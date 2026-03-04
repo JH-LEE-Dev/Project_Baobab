@@ -3,6 +3,7 @@
   <Project Path="VFolders.csproj" />
   <Project Path="NaughtyAttributes.Core.csproj" />
   <Project Path="ChocDino.UIFX.csproj" />
+  <Project Path="Assembly-CSharp.csproj" />
   <Project Path="NaughtyAttributes.Editor.csproj" />
   <Project Path="ChocDino.UIFX.Demos.csproj" />
   <Project Path="VHierarchy.csproj" />
