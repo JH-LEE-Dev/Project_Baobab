@@ -5,6 +5,8 @@ public class GameInstaller : MonoBehaviour
     //외부 의존성
     private InputManager inputManager;
     private IBootStrapProvider bootStrapProvider;
+    private EnvironmentManager environmentManager;
+
 
     //내부 의존성
    
@@ -12,6 +14,9 @@ public class GameInstaller : MonoBehaviour
     {
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
+
+        environmentManager = GetComponentInChildren<EnvironmentManager>();
+        environmentManager.Initialize();
 
         SetupGamePlayScene();
     }

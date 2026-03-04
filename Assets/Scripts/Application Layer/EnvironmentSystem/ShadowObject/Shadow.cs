@@ -1,0 +1,38 @@
+using UnityEngine;
+
+public class Shadow : MonoBehaviour
+{
+    [Header("Day Cycle Settings")]
+    [Tooltip("하루 주기의 속도 (값이 클수록 시간이 빨리 감)")]
+    [SerializeField] private float _dayCycleSpeed = 0.5f;
+
+    [Header("Scale Range")]
+    [Tooltip("그림자가 가장 짧을 때 (정오)의 Y 스케일")]
+    [SerializeField] private float _minHeightScale = 0.2f;
+    [Tooltip("그림자가 가장 길 때 (일출/일몰)의 Y 스케일")]
+    [SerializeField] private float _maxHeightScale = 0.7f;
+
+    private void Update()
+    {
+        // 1. 현재 시간 각도 계산 (0 ~ 2PI)
+        float timeAngle = Time.time * _dayCycleSpeed;
+
+        // 2. 공전 (회전)
+        // 하루 주기에 맞춰 한 바퀴(360도)를 회전합니다.
+        float rotationDegree = timeAngle * Mathf.Rad2Deg;
+        transform.localRotation = Quaternion.Euler(0, 0, rotationDegree);
+
+        // 3. 해의 고도에 따른 길이 변형 (Scale)
+        // Cos 함수를 활용: 
+        // 0도(일출) -> 최대 길이
+        // 90도(정오) -> 최소 길이
+        // 180도(일몰) -> 최대 길이
+        float heightFactor = Mathf.Abs(Mathf.Cos(timeAngle)); 
+        float targetScaleY = Mathf.Lerp(_minHeightScale, _maxHeightScale, heightFactor);
+
+        transform.localScale = new Vector3(1f, targetScaleY, 1f);
+
+        // 4. 밤낮에 따른 투명도 처리 (선택 사항)
+        // 해가 지평선 아래로 내려가는 타이밍(Sin < 0)에 그림자를 숨기거나 흐리게 할 수 있습니다.
+    }
+}
