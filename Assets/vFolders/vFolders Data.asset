@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: adb9c12a8c6c949f7af83a3d238359d0, type: 3}
+  m_Name: vFolders Data
+  m_EditorClassIdentifier: VFolders::VFolders.VFoldersData
+  folderDatas_byGuid:
+    keys:
+    - 5b8496e85d957eb4dbec626e5f79e14b
+    - 7af48d1be2be6a94f900ef25ecff4760
+    - c08c63ef138104642a4f1563a2440605
+    - 109e9bdd0fcc649c5bc59085c35bdc83
+    - f54d1bd14bd3ca042bd867b519fee8cc
+    - 109ccfb08b9fd4bf5a9d8deee2ace2ed
+    - dd2b9e231b0ec4a9f97e258072ae2b33
+    - 444bf60c48cb40e499c787bcabc004eb
+    - e057d0e08b2f5e448aa425191882a50e
+    values:
+    - iconNameOrGuid: TerrainData Icon
+      colorIndex: 8
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: Material Icon
+      colorIndex: 7
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: cs Script Icon
+      colorIndex: 4
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: 
+      colorIndex: 10
+      isIconRecursive: 0
+      isColorRecursive: 1
+    - iconNameOrGuid: SceneAsset Icon
+      colorIndex: 2
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: SceneAsset Icon
+      colorIndex: 2
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: SceneAsset Icon
+      colorIndex: 2
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: SceneAsset Icon
+      colorIndex: 2
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: SceneAsset Icon
+      colorIndex: 2
+      isIconRecursive: 1
+      isColorRecursive: 1
+  bookmarks: []
