@@ -53,6 +53,7 @@ public class GameInstaller : MonoBehaviour
     public void Release()
     {
         unitSystem.Release();
+        cameraManager.Release();
     }
 
     private void Awake()
