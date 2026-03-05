@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2618603934779584709}
   - component: {fileID: 2323688822281165534}
   - component: {fileID: 34867441274785128}
+  - component: {fileID: 4252106643654042207}
   m_Layer: 0
   m_Name: GameInstaller
   m_TagString: Untagged
@@ -74,6 +75,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07f1c91fe49390043b6597eee47a36eb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraManager
+--- !u!114 &4252106643654042207
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1253828952939773992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83bd713e2c929d444a8a799dbe888c9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectManager
+  treePrefab: {fileID: 3572664757824521396, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
+  treeSpawnCenterPoint: {fileID: 9082528861806409277, guid: c67d2d0f4e91d4644a04c444b39cf5f4, type: 3}
 --- !u!1 &2554595008635905786
 GameObject:
   m_ObjectHideFlags: 0

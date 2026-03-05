@@ -34,4 +34,9 @@ public class UnitSystem
     {
         signalHub.Publish(new CharacterSpawendSignal(_character));
     }
+
+    public void SetupUnits()
+    {
+        unitSpawner.SpawnCharacter();
+    }
 }

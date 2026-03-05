@@ -5,7 +5,7 @@ public class EnvironmentManager : MonoBehaviour, IEnvironmentProvider
     //외부 의존성
     private IsometricShadowController isometricShadowController;
 
-    //내부 의존성 (물리 데이터 캐싱)
+    //내부 의존성
     private GroundPhysicsData dirtPhysicsData;
     private int dirtLayerMask;
 
@@ -20,11 +20,6 @@ public class EnvironmentManager : MonoBehaviour, IEnvironmentProvider
         dirtLayerMask = LayerMask.GetMask("Dirt");
     }
 
-    /// <summary>
-    /// 특정 위치의 레이어를 체크하여 지형 물리 데이터를 반환합니다.
-    /// </summary>
-    /// <param name="_position">체크할 위치</param>
-    /// <returns>해당 위치의 물리 데이터 (기본값은 Dirt)</returns>
     public GroundPhysicsData GetGroundPhysicsData(Vector3 _position)
     {
         // Physics2D.OverlapPoint를 사용하여 해당 위치의 레이어 확인
