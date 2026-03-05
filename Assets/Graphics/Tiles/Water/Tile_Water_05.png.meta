@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 5f73e283c10d7dd429fe04982b886fa0
+guid: 3454a1aa0361f15449917d25c8f8248d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5712141521995015328
-    second: TestTile_Grass_0
+      213: 1647620981271097878
+    second: Tile_Water_05_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TestTile_Grass_0
+      name: Tile_Water_05_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
         width: 32
-        height: 32
+        height: 27
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 06b5abacc856ab0b0800000000000000
-      internalID: -5712141521995015328
+      spriteID: 612f4219d868dd610800000000000000
+      internalID: 1647620981271097878
       vertices: []
       indices: 
       edges: []
@@ -126,18 +126,16 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 1537655665
+    internalID: 0
     vertices: []
     indices: 
     edges: []
     weights: []
-    secondaryTextures:
-    - texture: {fileID: 2800000, guid: 8628de190ce57ec449d6d3046719bbd1, type: 3}
-      name: _NormalMap
+    secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TestTile_Grass_0: -5712141521995015328
+      Tile_Water_05_0: 1647620981271097878
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
