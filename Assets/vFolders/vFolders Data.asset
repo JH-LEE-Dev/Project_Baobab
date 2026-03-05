@@ -23,6 +23,7 @@ MonoBehaviour:
     - dd2b9e231b0ec4a9f97e258072ae2b33
     - 444bf60c48cb40e499c787bcabc004eb
     - e057d0e08b2f5e448aa425191882a50e
+    - c58335a078671014e871eb729f550e36
     values:
     - iconNameOrGuid: TerrainData Icon
       colorIndex: 8
@@ -58,6 +59,10 @@ MonoBehaviour:
       isColorRecursive: 1
     - iconNameOrGuid: SceneAsset Icon
       colorIndex: 2
+      isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: Mesh Icon
+      colorIndex: 6
       isIconRecursive: 1
       isColorRecursive: 1
   bookmarks: []
