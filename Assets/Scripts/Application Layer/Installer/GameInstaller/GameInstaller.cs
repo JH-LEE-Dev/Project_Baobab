@@ -13,14 +13,19 @@ public class GameInstaller : MonoBehaviour
     private UnitSpawner unitSpawner;
     private CameraManager cameraManager;
     private SignalHub signalHub;
+    private ObjectManager objectManager;
+
 
     //시스템 객체들
     private UnitSystem unitSystem;
+    private ObjectSystem objectSystem;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager)
     {
         unitSystem = new UnitSystem();
         signalHub = new SignalHub();
+        objectSystem = new ObjectSystem();
+
 
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -28,22 +33,28 @@ public class GameInstaller : MonoBehaviour
         environmentManager = GetComponentInChildren<EnvironmentManager>();
         unitSpawner = GetComponent<UnitSpawner>();
         cameraManager = GetComponent<CameraManager>();
+        objectManager = GetComponent<ObjectManager>();
+
 
         cameraManager.Initialize(signalHub);
         environmentManager.Initialize();
         unitSpawner.Initialize(inputManager, environmentManager);
+        objectManager.Initialize(environmentManager);
+
 
         unitSystem.Initialize(signalHub, unitSpawner);
+        objectSystem.Initailize(objectManager);
 
         SetupGamePlayScene();
     }
 
     public void SetupGamePlayScene()
     {
-        if (unitSpawner != null)
-        {
-            unitSpawner.SpawnCharacter();
-        }
+        if (unitSystem != null)
+            unitSystem.SetupUnits();
+
+        if(objectSystem != null)
+            objectSystem.SetupObjects();
     }
 
     public void StartGameplayScene()
