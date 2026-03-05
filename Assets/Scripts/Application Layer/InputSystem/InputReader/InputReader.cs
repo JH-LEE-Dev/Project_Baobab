@@ -17,6 +17,10 @@ public class InputReader
             actions = new InputActionSystem();
 
             actions.Normal.ESC.performed += OnESCButtonPressed;
+            
+            // Move 액션 바인딩 추가
+            actions.Normal.Move.performed += OnMove;
+            actions.Normal.Move.canceled += OnMove;
         }
 
         actions.Normal.Enable();
@@ -27,6 +31,10 @@ public class InputReader
         actions.Normal.Disable();
 
         actions.Normal.ESC.performed -= OnESCButtonPressed; 
+        
+        // Move 액션 바인딩 해제
+        actions.Normal.Move.performed -= OnMove;
+        actions.Normal.Move.canceled -= OnMove;
     }
 
     public void OnMove(InputAction.CallbackContext context)

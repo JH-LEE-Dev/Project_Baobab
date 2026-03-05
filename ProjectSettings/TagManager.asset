@@ -11,7 +11,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Dirt
   - 
   - 
   - 
@@ -41,7 +41,13 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: Shadow
+  - name: CharacterShadow
+    uniqueID: 2550407815
+    locked: 0
+  - name: Character
+    uniqueID: 1559392995
+    locked: 0
+  - name: TreeShadow
     uniqueID: 2456909477
     locked: 0
   - name: Tree

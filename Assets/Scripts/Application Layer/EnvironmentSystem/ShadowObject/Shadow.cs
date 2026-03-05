@@ -2,18 +2,27 @@ using UnityEngine;
 
 public class Shadow : MonoBehaviour
 {
-    [Header("Day Cycle Settings")]
-    [Tooltip("하루 주기의 속도 (값이 클수록 시간이 빨리 감)")]
-    [SerializeField] private float _dayCycleSpeed = 0.5f;
+    //외부 의존성
+    IShadowDataProvider shadowDataProvider;
 
-    [Header("Scale Range")]
-    [Tooltip("그림자가 가장 짧을 때 (정오)의 Y 스케일")]
-    [SerializeField] private float _minHeightScale = 0.2f;
-    [Tooltip("그림자가 가장 길 때 (일출/일몰)의 Y 스케일")]
-    [SerializeField] private float _maxHeightScale = 0.7f;
+    private float _dayCycleSpeed;
+    private float _minHeightScale;
+    private float _maxHeightScale;
+
+    public void Initialize(IShadowDataProvider _shadowDataProvider)
+    {     
+        shadowDataProvider = _shadowDataProvider;
+    }
 
     private void Update()
     {
+        if (shadowDataProvider == null)
+            return;
+
+        _dayCycleSpeed = shadowDataProvider.dayCycleSpeed;
+        _minHeightScale = shadowDataProvider.minHeightScale;
+        _maxHeightScale = shadowDataProvider.maxHeightScale;
+
         // 1. 현재 시간 각도 계산 (0 ~ 2PI)
         float timeAngle = Time.time * _dayCycleSpeed;
 
@@ -27,7 +36,7 @@ public class Shadow : MonoBehaviour
         // 0도(일출) -> 최대 길이
         // 90도(정오) -> 최소 길이
         // 180도(일몰) -> 최대 길이
-        float heightFactor = Mathf.Abs(Mathf.Cos(timeAngle)); 
+        float heightFactor = Mathf.Abs(Mathf.Cos(timeAngle));
         float targetScaleY = Mathf.Lerp(_minHeightScale, _maxHeightScale, heightFactor);
 
         transform.localScale = new Vector3(1f, targetScaleY, 1f);
