@@ -9,7 +9,15 @@ public class Tree : MonoBehaviour
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
-        
+
         shadowObject.Initialize(environmentProvider.shadowDataProvider);
+    }
+
+    private void Update()
+    {
+        if(shadowObject != null)
+        {
+            shadowObject.GetComponent<SpriteRenderer>().sprite = animatorObject.GetComponentInChildren<SpriteRenderer>().sprite;
+        }
     }
 }

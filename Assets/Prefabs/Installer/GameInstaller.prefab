@@ -87,7 +87,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83bd713e2c929d444a8a799dbe888c9b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObjectManager
-  treePrefab: {fileID: 3572664757824521396, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
+  treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
   treeSpawnCenterPoint: {fileID: 9082528861806409277, guid: c67d2d0f4e91d4644a04c444b39cf5f4, type: 3}
 --- !u!1 &2554595008635905786
 GameObject:
