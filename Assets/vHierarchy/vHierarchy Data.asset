@@ -27,5 +27,4 @@ MonoBehaviour:
   bookmarks: []
   bookmarkedScenePaths:
   - Assets/Scenes/MainMenuScene.unity
-  - Assets/Scenes/ForestScene.unity
   - Assets/Scenes/TownScene.unity
