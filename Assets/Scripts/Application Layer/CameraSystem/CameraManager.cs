@@ -13,7 +13,14 @@ public class CameraManager : MonoBehaviour
     {
         signalHub = _signalHub;
 
-        // 씬 내에 존재하는 CinemachineCamera를 자동으로 검색하여 할당합니다.
+        SubscribeSignals();
+
+        ResetCamera();
+    }
+
+    public void ResetCamera()
+    {
+         // 씬 내에 존재하는 CinemachineCamera를 자동으로 검색하여 할당합니다.
         virtualCamera = Object.FindAnyObjectByType<CinemachineCamera>();
         
         if (virtualCamera == null)
@@ -21,7 +28,12 @@ public class CameraManager : MonoBehaviour
             Debug.LogWarning("CameraManager: 씬에서 CinemachineCamera를 찾을 수 없습니다.");
         }
 
-        SubscribeSignals();
+         // 시네머신 카메라의 추적 대상 설정
+        if (virtualCamera != null && characterTransform != null)
+        {
+            virtualCamera.Follow = characterTransform;
+            virtualCamera.LookAt = characterTransform;
+        }
     }
 
     public void Release()

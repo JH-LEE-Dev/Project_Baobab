@@ -3,6 +3,7 @@ public abstract class State
 {
     protected StateMachine stateMachine;
     protected Character character;
+    protected bool bActivated = false;
 
     public void Initialize(StateMachine _stateMachine, Character _character)
     {

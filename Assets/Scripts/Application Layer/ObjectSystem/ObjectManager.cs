@@ -1,89 +1,67 @@
+using System;
 using UnityEngine;
-using UnityEngine.Pool;
-using System.Collections.Generic;
 
 public class ObjectManager : MonoBehaviour
 {
+    //이벤트
+    public event Action<PortalType> PortalActivatedEvent;
+
     //외부 의존성
-    [SerializeField] private Tree treePrefab;
-    [SerializeField] private Transform treeSpawnCenterPoint;
     private IEnvironmentProvider environmentProvider;
 
-    //내부 의존성 (풀링)
-    private IObjectPool<Tree> treePool;
-    private List<Tree> activeTrees = new List<Tree>(10);
+    //내부 의존성
+    [SerializeField] private TownObjectManager townObjManagerPrefab;
+    [SerializeField] private ForestObjectManager forestObjManagerPrefab;
+
+    private TownObjectManager townObjManager;
+    private ForestObjectManager forestObjManager;
+
+    public delegate void ReadyObjHandler(SceneType _sceneType);
+    private ReadyObjHandler[] readyObjCreatorMap;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
 
-        // 오브젝트 풀 초기화
-        treePool = new ObjectPool<Tree>(
-            createFunc: OnCreateTree,
-            actionOnGet: OnGetTree,
-            actionOnRelease: OnReleaseTree,
-            actionOnDestroy: OnDestroyTree,
-            collectionCheck: true,
-            defaultCapacity: 10,
-            maxSize: 20
-        );
+        readyObjCreatorMap = new ReadyObjHandler[(int)SceneType.MAX];
+
+        BindLogic(SceneType.Town, ReadyTownObjManager);
+        BindLogic(SceneType.Forest, ReadyForestObjManager);
+
+        void BindLogic(SceneType _type, ReadyObjHandler _action)
+            => readyObjCreatorMap[(int)_type] = _action;
+        
+        ReadyTownObjManager(SceneType.Town);
+    }
+    
+    public void SetupObj(SceneType _type)
+    {
+        readyObjCreatorMap[(int)_type]?.Invoke(_type);
     }
 
-    public void SpawnTree()
+    private void ReadyTownObjManager(SceneType _sceneType)
     {
-        float spawnRange = 5f;
+        townObjManager = Instantiate(townObjManagerPrefab);
 
-        for (int i = 0; i < 10; i++)
-        {
-            Tree tree = treePool.Get();
-            
-            // 랜덤 위치 설정 (treeSpawnCenterPoint 주변)
-            Vector3 randomOffset = new Vector3(
-                Random.Range(-spawnRange, spawnRange),
-                Random.Range(-spawnRange, spawnRange),
-                0f
-            );
-            tree.transform.position = treeSpawnCenterPoint.position + randomOffset;
-            
-            activeTrees.Add(tree);
-        }
+        townObjManager.ReadyObj();
+
+        townObjManager.PortalActivatedEvent -=  PortalActivated;
+        townObjManager.PortalActivatedEvent +=  PortalActivated;
     }
 
-    private Tree OnCreateTree()
+    private void ReadyForestObjManager(SceneType _sceneType)
     {
-        Tree tree = Instantiate(treePrefab, transform);
-        tree.Initialize(environmentProvider);
-        return tree;
+        forestObjManager = Instantiate(forestObjManagerPrefab);
+        forestObjManager.Initialize(environmentProvider);
+
+        forestObjManager.ReadyObj();
+        
+        //forestObjManager.PortalActivatedEvent -=  PortalActivated;
+        //forestObjManager.PortalActivatedEvent +=  PortalActivated;
     }
 
-    private void OnGetTree(Tree _tree)
+    private void PortalActivated(PortalType _type)
     {
-        _tree.gameObject.SetActive(true);
-    }
-
-    private void OnReleaseTree(Tree _tree)
-    {
-        _tree.gameObject.SetActive(false);
-    }
-
-    private void OnDestroyTree(Tree _tree)
-    {
-        Destroy(_tree.gameObject);
-    }
-
-    private void OnDestroy()
-    {
-        // 씬 파괴 시 풀링된 객체들 정리
-        if (activeTrees != null)
-        {
-            for (int i = 0; i < activeTrees.Count; i++)
-            {
-                if (activeTrees[i] != null)
-                {
-                    treePool.Release(activeTrees[i]);
-                }
-            }
-            activeTrees.Clear();
-        }
+        PortalActivatedEvent?.Invoke(_type);
     }
 }

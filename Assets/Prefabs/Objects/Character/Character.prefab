@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3204427211746890799}
   - component: {fileID: 2775399802894898738}
   - component: {fileID: 1622961768033688538}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Shadow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -116,7 +116,7 @@ GameObject:
   - component: {fileID: 8662941010871122232}
   - component: {fileID: 1880944115013296388}
   - component: {fileID: 2629361383811991815}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Character
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -229,7 +229,7 @@ GameObject:
   - component: {fileID: 2767750851685985544}
   - component: {fileID: 2948752420604468892}
   - component: {fileID: 9079651369485532021}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Animator
   m_TagString: Untagged
   m_Icon: {fileID: 0}

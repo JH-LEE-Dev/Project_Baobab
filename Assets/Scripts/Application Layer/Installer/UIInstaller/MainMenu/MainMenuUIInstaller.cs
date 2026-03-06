@@ -73,8 +73,8 @@ public class MainMenuUIInstaller : MonoBehaviour
 
         if (mainMenuUIView != null)
         {
-            mainMenuUIView.PlayButtonClickedEvent -= bootStrapProvider.GoToGameplayScene;
-            mainMenuUIView.PlayButtonClickedEvent += bootStrapProvider.GoToGameplayScene;
+            mainMenuUIView.PlayButtonClickedEvent -= bootStrapProvider.GoToTownScene;
+            mainMenuUIView.PlayButtonClickedEvent += bootStrapProvider.GoToTownScene;
         }
     }
 
@@ -93,6 +93,6 @@ public class MainMenuUIInstaller : MonoBehaviour
     {
         UIView_MainMenu mainMenuUIView = uiManager.Open<UIView_MainMenu>();
 
-        mainMenuUIView.PlayButtonClickedEvent -= bootStrapProvider.GoToGameplayScene;
+        mainMenuUIView.PlayButtonClickedEvent -= bootStrapProvider.GoToTownScene;
     }
 }

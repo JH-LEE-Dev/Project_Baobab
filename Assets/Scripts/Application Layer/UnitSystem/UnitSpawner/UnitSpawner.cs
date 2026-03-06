@@ -27,7 +27,7 @@ public class UnitSpawner : MonoBehaviour
         if(characterSpawnPoint == null || characterPrefab == null)
             return;
 
-        character = Instantiate(characterPrefab);
+        character = Instantiate(characterPrefab,transform);
         character.transform.position = characterSpawnPoint.position;
         character.Initialize(inputManager, environmentProvider);
 

@@ -6,15 +6,13 @@ public class GameInstaller : MonoBehaviour
     private InputManager inputManager;
     private IBootStrapProvider bootStrapProvider;
 
-
-
     //내부 의존성
     private EnvironmentManager environmentManager;
     private UnitSpawner unitSpawner;
     private CameraManager cameraManager;
     private SignalHub signalHub;
     private ObjectManager objectManager;
-
+    private TeleportManager teleportManager;
 
     //시스템 객체들
     private UnitSystem unitSystem;
@@ -22,6 +20,8 @@ public class GameInstaller : MonoBehaviour
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager)
     {
+        DontDestroyOnLoad(gameObject);
+
         unitSystem = new UnitSystem();
         signalHub = new SignalHub();
         objectSystem = new ObjectSystem();
@@ -34,37 +34,38 @@ public class GameInstaller : MonoBehaviour
         unitSpawner = GetComponent<UnitSpawner>();
         cameraManager = GetComponent<CameraManager>();
         objectManager = GetComponent<ObjectManager>();
+        teleportManager = GetComponent<TeleportManager>();
 
 
         cameraManager.Initialize(signalHub);
         environmentManager.Initialize();
         unitSpawner.Initialize(inputManager, environmentManager);
         objectManager.Initialize(environmentManager);
+        teleportManager.Initialize(signalHub, bootStrapProvider);
 
 
         unitSystem.Initialize(signalHub, unitSpawner);
-        objectSystem.Initailize(objectManager);
+        objectSystem.Initailize(signalHub,objectManager);
 
-        SetupGamePlayScene();
+        unitSystem.SetupUnits();
     }
 
-    public void SetupGamePlayScene()
+    public void SetupScene(SceneType _type)
     {
-        if (unitSystem != null)
-            unitSystem.SetupUnits();
+        if (objectSystem != null)
+            objectSystem.SetupObjects(_type);
 
-        if(objectSystem != null)
-            objectSystem.SetupObjects();
-    }
-
-    public void StartGameplayScene()
-    {
+        cameraManager.ResetCamera();
     }
 
     public void Release()
     {
         unitSystem.Release();
         cameraManager.Release();
+        objectSystem.Release();
+        teleportManager.Release();
+
+        Destroy(gameObject);
     }
 
     private void Awake()

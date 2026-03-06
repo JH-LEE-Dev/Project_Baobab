@@ -3,45 +3,40 @@ using UnityEngine;
 public class Shadow : MonoBehaviour
 {
     //외부 의존성
-    IShadowDataProvider shadowDataProvider;
+    private IShadowDataProvider shadowDataProvider;
 
-    private float _dayCycleSpeed;
+    //내부 의존성
     private float _minHeightScale;
     private float _maxHeightScale;
 
     public void Initialize(IShadowDataProvider _shadowDataProvider)
-    {     
+    {
         shadowDataProvider = _shadowDataProvider;
     }
 
     private void Update()
     {
         if (shadowDataProvider == null)
+        {
             return;
+        }
 
-        _dayCycleSpeed = shadowDataProvider.dayCycleSpeed;
+        float timePercent = shadowDataProvider.currentTimePercent;
         _minHeightScale = shadowDataProvider.minHeightScale;
         _maxHeightScale = shadowDataProvider.maxHeightScale;
 
         // 1. 현재 시간 각도 계산 (0 ~ 2PI)
-        float timeAngle = Time.time * _dayCycleSpeed;
+        float timeAngle = timePercent * Mathf.PI * 2f;
 
-        // 2. 공전 (회전)
-        // 하루 주기에 맞춰 한 바퀴(360도)를 회전합니다.
-        float rotationDegree = timeAngle * Mathf.Rad2Deg;
-        transform.localRotation = Quaternion.Euler(0, 0, rotationDegree);
+        // 2. 공전 (회전) - 24시간 내내 회전 유지
+        transform.localRotation = Quaternion.Euler(0, 0, timeAngle*Mathf.Rad2Deg);
 
         // 3. 해의 고도에 따른 길이 변형 (Scale)
-        // Cos 함수를 활용: 
-        // 0도(일출) -> 최대 길이
-        // 90도(정오) -> 최소 길이
-        // 180도(일몰) -> 최대 길이
-        float heightFactor = Mathf.Abs(Mathf.Cos(timeAngle));
+        // 낮/밤 구분 없이 사인 곡선에 따라 길이를 조절하되, 
+        // 시각적 처리는 Controller의 알파 페이딩에서 담당함.
+        float heightFactor = Mathf.Abs(Mathf.Sin(timeAngle));
         float targetScaleY = Mathf.Lerp(_minHeightScale, _maxHeightScale, heightFactor);
 
         transform.localScale = new Vector3(1f, targetScaleY, 1f);
-
-        // 4. 밤낮에 따른 투명도 처리 (선택 사항)
-        // 해가 지평선 아래로 내려가는 타이밍(Sin < 0)에 그림자를 숨기거나 흐리게 할 수 있습니다.
     }
 }

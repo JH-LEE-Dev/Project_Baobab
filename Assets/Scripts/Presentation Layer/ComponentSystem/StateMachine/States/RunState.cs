@@ -11,6 +11,7 @@ public class RunState : State
 
     public override void Enter()
     {
+        bActivated = true;
         character.anim.SetBool(character.isMovingHash, true);
     }
 
@@ -19,6 +20,8 @@ public class RunState : State
         moveInput = Vector2.zero;
         directionUpdateTimer = 0f;
         pendingDirection = Vector2.zero;
+
+        bActivated = false;
     }
 
     public override void Update()
@@ -46,6 +49,9 @@ public class RunState : State
 
     private void OnMove(Vector2 _input)
     {
+        if (bActivated == false)
+            return;
+
         moveInput = _input;
 
         if (_input == Vector2.zero)
@@ -80,7 +86,7 @@ public class RunState : State
     }
 
     private void UpdateFacingDirection(Vector2 _input)
-    {            
+    {
         character.SetFacingDirection(_input);
         lastVisualInput = _input;
         directionUpdateTimer = 0f;

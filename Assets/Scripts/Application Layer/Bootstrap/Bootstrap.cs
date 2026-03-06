@@ -26,8 +26,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     private void BootTempScene()
     {
-        SetupGameplayScene();
-        StartGameplayScene();
+        //SetupScene();
+        //StartScene();
     }
 
     private void Awake()
@@ -90,15 +90,21 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
     }
 
-    public void SetupGameplayScene()
+    public void SetupScene(string _sceneName)
     {
-        gameInstaller = Instantiate(gameInstaller_Prefab);
-        gameInstaller.Initialize(this,inputManager);
-    }
+        if (_sceneName == "TownScene")
+        {
+            gameInstaller = Instantiate(gameInstaller_Prefab);
+            gameInstaller.Initialize(this, inputManager);
+        }
 
-    private void StartGameplayScene()
-    {
-        gameInstaller.StartGameplayScene();
+        if (_sceneName == "ForestScene")
+        {
+            if (gameInstaller == null)
+                return;
+
+            gameInstaller.SetupScene(SceneType.Forest);
+        }
     }
 
     private void StartMainMenuScene()
@@ -110,12 +116,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     {
         string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
 
-        if (sceneName == "GameplayScene")
+        if (sceneName != "MainMenuScene")
         {
-            SetupGameplayScene();
-            StartGameplayScene();
+            SetupScene(sceneName);
         }
-        else if (sceneName == "MainMenuScene")
+        else
         {
             SetupMainMenuScene();
             StartMainMenuScene();
@@ -137,9 +142,22 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         sceneManager.ChangeScene(SceneType.MainMenu);
     }
 
-    public void GoToGameplayScene()
+    public void GoToTownScene()
     {
         mainMenuInstaller.Release();
-        sceneManager.ChangeScene(SceneType.Gameplay);
+        sceneManager.ChangeScene(SceneType.Town);
+    }
+
+    public void GoToOtherScene(string _sceneName)
+    {
+        if (_sceneName == "TownScene")
+        {
+            sceneManager.ChangeScene(SceneType.Town);
+        }
+
+        if (_sceneName == "ForestScene")
+        { 
+            sceneManager.ChangeScene(SceneType.Forest);
+        }
     }
 }

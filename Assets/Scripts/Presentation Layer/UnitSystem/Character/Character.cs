@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Character : MonoBehaviour
+public class Character : MonoBehaviour, ITeleportable
 {
     //외부 의존성
     public InputManager inputManager { get; private set; }
@@ -43,10 +43,6 @@ public class Character : MonoBehaviour
         SetupStateMachine();
     }
 
-    /// <summary>
-    /// 입력값에 따라 캐릭터의 바라보는 방향(8방향)을 설정합니다.
-    /// </summary>
-    /// <param name="_input">입력 벡터</param>
     public void SetFacingDirection(Vector2 _input)
     {
         if (_input.sqrMagnitude < 0.01f) return;

@@ -4,11 +4,13 @@ public class IdleState : State
 {
     public override void Enter()
     {
+        bActivated = true;
         character.anim.SetBool(character.isMovingHash, false);
     }
 
     public override void Exit()
     {
+        bActivated = false;
     }
 
     public override void Update()
@@ -35,6 +37,9 @@ public class IdleState : State
 
     private void OnMove(Vector2 _input)
     {
+        if(bActivated == false)
+            return;
+            
         // 키보드 입력이 발생하면 즉시 방향 설정 후 RunState로 전환
         if (_input != Vector2.zero)
         {
