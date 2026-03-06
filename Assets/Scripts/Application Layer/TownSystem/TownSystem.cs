@@ -3,6 +3,7 @@ using UnityEngine;
 public class TownSystem : MonoBehaviour
 {
     //내부 의존성
+    [SerializeField] private Transform townStartPoint;
     private SignalHub signalHub;
     private TownObjectManager townObjectManager;
     private IEnvironmentProvider environmentProvider;
@@ -32,6 +33,7 @@ public class TownSystem : MonoBehaviour
 
     public void StartTownSystem(SceneChangeData _sceneChangeData)
     {
+        character.transform.position = townStartPoint.position;
         townObjectManager.ReadyObj();
     }
 

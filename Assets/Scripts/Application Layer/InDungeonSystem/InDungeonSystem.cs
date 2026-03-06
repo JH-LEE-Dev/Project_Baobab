@@ -2,15 +2,16 @@ using UnityEngine;
 
 public class InDungeonSystem : MonoBehaviour
 {
+    [SerializeField] private Transform dungeonStartPoint;
     private SignalHub signalHub;
     private InDungeonObjectManager inDungeonObjectManager;
     private IEnvironmentProvider environmentProvider;
 
     private Character character;
 
-    public void Initialize(SignalHub _signalHub,IEnvironmentProvider _environmentProvider)
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider)
     {
-        environmentProvider =_environmentProvider;
+        environmentProvider = _environmentProvider;
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
@@ -28,6 +29,7 @@ public class InDungeonSystem : MonoBehaviour
 
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
+        character.transform.position = dungeonStartPoint.position;
         inDungeonObjectManager.ReadyObj();
     }
 
@@ -42,7 +44,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
     }
 
-        private void SubscribeSignals()
+    private void SubscribeSignals()
     {
         signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
     }

@@ -196,6 +196,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc37e7de64c27914dab8482bdda69589, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonSystem
+  dungeonStartPoint: {fileID: 3810338158089729465, guid: 7c4091825dcc3db42bf284e5a434a4cc, type: 3}
 --- !u!1 &6583048210432933352
 GameObject:
   m_ObjectHideFlags: 0
@@ -408,6 +409,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88d7f3f8a3f671a459b8157331a15876, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownSystem
+  townStartPoint: {fileID: 4434414126251310962, guid: 7e2fffb1c09c60c4e86d94bff7fd2f97, type: 3}
 --- !u!1 &9097579308778333852
 GameObject:
   m_ObjectHideFlags: 0
@@ -453,6 +455,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonObjectManager
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
-  treeSpawnCenterPoint: {fileID: 0}
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   portalSpawnPoint: {fileID: 3575309803827302579, guid: c6b9cee9c9de15b4c974f641daca3fe2, type: 3}

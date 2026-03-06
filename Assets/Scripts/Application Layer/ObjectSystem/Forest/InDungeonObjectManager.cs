@@ -61,6 +61,7 @@ public class InDungeonObjectManager : MonoBehaviour
     {
         TreeObj tree = Instantiate(treePrefab, transform);
         tree.Initialize(environmentProvider);
+
         return tree;
     }
 
@@ -109,7 +110,8 @@ public class InDungeonObjectManager : MonoBehaviour
 
     private void ReleaseEvents()
     {
-        portal.PortalActivated -= PortalActivated;
+        if (portal != null)
+            portal.PortalActivated -= PortalActivated;
     }
 
     private void PortalActivated(PortalType _type)
