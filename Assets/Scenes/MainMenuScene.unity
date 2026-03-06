@@ -178,9 +178,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2d7375460e349e4f8a1782adb8c7b9e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BootStrap
-  bTempScene: 0
-  gameInstaller_Prefab: {fileID: 2618603934779584709, guid: 2ebab4c8acaf99742b56d0772e82689f, type: 3}
-  mainMenuInstaller_Prefab: {fileID: 2903737071357978035, guid: ac5e5f0119faab946b0b9760ecca8785, type: 3}
+  isTempScene: 0
+  gameInstallerPrefab: {fileID: 2618603934779584709, guid: 2ebab4c8acaf99742b56d0772e82689f, type: 3}
+  mainMenuInstallerPrefab: {fileID: 2903737071357978035, guid: ac5e5f0119faab946b0b9760ecca8785, type: 3}
 --- !u!114 &209871257
 MonoBehaviour:
   m_ObjectHideFlags: 0

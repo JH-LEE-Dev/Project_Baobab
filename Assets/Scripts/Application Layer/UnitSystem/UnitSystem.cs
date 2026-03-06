@@ -5,11 +5,16 @@ public class UnitSystem
     //외부 의존성
     private SignalHub signalHub;
     private UnitSpawner unitSpawner;
+    private UnitLogicManager unitLogicManager;
 
-    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner)
+    //내부 의존성
+
+
+    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner,UnitLogicManager _unitLogicManager)
     {
         signalHub = _signalHub;
         unitSpawner = _unitSpawner;
+        unitLogicManager = _unitLogicManager;
 
         BindEvents();
     }
@@ -33,9 +38,10 @@ public class UnitSystem
     private void CharacterSpawned(Character _character)
     {
         signalHub.Publish(new CharacterSpawendSignal(_character));
+        unitLogicManager.SetCharacter(_character);
     }
 
-    public void SetupUnits()
+    public void CreateCharacter()
     {
         unitSpawner.SpawnCharacter();
     }

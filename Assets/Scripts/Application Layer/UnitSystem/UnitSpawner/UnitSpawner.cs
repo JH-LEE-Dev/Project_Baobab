@@ -24,7 +24,7 @@ public class UnitSpawner : MonoBehaviour
 
     public void SpawnCharacter()
     {
-        if(characterSpawnPoint == null || characterPrefab == null)
+        if(characterSpawnPoint == null || characterPrefab == null || character != null)
             return;
 
         character = Instantiate(characterPrefab,transform);

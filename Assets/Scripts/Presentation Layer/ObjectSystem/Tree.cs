@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Tree : MonoBehaviour
+public class TreeObj : MonoBehaviour
 {
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;

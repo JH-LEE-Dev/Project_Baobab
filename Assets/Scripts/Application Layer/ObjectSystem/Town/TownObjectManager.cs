@@ -6,17 +6,20 @@ public class TownObjectManager : MonoBehaviour
     //이벤트
     public event Action<PortalType> PortalActivatedEvent;
 
+    //외부 의존성
+    private IEnvironmentProvider environmentProvider;
+
     //내부 의존성
     [Header("Portal")]
-    [SerializeField] private Portal portalPrefab;
+    [SerializeField] private PortalObj portalPrefab;
     [SerializeField] private Transform portalSpawnPoint;
 
     //내부 의존성
-    private Portal portal;
+    private PortalObj portal;
 
-    public void Initialize()
+    public void Initialize(IEnvironmentProvider _environmentProvider)
     {
-
+        environmentProvider = _environmentProvider;
     }
 
     public void ReadyObj()

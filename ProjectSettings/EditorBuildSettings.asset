@@ -12,7 +12,7 @@ EditorBuildSettings:
     path: Assets/Scenes/TownScene.unity
     guid: 4e867fa40683a19469a6b9ede1dd1800
   - enabled: 1
-    path: Assets/Scenes/ForestScene.unity
+    path: Assets/Scenes/DungeonScene.unity
     guid: 2c44bfd28c30a364db2f0944d7401079
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}

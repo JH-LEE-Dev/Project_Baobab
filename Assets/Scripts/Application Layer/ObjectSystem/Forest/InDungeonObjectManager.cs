@@ -1,27 +1,35 @@
 using UnityEngine;
 using UnityEngine.Pool;
 using System.Collections.Generic;
+using System;
 
-public class ForestObjectManager : MonoBehaviour
+public class InDungeonObjectManager : MonoBehaviour
 {
+    //이벤트
+    public event Action<PortalType> PortalActivatedEvent;
+
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
 
     //내부 의존성
     [Header("Tree")]
-    [SerializeField] private Tree treePrefab;
-    [SerializeField] private Transform treeSpawnCenterPoint;
+    [SerializeField] private TreeObj treePrefab;
+
+    [Header("Portal")]
+    [SerializeField] private PortalObj portalPrefab;
+    [SerializeField] private Transform portalSpawnPoint;
+    private PortalObj portal;
 
     //내부 의존성 (풀링)
-    private IObjectPool<Tree> treePool;
-    private List<Tree> activeTrees = new List<Tree>(10);
+    private IObjectPool<TreeObj> treePool;
+    private List<TreeObj> activeTrees = new List<TreeObj>(10);
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
 
         // 오브젝트 풀 초기화
-        treePool = new ObjectPool<Tree>(
+        treePool = new ObjectPool<TreeObj>(
             createFunc: OnCreateTree,
             actionOnGet: OnGetTree,
             actionOnRelease: OnReleaseTree,
@@ -34,47 +42,39 @@ public class ForestObjectManager : MonoBehaviour
 
     public void SpawnTree()
     {
-        float spawnRange = 5f;
 
-        for (int i = 0; i < 10; i++)
-        {
-            Tree tree = treePool.Get();
-            
-            // 랜덤 위치 설정 (treeSpawnCenterPoint 주변)
-            Vector3 randomOffset = new Vector3(
-                Random.Range(-spawnRange, spawnRange),
-                Random.Range(-spawnRange, spawnRange),
-                0f
-            );
-            tree.transform.position = treeSpawnCenterPoint.position + randomOffset;
-            
-            activeTrees.Add(tree);
-        }
     }
 
     public void ReadyObj()
     {
         SpawnTree();
+
+        portal = Instantiate(portalPrefab);
+        portal.transform.position = portalSpawnPoint.position;
+
+        portal.Initialize(PortalType.ToTownPortal);
+
+        BindEvents();
     }
 
-    private Tree OnCreateTree()
+    private TreeObj OnCreateTree()
     {
-        Tree tree = Instantiate(treePrefab, transform);
+        TreeObj tree = Instantiate(treePrefab, transform);
         tree.Initialize(environmentProvider);
         return tree;
     }
 
-    private void OnGetTree(Tree _tree)
+    private void OnGetTree(TreeObj _tree)
     {
         _tree.gameObject.SetActive(true);
     }
 
-    private void OnReleaseTree(Tree _tree)
+    private void OnReleaseTree(TreeObj _tree)
     {
         _tree.gameObject.SetActive(false);
     }
 
-    private void OnDestroyTree(Tree _tree)
+    private void OnDestroyTree(TreeObj _tree)
     {
         Destroy(_tree.gameObject);
     }
@@ -94,5 +94,26 @@ public class ForestObjectManager : MonoBehaviour
 
             activeTrees.Clear();
         }
+
+        ReleaseEvents();
+    }
+
+    private void BindEvents()
+    {
+        if (portal == null)
+            return;
+
+        portal.PortalActivated -= PortalActivated;
+        portal.PortalActivated += PortalActivated;
+    }
+
+    private void ReleaseEvents()
+    {
+        portal.PortalActivated -= PortalActivated;
+    }
+
+    private void PortalActivated(PortalType _type)
+    {
+        PortalActivatedEvent?.Invoke(_type);
     }
 }

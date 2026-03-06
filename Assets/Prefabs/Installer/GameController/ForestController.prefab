@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &1085935156054506932
+--- !u!1 &885891307002525967
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2435271060444979339}
-  - component: {fileID: 7400456326593049518}
+  - component: {fileID: 2946303093301114574}
+  - component: {fileID: 5354477518535770408}
   m_Layer: 0
-  m_Name: ForestObjManager
+  m_Name: ForestController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2435271060444979339
+--- !u!4 &2946303093301114574
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1085935156054506932}
+  m_GameObject: {fileID: 885891307002525967}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -32,19 +32,16 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7400456326593049518
+--- !u!114 &5354477518535770408
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1085935156054506932}
+  m_GameObject: {fileID: 885891307002525967}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 894b348a7e01d364e9c593c2a69222fb, type: 3}
+  m_Script: {fileID: 11500000, guid: a62af94f7ce207d46a20878432728bb0, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ForestObjectManager
-  treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
-  treeSpawnCenterPoint: {fileID: 9082528861806409277, guid: c67d2d0f4e91d4644a04c444b39cf5f4, type: 3}
-  portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
-  portalSpawnPoint: {fileID: 3575309803827302579, guid: c6b9cee9c9de15b4c974f641daca3fe2, type: 3}
+  m_EditorClassIdentifier: Assembly-CSharp::ForestController
+  characterStartTransform: {fileID: 3810338158089729465, guid: 7c4091825dcc3db42bf284e5a434a4cc, type: 3}

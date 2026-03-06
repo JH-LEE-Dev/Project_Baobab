@@ -34,7 +34,7 @@ public class TeleportManager : MonoBehaviour
         switch (portalActivatedSignal.type)
         {
             case PortalType.ToDungeonPortal:
-                bootStrapProvider.GoToOtherScene("ForestScene");
+                bootStrapProvider.GoToOtherScene("DungeonScene");
                 break;
             case PortalType.ToTownPortal:
                 bootStrapProvider.GoToOtherScene("TownScene");

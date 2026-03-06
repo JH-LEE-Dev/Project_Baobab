@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class Portal : MonoBehaviour
+public class PortalObj : MonoBehaviour
 {
     //이벤트
     public event Action<PortalType> PortalActivated;

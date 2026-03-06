@@ -4,56 +4,189 @@ using UnityEngine.SceneManagement;
 
 public class BootStrap : MonoBehaviour, IBootStrapProvider
 {
-    [SerializeField] bool bTempScene = false;
+    // 필드 선언 (내부 의존성)
+    [SerializeField] private bool isTempScene = false;
 
-    private static BootStrap Instance;
+    private static BootStrap instance;
 
     private SceneManager sceneManager;
-    private AudioManager audioManager;
     private InputManager inputManager;
 
-    [Header("MainMenu Level Object")]
-
     [Header("Gameplay Level Object")]
-    [SerializeField] GameInstaller gameInstaller_Prefab;
-    [SerializeField] MainMenuInstaller mainMenuInstaller_Prefab;
+    [SerializeField] private GameInstaller gameInstallerPrefab;
+    [SerializeField] private MainMenuInstaller mainMenuInstallerPrefab;
 
     private GameInstaller gameInstaller;
     private MainMenuInstaller mainMenuInstaller;
-    //private LocalizationManager localizationManager;
 
-    //private const string koreanLocalizationFileName = "CardDescription_Korean";
+    // 캐싱된 씬 이름 (문자열 비교 최적화 및 GC 할당 최소화)
+    private static readonly string mainMenuSceneName = "MainMenuScene";
+    private static readonly string townSceneName = "TownScene";
+    private static readonly string dungeonSceneName = "DungeonScene";
 
-    private void BootTempScene()
+    private SceneType currentSceneType = SceneType.None;
+    private SceneType prevSceneType = SceneType.None;
+
+
+
+    // 퍼블릭 초기화 및 제어 메서드
+    public void SetupScene(string _sceneName)
     {
-        //SetupScene();
-        //StartScene();
+        if (_sceneName == townSceneName)
+        {
+            currentSceneType = SceneType.Town;
+
+            if (gameInstaller == null)
+            {
+                gameInstaller = Instantiate(gameInstallerPrefab);
+                gameInstaller.Initialize(this, inputManager);
+            }
+        }
+        else if (_sceneName == dungeonSceneName)
+        {
+            currentSceneType = SceneType.Dungeon;
+        }
+
+        if (gameInstaller != null)
+        {
+            gameInstaller.SetupGameInstaller(new SceneChangeData(currentSceneType, prevSceneType));
+        }
     }
 
+    public void SetupMainMenuScene()
+    {
+        currentSceneType = SceneType.MainMenu;
+
+        if (mainMenuInstaller == null)
+        {
+            mainMenuInstaller = Instantiate(mainMenuInstallerPrefab);
+            mainMenuInstaller.Initialize(this, inputManager);
+        }
+    }
+
+    public void GoToMainMenuScene()
+    {
+        prevSceneType = currentSceneType;
+
+        if (isTempScene)
+        {
+            return;
+        }
+
+        if (gameInstaller != null)
+        {
+            gameInstaller.Release();
+            gameInstaller = null; // 참조 해제하여 GC 대상 포함
+        }
+
+        sceneManager.ChangeScene(SceneType.MainMenu);
+    }
+
+    public void GoToTownScene()
+    {
+        prevSceneType = currentSceneType;
+
+        if (mainMenuInstaller != null)
+        {
+            mainMenuInstaller.Release();
+            mainMenuInstaller = null;
+        }
+
+        sceneManager.ChangeScene(SceneType.Town);
+    }
+
+    public void GoToOtherScene(string _sceneName)
+    {
+        prevSceneType = currentSceneType;
+
+        if (_sceneName == townSceneName)
+        {
+            sceneManager.ChangeScene(SceneType.Town);
+        }
+        else if (_sceneName == dungeonSceneName)
+        {
+            sceneManager.ChangeScene(SceneType.Dungeon);
+        }
+    }
+
+    // 유니티 이벤트 함수
     private void Awake()
     {
-        if (Instance != null)
+        if (instance != null)
         {
             Destroy(gameObject);
             return;
         }
 
-        Instance = this;
+        instance = this;
         DontDestroyOnLoad(gameObject);
 
+        // 이벤트 중복 등록 방지
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
 
-        audioManager = GetComponent<AudioManager>();
         sceneManager = GetComponent<SceneManager>();
         inputManager = GetComponent<InputManager>();
-        //localizationManager = new LocalizationManager();
 
-        inputManager.Initialize();
+        if (inputManager != null)
+        {
+            inputManager.Initialize();
+        }
 
         BindEvent();
-
         InitializeDoTweenPool();
+    }
+
+    private void Start()
+    {
+        if (isTempScene)
+        {
+            BootTempScene();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseEvent();
+    }
+
+    // 내부 로직
+    private void BindEvent()
+    {
+        if (inputManager != null && inputManager.inputReader != null)
+        {
+            inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
+            inputManager.inputReader.ESCButtonPressedEvent += GoToMainMenuScene;
+        }
+    }
+
+    private void ReleaseEvent()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+
+        if (inputManager != null && inputManager.inputReader != null)
+        {
+            inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
+        }
+    }
+
+    private void OnSceneLoaded(Scene _scene, LoadSceneMode _mode)
+    {
+        // 최적화: SceneManager API 호출 대신 이벤트 인자 활용
+        string loadedSceneName = _scene.name;
+
+        if (loadedSceneName != mainMenuSceneName)
+        {
+            SetupScene(loadedSceneName);
+        }
+        else
+        {
+            SetupMainMenuScene();
+            if (mainMenuInstaller != null)
+            {
+                mainMenuInstaller.StartMainMenuScene();
+            }
+        }
     }
 
     private void InitializeDoTweenPool()
@@ -62,102 +195,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         DOTween.SetTweensCapacity(1250, 312);
     }
 
-    public void Start()
+    private void BootTempScene()
     {
-        if (bTempScene)
-            BootTempScene();
-
-        //Sound.PlayBGM("BGM_MainMenu");
-        //localizationManager.LoadLanguage(koreanLocalizationFileName);
-    }
-
-    public void OnDestroy()
-    {
-        ReleaseEvent();
-    }
-
-    private void BindEvent()
-    {
-        inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
-        inputManager.inputReader.ESCButtonPressedEvent += GoToMainMenuScene;
-    }
-
-    private void ReleaseEvent()
-    {
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-
-        if (inputManager != null)
-            inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
-    }
-
-    public void SetupScene(string _sceneName)
-    {
-        if (_sceneName == "TownScene")
-        {
-            gameInstaller = Instantiate(gameInstaller_Prefab);
-            gameInstaller.Initialize(this, inputManager);
-        }
-
-        if (_sceneName == "ForestScene")
-        {
-            if (gameInstaller == null)
-                return;
-
-            gameInstaller.SetupScene(SceneType.Forest);
-        }
-    }
-
-    private void StartMainMenuScene()
-    {
-        mainMenuInstaller.StartMainMenuScene();
-    }
-
-    public void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-
-        if (sceneName != "MainMenuScene")
-        {
-            SetupScene(sceneName);
-        }
-        else
-        {
-            SetupMainMenuScene();
-            StartMainMenuScene();
-        }
-    }
-
-    public void SetupMainMenuScene()
-    {
-        mainMenuInstaller = Instantiate(mainMenuInstaller_Prefab);
-        mainMenuInstaller.Initialize(this, inputManager);
-    }
-
-    public void GoToMainMenuScene()
-    {
-        if (bTempScene)
-            return;
-
-        gameInstaller.Release();
-        sceneManager.ChangeScene(SceneType.MainMenu);
-    }
-
-    public void GoToTownScene()
-    {
-        mainMenuInstaller.Release();
-        sceneManager.ChangeScene(SceneType.Town);
-    }
-
-    public void GoToOtherScene(string _sceneName)
-    {
-        if (_sceneName == "TownScene")
-        {
-            sceneManager.ChangeScene(SceneType.Town);
-        }
-
-        if (_sceneName == "ForestScene")
-        { 
-            sceneManager.ChangeScene(SceneType.Forest);
-        }
+        // 임시 부팅 로직
     }
 }

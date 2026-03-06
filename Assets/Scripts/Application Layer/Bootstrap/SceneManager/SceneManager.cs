@@ -1,14 +1,4 @@
 using UnityEngine;
-
-public enum SceneType
-{
-    None,
-    MainMenu,
-    Town,
-    Forest,
-    MAX,
-}
-
 public class SceneManager : MonoBehaviour
 {
     public void ChangeScene(SceneType sceneType)
@@ -21,8 +11,8 @@ public class SceneManager : MonoBehaviour
             case SceneType.Town:
                 UnityEngine.SceneManagement.SceneManager.LoadScene("TownScene");
                 break;
-            case SceneType.Forest:
-                UnityEngine.SceneManagement.SceneManager.LoadScene("ForestScene");
+            case SceneType.Dungeon:
+                UnityEngine.SceneManagement.SceneManager.LoadScene("DungeonScene");
                 break;
         }
     }
