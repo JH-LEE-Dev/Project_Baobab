@@ -6,7 +6,8 @@ public class InDungeonSystem : MonoBehaviour
     private InDungeonObjectManager inDungeonObjectManager;
     private IEnvironmentProvider environmentProvider;
 
-    private Character character;
+    [Header("Dungeon Data")]
+    [SerializeField] private DungeonData dungeonData;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider)
     {
@@ -28,7 +29,8 @@ public class InDungeonSystem : MonoBehaviour
 
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
-        signalHub.Publish(new DungeonStartSignal());
+        signalHub.Publish(new DungeonReadySignal(dungeonData));
+        inDungeonObjectManager.SetDungeonData(dungeonData);
     }
 
     private void BindEvents()
@@ -44,13 +46,11 @@ public class InDungeonSystem : MonoBehaviour
 
     private void SubscribeSignals()
     {
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
         signalHub.Subscribe<MapGeneratedSignal>(MapGenerated);
     }
 
     private void UnSubscribeSignals()
     {
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
         signalHub.UnSubscribe<MapGeneratedSignal>(MapGenerated);
     }
 
@@ -59,15 +59,11 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new PortalActivatedSignal(_type));
     }
 
-    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
-    {
-        character = characterSpawendSignal.character;
-        inDungeonObjectManager.SetCharacter(character);
-    }
-
     private void MapGenerated(MapGeneratedSignal mapGeneratedSignal)
     {
         inDungeonObjectManager.ReadyTrees(mapGeneratedSignal.grassTilePositions);
         inDungeonObjectManager.ReadyPortalAndCharacter();
+
+        signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
     }
 }

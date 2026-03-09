@@ -49,12 +49,12 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void SubscribeSignals()
     {
-        signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
+        signalHub.Subscribe<DungeonReadySignal>(DungeonStarted);
     }
 
     private void UnSubscribeSignals()
     {
-        signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
+        signalHub.UnSubscribe<DungeonReadySignal>(DungeonStarted);
     }
 
     private void BindEvents()
@@ -68,7 +68,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         tileMapGenerator.TilemapGeneratedEvent -= TilemapGenerated;
     }
 
-    private void DungeonStarted(DungeonStartSignal dungeonStartSignal)
+    private void DungeonStarted(DungeonReadySignal dungeonStartSignal)
     {
         tileMapGenerator.InitializeMapData();
         tileMapGenerator.GenerateMap();

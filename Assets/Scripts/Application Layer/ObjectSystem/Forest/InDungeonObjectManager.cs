@@ -9,9 +9,8 @@ public class InDungeonObjectManager : MonoBehaviour
     // // 이벤트
     public event Action<PortalType> PortalActivatedEvent;
 
-    // // 외부 의존성
+    // 외부 의존성
     private IEnvironmentProvider environmentProvider;
-    private Character character;
 
     // // 내부 의존성
     [Header("Tree Settings")]
@@ -32,6 +31,9 @@ public class InDungeonObjectManager : MonoBehaviour
     private List<TreeObj> activeTrees = new List<TreeObj>(1000);
     private Coroutine growthCoroutine;
 
+    private DungeonData dungeonData;
+
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -46,11 +48,6 @@ public class InDungeonObjectManager : MonoBehaviour
             defaultCapacity: 200,
             maxSize: 5000
         );
-    }
-
-    public void SetCharacter(Character _character)
-    {
-        character = _character;
     }
 
     public void SpawnTree()
@@ -94,13 +91,19 @@ public class InDungeonObjectManager : MonoBehaviour
 
         portal.transform.position = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
 
-        if (character != null)
-        {
-            character.transform.position = environmentProvider.tilemapDataProvider.GetPlayerSpawnPosition();
-        }
-
         BindEvents();
     }
+
+    public Vector3 GetPlayerStartPos()
+    {
+        return environmentProvider.tilemapDataProvider.GetPlayerSpawnPosition();
+    }
+
+    public void SetDungeonData(DungeonData _dungeonData)
+    {
+        dungeonData = _dungeonData;
+    }
+
 
     private IEnumerator GrowthRoutine()
     {
@@ -126,7 +129,7 @@ public class InDungeonObjectManager : MonoBehaviour
         // 리스트 내에서 랜덤하게 하나 선택
         int randomIndex = UnityEngine.Random.Range(0, availablePositions.Count);
         Vector3 spawnPos = availablePositions[randomIndex];
-        
+
         // 선택된 요소를 마지막 요소와 교체 후 제거 (O(1) 성능 유지하며 랜덤 추출)
         int lastIndex = availablePositions.Count - 1;
         availablePositions[randomIndex] = availablePositions[lastIndex];
@@ -173,8 +176,45 @@ public class InDungeonObjectManager : MonoBehaviour
     private TreeObj OnCreateTree()
     {
         TreeObj tree = Instantiate(treePrefab, transform);
-        tree.Initialize(environmentProvider);
+        tree.Initialize(environmentProvider, CalcTreeData());
+
         return tree;
+    }
+
+    private TreeInitData CalcTreeData()
+    {
+        if (dungeonData == null)
+        {
+            return new TreeInitData(TreeType.None, TreeGrade.None);
+        }
+
+        // 1. 나무 종류 선택 (단순 랜덤)
+        TreeType selectedType = TreeType.None;
+        if (dungeonData.treeTypes != null && dungeonData.treeTypes.Count > 0)
+        {
+            int typeIdx = UnityEngine.Random.Range(0, dungeonData.treeTypes.Count);
+            selectedType = dungeonData.treeTypes[typeIdx];
+        }
+
+        // 2. 나무 등급 선택 (가중치 확률 기반)
+        TreeGrade selectedGrade = TreeGrade.Normal;
+        if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
+        {
+            float randomVal = UnityEngine.Random.Range(0f, 1f);
+            float cumulativeProb = 0f;
+
+            for (int i = 0; i < dungeonData.treeGradeProbs.Count; i++)
+            {
+                cumulativeProb += dungeonData.treeGradeProbs[i].probability;
+                if (randomVal <= cumulativeProb)
+                {
+                    selectedGrade = dungeonData.treeGradeProbs[i].grade;
+                    break;
+                }
+            }
+        }
+
+        return new TreeInitData(selectedType, selectedGrade);
     }
 
     private void OnGetTree(TreeObj _tree)
@@ -225,7 +265,7 @@ public class InDungeonObjectManager : MonoBehaviour
     {
         // 죽은 나무의 위치를 사용 가능 목록에 추가
         availablePositions.Add(_treeObj.transform.position);
-        
+
         // 방금 추가된 위치가 다음에 바로 나오지 않도록 리스트 내의 임의의 위치와 섞음
         if (availablePositions.Count > 1)
         {
@@ -235,7 +275,7 @@ public class InDungeonObjectManager : MonoBehaviour
             availablePositions[lastIdx] = availablePositions[swapIdx];
             availablePositions[swapIdx] = temp;
         }
-        
+
         treePool.Release(_treeObj);
         activeTrees.Remove(_treeObj);
     }

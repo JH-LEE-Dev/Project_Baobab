@@ -5,7 +5,6 @@ using System;
 
 public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 {
-    // // 이벤트
     public event Action<List<Vector3>> TilemapGeneratedEvent;
 
     [Header("설정")]
@@ -27,290 +26,139 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private TileBase grassTile;
     [SerializeField] private TileBase mountainTile;
 
-    // // 내부 의존성
     private Tilemap groundTilemap;
+    private Tilemap collisionTilemap;
     private Grid grid;
 
-    // // 최적화를 위한 재사용 컬렉션 (GC Alloc 방지)
-    private bool[] visited;
-    private bool[] isEdgeFlag;
-    private Queue<int> bfsQueue;
-    private List<int> currentBlob;
-    private List<int> largestBlob;
-    private List<int> edgeIndices;
-    private List<Vector3> grassTileWorldPositions;
+    private List<int> largestBlob = new List<int>();
+    private List<Vector3> grassPositions = new List<Vector3>();
     private float[] noiseValues;
-    private TileBase[] groundArray;
-    private TileBase[] collisionArray;
-    private Vector3 halfCellHeightOffset;
-
-    // // 스폰 데이터
-    private int playerSpawnIndex = -1;
-    private int portalSpawnIndex = -1;
+    private int playerIdx = -1, portalIdx = -1;
 
     public void InitializeMapData()
     {
-        if (grid == null)
-        {
-            grid = Instantiate(gridPrefab, transform.position, Quaternion.identity).GetComponent<Grid>();
-        }
-
+        if (grid == null) grid = Instantiate(gridPrefab, transform.position, Quaternion.identity).GetComponent<Grid>();
         Tilemap[] maps = grid.GetComponentsInChildren<Tilemap>();
-        Tilemap collisionTilemap = null;
-        foreach (var map in maps)
+        foreach (var m in maps)
         {
-            if (map.name == "GroundTilemap") groundTilemap = map;
-            else if (map.name == "ColliderTilemap") collisionTilemap = map;
+            if (m.name == "GroundTilemap") groundTilemap = m;
+            else if (m.name == "ColliderTilemap") collisionTilemap = m;
         }
-
-        int totalSize = width * height;
-        visited = new bool[totalSize];
-        isEdgeFlag = new bool[totalSize];
-        bfsQueue = new Queue<int>(totalSize);
-        currentBlob = new List<int>(totalSize);
-        largestBlob = new List<int>(totalSize);
-        edgeIndices = new List<int>(totalSize / 10);
-        grassTileWorldPositions = new List<Vector3>(totalSize);
-        noiseValues = new float[totalSize];
-        groundArray = new TileBase[totalSize];
-        collisionArray = new TileBase[totalSize];
-
-        // 타일 세로 크기의 절반 오프셋 캐싱
-        halfCellHeightOffset = new Vector3(0, grid.cellSize.y * 0.5f, 0);
-
+        noiseValues = new float[width * height];
         if (seed == 0) seed = UnityEngine.Random.Range(1, 100000);
     }
 
-    public Vector3 GetPlayerSpawnPosition() => GetWorldPosByIndex(playerSpawnIndex);
-    public Vector3 GetPortalSpawnPosition() => GetWorldPosByIndex(portalSpawnIndex);
-    public List<Vector3> GetGrassTileWorldPositions() => grassTileWorldPositions;
+    public Vector3 GetPlayerSpawnPosition() => GetWorldPos(playerIdx);
+    public Vector3 GetPortalSpawnPosition() => GetWorldPos(portalIdx);
+    public List<Vector3> GetGrassTileWorldPositions() => grassPositions;
 
     public void GenerateMap()
     {
-        if (groundTilemap == null) return;
-
+        if (!groundTilemap || !collisionTilemap) return;
         groundTilemap.ClearAllTiles();
-        // ColliderTilemap은 groundTilemap과 동일한 구조의 자식이므로 함께 정리 (필요 시 캐싱 가능)
-        Tilemap collisionTilemap = grid.transform.Find("ColliderTilemap")?.GetComponent<Tilemap>();
-        if (collisionTilemap != null) collisionTilemap.ClearAllTiles();
+        collisionTilemap.ClearAllTiles();
 
-        float invWidth = 1f / width;
-        float invHeight = 1f / height;
-        float invWidthMinusOne = 1f / (width - 1);
-        float invHeightMinusOne = 1f / (height - 1);
-
-        // 1단계: 노이즈 생성
+        // 1. 노이즈 생성
         for (int y = 0; y < height; y++)
         {
-            int rowOffset = y * width;
-            float yCoord = (float)y * invHeight * scale + seed;
-            float ny = (float)y * invHeightMinusOne * 2f - 1f;
-
             for (int x = 0; x < width; x++)
             {
-                float xCoord = (float)x * invWidth * scale + seed;
-                float noiseValue = Mathf.PerlinNoise(xCoord, yCoord);
-
+                float val = Mathf.PerlinNoise((x + 0.5f) / width * scale + seed, (y + 0.5f) / height * scale + seed);
                 if (useIslandPrevention)
                 {
-                    float nx = (float)x * invWidthMinusOne * 2f - 1f;
-                    float distance = Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny));
-                    noiseValue -= EvaluateFalloff(distance);
+                    float nx = x / (width - 1f) * 2f - 1f, ny = y / (height - 1f) * 2f - 1f;
+                    val -= EvaluateFalloff(Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny)));
                 }
-                noiseValues[x + rowOffset] = noiseValue;
+                noiseValues[x + y * width] = val;
             }
         }
 
         RemoveIslands();
-        DetermineSpawnPoints();
+        DetermineSpawns();
 
-        // 2단계: 타일 배치 및 Grass 좌표 수집 (최적화 루프)
-        grassTileWorldPositions.Clear();
-        Vector3 playerPos = GetPlayerSpawnPosition();
-        Vector3 portalPos = GetPortalSpawnPosition();
-        const float excludeRadiusSqr = 1.5f * 1.5f;
+        // 2. 타일 배치 및 Grass 좌표 수집
+        TileBase[] gArr = new TileBase[noiseValues.Length], cArr = new TileBase[noiseValues.Length];
+        grassPositions.Clear();
+        float sandT = waterThreshold + 0.1f, mountT = 0.7f;
 
-        int currX = 0;
-        int currY = 0;
         for (int i = 0; i < noiseValues.Length; i++)
         {
-            float val = noiseValues[i];
-            if (val < waterThreshold)
-            {
-                collisionArray[i] = waterTile;
-                groundArray[i] = null;
-            }
+            float v = noiseValues[i];
+            if (v < waterThreshold) { cArr[i] = waterTile; }
             else
             {
-                collisionArray[i] = null;
-                TileBase tile = GetTileByNoise(val);
-                groundArray[i] = tile;
-
-                if (tile == grassTile)
+                if (v < sandT) gArr[i] = sandTile;
+                else if (v < mountT)
                 {
-                    // % 와 / 연산 대신 현재 추적 중인 좌표 사용
-                    Vector3 worldPos = groundTilemap.GetCellCenterWorld(new Vector3Int(currX, currY, 0)) - halfCellHeightOffset;
-                    if ((worldPos - playerPos).sqrMagnitude >= excludeRadiusSqr && 
-                        (worldPos - portalPos).sqrMagnitude >= excludeRadiusSqr)
-                    {
-                        grassTileWorldPositions.Add(worldPos);
-                    }
+                    gArr[i] = grassTile;
+                    Vector3 pos = GetWorldPos(i);
+                    if ((pos - GetPlayerSpawnPosition()).sqrMagnitude > 2.25f && (pos - GetPortalSpawnPosition()).sqrMagnitude > 2.25f)
+                        grassPositions.Add(pos);
                 }
+                else gArr[i] = mountainTile;
             }
-
-            // 인덱스 기반 좌표 추적 (나눗셈 제거)
-            currX++;
-            if (currX >= width) { currX = 0; currY++; }
         }
-
-        BoundsInt area = new BoundsInt(0, 0, 0, width, height, 1);
-        groundTilemap.SetTilesBlock(area, groundArray);
-        if (collisionTilemap != null) collisionTilemap.SetTilesBlock(area, collisionArray);
-
-        TilemapGeneratedEvent?.Invoke(grassTileWorldPositions);
+        BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
+        groundTilemap.SetTilesBlock(b, gArr);
+        collisionTilemap.SetTilesBlock(b, cArr);
+        TilemapGeneratedEvent?.Invoke(grassPositions);
     }
 
-    private void DetermineSpawnPoints()
+    private void DetermineSpawns()
     {
-        edgeIndices.Clear();
-        Array.Clear(isEdgeFlag, 0, isEdgeFlag.Length);
-
-        int blobCount = largestBlob.Count;
-        for (int i = 0; i < blobCount; i++)
+        List<int> edges = new List<int>();
+        foreach (int i in largestBlob)
         {
-            int idx = largestBlob[i];
-            int cx = idx % width;
-            int cy = idx / width;
-
-            if (IsWaterOrEdge(cx + 1, cy) || IsWaterOrEdge(cx - 1, cy) ||
-                IsWaterOrEdge(cx, cy + 1) || IsWaterOrEdge(cx, cy - 1))
-            {
-                edgeIndices.Add(idx);
-                isEdgeFlag[idx] = true;
-            }
+            int x = i % width, y = i / width;
+            if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1)) edges.Add(i);
         }
-
-        if (edgeIndices.Count == 0)
+        portalIdx = edges.Count > 0 ? edges[UnityEngine.Random.Range(0, edges.Count)] : (largestBlob.Count > 0 ? largestBlob[0] : -1);
+        playerIdx = -1;
+        for (int r = 0; r <= 15 && playerIdx == -1; r++)
         {
-            playerSpawnIndex = blobCount > 0 ? largestBlob[0] : -1;
-            portalSpawnIndex = playerSpawnIndex;
-            return;
-        }
-
-        // 1. 포탈 위치를 먼저 결정 (해안가 중 랜덤)
-        portalSpawnIndex = edgeIndices[UnityEngine.Random.Range(0, edgeIndices.Count)];
-        int potX = portalSpawnIndex % width;
-        int potY = portalSpawnIndex / width;
-
-        // 2. 포탈 인근에서 가장 가까운 Grass 타일을 찾아 캐릭터 위치로 결정
-        playerSpawnIndex = -1;
-        
-        // 탐색 범위를 0(포탈 위치)부터 반경 10까지 점진적으로 확대하며 탐색
-        for (int r = 0; r <= 10 && playerSpawnIndex == -1; r++)
-        {
-            for (int dx = -r; dx <= r && playerSpawnIndex == -1; dx++)
-            {
-                int tx = potX + dx;
-                if (tx < 0 || tx >= width) continue;
-
+            for (int dx = -r; dx <= r && playerIdx == -1; dx++)
                 for (int dy = -r; dy <= r; dy++)
                 {
-                    int ty = potY + dy;
-                    if (ty < 0 || ty >= height) continue;
-
-                    int tIdx = tx + ty * width;
-                    float val = noiseValues[tIdx];
-
-                    // 해당 타일이 메인 대륙에 있고(RemoveIslands에서 걸러짐), Grass 타일 조건에 맞는지 확인
-                    if (val >= waterThreshold + 0.1f && val < 0.7f)
-                    {
-                        playerSpawnIndex = tIdx;
-                        break;
-                    }
+                    int idx = (portalIdx % width + dx) + (portalIdx / width + dy) * width;
+                    if (idx >= 0 && idx < noiseValues.Length && noiseValues[idx] >= waterThreshold + 0.1f && noiseValues[idx] < 0.7f)
+                    { playerIdx = idx; break; }
                 }
-            }
         }
-
-        // 만약 인근에 Grass 타일이 전혀 없다면 (매우 드문 지형), 안전책으로 포탈 위치를 사용
-        if (playerSpawnIndex == -1) playerSpawnIndex = portalSpawnIndex;
+        if (playerIdx == -1) playerIdx = portalIdx;
     }
 
-    private bool IsWaterOrEdge(int _x, int _y)
-    {
-        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return true;
-        return noiseValues[_x + _y * width] < waterThreshold;
-    }
+    private bool IsWater(int x, int y) => x < 0 || x >= width || y < 0 || y >= height || noiseValues[x + y * width] < waterThreshold;
 
-    private Vector3 GetWorldPosByIndex(int _index)
-    {
-        if (_index < 0 || groundTilemap == null) return Vector3.zero;
-        return groundTilemap.GetCellCenterWorld(new Vector3Int(_index % width, _index / width, 0)) - halfCellHeightOffset;
-    }
+    private Vector3 GetWorldPos(int i) => i < 0 ? Vector3.zero : groundTilemap.GetCellCenterWorld(new Vector3Int(i % width, i / width, 0)) + new Vector3(0, grid.cellSize.y * 0.5f, 0);
 
     private void RemoveIslands()
     {
-        int totalSize = width * height;
-        Array.Clear(visited, 0, totalSize);
+        bool[] vis = new bool[noiseValues.Length];
         largestBlob.Clear();
-
-        for (int i = 0; i < totalSize; i++)
+        for (int i = 0; i < noiseValues.Length; i++)
         {
-            if (noiseValues[i] < waterThreshold || visited[i]) continue;
-            currentBlob.Clear();
-            bfsQueue.Clear();
-            bfsQueue.Enqueue(i);
-            visited[i] = true;
-
-            while (bfsQueue.Count > 0)
+            if (noiseValues[i] < waterThreshold || vis[i]) continue;
+            List<int> curr = new List<int>();
+            Queue<int> q = new Queue<int>();
+            q.Enqueue(i); vis[i] = true;
+            while (q.Count > 0)
             {
-                int curr = bfsQueue.Dequeue();
-                currentBlob.Add(curr);
-                int cx = curr % width;
-                int cy = curr / width;
-                CheckNeighbor(cx + 1, cy);
-                CheckNeighbor(cx - 1, cy);
-                CheckNeighbor(cx, cy + 1);
-                CheckNeighbor(cx, cy - 1);
+                int c = q.Dequeue(); curr.Add(c);
+                int cx = c % width, cy = c / width;
+                int[] dx = { 1, -1, 0, 0 }, dy = { 0, 0, 1, -1 };
+                for (int j = 0; j < 4; j++)
+                {
+                    int nx = cx + dx[j], ny = cy + dy[j], ni = nx + ny * width;
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height && !vis[ni] && noiseValues[ni] >= waterThreshold)
+                    { vis[ni] = true; q.Enqueue(ni); }
+                }
             }
-
-            if (currentBlob.Count > largestBlob.Count)
-            {
-                largestBlob.Clear();
-                largestBlob.AddRange(currentBlob);
-            }
+            if (curr.Count > largestBlob.Count) largestBlob = curr;
         }
-
-        Array.Clear(visited, 0, totalSize);
-        for (int i = 0; i < largestBlob.Count; i++) visited[largestBlob[i]] = true;
-
-        float failValue = waterThreshold - 0.05f;
-        for (int i = 0; i < totalSize; i++)
-        {
-            if (noiseValues[i] >= waterThreshold && !visited[i]) noiseValues[i] = failValue;
-        }
+        vis = new bool[noiseValues.Length];
+        foreach (int i in largestBlob) vis[i] = true;
+        for (int i = 0; i < noiseValues.Length; i++) if (noiseValues[i] >= waterThreshold && !vis[i]) noiseValues[i] = waterThreshold - 0.05f;
     }
 
-    private void CheckNeighbor(int _x, int _y)
-    {
-        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return;
-        int idx = _x + _y * width;
-        if (!visited[idx] && noiseValues[idx] >= waterThreshold)
-        {
-            visited[idx] = true;
-            bfsQueue.Enqueue(idx);
-        }
-    }
-
-    private float EvaluateFalloff(float _value)
-    {
-        float vPow = Mathf.Pow(_value, falloffA);
-        return vPow / (vPow + Mathf.Pow(falloffB - falloffB * _value, falloffA));
-    }
-
-    private TileBase GetTileByNoise(float _value)
-    {
-        if (_value < waterThreshold + 0.1f) return sandTile;
-        if (_value < 0.7f) return grassTile;
-        return mountainTile;
-    }
+    private float EvaluateFalloff(float v) { float p = Mathf.Pow(v, falloffA); return p / (p + Mathf.Pow(falloffB - falloffB * v, falloffA)); }
 }

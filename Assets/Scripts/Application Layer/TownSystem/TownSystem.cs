@@ -8,8 +8,6 @@ public class TownSystem : MonoBehaviour
     private TownObjectManager townObjectManager;
     private IEnvironmentProvider environmentProvider;
 
-    private Character character;
-
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider)
     {
@@ -33,7 +31,7 @@ public class TownSystem : MonoBehaviour
 
     public void StartTownSystem(SceneChangeData _sceneChangeData)
     {
-        character.transform.position = townStartPoint.position;
+        signalHub.Publish(new TownStartedSignal(townStartPoint));
         townObjectManager.ReadyObj();
     }
 
@@ -50,21 +48,16 @@ public class TownSystem : MonoBehaviour
 
     private void SubscribeSignals()
     {
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+
     }
 
     private void UnSubscribeSignals()
     {
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+
     }
 
     private void PortalActivated(PortalType _type)
     {
         signalHub.Publish(new PortalActivatedSignal(_type));
-    }
-
-    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
-    {
-        character = characterSpawendSignal.character;
     }
 }

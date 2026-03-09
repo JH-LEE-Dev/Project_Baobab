@@ -13,9 +13,12 @@ public class TreeObj : MonoBehaviour, IDamageable
     [SerializeField] private GameObject animatorObject;
     private IEnvironmentProvider environmentProvider;
 
-    public void Initialize(IEnvironmentProvider _environmentProvider)
+    private TreeInitData treeData;
+
+    public void Initialize(IEnvironmentProvider _environmentProvider,TreeInitData _initData)
     {
         environmentProvider = _environmentProvider;
+        treeData = _initData;
 
         shadowObject.Initialize(environmentProvider.shadowDataProvider);
     }

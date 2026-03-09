@@ -260,6 +260,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc37e7de64c27914dab8482bdda69589, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonSystem
+  dungeonData: {fileID: 11400000, guid: 1ac130def065a0142a5ce3f75ed357e3, type: 2}
 --- !u!1 &4623915527415485074
 GameObject:
   m_ObjectHideFlags: 0
