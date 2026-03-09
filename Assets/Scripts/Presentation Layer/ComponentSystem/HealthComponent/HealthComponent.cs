@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class HealthComponent : PComponent
+public class PHealthComponent : PComponent
 {
     [SerializeField] private float maxHealth;
     private float currentHealth;

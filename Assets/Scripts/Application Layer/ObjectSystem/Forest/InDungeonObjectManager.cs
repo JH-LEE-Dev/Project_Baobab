@@ -226,6 +226,7 @@ public class InDungeonObjectManager : MonoBehaviour
 
     private void OnReleaseTree(TreeObj _tree)
     {
+        _tree.ResetTree();
         _tree.TreeDeadEvent -= TreeIsDead;
         _tree.gameObject.SetActive(false);
     }

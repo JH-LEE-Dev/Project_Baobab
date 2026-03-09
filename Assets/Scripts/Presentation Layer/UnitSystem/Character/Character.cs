@@ -14,7 +14,7 @@ public class Character : MonoBehaviour, ITeleportable
     [SerializeField] private float maxLightIntensity = 1.0f; // 밤일 때의 최대 밝기
 
     private AttackComponent attackComponent;
-    private HealthComponent healthComponent;
+    private PHealthComponent healthComponent;
 
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
@@ -48,7 +48,7 @@ public class Character : MonoBehaviour, ITeleportable
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
-        healthComponent = GetComponentInChildren<HealthComponent>();
+        healthComponent = GetComponentInChildren<PHealthComponent>();
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
