@@ -151,6 +151,70 @@ MonoBehaviour:
   maxHeightScale: 1.5
   _shadowMaterial: {fileID: 2100000, guid: f1d5d17c7e214ff4493987030f81849d, type: 2}
   _shadowColor: {r: 0, g: 0, b: 0, a: 0.5}
+  globalLightPrefab: {fileID: 8241805674026747720, guid: 55fe3e88bf27aed4ea50abf8af35873b, type: 3}
+  lightColorGradient:
+    serializedVersion: 2
+    key0: {r: 1, g: 1, b: 1, a: 1}
+    key1: {r: 1, g: 1, b: 1, a: 1}
+    key2: {r: 0, g: 0, b: 0, a: 0}
+    key3: {r: 0, g: 0, b: 0, a: 0}
+    key4: {r: 0, g: 0, b: 0, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 65535
+    ctime2: 0
+    ctime3: 0
+    ctime4: 0
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_ColorSpace: -1
+    m_NumColorKeys: 2
+    m_NumAlphaKeys: 2
+  lightIntensityCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.25
+      inSlope: 2
+      outSlope: 2
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.5
+      value: 1
+      inSlope: -0
+      outSlope: -0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.36666667
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0.25
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!1 &3183484928994684872
 GameObject:
   m_ObjectHideFlags: 0
@@ -196,6 +260,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc37e7de64c27914dab8482bdda69589, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonSystem
+  dungeonData: {fileID: 11400000, guid: 1ac130def065a0142a5ce3f75ed357e3, type: 2}
+--- !u!1 &4623915527415485074
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3978169657189425554}
+  - component: {fileID: 640579899699480464}
+  m_Layer: 0
+  m_Name: GroundDataManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3978169657189425554
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4623915527415485074}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 163844690309674911}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &640579899699480464
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4623915527415485074}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 381969c677484804cabb1f33b36a4892, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GroundDataManager
 --- !u!1 &6583048210432933352
 GameObject:
   m_ObjectHideFlags: 0
@@ -295,9 +404,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 163844690309674911}
-  - component: {fileID: 7532746966046643497}
+  - component: {fileID: 2826110377404474478}
   m_Layer: 0
-  m_Name: EnvironmentManager
+  m_Name: EnvironmentSystem
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -318,9 +427,11 @@ Transform:
   m_Children:
   - {fileID: 457043997368643967}
   - {fileID: 6316400875601101273}
+  - {fileID: 3978169657189425554}
+  - {fileID: 3235015552567438449}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7532746966046643497
+--- !u!114 &2826110377404474478
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -329,9 +440,66 @@ MonoBehaviour:
   m_GameObject: {fileID: 7224331137657030612}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fada559c826d4944b8005a8b005e3ca2, type: 3}
+  m_Script: {fileID: 11500000, guid: e3a8f9b273480654bbf8fbed5fd29da5, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EnvironmentManager
+  m_EditorClassIdentifier: Assembly-CSharp::EnvironmentSystem
+--- !u!1 &7291486191322297758
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3235015552567438449}
+  - component: {fileID: 7144509803247603499}
+  m_Layer: 0
+  m_Name: TileMapGenerator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3235015552567438449
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7291486191322297758}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 163844690309674911}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7144509803247603499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7291486191322297758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f7e6fd6cc9cc7f45acefb152231cf26, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TileMapGenerator
+  gridPrefab: {fileID: 672702204642318889, guid: 8a3483086f2d1264a966af0fa32945c5, type: 3}
+  width: 100
+  height: 100
+  scale: 10
+  seed: 0
+  useIslandPrevention: 1
+  falloffA: 3
+  falloffB: 6.5
+  waterThreshold: 0.2
+  waterTile: {fileID: 11400000, guid: 9994dfdbe2ef6f94baa506ce450e2381, type: 2}
+  sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
+  grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}
+  mountainTile: {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
 --- !u!1 &7432536287932878892
 GameObject:
   m_ObjectHideFlags: 0
@@ -408,6 +576,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88d7f3f8a3f671a459b8157331a15876, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownSystem
+  townStartPoint: {fileID: 4434414126251310962, guid: 7e2fffb1c09c60c4e86d94bff7fd2f97, type: 3}
 --- !u!1 &9097579308778333852
 GameObject:
   m_ObjectHideFlags: 0
@@ -453,6 +622,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonObjectManager
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
-  treeSpawnCenterPoint: {fileID: 0}
+  startDensity: 0.1
+  maxDensity: 0.3
+  spawnInterval: 5
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   portalSpawnPoint: {fileID: 3575309803827302579, guid: c6b9cee9c9de15b4c974f641daca3fe2, type: 3}

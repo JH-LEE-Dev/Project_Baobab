@@ -1,27 +1,12 @@
 using UnityEngine;
 
-public class EnvironmentManager : MonoBehaviour, IEnvironmentProvider
+public class GroundDataManager : MonoBehaviour, IGroundDataProvider
 {
-    //제공 인터페이스
-    public IShadowDataProvider shadowDataProvider => isometricShadowController;
-
-    //내부 의존성
-    private IsometricShadowController isometricShadowController;
-    private TimeController timeController;
     private GroundPhysicsData dirtPhysicsData;
     private int dirtLayerMask;
 
     public void Initialize()
     {
-        isometricShadowController = GetComponentInChildren<IsometricShadowController>();
-        timeController = GetComponentInChildren<TimeController>();
-
-        if (timeController != null)
-            timeController.Initialize();
-
-        if(isometricShadowController != null)
-            isometricShadowController.Initialize(timeController);
-
         // Dirt 지형의 물리 데이터 초기화 (가속도, 감속도, 최대 속도)
         dirtPhysicsData = new GroundPhysicsData(8f, 8f, 2f);
         dirtLayerMask = LayerMask.GetMask("Dirt");

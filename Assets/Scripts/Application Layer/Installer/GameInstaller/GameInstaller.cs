@@ -7,7 +7,6 @@ public class GameInstaller : MonoBehaviour
     private IBootStrapProvider bootStrapProvider;
 
     //내부 의존성
-    private EnvironmentManager environmentManager;
     private UnitSpawner unitSpawner;
     private CameraManager cameraManager;
     private SignalHub signalHub;
@@ -18,6 +17,7 @@ public class GameInstaller : MonoBehaviour
     private UnitSystem unitSystem;
     private TownSystem townSystem;
     private InDungeonSystem inDungeonSystem;
+    private EnvironmentSystem environmentSystem;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager)
     {
@@ -30,21 +30,21 @@ public class GameInstaller : MonoBehaviour
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
 
-        environmentManager = GetComponentInChildren<EnvironmentManager>();
         unitSpawner = GetComponent<UnitSpawner>();
         cameraManager = GetComponent<CameraManager>();
         teleportManager = GetComponent<TeleportManager>();
         unitLogicManager = GetComponent<UnitLogicManager>();
         townSystem = GetComponentInChildren<TownSystem>();
         inDungeonSystem = GetComponentInChildren<InDungeonSystem>();
+        environmentSystem = GetComponentInChildren<EnvironmentSystem>();
 
 
         cameraManager.Initialize(signalHub);
-        environmentManager.Initialize();
-        unitSpawner.Initialize(inputManager, environmentManager);
+        unitSpawner.Initialize(inputManager, environmentSystem);
         teleportManager.Initialize(signalHub, bootStrapProvider);
-        townSystem.Initialize(signalHub, environmentManager);
-        inDungeonSystem.Initialize(signalHub, environmentManager);
+        townSystem.Initialize(signalHub, environmentSystem);
+        inDungeonSystem.Initialize(signalHub, environmentSystem);
+        environmentSystem.Initialize(signalHub);
 
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager);
@@ -69,7 +69,7 @@ public class GameInstaller : MonoBehaviour
         teleportManager.Release();
         townSystem.Release();
         inDungeonSystem.Release();
-
+        environmentSystem.Release();
 
         Destroy(gameObject);
     }
