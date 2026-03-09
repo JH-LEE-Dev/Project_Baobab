@@ -79,7 +79,7 @@ public class Character : MonoBehaviour, ITeleportable
     private void FixedUpdate()
     {
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
-        currentGroundData = environmentProvider.GetGroundPhysicsData(transform.position);
+        currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
         
         stateMachine?.FixedUpdate();
     }
