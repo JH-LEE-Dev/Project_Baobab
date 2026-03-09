@@ -1,45 +1,50 @@
 using UnityEngine;
 using UnityEngine.Pool;
 using System.Collections.Generic;
+using System.Collections;
 using System;
 
 public class InDungeonObjectManager : MonoBehaviour
 {
-    //이벤트
+    // // 이벤트
     public event Action<PortalType> PortalActivatedEvent;
 
-    //외부 의존성
+    // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
     private Character character;
 
-    //내부 의존성
+    // // 내부 의존성
     [Header("Tree Settings")]
     [SerializeField] private TreeObj treePrefab;
-    [SerializeField, Range(0.01f, 0.5f)] private float treeDensity = 0.1f; // 나무 스폰 밀도 (0.1 = 약 10% 확률)
+    [SerializeField, Range(0f, 1f)] private float startDensity = 0.1f; // 시작 시 나무 밀도
+    [SerializeField, Range(0f, 1f)] private float maxDensity = 0.3f;   // 목표 최대 나무 밀도
+    [SerializeField] private float spawnInterval = 1.0f;               // 나무가 하나씩 추가 생성되는 간격
 
     [Header("Portal")]
     [SerializeField] private PortalObj portalPrefab;
     [SerializeField] private Transform portalSpawnPoint;
     private PortalObj portal;
     private List<Vector3> grassTileWorldPositions;
+    private List<Vector3> availablePositions = new List<Vector3>();
 
-    //내부 의존성 (풀링)
+    // // 내부 의존성 (풀링 및 성장 제어)
     private IObjectPool<TreeObj> treePool;
-    private List<TreeObj> activeTrees = new List<TreeObj>(100);
+    private List<TreeObj> activeTrees = new List<TreeObj>(1000);
+    private Coroutine growthCoroutine;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
 
-        // 오브젝트 풀 초기화 (최대 사이즈 확대)
+        // 오브젝트 풀 초기화 (최대 사이즈 확보)
         treePool = new ObjectPool<TreeObj>(
             createFunc: OnCreateTree,
             actionOnGet: OnGetTree,
             actionOnRelease: OnReleaseTree,
             actionOnDestroy: OnDestroyTree,
             collectionCheck: true,
-            defaultCapacity: 50,
-            maxSize: 500
+            defaultCapacity: 200,
+            maxSize: 5000
         );
     }
 
@@ -52,55 +57,99 @@ public class InDungeonObjectManager : MonoBehaviour
     {
         if (grassTileWorldPositions == null || grassTileWorldPositions.Count == 0) return;
 
-        // 기존 나무 정리
+        StopGrowth();
         ClearTrees();
 
-        // 시드 기반 랜덤 사용 (필요 시 seed 값 사용 가능)
-        for (int i = 0; i < grassTileWorldPositions.Count; i++)
-        {
-            // 설정된 밀도 확률에 따라 스폰 결정
-            if (UnityEngine.Random.value <= treeDensity)
-            {
-                TreeObj tree = treePool.Get();
+        // 1. 모든 위치를 사용 가능 목록으로 초기화 및 셔플
+        availablePositions.Clear();
+        availablePositions.AddRange(grassTileWorldPositions);
+        ShuffleList(availablePositions);
 
-                // 이미 TileMapGenerator에서 grid.GetCellCenterWorld()로 처리된 좌표임
-                tree.transform.position = grassTileWorldPositions[i];
-                activeTrees.Add(tree);
-            }
+        // 2. 시작 밀도만큼 즉시 스폰
+        int totalPossible = grassTileWorldPositions.Count;
+        int startCount = Mathf.RoundToInt(totalPossible * startDensity);
+
+        for (int i = 0; i < startCount; i++)
+        {
+            SpawnOneTreeFromAvailable();
         }
+
+        // 3. 점진적 생성 루틴 시작
+        growthCoroutine = StartCoroutine(GrowthRoutine());
     }
 
     public void ReadyTrees(List<Vector3> _grassTileWorldPositions)
     {
         grassTileWorldPositions = _grassTileWorldPositions;
-
         SpawnTree();
     }
 
     public void ReadyPortalAndCharacter()
     {
-        // 포탈이 없으면 생성, 있으면 위치만 업데이트
         if (portal == null)
         {
-            portal = Instantiate(portalPrefab);
+            portal = Instantiate(portalPrefab, transform);
             portal.Initialize(PortalType.ToTownPortal);
         }
 
-        // 맵이 재생성될 때마다 새로운 스폰 위치로 강제 이동
         portal.transform.position = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
 
         if (character != null)
         {
-            // 캐릭터도 새로운 시작 지점으로 이동
             character.transform.position = environmentProvider.tilemapDataProvider.GetPlayerSpawnPosition();
         }
 
         BindEvents();
     }
 
+    private IEnumerator GrowthRoutine()
+    {
+        int totalPossible = grassTileWorldPositions.Count;
+        int maxCount = Mathf.RoundToInt(totalPossible * maxDensity);
+
+        while (true)
+        {
+            yield return new WaitForSeconds(spawnInterval);
+
+            // 최대 밀도보다 적고 빈 자리가 있다면 하나 생성
+            if (activeTrees.Count < maxCount && availablePositions.Count > 0)
+            {
+                SpawnOneTreeFromAvailable();
+            }
+        }
+    }
+
+    private void SpawnOneTreeFromAvailable()
+    {
+        if (availablePositions.Count == 0) return;
+
+        // 리스트 내에서 랜덤하게 하나 선택
+        int randomIndex = UnityEngine.Random.Range(0, availablePositions.Count);
+        Vector3 spawnPos = availablePositions[randomIndex];
+        
+        // 선택된 요소를 마지막 요소와 교체 후 제거 (O(1) 성능 유지하며 랜덤 추출)
+        int lastIndex = availablePositions.Count - 1;
+        availablePositions[randomIndex] = availablePositions[lastIndex];
+        availablePositions.RemoveAt(lastIndex);
+
+        TreeObj tree = treePool.Get();
+        tree.transform.position = spawnPos;
+        activeTrees.Add(tree);
+    }
+
+    private void StopGrowth()
+    {
+        if (growthCoroutine != null)
+        {
+            StopCoroutine(growthCoroutine);
+            growthCoroutine = null;
+        }
+    }
+
     private void ClearTrees()
     {
-        for (int i = 0; i < activeTrees.Count; i++)
+        int count = activeTrees.Count;
+        for (int i = 0; i < count; i++)
         {
             if (activeTrees[i] != null)
             {
@@ -110,21 +159,34 @@ public class InDungeonObjectManager : MonoBehaviour
         activeTrees.Clear();
     }
 
+    private void ShuffleList<T>(List<T> _list)
+    {
+        for (int i = 0; i < _list.Count; i++)
+        {
+            int randomIndex = UnityEngine.Random.Range(i, _list.Count);
+            T temp = _list[i];
+            _list[i] = _list[randomIndex];
+            _list[randomIndex] = temp;
+        }
+    }
+
     private TreeObj OnCreateTree()
     {
-        TreeObj tree = Instantiate(treePrefab);
+        TreeObj tree = Instantiate(treePrefab, transform);
         tree.Initialize(environmentProvider);
-
         return tree;
     }
 
     private void OnGetTree(TreeObj _tree)
     {
         _tree.gameObject.SetActive(true);
+        _tree.TreeDeadEvent -= TreeIsDead;
+        _tree.TreeDeadEvent += TreeIsDead;
     }
 
     private void OnReleaseTree(TreeObj _tree)
     {
+        _tree.TreeDeadEvent -= TreeIsDead;
         _tree.gameObject.SetActive(false);
     }
 
@@ -135,29 +197,46 @@ public class InDungeonObjectManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 씬 파괴 시 풀링된 객체들 정리
+        StopGrowth();
         ClearTrees();
-
         ReleaseEvents();
     }
 
     private void BindEvents()
     {
-        if (portal == null)
-            return;
-
+        if (portal == null) return;
         portal.PortalActivated -= PortalActivated;
         portal.PortalActivated += PortalActivated;
     }
 
     private void ReleaseEvents()
     {
-        if (portal != null)
-            portal.PortalActivated -= PortalActivated;
+        if (portal != null) portal.PortalActivated -= PortalActivated;
     }
 
     private void PortalActivated(PortalType _type)
     {
+        StopGrowth();
+        ClearTrees();
         PortalActivatedEvent?.Invoke(_type);
+    }
+
+    private void TreeIsDead(TreeObj _treeObj)
+    {
+        // 죽은 나무의 위치를 사용 가능 목록에 추가
+        availablePositions.Add(_treeObj.transform.position);
+        
+        // 방금 추가된 위치가 다음에 바로 나오지 않도록 리스트 내의 임의의 위치와 섞음
+        if (availablePositions.Count > 1)
+        {
+            int lastIdx = availablePositions.Count - 1;
+            int swapIdx = UnityEngine.Random.Range(0, lastIdx);
+            Vector3 temp = availablePositions[lastIdx];
+            availablePositions[lastIdx] = availablePositions[swapIdx];
+            availablePositions[swapIdx] = temp;
+        }
+        
+        treePool.Release(_treeObj);
+        activeTrees.Remove(_treeObj);
     }
 }

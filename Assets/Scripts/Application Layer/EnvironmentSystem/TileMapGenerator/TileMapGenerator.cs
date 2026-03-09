@@ -29,7 +29,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     // // 내부 의존성
     private Tilemap groundTilemap;
-    private Tilemap collisionTilemap;
     private Grid grid;
 
     // // 최적화를 위한 재사용 컬렉션 (GC Alloc 방지)
@@ -43,6 +42,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private float[] noiseValues;
     private TileBase[] groundArray;
     private TileBase[] collisionArray;
+    private Vector3 halfCellHeightOffset;
 
     // // 스폰 데이터
     private int playerSpawnIndex = -1;
@@ -52,10 +52,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         if (grid == null)
         {
-            grid = Instantiate(gridPrefab, Vector3.zero, Quaternion.identity).GetComponent<Grid>();
+            grid = Instantiate(gridPrefab, transform.position, Quaternion.identity).GetComponent<Grid>();
         }
 
         Tilemap[] maps = grid.GetComponentsInChildren<Tilemap>();
+        Tilemap collisionTilemap = null;
         foreach (var map in maps)
         {
             if (map.name == "GroundTilemap") groundTilemap = map;
@@ -74,9 +75,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         groundArray = new TileBase[totalSize];
         collisionArray = new TileBase[totalSize];
 
-        if (seed == 0) seed = UnityEngine.Random.Range(1, 100000);
+        // 타일 세로 크기의 절반 오프셋 캐싱
+        halfCellHeightOffset = new Vector3(0, grid.cellSize.y * 0.5f, 0);
 
-        GenerateMap();
+        if (seed == 0) seed = UnityEngine.Random.Range(1, 100000);
     }
 
     public Vector3 GetPlayerSpawnPosition() => GetWorldPosByIndex(playerSpawnIndex);
@@ -85,17 +87,19 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     public void GenerateMap()
     {
-        if (groundTilemap == null || collisionTilemap == null) return;
+        if (groundTilemap == null) return;
 
         groundTilemap.ClearAllTiles();
-        collisionTilemap.ClearAllTiles();
+        // ColliderTilemap은 groundTilemap과 동일한 구조의 자식이므로 함께 정리 (필요 시 캐싱 가능)
+        Tilemap collisionTilemap = grid.transform.Find("ColliderTilemap")?.GetComponent<Tilemap>();
+        if (collisionTilemap != null) collisionTilemap.ClearAllTiles();
 
         float invWidth = 1f / width;
         float invHeight = 1f / height;
         float invWidthMinusOne = 1f / (width - 1);
         float invHeightMinusOne = 1f / (height - 1);
 
-        // 1단계: 노이즈 생성 및 Falloff 적용
+        // 1단계: 노이즈 생성
         for (int y = 0; y < height; y++)
         {
             int rowOffset = y * width;
@@ -113,7 +117,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     float distance = Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny));
                     noiseValue -= EvaluateFalloff(distance);
                 }
-
                 noiseValues[x + rowOffset] = noiseValue;
             }
         }
@@ -121,12 +124,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         RemoveIslands();
         DetermineSpawnPoints();
 
-        // 2단계: 타일 배치 및 Grass 좌표 수집 통합 (최적화)
+        // 2단계: 타일 배치 및 Grass 좌표 수집 (최적화 루프)
         grassTileWorldPositions.Clear();
         Vector3 playerPos = GetPlayerSpawnPosition();
         Vector3 portalPos = GetPortalSpawnPosition();
         const float excludeRadiusSqr = 1.5f * 1.5f;
 
+        int currX = 0;
+        int currY = 0;
         for (int i = 0; i < noiseValues.Length; i++)
         {
             float val = noiseValues[i];
@@ -141,10 +146,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 TileBase tile = GetTileByNoise(val);
                 groundArray[i] = tile;
 
-                // Grass 타일인 경우에만 스폰 지점 거리 체크 후 목록 추가
                 if (tile == grassTile)
                 {
-                    Vector3 worldPos = GetWorldPosByIndex(i);
+                    // % 와 / 연산 대신 현재 추적 중인 좌표 사용
+                    Vector3 worldPos = groundTilemap.GetCellCenterWorld(new Vector3Int(currX, currY, 0)) - halfCellHeightOffset;
                     if ((worldPos - playerPos).sqrMagnitude >= excludeRadiusSqr && 
                         (worldPos - portalPos).sqrMagnitude >= excludeRadiusSqr)
                     {
@@ -152,11 +157,15 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     }
                 }
             }
+
+            // 인덱스 기반 좌표 추적 (나눗셈 제거)
+            currX++;
+            if (currX >= width) { currX = 0; currY++; }
         }
 
         BoundsInt area = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(area, groundArray);
-        collisionTilemap.SetTilesBlock(area, collisionArray);
+        if (collisionTilemap != null) collisionTilemap.SetTilesBlock(area, collisionArray);
 
         TilemapGeneratedEvent?.Invoke(grassTileWorldPositions);
     }
@@ -181,44 +190,49 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
-        if (edgeIndices.Count < 2)
+        if (edgeIndices.Count == 0)
         {
             playerSpawnIndex = blobCount > 0 ? largestBlob[0] : -1;
             portalSpawnIndex = playerSpawnIndex;
             return;
         }
 
-        playerSpawnIndex = edgeIndices[UnityEngine.Random.Range(0, edgeIndices.Count)];
-        int px = playerSpawnIndex % width;
-        int py = playerSpawnIndex / width;
-        Vector3 playerPos = GetWorldPosByIndex(playerSpawnIndex);
+        // 1. 포탈 위치를 먼저 결정 (해안가 중 랜덤)
+        portalSpawnIndex = edgeIndices[UnityEngine.Random.Range(0, edgeIndices.Count)];
+        int potX = portalSpawnIndex % width;
+        int potY = portalSpawnIndex / width;
 
-        portalSpawnIndex = -1;
-        // 주변 8방향 근거리 탐색 (sqrMagnitude 최적화 적용 가능하나 정수 좌표계이므로 반경 루프 유지)
-        for (int r = 2; r <= 4 && portalSpawnIndex == -1; r++)
+        // 2. 포탈 인근에서 가장 가까운 Grass 타일을 찾아 캐릭터 위치로 결정
+        playerSpawnIndex = -1;
+        
+        // 탐색 범위를 0(포탈 위치)부터 반경 10까지 점진적으로 확대하며 탐색
+        for (int r = 0; r <= 10 && playerSpawnIndex == -1; r++)
         {
-            for (int dx = -r; dx <= r && portalSpawnIndex == -1; dx++)
+            for (int dx = -r; dx <= r && playerSpawnIndex == -1; dx++)
             {
-                int tx = px + dx;
+                int tx = potX + dx;
                 if (tx < 0 || tx >= width) continue;
 
                 for (int dy = -r; dy <= r; dy++)
                 {
-                    if (dx == 0 && dy == 0) continue;
-                    int ty = py + dy;
+                    int ty = potY + dy;
                     if (ty < 0 || ty >= height) continue;
 
                     int tIdx = tx + ty * width;
-                    if (isEdgeFlag[tIdx])
+                    float val = noiseValues[tIdx];
+
+                    // 해당 타일이 메인 대륙에 있고(RemoveIslands에서 걸러짐), Grass 타일 조건에 맞는지 확인
+                    if (val >= waterThreshold + 0.1f && val < 0.7f)
                     {
-                        portalSpawnIndex = tIdx;
+                        playerSpawnIndex = tIdx;
                         break;
                     }
                 }
             }
         }
 
-        if (portalSpawnIndex == -1) portalSpawnIndex = playerSpawnIndex;
+        // 만약 인근에 Grass 타일이 전혀 없다면 (매우 드문 지형), 안전책으로 포탈 위치를 사용
+        if (playerSpawnIndex == -1) playerSpawnIndex = portalSpawnIndex;
     }
 
     private bool IsWaterOrEdge(int _x, int _y)
@@ -229,8 +243,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private Vector3 GetWorldPosByIndex(int _index)
     {
-        if (_index < 0) return Vector3.zero;
-        return grid.GetCellCenterWorld(new Vector3Int(_index % width, _index / width, 0));
+        if (_index < 0 || groundTilemap == null) return Vector3.zero;
+        return groundTilemap.GetCellCenterWorld(new Vector3Int(_index % width, _index / width, 0)) - halfCellHeightOffset;
     }
 
     private void RemoveIslands()
@@ -242,7 +256,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         for (int i = 0; i < totalSize; i++)
         {
             if (noiseValues[i] < waterThreshold || visited[i]) continue;
-
             currentBlob.Clear();
             bfsQueue.Clear();
             bfsQueue.Enqueue(i);
@@ -254,7 +267,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 currentBlob.Add(curr);
                 int cx = curr % width;
                 int cy = curr / width;
-
                 CheckNeighbor(cx + 1, cy);
                 CheckNeighbor(cx - 1, cy);
                 CheckNeighbor(cx, cy + 1);
@@ -269,16 +281,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
 
         Array.Clear(visited, 0, totalSize);
-        int largestCount = largestBlob.Count;
-        for (int i = 0; i < largestCount; i++) visited[largestBlob[i]] = true;
+        for (int i = 0; i < largestBlob.Count; i++) visited[largestBlob[i]] = true;
 
         float failValue = waterThreshold - 0.05f;
         for (int i = 0; i < totalSize; i++)
         {
-            if (noiseValues[i] >= waterThreshold && !visited[i])
-            {
-                noiseValues[i] = failValue;
-            }
+            if (noiseValues[i] >= waterThreshold && !visited[i]) noiseValues[i] = failValue;
         }
     }
 

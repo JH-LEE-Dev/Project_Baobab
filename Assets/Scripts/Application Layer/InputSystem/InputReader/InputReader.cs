@@ -6,6 +6,9 @@ public class InputReader
 {
     //이벤트
     public event Action<Vector2> MoveEvent;
+    public event Action<Vector2> MouseMoveEvent;
+
+    public event Action MouseClickEvent;
     public event Action ESCButtonPressedEvent;
 
     private InputActionSystem actions;
@@ -17,10 +20,12 @@ public class InputReader
             actions = new InputActionSystem();
 
             actions.Normal.ESC.performed += OnESCButtonPressed;
-            
+
             // Move 액션 바인딩 추가
             actions.Normal.Move.performed += OnMove;
             actions.Normal.Move.canceled += OnMove;
+            actions.Normal.Mouse.performed += OnMouseMove;
+            actions.Normal.Click.performed += OnMouseClick;
         }
 
         actions.Normal.Enable();
@@ -30,11 +35,13 @@ public class InputReader
     {
         actions.Normal.Disable();
 
-        actions.Normal.ESC.performed -= OnESCButtonPressed; 
-        
+        actions.Normal.ESC.performed -= OnESCButtonPressed;
+
         // Move 액션 바인딩 해제
         actions.Normal.Move.performed -= OnMove;
         actions.Normal.Move.canceled -= OnMove;
+        actions.Normal.Mouse.performed -= OnMouseMove;
+        actions.Normal.Click.performed -= OnMouseClick;
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -49,6 +56,18 @@ public class InputReader
         ESCButtonPressedEvent?.Invoke();
 
         ClearAllEvent();
+    }
+
+    private void OnMouseMove(InputAction.CallbackContext context)
+    {
+        Vector2 move = context.ReadValue<Vector2>();
+
+        MouseMoveEvent?.Invoke(move);
+    }
+
+    private void OnMouseClick(InputAction.CallbackContext context)
+    {
+        MouseClickEvent?.Invoke();
     }
 
     private void ClearAllEvent()

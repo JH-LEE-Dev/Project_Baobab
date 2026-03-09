@@ -9,7 +9,9 @@ public class Character : MonoBehaviour, ITeleportable
     //내부 의존성 (컴포넌트)
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
-    
+
+    private AttackComponent attackComponent;
+
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
 
@@ -29,16 +31,21 @@ public class Character : MonoBehaviour, ITeleportable
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
+
         stateMachine = new StateMachine();
+        ComponentCtx componentCtx = new ComponentCtx();
+        componentCtx.Initialize(inputManager);
 
         anim = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
+        attackComponent = GetComponentInChildren<AttackComponent>();
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
 
         shadowObject.Initialize(environmentProvider.shadowDataProvider);
+        attackComponent.Initialize(componentCtx);
 
         SetupStateMachine();
     }
@@ -80,7 +87,7 @@ public class Character : MonoBehaviour, ITeleportable
     {
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
-        
+
         stateMachine?.FixedUpdate();
     }
 
