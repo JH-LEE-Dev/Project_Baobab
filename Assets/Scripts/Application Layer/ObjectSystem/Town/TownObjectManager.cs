@@ -37,7 +37,7 @@ public class TownObjectManager : MonoBehaviour
             // 혹시 모를 런타임 파괴를 대비한 null 체크
             if (trees[i] != null)
             {
-                trees[i].Initialize(environmentProvider, new TreeInitData(TreeType.BirchTree, TreeGrade.Normal));
+                trees[i].Initialize(environmentProvider, new TreeData(TreeType.BirchTree, TreeGrade.Normal,TreeState.Idle));
             }
         }
 

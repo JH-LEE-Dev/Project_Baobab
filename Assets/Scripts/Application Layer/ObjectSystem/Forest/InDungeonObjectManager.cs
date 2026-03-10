@@ -181,11 +181,11 @@ public class InDungeonObjectManager : MonoBehaviour
         return tree;
     }
 
-    private TreeInitData CalcTreeData()
+    private TreeData CalcTreeData()
     {
         if (dungeonData == null)
         {
-            return new TreeInitData(TreeType.None, TreeGrade.None);
+            return new TreeData(TreeType.None, TreeGrade.None,TreeState.Idle);
         }
 
         // 1. 나무 종류 선택 (단순 랜덤)
@@ -214,7 +214,7 @@ public class InDungeonObjectManager : MonoBehaviour
             }
         }
 
-        return new TreeInitData(selectedType, selectedGrade);
+        return new TreeData(selectedType, selectedGrade,TreeState.Idle);
     }
 
     private void OnGetTree(TreeObj _tree)

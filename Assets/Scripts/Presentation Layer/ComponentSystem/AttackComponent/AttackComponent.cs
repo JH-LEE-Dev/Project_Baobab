@@ -103,27 +103,4 @@ public class AttackComponent : PComponent
     {
         ReleaseEvents();
     }
-
-    private void OnDrawGizmos()
-    {
-        // 1. 최대 사거리 표시 (노란색 원)
-        Gizmos.color = Color.yellow;
-        Transform parentTransform = characterTransform != null ? characterTransform : transform.parent;
-        if (parentTransform != null)
-        {
-            Gizmos.DrawWireSphere(parentTransform.position, maxAttackDistance);
-        }
-
-        // 2. 현재 공격 콜라이더 위치 표시 (빨간색 원)
-        if (attackCollider != null)
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(attackCollider.transform.position, 0.3f);
-
-            if (parentTransform != null)
-            {
-                Gizmos.DrawLine(parentTransform.position, attackCollider.transform.position);
-            }
-        }
-    }
 }

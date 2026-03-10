@@ -15,12 +15,12 @@ public class TreeObj : MonoBehaviour, IDamageable
     private IEnvironmentProvider environmentProvider;
     private SpriteRenderer sr;
 
-    private TreeInitData treeData;
+    private TreeData treeData;
 
     private EHealthComponent healthComponent;
 
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, TreeInitData _initData)
+    public void Initialize(IEnvironmentProvider _environmentProvider, TreeData _initData)
     {
         EComponentCtx ctx = new EComponentCtx();
 

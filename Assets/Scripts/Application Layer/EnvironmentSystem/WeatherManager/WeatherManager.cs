@@ -54,7 +54,6 @@ public class WeatherManager : MonoBehaviour
         if (weatherTimer <= 0)
         {
             ChangeWeather();
-            weatherTimer = Random.Range(90f, 150f);
         }
     }
 
@@ -62,6 +61,9 @@ public class WeatherManager : MonoBehaviour
     {
         currentWeatherType = (currentWeatherType == WeatherType.Normal) ? WeatherType.Rain : WeatherType.Normal;
         targetEmission = (currentWeatherType == WeatherType.Rain) ? maxRainEmission : 0f;
+        
+        // 날씨가 변경될 때마다 새로운 타이머 설정
+        weatherTimer = Random.Range(90f, 150f);
     }
 
     private void UpdateRainEmission()
@@ -99,7 +101,9 @@ public class WeatherManager : MonoBehaviour
             debugStyle.alignment = TextAnchor.UpperRight;
         }
 
-        string weatherInfo = $"Current Weather: {currentWeatherType}\nNext Change In: {weatherTimer:F1}s";
+        string weatherName = (currentWeatherType == WeatherType.Normal) ? "맑음" : "비";
+        string weatherInfo = $"현재 날씨: {weatherName}";
+
         float width = 300f;
         float height = 100f;
         GUI.Label(new Rect(Screen.width - width - 10f, 10, width, height), weatherInfo, debugStyle);

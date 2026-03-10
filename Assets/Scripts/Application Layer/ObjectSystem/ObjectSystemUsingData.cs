@@ -21,13 +21,22 @@ public enum TreeGrade
     Max,
 }
 
-public struct TreeInitData
+public enum TreeState
+{
+    Idle,
+    Wet,
+    Max,
+}
+
+public struct TreeData
 {
     public TreeType type;
     public TreeGrade grade;
+    public TreeState treeState;
 
-    public TreeInitData(TreeType _type, TreeGrade _grade)
+    public TreeData(TreeType _type, TreeGrade _grade,TreeState _treeState)
     {
+        treeState = _treeState;
         type = _type;
         grade = _grade;
     }

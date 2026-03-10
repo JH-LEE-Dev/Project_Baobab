@@ -12,12 +12,20 @@ public class Character : MonoBehaviour, ITeleportable
     [SerializeField] private GameObject animatorObject;
     [SerializeField] private Light2D spotLight;
     [SerializeField] private float maxLightIntensity = 1.0f; // 밤일 때의 최대 밝기
+    [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
 
     private AttackComponent attackComponent;
     private PHealthComponent healthComponent;
 
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
+    private Material characterMaterial;
+
+    private int shadowOverlapCount = 0;
+    private Color normalColor = Color.white;
+    private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
+
+    private static readonly int baseColorHash = Shader.PropertyToID("_BaseColor");
 
     public StateMachine stateMachine { get; private set; }
     public Animator anim { get; private set; }
@@ -52,10 +60,17 @@ public class Character : MonoBehaviour, ITeleportable
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
+        characterMaterial = sr.material;
 
         shadowObject.Initialize(environmentProvider.shadowDataProvider);
         attackComponent.Initialize(componentCtx);
         healthComponent.Initialize(componentCtx);
+
+        if (shadowSensor != null)
+        {
+            shadowSensor.OnTriggerEnterEvent += HandleShadowEnter;
+            shadowSensor.OnTriggerExitEvent += HandleShadowExit;
+        }
 
         SetupStateMachine();
     }
@@ -99,6 +114,7 @@ public class Character : MonoBehaviour, ITeleportable
     {
         stateMachine?.Update();
         shadowSR.sprite = sr.sprite;
+        UpdateCharacterColor();
 
         if(bStaminaUpDown == true)
         {
@@ -147,6 +163,12 @@ public class Character : MonoBehaviour, ITeleportable
     private void OnDestroy()
     {
         stateMachine?.ReleaseAllState();
+
+        if (shadowSensor != null)
+        {
+            shadowSensor.OnTriggerEnterEvent -= HandleShadowEnter;
+            shadowSensor.OnTriggerExitEvent -= HandleShadowExit;
+        }
     }
 
     private void DecreaseStamina()
@@ -157,6 +179,30 @@ public class Character : MonoBehaviour, ITeleportable
     private void IncreaseStamina()
     {
         healthComponent.IncreaseStamina(staminaIncAmount);
+    }
+
+    private void UpdateCharacterColor()
+    {
+        if (characterMaterial == null) return;
+        
+        Color targetColor = (shadowOverlapCount > 0) ? shadowTint : normalColor;
+        characterMaterial.SetColor(baseColorHash, targetColor);
+    }
+
+    private void HandleShadowEnter(Collider2D _other)
+    {
+        if (_other.CompareTag("TreeShadow"))
+        {
+            shadowOverlapCount++;
+        }
+    }
+
+    private void HandleShadowExit(Collider2D _other)
+    {
+        if (_other.CompareTag("TreeShadow"))
+        {
+            shadowOverlapCount = Mathf.Max(0, shadowOverlapCount - 1);
+        }
     }
 
     private void OnGUI()
