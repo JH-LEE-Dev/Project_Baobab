@@ -44,7 +44,7 @@ public class GameInstaller : MonoBehaviour
         teleportManager.Initialize(signalHub, bootStrapProvider);
         townSystem.Initialize(signalHub, environmentSystem);
         inDungeonSystem.Initialize(signalHub, environmentSystem);
-        environmentSystem.Initialize(signalHub);
+        environmentSystem.Initialize(signalHub,unitLogicManager);
 
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager);

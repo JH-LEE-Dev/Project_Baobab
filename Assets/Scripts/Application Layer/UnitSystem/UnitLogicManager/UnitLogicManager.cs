@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class UnitLogicManager : MonoBehaviour
+public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 {
     private Character character;
 
@@ -27,5 +27,10 @@ public class UnitLogicManager : MonoBehaviour
     public void SetCharacterPos(Vector3 _pos)
     {
         character.transform.position = _pos;
+    }
+
+    public Transform GetCharacterTransform()
+    {
+        return character.transform;
     }
 }

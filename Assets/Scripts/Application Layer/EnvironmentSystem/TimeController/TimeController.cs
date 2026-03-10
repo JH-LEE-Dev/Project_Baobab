@@ -62,7 +62,7 @@ public class TimeController : MonoBehaviour, ITimeDataProvider
 
         // 화면 좌측 상단에 디버그 정보 표시
         GUIStyle style = new GUIStyle();
-        style.fontSize = 25;
+        style.fontSize = 15;
         style.normal.textColor = Color.white;
 
         string debugText = $"현재 시간: {hours:D2}:{minutes:D2}\n상태: {stateString}";

@@ -17,8 +17,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private IsometricShadowController isometricShadowController;
     private TimeController timeController;
     private GroundDataManager groundDataManager;
+    private WeatherManager weatherManager;
 
-    public void Initialize(SignalHub _signalHub)
+    public void Initialize(SignalHub _signalHub, IUnitLogicProvider _unitLogicProvider)
     {
         signalHub = _signalHub;
 
@@ -27,6 +28,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         isometricShadowController = GetComponentInChildren<IsometricShadowController>();
         timeController = GetComponentInChildren<TimeController>();
         groundDataManager = GetComponentInChildren<GroundDataManager>();
+        weatherManager = GetComponentInChildren<WeatherManager>();
 
         if (timeController != null)
             timeController.Initialize();
@@ -36,6 +38,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         if (groundDataManager != null)
             groundDataManager.Initialize();
+
+        if (weatherManager != null)
+            weatherManager.Initialize(_unitLogicProvider);
 
         BindEvents();
         SubscribeSignals();

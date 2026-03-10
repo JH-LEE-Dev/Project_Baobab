@@ -113,16 +113,26 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1)) edges.Add(i);
         }
         portalIdx = edges.Count > 0 ? edges[UnityEngine.Random.Range(0, edges.Count)] : (largestBlob.Count > 0 ? largestBlob[0] : -1);
+        
         playerIdx = -1;
-        for (int r = 0; r <= 15 && playerIdx == -1; r++)
+        int px = portalIdx % width, py = portalIdx / width;
+        for (int r = 3; r <= 20 && playerIdx == -1; r++)
         {
             for (int dx = -r; dx <= r && playerIdx == -1; dx++)
+            {
                 for (int dy = -r; dy <= r; dy++)
                 {
-                    int idx = (portalIdx % width + dx) + (portalIdx / width + dy) * width;
-                    if (idx >= 0 && idx < noiseValues.Length && noiseValues[idx] >= waterThreshold + 0.1f && noiseValues[idx] < 0.7f)
+                    // 포탈로부터 최소 3타일 거리를 유지
+                    if (Mathf.Abs(dx) < 3 && Mathf.Abs(dy) < 3) continue;
+
+                    int x = px + dx, y = py + dy;
+                    if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+                    int idx = x + y * width;
+                    if (noiseValues[idx] >= waterThreshold)
                     { playerIdx = idx; break; }
                 }
+            }
         }
         if (playerIdx == -1) playerIdx = portalIdx;
     }

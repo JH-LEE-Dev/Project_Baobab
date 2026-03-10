@@ -170,7 +170,7 @@ public class Character : MonoBehaviour, ITeleportable
         float posY = Screen.height - height - 10f;
 
         GUIStyle style = new GUIStyle();
-        style.fontSize = 20;
+        style.fontSize = 12;
         style.normal.textColor = Color.white;
         style.alignment = TextAnchor.LowerRight;
 
