@@ -349,6 +349,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8539dd2f0a7e01e479e46d6becc1ca04, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeController
+--- !u!1 &6642710826210589754
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6294399347402597407}
+  - component: {fileID: 7485895784551344923}
+  m_Layer: 0
+  m_Name: WeatherManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6294399347402597407
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6642710826210589754}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 163844690309674911}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7485895784551344923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6642710826210589754}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cba207b271e1d484689ea31004af9189, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeatherManager
+  rainEffectPrefab: {fileID: 2369352953646517886, guid: e34d3c23919a9b04f8ba3dd86648afcc, type: 3}
 --- !u!1 &6940118864367099131
 GameObject:
   m_ObjectHideFlags: 0
@@ -429,6 +474,7 @@ Transform:
   - {fileID: 6316400875601101273}
   - {fileID: 3978169657189425554}
   - {fileID: 3235015552567438449}
+  - {fileID: 6294399347402597407}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2826110377404474478

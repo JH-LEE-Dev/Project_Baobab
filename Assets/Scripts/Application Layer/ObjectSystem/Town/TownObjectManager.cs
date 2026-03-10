@@ -30,18 +30,14 @@ public class TownObjectManager : MonoBehaviour
 
         portal.Initialize(PortalType.ToDungeonPortal);
 
-        // 캐싱 로직: trees가 null일 때만(한 번도 찾지 않았을 때만) 검색 실행
-        if (trees == null)
-        {
-            trees = FindObjectsByType<TreeObj>(FindObjectsSortMode.None);
-        }
+        trees = FindObjectsByType<TreeObj>(FindObjectsSortMode.None);
 
         for (int i = 0; i < trees.Length; i++)
         {
             // 혹시 모를 런타임 파괴를 대비한 null 체크
             if (trees[i] != null)
             {
-                trees[i].Initialize(environmentProvider,new TreeInitData(TreeType.BirchTree,TreeGrade.Normal));
+                trees[i].Initialize(environmentProvider, new TreeInitData(TreeType.BirchTree, TreeGrade.Normal));
             }
         }
 
@@ -52,7 +48,7 @@ public class TownObjectManager : MonoBehaviour
     {
         if (portal == null)
             return;
-        
+
         portal.PortalActivated -= PortalActivated;
         portal.PortalActivated += PortalActivated;
     }

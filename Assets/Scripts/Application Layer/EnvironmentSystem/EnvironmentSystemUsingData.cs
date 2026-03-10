@@ -1,4 +1,9 @@
 
+public enum WeatherType
+{
+    Normal,
+    Rain,
+}
 public struct GroundPhysicsData
 {
     public float acceleration;  // 가속도
@@ -12,3 +17,4 @@ public struct GroundPhysicsData
         maxSpeed = _maxSpeed;
     }
 }
+
