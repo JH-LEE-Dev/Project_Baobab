@@ -62,7 +62,7 @@ public class Character : MonoBehaviour, ITeleportable
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
         characterMaterial = sr.material;
 
-        shadowObject.Initialize(environmentProvider.shadowDataProvider);
+        shadowObject.Initialize();
         attackComponent.Initialize(componentCtx);
         healthComponent.Initialize(componentCtx);
 
@@ -115,6 +115,11 @@ public class Character : MonoBehaviour, ITeleportable
         stateMachine?.Update();
         shadowSR.sprite = sr.sprite;
         UpdateCharacterColor();
+
+        if(shadowObject != null)
+        {
+            shadowObject.ManualUpdate(environmentProvider.shadowDataProvider.CurrentShadowRotation, environmentProvider.shadowDataProvider.CurrentShadowScaleY,false);
+        }
 
         if(bStaminaUpDown == true)
         {

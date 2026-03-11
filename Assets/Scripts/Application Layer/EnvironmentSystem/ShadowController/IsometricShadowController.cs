@@ -21,6 +21,15 @@ public class IsometricShadowController : MonoBehaviour, IShadowDataProvider
     [SerializeField] private Gradient lightColorGradient; // 시간에 따른 빛의 색상
     [SerializeField] private AnimationCurve lightIntensityCurve; // 시간에 따른 빛의 강도
 
+    // 중앙 계산 결과 저장을 위한 프로퍼티
+    public Quaternion CurrentShadowRotation => _currentShadowRotation;
+    public float CurrentShadowScaleY => _currentShadowScaleY;
+    public bool IsShadowActive => _isShadowActive; // 추가
+
+    private Quaternion _currentShadowRotation;
+    private float _currentShadowScaleY;
+    private bool _isShadowActive; // 추가
+
     float IShadowDataProvider.currentTimePercent => timeDataProvider?.currentTimePercent ?? 0f;
     float IShadowDataProvider.dayCycleSpeed => dayCycleSpeed;
     float IShadowDataProvider.minHeightScale => minHeightScale;
@@ -51,6 +60,14 @@ public class IsometricShadowController : MonoBehaviour, IShadowDataProvider
 
     private void UpdateShadows(float _timePercent)
     {
+        // 1. 중앙화된 그림자 연산 (모든 Shadow 객체가 공유)
+        float timeAngle = _timePercent * Mathf.PI * 2f;
+        _currentShadowRotation = Quaternion.Euler(0, 0, timeAngle * Mathf.Rad2Deg);
+        
+        float heightFactor = Mathf.Abs(Mathf.Sin(timeAngle));
+        _currentShadowScaleY = Mathf.Lerp(minHeightScale, maxHeightScale, heightFactor);
+
+        // 2. 머티리얼 알파 페이드 로직
         if (_shadowMaterial == null) return;
 
         // 알파 페이드 로직 (0.20 ~ 0.30 일출 페이드 인, 0.70 ~ 0.80 일몰 페이드 아웃)
@@ -58,6 +75,9 @@ public class IsometricShadowController : MonoBehaviour, IShadowDataProvider
         float fadeOut = 1f - Mathf.InverseLerp(0.70f, 0.80f, _timePercent);
         float finalAlphaMultiplier = fadeIn * fadeOut;
         
+        // 그림자 활성화 여부 (알파가 0보다 크면 활성)
+        _isShadowActive = finalAlphaMultiplier > 0.4f;
+
         Color targetColor = _shadowColor;
         targetColor.a *= finalAlphaMultiplier;
 
