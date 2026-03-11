@@ -1,0 +1,1787 @@
+fileFormatVersion: 2
+guid: 3ed9d3084ddbf1848a29316bcca67161
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1338186678145460137
+    second: CampFire_96x96_0
+  - first:
+      213: 4239064001313093763
+    second: CampFire_96x96_1
+  - first:
+      213: -735420200138281545
+    second: CampFire_96x96_2
+  - first:
+      213: 2507487797400107575
+    second: CampFire_96x96_3
+  - first:
+      213: 3543983932751429290
+    second: CampFire_96x96_4
+  - first:
+      213: -6497532991678095771
+    second: CampFire_96x96_5
+  - first:
+      213: 2222016535478157929
+    second: CampFire_96x96_6
+  - first:
+      213: -8843630809072304063
+    second: CampFire_96x96_7
+  - first:
+      213: -1516575158526608973
+    second: CampFire_96x96_8
+  - first:
+      213: -7269284638005107425
+    second: CampFire_96x96_9
+  - first:
+      213: -4208847810292226298
+    second: CampFire_96x96_10
+  - first:
+      213: -5528496184613087373
+    second: CampFire_96x96_11
+  - first:
+      213: 6309167227526204401
+    second: CampFire_96x96_12
+  - first:
+      213: 832625816563535142
+    second: CampFire_96x96_13
+  - first:
+      213: 9145325644783260109
+    second: CampFire_96x96_14
+  - first:
+      213: 8590591729478749572
+    second: CampFire_96x96_15
+  - first:
+      213: -8829055615721126560
+    second: CampFire_96x96_16
+  - first:
+      213: 2048903559156097792
+    second: CampFire_96x96_17
+  - first:
+      213: -8733068697431225946
+    second: CampFire_96x96_18
+  - first:
+      213: 7476403832220193932
+    second: CampFire_96x96_19
+  - first:
+      213: -5687768485798106461
+    second: CampFire_96x96_20
+  - first:
+      213: 1963769396090480376
+    second: CampFire_96x96_21
+  - first:
+      213: 1854331465644508664
+    second: CampFire_96x96_22
+  - first:
+      213: -4139354293545324872
+    second: CampFire_96x96_23
+  - first:
+      213: 2156568850818154237
+    second: CampFire_96x96_24
+  - first:
+      213: 3017161988619577016
+    second: CampFire_96x96_25
+  - first:
+      213: 5255024891269047690
+    second: CampFire_96x96_26
+  - first:
+      213: -4024912392216135791
+    second: CampFire_96x96_27
+  - first:
+      213: -2426295812005401466
+    second: CampFire_96x96_28
+  - first:
+      213: 6607415522991437175
+    second: CampFire_96x96_29
+  - first:
+      213: -6852288342697121414
+    second: CampFire_96x96_30
+  - first:
+      213: -3203663824020727392
+    second: CampFire_96x96_31
+  - first:
+      213: 3070953888242745159
+    second: CampFire_96x96_32
+  - first:
+      213: -4463886586285545553
+    second: CampFire_96x96_33
+  - first:
+      213: 6827806914522239
+    second: CampFire_96x96_34
+  - first:
+      213: 6088288818105535291
+    second: CampFire_96x96_35
+  - first:
+      213: -770849686119102140
+    second: CampFire_96x96_36
+  - first:
+      213: -3690386191650871752
+    second: CampFire_96x96_37
+  - first:
+      213: -3722753535100331223
+    second: CampFire_96x96_38
+  - first:
+      213: -5882411719976983512
+    second: CampFire_96x96_39
+  - first:
+      213: 918915430584685144
+    second: CampFire_96x96_40
+  - first:
+      213: -7261863037758835734
+    second: CampFire_96x96_41
+  - first:
+      213: 2218166240888041471
+    second: CampFire_96x96_42
+  - first:
+      213: -6635286157006396831
+    second: CampFire_96x96_43
+  - first:
+      213: 5375084968168621598
+    second: CampFire_96x96_44
+  - first:
+      213: -1148957688869451541
+    second: CampFire_96x96_45
+  - first:
+      213: 7357576877746208997
+    second: CampFire_96x96_46
+  - first:
+      213: 1122680987345245836
+    second: CampFire_96x96_47
+  - first:
+      213: -2300858987958345850
+    second: CampFire_96x96_48
+  - first:
+      213: -4883074335390507985
+    second: CampFire_96x96_49
+  - first:
+      213: -9090406858840625008
+    second: CampFire_96x96_50
+  - first:
+      213: 5450203644476036825
+    second: CampFire_96x96_51
+  - first:
+      213: -3387371675857906055
+    second: CampFire_96x96_52
+  - first:
+      213: 270703664891433882
+    second: CampFire_96x96_53
+  - first:
+      213: -7591579706639433999
+    second: CampFire_96x96_54
+  - first:
+      213: 6969544045883726306
+    second: CampFire_96x96_55
+  - first:
+      213: -5837724176067964465
+    second: CampFire_96x96_56
+  - first:
+      213: 865512530202101503
+    second: CampFire_96x96_57
+  - first:
+      213: 455914779218634804
+    second: CampFire_96x96_58
+  - first:
+      213: -1979918948745495486
+    second: CampFire_96x96_59
+  - first:
+      213: 5918496715998161229
+    second: CampFire_96x96_60
+  - first:
+      213: 3031836674717392794
+    second: CampFire_96x96_61
+  - first:
+      213: 4394093097734301534
+    second: CampFire_96x96_62
+  - first:
+      213: -266642503247251917
+    second: CampFire_96x96_63
+  - first:
+      213: 6210484280663646317
+    second: CampFire_96x96_64
+  - first:
+      213: 1655179572185721226
+    second: CampFire_96x96_65
+  - first:
+      213: -8798767347598628316
+    second: CampFire_96x96_66
+  - first:
+      213: 9207469361655767968
+    second: CampFire_96x96_67
+  - first:
+      213: -1770713720453326284
+    second: CampFire_96x96_68
+  - first:
+      213: -7226185005891812780
+    second: CampFire_96x96_69
+  - first:
+      213: 5730010360551053907
+    second: CampFire_96x96_70
+  - first:
+      213: -6011100209068708150
+    second: CampFire_96x96_71
+  - first:
+      213: -5492783783784933995
+    second: CampFire_96x96_72
+  - first:
+      213: 1134644465806667085
+    second: CampFire_96x96_73
+  - first:
+      213: -8442408843899817587
+    second: CampFire_96x96_74
+  - first:
+      213: 784721518431269149
+    second: CampFire_96x96_75
+  - first:
+      213: 2280742034909382211
+    second: CampFire_96x96_76
+  - first:
+      213: 7775943253041545237
+    second: CampFire_96x96_77
+  - first:
+      213: 8166554561380250584
+    second: CampFire_96x96_78
+  - first:
+      213: -1693562065996646510
+    second: CampFire_96x96_79
+  - first:
+      213: -1028328540419212863
+    second: CampFire_96x96_80
+  - first:
+      213: 2171928663222609464
+    second: CampFire_96x96_81
+  - first:
+      213: 5585572046848353187
+    second: CampFire_96x96_82
+  - first:
+      213: -4649371671748081883
+    second: CampFire_96x96_83
+  - first:
+      213: 648544479591853582
+    second: CampFire_96x96_84
+  - first:
+      213: 9095479748659184891
+    second: CampFire_96x96_85
+  - first:
+      213: -631588818660744681
+    second: CampFire_96x96_86
+  - first:
+      213: -5471886735138720894
+    second: CampFire_96x96_87
+  - first:
+      213: 3026203919251831839
+    second: CampFire_96x96_88
+  - first:
+      213: -4496999155810988728
+    second: CampFire_96x96_89
+  - first:
+      213: -7767544616305577439
+    second: CampFire_96x96_90
+  - first:
+      213: -1025416401772858759
+    second: CampFire_96x96_91
+  - first:
+      213: 2485754393916899301
+    second: CampFire_96x96_92
+  - first:
+      213: 2442897301542858484
+    second: CampFire_96x96_93
+  - first:
+      213: 3245270375888522501
+    second: CampFire_96x96_94
+  - first:
+      213: -4270525603482189796
+    second: CampFire_96x96_95
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: CampFire_96x96_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9a7250a91b1329210800000000000000
+      internalID: 1338186678145460137
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_1
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 388b96aef3e24da30800000000000000
+      internalID: 4239064001313093763
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_2
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7bd6c1279334bc5f0800000000000000
+      internalID: -735420200138281545
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_3
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 73af8a2ddd26cc220800000000000000
+      internalID: 2507487797400107575
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_4
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aae37592c92ce2130800000000000000
+      internalID: 3543983932751429290
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_5
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 56e55a26b2024d5a0800000000000000
+      internalID: -6497532991678095771
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_6
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 962483a244036de10800000000000000
+      internalID: 2222016535478157929
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_7
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1408b8c72ac154580800000000000000
+      internalID: -8843630809072304063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_8
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 576
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3b9f6d0bdea04fae0800000000000000
+      internalID: -1516575158526608973
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_9
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f156084d2205e1b90800000000000000
+      internalID: -7269284638005107425
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_10
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 607e9d9473b2795c0800000000000000
+      internalID: -4208847810292226298
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_11
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 377d806e206d643b0800000000000000
+      internalID: -5528496184613087373
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_12
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1fb4c318a2aae8750800000000000000
+      internalID: 6309167227526204401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_13
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 62dc61bc4c41e8b00800000000000000
+      internalID: 832625816563535142
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_14
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc1939c4839baee70800000000000000
+      internalID: 9145325644783260109
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_15
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48d4dfdb9a9e73770800000000000000
+      internalID: 8590591729478749572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_16
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 06546c222b4e87580800000000000000
+      internalID: -8829055615721126560
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_17
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 480
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00368867eea2f6c10800000000000000
+      internalID: 2048903559156097792
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_18
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6a9478a1a48edc680800000000000000
+      internalID: -8733068697431225946
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_19
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c849ad87ca581c760800000000000000
+      internalID: 7476403832220193932
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_20
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3aaa75f72bcf011b0800000000000000
+      internalID: -5687768485798106461
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_21
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f6a1ca7cd5b04b10800000000000000
+      internalID: 1963769396090480376
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_22
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f50291b4a8ebb910800000000000000
+      internalID: 1854331465644508664
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_23
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8be2eb5833f0e86c0800000000000000
+      internalID: -4139354293545324872
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_24
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dfe30be91fbaded10800000000000000
+      internalID: 2156568850818154237
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_25
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b62b71d7dc1fd920800000000000000
+      internalID: 3017161988619577016
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_26
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 384
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a856de9db499de840800000000000000
+      internalID: 5255024891269047690
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_27
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 197b3e11183a428c0800000000000000
+      internalID: -4024912392216135791
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_28
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68c666560d0145ed0800000000000000
+      internalID: -2426295812005401466
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_29
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7757e4b196142bb50800000000000000
+      internalID: 6607415522991437175
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_30
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a79ecfaae08c7e0a0800000000000000
+      internalID: -6852288342697121414
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_31
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a9997dc9bc4a83d0800000000000000
+      internalID: -3203663824020727392
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_32
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 74f305e6a483e9a20800000000000000
+      internalID: 3070953888242745159
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_33
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fa7a1daecc61d02c0800000000000000
+      internalID: -4463886586285545553
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_34
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7c2cbdaad1481000800000000000000
+      internalID: 6827806914522239
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_35
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 288
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b3bc9254c62fd7450800000000000000
+      internalID: 6088288818105535291
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_36
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44946ab6b446d45f0800000000000000
+      internalID: -770849686119102140
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_37
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 836a4aaaf4d19ccc0800000000000000
+      internalID: -3690386191650871752
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_38
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 92bd302426f165cc0800000000000000
+      internalID: -3722753535100331223
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_39
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8246d2005b97d5ea0800000000000000
+      internalID: -5882411719976983512
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_40
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 85210aa27b4a0cc00800000000000000
+      internalID: 918915430584685144
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_41
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ae378daca0ea83b90800000000000000
+      internalID: -7261863037758835734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_42
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fff25e8917288ce10800000000000000
+      internalID: 2218166240888041471
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_43
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 162219c356abae3a0800000000000000
+      internalID: -6635286157006396831
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_44
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 192
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e168b35dc43289a40800000000000000
+      internalID: 5375084968168621598
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_45
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be88bf4c1151e00f0800000000000000
+      internalID: -1148957688869451541
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_46
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5e0c0bd203d5b1660800000000000000
+      internalID: 7357576877746208997
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_47
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c865cc6e860949f00800000000000000
+      internalID: 1122680987345245836
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_48
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68f5a70e0f4b110e0800000000000000
+      internalID: -2300858987958345850
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_49
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f2cd83b73c5db3cb0800000000000000
+      internalID: -4883074335390507985
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_50
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 090b70bff1368d180800000000000000
+      internalID: -9090406858840625008
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_51
+      rect:
+        serializedVersion: 2
+        x: 576
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9d69886965303ab40800000000000000
+      internalID: 5450203644476036825
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_52
+      rect:
+        serializedVersion: 2
+        x: 672
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 976154a6863adf0d0800000000000000
+      internalID: -3387371675857906055
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_53
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 96
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a9310498c8bb1c300800000000000000
+      internalID: 270703664891433882
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_54
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1fe31bd8a7a45a690800000000000000
+      internalID: -7591579706639433999
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_55
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2e9965d226bc8b060800000000000000
+      internalID: 6969544045883726306
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_56
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc152cc9acc3cfea0800000000000000
+      internalID: -5837724176067964465
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_57
+      rect:
+        serializedVersion: 2
+        x: 288
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ff6885f7f0be20c00800000000000000
+      internalID: 865512530202101503
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_58
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4386d2f731cb35600800000000000000
+      internalID: 455914779218634804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: CampFire_96x96_59
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 0
+        width: 96
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 24cb5f7c43ae584e0800000000000000
+      internalID: -1979918948745495486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 1fc574c8c79c7f041a3c5079a3c8611d
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":96.0,"y":96.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      CampFire_96x96_0: 1338186678145460137
+      CampFire_96x96_1: 4239064001313093763
+      CampFire_96x96_10: -4208847810292226298
+      CampFire_96x96_11: -5528496184613087373
+      CampFire_96x96_12: 6309167227526204401
+      CampFire_96x96_13: 832625816563535142
+      CampFire_96x96_14: 9145325644783260109
+      CampFire_96x96_15: 8590591729478749572
+      CampFire_96x96_16: -8829055615721126560
+      CampFire_96x96_17: 2048903559156097792
+      CampFire_96x96_18: -8733068697431225946
+      CampFire_96x96_19: 7476403832220193932
+      CampFire_96x96_2: -735420200138281545
+      CampFire_96x96_20: -5687768485798106461
+      CampFire_96x96_21: 1963769396090480376
+      CampFire_96x96_22: 1854331465644508664
+      CampFire_96x96_23: -4139354293545324872
+      CampFire_96x96_24: 2156568850818154237
+      CampFire_96x96_25: 3017161988619577016
+      CampFire_96x96_26: 5255024891269047690
+      CampFire_96x96_27: -4024912392216135791
+      CampFire_96x96_28: -2426295812005401466
+      CampFire_96x96_29: 6607415522991437175
+      CampFire_96x96_3: 2507487797400107575
+      CampFire_96x96_30: -6852288342697121414
+      CampFire_96x96_31: -3203663824020727392
+      CampFire_96x96_32: 3070953888242745159
+      CampFire_96x96_33: -4463886586285545553
+      CampFire_96x96_34: 6827806914522239
+      CampFire_96x96_35: 6088288818105535291
+      CampFire_96x96_36: -770849686119102140
+      CampFire_96x96_37: -3690386191650871752
+      CampFire_96x96_38: -3722753535100331223
+      CampFire_96x96_39: -5882411719976983512
+      CampFire_96x96_4: 3543983932751429290
+      CampFire_96x96_40: 918915430584685144
+      CampFire_96x96_41: -7261863037758835734
+      CampFire_96x96_42: 2218166240888041471
+      CampFire_96x96_43: -6635286157006396831
+      CampFire_96x96_44: 5375084968168621598
+      CampFire_96x96_45: -1148957688869451541
+      CampFire_96x96_46: 7357576877746208997
+      CampFire_96x96_47: 1122680987345245836
+      CampFire_96x96_48: -2300858987958345850
+      CampFire_96x96_49: -4883074335390507985
+      CampFire_96x96_5: -6497532991678095771
+      CampFire_96x96_50: -9090406858840625008
+      CampFire_96x96_51: 5450203644476036825
+      CampFire_96x96_52: -3387371675857906055
+      CampFire_96x96_53: 270703664891433882
+      CampFire_96x96_54: -7591579706639433999
+      CampFire_96x96_55: 6969544045883726306
+      CampFire_96x96_56: -5837724176067964465
+      CampFire_96x96_57: 865512530202101503
+      CampFire_96x96_58: 455914779218634804
+      CampFire_96x96_59: -1979918948745495486
+      CampFire_96x96_6: 2222016535478157929
+      CampFire_96x96_7: -8843630809072304063
+      CampFire_96x96_8: -1516575158526608973
+      CampFire_96x96_9: -7269284638005107425
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
