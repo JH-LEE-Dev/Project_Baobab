@@ -21,6 +21,11 @@ public class PortalObj : MonoBehaviour
         lastActivatedTime = Time.time;
     }
 
+    public void ResetPortal()
+    {
+        lastActivatedTime = Time.time;
+    }
+
     //유니티 이벤트 함수
     private void OnTriggerEnter2D(Collider2D _other)
     {

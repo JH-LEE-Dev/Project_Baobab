@@ -87,7 +87,7 @@ public class RunState : State
 
     private void UpdateFacingDirection(Vector2 _input)
     {
-        character.SetFacingDirection(_input);
+        character.SetFacingDirection(GetIsometricVector(_input));
         lastVisualInput = _input;
         directionUpdateTimer = 0f;
     }
@@ -107,10 +107,25 @@ public class RunState : State
     private void ApplyMovement()
     {
         var groundData = character.currentGroundData;
+        Vector2 isoDir = GetIsometricVector(moveInput);
+
+        // 입력이 있을 때만 정규화하여 일정한 이동 속도 유지
+        if (isoDir.sqrMagnitude > 0.001f)
+            isoDir.Normalize();
+
         character.rb.linearVelocity = Vector2.MoveTowards(
             character.rb.linearVelocity,
-            moveInput * groundData.maxSpeed,
+            isoDir * groundData.maxSpeed,
             groundData.acceleration * Time.fixedDeltaTime
         );
+    }
+
+    /// <summary>
+    /// 일반 입력을 아이소매트릭 타일의 변 방향으로 변환합니다.
+    /// </summary>
+    private Vector2 GetIsometricVector(Vector2 _input)
+    {
+        // ISO X = (X - Y), ISO Y = (X + Y) * 0.5 (2:1 비율 반영)
+        return new Vector2(_input.x, _input.y * 0.5f);
     }
 }

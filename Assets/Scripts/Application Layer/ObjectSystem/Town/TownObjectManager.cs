@@ -55,6 +55,11 @@ public class TownObjectManager : MonoBehaviour
         BindEvents();
     }
 
+    public Transform GetPortalTransform()
+    {
+        return portal.transform;
+    }
+
     private void SetupCullingGroup()
     {
         if (cullingGroup != null) cullingGroup.Dispose();
