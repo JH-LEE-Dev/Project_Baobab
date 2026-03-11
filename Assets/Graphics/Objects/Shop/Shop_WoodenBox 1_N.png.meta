@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: f813b0c7eb027d24191316ddf645a64b
+guid: bae6aa3f64ffd4c4bb9ca6e61b2b4990
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 849428223160775580
-    second: Shop_Front 1_0
+      213: -6197831862610591811
+    second: KakaoTalk_20260311_221028729_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Shop_Front 1_0
+      name: KakaoTalk_20260311_221028729_0
       rect:
         serializedVersion: 2
-        x: 2
-        y: 1
-        width: 59
-        height: 62
+        x: 17
+        y: 0
+        width: 29
+        height: 27
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c9370bfe776c9cb00800000000000000
-      internalID: 849428223160775580
+      spriteID: dbf7f7b22c0ecf9a0800000000000000
+      internalID: -6197831862610591811
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Shop_Front 1_0: 849428223160775580
+      KakaoTalk_20260311_221028729_0: -6197831862610591811
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 02e05ff0d14e03f4db098cf3f8899a9b
+guid: b77456388ff3e5c458c894ec4731dd8a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -283091838976496353
-    second: Dryingyard 2_0
+      213: -4248131354645362576
+    second: Dryingyard_NoMark_N_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Dryingyard 2_0
+      name: Dryingyard_NoMark_N_0
       rect:
         serializedVersion: 2
         x: 1
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f1d6efae871421cf0800000000000000
-      internalID: -283091838976496353
+      spriteID: 0780a2f5a0b9b05c0800000000000000
+      internalID: -4248131354645362576
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Dryingyard 2_0: -283091838976496353
+      Dryingyard_NoMark_N_0: -4248131354645362576
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
