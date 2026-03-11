@@ -92,7 +92,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 {
                     gArr[i] = grassTile;
                     Vector3 pos = GetWorldPos(i);
-                    if ((pos - GetPlayerSpawnPosition()).sqrMagnitude > 2.25f && (pos - GetPortalSpawnPosition()).sqrMagnitude > 2.25f)
+                    if ((pos - GetPortalSpawnPosition()).sqrMagnitude > 2.25f)
                         grassPositions.Add(pos);
                 }
                 else gArr[i] = mountainTile;
@@ -106,35 +106,44 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private void DetermineSpawns()
     {
-        List<int> edges = new List<int>();
+        bool[] isShoreline = new bool[width * height];
+        List<int> shoreline = new List<int>();
         foreach (int i in largestBlob)
         {
             int x = i % width, y = i / width;
-            if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1)) edges.Add(i);
-        }
-        portalIdx = edges.Count > 0 ? edges[UnityEngine.Random.Range(0, edges.Count)] : (largestBlob.Count > 0 ? largestBlob[0] : -1);
-        
-        playerIdx = -1;
-        int px = portalIdx % width, py = portalIdx / width;
-        for (int r = 3; r <= 20 && playerIdx == -1; r++)
-        {
-            for (int dx = -r; dx <= r && playerIdx == -1; dx++)
+            if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1))
             {
-                for (int dy = -r; dy <= r; dy++)
+                isShoreline[i] = true;
+                shoreline.Add(i);
+            }
+        }
+
+        List<int> innerEdges = new List<int>();
+        int[] dx = { 1, -1, 0, 0 }, dy = { 0, 0, 1, -1 };
+        foreach (int i in largestBlob)
+        {
+            if (isShoreline[i]) continue;
+
+            int x = i % width, y = i / width;
+            for (int j = 0; j < 4; j++)
+            {
+                int nx = x + dx[j], ny = y + dy[j];
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height && isShoreline[nx + ny * width])
                 {
-                    // 포탈로부터 최소 3타일 거리를 유지
-                    if (Mathf.Abs(dx) < 3 && Mathf.Abs(dy) < 3) continue;
-
-                    int x = px + dx, y = py + dy;
-                    if (x < 0 || x >= width || y < 0 || y >= height) continue;
-
-                    int idx = x + y * width;
-                    if (noiseValues[idx] >= waterThreshold)
-                    { playerIdx = idx; break; }
+                    innerEdges.Add(i);
+                    break;
                 }
             }
         }
-        if (playerIdx == -1) playerIdx = portalIdx;
+
+        if (innerEdges.Count > 0)
+            portalIdx = innerEdges[UnityEngine.Random.Range(0, innerEdges.Count)];
+        else if (shoreline.Count > 0)
+            portalIdx = shoreline[UnityEngine.Random.Range(0, shoreline.Count)];
+        else
+            portalIdx = largestBlob.Count > 0 ? largestBlob[0] : -1;
+
+        playerIdx = portalIdx;
     }
 
     private bool IsWater(int x, int y) => x < 0 || x >= width || y < 0 || y >= height || noiseValues[x + y * width] < waterThreshold;

@@ -13,7 +13,7 @@ public class WeatherManager : MonoBehaviour
     private float maxRainEmission;
     private float currentEmission;
     private float targetEmission;
-    private float transitionSpeed = 15.0f; // Emission 변화 속도
+    private float transitionSpeed = 25.0f; // Emission 변화 속도
 
     private WeatherType currentWeatherType;
     private GUIStyle debugStyle;

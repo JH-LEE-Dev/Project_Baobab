@@ -440,6 +440,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TownObjectManager
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   portalSpawnPoint: {fileID: 4103959821245234347, guid: 4b288be7fa674804ab828020e0b795ce, type: 3}
+  cullingDistance: 25
 --- !u!1 &7224331137657030612
 GameObject:
   m_ObjectHideFlags: 0
@@ -671,5 +672,6 @@ MonoBehaviour:
   startDensity: 0.1
   maxDensity: 0.3
   spawnInterval: 5
+  cullingDistance: 25
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   portalSpawnPoint: {fileID: 3575309803827302579, guid: c6b9cee9c9de15b4c974f641daca3fe2, type: 3}

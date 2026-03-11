@@ -19,6 +19,12 @@ public class InDungeonObjectManager : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float maxDensity = 0.3f;   // 목표 최대 나무 밀도
     [SerializeField] private float spawnInterval = 1.0f;               // 나무가 하나씩 추가 생성되는 간격
 
+    [Header("Optimization")]
+    [SerializeField] private float cullingDistance = 25f; // 컬링 기준 거리
+    private CullingGroup cullingGroup;
+    private BoundingSphere[] spheres;
+    private bool isCullingDirty = false;
+
     [Header("Portal")]
     [SerializeField] private PortalObj portalPrefab;
     [SerializeField] private Transform portalSpawnPoint;
@@ -29,6 +35,7 @@ public class InDungeonObjectManager : MonoBehaviour
     // // 내부 의존성 (풀링 및 성장 제어)
     private IObjectPool<TreeObj> treePool;
     private List<TreeObj> activeTrees = new List<TreeObj>(1000);
+    private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(); // 시야 내 나무들만 관리
     private Coroutine growthCoroutine;
 
     private DungeonData dungeonData;
@@ -50,10 +57,77 @@ public class InDungeonObjectManager : MonoBehaviour
         );
     }
 
+    private void SetupCullingGroup()
+    {
+        if (cullingGroup != null) cullingGroup.Dispose();
+
+        cullingGroup = new CullingGroup();
+        cullingGroup.targetCamera = Camera.main;
+
+        // 거리 단계 설정
+        cullingGroup.SetBoundingDistances(new float[] { cullingDistance });
+        cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
+        cullingGroup.onStateChanged = OnCullingStateChanged;
+    }
+
+    private void RefreshCullingGroup()
+    {
+        int count = activeTrees.Count;
+        if (spheres == null || spheres.Length < count)
+        {
+            spheres = new BoundingSphere[count + 100]; // 여유분 확보
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            spheres[i] = new BoundingSphere(activeTrees[i].transform.position, 3f);
+        }
+
+        cullingGroup.SetBoundingSpheres(spheres);
+        cullingGroup.SetBoundingSphereCount(count);
+
+        // 현재 상태 즉시 갱신
+        activeTreesForUpdate.Clear();
+        for (int i = 0; i < count; i++)
+        {
+            bool shouldBeActive = cullingGroup.IsVisible(i) && cullingGroup.GetDistance(i) == 0;
+
+            if (activeTrees[i].gameObject.activeSelf != shouldBeActive)
+                activeTrees[i].gameObject.SetActive(shouldBeActive);
+
+            if (shouldBeActive) activeTreesForUpdate.Add(activeTrees[i]);
+        }
+    }
+
+    private void OnCullingStateChanged(CullingGroupEvent ev)
+    {
+        if (ev.index >= activeTrees.Count) return;
+
+        bool shouldBeActive = ev.isVisible && (ev.currentDistance == 0);
+        TreeObj tree = activeTrees[ev.index];
+
+        if (tree.gameObject.activeSelf != shouldBeActive)
+        {
+            tree.gameObject.SetActive(shouldBeActive);
+        }
+
+        if (shouldBeActive)
+        {
+            if (!activeTreesForUpdate.Contains(tree))
+                activeTreesForUpdate.Add(tree);
+        }
+        else
+        {
+            activeTreesForUpdate.Remove(tree);
+        }
+    }
+
     public void SpawnTree()
     {
         if (grassTileWorldPositions == null || grassTileWorldPositions.Count == 0) return;
 
+        SetupCullingGroup();
+        
         StopGrowth();
         ClearTrees();
 
@@ -70,6 +144,8 @@ public class InDungeonObjectManager : MonoBehaviour
         {
             SpawnOneTreeFromAvailable();
         }
+
+        RefreshCullingGroup();
 
         // 3. 점진적 생성 루틴 시작
         growthCoroutine = StartCoroutine(GrowthRoutine());
@@ -89,6 +165,7 @@ public class InDungeonObjectManager : MonoBehaviour
             portal.Initialize(PortalType.ToTownPortal);
         }
 
+        portal.ResetPortal();
         portal.transform.position = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
 
         BindEvents();
@@ -102,6 +179,22 @@ public class InDungeonObjectManager : MonoBehaviour
     public void SetDungeonData(DungeonData _dungeonData)
     {
         dungeonData = _dungeonData;
+    }
+
+    private void Update()
+    {
+        // 최적화: 시야 내 나무들만 업데이트
+        for (int i = 0; i < activeTreesForUpdate.Count; i++)
+        {
+            activeTreesForUpdate[i].ManualUpdate();
+        }
+
+        // 지연된 컬링 갱신 처리 (나무가 새로 생성되거나 죽었을 때)
+        if (isCullingDirty)
+        {
+            RefreshCullingGroup();
+            isCullingDirty = false;
+        }
     }
 
 
@@ -118,6 +211,7 @@ public class InDungeonObjectManager : MonoBehaviour
             if (activeTrees.Count < maxCount && availablePositions.Count > 0)
             {
                 SpawnOneTreeFromAvailable();
+                isCullingDirty = true; // 다음 프레임에 컬링 그룹 갱신
             }
         }
     }
@@ -160,6 +254,8 @@ public class InDungeonObjectManager : MonoBehaviour
             }
         }
         activeTrees.Clear();
+        activeTreesForUpdate.Clear();
+        isCullingDirty = true;
     }
 
     private void ShuffleList<T>(List<T> _list)
@@ -185,7 +281,7 @@ public class InDungeonObjectManager : MonoBehaviour
     {
         if (dungeonData == null)
         {
-            return new TreeData(TreeType.None, TreeGrade.None,TreeState.Idle);
+            return new TreeData(TreeType.None, TreeGrade.None, TreeState.Idle);
         }
 
         // 1. 나무 종류 선택 (단순 랜덤)
@@ -214,7 +310,7 @@ public class InDungeonObjectManager : MonoBehaviour
             }
         }
 
-        return new TreeData(selectedType, selectedGrade,TreeState.Idle);
+        return new TreeData(selectedType, selectedGrade, TreeState.Idle);
     }
 
     private void OnGetTree(TreeObj _tree)
@@ -241,6 +337,13 @@ public class InDungeonObjectManager : MonoBehaviour
         StopGrowth();
         ClearTrees();
         ReleaseEvents();
+
+        if (cullingGroup != null)
+        {
+            cullingGroup.onStateChanged = null;
+            cullingGroup.Dispose();
+            cullingGroup = null;
+        }
     }
 
     private void BindEvents()
@@ -277,7 +380,10 @@ public class InDungeonObjectManager : MonoBehaviour
             availablePositions[swapIdx] = temp;
         }
 
-        treePool.Release(_treeObj);
         activeTrees.Remove(_treeObj);
+        activeTreesForUpdate.Remove(_treeObj);
+        isCullingDirty = true; // 컬링 그룹 갱신 필요함 알림
+
+        treePool.Release(_treeObj);
     }
 }
