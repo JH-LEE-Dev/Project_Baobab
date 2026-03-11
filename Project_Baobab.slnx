@@ -12,5 +12,6 @@
   <Project Path="ChocDino.UIFX.TMP.Editor.csproj" />
   <Project Path="ChocDino.UIFX.TMP.csproj" />
   <Project Path="Assembly-CSharp-Editor-firstpass.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Wingman.csproj" />
 </Solution>
