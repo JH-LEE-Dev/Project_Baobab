@@ -38,7 +38,7 @@ public class TownObjectManager : MonoBehaviour
 
         // 씬 내의 모든 나무(비활성 포함)를 찾아 관리 대상으로 등록
         trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include, FindObjectsSortMode.None);
-        
+
         if (trees != null && trees.Length > 0)
         {
             SetupCullingGroup();
@@ -82,7 +82,7 @@ public class TownObjectManager : MonoBehaviour
         for (int i = 0; i < trees.Length; i++)
         {
             bool shouldBeActive = cullingGroup.IsVisible(i) && cullingGroup.GetDistance(i) == 0;
-            
+
             if (trees[i].gameObject.activeSelf != shouldBeActive)
                 trees[i].gameObject.SetActive(shouldBeActive);
 
@@ -92,6 +92,9 @@ public class TownObjectManager : MonoBehaviour
 
     private void OnCullingStateChanged(CullingGroupEvent ev)
     {
+        if (trees == null)
+            return;
+
         if (ev.index >= trees.Length) return;
 
         // InDungeonObjectManager와 동일하게 시야(Visible)와 거리(Distance == 0)를 모두 체크
