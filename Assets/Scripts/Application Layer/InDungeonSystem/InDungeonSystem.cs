@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using UnityEngine;
 
 public class InDungeonSystem : MonoBehaviour
@@ -15,7 +16,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider);
+        inDungeonObjectManager.Initialize(environmentProvider,dungeonData);
 
         BindEvents();
         SubscribeSignals();

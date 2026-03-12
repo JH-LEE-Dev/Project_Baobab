@@ -55,7 +55,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5074767916962781381}
   - component: {fileID: 5615424976764879475}
-  - component: {fileID: 1685436723534870255}
+  - component: {fileID: 7708948688849237663}
   m_Layer: 10
   m_Name: Animator
   m_TagString: Untagged
@@ -100,7 +100,7 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!212 &1685436723534870255
+--- !u!212 &7708948688849237663
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
@@ -126,7 +126,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 6f633ab42f1ed9542a6da6b821695d0e, type: 2}
+  - {fileID: 2100000, guid: 214f85c456950a64caa717cd4e8ddff7, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -146,7 +146,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 4
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2104154550, guid: 120bc04a66dc9184aa4138e632a57df9, type: 3}
@@ -418,7 +418,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1838057819
-  m_SortingLayer: 3
+  m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -2104154550, guid: 120bc04a66dc9184aa4138e632a57df9, type: 3}

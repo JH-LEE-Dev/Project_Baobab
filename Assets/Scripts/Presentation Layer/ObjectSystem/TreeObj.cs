@@ -16,8 +16,8 @@ public class TreeObj : MonoBehaviour, IDamageable
     private SpriteRenderer sr;                // 나무 본체 SpriteRenderer
     private SpriteRenderer shadowSr;          // 그림자 SpriteRenderer
     private SpriteRenderer animatorSr;        // 애니메이터 SpriteRenderer (그림자 동기화용)
-    private TreeData treeData;
     private EHealthComponent healthComponent;
+    public TreeData treeData { get; private set; }
 
     public void Initialize(IEnvironmentProvider _environmentProvider, TreeData _initData)
     {
@@ -68,10 +68,10 @@ public class TreeObj : MonoBehaviour, IDamageable
             }
         }
 
-        if(shadowObject != null)
+        if (shadowObject != null)
         {
             shadowObject.ManualUpdate(
-                environmentProvider.shadowDataProvider.CurrentShadowRotation, 
+                environmentProvider.shadowDataProvider.CurrentShadowRotation,
                 environmentProvider.shadowDataProvider.CurrentShadowScaleY,
                 environmentProvider.shadowDataProvider.IsShadowActive
             );

@@ -17,8 +17,8 @@ TagManager:
   - Character
   - ColliderTiles
   - Tree
-  - 
-  - 
+  - LogItem
+  - TreeShadow
   - 
   - 
   - 
@@ -48,11 +48,11 @@ TagManager:
   - name: Character
     uniqueID: 1559392995
     locked: 0
-  - name: TreeShadow
-    uniqueID: 2456909477
-    locked: 0
   - name: Tree
     uniqueID: 3028180869
+    locked: 0
+  - name: TreeShadow
+    uniqueID: 2456909477
     locked: 0
   - name: Portal
     uniqueID: 3143900641

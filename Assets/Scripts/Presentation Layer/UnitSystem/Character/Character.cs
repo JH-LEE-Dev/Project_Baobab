@@ -192,6 +192,7 @@ public class Character : MonoBehaviour, ITeleportable
         
         Color targetColor = (shadowOverlapCount > 0) ? shadowTint : normalColor;
         characterMaterial.SetColor(baseColorHash, targetColor);
+        //sr.color = targetColor;
     }
 
     private void HandleShadowEnter(Collider2D _other)
