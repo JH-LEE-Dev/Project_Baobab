@@ -1,4 +1,7 @@
 
+using System;
+using System.Collections.Generic;
+
 public enum PortalType
 {
     None,
@@ -28,6 +31,17 @@ public enum TreeState
     Max,
 }
 
+public enum LogState
+{
+    Destoyed,
+    Damaged,
+    Wet,
+    Normal,
+    Fascinating,
+    Advanced,
+    Perfect,
+}
+
 public struct TreeData
 {
     public TreeType type;
@@ -40,4 +54,26 @@ public struct TreeData
         type = _type;
         grade = _grade;
     }
+}
+
+
+[Serializable]
+public struct LogDropData
+{
+    public TreeGrade treeGrade;
+    public List<LogStateProbData> probDatas;
+}
+
+[Serializable]
+public struct LogStateProbData
+{
+    public TreeState treeState;
+    public List<LogProbData> probDatas;
+}
+
+[Serializable]
+public struct LogProbData
+{
+    public LogState type;
+    public float probability;
 }

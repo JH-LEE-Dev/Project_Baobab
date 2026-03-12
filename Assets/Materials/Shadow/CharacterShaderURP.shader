@@ -5,9 +5,6 @@ Shader "Custom/CharacterShaderURP"
         [MainColor] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
         [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
         _Cutoff("Alpha Cutoff", Range(0, 1)) = 0.5
-        
-        // 캐릭터는 1번 스텐실을 사용하여 나무 그림자(Ref 2 제외)가 그려질 수 있게 함
-        [IntRange] _StencilRef("Stencil Reference Value", Range(0, 255)) = 1
     }
 
     SubShader
@@ -16,18 +13,16 @@ Shader "Custom/CharacterShaderURP"
 
         Pass
         {
-            // --- 캐릭터 스텐실 설정 ---
-            // 캐릭터는 Ref 1을 기록합니다.
-            // 그림자 셰이더는 Ref 2(나무)가 아닌 곳에만 그려지므로, 1인 캐릭터 위에는 그림자가 그려집니다.
+            // 캐릭터는 항상 스텐실 1을 기록하도록 하드코딩
             Stencil
             {
-                Ref [_StencilRef]
+                Ref 1
                 Comp Always
                 Pass Replace
             }
 
             HLSLPROGRAM
-
+// ... 나머지 부분은 동일 ...
             #pragma vertex vert
             #pragma fragment frag
 

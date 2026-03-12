@@ -48,6 +48,8 @@ Material:
     - _EnableExternalAlpha: 0
     - _HeightScale: -0.5510729
     - _HorizontalOffset: 0.71203315
+    - _IgnoreStencilMask: 3
+    - _ShadowStencilBit: 4
     - _Skew: 0
     - _TreeStencilRef: 2
     - _ZWrite: 0

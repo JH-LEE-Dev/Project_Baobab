@@ -47,7 +47,6 @@ Material:
     m_Floats:
     - _Cutoff: 0.5
     - _EnableExternalAlpha: 0
-    - _StencilRef: 2
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
