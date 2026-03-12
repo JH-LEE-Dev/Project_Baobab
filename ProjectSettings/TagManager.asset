@@ -57,5 +57,8 @@ TagManager:
   - name: Portal
     uniqueID: 3143900641
     locked: 0
+  - name: HUD
+    uniqueID: 962808927
+    locked: 0
   m_RenderingLayers:
   - Default
