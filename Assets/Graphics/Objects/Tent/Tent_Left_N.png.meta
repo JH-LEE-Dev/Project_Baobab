@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 317c3924b6bd3374c972da08fdf46826
+guid: 12bac4388289a8c49a2b68c28cc9f004
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3995619558499231999
-    second: SMELTER_0
+      213: -6926882482573860729
+    second: Tent_Left_N_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SMELTER_0
+      name: Tent_Left_N_0
       rect:
         serializedVersion: 2
-        x: 0
+        x: 1
         y: 0
-        width: 64
-        height: 57
+        width: 62
+        height: 49
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 107dc066e25bc88c0800000000000000
-      internalID: -3995619558499231999
+      spriteID: 7802f411515cedf90800000000000000
+      internalID: -6926882482573860729
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      SMELTER_0: -3995619558499231999
+      Tent_Left_N_0: -6926882482573860729
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

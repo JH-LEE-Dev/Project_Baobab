@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: dd3ef9cc6666eee4693c2e61b337a135
+guid: fa351f422f7085448afd40e417aa7914
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4386028946709273093
-    second: Tent_Right_0
+      213: 8508085551313556280
+    second: SMELTER_Anvil_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Tent_Right_0
+      name: SMELTER_Anvil_0
       rect:
         serializedVersion: 2
-        x: 1
-        y: 0
-        width: 62
-        height: 49
+        x: 23
+        y: 4
+        width: 17
+        height: 15
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 50adf2fb61e4edc30800000000000000
-      internalID: 4386028946709273093
+      spriteID: 8339dac2bbac21670800000000000000
+      internalID: 8508085551313556280
       vertices: []
       indices: 
       edges: []
@@ -126,16 +126,18 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 0
+    internalID: 1537655665
     vertices: []
     indices: 
     edges: []
     weights: []
-    secondaryTextures: []
+    secondaryTextures:
+    - texture: {fileID: 2800000, guid: 3a3af40d27469ae40b207c7650b7cef9, type: 3}
+      name: _NormalMap
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Tent_Right_0: 4386028946709273093
+      SMELTER_Anvil_0: 8508085551313556280
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

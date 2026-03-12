@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 907e4f10d9cbe894ba9bfcfc2174db2b
+guid: 24e137d6755fe7f43a4247de9d49eccf
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1201098344330227803
-    second: tent_Back_0
+      213: 3424797393331844357
+    second: Tent_Back_N_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: tent_Back_0
+      name: Tent_Back_N_0
       rect:
         serializedVersion: 2
         x: 1
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 5af03e56b67d45fe0800000000000000
-      internalID: -1201098344330227803
+      spriteID: 5057a397513578f20800000000000000
+      internalID: 3424797393331844357
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      tent_Back_0: -1201098344330227803
+      Tent_Back_N_0: 3424797393331844357
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
