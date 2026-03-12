@@ -1,10 +1,13 @@
 fileFormatVersion: 2
-guid: 8b8a8ab37c91f164389edc719c210902
+guid: 92bbb9981278364469053bd9499fb7ae
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4680604487437357142
-    second: Street Lamp_0
+      213: 7047724635321077010
+    second: SmallGrass03_N_0
+  - first:
+      213: -7800479726000108327
+    second: SmallGrass03_N_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,23 +103,45 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Street Lamp_0
+      name: SmallGrass03_N_0
       rect:
         serializedVersion: 2
-        x: 24
-        y: 8
-        width: 16
-        height: 44
+        x: 6
+        y: 22
+        width: 6
+        height: 7
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6509dcf7bf8d4f040800000000000000
-      internalID: 4680604487437357142
+      spriteID: 21d0513273c8ec160800000000000000
+      internalID: 7047724635321077010
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SmallGrass03_N_1
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 18
+        width: 11
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9dc802694012fb390800000000000000
+      internalID: -7800479726000108327
       vertices: []
       indices: 
       edges: []
@@ -126,18 +151,17 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 1537655665
+    internalID: 0
     vertices: []
     indices: 
     edges: []
     weights: []
-    secondaryTextures:
-    - texture: {fileID: 2800000, guid: 1a08f865b963a3649add534823327341, type: 3}
-      name: _NormalMap
+    secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Street Lamp_0: 4680604487437357142
+      SmallGrass03_N_0: 7047724635321077010
+      SmallGrass03_N_1: -7800479726000108327
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

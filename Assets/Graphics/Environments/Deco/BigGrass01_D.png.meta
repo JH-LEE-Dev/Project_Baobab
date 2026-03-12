@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 8b8a8ab37c91f164389edc719c210902
+guid: a6f4e84db27cf6a449456a3e942395ce
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4680604487437357142
-    second: Street Lamp_0
+      213: -6076947353561135961
+    second: BigGrass01_D_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Street Lamp_0
+      name: BigGrass01_D_0
       rect:
         serializedVersion: 2
-        x: 24
-        y: 8
-        width: 16
-        height: 44
+        x: 9
+        y: 10
+        width: 14
+        height: 12
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6509dcf7bf8d4f040800000000000000
-      internalID: 4680604487437357142
+      spriteID: 7a40d3834985aaba0800000000000000
+      internalID: -6076947353561135961
       vertices: []
       indices: 
       edges: []
@@ -132,12 +132,12 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures:
-    - texture: {fileID: 2800000, guid: 1a08f865b963a3649add534823327341, type: 3}
+    - texture: {fileID: 2800000, guid: 8e2ed2b5d787e714aad1c8e4dbdf8d02, type: 3}
       name: _NormalMap
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Street Lamp_0: 4680604487437357142
+      BigGrass01_D_0: -6076947353561135961
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
