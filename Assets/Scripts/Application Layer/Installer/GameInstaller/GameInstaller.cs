@@ -41,7 +41,7 @@ public class GameInstaller : MonoBehaviour
         gameplayUIInstaller = GetComponentInChildren<GameplayUIInstaller>();
 
 
-        cameraManager.Initialize(signalHub);
+        cameraManager.Initialize(signalHub,inputManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
         teleportManager.Initialize(signalHub, bootStrapProvider);
         townSystem.Initialize(signalHub, environmentSystem);
