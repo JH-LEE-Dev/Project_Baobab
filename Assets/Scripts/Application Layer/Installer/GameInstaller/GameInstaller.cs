@@ -12,6 +12,7 @@ public class GameInstaller : MonoBehaviour
     private SignalHub signalHub;
     private TeleportManager teleportManager;
     private UnitLogicManager unitLogicManager;
+    private GameplayUIInstaller gameplayUIInstaller;
 
     //시스템 객체들
     private UnitSystem unitSystem;
@@ -37,6 +38,7 @@ public class GameInstaller : MonoBehaviour
         townSystem = GetComponentInChildren<TownSystem>();
         inDungeonSystem = GetComponentInChildren<InDungeonSystem>();
         environmentSystem = GetComponentInChildren<EnvironmentSystem>();
+        gameplayUIInstaller = GetComponentInChildren<GameplayUIInstaller>();
 
 
         cameraManager.Initialize(signalHub);
@@ -45,6 +47,7 @@ public class GameInstaller : MonoBehaviour
         townSystem.Initialize(signalHub, environmentSystem);
         inDungeonSystem.Initialize(signalHub, environmentSystem);
         environmentSystem.Initialize(signalHub,unitLogicManager);
+        gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager);
 
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager);
@@ -70,6 +73,7 @@ public class GameInstaller : MonoBehaviour
         townSystem.Release();
         inDungeonSystem.Release();
         environmentSystem.Release();
+        gameplayUIInstaller.Release();
 
         Destroy(gameObject);
     }

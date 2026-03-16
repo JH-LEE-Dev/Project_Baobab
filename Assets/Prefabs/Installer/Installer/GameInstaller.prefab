@@ -614,6 +614,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7453643367642077464}
+  - component: {fileID: 7413030513366689950}
+  - component: {fileID: 1519226333585974322}
   m_Layer: 0
   m_Name: UIInstaller
   m_TagString: Untagged
@@ -636,6 +638,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7413030513366689950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432536287932878892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c7a54d1c1bc9594f9b44ae221daafe1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameplayUIInstaller
+  canvasRootPrefab:
+    popupLayerRoot: {fileID: 0}
+    overlayLayerRoot: {fileID: 4750015337367576829, guid: cbd5119decaf607429f3b180b835f245, type: 3}
+    tooltipLayerRoot: {fileID: 0}
+  canvasPrefab: {fileID: 5983813252923583599, guid: 3397ab25825686d409ff314f4d9c4ac1, type: 3}
+--- !u!114 &1519226333585974322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432536287932878892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02206c58197d1724383a0f183752ed3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameplayUIManager
+  viewPrefabs:
+  - {fileID: 7413597417011568370, guid: 63de477bf2787ae49912336d84000a8e, type: 3}
 --- !u!1 &7565708588615142684
 GameObject:
   m_ObjectHideFlags: 0

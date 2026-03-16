@@ -7,6 +7,7 @@ public class InputReader
     //이벤트
     public event Action<Vector2> MoveEvent;
     public event Action<Vector2> MouseMoveEvent;
+    public event Action InventoryKeyEvent;
 
     public event Action MouseClickEvent;
     public event Action ESCButtonPressedEvent;
@@ -26,6 +27,7 @@ public class InputReader
             actions.Normal.Move.canceled += OnMove;
             actions.Normal.Mouse.performed += OnMouseMove;
             actions.Normal.Click.performed += OnMouseClick;
+            actions.Normal.Inventory.performed += OnInventoryKeyPressed;
         }
 
         actions.Normal.Enable();
@@ -42,6 +44,7 @@ public class InputReader
         actions.Normal.Move.canceled -= OnMove;
         actions.Normal.Mouse.performed -= OnMouseMove;
         actions.Normal.Click.performed -= OnMouseClick;
+        actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -73,5 +76,10 @@ public class InputReader
     private void ClearAllEvent()
     {
         MoveEvent = null;
+    }
+
+    private void OnInventoryKeyPressed(InputAction.CallbackContext context)
+    {
+        InventoryKeyEvent?.Invoke();
     }
 }
