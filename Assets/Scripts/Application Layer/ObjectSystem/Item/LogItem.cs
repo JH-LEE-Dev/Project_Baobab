@@ -1,7 +1,7 @@
 using System.Collections;
 using UnityEngine;
 
-public class LogItem : MonoBehaviour
+public class LogItem : Item
 {
     // 내부 의존성
     private LogState logType;
