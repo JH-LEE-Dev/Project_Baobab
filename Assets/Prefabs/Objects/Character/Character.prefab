@@ -326,7 +326,7 @@ GameObject:
   - component: {fileID: 1389021518043769419}
   - component: {fileID: 8662941010871122232}
   - component: {fileID: 1880944115013296388}
-  - component: {fileID: 2629361383811991815}
+  - component: {fileID: 2458229477242988497}
   m_Layer: 8
   m_Name: Character
   m_TagString: Untagged
@@ -395,12 +395,12 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 0
+  m_Interpolate: 1
   m_SleepingMode: 1
   m_CollisionDetection: 1
   m_Constraints: 4
---- !u!70 &2629361383811991815
-CapsuleCollider2D:
+--- !u!58 &2458229477242988497
+CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -433,9 +433,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.03, y: 0.07}
-  m_Size: {x: 0.37, y: 0.09}
-  m_Direction: 0
+  m_Offset: {x: -0.01, y: 0.06}
+  m_Radius: 0.13
 --- !u!1 &3984376963687474699
 GameObject:
   m_ObjectHideFlags: 0
@@ -445,8 +444,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2767750851685985544}
-  - component: {fileID: 2948752420604468892}
   - component: {fileID: 9079651369485532021}
+  - component: {fileID: 8627127040924059846}
   m_Layer: 8
   m_Name: Animator
   m_TagString: Untagged
@@ -469,7 +468,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1389021518043769419}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &2948752420604468892
+--- !u!95 &9079651369485532021
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3984376963687474699}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1164ff1acf549484ab7418f935150817, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!212 &8627127040924059846
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
@@ -495,7 +516,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 214f85c456950a64caa717cd4e8ddff7, type: 2}
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -515,7 +536,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 3
+  m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 8793639957104055765, guid: d48a7ec034f70294a9290bb50ace8fee, type: 3}
@@ -523,33 +544,11 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 0.6666667, y: 0.6666667}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
---- !u!95 &9079651369485532021
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3984376963687474699}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 1164ff1acf549484ab7418f935150817, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &8366246158690645224
 GameObject:
   m_ObjectHideFlags: 0

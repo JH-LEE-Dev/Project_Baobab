@@ -55,7 +55,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5074767916962781381}
   - component: {fileID: 5615424976764879475}
-  - component: {fileID: 7708948688849237663}
+  - component: {fileID: 5678751353132411447}
   m_Layer: 10
   m_Name: Animator
   m_TagString: Untagged
@@ -100,7 +100,7 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!212 &7708948688849237663
+--- !u!212 &5678751353132411447
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
@@ -126,7 +126,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 214f85c456950a64caa717cd4e8ddff7, type: 2}
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
