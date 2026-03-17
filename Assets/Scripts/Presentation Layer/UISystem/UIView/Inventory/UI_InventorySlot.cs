@@ -23,7 +23,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         uiImage = gameObject.GetComponentInChildren<Image>();
 
-        if (null != uiImage)
+        if (null != uiImage && uiImage.sprite != null && uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
         countText = gameObject.GetComponentInChildren<TMP_Text>();
