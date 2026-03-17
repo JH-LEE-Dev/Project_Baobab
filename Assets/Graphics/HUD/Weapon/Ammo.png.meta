@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 9334cc81480c3e94299f772a8d7e026e
+guid: 9bbd2d674efc8f34f8ddcc901455979d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3829066963105545630
-    second: InBorder_01_0
+      213: 3921441551649640537
+    second: Ammo_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -24,7 +24,7 @@ TextureImporter:
     heightScale: 0.25
     normalMapFilter: 0
     flipGreenChannel: 0
-  isReadable: 1
+  isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: InBorder_01_0
+      name: Ammo_0
       rect:
         serializedVersion: 2
-        x: 6
-        y: 5
-        width: 20
-        height: 21
+        x: 28
+        y: 27
+        width: 7
+        height: 11
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 26209e262eb6cdac0800000000000000
-      internalID: -3829066963105545630
+      spriteID: 95098858052cb6630800000000000000
+      internalID: 3921441551649640537
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      InBorder_01_0: -3829066963105545630
+      Ammo_0: 3921441551649640537
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

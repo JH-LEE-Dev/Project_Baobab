@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 9334cc81480c3e94299f772a8d7e026e
+guid: 409f2321edd17ed4697f0b7988f4ac4c
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3829066963105545630
-    second: InBorder_01_0
+      213: -9057444008558310320
+    second: Rifle_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -24,7 +24,7 @@ TextureImporter:
     heightScale: 0.25
     normalMapFilter: 0
     flipGreenChannel: 0
-  isReadable: 1
+  isReadable: 0
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: InBorder_01_0
+      name: Rifle_0
       rect:
         serializedVersion: 2
-        x: 6
-        y: 5
-        width: 20
-        height: 21
+        x: 13
+        y: 12
+        width: 37
+        height: 41
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 26209e262eb6cdac0800000000000000
-      internalID: -3829066963105545630
+      spriteID: 05c44e0a9ae7d4280800000000000000
+      internalID: -9057444008558310320
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      InBorder_01_0: -3829066963105545630
+      Rifle_0: -9057444008558310320
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
