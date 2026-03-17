@@ -35,9 +35,10 @@ public class TilemapForestGenerator : EditorWindow
         TileBase waterTile = AssetDatabase.LoadAssetAtPath<TileBase>("Assets/TileMap/Tiles/Tile_Water_00.asset");
         TileBase grassTile = AssetDatabase.LoadAssetAtPath<TileBase>("Assets/TileMap/Tiles/Tile_Grass.asset");
         TileBase rockTile = AssetDatabase.LoadAssetAtPath<TileBase>("Assets/TileMap/Tiles/Tile_Rock.asset");
+        TileBase treeCollisionTile = AssetDatabase.LoadAssetAtPath<TileBase>("Assets/TileMap/Tiles/ZeroAlpha_3232_0.asset");
         GameObject treePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Objects/Trees/Tree.prefab");
 
-        if (waterTile == null || grassTile == null || rockTile == null || treePrefab == null)
+        if (waterTile == null || grassTile == null || rockTile == null || treePrefab == null || treeCollisionTile == null)
         {
             Debug.LogError("필요한 타일 또는 나무 프리팹 에셋을 찾을 수 없습니다. 경로를 확인해주세요.");
             return;
@@ -118,6 +119,9 @@ public class TilemapForestGenerator : EditorWindow
                         // 나무 크기에 변화를 주어 자연스러움 증대
                         float randomScale = Random.Range(0.85f, 1.2f);
                         treeInst.transform.localScale = Vector3.one * randomScale;
+
+                        // 나무 위치에 충돌 타일 배치
+                        colliderTilemap.SetTile(pos, treeCollisionTile);
 
                         treeCount++;
                     }

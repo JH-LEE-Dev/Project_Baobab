@@ -605,6 +605,7 @@ MonoBehaviour:
   sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
   grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}
   mountainTile: {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
+  treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
 --- !u!1 &7432536287932878892
 GameObject:
   m_ObjectHideFlags: 0

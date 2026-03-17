@@ -25,6 +25,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private TileBase sandTile;
     [SerializeField] private TileBase grassTile;
     [SerializeField] private TileBase mountainTile;
+    [SerializeField] private TileBase treeCollisionTile;
 
     private Tilemap groundTilemap;
     private Tilemap collisionTilemap;
@@ -51,6 +52,30 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     public Vector3 GetPlayerSpawnPosition() => GetWorldPos(playerIdx);
     public Vector3 GetPortalSpawnPosition() => GetWorldPos(portalIdx);
     public List<Vector3> GetGrassTileWorldPositions() => grassPositions;
+
+    public void SetTreeCollisionTile(Vector3 _worldPos)
+    {
+        if (collisionTilemap == null || treeCollisionTile == null) return;
+
+        // GetWorldPos에서 추가된 Y 오프셋(cellSize.y * 0.5f)을 제거하여 정확한 셀 좌표를 얻습니다.
+        Vector3 adjustedPos = _worldPos;
+        if (grid != null) adjustedPos.y -= grid.cellSize.y * 0.5f;
+
+        Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
+        collisionTilemap.SetTile(cellPos, treeCollisionTile);
+    }
+
+    public void ClearTreeCollisionTile(Vector3 _worldPos)
+    {
+        if (collisionTilemap == null) return;
+
+        // Y 오프셋을 보정하여 정확한 타일 위치의 충돌 타일을 제거합니다.
+        Vector3 adjustedPos = _worldPos;
+        if (grid != null) adjustedPos.y -= grid.cellSize.y * 0.5f;
+
+        Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
+        collisionTilemap.SetTile(cellPos, null);
+    }
 
     public void GenerateMap()
     {

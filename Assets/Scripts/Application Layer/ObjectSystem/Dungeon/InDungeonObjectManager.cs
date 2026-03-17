@@ -237,6 +237,8 @@ public class InDungeonObjectManager : MonoBehaviour
         TreeObj tree = treePool.Get();
         tree.transform.position = spawnPos;
         activeTrees.Add(tree);
+
+        environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
     }
 
     private void StopGrowth()
@@ -372,6 +374,8 @@ public class InDungeonObjectManager : MonoBehaviour
 
     private void TreeIsDead(TreeObj _treeObj)
     {
+        environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
+
         // 아이템 스폰
         itemManager.SpawnLogItem(_treeObj);
 
