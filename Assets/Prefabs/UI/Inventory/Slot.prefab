@@ -49,7 +49,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 266eca1f19396ba428884a81030fc99c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_InventorySlot
-  commander: {fileID: 0}
 --- !u!1 &7126879529968855045
 GameObject:
   m_ObjectHideFlags: 0
