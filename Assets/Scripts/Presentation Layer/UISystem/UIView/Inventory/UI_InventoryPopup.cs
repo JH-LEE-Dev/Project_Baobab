@@ -23,7 +23,7 @@ public class UI_InventoryPopup : MonoBehaviour
                 if (null == newSlot)
                     continue;
 
-                newSlot.Initialize(null);
+                newSlot.Initialize();
                 newSlot.DisableRayCast();
                 newSlot.gameObject.SetActive(false);
 
@@ -44,7 +44,6 @@ public class UI_InventoryPopup : MonoBehaviour
         {
             Debug.Log("너 처음에 호출 되잖아 싯팔아");
             rect.position = position;
-            Canvas.ForceUpdateCanvases();
             // 화면 영역 밖으로 나간 위치 보정
             rect.position = GlobalUI.KeepInsideScreenforUI(rect); 
         }

@@ -46,7 +46,7 @@ public class UIView_Inventory : UIView
 
     protected override void OnHide() //이 UI가 꺼졌을 때 호출 됨.
     {
-
+        ExitPopup();
 
         base.OnHide();
     }
@@ -61,7 +61,10 @@ public class UIView_Inventory : UIView
 
             if (null != slot)
             {
-                slot.Initialize(this);
+                slot.Initialize();
+
+                slot.deleteItem -= SendDeleteItem;
+                slot.deleteItem += SendDeleteItem;
 
                 slot.enterSlot -= EnterPopup;
                 slot.enterSlot += EnterPopup;
@@ -102,7 +105,7 @@ public class UIView_Inventory : UIView
         invPopup.ShowItems(position);
     }
 
-    private void ExitPopup(Item it)
+    private void ExitPopup()
     {
         if (null == invPopup)
             return;
