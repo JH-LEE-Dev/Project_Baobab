@@ -3,6 +3,7 @@ using UnityEngine;
 public class Item : MonoBehaviour
 {
     public ItemType itemType { get; private set; }
+    public Sprite sprite;
 
     public virtual void Initialize(ItemType _itemType)
     {
@@ -11,6 +12,6 @@ public class Item : MonoBehaviour
 
     public virtual void ResetItem()
     {
-        
+
     }
 }

@@ -3,8 +3,10 @@ using UnityEngine;
 public class ItemData : IItemData
 {
     public ItemType itemType;
-
+    public Sprite sprite;
     ItemType IItemData.itemType => itemType;
+
+    Sprite IItemData.sprite => sprite;
 
     public virtual bool IsSameType(ItemData _other)
     {
@@ -16,6 +18,7 @@ public class ItemData : IItemData
     {
         if (_item == null) return;
         itemType = _item.itemType;
+        sprite  = _item.sprite;
     }
 
     public virtual void Reset()
