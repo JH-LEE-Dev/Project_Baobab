@@ -4,10 +4,13 @@ public class LogItemData : ItemData, ILogItemData
 {
     public LogState logState;
     public TreeType treeType;
+    public Sprite sprite;
 
     LogState ILogItemData.logState => logState;
 
     TreeType ILogItemData.treeType => treeType;
+
+    Sprite ILogItemData.sprite => sprite;
 
     public override bool IsSameType(ItemData _other)
     {
@@ -25,6 +28,7 @@ public class LogItemData : ItemData, ILogItemData
         {
             logState = logItem.logState;
             treeType = logItem.treeType;
+            sprite  = logItem.sprite;
         }
     }
 
@@ -33,5 +37,6 @@ public class LogItemData : ItemData, ILogItemData
         base.Reset();
         logState = LogState.Destoyed;
         treeType = TreeType.None;
+        sprite = null;
     }
 }

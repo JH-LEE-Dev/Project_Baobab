@@ -278,6 +278,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6cdaa35996903aa46a9802724e100be3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
+  inventorySlots: []
 --- !u!1 &3957381566655606059
 GameObject:
   m_ObjectHideFlags: 0
@@ -336,6 +337,7 @@ MonoBehaviour:
       - type: 5
         probability: 0.5
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
+  logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
 --- !u!1 &4623915527415485074
 GameObject:
   m_ObjectHideFlags: 0

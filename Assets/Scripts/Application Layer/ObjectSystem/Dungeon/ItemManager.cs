@@ -13,6 +13,7 @@ public class ItemManager : MonoBehaviour
 
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
+    [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
     public void Initialize()
     {
@@ -94,7 +95,7 @@ public class ItemManager : MonoBehaviour
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = _treeObj.transform.position;
-            logItem.Initialize(ItemType.Log, logType, treeData.type);
+            logItem.Initialize(logItemTypeDataBase.Get(treeData.type),logType);
 
             // 포물선 운동 설정
             Vector3 startPos = _treeObj.transform.position;

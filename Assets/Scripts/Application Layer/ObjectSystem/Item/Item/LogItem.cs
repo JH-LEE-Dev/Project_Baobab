@@ -12,6 +12,7 @@ public class LogItem : Item
     public TreeType treeType { get; private set; }
     private SpriteRenderer spriteRenderer;
     private Transform visualTransform;
+    public Sprite sprite { get; private set; }
 
     // 상태 변수
     private bool isSucked = false;
@@ -19,15 +20,23 @@ public class LogItem : Item
     private Transform suckTarget;
     private Coroutine moveCoroutine;
 
-    public void Initialize(ItemType _itemType,LogState _logType, TreeType _treeType)
+    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState)
     {
-        base.Initialize(_itemType);
+        base.Initialize(_logItemTypeData.itemType);
 
-        logState = _logType;
-        treeType = _treeType;
+        logState = _logState;
+        treeType = _logItemTypeData.treeType;
         isSucked = false;
         isLaunching = false;
         suckTarget = null;
+        sprite = _logItemTypeData.sprite;
+
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sprite = sprite;
+        }
+
 
         if (spriteRenderer == null)
         {
