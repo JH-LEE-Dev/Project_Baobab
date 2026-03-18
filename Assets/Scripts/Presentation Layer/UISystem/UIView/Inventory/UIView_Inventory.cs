@@ -15,6 +15,8 @@ public class UIView_Inventory : UIView
     private UI_InventoryPopup invPopup;
     [SerializeField] private float popupYOffset = 30.0f;
 
+    private const int defaultPopupCap = 12;
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
@@ -68,7 +70,7 @@ public class UIView_Inventory : UIView
 
             slot.exitSlot -= ExitPopup;
             slot.exitSlot += ExitPopup;
-            
+
             inventorySlots.Add(slot);
         }
     }
@@ -83,7 +85,7 @@ public class UIView_Inventory : UIView
         if (null == invPopup)
             return;
 
-        invPopup.Initialize(12);
+        invPopup.Initialize(defaultPopupCap);
         invPopup.gameObject.SetActive(false);
     }
 
