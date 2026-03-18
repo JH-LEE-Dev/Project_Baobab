@@ -4,6 +4,11 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
+// Item Data를 기록 해야 변동 사항에 대해서 주소 비교로 확인을 할 수 있는 상태인데
+// 인벤토리 슬롯을 가지고 있어야 삭제할 때 정보를 넘길 수 있어서
+// 쓸 데 없이 같은 주소를 2개를 참조하고 있는 이상한 비효율적인 형태가 있음
+// 변화를 어떻게 가졌는 지 판단 해야 하고, 쓸 데 없는 보관 없애야 함.
+
 public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("Main Settings")]
@@ -76,7 +81,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateImage(Sprite _sprite)
     {
-        if (null == _sprite || null == uiImage)
+        if (null == uiImage)
             return;
 
         uiImage.enabled = true;
@@ -87,10 +92,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         showItemData = _item;
         logStateCounts = _logStateCounts;
-
-        Debug.Log(showItemData + " " + logStateCounts);
-        // 이름 경로 생성
-        //UpdateImage();
+        UpdateImage(_item.sprite);
     }
 
     public void DisableRayCast()

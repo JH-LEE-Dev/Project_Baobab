@@ -157,7 +157,6 @@ public class UIView_Inventory : UIView
             {
                 inventorySlots[i].UpdateBindSlotData(items[i].itemData, items[i].logStateCounts);
                 inventorySlots[i].UpdateItemCount(items[i].count);
-                inventorySlots[i].UpdateImage(items[i].itemData.sprite);
             }
         }
     }
