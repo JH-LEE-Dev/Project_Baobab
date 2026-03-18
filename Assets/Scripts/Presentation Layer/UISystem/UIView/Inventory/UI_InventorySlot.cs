@@ -6,14 +6,25 @@ using UnityEngine.UI;
 
 public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    [Header("Main Settings")]   
-    private Item bindItem;
+    [Header("Main Settings")]
+    private IItemData showItemData;
+    public IItemData ShowItemData { get { return showItemData; } }
+
+    private LogStateCount[] logStateCounts;
+    public LogStateCount[] LogStateCounts { get { return logStateCounts; } }
+
+
+    private int showCnt = 0;
+    public int ShowCnt { get { return showCnt; } }
+    
     private Image uiImage;
     private TMP_Text countText;
 
-    public Action<Item, Vector2> enterSlot;
+    public Action<IItemData, LogStateCount[], Vector2> enterSlot;
     public Action exitSlot;
-    public Action<Item> deleteItem;
+    public Action<IItemData> deleteItem;
+
+    private const string imgFolderPath = "Assets/Graphics/Item/Log/";
 
     public void Initialize()
     {
@@ -28,13 +39,21 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     public virtual void OnPointerClick(PointerEventData eventData)
     {
         Debug.Log("아이템 삭제 요청");
-        deleteItem?.Invoke(bindItem);
+        deleteItem?.Invoke(showItemData);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         Debug.Log("슬롯에 마우스 올라옴");
-        enterSlot?.Invoke(bindItem, uiImage.rectTransform.position);
+
+        // 통나무 타입이 아니면 UI 꺼버리고 호출 안함 / 이전에 켜져있었을 수도 있으니까 방지
+        if (showItemData.itemType != ItemType.Log)
+        {
+            exitSlot?.Invoke();
+            return;
+        }
+
+        enterSlot?.Invoke(showItemData, logStateCounts, uiImage.rectTransform.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -48,15 +67,35 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == countText)
             return;
 
+        showCnt = newCnt;
         countText.text = newCnt.ToString();
     }
 
-    public void UpdateImage(Image img)
+    public void UpdateImage(Sprite _sprite)
     {
-        if (null == img || null == uiImage)
+        if (null == _sprite || null == uiImage)
             return;
 
-        uiImage.sprite = img.sprite;
+        uiImage.sprite = _sprite;
+    }
+
+    public void UpdateImage(string itemName)
+    {
+        Sprite newSprite = GlobalUI.GetSpritefromPath(imgFolderPath, itemName);
+        if (null == newSprite)
+            return;
+
+        UpdateImage(newSprite);
+    }
+
+    public void UpdateBindSlotData(IItemData _item, LogStateCount[] _logStateCounts)
+    {
+        showItemData = _item;
+        logStateCounts = _logStateCounts;
+
+
+        // 이름 경로 생성
+        //UpdateImage();
     }
 
     public void DisableRayCast()
