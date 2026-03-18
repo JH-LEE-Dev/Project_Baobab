@@ -155,10 +155,9 @@ public class UIView_Inventory : UIView
 
             else
             {
-                Debug.Log("여기 들어오긴 함?");
-
                 inventorySlots[i].UpdateBindSlotData(items[i].itemData, items[i].logStateCounts);
                 inventorySlots[i].UpdateItemCount(items[i].count);
+                inventorySlots[i].UpdateImage(items[i].itemData);
             }
         }
     }

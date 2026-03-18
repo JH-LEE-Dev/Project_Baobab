@@ -17,7 +17,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private int showCnt = 0;
     public int ShowCnt { get { return showCnt; } }
     
-    private Image uiImage;
+    [SerializeField] private Image uiImage;
     private TMP_Text countText;
 
     public Action<IItemData, LogStateCount[], Vector2> enterSlot;
@@ -26,8 +26,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void Initialize()
     {
-        uiImage = gameObject.GetComponentInChildren<Image>();
-
+        if (null != uiImage)
+            uiImage.enabled = false;
+        
         if (null != uiImage && uiImage.sprite != null && uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
@@ -37,6 +38,10 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     public virtual void OnPointerClick(PointerEventData eventData)
     {
         Debug.Log("아이템 삭제 요청");
+
+        if (null != uiImage)
+            uiImage.enabled = false;
+
         deleteItem?.Invoke(showItemData);
     }
 
@@ -74,6 +79,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == _sprite || null == uiImage)
             return;
 
+        uiImage.enabled = true;
         uiImage.sprite = _sprite;
     }
 
