@@ -1,5 +1,5 @@
 public enum EquipmentType
 {
-    Hatchet,
-    Rifle,
+    Hatchet,        // 한손 도끼
+    Rifle,          // 소총
 }

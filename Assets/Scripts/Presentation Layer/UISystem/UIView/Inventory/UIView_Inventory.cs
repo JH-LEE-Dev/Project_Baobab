@@ -55,20 +55,20 @@ public class UIView_Inventory : UIView
         {
             UI_InventorySlot slot = Instantiate(uiSlotPrefab, this.transform).GetComponent<UI_InventorySlot>();
 
-            if (null != slot)
-            {
-                slot.Initialize();
+            if (null == slot)
+                return;
 
-                slot.deleteItem -= SendDeleteItem;
-                slot.deleteItem += SendDeleteItem;
+            slot.Initialize();
 
-                slot.enterSlot -= EnterPopup;
-                slot.enterSlot += EnterPopup;
+            slot.deleteItem -= SendDeleteItem;
+            slot.deleteItem += SendDeleteItem;
 
-                slot.exitSlot -= ExitPopup;
-                slot.exitSlot += ExitPopup;
-            }
+            slot.enterSlot -= EnterPopup;
+            slot.enterSlot += EnterPopup;
 
+            slot.exitSlot -= ExitPopup;
+            slot.exitSlot += ExitPopup;
+            
             inventorySlots.Add(slot);
         }
     }
