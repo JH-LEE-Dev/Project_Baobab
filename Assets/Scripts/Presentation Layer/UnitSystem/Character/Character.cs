@@ -13,6 +13,9 @@ public class Character : MonoBehaviour, ITeleportable
     [SerializeField] private Light2D spotLight;
     [SerializeField] private float maxLightIntensity = 1.0f; // 밤일 때의 최대 밝기
     [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
+    [SerializeField] private GameObject itemSensor;
+
+    private Rigidbody2D itemSensorRB;
 
     private AttackComponent attackComponent;
     private PHealthComponent healthComponent;
@@ -57,6 +60,8 @@ public class Character : MonoBehaviour, ITeleportable
         col = GetComponent<Collider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
         healthComponent = GetComponentInChildren<PHealthComponent>();
+        itemSensorRB = itemSensor.GetComponent<Rigidbody2D>();
+
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
@@ -135,6 +140,8 @@ public class Character : MonoBehaviour, ITeleportable
 
     private void FixedUpdate()
     {
+        SetItemSensorPos();
+        
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
 
@@ -228,5 +235,10 @@ public class Character : MonoBehaviour, ITeleportable
 
         string debugText = $"Stamina: {healthComponent.CurrentStamina:F1} / {healthComponent.MaxStamina:F1}";
         GUI.Label(new Rect(posX, posY, width, height), debugText, style);
+    }
+
+    private void SetItemSensorPos()
+    {
+        itemSensorRB.MovePosition(transform.position);
     }
 }

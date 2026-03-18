@@ -13,6 +13,7 @@ public class GameInstaller : MonoBehaviour
     private TeleportManager teleportManager;
     private UnitLogicManager unitLogicManager;
     private GameplayUIInstaller gameplayUIInstaller;
+    private InventoryManager inventoryManager;
 
     //시스템 객체들
     private UnitSystem unitSystem;
@@ -31,14 +32,16 @@ public class GameInstaller : MonoBehaviour
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
 
-        unitSpawner = GetComponent<UnitSpawner>();
+        unitSpawner = GetComponentInChildren<UnitSpawner>();
         cameraManager = GetComponent<CameraManager>();
         teleportManager = GetComponent<TeleportManager>();
-        unitLogicManager = GetComponent<UnitLogicManager>();
+        unitLogicManager = GetComponentInChildren<UnitLogicManager>();
         townSystem = GetComponentInChildren<TownSystem>();
         inDungeonSystem = GetComponentInChildren<InDungeonSystem>();
         environmentSystem = GetComponentInChildren<EnvironmentSystem>();
         gameplayUIInstaller = GetComponentInChildren<GameplayUIInstaller>();
+        inventoryManager = GetComponentInChildren<InventoryManager>();
+
 
 
         cameraManager.Initialize(signalHub,inputManager);
@@ -47,10 +50,11 @@ public class GameInstaller : MonoBehaviour
         townSystem.Initialize(signalHub, environmentSystem);
         inDungeonSystem.Initialize(signalHub, environmentSystem);
         environmentSystem.Initialize(signalHub,unitLogicManager);
-        gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager);
+        inventoryManager.Initialize();
+        gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager,inventoryManager);
 
 
-        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager);
+        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager,inventoryManager);
 
         unitSystem.CreateCharacter();
     }

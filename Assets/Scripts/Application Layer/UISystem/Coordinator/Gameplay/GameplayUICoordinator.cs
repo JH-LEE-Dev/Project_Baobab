@@ -14,6 +14,7 @@ public class GameplayUICoordinator
         inventoryUI = _inventoryUI;
         hudUI = _hudUI;
 
+
         BindEvents();
     }
 

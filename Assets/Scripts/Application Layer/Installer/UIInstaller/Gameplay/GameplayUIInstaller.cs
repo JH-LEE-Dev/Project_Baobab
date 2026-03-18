@@ -8,6 +8,9 @@ public class GameplayUIInstaller : MonoBehaviour
 
     private GameplayUIManager uiManager;
     private GameplayUICoordinator uICoordinator;
+    private IInventory inventory;
+
+    //Canvas
 
     [Header("UI Canvas/CanvasRoot Objects")]
     [SerializeField] private CanvasRoot canvasRootPrefab;
@@ -18,16 +21,17 @@ public class GameplayUIInstaller : MonoBehaviour
     private Canvas canvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
-        InputManager _inputManager)
+        InputManager _inputManager,IInventory _inventory)
     {
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
         signalHub = _signalHub;
-    
+        inventory = _inventory;
+
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager);
+        uiManager.Initialize(inputManager,inventory);
 
         SetupUIElement();
     }

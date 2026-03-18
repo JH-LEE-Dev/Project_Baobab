@@ -1,18 +1,33 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
 public class LogItem : Item
 {
+    // 이벤트
+    public event Action<LogItem> LogItemAcquired;
+
     // 내부 의존성
-    private LogState logType;
-    private TreeType treeType;
+    public LogState logState { get; private set; }
+    public TreeType treeType { get; private set; }
     private SpriteRenderer spriteRenderer;
     private Transform visualTransform;
 
-    public void Initialize(LogState _logType, TreeType _treeType)
+    // 상태 변수
+    private bool isSucked = false;
+    private bool isLaunching = false;
+    private Transform suckTarget;
+    private Coroutine moveCoroutine;
+
+    public void Initialize(ItemType _itemType,LogState _logType, TreeType _treeType)
     {
-        logType = _logType;
+        base.Initialize(_itemType);
+
+        logState = _logType;
         treeType = _treeType;
+        isSucked = false;
+        isLaunching = false;
+        suckTarget = null;
 
         if (spriteRenderer == null)
         {
@@ -26,11 +41,22 @@ public class LogItem : Item
 
     public void Launch(Vector3 _start, Vector3 _end, float _height, float _duration)
     {
-        StartCoroutine(ParabolicMoveRoutine(_start, _end, _height, _duration));
+        if (moveCoroutine != null) StopCoroutine(moveCoroutine);
+        moveCoroutine = StartCoroutine(ParabolicMoveRoutine(_start, _end, _height, _duration));
+    }
+
+    public override void ResetItem()
+    {
+        base.ResetItem();
+
+        isSucked = false;
+        isLaunching = false;
+        suckTarget = null;
     }
 
     private IEnumerator ParabolicMoveRoutine(Vector3 _start, Vector3 _end, float _height, float _duration)
     {
+        isLaunching = true;
         float elapsed = 0f;
 
         while (elapsed < _duration)
@@ -63,6 +89,80 @@ public class LogItem : Item
         if (visualTransform != null)
         {
             visualTransform.localPosition = Vector3.zero;
+        }
+
+        isLaunching = false;
+        moveCoroutine = null;
+
+        // 도착했을 때 이미 타겟이 범위 내에 있었다면 흡입 시작
+        if (suckTarget != null)
+        {
+            StartSucking(suckTarget);
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D _other)
+    {
+        if (isSucked) return;
+
+        if (_other.CompareTag("ItemSensor"))
+        {
+            suckTarget = _other.transform;
+
+            // 발사 중이 아닐 때만 즉시 흡입 시작
+            if (!isLaunching)
+            {
+                StartSucking(suckTarget);
+            }
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D _other)
+    {
+        if (_other.CompareTag("ItemSensor"))
+        {
+            if (suckTarget == _other.transform)
+            {
+                suckTarget = null;
+            }
+        }
+    }
+
+    private void StartSucking(Transform _target)
+    {
+        if (moveCoroutine != null) StopCoroutine(moveCoroutine);
+        isSucked = true;
+        moveCoroutine = StartCoroutine(SuckingRoutine(_target));
+    }
+
+    private IEnumerator SuckingRoutine(Transform _target)
+    {
+        float speed = 0f; // 0에서 시작하여 서서히 가속
+        float accel = 12f;
+
+        while (true)
+        {
+            if (_target == null) break;
+
+            Vector3 targetPos = _target.position;
+            float distance = Vector3.Distance(transform.position, targetPos);
+
+            if (distance < 0.2f)
+            {
+                LogItemAcquired?.Invoke(this);
+
+                yield break;
+            }
+
+            speed += accel * Time.deltaTime;
+            transform.position = Vector3.MoveTowards(transform.position, targetPos, speed * Time.deltaTime);
+
+            if (visualTransform != null)
+            {
+                visualTransform.localPosition = Vector3.Lerp(visualTransform.localPosition, Vector3.zero, Time.deltaTime * 5f);
+            }
+
+            yield return null;
         }
     }
 }

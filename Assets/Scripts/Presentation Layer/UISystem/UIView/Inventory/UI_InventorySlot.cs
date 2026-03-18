@@ -65,6 +65,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
 
         uiImage.raycastTarget = false;
-        Debug.Log($"[{gameObject.name}]의 DisableRayCast 실행됨. 객체 ID: {uiImage.gameObject.GetInstanceID()}, 현재 RaycastTarget 상태: {uiImage.raycastTarget}");
+        //Debug.Log($"[{gameObject.name}]의 DisableRayCast 실행됨. 객체 ID: {uiImage.gameObject.GetInstanceID()}, 현재 RaycastTarget 상태: {uiImage.raycastTarget}");
     }
 }
