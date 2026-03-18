@@ -7,19 +7,16 @@ using UnityEngine.UI;
 public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("Main Settings")]   
-    private UIView_Inventory commander;
     private Item bindItem;
-
     private Image uiImage;
     private TMP_Text countText;
 
     public Action<Item, Vector2> enterSlot;
-    public Action<Item> exitSlot;
+    public Action exitSlot;
+    public Action<Item> deleteItem;
 
-    public void Initialize(UIView_Inventory owner)
+    public void Initialize()
     {
-        commander = owner;
-
         uiImage = gameObject.GetComponentInChildren<Image>();
 
         if (null != uiImage && uiImage.sprite != null && uiImage.sprite.texture.isReadable)
@@ -31,19 +28,19 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     public virtual void OnPointerClick(PointerEventData eventData)
     {
         Debug.Log("아이템 삭제 요청");
-        commander?.SendDeleteItem(bindItem);
+        deleteItem?.Invoke(bindItem);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         Debug.Log("슬롯에 마우스 올라옴");
-        enterSlot.Invoke(bindItem, uiImage.rectTransform.position);
+        enterSlot?.Invoke(bindItem, uiImage.rectTransform.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
         Debug.Log("슬롯에 마우스 빠짐");
-        exitSlot.Invoke(bindItem);
+        exitSlot?.Invoke();
     }
 
     public void UpdateItemCount(int newCnt)
