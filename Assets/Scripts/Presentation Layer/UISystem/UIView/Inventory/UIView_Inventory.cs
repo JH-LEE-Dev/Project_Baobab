@@ -1,8 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Unity.Mathematics;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class UIView_Inventory : UIView
@@ -53,7 +49,7 @@ public class UIView_Inventory : UIView
 
     public void UpdateMaxSlotCount(int cnt)
     {
-        int needCount = cnt - inventorySlots.Count();
+        int needCount = cnt - inventorySlots.Count;
 
         while(0 < needCount--)
         {

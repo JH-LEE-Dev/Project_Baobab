@@ -67,7 +67,9 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_Inventory inventoryUI = uiManager.Open<UIView_Inventory>();
         inventoryUI.Hide();
 
-        uICoordinator.Initialize(inputManager,inventoryUI);
+        UIView_HUD hudUI = uiManager.Open<UIView_HUD>();
+
+        uICoordinator.Initialize(inputManager,inventoryUI,hudUI);
 
         BindEvent();
     }
