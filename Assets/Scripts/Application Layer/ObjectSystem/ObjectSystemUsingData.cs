@@ -56,6 +56,13 @@ public struct TreeData
     }
 }
 
+public enum ItemType
+{
+    None,
+    Log,
+    Max,
+}
+
 
 [Serializable]
 public struct LogDropData

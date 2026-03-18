@@ -22,11 +22,37 @@ public class ItemManager : MonoBehaviour
             defaultCapacity: 10,
             maxSize: 100
         );
+
+        BindEvents();
+    }
+
+    public void Release()
+    {
+        ReleaseEvents();
+    }
+
+    private void BindEvents()
+    {
+
+    }
+
+    private void ReleaseEvents()
+    {
+
+    }
+
+    private void LogItemAcquired(LogItem _item)
+    {
+        logPool.Release(_item);
     }
 
     private LogItem CreateLogItem()
     {
         LogItem newItem = Instantiate(logItemPrefab, transform);
+
+        newItem.LogItemAcquired -= LogItemAcquired;
+        newItem.LogItemAcquired += LogItemAcquired;
+
         return newItem;
     }
 
@@ -42,6 +68,7 @@ public class ItemManager : MonoBehaviour
 
     private void OnDestroyLogItem(LogItem _item)
     {
+        _item.LogItemAcquired -= LogItemAcquired;
         Destroy(_item.gameObject);
     }
 
@@ -63,7 +90,7 @@ public class ItemManager : MonoBehaviour
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = _treeObj.transform.position;
-            logItem.Initialize(logType, treeData.type);
+            logItem.Initialize(ItemType.Log, logType, treeData.type);
 
             // 포물선 운동 설정
             Vector3 startPos = _treeObj.transform.position;

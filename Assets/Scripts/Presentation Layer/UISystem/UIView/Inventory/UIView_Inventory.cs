@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class UIView_Inventory : UIView
 {
+    private IInventory inventory;
+
     [Header("UI References")]
     [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
     [SerializeField] private GameObject uiSlotPrefab;
@@ -22,6 +24,11 @@ public class UIView_Inventory : UIView
         inventorySlots.Clear(); // Ensure the list starts fresh, ignoring any editor-assigned slots.
         UpdateMaxSlotCount(startSlotCount);
         Init_InventoryPopup();
+    }
+
+    public void DependencyInjection(IInventory _inventory)
+    {
+        inventory = _inventory;
     }
 
     public override void OnDestroy()

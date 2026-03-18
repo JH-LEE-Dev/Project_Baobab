@@ -10,10 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1821968231370692703}
   - component: {fileID: 2618603934779584709}
-  - component: {fileID: 2323688822281165534}
   - component: {fileID: 34867441274785128}
   - component: {fileID: 5395225011619469689}
-  - component: {fileID: 8625514034925759021}
   m_Layer: 0
   m_Name: GameInstaller
   m_TagString: Untagged
@@ -38,6 +36,7 @@ Transform:
   - {fileID: 163844690309674911}
   - {fileID: 7167910169251179437}
   - {fileID: 6142116780314600098}
+  - {fileID: 2090011938990725870}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2618603934779584709
@@ -52,20 +51,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 89b0620edf299d84eab26dc6d4fe909f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameInstaller
---- !u!114 &2323688822281165534
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1253828952939773992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 24a51f9d9bd3955418faebd2980e6578, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UnitSpawner
-  characterSpawnPoint: {fileID: 5004496044835778804, guid: e8c773d61d82f3b4086ee1131624cecc, type: 3}
-  characterPrefab: {fileID: 8662941010871122232, guid: e73742882640a0d4787ce81c60e7198b, type: 3}
 --- !u!114 &34867441274785128
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90,18 +75,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e2e1e3ac60ebb04498c4caba205f446, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeleportManager
---- !u!114 &8625514034925759021
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1253828952939773992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4a1ab0b45d87b9141bb09525dc9b835b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UnitLogicManager
 --- !u!1 &2554595008635905786
 GameObject:
   m_ObjectHideFlags: 0
@@ -261,6 +234,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonSystem
   dungeonData: {fileID: 11400000, guid: 1ac130def065a0142a5ce3f75ed357e3, type: 2}
+--- !u!1 &3306528137990007570
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2906103801948541194}
+  - component: {fileID: 6484410132478005881}
+  m_Layer: 0
+  m_Name: InventoryManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2906103801948541194
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3306528137990007570}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2090011938990725870}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6484410132478005881
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3306528137990007570}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6cdaa35996903aa46a9802724e100be3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
 --- !u!1 &3957381566655606059
 GameObject:
   m_ObjectHideFlags: 0
@@ -717,6 +734,66 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownSystem
   townStartPoint: {fileID: 4434414126251310962, guid: 7e2fffb1c09c60c4e86d94bff7fd2f97, type: 3}
+--- !u!1 &7829982200698710532
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2090011938990725870}
+  - component: {fileID: 6245971378031753382}
+  - component: {fileID: 8919172322634990837}
+  m_Layer: 0
+  m_Name: UnitSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2090011938990725870
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7829982200698710532}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2906103801948541194}
+  m_Father: {fileID: 1821968231370692703}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6245971378031753382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7829982200698710532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a1ab0b45d87b9141bb09525dc9b835b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitLogicManager
+--- !u!114 &8919172322634990837
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7829982200698710532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24a51f9d9bd3955418faebd2980e6578, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UnitSpawner
+  characterSpawnPoint: {fileID: 5004496044835778804, guid: e8c773d61d82f3b4086ee1131624cecc, type: 3}
+  characterPrefab: {fileID: 8662941010871122232, guid: e73742882640a0d4787ce81c60e7198b, type: 3}
 --- !u!1 &9097579308778333852
 GameObject:
   m_ObjectHideFlags: 0

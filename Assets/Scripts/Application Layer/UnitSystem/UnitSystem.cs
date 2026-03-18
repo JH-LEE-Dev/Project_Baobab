@@ -6,15 +6,17 @@ public class UnitSystem
     private SignalHub signalHub;
     private UnitSpawner unitSpawner;
     private UnitLogicManager unitLogicManager;
+    private InventoryManager inventoryManager;
 
     //내부 의존성
 
 
-    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager)
+    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager,InventoryManager _inventoryManager)
     {
         signalHub = _signalHub;
         unitSpawner = _unitSpawner;
         unitLogicManager = _unitLogicManager;
+        inventoryManager = _inventoryManager;
 
         SubscribeSignals();
         BindEvents();
