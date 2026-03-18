@@ -38,6 +38,7 @@ public class UnitSystem
         signalHub.Subscribe<DungeonReadySignal>(DungeonReady);
         signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
+        signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
     }
 
     private void UnSubscribeSignals()
@@ -45,6 +46,7 @@ public class UnitSystem
         signalHub.UnSubscribe<DungeonReadySignal>(DungeonReady);
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
+        signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
     }
 
     private void BindEvents()
@@ -78,5 +80,10 @@ public class UnitSystem
     {
         unitLogicManager.SetCharacterStaminaState(true, 0, 0.05f);
         unitLogicManager.SetCharacterTransform(townStartedSignal.characterPos);
+    }
+
+    private void ItemAcquired(ItemAcquiredSignal itemAcquiredSignal)
+    {
+        inventoryManager.ItemAcquired(itemAcquiredSignal.item);
     }
 }

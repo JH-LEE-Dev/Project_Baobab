@@ -38,11 +38,15 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
         inDungeonObjectManager.PortalActivatedEvent += PortalActivated;
+
+        inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
+        inDungeonObjectManager.ItemAcquiredEvent += ItemAcquired;
     }
 
     private void ReleaseEvents()
     {
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
+        inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
     }
 
     private void SubscribeSignals()
@@ -66,5 +70,10 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.ReadyPortalAndCharacter();
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
+    }
+
+    private void ItemAcquired(Item _item)
+    {
+        signalHub.Publish(new ItemAcquiredSignal(_item));
     }
 }

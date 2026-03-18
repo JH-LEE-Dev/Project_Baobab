@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
 public class ItemManager : MonoBehaviour
 {
+    public event Action<Item> LogItemAcquiredEvent;
+
     // 외부 의존성
     [SerializeField] private List<LogDropData> logProbDatas;
     [SerializeField] private LogItem logItemPrefab;
@@ -43,6 +46,7 @@ public class ItemManager : MonoBehaviour
 
     private void LogItemAcquired(LogItem _item)
     {
+        LogItemAcquiredEvent?.Invoke(_item);
         logPool.Release(_item);
     }
 
@@ -82,7 +86,7 @@ public class ItemManager : MonoBehaviour
         LogStateProbData stateProbData = GetStateProbData(dropData, treeData.treeState);
         if (stateProbData.probDatas == null || stateProbData.probDatas.Count == 0) return;
 
-        int spawnCount = Random.Range(2, 4); // 2~3개
+        int spawnCount = UnityEngine.Random.Range(2, 4); // 2~3개
 
         for (int i = 0; i < spawnCount; i++)
         {
@@ -94,12 +98,12 @@ public class ItemManager : MonoBehaviour
 
             // 포물선 운동 설정
             Vector3 startPos = _treeObj.transform.position;
-            Vector2 randomDir = Random.insideUnitCircle.normalized;
-            float randomDist = Random.Range(0.25f, 0.75f);
+            Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
+            float randomDist = UnityEngine.Random.Range(0.25f, 0.75f);
             Vector3 endPos = startPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * randomDist;
 
-            float height = Random.Range(0.5f, 1.0f);
-            float duration = Random.Range(0.25f, 0.5f);
+            float height = UnityEngine.Random.Range(0.5f, 1.0f);
+            float duration = UnityEngine.Random.Range(0.25f, 0.5f);
 
             logItem.Launch(startPos, endPos, height, duration);
         }
@@ -137,7 +141,7 @@ public class ItemManager : MonoBehaviour
             totalProb += _data.probDatas[i].probability;
         }
 
-        float randomVal = Random.Range(0f, totalProb);
+        float randomVal = UnityEngine.Random.Range(0f, totalProb);
         float currentProb = 0;
 
         for (int i = 0; i < _data.probDatas.Count; i++)

@@ -161,6 +161,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Portal
   type: 0
+  cooldownTime: 2
 --- !u!70 &6975217983711159795
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

@@ -14,15 +14,25 @@ public class InventoryManager : MonoBehaviour, IInventory
 
     public void Initialize()
     {
-        // 1. 기존 슬롯의 데이터들을 풀로 반환
-        for (int i = 0; i < inventorySlots.Count; i++)
+        // 1. 기존 슬롯의 데이터들을 풀로 반환하고 슬롯 초기화
+        if (inventorySlots.Count == 0)
         {
-            if (inventorySlots[i].itemData != null)
+            for (int i = 0; i < SYSTEM_VAR.INVENTORYSLOT_CNT_MAX; i++)
             {
-                ReleaseToPool(inventorySlots[i].itemData);
+                inventorySlots.Add(new InventorySlot());
             }
         }
-        inventorySlots.Clear();
+        else
+        {
+            for (int i = 0; i < inventorySlots.Count; i++)
+            {
+                if (inventorySlots[i].itemData is ItemData data)
+                {
+                    ReleaseToPool(data);
+                }
+                inventorySlots[i].Setup(null, 0);
+            }
+        }
 
         // 2. 모든 아이템 타입에 대해 풀 미리 생성 (None, Max 제외)
         for (int i = (int)ItemType.None + 1; i < (int)ItemType.Max; i++)
@@ -42,21 +52,29 @@ public class InventoryManager : MonoBehaviour, IInventory
         // 1. 기존 슬롯 확인 (중첩 가능한지)
         for (int i = 0; i < inventorySlots.Count; i++)
         {
-            if (inventorySlots[i].itemData != null && IsSameItem(_item, inventorySlots[i].itemData))
+            if (inventorySlots[i].itemData != null && IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
             {
-                inventorySlots[i].count++;
+                inventorySlots[i].AddCount(_item);
                 return;
             }
         }
 
-        // 2. 새로운 타입의 아이템인 경우 풀에서 데이터를 가져와 복사
-        ItemData newData = GetFromPool(_item.itemType);
-        if (newData != null)
+        // 2. 새로운 타입인 경우 첫 번째 빈 슬롯을 찾아 데이터 가져와 추가
+        for (int i = 0; i < inventorySlots.Count; i++)
         {
-            newData.CopyFrom(_item);
-            inventorySlots.Add(new InventorySlot(newData, 1));
+            if (inventorySlots[i].itemData == null)
+            {
+                ItemData newData = GetFromPool(_item.itemType);
+                if (newData != null)
+                {
+                    newData.CopyFrom(_item);
+                    inventorySlots[i].Setup(newData, 1);
+                }
+                return;
+            }
         }
     }
+
 
     private bool IsSameItem(Item _item, ItemData _data)
     {
@@ -64,6 +82,7 @@ public class InventoryManager : MonoBehaviour, IInventory
 
         if (_item is LogItem logItem && _data is LogItemData logData)
         {
+            // 같은 나무 종류라면 같은 슬롯에 보관
             return logItem.treeType == logData.treeType;
         }
 
@@ -119,7 +138,7 @@ public class InventoryManager : MonoBehaviour, IInventory
 
     public void ItemDeleted(IItemData _itemData)
     {
-        // 아이템 슬롯에서 삭제될 때의 로직 (필요 시 구현 및 ReleaseToPool 호출)
+        // 필요 시 구현
     }
 
     public List<InventorySlot> GetInventorySlots()

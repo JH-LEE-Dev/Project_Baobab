@@ -18,3 +18,12 @@ public struct DungeonStartSignal
         characterPos = _characterPos;
     }
 }
+
+public struct ItemAcquiredSignal
+{
+    public Item item;
+    public ItemAcquiredSignal(Item _item)
+    {
+        item = _item;
+    }
+}
