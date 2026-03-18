@@ -27,4 +27,16 @@ public static class GlobalUI
 
         return clampedPos;
     }
+
+    public static Sprite GetSpritefromPath(string _folderPath, string _itemName)
+    {
+        string getPath = _folderPath;
+
+        if (getPath.EndsWith('/'))
+            getPath += '/';
+
+        getPath += _itemName;
+
+        return Resources.Load<Sprite>(getPath);
+    }
 }
