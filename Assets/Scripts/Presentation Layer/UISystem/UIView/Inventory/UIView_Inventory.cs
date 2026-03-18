@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using VFolders.Libs;
 
 public class UIView_Inventory : UIView
 {
@@ -46,7 +47,7 @@ public class UIView_Inventory : UIView
     {
         base.OnShow();
 
-        
+        InventoryShowEvent();
     }
 
     protected override void OnHide() //이 UI가 꺼졌을 때 호출 됨.
@@ -96,9 +97,14 @@ public class UIView_Inventory : UIView
         invPopup.gameObject.SetActive(false);
     }
 
-    private void EnterPopup(Item it, Vector2 position)
+#region  [ Hover Event ]
+    private void EnterPopup(IItemData itemData, LogStateCount[] _logStateCounts, Vector2 position)
     {
-        if (null == invPopup)
+        if (null == invPopup || null == itemData || null == _logStateCounts)
+            return;
+
+        ILogItemData logItemData = itemData as ILogItemData;
+        if (null == logItemData)
             return;
 
         invPopup.gameObject.SetActive(true);
@@ -107,7 +113,7 @@ public class UIView_Inventory : UIView
         // ShowItems 에 리스트 넣기
         
         position.y += popupYOffset;
-        invPopup.ShowItems(position);
+        invPopup.ShowItems(logItemData, position, _logStateCounts);
     }
 
     private void ExitPopup()
@@ -118,10 +124,45 @@ public class UIView_Inventory : UIView
         invPopup.InvisibleSlots();
         invPopup.gameObject.SetActive(false);
     }   
+#endregion
 
-    public void SendDeleteItem(Item it)
+    public void SendDeleteItem(IItemData it)
     {
         // TODO :: 삭제할 아이템을 위로 올려 보냄.
         // 이후에 노출 되어야 하는 아이템 슬롯 재정렬
+    }
+
+    public void InventoryShowEvent()
+    {
+        if (null == inventory)
+            return;
+
+        var items = inventory.inventorySlots;
+        if (null == items)
+            return;
+
+        UpdateMaxSlotCount(items.Count);
+        UpdateSlots(items); 
+    }
+
+    private void UpdateSlots(IReadOnlyList<IInventorySlot> items)
+    {
+        foreach (IInventorySlot slot in items)
+        {
+            foreach (UI_InventorySlot uiSlot in inventorySlots)
+            {
+                if (uiSlot.ShowItemData == slot.itemData)
+                {
+                    if (uiSlot.ShowCnt == slot.count)
+                        continue;
+
+                    uiSlot.UpdateItemCount(slot.count);
+                    continue;
+                }
+
+                uiSlot.UpdateBindSlotData(slot.itemData, slot.logStateCounts);
+                uiSlot.UpdateItemCount(slot.count);
+            }
+        }
     }
 }

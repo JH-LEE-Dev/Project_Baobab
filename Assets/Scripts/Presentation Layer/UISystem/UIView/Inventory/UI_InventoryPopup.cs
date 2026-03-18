@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class UI_InventoryPopup : MonoBehaviour
@@ -32,15 +33,20 @@ public class UI_InventoryPopup : MonoBehaviour
         rect = GetComponent<RectTransform>();
     }
 
-    public void ShowItems(Vector2 position/*, 목록을 받아 옴*/)
+    public void ShowItems(ILogItemData iLogItemData, Vector2 position, LogStateCount[] _logStateCounts)
     {
         // 임시. TODO :: 나중엔 받아온 목록만큼 노출
-        for (int i = 0; i < 4; ++i)
+        for (int i = 0; i < _logStateCounts.Length; ++i)
+        {
             slots[i].gameObject.SetActive(true);
+            
+            string itemName = iLogItemData.treeType.ToString() + "_" + iLogItemData.logState.ToString();
+            slots[i].UpdateImage(itemName);
+            slots[i].UpdateItemCount(_logStateCounts[i].count);
+        }
 
         if (null != rect)
         {
-            Debug.Log("너 처음에 호출 되잖아 싯팔아");
             rect.position = position;
             // 화면 영역 밖으로 나간 위치 보정
             rect.position = GlobalUI.KeepInsideScreenforUI(rect); 
