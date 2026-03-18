@@ -12,7 +12,6 @@ public class LogItem : Item
     public TreeType treeType { get; private set; }
     private SpriteRenderer spriteRenderer;
     private Transform visualTransform;
-    public Sprite sprite { get; private set; }
 
     // 상태 변수
     private bool isSucked = false;
