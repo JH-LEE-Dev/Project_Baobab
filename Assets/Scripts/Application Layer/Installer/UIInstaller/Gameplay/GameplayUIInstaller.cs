@@ -63,7 +63,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
     public void SetupCanvas()
     {
-        canvas = Instantiate(canvasPrefab);
+        canvas = Instantiate(canvasPrefab,transform);
     }
 
     private void OpenUIView()
@@ -73,7 +73,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_HUD hudUI = uiManager.Open<UIView_HUD>();
 
-        uICoordinator.Initialize(inputManager,inventoryUI,hudUI);
+        uICoordinator.Initialize(signalHub,inputManager,inventoryUI,hudUI);
 
         BindEvent();
     }

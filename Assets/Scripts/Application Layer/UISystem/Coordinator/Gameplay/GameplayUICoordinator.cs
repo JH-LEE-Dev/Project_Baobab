@@ -4,18 +4,30 @@ public class GameplayUICoordinator
     private UIView_Inventory inventoryUI;
     private InputManager inputManager;
 
+    private SignalHub signalHub;
     private UIView_HUD hudUI;
 
     private bool bInventoryOpened = false;
 
-    public void Initialize(InputManager _inputManager, UIView_Inventory _inventoryUI, UIView_HUD _hudUI)
+    public void Initialize(SignalHub _signalHub,InputManager _inputManager, UIView_Inventory _inventoryUI, UIView_HUD _hudUI)
     {
         inputManager = _inputManager;
         inventoryUI = _inventoryUI;
         hudUI = _hudUI;
+        signalHub = _signalHub;
 
-
+        SubscribeSignals();
         BindEvents();
+    }
+
+    private void SubscribeSignals()
+    {
+        signalHub.Subscribe<InventoryUpdatedSignal>(InventoryUpdated);
+    }
+
+    private void UnSubscribeSignals()
+    {
+        signalHub.UnSubscribe<InventoryUpdatedSignal>(InventoryUpdated);
     }
 
     private void BindEvents()
@@ -31,6 +43,7 @@ public class GameplayUICoordinator
 
     public void Release()
     {
+        UnSubscribeSignals();
         ReleaseEvents();
     }
 
@@ -46,5 +59,10 @@ public class GameplayUICoordinator
             bInventoryOpened = false;
             inventoryUI.Hide();
         }
+    }
+
+    private void InventoryUpdated(InventoryUpdatedSignal inventoryUpdatedSignal)
+    {
+        inventoryUI.InventoryShowEvent();
     }
 }

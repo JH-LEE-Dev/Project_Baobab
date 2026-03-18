@@ -7,3 +7,5 @@ public struct CharacterSpawendSignal
         character = _character;
     }
 }
+
+public struct InventoryUpdatedSignal { }

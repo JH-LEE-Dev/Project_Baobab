@@ -136,7 +136,7 @@ public class UIView_Inventory : UIView
     {
         if (null == inventory)
             return;
-
+            
         var items = inventory.inventorySlots;
         if (null == items)
             return;

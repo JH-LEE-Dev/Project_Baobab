@@ -85,5 +85,6 @@ public class UnitSystem
     private void ItemAcquired(ItemAcquiredSignal itemAcquiredSignal)
     {
         inventoryManager.ItemAcquired(itemAcquiredSignal.item);
+        signalHub.Publish(new InventoryUpdatedSignal());
     }
 }
