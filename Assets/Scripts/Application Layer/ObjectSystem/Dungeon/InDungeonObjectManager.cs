@@ -8,6 +8,8 @@ public class InDungeonObjectManager : MonoBehaviour
 {
     // // 이벤트
     public event Action<PortalType> PortalActivatedEvent;
+    public event Action<Item> ItemAcquiredEvent;
+
 
     // 외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -42,7 +44,7 @@ public class InDungeonObjectManager : MonoBehaviour
 
     private ItemManager itemManager;
 
-    public void Initialize(IEnvironmentProvider _environmentProvider,DungeonData _dungeonData)
+    public void Initialize(IEnvironmentProvider _environmentProvider, DungeonData _dungeonData)
     {
         environmentProvider = _environmentProvider;
         dungeonData = _dungeonData;
@@ -60,6 +62,17 @@ public class InDungeonObjectManager : MonoBehaviour
             defaultCapacity: 200,
             maxSize: 5000
         );
+
+        if (itemManager != null)
+        {
+            itemManager.LogItemAcquiredEvent -= ItemAcquired;
+            itemManager.LogItemAcquiredEvent += ItemAcquired;
+        }
+    }
+
+    private void ItemAcquired(Item _item)
+    {
+        ItemAcquiredEvent?.Invoke(_item);
     }
 
     private void SetupCullingGroup()
@@ -132,7 +145,7 @@ public class InDungeonObjectManager : MonoBehaviour
         if (grassTileWorldPositions == null || grassTileWorldPositions.Count == 0) return;
 
         SetupCullingGroup();
-        
+
         StopGrowth();
         ClearTrees();
 
