@@ -31,7 +31,7 @@ RectTransform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -57,7 +57,7 @@ MonoBehaviour:
   uiRoot: {fileID: 4833147362847093384}
   uiSlotPrefab: {fileID: 579466836129025464, guid: fb43f9e42a2b2fd4999daf76b9e7d5e0, type: 3}
   uiPopupPrefab: {fileID: 7047183625215616851, guid: 8f0199b641621114ea2b4c7bc8799070, type: 3}
-  startSlotCount: 12
+  startSlotCount: 2
   inventorySlots: []
   popupYOffset: 30
 --- !u!222 &1543558412992552657
@@ -125,14 +125,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GridLayoutGroup
   m_Padding:
-    m_Left: 0
-    m_Right: 0
-    m_Top: 0
-    m_Bottom: 0
+    m_Left: -5
+    m_Right: -5
+    m_Top: -5
+    m_Bottom: -5
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 100, y: 100}
-  m_Spacing: {x: -35, y: -35}
+  m_CellSize: {x: 50, y: 50}
+  m_Spacing: {x: -25, y: -25}
   m_Constraint: 2
   m_ConstraintCount: 2

@@ -38,6 +38,7 @@ public class UIView_Inventory : UIView
     {
         foreach (UI_InventorySlot slot in inventorySlots)
         {
+            slot.deleteItem -= SendDeleteItem;
             slot.enterSlot -= EnterPopup;
             slot.exitSlot -= ExitPopup;
         }
@@ -100,20 +101,14 @@ public class UIView_Inventory : UIView
 #region  [ Hover Event ]
     private void EnterPopup(IItemData itemData, LogStateCount[] _logStateCounts, Vector2 position)
     {
-        if (null == invPopup || null == itemData || null == _logStateCounts)
-            return;
-
         ILogItemData logItemData = itemData as ILogItemData;
-        if (null == logItemData)
+        if (null == invPopup || null == logItemData)
             return;
 
         invPopup.gameObject.SetActive(true);
-
-        // TODO :: 현재 선택된 아이템의 해당 하는 종류 ( 자작, 참, 소 등 ) 타입을 구분해서 그 리스트를 꺼내온 뒤
-        // ShowItems 에 리스트 넣기
         
         position.y += popupYOffset;
-        invPopup.ShowItems(logItemData, position, _logStateCounts);
+        invPopup.ShowItems(logItemData, _logStateCounts, position);
     }
 
     private void ExitPopup()
@@ -129,39 +124,41 @@ public class UIView_Inventory : UIView
     public void SendDeleteItem(IItemData it)
     {
         // TODO :: 삭제할 아이템을 위로 올려 보냄.
-        // 이후에 노출 되어야 하는 아이템 슬롯 재정렬
+        UpdateSlots(inventory.inventorySlots); 
     }
 
     public void InventoryShowEvent()
     {
         if (null == inventory)
             return;
-            
+
         var items = inventory.inventorySlots;
         if (null == items)
             return;
 
-        UpdateMaxSlotCount(items.Count);
         UpdateSlots(items); 
     }
 
     private void UpdateSlots(IReadOnlyList<IInventorySlot> items)
     {
-        foreach (IInventorySlot slot in items)
+        UpdateMaxSlotCount(items.Count);
+
+        for (int i = 0; i < items.Count; ++i)
         {
-            foreach (UI_InventorySlot uiSlot in inventorySlots)
+            if (inventorySlots[i].ShowItemData == items[i].itemData)
             {
-                if (uiSlot.ShowItemData == slot.itemData)
-                {
-                    if (uiSlot.ShowCnt == slot.count)
-                        continue;
-
-                    uiSlot.UpdateItemCount(slot.count);
+                if (inventorySlots[i].ShowCnt == items[i].count)
                     continue;
-                }
 
-                uiSlot.UpdateBindSlotData(slot.itemData, slot.logStateCounts);
-                uiSlot.UpdateItemCount(slot.count);
+                inventorySlots[i].UpdateItemCount(items[i].count);
+            }
+
+            else
+            {
+                Debug.Log("여기 들어오긴 함?");
+
+                inventorySlots[i].UpdateBindSlotData(items[i].itemData, items[i].logStateCounts);
+                inventorySlots[i].UpdateItemCount(items[i].count);
             }
         }
     }
