@@ -1,7 +1,5 @@
 using System.Collections.Generic;
-using Microsoft.Unity.VisualStudio.Editor;
 using UnityEngine;
-using UnityEngine.InputSystem.Interactions;
 
 public class UI_InventoryPopup : MonoBehaviour
 {

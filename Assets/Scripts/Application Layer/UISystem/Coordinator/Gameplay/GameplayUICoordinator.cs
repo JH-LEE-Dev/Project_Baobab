@@ -1,18 +1,18 @@
-using System;
-using System.Collections.Generic;
-using UnityEngine;
 
 public class GameplayUICoordinator
 {
     private UIView_Inventory inventoryUI;
     private InputManager inputManager;
 
+    private UIView_HUD hudUI;
+
     private bool bInventoryOpened = false;
 
-    public void Initialize(InputManager _inputManager, UIView_Inventory _inventoryUI)
+    public void Initialize(InputManager _inputManager, UIView_Inventory _inventoryUI, UIView_HUD _hudUI)
     {
         inputManager = _inputManager;
         inventoryUI = _inventoryUI;
+        hudUI = _hudUI;
 
         BindEvents();
     }

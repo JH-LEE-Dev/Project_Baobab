@@ -1,5 +1,4 @@
 using System;
-using MCPForUnity.Editor.Models;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
