@@ -35,7 +35,7 @@ public class UI_InventoryPopup : MonoBehaviour
 
     public void ShowItems(ILogItemData iLogItemData, LogStateCount[] _logStateCounts, Vector2 position)
     {
-        if (null == _logStateCounts)
+        if (null == _logStateCounts || null == iLogItemData)
             return;
 
         for (int i = 0; i < _logStateCounts.Length; ++i)
@@ -45,6 +45,9 @@ public class UI_InventoryPopup : MonoBehaviour
             slots[i].UpdateImage(iLogItemData.sprite);
             slots[i].UpdateItemCount(_logStateCounts[i].count);
         }
+
+        for (int i = _logStateCounts.Length; i < slots.Count; ++i)
+            slots[i].gameObject.SetActive(false);
 
         if (null != rect)
         {

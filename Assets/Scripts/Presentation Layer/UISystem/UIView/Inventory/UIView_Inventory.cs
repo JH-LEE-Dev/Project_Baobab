@@ -121,7 +121,7 @@ public class UIView_Inventory : UIView
     }   
 #endregion
 
-    public void SendDeleteItem(IItemData it)
+    public void SendDeleteItem(IInventorySlot _inData)
     {
         // TODO :: 삭제할 아이템을 위로 올려 보냄.
         UpdateSlots(inventory.inventorySlots); 
@@ -155,9 +155,12 @@ public class UIView_Inventory : UIView
 
             else
             {
-                inventorySlots[i].UpdateBindSlotData(items[i].itemData, items[i].logStateCounts);
+                inventorySlots[i].UpdateBindSlotData(items[i]);
                 inventorySlots[i].UpdateItemCount(items[i].count);
             }
         }
+
+        for (int i = items.Count; i < inventorySlots.Count; ++i)
+            inventorySlots[i].ResetData();
     }
 }
