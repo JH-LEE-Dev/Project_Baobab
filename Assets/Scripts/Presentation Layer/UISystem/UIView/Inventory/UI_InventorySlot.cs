@@ -25,19 +25,18 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void Initialize()
     {
-        if (null != uiImage)
-            uiImage.enabled = false;
-        
+        UpdateImage(null);
         if (null != uiImage && null != uiImage.sprite && uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
         countText = gameObject.GetComponentInChildren<TMP_Text>();
+        UpdateItemCount(0);
     }
 
     public void ResetData()
     {
-        if (null != uiImage)
-            uiImage.enabled = false;
+        UpdateImage(null);
+        UpdateItemCount(0);
 
         invSlotRef = null;
         showItemData = null;
@@ -45,7 +44,12 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateItemCount(int _newCnt)
     {
-        if (null == countText || showCnt == _newCnt)
+        if (null == countText)
+            return;
+
+        countText.enabled = 0 < _newCnt;
+
+        if (showCnt == _newCnt)
             return;
 
         showCnt = _newCnt;

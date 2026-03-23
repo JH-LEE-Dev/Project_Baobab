@@ -40,8 +40,15 @@ public class UI_InventoryPopup : MonoBehaviour
 
         for (int i = 0; i < _logStateCounts.Length; ++i)
         {
+            if (0 >= _logStateCounts[i].count)
+            {
+                slots[i].gameObject.SetActive(false);
+                continue;
+            }
+
             slots[i].gameObject.SetActive(true);
             
+            // 나중엔 등급별로 이미지 적용 해야 함.
             slots[i].UpdateImage(iLogItemData.sprite);
             slots[i].UpdateItemCount(_logStateCounts[i].count);
         }
