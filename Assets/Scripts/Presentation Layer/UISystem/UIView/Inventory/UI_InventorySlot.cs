@@ -20,7 +20,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public Action<IItemData, LogStateCount[], Vector2> enterSlot;
     public Action exitSlot;
-    public Action<IInventorySlot> deleteItem;
+    public Action<IInventorySlot> deleteSlot;
 
     public void Initialize()
     {
@@ -37,7 +37,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         Debug.Log("아이템 삭제 요청");
 
-        deleteItem?.Invoke(invSlotRef);
+        deleteSlot?.Invoke(invSlotRef);
     }
 
     public void ResetData()
@@ -76,8 +76,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == uiImage || uiImage.sprite == _sprite)
             return;
 
-        uiImage.enabled = true;
         uiImage.sprite = _sprite;
+        uiImage.enabled = null != _sprite;
     }
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)

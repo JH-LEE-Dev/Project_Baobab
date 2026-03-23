@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using VFolders.Libs;
@@ -17,6 +18,8 @@ public class UIView_Inventory : UIView
 
     private UI_InventoryPopup invPopup;
     [SerializeField] private float popupYOffset = 30.0f;
+
+    Action<IInventorySlot> deleteAction;
 
     private const int defaultPopupCap = 12;
 
@@ -38,10 +41,12 @@ public class UIView_Inventory : UIView
     {
         foreach (UI_InventorySlot slot in inventorySlots)
         {
-            slot.deleteItem -= SendDeleteItem;
+            slot.deleteSlot -= SendDeleteItem;
             slot.enterSlot -= EnterPopup;
             slot.exitSlot -= ExitPopup;
         }
+
+        base.OnDestroy();
     }
 
     protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
@@ -71,8 +76,8 @@ public class UIView_Inventory : UIView
 
             slot.Initialize();
 
-            slot.deleteItem -= SendDeleteItem;
-            slot.deleteItem += SendDeleteItem;
+            slot.deleteSlot -= SendDeleteItem;
+            slot.deleteSlot += SendDeleteItem;
 
             slot.enterSlot -= EnterPopup;
             slot.enterSlot += EnterPopup;
@@ -123,8 +128,8 @@ public class UIView_Inventory : UIView
 
     public void SendDeleteItem(IInventorySlot _inData)
     {
-        // TODO :: 삭제할 아이템을 위로 올려 보냄.
-        UpdateSlots(inventory.inventorySlots); 
+        deleteAction.Invoke(_inData);
+        UpdateSlots(inventory.inventorySlots);
     }
 
     public void InventoryShowEvent()
