@@ -25,7 +25,7 @@ public class HUD_ProgressBar : MonoBehaviour
         
     }
 
-    public void SetMaxFatigue(float _maxValue)
+    public void SetMaxValue(float _maxValue)
     {
         if (0.0f >= _maxValue)
             return;
@@ -38,7 +38,7 @@ public class HUD_ProgressBar : MonoBehaviour
         progressSlider.maxValue = maxValue;
     }
 
-    public void UpdateFatigue(float _newValue)
+    public void UpdateValue(float _newValue)
     {
         currentValue = _newValue;
 
