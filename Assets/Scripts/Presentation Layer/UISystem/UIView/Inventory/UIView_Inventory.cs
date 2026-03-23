@@ -139,28 +139,33 @@ public class UIView_Inventory : UIView
         UpdateSlots(items); 
     }
 
-    private void UpdateSlots(IReadOnlyList<IInventorySlot> items)
+    private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
     {
-        UpdateMaxSlotCount(items.Count);
+        int itemCount = _items.Count;
+        UpdateMaxSlotCount(itemCount);
 
-        for (int i = 0; i < items.Count; ++i)
+        for (int i = 0; i < inventorySlots.Count; ++i)
         {
-            if (inventorySlots[i].ShowItemData == items[i].itemData)
+            UI_InventorySlot slot = inventorySlots[i];
+
+            if (i < itemCount)
             {
-                if (inventorySlots[i].ShowCnt == items[i].count)
-                    continue;
+                IInventorySlot item = _items[i];
 
-                inventorySlots[i].UpdateItemCount(items[i].count);
+                if (!slot.gameObject.activeSelf)
+                    slot.gameObject.SetActive(true);
+
+                slot.UpdateBindSlotData(item);
+                slot.UpdateItemCount(item.count);
             }
-
             else
             {
-                inventorySlots[i].UpdateBindSlotData(items[i]);
-                inventorySlots[i].UpdateItemCount(items[i].count);
+                if (slot.gameObject.activeSelf)
+                {
+                    slot.ResetData();
+                    slot.gameObject.SetActive(false);
+                }
             }
         }
-
-        for (int i = items.Count; i < inventorySlots.Count; ++i)
-            inventorySlots[i].ResetData();
     }
 }

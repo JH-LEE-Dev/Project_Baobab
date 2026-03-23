@@ -62,18 +62,18 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         exitSlot?.Invoke();
     }
 
-    public void UpdateItemCount(int newCnt)
+    public void UpdateItemCount(int _newCnt)
     {
-        if (null == countText)
+        if (null == countText || showCnt == _newCnt)
             return;
 
-        showCnt = newCnt;
-        countText.text = newCnt.ToString();
+        showCnt = _newCnt;
+        countText.text = _newCnt.ToString();
     }
 
     public void UpdateImage(Sprite _sprite)
     {
-        if (null == uiImage)
+        if (null == uiImage || uiImage.sprite == _sprite)
             return;
 
         uiImage.enabled = true;
@@ -82,10 +82,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)
     {
+        if (invSlotRef == _newSlot && showItemData == _newSlot.itemData)
+            return;
+
         showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
 
-        UpdateImage(showItemData.sprite);
+        UpdateImage(showItemData?.sprite);
     }
 
     public void DisableRayCast()
