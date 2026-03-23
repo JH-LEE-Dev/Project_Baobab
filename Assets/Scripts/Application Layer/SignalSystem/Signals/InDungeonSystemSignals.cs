@@ -27,3 +27,12 @@ public struct ItemAcquiredSignal
         item = _item;
     }
 }
+
+public struct TreeGetHitSignal
+{
+    public TreeObj treeObj;
+    public TreeGetHitSignal(TreeObj _treeObj)
+    {
+        treeObj = _treeObj;
+    }
+}

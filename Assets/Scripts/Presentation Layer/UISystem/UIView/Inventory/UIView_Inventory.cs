@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using VFolders.Libs;
 
 public class UIView_Inventory : UIView
 {

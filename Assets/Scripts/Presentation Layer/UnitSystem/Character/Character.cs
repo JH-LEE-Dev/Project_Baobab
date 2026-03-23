@@ -109,7 +109,7 @@ public class Character : MonoBehaviour, ITeleportable
         stateMachine.ChangeState<IdleState>();
     }
 
-    private void AddState(State _state)
+    private void AddState(CharacterState _state)
     {
         _state.Initialize(stateMachine, this);
         stateMachine.AddState(_state);

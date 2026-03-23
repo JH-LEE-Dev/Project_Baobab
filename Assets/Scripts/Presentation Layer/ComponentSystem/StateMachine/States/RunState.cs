@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class RunState : State
+public class RunState : CharacterState
 {
     private Vector2 moveInput;
     private Vector2 lastVisualInput;

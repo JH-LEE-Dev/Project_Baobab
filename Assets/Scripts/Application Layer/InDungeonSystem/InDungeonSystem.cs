@@ -4,7 +4,7 @@ using UnityEngine;
 public class InDungeonSystem : MonoBehaviour
 {
     private SignalHub signalHub;
-    private InDungeonObjectManager inDungeonObjectManager;
+    public InDungeonObjectManager inDungeonObjectManager {get; private set;}
     private IEnvironmentProvider environmentProvider;
 
     [Header("Dungeon Data")]
@@ -41,12 +41,16 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
         inDungeonObjectManager.ItemAcquiredEvent += ItemAcquired;
+
+        inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
+        inDungeonObjectManager.TreeGetHitEvent += TreeGetHit;
     }
 
     private void ReleaseEvents()
     {
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
         inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
+        inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
     }
 
     private void SubscribeSignals()
@@ -75,5 +79,10 @@ public class InDungeonSystem : MonoBehaviour
     private void ItemAcquired(Item _item)
     {
         signalHub.Publish(new ItemAcquiredSignal(_item));
+    }
+
+    private void TreeGetHit(TreeObj _treeObj)
+    {
+        signalHub.Publish(new TreeGetHitSignal(_treeObj));
     }
 }
