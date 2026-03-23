@@ -5,6 +5,8 @@ public class InDungeonSystem : MonoBehaviour
 {
     private SignalHub signalHub;
     public InDungeonObjectManager inDungeonObjectManager {get; private set;}
+    public InDungeonUnitSpawner inDungeonUnitSpawner {get; private set;}
+
     private IEnvironmentProvider environmentProvider;
 
     [Header("Dungeon Data")]
@@ -17,6 +19,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
         inDungeonObjectManager.Initialize(environmentProvider,dungeonData);
+
+        inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
+        inDungeonUnitSpawner.Initialize(environmentProvider);
 
         BindEvents();
         SubscribeSignals();
@@ -32,6 +37,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Publish(new DungeonReadySignal(dungeonData));
         inDungeonObjectManager.SetDungeonData(dungeonData);
+        inDungeonUnitSpawner.SpawnAnimals();
     }
 
     private void BindEvents()

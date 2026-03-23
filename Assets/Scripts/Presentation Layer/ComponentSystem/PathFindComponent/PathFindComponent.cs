@@ -3,19 +3,18 @@ using System.Collections.Generic;
 
 public class PathFindComponent : MonoBehaviour
 {
-    // // 내부 데이터 구조체
     private struct Node
     {
-        public Vector3Int cellPos;
+        public Vector3Int pos;
         public int gCost;
         public int hCost;
         public Vector3Int parentPos;
 
         public int fCost => gCost + hCost;
 
-        public Node(Vector3Int _cellPos, int _gCost, int _hCost, Vector3Int _parentPos)
+        public Node(Vector3Int _pos, int _gCost, int _hCost, Vector3Int _parentPos)
         {
-            cellPos = _cellPos;
+            pos = _pos;
             gCost = _gCost;
             hCost = _hCost;
             parentPos = _parentPos;
@@ -24,147 +23,164 @@ public class PathFindComponent : MonoBehaviour
 
     // // 외부 의존성
     private ITilemapDataProvider tilemapDataProvider;
+    private IPathfindGridProvider pathfindGridProvider;
 
-    // // 재사용 컬렉션 (GC 최소화)
-    private Dictionary<Vector3Int, Node> openSet = new Dictionary<Vector3Int, Node>(100);
-    private Dictionary<Vector3Int, Node> closedSet = new Dictionary<Vector3Int, Node>(200);
-    private List<Vector3Int> neighbors = new List<Vector3Int>(8);
-    private List<Vector3> finalPath = new List<Vector3>(50);
-    private List<Vector3> candidateTargets = new List<Vector3>(100);
+    // // 내부 데이터 (경로 공유 및 GC 최소화)
+    private readonly List<Vector3> currentPath = new List<Vector3>(64);
+    public IReadOnlyList<Vector3> Path => currentPath;
 
-    // // 퍼블릭 초기화 및 제어 메서드
+    // // 내부 의존성 (재사용을 위한 컬렉션, GC 최소화)
+    private readonly List<Node> openList = new List<Node>(256);
+    private readonly Dictionary<Vector3Int, Node> closedNodes = new Dictionary<Vector3Int, Node>(256);
+    private static readonly Vector3Int[] neighborOffsets = new Vector3Int[]
+    {
+        new Vector3Int(1, 0, 0), new Vector3Int(-1, 0, 0),
+        new Vector3Int(0, 1, 0), new Vector3Int(0, -1, 0),
+        new Vector3Int(1, 1, 0), new Vector3Int(-1, 1, 0),
+        new Vector3Int(1, -1, 0), new Vector3Int(-1, -1, 0)
+    };
 
-    public void Initialize(ITilemapDataProvider _tilemapDataProvider)
+    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindGridProvider _pathfindGridProvider)
     {
         tilemapDataProvider = _tilemapDataProvider;
+        pathfindGridProvider = _pathfindGridProvider;
     }
 
     /// <summary>
-    /// 특정 거리 이상의 무작위 목표 지점을 반환합니다.
+    /// 내부 리스트(currentPath)를 사용하여 길을 찾습니다.
     /// </summary>
-    public Vector3 GetRandomTarget(Vector3 _currentPos, float _minDistance)
+    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos)
     {
-        if (tilemapDataProvider == null) return _currentPos;
-
-        candidateTargets.Clear();
-        List<Vector3> walkablePosList = tilemapDataProvider.GetWalkableTileWorldPositions();
-        float minSqrDist = _minDistance * _minDistance;
-
-        for (int i = 0; i < walkablePosList.Count; i++)
-        {
-            if ((walkablePosList[i] - _currentPos).sqrMagnitude >= minSqrDist)
-            {
-                candidateTargets.Add(walkablePosList[i]);
-            }
-        }
-
-        if (candidateTargets.Count > 0)
-        {
-            return candidateTargets[Random.Range(0, candidateTargets.Count)];
-        }
-
-        return _currentPos;
+        return FindPath(_startWorldPos, _endWorldPos, currentPath);
     }
 
     /// <summary>
-    /// 특정 거리 이상의 무작위 지점을 찾아 A* 알고리즘으로 경로를 반환합니다.
+    /// A* 알고리즘을 사용하여 두 지점 사이의 길을 찾습니다.
     /// </summary>
-    public List<Vector3> FindPath(Vector3 _startWorld, float _minDistance)
+    /// <param name="_startWorldPos">시작 월드 좌표</param>
+    /// <param name="_endWorldPos">목표 월드 좌표</param>
+    /// <param name="_pathResult">결과 경로를 담을 리스트 (외부에서 관리)</param>
+    /// <returns>경로를 찾았는지 여부</returns>
+    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos, List<Vector3> _pathResult)
     {
-        if (tilemapDataProvider == null) return null;
+        _pathResult.Clear();
+        Vector3Int startPos = tilemapDataProvider.WorldToCell(_startWorldPos);
+        Vector3Int targetPos = tilemapDataProvider.WorldToCell(_endWorldPos);
 
-        Vector3 endWorld = GetRandomTarget(_startWorld, _minDistance);
-        
-        // 시작점과 목표지점이 같으면(이동 불가 등) null 반환
-        if ((endWorld - _startWorld).sqrMagnitude < 0.01f) return null;
-
-        Vector3Int startCell = tilemapDataProvider.WorldToCell(_startWorld);
-        Vector3Int endCell = tilemapDataProvider.WorldToCell(endWorld);
-
-        openSet.Clear();
-        closedSet.Clear();
-        finalPath.Clear();
-
-        openSet.Add(startCell, new Node(startCell, 0, GetDistance(startCell, endCell), startCell));
-
-        while (openSet.Count > 0)
+        // 도착 지점이 이동 불가능하면 즉시 종료
+        if (!tilemapDataProvider.IsWalkable(targetPos))
         {
-            Node currentNode = GetLowestFCostNode();
-
-            if (currentNode.cellPos == endCell)
-            {
-                return RetracePath(startCell, currentNode);
-            }
-
-            openSet.Remove(currentNode.cellPos);
-            closedSet.Add(currentNode.cellPos, currentNode);
-
-            GetNeighbors(currentNode.cellPos);
-            for (int i = 0; i < neighbors.Count; i++)
-            {
-                Vector3Int neighbor = neighbors[i];
-
-                if (closedSet.ContainsKey(neighbor)) continue;
-
-                int newMovementCostToNeighbor = currentNode.gCost + GetDistance(currentNode.cellPos, neighbor);
-                bool isInOpenSet = openSet.TryGetValue(neighbor, out Node neighborNode);
-
-                if (newMovementCostToNeighbor < neighborNode.gCost || !isInOpenSet)
-                {
-                    Node newNode = new Node(neighbor, newMovementCostToNeighbor, GetDistance(neighbor, endCell), currentNode.cellPos);
-                    
-                    if (!isInOpenSet) openSet.Add(neighbor, newNode);
-                    else openSet[neighbor] = newNode;
-                }
-            }
+            return false;
         }
 
-        return null;
+        openList.Clear();
+        closedNodes.Clear();
+
+        openList.Add(new Node(startPos, 0, GetDistance(startPos, targetPos), startPos));
+
+        while (openList.Count > 0)
+        {
+            int currentNodeIndex = 0;
+            for (int i = 1; i < openList.Count; i++)
+            {
+                if (openList[i].fCost < openList[currentNodeIndex].fCost ||
+                    (openList[i].fCost == openList[currentNodeIndex].fCost && openList[i].hCost < openList[currentNodeIndex].hCost))
+                {
+                    currentNodeIndex = i;
+                }
+            }
+
+            Node currentNode = openList[currentNodeIndex];
+            openList.RemoveAt(currentNodeIndex);
+            closedNodes[currentNode.pos] = currentNode;
+
+            // 목표 도달
+            if (currentNode.pos == targetPos)
+            {
+                RetracePath(startPos, currentNode, _pathResult);
+                return true;
+            }
+
+            for (int i = 0; i < neighborOffsets.Length; i++)
+            {
+                Vector3Int offset = neighborOffsets[i];
+                Vector3Int neighborPos = currentNode.pos + offset;
+
+                // 1. 기본 이동 가능 여부 및 방문 여부 확인
+                if (!tilemapDataProvider.IsWalkable(neighborPos) || closedNodes.ContainsKey(neighborPos))
+                {
+                    continue;
+                }
+
+                // 2. 이동 경로 양 옆 타일 체크 (좁은 길 통과 제한)
+                Vector3Int side1, side2;
+                if (offset.x != 0 && offset.y != 0) // 대각선 이동 시 (1,1) 등
+                {
+                    // 양 옆은 직교 방향 타일
+                    side1 = currentNode.pos + new Vector3Int(offset.x, 0, 0);
+                    side2 = currentNode.pos + new Vector3Int(0, offset.y, 0);
+                }
+                else if (offset.x != 0) // 가로 이동 시 (1,0) 등
+                {
+                    // 양 옆은 세로 방향 대각선 타일
+                    side1 = currentNode.pos + new Vector3Int(offset.x, 1, 0);
+                    side2 = currentNode.pos + new Vector3Int(offset.x, -1, 0);
+                }
+                else // 세로 이동 시 (0,1) 등
+                {
+                    // 양 옆은 가로 방향 대각선 타일
+                    side1 = currentNode.pos + new Vector3Int(1, offset.y, 0);
+                    side2 = currentNode.pos + new Vector3Int(-1, offset.y, 0);
+                }
+
+                // 양 옆 타일 중 하나라도 갈 수 없으면, 갈 수 없음.
+                if (!tilemapDataProvider.IsWalkable(side1) || !tilemapDataProvider.IsWalkable(side2))
+                {
+                    continue;
+                }
+
+                // 3. 방향 전환 페널티 (직진 선호 로직)
+                int turnPenalty = 0;
+                if (currentNode.pos != startPos)
+                {
+                    Vector3Int previousDir = currentNode.pos - currentNode.parentPos;
+                    if (previousDir != offset)
+                    {
+                        // 방향이 바뀌면 약간의 비용(예: 직교 이동의 절반 수준)을 추가하여 
+                        // 거리가 같다면 꺾이지 않는 경로를 우선 선택하게 함
+                        turnPenalty = 5; 
+                    }
+                }
+
+                int newMovementCostToNeighbor = currentNode.gCost + GetDistance(currentNode.pos, neighborPos) + turnPenalty;
+                int openIndex = FindInOpenList(neighborPos);
+
+
+                if (openIndex == -1)
+                {
+                    openList.Add(new Node(neighborPos, newMovementCostToNeighbor, GetDistance(neighborPos, targetPos), currentNode.pos));
+                }
+                else if (newMovementCostToNeighbor < openList[openIndex].gCost)
+                {
+                    // 더 짧은 경로를 찾은 경우 업데이트
+                    openList[openIndex] = new Node(neighborPos, newMovementCostToNeighbor, GetDistance(neighborPos, targetPos), currentNode.pos);
+                }
+            }
+
+            // 성능 저하 방지를 위한 최대 탐색 수 제한
+            if (closedNodes.Count > 1000) break;
+        }
+
+        return false;
     }
 
-    // // 프라이빗 로직 메서드
-
-    private Node GetLowestFCostNode()
+    private int FindInOpenList(Vector3Int _pos)
     {
-        Node lowestNode = default;
-        int minFCost = int.MaxValue;
-
-        foreach (var kvp in openSet)
+        for (int i = 0; i < openList.Count; i++)
         {
-            if (kvp.Value.fCost < minFCost)
-            {
-                minFCost = kvp.Value.fCost;
-                lowestNode = kvp.Value;
-            }
-            else if (kvp.Value.fCost == minFCost)
-            {
-                if (kvp.Value.hCost < lowestNode.hCost)
-                {
-                    lowestNode = kvp.Value;
-                }
-            }
+            if (openList[i].pos == _pos) return i;
         }
-
-        return lowestNode;
-    }
-
-    private void GetNeighbors(Vector3Int _cell)
-    {
-        neighbors.Clear();
-        // 상하좌우 및 대각선 8방향
-        for (int x = -1; x <= 1; x++)
-        {
-            for (int y = -1; y <= 1; y++)
-            {
-                if (x == 0 && y == 0) continue;
-
-                Vector3Int neighborPos = new Vector3Int(_cell.x + x, _cell.y + y, 0);
-                if (tilemapDataProvider.IsWalkable(neighborPos))
-                {
-                    neighbors.Add(neighborPos);
-                }
-            }
-        }
+        return -1;
     }
 
     private int GetDistance(Vector3Int _a, Vector3Int _b)
@@ -172,19 +188,19 @@ public class PathFindComponent : MonoBehaviour
         int dstX = Mathf.Abs(_a.x - _b.x);
         int dstY = Mathf.Abs(_a.y - _b.y);
 
-        if (dstX > dstY) return 14 * dstY + 10 * (dstX - dstY);
+        if (dstX > dstY)
+            return 14 * dstY + 10 * (dstX - dstY);
         return 14 * dstX + 10 * (dstY - dstX);
     }
 
-    private List<Vector3> RetracePath(Vector3Int _startCell, Node _endNode)
+    private void RetracePath(Vector3Int _startPos, Node _endNode, List<Vector3> _pathResult)
     {
-        Node curr = _endNode;
-        while (curr.cellPos != _startCell)
+        Node currentNode = _endNode;
+        while (currentNode.pos != _startPos)
         {
-            finalPath.Add(tilemapDataProvider.CellToWorld(curr.cellPos));
-            curr = closedSet[curr.parentPos];
+            _pathResult.Add(tilemapDataProvider.CellToWorld(currentNode.pos));
+            currentNode = closedNodes[currentNode.parentPos];
         }
-        finalPath.Reverse();
-        return finalPath;
+        _pathResult.Reverse();
     }
 }

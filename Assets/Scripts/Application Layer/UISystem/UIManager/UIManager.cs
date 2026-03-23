@@ -10,6 +10,10 @@ public class UIManager : MonoBehaviour
     protected Transform overlayLayerRoot;
     protected Transform tooltipLayerRoot;
 
+    protected Transform worldPopupLayerRoot;
+    protected Transform worldOverlayLayerRoot;
+    protected Transform worldTooltipLayerRoot;
+
     [Header("UIView Prefab")]
     [SerializeField] private List<UIView> viewPrefabs = new List<UIView>();
 
@@ -17,13 +21,17 @@ public class UIManager : MonoBehaviour
 
     private Dictionary<Type, UIView> instanceByType = new Dictionary<Type, UIView>();
 
-    public void SceneChanged(CanvasRoot canvasRoot)
+    public void SceneChanged(CanvasRoot canvasRoot,CanvasRoot worldCanvasRoot)
     {
         CloseAll();
 
         popupLayerRoot = canvasRoot.popupLayerRoot;
         overlayLayerRoot = canvasRoot.overlayLayerRoot;
         tooltipLayerRoot = canvasRoot.tooltipLayerRoot;
+
+        worldPopupLayerRoot = worldCanvasRoot.popupLayerRoot;
+        worldOverlayLayerRoot = worldCanvasRoot.overlayLayerRoot;
+        worldTooltipLayerRoot = worldCanvasRoot.tooltipLayerRoot;
     }
 
     public void Initialize(InputManager _inputManager)
@@ -104,7 +112,7 @@ public class UIManager : MonoBehaviour
             return null;
         }
 
-        Transform parent = GetLayerRoot(prefab.Layer);
+        Transform parent = GetLayerRoot(prefab.Layer,prefab.bWorld);
 
         UIView instance = Instantiate(prefab, parent);
         instance.gameObject.name = $"{prefab.gameObject.name}_Instance";
@@ -115,13 +123,22 @@ public class UIManager : MonoBehaviour
         return (T)instance;
     }
 
-    private Transform GetLayerRoot(UILayer layer)
+    private Transform GetLayerRoot(UILayer layer,bool bWorld)
     {
+        if(bWorld == false)
         switch (layer)
         {
             case UILayer.Popup: return popupLayerRoot;
             case UILayer.Overlay: return overlayLayerRoot;
             case UILayer.Tooltip: return tooltipLayerRoot;
+            default: return default;
+        }
+        else
+        switch (layer)
+        {
+            case UILayer.Popup: return worldPopupLayerRoot;
+            case UILayer.Overlay: return worldOverlayLayerRoot;
+            case UILayer.Tooltip: return worldTooltipLayerRoot;
             default: return default;
         }
     }

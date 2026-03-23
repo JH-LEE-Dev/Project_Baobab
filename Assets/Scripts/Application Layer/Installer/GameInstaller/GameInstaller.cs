@@ -44,17 +44,17 @@ public class GameInstaller : MonoBehaviour
 
 
 
-        cameraManager.Initialize(signalHub,inputManager);
+        cameraManager.Initialize(signalHub, inputManager);
+        environmentSystem.Initialize(signalHub, unitLogicManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
         teleportManager.Initialize(signalHub, bootStrapProvider);
         townSystem.Initialize(signalHub, environmentSystem);
         inDungeonSystem.Initialize(signalHub, environmentSystem);
-        environmentSystem.Initialize(signalHub,unitLogicManager);
         inventoryManager.Initialize();
-        gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager,inventoryManager,inDungeonSystem.inDungeonObjectManager);
+        gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager);
 
 
-        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager,inventoryManager);
+        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);
 
         unitSystem.CreateCharacter();
     }
@@ -63,7 +63,7 @@ public class GameInstaller : MonoBehaviour
     {
         cameraManager.ResetCamera();
 
-        if(_sceneChangeData.currentScene == SceneType.Dungeon)
+        if (_sceneChangeData.currentScene == SceneType.Dungeon)
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
         else
             townSystem.StartTownSystem(_sceneChangeData);

@@ -47,7 +47,7 @@ public class Animal : MonoBehaviour
         pathFindComponent = GetComponentInChildren<PathFindComponent>();
 
         shadowObject.Initialize();
-        pathFindComponent.Initialize(environmentProvider.tilemapDataProvider);
+        pathFindComponent.Initialize(environmentProvider.tilemapDataProvider, environmentProvider.pathfindGridProvider);
 
         if (shadowSensor != null)
         {

@@ -5,7 +5,7 @@ using UnityEngine.Pool;
 public class InventoryManager : MonoBehaviour, IInventory
 {
     // 내부 의존성
-    [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.INVENTORYSLOT_CNT_MAX);
+    [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
     
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
@@ -17,7 +17,7 @@ public class InventoryManager : MonoBehaviour, IInventory
         // 1. 기존 슬롯의 데이터들을 풀로 반환하고 슬롯 초기화
         if (inventorySlots.Count == 0)
         {
-            for (int i = 0; i < SYSTEM_VAR.INVENTORYSLOT_CNT_MAX; i++)
+            for (int i = 0; i < SYSTEM_VAR.MAX_INVENTORY_CNT; i++)
             {
                 inventorySlots.Add(new InventorySlot());
             }
@@ -136,9 +136,18 @@ public class InventoryManager : MonoBehaviour, IInventory
         }
     }
 
-    public void ItemDeleted(IItemData _itemData)
+    public void ItemDeleted(IInventorySlot _inventorySlot)
     {
-        // 필요 시 구현
+        if (_inventorySlot == null) return;
+
+        if (_inventorySlot is InventorySlot slot)
+        {
+            if (slot.itemData != null)
+            {
+                ReleaseToPool(slot.itemData);
+            }
+            slot.Setup(null, 0);
+        }
     }
 
     public List<InventorySlot> GetInventorySlots()

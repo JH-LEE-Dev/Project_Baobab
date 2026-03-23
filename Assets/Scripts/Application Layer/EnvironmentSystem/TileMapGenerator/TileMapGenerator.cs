@@ -47,7 +47,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private List<int> innerEdgesList = new List<int>(5000);
     private List<Vector3> grassPositions = new List<Vector3>(5000);
     private List<Vector3> walkablePositions = new List<Vector3>(22500);
-    private Dictionary<Vector3, int> positionToIndex = new Dictionary<Vector3, int>(22500);
+    private Dictionary<Vector3Int, int> positionToIndex = new Dictionary<Vector3Int, int>(22500);
     private Queue<int> bfsQueue = new Queue<int>(22500);
 
     private int playerIdx = -1;
@@ -106,8 +106,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     public bool IsWalkable(Vector3Int _cellPos)
     {
-        Vector3 worldPos = CellToWorld(_cellPos);
-        return positionToIndex.ContainsKey(worldPos);
+        return positionToIndex.ContainsKey(_cellPos);
     }
 
     public Vector3Int WorldToCell(Vector3 _worldPos)
@@ -136,16 +135,17 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         collisionTilemap.SetTile(cellPos, treeCollisionTile);
 
         // O(1) Remove using index mapping
-        if (positionToIndex.TryGetValue(_worldPos, out int index))
+        if (positionToIndex.TryGetValue(cellPos, out int index))
         {
             int lastIdx = walkablePositions.Count - 1;
             Vector3 lastPos = walkablePositions[lastIdx];
+            Vector3Int lastCellPos = WorldToCell(lastPos);
 
             walkablePositions[index] = lastPos;
-            positionToIndex[lastPos] = index;
+            positionToIndex[lastCellPos] = index;
 
             walkablePositions.RemoveAt(lastIdx);
-            positionToIndex.Remove(_worldPos);
+            positionToIndex.Remove(cellPos);
         }
     }
 
@@ -159,9 +159,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
         collisionTilemap.SetTile(cellPos, null);
 
-        if (!positionToIndex.ContainsKey(_worldPos))
+        if (!positionToIndex.ContainsKey(cellPos))
         {
-            positionToIndex[_worldPos] = walkablePositions.Count;
+            positionToIndex[cellPos] = walkablePositions.Count;
             walkablePositions.Add(_worldPos);
         }
     }
@@ -350,7 +350,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             else
             {
                 Vector3 pos = GetWorldPos(i);
-                positionToIndex[pos] = walkablePositions.Count;
+                Vector3Int cellPos = new Vector3Int(i % width, i / width, 0);
+                
+                positionToIndex[cellPos] = walkablePositions.Count;
                 walkablePositions.Add(pos);
 
                 if (v < sandT)

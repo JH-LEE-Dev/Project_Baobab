@@ -50,4 +50,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIView_Unit
   layer: 2
   startHidden: 1
+  bWorld: 1
   uiRoot: {fileID: 5973435824668062020}
