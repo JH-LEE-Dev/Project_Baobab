@@ -8,46 +8,46 @@ public class HUD_EquipmentItem : MonoBehaviour
     private Image mainImg;
     private Image subImg;
     private TMP_Text srcText;
+    private EquipmentSpriteData spriteData;
 
-    private const string imgFolderPath = "Assets/Graphics/HUD/Equipment/";
-    private const string ammoStr = "_Ammo";
-
-    public void Initialize()
+    public void Initialize(EquipmentSpriteData _spriteData)
     {
-        mainImg = GetComponentInChildren<Image>();
-        subImg = GetComponentInChildren<Image>();
+        spriteData = _spriteData;
+        
+        Image[] imgs = GetComponentsInChildren<Image>();
+        if (imgs.Length >= 2)
+        {
+            mainImg = imgs[0];
+            subImg = imgs[1];
+        }
+        else if (imgs.Length == 1)
+        {
+            mainImg = imgs[0];
+        }
+
         srcText = GetComponentInChildren<TMP_Text>();
-
-        ChangeImage(EquipmentType.Hatchet);
-    }
-
-    public void OnDestroy()
-    {
-
-    }
-
-    public void OnShow()
-    {
-        
-    }
-
-    public void OnHide()
-    {
-        
     }
 
     public void ChangeImage(EquipmentType _inType)
     {
-        if (null == mainImg)
+        if (null == spriteData || null == mainImg)
             return;
 
-        Sprite newSprite = GlobalUI.GetSpritefromPath(imgFolderPath, _inType.ToString());
-        if (null == newSprite)
-            return;
+        if (spriteData.TryGetSprites(_inType, out Sprite main, out Sprite sub))
+        {
+            mainImg.sprite = main;
+            mainImg.enabled = (null != main);
 
-        mainImg.sprite = newSprite;
+            if (sub != null)
+            {
+                subImg.sprite = sub;
+                SetSubImgVisibility(true);
+            }
+            else
+                SetSubImgVisibility(false);
+        }
 
-        CheckUsedAmmo(_inType);
+        CheckVisibilityByEquipmentType(_inType);
     }
 
     public void ChangeText(int cnt)
@@ -58,31 +58,14 @@ public class HUD_EquipmentItem : MonoBehaviour
         srcText.text = cnt.ToString(); 
     }
 
-    private void CheckUsedAmmo(EquipmentType _inType)
+    private void CheckVisibilityByEquipmentType(EquipmentType _inType)
     {
-        switch (_inType)
-        {
-            case EquipmentType.Rifle:
-                SetSubImgVisibility(true);
-                SetTextVisibility(true);
-                break;
-
-            default:
-                SetSubImgVisibility(false);
-                SetTextVisibility(false);
-                return;
-        }
-
-        if (null == subImg)
-            return;
-
-        string ammoName = _inType.ToString() + ammoStr;
-
-        Sprite newSprite = GlobalUI.GetSpritefromPath(imgFolderPath, ammoName);
-        if (null == newSprite)
-            return;
+        bool needsAmmo = (_inType == EquipmentType.Rifle);
         
-        subImg.sprite = newSprite;
+        SetTextVisibility(needsAmmo);
+
+        if (!needsAmmo) 
+            SetSubImgVisibility(false);
     }
 
     public void SetTextVisibility(bool isTrigger) => srcText?.gameObject.SetActive(isTrigger);

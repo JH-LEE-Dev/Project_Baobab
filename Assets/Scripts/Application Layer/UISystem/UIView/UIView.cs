@@ -7,6 +7,7 @@ public abstract class UIView : MonoBehaviour
     [Header("UIView Settings")]
     [SerializeField] private UILayer layer = UILayer.None;
     [SerializeField] private bool startHidden = true;
+    public bool bWorld = false;
 
     public UILayer Layer => layer;
 

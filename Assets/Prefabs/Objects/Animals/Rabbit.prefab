@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4267000666182763687}
   - component: {fileID: 6321879945347207353}
   - component: {fileID: 5139410583856100867}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: ShadowSensor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -91,7 +91,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8195625567413121415}
   - component: {fileID: 5272607701980620956}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: PathFindComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -136,7 +136,7 @@ GameObject:
   - component: {fileID: 4818910548906014969}
   - component: {fileID: 941508293144650439}
   - component: {fileID: 2771727189475080246}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Shadow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -241,7 +241,7 @@ GameObject:
   - component: {fileID: 8430726926679011216}
   - component: {fileID: 2422511412775729993}
   - component: {fileID: 6606156975207352883}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Rabbit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -356,7 +356,7 @@ GameObject:
   - component: {fileID: 5166629726069554192}
   - component: {fileID: 3992563530123070800}
   - component: {fileID: 6282789654599482605}
-  m_Layer: 8
+  m_Layer: 0
   m_Name: Animator
   m_TagString: Untagged
   m_Icon: {fileID: 0}

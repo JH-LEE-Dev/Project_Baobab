@@ -9,6 +9,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     public ITilemapDataProvider tilemapDataProvider => tileMapGenerator;
 
+    public IPathfindGridProvider pathfindGridProvider => pathfindGridManager;
+
     //외부 의존성
     private SignalHub signalHub;
 
@@ -18,6 +20,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private TimeController timeController;
     private GroundDataManager groundDataManager;
     private WeatherManager weatherManager;
+    private PathfindGridManager pathfindGridManager;
+
 
     public void Initialize(SignalHub _signalHub, IUnitLogicProvider _unitLogicProvider)
     {
@@ -29,6 +33,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         timeController = GetComponentInChildren<TimeController>();
         groundDataManager = GetComponentInChildren<GroundDataManager>();
         weatherManager = GetComponentInChildren<WeatherManager>();
+        pathfindGridManager =GetComponentInChildren<PathfindGridManager>();
 
         if (timeController != null)
             timeController.Initialize();

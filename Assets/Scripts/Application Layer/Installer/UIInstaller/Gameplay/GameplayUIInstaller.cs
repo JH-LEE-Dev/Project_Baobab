@@ -1,4 +1,5 @@
 using UnityEngine;
+using PresentationLayer.UISystem.View;
 
 public class GameplayUIInstaller : MonoBehaviour
 {
@@ -16,11 +17,15 @@ public class GameplayUIInstaller : MonoBehaviour
 
     [Header("UI Canvas/CanvasRoot Objects")]
     [SerializeField] private CanvasRoot canvasRootPrefab;
+    [SerializeField] private CanvasRoot worldCanvasRootPrefab;
     [SerializeField] private Canvas canvasPrefab;
+    [SerializeField] private Canvas worldCanvasPrefab;
 
     //Gameplay Scene
     private CanvasRoot canvasRoot;
+    private CanvasRoot worldCanvasRoot;
     private Canvas canvas;
+    private Canvas worldCanvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
         InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider)
@@ -55,11 +60,17 @@ public class GameplayUIInstaller : MonoBehaviour
         //Transform screenLayerRoot = Instantiate(gameplayLevelRoots_Prefab.screenLayerRoot, canvas_GamplayScene.transform);
         //Transform tooltipLayerRoot = Instantiate(gameplayLevelRoots_Prefab.tooltipLayerRoot, canvas_GamplayScene.transform);
 
+        Transform worldOverlayRoot = Instantiate(worldCanvasRootPrefab.overlayLayerRoot, worldCanvas.transform);
+
         SetAnchorToCanvas(overlayRoot);
 
         CanvasRoot tempRoot = new CanvasRoot();
         tempRoot.overlayLayerRoot = overlayRoot;
-        uiManager.SceneChanged(tempRoot);
+
+        CanvasRoot worldTempRoot = new CanvasRoot();
+        worldTempRoot.overlayLayerRoot = worldOverlayRoot;
+
+        uiManager.SceneChanged(tempRoot,worldTempRoot);
 
         OpenUIView();
     }
@@ -67,6 +78,13 @@ public class GameplayUIInstaller : MonoBehaviour
     public void SetupCanvas()
     {
         canvas = Instantiate(canvasPrefab,transform);
+        worldCanvas = Instantiate(worldCanvasPrefab,transform);
+
+        var worldCanvasEnabler = worldCanvas.GetComponent<WorldCanvasEnabler>();
+        if (worldCanvasEnabler != null)
+        {
+            worldCanvasEnabler.Initialize();
+        }
     }
 
     private void OpenUIView()

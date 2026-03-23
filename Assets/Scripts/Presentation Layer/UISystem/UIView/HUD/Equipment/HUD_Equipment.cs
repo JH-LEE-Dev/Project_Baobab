@@ -5,35 +5,30 @@ public class HUD_Equipment : MonoBehaviour
     private HUD_EquipmentField equipmentField;
     private HUD_EquipmentItem equipmentItem;
 
+    [SerializeField] private EquipmentSpriteData spriteData;
+
     public void Initialize()
     {
         equipmentField = GetComponentInChildren<HUD_EquipmentField>();
         equipmentField?.Initialize();
 
         equipmentItem = GetComponentInChildren<HUD_EquipmentItem>();
-
-        if (null != equipmentItem)
-        {
-            equipmentItem.Initialize();
-        }
+        equipmentItem?.Initialize(spriteData);
     }
 
     public void OnDestroy()
     {
         equipmentField?.OnDestroy();
-        equipmentItem?.OnDestroy();
     }
 
     public void OnShow()
     {
         equipmentField?.OnShow();
-        equipmentItem?.OnShow();
     }
 
     public void OnHide()
     {
         equipmentField?.OnHide();
-        equipmentItem?.OnHide();
     }
 
     public void UpdateAmmoCount(int cnt) => equipmentItem?.ChangeText(cnt);
