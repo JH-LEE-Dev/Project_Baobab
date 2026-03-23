@@ -1,14 +1,11 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-using VFolders.Libs;
 
 public class UIView_Inventory : UIView
 {
-    private IInventory inventory;
-
+    //외부 의존성
     [Header("UI References")]
-    [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
+    [SerializeField] private Transform uiRoot; 
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject uiPopupPrefab;
 
@@ -16,18 +13,18 @@ public class UIView_Inventory : UIView
     [SerializeField] private int startSlotCount = 2;
     [SerializeField] private List<UI_InventorySlot> inventorySlots;
 
-    private UI_InventoryPopup invPopup;
     [SerializeField] private float popupYOffset = 30.0f;
 
-    Action<IInventorySlot> deleteAction;
-
+    //내부 의존성
+    private IInventory inventory;
+    private UI_InventoryPopup invPopup;
     private const int defaultPopupCap = 12;
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
 
-        inventorySlots.Clear(); // Ensure the list starts fresh, ignoring any editor-assigned slots.
+        inventorySlots.Clear();
         UpdateMaxSlotCount(startSlotCount);
         Init_InventoryPopup();
     }
@@ -37,37 +34,11 @@ public class UIView_Inventory : UIView
         inventory = _inventory;
     }
 
-    public override void OnDestroy()
+    public void UpdateMaxSlotCount(int _cnt)
     {
-        foreach (UI_InventorySlot slot in inventorySlots)
-        {
-            slot.deleteSlot -= SendDeleteItem;
-            slot.enterSlot -= EnterPopup;
-            slot.exitSlot -= ExitPopup;
-        }
+        int needCount = _cnt - inventorySlots.Count;
 
-        base.OnDestroy();
-    }
-
-    protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
-    {
-        base.OnShow();
-
-        InventoryShowEvent();
-    }
-
-    protected override void OnHide() //이 UI가 꺼졌을 때 호출 됨.
-    {
-        ExitPopup();
-
-        base.OnHide();
-    }
-
-    public void UpdateMaxSlotCount(int cnt)
-    {
-        int needCount = cnt - inventorySlots.Count;
-
-        while(0 < needCount--)
+        while (0 < needCount--)
         {
             UI_InventorySlot slot = Instantiate(uiSlotPrefab, this.transform).GetComponent<UI_InventorySlot>();
 
@@ -76,8 +47,8 @@ public class UIView_Inventory : UIView
 
             slot.Initialize();
 
-            slot.deleteSlot -= SendDeleteItem;
-            slot.deleteSlot += SendDeleteItem;
+            slot.deleteItem -= SendDeleteItem;
+            slot.deleteItem += SendDeleteItem;
 
             slot.enterSlot -= EnterPopup;
             slot.enterSlot += EnterPopup;
@@ -89,47 +60,12 @@ public class UIView_Inventory : UIView
         }
     }
 
-    private void Init_InventoryPopup()
-    {
-        if (null == uiPopupPrefab)
-            return;
-
-        invPopup = Instantiate(uiPopupPrefab, this.transform.parent).GetComponent<UI_InventoryPopup>();
-
-        if (null == invPopup)
-            return;
-
-        invPopup.Initialize(defaultPopupCap);
-        invPopup.gameObject.SetActive(false);
-    }
-
-#region  [ Hover Event ]
-    private void EnterPopup(IItemData itemData, LogStateCount[] _logStateCounts, Vector2 position)
-    {
-        ILogItemData logItemData = itemData as ILogItemData;
-        if (null == invPopup || null == logItemData)
-            return;
-
-        invPopup.gameObject.SetActive(true);
-        
-        position.y += popupYOffset;
-        invPopup.ShowItems(logItemData, _logStateCounts, position);
-    }
-
-    private void ExitPopup()
-    {
-        if (null == invPopup)
-            return;
-
-        invPopup.InvisibleSlots();
-        invPopup.gameObject.SetActive(false);
-    }   
-#endregion
-
     public void SendDeleteItem(IInventorySlot _inData)
     {
-        deleteAction.Invoke(_inData);
-        UpdateSlots(inventory.inventorySlots);
+        if (null == inventory)
+            return;
+
+        UpdateSlots(inventory.inventorySlots); 
     }
 
     public void InventoryShowEvent()
@@ -137,7 +73,8 @@ public class UIView_Inventory : UIView
         if (null == inventory)
             return;
 
-        var items = inventory.inventorySlots;
+        IReadOnlyList<IInventorySlot> items = inventory.inventorySlots;
+        
         if (null == items)
             return;
 
@@ -157,7 +94,7 @@ public class UIView_Inventory : UIView
             {
                 IInventorySlot item = _items[i];
 
-                if (!slot.gameObject.activeSelf)
+                if (false == slot.gameObject.activeSelf)
                     slot.gameObject.SetActive(true);
 
                 slot.UpdateBindSlotData(item);
@@ -165,12 +102,80 @@ public class UIView_Inventory : UIView
             }
             else
             {
-                if (slot.gameObject.activeSelf)
+                if (true == slot.gameObject.activeSelf)
                 {
                     slot.ResetData();
                     slot.gameObject.SetActive(false);
                 }
             }
+        }
+    }
+
+    private void Init_InventoryPopup()
+    {
+        if (null == uiPopupPrefab)
+            return;
+
+        invPopup = Instantiate(uiPopupPrefab, this.transform.parent).GetComponent<UI_InventoryPopup>();
+
+        if (null == invPopup)
+            return;
+
+        invPopup.Initialize(defaultPopupCap);
+        invPopup.gameObject.SetActive(false);
+    }
+
+#region  [ Hover Event ]
+    private void EnterPopup(IItemData _itemData, LogStateCount[] _logStateCounts, Vector2 _position)
+    {
+        ILogItemData logItemData = _itemData as ILogItemData;
+        
+        if (null == invPopup || null == logItemData)
+            return;
+
+        invPopup.gameObject.SetActive(true);
+        
+        _position.y += popupYOffset;
+        invPopup.ShowItems(logItemData, _logStateCounts, _position);
+    }
+
+    private void ExitPopup()
+    {
+        if (null == invPopup)
+            return;
+
+        invPopup.InvisibleSlots();
+        invPopup.gameObject.SetActive(false);
+    }   
+#endregion
+
+    // 유니티 이벤트 함수
+    protected override void OnShow() 
+    {
+        base.OnShow();
+
+        InventoryShowEvent();
+    }
+
+    protected override void OnHide() 
+    {
+        ExitPopup();
+
+        base.OnHide();
+    }
+
+    public override void OnDestroy()
+    {
+        for (int i = 0; i < inventorySlots.Count; i++)
+        {
+            UI_InventorySlot slot = inventorySlots[i];
+            
+            if (null == slot)
+                continue;
+
+            slot.deleteItem -= SendDeleteItem;
+            slot.enterSlot -= EnterPopup;
+            slot.exitSlot -= ExitPopup;
         }
     }
 }

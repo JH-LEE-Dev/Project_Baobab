@@ -6,7 +6,13 @@ using UnityEngine.UI;
 
 public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    [Header("Main Settings")]
+    //외부 의존성
+    [SerializeField] private Image uiImage;
+    public Action<IItemData, LogStateCount[], Vector2> enterSlot;
+    public Action exitSlot;
+    public Action<IInventorySlot> deleteItem;
+
+    //내부 의존성
     private IItemData showItemData;
     public IItemData ShowItemData { get { return showItemData; } }
 
@@ -15,29 +21,17 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private int showCnt = 0;
     public int ShowCnt { get { return showCnt; } }
     
-    [SerializeField] private Image uiImage;
     private TMP_Text countText;
-
-    public Action<IItemData, LogStateCount[], Vector2> enterSlot;
-    public Action exitSlot;
-    public Action<IInventorySlot> deleteSlot;
 
     public void Initialize()
     {
         if (null != uiImage)
             uiImage.enabled = false;
         
-        if (null != uiImage && uiImage.sprite != null && uiImage.sprite.texture.isReadable)
+        if (null != uiImage && null != uiImage.sprite && uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
         countText = gameObject.GetComponentInChildren<TMP_Text>();
-    }
-
-    public virtual void OnPointerClick(PointerEventData eventData)
-    {
-        Debug.Log("아이템 삭제 요청");
-
-        deleteSlot?.Invoke(invSlotRef);
     }
 
     public void ResetData()
@@ -47,19 +41,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         invSlotRef = null;
         showItemData = null;
-    }
-
-    public void OnPointerEnter(PointerEventData eventData)
-    {
-        Debug.Log("슬롯에 마우스 올라옴");
-
-        enterSlot?.Invoke(showItemData, invSlotRef?.logStateCounts, uiImage.rectTransform.position);
-    }
-
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        Debug.Log("슬롯에 마우스 빠짐");
-        exitSlot?.Invoke();
     }
 
     public void UpdateItemCount(int _newCnt)
@@ -76,8 +57,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == uiImage || uiImage.sprite == _sprite)
             return;
 
+        uiImage.enabled = true;
         uiImage.sprite = _sprite;
-        uiImage.enabled = null != _sprite;
     }
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)
@@ -88,7 +69,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
 
-        UpdateImage(showItemData?.sprite);
+        UpdateImage(showItemData.sprite);
     }
 
     public void DisableRayCast()
@@ -97,5 +78,30 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
 
         uiImage.raycastTarget = false;
+    }
+
+    // 유니티 이벤트 함수 및 인터페이스 구현
+    public virtual void OnPointerClick(PointerEventData _eventData)
+    {
+        Debug.Log("아이템 삭제 요청");
+
+        if (null != deleteItem)
+            deleteItem.Invoke(invSlotRef);
+    }
+
+    public void OnPointerEnter(PointerEventData _eventData)
+    {
+        Debug.Log("슬롯에 마우스 올라옴");
+
+        if (null != enterSlot)
+            enterSlot.Invoke(showItemData, invSlotRef?.logStateCounts, uiImage.rectTransform.position);
+    }
+
+    public void OnPointerExit(PointerEventData _eventData)
+    {
+        Debug.Log("슬롯에 마우스 빠짐");
+
+        if (null != exitSlot)
+            exitSlot.Invoke();
     }
 }
