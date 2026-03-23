@@ -2,10 +2,11 @@ using UnityEngine;
 using System;
 using DG.Tweening;
 
-public class TreeObj : MonoBehaviour, IDamageable
+public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
 {
     //이벤트
     public event Action<TreeObj> TreeDeadEvent;
+    public event Action<TreeObj> TreeGetHitEvent;
 
     //외부 의존성
     [SerializeField] private Shadow shadowObject;
@@ -18,6 +19,12 @@ public class TreeObj : MonoBehaviour, IDamageable
     private SpriteRenderer animatorSr;        // 애니메이터 SpriteRenderer (그림자 동기화용)
     private EHealthComponent healthComponent;
     public TreeData treeData { get; private set; }
+
+    public IHealthComponent health => healthComponent;
+
+    private bool bDead = false;
+    bool ITreeObj.bDead => bDead;
+
 
     public void Initialize(IEnvironmentProvider _environmentProvider, TreeData _initData)
     {
@@ -42,11 +49,14 @@ public class TreeObj : MonoBehaviour, IDamageable
 
     public void ResetTree()
     {
+        bDead = false;
         healthComponent.Reset();
     }
 
     public void TakeDamage(float _damage)
     {
+        TreeGetHitEvent?.Invoke(this);
+        
         healthComponent.DecreaseHealth(_damage);
 
         if (sr != null)
@@ -102,6 +112,12 @@ public class TreeObj : MonoBehaviour, IDamageable
 
     private void TreeIsDeadEvent()
     {
+        bDead = true;
         TreeDeadEvent?.Invoke(this);
+    }
+
+    public Transform GetTransform()
+    {
+        return transform;
     }
 }

@@ -27,182 +27,374 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private TileBase mountainTile;
     [SerializeField] private TileBase treeCollisionTile;
 
+    // // 외부 의존성
     private Tilemap groundTilemap;
     private Tilemap collisionTilemap;
     private Grid grid;
 
-    private List<int> largestBlob = new List<int>();
-    private List<Vector3> grassPositions = new List<Vector3>();
+    // // 내부 의존성 및 캐싱 필드
     private float[] noiseValues;
-    private int playerIdx = -1, portalIdx = -1;
+    private TileBase[] groundTiles;
+    private TileBase[] collisionTiles;
+    private bool[] visited;
+    private bool[] isShoreline;
+    private float halfCellY;
+
+    // // 재사용 컬렉션 (GC 최소화)
+    private List<int> largestBlob = new List<int>(22500);
+    private List<int> currentBlob = new List<int>(22500);
+    private List<int> shorelineList = new List<int>(5000);
+    private List<int> innerEdgesList = new List<int>(5000);
+    private List<Vector3> grassPositions = new List<Vector3>(5000);
+    private List<Vector3> walkablePositions = new List<Vector3>(22500);
+    private Dictionary<Vector3, int> positionToIndex = new Dictionary<Vector3, int>(22500);
+    private Queue<int> bfsQueue = new Queue<int>(22500);
+
+    private int playerIdx = -1;
+    private int portalIdx = -1;
+
+    // // 퍼블릭 초기화 및 제어 메서드
 
     public void InitializeMapData()
     {
-        if (grid == null) grid = Instantiate(gridPrefab, transform.position, Quaternion.identity).GetComponent<Grid>();
-        Tilemap[] maps = grid.GetComponentsInChildren<Tilemap>();
-        foreach (var m in maps)
+        if (grid == null)
         {
-            if (m.name == "GroundTilemap") groundTilemap = m;
-            else if (m.name == "ColliderTilemap") collisionTilemap = m;
+            grid = Instantiate(gridPrefab, transform.position, Quaternion.identity).GetComponent<Grid>();
         }
-        noiseValues = new float[width * height];
+
+        halfCellY = grid.cellSize.y * 0.5f;
+
+        Tilemap[] maps = grid.GetComponentsInChildren<Tilemap>();
+        for (int i = 0; i < maps.Length; i++)
+        {
+            if (maps[i].name == "GroundTilemap") groundTilemap = maps[i];
+            else if (maps[i].name == "ColliderTilemap") collisionTilemap = maps[i];
+        }
+
+        int size = width * height;
+        noiseValues = new float[size];
+        groundTiles = new TileBase[size];
+        collisionTiles = new TileBase[size];
+        visited = new bool[size];
+        isShoreline = new bool[size];
+
         if (seed == 0) seed = UnityEngine.Random.Range(1, 100000);
     }
 
+    public void GenerateMap()
+    {
+        if (groundTilemap == null || collisionTilemap == null) return;
+
+        groundTilemap.ClearAllTiles();
+        collisionTilemap.ClearAllTiles();
+
+        GenerateNoiseMap();
+        RemoveIslands();
+        DetermineSpawns();
+        ApplyTiles();
+
+        TilemapGeneratedEvent?.Invoke(grassPositions);
+    }
+
     public Vector3 GetPlayerSpawnPosition() => GetWorldPos(playerIdx);
+
     public Vector3 GetPortalSpawnPosition() => GetWorldPos(portalIdx);
+
     public List<Vector3> GetGrassTileWorldPositions() => grassPositions;
+
+    public List<Vector3> GetWalkableTileWorldPositions() => walkablePositions;
+
+    public bool IsWalkable(Vector3Int _cellPos)
+    {
+        Vector3 worldPos = CellToWorld(_cellPos);
+        return positionToIndex.ContainsKey(worldPos);
+    }
+
+    public Vector3Int WorldToCell(Vector3 _worldPos)
+    {
+        if (groundTilemap == null) return Vector3Int.zero;
+        
+        Vector3 adjustedPos = _worldPos;
+        adjustedPos.y -= halfCellY;
+        return groundTilemap.WorldToCell(adjustedPos);
+    }
+
+    public Vector3 CellToWorld(Vector3Int _cellPos)
+    {
+        if (groundTilemap == null) return Vector3.zero;
+        return groundTilemap.GetCellCenterWorld(_cellPos) + new Vector3(0, halfCellY, 0);
+    }
 
     public void SetTreeCollisionTile(Vector3 _worldPos)
     {
         if (collisionTilemap == null || treeCollisionTile == null) return;
 
-        // GetWorldPos에서 추가된 Y 오프셋(cellSize.y * 0.5f)을 제거하여 정확한 셀 좌표를 얻습니다.
         Vector3 adjustedPos = _worldPos;
-        if (grid != null) adjustedPos.y -= grid.cellSize.y * 0.5f;
+        adjustedPos.y -= halfCellY;
 
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
         collisionTilemap.SetTile(cellPos, treeCollisionTile);
+
+        // O(1) Remove using index mapping
+        if (positionToIndex.TryGetValue(_worldPos, out int index))
+        {
+            int lastIdx = walkablePositions.Count - 1;
+            Vector3 lastPos = walkablePositions[lastIdx];
+
+            walkablePositions[index] = lastPos;
+            positionToIndex[lastPos] = index;
+
+            walkablePositions.RemoveAt(lastIdx);
+            positionToIndex.Remove(_worldPos);
+        }
     }
 
     public void ClearTreeCollisionTile(Vector3 _worldPos)
     {
         if (collisionTilemap == null) return;
 
-        // Y 오프셋을 보정하여 정확한 타일 위치의 충돌 타일을 제거합니다.
         Vector3 adjustedPos = _worldPos;
-        if (grid != null) adjustedPos.y -= grid.cellSize.y * 0.5f;
+        adjustedPos.y -= halfCellY;
 
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
         collisionTilemap.SetTile(cellPos, null);
+
+        if (!positionToIndex.ContainsKey(_worldPos))
+        {
+            positionToIndex[_worldPos] = walkablePositions.Count;
+            walkablePositions.Add(_worldPos);
+        }
     }
 
-    public void GenerateMap()
-    {
-        if (!groundTilemap || !collisionTilemap) return;
-        groundTilemap.ClearAllTiles();
-        collisionTilemap.ClearAllTiles();
+    // // 프라이빗 로직 메서드
 
-        // 1. 노이즈 생성
+    private void GenerateNoiseMap()
+    {
+        float invWidth = 1f / width;
+        float invHeight = 1f / height;
+
         for (int y = 0; y < height; y++)
         {
+            int rowOffset = y * width;
+            float yCoord = (y + 0.5f) * invHeight * scale + seed;
+            float ny = y * (y - 1f != 0 ? 1f / (height - 1f) : 1f) * 2f - 1f;
+
             for (int x = 0; x < width; x++)
             {
-                float val = Mathf.PerlinNoise((x + 0.5f) / width * scale + seed, (y + 0.5f) / height * scale + seed);
+                float xCoord = (x + 0.5f) * invWidth * scale + seed;
+                float val = Mathf.PerlinNoise(xCoord, yCoord);
+
                 if (useIslandPrevention)
                 {
-                    float nx = x / (width - 1f) * 2f - 1f, ny = y / (height - 1f) * 2f - 1f;
-                    val -= EvaluateFalloff(Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny)));
+                    float nx = x * (x - 1f != 0 ? 1f / (width - 1f) : 1f) * 2f - 1f;
+                    float dist = Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny));
+                    val -= EvaluateFalloff(dist);
                 }
-                noiseValues[x + y * width] = val;
+
+                noiseValues[x + rowOffset] = val;
             }
         }
+    }
 
-        RemoveIslands();
-        DetermineSpawns();
+    private void RemoveIslands()
+    {
+        int size = width * height;
+        Array.Clear(visited, 0, size);
+        largestBlob.Clear();
 
-        // 2. 타일 배치 및 Grass 좌표 수집
-        TileBase[] gArr = new TileBase[noiseValues.Length], cArr = new TileBase[noiseValues.Length];
-        grassPositions.Clear();
-        float sandT = waterThreshold + 0.1f, mountT = 0.7f;
+        ReadOnlySpan<int> dx = stackalloc int[] { 1, -1, 0, 0 };
+        ReadOnlySpan<int> dy = stackalloc int[] { 0, 0, 1, -1 };
 
-        for (int i = 0; i < noiseValues.Length; i++)
+        for (int i = 0; i < size; i++)
         {
-            float v = noiseValues[i];
-            if (v < waterThreshold) { cArr[i] = waterTile; }
-            else
+            if (noiseValues[i] < waterThreshold || visited[i]) continue;
+
+            currentBlob.Clear();
+            bfsQueue.Clear();
+
+            bfsQueue.Enqueue(i);
+            visited[i] = true;
+
+            while (bfsQueue.Count > 0)
             {
-                if (v < sandT) gArr[i] = sandTile;
-                else if (v < mountT)
+                int c = bfsQueue.Dequeue();
+                currentBlob.Add(c);
+
+                int cx = c % width;
+                int cy = c / width;
+
+                for (int j = 0; j < 4; j++)
                 {
-                    gArr[i] = grassTile;
-                    Vector3 pos = GetWorldPos(i);
-                    if ((pos - GetPortalSpawnPosition()).sqrMagnitude > 2.25f)
-                        grassPositions.Add(pos);
+                    int nx = cx + dx[j];
+                    int ny = cy + dy[j];
+
+                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
+                    {
+                        int ni = nx + ny * width;
+                        if (!visited[ni] && noiseValues[ni] >= waterThreshold)
+                        {
+                            visited[ni] = true;
+                            bfsQueue.Enqueue(ni);
+                        }
+                    }
                 }
-                else gArr[i] = mountainTile;
+            }
+
+            if (currentBlob.Count > largestBlob.Count)
+            {
+                largestBlob.Clear();
+                largestBlob.AddRange(currentBlob);
             }
         }
-        BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
-        groundTilemap.SetTilesBlock(b, gArr);
-        collisionTilemap.SetTilesBlock(b, cArr);
-        TilemapGeneratedEvent?.Invoke(grassPositions);
+
+        Array.Clear(visited, 0, size);
+        for (int i = 0; i < largestBlob.Count; i++)
+        {
+            visited[largestBlob[i]] = true;
+        }
+
+        for (int i = 0; i < size; i++)
+        {
+            if (noiseValues[i] >= waterThreshold && !visited[i])
+            {
+                noiseValues[i] = waterThreshold - 0.05f;
+            }
+        }
     }
 
     private void DetermineSpawns()
     {
-        bool[] isShoreline = new bool[width * height];
-        List<int> shoreline = new List<int>();
-        foreach (int i in largestBlob)
+        int size = width * height;
+        Array.Clear(isShoreline, 0, size);
+        shorelineList.Clear();
+        innerEdgesList.Clear();
+
+        for (int i = 0; i < largestBlob.Count; i++)
         {
-            int x = i % width, y = i / width;
+            int idx = largestBlob[i];
+            int x = idx % width;
+            int y = idx / width;
+
             if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1))
             {
-                isShoreline[i] = true;
-                shoreline.Add(i);
+                isShoreline[idx] = true;
+                shorelineList.Add(idx);
             }
         }
 
-        List<int> innerEdges = new List<int>();
-        int[] dx = { 1, -1, 0, 0 }, dy = { 0, 0, 1, -1 };
-        foreach (int i in largestBlob)
-        {
-            if (isShoreline[i]) continue;
+        ReadOnlySpan<int> dx = stackalloc int[] { 1, -1, 0, 0 };
+        ReadOnlySpan<int> dy = stackalloc int[] { 0, 0, 1, -1 };
 
-            int x = i % width, y = i / width;
+        for (int i = 0; i < largestBlob.Count; i++)
+        {
+            int idx = largestBlob[i];
+            if (isShoreline[idx]) continue;
+
+            int x = idx % width;
+            int y = idx / width;
+
             for (int j = 0; j < 4; j++)
             {
-                int nx = x + dx[j], ny = y + dy[j];
-                if (nx >= 0 && nx < width && ny >= 0 && ny < height && isShoreline[nx + ny * width])
+                int nx = x + dx[j];
+                int ny = y + dy[j];
+
+                if (nx >= 0 && nx < width && ny >= 0 && ny < height)
                 {
-                    innerEdges.Add(i);
-                    break;
+                    if (isShoreline[nx + ny * width])
+                    {
+                        innerEdgesList.Add(idx);
+                        break;
+                    }
                 }
             }
         }
 
-        if (innerEdges.Count > 0)
-            portalIdx = innerEdges[UnityEngine.Random.Range(0, innerEdges.Count)];
-        else if (shoreline.Count > 0)
-            portalIdx = shoreline[UnityEngine.Random.Range(0, shoreline.Count)];
+        if (innerEdgesList.Count > 0)
+        {
+            portalIdx = innerEdgesList[UnityEngine.Random.Range(0, innerEdgesList.Count)];
+        }
+        else if (shorelineList.Count > 0)
+        {
+            portalIdx = shorelineList[UnityEngine.Random.Range(0, shorelineList.Count)];
+        }
         else
+        {
             portalIdx = largestBlob.Count > 0 ? largestBlob[0] : -1;
+        }
 
         playerIdx = portalIdx;
     }
 
-    private bool IsWater(int x, int y) => x < 0 || x >= width || y < 0 || y >= height || noiseValues[x + y * width] < waterThreshold;
-
-    private Vector3 GetWorldPos(int i) => i < 0 ? Vector3.zero : groundTilemap.GetCellCenterWorld(new Vector3Int(i % width, i / width, 0)) + new Vector3(0, grid.cellSize.y * 0.5f, 0);
-
-    private void RemoveIslands()
+    private void ApplyTiles()
     {
-        bool[] vis = new bool[noiseValues.Length];
-        largestBlob.Clear();
-        for (int i = 0; i < noiseValues.Length; i++)
+        int size = width * height;
+        Array.Clear(groundTiles, 0, size);
+        Array.Clear(collisionTiles, 0, size);
+
+        grassPositions.Clear();
+        walkablePositions.Clear();
+        positionToIndex.Clear();
+
+        float sandT = waterThreshold + 0.1f;
+        float mountT = 0.7f;
+        Vector3 portalPos = GetPortalSpawnPosition();
+
+        for (int i = 0; i < size; i++)
         {
-            if (noiseValues[i] < waterThreshold || vis[i]) continue;
-            List<int> curr = new List<int>();
-            Queue<int> q = new Queue<int>();
-            q.Enqueue(i); vis[i] = true;
-            while (q.Count > 0)
+            float v = noiseValues[i];
+
+            if (v < waterThreshold)
             {
-                int c = q.Dequeue(); curr.Add(c);
-                int cx = c % width, cy = c / width;
-                int[] dx = { 1, -1, 0, 0 }, dy = { 0, 0, 1, -1 };
-                for (int j = 0; j < 4; j++)
+                collisionTiles[i] = waterTile;
+            }
+            else
+            {
+                Vector3 pos = GetWorldPos(i);
+                positionToIndex[pos] = walkablePositions.Count;
+                walkablePositions.Add(pos);
+
+                if (v < sandT)
                 {
-                    int nx = cx + dx[j], ny = cy + dy[j], ni = nx + ny * width;
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height && !vis[ni] && noiseValues[ni] >= waterThreshold)
-                    { vis[ni] = true; q.Enqueue(ni); }
+                    groundTiles[i] = sandTile;
+                }
+                else if (v < mountT)
+                {
+                    groundTiles[i] = grassTile;
+                    if ((pos - portalPos).sqrMagnitude > 2.25f)
+                    {
+                        grassPositions.Add(pos);
+                    }
+                }
+                else
+                {
+                    groundTiles[i] = mountainTile;
                 }
             }
-            if (curr.Count > largestBlob.Count) largestBlob = curr;
         }
-        vis = new bool[noiseValues.Length];
-        foreach (int i in largestBlob) vis[i] = true;
-        for (int i = 0; i < noiseValues.Length; i++) if (noiseValues[i] >= waterThreshold && !vis[i]) noiseValues[i] = waterThreshold - 0.05f;
+
+        BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
+        groundTilemap.SetTilesBlock(b, groundTiles);
+        collisionTilemap.SetTilesBlock(b, collisionTiles);
     }
 
-    private float EvaluateFalloff(float v) { float p = Mathf.Pow(v, falloffA); return p / (p + Mathf.Pow(falloffB - falloffB * v, falloffA)); }
+    private bool IsWater(int _x, int _y)
+    {
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return true;
+        return noiseValues[_x + _y * width] < waterThreshold;
+    }
+
+    private Vector3 GetWorldPos(int _idx)
+    {
+        if (_idx < 0) return Vector3.zero;
+
+        Vector3Int cellPos = new Vector3Int(_idx % width, _idx / width, 0);
+        return groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
+    }
+
+    private float EvaluateFalloff(float _v)
+    {
+        float p = Mathf.Pow(_v, falloffA);
+        float q = Mathf.Pow(falloffB - falloffB * _v, falloffA);
+        return p / (p + q);
+    }
 }

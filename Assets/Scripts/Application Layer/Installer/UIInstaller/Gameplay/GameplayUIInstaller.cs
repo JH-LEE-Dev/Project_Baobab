@@ -9,6 +9,8 @@ public class GameplayUIInstaller : MonoBehaviour
     private GameplayUIManager uiManager;
     private GameplayUICoordinator uICoordinator;
     private IInventory inventory;
+    private IInDungeonObjProvider inDungeonObjProvider;
+
 
     //Canvas
 
@@ -21,17 +23,18 @@ public class GameplayUIInstaller : MonoBehaviour
     private Canvas canvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
-        InputManager _inputManager,IInventory _inventory)
+        InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider)
     {
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
         signalHub = _signalHub;
         inventory = _inventory;
+        inDungeonObjProvider = _inDungeonObjProvider;
 
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager,inventory);
+        uiManager.Initialize(inputManager,inventory,inDungeonObjProvider);
 
         SetupUIElement();
     }
@@ -73,7 +76,9 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_HUD hudUI = uiManager.Open<UIView_HUD>();
 
-        uICoordinator.Initialize(signalHub,inputManager,inventoryUI,hudUI);
+        UIView_Unit unitUI = uiManager.Open<UIView_Unit>();
+
+        uICoordinator.Initialize(signalHub,inputManager,inventoryUI,hudUI,unitUI);
 
         BindEvent();
     }

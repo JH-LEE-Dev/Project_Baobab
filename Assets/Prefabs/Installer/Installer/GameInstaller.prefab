@@ -690,6 +690,7 @@ MonoBehaviour:
   viewPrefabs:
   - {fileID: 7413597417011568370, guid: 63de477bf2787ae49912336d84000a8e, type: 3}
   - {fileID: 1422794173155767131, guid: 11f866fd5c2c273459db8db66362ab13, type: 3}
+  - {fileID: 1448683597634536456, guid: a0477aa2b0cc932478422b83f49f3aad, type: 3}
 --- !u!1 &7565708588615142684
 GameObject:
   m_ObjectHideFlags: 0
@@ -847,4 +848,3 @@ MonoBehaviour:
   spawnInterval: 5
   cullingDistance: 25
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
-  portalSpawnPoint: {fileID: 3575309803827302579, guid: c6b9cee9c9de15b4c974f641daca3fe2, type: 3}
