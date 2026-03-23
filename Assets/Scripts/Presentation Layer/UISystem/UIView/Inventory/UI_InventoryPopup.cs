@@ -33,22 +33,25 @@ public class UI_InventoryPopup : MonoBehaviour
         rect = GetComponent<RectTransform>();
     }
 
-    public void ShowItems(ILogItemData iLogItemData, Vector2 position, LogStateCount[] _logStateCounts)
+    public void ShowItems(ILogItemData iLogItemData, LogStateCount[] _logStateCounts, Vector2 position)
     {
-        // 임시. TODO :: 나중엔 받아온 목록만큼 노출
+        if (null == _logStateCounts || null == iLogItemData)
+            return;
+
         for (int i = 0; i < _logStateCounts.Length; ++i)
         {
             slots[i].gameObject.SetActive(true);
             
-            string itemName = iLogItemData.treeType.ToString() + "_" + iLogItemData.logState.ToString();
-            slots[i].UpdateImage(itemName);
+            slots[i].UpdateImage(iLogItemData.sprite);
             slots[i].UpdateItemCount(_logStateCounts[i].count);
         }
+
+        for (int i = _logStateCounts.Length; i < slots.Count; ++i)
+            slots[i].gameObject.SetActive(false);
 
         if (null != rect)
         {
             rect.position = position;
-            // 화면 영역 밖으로 나간 위치 보정
             rect.position = GlobalUI.KeepInsideScreenforUI(rect); 
         }
     }

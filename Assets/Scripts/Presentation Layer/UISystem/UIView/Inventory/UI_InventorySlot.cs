@@ -10,26 +10,23 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private IItemData showItemData;
     public IItemData ShowItemData { get { return showItemData; } }
 
-    private LogStateCount[] logStateCounts;
-    public LogStateCount[] LogStateCounts { get { return logStateCounts; } }
-
+    private IInventorySlot invSlotRef;
 
     private int showCnt = 0;
     public int ShowCnt { get { return showCnt; } }
     
-    private Image uiImage;
+    [SerializeField] private Image uiImage;
     private TMP_Text countText;
 
     public Action<IItemData, LogStateCount[], Vector2> enterSlot;
     public Action exitSlot;
-    public Action<IItemData> deleteItem;
-
-    private const string imgFolderPath = "Assets/Graphics/Item/Log/";
+    public Action<IInventorySlot> deleteItem;
 
     public void Initialize()
     {
-        uiImage = gameObject.GetComponentInChildren<Image>();
-
+        if (null != uiImage)
+            uiImage.enabled = false;
+        
         if (null != uiImage && uiImage.sprite != null && uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
@@ -39,21 +36,24 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     public virtual void OnPointerClick(PointerEventData eventData)
     {
         Debug.Log("아이템 삭제 요청");
-        deleteItem?.Invoke(showItemData);
+
+        deleteItem?.Invoke(invSlotRef);
+    }
+
+    public void ResetData()
+    {
+        if (null != uiImage)
+            uiImage.enabled = false;
+
+        invSlotRef = null;
+        showItemData = null;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
         Debug.Log("슬롯에 마우스 올라옴");
 
-        // 통나무 타입이 아니면 UI 꺼버리고 호출 안함 / 이전에 켜져있었을 수도 있으니까 방지
-        if (showItemData.itemType != ItemType.Log)
-        {
-            exitSlot?.Invoke();
-            return;
-        }
-
-        enterSlot?.Invoke(showItemData, logStateCounts, uiImage.rectTransform.position);
+        enterSlot?.Invoke(showItemData, invSlotRef?.logStateCounts, uiImage.rectTransform.position);
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -73,29 +73,19 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateImage(Sprite _sprite)
     {
-        if (null == _sprite || null == uiImage)
+        if (null == uiImage)
             return;
 
+        uiImage.enabled = true;
         uiImage.sprite = _sprite;
     }
 
-    public void UpdateImage(string itemName)
+    public void UpdateBindSlotData(IInventorySlot _newSlot)
     {
-        Sprite newSprite = GlobalUI.GetSpritefromPath(imgFolderPath, itemName);
-        if (null == newSprite)
-            return;
+        showItemData = _newSlot.itemData;
+        invSlotRef = _newSlot;
 
-        UpdateImage(newSprite);
-    }
-
-    public void UpdateBindSlotData(IItemData _item, LogStateCount[] _logStateCounts)
-    {
-        showItemData = _item;
-        logStateCounts = _logStateCounts;
-
-
-        // 이름 경로 생성
-        //UpdateImage();
+        UpdateImage(showItemData.sprite);
     }
 
     public void DisableRayCast()
@@ -104,6 +94,5 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
 
         uiImage.raycastTarget = false;
-        //Debug.Log($"[{gameObject.name}]의 DisableRayCast 실행됨. 객체 ID: {uiImage.gameObject.GetInstanceID()}, 현재 RaycastTarget 상태: {uiImage.raycastTarget}");
     }
 }
