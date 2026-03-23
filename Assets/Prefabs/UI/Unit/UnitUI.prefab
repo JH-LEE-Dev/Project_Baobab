@@ -51,3 +51,5 @@ MonoBehaviour:
   layer: 2
   startHidden: 1
   uiRoot: {fileID: 5973435824668062020}
+  hpBarPrefab: {fileID: 8900395080866215809, guid: 398f57566344cca4ead9623aeb20ec2e, type: 3}
+  hpBarPool: {fileID: 0}

@@ -10,7 +10,6 @@ public class UIView_Inventory : UIView
     [SerializeField] private GameObject uiPopupPrefab;
 
     [Header("Inventory Settings")]
-    [SerializeField] private int startSlotCount = 2;
     [SerializeField] private List<UI_InventorySlot> inventorySlots;
 
     [SerializeField] private float popupYOffset = 30.0f;
@@ -25,7 +24,7 @@ public class UIView_Inventory : UIView
         base.Initialize(_ctx);
 
         inventorySlots.Clear();
-        UpdateMaxSlotCount(startSlotCount);
+        UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
         Init_InventoryPopup();
     }
 
@@ -83,8 +82,8 @@ public class UIView_Inventory : UIView
 
     private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
     {
+        // 이거 인벤토리 로직에서 개수만큼 긁어 오는데, 개수 동일화 안 되어있으면 위험함.
         int itemCount = _items.Count;
-        UpdateMaxSlotCount(itemCount);
 
         for (int i = 0; i < inventorySlots.Count; ++i)
         {

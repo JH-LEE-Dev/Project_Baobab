@@ -1,61 +1,156 @@
+using System;
+using PresentationLayer.ObjectSystem;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class HUD_ProgressBar : MonoBehaviour
+namespace PresentationLayer.UISystem.HUD
 {
-    private Slider progressSlider;
-
-    private float currentValue = 0.0f;
-    private float maxValue = 100.0f;
-
-    public void Initialize()
-    { 
-        progressSlider = GetComponentInChildren<Slider>();
-
-        if (null == progressSlider)
-            return;
-
-        progressSlider.minValue = 0.0f;
-        progressSlider.maxValue = maxValue;
-        progressSlider.value = currentValue;
-    }
-
-    public void OnDestroy()
+    /// <summary>
+    /// HUD에서 진행도를 표시하는 프로그레스 바입니다.
+    /// 지정된 시간 동안만 활성화되고 이후 콜백을 통해 반납될 수 있습니다.
+    /// </summary>
+    public class HUD_ProgressBar : MonoBehaviour, IPoolable
     {
+        // //외부 의존성
+        [SerializeField] private Slider progressSlider;
+
+        // //내부 의존성
+        private float currentValue = 0.0f;
+        private float maxValue = 100.0f;
         
-    }
+        private float activeTimer = 0.0f;
+        private bool isTimerActive = false;
+        
+        private Action<HUD_ProgressBar> onHideCallback;
 
-    public void SetMaxValue(float _maxValue)
-    {
-        if (0.0f >= _maxValue)
-            return;
+        private GameObject targetObj;
 
-        maxValue = _maxValue;
+        // //퍼블릭 초기화 및 제어 메서드
 
-        if (null == progressSlider)
-            return;
+        public void Initialize()
+        {
+            if (null == progressSlider)
+            {
+                progressSlider = GetComponentInChildren<Slider>();
+            }
 
-        progressSlider.maxValue = maxValue;
-    }
+            if (null == progressSlider)
+            {
+                return;
+            }
 
-    public void UpdateValue(float _newValue)
-    {
-        currentValue = _newValue;
+            progressSlider.minValue = 0.0f;
+            progressSlider.maxValue = maxValue;
+            progressSlider.value = currentValue;
+        }
+        public void LateUpdate()
+        {
+            if (true == isTimerActive && null != targetObj)
+            {
+                gameObject.transform.position = targetObj.transform.position;
+            }
+        }
 
-        if (null == progressSlider)
-            return;
+        public void SetMaxValue(float _maxValue)
+        {
+            if (0.0f >= _maxValue)
+            {
+                return;
+            }
 
-        // TODO :: DOTween
-        progressSlider.value = currentValue;
-    }
+            maxValue = _maxValue;
 
-    public void OnShow()
-    {
-        gameObject.SetActive(true);
-    }
+            if (null != progressSlider)
+            {
+                progressSlider.maxValue = maxValue;
+            }
+        }
 
-    public void OnHide()
-    {
-        gameObject.SetActive(false);
+        public void UpdateValue(float _newValue)
+        {
+            currentValue = _newValue;
+
+            if (null != progressSlider)
+            {
+                progressSlider.value = currentValue;
+            }
+        }
+
+        public void UpdateTargetObj(GameObject _target) => targetObj = _target;
+
+        /// <summary>
+        /// 지정된 시간 동안 활성화하고, 종료 시 실행할 콜백을 등록합니다.
+        /// </summary>
+        public void TriggerActiveForDuration(float _duration, Action<HUD_ProgressBar> _onHide = null)
+        {
+            if (0.0f >= _duration)
+            {
+                onHideCallback = _onHide;
+                OnHide();
+                return;
+            }
+
+            activeTimer = _duration;
+            isTimerActive = true;
+            onHideCallback = _onHide;
+            OnShow();
+        }
+
+        public void OnShow()
+        {
+            if (false == gameObject.activeSelf)
+            {
+                gameObject.SetActive(true);
+            }
+        }
+
+        public void OnHide()
+        {
+            if (true == gameObject.activeSelf)
+            {
+                isTimerActive = false;
+                activeTimer = 0.0f;
+                gameObject.SetActive(false);
+                
+                // 반납 등을 위한 콜백 실행
+                onHideCallback?.Invoke(this);
+                onHideCallback = null;
+            }
+        }
+
+        // //IPoolable 구현부
+
+        public void OnSpawn()
+        {
+            Initialize();
+        }
+
+        public void OnDespawn()
+        {
+            isTimerActive = false;
+            activeTimer = 0.0f;
+            onHideCallback = null;
+        }
+
+        // //유니티 이벤트 함수
+
+        private void Update()
+        {
+            if (false == isTimerActive)
+            {
+                return;
+            }
+
+            activeTimer -= Time.deltaTime;
+
+            if (0.0f >= activeTimer)
+            {
+                OnHide();
+            }
+        }
+
+        private void OnDestroy()
+        {
+        }
     }
 }

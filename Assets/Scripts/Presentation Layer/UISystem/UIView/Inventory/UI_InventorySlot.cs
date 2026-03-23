@@ -57,8 +57,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == uiImage || uiImage.sprite == _sprite)
             return;
 
-        uiImage.enabled = true;
         uiImage.sprite = _sprite;
+        uiImage.enabled = null != _sprite;
     }
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)
@@ -69,7 +69,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
 
-        UpdateImage(showItemData.sprite);
+        UpdateImage(showItemData?.sprite);
     }
 
     public void DisableRayCast()
