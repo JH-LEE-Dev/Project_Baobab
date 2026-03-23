@@ -1,0 +1,52 @@
+# Unity 자동 생성 및 캐시 폴더 제외
+/Library/
+/Temp/
+/Logs/
+/UserSettings/
+/Build/
+/Builds/
+/obj/
+/bin/
+
+# 프로젝트 메타데이터 및 바이너리 파일 제외
+*.meta
+*.unity
+*.asset
+*.prefab
+*.mat
+*.anim
+*.controller
+*.unitypackage
+
+# IDE 및 빌드 설정 파일 제외
+*.sln
+*.csproj
+*.vsconfig
+.vscode/
+.vs/
+
+# 타사 에셋 및 플러그인
+Assets/ChocDino/
+Assets/NaughtyAttributes/
+Assets/vFolders/
+Assets/vHierarchy/
+Assets/Wingman/
+Assets/Plugins/
+
+# 패키지 매니저 설정
+/Packages/manifest.json
+/Packages/packages-lock.json
+
+# 대용량 바이너리 및 미디어
+*.png
+*.jpg
+*.jpeg
+*.tga
+*.psd
+*.fbx
+*.obj
+*.wav
+*.mp3
+*.ttf
+*.otf
+*.renderTexture
