@@ -46,6 +46,13 @@ public class PathFindComponent : MonoBehaviour
         pathfindGridProvider = _pathfindGridProvider;
     }
 
+    // // 점유 관리 API
+    public bool IsOccupied(Vector3Int _cellPos) => pathfindGridProvider.IsOccupied(_cellPos);
+    public bool Occupy(Vector3Int _cellPos) => pathfindGridProvider.Occupy(_cellPos);
+    public void Release(Vector3Int _cellPos) => pathfindGridProvider.Release(_cellPos);
+    public Vector3Int WorldToCell(Vector3 _worldPos) => tilemapDataProvider.WorldToCell(_worldPos);
+    public bool IsWalkable(Vector3Int _cellPos) => tilemapDataProvider.IsWalkable(_cellPos);
+
     /// <summary>
     /// 내부 리스트(currentPath)를 사용하여 길을 찾습니다.
     /// </summary>
@@ -67,8 +74,8 @@ public class PathFindComponent : MonoBehaviour
         Vector3Int startPos = tilemapDataProvider.WorldToCell(_startWorldPos);
         Vector3Int targetPos = tilemapDataProvider.WorldToCell(_endWorldPos);
 
-        // 도착 지점이 이동 불가능하면 즉시 종료
-        if (!tilemapDataProvider.IsWalkable(targetPos))
+        // 도착 지점이 이동 불가능하거나 다른 유닛에 의해 점유되어 있으면 즉시 종료
+        if (!tilemapDataProvider.IsWalkable(targetPos) || pathfindGridProvider.IsOccupied(targetPos))
         {
             return false;
         }
@@ -106,8 +113,10 @@ public class PathFindComponent : MonoBehaviour
                 Vector3Int offset = neighborOffsets[i];
                 Vector3Int neighborPos = currentNode.pos + offset;
 
-                // 1. 기본 이동 가능 여부 및 방문 여부 확인
-                if (!tilemapDataProvider.IsWalkable(neighborPos) || closedNodes.ContainsKey(neighborPos))
+                // 1. 기본 이동 가능 여부, 방문 여부, 그리고 다른 유닛 점유 여부 확인
+                if (!tilemapDataProvider.IsWalkable(neighborPos) || 
+                    closedNodes.ContainsKey(neighborPos) || 
+                    pathfindGridProvider.IsOccupied(neighborPos))
                 {
                     continue;
                 }

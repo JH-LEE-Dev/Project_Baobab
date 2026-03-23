@@ -472,7 +472,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   animalPrefab: {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
-  spawnCount: 1
+  spawnCount: 20
 --- !u!1 &6583048210432933352
 GameObject:
   m_ObjectHideFlags: 0
