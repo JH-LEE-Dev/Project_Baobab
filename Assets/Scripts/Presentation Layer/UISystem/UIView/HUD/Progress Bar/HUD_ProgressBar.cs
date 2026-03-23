@@ -14,6 +14,8 @@ namespace PresentationLayer.UISystem.HUD
         // //외부 의존성
         [SerializeField] private Slider progressSlider;
 
+        private RectTransform rect;
+
         // //내부 의존성
         private float currentValue = 0.0f;
         private float maxValue = 100.0f;
@@ -35,20 +37,13 @@ namespace PresentationLayer.UISystem.HUD
             }
 
             if (null == progressSlider)
-            {
                 return;
-            }
+
+            rect = progressSlider?.GetComponent<RectTransform>();
 
             progressSlider.minValue = 0.0f;
             progressSlider.maxValue = maxValue;
             progressSlider.value = currentValue;
-        }
-        public void LateUpdate()
-        {
-            if (true == isTimerActive && null != targetObj)
-            {
-                gameObject.transform.position = targetObj.transform.position;
-            }
         }
 
         public void SetMaxValue(float _maxValue)
@@ -146,6 +141,14 @@ namespace PresentationLayer.UISystem.HUD
             if (0.0f >= activeTimer)
             {
                 OnHide();
+            }
+        }
+
+        public void LateUpdate()
+        {
+            if (true == isTimerActive && null != targetObj)
+            {
+                rect.position = targetObj.transform.position;
             }
         }
 

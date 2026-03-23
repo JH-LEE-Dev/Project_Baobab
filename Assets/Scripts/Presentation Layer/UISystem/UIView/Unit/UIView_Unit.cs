@@ -44,7 +44,7 @@ namespace PresentationLayer.UISystem.View
                 return;
             
             damagedTrees.Add(_treeObj);
-            OnShow_HPBar(_treeObj);
+            //OnShow_HPBar(_treeObj);
         }
 
         public void DependencyInjection(IReadOnlyList<ITreeObj> _trees)
