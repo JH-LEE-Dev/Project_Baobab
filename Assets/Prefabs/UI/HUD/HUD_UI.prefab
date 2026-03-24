@@ -34,7 +34,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1920, y: 1080}
+  m_SizeDelta: {x: 640, y: 360}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1422794173155767131
 MonoBehaviour:
@@ -50,5 +50,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIView_HUD
   layer: 2
   startHidden: 1
+  bWorld: 0
   uiRoot: {fileID: 1772526790917447411}
   hudEquipmentPrefab: {fileID: 3602922423060339287, guid: cd342e10fd24dc842b88530280f46250, type: 3}
+  hudSteminaBarPrefab: {fileID: 8900395080866215809, guid: c972384e8d3d069409a24acee0d1b3b6, type: 3}
