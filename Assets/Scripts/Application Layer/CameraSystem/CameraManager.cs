@@ -111,6 +111,7 @@ public class CameraManager : MonoBehaviour
 
     private void LateUpdate()
     {
+        return;
         if (virtualCamera == null || characterTransform == null) return;
 
         Vector3 currentCharacterPos = characterTransform.position;
