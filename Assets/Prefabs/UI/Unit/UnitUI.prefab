@@ -53,4 +53,5 @@ MonoBehaviour:
   bWorld: 1
   uiRoot: {fileID: 5973435824668062020}
   hpBarPrefab: {fileID: 8900395080866215809, guid: 398f57566344cca4ead9623aeb20ec2e, type: 3}
-  hpBarPool: {fileID: 0}
+  treesYOffset: 1.5
+  animalsYOffset: 1.5

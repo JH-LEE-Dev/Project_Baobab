@@ -21,6 +21,7 @@ namespace PresentationLayer.UISystem.HUD
         private float maxValue = 100.0f;
         
         private float activeTimer = 0.0f;
+        private float showYOffset = 0f;
         private bool isTimerActive = false;
         
         private Action<HUD_ProgressBar> onHideCallback;
@@ -42,36 +43,20 @@ namespace PresentationLayer.UISystem.HUD
             rect = progressSlider?.GetComponent<RectTransform>();
 
             progressSlider.minValue = 0.0f;
-            progressSlider.maxValue = maxValue;
-            progressSlider.value = currentValue;
+            progressSlider.maxValue = 1f;
+            progressSlider.value = 1f;
         }
 
-        public void SetMaxValue(float _maxValue)
+        public void UpdateValue(float _ratio)
         {
-            if (0.0f >= _maxValue)
-            {
-                return;
-            }
-
-            maxValue = _maxValue;
+            currentValue = _ratio;
 
             if (null != progressSlider)
-            {
-                progressSlider.maxValue = maxValue;
-            }
-        }
-
-        public void UpdateValue(float _newValue)
-        {
-            currentValue = _newValue;
-
-            if (null != progressSlider)
-            {
                 progressSlider.value = currentValue;
-            }
         }
 
         public void UpdateTargetObj(GameObject _target) => targetObj = _target;
+        public void UpdateYOffset(float _in) =>  showYOffset = _in;
 
         /// <summary>
         /// 지정된 시간 동안 활성화하고, 종료 시 실행할 콜백을 등록합니다.
@@ -148,7 +133,10 @@ namespace PresentationLayer.UISystem.HUD
         {
             if (true == isTimerActive && null != targetObj)
             {
-                rect.position = targetObj.transform.position;
+                Vector3 newPos = targetObj.transform.position;
+                newPos.y += showYOffset;
+
+                rect.position = newPos;
             }
         }
 
