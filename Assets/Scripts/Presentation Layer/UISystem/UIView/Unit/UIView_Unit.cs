@@ -46,8 +46,11 @@ namespace PresentationLayer.UISystem.View
         {
             if (null == _treeObj)
             {
+                Debug.Log("Null 임");
                 return;
             }
+
+            Debug.Log(_treeObj);
 
             // 이미 캐싱 돼 있으면 시간 연장
             if (damagedTrees.TryGetValue(_treeObj, out HUD_ProgressBar _bar))
@@ -72,8 +75,6 @@ namespace PresentationLayer.UISystem.View
             HUD_ProgressBar _bar = hpBarPool.Spawn<HUD_ProgressBar>(hpBarPrefab, Vector3.zero, Quaternion.identity, this.transform);
             if (null == _bar)
                 return;
-
-            Debug.Log("현재:" + _treeObj.health.GetCurrentHealth() + " 최대:" + _treeObj.health.GetMaxHealth());
 
             _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
             _bar.UpdateYOffset(_YOffset);
