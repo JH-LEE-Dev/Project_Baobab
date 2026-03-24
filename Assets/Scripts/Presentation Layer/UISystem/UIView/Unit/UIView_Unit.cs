@@ -56,7 +56,6 @@ namespace PresentationLayer.UISystem.View
                 if (true == _treeObj.bDead)
                 {
                     _bar.OnHide();
-                    damagedTrees.Remove(_treeObj);
                     return;
                 }
             }
@@ -106,9 +105,7 @@ namespace PresentationLayer.UISystem.View
             }
 
             if (null != _ownerTree)
-            {
                 damagedTrees.Remove(_ownerTree);
-            }
 
             hpBarPool?.Despawn(_bar.gameObject);
         }
