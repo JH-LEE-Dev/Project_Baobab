@@ -63,10 +63,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.08229167
+    x: 0
     y: 0
-    width: 0.33333334
-    height: 0.5416667
+    width: 1
+    height: 1
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
@@ -226,9 +226,9 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0.0061728396
+    x: 0.0031055901
     y: 0
-    width: 0.9876543
+    width: 0.99378884
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
@@ -511,7 +511,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60c6996386783e842ba519edc727abf8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraQuadController
-  renderCamera: {fileID: 1417226923079838101}
   finalCamera: {fileID: 1308022515535302163}
   pixelsPerUnit: 32
 --- !u!1 &8308394329529539000

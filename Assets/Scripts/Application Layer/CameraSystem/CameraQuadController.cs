@@ -8,33 +8,16 @@ public class CameraQuadController : MonoBehaviour
 
     public void Ready()
     {
-        // 1. 기본 카메라 뷰 크기 계산 (패딩 전)
-        float baseHeight = finalCamera.orthographicSize * 2f;
-        float baseWidth = baseHeight * finalCamera.aspect;
+        // 1. 가시 영역의 순수 픽셀 크기 계산
+        float hPx = finalCamera.orthographicSize * 2 * pixelsPerUnit;
+        float wPx = hPx * finalCamera.aspect;
 
-        // 2. 안전 여백 계산 (상하좌우 각각 2픽셀씩, 총 4픽셀 분량 추가)
-        float pixelSize = 1f / pixelsPerUnit;
-        float padding = pixelSize * 2f;
+        // 2. 가로/세로 각각 정수로 올림 처리 후 정확히 4픽셀씩만 추가
+        float finalH = Mathf.Ceil(hPx) + 4;
+        float finalW = Mathf.Ceil(wPx) + 4;
 
-        // 3. 패딩이 적용된 실제 쿼드 크기
-        float paddedWidth = baseWidth + (padding * 2f);
-        float paddedHeight = baseHeight + (padding * 2f);
-
-        // 4. Quad 크기 조정
-        transform.localScale = new Vector3(paddedWidth, paddedHeight, 1f);
-
-        // 5. UV 조정을 통해 텍스처 늘어남 방지 (1:1 픽셀 매칭 유지)
-        Vector2 tiling = new Vector2(paddedWidth / baseWidth, paddedHeight / baseHeight);
-        Vector2 offset = new Vector2(-(padding / baseWidth), -(padding / baseHeight));
-
-        Renderer renderer = GetComponent<Renderer>();
-        if (renderer != null)
-        {
-            renderer.material.mainTextureScale = tiling;
-            renderer.material.mainTextureOffset = offset;
-        }
-
-        // 카메라 바로 앞에 위치
+        // 3. 최종 Scale 적용 (이제 20.125와 같이 의도한 숫자가 정확히 나옵니다)
+        transform.localScale = new Vector3(finalW / pixelsPerUnit, finalH / pixelsPerUnit, 1f);
         transform.localPosition = new Vector3(0, 0, quadZOffset); 
     }
 }
