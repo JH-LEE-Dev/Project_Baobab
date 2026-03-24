@@ -7,6 +7,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
     public event Action<TreeObj> TreeGetHitEvent;
 
     [SerializeField] private Shadow shadowObject;
+    [SerializeField] private Shadow bottomShadowObject;
     [SerializeField] private TreeVisualComponent treeVisualComponent;
 
     private IEnvironmentProvider environmentProvider;
@@ -30,10 +31,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
             treeVisualComponent.Initialize();
         }
 
-        if (shadowObject != null)
-        {
-            shadowObject.Initialize();
-        }
+        InitializeShadow(shadowObject);
+        InitializeShadow(bottomShadowObject);
 
         BindEvents();
     }
@@ -77,14 +76,30 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
 
     public void ManualUpdate()
     {
-        if (shadowObject != null)
+        UpdateShadow(shadowObject);
+        UpdateShadow(bottomShadowObject);
+    }
+
+    private void InitializeShadow(Shadow shadow)
+    {
+        if (shadow != null)
         {
-            shadowObject.ManualUpdate(
-                environmentProvider.shadowDataProvider.CurrentShadowRotation,
-                environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-                environmentProvider.shadowDataProvider.IsShadowActive
-            );
+            shadow.Initialize();
         }
+    }
+
+    private void UpdateShadow(Shadow shadow)
+    {
+        if (shadow == null)
+        {
+            return;
+        }
+
+        shadow.ManualUpdate(
+            environmentProvider.shadowDataProvider.CurrentShadowRotation,
+            environmentProvider.shadowDataProvider.CurrentShadowScaleY,
+            environmentProvider.shadowDataProvider.IsShadowActive
+        );
     }
 
     private void BindEvents()

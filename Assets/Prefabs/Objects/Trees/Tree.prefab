@@ -401,6 +401,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Tree
   shadowObject: {fileID: 2746110928990139193}
+  bottomShadowObject: {fileID: 3831676453712277121}
   treeVisualComponent: {fileID: 7941305713547832146}
 --- !u!114 &1689780772015703933
 MonoBehaviour:

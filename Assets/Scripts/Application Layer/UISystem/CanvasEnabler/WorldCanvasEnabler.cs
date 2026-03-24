@@ -8,9 +8,8 @@ public class WorldCanvasEnabler : MonoBehaviour
     {
         if(canvas != null)
         {
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.renderMode = RenderMode.WorldSpace;
             canvas.worldCamera = Camera.main;
-            canvas.overrideSorting = true;
             canvas.sortingLayerName = "HUD";
         }
     }
