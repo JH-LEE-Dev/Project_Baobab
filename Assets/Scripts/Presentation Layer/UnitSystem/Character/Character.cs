@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
-public class Character : MonoBehaviour, ITeleportable
+public class Character : MonoBehaviour, ITeleportable,ICharacter
 {
     //외부 의존성
     public InputManager inputManager { get; private set; }
@@ -37,6 +37,8 @@ public class Character : MonoBehaviour, ITeleportable
 
     //현재 지형 물리 데이터 (캐싱)
     public GroundPhysicsData currentGroundData { get; private set; }
+
+    public IPHealthComponent pHealthComponent => healthComponent;
 
     // 캐싱된 해시값 (GC 방지 및 성능 최적화)
     private readonly int facingDirHash = Animator.StringToHash("facingDir");

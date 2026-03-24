@@ -12,6 +12,8 @@ public class UIView_HUD : UIView
     private HUD_Equipment hudEquipment;
     private HUD_ProgressBar hudSteminaBar;
 
+    private ICharacter character;
+
 #region Default Logic
 
     public override void Initialize(UIViewContext _ctx)
@@ -39,6 +41,11 @@ public class UIView_HUD : UIView
         hudEquipment?.OnHide();
 
         base.OnHide();
+    }
+
+    public void SetCharacter(ICharacter _character)
+    {
+        character = _character;
     }
 
 #endregion

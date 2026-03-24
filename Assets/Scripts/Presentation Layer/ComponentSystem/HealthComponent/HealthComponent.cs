@@ -1,9 +1,10 @@
 using UnityEngine;
 
-public class PHealthComponent : PComponent
+public class PHealthComponent : PComponent,IPHealthComponent
 {
     [SerializeField] private float maxHealth;
     private float currentHealth;
+    private float prevHealth;
 
     [SerializeField] private float maxStamina;
     private float currentStamina;
@@ -17,10 +18,13 @@ public class PHealthComponent : PComponent
 
         currentStamina = maxStamina;
         currentHealth = maxHealth;
+        prevHealth = currentHealth;
     }
 
     public void DecreaseHealth(float _damage)
     {
+        prevHealth = currentHealth;
+
         if (currentHealth - _damage <= 0)
         {
             currentHealth = 0;
@@ -50,6 +54,31 @@ public class PHealthComponent : PComponent
         }
 
         currentStamina += _stamina;
+    }
+
+    public float GetMaxHealth()
+    {
+        return maxHealth;
+    }
+
+    public float GetCurrentHealth()
+    {
+        return currentHealth;
+    }
+
+    public float GetPrevHealth()
+    {
+        return prevHealth;
+    }
+
+    public float GetMaxStamina()
+    {
+        return maxStamina;
+    }
+
+    public float GetCurrentStamina()
+    {
+        return currentStamina;
     }
 }
 
