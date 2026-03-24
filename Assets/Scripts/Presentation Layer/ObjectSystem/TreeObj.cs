@@ -70,6 +70,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
         }
 
         TreeGetHitEvent?.Invoke(this);
+
+        if (bDead)
+            TreeDeadEvent?.Invoke(this);
     }
 
     public void ManualUpdate()
@@ -91,8 +94,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
             return;
         }
 
-        healthComponent.EnemyIsDeadEvent -= TreeIsDeadEvent;
-        healthComponent.EnemyIsDeadEvent += TreeIsDeadEvent;
+        healthComponent.EnemyIsDeadEvent -= TreeIsDead;
+        healthComponent.EnemyIsDeadEvent += TreeIsDead;
     }
 
     private void ReleaseEvents()
@@ -102,7 +105,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
             return;
         }
 
-        healthComponent.EnemyIsDeadEvent -= TreeIsDeadEvent;
+        healthComponent.EnemyIsDeadEvent -= TreeIsDead;
     }
 
     private void OnDestroy()
@@ -110,10 +113,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
         ReleaseEvents();
     }
 
-    private void TreeIsDeadEvent()
+    private void TreeIsDead()
     {
         bDead = true;
-        TreeDeadEvent?.Invoke(this);
     }
 
     public Transform GetTransform()
