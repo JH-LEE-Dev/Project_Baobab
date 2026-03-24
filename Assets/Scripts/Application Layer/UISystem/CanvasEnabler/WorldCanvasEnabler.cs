@@ -10,7 +10,6 @@ public class WorldCanvasEnabler : MonoBehaviour
         {
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.worldCamera = Camera.main;
-            canvas.overrideSorting = true;
             canvas.sortingLayerName = "HUD";
         }
     }
