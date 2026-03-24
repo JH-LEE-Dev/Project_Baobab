@@ -40,9 +40,11 @@ public class CameraManager : MonoBehaviour
             lastCharacterPosition = characterTransform.position;
         }
 
-        // 시네머신 카메라의 추적 대상 설정
+        // 시네머신 카메라의 추적 대상 및 렌즈 설정
         if (virtualCamera != null)
         {
+            virtualCamera.Lens.OrthographicSize = 5.625f;
+
             if (characterTransform != null)
             {
                 virtualCamera.Follow = characterTransform;
@@ -54,6 +56,8 @@ public class CameraManager : MonoBehaviour
                 virtualCamera.LookAt = null;
             }
         }
+
+        ReadyCamera();
     }
 
     public void Release()
@@ -139,5 +143,17 @@ public class CameraManager : MonoBehaviour
     private void CharacterMoved(Vector2 _input)
     {
         currentInput = _input;
+    }
+
+    private void ReadyCamera()
+    {
+        var parent = virtualCamera.gameObject.transform.parent;
+
+        if (parent != null)
+        {
+            var quadController = parent.gameObject.GetComponentInChildren<CameraQuadController>();
+
+            quadController.Ready();
+        }
     }
 }

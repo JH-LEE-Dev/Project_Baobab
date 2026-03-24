@@ -4,6 +4,45 @@ using UnityEngine.Tilemaps;
 
 public class TilemapForestGenerator : EditorWindow
 {
+    [MenuItem("Tools/Normalize Tree Scale")]
+    public static void NormalizeTreeScale()
+    {
+        TreeObj[] trees = Object.FindObjectsByType<TreeObj>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        if (trees == null || trees.Length == 0)
+        {
+            Debug.LogWarning("Normalize Tree Scale: no TreeObj found in the loaded scene.");
+            return;
+        }
+
+        Undo.RecordObjects(trees, "Normalize Tree Scale");
+
+        int normalizedCount = 0;
+        for (int i = 0; i < trees.Length; i++)
+        {
+            TreeObj tree = trees[i];
+            if (tree == null)
+            {
+                continue;
+            }
+
+            tree.transform.localScale = Vector3.one;
+
+            TreeVisualComponent visual = tree.GetComponentInChildren<TreeVisualComponent>(true);
+            if (visual != null)
+            {
+                Undo.RecordObject(visual, "Normalize Tree Visual Root");
+                visual.NormalizeVisualRootTransform();
+                EditorUtility.SetDirty(visual);
+            }
+
+            EditorUtility.SetDirty(tree.transform);
+            normalizedCount++;
+        }
+
+        Debug.Log($"Normalize Tree Scale complete: {normalizedCount} trees reset to uniform scale.");
+    }
+
     [MenuItem("Tools/Generate Forest Environment")]
     public static void GenerateForest()
     {
@@ -115,10 +154,6 @@ public class TilemapForestGenerator : EditorWindow
                         
                         treeInst.transform.position = worldPos;
                         treeInst.transform.parent = treeRoot.transform;
-
-                        // 나무 크기에 변화를 주어 자연스러움 증대
-                        float randomScale = Random.Range(0.85f, 1.2f);
-                        treeInst.transform.localScale = Vector3.one * randomScale;
 
                         // 나무 위치에 충돌 타일 배치
                         colliderTilemap.SetTile(pos, treeCollisionTile);
