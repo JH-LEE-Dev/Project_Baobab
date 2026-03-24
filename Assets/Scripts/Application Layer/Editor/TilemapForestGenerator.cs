@@ -116,10 +116,6 @@ public class TilemapForestGenerator : EditorWindow
                         treeInst.transform.position = worldPos;
                         treeInst.transform.parent = treeRoot.transform;
 
-                        // 나무 크기에 변화를 주어 자연스러움 증대
-                        float randomScale = Random.Range(0.85f, 1.2f);
-                        treeInst.transform.localScale = Vector3.one * randomScale;
-
                         // 나무 위치에 충돌 타일 배치
                         colliderTilemap.SetTile(pos, treeCollisionTile);
 
