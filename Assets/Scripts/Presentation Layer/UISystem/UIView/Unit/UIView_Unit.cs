@@ -17,8 +17,12 @@ namespace PresentationLayer.UISystem.View
         [Header("UI Pools")]
         [SerializeField] private GameObject hpBarPrefab;
         private ObjectPools hpBarPool;
+
+        [Header("Offset Settings")]
+        [SerializeField] private float treesYOffset = 1.5f;
+        [SerializeField] private float animalsYOffset = 1.5f;
         
-        private List<ITreeObj> damagedTrees = new List<ITreeObj>(32);
+        private Dictionary<ITreeObj, HUD_ProgressBar> damagedTrees = new Dictionary<ITreeObj, HUD_ProgressBar>(32);
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -41,10 +45,18 @@ namespace PresentationLayer.UISystem.View
         public void TreeGetHit(ITreeObj _treeObj)
         {
             if (null == _treeObj)
+            {
                 return;
-            
-            damagedTrees.Add(_treeObj);
-            OnShow_HPBar(_treeObj);
+            }
+
+            // 이미 캐싱 돼 있으면 시간 연장
+            if (damagedTrees.TryGetValue(_treeObj, out HUD_ProgressBar _bar))
+            {
+                _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
+                _bar.TriggerActiveForDuration(3.0f, FinishedBar);
+            }
+            else
+                ShowHP_Trees(_treeObj, treesYOffset);
         }
 
         public void DependencyInjection(IReadOnlyList<ITreeObj> _trees)
@@ -52,7 +64,7 @@ namespace PresentationLayer.UISystem.View
             trees = _trees;
         }
 
-        private void OnShow_HPBar(ITreeObj _treeObj)
+        private void ShowHP_Trees(ITreeObj _treeObj, float _YOffset)
         {   
             if (null == hpBarPool || null == _treeObj)
                 return;
@@ -61,15 +73,44 @@ namespace PresentationLayer.UISystem.View
             if (null == _bar)
                 return;
 
-            _bar.SetMaxValue(_treeObj.health.GetMaxHealth());
-            _bar.UpdateValue(_treeObj.health.GetCurrentHealth());
+            Debug.Log("현재:" + _treeObj.health.GetCurrentHealth() + " 최대:" + _treeObj.health.GetMaxHealth());
+
+            _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
+            _bar.UpdateYOffset(_YOffset);
             _bar.UpdateTargetObj(_treeObj.GetTransform().gameObject);
             
+            // 딕셔너리에 등록 (중복 체크는 TreeGetHit에서 수행함)
+            damagedTrees.Add(_treeObj, _bar);
+
             // 3초 동안 활성화하고, 종료 시 풀에 반납하도록 콜백 등록
             _bar.TriggerActiveForDuration(3.0f, FinishedBar);
         }
 
-        private void FinishedBar(HUD_ProgressBar _bar) => hpBarPool?.Despawn(_bar.gameObject);
+        private void FinishedBar(HUD_ProgressBar _bar)
+        {
+            if (null == _bar)
+            {
+                return;
+            }
+
+            // 해당 바를 사용 중이던 나무를 찾아 딕셔너리에서 제거
+            ITreeObj _ownerTree = null;
+            foreach (var _kvp in damagedTrees)
+            {
+                if (_kvp.Value == _bar)
+                {
+                    _ownerTree = _kvp.Key;
+                    break;
+                }
+            }
+
+            if (null != _ownerTree)
+            {
+                damagedTrees.Remove(_ownerTree);
+            }
+
+            hpBarPool?.Despawn(_bar.gameObject);
+        }
 
         // //유니티 이벤트 함수
 
