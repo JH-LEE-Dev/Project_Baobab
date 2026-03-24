@@ -64,7 +64,10 @@ public class GameInstaller : MonoBehaviour
         cameraManager.ResetCamera();
 
         if (_sceneChangeData.currentScene == SceneType.Dungeon)
+        {
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
+            gameplayUIInstaller.SetupCanvas();
+        }
         else
             townSystem.StartTownSystem(_sceneChangeData);
     }

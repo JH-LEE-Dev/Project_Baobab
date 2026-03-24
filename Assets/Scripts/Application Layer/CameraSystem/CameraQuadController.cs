@@ -13,9 +13,9 @@ public class CameraQuadController : MonoBehaviour
         float padding = pixelSize * 2f;
 
         // 카메라의 세로 크기 계산 (여백 포함)
-        float height = (finalCamera.orthographicSize * 2f);
+        float height = (finalCamera.orthographicSize * 2f) + padding;
         // 화면 비율(Aspect Ratio) 계산 (여백 포함)
-        float width = (height * finalCamera.aspect);
+        float width = (height * finalCamera.aspect) + padding;
 
         // Quad 크기 조정
         transform.localScale = new Vector3(width, height, 1f);
