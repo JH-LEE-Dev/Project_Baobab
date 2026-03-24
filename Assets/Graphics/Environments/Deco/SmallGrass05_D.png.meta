@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: fecf2c6daa7a69746b789937f3cc5ad3
+guid: 71da5e08b950df8468fe9915fe0c8aa8
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4293627418728897981
-    second: SmallGrass05_D_0
+      213: 7433898673377573845
+    second: SmallGrass05_D 1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -49,8 +49,8 @@ TextureImporter:
   spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 0
-  alignment: 0
-  spritePivot: {x: 0.5, y: 0.5}
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0.75}
   spritePixelsToUnits: 32
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SmallGrass05_D_0
+      name: SmallGrass05_D 1_0
       rect:
         serializedVersion: 2
         x: 6
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dbd96338367069b30800000000000000
-      internalID: 4293627418728897981
+      spriteID: 5dbfaeaf4738a2760800000000000000
+      internalID: 7433898673377573845
       vertices: []
       indices: 
       edges: []
@@ -137,7 +137,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      SmallGrass05_D_0: 4293627418728897981
+      SmallGrass05_D 1_0: 7433898673377573845
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

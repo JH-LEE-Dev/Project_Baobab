@@ -12,14 +12,15 @@ public class TreeVisualComponent : MonoBehaviour
     [Header("Renderers")]
     [SerializeField] private SpriteRenderer topRenderer;
     [SerializeField] private SpriteRenderer bottomRenderer;
-    [SerializeField] private SpriteRenderer shadowRenderer;
+    [SerializeField] private SpriteRenderer topShadowRenderer;
+    [SerializeField] private SpriteRenderer bottomShadowRenderer;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites = new Sprite[3];
     [SerializeField] private Sprite[] bottomSprites = new Sprite[3];
 
     [Header("Default Tint")]
-    [SerializeField] private Color32 topBrightColor = new(100, 217, 66, 255);
+    [SerializeField] private Color32 topBrightColor = new(53, 204, 92, 255);
     [SerializeField] private Color32 bottomBrightColor = new(132, 102, 36, 255);
     [SerializeField, Range(0f, 1f)] private float minBrightness = 0.8f;
 
@@ -97,12 +98,17 @@ public class TreeVisualComponent : MonoBehaviour
 
     private void SyncShadowSprite()
     {
-        if (shadowRenderer == null || topRenderer == null)
+        if (topShadowRenderer != null && topRenderer != null)
         {
-            return;
+            topShadowRenderer.sprite = topRenderer.sprite;
+            topShadowRenderer.color = topRenderer.color;
         }
 
-        shadowRenderer.sprite = topRenderer.sprite;
+        if (bottomShadowRenderer != null && bottomRenderer != null)
+        {
+            bottomShadowRenderer.sprite = bottomRenderer.sprite;
+            bottomShadowRenderer.color = bottomRenderer.color;
+        }
     }
 
     private void ApplyRandomVisual()
