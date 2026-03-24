@@ -28,7 +28,7 @@ public class GameplayUIInstaller : MonoBehaviour
     private Canvas worldCanvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
-        InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider)
+        InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider)
     {
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -39,7 +39,7 @@ public class GameplayUIInstaller : MonoBehaviour
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager,inventory,inDungeonObjProvider);
+        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider);
 
         SetupUIElement();
     }
@@ -70,15 +70,17 @@ public class GameplayUIInstaller : MonoBehaviour
         CanvasRoot worldTempRoot = new CanvasRoot();
         worldTempRoot.overlayLayerRoot = worldOverlayRoot;
 
-        uiManager.SceneChanged(tempRoot,worldTempRoot);
+        uiManager.SceneChanged(tempRoot, worldTempRoot);
 
         OpenUIView();
     }
 
     public void SetupCanvas()
     {
-        canvas = Instantiate(canvasPrefab,transform);
-        worldCanvas = Instantiate(worldCanvasPrefab,transform);
+        if (canvas == null)
+            canvas = Instantiate(canvasPrefab, transform);
+        if (worldCanvas == null)
+            worldCanvas = Instantiate(worldCanvasPrefab, transform);
 
         var worldCanvasEnabler = worldCanvas.GetComponent<WorldCanvasEnabler>();
         if (worldCanvasEnabler != null)
@@ -96,7 +98,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_Unit unitUI = uiManager.Open<UIView_Unit>();
 
-        uICoordinator.Initialize(signalHub,inputManager,inventoryUI,hudUI,unitUI);
+        uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI);
 
         BindEvent();
     }
@@ -119,7 +121,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
     private void BindEvent()
     {
-       
+
     }
 
     private void ReleaseEvent()
