@@ -14,6 +14,7 @@ public class UIView_HUD : UIView
 
     private ICharacter character;
 
+
 #region Default Logic
 
     public override void Initialize(UIViewContext _ctx)
@@ -48,6 +49,12 @@ public class UIView_HUD : UIView
         character = _character;
     }
 
+    public override void Update()
+    {
+        if (null != character && null != character.pHealthComponent)
+            UsedSteminaEvent(character.pHealthComponent.GetCurrentStamina(), character.pHealthComponent.GetMaxStamina());
+    }
+
 #endregion
 
 #region HUD_Equipment Logic
@@ -75,7 +82,7 @@ public class UIView_HUD : UIView
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
     {
         float newRatio = _currentStemina / _maxStemina;
-        hudSteminaBar?.UpdateValue(newRatio);
+        hudSteminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
     }
 
 #endregion

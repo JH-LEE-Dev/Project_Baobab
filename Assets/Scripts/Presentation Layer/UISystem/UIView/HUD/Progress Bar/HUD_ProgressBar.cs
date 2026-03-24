@@ -18,7 +18,6 @@ namespace PresentationLayer.UISystem.HUD
 
         // //내부 의존성
         private float currentValue = 0.0f;
-        private float maxValue = 100.0f;
         
         private float activeTimer = 0.0f;
         private float showYOffset = 0f;
