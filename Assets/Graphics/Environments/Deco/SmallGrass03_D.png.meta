@@ -1,13 +1,13 @@
 fileFormatVersion: 2
-guid: 3ba145e77cb54f545940774707438b8f
+guid: 09b85ce4b5e7a0744ab0cff7e7414ca7
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2287517901690440559
-    second: SmallGrass03_D_0
+      213: -65121181022992176
+    second: SmallGrass03_D 1_0
   - first:
-      213: 8941256888527002840
-    second: SmallGrass03_D_1
+      213: 4581605127632749994
+    second: SmallGrass03_D 1_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,8 +52,8 @@ TextureImporter:
   spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 0
-  alignment: 0
-  spritePivot: {x: 0.5, y: 0.5}
+  alignment: 9
+  spritePivot: {x: 0.5, y: 0.75}
   spritePixelsToUnits: 32
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -103,7 +103,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SmallGrass03_D_0
+      name: SmallGrass03_D 1_0
       rect:
         serializedVersion: 2
         x: 5
@@ -118,14 +118,14 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 194f464969a1140e0800000000000000
-      internalID: -2287517901690440559
+      spriteID: 0d845c181a4a81ff0800000000000000
+      internalID: -65121181022992176
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: SmallGrass03_D_1
+      name: SmallGrass03_D 1_1
       rect:
         serializedVersion: 2
         x: 13
@@ -140,8 +140,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 8dc9a2e64c9b51c70800000000000000
-      internalID: 8941256888527002840
+      spriteID: aa588a5d691259f30800000000000000
+      internalID: 4581605127632749994
       vertices: []
       indices: 
       edges: []
@@ -162,8 +162,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      SmallGrass03_D_0: -2287517901690440559
-      SmallGrass03_D_1: 8941256888527002840
+      SmallGrass03_D 1_0: -65121181022992176
+      SmallGrass03_D 1_1: 4581605127632749994
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
