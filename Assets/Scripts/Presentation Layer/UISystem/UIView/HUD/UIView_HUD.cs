@@ -9,6 +9,8 @@ public class UIView_HUD : UIView
 
     private HUD_Equipment hudEquipment;
 
+    private ICharacter character;
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
@@ -40,5 +42,10 @@ public class UIView_HUD : UIView
 
         if (null != hudEquipment)
             hudEquipment.Initialize();
+    }
+
+    public void SetCharacter(ICharacter _character)
+    {
+        character = _character;
     }
 }

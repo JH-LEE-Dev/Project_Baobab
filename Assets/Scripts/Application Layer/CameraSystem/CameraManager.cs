@@ -43,7 +43,7 @@ public class CameraManager : MonoBehaviour
         // 시네머신 카메라의 추적 대상 및 렌즈 설정
         if (virtualCamera != null)
         {
-            virtualCamera.Lens.OrthographicSize = 5.625f;
+            virtualCamera.Lens.OrthographicSize = 5.6875f;
 
             if (characterTransform != null)
             {
