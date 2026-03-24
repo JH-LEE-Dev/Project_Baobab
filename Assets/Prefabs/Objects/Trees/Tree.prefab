@@ -81,8 +81,8 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
+  m_Color: {r: 0.4827187, g: 0.37300992, b: 0.13165057, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -145,9 +145,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5074767916962781381}
-  - component: {fileID: 5615424976764879475}
   m_Layer: 10
-  m_Name: Animator
+  m_Name: Visual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -170,28 +169,6 @@ Transform:
   - {fileID: 5194844408035007574}
   m_Father: {fileID: 1921179417615905477}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!95 &5615424976764879475
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2935715581250871044}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 16da04795d76f114db43ee8489ce422a, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &2950277259561733017
 GameObject:
   m_ObjectHideFlags: 0
@@ -204,6 +181,7 @@ GameObject:
   - component: {fileID: 1236779656131352474}
   - component: {fileID: 5272385284174554040}
   - component: {fileID: 1689780772015703933}
+  - component: {fileID: 7941305713547832146}
   m_Layer: 10
   m_Name: Tree
   m_TagString: Untagged
@@ -278,7 +256,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Tree
   shadowObject: {fileID: 2746110928990139193}
-  animatorObject: {fileID: 2935715581250871044}
+  treeVisualComponent: {fileID: 7941305713547832146}
 --- !u!114 &1689780772015703933
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -371,6 +349,42 @@ MonoBehaviour:
     RefIds:
     - rid: -2
       type: {class: , ns: , asm: }
+--- !u!114 &7941305713547832146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2950277259561733017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55b5321b2d05b174fb41ccd233fe5f9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TreeVisualComponent
+  previewInEditor: 1
+  visualRoot: {fileID: 5074767916962781381}
+  topRenderer: {fileID: 7995597291144077611}
+  bottomRenderer: {fileID: 3861874012178060140}
+  shadowRenderer: {fileID: 243131185621706027}
+  topSprites:
+  - {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
+  - {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
+  - {fileID: 21300000, guid: faa5d1f9decdec04dbb99edcea569d87, type: 3}
+  bottomSprites:
+  - {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
+  - {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
+  - {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
+  topBrightColor:
+    serializedVersion: 2
+    rgba: 4283222594
+  bottomBrightColor:
+    serializedVersion: 2
+    rgba: 4280575620
+  minBrightness: 0.8
+  hitPunchX: 0.1
+  hitDuration: 0.2
+  hitVibrato: 15
+  hitElasticity: 1
 --- !u!1 &3147413912486074957
 GameObject:
   m_ObjectHideFlags: 0
@@ -453,7 +467,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.23020579, g: 0.7045692, b: 0.26508546, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -489,7 +503,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7459644798194361028}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -545,7 +559,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -2104154550, guid: 120bc04a66dc9184aa4138e632a57df9, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

@@ -321,7 +321,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private TreeObj OnCreateTree()
     {
         TreeObj tree = Instantiate(treePrefab, transform);
-        tree.Initialize(environmentProvider, CalculateRandomTreeData());
+        tree.Initialize(environmentProvider);
         return tree;
     }
 
@@ -360,6 +360,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private void OnGetTree(TreeObj _tree)
     {
         _tree.gameObject.SetActive(true);
+        _tree.ApplyData(CalculateRandomTreeData());
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeDeadEvent += OnTreeDead;
         _tree.TreeGetHitEvent -= OnTreeHit;
