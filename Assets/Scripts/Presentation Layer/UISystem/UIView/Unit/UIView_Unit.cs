@@ -45,15 +45,20 @@ namespace PresentationLayer.UISystem.View
         public void TreeGetHit(ITreeObj _treeObj)
         {
             if (null == _treeObj)
-            {
                 return;
-            }
 
             // 이미 캐싱 돼 있으면 시간 연장
             if (damagedTrees.TryGetValue(_treeObj, out HUD_ProgressBar _bar))
             {
                 _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
                 _bar.TriggerActiveForDuration(3.0f, FinishedBar);
+
+                if (true == _treeObj.bDead)
+                {
+                    _bar.OnHide();
+                    damagedTrees.Remove(_treeObj);
+                    return;
+                }
             }
             else
                 ShowHP_Trees(_treeObj, treesYOffset);
@@ -73,8 +78,6 @@ namespace PresentationLayer.UISystem.View
             if (null == _bar)
                 return;
 
-            Debug.Log("현재:" + _treeObj.health.GetCurrentHealth() + " 최대:" + _treeObj.health.GetMaxHealth());
-
             _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
             _bar.UpdateYOffset(_YOffset);
             _bar.UpdateTargetObj(_treeObj.GetTransform().gameObject);
@@ -89,9 +92,7 @@ namespace PresentationLayer.UISystem.View
         private void FinishedBar(HUD_ProgressBar _bar)
         {
             if (null == _bar)
-            {
                 return;
-            }
 
             // 해당 바를 사용 중이던 나무를 찾아 딕셔너리에서 제거
             ITreeObj _ownerTree = null;
