@@ -62,14 +62,14 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
 
     public void TakeDamage(float _damage)
     {
-        TreeGetHitEvent?.Invoke(this);
-
         healthComponent.DecreaseHealth(_damage);
 
         if (treeVisualComponent != null)
         {
             treeVisualComponent.PlayHitFeedback();
         }
+
+        TreeGetHitEvent?.Invoke(this);
     }
 
     public void ManualUpdate()

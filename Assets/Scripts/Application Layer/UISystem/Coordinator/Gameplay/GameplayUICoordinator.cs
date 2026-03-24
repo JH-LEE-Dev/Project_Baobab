@@ -28,12 +28,14 @@ public class GameplayUICoordinator
     {
         signalHub.Subscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.Subscribe<TreeGetHitSignal>(TreeGetHit);
+        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.UnSubscribe<TreeGetHitSignal>(TreeGetHit);
+        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
     }
 
     private void BindEvents()
@@ -75,5 +77,10 @@ public class GameplayUICoordinator
     private void TreeGetHit(TreeGetHitSignal treeGetHitSignal)
     {
         unitUI.TreeGetHit(treeGetHitSignal.treeObj);
+    }
+
+    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
+    {
+        hudUI.SetCharacter(characterSpawendSignal.character);
     }
 }
