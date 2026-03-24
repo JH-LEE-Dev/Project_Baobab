@@ -30,8 +30,21 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private int hitVibrato = 15;
     [SerializeField] private float hitElasticity = 1f;
 
+    [Header("Wind Sway")]
+    [SerializeField] private bool enableWindSway = true;
+    [SerializeField] private float swayPositionAmplitude = 0.03f;
+    [SerializeField] private float swayRotationAmplitude = 1.25f;
+    [SerializeField] private float swayMainSpeed = 0.55f;
+    [SerializeField] private float swayDetailSpeed = 1.45f;
+    [SerializeField] private float swayDetailWeight = 0.35f;
+
+    private Vector3 topRendererBaseLocalPosition;
+    private Quaternion topRendererBaseLocalRotation;
+    private float swayPhase;
+
     public void Initialize()
     {
+        CacheSwayBasePose();
         ResetVisualState();
     }
 
@@ -61,6 +74,7 @@ public class TreeVisualComponent : MonoBehaviour
 
         visualRoot.DOKill();
         visualRoot.localPosition = Vector3.zero;
+        ResetTopSway();
     }
 
     [ContextMenu("Refresh Visual Preview")]
@@ -80,6 +94,7 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localPosition = Vector3.zero;
         visualRoot.localRotation = Quaternion.identity;
         visualRoot.localScale = Vector3.one;
+        ResetTopSway();
     }
 
     // 나무의 색상을 바꿔준다.
@@ -117,6 +132,8 @@ public class TreeVisualComponent : MonoBehaviour
         SetRandomSprite(topRenderer, topSprites);
         ApplyColors();
         SyncShadowSprite();
+        CacheSwayBasePose();
+        ResetTopSway();
     }
 
     private static void SetRandomSprite(SpriteRenderer _renderer, Sprite[] _sprites)
@@ -148,5 +165,55 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         RefreshVisualPreview();
+    }
+
+    private void Awake()
+    {
+        CacheSwayBasePose();
+    }
+
+    private void Update()
+    {
+        ApplyWindSway();
+    }
+
+    private void CacheSwayBasePose()
+    {
+        if (topRenderer == null)
+        {
+            return;
+        }
+
+        topRendererBaseLocalPosition = topRenderer.transform.localPosition;
+        topRendererBaseLocalRotation = topRenderer.transform.localRotation;
+        swayPhase = Random.Range(0f, Mathf.PI * 2f);
+    }
+
+    private void ApplyWindSway()
+    {
+        if (!Application.isPlaying || !enableWindSway || topRenderer == null)
+        {
+            return;
+        }
+
+        float time = Time.time;
+        float mainWave = Mathf.Sin((time * swayMainSpeed) + swayPhase);
+        float detailWave = Mathf.Sin((time * swayDetailSpeed) + (swayPhase * 1.73f)) * swayDetailWeight;
+        float sway = mainWave + detailWave;
+
+        Transform topTransform = topRenderer.transform;
+        topTransform.localPosition = topRendererBaseLocalPosition + new Vector3(sway * swayPositionAmplitude, 0f, 0f);
+        topTransform.localRotation = topRendererBaseLocalRotation * Quaternion.Euler(0f, 0f, -sway * swayRotationAmplitude);
+    }
+
+    private void ResetTopSway()
+    {
+        if (topRenderer == null)
+        {
+            return;
+        }
+
+        topRenderer.transform.localPosition = topRendererBaseLocalPosition;
+        topRenderer.transform.localRotation = topRendererBaseLocalRotation;
     }
 }
