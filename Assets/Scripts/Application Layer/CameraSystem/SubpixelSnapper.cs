@@ -26,17 +26,25 @@ public class SubpixelSnapper : MonoBehaviour
         Vector3 rawPosition = pixelCamera.transform.position;
 
         // 2. 픽셀 그리드에 딱 맞는 '스냅된 좌표' 계산
-        float snapX = Mathf.Round(rawPosition.x * pixelsPerUnit) / pixelsPerUnit;
-        float snapY = Mathf.Round(rawPosition.y * pixelsPerUnit) / pixelsPerUnit;
+        // Mathf.Round 대신 Floor를 사용하여 소수점 경계에서의 지터링(Jittering) 방지
+        float snapX = Mathf.Floor(rawPosition.x * pixelsPerUnit) / pixelsPerUnit;
+        float snapY = Mathf.Floor(rawPosition.y * pixelsPerUnit) / pixelsPerUnit;
         
         // 3. 저해상도 카메라는 픽셀 격자에 맞춰 렌더링하도록 강제 고정
         pixelCamera.transform.position = new Vector3(snapX, snapY, rawPosition.z);
 
-        // 4. [핵심] 실제 위치와 스냅된 위치 사이의 '소수점 오차' 계산
+        // 4. 실제 위치와 스냅된 위치 사이의 '소수점 오차' 계산
         float offsetX = rawPosition.x - snapX;
         float offsetY = rawPosition.y - snapY;
 
-        // 5. 출력용 쿼드를 오차의 '반대 방향'으로 미세하게 밀어줌
-        quadTransform.localPosition = new Vector3(-offsetX, -offsetY, quadZOffset);
+        // 5. [개선] 오차값을 실제 '화면 픽셀' 단위로 스냅하여 이글거림 해결
+        // 월드 단위 1당 실제 화면의 픽셀 수 계산 (Screen Height / OrthoSize * 2)
+        float worldToScreenPPU = Screen.height / (pixelCamera.orthographicSize * 2f);
+        
+        float finalOffsetX = Mathf.Round(offsetX * worldToScreenPPU) / worldToScreenPPU;
+        float finalOffsetY = Mathf.Round(offsetY * worldToScreenPPU) / worldToScreenPPU;
+
+        // 6. 출력용 쿼드를 화면 픽셀에 정렬된 오차만큼 밀어줌
+        quadTransform.localPosition = new Vector3(-finalOffsetX, -finalOffsetY, quadZOffset);
     }
 }
