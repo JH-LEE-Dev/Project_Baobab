@@ -25,7 +25,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void Initialize()
     {
-        UpdateImage(null);
+        UpdateImage(null, Color.white);
         if (null != uiImage && null != uiImage.sprite && uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
@@ -35,7 +35,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void ResetData()
     {
-        UpdateImage(null);
+        UpdateImage(null, Color.white);
         UpdateItemCount(0);
 
         invSlotRef = null;
@@ -56,12 +56,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         countText.text = _newCnt.ToString();
     }
 
-    public void UpdateImage(Sprite _sprite)
+    public void UpdateImage(Sprite _sprite, Color _color)
     {
         if (null == uiImage || uiImage.sprite == _sprite)
             return;
 
         uiImage.sprite = _sprite;
+        uiImage.color = _color;
         uiImage.enabled = null != _sprite;
     }
 
@@ -73,7 +74,10 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
 
-        UpdateImage(showItemData?.sprite);
+        if (null == showItemData)
+            return;
+
+        UpdateImage(showItemData.sprite, showItemData.color);
     }
 
     public void DisableRayCast()
