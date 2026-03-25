@@ -57,7 +57,7 @@ public class CameraManager : MonoBehaviour
             }
         }
 
-        ReadyCamera();
+        //ReadyCamera();
     }
 
     public void Release()
