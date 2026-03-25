@@ -12,6 +12,8 @@ public enum PortalType
 public enum TreeType
 {
     None,
+    OakTree,
+    PineTree,
     BirchTree,
     Max,
 }
