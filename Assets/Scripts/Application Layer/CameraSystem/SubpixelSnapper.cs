@@ -12,6 +12,11 @@ public class SubpixelSnapper : MonoBehaviour
     [SerializeField] private float pixelsPerUnit = 32f;
     private const float quadZOffset = 10f;
 
+    public void Initialize(Transform _quadTransform)
+    {
+        quadTransform = _quadTransform;
+    }
+
     /// <summary>
     /// 시네머신이 위치 결정을 끝낸 직후(DefaultExecutionOrder 2000) 실행됨
     /// </summary>
@@ -40,7 +45,7 @@ public class SubpixelSnapper : MonoBehaviour
 
         // 5. [개선] 오차값을 실제 '화면 픽셀' 단위로 스냅하여 이글거림 해결
         // 쿼드를 렌더링하는 finalCamera의 orthographicSize(5.625f) 기준
-        float worldToScreenPPU = Screen.height / (quadTransform.parent.GetComponent<Camera>().orthographicSize * 2f);
+        float worldToScreenPPU = Screen.height / (5.625f * 2f);
         float finalOffsetX = Mathf.Round(offsetX * worldToScreenPPU) / worldToScreenPPU;
         float finalOffsetY = Mathf.Round(offsetY * worldToScreenPPU) / worldToScreenPPU;
 
