@@ -63,21 +63,21 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.2609375
+    x: 0
     y: 0
-    width: 0.6666667
-    height: 0.5407407
+    width: 1
+    height: 1
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.5625
+  orthographic size: 5.625
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
     m_Bits: 8183
   m_RenderingPath: -1
-  m_TargetTexture: {fileID: 0}
+  m_TargetTexture: {fileID: 8400000, guid: 4159de6766e1e4444b3c5e1ff871ef1b, type: 2}
   m_TargetDisplay: 0
   m_TargetEye: 3
   m_HDR: 1
@@ -373,6 +373,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7979977446318086124}
     m_Modifications:
+    - target: {fileID: 140258731890173470, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3069459630425517660, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_IsActive
       value: 1
@@ -383,7 +387,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4576627403956033864, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+      propertyPath: m_TargetTexture
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: orthographic size
