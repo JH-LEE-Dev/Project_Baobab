@@ -7,6 +7,7 @@ public class SubpixelSnapper : MonoBehaviour
     // 외부 의존성
     [SerializeField] private Camera pixelCamera;      // 저해상도 RT를 렌더링하는 카메라
     [SerializeField] private Transform quadTransform; // 출력용 쿼드 (Final Camera의 자식)
+    [SerializeField] private Camera finalCamera;
 
     // 내부 설정
     [SerializeField] private float pixelsPerUnit = 32f;
@@ -27,6 +28,11 @@ public class SubpixelSnapper : MonoBehaviour
             return;
         }
 
+        if (finalCamera == null)
+        {
+            finalCamera = quadTransform.parent.GetComponent<Camera>();
+        }
+
         // 1. 시네머신이 댐핑을 적용해 계산한 '이번 프레임의 최종 부드러운 좌표'
         Vector3 rawPosition = pixelCamera.transform.position;
 
@@ -44,8 +50,7 @@ public class SubpixelSnapper : MonoBehaviour
         float offsetY = rawPosition.y - snapY;
 
         // 5. [개선] 오차값을 실제 '화면 픽셀' 단위로 스냅하여 이글거림 해결
-        // 쿼드를 렌더링하는 finalCamera의 orthographicSize(5.625f) 기준
-        float worldToScreenPPU = Screen.height / (5.625f * 2f);
+        float worldToScreenPPU = Screen.height / (finalCamera.orthographicSize * 2f);
         float finalOffsetX = Mathf.Round(offsetX * worldToScreenPPU) / worldToScreenPPU;
         float finalOffsetY = Mathf.Round(offsetY * worldToScreenPPU) / worldToScreenPPU;
 

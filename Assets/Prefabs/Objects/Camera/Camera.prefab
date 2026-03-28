@@ -63,9 +63,9 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0
+    x: 0.0015576323
     y: 0
-    width: 0.99999994
+    width: 0.9968847
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
@@ -187,7 +187,7 @@ MonoBehaviour:
   m_AssetsPPU: 32
   m_RefResolutionX: 642
   m_RefResolutionY: 362
-  m_CropFrame: 0
+  m_CropFrame: 1
   m_GridSnapping: 2
   m_FilterMode: 1
   m_UpscaleRT: 0
@@ -244,6 +244,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SubpixelSnapper
   pixelCamera: {fileID: 1417226923079838101}
   quadTransform: {fileID: 8470433850319079871}
+  finalCamera: {fileID: 0}
   pixelsPerUnit: 32
 --- !u!1 &8308394329529539000
 GameObject:
@@ -399,19 +400,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
-      value: -0.09427084
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.width
-      value: 0.33333334
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.height
-      value: 0.5416667
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5702937174473736841, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5702937174473736841, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+      propertyPath: m_RefResolutionX
+      value: 640
+      objectReference: {fileID: 0}
+    - target: {fileID: 5702937174473736841, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+      propertyPath: m_RefResolutionY
+      value: 360
       objectReference: {fileID: 0}
     - target: {fileID: 6321592856434160072, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_LocalPosition.x
