@@ -4,4 +4,5 @@ public interface IItemData
 {
     ItemType itemType { get; }
     public Sprite sprite { get; }
+    public Color color { get; }
 }

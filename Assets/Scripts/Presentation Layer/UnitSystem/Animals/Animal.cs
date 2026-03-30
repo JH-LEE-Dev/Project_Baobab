@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class Animal : MonoBehaviour
@@ -9,6 +10,7 @@ public class Animal : MonoBehaviour
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
     [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
+    [SerializeField] private TriggerProxy characterSensorProxy;
 
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
@@ -22,6 +24,7 @@ public class Animal : MonoBehaviour
     public Animator anim { get; private set; }
     public Rigidbody2D rb { get; private set; }
     public Collider2D col { get; private set; }
+    public Collider2D characterSensor { get; private set; }
 
     //현재 지형 물리 데이터 (캐싱)
     public GroundPhysicsData currentGroundData { get; private set; }
@@ -31,6 +34,16 @@ public class Animal : MonoBehaviour
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
 
     private PathFindComponent pathFindComponent;
+
+    //군중 제어 코드
+    public Vector3 centerPos;
+    public Vector3 targetPos;
+    public float scatterRadius;
+
+    //도망 코드
+    public bool bRunAway = false;
+    public Vector3 FleeDirection { get; private set; }
+    private Transform playerTransform;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -45,6 +58,11 @@ public class Animal : MonoBehaviour
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
         pathFindComponent = GetComponentInChildren<PathFindComponent>();
+        
+        if (characterSensorProxy != null)
+        {
+            characterSensor = characterSensorProxy.GetComponent<Collider2D>();
+        }
 
         shadowObject.Initialize();
         pathFindComponent.Initialize(environmentProvider.tilemapDataProvider, environmentProvider.pathfindGridProvider);
@@ -53,6 +71,12 @@ public class Animal : MonoBehaviour
         {
             shadowSensor.OnTriggerEnterEvent += HandleShadowEnter;
             shadowSensor.OnTriggerExitEvent += HandleShadowExit;
+        }
+
+        if (characterSensorProxy != null)
+        {
+            characterSensorProxy.OnTriggerEnterEvent += HandleCharacterEnter;
+            characterSensorProxy.OnTriggerExitEvent += HandleCharacterExit;
         }
 
         SetupStateMachine();
@@ -68,6 +92,17 @@ public class Animal : MonoBehaviour
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
         anim.SetFloat(facingDirHash, dirIndex);
+    }
+
+    public void MoveTo(Vector3 _endPos,Vector3 _centerPos,float _scatterRadius)
+    {
+        targetPos = _endPos;
+        centerPos = _centerPos;
+        scatterRadius = _scatterRadius;
+
+        pathFindComponent.FindPath(transform.position, _endPos);
+
+        stateMachine.ChangeState<AS_RunState>();
     }
 
     private void SetupStateMachine()
@@ -88,6 +123,11 @@ public class Animal : MonoBehaviour
     private void Update()
     {
         stateMachine?.Update();
+
+        if (bRunAway && playerTransform != null)
+        {
+            FleeDirection = (transform.position - playerTransform.position).normalized;
+        }
 
         shadowSR.sprite = sr.sprite;
         UpdateAnimalColor();
@@ -115,6 +155,12 @@ public class Animal : MonoBehaviour
             shadowSensor.OnTriggerEnterEvent -= HandleShadowEnter;
             shadowSensor.OnTriggerExitEvent -= HandleShadowExit;
         }
+
+        if (characterSensorProxy != null)
+        {
+            characterSensorProxy.OnTriggerEnterEvent -= HandleCharacterEnter;
+            characterSensorProxy.OnTriggerExitEvent -= HandleCharacterExit;
+        }
     }
 
     private void UpdateAnimalColor()
@@ -137,6 +183,26 @@ public class Animal : MonoBehaviour
         if (_other.CompareTag("TreeShadow"))
         {
             shadowOverlapCount = Mathf.Max(0, shadowOverlapCount - 1);
+        }
+    }
+
+    private void HandleCharacterEnter(Collider2D _other)
+    {
+        // "Player" 태그를 가진 객체가 감지되면 도망 상태 활성화
+        if (_other.CompareTag("Player"))
+        {
+            playerTransform = _other.transform;
+            bRunAway = true;
+        }
+    }
+
+    private void HandleCharacterExit(Collider2D _other)
+    {
+        // 플레이어가 감지 범위를 벗어나면 도망 상태 해제
+        if (_other.CompareTag("Player"))
+        {
+            playerTransform = null;
+            bRunAway = false;
         }
     }
 }

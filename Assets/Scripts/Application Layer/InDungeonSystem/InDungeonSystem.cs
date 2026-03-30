@@ -1,4 +1,4 @@
-using JetBrains.Annotations;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class InDungeonSystem : MonoBehaviour
@@ -6,8 +6,8 @@ public class InDungeonSystem : MonoBehaviour
     private SignalHub signalHub;
     public InDungeonObjectManager inDungeonObjectManager {get; private set;}
     public InDungeonUnitSpawner inDungeonUnitSpawner {get; private set;}
-
     private IEnvironmentProvider environmentProvider;
+
 
     [Header("Dungeon Data")]
     [SerializeField] private DungeonData dungeonData;
@@ -71,6 +71,7 @@ public class InDungeonSystem : MonoBehaviour
 
     private void PortalActivated(PortalType _type)
     {
+        inDungeonUnitSpawner.ReleaseAllAnimals();
         signalHub.Publish(new PortalActivatedSignal(_type));
     }
 

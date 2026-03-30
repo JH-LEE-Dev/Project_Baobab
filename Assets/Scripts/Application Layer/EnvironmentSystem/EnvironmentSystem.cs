@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 {
@@ -11,6 +12,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     public IPathfindGridProvider pathfindGridProvider => pathfindGridManager;
 
+    public IDensityProvider densityProvider => densityManager;
+
     //외부 의존성
     private SignalHub signalHub;
 
@@ -21,6 +24,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private GroundDataManager groundDataManager;
     private WeatherManager weatherManager;
     private PathfindGridManager pathfindGridManager;
+    private DensityManager densityManager;
 
 
     public void Initialize(SignalHub _signalHub, IUnitLogicProvider _unitLogicProvider)
@@ -34,6 +38,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         groundDataManager = GetComponentInChildren<GroundDataManager>();
         weatherManager = GetComponentInChildren<WeatherManager>();
         pathfindGridManager =GetComponentInChildren<PathfindGridManager>();
+        densityManager = GetComponentInChildren<DensityManager>();
 
         if (timeController != null)
             timeController.Initialize();
@@ -46,6 +51,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         if (weatherManager != null)
             weatherManager.Initialize(_unitLogicProvider);
+
+        if(densityManager != null)
+            densityManager.Initialize();
 
         BindEvents();
         SubscribeSignals();
@@ -71,11 +79,16 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         tileMapGenerator.TilemapGeneratedEvent -= TilemapGenerated;
         tileMapGenerator.TilemapGeneratedEvent += TilemapGenerated;
+
+        tileMapGenerator.DeclareActiveTilesCntEvent -= DeclareActiveTileCnt;
+        tileMapGenerator.DeclareActiveTilesCntEvent += DeclareActiveTileCnt;
     }
 
     private void ReleaseEvents()
     {
         tileMapGenerator.TilemapGeneratedEvent -= TilemapGenerated;
+
+        tileMapGenerator.DeclareActiveTilesCntEvent -= DeclareActiveTileCnt;
     }
 
     private void DungeonStarted(DungeonReadySignal dungeonStartSignal)
@@ -87,5 +100,10 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void TilemapGenerated(List<Vector3> tilePositions)
     {
         signalHub.Publish(new MapGeneratedSignal(tilePositions));
+    }
+
+    private void DeclareActiveTileCnt(int _grassTileCnt,int _walkableTileCnt)
+    {
+        densityManager.SetActiveTilesCnt(_grassTileCnt,_walkableTileCnt);
     }
 }

@@ -6,4 +6,5 @@ public interface IEnvironmentProvider
     public IGroundDataProvider groundDataProvider { get; }
     public ITilemapDataProvider tilemapDataProvider { get; }
     public IPathfindGridProvider pathfindGridProvider { get; }
+    public IDensityProvider densityProvider { get; }
 }

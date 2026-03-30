@@ -106,11 +106,9 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localScale = Vector3.one;
         ResetTopSway();
     }
-
     #endregion
 
     #region Apply Data
-
     // 트리 데이터가 적용될 때 스프라이트 조합과 색상 바리에이션을 새로 구성한다.
     public void ApplyVisual(TreeData _treeData)
     {
@@ -129,6 +127,12 @@ public class TreeVisualComponent : MonoBehaviour
     }
 
     // 상단/하단 스프라이트에 밝기 편차를 줘서 개체마다 미묘한 색 차이를 만든다.
+    public Color GetBottomColor()
+    {
+        return bottomRenderer.color;
+    }
+
+    // 나무의 색상을 바꿔준다.
     private void ApplyColors()
     {
         if (topRenderer != null)

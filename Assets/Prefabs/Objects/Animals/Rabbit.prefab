@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4267000666182763687}
   - component: {fileID: 6321879945347207353}
   - component: {fileID: 5139410583856100867}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: ShadowSensor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -91,7 +91,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8195625567413121415}
   - component: {fileID: 5272607701980620956}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: PathFindComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -125,6 +125,87 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf5e00459b1eaaf44bb0def6eda12530, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PathFindComponent
+--- !u!1 &4577984043536687335
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8032868998262436013}
+  - component: {fileID: 3538285812751744971}
+  - component: {fileID: 5794393059330898891}
+  m_Layer: 15
+  m_Name: CharacterSensor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8032868998262436013
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4577984043536687335}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8125574298360731873}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!58 &3538285812751744971
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4577984043536687335}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_Radius: 2.88
+--- !u!114 &5794393059330898891
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4577984043536687335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6f2e6b8eb560be4da5a1871bf638b78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TriggerProxy
 --- !u!1 &5476878515907285987
 GameObject:
   m_ObjectHideFlags: 0
@@ -136,7 +217,7 @@ GameObject:
   - component: {fileID: 4818910548906014969}
   - component: {fileID: 941508293144650439}
   - component: {fileID: 2771727189475080246}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: Shadow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -151,7 +232,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5476878515907285987}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0.92387956, w: -0.3826834}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -170,6 +251,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 157c2ed3ab0d72b4bba3702c2ca7f5ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Shadow
+  defaultRotationZ: 225
+  defaultScaleY: 1
 --- !u!212 &2771727189475080246
 SpriteRenderer:
   serializedVersion: 2
@@ -238,10 +321,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8125574298360731873}
-  - component: {fileID: 8430726926679011216}
-  - component: {fileID: 2422511412775729993}
   - component: {fileID: 6606156975207352883}
-  m_Layer: 0
+  - component: {fileID: 1015278686456738704}
+  - component: {fileID: 8158245246769060474}
+  m_Layer: 14
   m_Name: Rabbit
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -257,7 +340,7 @@ Transform:
   m_GameObject: {fileID: 5911788971367355826}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -23.7566, y: 29.40053, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -265,9 +348,30 @@ Transform:
   - {fileID: 4818910548906014969}
   - {fileID: 4267000666182763687}
   - {fileID: 8195625567413121415}
+  - {fileID: 8032868998262436013}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!50 &8430726926679011216
+--- !u!114 &6606156975207352883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5911788971367355826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 014c696f190d58e4e9d1dbe756fee7d7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Animal
+  shadowObject: {fileID: 941508293144650439}
+  animatorObject: {fileID: 8470380151137750416}
+  shadowSensor: {fileID: 5139410583856100867}
+  characterSensorProxy: {fileID: 5794393059330898891}
+  centerPos: {x: 0, y: 0, z: 0}
+  targetPos: {x: 0, y: 0, z: 0}
+  scatterRadius: 0
+  bRunAway: 0
+--- !u!50 &1015278686456738704
 Rigidbody2D:
   serializedVersion: 5
   m_ObjectHideFlags: 0
@@ -290,11 +394,11 @@ Rigidbody2D:
   m_ExcludeLayers:
     serializedVersion: 2
     m_Bits: 0
-  m_Interpolate: 1
+  m_Interpolate: 0
   m_SleepingMode: 1
-  m_CollisionDetection: 1
+  m_CollisionDetection: 0
   m_Constraints: 4
---- !u!58 &2422511412775729993
+--- !u!58 &8158245246769060474
 CircleCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -328,23 +432,8 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.01, y: 0.06}
-  m_Radius: 0.13
---- !u!114 &6606156975207352883
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5911788971367355826}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 014c696f190d58e4e9d1dbe756fee7d7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Animal
-  shadowObject: {fileID: 941508293144650439}
-  animatorObject: {fileID: 8470380151137750416}
-  shadowSensor: {fileID: 5139410583856100867}
+  m_Offset: {x: -0.04, y: 0.09}
+  m_Radius: 0.14
 --- !u!1 &8470380151137750416
 GameObject:
   m_ObjectHideFlags: 0
@@ -356,7 +445,7 @@ GameObject:
   - component: {fileID: 5166629726069554192}
   - component: {fileID: 3992563530123070800}
   - component: {fileID: 6282789654599482605}
-  m_Layer: 0
+  m_Layer: 14
   m_Name: Animator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -449,7 +538,7 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 8793639957104055765, guid: d48a7ec034f70294a9290bb50ace8fee, type: 3}
+  m_Sprite: {fileID: 1125379381859389362, guid: d215ed28e9b430647ac02a441230a286, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

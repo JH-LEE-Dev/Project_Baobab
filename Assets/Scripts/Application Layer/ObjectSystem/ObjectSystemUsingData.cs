@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Generic;
 
@@ -12,6 +11,8 @@ public enum PortalType
 public enum TreeType
 {
     None,
+    OakTree,
+    PineTree,
     BirchTree,
     Max,
 }
