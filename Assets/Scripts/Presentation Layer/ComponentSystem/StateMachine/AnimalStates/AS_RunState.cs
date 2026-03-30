@@ -49,6 +49,7 @@ public class AS_RunState : AnimalState
         var path = pathFindComponent.Path;
         if (path == null || path.Count == 0 || currentPathIndex >= path.Count)
         {
+            animal.bArrived = true;
             stateMachine.ChangeState<AS_IdleState>();
             return;
         }
@@ -75,7 +76,6 @@ public class AS_RunState : AnimalState
                 if (stuckTimer >= stuckThreshold)
                 {
                     // 데드락 예방: 길을 다시 찾거나 양보를 위해 Idle로 전환
-                    // 재탐색 시 현재 점유된 타일들을 자동으로 피해감
                     if (!pathFindComponent.FindPath(animal.transform.position, finalDestination))
                     {
                         stateMachine.ChangeState<AS_IdleState>();
@@ -89,6 +89,42 @@ public class AS_RunState : AnimalState
                 return;
             }
         }
+        else
+        {
+            // 1-1. 대각선 이동 중 실시간 장애물(나무 등) 감지
+            Vector3Int diff = nextReservedPos - currentReservedPos;
+            if (diff.x != 0 && diff.y != 0) // 대각선 이동 중인가?
+            {
+                // 직교 방향 양 옆 타일이 여전히 이동 가능한지 체크
+                bool side1 = pathFindComponent.IsWalkable(new Vector3Int(currentReservedPos.x + diff.x, currentReservedPos.y, 0));
+                bool side2 = pathFindComponent.IsWalkable(new Vector3Int(currentReservedPos.x, currentReservedPos.y + diff.y, 0));
+
+                if (!side1 || !side2) // 옆에 나무가 자랐다면!
+                {
+                    animal.rb.linearVelocity = Vector2.zero;
+                    animal.anim.SetBool(animal.isMovingHash, false);
+                    stuckTimer += Time.deltaTime;
+
+                    if (stuckTimer >= stuckThreshold)
+                    {
+                        // 경로가 막혔으므로 재탐색
+                        if (!pathFindComponent.FindPath(animal.transform.position, finalDestination))
+                        {
+                            stateMachine.ChangeState<AS_IdleState>();
+                        }
+                        else
+                        {
+                            currentPathIndex = 0;
+                            stuckTimer = 0f;
+                            // 현재 타일만 남기고 다음 예약 해제하여 다시 처음부터 예약하게 함
+                            pathFindComponent.Release(nextReservedPos);
+                            hasNextReservation = false;
+                        }
+                    }
+                    return;
+                }
+            }
+        }
 
         // 2. 이동 및 도착 판정
         if (Vector2.Distance(animal.transform.position, path[currentPathIndex]) < stopDistance)
@@ -99,6 +135,23 @@ public class AS_RunState : AnimalState
             hasNextReservation = false; // 다음 타일을 위한 예약 공간 비움
             
             currentPathIndex++;
+
+            // 다음 목표 타일이 유효한지 미리 체크 (나무 등이 자랐을 경우 대비)
+            if (currentPathIndex < path.Count)
+            {
+                Vector3Int nextCell = pathFindComponent.WorldToCell(path[currentPathIndex]);
+                if (!pathFindComponent.IsWalkable(nextCell))
+                {
+                    if (!pathFindComponent.FindPath(animal.transform.position, finalDestination))
+                    {
+                        stateMachine.ChangeState<AS_IdleState>();
+                    }
+                    else
+                    {
+                        currentPathIndex = 0;
+                    }
+                }
+            }
         }
     }
 

@@ -19,7 +19,7 @@ public class LogItem : Item
     private Transform suckTarget;
     private Coroutine moveCoroutine;
 
-    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState)
+    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState,Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
 
@@ -29,8 +29,8 @@ public class LogItem : Item
         isLaunching = false;
         suckTarget = null;
         sprite = _logItemTypeData.sprite;
+        color = _color;
         
-
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer != null)
         {

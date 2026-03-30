@@ -1,4 +1,4 @@
-using JetBrains.Annotations;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class InDungeonSystem : MonoBehaviour
@@ -6,8 +6,9 @@ public class InDungeonSystem : MonoBehaviour
     private SignalHub signalHub;
     public InDungeonObjectManager inDungeonObjectManager {get; private set;}
     public InDungeonUnitSpawner inDungeonUnitSpawner {get; private set;}
-
     private IEnvironmentProvider environmentProvider;
+    private GroupManager groupManager;
+
 
     [Header("Dungeon Data")]
     [SerializeField] private DungeonData dungeonData;
@@ -22,6 +23,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
+
+        groupManager = GetComponentInChildren<GroupManager>();
+        groupManager.Initialize(environmentProvider);
 
         BindEvents();
         SubscribeSignals();
@@ -50,6 +54,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonObjectManager.TreeGetHitEvent += TreeGetHit;
+
+        inDungeonUnitSpawner.AnimalSpawnedEvent -= AnimalSpawned;
+        inDungeonUnitSpawner.AnimalSpawnedEvent += AnimalSpawned;
     }
 
     private void ReleaseEvents()
@@ -57,6 +64,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
         inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
+        inDungeonUnitSpawner.AnimalSpawnedEvent -= AnimalSpawned;
     }
 
     private void SubscribeSignals()
@@ -90,5 +98,10 @@ public class InDungeonSystem : MonoBehaviour
     private void TreeGetHit(TreeObj _treeObj)
     {
         signalHub.Publish(new TreeGetHitSignal(_treeObj));
+    }
+
+    private void AnimalSpawned(IReadOnlyList<AnimalGroup> _animapGroup)
+    {
+        groupManager.SetAnimalGroup(_animapGroup);
     }
 }

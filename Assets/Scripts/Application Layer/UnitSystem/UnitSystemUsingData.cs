@@ -1,4 +1,6 @@
 using System;
+using UnityEngine;
+using System.Collections.Generic;
 
 public struct LogStateCount
 {
@@ -11,10 +13,10 @@ public class InventorySlot : IInventorySlot
 {
     public ItemData itemData;
     public int totalCount;
-    
+
     // 내부 데이터 저장용 (인덱스 = LogState enum 값)
     private int[] logStateCounts = new int[Enum.GetValues(typeof(LogState)).Length];
-    
+
     // 인터페이스 노출용 (정렬된 캐시)
     private LogStateCount[] sortedLogStateCounts;
     private bool isDirty = true;
@@ -49,7 +51,7 @@ public class InventorySlot : IInventorySlot
             sortedLogStateCounts[i].state = states[i];
             sortedLogStateCounts[i].count = 0;
         }
-        
+
         for (int i = 0; i < logStateCounts.Length; i++)
         {
             logStateCounts[i] = 0;
@@ -70,7 +72,7 @@ public class InventorySlot : IInventorySlot
         {
             logStateCounts[(int)logData.logState] = _count;
         }
-        
+
         isDirty = true;
     }
 
@@ -125,5 +127,19 @@ public class InventorySlot : IInventorySlot
                 }
             }
         }
+    }
+}
+
+// // 그룹 관리 클래스
+public class AnimalGroup
+{
+    public List<Animal> members = new List<Animal>();
+    public Vector3 centerPosition;
+    public float moveTimer;
+
+    public AnimalGroup(Vector3 _center)
+    {
+        centerPosition = _center;
+        moveTimer = UnityEngine.Random.Range(5f, 15f);
     }
 }

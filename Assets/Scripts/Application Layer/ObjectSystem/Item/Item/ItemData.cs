@@ -23,6 +23,7 @@ public class ItemData : IItemData
         if (_item == null) return;
         itemType = _item.itemType;
         sprite  = _item.sprite;
+        color = _item.color;
     }
 
     public virtual void Reset()

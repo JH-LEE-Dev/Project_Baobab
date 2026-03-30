@@ -22,6 +22,10 @@ public class Animal : MonoBehaviour
     public Animator anim { get; private set; }
     public Rigidbody2D rb { get; private set; }
     public Collider2D col { get; private set; }
+    public bool bArrived = false;
+    public Vector3 centerPos;
+    public Vector3 targetPos;
+    public float scatterRadius;
 
     //현재 지형 물리 데이터 (캐싱)
     public GroundPhysicsData currentGroundData { get; private set; }
@@ -68,6 +72,17 @@ public class Animal : MonoBehaviour
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
         anim.SetFloat(facingDirHash, dirIndex);
+    }
+
+    public void MoveTo(Vector3 _endPos,Vector3 _centerPos,float _scatterRadius)
+    {
+        targetPos = _endPos;
+        centerPos = _centerPos;
+        scatterRadius = _scatterRadius;
+
+        pathFindComponent.FindPath(transform.position, _endPos);
+        bArrived = false;
+        stateMachine.ChangeState<AS_RunState>();
     }
 
     private void SetupStateMachine()
