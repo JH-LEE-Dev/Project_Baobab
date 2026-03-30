@@ -8,6 +8,8 @@ public class UIView_Inventory : UIView
     [SerializeField] private Transform uiRoot; 
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject uiPopupPrefab;
+    [SerializeField] private GameObject uiHomingPrefab;
+
 
     [Header("Inventory Settings")]
     [SerializeField] private List<UI_InventorySlot> inventorySlots;
@@ -17,6 +19,8 @@ public class UIView_Inventory : UIView
     //내부 의존성
     private IInventory inventory;
     private UI_InventoryPopup invPopup;
+    private UI_Homing homing;
+
     private const int defaultPopupCap = 12;
 
     public override void Initialize(UIViewContext _ctx)
@@ -26,12 +30,15 @@ public class UIView_Inventory : UIView
         inventorySlots.Clear();
         UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
         Init_InventoryPopup();
+        Init_Homing();
     }
 
     public void DependencyInjection(IInventory _inventory)
     {
         inventory = _inventory;
     }
+
+#region [ Inventory UI ]
 
     public void UpdateMaxSlotCount(int _cnt)
     {
@@ -123,6 +130,8 @@ public class UIView_Inventory : UIView
         invPopup.gameObject.SetActive(false);
     }
 
+#endregion
+
 #region  [ Hover Event ]
     private void EnterPopup(IItemData _itemData, LogStateCount[] _logStateCounts, Vector2 _position)
     {
@@ -147,17 +156,34 @@ public class UIView_Inventory : UIView
     }   
 #endregion
 
+#region [ Homing UI ]
+
+    private void Init_Homing()
+    {
+        homing = Instantiate(uiHomingPrefab, this.transform.parent).GetComponent<UI_Homing>();
+
+        if (null == homing)
+            return;
+
+        homing.Initialize();
+        homing.gameObject.SetActive(false);
+    }
+
+#endregion
+
     // 유니티 이벤트 함수
     protected override void OnShow() 
     {
         base.OnShow();
 
         InventoryShowEvent();
+        homing?.OnShow();
     }
 
     protected override void OnHide() 
     {
         ExitPopup();
+        homing?.OnHide();
 
         base.OnHide();
     }
