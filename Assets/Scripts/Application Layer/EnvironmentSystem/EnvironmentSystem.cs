@@ -21,6 +21,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private GroundDataManager groundDataManager;
     private WeatherManager weatherManager;
     private PathfindGridManager pathfindGridManager;
+    private DensityManager densityManager;
 
 
     public void Initialize(SignalHub _signalHub, IUnitLogicProvider _unitLogicProvider)
@@ -34,6 +35,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         groundDataManager = GetComponentInChildren<GroundDataManager>();
         weatherManager = GetComponentInChildren<WeatherManager>();
         pathfindGridManager =GetComponentInChildren<PathfindGridManager>();
+        densityManager = GetComponentInChildren<DensityManager>();
 
         if (timeController != null)
             timeController.Initialize();
@@ -46,6 +48,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         if (weatherManager != null)
             weatherManager.Initialize(_unitLogicProvider);
+
+        if(densityManager != null)
+            densityManager.Initialize();
 
         BindEvents();
         SubscribeSignals();
