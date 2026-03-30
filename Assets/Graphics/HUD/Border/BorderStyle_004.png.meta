@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: dd3c942c9fb71bc438fdf260419b5da5
+guid: f10178b597fdba34f99738192b240936
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8563423796457529545
-    second: New_Wood_002_D_0
+      213: -7475488301642935865
+    second: BorderStyle_004_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,7 +52,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
-  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteBorder: {x: 6, y: 5, z: 6, w: 6}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: New_Wood_002_D_0
+      name: BorderStyle_004_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 9
-        width: 21
-        height: 15
+        x: 0
+        y: 0
+        width: 32
+        height: 32
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9c06af8629467d670800000000000000
-      internalID: 8563423796457529545
+      spriteID: 7c11cf91ffab14890800000000000000
+      internalID: -7475488301642935865
       vertices: []
       indices: 
       edges: []
@@ -131,13 +131,11 @@ TextureImporter:
     indices: 
     edges: []
     weights: []
-    secondaryTextures:
-    - texture: {fileID: 2800000, guid: b20837008e1a38947a1866ba4883e4f3, type: 3}
-      name: _NormalMap
+    secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      New_Wood_002_D_0: 8563423796457529545
+      BorderStyle_004_0: -7475488301642935865
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
