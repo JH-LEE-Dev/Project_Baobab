@@ -114,56 +114,29 @@ public class PathFindComponent : MonoBehaviour
                 Vector3Int neighborPos = currentNode.pos + offset;
 
                 // 1. 기본 이동 가능 여부, 방문 여부, 그리고 다른 유닛 점유 여부 확인
-                if (!tilemapDataProvider.IsWalkable(neighborPos) || 
-                    closedNodes.ContainsKey(neighborPos) || 
+                if (!tilemapDataProvider.IsWalkable(neighborPos) ||
+                    closedNodes.ContainsKey(neighborPos) ||
                     pathfindGridProvider.IsOccupied(neighborPos))
                 {
                     continue;
                 }
 
-                // 2. 이동 경로 양 옆 타일 체크 (좁은 길 통과 제한)
-                Vector3Int side1, side2;
+                // 2. 이동 경로 양 옆 타일 체크 (코너 커팅 방지)
                 if (offset.x != 0 && offset.y != 0) // 대각선 이동 시 (1,1) 등
                 {
                     // 양 옆은 직교 방향 타일
-                    side1 = currentNode.pos + new Vector3Int(offset.x, 0, 0);
-                    side2 = currentNode.pos + new Vector3Int(0, offset.y, 0);
-                }
-                else if (offset.x != 0) // 가로 이동 시 (1,0) 등
-                {
-                    // 양 옆은 세로 방향 대각선 타일
-                    side1 = currentNode.pos + new Vector3Int(offset.x, 1, 0);
-                    side2 = currentNode.pos + new Vector3Int(offset.x, -1, 0);
-                }
-                else // 세로 이동 시 (0,1) 등
-                {
-                    // 양 옆은 가로 방향 대각선 타일
-                    side1 = currentNode.pos + new Vector3Int(1, offset.y, 0);
-                    side2 = currentNode.pos + new Vector3Int(-1, offset.y, 0);
-                }
+                    Vector3Int side1 = currentNode.pos + new Vector3Int(offset.x, 0, 0);
+                    Vector3Int side2 = currentNode.pos + new Vector3Int(0, offset.y, 0);
 
-                // 양 옆 타일 중 하나라도 갈 수 없으면, 갈 수 없음.
-                if (!tilemapDataProvider.IsWalkable(side1) || !tilemapDataProvider.IsWalkable(side2))
-                {
-                    continue;
-                }
-
-                // 3. 방향 전환 페널티 (직진 선호 로직)
-                int turnPenalty = 0;
-                if (currentNode.pos != startPos)
-                {
-                    Vector3Int previousDir = currentNode.pos - currentNode.parentPos;
-                    if (previousDir != offset)
+                    // 양 옆 타일 중 하나라도 갈 수 없으면, 대각선으로 가로질러 갈 수 없음.
+                    if (!tilemapDataProvider.IsWalkable(side1) || !tilemapDataProvider.IsWalkable(side2))
                     {
-                        // 방향이 바뀌면 약간의 비용(예: 직교 이동의 절반 수준)을 추가하여 
-                        // 거리가 같다면 꺾이지 않는 경로를 우선 선택하게 함
-                        turnPenalty = 5; 
+                        continue;
                     }
                 }
 
-                int newMovementCostToNeighbor = currentNode.gCost + GetDistance(currentNode.pos, neighborPos) + turnPenalty;
+                int newMovementCostToNeighbor = currentNode.gCost + GetDistance(currentNode.pos, neighborPos);
                 int openIndex = FindInOpenList(neighborPos);
-
 
                 if (openIndex == -1)
                 {

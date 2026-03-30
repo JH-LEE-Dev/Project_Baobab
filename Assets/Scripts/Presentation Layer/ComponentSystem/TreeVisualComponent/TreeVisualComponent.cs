@@ -97,6 +97,11 @@ public class TreeVisualComponent : MonoBehaviour
         ResetTopSway();
     }
 
+    public Color GetBottomColor()
+    {
+        return bottomRenderer.color;
+    }
+
     // 나무의 색상을 바꿔준다.
     private void ApplyColors()
     {

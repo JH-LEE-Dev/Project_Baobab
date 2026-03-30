@@ -95,7 +95,7 @@ public class ItemManager : MonoBehaviour
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = _treeObj.transform.position;
-            logItem.Initialize(logItemTypeDataBase.Get(treeData.type),logType);
+            logItem.Initialize(logItemTypeDataBase.Get(treeData.type),logType,_treeObj.GetColor());
 
             // 포물선 운동 설정
             Vector3 startPos = _treeObj.transform.position;

@@ -6,6 +6,7 @@ using System;
 public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 {
     public event Action<List<Vector3>> TilemapGeneratedEvent;
+    public event Action<int, int> DeclareActiveTilesCntEvent;
 
     [Header("설정")]
     [SerializeField] private GameObject gridPrefab;
@@ -36,6 +37,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private float[] noiseValues;
     private TileBase[] groundTiles;
     private TileBase[] collisionTiles;
+    private int[] cellToIndex; // Dictionary<Vector3Int, int> 대신 사용
     private bool[] visited;
     private bool[] isShoreline;
     private float halfCellY;
@@ -47,7 +49,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private List<int> innerEdgesList = new List<int>(5000);
     private List<Vector3> grassPositions = new List<Vector3>(5000);
     private List<Vector3> walkablePositions = new List<Vector3>(22500);
-    private Dictionary<Vector3Int, int> positionToIndex = new Dictionary<Vector3Int, int>(22500);
     private Queue<int> bfsQueue = new Queue<int>(22500);
 
     private int playerIdx = -1;
@@ -75,6 +76,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         noiseValues = new float[size];
         groundTiles = new TileBase[size];
         collisionTiles = new TileBase[size];
+        cellToIndex = new int[size];
+        for (int i = 0; i < size; i++) cellToIndex[i] = -1;
         visited = new bool[size];
         isShoreline = new bool[size];
 
@@ -93,6 +96,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         DetermineSpawns();
         ApplyTiles();
 
+        DeclareActiveTilesCntEvent?.Invoke(walkablePositions.Count, grassPositions.Count);
         TilemapGeneratedEvent?.Invoke(grassPositions);
     }
 
@@ -106,13 +110,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     public bool IsWalkable(Vector3Int _cellPos)
     {
-        return positionToIndex.ContainsKey(_cellPos);
+        if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;
+        return cellToIndex[_cellPos.x + _cellPos.y * width] != -1;
     }
 
     public Vector3Int WorldToCell(Vector3 _worldPos)
     {
         if (groundTilemap == null) return Vector3Int.zero;
-        
+
         Vector3 adjustedPos = _worldPos;
         adjustedPos.y -= halfCellY;
         return groundTilemap.WorldToCell(adjustedPos);
@@ -134,18 +139,26 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
         collisionTilemap.SetTile(cellPos, treeCollisionTile);
 
-        // O(1) Remove using index mapping
-        if (positionToIndex.TryGetValue(cellPos, out int index))
+        if (cellPos.x < 0 || cellPos.x >= width || cellPos.y < 0 || cellPos.y >= height) return;
+
+        int flatIdx = cellPos.x + cellPos.y * width;
+        int index = cellToIndex[flatIdx];
+
+        if (index != -1)
         {
             int lastIdx = walkablePositions.Count - 1;
             Vector3 lastPos = walkablePositions[lastIdx];
             Vector3Int lastCellPos = WorldToCell(lastPos);
 
             walkablePositions[index] = lastPos;
-            positionToIndex[lastCellPos] = index;
+            
+            if (lastCellPos.x >= 0 && lastCellPos.x < width && lastCellPos.y >= 0 && lastCellPos.y < height)
+            {
+                cellToIndex[lastCellPos.x + lastCellPos.y * width] = index;
+            }
 
             walkablePositions.RemoveAt(lastIdx);
-            positionToIndex.Remove(cellPos);
+            cellToIndex[flatIdx] = -1;
         }
     }
 
@@ -159,9 +172,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
         collisionTilemap.SetTile(cellPos, null);
 
-        if (!positionToIndex.ContainsKey(cellPos))
+        if (cellPos.x < 0 || cellPos.x >= width || cellPos.y < 0 || cellPos.y >= height) return;
+
+        int flatIdx = cellPos.x + cellPos.y * width;
+        if (cellToIndex[flatIdx] == -1)
         {
-            positionToIndex[cellPos] = walkablePositions.Count;
+            cellToIndex[flatIdx] = walkablePositions.Count;
             walkablePositions.Add(_worldPos);
         }
     }
@@ -333,7 +349,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         grassPositions.Clear();
         walkablePositions.Clear();
-        positionToIndex.Clear();
+        for (int i = 0; i < size; i++) cellToIndex[i] = -1;
 
         float sandT = waterThreshold + 0.1f;
         float mountT = 0.7f;
@@ -350,9 +366,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             else
             {
                 Vector3 pos = GetWorldPos(i);
-                Vector3Int cellPos = new Vector3Int(i % width, i / width, 0);
-                
-                positionToIndex[cellPos] = walkablePositions.Count;
+
+                cellToIndex[i] = walkablePositions.Count;
                 walkablePositions.Add(pos);
 
                 if (v < sandT)

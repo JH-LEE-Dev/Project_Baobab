@@ -37,7 +37,7 @@ public class TownObjectManager : MonoBehaviour
         portal.Initialize(PortalType.ToDungeonPortal);
 
         // 씬 내의 모든 나무(비활성 포함)를 찾아 관리 대상으로 등록
-        trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
 
         if (trees != null && trees.Length > 0)
         {

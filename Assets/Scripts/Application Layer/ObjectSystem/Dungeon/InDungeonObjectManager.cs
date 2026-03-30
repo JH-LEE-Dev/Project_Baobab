@@ -19,8 +19,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     // // 내부 의존성
     [Header("Tree Settings")]
     [SerializeField] private TreeObj treePrefab;
-    [SerializeField, Range(0f, 1f)] private float startDensity = 0.1f;
-    [SerializeField, Range(0f, 1f)] private float maxDensity = 0.3f;
     [SerializeField] private float spawnInterval = 1.0f;
 
     [Header("Optimization")]
@@ -123,8 +121,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         }
         ShufflePositions(availablePositions);
 
-        // 2. 초기 밀도 스폰
-        int startCount = Mathf.RoundToInt(availablePositions.Count * startDensity);
+        // 2. 초기 개수 스폰
+        int startCount = environmentProvider.densityProvider.GetTreeStartCnt();
         for (int i = 0; i < startCount; i++)
         {
             SpawnOneTreeFromAvailable();
@@ -136,23 +134,41 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         growthCoroutine = StartCoroutine(GrowthRoutine());
     }
 
-    private void SpawnOneTreeFromAvailable()
+    private bool SpawnOneTreeFromAvailable()
     {
-        if (availablePositions.Count == 0) return;
+        int count = availablePositions.Count;
+        if (count == 0) return false;
 
-        int lastIdx = availablePositions.Count - 1;
-        int randomIndex = UnityEngine.Random.Range(0, availablePositions.Count);
-        Vector3 spawnPos = availablePositions[randomIndex];
+        // 랜덤한 시작 지점부터 순회하며 빈 공간을 찾음
+        int startIdx = UnityEngine.Random.Range(0, count);
+        for (int i = 0; i < count; i++)
+        {
+            // 성능 보호를 위해 한 프레임에 너무 많은 타일을 검사하지 않도록 제한 (최대 30회)
+            if (i > 30) break;
 
-        // Swap-with-last for O(1) removal
-        availablePositions[randomIndex] = availablePositions[lastIdx];
-        availablePositions.RemoveAt(lastIdx);
+            int checkIdx = (startIdx + i) % count;
+            Vector3 spawnPos = availablePositions[checkIdx];
+            Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(spawnPos);
 
-        TreeObj tree = treePool.Get();
-        tree.transform.position = spawnPos;
-        activeTrees.Add(tree);
+            // 해당 타일이 점유 중(플레이어, 몬스터 등)이 아니면 생성 진행
+            if (!environmentProvider.pathfindGridProvider.IsOccupied(cellPos))
+            {
+                int lastIdx = availablePositions.Count - 1;
+                // Swap-with-last for O(1) removal
+                availablePositions[checkIdx] = availablePositions[lastIdx];
+                availablePositions.RemoveAt(lastIdx);
 
-        environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
+                TreeObj tree = treePool.Get();
+                tree.transform.position = spawnPos;
+                activeTrees.Add(tree);
+
+                environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
+                environmentProvider.densityProvider.UpdateTreeCnt(true);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private IEnumerator GrowthRoutine()
@@ -161,11 +177,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         {
             yield return spawnYield;
 
-            int maxCount = Mathf.RoundToInt(grassTileWorldPositions.Count * maxDensity);
-            if (activeTrees.Count < maxCount && availablePositions.Count > 0)
+            if (environmentProvider.densityProvider.CanCreateTree() && availablePositions.Count > 0)
             {
-                SpawnOneTreeFromAvailable();
-                isCullingDirty = true;
+                // 성공적으로 생성했을 때만 컬링 그룹 갱신 플래그 설정
+                if (SpawnOneTreeFromAvailable())
+                {
+                    isCullingDirty = true;
+                }
             }
         }
     }
@@ -177,6 +195,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             if (activeTrees[i] != null)
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
+                environmentProvider.densityProvider.UpdateTreeCnt(false);
                 treePool.Release(activeTrees[i]);
             }
         }
@@ -294,6 +313,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private void OnTreeDead(TreeObj _treeObj)
     {
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
+        environmentProvider.densityProvider.UpdateTreeCnt(false);
         itemManager.SpawnLogItem(_treeObj);
 
         // 죽은 위치 재사용 준비

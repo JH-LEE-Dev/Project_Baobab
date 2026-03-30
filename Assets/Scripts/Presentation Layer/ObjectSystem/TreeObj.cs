@@ -80,6 +80,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj
         UpdateShadow(bottomShadowObject);
     }
 
+    public Color GetColor()
+    {
+        return treeVisualComponent.GetBottomColor();   
+    }
+
     private void InitializeShadow(Shadow shadow)
     {
         if (shadow != null)

@@ -136,7 +136,7 @@ namespace PresentationLayer.UISystem.HUD
                 newPos.y += showYOffset;
 
                 rect.position = newPos;
-                Debug.Log(newPos + ", " + rect.position);
+                //Debug.Log(newPos + ", " + rect.position);
             }
         }
 
