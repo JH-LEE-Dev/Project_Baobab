@@ -160,7 +160,7 @@ public class UIView_Popup : UIView
 
     private void Init_Homing()
     {
-        homing = Instantiate(uiHomingPrefab, this.transform.parent).GetComponent<UI_Homing>();
+        //homing = Instantiate(uiHomingPrefab, this.transform.parent).GetComponent<UI_Homing>();
 
         if (null == homing)
             return;
