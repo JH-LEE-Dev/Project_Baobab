@@ -91,7 +91,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
     private void OpenUIView()
     {
-        UIView_Inventory inventoryUI = uiManager.Open<UIView_Inventory>();
+        UIView_Popup inventoryUI = uiManager.Open<UIView_Popup>();
         inventoryUI.Hide();
 
         UIView_HUD hudUI = uiManager.Open<UIView_HUD>();

@@ -2,7 +2,7 @@ using PresentationLayer.UISystem.View;
 
 public class GameplayUICoordinator
 {
-    private UIView_Inventory inventoryUI;
+    private UIView_Popup inventoryUI;
     private InputManager inputManager;
     private UIView_Unit unitUI;
 
@@ -11,7 +11,7 @@ public class GameplayUICoordinator
 
     private bool bInventoryOpened = false;
 
-    public void Initialize(SignalHub _signalHub,InputManager _inputManager, UIView_Inventory _inventoryUI, UIView_HUD _hudUI,UIView_Unit _unitUI)
+    public void Initialize(SignalHub _signalHub,InputManager _inputManager, UIView_Popup _inventoryUI, UIView_HUD _hudUI,UIView_Unit _unitUI)
     {
         inputManager = _inputManager;
         inventoryUI = _inventoryUI;

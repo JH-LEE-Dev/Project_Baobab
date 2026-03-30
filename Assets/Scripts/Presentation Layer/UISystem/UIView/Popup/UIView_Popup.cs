@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UIView_Inventory : UIView
+public class UIView_Popup : UIView
 {
     //외부 의존성
     [Header("UI References")]

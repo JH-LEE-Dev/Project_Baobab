@@ -15,7 +15,7 @@ public class GameplayUIManager : UIManager
 
     protected override void DataInjection(UIView view)
     {
-        if(view is UIView_Inventory invUI)
+        if(view is UIView_Popup invUI)
             invUI.DependencyInjection(inventory);
 
         if(view is UIView_Unit unitUI)
