@@ -35,7 +35,7 @@ public class LogItem : Item
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
-            spriteRenderer.color = _logItemTypeData.color;
+            spriteRenderer.color = color;
         }
 
 

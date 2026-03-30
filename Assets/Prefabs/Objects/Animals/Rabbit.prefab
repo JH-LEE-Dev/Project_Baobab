@@ -284,6 +284,10 @@ MonoBehaviour:
   shadowObject: {fileID: 941508293144650439}
   animatorObject: {fileID: 8470380151137750416}
   shadowSensor: {fileID: 5139410583856100867}
+  bArrived: 1
+  centerPos: {x: 0, y: 0, z: 0}
+  targetPos: {x: 0, y: 0, z: 0}
+  scatterRadius: 0
 --- !u!50 &1015278686456738704
 Rigidbody2D:
   serializedVersion: 5
