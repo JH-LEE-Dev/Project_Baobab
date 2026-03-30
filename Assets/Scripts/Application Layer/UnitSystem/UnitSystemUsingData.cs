@@ -129,17 +129,3 @@ public class InventorySlot : IInventorySlot
         }
     }
 }
-
-// // 그룹 관리 클래스
-public class AnimalGroup
-{
-    public List<Animal> members = new List<Animal>();
-    public Vector3 centerPosition;
-    public float moveTimer;
-
-    public AnimalGroup(Vector3 _center)
-    {
-        centerPosition = _center;
-        moveTimer = UnityEngine.Random.Range(5f, 15f);
-    }
-}

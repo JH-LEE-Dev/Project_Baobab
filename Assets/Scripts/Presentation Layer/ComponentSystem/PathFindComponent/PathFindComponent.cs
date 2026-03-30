@@ -76,7 +76,7 @@ public class PathFindComponent : MonoBehaviour
         Vector3Int targetPos = tilemapDataProvider.WorldToCell(_endWorldPos);
 
         // 도착 지점이 이동 불가능하거나 다른 유닛에 의해 점유되어 있으면 즉시 종료
-        if (!tilemapDataProvider.IsWalkable(targetPos) /*|| pathfindGridProvider.IsOccupied(targetPos)*/)
+        if (!tilemapDataProvider.IsWalkable(targetPos) || pathfindGridProvider.IsOccupied(targetPos))
         {
             return false;
         }
