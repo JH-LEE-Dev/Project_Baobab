@@ -15,4 +15,13 @@ MonoBehaviour:
   datas:
   - itemType: 1
     treeType: 1
-    sprite: {fileID: 21300000, guid: d3ac19cbb9762b349a2222ce7702e144, type: 3}
+    sprite: {fileID: 21300000, guid: 6948c3dc772a8764990f0276bf64b39c, type: 3}
+    color: {r: 0.5943396, g: 0.31676444, b: 0, a: 1}
+  - itemType: 1
+    treeType: 2
+    sprite: {fileID: 21300000, guid: 6948c3dc772a8764990f0276bf64b39c, type: 3}
+    color: {r: 0.3773585, g: 0.20109235, b: 0, a: 1}
+  - itemType: 1
+    treeType: 3
+    sprite: {fileID: 21300000, guid: 3043cd600f88fad4f8515957e6a605db, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}

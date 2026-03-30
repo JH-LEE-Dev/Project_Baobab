@@ -29,11 +29,13 @@ public class LogItem : Item
         isLaunching = false;
         suckTarget = null;
         sprite = _logItemTypeData.sprite;
+        
 
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
+            spriteRenderer.color = _logItemTypeData.color;
         }
 
 

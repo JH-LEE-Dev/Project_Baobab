@@ -4,9 +4,13 @@ public class ItemData : IItemData
 {
     public ItemType itemType;
     public Sprite sprite;
+    public Color color;
+
     ItemType IItemData.itemType => itemType;
 
     Sprite IItemData.sprite => sprite;
+
+    Color IItemData.color => color;
 
     public virtual bool IsSameType(ItemData _other)
     {
