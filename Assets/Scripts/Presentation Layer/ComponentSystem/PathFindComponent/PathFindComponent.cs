@@ -51,6 +51,7 @@ public class PathFindComponent : MonoBehaviour
     public bool Occupy(Vector3Int _cellPos) => pathfindGridProvider.Occupy(_cellPos);
     public void Release(Vector3Int _cellPos) => pathfindGridProvider.Release(_cellPos);
     public Vector3Int WorldToCell(Vector3 _worldPos) => tilemapDataProvider.WorldToCell(_worldPos);
+    public Vector3 CellToWorld(Vector3Int _cellPos) => tilemapDataProvider.CellToWorld(_cellPos);
     public bool IsWalkable(Vector3Int _cellPos) => tilemapDataProvider.IsWalkable(_cellPos);
 
     /// <summary>
@@ -75,7 +76,7 @@ public class PathFindComponent : MonoBehaviour
         Vector3Int targetPos = tilemapDataProvider.WorldToCell(_endWorldPos);
 
         // 도착 지점이 이동 불가능하거나 다른 유닛에 의해 점유되어 있으면 즉시 종료
-        if (!tilemapDataProvider.IsWalkable(targetPos) || pathfindGridProvider.IsOccupied(targetPos))
+        if (!tilemapDataProvider.IsWalkable(targetPos) /*|| pathfindGridProvider.IsOccupied(targetPos)*/)
         {
             return false;
         }

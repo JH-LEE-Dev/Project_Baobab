@@ -35,15 +35,32 @@ public class GroupManager : MonoBehaviour
         if (animalGroups == null) return;
 
         float deltaTime = Time.deltaTime;
+
         for (int i = 0; i < animalGroups.Count; i++)
         {
             AnimalGroup group = animalGroups[i];
-            group.moveTimer -= deltaTime;
 
-            if (group.moveTimer <= 0f)
+            // 모든 멤버가 도착했는지 확인
+            bool allArrived = true;
+            for (int j = 0; j < group.members.Count; j++)
             {
-                MoveGroupToRandomPoint(group);
-                group.moveTimer = Random.Range(minMoveInterval, maxMoveInterval);
+                if (!group.members[j].bArrived)
+                {
+                    allArrived = false;
+                    break;
+                }
+            }
+
+            // 모든 멤버가 도착한 상태에서만 타이머 작동
+            if (allArrived)
+            {
+                group.moveTimer -= deltaTime;
+
+                if (group.moveTimer <= 0f)
+                {
+                    MoveGroupToRandomPoint(group);
+                    group.moveTimer = Random.Range(minMoveInterval, maxMoveInterval);
+                }
             }
         }
     }
@@ -90,7 +107,7 @@ public class GroupManager : MonoBehaviour
                     if (!environmentProvider.tilemapDataProvider.IsWalkable(candidate)) continue;
 
                     // 2. 현재 다른 오브젝트에 의해 점유 중인가?
-                    if (environmentProvider.pathfindGridProvider.IsOccupied(candidate)) continue;
+                    //if (environmentProvider.pathfindGridProvider.IsOccupied(candidate)) continue;
 
                     // 3. 이 프레임에서 이 그룹의 다른 멤버가 이미 예약했는가?
                     bool alreadyTaken = false;

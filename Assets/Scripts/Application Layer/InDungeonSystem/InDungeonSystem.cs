@@ -79,6 +79,7 @@ public class InDungeonSystem : MonoBehaviour
 
     private void PortalActivated(PortalType _type)
     {
+        inDungeonUnitSpawner.ReleaseAllAnimals();
         signalHub.Publish(new PortalActivatedSignal(_type));
     }
 
