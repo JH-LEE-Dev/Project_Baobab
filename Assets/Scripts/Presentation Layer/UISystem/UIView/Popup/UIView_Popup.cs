@@ -72,8 +72,6 @@ public class UIView_Popup : UIView
     {
         base.OnShow();
 
-        Debug.Log("켜짐");
-
         uI_Inventory?.OnShow();
         uI_Homing?.OnShow();
     }
