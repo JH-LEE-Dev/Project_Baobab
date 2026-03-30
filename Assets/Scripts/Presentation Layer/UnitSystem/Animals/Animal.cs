@@ -22,7 +22,6 @@ public class Animal : MonoBehaviour
     public Animator anim { get; private set; }
     public Rigidbody2D rb { get; private set; }
     public Collider2D col { get; private set; }
-    public bool bArrived = true;
     public Vector3 centerPos;
     public Vector3 targetPos;
     public float scatterRadius;
@@ -81,7 +80,7 @@ public class Animal : MonoBehaviour
         scatterRadius = _scatterRadius;
 
         pathFindComponent.FindPath(transform.position, _endPos);
-        bArrived = false;
+
         stateMachine.ChangeState<AS_RunState>();
     }
 

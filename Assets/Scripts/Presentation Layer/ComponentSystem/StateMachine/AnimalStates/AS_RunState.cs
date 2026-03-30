@@ -44,7 +44,6 @@ public class AS_RunState : AnimalState
         var path = pathFindComponent.Path;
         if (path == null || path.Count == 0 || currentPathIndex >= path.Count)
         {
-            animal.bArrived = true;
             stateMachine.ChangeState<AS_IdleState>();
             return;
         }
@@ -71,7 +70,7 @@ public class AS_RunState : AnimalState
                 if (stuckTimer >= stuckThreshold)
                 {
                     // 데드락 예방: 길을 다시 찾거나 양보를 위해 Idle로 전환
-                    Vector3 newDest = GetNewDestinationNearCenter();
+                    Vector3 newDest = GetRandomDestination();
                     if (!pathFindComponent.FindPath(animal.transform.position, newDest))
                     {
                         stateMachine.ChangeState<AS_IdleState>();
@@ -104,7 +103,7 @@ public class AS_RunState : AnimalState
                     if (stuckTimer >= stuckThreshold)
                     {
                         // 경로가 막혔으므로 재탐색
-                        Vector3 newDest = GetNewDestinationNearCenter();
+                        Vector3 newDest = GetRandomDestination();
                         if (!pathFindComponent.FindPath(animal.transform.position, newDest))
                         {
                             stateMachine.ChangeState<AS_IdleState>();
@@ -139,7 +138,7 @@ public class AS_RunState : AnimalState
                 Vector3Int nextCell = pathFindComponent.WorldToCell(path[currentPathIndex]);
                 if (!pathFindComponent.IsWalkable(nextCell))
                 {
-                    Vector3 newDest = GetNewDestinationNearCenter();
+                    Vector3 newDest = GetRandomDestination();
                     if (!pathFindComponent.FindPath(animal.transform.position, newDest))
                     {
                         stateMachine.ChangeState<AS_IdleState>();
@@ -153,17 +152,16 @@ public class AS_RunState : AnimalState
         }
     }
 
-    private Vector3 GetNewDestinationNearCenter()
+    private Vector3 GetRandomDestination()
     {
-        Vector3Int centerCell = pathFindComponent.WorldToCell(animal.centerPos);
-        int radius = Mathf.RoundToInt(animal.scatterRadius);
-
-        // 무작위 순서로 주변 타일 탐색하여 하나 선택
-        for (int i = 0; i < 20; i++) // 최대 20번 시도
+        Vector3Int currentCell = pathFindComponent.WorldToCell(animal.transform.position);
+        
+        // 주변 10칸 내외의 무작위 지점 탐색
+        for (int i = 0; i < 30; i++)
         {
-            int rx = Random.Range(-radius, radius + 1);
-            int ry = Random.Range(-radius, radius + 1);
-            Vector3Int candidate = new Vector3Int(centerCell.x + rx, centerCell.y + ry, 0);
+            int rx = Random.Range(-10, 11);
+            int ry = Random.Range(-10, 11);
+            Vector3Int candidate = new Vector3Int(currentCell.x + rx, currentCell.y + ry, 0);
 
             if (pathFindComponent.IsWalkable(candidate) && !pathFindComponent.IsOccupied(candidate))
             {
@@ -171,7 +169,7 @@ public class AS_RunState : AnimalState
             }
         }
 
-        return animal.targetPos; // 실패 시 원래 목적지 반환
+        return animal.transform.position; // 실패 시 현재 위치
     }
 
     public override void FixedUpdate()
