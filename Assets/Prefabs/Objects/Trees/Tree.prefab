@@ -81,8 +81,8 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
-  m_Color: {r: 0.4831281, g: 0.37332624, b: 0.1317622, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+  m_Color: {r: 0.4493092, g: 0.34719348, b: 0.12253887, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -533,6 +533,12 @@ MonoBehaviour:
   hitDuration: 0.2
   hitVibrato: 15
   hitElasticity: 1
+  enableWindSway: 1
+  swayPositionAmplitude: 0.03
+  swayRotationAmplitude: 1.25
+  swayMainSpeed: 0.55
+  swayDetailSpeed: 1.45
+  swayDetailWeight: 0.35
 --- !u!1 &3147413912486074957
 GameObject:
   m_ObjectHideFlags: 0
@@ -614,8 +620,8 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
-  m_Color: {r: 0.25700918, g: 0.78660387, b: 0.29594997, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
+  m_Color: {r: 0.24042544, g: 0.73584753, b: 0.27685353, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
