@@ -54,6 +54,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIView_Inventory
   layer: 2
   startHidden: 1
+  bWorld: 0
   uiRoot: {fileID: 4833147362847093384}
   uiSlotPrefab: {fileID: 579466836129025464, guid: fb43f9e42a2b2fd4999daf76b9e7d5e0, type: 3}
   uiPopupPrefab: {fileID: 7047183625215616851, guid: 8f0199b641621114ea2b4c7bc8799070, type: 3}
@@ -80,15 +81,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.8301887, g: 0.48275042, b: 0.19971518, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: c66bef3c981255d47a9379229f6986ea, type: 3}
-  m_Type: 2
+  m_Sprite: {fileID: 21300000, guid: 372d6c1b8642cab49bab5fb7d5a678f9, type: 3}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -124,14 +125,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GridLayoutGroup
   m_Padding:
-    m_Left: -5
-    m_Right: -5
-    m_Top: -5
-    m_Bottom: -5
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 50, y: 50}
-  m_Spacing: {x: -25, y: -25}
+  m_CellSize: {x: 35, y: 35}
+  m_Spacing: {x: -10, y: -10}
   m_Constraint: 2
   m_ConstraintCount: 2
