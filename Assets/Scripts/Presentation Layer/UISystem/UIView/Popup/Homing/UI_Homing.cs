@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UIElements;
 
 public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
@@ -21,11 +20,16 @@ public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
          gameObject.SetActive(false);
     }
 
+    private void Homing()
+    {
+        
+    }
+
     // TODO :: DOTWEEN 
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        
+        Homing();
     }
 
     public void OnPointerEnter(PointerEventData eventData)

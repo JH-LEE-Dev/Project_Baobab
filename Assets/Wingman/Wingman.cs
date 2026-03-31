@@ -6,8 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using UnityEditor;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace WingmanInspector {
 
@@ -103,7 +103,7 @@ namespace WingmanInspector {
 
             EditorApplication.update -= Update;
             EditorApplication.update += Update;
-
+            
             EditorApplication.hierarchyWindowItemOnGUI -= OnHierarchyGUI;
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyGUI;
             
@@ -112,7 +112,7 @@ namespace WingmanInspector {
             
             EditorApplication.quitting -= OnQuit;
             EditorApplication.quitting += OnQuit;
-
+            
             Settings.OnSettingsChanged += OnSettingsChanged;
         }
 
@@ -124,7 +124,7 @@ namespace WingmanInspector {
             EditorApplication.quitting -= OnQuit;
             Settings.OnSettingsChanged -= OnSettingsChanged;
         }
-        
+
         private static void RefreshInspectorWindows() {
             IList windows = (IList)allInspectorsFieldInfo.GetValue(inspectorWindowType);
             
@@ -136,7 +136,7 @@ namespace WingmanInspector {
             // Add new window as a container to the list
             foreach (EditorWindow inspectorWindow in windows) {
                 if (!InspectorHasContainer(inspectorWindow)) {
-                    containers.Add(new WingmanContainer(inspectorWindow, Selection.activeObject));
+                    containers.Add(new WingmanContainer(inspectorWindow));
                 }
             }
             
@@ -156,7 +156,7 @@ namespace WingmanInspector {
             }
             return false;
         }
-        
+
         private static void OnSelectionChanged() {
             foreach (WingmanContainer container in containers) {
                 if (!container.InspectorIsLocked()) {
@@ -176,6 +176,15 @@ namespace WingmanInspector {
         private static void OnHierarchyGUI(int instanceID, Rect selectionRect) {
             foreach (WingmanContainer container in containers) {
                 container.OnHierarchyGUI();
+            }
+        }
+        
+        [Shortcut("Wingman/Toggle Component", KeyCode.A)]
+        private static void ToggleComponentShortcut() {
+            foreach (WingmanContainer container in containers) {
+                if (container.IsFocused) {
+                    container.PerformShortcutOperation(WingmanContainer.ShortcutOperation.ToggleComponent); 
+                }
             }
         }
 

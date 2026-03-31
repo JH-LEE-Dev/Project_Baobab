@@ -54,7 +54,7 @@ MonoBehaviour:
   bWorld: 0
   uiRoot: {fileID: 4833147362847093384}
   uiInventoryPrefab: {fileID: 6659610576506340938, guid: 91fb41b086325604ea63f2ba561068af, type: 3}
-  uiHomingPrefab: {fileID: 0}
+  uiHomingPrefab: {fileID: 7019952593193086363, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
 --- !u!222 &1543558412992552657
 CanvasRenderer:
   m_ObjectHideFlags: 0
