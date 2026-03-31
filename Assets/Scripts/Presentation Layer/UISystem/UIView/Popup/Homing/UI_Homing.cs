@@ -1,9 +1,12 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UIElements;
 
 public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
+
+    public Action clickedEvent;
+
     // TODO :: DOTWEEN 할 이미지 받기.
 
     public void Initialize()
@@ -21,11 +24,16 @@ public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
          gameObject.SetActive(false);
     }
 
+    private void Homing()
+    {
+        clickedEvent.Invoke();
+    }
+
     // TODO :: DOTWEEN 
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        
+        Homing();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
