@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5175255327761468778}
   - component: {fileID: 7348855767149077549}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: HUD_Field
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -62,7 +62,7 @@ GameObject:
   - component: {fileID: 2366915235320108784}
   - component: {fileID: 6988936098995783673}
   - component: {fileID: 429325639778816957}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: AmmoCount
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -200,7 +200,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8398892545146681141}
   - component: {fileID: 4187832725967485517}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: HUD_Item
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -251,7 +251,7 @@ GameObject:
   - component: {fileID: 3038173214871745395}
   - component: {fileID: 5959834386677067869}
   - component: {fileID: 3951075414392890725}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: InGage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -326,7 +326,7 @@ GameObject:
   - component: {fileID: 7772945835492561996}
   - component: {fileID: 1209964945228373233}
   - component: {fileID: 7793428000166848517}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -400,7 +400,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6236687586181825250}
   - component: {fileID: 6401064076830842182}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: HUD_Equipment
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -425,7 +425,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -10, y: 10}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &6401064076830842182
@@ -452,7 +452,7 @@ GameObject:
   - component: {fileID: 1218139189291559219}
   - component: {fileID: 2572493181782076790}
   - component: {fileID: 7093153029011485014}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: MainImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -525,7 +525,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2740640172811565636}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Ammo
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -564,7 +564,7 @@ GameObject:
   - component: {fileID: 2149469031179181874}
   - component: {fileID: 101392578171954342}
   - component: {fileID: 194570054719264196}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: SubImage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -639,7 +639,7 @@ GameObject:
   - component: {fileID: 4042665607657910092}
   - component: {fileID: 1974465184392243218}
   - component: {fileID: 26654344223143651}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: Frame
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -82,6 +82,12 @@ public class GameplayUIInstaller : MonoBehaviour
         if (worldCanvas == null)
             worldCanvas = Instantiate(worldCanvasPrefab, transform);
 
+        var canvasEnabler = canvas.GetComponent<CanvasEnabler>();
+        if (canvasEnabler != null)
+        {
+            canvasEnabler.Initialize();
+        }
+
         var worldCanvasEnabler = worldCanvas.GetComponent<WorldCanvasEnabler>();
         if (worldCanvasEnabler != null)
         {

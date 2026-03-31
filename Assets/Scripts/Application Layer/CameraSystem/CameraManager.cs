@@ -14,6 +14,9 @@ public class CameraManager : MonoBehaviour
     //private float snapDistanceThreshold = 0.015f;
     //private float stopThreshold = 0.001f; // 캐릭터가 멈췄다고 판단할 이동량 임계값
 
+    private GameObject uiCamera;
+
+
     public void Initialize(SignalHub _signalHub, InputManager _inputManager)
     {
         signalHub = _signalHub;
@@ -153,7 +156,18 @@ public class CameraManager : MonoBehaviour
         {
             var quadController = parent.gameObject.GetComponentInChildren<CameraQuadController>();
 
-            quadController.Ready();
+            quadController.Ready(true);
+        }
+
+        uiCamera = GameObject.Find("UI Camera");
+
+        if (uiCamera != null)
+        {
+            var quadController = uiCamera.gameObject.GetComponentInChildren<CameraQuadController>();
+            if (quadController != null)
+            {
+                quadController.Ready(false);
+            }
         }
     }
 }
