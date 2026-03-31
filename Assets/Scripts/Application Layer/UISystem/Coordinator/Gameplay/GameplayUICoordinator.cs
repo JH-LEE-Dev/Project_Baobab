@@ -2,7 +2,7 @@ using PresentationLayer.UISystem.View;
 
 public class GameplayUICoordinator
 {
-    private UIView_Popup inventoryUI;
+    private UIView_Popup popUpUI;
     private InputManager inputManager;
     private UIView_Unit unitUI;
 
@@ -11,10 +11,10 @@ public class GameplayUICoordinator
 
     private bool bInventoryOpened = false;
 
-    public void Initialize(SignalHub _signalHub,InputManager _inputManager, UIView_Popup _inventoryUI, UIView_HUD _hudUI,UIView_Unit _unitUI)
+    public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI, UIView_Unit _unitUI)
     {
         inputManager = _inputManager;
-        inventoryUI = _inventoryUI;
+        popUpUI = _popUpUI;
         hudUI = _hudUI;
         signalHub = _signalHub;
         unitUI = _unitUI;
@@ -42,11 +42,15 @@ public class GameplayUICoordinator
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         inputManager.inputReader.InventoryKeyEvent += OnInventoryKeyPressed;
+
+        popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
+        popUpUI.GoHomeButtonClickedEvent += GoHomeButtonClicked;
     }
 
     private void ReleaseEvents()
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
+        popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
     }
 
     public void Release()
@@ -60,18 +64,18 @@ public class GameplayUICoordinator
         if (bInventoryOpened == false)
         {
             bInventoryOpened = true;
-            inventoryUI.Show();
+            popUpUI.Show();
         }
         else
         {
             bInventoryOpened = false;
-            inventoryUI.Hide();
+            popUpUI.Hide();
         }
     }
 
     private void InventoryUpdated(InventoryUpdatedSignal inventoryUpdatedSignal)
     {
-        inventoryUI.InventoryShowEvent();
+        popUpUI.InventoryShowEvent();
     }
 
     private void TreeGetHit(TreeGetHitSignal treeGetHitSignal)
@@ -82,5 +86,10 @@ public class GameplayUICoordinator
     private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
     {
         hudUI.SetCharacter(characterSpawendSignal.character);
+    }
+
+    private void GoHomeButtonClicked()
+    {
+        signalHub.Publish(new GoHomeButtonClickedSignal());
     }
 }

@@ -62,11 +62,13 @@ public class InDungeonSystem : MonoBehaviour
     private void SubscribeSignals()
     {
         signalHub.Subscribe<MapGeneratedSignal>(MapGenerated);
+        signalHub.Subscribe<GoHomeButtonClickedSignal>(GoHome);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<MapGeneratedSignal>(MapGenerated);
+        signalHub.UnSubscribe<GoHomeButtonClickedSignal>(GoHome);
     }
 
     private void PortalActivated(PortalType _type)
@@ -91,5 +93,10 @@ public class InDungeonSystem : MonoBehaviour
     private void TreeGetHit(TreeObj _treeObj)
     {
         signalHub.Publish(new TreeGetHitSignal(_treeObj));
+    }
+
+    private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
+    {
+        inDungeonObjectManager.ClearObjManager();
     }
 }
