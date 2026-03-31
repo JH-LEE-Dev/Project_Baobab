@@ -6,6 +6,7 @@ TagManager:
   tags:
   - TreeShadow
   - ItemSensor
+  - UI Quad
   layers:
   - Default
   - TransparentFX
