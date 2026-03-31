@@ -764,6 +764,13 @@ MonoBehaviour:
   grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}
   mountainTile: {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
   treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  decoTiles:
+  - {fileID: 11400000, guid: 9d7cb86a2c6ed0c4cb0740665ad6febd, type: 2}
+  - {fileID: 11400000, guid: be2955d52caddd94380efa18b54c060b, type: 2}
+  - {fileID: 11400000, guid: a2a61adf3cf3753478c7f1292a6a858d, type: 2}
+  - {fileID: 11400000, guid: 4b1c420b76a582b449abfc8c69f420cb, type: 2}
+  - {fileID: 11400000, guid: 6d5fb5cf9d91704479a8b3c48716ac2d, type: 2}
+  - {fileID: 11400000, guid: 0cc3ff65d32fc7e419148d6a1d10565a, type: 2}
 --- !u!1 &7432536287932878892
 GameObject:
   m_ObjectHideFlags: 0
