@@ -75,7 +75,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 24535
+    m_Bits: 24567
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: 4159de6766e1e4444b3c5e1ff871ef1b, type: 2}
   m_TargetDisplay: 0
