@@ -72,8 +72,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
     public void EnablePointLights()
     {
-        if (characterPointLight != null)
-            characterPointLight.Enable();
+
     }
 
     private void Update()
