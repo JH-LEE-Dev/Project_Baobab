@@ -35,9 +35,16 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
     [Header("Point Lights")]
     [SerializeField, Range(0, MaxPointLights)] private int maxPointLights = MaxPointLights;
 
+    [Header("External Inputs")]
+    [SerializeField, Range(0f, 24f)] private float currentHour = 12f;
+    [SerializeField] private WeatherType currentWeather = WeatherType.Normal;
+
     private readonly Vector4[] pointLightPositions = new Vector4[MaxPointLights];
     private readonly Vector4[] pointLightColors = new Vector4[MaxPointLights];
     private readonly Vector4[] pointLightParams = new Vector4[MaxPointLights];
+
+    public float CurrentHour => currentHour;
+    public WeatherType CurrentWeather => currentWeather;
 
     private void OnEnable()
     {
@@ -72,6 +79,42 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
         Shader.SetGlobalFloat(GlobalAmbientLightIntensityId, ambientIntensity);
 
         PushPointLights();
+    }
+
+    public void SetCurrentHour(float hour)
+    {
+        currentHour = Mathf.Repeat(hour, 24f);
+    }
+
+    public void SetCurrentTimeNormalized(float normalizedTime)
+    {
+        currentHour = Mathf.Repeat(normalizedTime, 1f) * 24f;
+    }
+
+    public void SetCurrentTimePercent(float currentTimePercent)
+    {
+        SetCurrentTimeNormalized(currentTimePercent);
+    }
+
+    public void SetCurrentWeather(WeatherType weather)
+    {
+        currentWeather = weather;
+    }
+
+    public bool SetCurrentWeather(string weatherName)
+    {
+        if (string.IsNullOrWhiteSpace(weatherName))
+        {
+            return false;
+        }
+
+        if (System.Enum.TryParse(weatherName, true, out WeatherType parsedWeather))
+        {
+            currentWeather = parsedWeather;
+            return true;
+        }
+
+        return false;
     }
 
     [ContextMenu("Apply Material To Scene")]
