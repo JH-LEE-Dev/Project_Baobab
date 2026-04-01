@@ -46,12 +46,12 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
     public float CurrentHour => currentHour;
     public WeatherType CurrentWeather => currentWeather;
 
-    private void OnEnable()
+    public void Initialize()
     {
         ApplyGlobals();
         TryApplyMaterialToScene();
     }
-
+    
     private void Update()
     {
         ApplyGlobals();
