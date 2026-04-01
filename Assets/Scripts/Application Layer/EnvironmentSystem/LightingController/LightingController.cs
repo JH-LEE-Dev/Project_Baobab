@@ -50,6 +50,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         if (globalLightPrefab != null)
         {
             globalLight = Instantiate(globalLightPrefab, transform);
+            globalLight.Initialize();
             globalLight.SetCurrentWeather(WeatherType.Normal);
         }
 
