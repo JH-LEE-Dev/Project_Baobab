@@ -4,12 +4,12 @@ public class TimeController : MonoBehaviour, ITimeDataProvider
 {
     //내부 의존성
     private const float minutesInDay = 1440f;
-    private const float timeMultiplier = 5f; // 1초당 5분
+    private const float timeMultiplier = 25f; //5f; //1초당 5분
     private float currentMinutes;
     private bool isDay;
     private bool bInitialized = false;
 
-    //공개 인터페이스 구현
+    //공개 인터페이스 구현    
     public float currentTimePercent => currentMinutes / minutesInDay;
 
 
@@ -69,3 +69,4 @@ public class TimeController : MonoBehaviour, ITimeDataProvider
         GUI.Label(new Rect(10, 10, 300, 100), debugText, style);
     }
 }
+
