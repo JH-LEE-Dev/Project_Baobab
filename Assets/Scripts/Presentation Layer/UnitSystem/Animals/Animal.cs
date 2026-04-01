@@ -45,11 +45,14 @@ public class Animal : MonoBehaviour
     public Vector3 FleeDirection { get; private set; }
     private Transform playerTransform;
 
+    public AnimalAnimValueHandler animalAnimValueHandler { get; private set; }
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
 
         stateMachine = new StateMachine();
+        animalAnimValueHandler = new AnimalAnimValueHandler();
 
         anim = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
@@ -58,7 +61,7 @@ public class Animal : MonoBehaviour
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
         pathFindComponent = GetComponentInChildren<PathFindComponent>();
-        
+
         if (characterSensorProxy != null)
         {
             characterSensor = characterSensorProxy.GetComponent<Collider2D>();
@@ -80,21 +83,49 @@ public class Animal : MonoBehaviour
         }
 
         SetupStateMachine();
+
+        animalAnimValueHandler.Initialize(anim);
     }
 
     public void SetFacingDirection(Vector2 _input)
     {
         if (_input.sqrMagnitude < 0.01f) return;
 
-        // 8방향 인덱스 계산 (0: 우, 1: 우상, 2: 상, 3: 좌상, 4: 좌, 5: 좌하, 6: 하, 7: 우하)
+        // 각도 계산 및 3방향 매핑 (0: 우/좌, 1: 상, 2: 하)
         float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
 
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
+        int dirIndex = 0;
+        bool shouldFlip = false;
+
+        if (angle > 45 && angle <= 135)
+        {
+            dirIndex = 1; // Up
+        }
+        else if (angle > 135 && angle <= 225)
+        {
+            dirIndex = 0; // Right (Flipped to Left)
+            shouldFlip = true;
+        }
+        else if (angle > 225 && angle <= 315)
+        {
+            dirIndex = 2; // Down
+        }
+        else
+        {
+            dirIndex = 0; // Right
+            shouldFlip = false;
+        }
+
         anim.SetFloat(facingDirHash, dirIndex);
+
+        // 좌측 방향일 경우 transform 반전 처리
+        Vector3 localScale = animatorObject.transform.localScale;
+        localScale.x = shouldFlip ? -1f : 1f;
+        animatorObject.transform.localScale = localScale;
     }
 
-    public void MoveTo(Vector3 _endPos,Vector3 _centerPos,float _scatterRadius)
+    public void MoveTo(Vector3 _endPos, Vector3 _centerPos, float _scatterRadius)
     {
         targetPos = _endPos;
         centerPos = _centerPos;
