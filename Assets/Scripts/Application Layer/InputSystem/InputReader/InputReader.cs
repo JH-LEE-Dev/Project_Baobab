@@ -11,6 +11,10 @@ public class InputReader
 
     public event Action MouseClickEvent;
     public event Action ESCButtonPressedEvent;
+    public event Action InteractionKeyPressedEvent;
+    public event Action InteractionKeyCanceledEvent;
+
+    //내부 의존성
 
     private InputActionSystem actions;
 
@@ -28,6 +32,8 @@ public class InputReader
             actions.Normal.Mouse.performed += OnMouseMove;
             actions.Normal.Click.performed += OnMouseClick;
             actions.Normal.Inventory.performed += OnInventoryKeyPressed;
+            actions.Normal.Interaction.performed += InteractionKeyPressed;
+            actions.Normal.Interaction.canceled += InteractionKeyCanceled;
         }
 
         actions.Normal.Enable();
@@ -45,6 +51,8 @@ public class InputReader
         actions.Normal.Mouse.performed -= OnMouseMove;
         actions.Normal.Click.performed -= OnMouseClick;
         actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
+        actions.Normal.Interaction.performed -= InteractionKeyPressed;
+        actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -81,5 +89,15 @@ public class InputReader
     private void OnInventoryKeyPressed(InputAction.CallbackContext context)
     {
         InventoryKeyEvent?.Invoke();
+    }
+
+    private void InteractionKeyPressed(InputAction.CallbackContext context)
+    {
+        InteractionKeyPressedEvent?.Invoke();
+    }
+
+    private void InteractionKeyCanceled(InputAction.CallbackContext context)
+    {
+        InteractionKeyCanceledEvent?.Invoke();
     }
 }

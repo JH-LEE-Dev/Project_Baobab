@@ -1,8 +1,12 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class UI_Inventory : MonoBehaviour
 {
+    //이벤트
+    public event Action<IInventorySlot> SendDeleteItemEvent;
+    
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject uiPopupPrefab;
 
@@ -61,6 +65,8 @@ public class UI_Inventory : MonoBehaviour
     {
         if (null == inventory)
             return;
+
+        SendDeleteItemEvent.Invoke(_inData);
 
         UpdateSlots(inventory.inventorySlots); 
     }

@@ -75,7 +75,7 @@ Camera:
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 24567
+    m_Bits: 90103
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 8400000, guid: 4159de6766e1e4444b3c5e1ff871ef1b, type: 2}
   m_TargetDisplay: 0
@@ -404,7 +404,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
-      value: -0.08802084
+      value: -0.073437504
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.width

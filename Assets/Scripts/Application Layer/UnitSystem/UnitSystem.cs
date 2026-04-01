@@ -20,6 +20,8 @@ public class UnitSystem
 
         SubscribeSignals();
         BindEvents();
+
+        InventoryInitialized();
     }
 
     public void Release()
@@ -39,6 +41,7 @@ public class UnitSystem
         signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
+        signalHub.Subscribe<DeleteItemSignal>(ItemDeleted);
     }
 
     private void UnSubscribeSignals()
@@ -47,6 +50,7 @@ public class UnitSystem
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
+        signalHub.UnSubscribe<DeleteItemSignal>(ItemDeleted);
     }
 
     private void BindEvents()
@@ -86,5 +90,15 @@ public class UnitSystem
     {
         inventoryManager.ItemAcquired(itemAcquiredSignal.item);
         signalHub.Publish(new InventoryUpdatedSignal());
+    }
+
+    private void ItemDeleted(DeleteItemSignal deleteItemSignal)
+    {
+        inventoryManager.ItemDeleted(deleteItemSignal.slot);
+    }
+
+    private void InventoryInitialized()
+    {
+        signalHub.Publish(new InventoryInitializedSignal(inventoryManager));
     }
 }

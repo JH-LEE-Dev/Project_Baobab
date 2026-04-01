@@ -30,6 +30,11 @@ public class TownObjectManager : MonoBehaviour
         environmentProvider = _environmentProvider;
     }
 
+    public void Release()
+    {
+        ReleaseEvents();
+    }
+
     public void ReadyObj()
     {
         portal = Instantiate(portalPrefab);

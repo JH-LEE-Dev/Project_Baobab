@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 1813590512414858484}
   - component: {fileID: 8911054006785933061}
   - component: {fileID: 5221669164695509942}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Animator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -59,7 +59,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -125,7 +125,7 @@ GameObject:
   - component: {fileID: 2765096103720082767}
   - component: {fileID: 256747857165204771}
   - component: {fileID: 6975217983711159795}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: Portal
   m_TagString: Untagged
   m_Icon: {fileID: 0}

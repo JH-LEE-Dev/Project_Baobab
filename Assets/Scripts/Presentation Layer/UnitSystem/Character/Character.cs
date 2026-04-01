@@ -10,8 +10,6 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
     //내부 의존성 (컴포넌트)
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
-    [SerializeField] private Light2D spotLight;
-    [SerializeField] private float maxLightIntensity = 1.0f; // 밤일 때의 최대 밝기
     [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
     [SerializeField] private GameObject itemSensor;
 
@@ -136,8 +134,6 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
         {
             DecreaseStamina();
         }
-
-        UpdateSpotLight();
     }
 
     private void FixedUpdate()
@@ -148,30 +144,6 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
 
         stateMachine?.FixedUpdate();
-        
-        if (spotLight != null)
-        {
-            spotLight.transform.position = transform.position;
-        }
-    }
-
-    private void UpdateSpotLight()
-    {
-        if (spotLight == null || environmentProvider?.shadowDataProvider == null) return;
-
-        float timePercent = environmentProvider.shadowDataProvider.currentTimePercent;
-
-        // 밤에 켜지고 낮에 꺼지는 로직
-        // 0.20 ~ 0.30 (일출): 불이 서서히 꺼짐
-        // 0.70 ~ 0.80 (일몰): 불이 서서히 켜짐
-        float morningFade = 1f - Mathf.InverseLerp(0.20f, 0.30f, timePercent);
-        float eveningFade = Mathf.InverseLerp(0.70f, 0.80f, timePercent);
-        
-        // 최종 강도는 오전 페이드나 오후 페이드 중 더 강한 쪽 (밤 시간대 커버)
-        // 0.80 ~ 0.20(다음날) 사이는 항상 1에 가깝게 유지됨
-        float finalIntensityMultiplier = Mathf.Max(morningFade, eveningFade);
-        
-        spotLight.intensity = maxLightIntensity * finalIntensityMultiplier;
     }
 
     private void OnDestroy()
@@ -242,5 +214,10 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
     private void SetItemSensorPos()
     {
         itemSensorRB.MovePosition(transform.position);
+    }
+
+    public Transform GetTransform()
+    {
+        return transform;
     }
 }
