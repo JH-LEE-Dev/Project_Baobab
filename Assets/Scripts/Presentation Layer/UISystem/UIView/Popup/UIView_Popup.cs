@@ -6,6 +6,7 @@ public class UIView_Popup : UIView
 {
     //이벤트
     public event Action GoHomeButtonClickedEvent;
+    public event Action<IInventorySlot> SendDeleteItemEvent;
 
 
     //외부 의존성
@@ -27,6 +28,8 @@ public class UIView_Popup : UIView
 
         Init_Homing();
         Init_Inventory();
+
+        BindEvents();
     }
 
     public void DependencyInjection(IInventory _inventory)
@@ -34,6 +37,20 @@ public class UIView_Popup : UIView
         inventory = _inventory;
 
         uI_Inventory?.BindInventory(inventory);
+    }
+
+    private void BindEvents()
+    {
+        if (uI_Inventory != null)
+        {
+            uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
+            uI_Inventory.SendDeleteItemEvent += SendDeleteItem;
+        }
+    }
+
+    private void ReleaseEvents()
+    {
+         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
     }
 
     #region [ Inventory UI ]
@@ -49,6 +66,11 @@ public class UIView_Popup : UIView
 
         uI_Inventory.Initialize(uiRoot);
         uI_Inventory.OnHide();
+    }
+
+    private void SendDeleteItem(IInventorySlot _inData)
+    {
+        SendDeleteItemEvent.Invoke(_inData);
     }
 
     public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
@@ -95,6 +117,8 @@ public class UIView_Popup : UIView
 
     public override void OnDestroy()
     {
+        ReleaseEvents();
+
         uI_Inventory?.OnDestroy();
     }
 

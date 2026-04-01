@@ -45,12 +45,16 @@ public class GameplayUICoordinator
 
         popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         popUpUI.GoHomeButtonClickedEvent += GoHomeButtonClicked;
+
+        popUpUI.SendDeleteItemEvent -= SendDeleteItem;
+        popUpUI.SendDeleteItemEvent += SendDeleteItem;
     }
 
     private void ReleaseEvents()
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
+        popUpUI.SendDeleteItemEvent -= SendDeleteItem;
     }
 
     public void Release()
@@ -91,5 +95,10 @@ public class GameplayUICoordinator
     private void GoHomeButtonClicked()
     {
         signalHub.Publish(new GoHomeButtonClickedSignal());
+    }
+
+    private void SendDeleteItem(IInventorySlot _inData)
+    {
+        signalHub.Publish(new DeleteItemSignal(_inData));
     }
 }

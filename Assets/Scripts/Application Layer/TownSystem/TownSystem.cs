@@ -2,22 +2,28 @@ using UnityEngine;
 
 public class TownSystem : MonoBehaviour
 {
+    //외부 의존성
+    private InputManager inputManager;
+
     //내부 의존성
     [SerializeField] private Transform townStartPoint;
     private SignalHub signalHub;
     private TownObjectManager townObjectManager;
     private IEnvironmentProvider environmentProvider;
+    private LogProcessingManager logProcessingManager;
 
 
-    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider)
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
     {
+        inputManager = _inputManager;
         signalHub = _signalHub;
         environmentProvider = _environmentProvider;
 
         townObjectManager = GetComponentInChildren<TownObjectManager>();
+        logProcessingManager = GetComponentInChildren<LogProcessingManager>();
 
         townObjectManager.Initialize(environmentProvider);
-
+        logProcessingManager.Initialize(inputManager);
 
         BindEvents();
         SubscribeSignals();
@@ -25,6 +31,9 @@ public class TownSystem : MonoBehaviour
 
     public void Release()
     {
+        logProcessingManager.Release();
+        townObjectManager.Release();
+
         ReleaseEvents();
         UnSubscribeSignals();
     }
@@ -43,25 +52,39 @@ public class TownSystem : MonoBehaviour
     {
         townObjectManager.PortalActivatedEvent -= PortalActivated;
         townObjectManager.PortalActivatedEvent += PortalActivated;
+
+        logProcessingManager.InventoryUpdatedEvent -= InventoryUpdated;
+        logProcessingManager.InventoryUpdatedEvent += InventoryUpdated;
     }
 
     private void ReleaseEvents()
     {
         townObjectManager.PortalActivatedEvent -= PortalActivated;
+        logProcessingManager.InventoryUpdatedEvent -= InventoryUpdated;
     }
 
     private void SubscribeSignals()
     {
-
+        signalHub.Subscribe<InventoryInitializedSignal>(InventoryInitialized);
     }
 
     private void UnSubscribeSignals()
     {
-
+        signalHub.UnSubscribe<InventoryInitializedSignal>(InventoryInitialized);
     }
 
     private void PortalActivated(PortalType _type)
     {
         signalHub.Publish(new PortalActivatedSignal(_type));
+    }
+
+    private void InventoryInitialized(InventoryInitializedSignal inventoryInitializedSignal)
+    {
+        logProcessingManager.DI_Inventory(inventoryInitializedSignal.inventory);
+    }
+
+    private void InventoryUpdated()
+    {
+        signalHub.Publish(new InventoryUpdatedSignal());
     }
 }
