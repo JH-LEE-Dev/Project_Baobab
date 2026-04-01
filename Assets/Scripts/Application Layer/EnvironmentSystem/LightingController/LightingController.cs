@@ -6,6 +6,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 {
     //외부 의존성
     private ITimeDataProvider timeDataProvider;
+
     [Header("Point Lights")]
     [SerializeField] private SpritePointLight2D characterPointLightPrefab;
 
@@ -49,6 +50,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         if (globalLightPrefab != null)
         {
             globalLight = Instantiate(globalLightPrefab, transform);
+            globalLight.SetCurrentWeather(WeatherType.Normal);
         }
 
         BindEvents();
@@ -121,8 +123,11 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     {
         if (globalLight == null) return;
 
-        // Gradient와 AnimationCurve에서 현재 시간에 해당하는 값 추출
-        Color currentColor = lightColorGradient.Evaluate(_timePercent);
-        float currentIntensity = lightIntensityCurve.Evaluate(_timePercent);
+        globalLight.SetCurrentTimePercent(_timePercent);
+    }
+    
+    public void WeatherChanged(WeatherType _weatherType)
+    {
+        globalLight.SetCurrentWeather(_weatherType);   
     }
 }

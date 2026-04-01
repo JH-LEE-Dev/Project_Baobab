@@ -84,6 +84,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         tileMapGenerator.DeclareActiveTilesCntEvent -= DeclareActiveTileCnt;
         tileMapGenerator.DeclareActiveTilesCntEvent += DeclareActiveTileCnt;
+
+        weatherManager.WeatherChagnedEvent -= WeatherChanged;
+        weatherManager.WeatherChagnedEvent += WeatherChanged;
     }
 
     private void ReleaseEvents()
@@ -91,6 +94,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         tileMapGenerator.TilemapGeneratedEvent -= TilemapGenerated;
 
         tileMapGenerator.DeclareActiveTilesCntEvent -= DeclareActiveTileCnt;
+
+        weatherManager.WeatherChagnedEvent -= WeatherChanged;
     }
 
     private void DungeonStarted(DungeonReadySignal dungeonStartSignal)
@@ -113,5 +118,10 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
     {
         lightingController.DI(characterSpawendSignal.character);
+    }
+
+    private void WeatherChanged(WeatherType _weatherType)
+    {
+        lightingController.WeatherChanged(_weatherType);
     }
 }
