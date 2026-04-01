@@ -74,6 +74,7 @@ Shader "Custom/2D/EarthSpriteLit"
             float4 _GlobalPointLightPositions[8];
             float4 _GlobalPointLightColors[8];
             float4 _GlobalPointLightParams[8];
+            float4 _GlobalPointLightShape[8];
 
             Varyings LitVertex(Attributes input)
             {
@@ -125,7 +126,7 @@ Shader "Custom/2D/EarthSpriteLit"
                 lightDirTS = normalize(lightDirTS);
 
                 half ndl = saturate(dot(normalTS, lightDirTS));
-                half3 pointLighting = 0.0h;
+                float3 pointLighting = 0.0;
 
                 [unroll]
                 for (int i = 0; i < 8; i++)
@@ -141,24 +142,32 @@ Shader "Custom/2D/EarthSpriteLit"
                     float pointIntensity = _GlobalPointLightParams[i].x;
                     float innerRadius = saturate(_GlobalPointLightParams[i].y) * outerRadius;
                     float height = max(_GlobalPointLightParams[i].z, 0.0001);
+                    float ellipseYScale = max(_GlobalPointLightShape[i].x, 0.1);
+                    float normalInfluence = saturate(_GlobalPointLightShape[i].y);
+                    float verticalBias = max(_GlobalPointLightShape[i].z, 0.0);
 
                     float2 toLightXY = lightPositionWS.xy - input.positionWS.xy;
-                    float distanceXY = length(toLightXY);
-                    float attenuation = 1.0 - smoothstep(innerRadius, outerRadius, distanceXY);
+                    float2 attenuatedOffset = float2(toLightXY.x, toLightXY.y * ellipseYScale);
+                    float distanceXY = length(attenuatedOffset);
+                    float radial01 = saturate((distanceXY - innerRadius) / max(outerRadius - innerRadius, 0.0001));
+                    float attenuation = 1.0 - (radial01 * radial01 * (3.0 - (2.0 * radial01)));
+                    attenuation *= attenuation;
 
                     if (attenuation <= 0.0)
                     {
                         continue;
                     }
 
-                    half3 pointLightDirTS = normalize(half3(toLightXY.xy, height));
-                    half pointNdotL = saturate(dot(normalTS, pointLightDirTS));
-                    pointLighting += pointColor * (pointIntensity * attenuation * pointNdotL);
+                    float3 pointLightDirTS = normalize(float3(attenuatedOffset.xy, height + verticalBias));
+                    float pointNdotL = dot(normalTS, pointLightDirTS);
+                    float pointNormalResponse = saturate((pointNdotL + normalInfluence) / (1.0 + normalInfluence));
+
+                    pointLighting += pointColor * (pointIntensity * attenuation * pointNormalResponse);
                 }
 
-                half3 ambient = _GlobalAmbientLightColor.rgb * _GlobalAmbientLightIntensity;
-                half3 direct = _GlobalDirectionalLightColor.rgb * (_GlobalDirectionalLightIntensity * ndl);
-                half3 lighting = saturate(ambient + direct + pointLighting);
+                float3 ambient = _GlobalAmbientLightColor.rgb * _GlobalAmbientLightIntensity;
+                float3 direct = _GlobalDirectionalLightColor.rgb * (_GlobalDirectionalLightIntensity * ndl);
+                float3 lighting = saturate(ambient + direct + pointLighting);
 
                 return half4(albedo.rgb * lighting, albedo.a);
             }
