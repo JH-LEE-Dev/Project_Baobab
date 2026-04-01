@@ -24,7 +24,6 @@ public class TreeVisualComponent : MonoBehaviour
     [Header("Default Tint")]
     [SerializeField] private Color32 topBrightColor = new Color32(53, 204, 92, 255);
     [SerializeField] private Color32 bottomBrightColor = new Color32(132, 102, 36, 255);
-    [SerializeField, Range(0f, 1f)] private float minBrightness = 0.8f;
 
     [Header("Hit Feedback")]
     [SerializeField] private float hitPunchX = 0.1f;
@@ -137,12 +136,12 @@ public class TreeVisualComponent : MonoBehaviour
     {
         if (topRenderer != null)
         {
-            topRenderer.color = GetRandomTint(topBrightColor);
+            topRenderer.color = ToColor(topBrightColor);
         }
 
         if (bottomRenderer != null)
         {
-            bottomRenderer.color = GetRandomTint(bottomBrightColor);
+            bottomRenderer.color = ToColor(bottomBrightColor);
         }
     }
 
@@ -174,14 +173,13 @@ public class TreeVisualComponent : MonoBehaviour
     }
 
     // 기준 색상에서 밝기만 살짝 달라진 틴트를 만들어 자연스러운 개체 차이를 만든다.
-    private Color GetRandomTint(Color32 _brightColor)
+    private static Color ToColor(Color32 _color)
     {
-        float brightness = Random.Range(minBrightness, 1f);
         return new Color(
-            (_brightColor.r / 255f) * brightness,
-            (_brightColor.g / 255f) * brightness,
-            (_brightColor.b / 255f) * brightness,
-            _brightColor.a / 255f
+            _color.r / 255f,
+            _color.g / 255f,
+            _color.b / 255f,
+            _color.a / 255f
         );
     }
 
