@@ -47,8 +47,8 @@ MonoBehaviour:
   lightColor: {r: 1, g: 1, b: 1, a: 1}
   intensity: 1
   outerRadius: 3.88
-  innerRadiusNormalized: 0.15
-  height: 7
+  innerRadiusNormalized: 0.365
+  height: 12
   ellipseYScale: 1.9
   normalInfluence: 0.203
   verticalBias: 0.5
