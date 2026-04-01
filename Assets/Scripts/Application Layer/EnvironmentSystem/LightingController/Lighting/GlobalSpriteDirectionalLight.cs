@@ -48,8 +48,7 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
 
     public void Initialize()
     {
-        ApplyGlobals();
-        TryApplyMaterialToScene();
+        Enable();
     }
     
     private void Update()
@@ -58,6 +57,12 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
     }
 
     private void OnValidate()
+    {
+        ApplyGlobals();
+        TryApplyMaterialToScene();
+    }
+
+    public void Enable()
     {
         ApplyGlobals();
         TryApplyMaterialToScene();
