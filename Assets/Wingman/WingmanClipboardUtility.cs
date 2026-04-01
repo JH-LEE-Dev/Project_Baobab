@@ -3,9 +3,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace WingmanInspector {
 
@@ -16,9 +16,11 @@ namespace WingmanInspector {
             typeof(Collider), typeof(Collider2D), typeof(CharacterController), typeof(Animator),
             typeof(Animation), typeof(Camera), typeof(AudioSource), typeof(AudioListener),
             typeof(Light), typeof(MeshFilter), typeof(MeshRenderer), typeof(SkinnedMeshRenderer),
-            typeof(SpriteRenderer), typeof(Canvas), typeof(CanvasRenderer), typeof(NavMeshAgent), 
-            typeof(NavMeshObstacle)
-        };
+            typeof(SpriteRenderer), typeof(Canvas), typeof(CanvasRenderer), 
+            // The AI module is not core so we cannot include a direct reference
+            Type.GetType("UnityEngine.AI.NavMeshAgent, UnityEngine.AIModule"),
+            Type.GetType("UnityEngine.AI.NavMeshObstacle, UnityEngine.AIModule"),
+        }.Where(t => t != null).ToHashSet();
 
         public static void PasteComponentsFromEmpty(this GameObject gameObject, List<Component> comps) {
             foreach (Component refComp in comps) {

@@ -382,6 +382,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3951690740116779950, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4576627403956033864, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_Name
       value: Final Camera
@@ -400,7 +404,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
-      value: -0.07239584
+      value: -0.08802084
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.width
@@ -465,8 +469,29 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3069459630425517660, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5661357469560508838}
   m_SourcePrefab: {fileID: 100100000, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+--- !u!1 &2075698439466048418 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3069459630425517660, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
+  m_PrefabInstance: {fileID: 3915517032243590654}
+  m_PrefabAsset: {fileID: 0}
+--- !u!210 &5661357469560508838
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2075698439466048418}
+  m_Enabled: 1
+  m_SortingLayerID: 962808927
+  m_SortingLayer: 6
+  m_SortingOrder: 0
+  m_SortAtRoot: 0
+  m_Sort3DAs2D: 0
 --- !u!4 &7056149730437973046 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6321592856434160072, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}

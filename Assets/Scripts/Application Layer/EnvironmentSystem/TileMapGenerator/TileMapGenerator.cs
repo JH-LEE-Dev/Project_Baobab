@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 using System;
-using UnityEditor.MPE;
 
 public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 {
