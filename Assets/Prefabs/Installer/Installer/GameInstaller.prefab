@@ -130,7 +130,7 @@ GameObject:
   - component: {fileID: 457043997368643967}
   - component: {fileID: 4846871308224028970}
   m_Layer: 0
-  m_Name: IsometricShadowController
+  m_Name: LightingController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -163,12 +163,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91a402351f5165c4791d7b8d3feace45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IsometricShadowController
+  characterPointLightPrefab: {fileID: -6427753554701023476, guid: 37b8d17d1c387c441864ea3d1ed1a209, type: 3}
   dayCycleSpeed: 0.01
   minHeightScale: 0.5
   maxHeightScale: 1.5
   _shadowMaterial: {fileID: 2100000, guid: f1d5d17c7e214ff4493987030f81849d, type: 2}
   _shadowColor: {r: 0, g: 0, b: 0, a: 0.5}
-  globalLightPrefab: {fileID: 8241805674026747720, guid: 55fe3e88bf27aed4ea50abf8af35873b, type: 3}
+  globalLightPrefab: {fileID: 4569121031774944733, guid: 55fe3e88bf27aed4ea50abf8af35873b, type: 3}
   lightColorGradient:
     serializedVersion: 2
     key0: {r: 1, g: 1, b: 1, a: 1}

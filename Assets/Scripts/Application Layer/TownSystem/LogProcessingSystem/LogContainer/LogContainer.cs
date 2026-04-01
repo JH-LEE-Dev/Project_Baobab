@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 using System;
+using System.Text;
+using Unity.VisualScripting;
 
 public class LogContainer : MonoBehaviour, IInventory
 {
@@ -29,6 +31,8 @@ public class LogContainer : MonoBehaviour, IInventory
 
 
     private const string PLAYER_TAG = "Player";
+
+    [SerializeField] private bool bDebug = false;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -247,6 +251,9 @@ public class LogContainer : MonoBehaviour, IInventory
                 }
 
                 lastTransferTime = Time.time; // 전송 시점 기록
+
+                DebugLogCharacterInventory();
+
                 ContainerUpdatedEvent?.Invoke();
                 return true;
             }
@@ -305,6 +312,41 @@ public class LogContainer : MonoBehaviour, IInventory
         }
 
         return true;
+    }
+
+    private void DebugLogCharacterInventory()
+    {
+        if (interactingContainer == null || bDebug == false) return;
+
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("<color=cyan>--- Character Inventory Status ---</color>");
+        var slots = interactingContainer.inventorySlots;
+        for (int i = 0; i < slots.Count; i++)
+        {
+            var slot = slots[i];
+            if (slot.itemData != null && slot.count > 0)
+            {
+                if (slot.itemData is LogItemData logData)
+                {
+                    sb.AppendFormat("Slot[{0}]: {1} Log (Total: {2})\n", i, logData.treeType, slot.count);
+
+                    // 각 LogState별 상세 수량 정보 출력
+                    var stateCounts = slot.logStateCounts;
+                    for (int j = 0; j < stateCounts.Length; j++)
+                    {
+                        if (stateCounts[j].count > 0)
+                        {
+                            sb.AppendFormat("  - {0}: {1}\n", stateCounts[j].state, stateCounts[j].count);
+                        }
+                    }
+                }
+                else
+                {
+                    sb.AppendFormat("Slot[{0}]: {1} x{2}\n", i, slot.itemData.itemType, slot.count);
+                }
+            }
+        }
+        Debug.Log(sb.ToString());
     }
 
     private void InteractionKeyCanceled()
