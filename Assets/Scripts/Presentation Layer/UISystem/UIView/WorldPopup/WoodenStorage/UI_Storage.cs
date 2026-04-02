@@ -6,6 +6,7 @@ public class UI_Storage : MonoBehaviour
 {
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject mainVisual;
+    [SerializeField] private float yOffset = 30f;
 
     private const int defaultCap = 2;
 
@@ -28,7 +29,11 @@ public class UI_Storage : MonoBehaviour
             RectTransform rect = GetComponent<RectTransform>();
 
             if (null != rect)
-                rect.position = storage.GetTransform().position;
+            {
+                Vector3 newPos = storage.GetTransform().position;
+                newPos.y += yOffset;
+                rect.position = newPos;
+            }
         }
     }
 
