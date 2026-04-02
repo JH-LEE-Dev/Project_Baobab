@@ -103,6 +103,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         return environmentProvider.tilemapDataProvider.GetPlayerSpawnPosition();
     }
 
+    public void ClearObjManager()
+    {
+        portal.gameObject.SetActive(false);
+        OnPortalActivated(PortalType.ToTownPortal);
+    }
+
     // // 프라이빗 로직 메서드
 
     private void SpawnInitialTrees()

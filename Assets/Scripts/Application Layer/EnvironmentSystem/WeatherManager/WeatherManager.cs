@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 
-public class WeatherManager : MonoBehaviour
+public class WeatherManager : MonoBehaviour,IWeatherProvider
 {
+    public event Action<WeatherType> WeatherChagnedEvent;
     //외부 의존성
     private IUnitLogicProvider unitLogicProvider;
 
@@ -38,7 +40,7 @@ public class WeatherManager : MonoBehaviour
         }
 
         currentWeatherType = WeatherType.Normal;
-        weatherTimer = Random.Range(90f, 150f);
+        weatherTimer = UnityEngine.Random.Range(90f, 150f);
     }
 
     private void Update()
@@ -63,7 +65,9 @@ public class WeatherManager : MonoBehaviour
         targetEmission = (currentWeatherType == WeatherType.Rain) ? maxRainEmission : 0f;
         
         // 날씨가 변경될 때마다 새로운 타이머 설정
-        weatherTimer = Random.Range(90f, 150f);
+        weatherTimer = UnityEngine.Random.Range(90f, 150f);
+
+        WeatherChagnedEvent?.Invoke(currentWeatherType);
     }
 
     private void UpdateRainEmission()
@@ -107,5 +111,10 @@ public class WeatherManager : MonoBehaviour
         float width = 300f;
         float height = 100f;
         GUI.Label(new Rect(Screen.width - width - 10f, 10, width, height), weatherInfo, debugStyle);
+    }
+
+    public WeatherType GetCurrentWeatherType()
+    {
+        return currentWeatherType;
     }
 }

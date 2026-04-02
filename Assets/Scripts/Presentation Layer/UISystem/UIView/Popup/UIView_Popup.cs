@@ -1,11 +1,17 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class UIView_Popup : UIView
 {
+    //이벤트
+    public event Action GoHomeButtonClickedEvent;
+    public event Action<IInventorySlot> SendDeleteItemEvent;
+
+
     //외부 의존성
     [Header("UI References")]
-    [SerializeField] private Transform uiRoot; 
+    [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiInventoryPrefab;
     [SerializeField] private GameObject uiHomingPrefab;
 
@@ -22,6 +28,8 @@ public class UIView_Popup : UIView
 
         Init_Homing();
         Init_Inventory();
+
+        BindEvents();
     }
 
     public void DependencyInjection(IInventory _inventory)
@@ -31,7 +39,21 @@ public class UIView_Popup : UIView
         uI_Inventory?.BindInventory(inventory);
     }
 
-#region [ Inventory UI ]
+    private void BindEvents()
+    {
+        if (uI_Inventory != null)
+        {
+            uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
+            uI_Inventory.SendDeleteItemEvent += SendDeleteItem;
+        }
+    }
+
+    private void ReleaseEvents()
+    {
+         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
+    }
+
+    #region [ Inventory UI ]
     private void Init_Inventory()
     {
         if (null == uiInventoryPrefab)
@@ -46,10 +68,15 @@ public class UIView_Popup : UIView
         uI_Inventory.OnHide();
     }
 
-     public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
-#endregion
+    private void SendDeleteItem(IInventorySlot _inData)
+    {
+        SendDeleteItemEvent.Invoke(_inData);
+    }
 
-#region [ Homing UI ]
+    public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
+    #endregion
+
+    #region [ Homing UI ]
 
     private void Init_Homing()
     {
@@ -62,13 +89,17 @@ public class UIView_Popup : UIView
             return;
 
         uI_Homing.Initialize();
+
+        uI_Homing.clickedEvent -= OnHomingButtonClicked;
+        uI_Homing.clickedEvent += OnHomingButtonClicked;
+
         uI_Homing.gameObject.SetActive(false);
     }
 
-#endregion
+    #endregion
 
     // 유니티 이벤트 함수
-    protected override void OnShow() 
+    protected override void OnShow()
     {
         base.OnShow();
 
@@ -76,7 +107,7 @@ public class UIView_Popup : UIView
         uI_Homing?.OnShow();
     }
 
-    protected override void OnHide() 
+    protected override void OnHide()
     {
         uI_Inventory?.OnHide();
         uI_Homing?.OnHide();
@@ -86,6 +117,13 @@ public class UIView_Popup : UIView
 
     public override void OnDestroy()
     {
+        ReleaseEvents();
+
         uI_Inventory?.OnDestroy();
+    }
+
+    private void OnHomingButtonClicked()
+    {
+        GoHomeButtonClickedEvent.Invoke();
     }
 }

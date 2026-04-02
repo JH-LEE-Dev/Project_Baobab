@@ -9,3 +9,12 @@ public struct CharacterSpawendSignal
 }
 
 public struct InventoryUpdatedSignal { }
+
+public struct InventoryInitializedSignal
+{
+    public IInventory inventory;
+    public InventoryInitializedSignal(IInventory _inventory)
+    {
+        inventory = _inventory;
+    }
+}

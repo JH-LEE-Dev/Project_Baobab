@@ -44,7 +44,7 @@ public class InventoryManager : MonoBehaviour, IInventory
             }
         }
     }
-
+    
     public void ItemAcquired(Item _item)
     {
         if (_item == null) return;

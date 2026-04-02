@@ -5,7 +5,7 @@ public class AS_RunState : AnimalState
     private int currentPathIndex;
     private const float stopDistance = 0.15f;
     private const float moveSpeed = 2f;
-    
+
     private Vector3Int currentReservedPos; // 현재 내가 서있는 타일
     private Vector3Int nextReservedPos;    // 내가 이동하기 위해 선점한 다음 타일
     private bool hasNextReservation;
@@ -22,7 +22,7 @@ public class AS_RunState : AnimalState
         hasNextReservation = false;
         stuckTimer = 0f;
         stuckThreshold = Random.Range(0.15f, 0.35f);
-        
+
         isFleeingPath = animal.bRunAway;
 
         // 시작 지점 확실히 점유
@@ -33,11 +33,14 @@ public class AS_RunState : AnimalState
     public override void Exit()
     {
         bActivated = false;
-        
+
         // 상태 탈출 시 모든 점유 해제
         pathFindComponent.Release(currentReservedPos);
         if (hasNextReservation)
             pathFindComponent.Release(nextReservedPos);
+
+        animal.anim.SetBool(animal.isMovingHash, false);
+        animal.animalAnimValueHandler.RunStartEnd(false);
     }
 
     public override void Update()
@@ -53,7 +56,7 @@ public class AS_RunState : AnimalState
         }
 
         var path = pathFindComponent.Path;
-        
+
         // 경로가 없거나 끝에 도달했을 때
         if (path == null || path.Count == 0 || currentPathIndex >= path.Count)
         {
@@ -127,7 +130,7 @@ public class AS_RunState : AnimalState
             pathFindComponent.Release(currentReservedPos);
             currentReservedPos = nextReservedPos;
             hasNextReservation = false; // 다음 타일을 위한 예약 공간 비움
-            
+
             currentPathIndex++;
 
             // 다음 목표 타일이 유효한지 미리 체크 (나무 등이 자랐을 경우 대비)
@@ -185,7 +188,7 @@ public class AS_RunState : AnimalState
     {
         currentPathIndex = 0;
         stuckTimer = 0f;
-        
+
         // 기존 예약 초기화하여 다시 점유 시도하게 함
         if (hasNextReservation)
         {
@@ -197,7 +200,7 @@ public class AS_RunState : AnimalState
     private Vector3 GetRandomDestination()
     {
         Vector3Int currentCell = pathFindComponent.WorldToCell(animal.transform.position);
-        
+
         // 주변 10칸 내외의 무작위 지점 탐색
         for (int i = 0; i < 30; i++)
         {
@@ -225,11 +228,11 @@ public class AS_RunState : AnimalState
         Vector2 currentPos = animal.transform.position;
         Vector2 direction = (targetPos - currentPos).normalized;
 
-         animal.rb.linearVelocity = Vector2.MoveTowards(
-            animal.rb.linearVelocity,
-            direction * moveSpeed,
-            animal.currentGroundData.deceleration * Time.fixedDeltaTime
-        );
+        animal.rb.linearVelocity = Vector2.MoveTowards(
+           animal.rb.linearVelocity,
+           direction * moveSpeed,
+           animal.currentGroundData.deceleration * Time.fixedDeltaTime
+       );
 
         animal.SetFacingDirection(direction);
     }

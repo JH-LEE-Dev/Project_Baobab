@@ -67,7 +67,7 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.01, y: 0.03}
+  m_Offset: {x: 0.02, y: 0.03}
   m_Radius: 0.07
 --- !u!114 &5139410583856100867
 MonoBehaviour:
@@ -432,7 +432,7 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.04, y: 0.09}
+  m_Offset: {x: 0.02, y: 0.09}
   m_Radius: 0.14
 --- !u!1 &8470380151137750416
 GameObject:
@@ -445,6 +445,7 @@ GameObject:
   - component: {fileID: 5166629726069554192}
   - component: {fileID: 3992563530123070800}
   - component: {fileID: 6282789654599482605}
+  - component: {fileID: 267589036374482092}
   m_Layer: 14
   m_Name: Animator
   m_TagString: Untagged
@@ -461,7 +462,7 @@ Transform:
   m_GameObject: {fileID: 8470380151137750416}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.348, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -477,7 +478,7 @@ Animator:
   m_GameObject: {fileID: 8470380151137750416}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 1164ff1acf549484ab7418f935150817, type: 2}
+  m_Controller: {fileID: 9100000, guid: dbb625934b7390340b706fb725d7610f, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -515,7 +516,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -538,7 +539,7 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 1125379381859389362, guid: d215ed28e9b430647ac02a441230a286, type: 3}
+  m_Sprite: {fileID: 5400607245196206213, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -548,3 +549,15 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!114 &267589036374482092
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8470380151137750416}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0d8e8a96d17add44bd1077de601e5e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimalAnimationTrigger

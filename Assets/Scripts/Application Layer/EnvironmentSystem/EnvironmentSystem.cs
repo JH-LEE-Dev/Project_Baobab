@@ -5,7 +5,7 @@ using UnityEngine.Tilemaps;
 public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 {
     //제공 인터페이스
-    public IShadowDataProvider shadowDataProvider => isometricShadowController;
+    public IShadowDataProvider shadowDataProvider => lightingController;
     public IGroundDataProvider groundDataProvider => groundDataManager;
 
     public ITilemapDataProvider tilemapDataProvider => tileMapGenerator;
@@ -19,7 +19,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     //내부 의존성
     private TileMapGenerator tileMapGenerator;
-    private IsometricShadowController isometricShadowController;
+    private LightingController lightingController;
     private TimeController timeController;
     private GroundDataManager groundDataManager;
     private WeatherManager weatherManager;
@@ -33,7 +33,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         tileMapGenerator = GetComponentInChildren<TileMapGenerator>();
 
-        isometricShadowController = GetComponentInChildren<IsometricShadowController>();
+        lightingController = GetComponentInChildren<LightingController>();
         timeController = GetComponentInChildren<TimeController>();
         groundDataManager = GetComponentInChildren<GroundDataManager>();
         weatherManager = GetComponentInChildren<WeatherManager>();
@@ -43,8 +43,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         if (timeController != null)
             timeController.Initialize();
 
-        if (isometricShadowController != null)
-            isometricShadowController.Initialize(timeController);
+        if (lightingController != null)
+            lightingController.Initialize(timeController);
 
         if (groundDataManager != null)
             groundDataManager.Initialize();
@@ -68,11 +68,13 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void SubscribeSignals()
     {
         signalHub.Subscribe<DungeonReadySignal>(DungeonStarted);
+        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<DungeonReadySignal>(DungeonStarted);
+        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
     }
 
     private void BindEvents()
@@ -82,6 +84,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         tileMapGenerator.DeclareActiveTilesCntEvent -= DeclareActiveTileCnt;
         tileMapGenerator.DeclareActiveTilesCntEvent += DeclareActiveTileCnt;
+
+        weatherManager.WeatherChagnedEvent -= WeatherChanged;
+        weatherManager.WeatherChagnedEvent += WeatherChanged;
     }
 
     private void ReleaseEvents()
@@ -89,10 +94,13 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         tileMapGenerator.TilemapGeneratedEvent -= TilemapGenerated;
 
         tileMapGenerator.DeclareActiveTilesCntEvent -= DeclareActiveTileCnt;
+
+        weatherManager.WeatherChagnedEvent -= WeatherChanged;
     }
 
     private void DungeonStarted(DungeonReadySignal dungeonStartSignal)
     {
+        lightingController.EnablePointLights();
         tileMapGenerator.InitializeMapData();
         tileMapGenerator.GenerateMap();
     }
@@ -105,5 +113,15 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void DeclareActiveTileCnt(int _grassTileCnt,int _walkableTileCnt)
     {
         densityManager.SetActiveTilesCnt(_grassTileCnt,_walkableTileCnt);
+    }
+
+    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
+    {
+        lightingController.DI(characterSpawendSignal.character);
+    }
+
+    private void WeatherChanged(WeatherType _weatherType)
+    {
+        lightingController.WeatherChanged(_weatherType);
     }
 }

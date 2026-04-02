@@ -86,6 +86,37 @@ public class InventorySlot : IInventorySlot
         totalCount++;
     }
 
+    public void AddCountByState(LogState _state)
+    {
+        logStateCounts[(int)_state]++;
+        totalCount++;
+        isDirty = true;
+    }
+
+    public LogState TakeOneItem()
+    {
+        if (totalCount <= 0) return LogState.Normal;
+
+        LogState takenState = LogState.Normal;
+        if (itemData is LogItemData)
+        {
+            // 수량이 있는 로그 상태 중 가장 높은 등급부터 하나 가져옴
+            for (int i = logStateCounts.Length - 1; i >= 0; i--)
+            {
+                if (logStateCounts[i] > 0)
+                {
+                    logStateCounts[i]--;
+                    takenState = (LogState)i;
+                    break;
+                }
+            }
+        }
+
+        totalCount--;
+        isDirty = true;
+        return takenState;
+    }
+
     public int GetCountByState(LogState _state)
     {
         return logStateCounts[(int)_state];

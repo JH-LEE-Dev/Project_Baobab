@@ -42,13 +42,11 @@ public class GameInstaller : MonoBehaviour
         gameplayUIInstaller = GetComponentInChildren<GameplayUIInstaller>();
         inventoryManager = GetComponentInChildren<InventoryManager>();
 
-
-
         cameraManager.Initialize(signalHub, inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
         teleportManager.Initialize(signalHub, bootStrapProvider);
-        townSystem.Initialize(signalHub, environmentSystem);
+        townSystem.Initialize(signalHub, environmentSystem, inputManager);
         inDungeonSystem.Initialize(signalHub, environmentSystem);
         inventoryManager.Initialize();
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager);
