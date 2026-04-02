@@ -37,6 +37,9 @@ public class UI_Inventory : MonoBehaviour
 
     public void UpdateMaxSlotCount(int _cnt)
     {
+        if (null == uiSlotPrefab)
+            return;
+
         int needCount = _cnt - inventorySlots.Count;
 
         while (0 < needCount--)
@@ -68,7 +71,7 @@ public class UI_Inventory : MonoBehaviour
 
         SendDeleteItemEvent.Invoke(_inData);
 
-        UpdateSlots(inventory.inventorySlots); 
+        UpdateSlots(inventory.inventorySlots);
         invPopup?.gameObject.SetActive(false);
     }
 
