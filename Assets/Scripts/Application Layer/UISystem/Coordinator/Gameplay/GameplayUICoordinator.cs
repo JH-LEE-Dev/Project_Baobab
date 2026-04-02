@@ -32,7 +32,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.Subscribe<TreeGetHitSignal>(TreeGetHit);
         signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
-        signalHub.Subscribe<ContainerUpdatedSignal>(ContianerUpdated);
+        signalHub.Subscribe<ContainerUpdatedSignal>(ContainerUpdated);
+        signalHub.Subscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
     }
 
     private void UnSubscribeSignals()
@@ -40,7 +41,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.UnSubscribe<TreeGetHitSignal>(TreeGetHit);
         signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
-        signalHub.UnSubscribe<ContainerUpdatedSignal>(ContianerUpdated);
+        signalHub.UnSubscribe<ContainerUpdatedSignal>(ContainerUpdated);
+        signalHub.UnSubscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
     }
 
     private void BindEvents()
@@ -107,8 +109,13 @@ public class GameplayUICoordinator
         signalHub.Publish(new DeleteItemSignal(_inData));
     }
 
-    private void ContianerUpdated(ContainerUpdatedSignal containerUpdatedSignal)
+    private void ContainerUpdated(ContainerUpdatedSignal containerUpdatedSignal)
     {
         worldPopupUI.ContainerUpdated();
+    }
+
+    private void ContainerInteractStateChanged(ContainerInteractStateChangedSignal containerInteractStateChangedSignal)
+    {
+        worldPopupUI.LogContainerInteractStateChanged(containerInteractStateChangedSignal.state);
     }
 }

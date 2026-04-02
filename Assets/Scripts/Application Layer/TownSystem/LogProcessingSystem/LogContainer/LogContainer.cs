@@ -7,6 +7,7 @@ using System.Text;
 
 public class LogContainer : MonoBehaviour, IInventory
 {
+    public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
 
     private InputManager inputManager;
@@ -377,6 +378,7 @@ public class LogContainer : MonoBehaviour, IInventory
         if (_other.CompareTag(PLAYER_TAG))
         {
             bCanInteract = true;
+            InteractStateEvent?.Invoke(true);
         }
     }
 
@@ -385,6 +387,8 @@ public class LogContainer : MonoBehaviour, IInventory
         if (_other.CompareTag(PLAYER_TAG))
         {
             bCanInteract = false;
+            InteractStateEvent?.Invoke(false);
+            
             if (transferCoroutine != null)
             {
                 StopCoroutine(transferCoroutine);

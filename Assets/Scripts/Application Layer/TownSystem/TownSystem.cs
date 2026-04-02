@@ -55,12 +55,16 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.ContainerUpdatedEvent -= ContainerUpdated;
         logProcessingManager.ContainerUpdatedEvent += ContainerUpdated;
+
+        logProcessingManager.InteractStateChangedEvent -= LogContainerInteractStateChanged;
+        logProcessingManager.InteractStateChangedEvent += LogContainerInteractStateChanged;
     }
 
     private void ReleaseEvents()
     {
         townObjectManager.PortalActivatedEvent -= PortalActivated;
         logProcessingManager.ContainerUpdatedEvent -= ContainerUpdated;
+        logProcessingManager.InteractStateChangedEvent -= LogContainerInteractStateChanged;
     }
 
     private void SubscribeSignals()
@@ -87,5 +91,10 @@ public class TownSystem : MonoBehaviour
     {
         signalHub.Publish(new InventoryUpdatedSignal());
         signalHub.Publish(new ContainerUpdatedSignal());
+    }
+
+    private void LogContainerInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new ContainerInteractStateChangedSignal(_boolean));
     }
 }

@@ -4,6 +4,8 @@ using UnityEngine;
 public class LogProcessingManager : MonoBehaviour
 {
     public event Action ContainerUpdatedEvent;
+    public event Action<bool> InteractStateChangedEvent;
+
 
     [SerializeField] GameObject logContainerPrefab;
 
@@ -41,15 +43,24 @@ public class LogProcessingManager : MonoBehaviour
     {
         logContainer.ContainerUpdatedEvent -= ContainerUpdated;
         logContainer.ContainerUpdatedEvent += ContainerUpdated;
+
+        logContainer.InteractStateEvent -= InteractStateChanged;
+        logContainer.InteractStateEvent += InteractStateChanged;
     }
 
     private void ReleaseEvents()
     {
         logContainer.ContainerUpdatedEvent -= ContainerUpdated;
+        logContainer.InteractStateEvent -= InteractStateChanged;
     }
 
     private void ContainerUpdated()
     {
         ContainerUpdatedEvent.Invoke();
+    }
+
+    private void InteractStateChanged(bool _boolean)
+    {
+        InteractStateChangedEvent.Invoke(_boolean);
     }
 }

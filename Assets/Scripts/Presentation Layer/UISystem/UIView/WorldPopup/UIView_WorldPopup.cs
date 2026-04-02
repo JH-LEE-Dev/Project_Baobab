@@ -75,4 +75,11 @@ public class UIView_WorldPopup : UIView
         sb.AppendLine("----------------------------------");
         Debug.Log(sb.ToString());
     }
+
+    // true : 원목 보관함과 상호작용 가능 거리에 들어옴
+    // false : 상호작용 거리에서 나감
+    public void LogContainerInteractStateChanged(bool _state)
+    {
+
+    }
 }
