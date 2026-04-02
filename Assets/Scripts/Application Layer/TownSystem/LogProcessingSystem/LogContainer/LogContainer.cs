@@ -7,6 +7,7 @@ using System.Text;
 
 public class LogContainer : MonoBehaviour, IInventory
 {
+    public event Action<LogItemData> LogOutEvent;
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
 
@@ -113,6 +114,10 @@ public class LogContainer : MonoBehaviour, IInventory
         }
     }
 
+    private void Update()
+    {
+        TakeFirstItem();
+    }
 
     private bool IsSameItem(Item _item, ItemData _data)
     {
@@ -388,7 +393,7 @@ public class LogContainer : MonoBehaviour, IInventory
         {
             bCanInteract = false;
             InteractStateEvent?.Invoke(false);
-            
+
             if (transferCoroutine != null)
             {
                 StopCoroutine(transferCoroutine);
@@ -400,5 +405,59 @@ public class LogContainer : MonoBehaviour, IInventory
     public Transform GetTransform()
     {
         return transform;
+    }
+
+    /// <summary>
+    /// 보관함의 첫 번째 슬롯에서 아이템을 하나 꺼내어 반환합니다.
+    /// 슬롯이 비게 되면 뒤의 아이템들을 앞으로 당깁니다.
+    /// </summary>
+    public void TakeFirstItem()
+    {
+        if (containerSlots == null)
+            return;
+
+        for (int i = 0; i < containerSlots.Count; i++)
+        {
+            var slot = containerSlots[i];
+
+            // 아이템이 있는 첫 번째 슬롯 발견
+            if (slot.itemData != null && slot.count > 0)
+            {
+                // 1. 해당 슬롯에서 상태 하나 추출 (가장 높은 등급 우선)
+                LogState takenState = slot.TakeOneItem();
+
+                // 2. 외부로 반환할 데이터 생성 (풀링 활용)
+                LogItemData resultData = GetFromPool(ItemType.Log) as LogItemData;
+                if (resultData != null && slot.itemData is LogItemData sourceLog)
+                {
+                    // 원본 데이터 복사
+                    resultData.itemType = sourceLog.itemType;
+                    resultData.sprite = sourceLog.sprite;
+                    resultData.color = sourceLog.color;
+                    resultData.treeType = sourceLog.treeType;
+                    resultData.logState = takenState;
+                }
+
+                // 3. 만약 아이템을 뺀 후 슬롯이 완전히 비었다면 리스트 정렬
+                if (slot.count == 0)
+                {
+                    // 데이터 풀 반환 및 슬롯 초기화
+                    if (slot.itemData is ItemData data)
+                    {
+                        ReleaseToPool(data);
+                    }
+                    slot.Setup(null, 0);
+
+                    // 빈 슬롯을 리스트의 맨 뒤로 보내서 "앞으로 당기기" 구현
+                    containerSlots.RemoveAt(i);
+                    containerSlots.Add(slot);
+                }
+
+                // 4. 이벤트 호출 및 결과 반환
+                ContainerUpdatedEvent?.Invoke();
+
+                LogOutEvent?.Invoke(resultData);
+            }
+        }
     }
 }
