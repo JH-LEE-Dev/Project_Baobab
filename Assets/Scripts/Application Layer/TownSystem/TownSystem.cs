@@ -10,7 +10,7 @@ public class TownSystem : MonoBehaviour
     private SignalHub signalHub;
     private TownObjectManager townObjectManager;
     private IEnvironmentProvider environmentProvider;
-    private LogProcessingManager logProcessingManager;
+    public LogProcessingManager logProcessingManager { get; private set; }
 
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
@@ -53,14 +53,14 @@ public class TownSystem : MonoBehaviour
         townObjectManager.PortalActivatedEvent -= PortalActivated;
         townObjectManager.PortalActivatedEvent += PortalActivated;
 
-        logProcessingManager.InventoryUpdatedEvent -= InventoryUpdated;
-        logProcessingManager.InventoryUpdatedEvent += InventoryUpdated;
+        logProcessingManager.ContainerUpdatedEvent -= ContainerUpdated;
+        logProcessingManager.ContainerUpdatedEvent += ContainerUpdated;
     }
 
     private void ReleaseEvents()
     {
         townObjectManager.PortalActivatedEvent -= PortalActivated;
-        logProcessingManager.InventoryUpdatedEvent -= InventoryUpdated;
+        logProcessingManager.ContainerUpdatedEvent -= ContainerUpdated;
     }
 
     private void SubscribeSignals()
@@ -83,8 +83,9 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.DI_Inventory(inventoryInitializedSignal.inventory);
     }
 
-    private void InventoryUpdated()
+    private void ContainerUpdated()
     {
         signalHub.Publish(new InventoryUpdatedSignal());
+        signalHub.Publish(new ContainerUpdatedSignal());
     }
 }

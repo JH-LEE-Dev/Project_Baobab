@@ -10,6 +10,7 @@ public class GameplayUIInstaller : MonoBehaviour
     private GameplayUIManager uiManager;
     private GameplayUICoordinator uICoordinator;
     private IInventory inventory;
+    private IInventory container;
     private IInDungeonObjProvider inDungeonObjProvider;
 
 
@@ -28,18 +29,19 @@ public class GameplayUIInstaller : MonoBehaviour
     private Canvas worldCanvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
-        InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider)
+        InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider,IInventory _container)
     {
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
         signalHub = _signalHub;
         inventory = _inventory;
         inDungeonObjProvider = _inDungeonObjProvider;
+        container = _container;
 
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider);
+        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container);
 
         SetupUIElement();
     }
@@ -98,7 +100,9 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_Unit unitUI = uiManager.Open<UIView_Unit>();
 
-        uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI);
+        UIView_WorldPopup worldPopupUI = uiManager.Open<UIView_WorldPopup>();
+
+        uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI);
 
         BindEvent();
     }
