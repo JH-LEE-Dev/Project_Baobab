@@ -15,6 +15,7 @@ public class UI_Storage : MonoBehaviour
     public void Initialize()
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
+        gameObject.SetActive(false);
         // TODO :: 컴포넌트 바인딩
     }
 
@@ -35,6 +36,9 @@ public class UI_Storage : MonoBehaviour
     {
         if (null == uiSlotPrefab)
             return;
+
+        if (false == gameObject.activeSelf)
+            gameObject.SetActive(true);
 
         int needCount = _cnt - storageSlots.Count;
 
