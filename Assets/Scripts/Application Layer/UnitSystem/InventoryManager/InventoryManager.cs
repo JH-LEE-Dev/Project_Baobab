@@ -154,4 +154,9 @@ public class InventoryManager : MonoBehaviour, IInventory
     {
         return inventorySlots;
     }
+
+    public Transform GetTransform()
+    {
+        return transform;
+    }
 }

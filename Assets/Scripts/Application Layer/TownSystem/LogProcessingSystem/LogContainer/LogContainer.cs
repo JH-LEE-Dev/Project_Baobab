@@ -4,10 +4,10 @@ using UnityEngine;
 using UnityEngine.Pool;
 using System;
 using System.Text;
-using Unity.VisualScripting;
 
 public class LogContainer : MonoBehaviour, IInventory
 {
+    public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
 
     private InputManager inputManager;
@@ -378,6 +378,7 @@ public class LogContainer : MonoBehaviour, IInventory
         if (_other.CompareTag(PLAYER_TAG))
         {
             bCanInteract = true;
+            InteractStateEvent?.Invoke(true);
         }
     }
 
@@ -386,11 +387,18 @@ public class LogContainer : MonoBehaviour, IInventory
         if (_other.CompareTag(PLAYER_TAG))
         {
             bCanInteract = false;
+            InteractStateEvent?.Invoke(false);
+            
             if (transferCoroutine != null)
             {
                 StopCoroutine(transferCoroutine);
                 transferCoroutine = null;
             }
         }
+    }
+
+    public Transform GetTransform()
+    {
+        return transform;
     }
 }

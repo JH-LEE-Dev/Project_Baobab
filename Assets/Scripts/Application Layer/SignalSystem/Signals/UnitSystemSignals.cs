@@ -18,3 +18,12 @@ public struct InventoryInitializedSignal
         inventory = _inventory;
     }
 }
+
+public struct ContainerInteractStateChangedSignal
+{
+    public bool state;
+    public ContainerInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
