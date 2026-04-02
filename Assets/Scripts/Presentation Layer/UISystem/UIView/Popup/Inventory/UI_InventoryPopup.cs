@@ -50,7 +50,6 @@ public class UI_InventoryPopup : MonoBehaviour
             // 나중엔 등급별로 이미지 적용 해야 함.
             slots[i].UpdateImage(iLogItemData.sprite, iLogItemData.color);
             slots[i].UpdateItemCount(_logStateCounts[i].count);
-            Debug.Log(_logStateCounts[i].count);
         }
 
         for (int i = _logStateCounts.Length; i < slots.Count; ++i)
