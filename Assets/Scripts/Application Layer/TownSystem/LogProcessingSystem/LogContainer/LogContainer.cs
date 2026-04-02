@@ -4,7 +4,6 @@ using UnityEngine;
 using UnityEngine.Pool;
 using System;
 using System.Text;
-using Unity.VisualScripting;
 
 public class LogContainer : MonoBehaviour, IInventory
 {
@@ -392,5 +391,10 @@ public class LogContainer : MonoBehaviour, IInventory
                 transferCoroutine = null;
             }
         }
+    }
+
+    public Transform GetTransform()
+    {
+        return transform;
     }
 }
