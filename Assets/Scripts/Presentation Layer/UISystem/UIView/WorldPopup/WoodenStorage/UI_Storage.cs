@@ -6,6 +6,7 @@ public class UI_Storage : MonoBehaviour
 {
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject mainVisual;
+    [SerializeField] private float yOffset = 30f;
 
     private const int defaultCap = 2;
 
@@ -16,7 +17,6 @@ public class UI_Storage : MonoBehaviour
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
         gameObject.SetActive(false);
-        // TODO :: 컴포넌트 바인딩
     }
 
     public void BindStorage(IInventory _storage)
@@ -28,7 +28,11 @@ public class UI_Storage : MonoBehaviour
             RectTransform rect = GetComponent<RectTransform>();
 
             if (null != rect)
-                rect.position = storage.GetTransform().position;
+            {
+                Vector3 newPos = storage.GetTransform().position;
+                newPos.y += yOffset;
+                rect.position = newPos;
+            }
         }
     }
 
@@ -36,9 +40,6 @@ public class UI_Storage : MonoBehaviour
     {
         if (null == uiSlotPrefab)
             return;
-
-        if (false == gameObject.activeSelf)
-            gameObject.SetActive(true);
 
         int needCount = _cnt - storageSlots.Count;
 
@@ -59,6 +60,9 @@ public class UI_Storage : MonoBehaviour
         if (null == storage)
             return;
 
+        if (false == gameObject.activeSelf)
+            gameObject.SetActive(true);
+
         UpdateSlots(storage.inventorySlots);
     }
 
@@ -67,7 +71,6 @@ public class UI_Storage : MonoBehaviour
         if (null == _items)
             return;
 
-        // 이거 인벤토리 로직에서 개수만큼 긁어 오는데, 개수 동일화 안 되어있으면 위험함.
         int itemCount = _items.Count;
 
         for (int i = 0; i < storageSlots.Count; ++i)
