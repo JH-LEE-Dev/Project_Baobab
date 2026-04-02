@@ -81,5 +81,6 @@ public class LogProcessingManager : MonoBehaviour
     private void LogOutFromContainer(LogItemData _itemData)
     {
         logItemPoolingManager.GetLogItem(_itemData);
+        logInBelt.LogIn(logItemPoolingManager.GetLogItem(_itemData));
     }
 }
