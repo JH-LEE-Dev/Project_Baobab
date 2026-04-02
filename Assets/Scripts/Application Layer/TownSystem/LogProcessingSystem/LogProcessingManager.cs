@@ -6,23 +6,33 @@ public class LogProcessingManager : MonoBehaviour
     public event Action ContainerUpdatedEvent;
     public event Action<bool> InteractStateChangedEvent;
 
+    [SerializeField] GameObject shopPrefab;
+    [SerializeField] GameObject shopSpawnPoint;
 
-    [SerializeField] GameObject logContainerPrefab;
-
-    private GameObject logContainerObj;
+    private GameObject shopObj;
 
     private IInventory inventory;
     private InputManager inputManager;
+    private LogItemPoolingManager logItemPoolingManager;
+    private LogInBelt logInBelt;
+
     public LogContainer logContainer { get; private set; }
 
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
 
-        logContainerObj = Instantiate(logContainerPrefab, this.transform);
+        shopObj = Instantiate(shopPrefab,shopSpawnPoint.transform.position,
+        Quaternion.identity, this.transform);
 
-        logContainer = logContainerObj.GetComponentInChildren<LogContainer>();
+        logContainer = shopObj.GetComponentInChildren<LogContainer>();
         logContainer.Initialize(inputManager);
+
+        logInBelt = shopObj.GetComponentInChildren<LogInBelt>();
+        logInBelt.Initialize();
+
+        logItemPoolingManager = GetComponentInChildren<LogItemPoolingManager>();
+        logItemPoolingManager.Initialize();
 
         BindEvents();
     }
@@ -46,12 +56,16 @@ public class LogProcessingManager : MonoBehaviour
 
         logContainer.InteractStateEvent -= InteractStateChanged;
         logContainer.InteractStateEvent += InteractStateChanged;
+
+        logContainer.LogOutEvent -= LogOutFromContainer;
+        logContainer.LogOutEvent += LogOutFromContainer;
     }
 
     private void ReleaseEvents()
     {
         logContainer.ContainerUpdatedEvent -= ContainerUpdated;
         logContainer.InteractStateEvent -= InteractStateChanged;
+        logContainer.LogOutEvent -= LogOutFromContainer;
     }
 
     private void ContainerUpdated()
@@ -62,5 +76,10 @@ public class LogProcessingManager : MonoBehaviour
     private void InteractStateChanged(bool _boolean)
     {
         InteractStateChangedEvent.Invoke(_boolean);
+    }
+
+    private void LogOutFromContainer(LogItemData _itemData)
+    {
+        logItemPoolingManager.GetLogItem(_itemData);
     }
 }
