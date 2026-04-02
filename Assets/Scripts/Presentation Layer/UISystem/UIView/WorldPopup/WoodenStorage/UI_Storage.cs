@@ -17,7 +17,6 @@ public class UI_Storage : MonoBehaviour
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
         gameObject.SetActive(false);
-        // TODO :: 컴포넌트 바인딩
     }
 
     public void BindStorage(IInventory _storage)
@@ -72,7 +71,6 @@ public class UI_Storage : MonoBehaviour
         if (null == _items)
             return;
 
-        // 이거 인벤토리 로직에서 개수만큼 긁어 오는데, 개수 동일화 안 되어있으면 위험함.
         int itemCount = _items.Count;
 
         for (int i = 0; i < storageSlots.Count; ++i)
