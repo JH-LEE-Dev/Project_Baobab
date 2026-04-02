@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class LogProcessingManager : MonoBehaviour
 {
-    public event Action InventoryUpdatedEvent;
+    public event Action ContainerUpdatedEvent;
 
     [SerializeField] GameObject logContainerPrefab;
 
@@ -11,7 +11,7 @@ public class LogProcessingManager : MonoBehaviour
 
     private IInventory inventory;
     private InputManager inputManager;
-    private LogContainer logContainer;
+    public LogContainer logContainer { get; private set; }
 
     public void Initialize(InputManager _inputManager)
     {
@@ -39,17 +39,17 @@ public class LogProcessingManager : MonoBehaviour
 
     private void BindEvents()
     {
-        logContainer.ContainerUpdatedEvent -= InventoryUpdated;
-        logContainer.ContainerUpdatedEvent += InventoryUpdated;
+        logContainer.ContainerUpdatedEvent -= ContainerUpdated;
+        logContainer.ContainerUpdatedEvent += ContainerUpdated;
     }
 
     private void ReleaseEvents()
     {
-        logContainer.ContainerUpdatedEvent -= InventoryUpdated;
+        logContainer.ContainerUpdatedEvent -= ContainerUpdated;
     }
 
-    private void InventoryUpdated()
+    private void ContainerUpdated()
     {
-        InventoryUpdatedEvent.Invoke();   
+        ContainerUpdatedEvent.Invoke();
     }
 }

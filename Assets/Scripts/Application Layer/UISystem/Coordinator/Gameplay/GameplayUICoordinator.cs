@@ -8,16 +8,19 @@ public class GameplayUICoordinator
 
     private SignalHub signalHub;
     private UIView_HUD hudUI;
+    private UIView_WorldPopup worldPopupUI;
 
     private bool bInventoryOpened = false;
 
-    public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI, UIView_Unit _unitUI)
+    public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
+     UIView_Unit _unitUI,UIView_WorldPopup _worldPopupUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
         hudUI = _hudUI;
         signalHub = _signalHub;
         unitUI = _unitUI;
+        worldPopupUI = _worldPopupUI;
 
 
         SubscribeSignals();
@@ -29,6 +32,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.Subscribe<TreeGetHitSignal>(TreeGetHit);
         signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<ContainerUpdatedSignal>(ContianerUpdated);
     }
 
     private void UnSubscribeSignals()
@@ -36,6 +40,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.UnSubscribe<TreeGetHitSignal>(TreeGetHit);
         signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<ContainerUpdatedSignal>(ContianerUpdated);
     }
 
     private void BindEvents()
@@ -100,5 +105,10 @@ public class GameplayUICoordinator
     private void SendDeleteItem(IInventorySlot _inData)
     {
         signalHub.Publish(new DeleteItemSignal(_inData));
+    }
+
+    private void ContianerUpdated(ContainerUpdatedSignal containerUpdatedSignal)
+    {
+        worldPopupUI.ContainerUpdated();
     }
 }

@@ -8,3 +8,5 @@ public struct TownStartedSignal
         characterPos = _characterPos;
     }
 }
+
+public struct ContainerUpdatedSignal { }

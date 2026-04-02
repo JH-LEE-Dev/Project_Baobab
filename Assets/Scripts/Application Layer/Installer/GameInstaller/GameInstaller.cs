@@ -49,7 +49,8 @@ public class GameInstaller : MonoBehaviour
         townSystem.Initialize(signalHub, environmentSystem, inputManager);
         inDungeonSystem.Initialize(signalHub, environmentSystem);
         inventoryManager.Initialize();
-        gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager);
+        gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
+        townSystem.logProcessingManager.logContainer);
 
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);
