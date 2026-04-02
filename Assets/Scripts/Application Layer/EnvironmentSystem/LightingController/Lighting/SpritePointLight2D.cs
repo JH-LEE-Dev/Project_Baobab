@@ -11,6 +11,9 @@ public class SpritePointLight2D : MonoBehaviour
     [SerializeField, Min(0.01f)] private float outerRadius = 3f;
     [SerializeField, Range(0f, 1f)] private float innerRadiusNormalized = 0.15f;
     [SerializeField, Min(0.01f)] private float height = 1f;
+    [SerializeField, Min(0.1f)] private float ellipseYScale = 1.35f;
+    [SerializeField, Range(0f, 1f)] private float normalInfluence = 0.35f;
+    [SerializeField, Min(0f)] private float verticalBias = 0.75f;
 
     [Header("Campfire")]
     [SerializeField] private bool useCampfireFlicker = false;
@@ -28,6 +31,20 @@ public class SpritePointLight2D : MonoBehaviour
     public float OuterRadius => useCampfireFlicker ? EvaluateCampfireRadius() : outerRadius;
     public float InnerRadiusNormalized => innerRadiusNormalized;
     public float Height => height;
+    public float EllipseYScale => ellipseYScale;
+    public float NormalInfluence => normalInfluence;
+    public float VerticalBias => verticalBias;
+
+
+    private void OnEnable()
+    {
+        Enable();
+    }
+    private void OnDisable()
+    {
+        Disable();
+    }
+
 
     public void Enable()
     {
@@ -51,6 +68,9 @@ public class SpritePointLight2D : MonoBehaviour
     {
         outerRadius = Mathf.Max(0.01f, outerRadius);
         height = Mathf.Max(0.01f, height);
+        ellipseYScale = Mathf.Max(0.1f, ellipseYScale);
+        normalInfluence = Mathf.Clamp01(normalInfluence);
+        verticalBias = Mathf.Max(0f, verticalBias);
         radiusFlickerAmplitude = Mathf.Max(0f, radiusFlickerAmplitude);
         radiusFlickerSpeed = Mathf.Max(0f, radiusFlickerSpeed);
         colorFlickerSpeed = Mathf.Max(0f, colorFlickerSpeed);
