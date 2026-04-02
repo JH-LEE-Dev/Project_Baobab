@@ -69,6 +69,7 @@ public class UI_Inventory : MonoBehaviour
         SendDeleteItemEvent.Invoke(_inData);
 
         UpdateSlots(inventory.inventorySlots); 
+        invPopup?.gameObject.SetActive(false);
     }
 
     private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
@@ -151,7 +152,8 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         IReadOnlyList<IInventorySlot> items = inventory.inventorySlots;
-        UpdateSlots(items); 
+
+        UpdateSlots(items);
     }
 
     public void OnHide()
