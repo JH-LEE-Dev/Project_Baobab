@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class UIView_WorldPopup : UIView
@@ -7,26 +8,49 @@ public class UIView_WorldPopup : UIView
     //내부 의존성
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
+    [SerializeField] private GameObject uiStoragePrefab;
+
+    private UI_Storage ui_Storage;
 
     //퍼블릭 초기화 및 제어 메서드
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
+
+        Init_UIStorage();
+    }
+    
+    private void Init_UIStorage()
+    {
+        if (null == uiStoragePrefab)
+            return;
+
+        ui_Storage = Instantiate(uiStoragePrefab, uiRoot).GetComponent<UI_Storage>();
+        if (null == ui_Storage)
+            return;
+
+        ui_Storage.Initialize();
     }
 
     public void DependencyInjection(IInventory _container)
     {
         container = _container;
+        ui_Storage?.BindStorage(container);
     }
 
     protected override void OnShow()
     {
         base.OnShow();
+
+        ui_Storage?.OnShow();
+        ui_Storage?.Refresh();
     }
 
     protected override void OnHide()
     {
+        ui_Storage?.OnHide();
+
         base.OnHide();
     }
 
@@ -48,6 +72,8 @@ public class UIView_WorldPopup : UIView
             Debug.LogWarning("[UIView_WorldPopup] Container is null.");
             return;
         }
+
+        ui_Storage?.Refresh();
 
         System.Text.StringBuilder sb = new System.Text.StringBuilder();
         sb.AppendLine("--- Container Inventory Status ---");

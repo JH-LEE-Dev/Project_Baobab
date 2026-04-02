@@ -52,3 +52,4 @@ MonoBehaviour:
   startHidden: 1
   bWorld: 1
   uiRoot: {fileID: 5973435824668062020}
+  uiStoragePrefab: {fileID: 3579267283983008013, guid: 9b47e8063b3458a459bf2b3e687f2c54, type: 3}

@@ -61,6 +61,7 @@ public class UI_InventoryPopup : MonoBehaviour
             rect.position = GlobalUI.KeepInsideScreenforUI(rect); 
         }
     }
+    
     public void InvisibleSlots()
     {
         foreach (UI_InventorySlot slot in slots)
