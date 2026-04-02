@@ -25,7 +25,9 @@ public class UI_Storage : MonoBehaviour
         {
             UpdateMaxSlotCount(storage.inventorySlots.Count);
             RectTransform rect = GetComponent<RectTransform>();
-            //rect.position = storage.
+
+            if (null != rect)
+                rect.position = storage.GetTransform().position;
         }
     }
 
