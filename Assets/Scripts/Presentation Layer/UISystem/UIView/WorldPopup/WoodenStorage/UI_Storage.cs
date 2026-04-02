@@ -37,9 +37,6 @@ public class UI_Storage : MonoBehaviour
         if (null == uiSlotPrefab)
             return;
 
-        if (false == gameObject.activeSelf)
-            gameObject.SetActive(true);
-
         int needCount = _cnt - storageSlots.Count;
 
         while (0 < needCount--)
@@ -58,6 +55,9 @@ public class UI_Storage : MonoBehaviour
     {
         if (null == storage)
             return;
+
+        if (false == gameObject.activeSelf)
+            gameObject.SetActive(true);
 
         UpdateSlots(storage.inventorySlots);
     }
