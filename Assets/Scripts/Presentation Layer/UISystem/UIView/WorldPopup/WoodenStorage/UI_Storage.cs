@@ -51,6 +51,8 @@ public class UI_Storage : MonoBehaviour
                 return;
 
             slot.Initialize();
+            slot.DisableRayCast();
+
             storageSlots.Add(slot);
         }
     }
@@ -86,6 +88,7 @@ public class UI_Storage : MonoBehaviour
 
                 slot.UpdateBindSlotData(item);
                 slot.UpdateItemCount(item.count);
+                Debug.Log(item + " " + item.count);
             }
             else
             {
