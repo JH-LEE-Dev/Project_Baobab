@@ -80,7 +80,7 @@ public class SpritePointLight2D : MonoBehaviour
     private Color EvaluateCampfireColor()
     {
         float time = GetAnimationTime();
-        float seed = Mathf.Abs(GetInstanceID()) * 0.0137f;
+        float seed = Mathf.Abs(GetHashCode()) * 0.0137f;
         float blend = Mathf.PerlinNoise(seed, time * colorFlickerSpeed);
         return Color.Lerp(lightColor, campfireSecondaryColor, blend);
     }
@@ -88,7 +88,7 @@ public class SpritePointLight2D : MonoBehaviour
     private float EvaluateCampfireRadius()
     {
         float time = GetAnimationTime();
-        float seed = Mathf.Abs(GetInstanceID()) * 0.0319f;
+        float seed = Mathf.Abs(GetHashCode()) * 0.0319f;
         float flicker = Mathf.PerlinNoise(seed, time * radiusFlickerSpeed);
         float centered = (flicker - 0.5f) * 2f;
         float multiplier = 1f + centered * radiusFlickerAmplitude;
@@ -98,7 +98,7 @@ public class SpritePointLight2D : MonoBehaviour
     private float EvaluateCampfireIntensity()
     {
         float time = GetAnimationTime();
-        float seed = Mathf.Abs(GetInstanceID()) * 0.0473f;
+        float seed = Mathf.Abs(GetHashCode()) * 0.0473f;
         float flicker = Mathf.PerlinNoise(seed, time * (radiusFlickerSpeed + 0.8f));
         float centered = (flicker - 0.5f) * 2f;
         float multiplier = 1f + centered * intensityFlickerAmplitude;
