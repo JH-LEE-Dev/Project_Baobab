@@ -71,6 +71,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (invSlotRef == _newSlot && showItemData == _newSlot.itemData)
             return;
 
+        // 아이템 데이터가 없다면.
+        if (null == _newSlot.itemData)
+        {
+            ResetData();
+            return;
+        }
+
         showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
 
@@ -91,24 +98,18 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     // 유니티 이벤트 함수 및 인터페이스 구현
     public virtual void OnPointerClick(PointerEventData _eventData)
     {
-        Debug.Log("아이템 삭제 요청");
-
         if (null != deleteItem)
             deleteItem.Invoke(invSlotRef);
     }
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        Debug.Log("슬롯에 마우스 올라옴");
-
         if (null != enterSlot)
             enterSlot.Invoke(showItemData, invSlotRef?.logStateCounts, uiImage.rectTransform.position);
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        Debug.Log("슬롯에 마우스 빠짐");
-
         if (null != exitSlot)
             exitSlot.Invoke();
     }

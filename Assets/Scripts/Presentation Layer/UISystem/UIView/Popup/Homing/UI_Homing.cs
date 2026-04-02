@@ -1,10 +1,10 @@
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 
 public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-
     public Action clickedEvent;
 
     // TODO :: DOTWEEN 할 이미지 받기.
@@ -33,6 +33,11 @@ public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     public void OnPointerClick(PointerEventData eventData)
     {
+        Scene currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+
+        if ("TownScene" == currentScene.name)
+            return;
+
         Homing();
     }
 
