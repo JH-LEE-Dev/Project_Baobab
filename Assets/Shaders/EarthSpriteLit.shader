@@ -52,6 +52,7 @@ Shader "Custom/2D/EarthSpriteLit"
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float3 positionWS : TEXCOORD1;
+                float3 pivotWS : TEXCOORD2;
                 half4 color : COLOR;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -75,6 +76,7 @@ Shader "Custom/2D/EarthSpriteLit"
             float4 _GlobalPointLightColors[8];
             float4 _GlobalPointLightParams[8];
             float4 _GlobalPointLightShape[8];
+            float _GlobalObjectPointLightRangeMultiplier;
 
             Varyings LitVertex(Attributes input)
             {
@@ -89,6 +91,7 @@ Shader "Custom/2D/EarthSpriteLit"
                 float3 positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
                 output.positionCS = TransformObjectToHClip(positionOS);
                 output.positionWS = TransformObjectToWorld(positionOS);
+                output.pivotWS = TransformObjectToWorld(float3(0.0, 0.0, 0.0));
                 output.uv = input.uv;
                 output.color = input.color * _Color * unity_SpriteColor;
                 return output;
@@ -137,16 +140,15 @@ Shader "Custom/2D/EarthSpriteLit"
                     }
 
                     float3 lightPositionWS = _GlobalPointLightPositions[i].xyz;
-                    float outerRadius = max(_GlobalPointLightPositions[i].w, 0.0001);
+                    float outerRadius = max(_GlobalPointLightPositions[i].w * max(_GlobalObjectPointLightRangeMultiplier, 0.1), 0.0001);
                     float3 pointColor = _GlobalPointLightColors[i].rgb;
                     float pointIntensity = _GlobalPointLightParams[i].x;
                     float innerRadius = saturate(_GlobalPointLightParams[i].y) * outerRadius;
-                    float height = max(_GlobalPointLightParams[i].z, 0.0001);
+                    float height = max(_GlobalPointLightParams[i].z, 0.0);
                     float ellipseYScale = max(_GlobalPointLightShape[i].x, 0.1);
                     float normalInfluence = saturate(_GlobalPointLightShape[i].y);
-                    float verticalBias = max(_GlobalPointLightShape[i].z, 0.0);
-
                     float2 toLightXY = lightPositionWS.xy - input.positionWS.xy;
+                    float2 pivotToLightXY = lightPositionWS.xy - input.pivotWS.xy;
                     float2 attenuatedOffset = float2(toLightXY.x, toLightXY.y * ellipseYScale);
                     float distanceXY = length(attenuatedOffset);
                     float radial01 = saturate((distanceXY - innerRadius) / max(outerRadius - innerRadius, 0.0001));
@@ -158,7 +160,19 @@ Shader "Custom/2D/EarthSpriteLit"
                         continue;
                     }
 
-                    float3 pointLightDirTS = normalize(float3(attenuatedOffset.xy, height + verticalBias));
+                    // Isometric object rule:
+                    // 1) Project the light down onto the ground by Height when deciding where the light is
+                    //    relative to this object's pivot.
+                    // 2) Use that projected position for left/right and front/back classification.
+                    // 3) Use Height itself as the true "above the ground" contribution, feeding the
+                    //    normal's Y response.
+                    float2 projectedPivotToLightXY = float2(
+                        pivotToLightXY.x,
+                        (lightPositionWS.y - height) - input.pivotWS.y);
+                    float sideOffset = projectedPivotToLightXY.x;
+                    float frontBackOffset = -projectedPivotToLightXY.y;
+                    float verticalOffset = height;
+                    float3 pointLightDirTS = normalize(float3(sideOffset, verticalOffset, frontBackOffset));
                     float pointNdotL = dot(normalTS, pointLightDirTS);
                     float pointNormalResponse = saturate((pointNdotL + normalInfluence) / (1.0 + normalInfluence));
 

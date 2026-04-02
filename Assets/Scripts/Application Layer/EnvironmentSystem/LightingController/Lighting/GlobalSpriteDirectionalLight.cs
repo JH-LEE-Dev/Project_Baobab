@@ -33,6 +33,7 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
     private static readonly int GlobalPointLightColorsId = Shader.PropertyToID("_GlobalPointLightColors");
     private static readonly int GlobalPointLightParamsId = Shader.PropertyToID("_GlobalPointLightParams");
     private static readonly int GlobalPointLightShapeId = Shader.PropertyToID("_GlobalPointLightShape");
+    private static readonly int GlobalObjectPointLightRangeMultiplierId = Shader.PropertyToID("_GlobalObjectPointLightRangeMultiplier");
 
     [Header("Directional Light")]
     [SerializeField] private Vector3 lightDirection = new Vector3(0f, 1f, 1f);
@@ -52,6 +53,7 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
 
     [Header("Point Lights")]
     [SerializeField, Range(0, MaxPointLights)] private int maxPointLights = MaxPointLights;
+    [SerializeField, Min(0.1f)] private float objectPointLightRangeMultiplier = 2.5f;
 
     [Header("External Inputs")]
     [SerializeField, Range(0f, 24f)] private float currentHour = 12f;
@@ -179,6 +181,7 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
         Shader.SetGlobalFloat(GlobalDirectionalLightIntensityId, appliedLightIntensity);
         Shader.SetGlobalColor(GlobalAmbientLightColorId, appliedAmbientColor);
         Shader.SetGlobalFloat(GlobalAmbientLightIntensityId, appliedAmbientIntensity);
+        Shader.SetGlobalFloat(GlobalObjectPointLightRangeMultiplierId, objectPointLightRangeMultiplier);
 
         PushPointLights();
     }
@@ -435,7 +438,7 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
             pointLightPositions[count] = new Vector4(position.x, position.y, position.z, light.OuterRadius);
             pointLightColors[count] = new Vector4(color.r, color.g, color.b, color.a);
             pointLightParams[count] = new Vector4(light.Intensity, light.InnerRadiusNormalized, light.Height, 0f);
-            pointLightShape[count] = new Vector4(light.EllipseYScale, light.NormalInfluence, light.VerticalBias, 0f);
+            pointLightShape[count] = new Vector4(light.EllipseYScale, light.NormalInfluence, 0f, 0f);
             count++;
         }
 
