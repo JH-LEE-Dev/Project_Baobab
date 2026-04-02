@@ -42,9 +42,6 @@ public class UIView_WorldPopup : UIView
     protected override void OnShow()
     {
         base.OnShow();
-
-        ui_Storage?.OnShow();
-        ui_Storage?.Refresh();
     }
 
     protected override void OnHide()
@@ -106,6 +103,14 @@ public class UIView_WorldPopup : UIView
     // false : 상호작용 거리에서 나감
     public void LogContainerInteractStateChanged(bool _state)
     {
-
+        if (true == _state)
+        {
+            ui_Storage?.OnShow();
+            ui_Storage?.Refresh();
+        }
+        else
+        {
+            ui_Storage?.OnHide();
+        }
     }
 }
