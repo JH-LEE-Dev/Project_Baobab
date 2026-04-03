@@ -55,4 +55,9 @@ public class LogCutter : MonoBehaviour, ILogCutter
         logToCut = _itemData;
         CuttingStartEvent?.Invoke(logToCut);
     }
+
+    public Transform GetTransform()
+    {
+        return transform;
+    }
 }
