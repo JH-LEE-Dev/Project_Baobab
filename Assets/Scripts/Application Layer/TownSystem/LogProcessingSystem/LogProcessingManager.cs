@@ -20,6 +20,7 @@ public class LogProcessingManager : MonoBehaviour
     private LogInBelt logInBelt;
     private LogInBelt logOutBelt;
     public LogCutter logCutter { get; private set; }
+    private LogEvaluator logEvaluator;
 
     public LogContainer logContainer { get; private set; }
 
@@ -32,6 +33,9 @@ public class LogProcessingManager : MonoBehaviour
 
         logContainer = shopObj.GetComponentInChildren<LogContainer>();
         logContainer.Initialize(inputManager);
+
+        logEvaluator = shopObj.GetComponentInChildren<LogEvaluator>();
+        logEvaluator.Initialize();
 
         LogInBelt[] belts = shopObj.GetComponentsInChildren<LogInBelt>();
         for (int i = 0; i < belts.Length; i++)
@@ -133,5 +137,6 @@ public class LogProcessingManager : MonoBehaviour
     private void LogToEvaluator(LogItem _item, ILogItemData _itemData)
     {
         logItemPoolingManager.ReturnLogItem(_item);
+        logEvaluator.EvaluateLog(_itemData);
     }
 }

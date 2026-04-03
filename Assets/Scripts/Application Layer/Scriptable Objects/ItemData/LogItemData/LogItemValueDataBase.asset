@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: LogItemValueDataBase
   m_EditorClassIdentifier: Assembly-CSharp::LogItemValueDataBase
   datas:
-  - treeType: 0
-    value: 0
+  - treeType: 1
+    value: 10

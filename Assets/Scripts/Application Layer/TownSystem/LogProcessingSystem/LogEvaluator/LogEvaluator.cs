@@ -1,11 +1,20 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class LogEvaluator : MonoBehaviour
 {
     public event Action<int> logEvaluatedEvent;
-    
+
     [SerializeField] private LogItemValueDataBase logItemValueDataBase;
+    [SerializeField] private GameObject storageObj;
+    [SerializeField] private float evaluationDelay = 1.5f;
+
+    private Animator anim;
+    private Animator storageAnim;
+    private Coroutine stopAnimCoroutine;
+
+    private readonly int startHash = Animator.StringToHash("bStart");
 
     //Perfect 등급 : value * 10
     //Advance 등급 : value * 3
@@ -17,11 +26,15 @@ public class LogEvaluator : MonoBehaviour
 
     public void Initialize()
     {
-        
+        anim = GetComponent<Animator>();
+        storageAnim = storageObj.GetComponent<Animator>();
     }
 
-    public void EvaluateLog(LogItemData _itemData)
+    public void EvaluateLog(ILogItemData _itemData)
     {
+        if (stopAnimCoroutine != null) StopCoroutine(stopAnimCoroutine);
+        anim.SetBool(startHash, true);
+
         LogItemValueData valueData = logItemValueDataBase.Get(_itemData.treeType);
         if (valueData == null)
         {
@@ -61,5 +74,14 @@ public class LogEvaluator : MonoBehaviour
 
         int finalPrice = Mathf.RoundToInt(baseValue * multiplier);
         logEvaluatedEvent?.Invoke(finalPrice);
+
+        stopAnimCoroutine = StartCoroutine(StopAnimationRoutine());
+    }
+
+    private IEnumerator StopAnimationRoutine()
+    {
+        yield return new WaitForSeconds(evaluationDelay);
+        anim.SetBool(startHash, false);
+        stopAnimCoroutine = null;
     }
 }
