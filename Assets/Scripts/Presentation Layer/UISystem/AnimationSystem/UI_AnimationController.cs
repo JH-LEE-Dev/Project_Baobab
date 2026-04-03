@@ -12,10 +12,14 @@ public class UI_AnimationController : MonoBehaviour
     private TweenCallback cachedCompletedCallback;
     private TweenCallback outCallback;
 
-    private void Initialize()
+    public void Initialize()
     {
         cachedCompletedCallback = Complete;
-    }
+
+        foreach (UI_AnimationBase target in animations)
+        {
+            target.Initialize();
+        }
 
     public void Play(TweenCallback _finishCallback)
     {
