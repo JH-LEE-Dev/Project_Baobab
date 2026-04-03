@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 687085483192830147}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -46,12 +46,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SpritePointLight2D
   lightColor: {r: 1, g: 1, b: 1, a: 1}
   intensity: 1
-  outerRadius: 3.88
-  innerRadiusNormalized: 0.365
-  height: 12
-  ellipseYScale: 1.9
-  normalInfluence: 0.203
-  verticalBias: 0.5
+  outerRadius: 4
+  innerRadiusNormalized: 0.442
+  height: 0
+  ellipseYScale: 2
+  normalInfluence: 0.1
   useCampfireFlicker: 0
   campfireSecondaryColor: {r: 1, g: 0.35, b: 0.1, a: 1}
   radiusFlickerAmplitude: 0.2
