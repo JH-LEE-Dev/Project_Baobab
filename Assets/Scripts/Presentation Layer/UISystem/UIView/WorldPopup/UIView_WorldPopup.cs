@@ -11,8 +11,10 @@ public class UIView_WorldPopup : UIView
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiStoragePrefab;
+    [SerializeField] private GameObject uiCutterPrefab;
 
     private UI_Storage ui_Storage;
+    private UI_TreeCutter ui_Cutter;
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -21,6 +23,7 @@ public class UIView_WorldPopup : UIView
         base.Initialize(_ctx);
 
         Init_UIStorage();
+        Init_UICutter();
     }
 
     private void BindEvents()
@@ -57,12 +60,26 @@ public class UIView_WorldPopup : UIView
         ui_Storage.Initialize();
     }
 
+    private void Init_UICutter()
+    {
+        if (null == uiCutterPrefab)
+            return;
+
+        ui_Cutter = Instantiate(uiCutterPrefab, uiRoot).GetComponent<UI_TreeCutter>();
+        if (null == ui_Cutter)
+            return;
+
+        ui_Cutter.Initialize();
+    }
+
+
     public void DependencyInjection(IInventory _container, ILogCutter _logCutter)
     {
         container = _container;
         logCutter = _logCutter;
 
         ui_Storage?.BindStorage(container);
+        ui_Cutter?.BindPosition(_logCutter.GetTransform().position);
         
         BindEvents();
     }
@@ -133,12 +150,18 @@ public class UIView_WorldPopup : UIView
     {
         if (true == _state)
         {
-            ui_Storage?.OnShow();
-            ui_Storage?.Refresh();
+            if (null != ui_Storage)
+            {
+                ui_Storage.OnShow();
+                ui_Storage.Refresh();
+            }
+
+            ui_Cutter?.OnShow();
         }
         else
         {
             ui_Storage?.OnHide();
+            ui_Cutter?.OnHide();
         }
     }
 
@@ -149,11 +172,15 @@ public class UIView_WorldPopup : UIView
         //logCutter.logToCut -> 절단될 원목.
         //logCutter.timeRemaining -> 남은 절단 시간.
 
-        
+        if (null != ui_Cutter)
+        {
+            ui_Cutter.BindItemData(logCutter.logToCut);
+            ui_Cutter.BindRemaining(logCutter.timeRemaining);
+        }
     }
 
     private void LogCuttingIsDone()
     {
-        
+        ui_Cutter?.ResetCutter();
     }
 }

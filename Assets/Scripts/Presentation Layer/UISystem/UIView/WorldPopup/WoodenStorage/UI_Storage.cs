@@ -62,8 +62,8 @@ public class UI_Storage : MonoBehaviour
         if (null == storage)
             return;
 
-        if (false == gameObject.activeSelf)
-            gameObject.SetActive(true);
+        // if (false == gameObject.activeSelf)
+        //     gameObject.SetActive(true);
 
         UpdateSlots(storage.inventorySlots);
     }
