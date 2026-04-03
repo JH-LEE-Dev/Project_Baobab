@@ -27,11 +27,15 @@ public class UIView_WorldPopup : UIView
     {
         logCutter.CuttingStartEvent -= LogToCutter;
         logCutter.CuttingStartEvent += LogToCutter;
+
+        logCutter.CuttingDoneEvent -= LogCuttingIsDone;
+        logCutter.CuttingDoneEvent += LogCuttingIsDone;
     }
 
     private void ReleaseEvents()
     {
         logCutter.CuttingStartEvent -= LogToCutter;
+        logCutter.CuttingDoneEvent -= LogCuttingIsDone;
     }
 
     public override void Release()
@@ -144,5 +148,10 @@ public class UIView_WorldPopup : UIView
         Debug.Log(logCutter.timeRemaining);
         //logCutter.logToCut -> 절단될 원목.
         //logCutter.timeRemaining -> 남은 절단 시간.
+    }
+
+    private void LogCuttingIsDone()
+    {
+        
     }
 }
