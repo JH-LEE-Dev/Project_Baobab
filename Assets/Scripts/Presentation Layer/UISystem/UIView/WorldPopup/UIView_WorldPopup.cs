@@ -144,5 +144,7 @@ public class UIView_WorldPopup : UIView
         Debug.Log(logCutter.timeRemaining);
         //logCutter.logToCut -> 절단될 원목.
         //logCutter.timeRemaining -> 남은 절단 시간.
+
+        
     }
 }
