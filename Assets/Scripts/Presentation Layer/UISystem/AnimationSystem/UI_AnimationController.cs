@@ -20,6 +20,7 @@ public class UI_AnimationController : MonoBehaviour
         {
             target.Initialize();
         }
+    }
 
     public void Play(TweenCallback _finishCallback)
     {

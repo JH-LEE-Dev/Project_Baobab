@@ -6,6 +6,8 @@ public class UI_TreeCutter : MonoBehaviour
     [SerializeField] private GameObject mainVisual;
     [SerializeField] private float yOffset = 30f;
 
+    private ILogItemData cachedItemData;
+
     private UI_InventorySlot slot;
     public UI_InventorySlot Slot { get { return slot;  } set { slot = value; } }
 
@@ -20,6 +22,16 @@ public class UI_TreeCutter : MonoBehaviour
                 slot.Initialize();
                 slot.DisableRayCast();
             }
+        }
+    }
+
+    public void BindItemData(ILogItemData _itemData)
+    {
+        cachedItemData = _itemData;
+
+        if (null != slot)
+        {
+            slot.UpdateImage(_itemData.sprite, _itemData.color);
         }
     }
 }
