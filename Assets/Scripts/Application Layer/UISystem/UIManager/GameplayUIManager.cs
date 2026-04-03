@@ -5,14 +5,18 @@ public class GameplayUIManager : UIManager
     private IInventory inventory;
     private IInventory container;
     private IInDungeonObjProvider inDungeonObjProvider;
+    private ILogCutter logCutter;
 
-    public void Initialize(InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider,IInventory _container)
+
+    public void Initialize(InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider,IInventory _container,
+    ILogCutter _logCutter)
     {
         base.Initialize(_inputManager);
 
         inventory = _inventory;
         inDungeonObjProvider = _inDungeonObjProvider;
         container = _container;
+        logCutter = _logCutter;
     }
 
     protected override void DataInjection(UIView view)
@@ -24,6 +28,6 @@ public class GameplayUIManager : UIManager
             unitUI.DependencyInjection(inDungeonObjProvider.trees);
 
         if(view is UIView_WorldPopup worldUI)
-            worldUI.DependencyInjection(container);
+            worldUI.DependencyInjection(container,logCutter);
     }
 }

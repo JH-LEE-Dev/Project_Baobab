@@ -152,4 +152,16 @@ public class UIManager : MonoBehaviour
     {
         
     }
+
+    public void ReleaseAllUIView()
+    {
+        foreach (var kv in instanceByType)
+        {
+            UIView view = kv.Value;
+            if (view != null)
+            {
+                view.Release();
+            }
+        }
+    }
 }

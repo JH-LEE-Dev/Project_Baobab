@@ -1,8 +1,15 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class LogInBelt : MonoBehaviour
 {
+    public event Action<LogItem, ILogItemData> LogToCutterEvent;
+    private LogItemData logItemData = new LogItemData();
+    [SerializeField] Tilemap tilemap;
+
+
     private struct BeltItem
     {
         public LogItem item;
@@ -22,10 +29,13 @@ public class LogInBelt : MonoBehaviour
 
     // 내부 상태
     private List<BeltItem> activeItems = new List<BeltItem>(10);
+    private bool isMoving = false;
 
     public void Initialize()
     {
         activeItems.Clear();
+        isMoving = false;
+        if (tilemap != null) tilemap.animationFrameRate = 0f;
     }
 
     public void LogIn(LogItem _item)
@@ -38,11 +48,13 @@ public class LogInBelt : MonoBehaviour
         // 다음 목표 인덱스 설정 (체크포인트가 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
         int nextTarget = checkPoints.Count > 1 ? 1 : 0;
         activeItems.Add(new BeltItem(_item, nextTarget));
+
+        StartBelt();
     }
 
     private void Update()
     {
-        if (activeItems.Count == 0) return;
+        if (!isMoving || activeItems.Count == 0) return;
 
         // 역순 순회하여 리스트 수정 시의 안정성 확보 및 GC 최소화
         for (int i = activeItems.Count - 1; i >= 0; i--)
@@ -87,7 +99,27 @@ public class LogInBelt : MonoBehaviour
 
     private void LogOut(LogItem _item)
     {
-        // 벨트의 마지막 지점에 도달했을 때의 처리
+        isMoving = false;
+        if (tilemap != null) tilemap.animationFrameRate = 0f;
+        tilemap.RefreshAllTiles();
+        
+        logItemData.itemType = _item.itemType;
+        logItemData.sprite = _item.sprite;
+        logItemData.color = _item.color;
+        logItemData.logState = _item.logState;
+        logItemData.treeType = _item.treeType;
 
+        LogToCutterEvent?.Invoke(_item, logItemData);
+    }
+
+    public void StartBelt()
+    {
+        if (activeItems.Count == 0)
+            return;
+
+        isMoving = true;
+        if (tilemap != null) tilemap.animationFrameRate = 3f;
+
+        tilemap.RefreshAllTiles();
     }
 }

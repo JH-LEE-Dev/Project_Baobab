@@ -82,4 +82,9 @@ public abstract class UIView : MonoBehaviour
         rt.offsetMin = Vector2.zero;   // Left, Bottom
         rt.offsetMax = Vector2.zero;   // Right, Top
     }
+
+    public virtual void Release()
+    {
+        
+    }
 }

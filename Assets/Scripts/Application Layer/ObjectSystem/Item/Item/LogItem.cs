@@ -18,8 +18,9 @@ public class LogItem : Item
     private bool isLaunching = false;
     private Transform suckTarget;
     private Coroutine moveCoroutine;
+    private bool bDrop = true;
 
-    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState,Color _color)
+    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
 
@@ -30,14 +31,13 @@ public class LogItem : Item
         suckTarget = null;
         sprite = _logItemTypeData.sprite;
         color = _color;
-        
+
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
             spriteRenderer.color = color;
         }
-
 
         if (spriteRenderer == null)
         {
@@ -47,6 +47,11 @@ public class LogItem : Item
                 visualTransform = spriteRenderer.transform;
             }
         }
+    }
+
+    public void IsDropItem(bool _boolean)
+    {
+        bDrop = _boolean;
     }
 
     public void Launch(Vector3 _start, Vector3 _end, float _height, float _duration)
@@ -113,7 +118,7 @@ public class LogItem : Item
 
     private void OnTriggerEnter2D(Collider2D _other)
     {
-        if (isSucked) return;
+        if (isSucked || bDrop == false) return;
 
         if (_other.CompareTag("ItemSensor"))
         {
@@ -129,6 +134,9 @@ public class LogItem : Item
 
     private void OnTriggerExit2D(Collider2D _other)
     {
+        if (bDrop == false)
+            return;
+            
         if (_other.CompareTag("ItemSensor"))
         {
             if (suckTarget == _other.transform)

@@ -34,9 +34,9 @@ public class LogItemPoolingManager : MonoBehaviour
     public LogItem GetLogItem(LogItemData _data)
     {
         LogItem item = logPool.Get();
-        
+
         LogItemTypeData typeData = logItemTypeDataBase.Get(_data.treeType);
-        
+
         if (typeData != null)
         {
             item.Initialize(typeData, _data.logState, _data.color);
@@ -59,7 +59,8 @@ public class LogItemPoolingManager : MonoBehaviour
     private LogItem CreateLogItem()
     {
         LogItem newItem = Instantiate(logItemPrefab, transform);
-        
+        newItem.IsDropItem(false);
+
         return newItem;
     }
 
