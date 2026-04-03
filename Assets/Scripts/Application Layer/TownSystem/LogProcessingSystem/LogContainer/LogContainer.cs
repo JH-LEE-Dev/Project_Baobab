@@ -18,8 +18,7 @@ public class LogContainer : MonoBehaviour, IInventory
 
     // 내부 의존성
     [SerializeField] private List<InventorySlot> containerSlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
-    [SerializeField] private float transferInterval = 1.0f;
-
+    [SerializeField] private float transferInterval = 1f;
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
 
@@ -29,17 +28,22 @@ public class LogContainer : MonoBehaviour, IInventory
     private Coroutine transferCoroutine;
     private WaitForSeconds transferWait;
     private float lastTransferTime = -1.0f;
+    private float lastOutputTime = -1.0f;
+    private float lastInterval = 0f;
 
 
     private const string PLAYER_TAG = "Player";
 
     [SerializeField] private bool bDebug = false;
 
+    private bool bStop = false;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
         transferWait = new WaitForSeconds(transferInterval);
-        lastTransferTime = -transferInterval; // 초기화 시 즉시 실행 가능하도록 설정
+        lastTransferTime = -transferInterval;
+        lastOutputTime = -transferInterval; // 초기화 시 즉시 실행 가능하도록 설정
 
         // 1. 기존 슬롯의 데이터들을 풀로 반환하고 슬롯 초기화
         if (containerSlots.Count == 0)
@@ -116,7 +120,19 @@ public class LogContainer : MonoBehaviour, IInventory
 
     private void Update()
     {
-        TakeFirstItem();
+        if (bStop == true)
+        {
+            lastOutputTime = Time.time - lastInterval;
+            return;
+        }
+
+        lastInterval = Time.time - lastOutputTime;
+        if (lastInterval >= transferInterval)
+        {
+            TakeFirstItem();
+            lastOutputTime = Time.time;
+            lastInterval = 0f;
+        }
     }
 
     private bool IsSameItem(Item _item, ItemData _data)
@@ -457,7 +473,13 @@ public class LogContainer : MonoBehaviour, IInventory
                 ContainerUpdatedEvent?.Invoke();
 
                 LogOutEvent?.Invoke(resultData);
+                return;
             }
         }
+    }
+
+    public void SetbStop(bool _bStop)
+    {
+        bStop = _bStop;
     }
 }

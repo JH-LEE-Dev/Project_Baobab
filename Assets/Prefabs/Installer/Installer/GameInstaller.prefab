@@ -472,7 +472,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e2f8354df6dc3d4f8c3c825cdbf35d3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LogItemPoolingManager
-  logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
+  logItemPrefab: {fileID: 5360078145449572918, guid: 169fe35dfcb21354eaf9328139723c41, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
 --- !u!1 &4623915527415485074
 GameObject:

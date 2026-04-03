@@ -4,6 +4,8 @@ using UnityEngine;
 public class UIView_WorldPopup : UIView
 {
     private IInventory container;
+    private ILogCutter logCutter;
+
 
     //내부 의존성
     [Header("UI References")]
@@ -20,6 +22,24 @@ public class UIView_WorldPopup : UIView
 
         Init_UIStorage();
     }
+
+    private void BindEvents()
+    {
+        logCutter.CuttingStartEvent -= LogToCutter;
+        logCutter.CuttingStartEvent += LogToCutter;
+    }
+
+    private void ReleaseEvents()
+    {
+        logCutter.CuttingStartEvent -= LogToCutter;
+    }
+
+    public override void Release()
+    {
+        base.Release();
+
+        ReleaseEvents();
+    }
     
     private void Init_UIStorage()
     {
@@ -33,10 +53,14 @@ public class UIView_WorldPopup : UIView
         ui_Storage.Initialize();
     }
 
-    public void DependencyInjection(IInventory _container)
+    public void DependencyInjection(IInventory _container, ILogCutter _logCutter)
     {
         container = _container;
+        logCutter = _logCutter;
+
         ui_Storage?.BindStorage(container);
+        
+        BindEvents();
     }
 
     protected override void OnShow()
@@ -112,5 +136,13 @@ public class UIView_WorldPopup : UIView
         {
             ui_Storage?.OnHide();
         }
+    }
+
+    //원목이 절단기로 들어감.
+    private void LogToCutter(ILogItemData _itemData)
+    {
+        Debug.Log(logCutter.timeRemaining);
+        //logCutter.logToCut -> 절단될 원목.
+        //logCutter.timeRemaining -> 남은 절단 시간.
     }
 }
