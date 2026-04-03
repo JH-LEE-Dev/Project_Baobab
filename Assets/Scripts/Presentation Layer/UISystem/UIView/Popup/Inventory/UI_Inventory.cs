@@ -80,7 +80,6 @@ public class UI_Inventory : MonoBehaviour
         if (null == _items)
             return;
 
-        // 이거 인벤토리 로직에서 개수만큼 긁어 오는데, 개수 동일화 안 되어있으면 위험함.
         int itemCount = _items.Count;
 
         for (int i = 0; i < inventorySlots.Count; ++i)

@@ -175,3 +175,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_Storage
   uiSlotPrefab: {fileID: 579466836129025464, guid: fb43f9e42a2b2fd4999daf76b9e7d5e0, type: 3}
   mainVisual: {fileID: 1415042115427916999}
+  yOffset: 2
