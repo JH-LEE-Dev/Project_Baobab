@@ -51,6 +51,8 @@ public class UI_Storage : MonoBehaviour
                 return;
 
             slot.Initialize();
+            slot.DisableRayCast();
+
             storageSlots.Add(slot);
         }
     }
@@ -60,8 +62,8 @@ public class UI_Storage : MonoBehaviour
         if (null == storage)
             return;
 
-        if (false == gameObject.activeSelf)
-            gameObject.SetActive(true);
+        // if (false == gameObject.activeSelf)
+        //     gameObject.SetActive(true);
 
         UpdateSlots(storage.inventorySlots);
     }
@@ -86,6 +88,7 @@ public class UI_Storage : MonoBehaviour
 
                 slot.UpdateBindSlotData(item);
                 slot.UpdateItemCount(item.count);
+                Debug.Log(item + " " + item.count);
             }
             else
             {

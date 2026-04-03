@@ -53,3 +53,4 @@ MonoBehaviour:
   bWorld: 1
   uiRoot: {fileID: 5973435824668062020}
   uiStoragePrefab: {fileID: 3579267283983008013, guid: 9b47e8063b3458a459bf2b3e687f2c54, type: 3}
+  uiCutterPrefab: {fileID: 4703071890517338714, guid: 55cdbd122cb3875469e8e6869abd4998, type: 3}
