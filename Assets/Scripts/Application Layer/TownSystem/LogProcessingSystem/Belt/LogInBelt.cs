@@ -5,7 +5,7 @@ using UnityEngine.Tilemaps;
 
 public class LogInBelt : MonoBehaviour
 {
-    public event Action<LogItem, ILogItemData> LogToCutterEvent;
+    public event Action<LogItem, ILogItemData> LogOutEvent;
     private LogItemData logItemData = new LogItemData();
     [SerializeField] Tilemap tilemap;
 
@@ -109,7 +109,7 @@ public class LogInBelt : MonoBehaviour
         logItemData.logState = _item.logState;
         logItemData.treeType = _item.treeType;
 
-        LogToCutterEvent?.Invoke(_item, logItemData);
+        LogOutEvent?.Invoke(_item, logItemData);
     }
 
     public void StartBelt()

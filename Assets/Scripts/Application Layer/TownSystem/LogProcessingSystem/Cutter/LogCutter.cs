@@ -6,6 +6,8 @@ public class LogCutter : MonoBehaviour, ILogCutter
     public event Action CuttingDoneEvent;
     public event Action<ILogItemData> CuttingStartEvent;
 
+    private LogItem cuttingItem;
+
     // 외부 의존성
     [SerializeField] private float cuttingDuration = 5.0f;
 
@@ -44,10 +46,11 @@ public class LogCutter : MonoBehaviour, ILogCutter
         CuttingDoneEvent?.Invoke();
     }
 
-    public void StartCutting(ILogItemData _itemData)
+    public void StartCutting(LogItem _item,ILogItemData _itemData)
     {
         if (bIsCutting) return;
 
+        cuttingItem = _item;
         bIsCutting = true;
         cuttingTimer = cuttingDuration;
         anim.SetBool(startHash, true);
@@ -59,5 +62,10 @@ public class LogCutter : MonoBehaviour, ILogCutter
     public Transform GetTransform()
     {
         return transform;
+    }
+
+    public LogItem GetCuttingLogItem()
+    {
+        return cuttingItem;
     }
 }

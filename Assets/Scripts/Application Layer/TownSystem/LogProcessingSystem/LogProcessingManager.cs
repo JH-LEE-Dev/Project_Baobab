@@ -11,12 +11,14 @@ public class LogProcessingManager : MonoBehaviour
     [SerializeField] GameObject shopPrefab;
     [SerializeField] GameObject shopSpawnPoint;
 
+
     private GameObject shopObj;
 
     private IInventory inventory;
     private InputManager inputManager;
     private LogItemPoolingManager logItemPoolingManager;
     private LogInBelt logInBelt;
+    private LogInBelt logOutBelt;
     public LogCutter logCutter { get; private set; }
 
     public LogContainer logContainer { get; private set; }
@@ -31,8 +33,21 @@ public class LogProcessingManager : MonoBehaviour
         logContainer = shopObj.GetComponentInChildren<LogContainer>();
         logContainer.Initialize(inputManager);
 
-        logInBelt = shopObj.GetComponentInChildren<LogInBelt>();
-        logInBelt.Initialize();
+        LogInBelt[] belts = shopObj.GetComponentsInChildren<LogInBelt>();
+        for (int i = 0; i < belts.Length; i++)
+        {
+            if (belts[i].name == "LogInBeltGrid")
+            {
+                logInBelt = belts[i];
+            }
+            else if (belts[i].name == "LogOutBeltGrid")
+            {
+                logOutBelt = belts[i];
+            }
+        }
+
+        if (logInBelt != null) logInBelt.Initialize();
+        if (logOutBelt != null) logOutBelt.Initialize();
 
         logItemPoolingManager = GetComponentInChildren<LogItemPoolingManager>();
         logItemPoolingManager.Initialize();
@@ -67,11 +82,14 @@ public class LogProcessingManager : MonoBehaviour
         logContainer.LogOutEvent -= LogOutFromContainer;
         logContainer.LogOutEvent += LogOutFromContainer;
 
-        logInBelt.LogToCutterEvent -= LogToCutter;
-        logInBelt.LogToCutterEvent += LogToCutter;
+        logInBelt.LogOutEvent -= LogToCutter;
+        logInBelt.LogOutEvent += LogToCutter;
 
         logCutter.CuttingDoneEvent -= CuttingDone;
         logCutter.CuttingDoneEvent += CuttingDone;
+
+        logOutBelt.LogOutEvent -= LogToEvaluator;
+        logOutBelt.LogOutEvent += LogToEvaluator;
     }
 
     private void ReleaseEvents()
@@ -79,8 +97,9 @@ public class LogProcessingManager : MonoBehaviour
         logContainer.ContainerUpdatedEvent -= ContainerUpdated;
         logContainer.InteractStateEvent -= InteractStateChanged;
         logContainer.LogOutEvent -= LogOutFromContainer;
-        logInBelt.LogToCutterEvent -= LogToCutter;
+        logInBelt.LogOutEvent -= LogToCutter;
         logCutter.CuttingDoneEvent -= CuttingDone;
+        logOutBelt.LogOutEvent -= LogToEvaluator;
     }
 
     private void ContainerUpdated()
@@ -100,8 +119,7 @@ public class LogProcessingManager : MonoBehaviour
 
     private void LogToCutter(LogItem _item, ILogItemData _itemData)
     {
-        logItemPoolingManager.ReturnLogItem(_item);
-        logCutter.StartCutting(_itemData);
+        logCutter.StartCutting(_item, _itemData);
         logContainer.SetbStop(true);
     }
 
@@ -109,5 +127,11 @@ public class LogProcessingManager : MonoBehaviour
     {
         logContainer.SetbStop(false);
         logInBelt.StartBelt();
+        logOutBelt.LogIn(logCutter.GetCuttingLogItem());
+    }
+
+    private void LogToEvaluator(LogItem _item, ILogItemData _itemData)
+    {
+        logItemPoolingManager.ReturnLogItem(_item);
     }
 }
