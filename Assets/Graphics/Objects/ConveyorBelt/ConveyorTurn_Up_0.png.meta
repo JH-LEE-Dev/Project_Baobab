@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 40f8ffacb94282740a3e1d4d894481c1
+guid: d285eda6c3c83f44f89c4be316e5e3b1
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7212660531430799472
-    second: ConveyorTurn_Right_3_0
+      213: 6573110028338386835
+    second: ConveyorTurn_Up_0_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: ConveyorTurn_Right_3_0
+      name: ConveyorTurn_Up_0_0
       rect:
         serializedVersion: 2
         x: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 078b96df984881460800000000000000
-      internalID: 7212660531430799472
+      spriteID: 397daa4beb0683b50800000000000000
+      internalID: 6573110028338386835
       vertices: []
       indices: 
       edges: []
@@ -132,12 +132,12 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures:
-    - texture: {fileID: 2800000, guid: d586fe0e29a5dc74ab3446b2ae4bc839, type: 3}
+    - texture: {fileID: 2800000, guid: 4d813fc03241417498a8f97fc9a6dfcc, type: 3}
       name: _NormalMap
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      ConveyorTurn_Right_3_0: 7212660531430799472
+      ConveyorTurn_Up_0_0: 6573110028338386835
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
