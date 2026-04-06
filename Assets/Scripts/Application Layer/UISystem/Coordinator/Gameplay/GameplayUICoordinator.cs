@@ -1,5 +1,3 @@
-using PresentationLayer.UISystem.View;
-
 public class GameplayUICoordinator
 {
     private UIView_Popup popUpUI;
