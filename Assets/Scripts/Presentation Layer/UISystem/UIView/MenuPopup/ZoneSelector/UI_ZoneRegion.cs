@@ -48,6 +48,13 @@ public class UI_ZoneRegion : MonoBehaviour
         gameObject.SetActive(_visible);
     }
 
-    public void OnShow() { /* 지역 활성화 시 연출 */ }
-    public void OnHide() { /* 지역 비활성화 시 상태 정리 */ }
+    public void OnShow() 
+    { 
+        /* 지역 활성화 시 연출 */ 
+    }
+    
+    public void OnHide() 
+    { 
+        /* 지역 비활성화 시 상태 정리 */ 
+    }
 }

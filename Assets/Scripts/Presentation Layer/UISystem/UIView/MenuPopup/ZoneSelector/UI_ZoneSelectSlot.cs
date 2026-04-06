@@ -24,9 +24,10 @@ public class UI_ZoneSelectSlot : MonoBehaviour, IPointerClickHandler, IPointerEn
         regionId = _regionId;
         zoneId = _zoneId;
         onSelectAction = _onSelect;
-        if (zoneNameText != null) zoneNameText.text = _name;
-        
         SetLockStatus(_isLocked);
+
+        if (zoneNameText != null) 
+            zoneNameText.text = _name;
     }
 
     public void OnShow()
@@ -42,19 +43,26 @@ public class UI_ZoneSelectSlot : MonoBehaviour, IPointerClickHandler, IPointerEn
     public void SetLockStatus(bool _locked)
     {
         isLocked = _locked;
-        if (unlockedImage != null) unlockedImage.gameObject.SetActive(!isLocked);
-        if (lockedImage != null) lockedImage.gameObject.SetActive(isLocked);
+
+        if (unlockedImage != null) 
+            unlockedImage.gameObject.SetActive(!isLocked);
+
+        if (lockedImage != null) 
+            lockedImage.gameObject.SetActive(isLocked);
     }
 
     public void SetHighlight(bool _active)
     {
-        if (highlightImage != null) highlightImage.gameObject.SetActive(_active && !isLocked);
+        if (highlightImage != null) 
+            highlightImage.gameObject.SetActive(_active && !isLocked);
     }
 
     // --- 입력 신호 발생 타이밍: 지역ID와 구역ID를 상위로 전달 ---
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (isLocked) return;
+        if (isLocked) 
+            return;
+        
         onSelectAction?.Invoke(regionId, zoneId);
     }
 
