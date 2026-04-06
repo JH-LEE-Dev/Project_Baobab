@@ -13,11 +13,13 @@ public class UIView_Popup : UIView
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiInventoryPrefab;
     [SerializeField] private GameObject uiHomingPrefab;
+    [SerializeField] private GameObject uiCoinPrefab;
 
     //내부 의존성
     private IInventory inventory;
     private UI_Inventory uI_Inventory;
     private UI_Homing uI_Homing;
+    private UI_Coin uI_Coin;
 
     private const int defaultPopupCap = 12;
 
@@ -27,6 +29,7 @@ public class UIView_Popup : UIView
 
         Init_Homing();
         Init_Inventory();
+        Init_Coin();
 
         BindEvents();
     }
@@ -36,6 +39,7 @@ public class UIView_Popup : UIView
         inventory = _inventory;
 
         uI_Inventory?.BindInventory(inventory);
+        uI_Coin?.BindInventory(inventory);
     }
 
     private void BindEvents()
@@ -52,7 +56,7 @@ public class UIView_Popup : UIView
         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
     }
 
-    #region [ Inventory UI ]
+#region [ Inventory UI ]
     private void Init_Inventory()
     {
         if (null == uiInventoryPrefab)
@@ -74,14 +78,9 @@ public class UIView_Popup : UIView
 
     public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
 
-    public void CharacterEarnMoney() //캐릭터가 돈을 얻었을 때,
-    {
-
-    }
-
     #endregion
 
-    #region [ Homing UI ]
+#region [ Homing UI ]
 
     private void Init_Homing()
     {
@@ -103,18 +102,43 @@ public class UIView_Popup : UIView
 
     #endregion
 
+#region [ Coin UI ]
+
+    private void Init_Coin()
+    {
+        if (null == uiCoinPrefab)
+            return;
+
+        uI_Coin = Instantiate(uiCoinPrefab, this.transform.parent).GetComponent<UI_Coin>();
+
+        if (null == uI_Coin)
+            return;
+
+        uI_Coin.Initialize();
+        uI_Coin.OnHide();
+    }
+
+    public void CharacterEarnMoney() //캐릭터가 돈을 얻었을 때,
+    {
+        uI_Coin?.UpdateMoneyText();
+    }
+
+#endregion
+
     protected override void OnShow()
     {
         base.OnShow();
 
         uI_Inventory?.OnShow();
         uI_Homing?.OnShow();
+        uI_Coin?.OnShow();
     }
 
     protected override void OnHide()
     {
         uI_Inventory?.OnHide();
         uI_Homing?.OnHide();
+        uI_Coin?.OnHide();
 
         base.OnHide();
     }
@@ -124,6 +148,8 @@ public class UIView_Popup : UIView
         ReleaseEvents();
 
         uI_Inventory?.OnDestroy();
+        //uI_Homing?.OnDestroy();
+        //uI_Coin?.OnDestroy();
     }
 
     private void OnHomingButtonClicked()
