@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class AnimalAnimationTrigger : MonoBehaviour
+public class AnimalAnimTrigger : MonoBehaviour
 {
     private Animal animal;
 
@@ -9,7 +9,7 @@ public class AnimalAnimationTrigger : MonoBehaviour
         animal = transform.parent.GetComponent<Animal>();
 
         if(animal == null)
-            Debug.LogError("AnimalAnimationTrigger -> animal is null");
+            Debug.LogError("AnimalAnimTrigger -> animal is null");
     }
 
     public void RunStartEnd()

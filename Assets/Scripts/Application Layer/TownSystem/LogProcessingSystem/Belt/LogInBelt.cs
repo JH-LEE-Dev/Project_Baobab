@@ -24,7 +24,7 @@ public class LogInBelt : MonoBehaviour
 
     // 외부 의존성
     [SerializeField] private List<Transform> checkPoints = new List<Transform>(5);
-    [SerializeField] private float beltSpeed = 3f;
+    [SerializeField] private float beltSpeed = 1.5f;
 
 
     // 내부 상태
@@ -118,7 +118,7 @@ public class LogInBelt : MonoBehaviour
             return;
 
         isMoving = true;
-        if (tilemap != null) tilemap.animationFrameRate = 3f;
+        if (tilemap != null) tilemap.animationFrameRate = 5f;
 
         tilemap.RefreshAllTiles();
     }

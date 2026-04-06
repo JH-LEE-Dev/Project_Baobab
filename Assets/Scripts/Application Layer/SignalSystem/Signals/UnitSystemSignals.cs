@@ -27,3 +27,5 @@ public struct ContainerInteractStateChangedSignal
         state = _state;
     }
 }
+
+public struct CharacterEarnMoneySignal { }

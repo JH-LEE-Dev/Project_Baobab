@@ -1,7 +1,6 @@
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
-public class Character : MonoBehaviour, ITeleportable,ICharacter
+public class Character : MonoBehaviour, ITeleportable, ICharacter
 {
     //외부 의존성
     public InputManager inputManager { get; private set; }
@@ -42,8 +41,8 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
 
-    private float staminaDecAmount =0f;
-    private float staminaIncAmount =0f;
+    private float staminaDecAmount = 0f;
+    private float staminaIncAmount = 0f;
     private bool bStaminaUpDown = false;
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -121,12 +120,12 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
         shadowSR.sprite = sr.sprite;
         UpdateCharacterColor();
 
-        if(shadowObject != null)
+        if (shadowObject != null)
         {
-            shadowObject.ManualUpdate(environmentProvider.shadowDataProvider.CurrentShadowRotation, environmentProvider.shadowDataProvider.CurrentShadowScaleY,false);
+            shadowObject.ManualUpdate(environmentProvider.shadowDataProvider.CurrentShadowRotation, environmentProvider.shadowDataProvider.CurrentShadowScaleY, false);
         }
 
-        if(bStaminaUpDown == true)
+        if (bStaminaUpDown == true)
         {
             IncreaseStamina();
         }
@@ -139,7 +138,7 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
     private void FixedUpdate()
     {
         SetItemSensorPos();
-        
+
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
 
@@ -170,7 +169,7 @@ public class Character : MonoBehaviour, ITeleportable,ICharacter
     private void UpdateCharacterColor()
     {
         if (characterMaterial == null) return;
-        
+
         Color targetColor = (shadowOverlapCount > 0) ? shadowTint : normalColor;
 
         sr.color = targetColor;
