@@ -63,15 +63,15 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: 0
+    x: -0.075
     y: 0
-    width: 0.99999994
-    height: 1
+    width: 0.33333334
+    height: 0.5416667
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 5.65625
+  orthographic size: 4.5703125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -404,7 +404,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
-      value: -0.073437504
+      value: -0.08854167
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.width
@@ -412,7 +412,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.height
-      value: 0.5416667
+      value: 0.86388886
       objectReference: {fileID: 0}
     - target: {fileID: 5702937174473736841, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_Enabled

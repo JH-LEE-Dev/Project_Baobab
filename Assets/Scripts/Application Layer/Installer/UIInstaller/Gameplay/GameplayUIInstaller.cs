@@ -103,7 +103,10 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_WorldPopup worldPopupUI = uiManager.Open<UIView_WorldPopup>();
 
-        uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI);
+        UIView_MenuPopup menuPopupUI = uiManager.Open<UIView_MenuPopup>();
+
+        uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
+        menuPopupUI);
 
         BindEvent();
     }
