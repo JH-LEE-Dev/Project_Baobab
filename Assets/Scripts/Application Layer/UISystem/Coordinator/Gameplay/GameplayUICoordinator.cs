@@ -7,11 +7,12 @@ public class GameplayUICoordinator
     private SignalHub signalHub;
     private UIView_HUD hudUI;
     private UIView_WorldPopup worldPopupUI;
+    private UIView_MenuPopup menuPopupUI;
 
     private bool bInventoryOpened = false;
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
-     UIView_Unit _unitUI,UIView_WorldPopup _worldPopupUI)
+     UIView_Unit _unitUI,UIView_WorldPopup _worldPopupUI,UIView_MenuPopup _menuPopupUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -19,6 +20,7 @@ public class GameplayUICoordinator
         signalHub = _signalHub;
         unitUI = _unitUI;
         worldPopupUI = _worldPopupUI;
+        menuPopupUI = _menuPopupUI;
 
 
         SubscribeSignals();
