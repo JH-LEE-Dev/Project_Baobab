@@ -23,6 +23,7 @@ public class SubpixelSnapper : MonoBehaviour
     /// </summary>
     private void LateUpdate()
     {
+        return;
         if (pixelCamera == null || quadTransform == null)
         {
             return;

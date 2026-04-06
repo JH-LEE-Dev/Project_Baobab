@@ -156,7 +156,8 @@ public class CameraManager : MonoBehaviour
         {
             var quadController = parent.gameObject.GetComponentInChildren<CameraQuadController>();
 
-            quadController.Ready(true);
+            if (quadController != null)
+                quadController.Ready(true);
         }
 
         uiCamera = GameObject.Find("UI Camera");
