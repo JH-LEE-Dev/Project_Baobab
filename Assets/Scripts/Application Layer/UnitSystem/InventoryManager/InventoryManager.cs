@@ -6,11 +6,15 @@ public class InventoryManager : MonoBehaviour, IInventory
 {
     // 내부 의존성
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
+
+    private int money;
     
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
+
+    int IInventory.money => money;
 
     public void Initialize()
     {
@@ -158,5 +162,10 @@ public class InventoryManager : MonoBehaviour, IInventory
     public Transform GetTransform()
     {
         return transform;
+    }
+
+    public void MoneyEarned(int _money)
+    {
+        money += _money;
     }
 }

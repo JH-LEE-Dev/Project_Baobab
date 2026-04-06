@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class LogProcessingManager : MonoBehaviour
 {
+    public event Action<int> EarnMoneyEvent;
     public event Action ContainerUpdatedEvent;
     public event Action<bool> InteractStateChangedEvent;
 
@@ -24,6 +25,8 @@ public class LogProcessingManager : MonoBehaviour
 
     public LogContainer logContainer { get; private set; }
 
+    private ShopNPC shopNPC;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
@@ -36,6 +39,9 @@ public class LogProcessingManager : MonoBehaviour
 
         logEvaluator = shopObj.GetComponentInChildren<LogEvaluator>();
         logEvaluator.Initialize();
+
+        shopNPC = shopObj.GetComponentInChildren<ShopNPC>();
+        shopNPC.Initialize(inputManager);
 
         LogInBelt[] belts = shopObj.GetComponentsInChildren<LogInBelt>();
         for (int i = 0; i < belts.Length; i++)
@@ -66,6 +72,7 @@ public class LogProcessingManager : MonoBehaviour
     public void Release()
     {
         logContainer.Release();
+        shopNPC.Release();
         ReleaseEvents();
     }
 
@@ -94,6 +101,12 @@ public class LogProcessingManager : MonoBehaviour
 
         logOutBelt.LogOutEvent -= LogToEvaluator;
         logOutBelt.LogOutEvent += LogToEvaluator;
+
+        logEvaluator.logEvaluatedEvent -= LogEvaluated;
+        logEvaluator.logEvaluatedEvent += LogEvaluated;
+
+        shopNPC.EarnMoneyEvent -= EarnMoney;
+        shopNPC.EarnMoneyEvent += EarnMoney;
     }
 
     private void ReleaseEvents()
@@ -104,6 +117,8 @@ public class LogProcessingManager : MonoBehaviour
         logInBelt.LogOutEvent -= LogToCutter;
         logCutter.CuttingDoneEvent -= CuttingDone;
         logOutBelt.LogOutEvent -= LogToEvaluator;
+        logEvaluator.logEvaluatedEvent -= LogEvaluated;
+        shopNPC.EarnMoneyEvent -= EarnMoney;
     }
 
     private void ContainerUpdated()
@@ -138,5 +153,15 @@ public class LogProcessingManager : MonoBehaviour
     {
         logItemPoolingManager.ReturnLogItem(_item);
         logEvaluator.EvaluateLog(_itemData);
+    }
+
+    private void LogEvaluated(int _money)
+    {
+        shopNPC.InsertMoney(_money);
+    }
+
+    private void EarnMoney(int _money)
+    {
+        EarnMoneyEvent.Invoke(_money);
     }
 }

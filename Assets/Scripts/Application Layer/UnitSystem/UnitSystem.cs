@@ -42,6 +42,7 @@ public class UnitSystem
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.Subscribe<DeleteItemSignal>(ItemDeleted);
+        signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
     }
 
     private void UnSubscribeSignals()
@@ -51,6 +52,7 @@ public class UnitSystem
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.UnSubscribe<DeleteItemSignal>(ItemDeleted);
+        signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
     }
 
     private void BindEvents()
@@ -100,5 +102,11 @@ public class UnitSystem
     private void InventoryInitialized()
     {
         signalHub.Publish(new InventoryInitializedSignal(inventoryManager));
+    }
+
+    private void MoneyEarned(MoneyEarnedSignal moneyEarnedSignal)
+    {
+        inventoryManager.MoneyEarned(moneyEarnedSignal.money);
+        signalHub.Publish(new InventoryUpdatedSignal());
     }
 }

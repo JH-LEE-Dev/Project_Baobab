@@ -24,6 +24,8 @@ public class LogContainer : MonoBehaviour, IInventory
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => containerSlots;
 
+    public int money => throw new NotImplementedException();
+
     private bool bCanInteract = false;
     private Coroutine transferCoroutine;
     private WaitForSeconds transferWait;

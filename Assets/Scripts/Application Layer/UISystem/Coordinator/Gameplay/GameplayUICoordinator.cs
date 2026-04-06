@@ -34,6 +34,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
         signalHub.Subscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.Subscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
+        signalHub.Subscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
     }
 
     private void UnSubscribeSignals()
@@ -43,6 +44,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
         signalHub.UnSubscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.UnSubscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
+        signalHub.UnSubscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
     }
 
     private void BindEvents()
@@ -117,5 +119,10 @@ public class GameplayUICoordinator
     private void ContainerInteractStateChanged(ContainerInteractStateChangedSignal containerInteractStateChangedSignal)
     {
         worldPopupUI.LogContainerInteractStateChanged(containerInteractStateChangedSignal.state);
+    }
+
+    private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
+    {
+        popUpUI.CharacterEarnMoney();
     }
 }

@@ -116,32 +116,6 @@ public class UIView_WorldPopup : UIView
         }
 
         ui_Storage?.Refresh();
-
-        System.Text.StringBuilder sb = new System.Text.StringBuilder();
-        sb.AppendLine("--- Container Inventory Status ---");
-        
-        var slots = container.inventorySlots;
-        for (int i = 0; i < slots.Count; i++)
-        {
-            var slot = slots[i];
-            if (slot.itemData == null || slot.count <= 0) continue;
-
-            sb.AppendFormat("Item: {0}, Total Count: {1}\n", slot.itemData.itemType, slot.count);
-
-            var logStates = slot.logStateCounts;
-            if (logStates != null && logStates.Length > 0)
-            {
-                for (int j = 0; j < logStates.Length; j++)
-                {
-                    if (logStates[j].count > 0)
-                    {
-                        sb.AppendFormat("  - State: {0}, Count: {1}\n", logStates[j].state, logStates[j].count);
-                    }
-                }
-            }
-        }
-        sb.AppendLine("----------------------------------");
-        Debug.Log(sb.ToString());
     }
 
     // true : 원목 보관함과 상호작용 가능 거리에 들어옴
@@ -168,7 +142,7 @@ public class UIView_WorldPopup : UIView
     //원목이 절단기로 들어감.
     private void LogToCutter(ILogItemData _itemData)
     {
-        Debug.Log(logCutter.timeRemaining);
+        //Debug.Log(logCutter.timeRemaining);
         //logCutter.logToCut -> 절단될 원목.
         //logCutter.timeRemaining -> 남은 절단 시간.
 

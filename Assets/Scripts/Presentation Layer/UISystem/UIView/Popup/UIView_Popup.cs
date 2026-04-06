@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class UIView_Popup : UIView
@@ -11,7 +10,7 @@ public class UIView_Popup : UIView
 
     //외부 의존성
     [Header("UI References")]
-    [SerializeField] private Transform uiRoot; 
+    [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiInventoryPrefab;
     [SerializeField] private GameObject uiHomingPrefab;
 
@@ -50,10 +49,10 @@ public class UIView_Popup : UIView
 
     private void ReleaseEvents()
     {
-         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
+        uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
     }
 
-#region [ Inventory UI ]
+    #region [ Inventory UI ]
     private void Init_Inventory()
     {
         if (null == uiInventoryPrefab)
@@ -73,10 +72,16 @@ public class UIView_Popup : UIView
         SendDeleteItemEvent.Invoke(_inData);
     }
 
-     public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
-#endregion
+    public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
 
-#region [ Homing UI ]
+    public void CharacterEarnMoney() //캐릭터가 돈을 얻었을 때,
+    {
+
+    }
+
+    #endregion
+
+    #region [ Homing UI ]
 
     private void Init_Homing()
     {
@@ -89,17 +94,16 @@ public class UIView_Popup : UIView
             return;
 
         uI_Homing.Initialize();
-        
+
         uI_Homing.clickedEvent -= OnHomingButtonClicked;
         uI_Homing.clickedEvent += OnHomingButtonClicked;
 
         uI_Homing.gameObject.SetActive(false);
     }
 
-#endregion
+    #endregion
 
-    // 유니티 이벤트 함수
-    protected override void OnShow() 
+    protected override void OnShow()
     {
         base.OnShow();
 
@@ -107,7 +111,7 @@ public class UIView_Popup : UIView
         uI_Homing?.OnShow();
     }
 
-    protected override void OnHide() 
+    protected override void OnHide()
     {
         uI_Inventory?.OnHide();
         uI_Homing?.OnHide();

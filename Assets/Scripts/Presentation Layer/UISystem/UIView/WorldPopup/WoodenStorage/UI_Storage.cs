@@ -88,7 +88,7 @@ public class UI_Storage : MonoBehaviour
 
                 slot.UpdateBindSlotData(item);
                 slot.UpdateItemCount(item.count);
-                Debug.Log(item + " " + item.count);
+                //Debug.Log(item + " " + item.count);
             }
             else
             {

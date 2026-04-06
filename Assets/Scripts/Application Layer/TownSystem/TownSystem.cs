@@ -58,6 +58,9 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.InteractStateChangedEvent -= LogContainerInteractStateChanged;
         logProcessingManager.InteractStateChangedEvent += LogContainerInteractStateChanged;
+
+        logProcessingManager.EarnMoneyEvent -= EarnMoney;
+        logProcessingManager.EarnMoneyEvent += EarnMoney;
     }
 
     private void ReleaseEvents()
@@ -65,6 +68,7 @@ public class TownSystem : MonoBehaviour
         townObjectManager.PortalActivatedEvent -= PortalActivated;
         logProcessingManager.ContainerUpdatedEvent -= ContainerUpdated;
         logProcessingManager.InteractStateChangedEvent -= LogContainerInteractStateChanged;
+        logProcessingManager.EarnMoneyEvent -= EarnMoney;
     }
 
     private void SubscribeSignals()
@@ -96,5 +100,10 @@ public class TownSystem : MonoBehaviour
     private void LogContainerInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new ContainerInteractStateChangedSignal(_boolean));
+    }
+
+    private void EarnMoney(int _money)
+    {
+        signalHub.Publish(new MoneyEarnedSignal(_money));
     }
 }
