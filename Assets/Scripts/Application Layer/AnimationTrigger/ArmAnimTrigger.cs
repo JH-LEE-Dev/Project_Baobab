@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Animations;
 
 public class ArmAnimTrigger : MonoBehaviour
 {
@@ -6,7 +7,7 @@ public class ArmAnimTrigger : MonoBehaviour
 
     public void Start()
     {
-        arm = GetComponent<ArmComponent>();
+        arm = transform.parent.GetComponent<ArmComponent>();
 
         if(arm == null)
             Debug.LogError("ArmAnimTrigger -> character is null");

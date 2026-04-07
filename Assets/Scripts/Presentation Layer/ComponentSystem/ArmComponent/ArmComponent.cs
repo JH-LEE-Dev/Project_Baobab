@@ -10,6 +10,9 @@ public class ArmComponent : PComponent
 
     public ArmAnimValueHandler armAnimValueHandler { get; private set; }
 
+    [SerializeField] private Transform revolutionCenter;
+    [SerializeField] private float orbitRadius = 0.1f;
+
     // 캐싱된 해시값
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     private readonly int bAttackHash = Animator.StringToHash("bAttack");
@@ -18,14 +21,14 @@ public class ArmComponent : PComponent
     {
         base.Initialize(_ctx);
 
-        anim = GetComponent<Animator>();
-        spriteRenderer = GetComponent<SpriteRenderer>();
+        anim = GetComponentInChildren<Animator>();
+        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         spriteRenderer.enabled = false;
 
         armAnimValueHandler = new ArmAnimValueHandler();
         armAnimValueHandler.Initialize(anim);
-        
+
         BindEvents();
     }
 
@@ -46,6 +49,7 @@ public class ArmComponent : PComponent
 
     private void Update()
     {
+        UpdateOrbitPosition();
         UpdateFacingDirection();
     }
 
@@ -58,6 +62,28 @@ public class ArmComponent : PComponent
     private void ReleaseEvents()
     {
         ctx.inputManager.inputReader.MouseClickEvent -= StartAttack;
+    }
+
+    private void UpdateOrbitPosition()
+    {
+        if (revolutionCenter == null || attackTransform == null || !spriteRenderer.enabled) return;
+
+        // 1. 위치 결정: 중심점에서 타겟 방향으로 공전 궤도 위에 배치
+        Vector2 centerToTarget = (Vector2)attackTransform.position - (Vector2)revolutionCenter.position;
+        if (centerToTarget.sqrMagnitude < 0.001f) return;
+        
+        Vector2 orbitDir = centerToTarget.normalized;
+        transform.position = (Vector2)revolutionCenter.position + orbitDir * orbitRadius;
+
+        // 2. 회전 결정: "팔의 현재 위치"에서 "타겟"을 바라보도록 회전
+        Vector2 armToTarget = (Vector2)attackTransform.position - (Vector2)transform.position;
+        
+        // 타겟이 팔의 위치와 겹칠 경우(궤도 안쪽 클릭 등) 공전 방향을 기본으로 사용
+        if (armToTarget.sqrMagnitude < 0.0001f) armToTarget = orbitDir;
+
+        // Down(0, -1) 방향을 0도로 기준 삼기 위해 90도 오프셋 추가
+        float angle = Mathf.Atan2(armToTarget.y, armToTarget.x) * Mathf.Rad2Deg + 90f;
+        transform.rotation = Quaternion.Euler(0, 0, angle);
     }
 
     private void UpdateFacingDirection()
