@@ -66,9 +66,13 @@ public class GameInstaller : MonoBehaviour
         {
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
             gameplayUIInstaller.SetupCanvas();
+            unitSystem.SetWhereIsCharacter(false);
         }
         else
+        {
             townSystem.StartTownSystem(_sceneChangeData);
+            unitSystem.SetWhereIsCharacter(true);
+        }
     }
 
     public void Release()

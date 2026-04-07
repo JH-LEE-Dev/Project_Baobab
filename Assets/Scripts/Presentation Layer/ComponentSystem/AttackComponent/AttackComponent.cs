@@ -42,9 +42,6 @@ public class AttackComponent : PComponent
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
         ctx.inputManager.inputReader.MouseMoveEvent += MouseMove;
-
-        ctx.inputManager.inputReader.MouseClickEvent -= Attack;
-        ctx.inputManager.inputReader.MouseClickEvent += Attack;
     }
 
     private void ReleaseEvents()
@@ -53,7 +50,6 @@ public class AttackComponent : PComponent
             return;
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
-        ctx.inputManager.inputReader.MouseClickEvent -= Attack;
     }
 
     private void MouseMove(Vector2 _mouseScreenPos)
@@ -87,10 +83,18 @@ public class AttackComponent : PComponent
         Vector3 characterPos = characterTransform.position;
         Vector3 direction = mouseWorldPos - characterPos;
 
-        // 5. 거리 제한 (ClampMagnitude)
-        if (direction.magnitude > maxAttackDistance)
+        // 5. 일정 거리(Radius) 무조건 유지
+        if (direction.sqrMagnitude > 0.0001f)
         {
             direction = direction.normalized * maxAttackDistance;
+        }
+        else
+        {
+            // 마우스가 캐릭터와 겹칠 경우 기존 오프셋 방향 유지 혹은 기본값 처리
+            Vector3 currentOffset = attackCollider.transform.position - characterPos;
+            direction = (currentOffset.sqrMagnitude > 0.0001f) 
+                ? currentOffset.normalized * maxAttackDistance 
+                : Vector3.right * maxAttackDistance;
         }
 
         // 6. 콜라이더 위치 업데이트
@@ -143,5 +147,10 @@ public class AttackComponent : PComponent
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(characterTransform.position, maxAttackDistance);
         }
+    }
+
+    public Transform GetAttackPointTransform()
+    {
+        return attackCollider.transform;
     }
 }

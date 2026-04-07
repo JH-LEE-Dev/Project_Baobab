@@ -16,6 +16,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
     private AttackComponent attackComponent;
     private PHealthComponent healthComponent;
+    private ArmComponent armComponent;
 
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
@@ -30,7 +31,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     public StateMachine stateMachine { get; private set; }
     public Animator anim { get; private set; }
     public Rigidbody2D rb { get; private set; }
-    public Collider2D col { get; private set; }
+    public CircleCollider2D col { get; private set; }
 
     //현재 지형 물리 데이터 (캐싱)
     public GroundPhysicsData currentGroundData { get; private set; }
@@ -40,6 +41,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     // 캐싱된 해시값 (GC 방지 및 성능 최적화)
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
+    public readonly int bInHubHash = Animator.StringToHash("bInHub");
 
     private float staminaDecAmount = 0f;
     private float staminaIncAmount = 0f;
@@ -56,11 +58,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
         anim = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
-        col = GetComponent<Collider2D>();
+        col = GetComponent<CircleCollider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
         healthComponent = GetComponentInChildren<PHealthComponent>();
         itemSensorRB = itemSensor.GetComponent<Rigidbody2D>();
-
+        armComponent = GetComponentInChildren<ArmComponent>();
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
@@ -69,6 +71,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         shadowObject.Initialize();
         attackComponent.Initialize(componentCtx);
         healthComponent.Initialize(componentCtx);
+        armComponent.Initialize(componentCtx);
 
         if (shadowSensor != null)
         {
@@ -133,6 +136,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         {
             DecreaseStamina();
         }
+
+        ConnectAttackToArm();
     }
 
     private void FixedUpdate()
@@ -218,5 +223,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     public Transform GetTransform()
     {
         return transform;
+    }
+
+    public void SetWhereIsCharacter(bool _bInHub)
+    {
+        anim.SetBool(bInHubHash, _bInHub);
+
+        armComponent.SetActivate(!_bInHub);
+    }
+
+    private void ConnectAttackToArm()
+    {
+        armComponent.SetAttackTransform(attackComponent.GetAttackPointTransform());
     }
 }
