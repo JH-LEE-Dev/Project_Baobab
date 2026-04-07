@@ -42,9 +42,6 @@ public class AttackComponent : PComponent
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
         ctx.inputManager.inputReader.MouseMoveEvent += MouseMove;
-
-        ctx.inputManager.inputReader.MouseClickEvent -= Attack;
-        ctx.inputManager.inputReader.MouseClickEvent += Attack;
     }
 
     private void ReleaseEvents()
@@ -53,7 +50,6 @@ public class AttackComponent : PComponent
             return;
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
-        ctx.inputManager.inputReader.MouseClickEvent -= Attack;
     }
 
     private void MouseMove(Vector2 _mouseScreenPos)
@@ -143,5 +139,10 @@ public class AttackComponent : PComponent
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(characterTransform.position, maxAttackDistance);
         }
+    }
+
+    public Transform GetAttackPointTransform()
+    {
+        return attackCollider.transform;
     }
 }

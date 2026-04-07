@@ -109,4 +109,9 @@ public class UnitSystem
         inventoryManager.MoneyEarned(moneyEarnedSignal.money);
         signalHub.Publish(new InventoryUpdatedSignal());
     }
+    
+    public void SetWhereIsCharacter(bool _bInHub)
+    {
+        unitLogicManager.SetWhereIsCharacter(_bInHub);
+    }
 }

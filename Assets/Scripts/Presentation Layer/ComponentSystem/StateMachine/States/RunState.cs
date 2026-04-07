@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Tilemaps;
 
 public class RunState : CharacterState
 {
@@ -8,6 +9,8 @@ public class RunState : CharacterState
     private Vector2 pendingDirection;
     private float directionUpdateTimer;
     private const float graceDuration = 0.05f;
+
+    private readonly RaycastHit2D[] hitBuffer = new RaycastHit2D[5];
 
     public override void Enter()
     {
@@ -107,17 +110,21 @@ public class RunState : CharacterState
     private void ApplyMovement()
     {
         var groundData = character.currentGroundData;
-        Vector2 isoDir = GetIsometricVector(moveInput);
+        Vector2 inputDir = GetIsometricVector(moveInput);
 
-        // 입력이 있을 때만 정규화하여 일정한 이동 속도 유지
-        if (isoDir.sqrMagnitude > 0.001f)
-            isoDir.Normalize();
+        if (inputDir.sqrMagnitude > 0.001f)
+            inputDir.Normalize();
 
-        character.rb.linearVelocity = Vector2.MoveTowards(
+        float speed = groundData.maxSpeed;
+        Vector2 targetVel = inputDir * speed;
+        CircleCollider2D circleCol = character.col;
+          character.rb.linearVelocity = Vector2.MoveTowards(
             character.rb.linearVelocity,
-            isoDir * groundData.maxSpeed,
+            targetVel,
             groundData.acceleration * Time.fixedDeltaTime
         );
+
+        return;
     }
 
     /// <summary>
