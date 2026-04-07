@@ -1,61 +1,61 @@
 fileFormatVersion: 2
-guid: f822192a08744a642b05daf8264546fa
+guid: 7ea2d9ddf2ac16647b7dfaa84f923e61
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2578524170348663066
-    second: Player_D_0
+      213: -4338364016169095639
+    second: Player_RIghtDown_D_0
   - first:
-      213: -1579742991432438769
-    second: Player_D_1
+      213: 4647258459333837162
+    second: Player_RIghtDown_D_1
   - first:
-      213: 2299452814847902032
-    second: Player_D_2
+      213: 3867170715335742745
+    second: Player_RIghtDown_D_2
   - first:
-      213: 7192895339871455227
-    second: Player_D_3
+      213: -4807068576218260712
+    second: Player_RIghtDown_D_3
   - first:
-      213: 1730165215791487324
-    second: Player_D_4
+      213: 8393552457732748402
+    second: Player_RIghtDown_D_4
   - first:
-      213: -2331373190478645975
-    second: Player_D_5
+      213: -1610020895423806433
+    second: Player_RIghtDown_D_5
   - first:
-      213: 2645369769970887081
-    second: Player_D_6
+      213: -6307896468763496080
+    second: Player_RIghtDown_D_6
   - first:
-      213: -3762481100566324738
-    second: Player_D_7
+      213: -6994615472091437828
+    second: Player_RIghtDown_D_7
   - first:
-      213: 1780271870698301338
-    second: Player_D_8
+      213: -2767624318140452583
+    second: Player_RIghtDown_D_8
   - first:
-      213: 2311558672575395210
-    second: Player_D_9
+      213: 6036448195446556806
+    second: Player_RIghtDown_D_9
   - first:
-      213: -4156651323786688926
-    second: Player_D_10
+      213: 6627989455896346013
+    second: Player_RIghtDown_D_10
   - first:
-      213: -2357441464012916001
-    second: Player_D_11
+      213: 5559158631394898058
+    second: Player_RIghtDown_D_11
   - first:
-      213: 7460616403375048523
-    second: Player_D_12
+      213: -7234912208135952276
+    second: Player_RIghtDown_D_12
   - first:
-      213: 2031202369628832880
-    second: Player_D_13
+      213: -1479705215258147709
+    second: Player_RIghtDown_D_13
   - first:
-      213: -4781286544805347475
-    second: Player_D_14
+      213: -3980937383165425929
+    second: Player_RIghtDown_D_14
   - first:
-      213: -8099742564186863777
-    second: Player_D_15
+      213: 543466182172543601
+    second: Player_RIghtDown_D_15
   - first:
-      213: 9127871277370636355
-    second: Player_D_16
+      213: 6509258809340971172
+    second: Player_RIghtDown_D_16
   - first:
-      213: -5263772935959852821
-    second: Player_D_17
+      213: -4706749426387701074
+    second: Player_RIghtDown_D_17
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -151,397 +151,397 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Player_D_0
+      name: Player_RIghtDown_D_0
       rect:
         serializedVersion: 2
         x: 0
         y: 96
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6eeeb9dbded373cd0800000000000000
-      internalID: -2578524170348663066
+      spriteID: 92e67e5b9e80bc3c0800000000000000
+      internalID: -4338364016169095639
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_1
+      name: Player_RIghtDown_D_1
       rect:
         serializedVersion: 2
         x: 32
         y: 96
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f0ca14f7e10a31ae0800000000000000
-      internalID: -1579742991432438769
+      spriteID: a61c50052f06e7040800000000000000
+      internalID: 4647258459333837162
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_2
+      name: Player_RIghtDown_D_2
       rect:
         serializedVersion: 2
         x: 64
         y: 96
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 05108cee62c49ef10800000000000000
-      internalID: 2299452814847902032
+      spriteID: 9155165c643faa530800000000000000
+      internalID: 3867170715335742745
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_3
+      name: Player_RIghtDown_D_3
       rect:
         serializedVersion: 2
         x: 96
         y: 96
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: bf7c997b33c42d360800000000000000
-      internalID: 7192895339871455227
+      spriteID: 81b519f499cd94db0800000000000000
+      internalID: -4807068576218260712
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_4
+      name: Player_RIghtDown_D_4
       rect:
         serializedVersion: 2
         x: 128
         y: 96
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c591df1d818c20810800000000000000
-      internalID: 1730165215791487324
+      spriteID: 27474c64d73eb7470800000000000000
+      internalID: 8393552457732748402
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_5
+      name: Player_RIghtDown_D_5
       rect:
         serializedVersion: 2
         x: 0
         y: 64
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 925b6a67f6c45afd0800000000000000
-      internalID: -2331373190478645975
+      spriteID: f14ce4f968e08a9e0800000000000000
+      internalID: -1610020895423806433
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_6
+      name: Player_RIghtDown_D_6
       rect:
         serializedVersion: 2
         x: 32
         y: 64
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9a9ebae3acd36b420800000000000000
-      internalID: 2645369769970887081
+      spriteID: 07139631599d578a0800000000000000
+      internalID: -6307896468763496080
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_7
+      name: Player_RIghtDown_D_7
       rect:
         serializedVersion: 2
         x: 64
         y: 64
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ef99f9e9f5bf8cbc0800000000000000
-      internalID: -3762481100566324738
+      spriteID: cf4e98589422eee90800000000000000
+      internalID: -6994615472091437828
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_8
+      name: Player_RIghtDown_D_8
       rect:
         serializedVersion: 2
         x: 96
         y: 64
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a97a79885dbc4b810800000000000000
-      internalID: 1780271870698301338
+      spriteID: 911718d985c6799d0800000000000000
+      internalID: -2767624318140452583
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_9
+      name: Player_RIghtDown_D_9
       rect:
         serializedVersion: 2
         x: 128
         y: 64
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a8574549d5e441020800000000000000
-      internalID: 2311558672575395210
+      spriteID: 688c3aab6a5c5c350800000000000000
+      internalID: 6036448195446556806
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_10
+      name: Player_RIghtDown_D_10
       rect:
         serializedVersion: 2
         x: 0
         y: 32
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2668986d4ab9056c0800000000000000
-      internalID: -4156651323786688926
+      spriteID: d9d7cb52b495bfb50800000000000000
+      internalID: 6627989455896346013
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_11
+      name: Player_RIghtDown_D_11
       rect:
         serializedVersion: 2
         x: 32
         y: 32
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fdabbbe8a7fa84fd0800000000000000
-      internalID: -2357441464012916001
+      spriteID: a80f6525259162d40800000000000000
+      internalID: 5559158631394898058
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_12
+      name: Player_RIghtDown_D_12
       rect:
         serializedVersion: 2
         x: 64
         y: 32
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b474f90471f698760800000000000000
-      internalID: 7460616403375048523
+      spriteID: c686beccdad689b90800000000000000
+      internalID: -7234912208135952276
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_13
+      name: Player_RIghtDown_D_13
       rect:
         serializedVersion: 2
         x: 96
         y: 32
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 07488ac1bc7403c10800000000000000
-      internalID: 2031202369628832880
+      spriteID: 384ce3052f7077be0800000000000000
+      internalID: -1479705215258147709
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_14
+      name: Player_RIghtDown_D_14
       rect:
         serializedVersion: 2
         x: 128
         y: 32
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d6fb587483575adb0800000000000000
-      internalID: -4781286544805347475
+      spriteID: 7f60a5bba8ed0c8c0800000000000000
+      internalID: -3980937383165425929
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_15
+      name: Player_RIghtDown_D_15
       rect:
         serializedVersion: 2
         x: 0
         y: 0
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f57c7895d0fe79f80800000000000000
-      internalID: -8099742564186863777
+      spriteID: 17a05dffc97ca8700800000000000000
+      internalID: 543466182172543601
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_16
+      name: Player_RIghtDown_D_16
       rect:
         serializedVersion: 2
         x: 32
         y: 0
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 348fa23b096bcae70800000000000000
-      internalID: 9127871277370636355
+      spriteID: 4a8c9d94668855a50800000000000000
+      internalID: 6509258809340971172
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Player_D_17
+      name: Player_RIghtDown_D_17
       rect:
         serializedVersion: 2
         x: 64
         y: 0
         width: 32
         height: 32
-      alignment: 9
-      pivot: {x: 0.5, y: 0.2}
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: be84cc5476253f6b0800000000000000
-      internalID: -5263772935959852821
+      spriteID: ea2336985544eaeb0800000000000000
+      internalID: -4706749426387701074
       vertices: []
       indices: 
       edges: []
@@ -550,38 +550,38 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: b5878b3e343245d4a82045778c441168
+    spriteID: 06c27e4be4336704e994861ba9075ffa
     internalID: 0
     vertices: []
     indices: 
     edges: []
     weights: []
     secondaryTextures:
-    - texture: {fileID: 2800000, guid: f7e7652f9a9761d4999457202914475d, type: 3}
+    - texture: {fileID: 2800000, guid: 1979be0d4d2a8394c98defb0edf1c60d, type: 3}
       name: _NormalMap
     spriteCustomMetadata:
       entries:
       - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":32.0,"y":32.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.20000000298023225},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":9,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":32.0,"y":32.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Player_D_0: -2578524170348663066
-      Player_D_1: -1579742991432438769
-      Player_D_10: -4156651323786688926
-      Player_D_11: -2357441464012916001
-      Player_D_12: 7460616403375048523
-      Player_D_13: 2031202369628832880
-      Player_D_14: -4781286544805347475
-      Player_D_15: -8099742564186863777
-      Player_D_16: 9127871277370636355
-      Player_D_17: -5263772935959852821
-      Player_D_2: 2299452814847902032
-      Player_D_3: 7192895339871455227
-      Player_D_4: 1730165215791487324
-      Player_D_5: -2331373190478645975
-      Player_D_6: 2645369769970887081
-      Player_D_7: -3762481100566324738
-      Player_D_8: 1780271870698301338
-      Player_D_9: 2311558672575395210
+      Player_RIghtDown_D_0: -4338364016169095639
+      Player_RIghtDown_D_1: 4647258459333837162
+      Player_RIghtDown_D_10: 6627989455896346013
+      Player_RIghtDown_D_11: 5559158631394898058
+      Player_RIghtDown_D_12: -7234912208135952276
+      Player_RIghtDown_D_13: -1479705215258147709
+      Player_RIghtDown_D_14: -3980937383165425929
+      Player_RIghtDown_D_15: 543466182172543601
+      Player_RIghtDown_D_16: 6509258809340971172
+      Player_RIghtDown_D_17: -4706749426387701074
+      Player_RIghtDown_D_2: 3867170715335742745
+      Player_RIghtDown_D_3: -4807068576218260712
+      Player_RIghtDown_D_4: 8393552457732748402
+      Player_RIghtDown_D_5: -1610020895423806433
+      Player_RIghtDown_D_6: -6307896468763496080
+      Player_RIghtDown_D_7: -6994615472091437828
+      Player_RIghtDown_D_8: -2767624318140452583
+      Player_RIghtDown_D_9: 6036448195446556806
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
