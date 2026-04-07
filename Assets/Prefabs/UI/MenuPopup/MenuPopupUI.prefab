@@ -51,4 +51,5 @@ MonoBehaviour:
   layer: 2
   startHidden: 1
   bWorld: 0
-  uiRoot: {fileID: 6522216609113807669}
+  zoneSelectorPrefab: {fileID: 6864007749244804662, guid: de8599146158acf4891d136e378244db, type: 3}
+  zoneInfoPrefab: {fileID: 0}
