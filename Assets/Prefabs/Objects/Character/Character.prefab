@@ -545,7 +545,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ArmComponent
   revolutionCenter: {fileID: 7226520039271191750}
-  orbitRadius: 0.15
+  orbitRadius: 0.1
+  smoothSpeed: 8
 --- !u!1 &8366246158690645224
 GameObject:
   m_ObjectHideFlags: 0

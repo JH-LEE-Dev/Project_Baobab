@@ -12,6 +12,9 @@ public class ArmComponent : PComponent
 
     [SerializeField] private Transform revolutionCenter;
     [SerializeField] private float orbitRadius = 0.1f;
+    [SerializeField] private float smoothSpeed = 10f;
+
+    private Vector2 lastOrbitDir = Vector2.down;
 
     // 캐싱된 해시값
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
@@ -69,21 +72,31 @@ public class ArmComponent : PComponent
         if (revolutionCenter == null || attackTransform == null || !spriteRenderer.enabled) return;
 
         // 1. 위치 결정: 중심점에서 타겟 방향으로 공전 궤도 위에 배치
-        Vector2 centerToTarget = (Vector2)attackTransform.position - (Vector2)revolutionCenter.position;
-        if (centerToTarget.sqrMagnitude < 0.001f) return;
+        Vector3 centerPos = revolutionCenter.position;
+        Vector2 centerToTarget = (Vector2)attackTransform.position - (Vector2)centerPos;
         
-        Vector2 orbitDir = centerToTarget.normalized;
-        transform.position = (Vector2)revolutionCenter.position + orbitDir * orbitRadius;
+        // 거리가 너무 가까워도 return 하지 않고 마지막 유효 방향을 사용 (이탈 방지)
+        if (centerToTarget.sqrMagnitude > 0.001f)
+        {
+            Vector2 targetDir = centerToTarget.normalized;
+            lastOrbitDir = Vector2.Lerp(lastOrbitDir, targetDir, Time.deltaTime * smoothSpeed).normalized;
+        }
+        
+        // 위치 업데이트 (Z축 보존을 위해 Vector3로 계산)
+        Vector3 nextPos = centerPos + (Vector3)(lastOrbitDir * orbitRadius);
+        nextPos.z = transform.position.z; 
+        transform.position = nextPos;
 
         // 2. 회전 결정: "팔의 현재 위치"에서 "타겟"을 바라보도록 회전
-        Vector2 armToTarget = (Vector2)attackTransform.position - (Vector2)transform.position;
+        Vector2 armToTarget = (Vector2)attackTransform.position - (Vector2)centerPos;
         
-        // 타겟이 팔의 위치와 겹칠 경우(궤도 안쪽 클릭 등) 공전 방향을 기본으로 사용
-        if (armToTarget.sqrMagnitude < 0.0001f) armToTarget = orbitDir;
+        // 타겟이 팔과 겹칠 경우 공전 방향을 바라보게 함
+        if (armToTarget.sqrMagnitude < 0.0001f) armToTarget = lastOrbitDir;
 
         // Down(0, -1) 방향을 0도로 기준 삼기 위해 90도 오프셋 추가
         float angle = Mathf.Atan2(armToTarget.y, armToTarget.x) * Mathf.Rad2Deg + 90f;
-        transform.rotation = Quaternion.Euler(0, 0, angle);
+        Quaternion targetRotation = Quaternion.Euler(0, 0, angle);
+        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
     }
 
     private void UpdateFacingDirection()
