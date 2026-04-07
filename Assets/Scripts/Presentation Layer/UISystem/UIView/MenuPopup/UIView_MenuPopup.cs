@@ -15,8 +15,8 @@ public class UIView_MenuPopup : UIView
     {
         base.Initialize(_ctx);
 
-        Init_ZoneSelector();
-        Init_ZoneInfo();
+        //Init_ZoneSelector();
+        //Init_ZoneInfo();
     }
 
     private void Init_ZoneInfo()

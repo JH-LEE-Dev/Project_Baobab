@@ -18,5 +18,6 @@ public class UI_ZoneInfo : MonoBehaviour
     public void OnHide()
     {
         // 3. 영역 숨김 시점의 상태 정리
+        
     }
 }
