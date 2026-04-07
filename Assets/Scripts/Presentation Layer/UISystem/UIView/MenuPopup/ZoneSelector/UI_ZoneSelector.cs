@@ -1,24 +1,35 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using Unity.VisualScripting;
 
 public class UI_ZoneSelector : MonoBehaviour
 {
     // 외부 의존성
     [Header("Pre-created Regions")]
-    [SerializeField] private List<UI_ZoneRegion> regions = new List<UI_ZoneRegion>();
+    [SerializeField] private GameObject regionPrefab;
+    [SerializeField] private Transform slotContainer;
+    private List<UI_ZoneRegion> regions;
 
     // 내부 의존성
     private Action<int, int> onZoneSelected;
 
-    public void Initialize(Action<int, int> _onZoneSelected)
+    public void Initialize(int _capacity, Action<int, int> _onZoneSelected)
     {
         onZoneSelected = _onZoneSelected;
-        
-        // 초기화 시 모든 지역을 숨김 처리 (구체적인 구역 구성은 OpenRegion 시점에 수행하거나 별도 호출 가능)
-        foreach (var region in regions)
+        regions = new(_capacity);
+
+        if (null == regionPrefab || null == slotContainer)
+            return;
+
+        for (int i = 0; i < _capacity; ++i)
         {
+            UI_ZoneRegion region = Instantiate(regionPrefab, slotContainer).GetComponent<UI_ZoneRegion>();
+            if (null == region)
+                continue;
+
             region.SetVisible(false);
+            regions.Add(region);
         }
     }
 

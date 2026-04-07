@@ -1,11 +1,13 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System;
+using UnityEngine.UI;
 
 public class UI_ZoneRegion : MonoBehaviour
 {
     // 외부 의존성
     [Header("Prefabs & Containers")]
+    [SerializeField] private Image zoneImage;
     [SerializeField] private UI_ZoneSelectSlot slotPrefab;
     [SerializeField] private Transform slotContainer;
 
@@ -24,11 +26,9 @@ public class UI_ZoneRegion : MonoBehaviour
                 break;
 
             UI_ZoneSelectSlot slot = Instantiate(slotPrefab, slotContainer);
-            // 구역 명칭 생성 (예: Region 0의 1번째 구역 -> "1-1")
-            string zoneName = $"{regionId + 1}-{i + 1}";
-            
+
             // 초기 상태는 모두 잠금(true)으로 생성
-            slot.Initialize(regionId, i, zoneName, true, _onZoneClick);
+            slot.Initialize(regionId, i, true, _onZoneClick);
             zoneSlots.Add(slot);
         }
     }
@@ -46,15 +46,5 @@ public class UI_ZoneRegion : MonoBehaviour
     {
         // 타이밍 3: 지역 묶음 전체의 가시성 제어
         gameObject.SetActive(_visible);
-    }
-
-    public void OnShow() 
-    { 
-        /* 지역 활성화 시 연출 */ 
-    }
-    
-    public void OnHide() 
-    { 
-        /* 지역 비활성화 시 상태 정리 */ 
     }
 }
