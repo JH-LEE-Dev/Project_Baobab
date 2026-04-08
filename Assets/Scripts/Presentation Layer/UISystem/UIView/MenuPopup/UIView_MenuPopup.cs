@@ -55,10 +55,6 @@ public class UIView_MenuPopup : UIView
         // 예: confirmButton.interactable = _isSelected;
     }
 
-
-
-
-
     private void HandleZoneChanged(int _regionId, int _zoneId)
     {
         // 3. 지역/구역 변경에 따른 정보창 동기화 타이밍
