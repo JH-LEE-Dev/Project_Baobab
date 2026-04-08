@@ -44,6 +44,8 @@ public class UIView_MenuPopup : UIView
             zoneSelector.Initialize(5, HandleZoneChanged, zoneDatabase, zoneInfo, HandleSelectionStatusChanged);
             zoneSelector.OpenRegion(0, 3);
             zoneSelector.UnlockZone(0, 0);
+            zoneSelector.UnlockZone(0, 1);
+            zoneSelector.UnlockZone(0, 2);
         }
     }
 
