@@ -13,10 +13,12 @@ MonoBehaviour:
   m_Name: Vegetated plains_03
   m_EditorClassIdentifier: Assembly-CSharp::ZoneData
   regionId: 0
-  zoneId: 0
-  zoneName: Vegetated plains_01
-  zoneDescription: 
+  zoneId: 2
+  zoneName: Vegetated plains_03
   farmableTrees:
   - {fileID: 11400000, guid: b2f20bd642258f74bb2bbd1cda1d9ed9, type: 2}
+  - {fileID: 11400000, guid: 385c9399a2f95d84881ebaafc700906c, type: 2}
   farmableAnimals:
   - {fileID: 11400000, guid: 59fbef7f142ca524eb9a77cfeef210fd, type: 2}
+  - {fileID: 11400000, guid: e74419d5e328dff44a3a0ae193fc70ea, type: 2}
+  - {fileID: 11400000, guid: 5a0a7a00641018848873eb2e2f5fee68, type: 2}
