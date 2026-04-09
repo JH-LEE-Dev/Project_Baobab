@@ -15,6 +15,6 @@ public class ArmAnimTrigger : MonoBehaviour
 
     public void AttackEnd()
     {
-        arm.armAnimValueHandler.AttackEnd(true);
+        arm.currentWeapon.armAnimValueHandler.AttackEnd(true);
     }
 }

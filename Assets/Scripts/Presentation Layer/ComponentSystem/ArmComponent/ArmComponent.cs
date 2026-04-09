@@ -3,32 +3,37 @@ using UnityEngine;
 public class ArmComponent : PComponent
 {
     // 내부 의존성
-    private Animator anim;
-    private SpriteRenderer spriteRenderer;
 
     private Transform attackTransform;
 
-    public ArmAnimValueHandler armAnimValueHandler { get; private set; }
-
     [SerializeField] private float smoothSpeed = 10f;
+    [SerializeField] private float maxYOffset = 0.5f;
 
     // 캐싱된 해시값
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     private readonly int bAttackHash = Animator.StringToHash("bAttack");
     private WeaponMode currentWeaponMode = WeaponMode.None;
 
+    private AxeComponent axeComponent;
+    private RifleComponent rifleComponent;
+    private Vector3 initialLocalPosition;
+
+    public WeaponComponent currentWeapon { get; private set; }
 
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
 
-        anim = GetComponentInChildren<Animator>();
-        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        initialLocalPosition = transform.localPosition;
 
-        spriteRenderer.enabled = false;
+        axeComponent = GetComponentInChildren<AxeComponent>();
+        rifleComponent = GetComponentInChildren<RifleComponent>();
+        axeComponent.Initialize();
+        rifleComponent.Initialize();
+        axeComponent.SetEnable(false);
+        rifleComponent.SetEnable(false);
 
-        armAnimValueHandler = new ArmAnimValueHandler();
-        armAnimValueHandler.Initialize(anim);
+        currentWeapon = axeComponent;
 
         BindEvents();
     }
@@ -40,7 +45,7 @@ public class ArmComponent : PComponent
 
     public void SetActivate(bool _boolean)
     {
-        spriteRenderer.enabled = _boolean;
+        currentWeapon.SetEnable(_boolean);
     }
 
     public void SetAttackTransform(Transform _transform)
@@ -52,6 +57,8 @@ public class ArmComponent : PComponent
     {
         UpdateRotation();
         UpdateFacingDirection();
+        UpdatePositionOffset();
+        UpdateFlip();
     }
 
     private void BindEvents()
@@ -67,17 +74,17 @@ public class ArmComponent : PComponent
 
     private void UpdateRotation()
     {
-        if (attackTransform == null || !spriteRenderer.enabled) return;
+        if (attackTransform == null) return;
 
         // 타겟을 바라보는 방향 계산
         Vector2 dirToTarget = (Vector2)attackTransform.position - (Vector2)transform.position;
-        
+
         if (dirToTarget.sqrMagnitude > 0.001f)
         {
             // Down(0, -1) 방향을 0도로 기준 삼기 위해 90도 오프셋 추가
             float angle = Mathf.Atan2(dirToTarget.y, dirToTarget.x) * Mathf.Rad2Deg + 90f;
             Quaternion targetRotation = Quaternion.Euler(0, 0, angle);
-            
+
             // 회전 스무딩 적용
             transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
         }
@@ -85,7 +92,7 @@ public class ArmComponent : PComponent
 
     private void UpdateFacingDirection()
     {
-        if (attackTransform == null || !spriteRenderer.enabled) return;
+        if (attackTransform == null) return;
 
         // Arm 위치에서 attackTransform까지의 방향 벡터 계산
         Vector2 direction = (attackTransform.position - transform.position);
@@ -97,16 +104,63 @@ public class ArmComponent : PComponent
         if (angle < 0) angle += 360;
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        anim.SetFloat(facingDirHash, dirIndex);
+        currentWeapon.anim.SetFloat(facingDirHash, dirIndex);
+    }
+
+    private void UpdatePositionOffset()
+    {
+        if (attackTransform == null) return;
+
+        Vector2 direction = (attackTransform.position - transform.position);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        
+        // 0~360도로 변환 (0: 우, 90: 상, 180: 좌, 270: 하)
+        if (angle < 0) angle += 360f;
+
+        // 0~180도(상단 반원) 범위일 때만 Sin 곡선을 따라 오프셋 적용
+        if (angle >= 0f && angle <= 180f)
+        {
+            // Mathf.Sin은 라디안 값을 사용하므로 Deg2Rad 변환
+            float offsetMultiplier = Mathf.Sin(angle * Mathf.Deg2Rad);
+            float offset = offsetMultiplier * maxYOffset;
+            transform.localPosition = initialLocalPosition + Vector3.down * offset;
+        }
+        else
+        {
+            transform.localPosition = initialLocalPosition;
+        }
+    }
+
+    private void UpdateFlip()
+    {
+        if (attackTransform == null) return;
+
+        // 타겟의 x 위치가 Arm의 x 위치보다 작으면 왼쪽(-1), 크면 오른쪽(1)
+        Vector3 localScale = transform.localScale;
+        localScale.x = (attackTransform.position.x < transform.position.x) ? -1f : 1f;
+        transform.localScale = localScale;
     }
 
     private void StartAttack()
     {
-        anim.SetBool(bAttackHash, true);
+        currentWeapon.anim.SetBool(bAttackHash, true);
     }
 
     public void WeaponModeChanged(WeaponMode _weaponMode)
     {
         currentWeaponMode = _weaponMode;
+
+        if (currentWeaponMode == WeaponMode.Axe)
+        {
+            currentWeapon = axeComponent;
+            rifleComponent.SetEnable(false);
+            currentWeapon.SetEnable(true);
+        }
+        else if (currentWeaponMode == WeaponMode.Rifle)
+        {
+            currentWeapon = rifleComponent;
+            axeComponent.SetEnable(false);
+            currentWeapon.SetEnable(true);
+        }
     }
 }
