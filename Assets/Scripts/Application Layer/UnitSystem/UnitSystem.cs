@@ -110,8 +110,8 @@ public class UnitSystem
         signalHub.Publish(new InventoryUpdatedSignal());
     }
     
-    public void SetWhereIsCharacter(bool _bInHub)
+    public void SetWhereIsCharacter(bool _bInDungeon)
     {
-        unitLogicManager.SetWhereIsCharacter(_bInHub);
+        unitLogicManager.SetWhereIsCharacter(_bInDungeon);
     }
 }

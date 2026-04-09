@@ -34,8 +34,8 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         return character.transform;
     }
 
-    public void SetWhereIsCharacter(bool _bInHub)
+    public void SetWhereIsCharacter(bool _bInDungeon)
     {
-        character.SetWhereIsCharacter(_bInHub);
+        character.SetWhereIsCharacter(_bInDungeon);
     }
 }

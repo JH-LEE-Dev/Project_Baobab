@@ -145,6 +145,15 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SwitchMode"",
+                    ""type"": ""Button"",
+                    ""id"": ""d5797455-52c6-437e-b8de-3c7f69a29511"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -257,6 +266,17 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""action"": ""Interaction"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""093114c3-0f19-4b9b-847b-58e764e94821"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SwitchMode"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -271,6 +291,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         m_Normal_Click = m_Normal.FindAction("Click", throwIfNotFound: true);
         m_Normal_Inventory = m_Normal.FindAction("Inventory", throwIfNotFound: true);
         m_Normal_Interaction = m_Normal.FindAction("Interaction", throwIfNotFound: true);
+        m_Normal_SwitchMode = m_Normal.FindAction("SwitchMode", throwIfNotFound: true);
     }
 
     ~@InputActionSystem()
@@ -357,6 +378,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Normal_Click;
     private readonly InputAction m_Normal_Inventory;
     private readonly InputAction m_Normal_Interaction;
+    private readonly InputAction m_Normal_SwitchMode;
     /// <summary>
     /// Provides access to input actions defined in input action map "Normal".
     /// </summary>
@@ -392,6 +414,10 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Normal/Interaction".
         /// </summary>
         public InputAction @Interaction => m_Wrapper.m_Normal_Interaction;
+        /// <summary>
+        /// Provides access to the underlying input action "Normal/SwitchMode".
+        /// </summary>
+        public InputAction @SwitchMode => m_Wrapper.m_Normal_SwitchMode;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -436,6 +462,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @Interaction.started += instance.OnInteraction;
             @Interaction.performed += instance.OnInteraction;
             @Interaction.canceled += instance.OnInteraction;
+            @SwitchMode.started += instance.OnSwitchMode;
+            @SwitchMode.performed += instance.OnSwitchMode;
+            @SwitchMode.canceled += instance.OnSwitchMode;
         }
 
         /// <summary>
@@ -465,6 +494,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @Interaction.started -= instance.OnInteraction;
             @Interaction.performed -= instance.OnInteraction;
             @Interaction.canceled -= instance.OnInteraction;
+            @SwitchMode.started -= instance.OnSwitchMode;
+            @SwitchMode.performed -= instance.OnSwitchMode;
+            @SwitchMode.canceled -= instance.OnSwitchMode;
         }
 
         /// <summary>
@@ -547,5 +579,12 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnInteraction(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SwitchMode" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSwitchMode(InputAction.CallbackContext context);
     }
 }
