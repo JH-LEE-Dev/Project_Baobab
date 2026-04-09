@@ -46,6 +46,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     private float staminaDecAmount = 0f;
     private float staminaIncAmount = 0f;
     private bool bStaminaUpDown = false;
+    public bool bInDungeon { get; private set; } = true;
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
     {
@@ -80,6 +81,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         }
 
         SetupStateMachine();
+
+        BindEvents();
+    }
+
+    private void BindEvents()
+    {
+        attackComponent.WeaponModeChangedEvent -= armComponent.WeaponModeChanged;
+        attackComponent.WeaponModeChangedEvent += armComponent.WeaponModeChanged;
+    }
+
+    private void ReleaseEvents()
+    {
+        attackComponent.WeaponModeChangedEvent -= armComponent.WeaponModeChanged;
     }
 
     public void SetFacingDirection(Vector2 _input)
@@ -91,7 +105,46 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         if (angle < 0) angle += 360;
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        anim.SetFloat(facingDirHash, dirIndex);
+
+        bool flipX = false;
+        int animIndex = -1;
+
+        switch (dirIndex)
+        {
+            case 0: // 우
+                animIndex = 0;
+                break;
+            case 1: // 우상
+                animIndex = 1;
+                break;
+            case 2: // 상
+                animIndex = 2;
+                break;
+            case 3: // 좌상 -> 우상(1) 반전
+                animIndex = 1;
+                flipX = true;
+                break;
+            case 4: // 좌 -> 우(0) 반전
+                animIndex = 0;
+                flipX = true;
+                break;
+            case 5: // 좌하 -> 우하(4) 반전
+                animIndex = 4;
+                flipX = true;
+                break;
+            case 6: // 하
+                animIndex = 3;
+                break;
+            case 7: // 우하
+                animIndex = 4;
+                break;
+        }
+
+        if (animIndex != -1)
+        {
+            sr.flipX = flipX;
+            anim.SetFloat(facingDirHash, animIndex);
+        }
     }
 
     public void SetStaminaUpDownState(bool _bStaminaUpDown, float _staminaDecAmount, float _staminaIncAmount)
@@ -137,7 +190,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
             DecreaseStamina();
         }
 
+        UpdateFacingByAttackPoint();
         ConnectAttackToArm();
+    }
+
+    private void UpdateFacingByAttackPoint()
+    {
+        if (attackComponent == null || bInDungeon == false) return;
+
+        Transform attackTarget = attackComponent.GetAttackPointTransform();
+        if (attackTarget == null) return;
+
+        Vector2 dir = (Vector2)attackTarget.position - (Vector2)transform.position;
+        SetFacingDirection(dir);
     }
 
     private void FixedUpdate()
@@ -159,6 +224,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
             shadowSensor.OnTriggerEnterEvent -= HandleShadowEnter;
             shadowSensor.OnTriggerExitEvent -= HandleShadowExit;
         }
+
+        ReleaseEvents();
     }
 
     private void DecreaseStamina()
@@ -225,11 +292,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         return transform;
     }
 
-    public void SetWhereIsCharacter(bool _bInHub)
+    public void SetWhereIsCharacter(bool _bInDungeon)
     {
-        anim.SetBool(bInHubHash, _bInHub);
-
-        armComponent.SetActivate(!_bInHub);
+        anim.SetBool(bInHubHash, !_bInDungeon);
+        bInDungeon = _bInDungeon;
+        armComponent.SetActivate(_bInDungeon);
     }
 
     private void ConnectAttackToArm()

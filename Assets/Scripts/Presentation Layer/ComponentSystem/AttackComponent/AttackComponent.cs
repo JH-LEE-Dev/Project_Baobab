@@ -1,8 +1,10 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class AttackComponent : PComponent
 {
+    public event Action<WeaponMode> WeaponModeChangedEvent;
     //외부 의존성
     private Camera mainCamera;
 
@@ -19,12 +21,14 @@ public class AttackComponent : PComponent
     private Collider2D[] results = new Collider2D[10];
     private ContactFilter2D contactFilter;
 
+    private WeaponMode currentWeaponMode = WeaponMode.None;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
 
         attackCollider = GetComponent<Collider2D>();
-        characterTransform = transform.parent; 
+        characterTransform = transform.parent;
         mainCamera = Camera.main;
 
         // 트리 레이어 등 특정 레이어만 필터링하도록 설정
@@ -42,6 +46,9 @@ public class AttackComponent : PComponent
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
         ctx.inputManager.inputReader.MouseMoveEvent += MouseMove;
+
+        ctx.inputManager.inputReader.SwitchModeKeyPressedEvent -= SwitchWeaponMode;
+        ctx.inputManager.inputReader.SwitchModeKeyPressedEvent += SwitchWeaponMode;
     }
 
     private void ReleaseEvents()
@@ -50,6 +57,7 @@ public class AttackComponent : PComponent
             return;
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
+        ctx.inputManager.inputReader.SwitchModeKeyPressedEvent -= SwitchWeaponMode;
     }
 
     private void MouseMove(Vector2 _mouseScreenPos)
@@ -92,8 +100,8 @@ public class AttackComponent : PComponent
         {
             // 마우스가 캐릭터와 겹칠 경우 기존 오프셋 방향 유지 혹은 기본값 처리
             Vector3 currentOffset = attackCollider.transform.position - characterPos;
-            direction = (currentOffset.sqrMagnitude > 0.0001f) 
-                ? currentOffset.normalized * maxAttackDistance 
+            direction = (currentOffset.sqrMagnitude > 0.0001f)
+                ? currentOffset.normalized * maxAttackDistance
                 : Vector3.right * maxAttackDistance;
         }
 
@@ -152,5 +160,20 @@ public class AttackComponent : PComponent
     public Transform GetAttackPointTransform()
     {
         return attackCollider.transform;
+    }
+
+    public void SetWeaponMode(WeaponMode _weaponMode)
+    {
+        currentWeaponMode = _weaponMode;
+    }
+
+    public void SwitchWeaponMode()
+    {
+        if (currentWeaponMode == WeaponMode.Axe)
+            currentWeaponMode = WeaponMode.Rifle;
+        else
+            currentWeaponMode = WeaponMode.Axe;
+
+        WeaponModeChangedEvent?.Invoke(currentWeaponMode);
     }
 }

@@ -160,3 +160,10 @@ public class InventorySlot : IInventorySlot
         }
     }
 }
+
+public enum WeaponMode
+{
+    None,
+    Axe,
+    Rifle,
+}

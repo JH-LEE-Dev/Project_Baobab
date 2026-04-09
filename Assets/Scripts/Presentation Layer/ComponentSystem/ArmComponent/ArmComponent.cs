@@ -10,15 +10,13 @@ public class ArmComponent : PComponent
 
     public ArmAnimValueHandler armAnimValueHandler { get; private set; }
 
-    [SerializeField] private Transform revolutionCenter;
-    [SerializeField] private float orbitRadius = 0.1f;
     [SerializeField] private float smoothSpeed = 10f;
-
-    private Vector2 lastOrbitDir = Vector2.down;
 
     // 캐싱된 해시값
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     private readonly int bAttackHash = Animator.StringToHash("bAttack");
+    private WeaponMode currentWeaponMode = WeaponMode.None;
+
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -52,7 +50,7 @@ public class ArmComponent : PComponent
 
     private void Update()
     {
-        UpdateOrbitPosition();
+        UpdateRotation();
         UpdateFacingDirection();
     }
 
@@ -67,36 +65,22 @@ public class ArmComponent : PComponent
         ctx.inputManager.inputReader.MouseClickEvent -= StartAttack;
     }
 
-    private void UpdateOrbitPosition()
+    private void UpdateRotation()
     {
-        if (revolutionCenter == null || attackTransform == null || !spriteRenderer.enabled) return;
+        if (attackTransform == null || !spriteRenderer.enabled) return;
 
-        // 1. 위치 결정: 중심점에서 타겟 방향으로 공전 궤도 위에 배치
-        Vector3 centerPos = revolutionCenter.position;
-        Vector2 centerToTarget = (Vector2)attackTransform.position - (Vector2)centerPos;
+        // 타겟을 바라보는 방향 계산
+        Vector2 dirToTarget = (Vector2)attackTransform.position - (Vector2)transform.position;
         
-        // 거리가 너무 가까워도 return 하지 않고 마지막 유효 방향을 사용 (이탈 방지)
-        if (centerToTarget.sqrMagnitude > 0.001f)
+        if (dirToTarget.sqrMagnitude > 0.001f)
         {
-            Vector2 targetDir = centerToTarget.normalized;
-            lastOrbitDir = Vector2.Lerp(lastOrbitDir, targetDir, Time.deltaTime * smoothSpeed).normalized;
+            // Down(0, -1) 방향을 0도로 기준 삼기 위해 90도 오프셋 추가
+            float angle = Mathf.Atan2(dirToTarget.y, dirToTarget.x) * Mathf.Rad2Deg + 90f;
+            Quaternion targetRotation = Quaternion.Euler(0, 0, angle);
+            
+            // 회전 스무딩 적용
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
         }
-        
-        // 위치 업데이트 (Z축 보존을 위해 Vector3로 계산)
-        Vector3 nextPos = centerPos + (Vector3)(lastOrbitDir * orbitRadius);
-        nextPos.z = transform.position.z; 
-        transform.position = nextPos;
-
-        // 2. 회전 결정: "팔의 현재 위치"에서 "타겟"을 바라보도록 회전
-        Vector2 armToTarget = (Vector2)attackTransform.position - (Vector2)centerPos;
-        
-        // 타겟이 팔과 겹칠 경우 공전 방향을 바라보게 함
-        if (armToTarget.sqrMagnitude < 0.0001f) armToTarget = lastOrbitDir;
-
-        // Down(0, -1) 방향을 0도로 기준 삼기 위해 90도 오프셋 추가
-        float angle = Mathf.Atan2(armToTarget.y, armToTarget.x) * Mathf.Rad2Deg + 90f;
-        Quaternion targetRotation = Quaternion.Euler(0, 0, angle);
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
     }
 
     private void UpdateFacingDirection()
@@ -119,5 +103,10 @@ public class ArmComponent : PComponent
     private void StartAttack()
     {
         anim.SetBool(bAttackHash, true);
+    }
+
+    public void WeaponModeChanged(WeaponMode _weaponMode)
+    {
+        currentWeaponMode = _weaponMode;
     }
 }

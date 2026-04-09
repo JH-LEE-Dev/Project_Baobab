@@ -8,7 +8,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     [SerializeField] private bool isTempScene = false;
 
     private static BootStrap instance;
-
     private SceneManager sceneManager;
     private InputManager inputManager;
 
