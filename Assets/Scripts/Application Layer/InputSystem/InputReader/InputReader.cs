@@ -13,6 +13,7 @@ public class InputReader
     public event Action ESCButtonPressedEvent;
     public event Action InteractionKeyPressedEvent;
     public event Action InteractionKeyCanceledEvent;
+    public event Action SwitchModeKeyPressedEvent;
 
     //내부 의존성
 
@@ -34,6 +35,7 @@ public class InputReader
             actions.Normal.Inventory.performed += OnInventoryKeyPressed;
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
+            actions.Normal.SwitchMode.performed += SwitchModeKeyPressed;
         }
 
         actions.Normal.Enable();
@@ -53,6 +55,7 @@ public class InputReader
         actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
+        actions.Normal.SwitchMode.performed -= SwitchModeKeyPressed;
     }
 
     public void OnMove(InputAction.CallbackContext context)
@@ -99,5 +102,10 @@ public class InputReader
     private void InteractionKeyCanceled(InputAction.CallbackContext context)
     {
         InteractionKeyCanceledEvent?.Invoke();
+    }
+
+    private void SwitchModeKeyPressed(InputAction.CallbackContext context)
+    {
+        SwitchModeKeyPressedEvent?.Invoke();
     }
 }

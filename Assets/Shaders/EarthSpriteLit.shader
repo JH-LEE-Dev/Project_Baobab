@@ -100,7 +100,17 @@ Shader "Custom/2D/EarthSpriteLit"
             half3 DecodeSpriteNormalTS(half4 packedNormal)
             {
                 half3 normalTS = UnpackNormal(packedNormal);
-                normalTS.xy *= sign(unity_SpriteProps.xy);
+
+                float2 spriteFlipSign = sign(unity_SpriteProps.xy);
+
+                // SpriteRenderer.flipX/flipY is not the only mirroring path used in the project.
+                // Characters also flip by using negative transform scale, so mirror the normal map
+                // X/Y the same way when the object transform is negatively scaled.
+                float2 transformMirrorSign = float2(
+                    unity_ObjectToWorld._m00 < 0.0 ? -1.0 : 1.0,
+                    unity_ObjectToWorld._m11 < 0.0 ? -1.0 : 1.0);
+
+                normalTS.xy *= spriteFlipSign * transformMirrorSign;
                 return normalize(normalTS);
             }
 

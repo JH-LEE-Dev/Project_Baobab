@@ -1,22 +1,16 @@
 fileFormatVersion: 2
-guid: 38d0893c5f0a17144b22ff3e618ba70b
+guid: f1a869a2af7905541b263be6024d1693
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4483835854381671379
-    second: PlayerArmGun_N_0
-  - first:
-      213: 3720687341351526158
-    second: PlayerArmGun_N_1
-  - first:
-      213: -4816238873990290825
-    second: PlayerArmGun_N_2
+      213: 8544697876439026659
+    second: Arm_Axe_N_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
-    sRGBTexture: 0
+    sRGBTexture: 1
     linearTexture: 0
     fadeOut: 0
     borderMipMap: 0
@@ -52,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 0
   alignment: 0
@@ -106,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: PlayerArmGun_N_0
+      name: Arm_Axe_N_0
       rect:
         serializedVersion: 2
-        x: 9
-        y: 36
-        width: 14
-        height: 10
+        x: 8
+        y: 5
+        width: 20
+        height: 14
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -121,52 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d2c9b6cfb0736c1c0800000000000000
-      internalID: -4483835854381671379
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PlayerArmGun_N_1
-      rect:
-        serializedVersion: 2
-        x: 42
-        y: 36
-        width: 9
-        height: 10
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: e0fdc858c6982a330800000000000000
-      internalID: 3720687341351526158
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: PlayerArmGun_N_2
-      rect:
-        serializedVersion: 2
-        x: 10
-        y: 4
-        width: 8
-        height: 10
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 772a16af248492db0800000000000000
-      internalID: -4816238873990290825
+      spriteID: 3ebce26627dd49670800000000000000
+      internalID: 8544697876439026659
       vertices: []
       indices: 
       edges: []
@@ -175,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -185,9 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      PlayerArmGun_N_0: -4483835854381671379
-      PlayerArmGun_N_1: 3720687341351526158
-      PlayerArmGun_N_2: -4816238873990290825
+      Arm_Axe_N_0: 8544697876439026659
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

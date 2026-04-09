@@ -90,7 +90,11 @@ public class RunState : CharacterState
 
     private void UpdateFacingDirection(Vector2 _input)
     {
-        character.SetFacingDirection(GetIsometricVector(_input));
+        if (character.bInDungeon == false)
+        {
+            character.SetFacingDirection(GetIsometricVector(_input));
+        }
+
         lastVisualInput = _input;
         directionUpdateTimer = 0f;
     }
@@ -118,11 +122,11 @@ public class RunState : CharacterState
         float speed = groundData.maxSpeed;
         Vector2 targetVel = inputDir * speed;
         CircleCollider2D circleCol = character.col;
-          character.rb.linearVelocity = Vector2.MoveTowards(
-            character.rb.linearVelocity,
-            targetVel,
-            groundData.acceleration * Time.fixedDeltaTime
-        );
+        character.rb.linearVelocity = Vector2.MoveTowards(
+          character.rb.linearVelocity,
+          targetVel,
+          groundData.acceleration * Time.fixedDeltaTime
+      );
 
         return;
     }
