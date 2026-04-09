@@ -21,7 +21,7 @@ public class AttackComponent : PComponent
     private Collider2D[] results = new Collider2D[10];
     private ContactFilter2D contactFilter;
 
-    private WeaponMode currentWeaponMode = WeaponMode.None;
+    private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
     public override void Initialize(ComponentCtx _ctx)
     {

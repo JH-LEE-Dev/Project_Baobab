@@ -19,4 +19,5 @@ public class WeaponComponent : MonoBehaviour
         spriteRenderer.enabled = _boolean;
     }
     public virtual void SetFacingDir(Transform _attackTransform) { }
+    public virtual void LeftButtonClicked() {}
 }

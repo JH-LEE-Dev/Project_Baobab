@@ -10,7 +10,6 @@ public class ArmComponent : PComponent
     [SerializeField] private float maxYOffset = 0.5f;
 
     // 캐싱된 해시값
-    private readonly int bReadyHash = Animator.StringToHash("bReady");
     private WeaponMode currentWeaponMode = WeaponMode.None;
 
     private AxeComponent axeComponent;
@@ -62,13 +61,13 @@ public class ArmComponent : PComponent
 
     private void BindEvents()
     {
-        ctx.inputManager.inputReader.MouseClickEvent -= StartAttack;
-        ctx.inputManager.inputReader.MouseClickEvent += StartAttack;
+        ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
+        ctx.inputManager.inputReader.MouseClickEvent += LeftButtonClicked;
     }
 
     private void ReleaseEvents()
     {
-        ctx.inputManager.inputReader.MouseClickEvent -= StartAttack;
+        ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
     }
 
     private void UpdateRotation()
@@ -76,7 +75,7 @@ public class ArmComponent : PComponent
         if (attackTransform == null) return;
 
         // 타겟을 바라보는 방향 계산
-        Vector2 dirToTarget = (Vector2)attackTransform.position - (Vector2)transform.position;
+        Vector2 dirToTarget = (Vector2)attackTransform.position - (Vector2)transform.parent.position;
 
         if (dirToTarget.sqrMagnitude > 0.001f)
         {
@@ -130,9 +129,9 @@ public class ArmComponent : PComponent
         transform.localScale = localScale;
     }
 
-    private void StartAttack()
+    private void LeftButtonClicked()
     {
-        currentWeapon.anim.SetBool(bReadyHash, true);
+        currentWeapon.LeftButtonClicked();
     }
 
     public void WeaponModeChanged(WeaponMode _weaponMode)

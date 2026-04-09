@@ -8,7 +8,7 @@ public class AxeComponent : WeaponComponent
     {
 
         // Arm 위치에서 attackTransform까지의 방향 벡터 계산
-        Vector2 direction = (_attackTransform.position - transform.position);
+        Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
 
         if (direction.sqrMagnitude < 0.01f) return;
 
@@ -18,5 +18,10 @@ public class AxeComponent : WeaponComponent
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
         anim.SetFloat(facingDirHash, dirIndex);
+    }
+
+    public override void LeftButtonClicked()
+    {
+    
     }
 }
