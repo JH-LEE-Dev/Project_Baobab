@@ -5,6 +5,8 @@ public class UIView_MenuPopup : UIView
     [Header("Sub UI Prefabs")]
     [SerializeField] private GameObject zoneSelectorPrefab;
     [SerializeField] private GameObject zoneInfoPrefab;
+    [SerializeField] private ZoneDatabase zoneDatabase;
+
 
     // 외부 의존성
     [Header("Sub UI Components")]
@@ -15,9 +17,10 @@ public class UIView_MenuPopup : UIView
     {
         base.Initialize(_ctx);
 
-        //Init_ZoneSelector();
-        //Init_ZoneInfo();
+        Init_ZoneInfo();
+        Init_ZoneSelector();
     }
+
 
     private void Init_ZoneInfo()
     {
@@ -35,15 +38,23 @@ public class UIView_MenuPopup : UIView
         if (null != zoneSelectorPrefab)
             zoneSelector = Instantiate(zoneSelectorPrefab, this.transform).GetComponent<UI_ZoneSelector>();    
 
-        // 1. 하위 시스템 초기화 및 클릭 콜백 연결 타이밍
         if (null != zoneSelector)
         {
-            zoneSelector.Initialize(1, HandleZoneChanged);
-            // 2. 초기 지역(묶음 0) 개방 타이밍: 구역 개수(3개)를 함께 전달하여 오류 수정
+            // 수정: 선택 상태 변경 콜백(HandleSelectionStatusChanged) 추가
+            zoneSelector.Initialize(5, HandleZoneChanged, zoneDatabase, zoneInfo, HandleSelectionStatusChanged);
             zoneSelector.OpenRegion(0, 3);
-            // 초기 첫 구역은 해금된 상태로 시작하도록 지시 가능
             zoneSelector.UnlockZone(0, 0);
+            zoneSelector.UnlockZone(0, 1);
+            zoneSelector.UnlockZone(0, 2);
         }
+    }
+
+    private void HandleSelectionStatusChanged(bool _isSelected)
+    {
+        // 추후 확인 버튼 활성화/비활성화 로직 배치 위치
+        Debug.Log($"[UIView_MenuPopup] Selection Status Changed: {_isSelected}");
+        
+        // 예: confirmButton.interactable = _isSelected;
     }
 
     private void HandleZoneChanged(int _regionId, int _zoneId)
