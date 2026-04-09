@@ -10,8 +10,7 @@ public class ArmComponent : PComponent
     [SerializeField] private float maxYOffset = 0.5f;
 
     // 캐싱된 해시값
-    private readonly int facingDirHash = Animator.StringToHash("facingDir");
-    private readonly int bAttackHash = Animator.StringToHash("bAttack");
+    private readonly int bReadyHash = Animator.StringToHash("bReady");
     private WeaponMode currentWeaponMode = WeaponMode.None;
 
     private AxeComponent axeComponent;
@@ -94,17 +93,7 @@ public class ArmComponent : PComponent
     {
         if (attackTransform == null) return;
 
-        // Arm 위치에서 attackTransform까지의 방향 벡터 계산
-        Vector2 direction = (attackTransform.position - transform.position);
-
-        if (direction.sqrMagnitude < 0.01f) return;
-
-        // 8방향 인덱스 계산 (0: 우, 1: 우상, 2: 상, 3: 좌상, 4: 좌, 5: 좌하, 6: 하, 7: 우하)
-        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        if (angle < 0) angle += 360;
-
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        currentWeapon.anim.SetFloat(facingDirHash, dirIndex);
+        currentWeapon.SetFacingDir(attackTransform);
     }
 
     private void UpdatePositionOffset()
@@ -143,7 +132,7 @@ public class ArmComponent : PComponent
 
     private void StartAttack()
     {
-        currentWeapon.anim.SetBool(bAttackHash, true);
+        currentWeapon.anim.SetBool(bReadyHash, true);
     }
 
     public void WeaponModeChanged(WeaponMode _weaponMode)
