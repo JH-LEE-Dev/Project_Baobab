@@ -16,7 +16,6 @@ public class InputReader
     public event Action SwitchModeKeyPressedEvent;
 
     //내부 의존성
-
     private InputActionSystem actions;
 
     public void Initialize()
