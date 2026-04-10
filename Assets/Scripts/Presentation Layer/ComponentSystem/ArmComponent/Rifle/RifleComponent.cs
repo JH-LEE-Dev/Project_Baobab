@@ -37,15 +37,21 @@ public class RifleComponent : WeaponComponent
 
         anim.SetFloat(facingDirHash, dirIndex);
 
-        // 위쪽 반원(0~180도)일 때는 뒤쪽(-1), 나머지는 앞쪽(1)으로 정렬
-        if (angle > 0 && angle < 180)
+        // bReady 상태에 따라 뒤쪽(-1)으로 정렬할 각도 범위 결정
+        bool isBehind;
+        if (bReady)
         {
-            spriteRenderer.sortingOrder = -1;
+            // 준비 상태일 때는 좁은 범위 (좌상, 우상, 상)
+            isBehind = (angle >= 22.5f && angle <= 157.5f);
         }
         else
         {
-            spriteRenderer.sortingOrder = 1;
+            // 비준비 상태일 때는 확장된 위쪽 반원 범위 (0~180도에서 양옆으로 22.5도씩 확장)
+            // 337.5도 ~ 360도 또는 0도 ~ 202.5도
+            isBehind = (angle >= 337.5f || angle <= 202.5f);
         }
+
+        spriteRenderer.sortingOrder = isBehind ? -1 : 1;
     }
 
     public override void LeftButtonClicked()

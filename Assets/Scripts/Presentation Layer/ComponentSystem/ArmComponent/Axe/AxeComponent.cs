@@ -18,8 +18,8 @@ public class AxeComponent : WeaponComponent
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
         anim.SetFloat(facingDirHash, dirIndex);
 
-        // 위쪽 반원(1, 2, 3)일 때는 뒤쪽(-1), 나머지는 앞쪽(1)으로 정렬
-        if (dirIndex >= 1 && dirIndex <= 3)
+        // 정확히 위쪽 반원(0~180도)일 때는 뒤쪽(-1), 나머지는 앞쪽(1)으로 정렬
+        if (angle > 0 && angle < 180)
         {
             spriteRenderer.sortingOrder = -1;
         }
