@@ -6,7 +6,6 @@ public class AxeComponent : WeaponComponent
     
     public override void SetFacingDir(Transform _attackTransform)
     {
-
         // Arm 위치에서 attackTransform까지의 방향 벡터 계산
         Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
 
@@ -18,6 +17,16 @@ public class AxeComponent : WeaponComponent
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
         anim.SetFloat(facingDirHash, dirIndex);
+
+        // 위쪽 반원(1, 2, 3)일 때는 뒤쪽(-1), 나머지는 앞쪽(1)으로 정렬
+        if (dirIndex >= 1 && dirIndex <= 3)
+        {
+            spriteRenderer.sortingOrder = -1;
+        }
+        else
+        {
+            spriteRenderer.sortingOrder = 1;
+        }
     }
 
     public override void LeftButtonClicked()

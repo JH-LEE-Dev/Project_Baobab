@@ -36,6 +36,16 @@ public class RifleComponent : WeaponComponent
         }
 
         anim.SetFloat(facingDirHash, dirIndex);
+
+        // 위쪽 반원(0~180도)일 때는 뒤쪽(-1), 나머지는 앞쪽(1)으로 정렬
+        if (angle > 0 && angle < 180)
+        {
+            spriteRenderer.sortingOrder = -1;
+        }
+        else
+        {
+            spriteRenderer.sortingOrder = 1;
+        }
     }
 
     public override void LeftButtonClicked()
