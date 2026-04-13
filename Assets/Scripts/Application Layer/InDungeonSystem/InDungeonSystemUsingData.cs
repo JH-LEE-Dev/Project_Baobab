@@ -4,7 +4,9 @@ using System;
 public enum DungeonType
 {
     None,
-    Forest1,
+    Forest1_1,
+    Forest1_2,
+    Forest1_3,
     Max,
 }
 
