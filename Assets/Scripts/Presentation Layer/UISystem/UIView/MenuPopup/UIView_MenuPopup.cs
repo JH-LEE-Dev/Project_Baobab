@@ -12,6 +12,8 @@ public class UIView_MenuPopup : UIView
     [Header("Sub UI Components")]
     private UI_ZoneSelector zoneSelector;
     private UI_ZoneInfo zoneInfo;
+    private UI_ZoneButton zoneSelectButton;
+    private UI_ZoneButton zoneCancelButton;
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -19,8 +21,8 @@ public class UIView_MenuPopup : UIView
 
         Init_ZoneInfo();
         Init_ZoneSelector();
+        Init_ZoneButtons();
     }
-
 
     private void Init_ZoneInfo()
     {
@@ -46,6 +48,12 @@ public class UIView_MenuPopup : UIView
             zoneSelector.UnlockZone(0, 0);
             zoneSelector.UnlockZone(0, 1);
         }
+    }
+
+    private void Init_ZoneButtons()
+    {
+        //zoneSelectButton?.Initialize();
+        zoneCancelButton?.Initialize(OnHideZoneSeletingUI);
     }
 
     private void HandleSelectionStatusChanged(bool _isSelected)

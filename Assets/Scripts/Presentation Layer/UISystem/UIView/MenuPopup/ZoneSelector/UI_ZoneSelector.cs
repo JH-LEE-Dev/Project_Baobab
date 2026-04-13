@@ -45,7 +45,7 @@ public class UI_ZoneSelector : MonoBehaviour
             regions[_regionId].Initialize(_regionId, _zoneCount, HandleZoneClick, HandleZoneHoverEnter, HandleZoneHoverExit);
             regions[_regionId].SetVisible(true);
 
-            // 초기 로딩 시 첫 번째 슬롯 자동 선택
+            // 요구사항: 창이 처음 열릴 때(지역이 개방될 때) 첫 번째 슬롯을 자동으로 클릭한 상태로 시작
             HandleZoneClick(_regionId, 0);
         }
     }
@@ -66,8 +66,8 @@ public class UI_ZoneSelector : MonoBehaviour
             selectedRegionId = -1;
             selectedZoneId = -1;
             
+            // 해제 시에도 정보창을 끄지 않고 마지막 정보를 유지합니다.
             onSelectionStatusChanged?.Invoke(false);
-            // 선택 해제 시에는 현재 정보창을 유지하거나 초기화할 수 있습니다.
         }
         else
         {
@@ -89,18 +89,13 @@ public class UI_ZoneSelector : MonoBehaviour
 
     private void HandleZoneHoverEnter(int _regionId, int _zoneId)
     {
-        // 고정 여부와 상관없이 마우스가 올라간 슬롯의 정보를 표시합니다.
+        if (selectedRegionId != -1) return;
         UpdateInfoDisplay(_regionId, _zoneId);
     }
 
     private void HandleZoneHoverExit()
     {
-        // 마우스가 슬롯을 벗어났을 때, 고정된(선택된) 슬롯이 있다면 그 정보로 되돌립니다.
-        if (selectedRegionId != -1)
-        {
-            UpdateInfoDisplay(selectedRegionId, selectedZoneId);
-        }
-        // 고정된 슬롯이 없다면 마지막 호버 정보를 그대로 유지합니다.
+        // 정보창을 숨기지 않고 마지막 정보를 유지합니다.
     }
 
     private void UpdateInfoDisplay(int _regionId, int _zoneId)
