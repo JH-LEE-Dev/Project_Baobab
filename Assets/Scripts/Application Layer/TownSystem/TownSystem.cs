@@ -11,7 +11,7 @@ public class TownSystem : MonoBehaviour
     private TownObjectManager townObjectManager;
     private IEnvironmentProvider environmentProvider;
     public LogProcessingManager logProcessingManager { get; private set; }
-
+    private TentManager tentManager;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
     {
@@ -21,9 +21,11 @@ public class TownSystem : MonoBehaviour
 
         townObjectManager = GetComponentInChildren<TownObjectManager>();
         logProcessingManager = GetComponentInChildren<LogProcessingManager>();
+        tentManager = GetComponentInChildren<TentManager>();
 
         townObjectManager.Initialize(environmentProvider);
         logProcessingManager.Initialize(inputManager);
+        tentManager.Initialize(inputManager);
 
         BindEvents();
         SubscribeSignals();
@@ -33,6 +35,7 @@ public class TownSystem : MonoBehaviour
     {
         logProcessingManager.Release();
         townObjectManager.Release();
+        tentManager.Release();
 
         ReleaseEvents();
         UnSubscribeSignals();
@@ -61,6 +64,9 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.EarnMoneyEvent -= EarnMoney;
         logProcessingManager.EarnMoneyEvent += EarnMoney;
+
+        tentManager.TentInteractEvent -= TentInteract;
+        tentManager.TentInteractEvent += TentInteract;
     }
 
     private void ReleaseEvents()
@@ -69,6 +75,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.ContainerUpdatedEvent -= ContainerUpdated;
         logProcessingManager.InteractStateChangedEvent -= LogContainerInteractStateChanged;
         logProcessingManager.EarnMoneyEvent -= EarnMoney;
+        tentManager.TentInteractEvent -= TentInteract;
     }
 
     private void SubscribeSignals()
@@ -105,5 +112,21 @@ public class TownSystem : MonoBehaviour
     private void EarnMoney(int _money)
     {
         signalHub.Publish(new MoneyEarnedSignal(_money));
+    }
+
+    private void TentInteract(bool _bInteract)
+    {
+        if (_bInteract == true)
+        {
+            Time.timeScale = 0;
+            inputManager.Pause(true);
+        }
+        else
+        {
+            Time.timeScale = 1;
+            inputManager.Pause(false);
+        }
+
+        signalHub.Publish(new TentInteractSignal(_bInteract));
     }
 }
