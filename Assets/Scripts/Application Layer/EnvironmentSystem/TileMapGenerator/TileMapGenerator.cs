@@ -331,20 +331,49 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
+        // 1. 플레이어 스폰 위치 먼저 결정 (기존 포탈 후보 로직 활용)
         if (innerEdgesList.Count > 0)
         {
-            portalIdx = innerEdgesList[UnityEngine.Random.Range(0, innerEdgesList.Count)];
+            playerIdx = innerEdgesList[UnityEngine.Random.Range(0, innerEdgesList.Count)];
         }
         else if (shorelineList.Count > 0)
         {
-            portalIdx = shorelineList[UnityEngine.Random.Range(0, shorelineList.Count)];
+            playerIdx = shorelineList[UnityEngine.Random.Range(0, shorelineList.Count)];
         }
         else
         {
-            portalIdx = largestBlob.Count > 0 ? largestBlob[0] : -1;
+            playerIdx = largestBlob.Count > 0 ? largestBlob[0] : -1;
         }
 
-        playerIdx = portalIdx;
+        if (playerIdx == -1) return;
+
+        // 2. 포탈 스폰 위치 결정: 플레이어로부터 가장 먼 곳 선택
+        List<int> candidates = innerEdgesList.Count > 0 ? innerEdgesList : shorelineList;
+        
+        if (candidates.Count > 0)
+        {
+            Vector3 playerPos = GetWorldPos(playerIdx);
+            float maxDistSq = -1f;
+            int bestPortalIdx = candidates[0];
+
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                int cIdx = candidates[i];
+                Vector3 cPos = GetWorldPos(cIdx);
+                float distSq = (playerPos - cPos).sqrMagnitude;
+                
+                if (distSq > maxDistSq)
+                {
+                    maxDistSq = distSq;
+                    bestPortalIdx = cIdx;
+                }
+            }
+            portalIdx = bestPortalIdx;
+        }
+        else
+        {
+            portalIdx = playerIdx;
+        }
     }
 
     private void ApplyTiles()

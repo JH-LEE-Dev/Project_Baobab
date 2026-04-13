@@ -36,3 +36,5 @@ public struct TreeGetHitSignal
         treeObj = _treeObj;
     }
 }
+
+public struct GoToHomeSignal { }

@@ -4,7 +4,7 @@ using UnityEngine;
 public class PortalObj : MonoBehaviour
 {
     //이벤트
-    public event Action<PortalType> PortalActivated;
+    public event Action PortalActivated;
 
     //내부 의존성
     private int characterLayer;
@@ -24,7 +24,6 @@ public class PortalObj : MonoBehaviour
     public void ResetPortal()
     {
         lastActivatedTime = Time.time;
-        gameObject.SetActive(true);
     }
 
     //유니티 이벤트 함수
@@ -34,8 +33,8 @@ public class PortalObj : MonoBehaviour
         if (_other.gameObject.layer == characterLayer && Time.time >= lastActivatedTime + cooldownTime)
         {
             lastActivatedTime = Time.time;
-            gameObject.SetActive(false);
-            PortalActivated?.Invoke(type);
+
+            PortalActivated?.Invoke();
         }
     }
 }

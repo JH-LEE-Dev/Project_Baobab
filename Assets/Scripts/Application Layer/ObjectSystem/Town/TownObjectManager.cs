@@ -5,7 +5,7 @@ using UnityEngine;
 public class TownObjectManager : MonoBehaviour
 {
     //이벤트
-    public event Action<PortalType> PortalActivatedEvent;
+    public event Action PortalActivatedEvent;
 
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -19,15 +19,27 @@ public class TownObjectManager : MonoBehaviour
     [SerializeField] private float cullingDistance = 25; // 거리 컬링 기준
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
+    private float[] cullingDistances;
+    private CullingGroup.StateChanged onCullingStateChangedDelegate;
 
-    //내부 의존성
+    //내부 상태
     private PortalObj portal;
     private TreeObj[] trees;
-    private List<TreeObj> activeTreesForUpdate = new List<TreeObj>();
+    private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
+
+        // CullingGroup 및 거리 배열 미리 생성하여 재사용
+        if (cullingGroup == null)
+        {
+            cullingGroup = new CullingGroup();
+            onCullingStateChangedDelegate = OnCullingStateChanged;
+            cullingGroup.onStateChanged = onCullingStateChangedDelegate;
+        }
+
+        cullingDistances = new float[] { cullingDistance };
     }
 
     public void Release()
@@ -37,15 +49,27 @@ public class TownObjectManager : MonoBehaviour
 
     public void ReadyObj()
     {
-        portal = Instantiate(portalPrefab);
-        portal.transform.position = portalSpawnPoint.position;
-        portal.Initialize(PortalType.ToDungeonPortal);
+        if (portal == null)
+        {
+            portal = Instantiate(portalPrefab);
+            portal.transform.position = portalSpawnPoint.position;
+            portal.Initialize(PortalType.ToDungeonPortal);
+        }
 
-        // 씬 내의 모든 나무(비활성 포함)를 찾아 관리 대상으로 등록
-        trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
+        // 씬 내의 나무가 이미 관리 중이라면 다시 찾지 않음 (할당 방지)
+        if (trees == null)
+        {
+            trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
+        }
 
         if (trees != null && trees.Length > 0)
         {
+            // BoundingSphere 배열 크기 최적화 및 캐싱
+            if (spheres == null || spheres.Length < trees.Length)
+            {
+                spheres = new BoundingSphere[trees.Length];
+            }
+
             SetupCullingGroup();
 
             for (int i = 0; i < trees.Length; i++)
@@ -68,31 +92,30 @@ public class TownObjectManager : MonoBehaviour
 
     private void SetupCullingGroup()
     {
-        if (cullingGroup != null) cullingGroup.Dispose();
-
-        cullingGroup = new CullingGroup();
+        // CullingGroup을 새로 생성하지 않고 기존 객체 설정만 갱신
         cullingGroup.targetCamera = Camera.main;
 
-        spheres = new BoundingSphere[trees.Length];
         for (int i = 0; i < trees.Length; i++)
         {
-            spheres[i] = new BoundingSphere(trees[i].transform.position, 3f);
+            spheres[i].position = trees[i].transform.position;
+            spheres[i].radius = 3f;
         }
 
         cullingGroup.SetBoundingSpheres(spheres);
         cullingGroup.SetBoundingSphereCount(trees.Length);
 
-        // 거리 단계 설정 및 기준점(카메라) 지정
-        cullingGroup.SetBoundingDistances(new float[] { cullingDistance });
+        // 캐싱된 배열 사용 (할당 방지)
+        cullingDistances[0] = cullingDistance;
+        cullingGroup.SetBoundingDistances(cullingDistances);
         cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
-
-        cullingGroup.onStateChanged = OnCullingStateChanged;
 
         // 초기 상태 갱신
         activeTreesForUpdate.Clear();
         for (int i = 0; i < trees.Length; i++)
         {
-            bool shouldBeActive = cullingGroup.IsVisible(i) && cullingGroup.GetDistance(i) == 0;
+            bool isVisible = cullingGroup.IsVisible(i);
+            bool isNear = cullingGroup.GetDistance(i) == 0;
+            bool shouldBeActive = isVisible && isNear;
 
             if (trees[i].gameObject.activeSelf != shouldBeActive)
                 trees[i].gameObject.SetActive(shouldBeActive);
@@ -108,7 +131,6 @@ public class TownObjectManager : MonoBehaviour
 
         if (ev.index >= trees.Length) return;
 
-        // InDungeonObjectManager와 동일하게 시야(Visible)와 거리(Distance == 0)를 모두 체크
         bool shouldBeActive = ev.isVisible && (ev.currentDistance == 0);
         TreeObj tree = trees[ev.index];
 
@@ -133,7 +155,6 @@ public class TownObjectManager : MonoBehaviour
         if (trees == null || trees.Length == 0)
             return;
 
-        // 시야 내 나무들만 ManualUpdate 호출
         for (int i = 0; i < activeTreesForUpdate.Count; i++)
         {
             activeTreesForUpdate[i].ManualUpdate();
@@ -154,6 +175,7 @@ public class TownObjectManager : MonoBehaviour
     private void BindEvents()
     {
         if (portal == null) return;
+
         portal.PortalActivated -= PortalActivated;
         portal.PortalActivated += PortalActivated;
     }
@@ -163,10 +185,19 @@ public class TownObjectManager : MonoBehaviour
         if (portal != null) portal.PortalActivated -= PortalActivated;
     }
 
-    private void PortalActivated(PortalType _type)
+    private void PortalActivated()
     {
-        PortalActivatedEvent?.Invoke(_type);
-        trees = null;
+        PortalActivatedEvent?.Invoke();
+    }
+
+    public void ClearObjManager()
+    {
+        // 참조를 해제하지 않고 개수만 0으로 설정하여 재할당 방지
+        if (cullingGroup != null)
+        {
+            cullingGroup.SetBoundingSphereCount(0);
+        }
         activeTreesForUpdate.Clear();
+        trees = null;
     }
 }

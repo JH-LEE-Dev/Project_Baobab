@@ -8,3 +8,12 @@ public struct DeleteItemSignal
         slot = _slot;
     }
 }
+
+public struct DungeonSelectedSignal
+{
+    public DungeonType type;
+    public DungeonSelectedSignal(DungeonType _type)
+    {
+        type = _type;
+    }
+}

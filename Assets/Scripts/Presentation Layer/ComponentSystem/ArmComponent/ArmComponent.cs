@@ -90,7 +90,7 @@ public class ArmComponent : PComponent
 
     private void UpdateFacingDirection()
     {
-        if (attackTransform == null) return;
+        if (attackTransform == null || currentWeapon == null) return;
 
         currentWeapon.SetFacingDir(attackTransform);
     }

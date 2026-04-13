@@ -4,8 +4,8 @@ using UnityEngine;
 public class InDungeonSystem : MonoBehaviour
 {
     private SignalHub signalHub;
-    public InDungeonObjectManager inDungeonObjectManager {get; private set;}
-    public InDungeonUnitSpawner inDungeonUnitSpawner {get; private set;}
+    public InDungeonObjectManager inDungeonObjectManager { get; private set; }
+    public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
     private IEnvironmentProvider environmentProvider;
 
 
@@ -18,7 +18,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider,dungeonData);
+        inDungeonObjectManager.Initialize(environmentProvider, dungeonData);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
@@ -73,10 +73,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<FirstTimeEarnMoneySignal>(FirstTimeEarnMoney);
     }
 
-    private void PortalActivated(PortalType _type)
+    private void PortalActivated()
     {
-        inDungeonUnitSpawner.ReleaseAllAnimals();
-        signalHub.Publish(new PortalActivatedSignal(_type));
+        signalHub.Publish(new PortalActivatedSignal());
     }
 
     private void MapGenerated(MapGeneratedSignal mapGeneratedSignal)
@@ -99,7 +98,9 @@ public class InDungeonSystem : MonoBehaviour
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
     {
+        inDungeonUnitSpawner.ReleaseAllAnimals();
         inDungeonObjectManager.ClearObjManager();
+        signalHub.Publish(new GoToHomeSignal());
     }
 
     private void FirstTimeEarnMoney(FirstTimeEarnMoneySignal firstTimeEarnMoneySignal)

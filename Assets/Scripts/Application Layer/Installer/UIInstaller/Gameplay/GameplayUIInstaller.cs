@@ -87,6 +87,12 @@ public class GameplayUIInstaller : MonoBehaviour
         if (worldCanvas == null)
             worldCanvas = Instantiate(worldCanvasPrefab, transform);
 
+        var CanvasEnabler = canvas.GetComponent<CanvasEnabler>();
+        if (CanvasEnabler != null)
+        {
+            //CanvasEnabler.Initialize();
+        }
+
         var worldCanvasEnabler = worldCanvas.GetComponent<WorldCanvasEnabler>();
         if (worldCanvasEnabler != null)
         {
@@ -106,7 +112,6 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_WorldPopup worldPopupUI = uiManager.Open<UIView_WorldPopup>();
 
         UIView_MenuPopup menuPopupUI = uiManager.Open<UIView_MenuPopup>();
-        menuPopupUI.Hide();
 
         UIView_Tent tentUI = uiManager.Open<UIView_Tent>();
 

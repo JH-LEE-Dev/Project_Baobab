@@ -7,7 +7,7 @@ using System;
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
-    public event Action<PortalType> PortalActivatedEvent;
+    public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
 
@@ -31,16 +31,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     // // 내부 상태 및 컬렉션
     private PortalObj portal;
     private List<Vector3> grassTileWorldPositions;
-    private List<Vector3> availablePositions = new List<Vector3>(5000);
-    private List<TreeObj> activeTrees = new List<TreeObj>(1000);
-    private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(1000);
+    private List<Vector3> availablePositions = new List<Vector3>(2000);
+    private List<TreeObj> activeTrees = new List<TreeObj>(2000);
+    private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2000);
 
     private IObjectPool<TreeObj> treePool;
     private Coroutine growthCoroutine;
     private WaitForSeconds spawnYield;
-
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
+    private float[] cullingDistances;
+    private CullingGroup.StateChanged onCullingStateChangedDelegate;
     private bool isCullingDirty = false;
 
     public IReadOnlyList<ITreeObj> trees => activeTrees;
@@ -58,6 +59,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();
 
+        cullingDistances = new float[] { cullingDistance };
+        spheres = new BoundingSphere[1000];
+        onCullingStateChangedDelegate = OnCullingStateChanged;
 
         spawnYield = new WaitForSeconds(spawnInterval);
 
@@ -111,7 +115,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void ClearObjManager()
     {
         portal.gameObject.SetActive(false);
-        OnPortalActivated(PortalType.ToTownPortal);
+        StopGrowth();
+        ClearTrees();
     }
 
     // // 프라이빗 로직 메서드
@@ -207,6 +212,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
+                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
                 treePool.Release(activeTrees[i]);
             }
         }
@@ -226,13 +232,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void SetupCullingGroup()
     {
-        if (cullingGroup != null) cullingGroup.Dispose();
+        if (cullingGroup == null)
+        {
+            cullingGroup = new CullingGroup();
+            cullingGroup.onStateChanged = onCullingStateChangedDelegate;
+        }
 
-        cullingGroup = new CullingGroup();
         cullingGroup.targetCamera = Camera.main;
-        cullingGroup.SetBoundingDistances(new float[] { cullingDistance });
+        cullingGroup.SetBoundingDistances(cullingDistances);
         cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
-        cullingGroup.onStateChanged = OnCullingStateChanged;
     }
 
     private void RefreshCullingGroup()
@@ -245,7 +253,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         for (int i = 0; i < count; i++)
         {
-            spheres[i] = new BoundingSphere(activeTrees[i].transform.position, 3f);
+            spheres[i].position = activeTrees[i].transform.position;
+            spheres[i].radius = 3f;
         }
 
         cullingGroup.SetBoundingSpheres(spheres);
@@ -314,11 +323,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         portal.PortalActivated += OnPortalActivated;
     }
 
-    private void OnPortalActivated(PortalType _type)
+    private void OnPortalActivated()
     {
-        StopGrowth();
-        ClearTrees();
-        PortalActivatedEvent?.Invoke(_type);
+        PortalActivatedEvent?.Invoke();
     }
 
     private void OnTreeDead(TreeObj _treeObj)
@@ -340,7 +347,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             availablePositions[swapIdx] = temp;
         }
 
-        activeTrees.Remove(_treeObj);
+        // activeTrees 최적화 (Swap-with-last)
+        int index = activeTrees.IndexOf(_treeObj);
+        if (index >= 0)
+        {
+            int lastIdx = activeTrees.Count - 1;
+            if (index != lastIdx)
+            {
+                activeTrees[index] = activeTrees[lastIdx];
+            }
+            activeTrees.RemoveAt(lastIdx);
+        }
+
         activeTreesForUpdate.Remove(_treeObj);
         isCullingDirty = true;
 
