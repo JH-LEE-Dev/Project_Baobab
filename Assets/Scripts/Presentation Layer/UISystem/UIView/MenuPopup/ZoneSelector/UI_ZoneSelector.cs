@@ -9,7 +9,7 @@ public class UI_ZoneSelector : MonoBehaviour
     [SerializeField] private Transform slotContainer;
     private List<UI_ZoneRegion> regions;
 
-    private Action<int, int> onZoneSelected;
+    private Action<DungeonType> onZoneSelected;
     private Action<bool> onSelectionStatusChanged;
     private ZoneDatabase zoneDatabase;
     private UI_ZoneInfo zoneInfo;
@@ -17,7 +17,7 @@ public class UI_ZoneSelector : MonoBehaviour
     private int selectedRegionId = -1;
     private int selectedZoneId = -1;
 
-    public void Initialize(int _capacity, Action<int, int> _onZoneSelected, ZoneDatabase _zoneDatabase, UI_ZoneInfo _zoneInfo, Action<bool> _onSelectionStatusChanged)
+    public void Initialize(int _capacity, Action<DungeonType> _onZoneSelected, ZoneDatabase _zoneDatabase, UI_ZoneInfo _zoneInfo, Action<bool> _onSelectionStatusChanged)
     {
         onZoneSelected = _onZoneSelected;
         zoneDatabase = _zoneDatabase;
@@ -68,6 +68,7 @@ public class UI_ZoneSelector : MonoBehaviour
             
             // 해제 시에도 정보창을 끄지 않고 마지막 정보를 유지합니다.
             onSelectionStatusChanged?.Invoke(false);
+            onZoneSelected?.Invoke(DungeonType.None);
         }
         else
         {
@@ -82,14 +83,20 @@ public class UI_ZoneSelector : MonoBehaviour
 
             UpdateInfoDisplay(_regionId, _zoneId);
             onSelectionStatusChanged?.Invoke(true);
-        }
 
-        onZoneSelected?.Invoke(_regionId, _zoneId);
+            ZoneData data = zoneDatabase.GetZoneData(_regionId, _zoneId);
+            if (data != null)
+            {
+                onZoneSelected?.Invoke(data.DungeonType);
+            }
+        }
     }
 
     private void HandleZoneHoverEnter(int _regionId, int _zoneId)
     {
-        if (selectedRegionId != -1) return;
+        if (selectedRegionId != -1) 
+            return;
+            
         UpdateInfoDisplay(_regionId, _zoneId);
     }
 

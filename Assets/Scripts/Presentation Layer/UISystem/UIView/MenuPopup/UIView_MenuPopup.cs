@@ -42,7 +42,7 @@ public class UIView_MenuPopup : UIView
 
         if (null != zoneSelector)
         {
-            // 수정: 선택 상태 변경 콜백(HandleSelectionStatusChanged) 추가
+            // 수정: Action<DungeonType>을 받도록 변경된 Initialize 호출
             zoneSelector.Initialize(5, HandleZoneChanged, zoneDatabase, zoneInfo, HandleSelectionStatusChanged);
             zoneSelector.OpenRegion(0, 3);
             zoneSelector.UnlockZone(0, 0);
@@ -52,22 +52,41 @@ public class UIView_MenuPopup : UIView
 
     private void Init_ZoneButtons()
     {
-        //zoneSelectButton?.Initialize();
-        zoneCancelButton?.Initialize(OnHideZoneSeletingUI);
+        // 자식 컴포넌트에서 버튼 참조 구성
+        UI_ZoneButton[] buttons = GetComponentsInChildren<UI_ZoneButton>(true);
+        foreach (var button in buttons)
+        {
+            if (button.name.Contains("SelectZone"))
+                zoneSelectButton = button;
+
+            else if (button.name.Contains("CancelZone"))
+                zoneCancelButton = button;
+        }
+
+        // 런타임에 던전 진입 처리를 위한 이벤트 바인딩
+        zoneSelectButton?.Initialize(HandleEnterDungeon);
+        zoneCancelButton?.Initialize(OnHide);
+    }
+
+    private void HandleEnterDungeon(DungeonType _type)
+    {
+        Debug.Log($"[UIView_MenuPopup] Entering Dungeon: {_type}");
+        // 통신 및 던전 진입 로직 배치
     }
 
     private void HandleSelectionStatusChanged(bool _isSelected)
     {
         // 추후 확인 버튼 활성화/비활성화 로직 배치 위치
-        Debug.Log($"[UIView_MenuPopup] Selection Status Changed: {_isSelected}");
-        
-        // 예: confirmButton.interactable = _isSelected;
+        if (zoneSelectButton != null)
+        {
+            zoneSelectButton.SetInteractable(_isSelected);
+        }
     }
 
-    private void HandleZoneChanged(int _regionId, int _zoneId)
+    private void HandleZoneChanged(DungeonType _dungeonType)
     {
-        // 3. 지역/구역 변경에 따른 정보창 동기화 타이밍
-        // zoneInfo.UpdateDisplay(_regionId, _zoneId);
+        // 지역/구역 변경 시 선택 버튼의 던전 타입 정보 업데이트
+        zoneSelectButton?.ChangeDungeonType(_dungeonType);
     }
 
     // --- 외부 진행 시스템(ProgressManager 등)에서 호출되는 타이밍 ---
@@ -78,18 +97,6 @@ public class UIView_MenuPopup : UIView
         
         // 5. 특정 지역 클리어 시 다음 지역 묶음 통째로 개방 (예: 지역 1을 2개의 구역으로 개방)
         // zoneSelector?.OpenRegion(_regionId + 1, 2);
-    }
-
-    public void OnShowZoneSeletingUI()
-    {
-        zoneSelector?.OnShow();
-        zoneInfo?.OnShow();
-    }
-
-    public void OnHideZoneSeletingUI()
-    {
-        zoneSelector?.OnHide();
-        zoneInfo?.OnHide();
     }
 
     protected override void OnShow()

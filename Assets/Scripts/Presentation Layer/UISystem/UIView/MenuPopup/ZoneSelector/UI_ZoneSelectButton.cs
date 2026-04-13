@@ -9,6 +9,7 @@ public class UI_ZoneButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
     private Action<DungeonType> enterDungeonEvent;
     private DungeonType dungeonType;
     private Action enterHideEvent;
+    private bool isInteractable = true;
 
     [SerializeField] private RectTransform visualRect; 
 
@@ -21,8 +22,25 @@ public class UI_ZoneButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         dungeonType = _type;
     }
 
+    public void SetInteractable(bool _interactable)
+    {
+        isInteractable = _interactable;
+        
+        // 시각적 피드백 (투명도 조절 등)
+        if (visualRect != null)
+        {
+            CanvasGroup cg = visualRect.GetComponent<CanvasGroup>();
+            if (cg == null) cg = visualRect.gameObject.AddComponent<CanvasGroup>();
+            cg.alpha = isInteractable ? 1.0f : 0.5f;
+            cg.blocksRaycasts = isInteractable;
+        }
+    }
+
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (!isInteractable) 
+            return;
+
         if (dungeonType == DungeonType.None)
         {
             enterHideEvent?.Invoke();
@@ -34,11 +52,13 @@ public class UI_ZoneButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (!isInteractable) return;
         //visualRect
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        if (!isInteractable) return;
         //visualRect   
     }
 }
