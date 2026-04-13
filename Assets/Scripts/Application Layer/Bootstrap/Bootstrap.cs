@@ -43,7 +43,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
         else if (_sceneName == dungeonSceneName)
         {
-            currentSceneType = SceneType.Dungeon;
+            currentSceneType = SceneType.DungeonScene;
         }
 
         if (gameInstaller != null)
@@ -104,7 +104,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
         else if (_sceneName == dungeonSceneName)
         {
-            sceneManager.ChangeScene(SceneType.Dungeon);
+            sceneManager.ChangeScene(SceneType.DungeonScene);
         }
     }
 

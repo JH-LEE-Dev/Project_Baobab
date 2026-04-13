@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ZoneData
   regionId: 0
   zoneId: 1
+  dungeonType: 2
   zoneName: Vegetated plains_02
   farmableTrees:
   - {fileID: 11400000, guid: b2f20bd642258f74bb2bbd1cda1d9ed9, type: 2}

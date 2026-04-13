@@ -11,7 +11,7 @@ public class SceneManager : MonoBehaviour
             case SceneType.Town:
                 UnityEngine.SceneManagement.SceneManager.LoadScene("TownScene");
                 break;
-            case SceneType.Dungeon:
+            case SceneType.DungeonScene:
                 UnityEngine.SceneManagement.SceneManager.LoadScene("DungeonScene");
                 break;
         }

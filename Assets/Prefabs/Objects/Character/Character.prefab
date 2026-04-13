@@ -1055,3 +1055,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a55c779351c72a84bb207fb6e6445560, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AxeComponent
+  swingArc: 160
+  baseRadius: 0.1
+  extensionAmount: 0.05
+  windUpDuration: 0.07
+  swingDuration: 0.13
+  recoveryDuration: 0.15

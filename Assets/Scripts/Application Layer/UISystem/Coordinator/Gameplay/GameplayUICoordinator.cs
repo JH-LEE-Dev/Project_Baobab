@@ -39,6 +39,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
         signalHub.Subscribe<WeaponModeChangedSignal>(WeaponModeChanged);
         signalHub.Subscribe<TentInteractSignal>(TentInteract);
+        signalHub.Subscribe<PortalActivatedSignal>(PortalActivated);
     }
 
     private void UnSubscribeSignals()
@@ -51,6 +52,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
         signalHub.UnSubscribe<WeaponModeChangedSignal>(WeaponModeChanged);
         signalHub.UnSubscribe<TentInteractSignal>(TentInteract);
+        signalHub.UnSubscribe<PortalActivatedSignal>(PortalActivated);
     }
 
     private void BindEvents()
@@ -63,6 +65,9 @@ public class GameplayUICoordinator
 
         popUpUI.SendDeleteItemEvent -= SendDeleteItem;
         popUpUI.SendDeleteItemEvent += SendDeleteItem;
+
+        menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
+        menuPopupUI.DungeonSelectedEvent += DungeonSelected;
     }
 
     private void ReleaseEvents()
@@ -70,6 +75,7 @@ public class GameplayUICoordinator
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         popUpUI.SendDeleteItemEvent -= SendDeleteItem;
+        menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
     }
 
     public void Release()
@@ -140,5 +146,15 @@ public class GameplayUICoordinator
     private void TentInteract(TentInteractSignal tentInteractSignal)
     {
         tentUI.TentInteract(tentInteractSignal.bInteract);
+    }
+
+    private void PortalActivated(PortalActivatedSignal portalActivatedSignal)
+    {
+        menuPopupUI.TeleportUIOpen();
+    }
+
+    private void DungeonSelected(DungeonType _type)
+    {
+        signalHub.Publish(new DungeonSelectedSignal(_type));
     }
 }

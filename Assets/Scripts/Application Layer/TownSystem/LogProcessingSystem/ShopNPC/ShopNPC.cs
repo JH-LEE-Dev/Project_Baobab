@@ -3,6 +3,7 @@ using System;
 
 public class ShopNPC : MonoBehaviour
 {
+    public event Action FirstTimeEarnMoneyEvent;
     public event Action<bool> InteractStateEvent;
     public event Action<int> EarnMoneyEvent;
 
@@ -13,6 +14,8 @@ public class ShopNPC : MonoBehaviour
     private int money;
 
     private const string PLAYER_TAG = "Player";
+
+    private bool bFirstTimeEarnMoney = true;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -73,6 +76,12 @@ public class ShopNPC : MonoBehaviour
             return;
 
         EarnMoneyEvent?.Invoke(money);
+
+        if(bFirstTimeEarnMoney == true)
+        {
+            FirstTimeEarnMoneyEvent?.Invoke();
+            bFirstTimeEarnMoney = false;
+        }
 
         money = 0;
     }

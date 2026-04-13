@@ -7,6 +7,7 @@ public class ZoneData : ScriptableObject
     [Header("Identities")]
     [SerializeField] private int regionId;
     [SerializeField] private int zoneId;
+    [SerializeField] private DungeonType dungeonType;
 
     [Header("Display Info")]
     [SerializeField] private string zoneName;
@@ -17,6 +18,7 @@ public class ZoneData : ScriptableObject
 
     public int RegionId => regionId;
     public int ZoneId => zoneId;
+    public DungeonType DungeonType => dungeonType;
     public string ZoneName => zoneName;
     public IReadOnlyList<FarmingItemData> FarmableTrees => farmableTrees;
     public IReadOnlyList<FarmingItemData> FarmableAnimals => farmableAnimals;
