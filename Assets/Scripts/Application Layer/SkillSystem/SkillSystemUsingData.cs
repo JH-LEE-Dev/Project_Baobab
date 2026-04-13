@@ -13,5 +13,7 @@ public struct Skill
 public enum SkillType
 {
     None,
+    Rest,
+    InventoryExpansion1,
     Max
 }

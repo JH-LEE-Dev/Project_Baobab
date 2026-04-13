@@ -1,0 +1,26 @@
+{
+  "nodes": [
+    {
+      "skillType": "Rest",
+      "displayName": "휴식",
+      "description": "이제 텐트에서 휴식할 수 있습니다.",
+      "pictureKey": "Ability_TextureSample",
+      "cost": 0,
+      "gridX": 0,
+      "gridY": 0,
+      "parentSkillTypes": []
+    },
+    {
+      "skillType": "InventoryExpansion1",
+      "displayName": "인벤토리 확장 I",
+      "description": "인벤토리 크기가 2 증가합니다.",
+      "pictureKey": "Ability_TextureSample",
+      "cost": 500,
+      "gridX": 0,
+      "gridY": 1,
+      "parentSkillTypes": [
+        "Rest"
+      ]
+    }
+  ]
+}
