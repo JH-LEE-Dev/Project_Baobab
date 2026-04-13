@@ -19,5 +19,5 @@ MonoBehaviour:
     probability: 80
   - grade: 2
     probability: 20
-  staminaDecAmount: 0.01
+  staminaDecAmount: 4
   staminaIncAmount: 0
