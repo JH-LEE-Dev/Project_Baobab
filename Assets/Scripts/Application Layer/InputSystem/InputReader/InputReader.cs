@@ -18,6 +18,8 @@ public class InputReader
     //내부 의존성
     private InputActionSystem actions;
 
+    private bool bPause = false;
+
     public void Initialize()
     {
         if (actions == null)
@@ -57,8 +59,16 @@ public class InputReader
         actions.Normal.SwitchMode.performed -= SwitchModeKeyPressed;
     }
 
+    public void Pause(bool _bPause)
+    {
+        bPause = _bPause;
+    }
+
     public void OnMove(InputAction.CallbackContext context)
     {
+        if (bPause)
+            return;
+            
         Vector2 move = context.ReadValue<Vector2>();
 
         MoveEvent?.Invoke(move);
