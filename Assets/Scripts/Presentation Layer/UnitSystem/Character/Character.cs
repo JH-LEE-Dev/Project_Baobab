@@ -156,6 +156,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
         staminaDecAmount = _staminaDecAmount;
         staminaIncAmount = _staminaIncAmount;
+        healthComponent.SetStaminaDecreaseAmount(staminaDecAmount);
+        healthComponent.SetStaminaIncreaseAmount(staminaIncAmount);
     }
 
     private void SetupStateMachine()
@@ -233,12 +235,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
     private void DecreaseStamina()
     {
-        healthComponent.DecreaseStamina(staminaDecAmount);
+        healthComponent.DecreaseStamina();
     }
 
     private void IncreaseStamina()
     {
-        healthComponent.IncreaseStamina(staminaIncAmount);
+        healthComponent.IncreaseStamina();
     }
 
     private void UpdateCharacterColor()

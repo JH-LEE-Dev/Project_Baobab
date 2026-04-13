@@ -20,6 +20,7 @@ public class GameInstaller : MonoBehaviour
     private TownSystem townSystem;
     private InDungeonSystem inDungeonSystem;
     private EnvironmentSystem environmentSystem;
+    private SkillManager skillManager;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager)
     {
@@ -41,7 +42,9 @@ public class GameInstaller : MonoBehaviour
         environmentSystem = GetComponentInChildren<EnvironmentSystem>();
         gameplayUIInstaller = GetComponentInChildren<GameplayUIInstaller>();
         inventoryManager = GetComponentInChildren<InventoryManager>();
+        skillManager = GetComponentInChildren<SkillManager>();
 
+        skillManager.Initialize();
         cameraManager.Initialize(signalHub, inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
@@ -50,7 +53,7 @@ public class GameInstaller : MonoBehaviour
         inDungeonSystem.Initialize(signalHub, environmentSystem);
         inventoryManager.Initialize();
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
-        townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter);
+        townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager);
 
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);

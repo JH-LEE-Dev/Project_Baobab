@@ -8,11 +8,13 @@ public class GameplayUICoordinator
     private UIView_HUD hudUI;
     private UIView_WorldPopup worldPopupUI;
     private UIView_MenuPopup menuPopupUI;
+    private UIView_Tent tentUI;
+
 
     private bool bInventoryOpened = false;
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
-     UIView_Unit _unitUI,UIView_WorldPopup _worldPopupUI,UIView_MenuPopup _menuPopupUI)
+     UIView_Unit _unitUI,UIView_WorldPopup _worldPopupUI,UIView_MenuPopup _menuPopupUI,UIView_Tent _tentUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -21,7 +23,7 @@ public class GameplayUICoordinator
         unitUI = _unitUI;
         worldPopupUI = _worldPopupUI;
         menuPopupUI = _menuPopupUI;
-
+        tentUI = _tentUI;
 
         SubscribeSignals();
         BindEvents();
@@ -36,6 +38,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
         signalHub.Subscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
         signalHub.Subscribe<WeaponModeChangedSignal>(WeaponModeChanged);
+        signalHub.Subscribe<TentInteractSignal>(TentInteract);
     }
 
     private void UnSubscribeSignals()
@@ -47,6 +50,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
         signalHub.UnSubscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
         signalHub.UnSubscribe<WeaponModeChangedSignal>(WeaponModeChanged);
+        signalHub.UnSubscribe<TentInteractSignal>(TentInteract);
     }
 
     private void BindEvents()
@@ -131,5 +135,10 @@ public class GameplayUICoordinator
     private void WeaponModeChanged(WeaponModeChangedSignal weaponModeChangedSignal)
     {
         hudUI.WeaponModeChanged(weaponModeChangedSignal.weaponMode);
+    }
+
+    private void TentInteract(TentInteractSignal tentInteractSignal)
+    {
+        tentUI.TentInteract(tentInteractSignal.bInteract);
     }
 }

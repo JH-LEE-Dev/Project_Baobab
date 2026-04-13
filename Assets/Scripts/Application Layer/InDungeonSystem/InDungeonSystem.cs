@@ -63,12 +63,14 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Subscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.Subscribe<GoHomeButtonClickedSignal>(GoHome);
+        signalHub.Subscribe<FirstTimeEarnMoneySignal>(FirstTimeEarnMoney);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.UnSubscribe<GoHomeButtonClickedSignal>(GoHome);
+        signalHub.UnSubscribe<FirstTimeEarnMoneySignal>(FirstTimeEarnMoney);
     }
 
     private void PortalActivated(PortalType _type)
@@ -98,5 +100,10 @@ public class InDungeonSystem : MonoBehaviour
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
     {
         inDungeonObjectManager.ClearObjManager();
+    }
+
+    private void FirstTimeEarnMoney(FirstTimeEarnMoneySignal firstTimeEarnMoneySignal)
+    {
+        inDungeonObjectManager.CreateWelcomeNoobLoot();
     }
 }

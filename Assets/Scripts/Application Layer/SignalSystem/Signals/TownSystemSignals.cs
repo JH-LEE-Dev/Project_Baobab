@@ -19,3 +19,12 @@ public struct MoneyEarnedSignal
         money = _money;
     }
 }
+
+public struct TentInteractSignal
+{
+    public bool bInteract;
+    public TentInteractSignal(bool _bInteract)
+    {
+        bInteract = _bInteract;
+    }
+}

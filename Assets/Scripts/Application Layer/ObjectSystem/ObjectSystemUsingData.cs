@@ -61,6 +61,7 @@ public enum ItemType
 {
     None,
     Log,
+    Loot,
     Max,
 }
 
@@ -83,5 +84,19 @@ public struct LogStateProbData
 public struct LogProbData
 {
     public LogState type;
+    public float probability;
+}
+
+public enum LootType
+{
+    None,
+    WelcomeNoob,
+    Max,
+}
+
+[Serializable]
+public struct LootDropData
+{
+    public LootType lootType;
     public float probability;
 }

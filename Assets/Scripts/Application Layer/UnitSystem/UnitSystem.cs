@@ -89,7 +89,7 @@ public class UnitSystem
 
     private void TownStarted(TownStartedSignal townStartedSignal)
     {
-        unitLogicManager.SetCharacterStaminaState(true, 0, 0.05f);
+        unitLogicManager.SetCharacterStaminaState(true, 0, 2f);
         unitLogicManager.SetCharacterTransform(townStartedSignal.characterPos);
     }
 

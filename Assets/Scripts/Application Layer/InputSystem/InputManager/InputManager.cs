@@ -26,4 +26,9 @@ public class InputManager : MonoBehaviour
     {
         inputReader?.Release();
     }
+
+    public void Pause(bool _bPause)
+    {
+        inputReader.Pause(_bPause);
+    }
 }

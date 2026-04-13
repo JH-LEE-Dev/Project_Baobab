@@ -11,6 +11,7 @@ public class GameplayUIInstaller : MonoBehaviour
     private IInventory inventory;
     private IInventory container;
     private IInDungeonObjProvider inDungeonObjProvider;
+    private ISkillSystemProvider skillSystemProvider;
 
 
     //Canvas
@@ -28,8 +29,8 @@ public class GameplayUIInstaller : MonoBehaviour
     private Canvas worldCanvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
-        InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider,IInventory _container,
-        ILogCutter _logCutter)
+        InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
+        ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider)
     {
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -37,11 +38,12 @@ public class GameplayUIInstaller : MonoBehaviour
         inventory = _inventory;
         inDungeonObjProvider = _inDungeonObjProvider;
         container = _container;
+        skillSystemProvider = _skillSystemProvider;
 
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter);
+        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider);
 
         SetupUIElement();
     }
@@ -106,8 +108,10 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_MenuPopup menuPopupUI = uiManager.Open<UIView_MenuPopup>();
         menuPopupUI.Hide();
 
+        UIView_Tent tentUI = uiManager.Open<UIView_Tent>();
+
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI);
+        menuPopupUI, tentUI);
 
         BindEvent();
     }
