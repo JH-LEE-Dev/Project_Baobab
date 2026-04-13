@@ -33,7 +33,7 @@ public class HUD_Equipment : MonoBehaviour
 
     public void UpdateAmmoCount(int cnt) => equipmentItem?.ChangeText(cnt);
 
-    public void UpdateState(EquipmentType type, int ammoCnt)
+    public void UpdateState(WeaponMode type, int ammoCnt)
     {
         equipmentItem?.ChangeImage(type);
         equipmentItem?.ChangeText(ammoCnt);

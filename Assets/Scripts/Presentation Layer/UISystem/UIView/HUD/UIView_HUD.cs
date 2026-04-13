@@ -64,7 +64,10 @@ public class UIView_HUD : UIView
         hudEquipment = Instantiate(hudEquipmentPrefab, this.transform).GetComponent<HUD_Equipment>();
 
         if (null != hudEquipment)
+        {
             hudEquipment.Initialize();
+            hudEquipment.UpdateState(WeaponMode.Axe, 0);
+        }
     }
 
 #endregion
@@ -90,7 +93,7 @@ public class UIView_HUD : UIView
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
     {
-        
+        hudEquipment?.UpdateState(_currentWeaponMode, 0);
     }
 
 }
