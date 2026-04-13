@@ -45,7 +45,6 @@ public class UIView_MenuPopup : UIView
             zoneSelector.OpenRegion(0, 3);
             zoneSelector.UnlockZone(0, 0);
             zoneSelector.UnlockZone(0, 1);
-            zoneSelector.UnlockZone(0, 2);
         }
     }
 
@@ -71,6 +70,18 @@ public class UIView_MenuPopup : UIView
         
         // 5. 특정 지역 클리어 시 다음 지역 묶음 통째로 개방 (예: 지역 1을 2개의 구역으로 개방)
         // zoneSelector?.OpenRegion(_regionId + 1, 2);
+    }
+
+    public void OnShowZoneSeletingUI()
+    {
+        zoneSelector?.OnShow();
+        zoneInfo?.OnShow();
+    }
+
+    public void OnHideZoneSeletingUI()
+    {
+        zoneSelector?.OnHide();
+        zoneInfo?.OnHide();
     }
 
     protected override void OnShow()

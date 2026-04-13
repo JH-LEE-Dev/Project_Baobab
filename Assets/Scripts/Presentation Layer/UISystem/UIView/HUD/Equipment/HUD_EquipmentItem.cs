@@ -28,7 +28,7 @@ public class HUD_EquipmentItem : MonoBehaviour
         srcText = GetComponentInChildren<TMP_Text>();
     }
 
-    public void ChangeImage(EquipmentType _inType)
+    public void ChangeImage(WeaponMode _inType)
     {
         if (null == spriteData || null == mainImg)
             return;
@@ -58,9 +58,9 @@ public class HUD_EquipmentItem : MonoBehaviour
         srcText.text = cnt.ToString(); 
     }
 
-    private void CheckVisibilityByEquipmentType(EquipmentType _inType)
+    private void CheckVisibilityByEquipmentType(WeaponMode _inType)
     {
-        bool needsAmmo = (_inType == EquipmentType.Rifle);
+        bool needsAmmo = (_inType == WeaponMode.Rifle);
         
         SetTextVisibility(needsAmmo);
 
