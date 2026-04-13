@@ -28,6 +28,7 @@ public class UnitSystem
     {
         UnSubscribeSignals();
         ReleaseEvents();
+        unitLogicManager.Release();
     }
 
     public void CreateCharacter()
@@ -59,11 +60,15 @@ public class UnitSystem
     {
         unitSpawner.CharacterSpawnedEvent -= CharacterSpawned;
         unitSpawner.CharacterSpawnedEvent += CharacterSpawned;
+
+        unitLogicManager.WeaponModeChangedEvent -= WeaponModeChanged;
+        unitLogicManager.WeaponModeChangedEvent += WeaponModeChanged;
     }
 
     private void ReleaseEvents()
     {
         unitSpawner.CharacterSpawnedEvent -= CharacterSpawned;
+        unitLogicManager.WeaponModeChangedEvent -= WeaponModeChanged;
     }
 
     private void CharacterSpawned(Character _character)
@@ -113,5 +118,10 @@ public class UnitSystem
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
         unitLogicManager.SetWhereIsCharacter(_bInDungeon);
+    }
+
+    private void WeaponModeChanged(WeaponMode _currentMode)
+    {
+        signalHub.Publish(new WeaponModeChangedSignal(_currentMode));
     }
 }

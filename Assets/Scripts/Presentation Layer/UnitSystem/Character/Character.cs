@@ -1,7 +1,10 @@
+using System;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter
 {
+    public event Action<WeaponMode> WeaponModeChangedEvent;
+
     //외부 의존성
     public InputManager inputManager { get; private set; }
     private IEnvironmentProvider environmentProvider;
@@ -87,13 +90,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
     private void BindEvents()
     {
-        attackComponent.WeaponModeChangedEvent -= armComponent.WeaponModeChanged;
-        attackComponent.WeaponModeChangedEvent += armComponent.WeaponModeChanged;
+        attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
+        attackComponent.WeaponModeChangedEvent += WeaponModeChanged;
     }
 
     private void ReleaseEvents()
     {
-        attackComponent.WeaponModeChangedEvent -= armComponent.WeaponModeChanged;
+        attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
     }
 
     public void SetFacingDirection(Vector2 _input)
@@ -302,5 +305,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     private void ConnectAttackToArm()
     {
         armComponent.SetAttackTransform(attackComponent.GetAttackPointTransform());
+    }
+
+    private void WeaponModeChanged(WeaponMode _currentMode)
+    {
+        WeaponModeChangedEvent?.Invoke(_currentMode);
+        armComponent.WeaponModeChanged(_currentMode);
     }
 }

@@ -1,7 +1,10 @@
+using System;
 using UnityEngine;
 
 public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 {
+    public event Action<WeaponMode> WeaponModeChangedEvent;
+
     private Character character;
 
     public void Initialize()
@@ -9,9 +12,28 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
     }
 
+    public void Release()
+    {
+        ReleaseEvents();
+    }
+
+    private void BindEvents()
+    {
+        character.WeaponModeChangedEvent -= WeaponModeChanged;
+        character.WeaponModeChangedEvent += WeaponModeChanged;
+    }
+
+    private void ReleaseEvents()
+    {
+        character.WeaponModeChangedEvent -= WeaponModeChanged;
+    }
+
     public void SetCharacter(Character _character)
     {
         character = _character;
+
+        if (character != null)
+            BindEvents();
     }
 
     public void SetCharacterStaminaState(bool _bStaminaUpDown, float _staminaDecAmount, float _staminaIncAmount)
@@ -37,5 +59,10 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
         character.SetWhereIsCharacter(_bInDungeon);
+    }
+
+    public void WeaponModeChanged(WeaponMode _currentMode)
+    {
+        WeaponModeChangedEvent?.Invoke(_currentMode);
     }
 }

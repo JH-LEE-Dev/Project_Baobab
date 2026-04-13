@@ -29,3 +29,12 @@ public struct ContainerInteractStateChangedSignal
 }
 
 public struct CharacterEarnMoneySignal { }
+
+public struct WeaponModeChangedSignal
+{
+    public WeaponMode weaponMode;
+    public WeaponModeChangedSignal(WeaponMode _weaponMode)
+    {
+        weaponMode = _weaponMode;
+    }
+}

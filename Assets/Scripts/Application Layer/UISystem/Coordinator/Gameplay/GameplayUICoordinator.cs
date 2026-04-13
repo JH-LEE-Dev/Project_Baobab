@@ -35,6 +35,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.Subscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
         signalHub.Subscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
+        signalHub.Subscribe<WeaponModeChangedSignal>(WeaponModeChanged);
     }
 
     private void UnSubscribeSignals()
@@ -45,6 +46,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.UnSubscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
         signalHub.UnSubscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
+        signalHub.UnSubscribe<WeaponModeChangedSignal>(WeaponModeChanged);
     }
 
     private void BindEvents()
@@ -124,5 +126,10 @@ public class GameplayUICoordinator
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
     {
         popUpUI.CharacterEarnMoney();
+    }
+
+    private void WeaponModeChanged(WeaponModeChangedSignal weaponModeChangedSignal)
+    {
+        hudUI.WeaponModeChanged(weaponModeChangedSignal.weaponMode);
     }
 }
