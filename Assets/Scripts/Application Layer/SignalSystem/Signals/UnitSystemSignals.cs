@@ -29,6 +29,7 @@ public struct ContainerInteractStateChangedSignal
 }
 
 public struct CharacterEarnMoneySignal { }
+public struct FirstTimeEarnMoneySignal { }
 
 public struct WeaponModeChangedSignal
 {

@@ -15,6 +15,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private IEnvironmentProvider environmentProvider;
     private ItemManager itemManager;
     private DungeonData dungeonData;
+    private LootManager lootManager;
 
     // // 내부 의존성
     [Header("Tree Settings")]
@@ -53,6 +54,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         itemManager = GetComponentInChildren<ItemManager>();
         itemManager.Initialize();
+
+        lootManager = GetComponentInChildren<LootManager>();
+        lootManager.Initialize();
+
 
         spawnYield = new WaitForSeconds(spawnInterval);
 
@@ -443,5 +448,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private void OnTreeHit(TreeObj _treeObj)
     {
         TreeGetHitEvent?.Invoke(_treeObj);
+    }
+
+    public void CreateWelcomeNoobLoot()
+    {
+        if (lootManager == null)
+            return;
+
+        lootManager.AcquireLootItem(LootType.WelcomeNoob);
     }
 }

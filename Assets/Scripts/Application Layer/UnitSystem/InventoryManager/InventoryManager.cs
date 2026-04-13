@@ -89,6 +89,11 @@ public class InventoryManager : MonoBehaviour, IInventory
             // 같은 나무 종류라면 같은 슬롯에 보관
             return logItem.treeType == logData.treeType;
         }
+        else if (_item is LootItem lootItem && _data is LootItemData lootData)
+        {
+            // 같은 전리품 종류라면 같은 슬롯에 보관
+            return lootItem.LootType == lootData.lootType;
+        }
 
         return true;
     }
@@ -133,6 +138,10 @@ public class InventoryManager : MonoBehaviour, IInventory
                 var logData = new LogItemData();
                 logData.itemType = _type;
                 return logData;
+            case ItemType.Loot:
+                var lootData = new LootItemData();
+                lootData.itemType = _type;
+                return lootData;
             default:
                 var itemData = new ItemData();
                 itemData.itemType = _type;
