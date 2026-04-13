@@ -1,7 +1,10 @@
+using System;
 using UnityEngine;
 
 public class UIView_MenuPopup : UIView
 {
+    public event Action<DungeonType> DungeonSelectedEvent;
+
     [Header("Sub UI Prefabs")]
     [SerializeField] private GameObject zoneSelectorPrefab;
     [SerializeField] private GameObject zoneInfoPrefab;
@@ -22,6 +25,8 @@ public class UIView_MenuPopup : UIView
         Init_ZoneInfo();
         Init_ZoneSelector();
         Init_ZoneButtons();
+
+        CloseTeleportUI();
     }
 
     private void Init_ZoneInfo()
@@ -72,6 +77,8 @@ public class UIView_MenuPopup : UIView
     {
         Debug.Log($"[UIView_MenuPopup] Entering Dungeon: {_type}");
         // 통신 및 던전 진입 로직 배치
+        DungeonSelectedEvent?.Invoke(_type);
+        CloseTeleportUI();
     }
 
     private void HandleSelectionStatusChanged(bool _isSelected)
@@ -102,16 +109,22 @@ public class UIView_MenuPopup : UIView
     protected override void OnShow()
     {
         base.OnShow();
-
-        zoneSelector?.OnShow();
-        zoneInfo?.OnShow();
     }
 
     protected override void OnHide()
     {
+        base.OnHide();
+    }
+
+    public void TeleportUIOpen()
+    {
+        zoneSelector?.OnShow();
+        zoneInfo?.OnShow();
+    }
+
+    public void CloseTeleportUI()
+    {
         zoneSelector?.OnHide();
         zoneInfo?.OnHide();
-
-        base.OnHide();
     }
 }

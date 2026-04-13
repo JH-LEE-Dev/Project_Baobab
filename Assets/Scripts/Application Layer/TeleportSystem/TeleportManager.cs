@@ -21,24 +21,28 @@ public class TeleportManager : MonoBehaviour
 
     private void SubscribeSignals()
     {
-        signalHub.Subscribe<PortalActivatedSignal>(PortalActivated);
+        signalHub.Subscribe<GoToDungeonSignal>(GoToDungeon);
+        signalHub.Subscribe<GoToHomeSignal>(GoToHome);
     }
 
     private void UnSubscribeSignals()
     {
-        signalHub.UnSubscribe<PortalActivatedSignal>(PortalActivated);
+        signalHub.UnSubscribe<GoToDungeonSignal>(GoToDungeon);
+        signalHub.UnSubscribe<GoToHomeSignal>(GoToHome);
     }
 
-    private void PortalActivated(PortalActivatedSignal portalActivatedSignal)
+    private void GoToDungeon(GoToDungeonSignal goToDungeonSignal)
     {
-        switch (portalActivatedSignal.type)
+        switch (goToDungeonSignal.type)
         {
-            case PortalType.ToDungeonPortal:
+            case DungeonType.Forest1_1:
                 bootStrapProvider.GoToOtherScene("DungeonScene");
                 break;
-            case PortalType.ToTownPortal:
-                bootStrapProvider.GoToOtherScene("TownScene");
-                break;
         }
+    }
+
+    private void GoToHome(GoToHomeSignal goToHomeSignal)
+    {
+        bootStrapProvider.GoToTownScene();
     }
 }

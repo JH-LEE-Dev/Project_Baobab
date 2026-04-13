@@ -7,7 +7,7 @@ using System;
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
-    public event Action<PortalType> PortalActivatedEvent;
+    public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
 
@@ -111,7 +111,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void ClearObjManager()
     {
         portal.gameObject.SetActive(false);
-        OnPortalActivated(PortalType.ToTownPortal);
+        StopGrowth();
+        ClearTrees();
     }
 
     // // 프라이빗 로직 메서드
@@ -314,11 +315,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         portal.PortalActivated += OnPortalActivated;
     }
 
-    private void OnPortalActivated(PortalType _type)
+    private void OnPortalActivated()
     {
-        StopGrowth();
-        ClearTrees();
-        PortalActivatedEvent?.Invoke(_type);
+        PortalActivatedEvent?.Invoke();
     }
 
     private void OnTreeDead(TreeObj _treeObj)

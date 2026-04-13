@@ -5,7 +5,7 @@ using UnityEngine;
 public class TownObjectManager : MonoBehaviour
 {
     //이벤트
-    public event Action<PortalType> PortalActivatedEvent;
+    public event Action PortalActivatedEvent;
 
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -154,6 +154,7 @@ public class TownObjectManager : MonoBehaviour
     private void BindEvents()
     {
         if (portal == null) return;
+
         portal.PortalActivated -= PortalActivated;
         portal.PortalActivated += PortalActivated;
     }
@@ -163,9 +164,13 @@ public class TownObjectManager : MonoBehaviour
         if (portal != null) portal.PortalActivated -= PortalActivated;
     }
 
-    private void PortalActivated(PortalType _type)
+    private void PortalActivated()
     {
-        PortalActivatedEvent?.Invoke(_type);
+        PortalActivatedEvent?.Invoke();
+    }
+
+    public void ClearObjManager()
+    {
         trees = null;
         activeTreesForUpdate.Clear();
     }

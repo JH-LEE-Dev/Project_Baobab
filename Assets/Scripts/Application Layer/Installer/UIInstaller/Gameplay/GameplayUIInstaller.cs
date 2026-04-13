@@ -112,7 +112,6 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_WorldPopup worldPopupUI = uiManager.Open<UIView_WorldPopup>();
 
         UIView_MenuPopup menuPopupUI = uiManager.Open<UIView_MenuPopup>();
-        menuPopupUI.Hide();
 
         UIView_Tent tentUI = uiManager.Open<UIView_Tent>();
 

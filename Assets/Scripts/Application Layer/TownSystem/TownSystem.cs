@@ -85,16 +85,18 @@ public class TownSystem : MonoBehaviour
     private void SubscribeSignals()
     {
         signalHub.Subscribe<InventoryInitializedSignal>(InventoryInitialized);
+        signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<InventoryInitializedSignal>(InventoryInitialized);
+        signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
     }
 
-    private void PortalActivated(PortalType _type)
+    private void PortalActivated()
     {
-        signalHub.Publish(new PortalActivatedSignal(_type));
+        signalHub.Publish(new PortalActivatedSignal());
     }
 
     private void InventoryInitialized(InventoryInitializedSignal inventoryInitializedSignal)
@@ -137,5 +139,11 @@ public class TownSystem : MonoBehaviour
     private void FirstTimeEarnMoney()
     {
         signalHub.Publish(new FirstTimeEarnMoneySignal());
+    }
+
+    private void DungeonSelected(DungeonSelectedSignal dungeonSelectedSignal)
+    {
+        townObjectManager.ClearObjManager();
+        signalHub.Publish(new GoToDungeonSignal(dungeonSelectedSignal.type));
     }
 }

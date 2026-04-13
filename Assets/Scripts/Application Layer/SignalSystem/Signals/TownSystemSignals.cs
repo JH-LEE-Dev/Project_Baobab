@@ -28,3 +28,12 @@ public struct TentInteractSignal
         bInteract = _bInteract;
     }
 }
+
+public struct GoToDungeonSignal
+{
+    public DungeonType type;
+    public GoToDungeonSignal(DungeonType _type)
+    {
+        type = _type;
+    }
+}
