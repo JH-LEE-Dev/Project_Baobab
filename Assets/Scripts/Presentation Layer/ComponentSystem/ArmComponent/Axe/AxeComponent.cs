@@ -1,171 +1,139 @@
 using DG.Tweening;
 using UnityEngine;
-using System.Collections.Generic;
-using System;
-
-[Serializable]
-public struct AxeKeyframe
-{
-    public Transform target;       // 키프레임의 위치와 회전 (Transform)
-    [Range(0.01f, 1f)]
-    public float durationRatio;    // 이 구간이 차지하는 시간 비중 (합계가 1이 되도록 설정)
-    public Ease ease;              // 이 구간의 보간 곡선
-}
 
 public class AxeComponent : WeaponComponent
 {
     // 외부 의존성
-    [Header("Keyframe Settings")]
-    [SerializeField] private List<AxeKeyframe> swingKeyframes = new List<AxeKeyframe>();
-    [SerializeField] private float totalSwingDuration = 0.3f;
+    [Header("Swing Path Points (World)")]
+    [SerializeField] private Transform controlPoint; // 궤적 곡률 제어점
+    [SerializeField] private Transform targetPoint;  // 도착 위치 (타격 지점)
+
+    [Header("Swing Settings")]
+    [SerializeField] private float swingDuration = 0.2f;
+    [SerializeField] private float endRotationZ = 90f;
+    [SerializeField] private Ease swingEase = Ease.InCubic;
 
     [Header("Return Settings")]
-    [SerializeField] private float returnDuration = 0.2f;
+    [SerializeField] private float returnDuration = 0.15f;
     [SerializeField] private Ease returnEase = Ease.OutQuad;
 
     // 내부 의존성
     private bool bAttacked = false;
-    private Sequence attackSeq;
+    private Tween pathTween;
+    private Tween rotateTween;
     
+    // 복귀를 위한 초기 상태 저장
     private Vector3 initialLocalPos;
     private Quaternion initialLocalRot;
 
-    // 내부 의존성
-    private Vector3 initialLocalPosition;
-    private Quaternion initialLocalRotation;
-    private float currentTargetAngle; 
-
+    // 베지어 경로 캐싱 (GC 방지용 고정 배열)
+    // DOTween Bezier Segment: [Control1, Control2, End]
+    private readonly Vector3[] bezierPath = new Vector3[3];
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
 
-    /// <summary>
-    /// 무기 초기화 및 초기 상태 캐싱
-    /// </summary>
-    public override void Initialize()
-    {
-        base.Initialize();
-
-        initialLocalPosition = transform.localPosition;
-        initialLocalRotation = transform.localRotation;
-    }
-    
-    /// <summary>
-    /// 타겟 방향에 따른 애니메이터 및 렌더링 정렬 설정
-    /// </summary>
     public override void SetFacingDir(Transform _attackTransform)
     {
-        if (transform.parent == null || transform.parent.parent == null) return;
-
-        // 마우스 방향 계산
         if (bAttacked) return;
 
+        // Arm 위치에서 attackTransform까지의 방향 벡터 계산
         Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
+
         if (direction.sqrMagnitude < 0.01f) return;
 
-        currentTargetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        if (currentTargetAngle < 0) currentTargetAngle += 360;
-
-        // 애니메이터 방향 인덱스 업데이트 (8방향)
-        if (anim != null)
-        {
-            anim.SetFloat(facingDirHash, Mathf.RoundToInt(currentTargetAngle / 45f) % 8);
-        }
-
-        // Isometric Depth 처리를 위한 정렬 순서 조절
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.sortingOrder = (currentTargetAngle > 0 && currentTargetAngle < 180) ? -1 : 1;
-        }
+        // 8방향 인덱스 계산
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
         anim.SetFloat(facingDirHash, dirIndex);
 
+        // 정렬 레이어 처리
         spriteRenderer.sortingOrder = (angle > 0 && angle < 180) ? -1 : 1;
     }
 
     public override void LeftButtonClicked()
     {
-        if (bAttacked || swingKeyframes == null || swingKeyframes.Count == 0) return;
+        if (bAttacked || null == controlPoint || null == targetPoint) return;
 
         bAttacked = true;
 
-        // 1. 초기 상태 기록
+        // 1. 초기 상태 저장
         initialLocalPos = transform.localPosition;
         initialLocalRot = transform.localRotation;
 
-        if (null != attackSeq && attackSeq.IsActive())
-            attackSeq.Kill();
+        // 2. 좌표 변환 (월드 -> 부모 기준 로컬)
+        // InverseTransformPoint는 부모의 스케일/플립 상태가 이미 반영된 좌표를 반환합니다.
+        Vector3 localControl = transform.parent.InverseTransformPoint(controlPoint.position);
+        Vector3 localTarget = transform.parent.InverseTransformPoint(targetPoint.position);
 
-        attackSeq = DOTween.Sequence();
+        // 베지어 경로 설정 [Control1, Control2, End]
+        bezierPath[0] = localControl;
+        bezierPath[1] = localControl;
+        bezierPath[2] = localTarget;
 
-        // 2. 키프레임 루프를 돌며 시퀀스 구성
-        for (int i = 0; i < swingKeyframes.Count; i++)
-        {
-            AxeKeyframe kf = swingKeyframes[i];
-            if (kf.target == null) continue;
+        KillTweens();
 
-            float stepTime = totalSwingDuration * kf.durationRatio;
-            
-            // 로컬 좌표 및 회전 변환
-            Vector3 targetPos = transform.parent.InverseTransformPoint(kf.target.position);
-            Quaternion targetRot = Quaternion.Inverse(transform.parent.rotation) * kf.target.rotation;
+        // 3. 휘두르기 시작 (현재 로컬 위치에서 목표 로컬 지점까지)
+        pathTween = transform.DOLocalPath(bezierPath, swingDuration, PathType.CubicBezier)
+            .SetEase(swingEase)
+            .OnComplete(OnSwingComplete);
 
-            // 이동과 회전을 동시에 실행 (Append + Join)
-            attackSeq.Append(transform.DOLocalMove(targetPos, stepTime).SetEase(kf.ease));
-            attackSeq.Join(transform.DOLocalRotateQuaternion(targetRot, stepTime).SetEase(kf.ease));
-        }
-
-        // 3. 모든 키프레임 완료 후 복귀 단계로 전환
-        attackSeq.OnComplete(OnSwingFinished);
+        rotateTween = transform.DOLocalRotate(new Vector3(0, 0, endRotationZ), swingDuration, RotateMode.LocalAxisAdd)
+            .SetEase(swingEase);
     }
 
-    private void OnSwingFinished()
+    private void OnSwingComplete()
     {
-        if (null != attackSeq && attackSeq.IsActive())
-            attackSeq.Kill();
+        // 4. 휘두르기 완료 후 원래 위치로 복귀 시작
+        pathTween = transform.DOLocalMove(initialLocalPos, returnDuration)
+            .SetEase(returnEase)
+            .OnComplete(OnReturnComplete);
 
-        attackSeq = DOTween.Sequence();
-
-        // 초기 위치로 부드럽게 복귀
-        attackSeq.Append(transform.DOLocalMove(initialLocalPos, returnDuration).SetEase(returnEase));
-        attackSeq.Join(transform.DOLocalRotateQuaternion(initialLocalRot, returnDuration).SetEase(returnEase));
-
-        attackSeq.OnComplete(OnReturnFinished);
+        rotateTween = transform.DOLocalRotateQuaternion(initialLocalRot, returnDuration)
+            .SetEase(returnEase);
     }
 
-    private void OnReturnFinished()
+    private void OnReturnComplete()
     {
+        // 5. 복귀 완료 후 다음 공격 가능 상태로 전환
         bAttacked = false;
+    }
+
+    private void KillTweens()
+    {
+        if (null != pathTween && pathTween.IsActive()) pathTween.Kill();
+        if (null != rotateTween && rotateTween.IsActive()) rotateTween.Kill();
     }
 
     private void OnDestroy()
     {
-        if (null != attackSeq && attackSeq.IsActive())
-            attackSeq.Kill();
+        KillTweens();
     }
 
     private void OnDrawGizmosSelected()
     {
-        if (swingKeyframes == null || swingKeyframes.Count == 0) return;
+        if (controlPoint == null || targetPoint == null) return;
 
-        Gizmos.color = Color.yellow;
-        Vector3 lastPos = transform.position;
-        
-        for (int i = 0; i < swingKeyframes.Count; i++)
+        Gizmos.color = Color.cyan;
+        Vector3 startPos = transform.position;
+        Vector3 previousPoint = startPos;
+        const int segments = 20;
+
+        for (int i = 1; i <= segments; i++)
         {
-            if (swingKeyframes[i].target == null) continue;
-            
-            Vector3 currentPos = swingKeyframes[i].target.position;
-            Gizmos.DrawLine(lastPos, currentPos);
-            Gizmos.DrawSphere(currentPos, 0.03f);
-            
-            // 방향 표시 (빨간색 선으로 도끼날이 향할 방향 시각화)
-            Gizmos.color = Color.red;
-            Gizmos.DrawRay(currentPos, swingKeyframes[i].target.up * 0.1f);
-            Gizmos.color = Color.yellow;
-            
-            lastPos = currentPos;
+            float t = i / (float)segments;
+            float invT = 1f - t;
+            Vector3 currentPoint = invT * invT * startPos + 
+                                   2f * invT * t * controlPoint.position + 
+                                   t * t * targetPoint.position;
+
+            Gizmos.DrawLine(previousPoint, currentPoint);
+            previousPoint = currentPoint;
         }
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawSphere(targetPoint.position, 0.05f);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawSphere(controlPoint.position, 0.03f);
     }
 }
