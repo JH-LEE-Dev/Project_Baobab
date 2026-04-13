@@ -45,7 +45,7 @@ public class TownSystem : MonoBehaviour
     {
         townObjectManager.ReadyObj();
 
-        if (_sceneChangeData.prevScene == SceneType.Dungeon)
+        if (_sceneChangeData.prevScene == SceneType.DungeonScene)
             signalHub.Publish(new TownStartedSignal(townObjectManager.GetPortalTransform()));
         else
             signalHub.Publish(new TownStartedSignal(townStartPoint));

@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5983813252923583599}
   - component: {fileID: 1256858329457694333}
   - component: {fileID: 5903493271542259228}
+  - component: {fileID: 8858733093728536719}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -47,7 +48,7 @@ Canvas:
   m_GameObject: {fileID: 1833141974581157746}
   m_Enabled: 1
   serializedVersion: 3
-  m_RenderMode: 0
+  m_RenderMode: 1
   m_Camera: {fileID: 0}
   m_PlaneDistance: 100
   m_PixelPerfect: 1
@@ -102,3 +103,16 @@ MonoBehaviour:
   m_BlockingMask:
     serializedVersion: 2
     m_Bits: 4294967295
+--- !u!114 &8858733093728536719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1833141974581157746}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 951ef7dd577f9f44eadf7ca861d7e410, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CanvasEnabler
+  canvas: {fileID: 5983813252923583599}

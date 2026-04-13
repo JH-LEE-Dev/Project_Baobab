@@ -4,7 +4,7 @@ public enum SceneType
     None,
     MainMenu,
     Town,
-    Dungeon,
+    DungeonScene,
     MAX,
 }
 
