@@ -92,6 +92,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     {
         attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
         attackComponent.WeaponModeChangedEvent += WeaponModeChanged;
+
+        armComponent.axeComponent.DeclareAttackStateEvent -= attackComponent.SetbAttack;
+        armComponent.axeComponent.DeclareAttackStateEvent += attackComponent.SetbAttack;
+
+        armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
+        armComponent.axeComponent.AttackEvent += attackComponent.Attack;
     }
 
     private void ReleaseEvents()

@@ -23,6 +23,8 @@ public class AttackComponent : PComponent
 
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
+    private bool bAttack = false;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -62,7 +64,7 @@ public class AttackComponent : PComponent
 
     private void MouseMove(Vector2 _mouseScreenPos)
     {
-        if (characterTransform == null || attackCollider == null)
+        if (bAttack || characterTransform == null || attackCollider == null)
             return;
 
         if (mainCamera == null)
@@ -109,7 +111,7 @@ public class AttackComponent : PComponent
         attackCollider.transform.position = characterPos + direction;
     }
 
-    private void Attack()
+    public void Attack()
     {
         if (attackCollider == null) return;
 
@@ -175,5 +177,10 @@ public class AttackComponent : PComponent
             currentWeaponMode = WeaponMode.Axe;
 
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
+    }
+
+    public void SetbAttack(bool _bAttack)
+    {
+        bAttack = _bAttack;
     }
 }
