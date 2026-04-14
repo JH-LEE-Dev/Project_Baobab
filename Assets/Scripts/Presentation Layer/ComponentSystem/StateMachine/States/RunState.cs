@@ -8,16 +8,25 @@ public class RunState : CharacterState
     private float directionUpdateTimer;
     private const float graceDuration = 0.05f;
 
+    private Vector3Int currentReservedPos;
+
     private readonly RaycastHit2D[] hitBuffer = new RaycastHit2D[5];
 
     public override void Enter()
     {
         bActivated = true;
         character.anim.SetBool(character.isMovingHash, true);
+
+        // 현재 위치 타일 점유
+        currentReservedPos = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        ctx.pathfindGridProvider.Occupy(currentReservedPos);
     }
 
     public override void Exit()
     {
+        // 점유 해제
+        ctx.pathfindGridProvider.Release(currentReservedPos);
+
         directionUpdateTimer = 0f;
         pendingDirection = Vector2.zero;
 
@@ -38,6 +47,18 @@ public class RunState : CharacterState
         }
 
         ApplyMovement();
+        UpdateOccupation();
+    }
+
+    private void UpdateOccupation()
+    {
+        Vector3Int newCell = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        if (newCell != currentReservedPos)
+        {
+            ctx.pathfindGridProvider.Release(currentReservedPos);
+            ctx.pathfindGridProvider.Occupy(newCell);
+            currentReservedPos = newCell;
+        }
     }
 
     protected override void SubscribeEvents()
@@ -122,7 +143,7 @@ public class RunState : CharacterState
         var groundData = character.currentGroundData;
         Vector2 inputDir = GetIsometricVector(ctx.moveInput);
 
-        if (inputDir.sqrMagnitude > 0.001f)
+        if (inputDir.sqrMagnitude > 0.0001f)
             inputDir.Normalize();
 
         float speed = groundData.maxSpeed * ctx.characterStat.speed;
