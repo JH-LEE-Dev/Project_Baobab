@@ -12,9 +12,9 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     float IRifleComponent.durability => durability;
 
-    public override void Initialize()
+    public override void Initialize(ComponentCtx _ctx)
     {
-        base.Initialize();
+        base.Initialize(_ctx);
         
         // 내부 컴포넌트 참조 구성
         rifleAnimation = GetComponent<RifleAnimation>();
