@@ -78,7 +78,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
         stateMachine = new StateMachine();
         ctx = new ComponentCtx();
-        ctx.Initialize(inputManager,statComponent);
+        ctx.Initialize(inputManager, statComponent, environmentProvider.pathfindGridProvider, environmentProvider.tilemapDataProvider);
 
         // 컴포넌트 초기화
         shadowObject.Initialize();
@@ -139,9 +139,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
-        if(_bInDungeon == false)
+        if (_bInDungeon == false)
             armComponent.ResetDurability();
-            
+
         bInDungeon = _bInDungeon;
         anim.SetBool(bInHubHash, !bInDungeon);
         armComponent.SetActivate(bInDungeon);
@@ -237,6 +237,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     {
         bCanAction = !_isAttacking;
         attackComponent.SetbAttack(_isAttacking);
+        UpdateFacingByAttackPoint();
     }
 
     private void SetItemSensorPos() => itemSensorRB.MovePosition(transform.position);

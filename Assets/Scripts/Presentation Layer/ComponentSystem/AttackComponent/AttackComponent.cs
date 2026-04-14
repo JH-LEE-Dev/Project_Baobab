@@ -25,6 +25,7 @@ public class AttackComponent : PComponent
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
     private bool bAttack = false;
+    private Vector2 lastMouseScreenPos;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -65,9 +66,16 @@ public class AttackComponent : PComponent
 
     private void MouseMove(Vector2 _mouseScreenPos)
     {
+        lastMouseScreenPos = _mouseScreenPos;
+
         if (bAttack || characterTransform == null || attackCollider == null)
             return;
 
+        UpdateAttackColliderPosition(_mouseScreenPos);
+    }
+
+    private void UpdateAttackColliderPosition(Vector2 _mouseScreenPos)
+    {
         if (mainCamera == null)
             mainCamera = Camera.main;
 
@@ -76,7 +84,6 @@ public class AttackComponent : PComponent
         float _normalizedY = _mouseScreenPos.y / Screen.height;
 
         // 2. 월드 카메라가 출력 중인 RenderTexture(또는 실제 픽셀) 해상도 기준으로 좌표 리매핑
-        // mainCamera.targetTexture가 설정되어 있다면 해당 텍스처 해상도를 사용합니다.
         float _targetWidth = (mainCamera.targetTexture != null) ? mainCamera.targetTexture.width : mainCamera.pixelWidth;
         float _targetHeight = (mainCamera.targetTexture != null) ? mainCamera.targetTexture.height : mainCamera.pixelHeight;
 
@@ -203,11 +210,11 @@ public class AttackComponent : PComponent
 
     public void SwitchWeaponMode()
     {
-        if (currentWeaponMode == WeaponMode.Axe)
-            currentWeaponMode = WeaponMode.Rifle;
-        else
-            currentWeaponMode = WeaponMode.Axe;
+        if (ctx != null && ctx.bWhileChangingWeapon) return;
 
+        WeaponMode targetMode = (currentWeaponMode == WeaponMode.Axe) ? WeaponMode.Rifle : WeaponMode.Axe;
+        
+        currentWeaponMode = targetMode;
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
 
         if (ctx != null && ctx.characterStat != null)
@@ -232,5 +239,41 @@ public class AttackComponent : PComponent
     public void SetbAttack(bool _bAttack)
     {
         bAttack = _bAttack;
+
+        // 공격이 끝나는 시점에 즉시 위치 업데이트
+        if (!bAttack)
+        {
+            UpdateAttackColliderPosition(lastMouseScreenPos);
+        }
+    }
+
+    public void GoToAxeMode()
+    {
+        if (ctx != null && ctx.bWhileChangingWeapon) return;
+        if (currentWeaponMode == WeaponMode.Axe) return;
+
+        currentWeaponMode = WeaponMode.Axe;
+        WeaponModeChangedEvent?.Invoke(currentWeaponMode);
+
+        if (ctx != null && ctx.characterStat != null)
+        {
+            StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
+            StartCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
+        }
+    }
+
+    public void GoToRifleMode()
+    {
+        if (ctx != null && ctx.bWhileChangingWeapon) return;
+        if (currentWeaponMode == WeaponMode.Rifle) return;
+
+        currentWeaponMode = WeaponMode.Rifle;
+        WeaponModeChangedEvent?.Invoke(currentWeaponMode);
+
+        if (ctx != null && ctx.characterStat != null)
+        {
+            StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
+            StartCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
+        }
     }
 }

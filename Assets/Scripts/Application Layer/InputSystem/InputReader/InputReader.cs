@@ -15,6 +15,8 @@ public class InputReader
     public event Action InteractionKeyPressedEvent;
     public event Action InteractionKeyCanceledEvent;
     public event Action SwitchModeKeyPressedEvent;
+    public event Action GoToAxeModeEvent;
+    public event Action GoToRifleModeEvent;
 
     //내부 의존성
     private InputActionSystem actions;
@@ -39,6 +41,8 @@ public class InputReader
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
             actions.Normal.SwitchMode.performed += SwitchModeKeyPressed;
+            actions.Normal.AxeMode.performed += GoToAxeModeKeyPressed;
+            actions.Normal.RifleMode.performed += GoToRifleModeKeyPressed;
         }
 
         actions.Normal.Enable();
@@ -60,6 +64,8 @@ public class InputReader
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
         actions.Normal.SwitchMode.performed -= SwitchModeKeyPressed;
+        actions.Normal.AxeMode.performed -= GoToAxeModeKeyPressed;
+        actions.Normal.RifleMode.performed -= GoToRifleModeKeyPressed;
     }
 
     public void Pause(bool _bPause)
@@ -124,5 +130,15 @@ public class InputReader
     private void SwitchModeKeyPressed(InputAction.CallbackContext context)
     {
         SwitchModeKeyPressedEvent?.Invoke();
+    }
+
+    private void GoToAxeModeKeyPressed(InputAction.CallbackContext context)
+    {
+        GoToAxeModeEvent?.Invoke();
+    }
+
+    private void GoToRifleModeKeyPressed(InputAction.CallbackContext context)
+    {
+        GoToRifleModeEvent?.Invoke();
     }
 }
