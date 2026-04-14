@@ -19,7 +19,8 @@ public class InputReader
     public event Action GoToAxeModeEvent;
     public event Action GoToRifleModeEvent;
     public event Action ReloadButtonPressedEvent;
-
+    public event Action AimCorrectionKeyPressedEvent;
+    public event Action AimCorrectionKeyCanceledEvent;
     //내부 의존성
     private InputActionSystem actions;
 
@@ -46,6 +47,8 @@ public class InputReader
             actions.Normal.AxeMode.performed += GoToAxeModeKeyPressed;
             actions.Normal.RifleMode.performed += GoToRifleModeKeyPressed;
             actions.Normal.Reload.performed += ReloadButtonPressed;
+            actions.Normal.AimCorrection.performed += AimCorrectionKeyPressed;
+            actions.Normal.AimCorrection.canceled += AimCorrectionKeyCanceled;
         }
 
         actions.Normal.Enable();
@@ -70,6 +73,8 @@ public class InputReader
         actions.Normal.AxeMode.performed -= GoToAxeModeKeyPressed;
         actions.Normal.RifleMode.performed -= GoToRifleModeKeyPressed;
         actions.Normal.Reload.performed -= ReloadButtonPressed;
+        actions.Normal.AimCorrection.performed -= AimCorrectionKeyPressed;
+        actions.Normal.AimCorrection.canceled -= AimCorrectionKeyCanceled;
     }
 
     public void Pause(bool _bPause)
@@ -150,5 +155,15 @@ public class InputReader
     private void ReloadButtonPressed(InputAction.CallbackContext context)
     {
         ReloadButtonPressedEvent?.Invoke();
+    }
+
+    private void AimCorrectionKeyPressed(InputAction.CallbackContext context)
+    {
+        AimCorrectionKeyPressedEvent?.Invoke();
+    }
+
+    private void AimCorrectionKeyCanceled(InputAction.CallbackContext context)
+    {
+        AimCorrectionKeyCanceledEvent?.Invoke();
     }
 }

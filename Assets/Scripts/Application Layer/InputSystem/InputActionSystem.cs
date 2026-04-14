@@ -181,6 +181,15 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""AimCorrection"",
+                    ""type"": ""Button"",
+                    ""id"": ""67315ccc-d343-4f75-9a55-41ae74ba06d9"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -337,6 +346,17 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""action"": ""Reload"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""6f09f443-5826-473b-baf8-2ae645b20531"",
+                    ""path"": ""<Keyboard>/shift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""AimCorrection"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -355,6 +375,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         m_Normal_AxeMode = m_Normal.FindAction("AxeMode", throwIfNotFound: true);
         m_Normal_RifleMode = m_Normal.FindAction("RifleMode", throwIfNotFound: true);
         m_Normal_Reload = m_Normal.FindAction("Reload", throwIfNotFound: true);
+        m_Normal_AimCorrection = m_Normal.FindAction("AimCorrection", throwIfNotFound: true);
     }
 
     ~@InputActionSystem()
@@ -445,6 +466,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Normal_AxeMode;
     private readonly InputAction m_Normal_RifleMode;
     private readonly InputAction m_Normal_Reload;
+    private readonly InputAction m_Normal_AimCorrection;
     /// <summary>
     /// Provides access to input actions defined in input action map "Normal".
     /// </summary>
@@ -496,6 +518,10 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Normal/Reload".
         /// </summary>
         public InputAction @Reload => m_Wrapper.m_Normal_Reload;
+        /// <summary>
+        /// Provides access to the underlying input action "Normal/AimCorrection".
+        /// </summary>
+        public InputAction @AimCorrection => m_Wrapper.m_Normal_AimCorrection;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -552,6 +578,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @Reload.started += instance.OnReload;
             @Reload.performed += instance.OnReload;
             @Reload.canceled += instance.OnReload;
+            @AimCorrection.started += instance.OnAimCorrection;
+            @AimCorrection.performed += instance.OnAimCorrection;
+            @AimCorrection.canceled += instance.OnAimCorrection;
         }
 
         /// <summary>
@@ -593,6 +622,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @Reload.started -= instance.OnReload;
             @Reload.performed -= instance.OnReload;
             @Reload.canceled -= instance.OnReload;
+            @AimCorrection.started -= instance.OnAimCorrection;
+            @AimCorrection.performed -= instance.OnAimCorrection;
+            @AimCorrection.canceled -= instance.OnAimCorrection;
         }
 
         /// <summary>
@@ -703,5 +735,12 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnReload(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "AimCorrection" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAimCorrection(InputAction.CallbackContext context);
     }
 }

@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {
+      "skillType": "Rest",
+      "displayName": "휴식",
+      "description": "이제 텐트에서 휴식할 수 있습니다.",
+      "maxLevel": 1,
+      "levelCosts": [
+        { "level": 1, "moneyType": "Coin", "amount": 0 }
+      ],
+      "gridX": 0,
+      "gridY": 0,
+      "parentSkillTypes": []
+    },
+    {
+      "skillType": "InventoryExpansion1",
+      "displayName": "인벤토리 확장 I",
+      "description": "인벤토리 크기가 2 증가합니다.",
+      "maxLevel": 1,
+      "levelCosts": [
+        { "level": 1, "moneyType": "Coin", "amount": 500 }
+      ],
+      "gridX": 0,
+      "gridY": 2,
+      "parentSkillTypes": [
+        "Rest"
+      ]
+    },
+    {
+      "skillType": "AxeDamage1",
+      "displayName": "도끼 데미지 I",
+      "description": "도끼 데미지 +10%",
+      "maxLevel": 5,
+      "levelCosts": [
+        { "level": 1, "moneyType": "Coin", "amount": 10 },
+        { "level": 2, "moneyType": "Coin", "amount": 10 },
+        { "level": 3, "moneyType": "Coin", "amount": 10 },
+        { "level": 4, "moneyType": "Coin", "amount": 10 },
+        { "level": 5, "moneyType": "Coin", "amount": 10 }
+      ],
+      "gridX": 2,
+      "gridY": 2,
+      "parentSkillTypes": [
+        "Rest"
+      ]
+    },
+    {
+      "skillType": "hunting",
+      "displayName": "수렵",
+      "description": "이제 맵에서 사냥을 할 수 있습니다.",
+      "maxLevel": 1,
+      "levelCosts": [
+        { "level": 1, "moneyType": "Coin", "amount": 20 }
+      ],
+      "gridX": -2,
+      "gridY": 2,
+      "parentSkillTypes": [
+        "Rest"
+      ]
+    }
+  ]
+}

@@ -64,21 +64,17 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         bAttacked = true;
         axeAnimation.PlaySwing(OnAttackImpact);
 
-        Debug.Log("Axe: 공격 시작");
         DeclareAttackStateEvent?.Invoke(true);
     }
 
     private void OnAttackImpact()
     {
-        Debug.Log("Axe: 타격 발생 (중간 지점)");
         AttackEvent?.Invoke();
         axeAnimation.PlayReturn(OnAttackFinish);
     }
 
     private void OnAttackFinish()
     {
-        Debug.Log("Axe: 공격 종료1");
-
         StartCoroutine(nameof(AttackCoolDownRoutine));
     }
 
@@ -87,7 +83,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         yield return new WaitForSeconds(ctx.characterStat.axeAttackCoolTime);
 
         bAttacked = false;
-        Debug.Log("Axe: 공격 종료2");
+
         DeclareAttackStateEvent?.Invoke(false);
 
         if (bLeftButtonClicked)

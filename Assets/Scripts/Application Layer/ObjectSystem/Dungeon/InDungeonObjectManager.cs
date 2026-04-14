@@ -165,9 +165,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         int startIdx = UnityEngine.Random.Range(0, count);
         for (int i = 0; i < count; i++)
         {
-            // 성능 보호를 위해 한 프레임에 너무 많은 타일을 검사하지 않도록 제한 (최대 30회)
-            if (i > 30) break;
-
             int checkIdx = (startIdx + i) % count;
             Vector3 spawnPos = availablePositions[checkIdx];
             Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(spawnPos);
