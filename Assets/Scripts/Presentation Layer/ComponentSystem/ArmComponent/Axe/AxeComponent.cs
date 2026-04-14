@@ -17,12 +17,14 @@ public class AxeComponent : WeaponComponent
 
     public override void SetFacingDir(Transform _attackTransform)
     {
-        if (bAttacked) return;
+        if (bAttacked) 
+            return;
 
         // Arm 위치에서 attackTransform까지의 방향 벡터 계산
         Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
 
-        if (direction.sqrMagnitude < 0.01f) return;
+        if (direction.sqrMagnitude < 0.01f) 
+            return;
 
         // 8방향 인덱스 계산
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -37,18 +39,18 @@ public class AxeComponent : WeaponComponent
 
     public override void LeftButtonClicked()
     {
-        if (bAttacked || null == axeAnimation) return;
+        if (bAttacked || null == axeAnimation) 
+            return;
 
-        // [1. 시작 지점] 휘두르기 시작
         OnAttackStart();
-
-        bAttacked = true;
-        axeAnimation.PlaySwing(OnAttackImpact);
     }
 
     private void OnAttackStart()
     {
         Debug.Log("Axe: 공격 시작");
+
+        bAttacked = true;
+        axeAnimation.PlaySwing(OnAttackImpact);
     }
 
     private void OnAttackImpact()
