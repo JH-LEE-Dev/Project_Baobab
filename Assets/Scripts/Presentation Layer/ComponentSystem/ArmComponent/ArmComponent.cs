@@ -12,8 +12,8 @@ public class ArmComponent : PComponent
     // 캐싱된 해시값
     private WeaponMode currentWeaponMode = WeaponMode.None;
 
-    private AxeComponent axeComponent;
-    private RifleComponent rifleComponent;
+    public AxeComponent axeComponent { get; private set; }
+    public RifleComponent rifleComponent { get; private set; }
     private Vector3 initialLocalPosition;
 
     public WeaponComponent currentWeapon { get; private set; }
@@ -101,7 +101,7 @@ public class ArmComponent : PComponent
 
         Vector2 direction = (attackTransform.position - transform.position);
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-        
+
         // 0~360도로 변환 (0: 우, 90: 상, 180: 좌, 270: 하)
         if (angle < 0) angle += 360f;
 

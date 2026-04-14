@@ -167,3 +167,11 @@ public enum WeaponMode
     Axe,
     Rifle,
 }
+
+public enum MoneyType
+{
+    None,
+    Coin,
+    Carrot,
+    Max
+}

@@ -1,7 +1,11 @@
+using System;
 using UnityEngine;
 
 public class AxeComponent : WeaponComponent
 {
+    public event Action<bool> DeclareAttackStateEvent;
+    public event Action AttackEvent;
+
     // 내부 의존성
     private AxeAnimation axeAnimation;
     private bool bAttacked = false;
@@ -10,7 +14,7 @@ public class AxeComponent : WeaponComponent
     public override void Initialize()
     {
         base.Initialize();
-        
+
         // 내부 컴포넌트 참조 구성
         axeAnimation = GetComponent<AxeAnimation>();
     }
@@ -49,19 +53,20 @@ public class AxeComponent : WeaponComponent
     private void OnAttackStart()
     {
         Debug.Log("Axe: 공격 시작");
+        DeclareAttackStateEvent?.Invoke(true);
     }
 
     private void OnAttackImpact()
     {
         Debug.Log("Axe: 타격 발생 (중간 지점)");
-
+        AttackEvent?.Invoke();
         axeAnimation.PlayReturn(OnAttackFinish);
     }
 
     private void OnAttackFinish()
     {
         Debug.Log("Axe: 공격 종료");
-        
+        DeclareAttackStateEvent?.Invoke(false);
         bAttacked = false;
     }
 }
