@@ -1,16 +1,23 @@
+using System;
 using UnityEngine;
 
-public class AxeComponent : WeaponComponent
+public class AxeComponent : WeaponComponent, IAxeComponent
 {
+    public event Action<bool> DeclareAttackStateEvent;
+    public event Action AttackEvent;
+
     // 내부 의존성
     private AxeAnimation axeAnimation;
     private bool bAttacked = false;
+    private bool bLeftButtonClicked = false;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
 
-    public override void Initialize()
+    float IAxeComponent.durability => durability;
+
+    public override void Initialize(ComponentCtx _ctx)
     {
-        base.Initialize();
-        
+        base.Initialize(_ctx);
+
         // 내부 컴포넌트 참조 구성
         axeAnimation = GetComponent<AxeAnimation>();
     }
@@ -39,31 +46,58 @@ public class AxeComponent : WeaponComponent
 
     public override void LeftButtonClicked()
     {
-        if (bAttacked || null == axeAnimation) 
-            return;
+        if (bAttacked || null == axeAnimation || bCanAction == false || durability == 0f || ctx.bWhileChangingWeapon == true) return;
+
+        bLeftButtonClicked = true;
 
         OnAttackStart();
     }
 
+    public override void LeftButtonReleased()
+    {
+        bLeftButtonClicked = false;
+    }
+
     private void OnAttackStart()
     {
-        Debug.Log("Axe: 공격 시작");
-
         bAttacked = true;
         axeAnimation.PlaySwing(OnAttackImpact);
+
+        Debug.Log("Axe: 공격 시작");
+        DeclareAttackStateEvent?.Invoke(true);
     }
 
     private void OnAttackImpact()
     {
         Debug.Log("Axe: 타격 발생 (중간 지점)");
-
+        AttackEvent?.Invoke();
         axeAnimation.PlayReturn(OnAttackFinish);
     }
 
     private void OnAttackFinish()
     {
-        Debug.Log("Axe: 공격 종료");
-        
+        StartCoroutine(nameof(AttackCoolDownRoutine));
+    }
+
+    private System.Collections.IEnumerator AttackCoolDownRoutine()
+    {
+        yield return new WaitForSeconds(ctx.characterStat.axeAttackCoolTime);
+
         bAttacked = false;
+        Debug.Log("Axe: 공격 종료");
+        DeclareAttackStateEvent?.Invoke(false);
+
+        if (bLeftButtonClicked)
+        {
+            OnAttackStart();
+        }
+    }
+
+    public override void DecreaseDurability()
+    {
+        durability -= ctx.characterStat.axeDurabilityDecAmount;
+
+        if (durability < 0f)
+            durability = 0f;
     }
 }

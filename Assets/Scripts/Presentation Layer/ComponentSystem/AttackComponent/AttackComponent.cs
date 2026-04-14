@@ -1,9 +1,9 @@
 using System;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class AttackComponent : PComponent
 {
+    public event Action AttackSuccessEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
     //외부 의존성
     private Camera mainCamera;
@@ -13,6 +13,7 @@ public class AttackComponent : PComponent
     [SerializeField] private float attackDamage = 10f; // 공격 데미지
     [SerializeField] private float maxAttackDistance = 2.0f; // 캐릭터로부터 공격 콜라이더가 떨어질 수 있는 최대 거리
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (Tree 등)
+    [SerializeField] private bool bAttackOnlyNearest = true; // 가장 가까운 대상 하나만 공격할지 여부
 
     private Collider2D attackCollider;
     private Transform characterTransform;
@@ -22,6 +23,8 @@ public class AttackComponent : PComponent
     private ContactFilter2D contactFilter;
 
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
+
+    private bool bAttack = false;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -62,7 +65,7 @@ public class AttackComponent : PComponent
 
     private void MouseMove(Vector2 _mouseScreenPos)
     {
-        if (characterTransform == null || attackCollider == null)
+        if (bAttack || characterTransform == null || attackCollider == null)
             return;
 
         if (mainCamera == null)
@@ -109,19 +112,50 @@ public class AttackComponent : PComponent
         attackCollider.transform.position = characterPos + direction;
     }
 
-    private void Attack()
+    public void Attack()
     {
         if (attackCollider == null) return;
 
         // GC Alloc 없이 충돌체 탐지
         int hitCount = attackCollider.Overlap(contactFilter, results);
+        if (hitCount <= 0) return;
 
-        for (int i = 0; i < hitCount; i++)
+        if (bAttackOnlyNearest)
         {
-            // IDamageable 인터페이스가 있는지 확인 후 데미지 처리
-            if (results[i].TryGetComponent(out IDamageable damageable))
+            IDamageable nearestDamageable = null;
+            float minDistanceSqr = float.MaxValue;
+            Vector3 attackPos = attackCollider.transform.position;
+
+            for (int i = 0; i < hitCount; i++)
             {
-                damageable.TakeDamage(attackDamage);
+                if (results[i].TryGetComponent(out IDamageable damageable))
+                {
+                    // 거리의 제곱을 비교하여 가장 가까운 대상 탐색 (성능 최적화)
+                    float distSqr = (results[i].transform.position - attackPos).sqrMagnitude;
+                    if (distSqr < minDistanceSqr)
+                    {
+                        minDistanceSqr = distSqr;
+                        nearestDamageable = damageable;
+                    }
+                }
+            }
+
+            if (nearestDamageable != null)
+            {
+                nearestDamageable.TakeDamage(attackDamage);
+                AttackSuccessEvent?.Invoke();
+            }
+        }
+        else
+        {
+            for (int i = 0; i < hitCount; i++)
+            {
+                // IDamageable 인터페이스가 있는지 확인 후 데미지 처리
+                if (results[i].TryGetComponent(out IDamageable damageable))
+                {
+                    damageable.TakeDamage(attackDamage);
+                    AttackSuccessEvent?.Invoke();
+                }
             }
         }
     }
@@ -175,5 +209,28 @@ public class AttackComponent : PComponent
             currentWeaponMode = WeaponMode.Axe;
 
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
+
+        if (ctx != null && ctx.characterStat != null)
+        {
+            StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
+            StartCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
+        }
+    }
+
+    private System.Collections.IEnumerator WeaponChangeSpeedModifierRoutine()
+    {
+        float _originalSpeed = ctx.characterStat.speed;
+        ctx.characterStat.speed = 0.5f;
+        ctx.bWhileChangingWeapon = true;
+
+        yield return new WaitForSeconds(ctx.characterStat.weaponChangeCoolTime);
+
+        ctx.bWhileChangingWeapon = false;
+        ctx.characterStat.speed = _originalSpeed;
+    }
+
+    public void SetbAttack(bool _bAttack)
+    {
+        bAttack = _bAttack;
     }
 }

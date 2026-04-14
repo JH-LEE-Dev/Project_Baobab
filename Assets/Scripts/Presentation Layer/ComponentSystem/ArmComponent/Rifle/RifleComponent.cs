@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class RifleComponent : WeaponComponent
+public class RifleComponent : WeaponComponent, IRifleComponent
 {
     // 내부 의존성
     private RifleAnimation rifleAnimation;
@@ -9,6 +9,8 @@ public class RifleComponent : WeaponComponent
 
     private bool bReady = false;
     private bool bFired = false;
+
+    float IRifleComponent.durability => durability;
 
     public override void Initialize()
     {
@@ -68,6 +70,9 @@ public class RifleComponent : WeaponComponent
 
     public override void LeftButtonClicked()
     {
+        if (bCanAction == false)
+            return;
+
         if (bReady == true)
         {
             if (bFired == false)
@@ -102,6 +107,15 @@ public class RifleComponent : WeaponComponent
     private void OnFireFinish()
     {
         Debug.Log("Rifle: 발사 동작 완료");
+
+        bReady = false;
+        bFired = false;
+        anim.SetBool(bReadyHash, bReady);
+    }
+
+    public override void SetEnable(bool _boolean)
+    {
+        base.SetEnable(_boolean);
 
         bReady = false;
         bFired = false;
