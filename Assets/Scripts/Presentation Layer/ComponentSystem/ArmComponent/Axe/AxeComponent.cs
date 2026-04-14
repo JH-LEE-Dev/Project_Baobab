@@ -27,7 +27,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         // Arm 위치에서 attackTransform까지의 방향 벡터 계산
         Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
 
-        if (direction.sqrMagnitude < 0.01f) return;
+        if (direction.sqrMagnitude < 0.01f) 
+            return;
 
         // 8방향 인덱스 계산
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -48,7 +49,6 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         bLeftButtonClicked = true;
 
-        // [1. 시작 지점] 휘두르기 시작
         OnAttackStart();
     }
 
@@ -75,6 +75,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void OnAttackFinish()
     {
+        Debug.Log("Axe: 공격 종료1");
+
         StartCoroutine(nameof(AttackCoolDownRoutine));
     }
 
@@ -83,7 +85,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         yield return new WaitForSeconds(ctx.characterStat.axeAttackCoolTime);
 
         bAttacked = false;
-        Debug.Log("Axe: 공격 종료");
+        Debug.Log("Axe: 공격 종료2");
         DeclareAttackStateEvent?.Invoke(false);
 
         if (bLeftButtonClicked)

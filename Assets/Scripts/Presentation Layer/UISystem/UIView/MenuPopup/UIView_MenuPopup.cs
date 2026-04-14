@@ -47,7 +47,6 @@ public class UIView_MenuPopup : UIView
 
         if (null != zoneSelector)
         {
-            // 수정: Action<DungeonType>을 받도록 변경된 Initialize 호출
             zoneSelector.Initialize(5, HandleZoneChanged, zoneDatabase, zoneInfo, HandleSelectionStatusChanged);
             zoneSelector.OpenRegion(0, 3);
             zoneSelector.UnlockZone(0, 0);
