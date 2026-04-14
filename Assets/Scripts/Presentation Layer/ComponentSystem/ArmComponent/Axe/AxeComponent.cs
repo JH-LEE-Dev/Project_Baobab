@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class AxeComponent : WeaponComponent
+public class AxeComponent : WeaponComponent, IAxeComponent
 {
     public event Action<bool> DeclareAttackStateEvent;
     public event Action AttackEvent;
@@ -9,11 +9,14 @@ public class AxeComponent : WeaponComponent
     // 내부 의존성
     private AxeAnimation axeAnimation;
     private bool bAttacked = false;
+    private bool bLeftButtonClicked = false;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
 
-    public override void Initialize()
+    float IAxeComponent.durability => durability;
+
+    public override void Initialize(ComponentCtx _ctx)
     {
-        base.Initialize();
+        base.Initialize(_ctx);
 
         // 내부 컴포넌트 참조 구성
         axeAnimation = GetComponent<AxeAnimation>();
@@ -41,17 +44,24 @@ public class AxeComponent : WeaponComponent
 
     public override void LeftButtonClicked()
     {
-        if (bAttacked || null == axeAnimation) return;
+        if (bAttacked || null == axeAnimation || bCanAction == false || durability == 0f || ctx.bWhileChangingWeapon == true) return;
+
+        bLeftButtonClicked = true;
 
         // [1. 시작 지점] 휘두르기 시작
         OnAttackStart();
+    }
 
-        bAttacked = true;
-        axeAnimation.PlaySwing(OnAttackImpact);
+    public override void LeftButtonReleased()
+    {
+        bLeftButtonClicked = false;
     }
 
     private void OnAttackStart()
     {
+        bAttacked = true;
+        axeAnimation.PlaySwing(OnAttackImpact);
+
         Debug.Log("Axe: 공격 시작");
         DeclareAttackStateEvent?.Invoke(true);
     }
@@ -65,8 +75,28 @@ public class AxeComponent : WeaponComponent
 
     private void OnAttackFinish()
     {
+        StartCoroutine(nameof(AttackCoolDownRoutine));
+    }
+
+    private System.Collections.IEnumerator AttackCoolDownRoutine()
+    {
+        yield return new WaitForSeconds(ctx.characterStat.axeAttackCoolTime);
+
+        bAttacked = false;
         Debug.Log("Axe: 공격 종료");
         DeclareAttackStateEvent?.Invoke(false);
-        bAttacked = false;
+
+        if (bLeftButtonClicked)
+        {
+            OnAttackStart();
+        }
+    }
+
+    public override void DecreaseDurability()
+    {
+        durability -= ctx.characterStat.axeDurabilityDecAmount;
+
+        if (durability < 0f)
+            durability = 0f;
     }
 }

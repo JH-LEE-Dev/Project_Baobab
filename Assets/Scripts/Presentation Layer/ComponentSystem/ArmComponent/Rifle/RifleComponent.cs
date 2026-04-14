@@ -1,12 +1,14 @@
 using UnityEngine;
 
-public class RifleComponent : WeaponComponent
+public class RifleComponent : WeaponComponent, IRifleComponent
 {
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     private readonly int bReadyHash = Animator.StringToHash("bReady");
 
     private bool bReady = false;
     private bool bFired = false;
+
+    float IRifleComponent.durability => durability;
 
     public override void SetFacingDir(Transform _attackTransform)
     {
@@ -56,6 +58,9 @@ public class RifleComponent : WeaponComponent
 
     public override void LeftButtonClicked()
     {
+        if (bCanAction == false)
+            return;
+
         if (bReady == true)
         {
             if (bFired == false)
@@ -76,6 +81,15 @@ public class RifleComponent : WeaponComponent
         bFired = true;
 
         //발사 애니메이션이 끝나면 실행할 코드
+        bReady = false;
+        bFired = false;
+        anim.SetBool(bReadyHash, bReady);
+    }
+
+    public override void SetEnable(bool _boolean)
+    {
+        base.SetEnable(_boolean);
+
         bReady = false;
         bFired = false;
         anim.SetBool(bReadyHash, bReady);

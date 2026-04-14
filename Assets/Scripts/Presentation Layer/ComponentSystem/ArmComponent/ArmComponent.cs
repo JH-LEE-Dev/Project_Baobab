@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class ArmComponent : PComponent
+public class ArmComponent : PComponent, IArmComponent
 {
     // 내부 의존성
 
@@ -18,6 +18,10 @@ public class ArmComponent : PComponent
 
     public WeaponComponent currentWeapon { get; private set; }
 
+    IAxeComponent IArmComponent.axeComponent => axeComponent;
+
+    IRifleComponent IArmComponent.rifleComponent => rifleComponent;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -26,8 +30,8 @@ public class ArmComponent : PComponent
 
         axeComponent = GetComponentInChildren<AxeComponent>();
         rifleComponent = GetComponentInChildren<RifleComponent>();
-        axeComponent.Initialize();
-        rifleComponent.Initialize();
+        axeComponent.Initialize(ctx);
+        rifleComponent.Initialize(ctx);
         axeComponent.SetEnable(false);
         rifleComponent.SetEnable(false);
 
@@ -63,11 +67,16 @@ public class ArmComponent : PComponent
     {
         ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
         ctx.inputManager.inputReader.MouseClickEvent += LeftButtonClicked;
+
+        ctx.inputManager.inputReader.MouseReleaseEvent -= LeftButtonReleased;
+        ctx.inputManager.inputReader.MouseReleaseEvent += LeftButtonReleased;
     }
 
     private void ReleaseEvents()
     {
         ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
+        
+        ctx.inputManager.inputReader.MouseReleaseEvent -= LeftButtonReleased;
     }
 
     private void UpdateRotation()
@@ -134,6 +143,11 @@ public class ArmComponent : PComponent
         currentWeapon.LeftButtonClicked();
     }
 
+    private void LeftButtonReleased()
+    {
+        currentWeapon.LeftButtonReleased();
+    }
+
     public void WeaponModeChanged(WeaponMode _weaponMode)
     {
         currentWeaponMode = _weaponMode;
@@ -150,5 +164,11 @@ public class ArmComponent : PComponent
             axeComponent.SetEnable(false);
             currentWeapon.SetEnable(true);
         }
+    }
+
+    public void ResetDurability()
+    {
+        axeComponent.ResetDurability();
+        rifleComponent.ResetDurability();
     }
 }

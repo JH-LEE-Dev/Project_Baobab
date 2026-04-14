@@ -1,9 +1,7 @@
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class RunState : CharacterState
 {
-    private Vector2 moveInput;
     private Vector2 lastVisualInput;
 
     private Vector2 pendingDirection;
@@ -20,7 +18,6 @@ public class RunState : CharacterState
 
     public override void Exit()
     {
-        moveInput = Vector2.zero;
         directionUpdateTimer = 0f;
         pendingDirection = Vector2.zero;
 
@@ -34,6 +31,12 @@ public class RunState : CharacterState
 
     public override void FixedUpdate()
     {
+        if (character.bCanAction == false)
+        {
+            stateMachine.ChangeState<IdleState>();
+            return;
+        }
+
         ApplyMovement();
     }
 
@@ -55,7 +58,7 @@ public class RunState : CharacterState
         if (bActivated == false)
             return;
 
-        moveInput = _input;
+        ctx.moveInput = _input;
 
         if (_input == Vector2.zero)
         {
@@ -113,13 +116,16 @@ public class RunState : CharacterState
 
     private void ApplyMovement()
     {
+        if (character.bCanAction == false)
+            return;
+
         var groundData = character.currentGroundData;
-        Vector2 inputDir = GetIsometricVector(moveInput);
+        Vector2 inputDir = GetIsometricVector(ctx.moveInput);
 
         if (inputDir.sqrMagnitude > 0.001f)
             inputDir.Normalize();
 
-        float speed = groundData.maxSpeed;
+        float speed = groundData.maxSpeed * ctx.characterStat.speed;
         Vector2 targetVel = inputDir * speed;
         CircleCollider2D circleCol = character.col;
         character.rb.linearVelocity = Vector2.MoveTowards(

@@ -10,6 +10,7 @@ public class InputReader
     public event Action InventoryKeyEvent;
 
     public event Action MouseClickEvent;
+    public event Action MouseReleaseEvent;
     public event Action ESCButtonPressedEvent;
     public event Action InteractionKeyPressedEvent;
     public event Action InteractionKeyCanceledEvent;
@@ -33,6 +34,7 @@ public class InputReader
             actions.Normal.Move.canceled += OnMove;
             actions.Normal.Mouse.performed += OnMouseMove;
             actions.Normal.Click.performed += OnMouseClick;
+            actions.Normal.Click.canceled += OnMouseReleased;
             actions.Normal.Inventory.performed += OnInventoryKeyPressed;
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
@@ -53,6 +55,7 @@ public class InputReader
         actions.Normal.Move.canceled -= OnMove;
         actions.Normal.Mouse.performed -= OnMouseMove;
         actions.Normal.Click.performed -= OnMouseClick;
+        actions.Normal.Click.canceled -= OnMouseReleased;
         actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
@@ -68,7 +71,7 @@ public class InputReader
     {
         if (bPause)
             return;
-            
+
         Vector2 move = context.ReadValue<Vector2>();
 
         MoveEvent?.Invoke(move);
@@ -91,6 +94,11 @@ public class InputReader
     private void OnMouseClick(InputAction.CallbackContext context)
     {
         MouseClickEvent?.Invoke();
+    }
+
+    private void OnMouseReleased(InputAction.CallbackContext context)
+    {
+        MouseReleaseEvent?.Invoke();
     }
 
     private void ClearAllEvent()
