@@ -20,6 +20,12 @@ public class RifleComponent : WeaponComponent
 
     public override void SetFacingDir(Transform _attackTransform)
     {
+        // 타겟 정보 전달 (Animation에서 관리)
+        if (null != rifleAnimation)
+        {
+            rifleAnimation.SetTarget(_attackTransform);
+        }
+
         // 타겟 방향 벡터 계산
         Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
 
@@ -79,8 +85,7 @@ public class RifleComponent : WeaponComponent
 
     private void Fire()
     {
-        if (null == rifleAnimation) 
-            return;
+        if (null == rifleAnimation) return;
 
         bFired = true;
 
