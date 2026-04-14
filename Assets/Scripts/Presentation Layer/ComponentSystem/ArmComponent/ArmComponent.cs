@@ -76,6 +76,12 @@ public class ArmComponent : PComponent, IArmComponent
 
         ctx.inputManager.inputReader.ReloadButtonPressedEvent -= rifleComponent.Reload;
         ctx.inputManager.inputReader.ReloadButtonPressedEvent += rifleComponent.Reload;
+
+        ctx.inputManager.inputReader.AimCorrectionKeyPressedEvent -= rifleComponent.ActivateAimCorrection;
+        ctx.inputManager.inputReader.AimCorrectionKeyPressedEvent += rifleComponent.ActivateAimCorrection;
+
+        ctx.inputManager.inputReader.AimCorrectionKeyCanceledEvent -= rifleComponent.DeActivateAimCorrection;
+        ctx.inputManager.inputReader.AimCorrectionKeyCanceledEvent += rifleComponent.DeActivateAimCorrection;
     }
 
     private void ReleaseEvents()
@@ -87,6 +93,10 @@ public class ArmComponent : PComponent, IArmComponent
         ctx.inputManager.inputReader.MouseReleaseEvent -= LeftButtonReleased;
 
         ctx.inputManager.inputReader.ReloadButtonPressedEvent -= rifleComponent.Reload;
+
+        ctx.inputManager.inputReader.AimCorrectionKeyPressedEvent -= rifleComponent.ActivateAimCorrection;
+        
+        ctx.inputManager.inputReader.AimCorrectionKeyCanceledEvent -= rifleComponent.DeActivateAimCorrection;
     }
 
     private void UpdateRotation()
