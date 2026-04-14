@@ -53,7 +53,6 @@ public class AxeComponent : WeaponComponent
 
     private void OnAttackImpact()
     {
-        // [2. 중간 지점] 타격 발생 (나무를 타격했다!)
         Debug.Log("Axe: 타격 발생 (중간 지점)");
 
         axeAnimation.PlayReturn(OnAttackFinish);
@@ -61,7 +60,6 @@ public class AxeComponent : WeaponComponent
 
     private void OnAttackFinish()
     {
-        // [3. 끝나는 지점] 복귀 완료
         Debug.Log("Axe: 공격 종료");
         
         bAttacked = false;
