@@ -7,6 +7,7 @@ public class RifleComponent : WeaponComponent
     private readonly int bReadyHash = Animator.StringToHash("bReady");
 
     private bool bReady = false;
+    private bool bFired = false;
 
     public override void SetFacingDir(Transform _attackTransform)
     {
@@ -56,8 +57,28 @@ public class RifleComponent : WeaponComponent
 
     public override void LeftButtonClicked()
     {
-        bReady = !bReady;
+        if (bReady == true)
+        {
+            if (bFired == false)
+            {
+                Fire();
+            }
+        }
+        else
+        {
+            bReady = true;
 
+            anim.SetBool(bReadyHash, bReady);
+        }
+    }
+
+    private void Fire()
+    {
+        bFired = true;
+
+        //발사 애니메이션이 끝나면 실행할 코드
+        bReady = false;
+        bFired = false;
         anim.SetBool(bReadyHash, bReady);
     }
 }
