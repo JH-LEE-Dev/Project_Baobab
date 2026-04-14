@@ -1,8 +1,9 @@
 using System;
 using UnityEngine;
 
-public class Animal : MonoBehaviour
+public class Animal : MonoBehaviour, IDamageable
 {
+    public event Action<Animal> AnimalIsDeadEvent;
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
 
@@ -47,6 +48,10 @@ public class Animal : MonoBehaviour
 
     public AnimalAnimValueHandler animalAnimValueHandler { get; private set; }
 
+    private EHealthComponent healthComponent;
+
+    public bool bDead { get; private set; } = false;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -61,6 +66,8 @@ public class Animal : MonoBehaviour
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
         pathFindComponent = GetComponentInChildren<PathFindComponent>();
+        healthComponent = GetComponentInChildren<EHealthComponent>();
+        healthComponent.Initialize();
 
         if (characterSensorProxy != null)
         {
@@ -140,6 +147,7 @@ public class Animal : MonoBehaviour
     {
         AddState(new AS_IdleState());
         AddState(new AS_RunState());
+        AddState(new AS_DeadState());
 
         // 초기 상태 설정
         stateMachine.ChangeState<AS_IdleState>();
@@ -235,5 +243,28 @@ public class Animal : MonoBehaviour
             playerTransform = null;
             bRunAway = false;
         }
+    }
+
+    public void TakeDamage(float _damage)
+    {
+        healthComponent.DecreaseHealth(_damage);
+
+        if (healthComponent.GetCurrentHealth() == 0f)
+        {
+            stateMachine.ChangeState<AS_DeadState>();
+            bDead = true;
+            AnimalIsDeadEvent?.Invoke(this);
+        }
+    }
+
+    public void Reset()
+    {
+        bDead = false;
+
+        if (healthComponent != null)
+            healthComponent.Reset();
+
+        if (stateMachine != null)
+            stateMachine.ChangeState<AS_IdleState>();
     }
 }

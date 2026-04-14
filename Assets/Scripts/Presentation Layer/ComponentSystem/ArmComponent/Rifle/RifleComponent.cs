@@ -7,6 +7,11 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     public event Action AttackCoolTimeStartEvent;
     public event Action ReloadStartEvent;
 
+    //외부 의존성
+    [SerializeField] private Transform muzzlePoint;
+
+    private BulletObjManager bulletObjManager;
+
     // 내부 의존성
     private RifleAnimation rifleAnimation;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
@@ -29,6 +34,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         // 내부 컴포넌트 참조 구성
         rifleAnimation = GetComponent<RifleAnimation>();
+        bulletObjManager = GetComponentInChildren<BulletObjManager>();
+        bulletObjManager.Initialize();
 
         mag = ctx.characterStat.magCap;
         ammo = ctx.characterStat.ammoCap;
@@ -139,6 +146,15 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     {
         if (null == rifleAnimation || mag == 0 || bReload == true) return;
 
+        // 1. 총알 생성 및 발사
+        if (bulletObjManager != null && muzzlePoint != null)
+        {
+            // muzzlePoint의 회전값에 오른쪽으로 90도 회전(Z축 기준 -90도)을 추가
+            Quaternion fireRotation = muzzlePoint.rotation * Quaternion.Euler(0, 0, -90f);
+            bulletObjManager.GetBullet(muzzlePoint.position, fireRotation);
+        }
+
+        // 2. 후속 처리
         DecreaseMagAmmo();
         bFired = true;
 
@@ -147,7 +163,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void OnFireStart()
     {
-        Debug.Log("Rifle: 발사 시작");
         DeclareAttackStateEvent?.Invoke(true);
 
         rifleAnimation.PlayRecoil(OnFireFinish);
@@ -155,7 +170,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void OnFireFinish()
     {
-        Debug.Log("Rifle: 발사 동작 완료");
         AttackCoolTimeStartEvent?.Invoke();
         StartCoroutine(nameof(FireAfterDelayRoutine));
     }
@@ -171,10 +185,10 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bInCoolDown = false;
         anim.SetBool(bReadyHash, bReady);
 
+        EnterReady(false);
         // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
         if (bLeftButtonClicked)
         {
-            EnterReady(false);
             Fire();
         }
     }
@@ -240,7 +254,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         mag = amount;
         bReload = false;
-        Debug.Log("Rifle: 재장전 완료");
     }
 
     public void ResetAmmo()
