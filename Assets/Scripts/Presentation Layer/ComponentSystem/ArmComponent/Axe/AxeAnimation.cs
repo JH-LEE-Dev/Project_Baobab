@@ -17,36 +17,43 @@ public class AxeAnimation : MonoBehaviour
     // 내부 의존성
     private Tween rotateTween;
     private Quaternion initialLocalRot;
-    private Action onCompleteCallback;
+    private Action onSwingComplete;
+    private Action onReturnComplete;
 
     public void PlaySwing(Action _onComplete)
     {
         // 1. 초기 회전 상태 저장
         initialLocalRot = transform.localRotation;
-        onCompleteCallback = _onComplete;
+        onSwingComplete = _onComplete;
 
         KillTweens();
 
-        // 2. 휘두르기 회전 시작 (람다 대신 기명 메서드 호출)
+        // 2. 휘두르기 회전 시작
         rotateTween = transform.DOLocalRotate(new Vector3(0, 0, endRotationZ), swingDuration, RotateMode.LocalAxisAdd)
             .SetEase(swingEase)
-            .OnComplete(NotifyComplete);
+            .OnComplete(NotifySwingComplete);
     }
 
     public void PlayReturn(Action _onComplete)
     {
-        onCompleteCallback = _onComplete;
+        onReturnComplete = _onComplete;
 
-        // 3. 원래 회전으로 복귀 시작 (람다 대신 기명 메서드 호출)
+        // 3. 원래 회전으로 복귀 시작
         rotateTween = transform.DOLocalRotateQuaternion(initialLocalRot, returnDuration)
             .SetEase(returnEase)
-            .OnComplete(NotifyComplete);
+            .OnComplete(NotifyReturnComplete);
     }
 
-    private void NotifyComplete()
+    private void NotifySwingComplete()
     {
-        onCompleteCallback?.Invoke();
-        onCompleteCallback = null;
+        onSwingComplete?.Invoke();
+        onSwingComplete = null;
+    }
+
+    private void NotifyReturnComplete()
+    {
+        onReturnComplete?.Invoke();
+        onReturnComplete = null;
     }
 
     public void KillTweens()

@@ -76,6 +76,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void OnAttackFinish()
     {
+        Debug.Log("Axe: 공격 종료1");
+
         StartCoroutine(nameof(AttackCoolDownRoutine));
     }
 
@@ -84,7 +86,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         yield return new WaitForSeconds(ctx.characterStat.axeAttackCoolTime);
 
         bAttacked = false;
-        Debug.Log("Axe: 공격 종료");
+        Debug.Log("Axe: 공격 종료2");
         DeclareAttackStateEvent?.Invoke(false);
 
         if (bLeftButtonClicked)
