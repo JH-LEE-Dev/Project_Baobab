@@ -34,7 +34,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     // 조준 보정을 위한 변수
     private readonly Collider2D[] results = new Collider2D[10];
-    private int animalLayerMask;
+    private ContactFilter2D animalFilter;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -48,8 +48,9 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         mag = ctx.characterStat.magCap;
         ammo = ctx.characterStat.ammoCap;
 
-        // 레이어 마스크 미리 캐싱
-        animalLayerMask = LayerMask.GetMask("Animal");
+        // 조준 보정용 필터 설정
+        animalFilter.useLayerMask = true;
+        animalFilter.SetLayerMask(LayerMask.GetMask("Animal"));
     }
 
     public override void SetFacingDir(Transform _attackTransform)
@@ -169,7 +170,9 @@ public class RifleComponent : WeaponComponent, IRifleComponent
                 // 조준 보정 로직: attackTransform 주변의 Animal 탐색
                 Vector2 searchPos = attackTransform.position;
                 float radius = mouseCol != null ? mouseCol.radius : 1f;
-                int count = Physics2D.OverlapCircleNonAlloc(searchPos, radius, results, animalLayerMask);
+                
+                // 최신 Non-Alloc 방식인 ContactFilter2D 사용
+                int count = Physics2D.OverlapCircle(searchPos, radius, animalFilter, results);
 
                 if (count > 0)
                 {
