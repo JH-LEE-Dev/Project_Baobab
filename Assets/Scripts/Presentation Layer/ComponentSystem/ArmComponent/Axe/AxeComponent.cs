@@ -39,21 +39,31 @@ public class AxeComponent : WeaponComponent
     {
         if (bAttacked || null == axeAnimation) return;
 
+        // [1. 시작 지점] 휘두르기 시작
+        OnAttackStart();
+
         bAttacked = true;
-
-        // 1. 휘두르기 시작
-        axeAnimation.PlaySwing(OnSwingComplete);
+        axeAnimation.PlaySwing(OnAttackImpact);
     }
 
-    private void OnSwingComplete()
+    private void OnAttackStart()
     {
-        // 2. 휘두르기 완료 후 원래 위치로 복귀 시작
-        axeAnimation.PlayReturn(OnReturnComplete);
+        Debug.Log("Axe: 공격 시작");
     }
 
-    private void OnReturnComplete()
+    private void OnAttackImpact()
     {
-        // 3. 복귀 완료 후 다음 공격 가능 상태로 전환
+        // [2. 중간 지점] 타격 발생 (나무를 타격했다!)
+        Debug.Log("Axe: 타격 발생 (중간 지점)");
+
+        axeAnimation.PlayReturn(OnAttackFinish);
+    }
+
+    private void OnAttackFinish()
+    {
+        // [3. 끝나는 지점] 복귀 완료
+        Debug.Log("Axe: 공격 종료");
+        
         bAttacked = false;
     }
 }
