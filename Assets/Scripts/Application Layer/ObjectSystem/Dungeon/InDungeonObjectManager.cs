@@ -146,7 +146,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         RefreshCullingGroup();
 
-        // 3. 성장 루틴 시작
+        // 3. 5초 후 성장 루틴 시작
+        growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
+    }
+
+    private IEnumerator StartGrowthAfterDelay()
+    {
+        yield return new WaitForSeconds(5f);
         growthCoroutine = StartCoroutine(GrowthRoutine());
     }
 

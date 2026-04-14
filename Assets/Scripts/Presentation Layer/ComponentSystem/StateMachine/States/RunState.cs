@@ -1,14 +1,14 @@
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class RunState : CharacterState
 {
-    private Vector2 moveInput;
     private Vector2 lastVisualInput;
 
     private Vector2 pendingDirection;
     private float directionUpdateTimer;
     private const float graceDuration = 0.05f;
+
+    private Vector3Int currentReservedPos;
 
     private readonly RaycastHit2D[] hitBuffer = new RaycastHit2D[5];
 
@@ -16,11 +16,17 @@ public class RunState : CharacterState
     {
         bActivated = true;
         character.anim.SetBool(character.isMovingHash, true);
+
+        // 현재 위치 타일 점유
+        currentReservedPos = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        ctx.pathfindGridProvider.Occupy(currentReservedPos);
     }
 
     public override void Exit()
     {
-        moveInput = Vector2.zero;
+        // 점유 해제
+        ctx.pathfindGridProvider.Release(currentReservedPos);
+
         directionUpdateTimer = 0f;
         pendingDirection = Vector2.zero;
 
@@ -34,7 +40,25 @@ public class RunState : CharacterState
 
     public override void FixedUpdate()
     {
+        if (character.bCanAction == false)
+        {
+            stateMachine.ChangeState<IdleState>();
+            return;
+        }
+
         ApplyMovement();
+        UpdateOccupation();
+    }
+
+    private void UpdateOccupation()
+    {
+        Vector3Int newCell = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        if (newCell != currentReservedPos)
+        {
+            ctx.pathfindGridProvider.Release(currentReservedPos);
+            ctx.pathfindGridProvider.Occupy(newCell);
+            currentReservedPos = newCell;
+        }
     }
 
     protected override void SubscribeEvents()
@@ -55,7 +79,7 @@ public class RunState : CharacterState
         if (bActivated == false)
             return;
 
-        moveInput = _input;
+        ctx.moveInput = _input;
 
         if (_input == Vector2.zero)
         {
@@ -113,13 +137,16 @@ public class RunState : CharacterState
 
     private void ApplyMovement()
     {
-        var groundData = character.currentGroundData;
-        Vector2 inputDir = GetIsometricVector(moveInput);
+        if (character.bCanAction == false)
+            return;
 
-        if (inputDir.sqrMagnitude > 0.001f)
+        var groundData = character.currentGroundData;
+        Vector2 inputDir = GetIsometricVector(ctx.moveInput);
+
+        if (inputDir.sqrMagnitude > 0.0001f)
             inputDir.Normalize();
 
-        float speed = groundData.maxSpeed;
+        float speed = groundData.maxSpeed * ctx.characterStat.speed;
         Vector2 targetVel = inputDir * speed;
         CircleCollider2D circleCol = character.col;
         character.rb.linearVelocity = Vector2.MoveTowards(

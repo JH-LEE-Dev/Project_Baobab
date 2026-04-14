@@ -1,15 +1,47 @@
 using UnityEngine;
+using System;
 
-public class RifleComponent : WeaponComponent
+public class RifleComponent : WeaponComponent, IRifleComponent
 {
+    public event Action<bool> DeclareAttackStateEvent;
+    public event Action AttackCoolTimeStartEvent;
+    public event Action ReloadStartEvent;
+
+    // 내부 의존성
+    private RifleAnimation rifleAnimation;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     private readonly int bReadyHash = Animator.StringToHash("bReady");
 
     private bool bReady = false;
     private bool bFired = false;
+    private bool bInCoolDown = false;
+    private bool bLeftButtonClicked = false;
+    private bool bReload = false;
+
+    float IRifleComponent.durability => durability;
+
+    private int mag;
+    private int ammo;
+
+    public override void Initialize(ComponentCtx _ctx)
+    {
+        base.Initialize(_ctx);
+
+        // 내부 컴포넌트 참조 구성
+        rifleAnimation = GetComponent<RifleAnimation>();
+
+        mag = ctx.characterStat.magCap;
+        ammo = ctx.characterStat.ammoCap;
+    }
 
     public override void SetFacingDir(Transform _attackTransform)
     {
+        // 타겟 정보 전달 (Animation에서 관리)
+        if (null != rifleAnimation)
+        {
+            rifleAnimation.SetTarget(_attackTransform);
+        }
+
         // 타겟 방향 벡터 계산
         Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
 
@@ -31,7 +63,6 @@ public class RifleComponent : WeaponComponent
         else
         {
             // 그 외 범위(좌/우)는 0으로 설정
-            // (Left 판정 범위인 115~245도 구간도 포함하며, 이미 부모에서 Flip 처리가 되므로 0을 사용)
             dirIndex = 0;
         }
 
@@ -41,13 +72,10 @@ public class RifleComponent : WeaponComponent
         bool isBehind;
         if (bReady)
         {
-            // 준비 상태일 때는 좁은 범위 (좌상, 우상, 상)
             isBehind = (angle >= 22.5f && angle <= 157.5f);
         }
         else
         {
-            // 비준비 상태일 때는 확장된 위쪽 반원 범위 (0~180도에서 양옆으로 22.5도씩 확장)
-            // 337.5도 ~ 360도 또는 0도 ~ 202.5도
             isBehind = (angle >= 337.5f || angle <= 202.5f);
         }
 
@@ -56,28 +84,168 @@ public class RifleComponent : WeaponComponent
 
     public override void LeftButtonClicked()
     {
+        if (bCanAction == false || ctx.bWhileChangingWeapon == true || bReload == true)
+            return;
+
+        bLeftButtonClicked = true;
+
         if (bReady == true)
         {
-            if (bFired == false)
+            if (bFired == false && bInCoolDown == false)
             {
                 Fire();
             }
         }
         else
         {
-            bReady = true;
+            EnterReady(true);
+        }
+    }
 
-            anim.SetBool(bReadyHash, bReady);
+    public override void LeftButtonReleased()
+    {
+        bLeftButtonClicked = false;
+    }
+
+    private void EnterReady(bool _useDelay)
+    {
+        bReady = true;
+        anim.SetBool(bReadyHash, bReady);
+
+        if (_useDelay)
+        {
+            StopCoroutine(nameof(RifleReadyCoolDownRoutine));
+            StartCoroutine(nameof(RifleReadyCoolDownRoutine));
+        }
+        else
+        {
+            bInCoolDown = false;
+        }
+    }
+
+    private System.Collections.IEnumerator RifleReadyCoolDownRoutine()
+    {
+        bInCoolDown = true;
+        yield return new WaitForSeconds(ctx.characterStat.rifleReadyTime);
+        bInCoolDown = false;
+
+        if (bLeftButtonClicked && bFired == false)
+        {
+            Fire();
         }
     }
 
     private void Fire()
     {
+        if (null == rifleAnimation || mag == 0 || bReload == true) return;
+
+        DecreaseMagAmmo();
         bFired = true;
 
-        //발사 애니메이션이 끝나면 실행할 코드
+        OnFireStart();
+    }
+
+    private void OnFireStart()
+    {
+        Debug.Log("Rifle: 발사 시작");
+        DeclareAttackStateEvent?.Invoke(true);
+
+        rifleAnimation.PlayRecoil(OnFireFinish);
+    }
+
+    private void OnFireFinish()
+    {
+        Debug.Log("Rifle: 발사 동작 완료");
+        AttackCoolTimeStartEvent?.Invoke();
+        StartCoroutine(nameof(FireAfterDelayRoutine));
+    }
+
+    private System.Collections.IEnumerator FireAfterDelayRoutine()
+    {
+        yield return new WaitForSeconds(ctx.characterStat.afterShotTime);
+
+        DeclareAttackStateEvent?.Invoke(false);
+
         bReady = false;
         bFired = false;
+        bInCoolDown = false;
         anim.SetBool(bReadyHash, bReady);
+
+        // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
+        if (bLeftButtonClicked)
+        {
+            EnterReady(false);
+            Fire();
+        }
+    }
+
+    public override void SetEnable(bool _boolean)
+    {
+        base.SetEnable(_boolean);
+
+        bReady = false;
+        bFired = false;
+        bInCoolDown = false;
+        bLeftButtonClicked = false;
+        anim.SetBool(bReadyHash, bReady);
+    }
+
+    public void CancelReady()
+    {
+        if (bFired == true || bCanAction == false)
+            return;
+
+        bReady = false;
+        bInCoolDown = false;
+
+        anim.SetBool(bReadyHash, bReady);
+    }
+
+    private void DecreaseMagAmmo()
+    {
+        mag -= 1;
+    }
+
+    public void Reload()
+    {
+        if (bCanAction == false || bFired == true || bReload == true || ammo == 0 || mag == ctx.characterStat.magCap)
+            return;
+
+        if (bReady)
+        {
+            CancelReady();
+        }
+
+        ReloadStartEvent?.Invoke();
+        StartCoroutine(nameof(ReloadRoutine));
+    }
+
+    private System.Collections.IEnumerator ReloadRoutine()
+    {
+        bReload = true;
+
+        yield return new WaitForSeconds(ctx.characterStat.reloadDuration);
+
+        int amount = 0;
+        if (ctx.characterStat.magCap < ammo)
+        {
+            ammo -= ctx.characterStat.magCap;
+            amount = ctx.characterStat.magCap;
+        }
+        else
+        {
+            amount = ammo;
+            ammo = 0;
+        }
+
+        mag = amount;
+        bReload = false;
+        Debug.Log("Rifle: 재장전 완료");
+    }
+
+    public void ResetAmmo()
+    {
+        ammo = ctx.characterStat.ammoCap;
+        mag = ctx.characterStat.magCap;
     }
 }

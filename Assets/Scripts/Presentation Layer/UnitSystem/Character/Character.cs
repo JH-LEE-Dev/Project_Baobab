@@ -1,81 +1,92 @@
 using System;
+using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter
 {
     public event Action<WeaponMode> WeaponModeChangedEvent;
 
-    //외부 의존성
+    // 외부 의존성
     public InputManager inputManager { get; private set; }
     private IEnvironmentProvider environmentProvider;
+    private ComponentCtx ctx;
 
-    //내부 의존성 (컴포넌트)
+    // 내부 의존성 (컴포넌트 및 오브젝트)
+    [Header("Internal Components")]
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
-    [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
+    [SerializeField] private TriggerProxy shadowSensor;
     [SerializeField] private GameObject itemSensor;
-
-    private Rigidbody2D itemSensorRB;
 
     private AttackComponent attackComponent;
     private PHealthComponent healthComponent;
     private ArmComponent armComponent;
-
-    private SpriteRenderer sr;
-    private SpriteRenderer shadowSR;
-    private Material characterMaterial;
-
-    private int shadowOverlapCount = 0;
-    private Color normalColor = Color.white;
-    private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
-
-    private static readonly int baseColorHash = Shader.PropertyToID("_BaseColor");
+    public StatComponent statComponent { get; private set; }
 
     public StateMachine stateMachine { get; private set; }
     public Animator anim { get; private set; }
     public Rigidbody2D rb { get; private set; }
     public CircleCollider2D col { get; private set; }
+    private SpriteRenderer sr;
+    private SpriteRenderer shadowSR;
+    private Rigidbody2D itemSensorRB;
 
-    //현재 지형 물리 데이터 (캐싱)
+    // 상태 및 데이터
+    [Header("Character Stats & States")]
     public GroundPhysicsData currentGroundData { get; private set; }
+    public bool bInDungeon { get; private set; } = true;
+    public bool bCanAction { get; private set; } = true;
+    public bool bCanRotate { get; private set; } = true;
 
-    public IPHealthComponent pHealthComponent => healthComponent;
-
-    // 캐싱된 해시값 (GC 방지 및 성능 최적화)
-    private readonly int facingDirHash = Animator.StringToHash("facingDir");
-    public readonly int isMovingHash = Animator.StringToHash("IsMoving");
-    public readonly int bInHubHash = Animator.StringToHash("bInHub");
+    private int shadowOverlapCount = 0;
+    private Color normalColor = Color.white;
+    private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
 
     private float staminaDecAmount = 0f;
     private float staminaIncAmount = 0f;
     private bool bStaminaUpDown = false;
-    public bool bInDungeon { get; private set; } = true;
+
+    // 캐싱된 해시 및 프로퍼티 (성능 최적화)
+    public IPHealthComponent pHealthComponent => healthComponent;
+
+    IStatComponent ICharacter.statComponent => statComponent;
+
+    IArmComponent ICharacter.armComponent => armComponent;
+
+    private readonly int facingDirHash = Animator.StringToHash("facingDir");
+    public readonly int isMovingHash = Animator.StringToHash("IsMoving");
+    public readonly int bInHubHash = Animator.StringToHash("bInHub");
+
+    #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
 
-        stateMachine = new StateMachine();
-        ComponentCtx componentCtx = new ComponentCtx();
-        componentCtx.Initialize(inputManager);
-
+        // 컴포넌트 할당
         anim = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<CircleCollider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
         healthComponent = GetComponentInChildren<PHealthComponent>();
-        itemSensorRB = itemSensor.GetComponent<Rigidbody2D>();
         armComponent = GetComponentInChildren<ArmComponent>();
+        itemSensorRB = itemSensor.GetComponent<Rigidbody2D>();
+        statComponent = GetComponentInChildren<StatComponent>();
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
-        characterMaterial = sr.material;
 
+        stateMachine = new StateMachine();
+        ctx = new ComponentCtx();
+        ctx.Initialize(inputManager, statComponent, environmentProvider.pathfindGridProvider, environmentProvider.tilemapDataProvider);
+
+        // 컴포넌트 초기화
         shadowObject.Initialize();
-        attackComponent.Initialize(componentCtx);
-        healthComponent.Initialize(componentCtx);
-        armComponent.Initialize(componentCtx);
+        attackComponent.Initialize(ctx);
+        healthComponent.Initialize(ctx);
+        armComponent.Initialize(ctx);
+        statComponent.Initialize(ctx);
 
         if (shadowSensor != null)
         {
@@ -84,69 +95,30 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         }
 
         SetupStateMachine();
-
         BindEvents();
-    }
-
-    private void BindEvents()
-    {
-        attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
-        attackComponent.WeaponModeChangedEvent += WeaponModeChanged;
-
-        armComponent.axeComponent.DeclareAttackStateEvent -= attackComponent.SetbAttack;
-        armComponent.axeComponent.DeclareAttackStateEvent += attackComponent.SetbAttack;
-
-        armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
-        armComponent.axeComponent.AttackEvent += attackComponent.Attack;
-    }
-
-    private void ReleaseEvents()
-    {
-        attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
     }
 
     public void SetFacingDirection(Vector2 _input)
     {
-        if (_input.sqrMagnitude < 0.01f) return;
+        if (_input.sqrMagnitude < 0.01f || bCanRotate == false) return;
 
-        // 8방향 인덱스 계산 (0: 우, 1: 우상, 2: 상, 3: 좌상, 4: 좌, 5: 좌하, 6: 하, 7: 우하)
         float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
 
         int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-
         bool flipX = false;
         int animIndex = -1;
 
         switch (dirIndex)
         {
-            case 0: // 우
-                animIndex = 0;
-                break;
-            case 1: // 우상
-                animIndex = 1;
-                break;
-            case 2: // 상
-                animIndex = 2;
-                break;
-            case 3: // 좌상 -> 우상(1) 반전
-                animIndex = 1;
-                flipX = true;
-                break;
-            case 4: // 좌 -> 우(0) 반전
-                animIndex = 0;
-                flipX = true;
-                break;
-            case 5: // 좌하 -> 우하(4) 반전
-                animIndex = 4;
-                flipX = true;
-                break;
-            case 6: // 하
-                animIndex = 3;
-                break;
-            case 7: // 우하
-                animIndex = 4;
-                break;
+            case 0: animIndex = 0; break; // 우
+            case 1: animIndex = 1; break; // 우상
+            case 2: animIndex = 2; break; // 상
+            case 3: animIndex = 1; flipX = true; break; // 좌상
+            case 4: animIndex = 0; flipX = true; break; // 좌
+            case 5: animIndex = 4; flipX = true; break; // 좌하
+            case 6: animIndex = 3; break; // 하
+            case 7: animIndex = 4; break; // 우하
         }
 
         if (animIndex != -1)
@@ -159,50 +131,80 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     public void SetStaminaUpDownState(bool _bStaminaUpDown, float _staminaDecAmount, float _staminaIncAmount)
     {
         bStaminaUpDown = _bStaminaUpDown;
-
         staminaDecAmount = _staminaDecAmount;
         staminaIncAmount = _staminaIncAmount;
+
         healthComponent.SetStaminaDecreaseAmount(staminaDecAmount);
         healthComponent.SetStaminaIncreaseAmount(staminaIncAmount);
     }
+
+    public void SetWhereIsCharacter(bool _bInDungeon)
+    {
+        if (_bInDungeon == false)
+            armComponent.ResetDurability();
+
+        bInDungeon = _bInDungeon;
+        anim.SetBool(bInHubHash, !bInDungeon);
+        armComponent.SetActivate(bInDungeon);
+    }
+
+    public Transform GetTransform() => transform;
+
+    #endregion
+
+    #region Private Methods
 
     private void SetupStateMachine()
     {
         AddState(new IdleState());
         AddState(new RunState());
-
-        // 초기 상태 설정
         stateMachine.ChangeState<IdleState>();
     }
 
     private void AddState(CharacterState _state)
     {
-        _state.Initialize(stateMachine, this);
+        _state.Initialize(stateMachine, this, ctx);
         stateMachine.AddState(_state);
     }
 
-    private void Update()
+    private void BindEvents()
     {
-        stateMachine?.Update();
-        shadowSR.sprite = sr.sprite;
-        UpdateCharacterColor();
+        attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
+        attackComponent.WeaponModeChangedEvent += WeaponModeChanged;
 
-        if (shadowObject != null)
+        if (armComponent.axeComponent != null)
         {
-            shadowObject.ManualUpdate(environmentProvider.shadowDataProvider.CurrentShadowRotation, environmentProvider.shadowDataProvider.CurrentShadowScaleY, false);
-        }
+            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
+            armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction;
 
-        if (bStaminaUpDown == true)
-        {
-            IncreaseStamina();
-        }
-        else
-        {
-            DecreaseStamina();
-        }
+            armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
+            armComponent.rifleComponent.DeclareAttackStateEvent += SetbCanAction;
 
-        UpdateFacingByAttackPoint();
-        ConnectAttackToArm();
+            armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
+            armComponent.axeComponent.AttackEvent += attackComponent.Attack;
+
+            attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
+            attackComponent.AttackSuccessEvent += armComponent.axeComponent.DecreaseDurability;
+        }
+    }
+
+    private void ReleaseEvents()
+    {
+        if (attackComponent != null)
+            attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
+
+        if (armComponent != null && armComponent.axeComponent != null)
+        {
+            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
+            attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
+            armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
+            armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
+        }
+    }
+
+    private void UpdateCharacterColor()
+    {
+        sr.color = (shadowOverlapCount > 0) ? shadowTint : normalColor;
     }
 
     private void UpdateFacingByAttackPoint()
@@ -216,13 +218,69 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         SetFacingDirection(dir);
     }
 
+    private void ConnectAttackToArm()
+    {
+        armComponent.SetAttackTransform(attackComponent.GetAttackPointTransform());
+    }
+
+    private void HandleShadowEnter(Collider2D _other)
+    {
+        if (_other.CompareTag("TreeShadow")) shadowOverlapCount++;
+    }
+
+    private void HandleShadowExit(Collider2D _other)
+    {
+        if (_other.CompareTag("TreeShadow")) shadowOverlapCount = Mathf.Max(0, shadowOverlapCount - 1);
+    }
+
+    private void WeaponModeChanged(WeaponMode _currentMode)
+    {
+        WeaponModeChangedEvent?.Invoke(_currentMode);
+        armComponent.WeaponModeChanged(_currentMode);
+    }
+
+    private void SetbCanAction(bool _isAttacking)
+    {
+        bCanAction = !_isAttacking;
+        bCanRotate = !_isAttacking;
+        attackComponent.SetbAttack(_isAttacking);
+        UpdateFacingByAttackPoint();
+    }
+
+    private void SetItemSensorPos() => itemSensorRB.MovePosition(transform.position);
+
+    #endregion
+
+    #region Unity Event Functions
+
+    private void Update()
+    {
+        stateMachine?.Update();
+
+        // 비주얼 업데이트
+        shadowSR.sprite = sr.sprite;
+        UpdateCharacterColor();
+
+        if (shadowObject != null)
+        {
+            shadowObject.ManualUpdate(
+                environmentProvider.shadowDataProvider.CurrentShadowRotation,
+                environmentProvider.shadowDataProvider.CurrentShadowScaleY,
+                false);
+        }
+
+        // 스태미나 로직
+        if (bStaminaUpDown) healthComponent.IncreaseStamina();
+        else healthComponent.DecreaseStamina();
+
+        UpdateFacingByAttackPoint();
+        ConnectAttackToArm();
+    }
+
     private void FixedUpdate()
     {
         SetItemSensorPos();
-
-        // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
-
         stateMachine?.FixedUpdate();
     }
 
@@ -239,85 +297,21 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         ReleaseEvents();
     }
 
-    private void DecreaseStamina()
-    {
-        healthComponent.DecreaseStamina();
-    }
-
-    private void IncreaseStamina()
-    {
-        healthComponent.IncreaseStamina();
-    }
-
-    private void UpdateCharacterColor()
-    {
-        if (characterMaterial == null) return;
-
-        Color targetColor = (shadowOverlapCount > 0) ? shadowTint : normalColor;
-
-        sr.color = targetColor;
-    }
-
-    private void HandleShadowEnter(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow"))
-        {
-            shadowOverlapCount++;
-        }
-    }
-
-    private void HandleShadowExit(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow"))
-        {
-            shadowOverlapCount = Mathf.Max(0, shadowOverlapCount - 1);
-        }
-    }
-
     private void OnGUI()
     {
         if (healthComponent == null) return;
 
-        // 화면 우측 하단 좌표 계산
         float width = 200f;
         float height = 50f;
         float posX = Screen.width - width - 10f;
         float posY = Screen.height - height - 10f;
 
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 12;
+        GUIStyle style = new GUIStyle { fontSize = 12, alignment = TextAnchor.LowerRight };
         style.normal.textColor = Color.white;
-        style.alignment = TextAnchor.LowerRight;
 
         string debugText = $"Stamina: {healthComponent.CurrentStamina:F1} / {healthComponent.MaxStamina:F1}";
         GUI.Label(new Rect(posX, posY, width, height), debugText, style);
     }
 
-    private void SetItemSensorPos()
-    {
-        itemSensorRB.MovePosition(transform.position);
-    }
-
-    public Transform GetTransform()
-    {
-        return transform;
-    }
-
-    public void SetWhereIsCharacter(bool _bInDungeon)
-    {
-        anim.SetBool(bInHubHash, !_bInDungeon);
-        bInDungeon = _bInDungeon;
-        armComponent.SetActivate(_bInDungeon);
-    }
-
-    private void ConnectAttackToArm()
-    {
-        armComponent.SetAttackTransform(attackComponent.GetAttackPointTransform());
-    }
-
-    private void WeaponModeChanged(WeaponMode _currentMode)
-    {
-        WeaponModeChangedEvent?.Invoke(_currentMode);
-        armComponent.WeaponModeChanged(_currentMode);
-    }
+    #endregion
 }

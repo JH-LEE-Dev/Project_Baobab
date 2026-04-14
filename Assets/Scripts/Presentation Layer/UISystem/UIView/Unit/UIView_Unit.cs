@@ -5,10 +5,11 @@ using UnityEngine;
 
 public class UIView_Unit : UIView
 {
-    // //외부 의존성
+    //외부 의존성
     private IReadOnlyList<ITreeObj> trees;
+    private ICharacter character;
 
-    // //내부 의존성
+    //내부 의존성
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
 
@@ -22,7 +23,7 @@ public class UIView_Unit : UIView
 
     private Dictionary<ITreeObj, HUD_ProgressBar> damagedTrees = new Dictionary<ITreeObj, HUD_ProgressBar>(32);
 
-    // //퍼블릭 초기화 및 제어 메서드
+    //퍼블릭 초기화 및 제어 메서드
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -64,6 +65,11 @@ public class UIView_Unit : UIView
     public void DependencyInjection(IReadOnlyList<ITreeObj> _trees)
     {
         trees = _trees;
+    }
+
+    public void SetCharacter(ICharacter _character)
+    {
+        character = _character;
     }
 
     private void ShowHP_Trees(ITreeObj _treeObj, float _YOffset)

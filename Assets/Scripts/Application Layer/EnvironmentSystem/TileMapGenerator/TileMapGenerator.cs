@@ -51,6 +51,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private List<int> shorelineList = new List<int>(5000);
     private List<int> innerEdgesList = new List<int>(5000);
     private List<Vector3> grassPositions = new List<Vector3>(5000);
+    private List<Vector3> delayedGrassPositions = new List<Vector3>(100);
     private List<Vector3> walkablePositions = new List<Vector3>(22500);
     private Queue<int> bfsQueue = new Queue<int>(22500);
 
@@ -73,7 +74,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         {
             if (maps[i].name == "GroundTilemap") groundTilemap = maps[i];
             else if (maps[i].name == "ColliderTilemap") collisionTilemap = maps[i];
-            else if(maps[i].name == "DecoTilemap") decoTilemap = maps[i];
+            else if (maps[i].name == "DecoTilemap") decoTilemap = maps[i];
         }
 
         int size = width * height;
@@ -104,6 +105,21 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         DeclareActiveTilesCntEvent?.Invoke(walkablePositions.Count, grassPositions.Count);
         TilemapGeneratedEvent?.Invoke(grassPositions);
+
+        // 5초 후 누락된 잔디 타일 추가를 위한 코루틴 시작
+        StopCoroutine(nameof(AddDelayedGrassPositions));
+        StartCoroutine(nameof(AddDelayedGrassPositions));
+    }
+
+    private System.Collections.IEnumerator AddDelayedGrassPositions()
+    {
+        yield return new WaitForSeconds(5f);
+
+        if (delayedGrassPositions.Count > 0)
+        {
+            grassPositions.AddRange(delayedGrassPositions);
+            delayedGrassPositions.Clear();
+        }
     }
 
     public Vector3 GetPlayerSpawnPosition() => GetWorldPos(playerIdx);
@@ -157,7 +173,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             Vector3Int lastCellPos = WorldToCell(lastPos);
 
             walkablePositions[index] = lastPos;
-            
+
             if (lastCellPos.x >= 0 && lastCellPos.x < width && lastCellPos.y >= 0 && lastCellPos.y < height)
             {
                 cellToIndex[lastCellPos.x + lastCellPos.y * width] = index;
@@ -349,7 +365,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         // 2. 포탈 스폰 위치 결정: 플레이어로부터 가장 먼 곳 선택
         List<int> candidates = innerEdgesList.Count > 0 ? innerEdgesList : shorelineList;
-        
+
         if (candidates.Count > 0)
         {
             Vector3 playerPos = GetWorldPos(playerIdx);
@@ -361,7 +377,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 int cIdx = candidates[i];
                 Vector3 cPos = GetWorldPos(cIdx);
                 float distSq = (playerPos - cPos).sqrMagnitude;
-                
+
                 if (distSq > maxDistSq)
                 {
                     maxDistSq = distSq;
@@ -384,12 +400,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Array.Clear(decoTilesToApply, 0, size);
 
         grassPositions.Clear();
+        delayedGrassPositions.Clear();
         walkablePositions.Clear();
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
 
         float sandT = waterThreshold + 0.1f;
         float mountT = 0.7f;
         Vector3 portalPos = GetPortalSpawnPosition();
+        Vector3 playerPos = GetPlayerSpawnPosition();
 
         for (int i = 0; i < size; i++)
         {
@@ -413,15 +431,22 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 else if (v < mountT)
                 {
                     groundTiles[i] = grassTile;
-                    if ((pos - portalPos).sqrMagnitude > 2.25f)
+                    
+                    // 30% 확률로 Deco 타일 배치
+                    if (decoTiles != null && decoTiles.Count > 0 && UnityEngine.Random.value < 0.3f)
+                    {
+                        decoTilesToApply[i] = decoTiles[UnityEngine.Random.Range(0, decoTiles.Count)];
+                    }
+
+                    // 포탈 및 플레이어 스폰 지점 주변에는 나무(Deco) 생성을 방지
+                    if ((pos - portalPos).sqrMagnitude > 2.25f && (pos - playerPos).sqrMagnitude > 2.25f)
                     {
                         grassPositions.Add(pos);
-
-                        // 30% 확률로 Deco 타일 배치
-                        if (decoTiles != null && decoTiles.Count > 0 && UnityEngine.Random.value < 0.3f)
-                        {
-                            decoTilesToApply[i] = decoTiles[UnityEngine.Random.Range(0, decoTiles.Count)];
-                        }
+                    }
+                    else
+                    {
+                        // 스폰 지점 주변 잔디 좌표는 나중에 추가하기 위해 따로 저장
+                        delayedGrassPositions.Add(pos);
                     }
                 }
                 else

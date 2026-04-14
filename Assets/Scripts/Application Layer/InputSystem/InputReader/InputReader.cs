@@ -6,14 +6,19 @@ public class InputReader
 {
     //이벤트
     public event Action<Vector2> MoveEvent;
+    public event Action MoveTriggerEvent;
     public event Action<Vector2> MouseMoveEvent;
     public event Action InventoryKeyEvent;
 
     public event Action MouseClickEvent;
+    public event Action MouseReleaseEvent;
     public event Action ESCButtonPressedEvent;
     public event Action InteractionKeyPressedEvent;
     public event Action InteractionKeyCanceledEvent;
     public event Action SwitchModeKeyPressedEvent;
+    public event Action GoToAxeModeEvent;
+    public event Action GoToRifleModeEvent;
+    public event Action ReloadButtonPressedEvent;
 
     //내부 의존성
     private InputActionSystem actions;
@@ -33,10 +38,14 @@ public class InputReader
             actions.Normal.Move.canceled += OnMove;
             actions.Normal.Mouse.performed += OnMouseMove;
             actions.Normal.Click.performed += OnMouseClick;
+            actions.Normal.Click.canceled += OnMouseReleased;
             actions.Normal.Inventory.performed += OnInventoryKeyPressed;
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
             actions.Normal.SwitchMode.performed += SwitchModeKeyPressed;
+            actions.Normal.AxeMode.performed += GoToAxeModeKeyPressed;
+            actions.Normal.RifleMode.performed += GoToRifleModeKeyPressed;
+            actions.Normal.Reload.performed += ReloadButtonPressed;
         }
 
         actions.Normal.Enable();
@@ -53,10 +62,14 @@ public class InputReader
         actions.Normal.Move.canceled -= OnMove;
         actions.Normal.Mouse.performed -= OnMouseMove;
         actions.Normal.Click.performed -= OnMouseClick;
+        actions.Normal.Click.canceled -= OnMouseReleased;
         actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
         actions.Normal.SwitchMode.performed -= SwitchModeKeyPressed;
+        actions.Normal.AxeMode.performed -= GoToAxeModeKeyPressed;
+        actions.Normal.RifleMode.performed -= GoToRifleModeKeyPressed;
+        actions.Normal.Reload.performed -= ReloadButtonPressed;
     }
 
     public void Pause(bool _bPause)
@@ -68,9 +81,10 @@ public class InputReader
     {
         if (bPause)
             return;
-            
+
         Vector2 move = context.ReadValue<Vector2>();
 
+        MoveTriggerEvent?.Invoke();
         MoveEvent?.Invoke(move);
     }
 
@@ -91,6 +105,11 @@ public class InputReader
     private void OnMouseClick(InputAction.CallbackContext context)
     {
         MouseClickEvent?.Invoke();
+    }
+
+    private void OnMouseReleased(InputAction.CallbackContext context)
+    {
+        MouseReleaseEvent?.Invoke();
     }
 
     private void ClearAllEvent()
@@ -116,5 +135,20 @@ public class InputReader
     private void SwitchModeKeyPressed(InputAction.CallbackContext context)
     {
         SwitchModeKeyPressedEvent?.Invoke();
+    }
+
+    private void GoToAxeModeKeyPressed(InputAction.CallbackContext context)
+    {
+        GoToAxeModeEvent?.Invoke();
+    }
+
+    private void GoToRifleModeKeyPressed(InputAction.CallbackContext context)
+    {
+        GoToRifleModeEvent?.Invoke();
+    }
+
+    private void ReloadButtonPressed(InputAction.CallbackContext context)
+    {
+        ReloadButtonPressedEvent?.Invoke();
     }
 }
