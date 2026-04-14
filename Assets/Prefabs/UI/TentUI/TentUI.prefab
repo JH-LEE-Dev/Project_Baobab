@@ -83,6 +83,9 @@ MonoBehaviour:
   pictureBindings:
   - pictureKey: Ability_TextureSample
     sprite: {fileID: 21300000, guid: e5298198a64592941849ea8b38428bab, type: 3}
+  toolTipPrefab: {fileID: 7118067883298631761, guid: 0693cecbf0fc4eb4e988a48e7663f4bf, type: 3}
+  toolTipParent: {fileID: 0}
+  toolTipSpacing: 24
 --- !u!1 &1970689072727835323
 GameObject:
   m_ObjectHideFlags: 0
