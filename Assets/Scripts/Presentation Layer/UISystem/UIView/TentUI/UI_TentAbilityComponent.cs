@@ -1,8 +1,7 @@
-using UnityEngine;
-using UnityEngine.InputSystem;
 using System;
 using System.Collections.Generic;
-using UnityEngine.UI;
+using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class UI_TentAbilityComponent : MonoBehaviour
 {
@@ -11,34 +10,30 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float MaxZoom = 1f;
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
-
-
+    private const float ToolTipSpacing = 32f;
 
     private ISkillSystemProvider skillSystemProvider;
     private Canvas rootCanvas;
     private bool isDragging;
+    private bool hasZoomFocus;
     private Vector2 previousMousePosition;
+    private Vector2 zoomFocusScreenPosition;
     private float currentZoom = DefaultZoom;
     private float targetZoom = DefaultZoom;
-    private Vector2 zoomFocusScreenPosition;
-    private bool hasZoomFocus;
-
-
-
 
     private readonly Dictionary<SkillType, AbilityNodeDefinitionJson> nodeDefinitionMap = new Dictionary<SkillType, AbilityNodeDefinitionJson>();
     private readonly List<SkillType> nodeBuildOrder = new List<SkillType>();
-    private readonly Dictionary<string, Sprite> pictureSpriteMap = new Dictionary<string, Sprite>();
+    private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
     private readonly Dictionary<AbilityLineSegmentSpriteType, Sprite> lineSpriteMap = new Dictionary<AbilityLineSegmentSpriteType, Sprite>();
     private readonly List<AbilityNode> spawnedNodes = new List<AbilityNode>();
-    private readonly List<AbilityLine> spawnedLines = new List<AbilityLine>();
     private readonly Dictionary<SkillType, AbilityNode> spawnedNodeMap = new Dictionary<SkillType, AbilityNode>();
     private readonly List<AbilityLineConnection> lineConnections = new List<AbilityLineConnection>();
+    private readonly List<AbilityLine> spawnedLines = new List<AbilityLine>();
+
+    private bool hasBuiltNodes;
     private int activeLineCount;
-    private bool hasBuiltTestNodes;
     private AbilityNode currentToolTipNode;
-
-
+    private AbilityToolTip toolTipInstance;
 
     [Header("UI References")]
     [SerializeField] private RectTransform abilityBackground;
@@ -56,11 +51,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [Header("ToolTip Setup")]
     [SerializeField] private AbilityToolTip toolTipPrefab;
     [SerializeField] private RectTransform toolTipParent;
-    private float toolTipSpacing = 32f;
 
-    private AbilityToolTip toolTipInstance;
 
-    // 추후 특성 UI 구현에 사용할 의존성을 초기화한다.
+
+#region Initializing
+
     public void Initialize(ISkillSystemProvider _skillSystemProvider)
     {
         skillSystemProvider = _skillSystemProvider;
@@ -72,7 +67,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         Close();
     }
 
-    // 인스펙터에서 연결한 그림 키와 스프라이트 참조를 캐시한다.
+
+        // 인스펙터에서 연결한 스킬별 아이콘 스프라이트를 캐시한다.
     private void CachePictureBindings()
     {
         pictureSpriteMap.Clear();
@@ -80,14 +76,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
         for (int i = 0; i < pictureBindings.Count; i++)
         {
             AbilityPictureBinding binding = pictureBindings[i];
-            if (binding == null || string.IsNullOrWhiteSpace(binding.pictureKey) || binding.sprite == null)
+            if (binding == null || binding.skillType == SkillType.None || binding.sprite == null)
                 continue;
 
-            pictureSpriteMap[binding.pictureKey] = binding.sprite;
+            pictureSpriteMap[binding.skillType] = binding.sprite;
         }
     }
 
-    // 인스펙터에서 연결한 라인 스프라이트들을 타입별 조회 맵으로 캐시한다.
+    // 인스펙터에서 연결한 라인 세그먼트 스프라이트를 타입별 조회 맵으로 캐시한다.
     private void CacheLineSpriteBindings()
     {
         lineSpriteMap.Clear();
@@ -102,7 +98,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
-    // 인스펙터에서 연결한 JSON 텍스트를 읽어 SkillType 기준 노드 정의 맵을 만든다.
+    // JSON 노드 정의를 읽어 SkillType 기준 조회 맵으로 만든다.
     private void LoadNodeDefinitions()
     {
         nodeDefinitionMap.Clear();
@@ -129,7 +125,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
-    // 툴팁 프리팹 인스턴스
+    // 툴팁 프리팹 인스턴스를 한 번만 생성하고 계속 재사용한다.
     private void EnsureToolTipInstance()
     {
         if (toolTipInstance != null || toolTipPrefab == null || abilityBackground == null)
@@ -150,7 +146,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
 
-    // 능력 버튼을 눌렀을 때 호출될 특성 UI 열기 진입점이다.
+
+#endregion
+
+
+#region Default
+
+    // 능력 화면을 열고 초기 노드 빌드와 가시성 갱신을 수행한다.
     public void Open()
     {
         if (abilityBackground == null)
@@ -158,27 +160,74 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         abilityBackground.gameObject.SetActive(true);
         BuildNodesIfNeeded();
+        RefreshNodeVisibility();
         ResetView();
     }
 
-    // 테스트용으로 JSON에 정의된 노드 중 지정한 SkillType 목록을 한 번만 생성한다.
     private void BuildNodesIfNeeded()
     {
-        if (hasBuiltTestNodes || moveTarget == null || abilityNodePrefab == null)
+        if (hasBuiltNodes || moveTarget == null || abilityNodePrefab == null)
             return;
 
         for (int i = 0; i < nodeBuildOrder.Count; i++)
         {
             CreateNode(nodeBuildOrder[i]);
         }
-
         BuildLines();
-
-        hasBuiltTestNodes = true;
+        hasBuiltNodes = true;
     }
 
+        // 부모자식 관계를 따라 라인 연결 정보를 만든다.
+    private void BuildLines()
+    {
+        lineConnections.Clear();
 
-    // 테스트용 텍스처의 위치와 확대 값을 초기화한다.
+        if (moveTarget == null)
+            return;
+
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode childNode = spawnedNodes[i];
+            SkillType[] parents = childNode.ParentSkillTypes;
+
+            for (int parentIndex = 0; parentIndex < parents.Length; parentIndex++)
+            {
+                if (spawnedNodeMap.TryGetValue(parents[parentIndex], out AbilityNode parentNode) == false)
+                    continue;
+
+                lineConnections.Add(new AbilityLineConnection(parentNode, childNode));
+            }
+        }
+
+        RefreshLines();
+    }
+
+    // 스킬 타입 하나를 기준으로 JSON 정의를 읽고 노드 프리팹을 만든다.
+    private AbilityNode CreateNode(SkillType _skillType)
+    {
+        if (nodeDefinitionMap.TryGetValue(_skillType, out AbilityNodeDefinitionJson nodeDefinition) == false)
+            return null;
+
+        AbilityNode node = Instantiate(abilityNodePrefab, moveTarget);
+        node.gameObject.name = $"AbilityNode_{_skillType}";
+        node.BindOwner(this);
+        node.ApplyDefinition(nodeDefinition, _skillType, ResolvePicture(_skillType), gridCellSize);
+        spawnedNodes.Add(node);
+        spawnedNodeMap[_skillType] = node;
+
+        return node;
+    }
+
+    // 스킬 타입에 대응되는 아이콘 스프라이트를 반환한다.
+    private Sprite ResolvePicture(SkillType _skillType)
+    {
+        if (pictureSpriteMap.TryGetValue(_skillType, out Sprite sprite))
+            return sprite;
+
+        return null;
+    }
+
+    // 능력 화면 기본 위치와 줌 상태를 초기화한다.
     private void ResetView()
     {
         if (moveTarget == null)
@@ -192,7 +241,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         moveTarget.localScale = Vector3.one * currentZoom;
     }
 
-    // 능력 UI를 닫고 드래그 상태를 초기화한다.
+    // 능력 화면을 닫고 입력 상태와 툴팁을 정리한다.
     public void Close()
     {
         isDragging = false;
@@ -206,20 +255,108 @@ public class UI_TentAbilityComponent : MonoBehaviour
             abilityBackground.gameObject.SetActive(false);
     }
 
-    // 능력 UI가 열려 있는 동안 드래그 이동과 줌을 처리한다.
+
+#endregion
+
+
+#region ToolTip
+
+    // 노드 기준 좌우 규칙과 일정 거리 규칙에 맞춰 툴팁을 표시한다.
+    public void ShowToolTip(AbilityNode _node)
+    {
+        if (_node == null || abilityBackground == null)
+            return;
+
+        currentToolTipNode = _node;
+        EnsureToolTipInstance();
+        if (toolTipInstance == null)
+            return;
+
+        RectTransform nodeRect = _node.RectTransform;
+        if (nodeRect == null)
+            return;
+
+        toolTipInstance.SetContent(
+            _node.GetToolTipTitleAndLevelText(),
+            _node.GetToolTipDescriptionText(),
+            _node.GetToolTipCostText());
+
+        toolTipInstance.Show();
+        Vector2 toolTipSize = toolTipInstance.GetSize();
+
+        Vector3[] worldCorners = new Vector3[4];
+        nodeRect.GetWorldCorners(worldCorners);
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            abilityBackground,
+            RectTransformUtility.WorldToScreenPoint(null, worldCorners[0]),
+            null,
+            out Vector2 localBottomLeft);
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            abilityBackground,
+            RectTransformUtility.WorldToScreenPoint(null, worldCorners[2]),
+            null,
+            out Vector2 localTopRight);
+
+        Vector2 nodeCenter = (localBottomLeft + localTopRight) * 0.5f;
+        float nodeWidth = Mathf.Abs(localTopRight.x - localBottomLeft.x);
+        bool placeOnRight = nodeCenter.x < 0f;
+        float direction = placeOnRight ? 1f : -1f;
+
+        float x = nodeCenter.x + direction * ((nodeWidth * 0.5f) + ToolTipSpacing + (toolTipSize.x * 0.5f));
+        float y = nodeCenter.y;
+
+        toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
+    }
+
+    // 현재 노드에 대한 툴팁을 숨긴다.
+    public void HideToolTip(AbilityNode _node)
+    {
+        if (currentToolTipNode != null && _node != currentToolTipNode)
+            return;
+
+        currentToolTipNode = null;
+
+        if (toolTipInstance != null)
+            toolTipInstance.Hide();
+    }
+
+        // 툴팁이 표시 중이면 현재 호버 노드 기준으로 위치를 계속 갱신한다.
+    private void UpdateToolTipPosition()
+    {
+        if (currentToolTipNode == null || toolTipInstance == null || toolTipInstance.gameObject.activeSelf == false)
+            return;
+
+        ShowToolTip(currentToolTipNode);
+    }
+
+
+#endregion
+
+
+#region Ticking
+
+    // 능력 화면이 열려 있는 동안 팬, 줌, 라인 재배치, 툴팁 추적을 수행함
     public void Tick()
     {
         if (abilityBackground == null || abilityBackground.gameObject.activeSelf == false || moveTarget == null)
             return;
 
+        // 드래그 이동
         HandlePan();
+        // 줌 기능
         HandleZoom();
+        // 줌 애니메이션 기능
         UpdateZoomAnimation();
+        // Line 스냅 및 재구성
         RefreshLines();
+        // 툴팁 포지션 스냅
         UpdateToolTipPosition();
     }
 
-    // 좌, 우, 휠 클릭 드래그로 테스트용 텍스처를 이동시킨다.
+
+    // 마우스 드래그로 능력 컨텐츠를 이동시킨다.
     private void HandlePan()
     {
         Mouse mouse = Mouse.current;
@@ -256,7 +393,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         moveTarget.anchoredPosition += delta / scaleFactor;
     }
 
-    // 마우스 휠로 테스트용 텍스처를 확대 및 축소한다.
+    // 마우스 휠 입력으로 목표 줌 값을 갱신한다.
     private void HandleZoom()
     {
         Mouse mouse = Mouse.current;
@@ -273,7 +410,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         targetZoom = Mathf.Clamp(targetZoom, MinZoom, MaxZoom);
     }
 
-    // 목표 줌 값을 향해 현재 줌을 빠르게 보간한다.
+    // 목표 줌 값을 따라가며 현재 줌을 부드럽게 갱신한다.
     private void UpdateZoomAnimation()
     {
         float previousZoom = currentZoom;
@@ -309,70 +446,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
 
-
-
-
-
-
-    // 생성관련
-
-    // SkillType 하나를 기준으로 JSON 정의를 조회하고 노드 프리팹을 생성한다.
-    private AbilityNode CreateNode(SkillType _skillType)
-    {
-        if (nodeDefinitionMap.TryGetValue(_skillType, out AbilityNodeDefinitionJson nodeDefinition) == false)
-            return null;
-
-        AbilityNode node = Instantiate(abilityNodePrefab, moveTarget);
-        node.gameObject.name = $"AbilityNode_{_skillType}";
-        node.BindOwner(this);
-        node.ApplyDefinition(nodeDefinition, _skillType, ResolvePicture(nodeDefinition.pictureKey), gridCellSize);
-        spawnedNodes.Add(node);
-        spawnedNodeMap[_skillType] = node;
-
-        return node;
-    }
-
-    // 그림 키를 기반으로 인스펙터에 연결된 스프라이트를 찾아 반환한다.
-    private Sprite ResolvePicture(string _pictureKey)
-    {
-        if (string.IsNullOrWhiteSpace(_pictureKey))
-            return null;
-
-        if (pictureSpriteMap.TryGetValue(_pictureKey, out Sprite sprite))
-            return sprite;
-
-        return null;
-    }
-
-    // 부모-자식 관계를 따라 화면상 중심점을 잇는 선 연결 정보를 만든다.
-    private void BuildLines()
-    {
-        lineConnections.Clear();
-
-        if (moveTarget == null)
-            return;
-
-        for (int i = 0; i < spawnedNodes.Count; i++)
-        {
-            AbilityNode childNode = spawnedNodes[i];
-            SkillType[] parents = childNode.ParentSkillTypes;
-
-            for (int parentIndex = 0; parentIndex < parents.Length; parentIndex++)
-            {
-                if (spawnedNodeMap.TryGetValue(parents[parentIndex], out AbilityNode parentNode) == false)
-                    continue;
-
-                lineConnections.Add(new AbilityLineConnection(parentNode, childNode));
-            }
-        }
-
-        RefreshLines();
-    }
-
-
-    // Line 관련
-
-    // 현재 노드들의 화면상 위치를 기준으로 모든 라인 세그먼트를 다시 생성한다.
+    // 현재 보이는 노드 상태를 기준으로 라인 세그먼트를 다시 배치한다.
     private void RefreshLines()
     {
         if (abilityLinePrefab == null || abilityBackground == null)
@@ -385,6 +459,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         for (int i = 0; i < lineConnections.Count; i++)
         {
+            if (lineConnections[i].ParentNode.gameObject.activeSelf == false || lineConnections[i].ChildNode.gameObject.activeSelf == false)
+                continue;
+
+            if (ShouldCullLineConnection(lineConnections[i], targetParent))
+                continue;
+
             BuildLineSegments(lineConnections[i], targetParent, segmentSize);
         }
 
@@ -420,9 +500,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
         Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
         Vector2 delta = endCenter - startCenter;
-        float distance = delta.magnitude;
 
-        if (distance <= 0.001f)
+        if (delta.magnitude <= 0.001f)
             return;
 
         float primaryDistance = isHorizontal
@@ -452,7 +531,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
-    // 현재 줌 비율에 따라 사용할 세그먼트 픽셀 크기를 선택한다.
+    // 현재 줌 비율에 따라 사용할 라인 세그먼트 크기를 선택한다.
     private int GetActiveSegmentSize()
     {
         float projectedGridSize = gridCellSize * currentZoom;
@@ -486,7 +565,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             : AbilityLineSegmentSpriteType.DiagSENW4;
     }
 
-    /// 노드 RectTransform의 현재 중심점을 기준 RectTransform의 로컬 좌표로 변환한다.
+    // 노드 중심점을 대상 RectTransform의 로컬 좌표로 변환한다.
     private Vector2 GetNodeCenterInRectangle(RectTransform _nodeRect, RectTransform _targetRectangle)
     {
         Vector3[] corners = new Vector3[4];
@@ -506,17 +585,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return SnapToPixel(localPoint);
     }
 
-    /// <summary>
-    /// 정수 픽셀 좌표에 맞춰 라인 위치를 스냅한다.
-    /// </summary>
+
+    // 정수 픽셀 좌표에 맞춰 위치를 스냅한다.
     private Vector2 SnapToPixel(Vector2 _position)
     {
         return new Vector2(Mathf.Round(_position.x), Mathf.Round(_position.y));
     }
 
-    /// <summary>
-    /// 풀에서 사용 가능한 라인을 가져오거나 새로 만든다.
-    /// </summary>
+    // 풀에서 사용 가능한 라인을 가져오거나 새로 만든다.
     private AbilityLine GetOrCreatePooledLine(RectTransform _targetParent)
     {
         AbilityLine line;
@@ -538,9 +614,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return line;
     }
 
-    /// <summary>
-    /// 이번 갱신에서 사용하지 않은 라인은 숨긴다.
-    /// </summary>
+    // 이번 프레임에 사용하지 않은 라인은 숨긴다.
     private void HideUnusedLines()
     {
         for (int i = activeLineCount; i < spawnedLines.Count; i++)
@@ -550,86 +624,182 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
+#endregion
 
 
+#region For System
 
-
-    // ToolTip 관련
-
-    // 노드 기준 좌우 규칙과 일정 거리 규칙에 맞춰 툴팁을 배치한다.
-    public void ShowToolTip(AbilityNode _node)
+    public enum AbilityLevelUpRejectReason
     {
-        if (_node == null || abilityBackground == null)
-            return;
-
-        currentToolTipNode = _node;
-        EnsureToolTipInstance();
-        if (toolTipInstance == null)
-            return;
-
-        RectTransform nodeRect = _node.RectTransform;
-        if (nodeRect == null)
-            return;
-
-        toolTipInstance.SetContent(
-            _node.GetToolTipTitleAndLevelText(),
-            _node.GetToolTipDescriptionText(),
-            _node.GetToolTipCostText());
-
-        toolTipInstance.Show();
-        Vector2 toolTipSize = toolTipInstance.GetSize();
-
-        Vector3[] worldCorners = new Vector3[4];
-        nodeRect.GetWorldCorners(worldCorners);
-
-        Vector2 localBottomLeft;
-        Vector2 localTopRight;
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            abilityBackground,
-            RectTransformUtility.WorldToScreenPoint(null, worldCorners[0]),
-            null,
-            out localBottomLeft);
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            abilityBackground,
-            RectTransformUtility.WorldToScreenPoint(null, worldCorners[2]),
-            null,
-            out localTopRight);
-
-        Vector2 nodeCenter = (localBottomLeft + localTopRight) * 0.5f;
-        float nodeWidth = Mathf.Abs(localTopRight.x - localBottomLeft.x);
-        bool placeOnRight = nodeCenter.x < 0f;
-
-        float direction = placeOnRight ? 1f : -1f;
-        float x = nodeCenter.x + direction * ((nodeWidth * 0.5f) + toolTipSpacing + (toolTipSize.x * 0.5f));
-        float y = nodeCenter.y;
-
-        toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
+        None,
+        NotEnoughMoney,
+        MaxLevel,
+        PrerequisiteNotMet,
     }
 
-    // 현재 노드용 툴팁을 숨긴다.
-    public void HideToolTip(AbilityNode _node)
+    // 노드 클릭 시 상위 시스템에 전달할 요청 함수다.
+    public void RequestNodeLevelUp(AbilityNode _node)
     {
-        if (currentToolTipNode != null && _node != currentToolTipNode)
+        if (_node == null)
             return;
 
-        currentToolTipNode = null;
-
-        if (toolTipInstance == null)
+        if (CanRequestLevelUp(_node, out AbilityLevelUpRejectReason rejectReason) == false)
+        {
+            OnAbilityLevelUpRejected(_node.SkillType, rejectReason);
             return;
+        }
 
-        toolTipInstance.Hide();
+        SkillType requestedSkillType = _node.SkillType;
+
+        OnAbilityLevelUpRequested(requestedSkillType);
+
+        // 이건 임시.
+        OnAbilityLevelUpApproved(requestedSkillType);
     }
 
-    // 툴팁이 표시 중이면 현재 호버 노드 기준으로 위치를 계속 다시 계산한다.
-    private void UpdateToolTipPosition()
+    // 부모 조건과 최대 레벨 여부를 기준으로 레벨업 요청 가능 여부를 판단한다.
+    private bool CanRequestLevelUp(AbilityNode _node, out AbilityLevelUpRejectReason _rejectReason)
     {
-        if (currentToolTipNode == null || toolTipInstance == null || toolTipInstance.gameObject.activeSelf == false)
+        _rejectReason = AbilityLevelUpRejectReason.None;
+
+        if (_node.CurrentLevel >= _node.MaxLevel)
+        {
+            _rejectReason = AbilityLevelUpRejectReason.MaxLevel;
+            return false;
+        }
+
+        SkillType[] parents = _node.ParentSkillTypes;
+        for (int i = 0; i < parents.Length; i++)
+        {
+            if (spawnedNodeMap.TryGetValue(parents[i], out AbilityNode parentNode) == false)
+            {
+                _rejectReason = AbilityLevelUpRejectReason.PrerequisiteNotMet;
+                return false;
+            }
+
+            if (parentNode.IsUnlockedByLevel() == false)
+            {
+                _rejectReason = AbilityLevelUpRejectReason.PrerequisiteNotMet;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    // 상위 로직에 어떤 스킬을 찍으려는지 전달하는 자리다.
+    private void OnAbilityLevelUpRequested(SkillType _skillType)
+    {
+        // _skillType 이놈 찍은거다.
+        Debug.Log($"Request Ability Unlock: {_skillType}");
+    }
+
+    // 해당 특성 찍기 승인
+    public void OnAbilityLevelUpApproved(SkillType _skillType)
+    {
+        if (spawnedNodeMap.TryGetValue(_skillType, out AbilityNode node) == false)
             return;
 
-        ShowToolTip(currentToolTipNode);
+        bool wasLockedByLevel = node.IsUnlockedByLevel() == false;
+        node.ApplyApprovedLevelUp();
+
+        // 해금되는 순간임
+        if (wasLockedByLevel && node.IsUnlockedByLevel())
+            RefreshNodeVisibility();
+        else
+            RefreshLines();
+
+        if (currentToolTipNode == node)
+            ShowToolTip(node);
     }
+
+    // 상위 로직에서 거절 및 이유 (연출을 위함임)
+    public void OnAbilityLevelUpRejected(SkillType _skillType, AbilityLevelUpRejectReason _rejectReason)
+    {
+        if (spawnedNodeMap.TryGetValue(_skillType, out AbilityNode node) == false)
+            return;
+
+        Debug.Log($"Reject Ability Unlock: {_skillType}, Reason: {_rejectReason}");
+
+        if (currentToolTipNode == node)
+            ShowToolTip(node);
+    }
+
+
+
+    // 부모 레벨 기준으로 자식 노드와 라인의 노출 상태를 갱신한다.
+    private void RefreshNodeVisibility()
+    {
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            bool isVisible = ShouldShowNode(node);
+            node.gameObject.SetActive(isVisible);
+
+            if (isVisible == false && currentToolTipNode == node)
+                HideToolTip(node);
+        }
+
+        RefreshLines();
+    }
+
+    // 부모가 모두 1레벨 이상이면 자식 노드를 표시한다. 부모가 없으면 시작 노드로 본다.
+    private bool ShouldShowNode(AbilityNode _node)
+    {
+        SkillType[] parents = _node.ParentSkillTypes;
+        if (parents == null || parents.Length == 0)
+            return true;
+
+        for (int i = 0; i < parents.Length; i++)
+        {
+            if (spawnedNodeMap.TryGetValue(parents[i], out AbilityNode parentNode) == false)
+                return false;
+
+            if (parentNode.IsUnlockedByLevel() == false)
+                return false;
+        }
+
+        return true;
+    }
+
+#endregion
+
+
+#region Optimization
+
+
+    // 라인 연결의 바운드가 화면 영역 밖에 충분히 벗어나 있으면 이번 프레임 렌더링을 생략한다.
+    private bool ShouldCullLineConnection(AbilityLineConnection _connection, RectTransform _targetParent)
+    {
+        Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
+        Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
+
+        float minX = Mathf.Min(startCenter.x, endCenter.x);
+        float maxX = Mathf.Max(startCenter.x, endCenter.x);
+        float minY = Mathf.Min(startCenter.y, endCenter.y);
+        float maxY = Mathf.Max(startCenter.y, endCenter.y);
+
+        Rect viewRect = abilityBackground.rect;
+        float margin = GetActiveSegmentSize() * 2f;
+
+        if (maxX < viewRect.xMin - margin)
+            return true;
+
+        if (minX > viewRect.xMax + margin)
+            return true;
+
+        if (maxY < viewRect.yMin - margin)
+            return true;
+
+        if (minY > viewRect.yMax + margin)
+            return true;
+
+        return false;
+    }
+
+#endregion
+
 }
 
 public class AbilityLineConnection

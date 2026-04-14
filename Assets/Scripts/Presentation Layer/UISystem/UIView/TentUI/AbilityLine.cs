@@ -7,9 +7,7 @@ public class AbilityLine : MonoBehaviour
     [SerializeField] private RectTransform rootRectTransform;
     [SerializeField] private Image lineImage;
 
-    /// <summary>
-    /// 라인 스프라이트와 배치 좌표를 적용한다.
-    /// </summary>
+    // 라인 스프라이트와 배치 좌표를 적용한다.
     public void Setup(Sprite _sprite, Vector2 _anchoredPosition)
     {
         gameObject.SetActive(true);
@@ -28,17 +26,13 @@ public class AbilityLine : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 풀에 반환된 라인을 숨긴다.
-    /// </summary>
+    // 풀에 반환된 라인을 숨긴다.
     public void Hide()
     {
         gameObject.SetActive(false);
     }
 
-    /// <summary>
-    /// 라인 루트를 가장 뒤쪽 형제로 이동시킨다.
-    /// </summary>
+    // 라인 루트를 가장 뒤쪽 형제로 이동시킨다.
     public void MoveBehindSiblings()
     {
         if (rootRectTransform != null)

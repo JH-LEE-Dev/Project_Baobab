@@ -3,7 +3,7 @@ using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
 
-public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
@@ -55,6 +55,14 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         return skillType;
     }
 
+    /// <summary>
+    /// 이 노드가 다음에 요청할 레벨을 반환한다.
+    /// </summary>
+    public int GetNextLevel()
+    {
+        return Mathf.Min(currentLevel + 1, maxLevel);
+    }
+
     // JSON에서 읽은 노드 정의를 현재 프리팹 인스턴스에 반영한다.
     public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, Sprite _pictureSprite, float _gridCellSize)
     {
@@ -81,7 +89,10 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (rectTransform == null)
             return;
 
-        rectTransform.anchoredPosition = new Vector2(gridPosition.x * _gridCellSize, gridPosition.y * _gridCellSize);
+        Vector2 anchoredPosition = new Vector2(gridPosition.x * _gridCellSize, gridPosition.y * _gridCellSize);
+        rectTransform.anchoredPosition = new Vector2(
+            Mathf.Round(anchoredPosition.x),
+            Mathf.Round(anchoredPosition.y));
     }
 
     // 부모 스킬 문자열 목록을 SkillType 배열로 변환한다.
@@ -101,6 +112,26 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         }
 
         return result;
+    }
+
+    // 현재 레벨이 1 이상인지 반환한다.
+    public bool IsUnlockedByLevel()
+    {
+        return currentLevel > 0;
+    }
+
+    // 현재 레벨을 외부에서 직접 반영한다.
+    public void SetCurrentLevel(int _currentLevel)
+    {
+        currentLevel = Mathf.Clamp(_currentLevel, 0, maxLevel);
+    }
+
+    /// <summary>
+    /// 승인된 특성 레벨업을 즉시 반영한다.
+    /// </summary>
+    public void ApplyApprovedLevelUp()
+    {
+        SetCurrentLevel(currentLevel + 1);
     }
 
     /// <summary>
@@ -176,5 +207,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerExit(PointerEventData eventData)
     {
         owner?.HideToolTip(this);
+    }
+
+    /// <summary>
+    /// 노드 클릭 시 상위 컴포넌트에 레벨업 요청을 전달한다.
+    /// </summary>
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
+            return;
+
+        owner?.RequestNodeLevelUp(this);
     }
 }

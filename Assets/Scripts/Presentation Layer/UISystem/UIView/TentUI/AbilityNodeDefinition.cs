@@ -14,7 +14,6 @@ public class AbilityNodeDefinitionJson
     public string description;
     public int maxLevel;
     public AbilityLevelCostJson[] levelCosts;
-    public string pictureKey;
     public int gridX;
     public int gridY;
     public string[] parentSkillTypes;
@@ -31,7 +30,7 @@ public class AbilityLevelCostJson
 [Serializable]
 public class AbilityPictureBinding
 {
-    public string pictureKey;
+    public SkillType skillType;
     public UnityEngine.Sprite sprite;
 }
 
