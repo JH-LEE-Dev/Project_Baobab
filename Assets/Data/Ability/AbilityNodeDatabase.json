@@ -6,7 +6,7 @@
       "description": "이제 텐트에서 휴식할 수 있습니다.",
       "maxLevel": 1,
       "levelCosts": [
-        { "level": 1, "coin": 0 }
+        { "level": 1, "moneyType": "Coin", "amount": 0 }
       ],
       "pictureKey": "Ability_TextureSample",
       "gridX": 0,
@@ -19,7 +19,7 @@
       "description": "인벤토리 크기가 2 증가합니다.",
       "maxLevel": 1,
       "levelCosts": [
-        { "level": 1, "coin": 500}
+        { "level": 1, "moneyType": "Coin", "amount": 500 }
       ],
       "pictureKey": "Ability_TextureSample",
       "gridX": 0,
@@ -28,17 +28,17 @@
         "Rest"
       ]
     },
-        {
+    {
       "skillType": "AxeDamage1",
       "displayName": "도끼 데미지 I",
       "description": "도끼 데미지 +10%",
       "maxLevel": 5,
       "levelCosts": [
-        { "level": 1, "coin": 10 },
-        { "level": 2, "coin": 10 },
-        { "level": 3, "coin": 10 },
-        { "level": 4, "coin": 10 },
-        { "level": 5, "coin": 10 }
+        { "level": 1, "moneyType": "Coin", "amount": 10 },
+        { "level": 2, "moneyType": "Coin", "amount": 10 },
+        { "level": 3, "moneyType": "Coin", "amount": 10 },
+        { "level": 4, "moneyType": "Coin", "amount": 10 },
+        { "level": 5, "moneyType": "Coin", "amount": 10 }
       ],
       "pictureKey": "Ability_TextureSample",
       "gridX": 2,
@@ -47,13 +47,13 @@
         "Rest"
       ]
     },
-        {
+    {
       "skillType": "hunting",
       "displayName": "수렵",
-      "description": "이제 숲에서 사냥을 할 수 있습니다.",
+      "description": "이제 맵에서 사냥을 할 수 있습니다.",
       "maxLevel": 1,
       "levelCosts": [
-        { "level": 1, "coin": 20}
+        { "level": 1, "moneyType": "Coin", "amount": 20 }
       ],
       "pictureKey": "Ability_TextureSample",
       "gridX": -2,
@@ -62,6 +62,5 @@
         "Rest"
       ]
     }
-
   ]
 }

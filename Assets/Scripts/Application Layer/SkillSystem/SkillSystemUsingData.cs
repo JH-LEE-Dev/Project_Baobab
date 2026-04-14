@@ -13,7 +13,9 @@ public struct Skill
 public enum SkillType
 {
     None,
-    Rest,
-    InventoryExpansion1,
+    Rest,//휴식
+    InventoryExpansion1,//인벤토리확장I
+    AxeDamage1,//도끼데미지
+    hunting,//수렵
     Max
 }

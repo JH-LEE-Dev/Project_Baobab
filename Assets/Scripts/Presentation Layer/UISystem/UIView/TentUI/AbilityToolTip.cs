@@ -16,9 +16,7 @@ public class AbilityToolTip : MonoBehaviour
     public TMP_Text DescriptionText => descriptionText;
     public TMP_Text CostText => costText;
 
-    /// <summary>
-    /// 툴팁에 표시할 문자열을 설정한다.
-    /// </summary>
+    // 툴팁에 표시할 문자열을 설정한다.
     public void SetContent(string _titleAndLevel, string _description, string _cost)
     {
         if (titleAndLevelText != null)

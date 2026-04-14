@@ -24,7 +24,7 @@ public class AbilityNodeDefinitionJson
 public class AbilityLevelCostJson
 {
     public int level;
-    public string resourceType;
+    public string moneyType;
     public int amount;
 }
 
@@ -32,5 +32,24 @@ public class AbilityLevelCostJson
 public class AbilityPictureBinding
 {
     public string pictureKey;
+    public UnityEngine.Sprite sprite;
+}
+
+public enum AbilityLineSegmentSpriteType
+{
+    Row4,
+    Col4,
+    DiagSENW4,
+    DiagSWNE4,
+    Row8,
+    Col8,
+    DiagSENW8,
+    DiagSWNE8,
+}
+
+[Serializable]
+public class AbilityLineSegmentSpriteBinding
+{
+    public AbilityLineSegmentSpriteType lineType;
     public UnityEngine.Sprite sprite;
 }

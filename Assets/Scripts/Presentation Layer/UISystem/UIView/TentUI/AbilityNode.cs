@@ -108,7 +108,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     /// </summary>
     public string GetToolTipTitleAndLevelText()
     {
-        return $"{displayName} {currentLevel}/{maxLevel}";
+        return $"{displayName}\n레벨 : {currentLevel} / {maxLevel}";
     }
 
     /// <summary>
@@ -134,10 +134,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (nextLevelCost.amount <= 0)
             return "Free";
 
-        if (string.IsNullOrWhiteSpace(nextLevelCost.resourceType))
+        if (Enum.TryParse(nextLevelCost.moneyType, true, out MoneyType parsedMoneyType) == false)
             return "Cost N/A";
 
-        return $"{nextLevelCost.amount} {nextLevelCost.resourceType}";
+        if (parsedMoneyType == MoneyType.None || parsedMoneyType == MoneyType.Max)
+            return "Cost N/A";
+
+        return $"{nextLevelCost.amount} {parsedMoneyType}";
     }
 
     /// <summary>
