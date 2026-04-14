@@ -2,14 +2,23 @@ using UnityEngine;
 
 public class IdleState : CharacterState
 {
+    private Vector3Int currentReservedPos;
+
     public override void Enter()
     {
         bActivated = true;
         character.anim.SetBool(character.isMovingHash, false);
+
+        // 현재 위치 타일 점유
+        currentReservedPos = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        ctx.pathfindGridProvider.Occupy(currentReservedPos);
     }
 
     public override void Exit()
     {
+        // 점유 해제
+        ctx.pathfindGridProvider.Release(currentReservedPos);
+
         bActivated = false;
     }
 
@@ -23,6 +32,18 @@ public class IdleState : CharacterState
             stateMachine.ChangeState<RunState>();
 
         ApplyDeceleration();
+        UpdateOccupation();
+    }
+
+    private void UpdateOccupation()
+    {
+        Vector3Int newCell = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
+        if (newCell != currentReservedPos)
+        {
+            ctx.pathfindGridProvider.Release(currentReservedPos);
+            ctx.pathfindGridProvider.Occupy(newCell);
+            currentReservedPos = newCell;
+        }
     }
 
     protected override void SubscribeEvents()
