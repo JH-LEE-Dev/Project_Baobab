@@ -20,6 +20,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         // 내부 컴포넌트 참조 구성
         axeAnimation = GetComponent<AxeAnimation>();
+
+        durability = ctx.characterStat.axeDurability;
     }
 
     public override void SetFacingDir(Transform _attackTransform)
@@ -27,7 +29,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         // Arm 위치에서 attackTransform까지의 방향 벡터 계산
         Vector2 direction = (_attackTransform.position - transform.parent.parent.position);
 
-        if (direction.sqrMagnitude < 0.01f) 
+        if (direction.sqrMagnitude < 0.01f)
             return;
 
         // 8방향 인덱스 계산
@@ -100,5 +102,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         if (durability < 0f)
             durability = 0f;
+    }
+
+    public override void ResetDurability()
+    {
+        durability = ctx.characterStat.axeDurability;
     }
 }

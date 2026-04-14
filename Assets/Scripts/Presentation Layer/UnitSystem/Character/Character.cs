@@ -174,17 +174,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
         if (armComponent.axeComponent != null)
         {
-            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction_Axe;
-            armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction_Axe;
+            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
+            armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction;
+
+            armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
+            armComponent.rifleComponent.DeclareAttackStateEvent += SetbCanAction;
 
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             armComponent.axeComponent.AttackEvent += attackComponent.Attack;
 
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             attackComponent.AttackSuccessEvent += armComponent.axeComponent.DecreaseDurability;
-
-            armComponent.rifleComponent.RifleReadyEvent -= RifleReady;
-            armComponent.rifleComponent.RifleReadyEvent += RifleReady;
         }
     }
 
@@ -195,7 +195,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
         if (armComponent != null && armComponent.axeComponent != null)
         {
-            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction_Axe;
+            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
+            attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
+            armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
         }
     }
@@ -237,17 +239,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         armComponent.WeaponModeChanged(_currentMode);
     }
 
-    private void SetbCanAction_Axe(bool _isAttacking)
+    private void SetbCanAction(bool _isAttacking)
     {
         bCanAction = !_isAttacking;
         bCanRotate = !_isAttacking;
         attackComponent.SetbAttack(_isAttacking);
         UpdateFacingByAttackPoint();
-    }
-
-    private void RifleReady()
-    {
-        bCanAction = false;
     }
 
     private void SetItemSensorPos() => itemSensorRB.MovePosition(transform.position);

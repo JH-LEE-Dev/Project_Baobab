@@ -65,18 +65,28 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void BindEvents()
     {
+        ctx.inputManager.inputReader.MoveTriggerEvent -= rifleComponent.CancelReady;
+        ctx.inputManager.inputReader.MoveTriggerEvent += rifleComponent.CancelReady;
+
         ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
         ctx.inputManager.inputReader.MouseClickEvent += LeftButtonClicked;
 
         ctx.inputManager.inputReader.MouseReleaseEvent -= LeftButtonReleased;
         ctx.inputManager.inputReader.MouseReleaseEvent += LeftButtonReleased;
+
+        ctx.inputManager.inputReader.ReloadButtonPressedEvent -= rifleComponent.Reload;
+        ctx.inputManager.inputReader.ReloadButtonPressedEvent += rifleComponent.Reload;
     }
 
     private void ReleaseEvents()
     {
+        ctx.inputManager.inputReader.MoveTriggerEvent -= rifleComponent.CancelReady;
+
         ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
-        
+
         ctx.inputManager.inputReader.MouseReleaseEvent -= LeftButtonReleased;
+
+        ctx.inputManager.inputReader.ReloadButtonPressedEvent -= rifleComponent.Reload;
     }
 
     private void UpdateRotation()
@@ -170,5 +180,6 @@ public class ArmComponent : PComponent, IArmComponent
     {
         axeComponent.ResetDurability();
         rifleComponent.ResetDurability();
+        rifleComponent.ResetAmmo();
     }
 }

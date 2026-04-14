@@ -6,6 +6,7 @@ public class InputReader
 {
     //이벤트
     public event Action<Vector2> MoveEvent;
+    public event Action MoveTriggerEvent;
     public event Action<Vector2> MouseMoveEvent;
     public event Action InventoryKeyEvent;
 
@@ -17,6 +18,7 @@ public class InputReader
     public event Action SwitchModeKeyPressedEvent;
     public event Action GoToAxeModeEvent;
     public event Action GoToRifleModeEvent;
+    public event Action ReloadButtonPressedEvent;
 
     //내부 의존성
     private InputActionSystem actions;
@@ -43,6 +45,7 @@ public class InputReader
             actions.Normal.SwitchMode.performed += SwitchModeKeyPressed;
             actions.Normal.AxeMode.performed += GoToAxeModeKeyPressed;
             actions.Normal.RifleMode.performed += GoToRifleModeKeyPressed;
+            actions.Normal.Reload.performed += ReloadButtonPressed;
         }
 
         actions.Normal.Enable();
@@ -66,6 +69,7 @@ public class InputReader
         actions.Normal.SwitchMode.performed -= SwitchModeKeyPressed;
         actions.Normal.AxeMode.performed -= GoToAxeModeKeyPressed;
         actions.Normal.RifleMode.performed -= GoToRifleModeKeyPressed;
+        actions.Normal.Reload.performed -= ReloadButtonPressed;
     }
 
     public void Pause(bool _bPause)
@@ -80,6 +84,7 @@ public class InputReader
 
         Vector2 move = context.ReadValue<Vector2>();
 
+        MoveTriggerEvent?.Invoke();
         MoveEvent?.Invoke(move);
     }
 
@@ -140,5 +145,10 @@ public class InputReader
     private void GoToRifleModeKeyPressed(InputAction.CallbackContext context)
     {
         GoToRifleModeEvent?.Invoke();
+    }
+
+    private void ReloadButtonPressed(InputAction.CallbackContext context)
+    {
+        ReloadButtonPressedEvent?.Invoke();
     }
 }

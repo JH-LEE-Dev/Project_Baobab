@@ -1,9 +1,12 @@
-using System;
 using UnityEngine;
+using System;
 
 public class RifleComponent : WeaponComponent, IRifleComponent
 {
-    public event Action RifleReadyEvent;
+    public event Action<bool> DeclareAttackStateEvent;
+    public event Action AttackCoolTimeStartEvent;
+    public event Action ReloadStartEvent;
+
     // 내부 의존성
     private RifleAnimation rifleAnimation;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
@@ -11,15 +14,24 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private bool bReady = false;
     private bool bFired = false;
+    private bool bInCoolDown = false;
+    private bool bLeftButtonClicked = false;
+    private bool bReload = false;
 
     float IRifleComponent.durability => durability;
+
+    private int mag;
+    private int ammo;
 
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
-        
+
         // 내부 컴포넌트 참조 구성
         rifleAnimation = GetComponent<RifleAnimation>();
+
+        mag = ctx.characterStat.magCap;
+        ammo = ctx.characterStat.ammoCap;
     }
 
     public override void SetFacingDir(Transform _attackTransform)
@@ -72,28 +84,62 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     public override void LeftButtonClicked()
     {
-        if (bCanAction == false)
+        if (bCanAction == false || ctx.bWhileChangingWeapon == true || bReload == true)
             return;
+
+        bLeftButtonClicked = true;
 
         if (bReady == true)
         {
-            if (bFired == false)
+            if (bFired == false && bInCoolDown == false)
             {
                 Fire();
             }
         }
         else
         {
-            bReady = true;
-            RifleReadyEvent?.Invoke();
-            anim.SetBool(bReadyHash, bReady);
+            EnterReady(true);
+        }
+    }
+
+    public override void LeftButtonReleased()
+    {
+        bLeftButtonClicked = false;
+    }
+
+    private void EnterReady(bool _useDelay)
+    {
+        bReady = true;
+        anim.SetBool(bReadyHash, bReady);
+
+        if (_useDelay)
+        {
+            StopCoroutine(nameof(RifleReadyCoolDownRoutine));
+            StartCoroutine(nameof(RifleReadyCoolDownRoutine));
+        }
+        else
+        {
+            bInCoolDown = false;
+        }
+    }
+
+    private System.Collections.IEnumerator RifleReadyCoolDownRoutine()
+    {
+        bInCoolDown = true;
+        yield return new WaitForSeconds(ctx.characterStat.rifleReadyTime);
+        bInCoolDown = false;
+
+        if (bLeftButtonClicked && bFired == false)
+        {
+            Fire();
         }
     }
 
     private void Fire()
     {
-        if (null == rifleAnimation) return;
+        if (null == rifleAnimation || mag == 0 || bReload == true) return;
 
+        DecreaseMagAmmo();
         bFired = true;
 
         OnFireStart();
@@ -102,6 +148,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private void OnFireStart()
     {
         Debug.Log("Rifle: 발사 시작");
+        DeclareAttackStateEvent?.Invoke(true);
 
         rifleAnimation.PlayRecoil(OnFireFinish);
     }
@@ -109,10 +156,27 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private void OnFireFinish()
     {
         Debug.Log("Rifle: 발사 동작 완료");
+        AttackCoolTimeStartEvent?.Invoke();
+        StartCoroutine(nameof(FireAfterDelayRoutine));
+    }
+
+    private System.Collections.IEnumerator FireAfterDelayRoutine()
+    {
+        yield return new WaitForSeconds(ctx.characterStat.afterShotTime);
+
+        DeclareAttackStateEvent?.Invoke(false);
 
         bReady = false;
         bFired = false;
+        bInCoolDown = false;
         anim.SetBool(bReadyHash, bReady);
+
+        // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
+        if (bLeftButtonClicked)
+        {
+            EnterReady(false);
+            Fire();
+        }
     }
 
     public override void SetEnable(bool _boolean)
@@ -121,6 +185,67 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         bReady = false;
         bFired = false;
+        bInCoolDown = false;
+        bLeftButtonClicked = false;
         anim.SetBool(bReadyHash, bReady);
+    }
+
+    public void CancelReady()
+    {
+        if (bFired == true || bCanAction == false)
+            return;
+
+        bReady = false;
+        bInCoolDown = false;
+
+        anim.SetBool(bReadyHash, bReady);
+    }
+
+    private void DecreaseMagAmmo()
+    {
+        mag -= 1;
+    }
+
+    public void Reload()
+    {
+        if (bCanAction == false || bFired == true || bReload == true || ammo == 0 || mag == ctx.characterStat.magCap)
+            return;
+
+        if (bReady)
+        {
+            CancelReady();
+        }
+
+        ReloadStartEvent?.Invoke();
+        StartCoroutine(nameof(ReloadRoutine));
+    }
+
+    private System.Collections.IEnumerator ReloadRoutine()
+    {
+        bReload = true;
+
+        yield return new WaitForSeconds(ctx.characterStat.reloadDuration);
+
+        int amount = 0;
+        if (ctx.characterStat.magCap < ammo)
+        {
+            ammo -= ctx.characterStat.magCap;
+            amount = ctx.characterStat.magCap;
+        }
+        else
+        {
+            amount = ammo;
+            ammo = 0;
+        }
+
+        mag = amount;
+        bReload = false;
+        Debug.Log("Rifle: 재장전 완료");
+    }
+
+    public void ResetAmmo()
+    {
+        ammo = ctx.characterStat.ammoCap;
+        mag = ctx.characterStat.magCap;
     }
 }

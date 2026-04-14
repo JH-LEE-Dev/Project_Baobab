@@ -4,7 +4,7 @@ public class WeaponComponent : MonoBehaviour
 {
     protected ComponentCtx ctx;
     protected bool bCanAction = false;
-    protected float durability = 100f;
+    protected float durability;
     public virtual void Initialize(ComponentCtx _ctx)
     {
         ctx = _ctx;
@@ -28,5 +28,5 @@ public class WeaponComponent : MonoBehaviour
     public virtual void LeftButtonClicked() { }
     public virtual void LeftButtonReleased() { }
     public virtual void DecreaseDurability() { }
-    public virtual void ResetDurability() { durability = 100f; }
+    public virtual void ResetDurability() { }
 }

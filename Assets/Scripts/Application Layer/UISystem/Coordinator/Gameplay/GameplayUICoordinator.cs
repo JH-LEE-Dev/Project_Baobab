@@ -111,6 +111,7 @@ public class GameplayUICoordinator
     private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
     {
         hudUI.SetCharacter(characterSpawendSignal.character);
+        unitUI.SetCharacter(characterSpawendSignal.character);
     }
 
     private void GoHomeButtonClicked()

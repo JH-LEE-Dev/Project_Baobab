@@ -172,6 +172,15 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Reload"",
+                    ""type"": ""Button"",
+                    ""id"": ""76f717b3-7678-4015-b04d-11e01a27dd40"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -317,6 +326,17 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""action"": ""RifleMode"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f7ecc1da-e735-4b54-9933-b5846101f3e5"",
+                    ""path"": ""<Keyboard>/r"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Reload"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -334,6 +354,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         m_Normal_SwitchMode = m_Normal.FindAction("SwitchMode", throwIfNotFound: true);
         m_Normal_AxeMode = m_Normal.FindAction("AxeMode", throwIfNotFound: true);
         m_Normal_RifleMode = m_Normal.FindAction("RifleMode", throwIfNotFound: true);
+        m_Normal_Reload = m_Normal.FindAction("Reload", throwIfNotFound: true);
     }
 
     ~@InputActionSystem()
@@ -423,6 +444,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Normal_SwitchMode;
     private readonly InputAction m_Normal_AxeMode;
     private readonly InputAction m_Normal_RifleMode;
+    private readonly InputAction m_Normal_Reload;
     /// <summary>
     /// Provides access to input actions defined in input action map "Normal".
     /// </summary>
@@ -470,6 +492,10 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Normal/RifleMode".
         /// </summary>
         public InputAction @RifleMode => m_Wrapper.m_Normal_RifleMode;
+        /// <summary>
+        /// Provides access to the underlying input action "Normal/Reload".
+        /// </summary>
+        public InputAction @Reload => m_Wrapper.m_Normal_Reload;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -523,6 +549,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @RifleMode.started += instance.OnRifleMode;
             @RifleMode.performed += instance.OnRifleMode;
             @RifleMode.canceled += instance.OnRifleMode;
+            @Reload.started += instance.OnReload;
+            @Reload.performed += instance.OnReload;
+            @Reload.canceled += instance.OnReload;
         }
 
         /// <summary>
@@ -561,6 +590,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @RifleMode.started -= instance.OnRifleMode;
             @RifleMode.performed -= instance.OnRifleMode;
             @RifleMode.canceled -= instance.OnRifleMode;
+            @Reload.started -= instance.OnReload;
+            @Reload.performed -= instance.OnReload;
+            @Reload.canceled -= instance.OnReload;
         }
 
         /// <summary>
@@ -664,5 +696,12 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnRifleMode(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Reload" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnReload(InputAction.CallbackContext context);
     }
 }
