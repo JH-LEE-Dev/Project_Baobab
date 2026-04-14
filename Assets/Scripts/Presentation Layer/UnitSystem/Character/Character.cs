@@ -36,6 +36,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     public GroundPhysicsData currentGroundData { get; private set; }
     public bool bInDungeon { get; private set; } = true;
     public bool bCanAction { get; private set; } = true;
+    public bool bCanRotate { get; private set; } = true;
 
     private int shadowOverlapCount = 0;
     private Color normalColor = Color.white;
@@ -99,7 +100,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
     public void SetFacingDirection(Vector2 _input)
     {
-        if (_input.sqrMagnitude < 0.01f || bCanAction == false) return;
+        if (_input.sqrMagnitude < 0.01f || bCanRotate == false) return;
 
         float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
@@ -173,14 +174,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
         if (armComponent.axeComponent != null)
         {
-            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
-            armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction;
+            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction_Axe;
+            armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction_Axe;
 
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             armComponent.axeComponent.AttackEvent += attackComponent.Attack;
 
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             attackComponent.AttackSuccessEvent += armComponent.axeComponent.DecreaseDurability;
+
+            armComponent.rifleComponent.RifleReadyEvent -= RifleReady;
+            armComponent.rifleComponent.RifleReadyEvent += RifleReady;
         }
     }
 
@@ -191,7 +195,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
         if (armComponent != null && armComponent.axeComponent != null)
         {
-            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
+            armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction_Axe;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
         }
     }
@@ -233,11 +237,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         armComponent.WeaponModeChanged(_currentMode);
     }
 
-    private void SetbCanAction(bool _isAttacking)
+    private void SetbCanAction_Axe(bool _isAttacking)
     {
         bCanAction = !_isAttacking;
+        bCanRotate = !_isAttacking;
         attackComponent.SetbAttack(_isAttacking);
         UpdateFacingByAttackPoint();
+    }
+
+    private void RifleReady()
+    {
+        bCanAction = false;
     }
 
     private void SetItemSensorPos() => itemSensorRB.MovePosition(transform.position);

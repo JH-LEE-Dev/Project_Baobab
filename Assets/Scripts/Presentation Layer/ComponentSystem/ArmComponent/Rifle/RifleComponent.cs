@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 
 public class RifleComponent : WeaponComponent, IRifleComponent
 {
+    public event Action RifleReadyEvent;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     private readonly int bReadyHash = Animator.StringToHash("bReady");
 
@@ -71,7 +73,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         else
         {
             bReady = true;
-
+            RifleReadyEvent?.Invoke();
             anim.SetBool(bReadyHash, bReady);
         }
     }
