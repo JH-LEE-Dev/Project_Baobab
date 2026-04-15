@@ -12,6 +12,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float ZoomFollowSpeed = 18f;
     private const float ToolTipSpacing = 32f;
     private const float StraightLineOverlap = 1f;
+    private static readonly Color CanApplyColor = new Color32(0, 255, 0, 255);
+    private static readonly Color CannotApplyColor = new Color32(255, 0, 0, 255);
+    private static readonly Color NodeBackgroundColor = new Color32(0, 0, 0, 255);
 
     private ISkillSystemProvider skillSystemProvider;
     private Canvas rootCanvas;
@@ -162,6 +165,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         abilityBackground.gameObject.SetActive(true);
         BuildNodesIfNeeded();
         RefreshNodeVisibility();
+        RefreshNodeAvailabilityVisuals();
         ResetView();
     }
 
@@ -600,7 +604,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             line.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
                 ? $"Line_{_parentSkillType}_{_childSkillType}_{segmentIndex}"
                 : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}_{segmentIndex}";
-            line.Setup(sprite, position);
+            line.Setup(sprite, position, GetLineColor(_childSkillType));
             line.MoveBehindSiblings();
         }
     }
@@ -618,6 +622,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         bool _hasCornerAnchor,
         bool _isStartCornerAnchor)
     {
+        Color lineColor = GetLineColor(_childSkillType);
         Vector2 snappedStart = SnapToPixel(_startCenter);
         Vector2 snappedEnd = SnapToPixel(_endCenter);
         float baseLength;
@@ -644,7 +649,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             anchoredLine.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
                 ? $"Line_{_parentSkillType}_{_childSkillType}"
                 : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-            anchoredLine.SetupAnchoredSize(_sprite, anchoredCornerPosition, _isHorizontal, length, anchorAtStart);
+            anchoredLine.SetupAnchoredSize(_sprite, anchoredCornerPosition, _isHorizontal, length, anchorAtStart, lineColor);
             anchoredLine.MoveBehindSiblings();
             return;
         }
@@ -663,8 +668,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
         line.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
             ? $"Line_{_parentSkillType}_{_childSkillType}"
             : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-        line.SetupScaled(_sprite, center, _isHorizontal, centerLength);
+        line.SetupScaled(_sprite, center, _isHorizontal, centerLength, lineColor);
         line.MoveBehindSiblings();
+    }
+
+    // 부모와 연결된 라인 색상은 도착 자식 노드의 현재 찍기 가능 여부를 따른다.
+    private Color GetLineColor(SkillType _childSkillType)
+    {
+        if (spawnedNodeMap.TryGetValue(_childSkillType, out AbilityNode childNode) == false)
+            return CannotApplyColor;
+
+        return childNode.CanApplyVisual ? CanApplyColor : CannotApplyColor;
     }
 
     // 현재 줌 비율에 따라 사용할 라인 세그먼트 크기를 선택한다.
@@ -792,50 +806,42 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_node == null)
             return;
 
-        if (CanRequestLevelUp(_node, out AbilityLevelUpRejectReason rejectReason) == false)
-        {
-            OnAbilityLevelUpRejected(_node.SkillType, rejectReason);
-            return;
-        }
-
         SkillType requestedSkillType = _node.SkillType;
 
         OnAbilityLevelUpRequested(requestedSkillType);
-
-        // 이건 임시.
-        OnAbilityLevelUpApproved(requestedSkillType);
-    }
-
-    // 부모 조건과 최대 레벨 여부를 기준으로 레벨업 요청 가능 여부를 판단한다.
-    private bool CanRequestLevelUp(AbilityNode _node, out AbilityLevelUpRejectReason _rejectReason)
-    {
-        _rejectReason = AbilityLevelUpRejectReason.None;
-
-        if (_node.CurrentLevel >= _node.MaxLevel)
-        {
-            _rejectReason = AbilityLevelUpRejectReason.MaxLevel;
-            return false;
-        }
-
-        SkillType[] parents = _node.ParentSkillTypes;
-        for (int i = 0; i < parents.Length; i++)
-        {
-            if (spawnedNodeMap.TryGetValue(parents[i], out AbilityNode parentNode) == false)
-                return false;
-
-            if (parentNode.IsUnlockedByLevel() == false)
-                return false;
-        }
-
-        return true;
     }
 
 
     // 상위 로직에 어떤 스킬을 찍으려는지 전달하는 자리다.
     private void OnAbilityLevelUpRequested(SkillType _skillType)
     {
-        // _skillType 이놈 찍은거다.
-        Debug.Log($"Request Ability Unlock: {_skillType}");
+        if (skillSystemProvider == null)
+        {
+            Debug.LogWarning($"SkillSystemProvider is null. Request skipped: {_skillType}");
+            return;
+        }
+
+        AbilityLevelUpRejectReason reason = skillSystemProvider.TryApplySkill(_skillType);
+
+        if (reason == AbilityLevelUpRejectReason.Pass)
+            OnAbilityLevelUpApproved(_skillType);
+        else
+            OnAbilityLevelUpRejected(_skillType, NormalizeRejectReason(reason));
+    }
+
+    // 상위 시스템의 세부 실패 사유를 UI에서 사용할 공통 사유로 정리한다.
+    private AbilityLevelUpRejectReason NormalizeRejectReason(AbilityLevelUpRejectReason _reason)
+    {
+        Debug.Log("RejectReason : " + _reason);
+
+        switch (_reason)
+        {
+            case AbilityLevelUpRejectReason.NotEnoughMoney:
+            case AbilityLevelUpRejectReason.NotEnoughCarrot:
+                return AbilityLevelUpRejectReason.NotEnoughMoney;
+            default:
+                return _reason;
+        }
     }
 
     // 해당 특성 찍기 승인
@@ -852,6 +858,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
             RefreshNodeVisibility();
         else
             RefreshLines();
+
+        RefreshNodeAvailabilityVisuals();
 
         if (currentToolTipNode == node)
             ShowToolTip(node);
@@ -882,6 +890,28 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             if (isVisible == false && currentToolTipNode == node)
                 HideToolTip(node);
+        }
+
+        RefreshLines();
+    }
+
+    // 현재 보이는 노드를 순회하며 찍기 가능 여부를 확인하고 테두리/배경 색을 갱신한다.
+    private void RefreshNodeAvailabilityVisuals()
+    {
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node == null || node.gameObject.activeSelf == false)
+                continue;
+
+            bool canApply = false;
+            if (skillSystemProvider != null)
+                canApply = skillSystemProvider.CanApplySkill(node.SkillType) == AbilityLevelUpRejectReason.Pass;
+
+            node.ApplyVisualState(
+                canApply ? CanApplyColor : CannotApplyColor,
+                NodeBackgroundColor,
+                canApply);
         }
 
         RefreshLines();
