@@ -60,6 +60,8 @@ public struct SkillDispatchInfo
 
 public class SkillManager : MonoBehaviour, ISkillSystemProvider
 {
+    private const bool EnablePrototypeAutoPass = false;
+
     public Action<SkillDispatchInfo> DispatchSkillsEvent;
 
     // 외부 의존성
@@ -128,6 +130,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     /// </summary>
     public AbilityLevelUpRejectReason TryApplySkill(SkillType _type)
     {
+        if (EnablePrototypeAutoPass)
+            return AbilityLevelUpRejectReason.Pass;
+
         AbilityLevelUpRejectReason reason = CanApplySkill(_type);
         if (reason != AbilityLevelUpRejectReason.Pass) return reason;
 
@@ -175,6 +180,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     /// </summary>
     public AbilityLevelUpRejectReason CanApplySkill(SkillType _type)
     {
+        if (EnablePrototypeAutoPass)
+            return AbilityLevelUpRejectReason.Pass;
+
         if (!skillNodeMap.TryGetValue(_type, out SkillNode node)) 
             return AbilityLevelUpRejectReason.None;
 

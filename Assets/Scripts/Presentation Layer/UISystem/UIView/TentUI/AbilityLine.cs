@@ -10,11 +10,18 @@ public class AbilityLine : MonoBehaviour
     // 라인 스프라이트와 배치 좌표를 적용한다.
     public void Setup(Sprite _sprite, Vector2 _anchoredPosition)
     {
+        Setup(_sprite, _anchoredPosition, Color.white);
+    }
+
+    // 라인 세그먼트 스프라이트, 색상, 배치 좌표를 적용한다.
+    public void Setup(Sprite _sprite, Vector2 _anchoredPosition, Color _color)
+    {
         gameObject.SetActive(true);
 
         if (lineImage != null)
         {
             lineImage.sprite = _sprite;
+            lineImage.color = _color;
             lineImage.SetNativeSize();
         }
 
@@ -32,11 +39,18 @@ public class AbilityLine : MonoBehaviour
     // 가로 또는 세로 선분을 하나의 오브젝트로 배치하고 길이만 늘린다.
     public void SetupScaled(Sprite _sprite, Vector2 _anchoredPosition, bool _isHorizontal, float _length)
     {
+        SetupScaled(_sprite, _anchoredPosition, _isHorizontal, _length, Color.white);
+    }
+
+    // 가로나 세로 라인을 한 오브젝트로 유지하면서 색상과 길이를 갱신한다.
+    public void SetupScaled(Sprite _sprite, Vector2 _anchoredPosition, bool _isHorizontal, float _length, Color _color)
+    {
         gameObject.SetActive(true);
 
         if (lineImage != null)
         {
             lineImage.sprite = _sprite;
+            lineImage.color = _color;
             lineImage.SetNativeSize();
         }
 
@@ -66,11 +80,18 @@ public class AbilityLine : MonoBehaviour
     // 코너 기준 한쪽 끝점을 고정한 상태로 width/height만 늘린다.
     public void SetupAnchoredSize(Sprite _sprite, Vector2 _cornerPosition, bool _isHorizontal, float _length, bool _anchorAtStart)
     {
+        SetupAnchoredSize(_sprite, _cornerPosition, _isHorizontal, _length, _anchorAtStart, Color.white);
+    }
+
+    // 코너 끝점을 기준으로 width/height만 늘려 색상과 길이를 갱신한다.
+    public void SetupAnchoredSize(Sprite _sprite, Vector2 _cornerPosition, bool _isHorizontal, float _length, bool _anchorAtStart, Color _color)
+    {
         gameObject.SetActive(true);
 
         if (lineImage != null)
         {
             lineImage.sprite = _sprite;
+            lineImage.color = _color;
             lineImage.SetNativeSize();
         }
 

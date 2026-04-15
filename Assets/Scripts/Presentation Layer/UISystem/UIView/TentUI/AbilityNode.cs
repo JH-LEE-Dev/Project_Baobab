@@ -17,12 +17,14 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     [Header("UI References")]
     [SerializeField] private Image abilityBaseImage;
+    [SerializeField] private Image abilityBackgroundImage;
     [SerializeField] private Image abilityPictureImage;
 
     [Header("Default Visual")]
     [SerializeField] private Sprite defaultPictureSprite;
 
     private UI_TentAbilityComponent owner;
+    private bool canApplyVisual;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -32,6 +34,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public Vector2Int GridPosition => gridPosition;
     public SkillType[] ParentSkillTypes => parentSkillTypes;
     public RectTransform RectTransform => transform as RectTransform;
+    public bool CanApplyVisual => canApplyVisual;
 
 
     // 특성 노드의 내부 그림을 외부에서 교체한다.
@@ -132,6 +135,18 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void ApplyApprovedLevelUp()
     {
         SetCurrentLevel(currentLevel + 1);
+    }
+
+    // 현재 노드의 테두리/배경 표시 상태를 갱신한다.
+    public void ApplyVisualState(Color _baseColor, Color _backgroundColor, bool _canApply)
+    {
+        canApplyVisual = _canApply;
+
+        if (abilityBaseImage != null)
+            abilityBaseImage.color = _baseColor;
+
+        if (abilityBackgroundImage != null)
+            abilityBackgroundImage.color = _backgroundColor;
     }
 
     /// <summary>
