@@ -14,13 +14,16 @@ public class GameInstaller : MonoBehaviour
     private UnitLogicManager unitLogicManager;
     private GameplayUIInstaller gameplayUIInstaller;
     private InventoryManager inventoryManager;
+    private SkillDispatcher skillDispatcher;
+    private SkillManager skillManager;
 
     //시스템 객체들
     private UnitSystem unitSystem;
     private TownSystem townSystem;
     private InDungeonSystem inDungeonSystem;
     private EnvironmentSystem environmentSystem;
-    private SkillManager skillManager;
+
+    private SkillSystem skillSystem;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager)
     {
@@ -28,7 +31,7 @@ public class GameInstaller : MonoBehaviour
 
         unitSystem = new UnitSystem();
         signalHub = new SignalHub();
-
+        skillSystem = new SkillSystem();
 
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -43,6 +46,7 @@ public class GameInstaller : MonoBehaviour
         gameplayUIInstaller = GetComponentInChildren<GameplayUIInstaller>();
         inventoryManager = GetComponentInChildren<InventoryManager>();
         skillManager = GetComponentInChildren<SkillManager>();
+        skillDispatcher = GetComponentInChildren<SkillDispatcher>();
 
         cameraManager.Initialize(signalHub, inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
@@ -54,9 +58,10 @@ public class GameInstaller : MonoBehaviour
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager);
-
+        skillDispatcher.Initialize(inventoryManager);
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);
+        skillSystem.Initialize(skillManager, skillDispatcher);
 
         unitSystem.CreateCharacter();
     }
@@ -87,6 +92,7 @@ public class GameInstaller : MonoBehaviour
         inDungeonSystem.Release();
         environmentSystem.Release();
         gameplayUIInstaller.Release();
+        skillSystem.Release();
 
         Destroy(gameObject);
     }

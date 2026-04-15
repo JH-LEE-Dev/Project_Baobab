@@ -19,11 +19,11 @@ namespace PresentationLayer.UISystem.HUD
 
         // //내부 의존성
         private float currentValue = 0.0f;
-        
+
         private float activeTimer = 0.0f;
         private float showYOffset = 0f;
         private bool isTimerActive = false;
-        
+
         private Action<HUD_ProgressBar> onHideCallback;
 
         private GameObject targetObj;
@@ -61,7 +61,7 @@ namespace PresentationLayer.UISystem.HUD
         }
 
         public void UpdateTargetObj(GameObject _target) => targetObj = _target;
-        public void UpdateYOffset(float _in) =>  showYOffset = _in;
+        public void UpdateYOffset(float _in) => showYOffset = _in;
 
         /// <summary>
         /// 지정된 TargetValue까지 0부터 차오르는 충전/쿨타임 기능을 실행합니다.
@@ -79,7 +79,7 @@ namespace PresentationLayer.UISystem.HUD
 
             // 위치 추적 및 타이머 활성화를 위해 설정 (Update의 타이머보다 DOTween이 먼저 끝날 수 있도록 여유 부여)
             isTimerActive = true;
-            activeTimer = _duration + 0.1f; 
+            activeTimer = _duration + 0.1f;
 
             OnShow();
 
@@ -125,7 +125,7 @@ namespace PresentationLayer.UISystem.HUD
                 isTimerActive = false;
                 activeTimer = 0.0f;
                 gameObject.SetActive(false);
-                
+
                 // 반납 등을 위한 콜백 실행
                 onHideCallback?.Invoke(this);
                 onHideCallback = null;
@@ -171,9 +171,8 @@ namespace PresentationLayer.UISystem.HUD
             {
                 Vector3 newPos = targetObj.transform.position;
                 newPos.y += showYOffset;
-
-                // 글로벌 유틸리티를 사용하여 픽셀 스냅 적용
-                rect.position = GlobalUI.SnapToScreenPixel(newPos, Camera.main);
+                
+                rect.position = GlobalUI.SnapToPixel(newPos, pixelsPerUnit);
             }
         }
 

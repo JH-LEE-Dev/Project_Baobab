@@ -141,7 +141,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 
         if (!node.GetNextLevelCost(out int moneyCost, out int carrotCost))
             return AbilityLevelUpRejectReason.None;
-        
+
         // 1. 재화 체크 (Money)
         if (inventory.GetCurrentMoney() < moneyCost)
         {
@@ -198,6 +198,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         {
             if (!prerequisites[i].bApplied)
             {
+
                 return AbilityLevelUpRejectReason.None; // 선행 스킬 미습득
             }
         }

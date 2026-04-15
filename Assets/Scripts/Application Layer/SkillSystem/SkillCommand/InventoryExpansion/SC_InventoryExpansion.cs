@@ -1,14 +1,15 @@
 using UnityEngine;
 
+[CreateAssetMenu(fileName = "Inventory Expansion", menuName = "Game/Skill Command/Inventory Expansion")]
 public class SC_InventoryExpansion : SkillCommand
 {
-    protected override void Execute(ICommandHandleSystem _system)
+    public override void Execute(ICommandHandleSystem _system)
     {
-
+        _system.inventoryCH.ExpandInventorySlotCnt(amount);
     }
 
-    protected override void Undo(ICommandHandleSystem _system)
+    public override void Undo(ICommandHandleSystem _system)
     {
-
+        _system.inventoryCH.ExpandInventorySlotCnt(-amount);
     }
 }

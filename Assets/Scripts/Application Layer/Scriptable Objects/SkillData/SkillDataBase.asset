@@ -25,3 +25,15 @@ MonoBehaviour:
         skillCommandType: 1
         amount: 2
     prerequisiteSkills: 
+  - skillType: 1
+    maxLevel: 1
+    cost:
+    - level: 1
+      moneyCost: 0
+      carrotCost: 0
+    skillTypes:
+    - level: 0
+      info:
+        skillCommandType: 0
+        amount: 0
+    prerequisiteSkills: 
