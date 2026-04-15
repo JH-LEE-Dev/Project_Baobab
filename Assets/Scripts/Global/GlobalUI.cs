@@ -39,4 +39,11 @@ public static class GlobalUI
 
         return Resources.Load<Sprite>(getPath);
     }
+
+    public static Vector3 SnapToPixel(Vector3 _position, float _pixelsPerUnit = 32f)
+    {
+        _position.x = Mathf.Round(_position.x * _pixelsPerUnit) / _pixelsPerUnit;
+        _position.y = Mathf.Round(_position.y * _pixelsPerUnit) / _pixelsPerUnit;
+        return _position;
+    }
 }
