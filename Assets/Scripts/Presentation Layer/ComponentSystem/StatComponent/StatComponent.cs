@@ -1,5 +1,3 @@
-
-
 public class StatComponent : PComponent, IStatComponent
 {
     //Move
@@ -20,5 +18,16 @@ public class StatComponent : PComponent, IStatComponent
     public int ammoCap = 6;
     public float reloadDuration = 3f;
 
+    float IStatComponent.speed => speed;
     float IStatComponent.weaponChangeCoolTime => weaponChangeCoolTime;
+
+    float IStatComponent.axeDurability => axeDurability;
+    float IStatComponent.axeDurabilityDecAmount => axeDurabilityDecAmount;
+    float IStatComponent.axeAttackCoolTime => axeAttackCoolTime;
+
+    float IStatComponent.rifleReadyTime => rifleReadyTime;
+    float IStatComponent.afterShotTime => afterShotTime;
+    int IStatComponent.magCap => magCap;
+    int IStatComponent.ammoCap => ammoCap;
+    float IStatComponent.reloadDuration => reloadDuration;
 }

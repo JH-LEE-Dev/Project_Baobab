@@ -17,6 +17,16 @@ public class AbilityNodeDefinitionJson
     public int gridX;
     public int gridY;
     public string[] parentSkillTypes;
+    public AbilityParentLineRouteJson[] parentLineRoutes;
+}
+
+[Serializable]
+public class AbilityParentLineRouteJson
+{
+    public string parentSkillType;
+    public bool usePivot;
+    public int pivotX;
+    public int pivotY;
 }
 
 [Serializable]

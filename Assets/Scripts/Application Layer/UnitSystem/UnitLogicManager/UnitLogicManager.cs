@@ -65,4 +65,9 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     {
         WeaponModeChangedEvent?.Invoke(_currentMode);
     }
+
+    public void CharacterSleep()
+    {
+        character.StaminaReset();
+    }
 }

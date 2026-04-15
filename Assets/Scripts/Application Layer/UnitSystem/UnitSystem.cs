@@ -11,7 +11,7 @@ public class UnitSystem
     //내부 의존성
 
 
-    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager,InventoryManager _inventoryManager)
+    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager, InventoryManager _inventoryManager)
     {
         signalHub = _signalHub;
         unitSpawner = _unitSpawner;
@@ -44,6 +44,8 @@ public class UnitSystem
         signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.Subscribe<DeleteItemSignal>(ItemDeleted);
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
+        signalHub.Subscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
+        signalHub.Subscribe<SleepSignal>(CharacterSleep);
     }
 
     private void UnSubscribeSignals()
@@ -54,6 +56,8 @@ public class UnitSystem
         signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.UnSubscribe<DeleteItemSignal>(ItemDeleted);
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
+        signalHub.UnSubscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
+        signalHub.UnSubscribe<SleepSignal>(CharacterSleep);
     }
 
     private void BindEvents()
@@ -89,7 +93,7 @@ public class UnitSystem
 
     private void TownStarted(TownStartedSignal townStartedSignal)
     {
-        unitLogicManager.SetCharacterStaminaState(true, 0, 2f);
+        unitLogicManager.SetCharacterStaminaState(true, 0, 1f);
         unitLogicManager.SetCharacterTransform(townStartedSignal.characterPos);
     }
 
@@ -114,7 +118,7 @@ public class UnitSystem
         inventoryManager.MoneyEarned(moneyEarnedSignal.money);
         signalHub.Publish(new InventoryUpdatedSignal());
     }
-    
+
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
         unitLogicManager.SetWhereIsCharacter(_bInDungeon);
@@ -123,5 +127,15 @@ public class UnitSystem
     private void WeaponModeChanged(WeaponMode _currentMode)
     {
         signalHub.Publish(new WeaponModeChangedSignal(_currentMode));
+    }
+
+    private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)
+    {
+        inventoryManager.CarrotEarned();
+    }
+
+    private void CharacterSleep(SleepSignal sleepSignal)
+    {
+        unitLogicManager.CharacterSleep();
     }
 }

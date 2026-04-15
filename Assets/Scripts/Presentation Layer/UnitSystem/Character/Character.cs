@@ -1,5 +1,4 @@
 using System;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter
@@ -128,6 +127,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         }
     }
 
+    public void StaminaReset()
+    {
+        healthComponent.StaminaReset();
+    }
+
     public void SetStaminaUpDownState(bool _bStaminaUpDown, float _staminaDecAmount, float _staminaIncAmount)
     {
         bStaminaUpDown = _bStaminaUpDown;
@@ -221,6 +225,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     private void ConnectAttackToArm()
     {
         armComponent.SetAttackTransform(attackComponent.GetAttackPointTransform());
+        armComponent.SetMouseTransform(attackComponent.mouseTransform);
     }
 
     private void HandleShadowEnter(Collider2D _other)

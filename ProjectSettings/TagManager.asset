@@ -19,7 +19,7 @@ TagManager:
   - Character
   - ColliderTiles
   - Tree
-  - LogItem
+  - Item
   - TreeShadow
   - PP RT
   - Animals

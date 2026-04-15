@@ -62,6 +62,7 @@ public enum ItemType
     None,
     Log,
     Loot,
+    Carrot,
     Max,
 }
 
