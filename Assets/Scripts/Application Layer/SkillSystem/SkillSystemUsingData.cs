@@ -19,3 +19,11 @@ public enum SkillType
     hunting,//수렵
     Max
 }
+
+public enum AbilityLevelUpRejectReason
+{
+    None,
+    Pass,
+    NotEnoughMoney,
+    MaxLevel,
+}

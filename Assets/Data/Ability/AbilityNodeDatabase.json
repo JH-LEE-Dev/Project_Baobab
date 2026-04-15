@@ -53,10 +53,18 @@
         { "level": 1, "moneyType": "Coin", "amount": 20 }
       ],
       "gridX": -2,
-      "gridY": 2,
+      "gridY": -2,
       "parentSkillTypes": [
         "Rest"
-      ]
+      ],
+      "parentLineRoutes": [
+      {
+      "parentSkillType": "Rest",
+      "usePivot": true,
+      "pivotX": -2,
+      "pivotY": 0
+      }
+    ]
     }
   ]
 }
