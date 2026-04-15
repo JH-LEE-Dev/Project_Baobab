@@ -786,14 +786,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
 #region For System
 
-    public enum AbilityLevelUpRejectReason
-    {
-        None,
-        NotEnoughMoney,
-        MaxLevel,
-        PrerequisiteNotMet,
-    }
-
     // 노드 클릭 시 상위 시스템에 전달할 요청 함수다.
     public void RequestNodeLevelUp(AbilityNode _node)
     {
@@ -829,16 +821,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         for (int i = 0; i < parents.Length; i++)
         {
             if (spawnedNodeMap.TryGetValue(parents[i], out AbilityNode parentNode) == false)
-            {
-                _rejectReason = AbilityLevelUpRejectReason.PrerequisiteNotMet;
                 return false;
-            }
 
             if (parentNode.IsUnlockedByLevel() == false)
-            {
-                _rejectReason = AbilityLevelUpRejectReason.PrerequisiteNotMet;
                 return false;
-            }
         }
 
         return true;
