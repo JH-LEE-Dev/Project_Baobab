@@ -129,7 +129,7 @@ public class UIView_Unit : UIView
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
     {
-        weaponSwapCoolBinding(); 
+        weaponSwapCoolPlay(); 
     }
 
     private void Init_ChargeBar()
@@ -157,11 +157,11 @@ public class UIView_Unit : UIView
         if (null == _rifle)
             return;
 
-        _rifle.ReloadStartEvent -= RifleReloadCoolBinding;
-        _rifle.ReloadStartEvent += RifleReloadCoolBinding;
+        _rifle.ReloadStartEvent -= RifleReloadCoolPlay;
+        _rifle.ReloadStartEvent += RifleReloadCoolPlay;
     }
 
-    private void RifleReloadCoolBinding()
+    private void RifleReloadCoolPlay()
     {
         if (null == character || null == uiCharge)
             return;
@@ -173,7 +173,7 @@ public class UIView_Unit : UIView
         uiCharge.SetCharge(_stats.axeAttackCoolTime);
     }
 
-    private void weaponSwapCoolBinding()
+    private void weaponSwapCoolPlay()
     {
         if (null == character || null == uiCharge)
             return;
