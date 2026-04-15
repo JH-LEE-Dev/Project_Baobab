@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 public class UI_TentAbilityComponent : MonoBehaviour
 {
     private const float DefaultZoom = 1f;
-    private const float MinZoom = 0.3f;
+    private const float MinZoom = 0.2f;
     private const float MaxZoom = 1f;
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
