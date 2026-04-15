@@ -6,6 +6,7 @@ using UnityEngine.Pool;
 
 public class InDungeonUnitSpawner : MonoBehaviour
 {
+    public event Action<Animal> AnimalIsDeadEvent;
     //그룹 정보를 넘기지 않도록 이벤트 수정 (필요 시 Action<IReadOnlyList<Animal>> 등으로 변경 가능)
     public event Action AnimalSpawnedEvent;
 
@@ -210,6 +211,8 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private void AnimalIsDead(Animal _aniaml)
     {
         environmentProvider.densityProvider.UpdateAnimalCnt(false);
+        AnimalIsDeadEvent?.Invoke(_aniaml);
+        allSpawnedAnimals.Remove(_aniaml);
         ReleaseAnimal(_aniaml);
     }
 }

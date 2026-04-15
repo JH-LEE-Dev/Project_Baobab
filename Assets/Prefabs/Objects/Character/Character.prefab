@@ -352,6 +352,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RifleComponent
   muzzlePoint: {fileID: 776704768645604309}
   mouseCol: {fileID: 7244437549703191926}
+  animalFilter:
+    useTriggers: 0
+    useLayerMask: 1
+    useDepth: 0
+    useOutsideDepth: 0
+    useNormalAngle: 0
+    useOutsideNormalAngle: 0
+    layerMask:
+      serializedVersion: 2
+      m_Bits: 16384
+    minDepth: 0
+    maxDepth: 0
+    minNormalAngle: 0
+    maxNormalAngle: 0
 --- !u!114 &8275291908445595204
 MonoBehaviour:
   m_ObjectHideFlags: 0

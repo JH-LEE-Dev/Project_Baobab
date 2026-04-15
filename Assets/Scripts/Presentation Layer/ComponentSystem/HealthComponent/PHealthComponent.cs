@@ -92,4 +92,9 @@ public class PHealthComponent : PComponent, IPHealthComponent
     {
         return currentStamina;
     }
+
+    public void StaminaReset()
+    {
+        currentStamina = maxStamina;
+    }
 }

@@ -1,15 +1,12 @@
 using System;
-using System.Collections;
 using UnityEngine;
-
-public class LogItem : Item
+using System.Collections;
+public class CarrotItem : Item
 {
     // 이벤트
-    public event Action<LogItem> LogItemAcquired;
+    public event Action<CarrotItem> CarrotItemAcquired;
 
     // 내부 의존성
-    public LogState logState { get; private set; }
-    public TreeType treeType { get; private set; }
     private SpriteRenderer spriteRenderer;
     private Transform visualTransform;
 
@@ -20,26 +17,15 @@ public class LogItem : Item
     private Coroutine moveCoroutine;
     private bool bDrop = true;
 
-    private IInventoryChecker inventoryChecker;
-
-    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
+    public void Initialize()
     {
-        base.Initialize(_logItemTypeData.itemType);
+        base.Initialize(ItemType.Carrot);
 
-        logState = _logState;
-        treeType = _logItemTypeData.treeType;
         isSucked = false;
         isLaunching = false;
         suckTarget = null;
-        sprite = _logItemTypeData.sprite;
-        color = _color;
 
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.sprite = sprite;
-            spriteRenderer.color = color;
-        }
 
         if (spriteRenderer == null)
         {
@@ -51,11 +37,6 @@ public class LogItem : Item
         }
     }
 
-    public void SetInventoryChecker(IInventoryChecker _inventoryChecker)
-    {
-        inventoryChecker = _inventoryChecker;
-    }
-    
     public void IsDropItem(bool _boolean)
     {
         bDrop = _boolean;
@@ -117,18 +98,7 @@ public class LogItem : Item
         moveCoroutine = null;
 
         // 도착했을 때 이미 타겟이 범위 내에 있었다면 흡입 시작
-        if (suckTarget != null && inventoryChecker.CanAcquired(this))
-        {
-            StartSucking(suckTarget);
-        }
-    }
-
-    private void Update()
-    {
-        if (isSucked || isLaunching || bDrop == false || suckTarget == null) return;
-
-        // 인벤토리 공간이 생겼을 때만 흡입 시작
-        if (inventoryChecker.CanAcquired(this))
+        if (suckTarget != null)
         {
             StartSucking(suckTarget);
         }
@@ -138,25 +108,15 @@ public class LogItem : Item
     {
         if (isSucked || bDrop == false) return;
 
-        // 아이템 센서 범위에 들어왔을 때 타겟 설정
         if (_other.CompareTag("ItemSensor"))
         {
             suckTarget = _other.transform;
 
-            // 발사 중이 아니고 인벤토리에 여유가 있을 때 즉시 흡입 시작
+            // 발사 중이 아닐 때만 즉시 흡입 시작
             if (!isLaunching)
             {
-                if (inventoryChecker.CanAcquired(this))
-                {
-                    StartSucking(suckTarget);
-                }
+                StartSucking(suckTarget);
             }
-        }
-        
-        // 캐릭터(Player)와 직접 충돌했을 때는 아무것도 하지 않음 (흡입을 통해서만 습득)
-        if (_other.CompareTag("Player"))
-        {
-            // Do nothing
         }
     }
 
@@ -164,7 +124,7 @@ public class LogItem : Item
     {
         if (bDrop == false)
             return;
-            
+
         if (_other.CompareTag("ItemSensor"))
         {
             if (suckTarget == _other.transform)
@@ -195,7 +155,7 @@ public class LogItem : Item
 
             if (distance < 0.2f)
             {
-                LogItemAcquired?.Invoke(this);
+                CarrotItemAcquired?.Invoke(this);
 
                 yield break;
             }

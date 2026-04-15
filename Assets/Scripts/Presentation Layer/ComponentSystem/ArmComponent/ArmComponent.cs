@@ -5,6 +5,7 @@ public class ArmComponent : PComponent, IArmComponent
     // 내부 의존성
 
     private Transform attackTransform;
+    private Vector3 mouseTransform;
 
     [SerializeField] private float smoothSpeed = 10f;
     [SerializeField] private float maxYOffset = 0.5f;
@@ -54,6 +55,11 @@ public class ArmComponent : PComponent, IArmComponent
     {
         attackTransform = _transform;
     }
+    public void SetMouseTransform(Vector3 _transform)
+    {
+        mouseTransform = _transform;
+    }
+
 
     private void Update()
     {
@@ -95,7 +101,7 @@ public class ArmComponent : PComponent, IArmComponent
         ctx.inputManager.inputReader.ReloadButtonPressedEvent -= rifleComponent.Reload;
 
         ctx.inputManager.inputReader.AimCorrectionKeyPressedEvent -= rifleComponent.ActivateAimCorrection;
-        
+
         ctx.inputManager.inputReader.AimCorrectionKeyCanceledEvent -= rifleComponent.DeActivateAimCorrection;
     }
 
@@ -122,6 +128,7 @@ public class ArmComponent : PComponent, IArmComponent
         if (attackTransform == null || currentWeapon == null) return;
 
         currentWeapon.SetFacingDir(attackTransform);
+        currentWeapon.SetMouseTransform(mouseTransform);
     }
 
     private void UpdatePositionOffset()

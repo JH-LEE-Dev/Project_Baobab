@@ -38,3 +38,5 @@ public struct TreeGetHitSignal
 }
 
 public struct GoToHomeSignal { }
+
+public struct CarrotItemAcquiredSignal { }

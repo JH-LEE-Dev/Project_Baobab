@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class InDungeonSystem : MonoBehaviour
@@ -12,13 +11,13 @@ public class InDungeonSystem : MonoBehaviour
     [Header("Dungeon Data")]
     [SerializeField] private DungeonData dungeonData;
 
-    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider)
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider,IInventoryChecker _inventoryChecker)
     {
         environmentProvider = _environmentProvider;
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, dungeonData);
+        inDungeonObjectManager.Initialize(environmentProvider, dungeonData,_inventoryChecker);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
@@ -50,6 +49,12 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonObjectManager.TreeGetHitEvent += TreeGetHit;
+
+        inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
+        inDungeonUnitSpawner.AnimalIsDeadEvent += inDungeonObjectManager.SpawnCarrots;
+
+        inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
+        inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
     }
 
     private void ReleaseEvents()
@@ -57,6 +62,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
         inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
+        inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
+        inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
     }
 
     private void SubscribeSignals()
@@ -106,5 +113,10 @@ public class InDungeonSystem : MonoBehaviour
     private void FirstTimeEarnMoney(FirstTimeEarnMoneySignal firstTimeEarnMoneySignal)
     {
         inDungeonObjectManager.CreateWelcomeNoobLoot();
+    }
+
+    private void CarrotItemAcquired()
+    {
+        signalHub.Publish(new CarrotItemAcquiredSignal());
     }
 }

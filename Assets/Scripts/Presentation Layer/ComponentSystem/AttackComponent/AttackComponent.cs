@@ -26,6 +26,7 @@ public class AttackComponent : PComponent
 
     private bool bAttack = false;
     private Vector2 lastMouseScreenPos;
+    public Vector3 mouseTransform { get; private set; }
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -96,6 +97,8 @@ public class AttackComponent : PComponent
         // 3. 변환된 좌표를 사용하여 월드 좌표 계산
         Vector3 mouseWorldPos = mainCamera.ScreenToWorldPoint(_convertedMousePos);
         mouseWorldPos.z = 0;
+
+        mouseTransform = mouseWorldPos;
 
         // 4. 캐릭터에서 마우스 방향으로의 벡터 계산
         Vector3 characterPos = characterTransform.position;
@@ -213,7 +216,7 @@ public class AttackComponent : PComponent
         if (ctx != null && ctx.bWhileChangingWeapon) return;
 
         WeaponMode targetMode = (currentWeaponMode == WeaponMode.Axe) ? WeaponMode.Rifle : WeaponMode.Axe;
-        
+
         currentWeaponMode = targetMode;
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
 

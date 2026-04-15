@@ -24,6 +24,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private bool bReload = false;
 
     float IRifleComponent.durability => durability;
+    int IRifleComponent.mag => mag;
+    int IRifleComponent.ammo => ammo;
 
     [SerializeField] private CircleCollider2D mouseCol;
 
@@ -34,7 +36,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     // 조준 보정을 위한 변수
     private readonly Collider2D[] results = new Collider2D[10];
-    private ContactFilter2D animalFilter;
+    [SerializeField] ContactFilter2D animalFilter;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -47,10 +49,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         mag = ctx.characterStat.magCap;
         ammo = ctx.characterStat.ammoCap;
-
-        // 조준 보정용 필터 설정
-        animalFilter.useLayerMask = true;
-        animalFilter.SetLayerMask(LayerMask.GetMask("Animal"));
     }
 
     public override void SetFacingDir(Transform _attackTransform)
@@ -165,10 +163,10 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         {
             Quaternion fireRotation;
 
-            if (bAimCorrection && attackTransform != null)
+            if (bAimCorrection)
             {
-                // 조준 보정 로직: attackTransform 주변의 Animal 탐색
-                Vector2 searchPos = attackTransform.position;
+                // 조준 보정 로직: mouseTransform 주변의 Animal 탐색
+                Vector2 searchPos = mouseTransform;
                 float radius = mouseCol != null ? mouseCol.radius : 1f;
                 
                 // 최신 Non-Alloc 방식인 ContactFilter2D 사용
@@ -194,7 +192,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
                         // 가장 가까운 타겟을 향한 방향 계산
                         Vector2 targetDir = ((Vector2)closestTarget.position - (Vector2)muzzlePoint.position).normalized;
                         float angle = Mathf.Atan2(targetDir.y, targetDir.x) * Mathf.Rad2Deg;
-                        fireRotation = Quaternion.Euler(0, 0, angle - 90f);
+                        fireRotation = Quaternion.Euler(0, 0, angle);
                     }
                     else
                     {
@@ -331,5 +329,13 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     public void DeActivateAimCorrection()
     {
         bAimCorrection = false;
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (bAimCorrection == false || mouseCol == null) return;
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(mouseTransform, mouseCol.radius);
     }
 }

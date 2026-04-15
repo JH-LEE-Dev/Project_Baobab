@@ -1,8 +1,10 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UIView_Tent : UIView
 {
+    public event Action SleepEvent;
     private ISkillSystemProvider skillSystemProvider;
 
     [Header("UI References")]
@@ -155,6 +157,7 @@ public class UIView_Tent : UIView
     private void OnRestButtonClicked()
     {
         Debug.Log("Tent Rest button clicked.");
+        SleepEvent.Invoke();
     }
 
 
