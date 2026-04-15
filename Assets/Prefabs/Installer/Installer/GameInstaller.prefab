@@ -430,6 +430,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
   currentSlotCount: 2
+  maxItemsPerSlot: 5
   inventorySlots: []
 --- !u!1 &3535782070355411120
 GameObject:
