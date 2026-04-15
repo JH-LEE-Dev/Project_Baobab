@@ -3,6 +3,7 @@ using UnityEngine;
 public class IdleState : CharacterState
 {
     private Vector3Int currentReservedPos;
+    private const float pixelsPerUnit = 32f; // 640*360 해상도 기준 픽셀 밀도
 
     public override void Enter()
     {
@@ -78,11 +79,37 @@ public class IdleState : CharacterState
     {
         var groundData = character.currentGroundData;
 
-        // 입력이 없는 상태이므로 속도를 0으로 수렴시킴 (감속도 적용)
-        character.rb.linearVelocity = Vector2.MoveTowards(
-            character.rb.linearVelocity,
-            Vector2.zero,
-            groundData.deceleration * Time.fixedDeltaTime
-        );
+        // 속도가 어느 정도 있을 때는 감속 적용
+        if (character.rb.linearVelocity.sqrMagnitude > 0.001f)
+        {
+            character.rb.linearVelocity = Vector2.MoveTowards(
+                character.rb.linearVelocity,
+                Vector2.zero,
+                groundData.deceleration * Time.fixedDeltaTime
+            );
+        }
+        else
+        {
+            // 속도가 거의 없으면 물리 속도를 0으로 고정하고 픽셀 스냅 수행
+            character.rb.linearVelocity = Vector2.zero;
+            SnapToPixel();
+        }
+    }
+
+    private void SnapToPixel()
+    {
+        Vector2 currentPos = character.rb.position;
+        
+        // 픽셀 그리드 좌표 계산 (Round를 사용하여 가장 가까운 픽셀로)
+        float snapX = Mathf.Round(currentPos.x * pixelsPerUnit) / pixelsPerUnit;
+        float snapY = Mathf.Round(currentPos.y * pixelsPerUnit) / pixelsPerUnit;
+        Vector2 snappedPos = new Vector2(snapX, snapY);
+
+        // 현재 위치와 스냅 위치의 차이가 미세하게라도 있으면 이동
+        if (Vector2.SqrMagnitude(currentPos - snappedPos) > 0.00001f)
+        {
+            // 부드러운 스냅을 위해 MoveTowards 사용 (필요 시 즉시 할당 rb.position = snappedPos 로 변경 가능)
+            character.rb.position = Vector2.MoveTowards(currentPos, snappedPos, Time.fixedDeltaTime);
+        }
     }
 }

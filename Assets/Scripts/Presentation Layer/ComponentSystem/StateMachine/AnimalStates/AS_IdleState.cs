@@ -6,12 +6,14 @@ public class AS_IdleState : AnimalState
     private float idleTimer;
     private float nextMoveTime;
     private bool isFleeing; // 도망 시도 여부 플래그
+    private const float pixelsPerUnit = 32f; // 640*360 해상도 기준 픽셀 밀도
 
     public override void Enter()
     {
         bActivated = true;
         animal.anim.SetBool(animal.isMovingHash, false);
         animal.rb.linearVelocity = Vector2.zero;
+// ... (나머지 Enter 코드 동일)
 
         // 현재 위치 타일 점유
         currentOccupiedPos = pathFindComponent.WorldToCell(animal.transform.position);
