@@ -45,7 +45,6 @@ public class UI_ZoneSelector : MonoBehaviour
             regions[_regionId].Initialize(_regionId, _zoneCount, HandleZoneClick, HandleZoneHoverEnter, HandleZoneHoverExit);
             regions[_regionId].SetVisible(true);
 
-            // 요구사항: 창이 처음 열릴 때(지역이 개방될 때) 첫 번째 슬롯을 자동으로 클릭한 상태로 시작
             HandleZoneClick(_regionId, 0);
         }
     }

@@ -26,6 +26,14 @@ public class UIView_MenuPopup : UIView
         Init_ZoneSelector();
         Init_ZoneButtons();
 
+        // 버튼이 모두 초기화된 후 첫 지역을 엽니다.
+        if (null != zoneSelector)
+        {
+            zoneSelector.OpenRegion(0, 3);
+            zoneSelector.UnlockZone(0, 0);
+            zoneSelector.UnlockZone(0, 1);
+        }
+
         CloseTeleportUI();
     }
 
@@ -48,9 +56,6 @@ public class UIView_MenuPopup : UIView
         if (null != zoneSelector)
         {
             zoneSelector.Initialize(5, HandleZoneChanged, zoneDatabase, zoneInfo, HandleSelectionStatusChanged);
-            zoneSelector.OpenRegion(0, 3);
-            zoneSelector.UnlockZone(0, 0);
-            zoneSelector.UnlockZone(0, 1);
         }
     }
 
