@@ -30,6 +30,9 @@ namespace PresentationLayer.UISystem.HUD
 
         private Tween chargeTween;
 
+        [Header("Pixel Perfect Settings")]
+        [SerializeField] private float pixelsPerUnit = 32f;
+
         // //퍼블릭 초기화 및 제어 메서드
 
         public void Initialize()
@@ -169,7 +172,8 @@ namespace PresentationLayer.UISystem.HUD
                 Vector3 newPos = targetObj.transform.position;
                 newPos.y += showYOffset;
 
-                rect.position = newPos;
+                // 글로벌 유틸리티를 사용하여 픽셀 스냅 적용
+                rect.position = GlobalUI.SnapToPixel(newPos, pixelsPerUnit);
             }
         }
 
