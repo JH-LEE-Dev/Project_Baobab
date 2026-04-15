@@ -9,6 +9,7 @@ public class InventoryManager : MonoBehaviour, IInventory
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
 
     private int money;
+    private int carrot;
     
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
@@ -16,6 +17,8 @@ public class InventoryManager : MonoBehaviour, IInventory
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
 
     int IInventory.money => money;
+
+    int IInventory.carrot => carrot;
 
     public void Initialize()
     {
@@ -200,5 +203,22 @@ public class InventoryManager : MonoBehaviour, IInventory
     public void MoneyEarned(int _money)
     {
         money += _money;
+    }
+
+    public void SpendMoney(int _money)
+    {
+        money -= _money;
+        if (money < 0) money = 0;
+    }
+
+    public void CarrotEarned()
+    {
+        carrot += 1;
+    }
+
+    public void SpendCarrot(int _carrot)
+    {
+        carrot -= _carrot;
+        if (carrot < 0) carrot = 0;
     }
 }

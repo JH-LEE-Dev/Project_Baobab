@@ -9,6 +9,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     // // 이벤트
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
+    public event Action CarrotItemAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
 
     // // 외부 의존성
@@ -79,7 +80,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         {
             itemManager.LogItemAcquiredEvent -= OnItemAcquired;
             itemManager.LogItemAcquiredEvent += OnItemAcquired;
+
+            itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
+            itemManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
         }
+    }
+
+    public void Release()
+    {
+        StopGrowth();
+        ClearTrees();
+
+        if (portal != null)
+        {
+            portal.PortalActivated -= OnPortalActivated;
+        }
+
+        if (cullingGroup != null)
+        {
+            cullingGroup.onStateChanged = null;
+            cullingGroup.Dispose();
+            cullingGroup = null;
+        }
+
+        itemManager.LogItemAcquiredEvent -= OnItemAcquired;
+
+        itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
     }
 
     public void SetDungeonData(DungeonData _dungeonData)
@@ -477,5 +503,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             return;
 
         lootManager.AcquireLootItem(LootType.WelcomeNoob);
+    }
+
+    public void SpawnCarrots(Animal _animal)
+    {
+        itemManager.SpawnCarrotItem(_animal.transform.position);
+    }
+
+    private void CarrotItemAcquired(Item _item)
+    {
+        CarrotItemAcquiredEvent?.Invoke();
     }
 }

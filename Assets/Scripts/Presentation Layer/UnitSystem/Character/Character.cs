@@ -221,6 +221,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     private void ConnectAttackToArm()
     {
         armComponent.SetAttackTransform(attackComponent.GetAttackPointTransform());
+        armComponent.SetMouseTransform(attackComponent.mouseTransform);
     }
 
     private void HandleShadowEnter(Collider2D _other)

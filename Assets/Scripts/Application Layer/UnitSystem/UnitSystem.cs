@@ -11,7 +11,7 @@ public class UnitSystem
     //내부 의존성
 
 
-    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager,InventoryManager _inventoryManager)
+    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager, InventoryManager _inventoryManager)
     {
         signalHub = _signalHub;
         unitSpawner = _unitSpawner;
@@ -44,6 +44,7 @@ public class UnitSystem
         signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.Subscribe<DeleteItemSignal>(ItemDeleted);
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
+        signalHub.Subscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
     }
 
     private void UnSubscribeSignals()
@@ -54,6 +55,7 @@ public class UnitSystem
         signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.UnSubscribe<DeleteItemSignal>(ItemDeleted);
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
+        signalHub.UnSubscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
     }
 
     private void BindEvents()
@@ -114,7 +116,7 @@ public class UnitSystem
         inventoryManager.MoneyEarned(moneyEarnedSignal.money);
         signalHub.Publish(new InventoryUpdatedSignal());
     }
-    
+
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
         unitLogicManager.SetWhereIsCharacter(_bInDungeon);
@@ -123,5 +125,10 @@ public class UnitSystem
     private void WeaponModeChanged(WeaponMode _currentMode)
     {
         signalHub.Publish(new WeaponModeChangedSignal(_currentMode));
+    }
+
+    private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)
+    {
+        inventoryManager.CarrotEarned();
     }
 }

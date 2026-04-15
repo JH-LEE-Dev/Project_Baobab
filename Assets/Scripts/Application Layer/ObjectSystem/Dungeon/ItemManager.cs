@@ -6,19 +6,22 @@ public class ItemManager : MonoBehaviour
 {
     // 내부 의존성
     private LogItemController logItemController;
-    private CarrrotItemController carrrotItemController;
+    private CarrotItemController carrrotItemController;
 
     public void Initialize()
     {
         logItemController = GetComponentInChildren<LogItemController>();
-        carrrotItemController = GetComponentInChildren<CarrrotItemController>();
+        carrrotItemController = GetComponentInChildren<CarrotItemController>();
 
         if (logItemController != null)
         {
             logItemController.Initialize();
         }
 
-        // CarrotItemController 초기화 로직도 필요하다면 여기에 추가
+        if (carrrotItemController != null)
+        {
+            carrrotItemController.Initialize();
+        }
         
         BindEvents();
     }
@@ -49,10 +52,26 @@ public class ItemManager : MonoBehaviour
         logItemController?.ReturnToPool(_item);
     }
 
+    public void SpawnCarrotItem(Vector3 _position)
+    {
+        carrrotItemController?.SpawnCarrotItem(_position);
+    }
+
+    public void ReturnCarrotToPool(CarrotItem _item)
+    {
+        carrrotItemController?.ReturnToPool(_item);
+    }
+
     // 이벤트 구독을 위한 프로퍼티 중계
     public event Action<Item> LogItemAcquiredEvent
     {
         add { if (logItemController != null) logItemController.LogItemAcquiredEvent += value; }
         remove { if (logItemController != null) logItemController.LogItemAcquiredEvent -= value; }
+    }
+
+    public event Action<Item> CarrotItemAcquiredEvent
+    {
+        add { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent += value; }
+        remove { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent -= value; }
     }
 }

@@ -26,11 +26,6 @@ public class CarrotItem : Item
         suckTarget = null;
 
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
-        if (spriteRenderer != null)
-        {
-            spriteRenderer.sprite = sprite;
-            spriteRenderer.color = color;
-        }
 
         if (spriteRenderer == null)
         {

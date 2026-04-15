@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class WeaponComponent : MonoBehaviour
 {
+    protected Vector3 mouseTransform;
     protected ComponentCtx ctx;
     protected bool bCanAction = false;
     protected float durability;
@@ -25,6 +26,7 @@ public class WeaponComponent : MonoBehaviour
         spriteRenderer.enabled = _boolean;
     }
     public virtual void SetFacingDir(Transform _attackTransform) { }
+    public virtual void SetMouseTransform(Vector3 _transform) { mouseTransform = _transform; }
     public virtual void LeftButtonClicked() { }
     public virtual void LeftButtonReleased() { }
     public virtual void DecreaseDurability() { }
