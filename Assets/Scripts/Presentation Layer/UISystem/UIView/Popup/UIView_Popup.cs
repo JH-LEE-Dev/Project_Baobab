@@ -14,12 +14,14 @@ public class UIView_Popup : UIView
     [SerializeField] private GameObject uiInventoryPrefab;
     [SerializeField] private GameObject uiHomingPrefab;
     [SerializeField] private GameObject uiCoinPrefab;
+    [SerializeField] private GameObject uiCarrotCoinPrefab;
 
     //내부 의존성
     private IInventory inventory;
     private UI_Inventory uI_Inventory;
     private UI_Homing uI_Homing;
     private UI_Coin uI_Coin;
+    private UI_Coin uI_CarrotCoin;
 
     private const int defaultPopupCap = 12;
 
@@ -30,6 +32,7 @@ public class UIView_Popup : UIView
         Init_Homing();
         Init_Inventory();
         Init_Coin();
+        Init_CarrotCoin();
 
         BindEvents();
     }
@@ -39,7 +42,8 @@ public class UIView_Popup : UIView
         inventory = _inventory;
 
         uI_Inventory?.BindInventory(inventory);
-        uI_Coin?.BindInventory(inventory);
+        uI_Coin?.BindInventory(inventory, MoneyType.Coin);
+        uI_CarrotCoin?.BindInventory(inventory, MoneyType.Carrot);
     }
 
     private void BindEvents()
@@ -118,6 +122,20 @@ public class UIView_Popup : UIView
         uI_Coin.OnHide();
     }
 
+    private void Init_CarrotCoin()
+    {
+        if (null == uiCarrotCoinPrefab)
+            return;
+
+        uI_CarrotCoin = Instantiate(uiCarrotCoinPrefab, this.transform.parent).GetComponent<UI_Coin>();
+
+        if (null == uI_CarrotCoin)
+            return;
+
+        uI_CarrotCoin.Initialize();
+        uI_CarrotCoin.OnHide();
+    }
+
     public void CharacterEarnMoney() //캐릭터가 돈을 얻었을 때,
     {
         uI_Coin?.UpdateMoneyText();
@@ -132,6 +150,7 @@ public class UIView_Popup : UIView
         uI_Inventory?.OnShow();
         uI_Homing?.OnShow();
         uI_Coin?.OnShow();
+        uI_CarrotCoin?.OnShow();
     }
 
     protected override void OnHide()
@@ -139,6 +158,7 @@ public class UIView_Popup : UIView
         uI_Inventory?.OnHide();
         uI_Homing?.OnHide();
         uI_Coin?.OnHide();
+        uI_CarrotCoin?.OnHide();
 
         base.OnHide();
     }

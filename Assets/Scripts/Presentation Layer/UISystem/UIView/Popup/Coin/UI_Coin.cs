@@ -9,15 +9,20 @@ public class UI_Coin : MonoBehaviour
     //내부 의존성
     private IInventory inventory;
 
+    private MoneyType moneyType;
+
+
     public void Initialize()
     {
         // 초기화 로직이 필요할 경우 작성
         moneyText = GetComponentInChildren<TMP_Text>();
     }
 
-    public void BindInventory(IInventory _inventory)
+    public void BindInventory(IInventory _inventory, MoneyType _moneyType)
     {
         inventory = _inventory;
+        moneyType = _moneyType;
+
         UpdateMoneyText();
     }
 
@@ -28,7 +33,10 @@ public class UI_Coin : MonoBehaviour
             return;
         }
 
-        moneyText.text = inventory.money.ToString();
+        if (MoneyType.Coin == moneyType)
+            moneyText.text = inventory.money.ToString();
+        else
+            moneyText.text = inventory.carrot.ToString();
     }
 
     public void OnShow()
