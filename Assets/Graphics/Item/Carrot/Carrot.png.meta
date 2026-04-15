@@ -103,10 +103,10 @@ TextureImporter:
       name: Carrot_0
       rect:
         serializedVersion: 2
-        x: 8
-        y: 2
-        width: 16
-        height: 16
+        x: 6
+        y: 8
+        width: 20
+        height: 18
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
