@@ -31,9 +31,5 @@ MonoBehaviour:
     - level: 1
       moneyCost: 0
       carrotCost: 0
-    skillTypes:
-    - level: 0
-      info:
-        skillCommandType: 0
-        amount: 0
+    skillTypes: []
     prerequisiteSkills: 
