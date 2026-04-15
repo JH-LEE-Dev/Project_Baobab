@@ -65,14 +65,13 @@ namespace PresentationLayer.UISystem.HUD
         /// </summary>
         /// <param name="_targetValue">최종 목표 값 (Slider의 MaxValue로 설정됨)</param>
         /// <param name="_duration">차오르는 데 걸리는 시간 (초)</param>
-        public void SetCharge(float _targetValue, float _duration)
+        public void SetCharge(float _duration)
         {
             if (null == progressSlider)
                 return;
 
             chargeTween?.Kill();
 
-            progressSlider.maxValue = _targetValue;
             progressSlider.value = 0f;
 
             // 위치 추적 및 타이머 활성화를 위해 설정 (Update의 타이머보다 DOTween이 먼저 끝날 수 있도록 여유 부여)
@@ -81,7 +80,7 @@ namespace PresentationLayer.UISystem.HUD
 
             OnShow();
 
-            chargeTween = progressSlider.DOValue(_targetValue, _duration)
+            chargeTween = progressSlider.DOValue(progressSlider.maxValue, _duration)
                 .SetEase(Ease.Linear)
                 .OnComplete(OnHide);
         }
@@ -171,7 +170,6 @@ namespace PresentationLayer.UISystem.HUD
                 newPos.y += showYOffset;
 
                 rect.position = newPos;
-                //Debug.Log(newPos + ", " + rect.position);
             }
         }
 

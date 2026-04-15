@@ -17,6 +17,7 @@ public class UIView_Unit : UIView
     private ObjectPools hpBarPool;
 
     [Header("Offset Settings")]
+    [SerializeField] private float characterYOffset = 1.5f;
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
@@ -33,6 +34,7 @@ public class UIView_Unit : UIView
         base.Initialize(_ctx);
 
         Init_HPBarPool();
+        Init_ChargeBar();
     }
 
     private void Init_HPBarPool()
@@ -58,7 +60,7 @@ public class UIView_Unit : UIView
         if (damagedTrees.TryGetValue(_treeObj, out HUD_ProgressBar _bar))
         {
             _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
-            _bar.TriggerActiveForDuration(3.0f, FinishedBar);
+            _bar.TriggerActiveForDuration(showCount, FinishedBar);
 
             if (true == _treeObj.bDead)
             {
@@ -78,6 +80,8 @@ public class UIView_Unit : UIView
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+
+        Bind_ChargeUIFunction();
     }
 
     private void ShowHP_Trees(ITreeObj _treeObj, float _YOffset)
@@ -122,17 +126,58 @@ public class UIView_Unit : UIView
         hpBarPool?.Despawn(_bar.gameObject);
     }
 
-    private void init_ChargeBar()
+    private void Init_ChargeBar()
     {
         if (null == chargePrefab)
             return;
 
         uiCharge = Instantiate(chargePrefab, Vector3.zero, Quaternion.identity, uiRoot).GetComponent<HUD_ProgressBar>();
-        uiCharge?.Initialize();
+        if (null == uiCharge)
+            return;
+
+        uiCharge.Initialize();
+        uiCharge.UpdateYOffset(characterYOffset);
+        uiCharge.OnHide();
     }
 
-    public void SettingCharge(float _value, float _duration) => uiCharge?.SetCharge(_value, _duration);
+    private void Bind_ChargeUIFunction()
+    {
+        if (null == character || null == uiCharge)
+            return;
 
+        uiCharge.UpdateTargetObj(character.GetTransform().gameObject);
+
+        IRifleComponent _rifle = character.armComponent?.rifleComponent;
+        if (null == _rifle)
+            return;
+
+        _rifle.ReloadStartEvent -= RifleReloadCoolBinding;
+        _rifle.ReloadStartEvent += RifleReloadCoolBinding;
+    }
+
+    private void RifleReloadCoolBinding()
+    {
+        if (null == character || null == uiCharge)
+            return;
+
+        IStatComponent _stats = character.statComponent;
+        if (null == _stats)
+            return;
+
+        uiCharge.SetCharge(_stats.axeAttackCoolTime);
+    }
+
+    private void weaponSwapCoolBinding()
+    {
+        if (null == character || null == uiCharge)
+            return;
+
+        IStatComponent _stats = character.statComponent;
+        if (null == _stats)
+            return;
+
+        uiCharge.SetCharge(_stats.weaponChangeCoolTime);
+    }
     // //유니티 이벤트 함수
 
     protected override void OnShow()
