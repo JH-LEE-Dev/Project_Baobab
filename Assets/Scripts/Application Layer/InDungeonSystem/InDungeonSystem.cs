@@ -11,13 +11,13 @@ public class InDungeonSystem : MonoBehaviour
     [Header("Dungeon Data")]
     [SerializeField] private DungeonData dungeonData;
 
-    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider)
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider,IInventoryChecker _inventoryChecker)
     {
         environmentProvider = _environmentProvider;
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, dungeonData);
+        inDungeonObjectManager.Initialize(environmentProvider, dungeonData,_inventoryChecker);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);

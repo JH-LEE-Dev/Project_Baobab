@@ -1,5 +1,4 @@
 using System;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter
@@ -126,6 +125,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
             sr.flipX = flipX;
             anim.SetFloat(facingDirHash, animIndex);
         }
+    }
+
+    public void StaminaReset()
+    {
+        healthComponent.StaminaReset();
     }
 
     public void SetStaminaUpDownState(bool _bStaminaUpDown, float _staminaDecAmount, float _staminaIncAmount)

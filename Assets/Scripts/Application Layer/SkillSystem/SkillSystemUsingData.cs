@@ -2,10 +2,19 @@ using System;
 using System.Collections.Generic;
 
 [Serializable]
+public struct SkillLevelCost
+{
+    public int level;
+    public int moneyCost;
+    public int carrotCost;
+}
+
+[Serializable]
 public struct Skill
 {
     public SkillType skillType;
-    public bool bApplied;
+    public int maxLevel;
+    public List<SkillLevelCost> cost;
     public List<SkillCommand<ICommandHandler>> skillTypes;
     public List<SkillType> prerequisiteSkills;
 }
@@ -25,5 +34,6 @@ public enum AbilityLevelUpRejectReason
     None,
     Pass,
     NotEnoughMoney,
+    NotEnoughCarrot,
     MaxLevel,
 }

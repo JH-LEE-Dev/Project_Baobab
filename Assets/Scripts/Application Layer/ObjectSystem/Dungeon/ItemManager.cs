@@ -7,15 +7,18 @@ public class ItemManager : MonoBehaviour
     // 내부 의존성
     private LogItemController logItemController;
     private CarrotItemController carrrotItemController;
+    private IInventoryChecker inventoryChecker;
 
-    public void Initialize()
+    public void Initialize(IInventoryChecker _inventoryChecker)
     {
+        inventoryChecker = _inventoryChecker;
+
         logItemController = GetComponentInChildren<LogItemController>();
         carrrotItemController = GetComponentInChildren<CarrotItemController>();
 
         if (logItemController != null)
         {
-            logItemController.Initialize();
+            logItemController.Initialize(inventoryChecker);
         }
 
         if (carrrotItemController != null)

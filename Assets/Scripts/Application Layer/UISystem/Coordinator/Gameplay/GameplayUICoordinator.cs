@@ -14,7 +14,7 @@ public class GameplayUICoordinator
     private bool bInventoryOpened = false;
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
-     UIView_Unit _unitUI,UIView_WorldPopup _worldPopupUI,UIView_MenuPopup _menuPopupUI,UIView_Tent _tentUI)
+     UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -68,6 +68,9 @@ public class GameplayUICoordinator
 
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.DungeonSelectedEvent += DungeonSelected;
+
+        tentUI.SleepEvent -= Sleep;
+        tentUI.SleepEvent += Sleep;
     }
 
     private void ReleaseEvents()
@@ -76,6 +79,7 @@ public class GameplayUICoordinator
         popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         popUpUI.SendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
+        tentUI.SleepEvent -= Sleep;
     }
 
     public void Release()
@@ -157,5 +161,10 @@ public class GameplayUICoordinator
     private void DungeonSelected(DungeonType _type)
     {
         signalHub.Publish(new DungeonSelectedSignal(_type));
+    }
+
+    private void Sleep()
+    {
+        signalHub.Publish(new SleepSignal());
     }
 }

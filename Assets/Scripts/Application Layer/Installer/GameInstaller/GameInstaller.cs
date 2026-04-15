@@ -44,14 +44,14 @@ public class GameInstaller : MonoBehaviour
         inventoryManager = GetComponentInChildren<InventoryManager>();
         skillManager = GetComponentInChildren<SkillManager>();
 
-        skillManager.Initialize();
         cameraManager.Initialize(signalHub, inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
         teleportManager.Initialize(signalHub, bootStrapProvider);
         townSystem.Initialize(signalHub, environmentSystem, inputManager);
-        inDungeonSystem.Initialize(signalHub, environmentSystem);
         inventoryManager.Initialize();
+        inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager);
+        skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager);
 

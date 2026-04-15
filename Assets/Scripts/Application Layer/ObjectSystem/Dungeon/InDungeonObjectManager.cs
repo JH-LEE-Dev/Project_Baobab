@@ -49,13 +49,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, DungeonData _dungeonData)
+    public void Initialize(IEnvironmentProvider _environmentProvider, DungeonData _dungeonData,IInventoryChecker _inventoryChecker)
     {
         environmentProvider = _environmentProvider;
         dungeonData = _dungeonData;
 
         itemManager = GetComponentInChildren<ItemManager>();
-        itemManager.Initialize();
+        itemManager.Initialize(_inventoryChecker);
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();

@@ -212,6 +212,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
     {
         environmentProvider.densityProvider.UpdateAnimalCnt(false);
         AnimalIsDeadEvent?.Invoke(_aniaml);
+        allSpawnedAnimals.Remove(_aniaml);
         ReleaseAnimal(_aniaml);
     }
 }

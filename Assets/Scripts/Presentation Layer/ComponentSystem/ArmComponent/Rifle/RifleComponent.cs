@@ -24,6 +24,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private bool bReload = false;
 
     float IRifleComponent.durability => durability;
+    int IRifleComponent.mag => mag;
+    int IRifleComponent.ammo => ammo;
 
     [SerializeField] private CircleCollider2D mouseCol;
 

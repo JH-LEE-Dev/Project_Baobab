@@ -20,6 +20,8 @@ public class LogItem : Item
     private Coroutine moveCoroutine;
     private bool bDrop = true;
 
+    private IInventoryChecker inventoryChecker;
+
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -49,6 +51,11 @@ public class LogItem : Item
         }
     }
 
+    public void SetInventoryChecker(IInventoryChecker _inventoryChecker)
+    {
+        inventoryChecker = _inventoryChecker;
+    }
+    
     public void IsDropItem(bool _boolean)
     {
         bDrop = _boolean;
@@ -116,19 +123,40 @@ public class LogItem : Item
         }
     }
 
+    private void Update()
+    {
+        if (isSucked || isLaunching || bDrop == false || suckTarget == null) return;
+
+        // 인벤토리 공간이 생겼을 때만 흡입 시작
+        if (inventoryChecker == null || inventoryChecker.CanAcquired(this))
+        {
+            StartSucking(suckTarget);
+        }
+    }
+
     private void OnTriggerEnter2D(Collider2D _other)
     {
         if (isSucked || bDrop == false) return;
 
+        // 아이템 센서 범위에 들어왔을 때 타겟 설정
         if (_other.CompareTag("ItemSensor"))
         {
             suckTarget = _other.transform;
 
-            // 발사 중이 아닐 때만 즉시 흡입 시작
+            // 발사 중이 아니고 인벤토리에 여유가 있을 때 즉시 흡입 시작
             if (!isLaunching)
             {
-                StartSucking(suckTarget);
+                if (inventoryChecker == null || inventoryChecker.CanAcquired(this))
+                {
+                    StartSucking(suckTarget);
+                }
             }
+        }
+        
+        // 캐릭터(Player)와 직접 충돌했을 때는 아무것도 하지 않음 (흡입을 통해서만 습득)
+        if (_other.CompareTag("Player"))
+        {
+            // Do nothing
         }
     }
 

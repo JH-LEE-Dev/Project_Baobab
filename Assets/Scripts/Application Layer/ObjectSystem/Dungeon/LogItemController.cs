@@ -15,8 +15,12 @@ public class LogItemController : MonoBehaviour
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
 
-    public void Initialize()
+    private IInventoryChecker inventoryChecker;
+
+    public void Initialize(IInventoryChecker _inventoryChecker)
     {
+        inventoryChecker = _inventoryChecker;
+
         logPool = new ObjectPool<LogItem>(
             createFunc: CreateLogItem,
             actionOnGet: OnGetLogItem,

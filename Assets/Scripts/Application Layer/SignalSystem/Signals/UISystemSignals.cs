@@ -17,3 +17,5 @@ public struct DungeonSelectedSignal
         type = _type;
     }
 }
+
+public struct SleepSignal { }
