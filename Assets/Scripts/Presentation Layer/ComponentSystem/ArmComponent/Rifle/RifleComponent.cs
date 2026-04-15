@@ -25,8 +25,16 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     float IRifleComponent.durability => durability;
 
+    [SerializeField] private CircleCollider2D mouseCol;
+
+    private bool bAimCorrection = false;
+    private Transform attackTransform;
     private int mag;
     private int ammo;
+
+    // 조준 보정을 위한 변수
+    private readonly Collider2D[] results = new Collider2D[10];
+    private ContactFilter2D animalFilter;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -39,10 +47,16 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         mag = ctx.characterStat.magCap;
         ammo = ctx.characterStat.ammoCap;
+
+        // 조준 보정용 필터 설정
+        animalFilter.useLayerMask = true;
+        animalFilter.SetLayerMask(LayerMask.GetMask("Animal"));
     }
 
     public override void SetFacingDir(Transform _attackTransform)
     {
+        attackTransform = _attackTransform;
+
         // 타겟 정보 전달 (Animation에서 관리)
         if (null != rifleAnimation)
         {
@@ -149,8 +163,55 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         // 1. 총알 생성 및 발사
         if (bulletObjManager != null && muzzlePoint != null)
         {
-            // muzzlePoint의 회전값에 오른쪽으로 90도 회전(Z축 기준 -90도)을 추가
-            Quaternion fireRotation = muzzlePoint.rotation * Quaternion.Euler(0, 0, -90f);
+            Quaternion fireRotation;
+
+            if (bAimCorrection && attackTransform != null)
+            {
+                // 조준 보정 로직: attackTransform 주변의 Animal 탐색
+                Vector2 searchPos = attackTransform.position;
+                float radius = mouseCol != null ? mouseCol.radius : 1f;
+                
+                // 최신 Non-Alloc 방식인 ContactFilter2D 사용
+                int count = Physics2D.OverlapCircle(searchPos, radius, animalFilter, results);
+
+                if (count > 0)
+                {
+                    Transform closestTarget = null;
+                    float minDistance = float.MaxValue;
+
+                    for (int i = 0; i < count; i++)
+                    {
+                        float dist = Vector2.Distance(searchPos, results[i].transform.position);
+                        if (dist < minDistance)
+                        {
+                            minDistance = dist;
+                            closestTarget = results[i].transform;
+                        }
+                    }
+
+                    if (closestTarget != null)
+                    {
+                        // 가장 가까운 타겟을 향한 방향 계산
+                        Vector2 targetDir = ((Vector2)closestTarget.position - (Vector2)muzzlePoint.position).normalized;
+                        float angle = Mathf.Atan2(targetDir.y, targetDir.x) * Mathf.Rad2Deg;
+                        fireRotation = Quaternion.Euler(0, 0, angle - 90f);
+                    }
+                    else
+                    {
+                        fireRotation = muzzlePoint.rotation * Quaternion.Euler(0, 0, -90f);
+                    }
+                }
+                else
+                {
+                    fireRotation = muzzlePoint.rotation * Quaternion.Euler(0, 0, -90f);
+                }
+            }
+            else
+            {
+                // 기본 발사 (보정 없음)
+                fireRotation = muzzlePoint.rotation * Quaternion.Euler(0, 0, -90f);
+            }
+
             bulletObjManager.GetBullet(muzzlePoint.position, fireRotation);
         }
 
@@ -260,5 +321,15 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     {
         ammo = ctx.characterStat.ammoCap;
         mag = ctx.characterStat.magCap;
+    }
+
+    public void ActivateAimCorrection()
+    {
+        bAimCorrection = true;
+    }
+
+    public void DeActivateAimCorrection()
+    {
+        bAimCorrection = false;
     }
 }
