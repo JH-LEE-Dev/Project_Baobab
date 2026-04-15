@@ -51,7 +51,7 @@ public class RifleAnimation : MonoBehaviour
             .SetEase(recoilEase));
             
         // 미세한 떨림 추가 (동시 실행)
-        recoilSequence.Join(transform.DOShakePosition(recoilDuration, shakeStrength, shakeVibrato, shakeRandomness, false, false));
+        recoilSequence.Join(transform.DOShakePosition(recoilDuration, shakeStrength, shakeVibrato, shakeRandomness, false, false).SetLink(gameObject));
             
         // 5. 원래 위치로 복귀
         recoilSequence.Append(transform.DOLocalMove(initialLocalPos, returnDuration)
@@ -59,6 +59,7 @@ public class RifleAnimation : MonoBehaviour
 
         // 6. 완료 시 기명 메서드 호출
         recoilSequence.OnComplete(NotifyComplete);
+        recoilSequence.SetLink(gameObject);
     }
 
     private void NotifyComplete()
