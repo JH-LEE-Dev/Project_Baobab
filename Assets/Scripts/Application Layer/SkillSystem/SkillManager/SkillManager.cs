@@ -62,7 +62,6 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 {
     private const bool EnablePrototypeAutoPass = false;
 
-    public Action<SkillCommand<ICommandHandler>> DispatchSkillsEvent;
     public Action<SkillDispatchInfo> DispatchSkillsEvent;
 
     // 외부 의존성
