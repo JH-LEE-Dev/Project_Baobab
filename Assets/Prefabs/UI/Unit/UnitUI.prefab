@@ -53,5 +53,8 @@ MonoBehaviour:
   bWorld: 1
   uiRoot: {fileID: 5973435824668062020}
   hpBarPrefab: {fileID: 8900395080866215809, guid: 398f57566344cca4ead9623aeb20ec2e, type: 3}
-  treesYOffset: 1.5
-  animalsYOffset: 1.5
+  chargePrefab: {fileID: 5121283278471093161, guid: d8d9cf278813c2144b4cf893857907a4, type: 3}
+  characterYOffset: 1
+  treesYOffset: 1
+  animalsYOffset: 1
+  showCount: 1.5

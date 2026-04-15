@@ -12,16 +12,20 @@ public class UIView_Unit : UIView
     //내부 의존성
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
-
-    [Header("UI Pools")]
     [SerializeField] private GameObject hpBarPrefab;
+    [SerializeField] private GameObject chargePrefab;
     private ObjectPools hpBarPool;
 
     [Header("Offset Settings")]
+    [SerializeField] private float characterYOffset = 1.5f;
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
+    [Header("Other")]
+    [SerializeField] private float showCount = 1.5f;
+
     private Dictionary<ITreeObj, HUD_ProgressBar> damagedTrees = new Dictionary<ITreeObj, HUD_ProgressBar>(32);
+    private HUD_ProgressBar uiCharge;
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -29,6 +33,12 @@ public class UIView_Unit : UIView
     {
         base.Initialize(_ctx);
 
+        Init_HPBarPool();
+        Init_ChargeBar();
+    }
+
+    private void Init_HPBarPool()
+    {
         if (null == hpBarPool)
         {
             hpBarPool = gameObject.AddComponent<ObjectPools>();
@@ -50,7 +60,7 @@ public class UIView_Unit : UIView
         if (damagedTrees.TryGetValue(_treeObj, out HUD_ProgressBar _bar))
         {
             _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
-            _bar.TriggerActiveForDuration(3.0f, FinishedBar);
+            _bar.TriggerActiveForDuration(showCount, FinishedBar);
 
             if (true == _treeObj.bDead)
             {
@@ -70,6 +80,8 @@ public class UIView_Unit : UIView
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+
+        Bind_ChargeUIFunction();
     }
 
     private void ShowHP_Trees(ITreeObj _treeObj, float _YOffset)
@@ -89,7 +101,7 @@ public class UIView_Unit : UIView
         damagedTrees.Add(_treeObj, _bar);
 
         // 3초 동안 활성화하고, 종료 시 풀에 반납하도록 콜백 등록
-        _bar.TriggerActiveForDuration(3.0f, FinishedBar);
+        _bar.TriggerActiveForDuration(showCount, FinishedBar);
     }
 
     private void FinishedBar(HUD_ProgressBar _bar)
@@ -117,9 +129,61 @@ public class UIView_Unit : UIView
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
     {
-
+        weaponSwapCoolPlay(); 
     }
 
+    private void Init_ChargeBar()
+    {
+        if (null == chargePrefab)
+            return;
+
+        uiCharge = Instantiate(chargePrefab, Vector3.zero, Quaternion.identity, uiRoot).GetComponent<HUD_ProgressBar>();
+        if (null == uiCharge)
+            return;
+
+        uiCharge.Initialize();
+        uiCharge.UpdateYOffset(characterYOffset);
+        uiCharge.OnHide();
+    }
+
+    private void Bind_ChargeUIFunction()
+    {
+        if (null == character || null == uiCharge)
+            return;
+
+        uiCharge.UpdateTargetObj(character.GetTransform().gameObject);
+
+        IRifleComponent _rifle = character.armComponent?.rifleComponent;
+        if (null == _rifle)
+            return;
+
+        _rifle.ReloadStartEvent -= RifleReloadCoolPlay;
+        _rifle.ReloadStartEvent += RifleReloadCoolPlay;
+    }
+
+    private void RifleReloadCoolPlay()
+    {
+        if (null == character || null == uiCharge)
+            return;
+
+        IStatComponent _stats = character.statComponent;
+        if (null == _stats)
+            return;
+
+        uiCharge.SetCharge(_stats.axeAttackCoolTime);
+    }
+
+    private void weaponSwapCoolPlay()
+    {
+        if (null == character || null == uiCharge)
+            return;
+
+        IStatComponent _stats = character.statComponent;
+        if (null == _stats)
+            return;
+
+        uiCharge.SetCharge(_stats.weaponChangeCoolTime);
+    }
     // //유니티 이벤트 함수
 
     protected override void OnShow()
