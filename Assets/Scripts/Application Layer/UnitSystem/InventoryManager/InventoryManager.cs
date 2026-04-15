@@ -6,7 +6,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 {
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
-    [SerializeField] private int maxItemsPerSlot = 2; // 슬롯당 최대 보관 개수
+    [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
 
     private int money;

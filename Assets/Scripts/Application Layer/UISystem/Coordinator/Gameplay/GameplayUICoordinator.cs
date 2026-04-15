@@ -146,6 +146,7 @@ public class GameplayUICoordinator
     private void WeaponModeChanged(WeaponModeChangedSignal weaponModeChangedSignal)
     {
         hudUI.WeaponModeChanged(weaponModeChangedSignal.weaponMode);
+        unitUI.WeaponModeChanged(weaponModeChangedSignal.weaponMode);
     }
 
     private void TentInteract(TentInteractSignal tentInteractSignal)

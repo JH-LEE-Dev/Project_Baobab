@@ -117,7 +117,7 @@ public class LogItem : Item
         moveCoroutine = null;
 
         // 도착했을 때 이미 타겟이 범위 내에 있었다면 흡입 시작
-        if (suckTarget != null)
+        if (suckTarget != null && inventoryChecker.CanAcquired(this))
         {
             StartSucking(suckTarget);
         }
@@ -128,7 +128,7 @@ public class LogItem : Item
         if (isSucked || isLaunching || bDrop == false || suckTarget == null) return;
 
         // 인벤토리 공간이 생겼을 때만 흡입 시작
-        if (inventoryChecker == null || inventoryChecker.CanAcquired(this))
+        if (inventoryChecker.CanAcquired(this))
         {
             StartSucking(suckTarget);
         }
@@ -146,7 +146,7 @@ public class LogItem : Item
             // 발사 중이 아니고 인벤토리에 여유가 있을 때 즉시 흡입 시작
             if (!isLaunching)
             {
-                if (inventoryChecker == null || inventoryChecker.CanAcquired(this))
+                if (inventoryChecker.CanAcquired(this))
                 {
                     StartSucking(suckTarget);
                 }

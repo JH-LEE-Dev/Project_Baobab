@@ -126,6 +126,12 @@ public class UIView_Unit : UIView
         hpBarPool?.Despawn(_bar.gameObject);
     }
 
+    //무기 모드 변환 시 호출. 기본값은 Axe
+    public void WeaponModeChanged(WeaponMode _currentWeaponMode)
+    {
+
+    }
+
     private void Init_ChargeBar()
     {
         if (null == chargePrefab)

@@ -171,7 +171,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
                 
                 // 최신 Non-Alloc 방식인 ContactFilter2D 사용
                 int count = Physics2D.OverlapCircle(searchPos, radius, animalFilter, results);
-                    Debug.Log(count);
+
                 if (count > 0)
                 {
                     Transform closestTarget = null;
