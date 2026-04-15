@@ -11,12 +11,12 @@ public class SkillNode
     public int currentLevel;
     public int maxLevel;
     public List<SkillLevelCost> costs;
-    public List<SkillCommand<ICommandHandler>> commands;
+    public List<SkillCommandInfoPerLevel> commands;
     public List<SkillNode> prerequisiteNodes;
 
     public bool bApplied => currentLevel > 0;
 
-    public SkillNode(SkillType _type, int _maxLevel, List<SkillLevelCost> _costs, List<SkillCommand<ICommandHandler>> _commands)
+    public SkillNode(SkillType _type, int _maxLevel, List<SkillLevelCost> _costs, List<SkillCommandInfoPerLevel> _commands)
     {
         skillType = _type;
         currentLevel = 0;
@@ -47,9 +47,20 @@ public class SkillNode
     }
 }
 
+public struct SkillDispatchInfo
+{
+    public int level;
+    public SkillCommandInfoPerLevel commandInfo;
+    public SkillDispatchInfo(int _level, SkillCommandInfoPerLevel _info)
+    {
+        level = _level;
+        commandInfo = _info;
+    }
+}
+
 public class SkillManager : MonoBehaviour, ISkillSystemProvider
 {
-    public Action<SkillCommand<ICommandHandler>> DispatchSkillsEvent;
+    public Action<SkillDispatchInfo> DispatchSkillsEvent;
 
     // 외부 의존성
     [SerializeField] private SkillDataBase skillDataBase;
@@ -150,7 +161,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         {
             for (int i = 0; i < node.commands.Count; i++)
             {
-                DispatchSkillsEvent?.Invoke(node.commands[i]);
+                var info = new SkillDispatchInfo(node.currentLevel, node.commands[i]);
+
+                DispatchSkillsEvent?.Invoke(info);
             }
         }
 

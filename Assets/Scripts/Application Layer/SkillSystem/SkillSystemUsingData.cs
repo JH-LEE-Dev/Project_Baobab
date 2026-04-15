@@ -9,13 +9,28 @@ public struct SkillLevelCost
     public int carrotCost;
 }
 
+
+[Serializable]
+public struct SkillCommandInfo
+{
+    public SkillCommandType skillCommandType;
+    public float amount;
+}
+
+[Serializable]
+public struct SkillCommandInfoPerLevel
+{
+    public int level;
+    public SkillCommandInfo info;
+}
+
 [Serializable]
 public struct Skill
 {
     public SkillType skillType;
     public int maxLevel;
     public List<SkillLevelCost> cost;
-    public List<SkillCommand<ICommandHandler>> skillTypes;
+    public List<SkillCommandInfoPerLevel> skillTypes;
     public List<SkillType> prerequisiteSkills;
 }
 
@@ -27,6 +42,12 @@ public enum SkillType
     AxeDamage1,//도끼데미지I
     hunting,//수렵
     Max
+}
+
+public enum SkillCommandType
+{
+    None,
+    InventoryExpansion,
 }
 
 public enum AbilityLevelUpRejectReason
