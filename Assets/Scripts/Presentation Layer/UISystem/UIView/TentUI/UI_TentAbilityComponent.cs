@@ -28,14 +28,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private readonly Dictionary<SkillType, AbilityNodeDefinitionJson> nodeDefinitionMap = new Dictionary<SkillType, AbilityNodeDefinitionJson>();
     private readonly List<SkillType> nodeBuildOrder = new List<SkillType>();
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
-    private readonly Dictionary<AbilityLineSegmentSpriteType, Sprite> lineSpriteMap = new Dictionary<AbilityLineSegmentSpriteType, Sprite>();
     private readonly List<AbilityNode> spawnedNodes = new List<AbilityNode>();
     private readonly Dictionary<SkillType, AbilityNode> spawnedNodeMap = new Dictionary<SkillType, AbilityNode>();
-    private readonly List<AbilityLineConnection> lineConnections = new List<AbilityLineConnection>();
-    private readonly List<AbilityLine> spawnedLines = new List<AbilityLine>();
+    private readonly AbilityLineRenderer lineRenderer = new AbilityLineRenderer();
 
     private bool hasBuiltNodes;
-    private int activeLineCount;
     private AbilityNode currentToolTipNode;
     private AbilityToolTip toolTipInstance;
 
@@ -64,6 +61,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         skillSystemProvider = _skillSystemProvider;
         rootCanvas = GetComponentInParent<Canvas>();
+        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor);
         CachePictureBindings();
         CacheLineSpriteBindings();
         LoadNodeDefinitions();
@@ -90,16 +88,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 인스펙터에서 연결한 라인 세그먼트 스프라이트를 타입별 조회 맵으로 캐시한다.
     private void CacheLineSpriteBindings()
     {
-        lineSpriteMap.Clear();
-
-        for (int i = 0; i < lineSpriteBindings.Count; i++)
-        {
-            AbilityLineSegmentSpriteBinding binding = lineSpriteBindings[i];
-            if (binding == null || binding.sprite == null)
-                continue;
-
-            lineSpriteMap[binding.lineType] = binding.sprite;
-        }
+        lineRenderer.CacheLineSpriteBindings(lineSpriteBindings);
     }
 
     // JSON 노드 정의를 읽어 SkillType 기준 조회 맵으로 만든다.
@@ -185,66 +174,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
         // 부모자식 관계를 따라 라인 연결 정보를 만든다.
     private void BuildLines()
     {
-        lineConnections.Clear();
-
-        if (moveTarget == null)
-            return;
-
-        for (int i = 0; i < spawnedNodes.Count; i++)
-        {
-            AbilityNode childNode = spawnedNodes[i];
-            SkillType[] parents = childNode.ParentSkillTypes;
-
-            for (int parentIndex = 0; parentIndex < parents.Length; parentIndex++)
-            {
-                if (spawnedNodeMap.TryGetValue(parents[parentIndex], out AbilityNode parentNode) == false)
-                    continue;
-
-                AbilityParentLineRouteJson route = FindParentLineRoute(childNode.SkillType, parents[parentIndex]);
-                if (route != null && route.usePivot)
-                {
-                    lineConnections.Add(new AbilityLineConnection(
-                        parentNode,
-                        childNode,
-                        true,
-                        new Vector2Int(route.pivotX, route.pivotY)));
-                }
-                else
-                {
-                    lineConnections.Add(new AbilityLineConnection(parentNode, childNode));
-                }
-            }
-        }
-
+        lineRenderer.RebuildConnections(spawnedNodes, spawnedNodeMap, nodeDefinitionMap);
         RefreshLines();
     }
 
     // 자식 노드 정의에서 특정 부모와 연결될 라인 경로 오버라이드를 찾는다.
-    private AbilityParentLineRouteJson FindParentLineRoute(SkillType _childSkillType, SkillType _parentSkillType)
-    {
-        if (nodeDefinitionMap.TryGetValue(_childSkillType, out AbilityNodeDefinitionJson childDefinition) == false)
-            return null;
-
-        AbilityParentLineRouteJson[] routes = childDefinition.parentLineRoutes;
-        if (routes == null || routes.Length == 0)
-            return null;
-
-        for (int i = 0; i < routes.Length; i++)
-        {
-            AbilityParentLineRouteJson route = routes[i];
-            if (route == null || string.IsNullOrWhiteSpace(route.parentSkillType))
-                continue;
-
-            if (Enum.TryParse(route.parentSkillType, true, out SkillType parsedParentSkillType) == false)
-                continue;
-
-            if (parsedParentSkillType == _parentSkillType)
-                return route;
-        }
-
-        return null;
-    }
-
     // 스킬 타입 하나를 기준으로 JSON 정의를 읽고 노드 프리팹을 만든다.
     private AbilityNode CreateNode(SkillType _skillType)
     {
@@ -492,186 +426,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 현재 보이는 노드 상태를 기준으로 라인 세그먼트를 다시 배치한다.
     private void RefreshLines()
     {
-        if (abilityLinePrefab == null || abilityBackground == null)
-            return;
-
-        activeLineCount = 0;
-
-        RectTransform targetParent = lineParent != null ? lineParent : abilityBackground;
-        int segmentSize = GetActiveSegmentSize();
-
-        for (int i = 0; i < lineConnections.Count; i++)
-        {
-            if (lineConnections[i].ParentNode.gameObject.activeSelf == false || lineConnections[i].ChildNode.gameObject.activeSelf == false)
-                continue;
-
-            if (ShouldCullLineConnection(lineConnections[i], targetParent))
-                continue;
-
-            BuildLineSegments(lineConnections[i], targetParent, segmentSize);
-        }
-
-        HideUnusedLines();
+        lineRenderer.RefreshLines(currentZoom);
     }
 
     // 한 부모-자식 연결에 대해 4px 또는 8px 세그먼트를 반복 배치한다.
-    private void BuildLineSegments(AbilityLineConnection _connection, RectTransform _targetParent, int _segmentSize)
-    {
-        if (_connection.ParentNode == null || _connection.ChildNode == null)
-            return;
-
-        if (_connection.HasPivot)
-        {
-            Vector2Int pivotGrid = _connection.PivotGrid;
-            Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
-            Vector2 pivotCenter = GetGridPointCenterInRectangle(pivotGrid, _targetParent);
-            Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
-
-            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "A", _connection.ParentNode.GridPosition, pivotGrid, startCenter, pivotCenter, _targetParent, _segmentSize, true, false);
-            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "B", pivotGrid, _connection.ChildNode.GridPosition, pivotCenter, endCenter, _targetParent, _segmentSize, true, true);
-            return;
-        }
-
-        Vector2 directStartCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
-        Vector2 directEndCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
-        BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, string.Empty, _connection.ParentNode.GridPosition, _connection.ChildNode.GridPosition, directStartCenter, directEndCenter, _targetParent, _segmentSize, false, false);
-    }
-
     // 두 점 사이의 한 구간에 대해 4px 또는 8px 세그먼트를 반복 배치한다.
-    private void BuildLineSegmentPath(
-        SkillType _parentSkillType,
-        SkillType _childSkillType,
-        string _pathSuffix,
-        Vector2Int _startGrid,
-        Vector2Int _endGrid,
-        Vector2 _startCenter,
-        Vector2 _endCenter,
-        RectTransform _targetParent,
-        int _segmentSize,
-        bool _hasCornerAnchor,
-        bool _isStartCornerAnchor)
-    {
-        int dx = _endGrid.x - _startGrid.x;
-        int dy = _endGrid.y - _startGrid.y;
-        int stepX = Math.Sign(dx);
-        int stepY = Math.Sign(dy);
-        int absDx = Mathf.Abs(dx);
-        int absDy = Mathf.Abs(dy);
-
-        bool isHorizontal = absDx > 0 && dy == 0;
-        bool isVertical = absDy > 0 && dx == 0;
-        bool isDiagonal = absDx == absDy && absDx > 0;
-
-        if (isHorizontal == false && isVertical == false && isDiagonal == false)
-            return;
-
-        AbilityLineSegmentSpriteType spriteType = GetSegmentSpriteType(stepX, stepY, _segmentSize);
-        if (lineSpriteMap.TryGetValue(spriteType, out Sprite sprite) == false)
-            return;
-
-        Vector2 delta = _endCenter - _startCenter;
-
-        if (delta.magnitude <= 0.001f)
-            return;
-
-        if (isHorizontal || isVertical)
-        {
-            BuildStretchedStraightLine(_parentSkillType, _childSkillType, _pathSuffix, _startCenter, _endCenter, _targetParent, isHorizontal, sprite, _hasCornerAnchor, _isStartCornerAnchor);
-            return;
-        }
-
-        float primaryDistance = isHorizontal
-            ? Mathf.Abs(_endCenter.x - _startCenter.x)
-            : Mathf.Abs(_endCenter.y - _startCenter.y);
-
-        if (isDiagonal)
-            primaryDistance = Mathf.Abs(_endCenter.x - _startCenter.x);
-
-        int segmentCount = Mathf.Max(1, Mathf.RoundToInt(primaryDistance / _segmentSize));
-        float coveredDistance = segmentCount * _segmentSize;
-        float remainingDistance = Mathf.Max(0f, primaryDistance - coveredDistance);
-        float leadingOffset = remainingDistance * 0.5f;
-
-        Vector2 segmentAxisStep = new Vector2(stepX * _segmentSize, stepY * _segmentSize);
-        Vector2 firstSegmentCenter = _startCenter + new Vector2(stepX, stepY) * (leadingOffset + (_segmentSize * 0.5f));
-        firstSegmentCenter = SnapToPixel(firstSegmentCenter);
-
-        for (int segmentIndex = 0; segmentIndex < segmentCount; segmentIndex++)
-        {
-            Vector2 position = firstSegmentCenter + (segmentAxisStep * segmentIndex);
-
-            AbilityLine line = GetOrCreatePooledLine(_targetParent);
-            line.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
-                ? $"Line_{_parentSkillType}_{_childSkillType}_{segmentIndex}"
-                : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}_{segmentIndex}";
-            line.Setup(sprite, position, GetLineColor(_childSkillType));
-            line.MoveBehindSiblings();
-        }
-    }
-
     // 가로 또는 세로 선은 하나의 선분 오브젝트를 늘려서 표현한다.
-    private void BuildStretchedStraightLine(
-        SkillType _parentSkillType,
-        SkillType _childSkillType,
-        string _pathSuffix,
-        Vector2 _startCenter,
-        Vector2 _endCenter,
-        RectTransform _targetParent,
-        bool _isHorizontal,
-        Sprite _sprite,
-        bool _hasCornerAnchor,
-        bool _isStartCornerAnchor)
-    {
-        Color lineColor = GetLineColor(_childSkillType);
-        Vector2 snappedStart = SnapToPixel(_startCenter);
-        Vector2 snappedEnd = SnapToPixel(_endCenter);
-        float baseLength;
-
-        if (_hasCornerAnchor)
-        {
-            Vector2 pivotCenter = _isStartCornerAnchor ? snappedStart : snappedEnd;
-            Vector2 farCenter = _isStartCornerAnchor ? snappedEnd : snappedStart;
-            Vector2 axisDirection = (farCenter - pivotCenter).normalized;
-            baseLength = _isHorizontal
-                ? Mathf.Abs(farCenter.x - pivotCenter.x)
-                : Mathf.Abs(farCenter.y - pivotCenter.y);
-
-            if (baseLength <= 0.001f)
-                return;
-
-            float length = Mathf.Round(baseLength + StraightLineOverlap);
-            bool anchorAtStart = _isHorizontal
-                ? farCenter.x >= pivotCenter.x
-                : farCenter.y >= pivotCenter.y;
-            Vector2 anchoredCornerPosition = SnapToPixel(pivotCenter - (axisDirection * StraightLineOverlap));
-
-            AbilityLine anchoredLine = GetOrCreatePooledLine(_targetParent);
-            anchoredLine.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
-                ? $"Line_{_parentSkillType}_{_childSkillType}"
-                : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-            anchoredLine.SetupAnchoredSize(_sprite, anchoredCornerPosition, _isHorizontal, length, anchorAtStart, lineColor);
-            anchoredLine.MoveBehindSiblings();
-            return;
-        }
-
-        baseLength = _isHorizontal
-            ? Mathf.Abs(snappedEnd.x - snappedStart.x)
-            : Mathf.Abs(snappedEnd.y - snappedStart.y);
-
-        if (baseLength <= 0.001f)
-            return;
-
-        float centerLength = Mathf.Round(baseLength + (StraightLineOverlap * 2f));
-        Vector2 center = SnapToPixel((snappedStart + snappedEnd) * 0.5f);
-
-        AbilityLine line = GetOrCreatePooledLine(_targetParent);
-        line.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
-            ? $"Line_{_parentSkillType}_{_childSkillType}"
-            : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-        line.SetupScaled(_sprite, center, _isHorizontal, centerLength, lineColor);
-        line.MoveBehindSiblings();
-    }
-
     // 부모와 연결된 라인 색상은 도착 자식 노드의 현재 찍기 가능 여부를 따른다.
     private Color GetLineColor(SkillType _childSkillType)
     {
@@ -682,119 +442,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 현재 줌 비율에 따라 사용할 라인 세그먼트 크기를 선택한다.
-    private int GetActiveSegmentSize()
-    {
-        float projectedGridSize = gridCellSize * currentZoom;
-        return projectedGridSize >= 16f ? 8 : 4;
-    }
-
     // 방향과 세그먼트 크기에 맞는 라인 스프라이트 타입을 반환한다.
-    private AbilityLineSegmentSpriteType GetSegmentSpriteType(int _stepX, int _stepY, int _segmentSize)
-    {
-        if (_segmentSize == 8)
-        {
-            if (_stepX != 0 && _stepY == 0)
-                return AbilityLineSegmentSpriteType.Row8;
-
-            if (_stepX == 0 && _stepY != 0)
-                return AbilityLineSegmentSpriteType.Col8;
-
-            return _stepX == _stepY
-                ? AbilityLineSegmentSpriteType.DiagSWNE8
-                : AbilityLineSegmentSpriteType.DiagSENW8;
-        }
-
-        if (_stepX != 0 && _stepY == 0)
-            return AbilityLineSegmentSpriteType.Row4;
-
-        if (_stepX == 0 && _stepY != 0)
-            return AbilityLineSegmentSpriteType.Col4;
-
-        return _stepX == _stepY
-            ? AbilityLineSegmentSpriteType.DiagSWNE4
-            : AbilityLineSegmentSpriteType.DiagSENW4;
-    }
-
     // 노드 중심점을 대상 RectTransform의 로컬 좌표로 변환한다.
-    private Vector2 GetNodeCenterInRectangle(RectTransform _nodeRect, RectTransform _targetRectangle)
-    {
-        Vector3[] corners = new Vector3[4];
-        _nodeRect.GetWorldCorners(corners);
-        Vector3 worldCenter = (corners[0] + corners[2]) * 0.5f;
-
-        Camera eventCamera = null;
-        if (rootCanvas != null && rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            eventCamera = rootCanvas.worldCamera;
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _targetRectangle,
-            RectTransformUtility.WorldToScreenPoint(eventCamera, worldCenter),
-            eventCamera,
-            out Vector2 localPoint);
-
-        return SnapToPixel(localPoint);
-    }
-
     // 그리드 좌표 하나를 대상 RectTransform 기준 로컬 중심 좌표로 변환한다.
-    private Vector2 GetGridPointCenterInRectangle(Vector2Int _gridPoint, RectTransform _targetRectangle)
-    {
-        if (moveTarget == null)
-            return Vector2.zero;
-
-        Vector3 worldPoint = moveTarget.TransformPoint(new Vector3(_gridPoint.x * gridCellSize, _gridPoint.y * gridCellSize, 0f));
-
-        Camera eventCamera = null;
-        if (rootCanvas != null && rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            eventCamera = rootCanvas.worldCamera;
-
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _targetRectangle,
-            RectTransformUtility.WorldToScreenPoint(eventCamera, worldPoint),
-            eventCamera,
-            out Vector2 localPoint);
-
-        return SnapToPixel(localPoint);
-    }
-
 
     // 정수 픽셀 좌표에 맞춰 위치를 스냅한다.
-    private Vector2 SnapToPixel(Vector2 _position)
-    {
-        return new Vector2(Mathf.Round(_position.x), Mathf.Round(_position.y));
-    }
-
     // 풀에서 사용 가능한 라인을 가져오거나 새로 만든다.
-    private AbilityLine GetOrCreatePooledLine(RectTransform _targetParent)
-    {
-        AbilityLine line;
-
-        if (activeLineCount < spawnedLines.Count)
-        {
-            line = spawnedLines[activeLineCount];
-            RectTransform lineRect = line.transform as RectTransform;
-            if (lineRect != null && lineRect.parent != _targetParent)
-                lineRect.SetParent(_targetParent, false);
-        }
-        else
-        {
-            line = Instantiate(abilityLinePrefab, _targetParent, false);
-            spawnedLines.Add(line);
-        }
-
-        activeLineCount++;
-        return line;
-    }
-
     // 이번 프레임에 사용하지 않은 라인은 숨긴다.
-    private void HideUnusedLines()
-    {
-        for (int i = activeLineCount; i < spawnedLines.Count; i++)
-        {
-            if (spawnedLines[i] != null)
-                spawnedLines[i].Hide();
-        }
-    }
-
 #endregion
 
 
@@ -939,48 +593,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 #endregion
 
 
-#region Optimization
 
 
     // 라인 연결의 바운드가 화면 영역 밖에 충분히 벗어나 있으면 이번 프레임 렌더링을 생략한다.
-    private bool ShouldCullLineConnection(AbilityLineConnection _connection, RectTransform _targetParent)
-    {
-        Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
-        Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
-
-        float minX = Mathf.Min(startCenter.x, endCenter.x);
-        float maxX = Mathf.Max(startCenter.x, endCenter.x);
-        float minY = Mathf.Min(startCenter.y, endCenter.y);
-        float maxY = Mathf.Max(startCenter.y, endCenter.y);
-
-        if (_connection.HasPivot)
-        {
-            Vector2 pivotCenter = GetGridPointCenterInRectangle(_connection.PivotGrid, _targetParent);
-            minX = Mathf.Min(minX, pivotCenter.x);
-            maxX = Mathf.Max(maxX, pivotCenter.x);
-            minY = Mathf.Min(minY, pivotCenter.y);
-            maxY = Mathf.Max(maxY, pivotCenter.y);
-        }
-
-        Rect viewRect = abilityBackground.rect;
-        float margin = GetActiveSegmentSize() * 2f;
-
-        if (maxX < viewRect.xMin - margin)
-            return true;
-
-        if (minX > viewRect.xMax + margin)
-            return true;
-
-        if (maxY < viewRect.yMin - margin)
-            return true;
-
-        if (minY > viewRect.yMax + margin)
-            return true;
-
-        return false;
-    }
-
-#endregion
 
 }
 
