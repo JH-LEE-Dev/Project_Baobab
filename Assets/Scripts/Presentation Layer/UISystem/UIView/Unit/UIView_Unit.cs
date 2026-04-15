@@ -12,16 +12,19 @@ public class UIView_Unit : UIView
     //내부 의존성
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
-
-    [Header("UI Pools")]
     [SerializeField] private GameObject hpBarPrefab;
+    [SerializeField] private GameObject chargePrefab;
     private ObjectPools hpBarPool;
 
     [Header("Offset Settings")]
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
+    [Header("Other")]
+    [SerializeField] private float showCount = 1.5f;
+
     private Dictionary<ITreeObj, HUD_ProgressBar> damagedTrees = new Dictionary<ITreeObj, HUD_ProgressBar>(32);
+    private HUD_ProgressBar uiCharge;
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -29,6 +32,11 @@ public class UIView_Unit : UIView
     {
         base.Initialize(_ctx);
 
+        Init_HPBarPool();
+    }
+
+    private void Init_HPBarPool()
+    {
         if (null == hpBarPool)
         {
             hpBarPool = gameObject.AddComponent<ObjectPools>();
@@ -89,7 +97,7 @@ public class UIView_Unit : UIView
         damagedTrees.Add(_treeObj, _bar);
 
         // 3초 동안 활성화하고, 종료 시 풀에 반납하도록 콜백 등록
-        _bar.TriggerActiveForDuration(3.0f, FinishedBar);
+        _bar.TriggerActiveForDuration(showCount, FinishedBar);
     }
 
     private void FinishedBar(HUD_ProgressBar _bar)
@@ -113,6 +121,17 @@ public class UIView_Unit : UIView
 
         hpBarPool?.Despawn(_bar.gameObject);
     }
+
+    private void init_ChargeBar()
+    {
+        if (null == chargePrefab)
+            return;
+
+        uiCharge = Instantiate(chargePrefab, Vector3.zero, Quaternion.identity, uiRoot).GetComponent<HUD_ProgressBar>();
+        uiCharge?.Initialize();
+    }
+
+    public void SettingCharge(float _value, float _duration) => uiCharge?.SetCharge(_value, _duration);
 
     // //유니티 이벤트 함수
 

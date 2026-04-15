@@ -2,6 +2,7 @@ using System;
 using PresentationLayer.ObjectSystem;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 namespace PresentationLayer.UISystem.HUD
 {
@@ -26,6 +27,8 @@ namespace PresentationLayer.UISystem.HUD
         private Action<HUD_ProgressBar> onHideCallback;
 
         private GameObject targetObj;
+
+        private Tween chargeTween;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -58,6 +61,32 @@ namespace PresentationLayer.UISystem.HUD
         public void UpdateYOffset(float _in) =>  showYOffset = _in;
 
         /// <summary>
+        /// 지정된 TargetValue까지 0부터 차오르는 충전/쿨타임 기능을 실행합니다.
+        /// </summary>
+        /// <param name="_targetValue">최종 목표 값 (Slider의 MaxValue로 설정됨)</param>
+        /// <param name="_duration">차오르는 데 걸리는 시간 (초)</param>
+        public void SetCharge(float _targetValue, float _duration)
+        {
+            if (null == progressSlider)
+                return;
+
+            chargeTween?.Kill();
+
+            progressSlider.maxValue = _targetValue;
+            progressSlider.value = 0f;
+
+            // 위치 추적 및 타이머 활성화를 위해 설정 (Update의 타이머보다 DOTween이 먼저 끝날 수 있도록 여유 부여)
+            isTimerActive = true;
+            activeTimer = _duration + 0.1f; 
+
+            OnShow();
+
+            chargeTween = progressSlider.DOValue(_targetValue, _duration)
+                .SetEase(Ease.Linear)
+                .OnComplete(OnHide);
+        }
+
+        /// <summary>
         /// 지정된 시간 동안 활성화하고, 종료 시 실행할 콜백을 등록합니다.
         /// </summary>
         public void TriggerActiveForDuration(float _duration, Action<HUD_ProgressBar> _onHide = null)
@@ -69,6 +98,7 @@ namespace PresentationLayer.UISystem.HUD
                 return;
             }
 
+            chargeTween?.Kill();
             activeTimer = _duration;
             isTimerActive = true;
             onHideCallback = _onHide;
@@ -87,6 +117,9 @@ namespace PresentationLayer.UISystem.HUD
         {
             if (true == gameObject.activeSelf)
             {
+                chargeTween?.Kill();
+                chargeTween = null;
+
                 isTimerActive = false;
                 activeTimer = 0.0f;
                 gameObject.SetActive(false);
@@ -106,6 +139,8 @@ namespace PresentationLayer.UISystem.HUD
 
         public void OnDespawn()
         {
+            chargeTween?.Kill();
+            chargeTween = null;
             isTimerActive = false;
             activeTimer = 0.0f;
             onHideCallback = null;
