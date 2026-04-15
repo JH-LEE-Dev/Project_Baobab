@@ -340,11 +340,11 @@ MonoBehaviour:
   Composition:
     ScreenPosition: {x: 0, y: 0}
     DeadZone:
-      Enabled: 0
-      Size: {x: 0, y: 0}
+      Enabled: 1
+      Size: {x: 0.1, y: 0.1}
     HardLimits:
       Enabled: 0
-      Size: {x: 0.8, y: 0.8}
+      Size: {x: 1, y: 1}
       Offset: {x: 0, y: 0}
   CenterOnActivate: 1
   TargetOffset: {x: 0, y: 0, z: 0}
@@ -404,7 +404,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
-      value: -0.08645834
+      value: -0.11562501
       objectReference: {fileID: 0}
     - target: {fileID: 5305673934832839931, guid: 5f56c498bff303a46b688eaaae5a8d38, type: 3}
       propertyPath: m_NormalizedViewPortRect.width

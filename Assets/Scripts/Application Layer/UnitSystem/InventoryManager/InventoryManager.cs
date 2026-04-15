@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker
+public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker,IInventoryCH
 {
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
@@ -266,5 +266,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         }
 
         return false;
+    }
+
+    public void ExpandInventorySlotCnt(float _amount)
+    {
+        currentSlotCount += (int)_amount;
     }
 }

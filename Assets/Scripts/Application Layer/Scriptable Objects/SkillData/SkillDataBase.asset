@@ -13,7 +13,15 @@ MonoBehaviour:
   m_Name: SkillDataBase
   m_EditorClassIdentifier: Assembly-CSharp::SkillDataBase
   skills:
-  - skillType: 0
-    bApplied: 0
-    skillTypes: []
-    prerequisiteSkills: []
+  - skillType: 2
+    maxLevel: 1
+    cost:
+    - level: 1
+      moneyCost: 500
+      carrotCost: 0
+    skillTypes:
+    - level: 1
+      info:
+        skillCommandType: 1
+        amount: 2
+    prerequisiteSkills: 

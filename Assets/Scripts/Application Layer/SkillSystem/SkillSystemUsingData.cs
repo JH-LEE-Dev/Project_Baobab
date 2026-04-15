@@ -9,13 +9,28 @@ public struct SkillLevelCost
     public int carrotCost;
 }
 
+
+[Serializable]
+public struct SkillCommandInfo
+{
+    public SkillCommandType skillCommandType;
+    public float amount;
+}
+
+[Serializable]
+public struct SkillCommandInfoPerLevel
+{
+    public int level;
+    public SkillCommandInfo info;
+}
+
 [Serializable]
 public struct Skill
 {
     public SkillType skillType;
     public int maxLevel;
     public List<SkillLevelCost> cost;
-    public List<SkillCommand<ICommandHandler>> skillTypes;
+    public List<SkillCommandInfoPerLevel> skillTypes;
     public List<SkillType> prerequisiteSkills;
 }
 
@@ -52,6 +67,12 @@ public enum SkillType
     FatigueRecoveryBoost1, //피로도 회복 강화1
     FatigueMaxIncrease1, // 피로도 최대치 증가1
     Max
+}
+
+public enum SkillCommandType
+{
+    None,
+    InventoryExpansion,
 }
 
 public enum AbilityLevelUpRejectReason

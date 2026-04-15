@@ -1,23 +1,10 @@
 using UnityEngine;
 
-public abstract class SkillCommand<THandler> : ScriptableObject
-    where THandler : class, ICommandHandler
+public abstract class SkillCommand : ScriptableObject
 {
-    public virtual void Execute(ICommandHandler handler)
-    {
-        if (handler is THandler target)
-        {
-            Execute(target);
-        }
-    }
-    public virtual void Undo(ICommandHandler handler)
-    {
-        if (handler is THandler target)
-        {
-            Undo(target);
-        }
-    }
-
-    protected abstract void Execute(THandler handler);
-    protected abstract void Undo(THandler handler);
+    public int level = 0;
+    public float amount = 0f;
+    public SkillCommandType skillCommandType;
+    protected abstract void Execute(ICommandHandleSystem _system);
+    protected abstract void Undo(ICommandHandleSystem _system);
 }
