@@ -108,6 +108,10 @@ public class LogItem : Item
         }
 
         transform.position = _end;
+
+        // 전역 픽셀 스냅 유틸리티 사용
+        transform.position = GlobalPixelSnapper.Snap(transform.position);
+
         if (visualTransform != null)
         {
             visualTransform.localPosition = Vector3.zero;

@@ -173,7 +173,7 @@ namespace PresentationLayer.UISystem.HUD
                 newPos.y += showYOffset;
 
                 // 글로벌 유틸리티를 사용하여 픽셀 스냅 적용
-                rect.position = GlobalUI.SnapToPixel(newPos, pixelsPerUnit);
+                rect.position = GlobalUI.SnapToScreenPixel(newPos, Camera.main);
             }
         }
 

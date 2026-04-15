@@ -6,14 +6,12 @@ public class AS_IdleState : AnimalState
     private float idleTimer;
     private float nextMoveTime;
     private bool isFleeing; // 도망 시도 여부 플래그
-    private const float pixelsPerUnit = 32f; // 640*360 해상도 기준 픽셀 밀도
 
     public override void Enter()
     {
         bActivated = true;
         animal.anim.SetBool(animal.isMovingHash, false);
         animal.rb.linearVelocity = Vector2.zero;
-// ... (나머지 Enter 코드 동일)
 
         // 현재 위치 타일 점유
         currentOccupiedPos = pathFindComponent.WorldToCell(animal.transform.position);
@@ -122,11 +120,27 @@ public class AS_IdleState : AnimalState
     {
         if (!bActivated) return;
 
-        animal.rb.linearVelocity = Vector2.MoveTowards(
-            animal.rb.linearVelocity,
-            Vector2.zero,
-            animal.currentGroundData.deceleration * Time.fixedDeltaTime
-        );
+        // 감속 로직
+        if (animal.rb.linearVelocity.sqrMagnitude > 0.001f)
+        {
+            animal.rb.linearVelocity = Vector2.MoveTowards(
+                animal.rb.linearVelocity,
+                Vector2.zero,
+                animal.currentGroundData.deceleration * Time.fixedDeltaTime
+            );
+        }
+        else
+        {
+            // 속도가 거의 없으면 물리 속도 고정 및 픽셀 스냅
+            animal.rb.linearVelocity = Vector2.zero;
+            SnapToPixel();
+        }
+    }
+
+    private void SnapToPixel()
+    {
+        // 전역 픽셀 스냅 유틸리티 사용
+        GlobalPixelSnapper.SnapRigidbody(animal.rb, Time.fixedDeltaTime);
     }
 
     protected override void SubscribeEvents() { }
