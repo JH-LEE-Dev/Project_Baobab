@@ -19,6 +19,7 @@ public class LogItem : Item
     private Transform suckTarget;
     private Coroutine moveCoroutine;
     private bool bDrop = true;
+    public float durability = 0f;
 
     private IInventoryChecker inventoryChecker;
 
@@ -33,6 +34,7 @@ public class LogItem : Item
         suckTarget = null;
         sprite = _logItemTypeData.sprite;
         color = _color;
+        durability = _logItemTypeData.durability;
 
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer != null)

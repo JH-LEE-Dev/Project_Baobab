@@ -9,17 +9,22 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private LogItem cuttingItem;
 
     // 외부 의존성
-    [SerializeField] private float cuttingDuration = 5.0f;
-    private float baseCuttingDuration;
     private float totalSpeedMultiplier = 1.0f;
 
     // 내부 상태
     private Animator anim;
     private readonly int startHash = Animator.StringToHash("bStart");
-    private float cuttingTimer = 0f;
     private bool bIsCutting = false;
 
-    public float timeRemaining => cuttingTimer;
+    public float timeRemaining
+    {
+        get
+        {
+            if (cuttingItem == null || !bIsCutting) return 0f;
+            // 1초에 1 * Multiplier만큼 깎으므로, 남은 시간 = 남은 내구도 / (1 * Multiplier)
+            return cuttingItem.durability / totalSpeedMultiplier;
+        }
+    }
 
     ILogItemData ILogCutter.logToCut => logToCut;
 
@@ -28,16 +33,19 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     public void Initialize()
     {
         anim = GetComponent<Animator>();
-        baseCuttingDuration = cuttingDuration;
     }
 
     private void Update()
     {
-        if (!bIsCutting) return;
+        if (!bIsCutting || cuttingItem == null) return;
 
-        cuttingTimer -= Time.deltaTime;
-        if (cuttingTimer <= 0f)
+        // 1초에 1 * totalSpeedMultiplier 만큼 내구도 감소
+        float decreaseAmount = Time.deltaTime * totalSpeedMultiplier;
+        cuttingItem.durability -= decreaseAmount;
+
+        if (cuttingItem.durability <= 0f)
         {
+            cuttingItem.durability = 0f;
             bIsCutting = false;
             CuttingDone();
         }
@@ -49,13 +57,12 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         CuttingDoneEvent?.Invoke();
     }
 
-    public void StartCutting(LogItem _item,ILogItemData _itemData)
+    public void StartCutting(LogItem _item, ILogItemData _itemData)
     {
         if (bIsCutting) return;
 
         cuttingItem = _item;
         bIsCutting = true;
-        cuttingTimer = cuttingDuration;
         anim.SetBool(startHash, true);
 
         logToCut = _itemData;
@@ -76,8 +83,5 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         // _amount는 0보다 큰 수이고 퍼센트 (예: 10.0f는 10% 속도 증가)
         totalSpeedMultiplier += (_amount / 100.0f);
-        
-        // 속도 증가 비율에 따라 Duration 감소 (Duration = Base / Multiplier)
-        cuttingDuration = baseCuttingDuration / totalSpeedMultiplier;
     }
 }

@@ -4,15 +4,17 @@ using UnityEngine.Pool;
 
 public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 {
-    public event Action<Item> CarrotItemAcquiredEvent;
+    public event Action<CarrotItem> CarrotItemAcquiredEvent;
 
     // 외부 의존성
     [SerializeField] private CarrotItem carrotItemPrefab;
+    [SerializeField] private int minAmountPerBundle = 3;
+    [SerializeField] private int maxAmountPerBundle = 5;
+    [SerializeField] private int minSpawnBundle = 2;
+    [SerializeField] private int maxSpawnBundle = 3;
 
     // 내부 의존성
     private IObjectPool<CarrotItem> carrotPool;
-    private int spawnCount = 1;
-    private int baseSpawnCount = 1;
     private float dropMultiplier = 1.0f;
 
     public void Initialize()
@@ -61,11 +63,18 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void SpawnCarrotItem(Vector3 _position)
     {
-        for (int i = 0; i < spawnCount; i++)
+        int bundlesToSpawn = UnityEngine.Random.Range(minSpawnBundle, maxSpawnBundle + 1);
+
+        for (int i = 0; i < bundlesToSpawn; i++)
         {
             CarrotItem carrotItem = carrotPool.Get();
 
             carrotItem.transform.position = _position;
+
+            // 당근 묶음 개수 설정 (기본 랜덤값 * 드랍 배율)
+            int randomAmount = UnityEngine.Random.Range(minAmountPerBundle, maxAmountPerBundle + 1);
+            float finalAmount = randomAmount * dropMultiplier;
+            carrotItem.SetAmount(finalAmount);
 
             // 포물선 운동 설정
             Vector3 startPos = _position;
@@ -87,10 +96,9 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void IncreaseCarrotDrop(float _amount)
     {
-        // _amount는 0보다 큰 퍼센트 (예: 100.0f는 100% 증가 즉 2배 드랍)
+        // _amount는 0보다 큰 퍼센트 (예: 100.0f는 100% 증가 즉 2배 용량)
         dropMultiplier += (_amount / 100.0f);
-        spawnCount = Mathf.FloorToInt(baseSpawnCount * dropMultiplier);
 
-        Debug.Log($"[CarrotItemController] Drop Rate Increased: {dropMultiplier * 100}% (SpawnCount: {spawnCount})");
+        Debug.Log($"[CarrotItemController] Carrot Bundle Capacity Increased: {dropMultiplier * 100}%");
     }
 }

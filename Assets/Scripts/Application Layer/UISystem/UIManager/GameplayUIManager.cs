@@ -22,8 +22,9 @@ public class GameplayUIManager : UIManager
         logCutter = _logCutter;
         skillSystemProvider = _skillSystemProvider;
         shopNPC = _shopNPC;
+        moneyData = _moneyData;
     }
-
+    
     protected override void DataInjection(UIView view)
     {
         if(view is UIView_Popup invUI)

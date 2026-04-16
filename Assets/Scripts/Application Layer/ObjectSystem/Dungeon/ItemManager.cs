@@ -72,7 +72,7 @@ public class ItemManager : MonoBehaviour
         remove { if (logItemController != null) logItemController.LogItemAcquiredEvent -= value; }
     }
 
-    public event Action<Item> CarrotItemAcquiredEvent
+    public event Action<CarrotItem> CarrotItemAcquiredEvent
     {
         add { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent += value; }
         remove { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent -= value; }

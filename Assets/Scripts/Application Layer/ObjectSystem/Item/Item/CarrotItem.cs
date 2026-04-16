@@ -16,6 +16,7 @@ public class CarrotItem : Item
     private Transform suckTarget;
     private Coroutine moveCoroutine;
     private bool bDrop = true;
+    public float amount { get; private set; } = 0;
 
     public void Initialize()
     {
@@ -55,6 +56,11 @@ public class CarrotItem : Item
         isSucked = false;
         isLaunching = false;
         suckTarget = null;
+    }
+
+    public void SetAmount(float _amount)
+    {
+        amount = _amount;
     }
 
     private IEnumerator ParabolicMoveRoutine(Vector3 _start, Vector3 _end, float _height, float _duration)

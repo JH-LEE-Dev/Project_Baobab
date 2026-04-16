@@ -115,8 +115,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.CreateWelcomeNoobLoot();
     }
 
-    private void CarrotItemAcquired()
+    private void CarrotItemAcquired(CarrotItem _carrotItem)
     {
-        signalHub.Publish(new CarrotItemAcquiredSignal());
+        signalHub.Publish(new CarrotItemAcquiredSignal(_carrotItem.amount));
     }
 }

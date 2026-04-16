@@ -39,4 +39,11 @@ public struct TreeGetHitSignal
 
 public struct GoToHomeSignal { }
 
-public struct CarrotItemAcquiredSignal { }
+public struct CarrotItemAcquiredSignal
+{
+    public float amount;
+    public CarrotItemAcquiredSignal(float _amount)
+    {
+        amount = _amount;
+    }
+}

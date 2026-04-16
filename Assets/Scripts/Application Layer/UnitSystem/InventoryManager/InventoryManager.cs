@@ -204,9 +204,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         money += _money;
     }
 
-    public void CarrotEarned()
+    public void CarrotEarned(float _amount)
     {
-        carrot += 1;
+        carrot += (int)_amount;
     }
 
     public int GetCurrentCarrot()

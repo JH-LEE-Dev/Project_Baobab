@@ -9,7 +9,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     // // 이벤트
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
-    public event Action CarrotItemAcquiredEvent;
+    public event Action<CarrotItem> CarrotItemAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
 
     // // 외부 의존성
@@ -510,8 +510,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         itemManager.SpawnCarrotItem(_animal.transform.position);
     }
 
-    private void CarrotItemAcquired(Item _item)
+    private void CarrotItemAcquired(CarrotItem _item)
     {
-        CarrotItemAcquiredEvent?.Invoke();
+        CarrotItemAcquiredEvent?.Invoke(_item);
     }
 }

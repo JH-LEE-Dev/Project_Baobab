@@ -139,7 +139,7 @@ public class UnitSystem
 
     private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)
     {
-        inventoryManager.CarrotEarned();
+        inventoryManager.CarrotEarned(carrotItemAcquiredSignal.amount);
         signalHub.Publish(new CharacterEarnMoneySignal(MoneyType.Carrot));
     }
 
