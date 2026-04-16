@@ -143,7 +143,11 @@ public class UIView_Popup : UIView
 
     public void InventorySpecChanged() //인벤토리 스펙이 변경되었을 때,
     {
-        
+        if (null != uI_Inventory)
+        {
+            if (uI_Inventory.isOpening)
+                uI_Inventory.InventoryShowEvent();
+        }
     }
 
 #endregion
