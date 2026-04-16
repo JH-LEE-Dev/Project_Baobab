@@ -22,7 +22,7 @@ public class SubpixelSnapper : MonoBehaviour
     /// 시네머신이 위치 결정을 끝낸 직후(DefaultExecutionOrder 2000) 실행됨
     /// </summary>
     private void LateUpdate()
-    {return;
+    {
         if (pixelCamera == null || quadTransform == null)
         {
             return;

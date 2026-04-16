@@ -28,6 +28,8 @@ public class LogContainer : MonoBehaviour, IInventory
 
     public int carrot => throw new NotImplementedException();
 
+    public int currentSlotCnt => throw new NotImplementedException();
+
     private bool bCanInteract = false;
     private Coroutine transferCoroutine;
     private WaitForSeconds transferWait;

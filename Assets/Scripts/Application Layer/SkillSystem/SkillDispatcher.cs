@@ -36,12 +36,12 @@ public class SkillDispatcher : MonoBehaviour,ICommandHandleSystem
 
     public void DispatchCommand(SkillDispatchInfo _skillDispatchInfo)
     {
-        SkillCommandType commandType = _skillDispatchInfo.commandInfo.info.skillCommandType;
+        SkillCommandType commandType = _skillDispatchInfo.commandInfo.skillCommandType;
 
         if (skillDic.TryGetValue(commandType, out SkillCommand command))
         {
             command.level = _skillDispatchInfo.level;
-            command.amount = _skillDispatchInfo.commandInfo.info.amount;
+            command.amount = _skillDispatchInfo.commandInfo.amount;
             command.Execute(this);
         }
         else

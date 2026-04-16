@@ -1,9 +1,11 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
 public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker,IInventoryCH
 {
+    public event Action InventorySpecChangedEvent;
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
@@ -21,19 +23,21 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     int IInventory.carrot => carrot;
 
+    public int currentSlotCnt => currentSlotCount;
+
     public void Initialize()
     {
-        // 1. 슬롯 리스트 초기화 및 개수 확보
-        if (inventorySlots.Count < currentSlotCount)
+        // 1. 슬롯 리스트 최대 개수(SYSTEM_VAR.MAX_INVENTORY_CNT)만큼 미리 생성
+        if (inventorySlots.Count < SYSTEM_VAR.MAX_INVENTORY_CNT)
         {
-            int needCount = currentSlotCount - inventorySlots.Count;
+            int needCount = SYSTEM_VAR.MAX_INVENTORY_CNT - inventorySlots.Count;
             for (int i = 0; i < needCount; i++)
             {
                 inventorySlots.Add(new InventorySlot());
             }
         }
 
-        // 2. 기존 슬롯의 데이터들을 풀로 반환하고 슬롯 초기화
+        // 2. 모든 슬롯(최대 개수)의 데이터들을 풀로 반환하고 슬롯 초기화
         for (int i = 0; i < inventorySlots.Count; i++)
         {
             if (inventorySlots[i].itemData is ItemData data)
@@ -60,17 +64,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     /// <param name="_amount">추가할 슬롯 개수</param>
     public void ExpandInventory(int _amount)
     {
-        int targetCount = Mathf.Min(currentSlotCount + _amount, SYSTEM_VAR.MAX_INVENTORY_CNT);
-        int addCount = targetCount - inventorySlots.Count;
-
-        for (int i = 0; i < addCount; i++)
-        {
-            inventorySlots.Add(new InventorySlot());
-        }
-
-        currentSlotCount = targetCount;
-
-        // UI 갱신을 위한 시그널 등이 필요할 수 있으나, 현재는 슬롯 리스트 확장까지만 구현
+        currentSlotCount = Mathf.Min(currentSlotCount + _amount, SYSTEM_VAR.MAX_INVENTORY_CNT);
     }
 
     public void ItemAcquired(Item _item)
@@ -80,8 +74,6 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (i >= inventorySlots.Count) break;
-
             if (inventorySlots[i].itemData != null &&
                 inventorySlots[i].totalCount < maxItemsPerSlot &&
                 IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
@@ -94,8 +86,6 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (i >= inventorySlots.Count) break;
-
             if (inventorySlots[i].itemData == null)
             {
                 ItemData newData = GetFromPool(_item.itemType);
@@ -270,6 +260,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void ExpandInventorySlotCnt(float _amount)
     {
-        currentSlotCount += (int)_amount;
+        currentSlotCount = Mathf.Min(currentSlotCount + (int)_amount, SYSTEM_VAR.MAX_INVENTORY_CNT);
+        InventorySpecChangedEvent?.Invoke();
     }
 }

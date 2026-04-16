@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 
 [Serializable]
-public struct SkillLevelCost
+public struct SkillCost
 {
-    public int level;
+    public float alpha;
     public int moneyCost;
     public int carrotCost;
 }
@@ -18,19 +18,12 @@ public struct SkillCommandInfo
 }
 
 [Serializable]
-public struct SkillCommandInfoPerLevel
-{
-    public int level;
-    public SkillCommandInfo info;
-}
-
-[Serializable]
 public struct Skill
 {
     public SkillType skillType;
     public int maxLevel;
-    public List<SkillLevelCost> cost;
-    public List<SkillCommandInfoPerLevel> skillTypes;
+    public SkillCost cost;
+    public List<SkillCommandInfo> skillTypes;
     public List<SkillType> prerequisiteSkills;
 }
 
