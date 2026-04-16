@@ -18,6 +18,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     //Axe
     public float axeDamage = 10f; // 기본 데미지를 10으로 수정
+    public float speedDecreaseWhileSwing = 0.3f;
     private float baseAxeDamage;
     private float axeDamageMultiplier = 1.0f;
     public float axeDurability = 30f;
@@ -28,7 +29,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public float rifleDamage = 10f; // 기본 데미지를 10으로 수정
     private float baseRifleDamage;
     private float rifleDamageMultiplier = 1.0f;
-    public float rifleReadyTime = 0.25f;
+    public float rifleReadyTime = 0;
     public float afterShotTime = 0.25f;
     public int magCap = 2;
     public int ammoCap = 6;

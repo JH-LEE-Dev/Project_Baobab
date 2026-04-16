@@ -10,11 +10,11 @@ public class AttackComponent : PComponent
 
     //내부 의존성
     [Header("Attack Settings")]
-    [SerializeField] private float maxAttackDistance = 2.0f; // 캐릭터로부터 공격 콜라이더가 떨어질 수 있는 최대 거리
+    [SerializeField] private float maxAttackDistance = 2.0f; // 캐릭터로부터 공격 포인트가 떨어질 수 있는 최대 거리
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (Tree 등)
-    [SerializeField] private bool bAttackOnlyNearest = true; // 가장 가까운 대상 하나만 공격할지 여부
 
-    private Collider2D attackCollider;
+    [SerializeField] private CircleCollider2D attackRadiusCollider;
+    [SerializeField] private Transform attackPointTransform;
     private Transform characterTransform;
 
     //최적화를 위한 재사용 컬렉션
@@ -31,7 +31,9 @@ public class AttackComponent : PComponent
     {
         base.Initialize(_ctx);
 
-        attackCollider = GetComponent<Collider2D>();
+        if (attackRadiusCollider == null)
+            attackRadiusCollider = GetComponent<CircleCollider2D>();
+            
         characterTransform = transform.parent;
         mainCamera = Camera.main;
 
@@ -68,7 +70,7 @@ public class AttackComponent : PComponent
     {
         lastMouseScreenPos = _mouseScreenPos;
 
-        if (bAttack || characterTransform == null || attackCollider == null)
+        if (bAttack || characterTransform == null)
             return;
 
         UpdateAttackColliderPosition(_mouseScreenPos);
@@ -111,36 +113,47 @@ public class AttackComponent : PComponent
         else
         {
             // 마우스가 캐릭터와 겹칠 경우 기존 오프셋 방향 유지 혹은 기본값 처리
-            Vector3 currentOffset = attackCollider.transform.position - characterPos;
+            Vector3 currentOffset = attackPointTransform.position - characterPos;
             direction = (currentOffset.sqrMagnitude > 0.0001f)
                 ? currentOffset.normalized * maxAttackDistance
                 : Vector3.right * maxAttackDistance;
         }
 
-        // 6. 콜라이더 위치 업데이트
-        attackCollider.transform.position = characterPos + direction;
+        // 6. 위치 업데이트
+        attackPointTransform.position = characterPos + direction;
     }
 
     public void Attack()
     {
-        if (attackCollider == null) return;
+        if (attackRadiusCollider == null) return;
 
-        // GC Alloc 없이 충돌체 탐지
-        int hitCount = attackCollider.Overlap(contactFilter, results);
+        // 1. 반경 내 모든 대상 탐지
+        int hitCount = attackRadiusCollider.Overlap(contactFilter, results);
         if (hitCount <= 0) return;
 
-        if (bAttackOnlyNearest)
-        {
-            IDamageable nearestDamageable = null;
-            float minDistanceSqr = float.MaxValue;
-            Vector3 attackPos = attackCollider.transform.position;
+        Vector3 characterPos = characterTransform.position;
+        // 캐릭터가 조준하고 있는 방향 (공격 포인트 방향)
+        Vector3 attackDir = (attackPointTransform.position - characterPos).normalized;
+        // 양쪽 45도 = 총 90도 범위 (내적 결과가 cos(45도)인 약 0.707 이상)
+        float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
 
-            for (int i = 0; i < hitCount; i++)
+        IDamageable nearestDamageable = null;
+        float minDistanceSqr = float.MaxValue;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            Vector3 targetPos = results[i].transform.position;
+            Vector3 targetDir = (targetPos - characterPos).normalized;
+
+            // 2. 방향 판정
+            float dot = Vector2.Dot(attackDir, targetDir);
+
+            if (dot >= cosThreshold)
             {
                 if (results[i].TryGetComponent(out IDamageable damageable))
                 {
-                    // 거리의 제곱을 비교하여 가장 가까운 대상 탐색 (성능 최적화)
-                    float distSqr = (results[i].transform.position - attackPos).sqrMagnitude;
+                    // 3. 거리 판정 (가장 가까운 대상 선택)
+                    float distSqr = (targetPos - characterPos).sqrMagnitude;
                     if (distSqr < minDistanceSqr)
                     {
                         minDistanceSqr = distSqr;
@@ -148,24 +161,12 @@ public class AttackComponent : PComponent
                     }
                 }
             }
-
-            if (nearestDamageable != null)
-            {
-                nearestDamageable.TakeDamage(ctx.characterStat.axeDamage);
-                AttackSuccessEvent?.Invoke();
-            }
         }
-        else
+
+        if (nearestDamageable != null)
         {
-            for (int i = 0; i < hitCount; i++)
-            {
-                // IDamageable 인터페이스가 있는지 확인 후 데미지 처리
-                if (results[i].TryGetComponent(out IDamageable damageable))
-                {
-                    damageable.TakeDamage(ctx.characterStat.axeDamage);
-                    AttackSuccessEvent?.Invoke();
-                }
-            }
+            nearestDamageable.TakeDamage(ctx.characterStat.axeDamage);
+            AttackSuccessEvent?.Invoke();
         }
     }
 
@@ -176,33 +177,33 @@ public class AttackComponent : PComponent
 
     private void OnDrawGizmos()
     {
-        if (attackCollider == null)
-            attackCollider = GetComponent<Collider2D>();
+        if (characterTransform == null) return;
 
-        if (attackCollider == null) return;
+        // 1. 공격 가능 사거리 시각화 (노란색)
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(characterTransform.position, maxAttackDistance);
 
-        // 1. 공격 콜라이더 범위 시각화 (빨간색)
-        Gizmos.color = Color.red;
-        if (attackCollider is CircleCollider2D circle)
+        // 2. 공격 포인트 및 범위 시각화 (빨간색)
+        if (attackPointTransform != null)
         {
-            Gizmos.DrawWireSphere(attackCollider.transform.position + (Vector3)circle.offset, circle.radius);
-        }
-        else
-        {
-            Gizmos.DrawWireSphere(attackCollider.bounds.center, 0.5f);
-        }
+            Vector3 characterPos = characterTransform.position;
+            Vector3 attackDir = (attackPointTransform.position - characterPos).normalized;
 
-        // 2. 최대 공격 가능 사거리 시각화 (노란색)
-        if (characterTransform != null)
-        {
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(characterTransform.position, maxAttackDistance);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(attackPointTransform.position, 0.2f);
+
+            // 공격 가능 범위(부채꼴) 라인 표시
+            Vector3 leftBoundary = Quaternion.Euler(0, 0, 45f) * attackDir * maxAttackDistance;
+            Vector3 rightBoundary = Quaternion.Euler(0, 0, -45f) * attackDir * maxAttackDistance;
+
+            Gizmos.DrawLine(characterPos, characterPos + leftBoundary);
+            Gizmos.DrawLine(characterPos, characterPos + rightBoundary);
         }
     }
 
     public Transform GetAttackPointTransform()
     {
-        return attackCollider.transform;
+        return attackPointTransform;
     }
 
     public void SetWeaponMode(WeaponMode _weaponMode)

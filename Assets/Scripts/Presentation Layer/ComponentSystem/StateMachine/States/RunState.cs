@@ -40,12 +40,6 @@ public class RunState : CharacterState
 
     public override void FixedUpdate()
     {
-        if (character.bCanAction == false)
-        {
-            stateMachine.ChangeState<IdleState>();
-            return;
-        }
-
         ApplyMovement();
         UpdateOccupation();
     }
@@ -137,9 +131,6 @@ public class RunState : CharacterState
 
     private void ApplyMovement()
     {
-        if (character.bCanAction == false)
-            return;
-
         var groundData = character.currentGroundData;
         Vector2 inputDir = GetIsometricVector(ctx.moveInput);
 
@@ -147,6 +138,13 @@ public class RunState : CharacterState
             inputDir.Normalize();
 
         float speed = groundData.maxSpeed * ctx.characterStat.speed;
+
+        // 도끼질 중에는 이동속도 30% 감소
+        if (character.bWhileSwing)
+        {
+            speed *= 1 - character.statComponent.speedDecreaseWhileSwing;
+        }
+
         Vector2 targetVel = inputDir * speed;
         CircleCollider2D circleCol = character.col;
         character.rb.linearVelocity = Vector2.MoveTowards(
