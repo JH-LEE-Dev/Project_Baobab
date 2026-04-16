@@ -120,6 +120,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45acdcfb0f73b344fab31c821e7fd95e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
+  applyToStartCnt: 1
 --- !u!1 &2327565162841499606
 GameObject:
   m_ObjectHideFlags: 0
