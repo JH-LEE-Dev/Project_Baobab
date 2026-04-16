@@ -74,12 +74,12 @@ public class ShopNPC : MonoBehaviour
     {
         if (money == 0 || bCanInteract == false)
             return;
-
+            
         EarnMoneyEvent?.Invoke(money);
 
         if(bFirstTimeEarnMoney == true)
         {
-            FirstTimeEarnMoneyEvent?.Invoke();
+            //FirstTimeEarnMoneyEvent?.Invoke();
             bFirstTimeEarnMoney = false;
         }
 
