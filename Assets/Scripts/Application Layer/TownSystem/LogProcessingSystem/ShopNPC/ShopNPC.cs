@@ -1,12 +1,14 @@
 using UnityEngine;
 using System;
 
-public class ShopNPC : MonoBehaviour
+public class ShopNPC : MonoBehaviour, IShopNPC
 {
+    public event Action ShopMoneyChangedEvent;
     public event Action FirstTimeEarnMoneyEvent;
     public event Action<bool> InteractStateEvent;
     public event Action<int> EarnMoneyEvent;
 
+    [SerializeField] private Transform npcTransform;
 
     private bool bCanInteract = false;
 
@@ -16,6 +18,10 @@ public class ShopNPC : MonoBehaviour
     private const string PLAYER_TAG = "Player";
 
     private bool bFirstTimeEarnMoney = true;
+
+    Transform IShopNPC.npcTransform => npcTransform;
+
+    public int currentMoney => money;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -33,6 +39,7 @@ public class ShopNPC : MonoBehaviour
     public void InsertMoney(int _money)
     {
         money += _money;
+        ShopMoneyChangedEvent?.Invoke();
     }
 
     public int GetMoney()

@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 {
+    public event Action CharacterStaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
 
     private Character character;
@@ -21,11 +22,15 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     {
         character.WeaponModeChangedEvent -= WeaponModeChanged;
         character.WeaponModeChangedEvent += WeaponModeChanged;
+
+        character.StaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
+        character.StaminaIsEmptyEvent += CharacterStaminaIsEmpty;
     }
 
     private void ReleaseEvents()
     {
         character.WeaponModeChangedEvent -= WeaponModeChanged;
+        character.StaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
     }
 
     public void SetCharacter(Character _character)
@@ -69,5 +74,10 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public void CharacterSleep()
     {
         character.StaminaReset();
+    }
+
+    private void CharacterStaminaIsEmpty()
+    {
+        CharacterStaminaIsEmptyEvent?.Invoke();
     }
 }

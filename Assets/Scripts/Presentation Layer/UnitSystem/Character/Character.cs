@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter
 {
+    public event Action StaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
 
     // 외부 의존성
@@ -205,6 +206,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             attackComponent.AttackSuccessEvent += armComponent.axeComponent.DecreaseDurability;
+
+            healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
+            healthComponent.StaminaIsEmptyEvent += StaminaIsEmpty;
         }
     }
 
@@ -219,6 +223,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
+            healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
         }
     }
 
@@ -266,6 +271,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         bCanRotate = !_isAttacking;
         attackComponent.SetbAttack(_isAttacking);
         UpdateFacingByAttackPoint();
+    }
+
+    private void StaminaIsEmpty()
+    {
+        StaminaIsEmptyEvent?.Invoke();
     }
 
     private void SetItemSensorPos() => itemSensorRB.MovePosition(transform.position);

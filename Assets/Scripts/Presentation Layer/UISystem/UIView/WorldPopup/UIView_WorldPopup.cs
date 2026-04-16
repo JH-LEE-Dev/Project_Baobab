@@ -5,6 +5,7 @@ public class UIView_WorldPopup : UIView
 {
     private IInventory container;
     private ILogCutter logCutter;
+    private IShopNPC shopNPC;
 
 
     //내부 의존성
@@ -73,10 +74,11 @@ public class UIView_WorldPopup : UIView
     }
 
 
-    public void DependencyInjection(IInventory _container, ILogCutter _logCutter)
+    public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC)
     {
         container = _container;
         logCutter = _logCutter;
+        shopNPC = _shopNPC;
 
         ui_Storage?.BindStorage(container);
         ui_Cutter?.BindPosition(_logCutter.GetTransform().position);

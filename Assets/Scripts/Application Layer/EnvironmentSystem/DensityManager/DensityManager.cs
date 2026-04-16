@@ -2,6 +2,12 @@ using UnityEngine;
 
 public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 {
+    // 밀도 설정 상수
+    private const float TreeMaxDensityRatio = 0.07f;
+    private const float TreeStartDensityRatio = 0.04f;
+    private const float RabbitMaxDensityRatio = 0.05f;
+    private const float RabbitStartDensityRatio = 0.02f;
+
     private int grassTileCnt;
     private int walkableTilesCnt;
     private int treeCnt;
@@ -92,19 +98,19 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
         grassTileCnt = _grassCnt;
         walkableTilesCnt = _walkableCnt;
 
-        maxTreeCnt = (int)(grassTileCnt * 0.3f * treeDensityMultiplier);
-        maxAnimalCnt = (int)(walkableTilesCnt * 0.05f * rabbitDensityMultiplier);
+        maxTreeCnt = (int)(grassTileCnt * TreeMaxDensityRatio * treeDensityMultiplier);
+        maxAnimalCnt = (int)(walkableTilesCnt * RabbitMaxDensityRatio * rabbitDensityMultiplier);
 
         // applyToStartCnt가 true이면 현재 배율을 적용, 아니면 기본값 사용
         if (applyToStartCnt)
         {
-            treeStartCnt = (int)(grassTileCnt * 0.1f * treeDensityMultiplier);
-            animalStartCnt = (int)(walkableTilesCnt * 0.01f * rabbitDensityMultiplier);
+            treeStartCnt = (int)(grassTileCnt * TreeStartDensityRatio * treeDensityMultiplier);
+            animalStartCnt = (int)(walkableTilesCnt * RabbitStartDensityRatio * rabbitDensityMultiplier);
         }
         else
         {
-            treeStartCnt = (int)(grassTileCnt * 0.1f);
-            animalStartCnt = (int)(walkableTilesCnt * 0.01f);
+            treeStartCnt = (int)(grassTileCnt * TreeStartDensityRatio);
+            animalStartCnt = (int)(walkableTilesCnt * RabbitStartDensityRatio);
         }
     }
 
@@ -112,14 +118,14 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
         treeDensityMultiplier += (_amount / 100.0f);
-        Debug.Log("AAA");
+
         if (grassTileCnt > 0)
         {
-            maxTreeCnt = (int)(grassTileCnt * 0.3f * treeDensityMultiplier);
+            maxTreeCnt = (int)(grassTileCnt * TreeMaxDensityRatio * treeDensityMultiplier);
 
             if (applyToStartCnt)
             {
-                treeStartCnt = (int)(grassTileCnt * 0.1f * treeDensityMultiplier);
+                treeStartCnt = (int)(grassTileCnt * TreeStartDensityRatio * treeDensityMultiplier);
             }
         }
 
@@ -133,11 +139,11 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 
         if (walkableTilesCnt > 0)
         {
-            maxAnimalCnt = (int)(walkableTilesCnt * 0.05f * rabbitDensityMultiplier);
+            maxAnimalCnt = (int)(walkableTilesCnt * RabbitMaxDensityRatio * rabbitDensityMultiplier);
 
             if (applyToStartCnt)
             {
-                animalStartCnt = (int)(walkableTilesCnt * 0.01f * rabbitDensityMultiplier);
+                animalStartCnt = (int)(walkableTilesCnt * RabbitStartDensityRatio * rabbitDensityMultiplier);
             }
         }
 

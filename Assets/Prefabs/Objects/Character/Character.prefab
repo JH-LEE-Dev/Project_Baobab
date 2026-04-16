@@ -823,11 +823,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatComponent
   speed: 1
+  maxStamina: 100
+  staminaIncreaseAlpha: 0
+  staminaDecreaseAlpha: 0
   weaponChangeCoolTime: 0.5
-  axeDamage: 10
+  bCanHunting: 0
+  axeDamage: 1
   axeDurability: 30
   axeDurabilityDecAmount: 1
   axeAttackCoolTime: 0.5
+  rifleDamage: 1
   rifleReadyTime: 0.25
   afterShotTime: 0.25
   magCap: 2

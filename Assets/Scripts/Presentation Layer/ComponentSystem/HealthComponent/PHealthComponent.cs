@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 
 public class PHealthComponent : PComponent, IPHealthComponent
 {
+    public event Action StaminaIsEmptyEvent;
     // 외부 의존성 (SerializeField)
     [SerializeField] private float maxHealth;
     [SerializeField] private float maxStamina;
@@ -46,6 +48,9 @@ public class PHealthComponent : PComponent, IPHealthComponent
         // staminaDecAmount는 초당 변화량이므로 Time.deltaTime을 곱함
         float amount = staminaDecAmount * Time.deltaTime;
         currentStamina = Mathf.Max(0, currentStamina - amount);
+
+        if(currentStamina <= 0)
+            StaminaIsEmptyEvent?.Invoke();
     }
 
     /// <summary>
