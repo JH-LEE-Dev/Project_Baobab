@@ -187,9 +187,22 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         {
             if (!prerequisites[i].bApplied)
             {
-
                 return AbilityLevelUpRejectReason.None; // 선행 스킬 미습득
             }
+        }
+
+        // 3. 재화 체크
+        if (!node.GetNextLevelCost(out int moneyCost, out int carrotCost))
+            return AbilityLevelUpRejectReason.None;
+
+        if (inventory.GetCurrentMoney() < moneyCost)
+        {
+            return AbilityLevelUpRejectReason.NotEnoughMoney;
+        }
+
+        if (inventory.GetCurrentCarrot() < carrotCost)
+        {
+            return AbilityLevelUpRejectReason.NotEnoughCarrot;
         }
 
         return AbilityLevelUpRejectReason.Pass;
