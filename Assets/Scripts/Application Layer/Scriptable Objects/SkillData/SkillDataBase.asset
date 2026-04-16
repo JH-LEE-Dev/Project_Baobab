@@ -31,3 +31,43 @@ MonoBehaviour:
       carrotCost: 0
     skillTypes: []
     prerequisiteSkills: 
+  - skillType: 3
+    maxLevel: 1
+    cost:
+      alpha: 1
+      moneyCost: 80
+      carrotCost: 0
+    skillTypes:
+    - skillCommandType: 2
+      amount: 1
+    prerequisiteSkills: 02000000
+  - skillType: 4
+    maxLevel: 1
+    cost:
+      alpha: 1
+      moneyCost: 500
+      carrotCost: 0
+    skillTypes:
+    - skillCommandType: 3
+      amount: 2
+    prerequisiteSkills: 02000000
+  - skillType: 5
+    maxLevel: 5
+    cost:
+      alpha: 1
+      moneyCost: 0
+      carrotCost: 10
+    skillTypes:
+    - skillCommandType: 4
+      amount: 50
+    prerequisiteSkills: 02000000
+  - skillType: 8
+    maxLevel: 5
+    cost:
+      alpha: 1
+      moneyCost: 10
+      carrotCost: 0
+    skillTypes:
+    - skillCommandType: 5
+      amount: 10
+    prerequisiteSkills: 01000000

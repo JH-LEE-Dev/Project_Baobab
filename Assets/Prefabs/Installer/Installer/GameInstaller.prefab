@@ -1327,6 +1327,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SkillDispatcher
   skillCommands:
   - {fileID: 11400000, guid: 0f5474debe1132b40a5b9aa7ed7bd2b0, type: 2}
+  - {fileID: 11400000, guid: 99a929ff15b075041a636cffd13ea1ce, type: 2}
+  - {fileID: 11400000, guid: dfc6820280a4fa44dbaf9626d79e1c99, type: 2}
+  - {fileID: 11400000, guid: 99a929ff15b075041a636cffd13ea1ce, type: 2}
+  - {fileID: 11400000, guid: 17d8041e34caacb42924283c0b30c44f, type: 2}
 --- !u!1 &9097579308778333852
 GameObject:
   m_ObjectHideFlags: 0

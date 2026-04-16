@@ -66,6 +66,10 @@ public enum SkillCommandType
 {
     None,
     InventoryExpansion,
+    logCapacityIncrease,
+    SawmillLogStorageExpansion,
+    LogProcessingSpeed,
+    AxeDamage,
 }
 
 public enum AbilityLevelUpRejectReason

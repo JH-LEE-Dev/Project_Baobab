@@ -1,18 +1,32 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class SkillDispatcher : MonoBehaviour,ICommandHandleSystem
+public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 {
+    private SignalHub signalHub;
     private IInventoryCH inventoryCH;
+    private IContainerCH containerCH;
+    private ICutterCH cutterCH;
+    private ICharacterStatCH characterStatCH;
+
 
     [SerializeField] private List<SkillCommand> skillCommands;
     private Dictionary<SkillCommandType, SkillCommand> skillDic;
 
     IInventoryCH ICommandHandleSystem.inventoryCH => inventoryCH;
 
-    public void Initialize(IInventoryCH _inventoryCH)
+    IContainerCH ICommandHandleSystem.containerCH => containerCH;
+
+    ICutterCH ICommandHandleSystem.cutterCH => cutterCH;
+
+    ICharacterStatCH ICommandHandleSystem.characterStatCH => characterStatCH;
+
+    public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH)
     {
+        signalHub = _signalHub;
         inventoryCH = _inventoryCH;
+        containerCH = _containerCH;
+        cutterCH = _cutterCH;
 
         if (skillCommands == null) return;
 
@@ -32,6 +46,23 @@ public class SkillDispatcher : MonoBehaviour,ICommandHandleSystem
                 Debug.LogWarning($"[SkillDispatcher] Duplicate SkillCommandType found: {command.skillCommandType}");
             }
         }
+
+        SubscribeSignals();
+    }
+
+    public void Release()
+    {
+        UnSubscribeSignals();
+    }
+
+    private void SubscribeSignals()
+    {
+        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+    }
+
+    private void UnSubscribeSignals()
+    {
+        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
     }
 
     public void DispatchCommand(SkillDispatchInfo _skillDispatchInfo)
@@ -48,5 +79,10 @@ public class SkillDispatcher : MonoBehaviour,ICommandHandleSystem
         {
             Debug.LogWarning($"[SkillDispatcher] SkillCommand not found for type: {commandType}");
         }
+    }
+
+    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
+    {
+        characterStatCH = characterSpawendSignal.character.statComponent;
     }
 }

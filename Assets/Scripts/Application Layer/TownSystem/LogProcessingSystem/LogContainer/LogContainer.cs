@@ -5,7 +5,7 @@ using UnityEngine.Pool;
 using System;
 using System.Text;
 
-public class LogContainer : MonoBehaviour, IInventory
+public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
     public event Action<LogItemData> LogOutEvent;
     public event Action<bool> InteractStateEvent;
@@ -17,6 +17,8 @@ public class LogContainer : MonoBehaviour, IInventory
     //외부 의존성
 
     // 내부 의존성
+    [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
+    [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> containerSlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
     [SerializeField] private float transferInterval = 1f;
     // 타입별 아이템 데이터 풀링 (GC 최적화)
@@ -24,11 +26,11 @@ public class LogContainer : MonoBehaviour, IInventory
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => containerSlots;
 
-    public int money => throw new NotImplementedException();
+    public int money => 0;
 
-    public int carrot => throw new NotImplementedException();
+    public int carrot => 0;
 
-    public int currentSlotCnt => throw new NotImplementedException();
+    public int currentSlotCnt => currentSlotCount;
 
     private bool bCanInteract = false;
     private Coroutine transferCoroutine;
@@ -51,27 +53,27 @@ public class LogContainer : MonoBehaviour, IInventory
         lastTransferTime = -transferInterval;
         lastOutputTime = -transferInterval; // 초기화 시 즉시 실행 가능하도록 설정
 
-        // 1. 기존 슬롯의 데이터들을 풀로 반환하고 슬롯 초기화
-        if (containerSlots.Count == 0)
+        // 1. 슬롯 리스트 최대 개수(SYSTEM_VAR.MAX_INVENTORY_CNT)만큼 미리 생성
+        if (containerSlots.Count < SYSTEM_VAR.MAX_INVENTORY_CNT)
         {
-            for (int i = 0; i < SYSTEM_VAR.MAX_INVENTORY_CNT; i++)
+            int needCount = SYSTEM_VAR.MAX_INVENTORY_CNT - containerSlots.Count;
+            for (int i = 0; i < needCount; i++)
             {
                 containerSlots.Add(new InventorySlot());
             }
         }
-        else
+
+        // 2. 모든 슬롯(최대 개수)의 데이터들을 풀로 반환하고 슬롯 초기화
+        for (int i = 0; i < containerSlots.Count; i++)
         {
-            for (int i = 0; i < containerSlots.Count; i++)
+            if (containerSlots[i].itemData is ItemData data)
             {
-                if (containerSlots[i].itemData is ItemData data)
-                {
-                    ReleaseToPool(data);
-                }
-                containerSlots[i].Setup(null, 0);
+                ReleaseToPool(data);
             }
+            containerSlots[i].Setup(null, 0);
         }
 
-        // 2. 모든 아이템 타입에 대해 풀 미리 생성 (None, Max 제외)
+        // 3. 모든 아이템 타입에 대해 풀 미리 생성 (None, Max 제외)
         for (int i = (int)ItemType.None + 1; i < (int)ItemType.Max; i++)
         {
             ItemType type = (ItemType)i;
@@ -98,18 +100,21 @@ public class LogContainer : MonoBehaviour, IInventory
     {
         if (_item == null) return;
 
-        // 1. 기존 슬롯 확인 (중첩 가능한지)
-        for (int i = 0; i < containerSlots.Count; i++)
+        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
+        for (int i = 0; i < currentSlotCount; i++)
         {
-            if (containerSlots[i].itemData != null && IsSameItem(_item, (ItemData)containerSlots[i].itemData))
+            if (containerSlots[i].itemData != null && 
+                containerSlots[i].totalCount < maxItemsPerSlot &&
+                IsSameItem(_item, (ItemData)containerSlots[i].itemData))
             {
                 containerSlots[i].AddCount(_item);
+                ContainerUpdatedEvent?.Invoke();
                 return;
             }
         }
 
-        // 2. 새로운 타입인 경우 첫 번째 빈 슬롯을 찾아 데이터 가져와 추가
-        for (int i = 0; i < containerSlots.Count; i++)
+        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
+        for (int i = 0; i < currentSlotCount; i++)
         {
             if (containerSlots[i].itemData == null)
             {
@@ -119,6 +124,7 @@ public class LogContainer : MonoBehaviour, IInventory
                     newData.CopyFrom(_item);
                     containerSlots[i].Setup(newData, 1);
                 }
+                ContainerUpdatedEvent?.Invoke();
                 return;
             }
         }
@@ -253,7 +259,7 @@ public class LogContainer : MonoBehaviour, IInventory
         if (!bCanInteract || interactingContainer == null) return false;
 
         var charSlots = interactingContainer.inventorySlots;
-        for (int i = 0; i < charSlots.Count; i++)
+        for (int i = 0; i < interactingContainer.currentSlotCnt; i++)
         {
             if (charSlots[i] is InventorySlot charSlot && charSlot.itemData != null && charSlot.count > 0)
             {
@@ -292,18 +298,20 @@ public class LogContainer : MonoBehaviour, IInventory
     {
         if (_sourceData == null) return;
 
-        // 1. 기존 슬롯 확인 (중첩 가능한지)
-        for (int i = 0; i < containerSlots.Count; i++)
+        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
+        for (int i = 0; i < currentSlotCount; i++)
         {
-            if (containerSlots[i].itemData != null && IsSameItemByData(_sourceData, containerSlots[i].itemData))
+            if (containerSlots[i].itemData != null && 
+                containerSlots[i].totalCount < maxItemsPerSlot &&
+                IsSameItemByData(_sourceData, containerSlots[i].itemData))
             {
                 containerSlots[i].AddCountByState(_state);
                 return;
             }
         }
 
-        // 2. 새로운 타입인 경우 첫 번째 빈 슬롯을 찾아 데이터 가져와 추가
-        for (int i = 0; i < containerSlots.Count; i++)
+        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
+        for (int i = 0; i < currentSlotCount; i++)
         {
             if (containerSlots[i].itemData == null)
             {
@@ -348,7 +356,7 @@ public class LogContainer : MonoBehaviour, IInventory
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("<color=cyan>--- Character Inventory Status ---</color>");
         var slots = interactingContainer.inventorySlots;
-        for (int i = 0; i < slots.Count; i++)
+        for (int i = 0; i < interactingContainer.currentSlotCnt; i++)
         {
             var slot = slots[i];
             if (slot.itemData != null && slot.count > 0)
@@ -438,7 +446,7 @@ public class LogContainer : MonoBehaviour, IInventory
         if (containerSlots == null)
             return;
 
-        for (int i = 0; i < containerSlots.Count; i++)
+        for (int i = 0; i < currentSlotCount; i++)
         {
             var slot = containerSlots[i];
 
@@ -471,6 +479,8 @@ public class LogContainer : MonoBehaviour, IInventory
                     slot.Setup(null, 0);
 
                     // 빈 슬롯을 리스트의 맨 뒤로 보내서 "앞으로 당기기" 구현
+                    // 단, currentSlotCount 범위 내에서만 정렬하는 것이 아니라 
+                    // 리스트 전체(MAX_INVENTORY_CNT)를 유지하면서 이동
                     containerSlots.RemoveAt(i);
                     containerSlots.Add(slot);
                 }
@@ -487,5 +497,17 @@ public class LogContainer : MonoBehaviour, IInventory
     public void SetbStop(bool _bStop)
     {
         bStop = _bStop;
+    }
+
+    public void ExpandContainerSlotCnt(float _amount)
+    {
+        currentSlotCount = Mathf.Min(currentSlotCount + (int)_amount, SYSTEM_VAR.MAX_INVENTORY_CNT);
+        ContainerUpdatedEvent?.Invoke();
+    }
+
+    public void LogCapacityIncrease(float _amount)
+    {
+        maxItemsPerSlot += (int)_amount;
+        ContainerUpdatedEvent?.Invoke();
     }
 }
