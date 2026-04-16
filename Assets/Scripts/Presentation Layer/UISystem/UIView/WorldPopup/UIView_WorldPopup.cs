@@ -13,9 +13,11 @@ public class UIView_WorldPopup : UIView
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiStoragePrefab;
     [SerializeField] private GameObject uiCutterPrefab;
+    [SerializeField] private GameObject uiTraderCoinPrefab;
 
     private UI_Storage ui_Storage;
     private UI_TreeCutter ui_Cutter;
+    private UI_Coin ui_TraderCoin;
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -25,6 +27,7 @@ public class UIView_WorldPopup : UIView
 
         Init_UIStorage();
         Init_UICutter();
+        Init_UITraderCoin();
     }
 
     private void BindEvents()
@@ -34,12 +37,19 @@ public class UIView_WorldPopup : UIView
 
         logCutter.CuttingDoneEvent -= LogCuttingIsDone;
         logCutter.CuttingDoneEvent += LogCuttingIsDone;
+
+        Bind_UITraderCoin();
     }
 
     private void ReleaseEvents()
     {
         logCutter.CuttingStartEvent -= LogToCutter;
         logCutter.CuttingDoneEvent -= LogCuttingIsDone;
+
+        if (null != shopNPC)
+        {
+            shopNPC.ShopMoneyChangedEvent -= UpdateTraderMoneyText;
+        }
     }
 
     public override void Release()
@@ -73,6 +83,45 @@ public class UIView_WorldPopup : UIView
         ui_Cutter.Initialize();
     }
 
+    private void Init_UITraderCoin()
+    {
+        if (null == uiTraderCoinPrefab)
+            return;
+
+        ui_TraderCoin = Instantiate(uiTraderCoinPrefab, uiRoot).GetComponent<UI_Coin>();
+        if (null == ui_TraderCoin)
+            return;
+
+        ui_TraderCoin.Initialize();
+
+        // 상시로 On
+        ui_TraderCoin.gameObject.SetActive(true);
+    }
+
+    private void Bind_UITraderCoin()
+    {
+        if (null == shopNPC)
+            return;
+
+        UpdateTraderMoneyText();
+
+        Vector3 newPos = shopNPC.npcTransform.position;
+        newPos.y += 0.5f;
+
+        if (null != ui_TraderCoin)
+            ui_TraderCoin.gameObject.transform.position = newPos;
+
+        shopNPC.ShopMoneyChangedEvent -= UpdateTraderMoneyText;
+        shopNPC.ShopMoneyChangedEvent += UpdateTraderMoneyText;
+    }
+
+    private void UpdateTraderMoneyText()
+    {
+        if (null == shopNPC || null == ui_TraderCoin)
+            return;
+
+        ui_TraderCoin.UpdateMoneyText(shopNPC.currentMoney);
+    }
 
     public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC)
     {
@@ -93,8 +142,6 @@ public class UIView_WorldPopup : UIView
 
     protected override void OnHide()
     {
-        ui_Storage?.OnHide();
-
         base.OnHide();
     }
 

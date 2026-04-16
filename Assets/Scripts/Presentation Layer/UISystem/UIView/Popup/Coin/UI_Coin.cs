@@ -37,6 +37,14 @@ public class UI_Coin : MonoBehaviour
             moneyText.text = inventory.carrot.ToString();
     }
 
+    public void UpdateMoneyText(int _money)
+    {
+        if (null == moneyText)
+            return;
+
+        moneyText.text = _money.ToString();
+    }
+
     public void OnShow()
     {
         gameObject.SetActive(true);
