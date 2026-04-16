@@ -54,3 +54,5 @@ MonoBehaviour:
   uiRoot: {fileID: 1772526790917447411}
   hudEquipmentPrefab: {fileID: 3602922423060339287, guid: cd342e10fd24dc842b88530280f46250, type: 3}
   hudSteminaBarPrefab: {fileID: 8900395080866215809, guid: c972384e8d3d069409a24acee0d1b3b6, type: 3}
+  uiCoinPrefab: {fileID: 2055453588307110909, guid: cf2aa288d16616344af88e383a20a540, type: 3}
+  uiCarrotCoinPrefab: {fileID: 2055453588307110909, guid: 11aa61b91ae75c34a824c806e706b635, type: 3}

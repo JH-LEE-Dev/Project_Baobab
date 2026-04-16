@@ -21,6 +21,8 @@ public class UI_Inventory : MonoBehaviour
 
     private UI_InventoryPopup invPopup;
 
+    public bool isOpening { get; private set; } = false;
+
     public void Initialize(Transform uiRoot)
     {
         inventorySlots.Clear();
@@ -80,7 +82,7 @@ public class UI_Inventory : MonoBehaviour
         if (null == _items)
             return;
 
-        int itemCount = _items.Count;
+        int itemCount = inventory.currentSlotCnt;
 
         for (int i = 0; i < inventorySlots.Count; ++i)
         {
@@ -162,12 +164,12 @@ public class UI_Inventory : MonoBehaviour
     {
         ExitPopup();
 
-        gameObject.SetActive(false);
+        gameObject.SetActive(isOpening = false);
     }
 
     public void OnShow()
     {
-        gameObject.SetActive(true);
+        gameObject.SetActive(isOpening = true);
 
         InventoryShowEvent();
     }
