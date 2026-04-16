@@ -170,7 +170,7 @@ public class UIView_Unit : UIView
         if (null == _stats)
             return;
 
-        uiCharge.SetCharge(_stats.axeAttackCoolTime);
+        uiCharge.SetCharge(_stats.reloadDuration);
     }
 
     private void weaponSwapCoolPlay()
