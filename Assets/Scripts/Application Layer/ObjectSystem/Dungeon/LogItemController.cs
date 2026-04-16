@@ -14,6 +14,7 @@ public class LogItemController : MonoBehaviour
 
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
+    private List<LogItem> activeItems = new List<LogItem>();
 
     private IInventoryChecker inventoryChecker;
 
@@ -49,17 +50,29 @@ public class LogItemController : MonoBehaviour
     private void OnGetLogItem(LogItem _item)
     {
         _item.gameObject.SetActive(true);
+        activeItems.Add(_item);
     }
 
     private void OnReleaseLogItem(LogItem _item)
     {
         _item.gameObject.SetActive(false);
+        activeItems.Remove(_item);
     }
 
     private void OnDestroyLogItem(LogItem _item)
     {
         _item.LogItemAcquired -= LogItemAcquired;
+        activeItems.Remove(_item);
         Destroy(_item.gameObject);
+    }
+
+    public void ClearAll()
+    {
+        for (int i = activeItems.Count - 1; i >= 0; i--)
+        {
+            logPool.Release(activeItems[i]);
+        }
+        activeItems.Clear();
     }
 
     public void SpawnLogItem(TreeObj _treeObj)

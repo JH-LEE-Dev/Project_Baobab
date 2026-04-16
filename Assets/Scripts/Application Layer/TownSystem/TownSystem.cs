@@ -128,13 +128,13 @@ public class TownSystem : MonoBehaviour
     {
         if (_bInteract == true)
         {
-            Time.timeScale = 0;
-            inputManager.Pause(true);
+            //Time.timeScale = 0;
+            //inputManager.Pause(true);
         }
         else
         {
-            Time.timeScale = 1;
-            inputManager.Pause(false);
+            //Time.timeScale = 1;
+            //inputManager.Pause(false);
         }
 
         signalHub.Publish(new TentInteractSignal(_bInteract));

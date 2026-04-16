@@ -141,6 +141,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void ClearObjManager()
     {
         portal.gameObject.SetActive(false);
+        itemManager.ReleaseAllItems();
         StopGrowth();
         ClearTrees();
     }

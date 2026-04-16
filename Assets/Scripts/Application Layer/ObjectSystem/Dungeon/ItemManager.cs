@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class ItemManager : MonoBehaviour
@@ -76,5 +75,11 @@ public class ItemManager : MonoBehaviour
     {
         add { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent += value; }
         remove { if (carrrotItemController != null) carrrotItemController.CarrotItemAcquiredEvent -= value; }
+    }
+
+    public void ReleaseAllItems()
+    {
+        carrrotItemController.ClearAll();
+        logItemController.ClearAll();
     }
 }

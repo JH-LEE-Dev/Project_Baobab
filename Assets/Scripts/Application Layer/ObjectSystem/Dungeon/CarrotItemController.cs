@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -15,6 +16,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     // 내부 의존성
     private IObjectPool<CarrotItem> carrotPool;
+    private List<CarrotItem> activeItems = new List<CarrotItem>();
     private float dropMultiplier = 1.0f;
 
     public void Initialize()
@@ -48,17 +50,29 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     {
         _item.gameObject.SetActive(true);
         _item.Initialize(); // CarrotItem.Initialize()는 매개변수가 없음
+        activeItems.Add(_item);
     }
 
     private void OnReleaseCarrotItem(CarrotItem _item)
     {
         _item.gameObject.SetActive(false);
+        activeItems.Remove(_item);
     }
 
     private void OnDestroyCarrotItem(CarrotItem _item)
     {
         _item.CarrotItemAcquired -= CarrotItemAcquired;
+        activeItems.Remove(_item);
         Destroy(_item.gameObject);
+    }
+
+    public void ClearAll()
+    {
+        for (int i = activeItems.Count - 1; i >= 0; i--)
+        {
+            carrotPool.Release(activeItems[i]);
+        }
+        activeItems.Clear();
     }
 
     public void SpawnCarrotItem(Vector3 _position)

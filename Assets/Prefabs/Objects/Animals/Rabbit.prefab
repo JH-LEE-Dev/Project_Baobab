@@ -479,7 +479,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf3ae12b6b6743c469cd1f405c94dcfc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EHealthComponent
-  maxHealth: 1
+  maxHealth: 2
 --- !u!1 &8470380151137750416
 GameObject:
   m_ObjectHideFlags: 0

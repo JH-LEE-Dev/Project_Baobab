@@ -108,17 +108,20 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         bLeftButtonClicked = true;
 
-        if (bReady == true)
-        {
-            if (bFired == false && bInCoolDown == false)
-            {
-                Fire();
-            }
-        }
-        else
-        {
-            EnterReady(true);
-        }
+        if (bInCoolDown == false)
+            Fire();
+
+        // if (bReady == true)
+        // {
+        //     if (bFired == false && bInCoolDown == false)
+        //     {
+        //         Fire();
+        //     }
+        // }
+        // else
+        // {
+        //     EnterReady(true);
+        // }
     }
 
     public override void LeftButtonReleased()
@@ -168,7 +171,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
                 // 조준 보정 로직: mouseTransform 주변의 Animal 탐색
                 Vector2 searchPos = mouseTransform;
                 float radius = mouseCol != null ? mouseCol.radius : 1f;
-                
+
                 // 최신 Non-Alloc 방식인 ContactFilter2D 사용
                 int count = Physics2D.OverlapCircle(searchPos, radius, animalFilter, results);
 
