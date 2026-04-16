@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class LogProcessingManager : MonoBehaviour
 {
+    public event Action LogContainerSpecChangedEvent;
     public event Action FirstTimeEarnMoneyEvent;
     public event Action<int> EarnMoneyEvent;
     public event Action ContainerUpdatedEvent;
@@ -22,7 +23,7 @@ public class LogProcessingManager : MonoBehaviour
     private LogInBelt logInBelt;
     private LogInBelt logOutBelt;
     public LogCutter logCutter { get; private set; }
-    private LogEvaluator logEvaluator;
+    public LogEvaluator logEvaluator { get; private set; }
 
     public LogContainer logContainer { get; private set; }
 
@@ -111,6 +112,9 @@ public class LogProcessingManager : MonoBehaviour
 
         shopNPC.FirstTimeEarnMoneyEvent -= FirstTimeEarnMoney;
         shopNPC.FirstTimeEarnMoneyEvent += FirstTimeEarnMoney;
+
+        logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
+        logContainer.ContainerSpecChangedEvent += LogContainerSpecChanged;
     }
 
     private void ReleaseEvents()
@@ -124,6 +128,7 @@ public class LogProcessingManager : MonoBehaviour
         logEvaluator.logEvaluatedEvent -= LogEvaluated;
         shopNPC.EarnMoneyEvent -= EarnMoney;
         shopNPC.FirstTimeEarnMoneyEvent -= FirstTimeEarnMoney;
+        logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
     }
 
     private void ContainerUpdated()
@@ -173,5 +178,10 @@ public class LogProcessingManager : MonoBehaviour
     private void FirstTimeEarnMoney()
     {
         FirstTimeEarnMoneyEvent.Invoke();
+    }
+
+    private void LogContainerSpecChanged()
+    {
+        LogContainerSpecChangedEvent.Invoke();
     }
 }

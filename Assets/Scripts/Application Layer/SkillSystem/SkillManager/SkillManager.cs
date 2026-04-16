@@ -28,8 +28,9 @@ public class SkillNode
 
     public bool GetNextLevelCost(out int _money, out int _carrot)
     {
-        _money = (int)(cost.moneyCost * (1f + cost.alpha * currentLevel));
-        _carrot = (int)(cost.carrotCost * (1f + cost.alpha * currentLevel));
+        int nextLevel = currentLevel + 1;
+        _money = (int)cost.moneyCurve.Evaluate(nextLevel);
+        _carrot = (int)cost.carrotCurve.Evaluate(nextLevel);
         
         return true;
     }

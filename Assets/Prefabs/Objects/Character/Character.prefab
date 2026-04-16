@@ -824,6 +824,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatComponent
   speed: 1
   weaponChangeCoolTime: 0.5
+  axeDamage: 10
   axeDurability: 30
   axeDurabilityDecAmount: 1
   axeAttackCoolTime: 0.5
@@ -1079,7 +1080,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4414742eddd92747b18dbfa44ddeda7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AttackComponent
-  attackDamage: 10
   maxAttackDistance: 0.75
   targetLayer:
     serializedVersion: 2

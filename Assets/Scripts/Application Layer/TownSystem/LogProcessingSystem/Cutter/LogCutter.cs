@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class LogCutter : MonoBehaviour, ILogCutter
+public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 {
     public event Action CuttingDoneEvent;
     public event Action<ILogItemData> CuttingStartEvent;
@@ -10,6 +10,8 @@ public class LogCutter : MonoBehaviour, ILogCutter
 
     // 외부 의존성
     [SerializeField] private float cuttingDuration = 5.0f;
+    private float baseCuttingDuration;
+    private float totalSpeedMultiplier = 1.0f;
 
     // 내부 상태
     private Animator anim;
@@ -26,6 +28,7 @@ public class LogCutter : MonoBehaviour, ILogCutter
     public void Initialize()
     {
         anim = GetComponent<Animator>();
+        baseCuttingDuration = cuttingDuration;
     }
 
     private void Update()
@@ -67,5 +70,14 @@ public class LogCutter : MonoBehaviour, ILogCutter
     public LogItem GetCuttingLogItem()
     {
         return cuttingItem;
+    }
+
+    public void IncreaseCutSpeed(float _amount)
+    {
+        // _amount는 0보다 큰 수이고 퍼센트 (예: 10.0f는 10% 속도 증가)
+        totalSpeedMultiplier += (_amount / 100.0f);
+        
+        // 속도 증가 비율에 따라 Duration 감소 (Duration = Base / Multiplier)
+        cuttingDuration = baseCuttingDuration / totalSpeedMultiplier;
     }
 }

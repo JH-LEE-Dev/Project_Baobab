@@ -14,7 +14,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
-    private ItemManager itemManager;
+    public ItemManager itemManager {get; private set;}
     private DungeonData dungeonData;
     private LootManager lootManager;
 

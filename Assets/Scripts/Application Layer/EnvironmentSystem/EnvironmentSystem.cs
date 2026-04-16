@@ -24,7 +24,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private GroundDataManager groundDataManager;
     private WeatherManager weatherManager;
     private PathfindGridManager pathfindGridManager;
-    private DensityManager densityManager;
+    public DensityManager densityManager {get; private set;}
 
 
     public void Initialize(SignalHub _signalHub, IUnitLogicProvider _unitLogicProvider)

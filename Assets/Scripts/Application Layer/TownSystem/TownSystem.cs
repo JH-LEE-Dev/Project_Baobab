@@ -70,6 +70,9 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.FirstTimeEarnMoneyEvent -= FirstTimeEarnMoney;
         logProcessingManager.FirstTimeEarnMoneyEvent += FirstTimeEarnMoney;
+
+        logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
+        logProcessingManager.LogContainerSpecChangedEvent += logContainerSpecChanged;
     }
 
     private void ReleaseEvents()
@@ -80,6 +83,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.EarnMoneyEvent -= EarnMoney;
         tentManager.TentInteractEvent -= TentInteract;
         logProcessingManager.FirstTimeEarnMoneyEvent -= FirstTimeEarnMoney;
+        logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
     }
 
     private void SubscribeSignals()
@@ -145,5 +149,10 @@ public class TownSystem : MonoBehaviour
     {
         townObjectManager.ClearObjManager();
         signalHub.Publish(new GoToDungeonSignal(dungeonSelectedSignal.type));
+    }
+
+    private void logContainerSpecChanged()
+    {
+        signalHub.Publish(new LogContainerSpecChangedSignal());
     }
 }
