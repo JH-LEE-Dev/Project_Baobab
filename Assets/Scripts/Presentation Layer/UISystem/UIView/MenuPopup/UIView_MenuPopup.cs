@@ -74,7 +74,7 @@ public class UIView_MenuPopup : UIView
 
         // 런타임에 던전 진입 처리를 위한 이벤트 바인딩
         zoneSelectButton?.Initialize(HandleEnterDungeon);
-        zoneCancelButton?.Initialize(OnHide);
+        zoneCancelButton?.Initialize(CloseTeleportUI);
     }
 
     private void HandleEnterDungeon(DungeonType _type)

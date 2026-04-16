@@ -12,6 +12,8 @@ public class UI_Storage : MonoBehaviour
 
     private IInventory storage;
     private List<UI_InventorySlot> storageSlots;
+    public bool isOpening { get; private set; } = false;
+
 
     public void Initialize()
     {
@@ -62,9 +64,6 @@ public class UI_Storage : MonoBehaviour
         if (null == storage)
             return;
 
-        // if (false == gameObject.activeSelf)
-        //     gameObject.SetActive(true);
-
         UpdateSlots(storage.inventorySlots);
     }
 
@@ -73,7 +72,7 @@ public class UI_Storage : MonoBehaviour
         if (null == _items)
             return;
 
-        int itemCount = _items.Count;
+        int itemCount = storage.currentSlotCnt;
 
         for (int i = 0; i < storageSlots.Count; ++i)
         {
@@ -88,7 +87,6 @@ public class UI_Storage : MonoBehaviour
 
                 slot.UpdateBindSlotData(item);
                 slot.UpdateItemCount(item.count);
-                //Debug.Log(item + " " + item.count);
             }
             else
             {
@@ -103,11 +101,11 @@ public class UI_Storage : MonoBehaviour
 
     public void OnShow()
     {
-        gameObject.SetActive(true);
+        gameObject.SetActive(isOpening = true);
     }
 
     public void OnHide()
     {
-         gameObject.SetActive(false);
+         gameObject.SetActive(isOpening = false);
     }
 }

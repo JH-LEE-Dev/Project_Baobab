@@ -29,9 +29,7 @@ public class UI_Coin : MonoBehaviour
     public void UpdateMoneyText()
     {
         if (null == inventory || null == moneyText)
-        {
             return;
-        }
 
         if (MoneyType.Coin == moneyType)
             moneyText.text = inventory.money.ToString();

@@ -155,7 +155,7 @@ public class UIView_WorldPopup : UIView
 
     public void LogContainerSpecChanged() //원목 보관함 스펙이 최신화됨.
     {
-        Debug.Log("AA");
+        ui_Storage?.Refresh();
     }
 
     private void LogCuttingIsDone()
