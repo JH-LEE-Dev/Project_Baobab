@@ -70,6 +70,9 @@ public class UnitSystem
 
         inventoryManager.InventorySpecChangedEvent -= InventorySpecChanged;
         inventoryManager.InventorySpecChangedEvent += InventorySpecChanged;
+
+        unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
+        unitLogicManager.CharacterStaminaIsEmptyEvent += CharacterStaminaIsEmpty;
     }
 
     private void ReleaseEvents()
@@ -77,6 +80,7 @@ public class UnitSystem
         unitSpawner.CharacterSpawnedEvent -= CharacterSpawned;
         unitLogicManager.WeaponModeChangedEvent -= WeaponModeChanged;
         inventoryManager.InventorySpecChangedEvent -= InventorySpecChanged;
+        unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
     }
 
     private void CharacterSpawned(Character _character)
@@ -147,5 +151,10 @@ public class UnitSystem
     private void InventorySpecChanged()
     {
         signalHub.Publish(new InventorySpecChangedSignal());
+    }
+
+    private void CharacterStaminaIsEmpty()
+    {
+        signalHub.Publish(new GoHomeButtonClickedSignal());
     }
 }

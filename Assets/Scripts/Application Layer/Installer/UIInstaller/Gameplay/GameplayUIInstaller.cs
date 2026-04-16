@@ -12,6 +12,7 @@ public class GameplayUIInstaller : MonoBehaviour
     private IInventory container;
     private IInDungeonObjProvider inDungeonObjProvider;
     private ISkillSystemProvider skillSystemProvider;
+    private IShopNPC shopNPC;
 
 
     //Canvas
@@ -30,7 +31,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
         InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
-        ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider)
+        ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC)
     {
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -39,11 +40,12 @@ public class GameplayUIInstaller : MonoBehaviour
         inDungeonObjProvider = _inDungeonObjProvider;
         container = _container;
         skillSystemProvider = _skillSystemProvider;
+        shopNPC = _shopNPC;
 
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider);
+        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider, shopNPC);
 
         SetupUIElement();
     }

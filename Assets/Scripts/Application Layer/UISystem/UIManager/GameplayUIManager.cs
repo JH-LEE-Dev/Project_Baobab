@@ -6,10 +6,11 @@ public class GameplayUIManager : UIManager
     private IInDungeonObjProvider inDungeonObjProvider;
     private ILogCutter logCutter;
     private ISkillSystemProvider skillSystemProvider;
+    private IShopNPC shopNPC;
 
 
     public void Initialize(InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider,IInventory _container,
-    ILogCutter _logCutter,ISkillSystemProvider _skillSystemProvider)
+    ILogCutter _logCutter,ISkillSystemProvider _skillSystemProvider,IShopNPC _shopNPC)
     {
         base.Initialize(_inputManager);
 
@@ -18,6 +19,7 @@ public class GameplayUIManager : UIManager
         container = _container;
         logCutter = _logCutter;
         skillSystemProvider = _skillSystemProvider;
+        shopNPC = _shopNPC;
     }
 
     protected override void DataInjection(UIView view)
@@ -29,7 +31,7 @@ public class GameplayUIManager : UIManager
             unitUI.DependencyInjection(inDungeonObjProvider.trees);
 
         if(view is UIView_WorldPopup worldUI)
-            worldUI.DependencyInjection(container,logCutter);
+            worldUI.DependencyInjection(container,logCutter,shopNPC);
             
         if(view is UIView_Tent tentUI)
             tentUI.DependencyInjection(skillSystemProvider);

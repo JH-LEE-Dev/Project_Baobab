@@ -27,7 +27,7 @@ public class LogProcessingManager : MonoBehaviour
 
     public LogContainer logContainer { get; private set; }
 
-    private ShopNPC shopNPC;
+    public ShopNPC shopNPC{ get; private set; }
 
     public void Initialize(InputManager _inputManager)
     {

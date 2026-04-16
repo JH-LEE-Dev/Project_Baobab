@@ -1375,6 +1375,37 @@ TilemapRenderer:
   m_SortOrder: 3
   m_Mode: 1
   m_DetectChunkCullingBounds: 0
+--- !u!1 &5964755494338139382
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6496686173505011792}
+  m_Layer: 16
+  m_Name: NPC_Transform
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6496686173505011792
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5964755494338139382}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.89, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1218102019296090519}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7330270266572842687
 GameObject:
   m_ObjectHideFlags: 0
@@ -1692,7 +1723,10 @@ PrefabInstance:
     m_RemovedComponents:
     - {fileID: 7799875132354655777, guid: 7ebd6991f818f934caf14226386fd50d, type: 3}
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 6026537990895040707, guid: 7ebd6991f818f934caf14226386fd50d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6496686173505011792}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 6510850199473253469, guid: 7ebd6991f818f934caf14226386fd50d, type: 3}
       insertIndex: -1
@@ -1759,6 +1793,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5bb0783a91c03bd4ba41fc92897804c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShopNPC
+  npcTransform: {fileID: 6496686173505011792}
 --- !u!1001 &7292070240138842572
 PrefabInstance:
   m_ObjectHideFlags: 0
