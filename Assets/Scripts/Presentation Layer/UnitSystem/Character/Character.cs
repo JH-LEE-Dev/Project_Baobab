@@ -165,6 +165,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         {
             armComponent.ResetDurability();
             healthComponent.StaminaReset();
+            bWhileSwing = false;
         }
 
         bInDungeon = _bInDungeon;
