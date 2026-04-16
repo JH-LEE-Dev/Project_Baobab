@@ -10,7 +10,6 @@ public class AttackComponent : PComponent
 
     //내부 의존성
     [Header("Attack Settings")]
-    [SerializeField] private float attackDamage = 10f; // 공격 데미지
     [SerializeField] private float maxAttackDistance = 2.0f; // 캐릭터로부터 공격 콜라이더가 떨어질 수 있는 최대 거리
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (Tree 등)
     [SerializeField] private bool bAttackOnlyNearest = true; // 가장 가까운 대상 하나만 공격할지 여부
@@ -152,7 +151,7 @@ public class AttackComponent : PComponent
 
             if (nearestDamageable != null)
             {
-                nearestDamageable.TakeDamage(attackDamage);
+                nearestDamageable.TakeDamage(ctx.characterStat.axeDamage);
                 AttackSuccessEvent?.Invoke();
             }
         }
@@ -163,7 +162,7 @@ public class AttackComponent : PComponent
                 // IDamageable 인터페이스가 있는지 확인 후 데미지 처리
                 if (results[i].TryGetComponent(out IDamageable damageable))
                 {
-                    damageable.TakeDamage(attackDamage);
+                    damageable.TakeDamage(ctx.characterStat.axeDamage);
                     AttackSuccessEvent?.Invoke();
                 }
             }
@@ -213,7 +212,7 @@ public class AttackComponent : PComponent
 
     public void SwitchWeaponMode()
     {
-        if (ctx != null && ctx.bWhileChangingWeapon) return;
+        if (ctx != null && ctx.bWhileChangingWeapon || ctx.characterStat.bCanHunting == false) return;
 
         WeaponMode targetMode = (currentWeaponMode == WeaponMode.Axe) ? WeaponMode.Rifle : WeaponMode.Axe;
 
@@ -267,7 +266,7 @@ public class AttackComponent : PComponent
 
     public void GoToRifleMode()
     {
-        if (ctx != null && ctx.bWhileChangingWeapon) return;
+        if (ctx != null && ctx.bWhileChangingWeapon || ctx.characterStat.bCanHunting == false) return;
         if (currentWeaponMode == WeaponMode.Rifle) return;
 
         currentWeaponMode = WeaponMode.Rifle;

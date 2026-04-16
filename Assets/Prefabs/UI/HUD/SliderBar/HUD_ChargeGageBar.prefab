@@ -262,6 +262,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.HUD.HUD_ProgressBar
   progressSlider: {fileID: 3686089145950256338}
+  pixelsPerUnit: 32
 --- !u!1 &7271992253624401219
 GameObject:
   m_ObjectHideFlags: 0

@@ -10,48 +10,37 @@ public class SkillNode
     public SkillType skillType;
     public int currentLevel;
     public int maxLevel;
-    public List<SkillLevelCost> costs;
-    public List<SkillCommandInfoPerLevel> commands;
+    public SkillCost cost;
+    public List<SkillCommandInfo> commands;
     public List<SkillNode> prerequisiteNodes;
 
     public bool bApplied => currentLevel > 0;
 
-    public SkillNode(SkillType _type, int _maxLevel, List<SkillLevelCost> _costs, List<SkillCommandInfoPerLevel> _commands)
+    public SkillNode(SkillType _type, int _maxLevel, SkillCost _cost, List<SkillCommandInfo> _commands)
     {
         skillType = _type;
         currentLevel = 0;
         maxLevel = _maxLevel;
-        costs = _costs;
+        cost = _cost;
         commands = _commands;
         prerequisiteNodes = new List<SkillNode>(4);
     }
 
     public bool GetNextLevelCost(out int _money, out int _carrot)
     {
-        _money = 0;
-        _carrot = 0;
-
-        if (costs == null) return false;
-        
         int nextLevel = currentLevel + 1;
-        for (int i = 0; i < costs.Count; i++)
-        {
-            if (costs[i].level == nextLevel)
-            {
-                _money = costs[i].moneyCost;
-                _carrot = costs[i].carrotCost;
-                return true;
-            }
-        }
-        return false;
+        _money = (int)cost.moneyCurve.Evaluate(nextLevel);
+        _carrot = (int)cost.carrotCurve.Evaluate(nextLevel);
+        
+        return true;
     }
 }
 
 public struct SkillDispatchInfo
 {
     public int level;
-    public SkillCommandInfoPerLevel commandInfo;
-    public SkillDispatchInfo(int _level, SkillCommandInfoPerLevel _info)
+    public SkillCommandInfo commandInfo;
+    public SkillDispatchInfo(int _level, SkillCommandInfo _info)
     {
         level = _level;
         commandInfo = _info;
@@ -130,8 +119,8 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     /// </summary>
     public AbilityLevelUpRejectReason TryApplySkill(SkillType _type)
     {
-        if (EnablePrototypeAutoPass)
-            return AbilityLevelUpRejectReason.Pass;
+        //if (EnablePrototypeAutoPass)
+            //return AbilityLevelUpRejectReason.Pass;
 
         AbilityLevelUpRejectReason reason = CanApplySkill(_type);
         if (reason != AbilityLevelUpRejectReason.Pass) return reason;
@@ -141,7 +130,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 
         if (!node.GetNextLevelCost(out int moneyCost, out int carrotCost))
             return AbilityLevelUpRejectReason.None;
-        
+
         // 1. 재화 체크 (Money)
         if (inventory.GetCurrentMoney() < moneyCost)
         {
@@ -180,8 +169,8 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     /// </summary>
     public AbilityLevelUpRejectReason CanApplySkill(SkillType _type)
     {
-        if (EnablePrototypeAutoPass)
-            return AbilityLevelUpRejectReason.Pass;
+        //if (EnablePrototypeAutoPass)
+            //return AbilityLevelUpRejectReason.Pass;
 
         if (!skillNodeMap.TryGetValue(_type, out SkillNode node)) 
             return AbilityLevelUpRejectReason.None;
@@ -198,6 +187,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         {
             if (!prerequisites[i].bApplied)
             {
+
                 return AbilityLevelUpRejectReason.None; // 선행 스킬 미습득
             }
         }

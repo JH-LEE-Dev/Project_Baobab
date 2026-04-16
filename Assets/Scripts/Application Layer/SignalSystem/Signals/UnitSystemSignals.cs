@@ -28,7 +28,15 @@ public struct ContainerInteractStateChangedSignal
     }
 }
 
-public struct CharacterEarnMoneySignal { }
+public struct CharacterEarnMoneySignal
+{
+    public MoneyType moneyType;
+    public CharacterEarnMoneySignal(MoneyType _moneyType)
+    {
+        moneyType = _moneyType;
+    }
+}
+
 public struct FirstTimeEarnMoneySignal { }
 
 public struct WeaponModeChangedSignal
@@ -39,3 +47,6 @@ public struct WeaponModeChangedSignal
         weaponMode = _weaponMode;
     }
 }
+
+public struct InventorySpecChangedSignal { }
+public struct LogContainerSpecChangedSignal { }

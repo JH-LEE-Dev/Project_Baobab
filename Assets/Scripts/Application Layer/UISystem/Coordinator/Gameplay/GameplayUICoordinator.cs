@@ -40,6 +40,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<WeaponModeChangedSignal>(WeaponModeChanged);
         signalHub.Subscribe<TentInteractSignal>(TentInteract);
         signalHub.Subscribe<PortalActivatedSignal>(PortalActivated);
+        signalHub.Subscribe<InventorySpecChangedSignal>(InventorySpecChanged);
+        signalHub.Subscribe<LogContainerSpecChangedSignal>(LogContainerSpecChanged);
     }
 
     private void UnSubscribeSignals()
@@ -53,6 +55,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<WeaponModeChangedSignal>(WeaponModeChanged);
         signalHub.UnSubscribe<TentInteractSignal>(TentInteract);
         signalHub.UnSubscribe<PortalActivatedSignal>(PortalActivated);
+        signalHub.UnSubscribe<InventorySpecChangedSignal>(InventorySpecChanged);
+        signalHub.UnSubscribe<LogContainerSpecChangedSignal>(LogContainerSpecChanged);
     }
 
     private void BindEvents()
@@ -140,7 +144,7 @@ public class GameplayUICoordinator
 
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
     {
-        popUpUI.CharacterEarnMoney();
+        popUpUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
     }
 
     private void WeaponModeChanged(WeaponModeChangedSignal weaponModeChangedSignal)
@@ -167,5 +171,15 @@ public class GameplayUICoordinator
     private void Sleep()
     {
         signalHub.Publish(new SleepSignal());
+    }
+
+    private void InventorySpecChanged(InventorySpecChangedSignal _inventorySpecChangedSignal)
+    {
+        popUpUI.InventorySpecChanged();
+    }
+
+    private void LogContainerSpecChanged(LogContainerSpecChangedSignal _logContainerSpecChangedSignal)
+    {
+        worldPopupUI.LogContainerSpecChanged();
     }
 }

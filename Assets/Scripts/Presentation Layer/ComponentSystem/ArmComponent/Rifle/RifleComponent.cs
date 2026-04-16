@@ -45,7 +45,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         // 내부 컴포넌트 참조 구성
         rifleAnimation = GetComponent<RifleAnimation>();
         bulletObjManager = GetComponentInChildren<BulletObjManager>();
-        bulletObjManager.Initialize();
+        bulletObjManager.Initialize(ctx);
 
         mag = ctx.characterStat.magCap;
         ammo = ctx.characterStat.ammoCap;

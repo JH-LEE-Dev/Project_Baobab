@@ -5,8 +5,8 @@ using UnityEngine;
 public class ItemManager : MonoBehaviour
 {
     // 내부 의존성
-    private LogItemController logItemController;
-    private CarrotItemController carrrotItemController;
+    public LogItemController logItemController { get; private set; }
+    public CarrotItemController carrrotItemController { get; private set; }
     private IInventoryChecker inventoryChecker;
 
     public void Initialize(IInventoryChecker _inventoryChecker)
@@ -25,7 +25,7 @@ public class ItemManager : MonoBehaviour
         {
             carrrotItemController.Initialize();
         }
-        
+
         BindEvents();
     }
 

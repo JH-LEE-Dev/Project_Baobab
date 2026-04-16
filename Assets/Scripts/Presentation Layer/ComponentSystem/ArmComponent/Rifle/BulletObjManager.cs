@@ -9,8 +9,12 @@ public class BulletObjManager : MonoBehaviour
     // 내부 의존성
     private IObjectPool<Bullet> bulletPool;
 
-    public void Initialize()
+    private ComponentCtx ctx;
+
+    public void Initialize(ComponentCtx _ctx)
     {
+        ctx = _ctx;
+
         bulletPool = new ObjectPool<Bullet>(
             createFunc: CreateBullet,
             actionOnGet: OnGetBullet,
@@ -54,6 +58,7 @@ public class BulletObjManager : MonoBehaviour
 
     private void OnGetBullet(Bullet _bullet)
     {
+        _bullet.SetDamage(ctx.characterStat.rifleDamage);
         _bullet.gameObject.SetActive(true);
     }
 

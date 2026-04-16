@@ -1,6 +1,4 @@
 using System;
-using Microsoft.Unity.VisualStudio.Editor;
-using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.EventSystems;
 

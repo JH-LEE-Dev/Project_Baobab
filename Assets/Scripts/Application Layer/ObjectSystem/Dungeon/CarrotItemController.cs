@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class CarrotItemController : MonoBehaviour
+public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 {
     public event Action<Item> CarrotItemAcquiredEvent;
 
@@ -11,6 +11,9 @@ public class CarrotItemController : MonoBehaviour
 
     // 내부 의존성
     private IObjectPool<CarrotItem> carrotPool;
+    private int spawnCount = 1;
+    private int baseSpawnCount = 1;
+    private float dropMultiplier = 1.0f;
 
     public void Initialize()
     {
@@ -58,8 +61,6 @@ public class CarrotItemController : MonoBehaviour
 
     public void SpawnCarrotItem(Vector3 _position)
     {
-        int spawnCount = UnityEngine.Random.Range(1, 3); // 1~2개
-
         for (int i = 0; i < spawnCount; i++)
         {
             CarrotItem carrotItem = carrotPool.Get();
@@ -82,5 +83,14 @@ public class CarrotItemController : MonoBehaviour
     public void ReturnToPool(CarrotItem _item)
     {
         carrotPool.Release(_item);
+    }
+
+    public void IncreaseCarrotDrop(float _amount)
+    {
+        // _amount는 0보다 큰 퍼센트 (예: 100.0f는 100% 증가 즉 2배 드랍)
+        dropMultiplier += (_amount / 100.0f);
+        spawnCount = Mathf.FloorToInt(baseSpawnCount * dropMultiplier);
+
+        Debug.Log($"[CarrotItemController] Drop Rate Increased: {dropMultiplier * 100}% (SpawnCount: {spawnCount})");
     }
 }

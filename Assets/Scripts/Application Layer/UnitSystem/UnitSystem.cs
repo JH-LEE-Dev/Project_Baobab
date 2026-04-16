@@ -67,12 +67,16 @@ public class UnitSystem
 
         unitLogicManager.WeaponModeChangedEvent -= WeaponModeChanged;
         unitLogicManager.WeaponModeChangedEvent += WeaponModeChanged;
+
+        inventoryManager.InventorySpecChangedEvent -= InventorySpecChanged;
+        inventoryManager.InventorySpecChangedEvent += InventorySpecChanged;
     }
 
     private void ReleaseEvents()
     {
         unitSpawner.CharacterSpawnedEvent -= CharacterSpawned;
         unitLogicManager.WeaponModeChangedEvent -= WeaponModeChanged;
+        inventoryManager.InventorySpecChangedEvent -= InventorySpecChanged;
     }
 
     private void CharacterSpawned(Character _character)
@@ -116,7 +120,7 @@ public class UnitSystem
     private void MoneyEarned(MoneyEarnedSignal moneyEarnedSignal)
     {
         inventoryManager.MoneyEarned(moneyEarnedSignal.money);
-        signalHub.Publish(new InventoryUpdatedSignal());
+        signalHub.Publish(new CharacterEarnMoneySignal(MoneyType.Coin));
     }
 
     public void SetWhereIsCharacter(bool _bInDungeon)
@@ -132,10 +136,16 @@ public class UnitSystem
     private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)
     {
         inventoryManager.CarrotEarned();
+        signalHub.Publish(new CharacterEarnMoneySignal(MoneyType.Carrot));
     }
 
     private void CharacterSleep(SleepSignal sleepSignal)
     {
         unitLogicManager.CharacterSleep();
+    }
+
+    private void InventorySpecChanged()
+    {
+        signalHub.Publish(new InventorySpecChangedSignal());
     }
 }
