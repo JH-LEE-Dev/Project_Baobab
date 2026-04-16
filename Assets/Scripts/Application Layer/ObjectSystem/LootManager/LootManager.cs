@@ -62,8 +62,11 @@ public class LootManager : MonoBehaviour
 
     private LootItem CreateLootItem()
     {
+        if (lootItemPrefab == null)
+            return null;
+
         LootItem newItem = Instantiate(lootItemPrefab, transform);
-        
+
         // 이벤트 바인딩 (생성 시 한 번만)
         newItem.lootItemAcquiredEvent -= OnLootItemAcquired;
         newItem.lootItemAcquiredEvent += OnLootItemAcquired;
@@ -168,7 +171,7 @@ public class LootManager : MonoBehaviour
 
         LootItem lootItem = lootPool.Get();
         lootItem.Initialize(typeData);
-        
+
         // 즉시 획득 처리 (이벤트 발생 및 풀 반환)
         OnLootItemAcquired(lootItem);
     }
