@@ -52,7 +52,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
     }
 
     public void SpawnAnimals()
-    {return;
+    {
         if (tilemapDataProvider == null || animalPrefab == null || environmentProvider.densityProvider == null)
         {
             return;
