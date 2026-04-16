@@ -7,7 +7,7 @@ public class UI_Coin : MonoBehaviour
     private TMP_Text moneyText;
 
     //내부 의존성
-    private IInventory inventory;
+    private IMoneyData moneyData;
 
     private MoneyType moneyType;
 
@@ -18,9 +18,9 @@ public class UI_Coin : MonoBehaviour
         moneyText = GetComponentInChildren<TMP_Text>();
     }
 
-    public void BindInventory(IInventory _inventory, MoneyType _moneyType)
+    public void BindMoneyData(IMoneyData _moneyData, MoneyType _moneyType)
     {
-        inventory = _inventory;
+        moneyData = _moneyData;
         moneyType = _moneyType;
 
         UpdateMoneyText();
@@ -28,13 +28,13 @@ public class UI_Coin : MonoBehaviour
 
     public void UpdateMoneyText()
     {
-        if (null == inventory || null == moneyText)
+        if (null == moneyData || null == moneyText)
             return;
 
         if (MoneyType.Coin == moneyType)
-            moneyText.text = inventory.money.ToString();
+            moneyText.text = moneyData.money.ToString();
         else
-            moneyText.text = inventory.carrot.ToString();
+            moneyText.text = moneyData.carrot.ToString();
     }
 
     public void UpdateMoneyText(int _money)

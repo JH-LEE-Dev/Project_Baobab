@@ -8,9 +8,13 @@ public class UIView_HUD : UIView
     [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
+    [SerializeField] private GameObject uiCoinPrefab;
+    [SerializeField] private GameObject uiCarrotCoinPrefab;
 
     private HUD_Equipment hudEquipment;
     private HUD_ProgressBar hudSteminaBar;
+    private UI_Coin uI_Coin;
+    private UI_Coin uI_CarrotCoin;
 
     private ICharacter character;
     private IMoneyData moneyData;
@@ -24,6 +28,8 @@ public class UIView_HUD : UIView
 
         Init_HUDEquipment();
         Init_HUDSteminaBar();
+        Init_Coin();
+        Init_CarrotCoin();
     }
 
     public override void OnDestroy()
@@ -36,11 +42,15 @@ public class UIView_HUD : UIView
         base.OnShow();
 
         hudEquipment?.OnShow();
+        uI_Coin?.OnShow();
+        uI_CarrotCoin?.OnShow();
     }
 
     protected override void OnHide() //이 UI가 꺼졌을 때 호출 됨.
     {
         hudEquipment?.OnHide();
+        uI_Coin?.OnHide();
+        uI_CarrotCoin?.OnHide();
 
         base.OnHide();
     }
@@ -53,6 +63,9 @@ public class UIView_HUD : UIView
     public void DependencyInjection(IMoneyData _moneyData)
     {
         moneyData = _moneyData;
+
+        uI_Coin?.BindMoneyData(moneyData, MoneyType.Coin);
+        uI_CarrotCoin?.BindMoneyData(moneyData, MoneyType.Carrot);
     }
 
     public override void Update()
@@ -104,6 +117,44 @@ public class UIView_HUD : UIView
 
     public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
     {
+        if (MoneyType.Coin == _moneyType)
+            uI_Coin?.UpdateMoneyText();
+        else if (MoneyType.Carrot == _moneyType)
+            uI_CarrotCoin?.UpdateMoneyText();
+    }
+
+#region Coin UI
+
+    private void Init_Coin()
+    {
+        if (null == uiCoinPrefab)
+            return;
+
+        uI_Coin = Instantiate(uiCoinPrefab, this.transform).GetComponent<UI_Coin>();
+
+        if (null == uI_Coin)
+            return;
+
+        uI_Coin.Initialize();
+    }
+
+    private void Init_CarrotCoin()
+    {
+        if (null == uiCarrotCoinPrefab)
+            return;
+
+        uI_CarrotCoin = Instantiate(uiCarrotCoinPrefab, this.transform).GetComponent<UI_Coin>();
+
+        if (null == uI_CarrotCoin)
+            return;
+
+        uI_CarrotCoin.Initialize();
+    }
+
+    public void InventorySpecChanged() //인벤토리 스펙 변동 시 호출
+    {
 
     }
+
+#endregion
 }
