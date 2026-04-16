@@ -13,6 +13,7 @@ public class UIView_HUD : UIView
     private HUD_ProgressBar hudSteminaBar;
 
     private ICharacter character;
+    private IMoneyData moneyData;
 
 
 #region Default Logic
@@ -47,6 +48,11 @@ public class UIView_HUD : UIView
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+    }
+
+    public void DependencyInjection(IMoneyData _moneyData)
+    {
+        moneyData = _moneyData;
     }
 
     public override void Update()
@@ -96,4 +102,8 @@ public class UIView_HUD : UIView
         hudEquipment?.UpdateState(_currentWeaponMode, 0);
     }
 
+    public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
+    {
+
+    }
 }

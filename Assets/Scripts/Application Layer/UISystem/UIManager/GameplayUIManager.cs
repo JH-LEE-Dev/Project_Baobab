@@ -7,10 +7,12 @@ public class GameplayUIManager : UIManager
     private ILogCutter logCutter;
     private ISkillSystemProvider skillSystemProvider;
     private IShopNPC shopNPC;
+    private IMoneyData moneyData;
+
 
 
     public void Initialize(InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider,IInventory _container,
-    ILogCutter _logCutter,ISkillSystemProvider _skillSystemProvider,IShopNPC _shopNPC)
+    ILogCutter _logCutter,ISkillSystemProvider _skillSystemProvider,IShopNPC _shopNPC,IMoneyData _moneyData)
     {
         base.Initialize(_inputManager);
 
@@ -35,5 +37,8 @@ public class GameplayUIManager : UIManager
             
         if(view is UIView_Tent tentUI)
             tentUI.DependencyInjection(skillSystemProvider);
+
+        if(view is UIView_HUD hudUI)
+            hudUI.DependencyInjection(moneyData);
     }
 }

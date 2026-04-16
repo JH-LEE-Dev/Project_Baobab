@@ -28,7 +28,7 @@ public class IdleState : CharacterState
 
     public override void FixedUpdate()
     {
-        if (ctx.moveInput.sqrMagnitude != 0 && character.bCanAction == true)
+        if (ctx.moveInput.sqrMagnitude != 0)
             stateMachine.ChangeState<RunState>();
 
         ApplyDeceleration();
@@ -69,8 +69,7 @@ public class IdleState : CharacterState
         // 키보드 입력이 발생하면 즉시 방향 설정 후 RunState로 전환
         if (_input != Vector2.zero)
         {
-            if (character.bCanAction == true)
-                stateMachine.ChangeState<RunState>();
+            stateMachine.ChangeState<RunState>();
         }
     }
 

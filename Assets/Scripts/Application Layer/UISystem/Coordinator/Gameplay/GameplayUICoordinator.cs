@@ -144,7 +144,7 @@ public class GameplayUICoordinator
 
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
     {
-        popUpUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
+        hudUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
     }
 
     private void WeaponModeChanged(WeaponModeChangedSignal weaponModeChangedSignal)

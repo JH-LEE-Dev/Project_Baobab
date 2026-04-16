@@ -136,11 +136,6 @@ public class UIView_Popup : UIView
         uI_CarrotCoin.OnHide();
     }
 
-    public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
-    {
-        uI_Coin?.UpdateMoneyText();
-    }
-
     public void InventorySpecChanged() //인벤토리 스펙이 변경되었을 때,
     {
         if (null != uI_Inventory)

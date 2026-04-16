@@ -35,7 +35,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     [Header("Character Stats & States")]
     public GroundPhysicsData currentGroundData { get; private set; }
     public bool bInDungeon { get; private set; } = true;
-    public bool bCanAction { get; private set; } = true;
+    public bool bWhileSwing { get; private set; } = false;
     public bool bCanRotate { get; private set; } = true;
 
     private int shadowOverlapCount = 0;
@@ -162,7 +162,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
         if (_bInDungeon == false)
+        {
             armComponent.ResetDurability();
+            healthComponent.StaminaReset();
+        }
 
         bInDungeon = _bInDungeon;
         anim.SetBool(bInHubHash, !bInDungeon);
@@ -267,7 +270,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
     private void SetbCanAction(bool _isAttacking)
     {
-        bCanAction = !_isAttacking;
+        bWhileSwing = _isAttacking; // 도끼질 등 액션 중일 때 true
         bCanRotate = !_isAttacking;
         attackComponent.SetbAttack(_isAttacking);
         UpdateFacingByAttackPoint();
