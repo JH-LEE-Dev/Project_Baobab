@@ -162,7 +162,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
         if (_bInDungeon == false)
+        {
             armComponent.ResetDurability();
+            healthComponent.StaminaReset();
+        }
 
         bInDungeon = _bInDungeon;
         anim.SetBool(bInHubHash, !bInDungeon);

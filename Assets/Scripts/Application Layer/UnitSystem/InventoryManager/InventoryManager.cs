@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker, IInventoryCH
+public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker, IInventoryCH, IMoneyData
 {
     public event Action InventorySpecChangedEvent;
     // 내부 의존성
@@ -24,6 +24,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     int IInventory.carrot => carrot;
 
     public int currentSlotCnt => currentSlotCount;
+
+    int IMoneyData.money => money;
+
+    int IMoneyData.carrot => carrot;
 
     public void Initialize()
     {
