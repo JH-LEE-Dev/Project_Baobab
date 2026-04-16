@@ -560,7 +560,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             bool canApply = false;
             if (skillSystemProvider != null)
-                canApply = skillSystemProvider.CanApplySkill(node.SkillType) == AbilityLevelUpRejectReason.Pass;
+            {
+                AbilityLevelUpRejectReason reason = skillSystemProvider.CanApplySkill(node.SkillType);
+                canApply =
+                    reason == AbilityLevelUpRejectReason.Pass ||
+                    reason == AbilityLevelUpRejectReason.MaxLevel;
+            }
 
             node.ApplyVisualState(
                 canApply ? CanApplyColor : CannotApplyColor,
