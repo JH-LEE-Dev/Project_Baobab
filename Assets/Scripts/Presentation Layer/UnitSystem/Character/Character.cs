@@ -138,8 +138,24 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         staminaDecAmount = _staminaDecAmount;
         staminaIncAmount = _staminaIncAmount;
 
-        healthComponent.SetStaminaDecreaseAmount(staminaDecAmount);
-        healthComponent.SetStaminaIncreaseAmount(staminaIncAmount);
+        UpdateStaminaAmounts();
+    }
+
+    private void UpdateStaminaAmounts()
+    {
+        // 최대 스태미나 동기화
+        healthComponent.SetMaxStamina(statComponent.maxStamina);
+
+        // staminaDecreaseAlpha는 소모량 감소 비율 (예: 10.0f면 10% 감소)
+        float reductionMultiplier = 1.0f - (statComponent.staminaDecreaseAlpha / 100.0f);
+        float finalDecAmount = staminaDecAmount * Mathf.Max(0, reductionMultiplier);
+
+        // staminaIncreaseAlpha는 회복량 증가 비율 (예: 10.0f면 10% 증가)
+        float boostMultiplier = 1.0f + (statComponent.staminaIncreaseAlpha / 100.0f);
+        float finalIncAmount = staminaIncAmount * boostMultiplier;
+
+        healthComponent.SetStaminaDecreaseAmount(finalDecAmount);
+        healthComponent.SetStaminaIncreaseAmount(finalIncAmount);
     }
 
     public void SetWhereIsCharacter(bool _bInDungeon)
@@ -275,6 +291,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
         }
 
         // 스태미나 로직
+        UpdateStaminaAmounts(); // 실시간 소모량 갱신 반영
         if (bStaminaUpDown) healthComponent.IncreaseStamina();
         else healthComponent.DecreaseStamina();
 

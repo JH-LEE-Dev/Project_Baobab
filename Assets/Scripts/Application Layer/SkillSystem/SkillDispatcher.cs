@@ -8,6 +8,9 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private IContainerCH containerCH;
     private ICutterCH cutterCH;
     private ICharacterStatCH characterStatCH;
+    private ILogEvaluatorCH logEvaluatorCH;
+    private IDensityCH densityCH;
+    private ICarrotItemCH carrotItemCH;
 
 
     [SerializeField] private List<SkillCommand> skillCommands;
@@ -21,12 +24,22 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     ICharacterStatCH ICommandHandleSystem.characterStatCH => characterStatCH;
 
-    public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH)
+    ILogEvaluatorCH ICommandHandleSystem.logEvaluatorCH => logEvaluatorCH;
+
+    IDensityCH ICommandHandleSystem.densityCH => densityCH;
+
+    ICarrotItemCH ICommandHandleSystem.carrotItemCH => carrotItemCH;
+
+    public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
+    ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH)
     {
         signalHub = _signalHub;
         inventoryCH = _inventoryCH;
         containerCH = _containerCH;
         cutterCH = _cutterCH;
+        logEvaluatorCH = _logEvaluatorCH;
+        densityCH = _densityCH;
+        carrotItemCH = _carrotItemCH;
 
         if (skillCommands == null) return;
 
@@ -72,7 +85,8 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         if (skillDic.TryGetValue(commandType, out SkillCommand command))
         {
             command.level = _skillDispatchInfo.level;
-            command.amount = _skillDispatchInfo.commandInfo.amount;
+            // 커브 공식을 사용하여 레벨에 따른 최종 수치 계산
+            command.amount = _skillDispatchInfo.commandInfo.amountCurve.Evaluate(_skillDispatchInfo.level);
             command.Execute(this);
         }
         else

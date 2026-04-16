@@ -1,7 +1,7 @@
 
 using UnityEngine;
 
-public class DensityManager : MonoBehaviour, IDensityProvider
+public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 {
     private int grassTileCnt;
     private int walkableTilesCnt;
@@ -11,6 +11,9 @@ public class DensityManager : MonoBehaviour, IDensityProvider
     private int maxAnimalCnt;
     private int animalStartCnt;
     private int treeStartCnt;
+
+    private float treeDensityMultiplier = 1.0f;
+    private float rabbitDensityMultiplier = 1.0f;
 
     public void Initialize()
     {
@@ -83,10 +86,38 @@ public class DensityManager : MonoBehaviour, IDensityProvider
         grassTileCnt = _grassCnt;
         walkableTilesCnt = _walkableCnt;
 
-        maxTreeCnt = (int)(grassTileCnt * 0.3f);
-        maxAnimalCnt = (int)(walkableTilesCnt * 0.05f);
+        maxTreeCnt = (int)(grassTileCnt * 0.3f * treeDensityMultiplier);
+        maxAnimalCnt = (int)(walkableTilesCnt * 0.05f * rabbitDensityMultiplier);
 
-        treeStartCnt = (int)(grassTileCnt * 0.1f);
-        animalStartCnt = (int)(walkableTilesCnt * 0.01f);
+        treeStartCnt = (int)(grassTileCnt * 0.1f * treeDensityMultiplier);
+        animalStartCnt = (int)(walkableTilesCnt * 0.01f * rabbitDensityMultiplier);
+    }
+
+    public void IncreaseTreeDensity(float _amount)
+    {
+        // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
+        treeDensityMultiplier += (_amount / 100.0f);
+
+        if (grassTileCnt > 0)
+        {
+            maxTreeCnt = (int)(grassTileCnt * 0.3f * treeDensityMultiplier);
+            treeStartCnt = (int)(grassTileCnt * 0.1f * treeDensityMultiplier);
+        }
+
+        Debug.Log($"[DensityManager] Tree Density Increased: {treeDensityMultiplier * 100}% (MaxTree: {maxTreeCnt})");
+    }
+
+    public void IncreaseRabbitDensity(float _amount)
+    {
+        // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
+        rabbitDensityMultiplier += (_amount / 100.0f);
+
+        if (walkableTilesCnt > 0)
+        {
+            maxAnimalCnt = (int)(walkableTilesCnt * 0.05f * rabbitDensityMultiplier);
+            animalStartCnt = (int)(walkableTilesCnt * 0.01f * rabbitDensityMultiplier);
+        }
+
+        Debug.Log($"[DensityManager] Rabbit Density Increased: {rabbitDensityMultiplier * 100}% (MaxAnimal: {maxAnimalCnt})");
     }
 }

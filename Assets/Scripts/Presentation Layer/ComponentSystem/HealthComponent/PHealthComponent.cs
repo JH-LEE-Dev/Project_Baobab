@@ -93,6 +93,20 @@ public class PHealthComponent : PComponent, IPHealthComponent
         return currentStamina;
     }
 
+    public void SetMaxStamina(float _maxStamina)
+    {
+        float diff = _maxStamina - maxStamina;
+        maxStamina = _maxStamina;
+        
+        // 최대치가 늘어난 만큼 현재치도 보정 (선택 사항이나 보통 긍정적 경험 제공)
+        if (diff > 0)
+        {
+            currentStamina += diff;
+        }
+        
+        currentStamina = Mathf.Min(currentStamina, maxStamina);
+    }
+
     public void StaminaReset()
     {
         currentStamina = maxStamina;

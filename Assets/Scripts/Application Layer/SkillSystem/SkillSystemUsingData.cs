@@ -1,12 +1,52 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
+
+public enum ProgressionType
+{
+    Manual,            // 1. 공식 없이 직접 값을 리스트로 책정
+    BasePlusLevelBase, // 2. 값 + (레벨 * 값)
+    BaseTimesLevel,    // 3. 값 * 레벨
+    Constant           // 4. 레벨에 상관없이 고정된 값 (baseValue 사용)
+}
+
+[Serializable]
+public struct ProgressionCurve
+{
+    public ProgressionType type;
+    public float baseValue;
+    public List<float> manualValues; // Manual 타입일 때 사용 (인덱스 0이 1레벨)
+
+    public float Evaluate(int _targetLevel)
+    {
+        if (_targetLevel <= 0) return 0;
+
+        switch (type)
+        {
+            case ProgressionType.Manual:
+                if (manualValues != null && manualValues.Count >= _targetLevel)
+                    return manualValues[_targetLevel - 1];
+                return 0;
+            case ProgressionType.BasePlusLevelBase:
+                // 값 + (레벨 * 값)
+                return baseValue + (_targetLevel * baseValue);
+            case ProgressionType.BaseTimesLevel:
+                // 값 * 레벨
+                return baseValue * _targetLevel;
+            case ProgressionType.Constant:
+                // 레벨에 관계없이 고정 값
+                return baseValue;
+            default:
+                return 0;
+        }
+    }
+}
 
 [Serializable]
 public struct SkillCost
 {
-    public float alpha;
-    public int moneyCost;
-    public int carrotCost;
+    public ProgressionCurve moneyCurve;
+    public ProgressionCurve carrotCurve;
 }
 
 
@@ -14,7 +54,7 @@ public struct SkillCost
 public struct SkillCommandInfo
 {
     public SkillCommandType skillCommandType;
-    public float amount;
+    public ProgressionCurve amountCurve;
 }
 
 [Serializable]
@@ -70,6 +110,16 @@ public enum SkillCommandType
     SawmillLogStorageExpansion,
     LogProcessingSpeed,
     AxeDamage,
+    hunting,
+    EquipmentSwitchSpeed,
+    GunDamage,
+    LogValue,
+    VerdantPlainsOvergrowth,
+    CarrotBundle,
+    RabbitBoom,
+    Stamina,
+    StaminaRecoveryBoost,
+    StaminaMaxIncrease,
 }
 
 public enum AbilityLevelUpRejectReason

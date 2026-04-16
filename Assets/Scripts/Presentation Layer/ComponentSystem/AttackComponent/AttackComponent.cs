@@ -212,7 +212,7 @@ public class AttackComponent : PComponent
 
     public void SwitchWeaponMode()
     {
-        if (ctx != null && ctx.bWhileChangingWeapon) return;
+        if (ctx != null && ctx.bWhileChangingWeapon || ctx.characterStat.bCanHunting == false) return;
 
         WeaponMode targetMode = (currentWeaponMode == WeaponMode.Axe) ? WeaponMode.Rifle : WeaponMode.Axe;
 
@@ -266,7 +266,7 @@ public class AttackComponent : PComponent
 
     public void GoToRifleMode()
     {
-        if (ctx != null && ctx.bWhileChangingWeapon) return;
+        if (ctx != null && ctx.bWhileChangingWeapon || ctx.characterStat.bCanHunting == false) return;
         if (currentWeaponMode == WeaponMode.Rifle) return;
 
         currentWeaponMode = WeaponMode.Rifle;

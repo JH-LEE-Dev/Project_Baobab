@@ -20,6 +20,11 @@ public class Bullet : MonoBehaviour
             col = GetComponent<CircleCollider2D>();
     }
 
+    public void SetDamage(float _damage)
+    {
+        damage = _damage;
+    }
+
     public void Reset()
     {
         timer = 0f;

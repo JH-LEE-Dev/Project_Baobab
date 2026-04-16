@@ -5,4 +5,7 @@ public interface ICommandHandleSystem
     public IContainerCH containerCH { get; }
     public ICutterCH cutterCH { get; }
     public ICharacterStatCH characterStatCH { get; }
+    public ILogEvaluatorCH logEvaluatorCH { get; }
+    public IDensityCH densityCH { get; }
+    public ICarrotItemCH carrotItemCH { get; }
 }

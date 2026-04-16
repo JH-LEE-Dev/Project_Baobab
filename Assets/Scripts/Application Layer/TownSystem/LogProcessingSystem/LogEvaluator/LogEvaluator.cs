@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-public class LogEvaluator : MonoBehaviour
+public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 {
     public event Action<int> logEvaluatedEvent;
 
@@ -15,6 +15,8 @@ public class LogEvaluator : MonoBehaviour
     private Coroutine stopAnimCoroutine;
 
     private readonly int startHash = Animator.StringToHash("bStart");
+
+    private float logValueMultiplier = 1.0f;
 
     //Perfect 등급 : value * 10
     //Advance 등급 : value * 3
@@ -43,36 +45,37 @@ public class LogEvaluator : MonoBehaviour
         }
 
         float baseValue = valueData.value;
-        float multiplier = 1.0f;
+        float stateMultiplier = 1.0f;
 
         switch (_itemData.logState)
         {
             case LogState.Perfect:
-                multiplier = 10.0f;
+                stateMultiplier = 10.0f;
                 break;
             case LogState.Advanced:
-                multiplier = 3.0f;
+                stateMultiplier = 3.0f;
                 break;
             case LogState.Fascinating:
-                multiplier = 1.3f;
+                stateMultiplier = 1.3f;
                 break;
             case LogState.Normal:
                 float[] normalMultipliers = { 0.9f, 1.0f, 1.1f };
-                multiplier = normalMultipliers[UnityEngine.Random.Range(0, normalMultipliers.Length)];
+                stateMultiplier = normalMultipliers[UnityEngine.Random.Range(0, normalMultipliers.Length)];
                 break;
             case LogState.Wet:
-                multiplier = 0.7f;
+                stateMultiplier = 0.7f;
                 break;
             case LogState.Damaged:
                 float[] damagedMultipliers = { 0.5f, 0.6f, 0.7f };
-                multiplier = damagedMultipliers[UnityEngine.Random.Range(0, damagedMultipliers.Length)];
+                stateMultiplier = damagedMultipliers[UnityEngine.Random.Range(0, damagedMultipliers.Length)];
                 break;
             case LogState.Destoyed:
-                multiplier = 0.1f;
+                stateMultiplier = 0.1f;
                 break;
         }
 
-        int finalPrice = Mathf.RoundToInt(baseValue * multiplier);
+        // 최종 가격 = 기본 가치 * 상태 배율 * 스킬 배율
+        int finalPrice = Mathf.RoundToInt(baseValue * stateMultiplier * logValueMultiplier);
         logEvaluatedEvent?.Invoke(finalPrice);
 
         stopAnimCoroutine = StartCoroutine(StopAnimationRoutine());
@@ -83,5 +86,13 @@ public class LogEvaluator : MonoBehaviour
         yield return new WaitForSeconds(evaluationDelay);
         anim.SetBool(startHash, false);
         stopAnimCoroutine = null;
+    }
+
+    public void IncreaseLogValueMultiplier(float _amount)
+    {
+        // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
+        logValueMultiplier += (_amount / 100.0f);
+        
+        Debug.Log($"[LogEvaluator] Log Value Multiplier Increased: {logValueMultiplier}");
     }
 }

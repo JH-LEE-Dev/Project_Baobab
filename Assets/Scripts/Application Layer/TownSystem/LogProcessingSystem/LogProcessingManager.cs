@@ -22,7 +22,7 @@ public class LogProcessingManager : MonoBehaviour
     private LogInBelt logInBelt;
     private LogInBelt logOutBelt;
     public LogCutter logCutter { get; private set; }
-    private LogEvaluator logEvaluator;
+    public LogEvaluator logEvaluator { get; private set; }
 
     public LogContainer logContainer { get; private set; }
 
