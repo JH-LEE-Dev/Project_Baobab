@@ -20,7 +20,7 @@ public class UIView_HUD : UIView
     private IMoneyData moneyData;
 
 
-#region Default Logic
+    #region Default Logic
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -74,9 +74,9 @@ public class UIView_HUD : UIView
             UsedSteminaEvent(character.pHealthComponent.GetCurrentStamina(), character.pHealthComponent.GetMaxStamina());
     }
 
-#endregion
+    #endregion
 
-#region HUD_Equipment Logic
+    #region HUD_Equipment Logic
 
     private void Init_HUDEquipment()
     {
@@ -89,9 +89,9 @@ public class UIView_HUD : UIView
         }
     }
 
-#endregion
-    
-#region HUD_Stemina Logic
+    #endregion
+
+    #region HUD_Stemina Logic
 
     private void Init_HUDSteminaBar()
     {
@@ -107,7 +107,7 @@ public class UIView_HUD : UIView
         hudSteminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
     }
 
-#endregion
+    #endregion
 
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
@@ -123,7 +123,13 @@ public class UIView_HUD : UIView
             uI_CarrotCoin?.UpdateMoneyText();
     }
 
-#region Coin UI
+    public void CharactersMoneyChanged()
+    {
+        uI_Coin?.UpdateMoneyText();
+        uI_CarrotCoin?.UpdateMoneyText();
+    }
+
+    #region Coin UI
 
     private void Init_Coin()
     {
@@ -156,5 +162,5 @@ public class UIView_HUD : UIView
 
     }
 
-#endregion
+    #endregion
 }

@@ -5,6 +5,7 @@ using UnityEngine.Pool;
 
 public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker, IInventoryCH, IMoneyData
 {
+    public event Action SpendMoneyEvent;
     public event Action InventorySpecChangedEvent;
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
@@ -223,12 +224,14 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         carrot -= _amount;
         if (carrot < 0) carrot = 0;
+        SpendMoneyEvent?.Invoke();
     }
 
     public void DecreaseMoney(int _amount)
     {
         money -= _amount;
         if (money < 0) money = 0;
+        SpendMoneyEvent?.Invoke();
     }
 
     public bool CanAcquired(LogItem _item)

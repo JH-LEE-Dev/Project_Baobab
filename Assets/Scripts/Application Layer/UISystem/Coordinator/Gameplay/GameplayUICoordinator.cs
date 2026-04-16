@@ -42,6 +42,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<PortalActivatedSignal>(PortalActivated);
         signalHub.Subscribe<InventorySpecChangedSignal>(InventorySpecChanged);
         signalHub.Subscribe<LogContainerSpecChangedSignal>(LogContainerSpecChanged);
+        signalHub.Subscribe<SpendMoneySignal>(SpendMoney);
     }
 
     private void UnSubscribeSignals()
@@ -57,6 +58,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<PortalActivatedSignal>(PortalActivated);
         signalHub.UnSubscribe<InventorySpecChangedSignal>(InventorySpecChanged);
         signalHub.UnSubscribe<LogContainerSpecChangedSignal>(LogContainerSpecChanged);
+        signalHub.UnSubscribe<SpendMoneySignal>(SpendMoney);
     }
 
     private void BindEvents()
@@ -181,5 +183,10 @@ public class GameplayUICoordinator
     private void LogContainerSpecChanged(LogContainerSpecChangedSignal _logContainerSpecChangedSignal)
     {
         worldPopupUI.LogContainerSpecChanged();
+    }
+
+    private void SpendMoney(SpendMoneySignal spendMoneySignal)
+    {
+        hudUI.CharactersMoneyChanged();
     }
 }

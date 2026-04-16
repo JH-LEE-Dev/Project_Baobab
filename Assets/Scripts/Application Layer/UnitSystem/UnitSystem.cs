@@ -73,6 +73,9 @@ public class UnitSystem
 
         unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
         unitLogicManager.CharacterStaminaIsEmptyEvent += CharacterStaminaIsEmpty;
+
+        inventoryManager.SpendMoneyEvent -= SpendMoney;
+        inventoryManager.SpendMoneyEvent += SpendMoney;
     }
 
     private void ReleaseEvents()
@@ -81,6 +84,7 @@ public class UnitSystem
         unitLogicManager.WeaponModeChangedEvent -= WeaponModeChanged;
         inventoryManager.InventorySpecChangedEvent -= InventorySpecChanged;
         unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
+        inventoryManager.SpendMoneyEvent -= SpendMoney;
     }
 
     private void CharacterSpawned(Character _character)
@@ -156,5 +160,10 @@ public class UnitSystem
     private void CharacterStaminaIsEmpty()
     {
         signalHub.Publish(new GoHomeButtonClickedSignal());
+    }
+
+    private void SpendMoney()
+    {
+        signalHub.Publish(new SpendMoneySignal());
     }
 }
