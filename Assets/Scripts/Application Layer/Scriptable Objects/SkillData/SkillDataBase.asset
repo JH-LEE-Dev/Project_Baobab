@@ -16,19 +16,17 @@ MonoBehaviour:
   - skillType: 2
     maxLevel: 1
     cost:
-    - level: 1
+      alpha: 1
       moneyCost: 500
       carrotCost: 0
     skillTypes:
-    - level: 1
-      info:
-        skillCommandType: 1
-        amount: 2
+    - skillCommandType: 1
+      amount: 2
     prerequisiteSkills: 
   - skillType: 1
     maxLevel: 1
     cost:
-    - level: 1
+      alpha: 1
       moneyCost: 0
       carrotCost: 0
     skillTypes: []
