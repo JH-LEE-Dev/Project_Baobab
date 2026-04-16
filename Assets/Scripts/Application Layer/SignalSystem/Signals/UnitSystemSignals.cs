@@ -49,3 +49,4 @@ public struct WeaponModeChangedSignal
 }
 
 public struct InventorySpecChangedSignal { }
+public struct LogContainerSpecChangedSignal { }

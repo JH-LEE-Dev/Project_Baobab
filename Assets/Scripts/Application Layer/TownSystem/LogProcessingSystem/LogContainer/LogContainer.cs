@@ -7,6 +7,7 @@ using System.Text;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
+    public event Action ContainerSpecChangedEvent;
     public event Action<LogItemData> LogOutEvent;
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
@@ -503,6 +504,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         currentSlotCount = Mathf.Min(currentSlotCount + (int)_amount, SYSTEM_VAR.MAX_INVENTORY_CNT);
         ContainerUpdatedEvent?.Invoke();
+        ContainerSpecChangedEvent?.Invoke();
     }
 
     public void LogCapacityIncrease(float _amount)
