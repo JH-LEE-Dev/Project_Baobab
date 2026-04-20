@@ -68,6 +68,8 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void ClearAll()
     {
+        // OnReleaseCarrotItem에서 activeItems.Remove가 호출되므로, 
+        // 역순 순회를 통해 안전하게 모든 아이템을 풀에 반납합니다.
         for (int i = activeItems.Count - 1; i >= 0; i--)
         {
             carrotPool.Release(activeItems[i]);

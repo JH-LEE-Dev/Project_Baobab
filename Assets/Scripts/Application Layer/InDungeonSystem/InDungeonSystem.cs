@@ -107,6 +107,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonUnitSpawner.ReleaseAllAnimals();
         inDungeonObjectManager.ClearObjManager();
+
         signalHub.Publish(new GoToHomeSignal());
     }
 

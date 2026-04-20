@@ -28,7 +28,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     // // 풀 설정 변수
     [SerializeField] private bool collectionCheck = true;
-    [SerializeField] private int defaultCapacity = 20;
+    [SerializeField] private int defaultCapacity = 200;
     [SerializeField] private int maxSize = SYSTEM_VAR.MAX_ANIMAL_CNT;
 
     // // 퍼블릭 메서드
@@ -143,6 +143,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
     {
         Animal animal = animalPool.Get();
         animal.transform.position = _pos;
+        animal.gameObject.SetActive(true);
         animal.Initialize(environmentProvider);
 
         allSpawnedAnimals.Add(animal);
@@ -154,6 +155,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     public void ReleaseAnimal(Animal _animal)
     {
+        _animal.AnimalIsDeadEvent -= AnimalIsDead;
         animalPool.Release(_animal);
     }
 
@@ -163,11 +165,13 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
         if (allSpawnedAnimals == null || animalPool == null) return;
 
-        for (int i = 0; i < allSpawnedAnimals.Count; i++)
+        // 리스트를 역순으로 순회하며 안전하게 해제
+        for (int i = allSpawnedAnimals.Count - 1; i >= 0; i--)
         {
             Animal animal = allSpawnedAnimals[i];
             if (animal != null)
             {
+                animal.AnimalIsDeadEvent -= AnimalIsDead;
                 animalPool.Release(animal);
                 environmentProvider.densityProvider.UpdateAnimalCnt(false);
             }
@@ -194,7 +198,6 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     private void OnGetAnimal(Animal _animal)
     {
-        _animal.gameObject.SetActive(true);
         _animal.Reset();
     }
 

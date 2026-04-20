@@ -77,7 +77,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     }
 
     private void CharacterStaminaIsEmpty()
-    {
+    {        
         CharacterStaminaIsEmptyEvent?.Invoke();
     }
 }

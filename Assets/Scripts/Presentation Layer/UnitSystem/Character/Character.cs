@@ -176,8 +176,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (_bInDungeon == false)
         {
             armComponent.ResetDurability();
-            healthComponent.StaminaReset();
             bWhileSwing = false;
+            healthComponent.StaminaReset();
         }
 
         bInDungeon = _bInDungeon;

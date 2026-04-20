@@ -45,12 +45,18 @@ public class PHealthComponent : PComponent, IPHealthComponent
     /// </summary>
     public void DecreaseStamina()
     {
+        if (currentStamina <= 0)
+            return;
+
         // staminaDecAmount는 초당 변화량이므로 Time.deltaTime을 곱함
         float amount = staminaDecAmount * Time.deltaTime;
         currentStamina = Mathf.Max(0, currentStamina - amount);
 
-        if(currentStamina <= 0)
+        if (currentStamina <= 0)
+        {
+            StaminaReset();
             StaminaIsEmptyEvent?.Invoke();
+        }
     }
 
     /// <summary>
@@ -102,13 +108,13 @@ public class PHealthComponent : PComponent, IPHealthComponent
     {
         float diff = _maxStamina - maxStamina;
         maxStamina = _maxStamina;
-        
+
         // 최대치가 늘어난 만큼 현재치도 보정 (선택 사항이나 보통 긍정적 경험 제공)
         if (diff > 0)
         {
             currentStamina += diff;
         }
-        
+
         currentStamina = Mathf.Min(currentStamina, maxStamina);
     }
 
