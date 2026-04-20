@@ -1,9 +1,9 @@
 {
   "nodes": [
     {
-      "skillType": "Rest",
-      "displayName": "휴식",
-      "description": "이제 텐트에서 휴식할 수 있습니다.",
+      "skillType": "OffRoadVehicle",
+      "displayName": "오프로드 차량",
+      "description": "오프로드 차량을 사용할 수 있습니다.",
       "maxLevel": 1,
       "levelCosts": [
         { "level": 1, "moneyType": "Coin", "amount": 0 }
@@ -23,11 +23,11 @@
       "gridX": -12,
       "gridY": 4,
       "parentSkillTypes": [
-        "Rest"
+        "OffRoadVehicle"
       ],
       "parentLineRoutes": [
       {
-      "parentSkillType": "Rest",
+      "parentSkillType": "OffRoadVehicle",
       "usePivot": true,
       "pivotX": -12,
       "pivotY": 0
@@ -105,11 +105,11 @@
       "gridX": -8,
       "gridY": 4,
       "parentSkillTypes": [
-        "Rest"
+        "OffRoadVehicle"
       ],
       "parentLineRoutes": [
       {
-      "parentSkillType": "Rest",
+      "parentSkillType": "OffRoadVehicle",
       "usePivot": true,
       "pivotX": -8,
       "pivotY": 0
@@ -160,11 +160,11 @@
       "gridX": -4,
       "gridY": 8,
       "parentSkillTypes": [
-        "Rest"
+        "OffRoadVehicle"
       ],
       "parentLineRoutes": [
       {
-      "parentSkillType": "Rest",
+      "parentSkillType": "OffRoadVehicle",
       "usePivot": true,
       "pivotX": -4,
       "pivotY": 0
@@ -209,11 +209,11 @@
       "gridX": 4,
       "gridY": 4,
       "parentSkillTypes": [
-        "Rest"
+        "OffRoadVehicle"
       ],
       "parentLineRoutes": [
       {
-      "parentSkillType": "Rest",
+      "parentSkillType": "OffRoadVehicle",
       "usePivot": true,
       "pivotX": 4,
       "pivotY": 0
@@ -261,11 +261,11 @@
       "gridX": 8,
       "gridY": 4,
       "parentSkillTypes": [
-        "Rest"
+        "OffRoadVehicle"
       ],
       "parentLineRoutes": [
       {
-      "parentSkillType": "Rest",
+      "parentSkillType": "OffRoadVehicle",
       "usePivot": true,
       "pivotX": 8,
       "pivotY": 0
@@ -313,30 +313,16 @@
       "gridX": 12,
       "gridY": 4,
       "parentSkillTypes": [
-        "Rest"
+        "OffRoadVehicle"
       ],
       "parentLineRoutes": [
       {
-      "parentSkillType": "Rest",
+      "parentSkillType": "OffRoadVehicle",
       "usePivot": true,
       "pivotX": 12,
       "pivotY": 0
       }
     ]
-    },
-    {
-      "skillType": "FatigueRecoveryBoost1",
-      "displayName": "피로도 회복 강화 I",
-      "description": "마을에서 피로도 회복 속도가 100% 증가합니다.",
-      "maxLevel": 1,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 100 }
-      ],
-      "gridX": 12,
-      "gridY": 8,
-      "parentSkillTypes": [
-        "Stamina1"
-      ]
     },
     {
       "skillType": "FatigueMaxIncrease1",
