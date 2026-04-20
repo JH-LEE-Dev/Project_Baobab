@@ -39,7 +39,7 @@ CircleCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6425157548726898768}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
@@ -115,12 +115,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Bullet
   damage: 1
+  speed: 30
+  lifeTime: 3
+  bulletRadius: 0.08
   targetLayer:
     serializedVersion: 2
     m_Bits: 17408
-  speed: 30
-  lifeTime: 3
-  col: {fileID: 1029872220682003187}
 --- !u!212 &1658719201094161418
 SpriteRenderer:
   serializedVersion: 2

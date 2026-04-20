@@ -38,6 +38,7 @@ Transform:
   - {fileID: 6142116780314600098}
   - {fileID: 2090011938990725870}
   - {fileID: 2150977159242293916}
+  - {fileID: 7608407158150497205}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2618603934779584709
@@ -120,6 +121,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45acdcfb0f73b344fab31c821e7fd95e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
+  TreeMaxDensityRatio: 0.07
+  TreeStartDensityRatio: 0.04
+  RabbitMaxDensityRatio: 0.05
+  RabbitStartDensityRatio: 0.02
   applyToStartCnt: 1
 --- !u!1 &2327565162841499606
 GameObject:
@@ -180,6 +185,57 @@ MonoBehaviour:
         probability: 0.5
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+--- !u!1 &2442542787030155420
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7608407158150497205}
+  - component: {fileID: 3109881949574734618}
+  m_Layer: 0
+  m_Name: CollisionSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7608407158150497205
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2442542787030155420}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1821968231370692703}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3109881949574734618
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2442542787030155420}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d39804148cfd39b43b69a597ed029ba8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CollisionSystem
+  cellSize: 2
+  gridCount: {x: 200, y: 200}
+  gridOrigin: {x: -150, y: -150}
+  showDebug: 1
+  showFullGrid: 1
+  objectColor: {r: 0, g: 1, b: 1, a: 1}
+  activeGridColor: {r: 0, g: 1, b: 0, a: 0.2}
 --- !u!1 &2554595008635905786
 GameObject:
   m_ObjectHideFlags: 0

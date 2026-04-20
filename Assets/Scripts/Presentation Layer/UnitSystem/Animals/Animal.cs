@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class Animal : MonoBehaviour, IDamageable
+public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 {
     public event Action<Animal> AnimalIsDeadEvent;
     //외부 의존성
@@ -12,6 +12,8 @@ public class Animal : MonoBehaviour, IDamageable
     [SerializeField] private GameObject animatorObject;
     [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
     [SerializeField] private TriggerProxy characterSensorProxy;
+    [SerializeField] private float collisionRadius = 0.14f;
+    [SerializeField] private Vector2 collisionOffset = new Vector2(0.02f,0.09f); // 충돌 오프셋 필드 추가
 
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
@@ -52,6 +54,13 @@ public class Animal : MonoBehaviour, IDamageable
 
     public bool bDead { get; private set; } = false;
 
+    // IStaticCollidable 구현
+    public Vector2 Position => transform.position;
+    public Vector2 Offset => collisionOffset; // 오프셋 반환
+    public float Radius => collisionRadius;
+    public int Layer => gameObject.layer;
+    private Vector2 lastGridPos;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -62,6 +71,9 @@ public class Animal : MonoBehaviour, IDamageable
         anim = GetComponentInChildren<Animator>();
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
+
+        // 메인 콜라이더 비활성화 (물리 엔진 부하 제거)
+        if (col != null) col.enabled = false;
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
@@ -92,6 +104,19 @@ public class Animal : MonoBehaviour, IDamageable
         SetupStateMachine();
 
         animalAnimValueHandler.Initialize(anim);
+    }
+
+    private void OnEnable()
+    {
+        // 동적 객체(동물)로 등록
+        lastGridPos = transform.position;
+        CollisionSystem.Instance?.Register(this, false);
+    }
+
+    private void OnDisable()
+    {
+        // 동적 객체에서 제거
+        CollisionSystem.Instance?.Unregister(this, false);
     }
 
     public void SetFacingDirection(Vector2 _input)
@@ -181,6 +206,11 @@ public class Animal : MonoBehaviour, IDamageable
     {
         stateMachine?.FixedUpdate();
 
+        // 커스텀 충돌 시스템 격자 정보 갱신
+        Vector2 currentPos = transform.position;
+        CollisionSystem.Instance?.UpdatePosition(this, lastGridPos, currentPos);
+        lastGridPos = currentPos;
+
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
     }
@@ -200,6 +230,9 @@ public class Animal : MonoBehaviour, IDamageable
             characterSensorProxy.OnTriggerEnterEvent -= HandleCharacterEnter;
             characterSensorProxy.OnTriggerExitEvent -= HandleCharacterExit;
         }
+
+        // 등록 해제
+        CollisionSystem.Instance?.Unregister(this);
     }
 
     private void UpdateAnimalColor()

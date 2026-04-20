@@ -189,7 +189,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7559b12313912794c982a315ade0d46a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LogCutter
-  cuttingDuration: 5
 --- !u!1 &1729556953830199542
 GameObject:
   m_ObjectHideFlags: 0
