@@ -81,7 +81,7 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
   m_Color: {r: 0.5176471, g: 0.4, b: 0.14117648, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -102,6 +102,7 @@ GameObject:
   - component: {fileID: 8038883340965128800}
   - component: {fileID: 6535780238217717142}
   - component: {fileID: 3831676453712277121}
+  - component: {fileID: 4126194945437885019}
   m_Layer: 0
   m_Name: BottomShadow
   m_TagString: TreeShadow
@@ -173,8 +174,8 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
+  m_Color: {r: 0.5176471, g: 0.4, b: 0.14117648, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -197,6 +198,43 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShadowController
   defaultRotationZ: 225
   defaultScaleY: 1
+--- !u!70 &4126194945437885019
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1763566264208475761}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: -0.04, y: 0.6999998}
+  m_Size: {x: 0.78, y: 1.06}
+  m_Direction: 0
 --- !u!1 &2303735798830986947
 GameObject:
   m_ObjectHideFlags: 0
@@ -321,7 +359,7 @@ CircleCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2950277259561733017}
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
@@ -349,7 +387,7 @@ CircleCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: -0.01, y: 0.02}
-  m_Radius: 0.29
+  m_Radius: 0.29319462
 --- !u!114 &5272385284174554040
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -365,8 +403,6 @@ MonoBehaviour:
   shadowObject: {fileID: 2746110928990139193}
   bottomShadowObject: {fileID: 3831676453712277121}
   treeVisualComponent: {fileID: 7941305713547832146}
-  collisionRadius: 0.29
-  collisionOffset: {x: 0, y: 0}
 --- !u!114 &1689780772015703933
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -475,8 +511,8 @@ MonoBehaviour:
   visualRoot: {fileID: 5074767916962781381}
   topRenderer: {fileID: 7995597291144077611}
   bottomRenderer: {fileID: 3861874012178060140}
-  topShadowRenderer: {fileID: 0}
-  bottomShadowRenderer: {fileID: 0}
+  topShadowRenderer: {fileID: 243131185621706027}
+  bottomShadowRenderer: {fileID: 6535780238217717142}
   topSprites:
   - {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
   - {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
@@ -585,7 +621,7 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
+  m_Sprite: {fileID: 21300000, guid: faa5d1f9decdec04dbb99edcea569d87, type: 3}
   m_Color: {r: 0.25882354, g: 0.7921569, b: 0.29803923, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -606,6 +642,7 @@ GameObject:
   - component: {fileID: 3840560498236531255}
   - component: {fileID: 243131185621706027}
   - component: {fileID: 2746110928990139193}
+  - component: {fileID: 7893670677420261957}
   m_Layer: 0
   m_Name: TopShadow
   m_TagString: TreeShadow
@@ -678,7 +715,7 @@ SpriteRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: faa5d1f9decdec04dbb99edcea569d87, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.25882354, g: 0.7921569, b: 0.29803923, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -701,3 +738,40 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShadowController
   defaultRotationZ: 225
   defaultScaleY: 1
+--- !u!70 &7893670677420261957
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7459644798194361028}
+  m_Enabled: 0
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: -0.04, y: 0.6999998}
+  m_Size: {x: 0.78, y: 1.06}
+  m_Direction: 0
