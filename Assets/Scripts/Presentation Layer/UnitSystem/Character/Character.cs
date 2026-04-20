@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class Character : MonoBehaviour, ITeleportable, ICharacter
+public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable
 {
     public event Action StaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
@@ -17,6 +17,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     [SerializeField] private GameObject animatorObject;
     [SerializeField] private TriggerProxy shadowSensor;
     [SerializeField] private GameObject itemSensor;
+
+    [Header("Collision Settings")]
+    [SerializeField] private float collisionRadius = 0.15f;
+    [SerializeField] private Vector2 collisionOffset = new Vector2(0f, 0.12f);
+    private Vector2 lastGridPos;
 
     private AttackComponent attackComponent;
     private PHealthComponent healthComponent;
@@ -45,6 +50,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     private float staminaDecAmount = 0f;
     private float staminaIncAmount = 0f;
     private bool bStaminaUpDown = false;
+
+    // IStaticCollidable 구현
+    public Vector2 Position => transform.position;
+    public Vector2 Offset => collisionOffset;
+    public float Radius => collisionRadius;
+    public int Layer => gameObject.layer;
+    public void TakeDamage(float _damage) => healthComponent.DecreaseHealth(_damage);
 
     // 캐싱된 해시 및 프로퍼티 (성능 최적화)
     public IPHealthComponent pHealthComponent => healthComponent;
@@ -286,6 +298,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
 
     #endregion
 
+    private void OnEnable()
+    {
+        lastGridPos = transform.position;
+        CollisionSystem.Instance?.Register(this, false);
+    }
+
+    private void OnDisable()
+    {
+        CollisionSystem.Instance?.Unregister(this, false);
+    }
+
     #region Unity Event Functions
 
     private void Update()
@@ -316,6 +339,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter
     private void FixedUpdate()
     {
         SetItemSensorPos();
+
+        // 커스텀 충돌 시스템 격자 정보 갱신
+        Vector2 currentPos = transform.position;
+        CollisionSystem.Instance?.UpdatePosition(this, lastGridPos, currentPos);
+        lastGridPos = currentPos;
+
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
         stateMachine?.FixedUpdate();
     }

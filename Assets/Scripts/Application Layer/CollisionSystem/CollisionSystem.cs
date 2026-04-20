@@ -79,16 +79,22 @@ public class CollisionSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 객체를 시스템에 등록합니다. (나무는 정적, 동물은 동적으로 자동 분류 가능하지만 여기서는 수동)
+    /// 객체를 시스템에 등록합니다.
     /// </summary>
     public void Register(IStaticCollidable obj, bool isStatic = true)
     {
         int index = WorldToGridIndex(obj.Position + obj.Offset);
         if (index < 0) return;
 
-        var entity = CreateEntity(obj);
-        if (isStatic) staticGrid[index].Add(entity);
-        else dynamicGrid[index].Add(entity);
+        var targetGrid = isStatic ? staticGrid[index] : dynamicGrid[index];
+
+        // 중복 등록 방지
+        for (int i = 0; i < targetGrid.Count; i++)
+        {
+            if (targetGrid[i].owner == obj) return;
+        }
+
+        targetGrid.Add(CreateEntity(obj));
     }
 
     public void Unregister(IStaticCollidable obj, bool isStatic = true)
@@ -102,7 +108,7 @@ public class CollisionSystem : MonoBehaviour
             if (targetGrid[i].owner == obj)
             {
                 targetGrid.RemoveAt(i);
-                break;
+                return; // 하나만 제거하고 종료
             }
         }
     }
