@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class UIView_Tent : UIView
 {
-    public event Action SleepEvent;
-
     private ISkillSystemProvider skillSystemProvider;
     private IMoneyData moneyData;
 

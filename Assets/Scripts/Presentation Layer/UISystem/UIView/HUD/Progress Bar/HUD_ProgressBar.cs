@@ -29,8 +29,8 @@ public class HUD_ProgressBar : MonoBehaviour, IPoolable
 
     private Tween chargeTween;
 
-    [Header("Pixel Perfect Settings")]
-    [SerializeField] private float pixelsPerUnit = 32f;
+    //[Header("Pixel Perfect Settings")]
+    //[SerializeField] private float pixelsPerUnit = 32f;
 
     // //퍼블릭 초기화 및 제어 메서드
 
