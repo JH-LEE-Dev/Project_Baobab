@@ -37,7 +37,7 @@ public class GameplayUIManager : UIManager
             worldUI.DependencyInjection(container,logCutter,shopNPC);
             
         if(view is UIView_Tent tentUI)
-            tentUI.DependencyInjection(skillSystemProvider);
+            tentUI.DependencyInjection(skillSystemProvider,moneyData);
 
         if(view is UIView_HUD hudUI)
             hudUI.DependencyInjection(moneyData);

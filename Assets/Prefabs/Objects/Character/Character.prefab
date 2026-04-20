@@ -352,20 +352,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::RifleComponent
   muzzlePoint: {fileID: 776704768645604309}
   mouseCol: {fileID: 7244437549703191926}
-  animalFilter:
-    useTriggers: 0
-    useLayerMask: 1
-    useDepth: 0
-    useOutsideDepth: 0
-    useNormalAngle: 0
-    useOutsideNormalAngle: 0
-    layerMask:
-      serializedVersion: 2
-      m_Bits: 16384
-    minDepth: 0
-    maxDepth: 0
-    minNormalAngle: 0
-    maxNormalAngle: 0
+  targetLayer:
+    serializedVersion: 2
+    m_Bits: 16384
+  aimCorrectionLayer:
+    serializedVersion: 2
+    m_Bits: 16384
 --- !u!114 &8275291908445595204
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1119,10 +1111,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AttackComponent
   maxAttackDistance: 0.75
+  attackRadius: 0.5
   targetLayer:
     serializedVersion: 2
     m_Bits: 1024
-  attackRadiusCollider: {fileID: 0}
   attackPointTransform: {fileID: 5107539740188412055}
 --- !u!58 &4232634801544025722
 CircleCollider2D:

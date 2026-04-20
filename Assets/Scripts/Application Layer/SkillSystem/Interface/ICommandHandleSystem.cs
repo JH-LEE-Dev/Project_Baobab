@@ -8,4 +8,5 @@ public interface ICommandHandleSystem
     public ILogEvaluatorCH logEvaluatorCH { get; }
     public IDensityCH densityCH { get; }
     public ICarrotItemCH carrotItemCH { get; }
+    public ITownObjSystemCH townObjSystemCH { get; }
 }

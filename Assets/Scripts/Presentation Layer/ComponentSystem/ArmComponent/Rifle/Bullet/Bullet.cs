@@ -6,18 +6,18 @@ public class Bullet : MonoBehaviour
     public event Action<Bullet> ReturnToPoolEvent;
 
     [SerializeField] private float damage = 1f;
-    [SerializeField] private LayerMask targetLayer;
     [SerializeField] private float speed = 10f;
     [SerializeField] private float lifeTime = 3f;
-
-    [SerializeField] private CircleCollider2D col;
+    [SerializeField] private float bulletRadius = 0.2f;
+    [SerializeField] private LayerMask targetLayer;
 
     private float timer;
 
     public void Initialize()
     {
-        if (col == null)
-            col = GetComponent<CircleCollider2D>();
+        // 커스텀 충돌 시스템을 사용하므로 기존 콜라이더 컴포넌트 비활성화 권장
+        var col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
     }
 
     public void SetDamage(float _damage)
@@ -34,28 +34,25 @@ public class Bullet : MonoBehaviour
     {
         Vector2 startPos = transform.position;
         Vector2 direction = transform.right;
-        float distance = speed * Time.deltaTime;
+        float moveDistance = speed * Time.deltaTime;
+        Vector2 endPos = startPos + (direction * moveDistance);
 
-        // 콜라이더의 반지름을 사용하여 CircleCast 수행
-        RaycastHit2D hit = Physics2D.CircleCast(startPos, col.radius, direction, distance, targetLayer);
-
-        if (hit.collider != null)
+        // 커스텀 충돌 시스템 사용 (레이어 마스크 추가)
+        if (CollisionSystem.Instance != null && 
+            CollisionSystem.Instance.CheckCollision(startPos, endPos, bulletRadius, targetLayer, out IStaticCollidable hitObject))
         {
-            // 충돌 지점으로 위치 보정 (콜라이더 중심점 위치인 centroid 사용)
-            transform.position = hit.centroid;
+            // 충돌 지점으로 이동
+            transform.position = hitObject.Position;
 
-            // IDamageable 인터페이스가 있는지 확인 후 데미지 처리
-            if (hit.collider.TryGetComponent(out IDamageable damageable))
-            {
-                damageable.TakeDamage(damage);
-            }
+            // 데미지 처리
+            hitObject.TakeDamage(damage);
 
             ReturnToPoolEvent?.Invoke(this);
             return;
         }
 
         // 충돌이 없으면 이동 적용
-        transform.position = startPos + (direction * distance);
+        transform.position = endPos;
 
         // 일정 시간 후 자동 반환
         timer += Time.deltaTime;
@@ -65,3 +62,4 @@ public class Bullet : MonoBehaviour
         }
     }
 }
+

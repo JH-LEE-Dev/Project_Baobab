@@ -74,9 +74,6 @@ public class GameplayUICoordinator
 
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.DungeonSelectedEvent += DungeonSelected;
-
-        tentUI.SleepEvent -= Sleep;
-        tentUI.SleepEvent += Sleep;
     }
 
     private void ReleaseEvents()
@@ -85,7 +82,6 @@ public class GameplayUICoordinator
         popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         popUpUI.SendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
-        tentUI.SleepEvent -= Sleep;
     }
 
     public void Release()
@@ -147,6 +143,7 @@ public class GameplayUICoordinator
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
     {
         hudUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
+        tentUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
     }
 
     private void WeaponModeChanged(WeaponModeChangedSignal weaponModeChangedSignal)
@@ -188,5 +185,6 @@ public class GameplayUICoordinator
     private void SpendMoney(SpendMoneySignal spendMoneySignal)
     {
         hudUI.CharactersMoneyChanged();
+        tentUI.CharactersMoneyChanged();
     }
 }

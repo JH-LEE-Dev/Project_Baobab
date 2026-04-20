@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class TownObjectManager : MonoBehaviour
+public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 {
     //이벤트
     public event Action PortalActivatedEvent;
@@ -26,6 +26,7 @@ public class TownObjectManager : MonoBehaviour
     private PortalObj portal;
     private TreeObj[] trees;
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
+    private bool bCanJump = false;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -54,7 +55,10 @@ public class TownObjectManager : MonoBehaviour
             portal = Instantiate(portalPrefab);
             portal.transform.position = portalSpawnPoint.position;
             portal.Initialize(PortalType.ToDungeonPortal);
+            portal.SetCanJump(bCanJump);
         }
+        else
+            portal.SetCanJump(bCanJump);
 
         // 씬 내의 나무가 이미 관리 중이라면 다시 찾지 않음 (할당 방지)
         if (trees == null)
@@ -199,5 +203,13 @@ public class TownObjectManager : MonoBehaviour
         }
         activeTreesForUpdate.Clear();
         trees = null;
+    }
+
+    public void CanTravel()
+    {
+        bCanJump = true;
+
+        if (portal != null)
+            portal.SetCanJump(bCanJump);
     }
 }

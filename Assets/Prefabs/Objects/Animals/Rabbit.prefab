@@ -368,6 +368,7 @@ MonoBehaviour:
   animatorObject: {fileID: 8470380151137750416}
   shadowSensor: {fileID: 5139410583856100867}
   characterSensorProxy: {fileID: 5794393059330898891}
+  collisionRadius: 0.14
   centerPos: {x: 0, y: 0, z: 0}
   targetPos: {x: 0, y: 0, z: 0}
   scatterRadius: 0
@@ -406,7 +407,7 @@ CircleCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5911788971367355826}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}

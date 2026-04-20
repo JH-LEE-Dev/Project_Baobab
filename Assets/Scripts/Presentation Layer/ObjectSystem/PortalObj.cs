@@ -12,6 +12,8 @@ public class PortalObj : MonoBehaviour
     [SerializeField] private float cooldownTime = 2.0f; // 쿨타임 설정
     private float lastActivatedTime = -10.0f; // 마지막 활성화 시간 (초기값은 충분히 과거로 설정)
 
+    private bool bCanJump = false;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type)
     {
@@ -29,6 +31,9 @@ public class PortalObj : MonoBehaviour
     //유니티 이벤트 함수
     private void OnTriggerEnter2D(Collider2D _other)
     {
+        if (bCanJump == false)
+            return;
+            
         // 캐릭터 레이어인지 확인 및 쿨타임 체크
         if (_other.gameObject.layer == characterLayer && Time.time >= lastActivatedTime + cooldownTime)
         {
@@ -37,4 +42,10 @@ public class PortalObj : MonoBehaviour
             PortalActivated?.Invoke();
         }
     }
+
+    public void SetCanJump(bool _canJump)
+    {
+        bCanJump = _canJump;
+    }
+
 }

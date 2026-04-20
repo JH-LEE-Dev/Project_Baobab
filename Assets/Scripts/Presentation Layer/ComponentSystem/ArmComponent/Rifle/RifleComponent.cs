@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using System;
 
 public class RifleComponent : WeaponComponent, IRifleComponent
@@ -28,15 +29,16 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     int IRifleComponent.ammo => ammo;
 
     [SerializeField] private CircleCollider2D mouseCol;
+    [SerializeField] private LayerMask targetLayer; // 일반 타겟 레이어
+    [SerializeField] private LayerMask aimCorrectionLayer; // 조준 보정 전용 레이어
 
     private bool bAimCorrection = false;
     private Transform attackTransform;
     private int mag;
     private int ammo;
 
-    // 조준 보정을 위한 변수
-    private readonly Collider2D[] results = new Collider2D[10];
-    [SerializeField] ContactFilter2D animalFilter;
+    // 조준 보정을 위한 변수 (커스텀 시스템 활용)
+    private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -49,11 +51,15 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         mag = ctx.characterStat.magCap;
         ammo = ctx.characterStat.ammoCap;
+
+        // 물리 엔진용 콜라이더 비활성화
+        if (mouseCol != null) mouseCol.enabled = false;
     }
 
     public override void SetFacingDir(Transform _attackTransform)
     {
         attackTransform = _attackTransform;
+        mouseTransform = _attackTransform.position; // 마우스 좌표 업데이트
 
         // 타겟 정보 전달 (Animation에서 관리)
         if (null != rifleAnimation)
@@ -110,18 +116,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         if (bInCoolDown == false)
             Fire();
-
-        // if (bReady == true)
-        // {
-        //     if (bFired == false && bInCoolDown == false)
-        //     {
-        //         Fire();
-        //     }
-        // }
-        // else
-        // {
-        //     EnterReady(true);
-        // }
     }
 
     public override void LeftButtonReleased()
@@ -166,34 +160,36 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         {
             Quaternion fireRotation;
 
-            if (bAimCorrection)
+            if (bAimCorrection && CollisionSystem.Instance != null)
             {
-                // 조준 보정 로직: mouseTransform 주변의 Animal 탐색
+                // 조준 보정 로직: mouseTransform 주변의 Collidable 탐색
                 Vector2 searchPos = mouseTransform;
                 float radius = mouseCol != null ? mouseCol.radius : 1f;
 
-                // 최신 Non-Alloc 방식인 ContactFilter2D 사용
-                int count = Physics2D.OverlapCircle(searchPos, radius, animalFilter, results);
+                CollisionSystem.Instance.GetCollidablesInRadius(searchPos, radius, targetLayer, correctionResults);
 
-                if (count > 0)
+                if (correctionResults.Count > 0)
                 {
-                    Transform closestTarget = null;
-                    float minDistance = float.MaxValue;
+                    Vector2 closestTargetPos = Vector2.zero;
+                    float minDistanceSqr = float.MaxValue;
+                    bool targetFound = false;
 
-                    for (int i = 0; i < count; i++)
+                    for (int i = 0; i < correctionResults.Count; i++)
                     {
-                        float dist = Vector2.Distance(searchPos, results[i].transform.position);
-                        if (dist < minDistance)
+                        var target = correctionResults[i];
+                        float distSqr = (searchPos - target.Position).sqrMagnitude;
+                        if (distSqr < minDistanceSqr)
                         {
-                            minDistance = dist;
-                            closestTarget = results[i].transform;
+                            minDistanceSqr = distSqr;
+                            closestTargetPos = target.Position;
+                            targetFound = true;
                         }
                     }
 
-                    if (closestTarget != null)
+                    if (targetFound)
                     {
                         // 가장 가까운 타겟을 향한 방향 계산
-                        Vector2 targetDir = ((Vector2)closestTarget.position - (Vector2)muzzlePoint.position).normalized;
+                        Vector2 targetDir = (closestTargetPos - (Vector2)muzzlePoint.position).normalized;
                         float angle = Mathf.Atan2(targetDir.y, targetDir.x) * Mathf.Rad2Deg;
                         fireRotation = Quaternion.Euler(0, 0, angle);
                     }

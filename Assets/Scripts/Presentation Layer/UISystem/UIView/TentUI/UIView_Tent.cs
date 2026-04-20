@@ -1,54 +1,45 @@
 using System;
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class UIView_Tent : UIView
 {
-    public event Action SleepEvent;
     private ISkillSystemProvider skillSystemProvider;
+    private IMoneyData moneyData;
 
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
-    [SerializeField] private RectTransform buttonPivot;
-    [SerializeField] private GameObject buttonAbility;
-    [SerializeField] private GameObject buttonCollection;
-    [SerializeField] private GameObject buttonRest;
     [SerializeField] private UI_TentAbilityComponent abilityUIComponent;
+    [SerializeField] private TMP_Text coinText;
+    [SerializeField] private TMP_Text carrotText;
 
-    [Header("Tent Menu Unlock")]
-    [SerializeField] private bool showAbilityOption = true;
-    [SerializeField] private bool showCollectionOption = true;
-    [SerializeField] private bool showRestOption = true;
 
-    /// <summary>
-    /// Tent UI 초기 설정을 진행한다.
-    /// </summary>
+#region Default Logic
+
+    // Tent UI 초기 설정을 진행한다.
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
-        BindButtonEvents();
         InitializeComponents();
-        ApplyButtonVisibility();
-
-        if (buttonPivot != null)
-            buttonPivot.gameObject.SetActive(false);
+        RefreshMoneyTexts();
     }
 
-        // Tent UI가 사용하는 하위 컴포넌트들을 초기화한다.
+    // Tent UI가 사용하는 하위 컴포넌트들을 초기화한다.
     private void InitializeComponents()
     {
         abilityUIComponent?.Initialize(skillSystemProvider);
     }
 
-
-    // 외부에서 전달한 스킬 시스템을 보관한다.
-    public void DependencyInjection(ISkillSystemProvider _skillSystemProvider)
+    // 외부에서 전달된 스킬 시스템과 재화 데이터를 보관한다.
+    public void DependencyInjection(ISkillSystemProvider _skillSystemProvider, IMoneyData _moneyData)
     {
         skillSystemProvider = _skillSystemProvider;
+        moneyData = _moneyData;
         abilityUIComponent?.Initialize(skillSystemProvider);
+        RefreshMoneyTexts();
     }
 
-    /// TentInteract 시 사용할 버튼 노출 루트를 찾는다.
+    // Tent UI가 사용할 루트 Transform을 찾는다.
     public override void SetupUI()
     {
         base.SetupUI();
@@ -57,147 +48,61 @@ public class UIView_Tent : UIView
             uiRoot = transform;
     }
 
-    // 마우스 입력 처리
+    // 능력창이 열려 있는 동안 입력 처리와 상태 갱신을 진행한다.
     public override void Update()
     {
         abilityUIComponent?.Tick();
     }
 
-
-    // 능력 버튼 노출 여부를 갱신한다.
-    public void SetAbilityOptionVisible(bool _visible)
-    {
-        showAbilityOption = _visible;
-        ApplyButtonVisibility();
-    }
-
-    // 전리품 상자 버튼 노출 여부를 갱신한다.
-    public void SetCollectionOptionVisible(bool _visible)
-    {
-        showCollectionOption = _visible;
-        ApplyButtonVisibility();
-    }
-
-    // 휴식 버튼 노출 여부를 갱신한다.
-    public void SetRestOptionVisible(bool _visible)
-    {
-        showRestOption = _visible;
-        ApplyButtonVisibility();
-    }
-
-    // 해금 상태에 따라 버튼 활성 여부를 적용하고 레이아웃을 갱신한다.
-    private void ApplyButtonVisibility()
-    {
-        if (buttonAbility != null)
-            buttonAbility.SetActive(showAbilityOption);
-
-        if (buttonCollection != null)
-            buttonCollection.SetActive(showCollectionOption);
-
-        if (buttonRest != null)
-            buttonRest.SetActive(showRestOption);
-    }
-
-
+    // Tent와 상호작용하면 곧바로 능력창을 열고, 상호작용이 끝나면 닫는다.
     public void TentInteract(bool _bInteract)
     {
-        abilityUIComponent?.Close();
-
-
         if (_bInteract)
         {
-            ApplyButtonVisibility();
-
-            if (buttonPivot != null)
-                buttonPivot.gameObject.SetActive(true);
+            RefreshMoneyTexts();
+            abilityUIComponent?.Open();
         }
         else
         {
-            if (buttonPivot != null)
-                buttonPivot.gameObject.SetActive(false);
+            abilityUIComponent?.Close();
         }
     }
 
+#endregion
 
-    // Tent 버튼 3개의 클릭 이벤트를 각 전용 함수에 연결
-    private void BindButtonEvents()
+
+#region Money UI
+
+    // 캐릭터가 특정 재화를 획득했을 때 현재 재화 텍스트를 갱신한다.
+    public void CharacterEarnMoney(MoneyType _moneyType)
     {
-        BindButtonEvent(buttonAbility, OnAbilityButtonClicked);
-        BindButtonEvent(buttonCollection, OnCollectionButtonClicked);
-        BindButtonEvent(buttonRest, OnRestButtonClicked);
+        RefreshMoneyTexts();
     }
 
-    // Tent UI가 정리될 때 버튼 3개의 클릭 이벤트를 해제한다.
-    private void ReleaseButtonEvents()
+    // 캐릭터의 전체 재화 값이 바뀌었을 때 현재 재화 텍스트를 갱신한다.
+    public void CharactersMoneyChanged()
     {
-        ReleaseButtonEvent(buttonAbility, OnAbilityButtonClicked);
-        ReleaseButtonEvent(buttonCollection, OnCollectionButtonClicked);
-        ReleaseButtonEvent(buttonRest, OnRestButtonClicked);
+        RefreshMoneyTexts();
     }
 
-
-
-
-    // 능력 버튼 클릭 시 호출되는 함수
-    private void OnAbilityButtonClicked()
+    // 현재 보유 중인 코인과 당근 수치를 텍스트로 갱신한다.
+    private void RefreshMoneyTexts()
     {
-        if (buttonPivot != null)
-            buttonPivot.gameObject.SetActive(false);
-
-        abilityUIComponent?.Open();
-    }
-
-    // 전리품 상자 버튼 클릭 시 호출되는 함수
-    private void OnCollectionButtonClicked()
-    {
-        Debug.Log("Tent Collection button clicked.");
-    }
-
-    // 휴식 버튼 클릭 시 호출되는 함수
-    private void OnRestButtonClicked()
-    {
-        Debug.Log("Tent Rest button clicked.");
-        SleepEvent.Invoke();
-    }
-
-
-
-
-
-
-    // 지정한 버튼 오브젝트에 클릭 콜백을 연결
-    private void BindButtonEvent(GameObject _buttonObject, UnityEngine.Events.UnityAction _callback)
-    {
-        Button button = GetButton(_buttonObject);
-        if (button == null)
+        if (moneyData == null)
             return;
 
-        button.onClick.RemoveListener(_callback);
-        button.onClick.AddListener(_callback);
+        if (coinText != null)
+            coinText.text = moneyData.money.ToString();
+
+        if (carrotText != null)
+            carrotText.text = moneyData.carrot.ToString();
     }
 
-    // 지정한 버튼 오브젝트에서 클릭 콜백을 해제
-    private void ReleaseButtonEvent(GameObject _buttonObject, UnityEngine.Events.UnityAction _callback)
-    {
-        Button button = GetButton(_buttonObject);
-        if (button == null)
-            return;
+#endregion
 
-        button.onClick.RemoveListener(_callback);
-    }
 
-    // 버튼 오브젝트에서 Button 컴포넌트를 가져온다.
-    private Button GetButton(GameObject _buttonObject)
-    {
-        if (_buttonObject == null)
-            return null;
-
-        return _buttonObject.GetComponent<Button>();
-    }
-    // Tent UI 파괴 시 버튼 이벤트를 정리하기 위한 프레임워크 훅이다.
+    // Tent UI 정리 시 확장 포인트로 남겨둔다.
     public override void OnDestroy()
     {
-        ReleaseButtonEvents();
     }
-
 }

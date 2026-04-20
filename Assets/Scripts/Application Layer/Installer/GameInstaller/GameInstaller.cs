@@ -66,7 +66,8 @@ public class GameInstaller : MonoBehaviour
            townSystem.logProcessingManager.logCutter,
         townSystem.logProcessingManager.logEvaluator,
          environmentSystem.densityManager,
-          inDungeonSystem.inDungeonObjectManager.itemManager.carrrotItemController);
+          inDungeonSystem.inDungeonObjectManager.itemManager.carrrotItemController,
+           townSystem.townObjectManager);
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);
         skillSystem.Initialize(skillManager, skillDispatcher);

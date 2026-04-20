@@ -51,19 +51,27 @@ public static class GlobalUI
     }
 
     /// <summary>
-    /// 실제 화면 해상도(예: 1920*1080)의 물리 픽셀 단위로 정밀하게 스냅합니다.
-    /// 월드 공간 UI의 지터를 해결하는 데 가장 효과적입니다.
+    /// 실제 화면 해상도의 물리 픽셀 단위로 정밀하게 스냅합니다.
+    /// 월드 좌표의 부동 소수점 오차를 제거하기 위해 스크린 좌표계에서 정수 단위로 고정 후 복원합니다.
     /// </summary>
     public static Vector3 SnapToScreenPixel(Vector3 _position, Camera _camera)
     {
         if (_camera == null) return _position;
 
-        // 화면 높이를 카메라 가시 높이(OrthoSize * 2)로 나누어 실제 Screen PPU를 계산
-        float screenPPU = Screen.height / (_camera.orthographicSize * 2f);
+        // 1. 월드 좌표를 현재 카메라 시점의 실제 스크린 픽셀 좌표(0~1920 등)로 변환
+        Vector3 screenPos = _camera.WorldToScreenPoint(_position);
 
-        _position.x = Mathf.Round(_position.x * screenPPU) / screenPPU;
-        _position.y = Mathf.Round(_position.y * screenPPU) / screenPPU;
+        // 2. 픽셀 좌표를 정수 단위로 강제 스냅하여 미세한 소수점 오차를 제거합니다.
+        screenPos.x = Mathf.Floor(screenPos.x + 0.5f);
+        screenPos.y = Mathf.Floor(screenPos.y + 0.5f);
+
+        // 3. 정수가 된 픽셀 좌표를 다시 월드 좌표로 역변환합니다.
+        float originalZ = _position.z;
+        Vector3 snappedWorldPos = _camera.ScreenToWorldPoint(screenPos);
         
-        return _position;
+        // Z축은 원래의 월드 Z값을 유지합니다.
+        snappedWorldPos.z = originalZ;
+        
+        return snappedWorldPos;
     }
 }

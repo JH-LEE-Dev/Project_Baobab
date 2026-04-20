@@ -70,7 +70,7 @@ public struct Skill
 public enum SkillType
 {
     None,
-    Rest,//휴식
+    OffRoadVehicle,//오프로드차량 
 
 
     InventoryExpansion1,//인벤토리확장I
@@ -97,7 +97,6 @@ public enum SkillType
 
 
     Stamina1, // 지구력1
-    FatigueRecoveryBoost1, //피로도 회복 강화1
     FatigueMaxIncrease1, // 피로도 최대치 증가1
     Max
 }
@@ -120,6 +119,7 @@ public enum SkillCommandType
     Stamina,
     StaminaRecoveryBoost,
     StaminaMaxIncrease,
+    OffRoadVehicle,
 }
 
 public enum AbilityLevelUpRejectReason

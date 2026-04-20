@@ -3,10 +3,10 @@ using UnityEngine;
 public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 {
     // 밀도 설정 상수
-    private const float TreeMaxDensityRatio = 0.07f;
-    private const float TreeStartDensityRatio = 0.04f;
-    private const float RabbitMaxDensityRatio = 0.05f;
-    private const float RabbitStartDensityRatio = 0.02f;
+    [SerializeField] private float TreeMaxDensityRatio = 0.07f;
+    [SerializeField] private float TreeStartDensityRatio = 0.04f;
+    [SerializeField] private float RabbitMaxDensityRatio = 0.05f;
+    [SerializeField] private float RabbitStartDensityRatio = 0.02f;
 
     private int grassTileCnt;
     private int walkableTilesCnt;
