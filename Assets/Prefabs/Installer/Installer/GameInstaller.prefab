@@ -386,6 +386,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CarrotItemController
   carrotItemPrefab: {fileID: 5707672045869052037, guid: 3af99c22434d5f641b5645a90a84fbc2, type: 3}
+  minAmountPerBundle: 3
+  maxAmountPerBundle: 5
+  minSpawnBundle: 2
+  maxSpawnBundle: 3
 --- !u!1 &3306528137990007570
 GameObject:
   m_ObjectHideFlags: 0
@@ -1342,6 +1346,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ce41cba82974788468fd9e4aecc8d5d6, type: 2}
   - {fileID: 11400000, guid: beccb015ffbf9064db3731d795806a6f, type: 2}
   - {fileID: 11400000, guid: d00395cc68abed141b12822b81ffcaf3, type: 2}
+  - {fileID: 11400000, guid: d8596666722d64847876e57a2dcec4fb, type: 2}
 --- !u!1 &9097579308778333852
 GameObject:
   m_ObjectHideFlags: 0

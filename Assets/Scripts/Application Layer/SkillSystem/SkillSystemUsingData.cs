@@ -119,6 +119,7 @@ public enum SkillCommandType
     Stamina,
     StaminaRecoveryBoost,
     StaminaMaxIncrease,
+    OffRoadVehicle,
 }
 
 public enum AbilityLevelUpRejectReason

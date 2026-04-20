@@ -53,6 +53,8 @@ public class BulletObjManager : MonoBehaviour
         newBullet.ReturnToPoolEvent -= ReturnBullet;
         newBullet.ReturnToPoolEvent += ReturnBullet;
 
+        DontDestroyOnLoad(newBullet);
+
         return newBullet;
     }
 

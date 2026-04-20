@@ -39,10 +39,15 @@ MonoBehaviour:
         baseValue: 0
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
-    skillTypes: []
+    skillTypes:
+    - skillCommandType: 16
+      amountCurve:
+        type: 3
+        baseValue: 0
+        manualValues: []
     prerequisiteSkills: 
   - skillType: 3
     maxLevel: 1

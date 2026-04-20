@@ -8,7 +8,7 @@ public class TownSystem : MonoBehaviour
     //내부 의존성
     [SerializeField] private Transform townStartPoint;
     private SignalHub signalHub;
-    private TownObjectManager townObjectManager;
+    public TownObjectManager townObjectManager { get; private set; }
     private IEnvironmentProvider environmentProvider;
     public LogProcessingManager logProcessingManager { get; private set; }
     private TentManager tentManager;
