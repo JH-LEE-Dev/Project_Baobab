@@ -176,7 +176,6 @@ public class HUD_ProgressBar : MonoBehaviour, IPoolable
             newPos.y += showYOffset;
 
             rect.position = GlobalUI.SnapToScreenPixel(newPos,Camera.main);
-            //rect.position = newPos;
         }
     }
 
