@@ -6,6 +6,7 @@ public class UIView_Tent : UIView
 {
     public event Action SleepEvent;
     private ISkillSystemProvider skillSystemProvider;
+    private IMoneyData moneyData;
 
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
@@ -34,7 +35,7 @@ public class UIView_Tent : UIView
             buttonPivot.gameObject.SetActive(false);
     }
 
-        // Tent UI가 사용하는 하위 컴포넌트들을 초기화한다.
+    // Tent UI가 사용하는 하위 컴포넌트들을 초기화한다.
     private void InitializeComponents()
     {
         abilityUIComponent?.Initialize(skillSystemProvider);
@@ -42,9 +43,10 @@ public class UIView_Tent : UIView
 
 
     // 외부에서 전달한 스킬 시스템을 보관한다.
-    public void DependencyInjection(ISkillSystemProvider _skillSystemProvider)
+    public void DependencyInjection(ISkillSystemProvider _skillSystemProvider, IMoneyData _moneyData)
     {
         skillSystemProvider = _skillSystemProvider;
+        moneyData = _moneyData;
         abilityUIComponent?.Initialize(skillSystemProvider);
     }
 
@@ -194,6 +196,16 @@ public class UIView_Tent : UIView
 
         return _buttonObject.GetComponent<Button>();
     }
+
+    public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
+    {
+        
+    }
+    public void CharactersMoneyChanged() //캐릭터 돈에 변화가 있었을 때,
+    {
+
+    }
+
     // Tent UI 파괴 시 버튼 이벤트를 정리하기 위한 프레임워크 훅이다.
     public override void OnDestroy()
     {
