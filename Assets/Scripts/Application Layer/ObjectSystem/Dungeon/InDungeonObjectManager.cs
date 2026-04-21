@@ -244,8 +244,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
-                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
+                
+                // 순서 변경: 먼저 풀에 반환(OnDisable 호출)하여 정상적으로 Unregister 되게 함
                 treePool.Release(activeTrees[i]);
+                // 해제된 객체의 위치를 나중에 옮김
+                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
             }
         }
         activeTrees.Clear();

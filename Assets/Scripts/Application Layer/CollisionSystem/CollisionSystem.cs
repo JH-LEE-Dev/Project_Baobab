@@ -1,16 +1,16 @@
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 /// <summary>
 /// 충돌 연산에 필요한 최소한의 데이터만 담은 구조체입니다.
-/// 인터페이스 접근(박싱)을 피하고 캐시 효율을 높이기 위해 사용합니다.
 /// </summary>
 public struct CollisionEntity
 {
-    public Vector2 center; // Position + Offset 계산된 최종 위치
+    public Vector2 center; 
     public float radius;
-    public int layer;
-    public IStaticCollidable owner; // 실제 컴포넌트 참조 (데미지 전달용)
+    public int layerBit; // 2번 최적화: 미리 계산된 비트마스크 (1 << layer)
+    public IStaticCollidable owner; 
 }
 
 public interface IStaticCollidable
@@ -19,7 +19,7 @@ public interface IStaticCollidable
     Vector2 Offset { get; }
     float Radius { get; }
     int Layer { get; }
-    void TakeDamage(float damage);
+    void TakeDamage(float _damage);
 }
 
 public class CollisionSystem : MonoBehaviour
@@ -29,22 +29,15 @@ public class CollisionSystem : MonoBehaviour
     {
         get
         {
-            if (instance == null)
-            {
-                instance = FindAnyObjectByType<CollisionSystem>();
-                if (instance == null)
-                {
-                    Debug.LogWarning("<color=red><b>[CollisionSystem]</b> No Instance found in scene!</color>");
-                }
-            }
+            if (instance == null) return null;
             return instance;
         }
     }
 
     [Header("Grid Settings")]
     [SerializeField] private float cellSize = 1.5f;
-    [SerializeField] private Vector2Int gridCount = new Vector2Int(200, 200); // 가로, 세로 격자 개수
-    [SerializeField] private Vector2 gridOrigin = new Vector2(-150, -150); // 격자 시작점 (좌하단)
+    [SerializeField] private Vector2Int gridCount = new Vector2Int(200, 200);
+    [SerializeField] private Vector2 gridOrigin = new Vector2(-150, -150);
 
     [Header("Debug")]
     [SerializeField] private bool showDebug = true;
@@ -52,9 +45,11 @@ public class CollisionSystem : MonoBehaviour
     [SerializeField] private Color objectColor = Color.cyan;
     [SerializeField] private Color activeGridColor = new Color(0, 1, 0, 0.1f);
 
-    // 정적(나무) 및 동적(동물) 격자 분리 (1차원 배열로 최적화)
     private List<CollisionEntity>[] staticGrid;
     private List<CollisionEntity>[] dynamicGrid;
+    
+    // 1번 최적화: 나눗셈 연산을 피하기 위한 역수 캐싱
+    private float invCellSize;
 
     private void Awake()
     {
@@ -66,11 +61,12 @@ public class CollisionSystem : MonoBehaviour
 
     private void InitializeGrids()
     {
-        int totalCells = gridCount.x * gridCount.y;
-        staticGrid = new List<CollisionEntity>[totalCells];
-        dynamicGrid = new List<CollisionEntity>[totalCells];
+        invCellSize = 1f / cellSize;
+        int _totalCells = gridCount.x * gridCount.y;
+        staticGrid = new List<CollisionEntity>[_totalCells];
+        dynamicGrid = new List<CollisionEntity>[_totalCells];
 
-        for (int i = 0; i < totalCells; i++)
+        for (int i = 0; i < _totalCells; i++)
         {
             staticGrid[i] = new List<CollisionEntity>(4);
             dynamicGrid[i] = new List<CollisionEntity>(4);
@@ -78,62 +74,65 @@ public class CollisionSystem : MonoBehaviour
         Debug.Log($"<color=green><b>[CollisionSystem]</b> Grid Initialized: {gridCount.x}x{gridCount.y} cells.</color>");
     }
 
-    /// <summary>
-    /// 객체를 시스템에 등록합니다.
-    /// </summary>
-    public void Register(IStaticCollidable obj, bool isStatic = true)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int WorldToGridIndex(Vector2 _worldPos)
     {
-        int index = WorldToGridIndex(obj.Position + obj.Offset);
-        if (index < 0) return;
+        // 1번 최적화 적용: 곱셈 연산으로 변경
+        int _x = (int)((_worldPos.x - gridOrigin.x) * invCellSize);
+        int _y = (int)((_worldPos.y - gridOrigin.y) * invCellSize);
 
-        var targetGrid = isStatic ? staticGrid[index] : dynamicGrid[index];
-
-        // 중복 등록 방지
-        for (int i = 0; i < targetGrid.Count; i++)
-        {
-            if (targetGrid[i].owner == obj) return;
-        }
-
-        targetGrid.Add(CreateEntity(obj));
+        if (_x < 0 || _x >= gridCount.x || _y < 0 || _y >= gridCount.y) return -1;
+        return _x + _y * gridCount.x;
     }
 
-    public void Unregister(IStaticCollidable obj, bool isStatic = true)
+    public void Register(IStaticCollidable _obj, bool _isStatic = true)
     {
-        int index = WorldToGridIndex(obj.Position + obj.Offset);
-        if (index < 0) return;
+        int _index = WorldToGridIndex(_obj.Position + _obj.Offset);
+        if (_index < 0) return;
 
-        var targetGrid = isStatic ? staticGrid[index] : dynamicGrid[index];
-        for (int i = 0; i < targetGrid.Count; i++)
+        var _targetGrid = _isStatic ? staticGrid[_index] : dynamicGrid[_index];
+
+        for (int i = 0; i < _targetGrid.Count; i++)
         {
-            if (targetGrid[i].owner == obj)
+            if (_targetGrid[i].owner == _obj) return;
+        }
+
+        _targetGrid.Add(CreateEntity(_obj));
+    }
+
+    public void Unregister(IStaticCollidable _obj, bool _isStatic = true)
+    {
+        int _index = WorldToGridIndex(_obj.Position + _obj.Offset);
+        if (_index < 0) return;
+
+        var _targetGrid = _isStatic ? staticGrid[_index] : dynamicGrid[_index];
+        for (int i = 0; i < _targetGrid.Count; i++)
+        {
+            if (_targetGrid[i].owner == _obj)
             {
-                targetGrid.RemoveAt(i);
-                return; // 하나만 제거하고 종료
+                _targetGrid.RemoveAt(i);
+                return;
             }
         }
     }
 
-    /// <summary>
-    /// 이동하는 객체(동물)의 격자 정보를 업데이트합니다.
-    /// </summary>
-    public void UpdatePosition(IStaticCollidable obj, Vector2 oldPos, Vector2 newPos)
+    public void UpdatePosition(IStaticCollidable _obj, Vector2 _oldPos, Vector2 _newPos)
     {
-        int oldIndex = WorldToGridIndex(oldPos + obj.Offset);
-        int newIndex = WorldToGridIndex(newPos + obj.Offset);
+        int _oldIndex = WorldToGridIndex(_oldPos + _obj.Offset);
+        int _newIndex = WorldToGridIndex(_newPos + _obj.Offset);
 
-        if (oldIndex == newIndex)
+        if (_oldIndex == _newIndex)
         {
-            // 같은 격자 내 이동이면 데이터만 갱신
-            if (newIndex >= 0)
+            if (_newIndex >= 0)
             {
-                var list = dynamicGrid[newIndex];
-                for (int i = 0; i < list.Count; i++)
+                var _list = dynamicGrid[_newIndex];
+                for (int i = 0; i < _list.Count; i++)
                 {
-                    if (list[i].owner == obj)
+                    if (_list[i].owner == _obj)
                     {
-                        var entity = list[i];
-                        entity.center = newPos + obj.Offset;
-                        list[i] = entity;
+                        var _entity = _list[i];
+                        _entity.center = _newPos + _obj.Offset;
+                        _list[i] = _entity;
                         break;
                     }
                 }
@@ -141,159 +140,148 @@ public class CollisionSystem : MonoBehaviour
             return;
         }
 
-        // 격자가 바뀌었을 때만 리스트 재배치
-        if (oldIndex >= 0)
+        if (_oldIndex >= 0)
         {
-            var oldList = dynamicGrid[oldIndex];
-            for (int i = 0; i < oldList.Count; i++)
+            var _oldList = dynamicGrid[_oldIndex];
+            for (int i = 0; i < _oldList.Count; i++)
             {
-                if (oldList[i].owner == obj) { oldList.RemoveAt(i); break; }
+                if (_oldList[i].owner == _obj) { _oldList.RemoveAt(i); break; }
             }
         }
 
-        if (newIndex >= 0)
+        if (_newIndex >= 0)
         {
-            dynamicGrid[newIndex].Add(CreateEntity(obj));
+            dynamicGrid[_newIndex].Add(CreateEntity(_obj));
         }
     }
 
-    private CollisionEntity CreateEntity(IStaticCollidable obj)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private CollisionEntity CreateEntity(IStaticCollidable _obj)
     {
         return new CollisionEntity
         {
-            center = obj.Position + obj.Offset,
-            radius = obj.Radius,
-            layer = obj.Layer,
-            owner = obj
+            center = _obj.Position + _obj.Offset,
+            radius = _obj.Radius,
+            layerBit = (1 << _obj.Layer), // 2번 최적화: 비트마스크 미리 계산
+            owner = _obj
         };
     }
 
-    private int WorldToGridIndex(Vector2 worldPos)
+    public bool CheckCollision(Vector2 _start, Vector2 _end, float _bulletRadius, int _layerMask, out IStaticCollidable _hitObject)
     {
-        int x = Mathf.FloorToInt((worldPos.x - gridOrigin.x) / cellSize);
-        int y = Mathf.FloorToInt((worldPos.y - gridOrigin.y) / cellSize);
+        _hitObject = null;
 
-        if (x < 0 || x >= gridCount.x || y < 0 || y >= gridCount.y) return -1;
-        return x + y * gridCount.x;
-    }
+        Vector2 _ab = _end - _start;
+        float _ab2 = _ab.x * _ab.x + _ab.y * _ab.y;
+        float _invAb2 = _ab2 > 0 ? 1f / _ab2 : 0;
 
-    public bool CheckCollision(Vector2 start, Vector2 end, float bulletRadius, int layerMask, out IStaticCollidable hitObject)
-    {
-        hitObject = null;
-        
-        // 탐색 범위 격자 계산
-        Vector2 min = Vector2.Min(start, end) - new Vector2(bulletRadius, bulletRadius);
-        Vector2 max = Vector2.Max(start, end) + new Vector2(bulletRadius, bulletRadius);
+        float _minX_val = (_start.x < _end.x ? _start.x : _end.x) - _bulletRadius;
+        float _maxX_val = (_start.x > _end.x ? _start.x : _end.x) + _bulletRadius;
+        float _minY_val = (_start.y < _end.y ? _start.y : _end.y) - _bulletRadius;
+        float _maxY_val = (_start.y > _end.y ? _start.y : _end.y) + _bulletRadius;
 
-        int minX = Mathf.FloorToInt((min.x - gridOrigin.x) / cellSize);
-        int maxX = Mathf.FloorToInt((max.x - gridOrigin.x) / cellSize);
-        int minY = Mathf.FloorToInt((min.y - gridOrigin.y) / cellSize);
-        int maxY = Mathf.FloorToInt((max.y - gridOrigin.y) / cellSize);
+        int _minX = Mathf.Clamp((int)((_minX_val - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
+        int _maxX = Mathf.Clamp((int)((_maxX_val - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
+        int _minY = Mathf.Clamp((int)((_minY_val - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
+        int _maxY = Mathf.Clamp((int)((_maxY_val - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
 
-        minX = Mathf.Clamp(minX, 0, gridCount.x - 1);
-        maxX = Mathf.Clamp(maxX, 0, gridCount.x - 1);
-        minY = Mathf.Clamp(minY, 0, gridCount.y - 1);
-        maxY = Mathf.Clamp(maxY, 0, gridCount.y - 1);
-
-        for (int x = minX; x <= maxX; x++)
+        for (int x = _minX; x <= _maxX; x++)
         {
-            for (int y = minY; y <= maxY; y++)
+            for (int y = _minY; y <= _maxY; y++)
             {
-                int index = x + y * gridCount.x;
-                
-                // Static Grid 검사
-                if (InternalCheck(staticGrid[index], start, end, bulletRadius, layerMask, out hitObject)) return true;
-                // Dynamic Grid 검사
-                if (InternalCheck(dynamicGrid[index], start, end, bulletRadius, layerMask, out hitObject)) return true;
+                int _index = x + y * gridCount.x;
+                if (InternalCheck(staticGrid[_index], _start, _ab, _invAb2, _bulletRadius, _layerMask, out _hitObject)) return true;
+                if (InternalCheck(dynamicGrid[_index], _start, _ab, _invAb2, _bulletRadius, _layerMask, out _hitObject)) return true;
             }
         }
 
         return false;
     }
 
-    private bool InternalCheck(List<CollisionEntity> list, Vector2 start, Vector2 end, float radius, int mask, out IStaticCollidable hit)
+    private bool InternalCheck(List<CollisionEntity> _list, Vector2 _start, Vector2 _ab, float _invAb2, float _bulletRadius, int _mask, out IStaticCollidable _hit)
     {
-        hit = null;
-        for (int i = 0; i < list.Count; i++)
+        _hit = null;
+        int _count = _list.Count;
+        for (int i = 0; i < _count; i++)
         {
-            var entity = list[i];
-            if (((1 << entity.layer) & mask) == 0) continue;
+            if ((_list[i].layerBit & _mask) == 0) continue;
 
-            float combinedRadius = radius + entity.radius;
-            if (SqrDistancePointToSegment(start, end, entity.center) < combinedRadius * combinedRadius)
+            float _combinedRadius = _bulletRadius + _list[i].radius;
+            if (SqrDistancePointToSegmentOptimized(_start, _ab, _invAb2, _list[i].center) < _combinedRadius * _combinedRadius)
             {
-                hit = entity.owner;
+                _hit = _list[i].owner;
                 return true;
             }
         }
         return false;
     }
 
-    public void GetCollidablesInRadius(Vector2 center, float radius, int layerMask, List<IStaticCollidable> results)
+    public void GetCollidablesInRadius(Vector2 _center, float _radius, int _layerMask, List<IStaticCollidable> _results)
     {
-        results.Clear();
+        _results.Clear();
+
+        int _minX = Mathf.Clamp((int)((_center.x - _radius - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
+        int _maxX = Mathf.Clamp((int)((_center.x + _radius - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
+        int _minY = Mathf.Clamp((int)((_center.y - _radius - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
+        int _maxY = Mathf.Clamp((int)((_center.y + _radius - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
+
+        for (int x = _minX; x <= _maxX; x++)
+        {
+            for (int y = _minY; y <= _maxY; y++)
+            {
+                int _index = x + y * gridCount.x;
+                InternalCollect(staticGrid[_index], _center, _radius, _layerMask, _results);
+                InternalCollect(dynamicGrid[_index], _center, _radius, _layerMask, _results);
+            }
+        }
+    }
+
+    private void InternalCollect(List<CollisionEntity> _list, Vector2 _center, float _radius, int _mask, List<IStaticCollidable> _results)
+    {
+        int _count = _list.Count;
+        for (int i = 0; i < _count; i++)
+        {
+            if ((_list[i].layerBit & _mask) == 0) continue;
+
+            float _combinedRadius = _radius + _list[i].radius;
+            float _dx = _list[i].center.x - _center.x;
+            float _dy = _list[i].center.y - _center.y;
+            if ((_dx * _dx + _dy * _dy) <= _combinedRadius * _combinedRadius)
+            {
+                _results.Add(_list[i].owner);
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float SqrDistancePointToSegmentOptimized(Vector2 _a, Vector2 _ab, float _invAb2, Vector2 _p)
+    {
+        float _apX = _p.x - _a.x;
+        float _apY = _p.y - _a.y;
+        float _t = (_apX * _ab.x + _apY * _ab.y) * _invAb2;
+        _t = _t < 0 ? 0 : (_t > 1 ? 1 : _t);
         
-        int minX = Mathf.Clamp(Mathf.FloorToInt((center.x - radius - gridOrigin.x) / cellSize), 0, gridCount.x - 1);
-        int maxX = Mathf.Clamp(Mathf.FloorToInt((center.x + radius - gridOrigin.x) / cellSize), 0, gridCount.x - 1);
-        int minY = Mathf.Clamp(Mathf.FloorToInt((center.y - radius - gridOrigin.y) / cellSize), 0, gridCount.y - 1);
-        int maxY = Mathf.Clamp(Mathf.FloorToInt((center.y + radius - gridOrigin.y) / cellSize), 0, gridCount.y - 1);
-
-        float radiusSq = radius * radius;
-
-        for (int x = minX; x <= maxX; x++)
-        {
-            for (int y = minY; y <= maxY; y++)
-            {
-                int index = x + y * gridCount.x;
-                InternalCollect(staticGrid[index], center, radius, layerMask, results);
-                InternalCollect(dynamicGrid[index], center, radius, layerMask, results);
-            }
-        }
-    }
-
-    private void InternalCollect(List<CollisionEntity> list, Vector2 center, float radius, int mask, List<IStaticCollidable> results)
-    {
-        for (int i = 0; i < list.Count; i++)
-        {
-            var entity = list[i];
-            if (((1 << entity.layer) & mask) == 0) continue;
-
-            float combinedRadius = radius + entity.radius;
-            if ((entity.center - center).sqrMagnitude <= combinedRadius * combinedRadius)
-            {
-                results.Add(entity.owner);
-            }
-        }
-    }
-
-    private float SqrDistancePointToSegment(Vector2 a, Vector2 b, Vector2 p)
-    {
-        Vector2 ab = b - a;
-        Vector2 ap = p - a;
-        float t = Vector2.Dot(ap, ab);
-        float ab2 = ab.sqrMagnitude;
-        if (ab2 > 0) t /= ab2;
-        t = Mathf.Clamp01(t);
-        Vector2 closestPoint = a + t * ab;
-        return (p - closestPoint).sqrMagnitude;
+        float _dx = _apX - _t * _ab.x;
+        float _dy = _apY - _t * _ab.y;
+        return _dx * _dx + _dy * _dy;
     }
 
     private void OnDrawGizmos()
     {
         if (!showDebug || staticGrid == null) return;
 
-        for (int i = 0; i < staticGrid.Length; i++)
+        int _totalCells = gridCount.x * gridCount.y;
+        for (int i = 0; i < _totalCells; i++)
         {
-            int x = i % gridCount.x;
-            int y = i / gridCount.x;
-            Vector3 center = new Vector3(gridOrigin.x + x * cellSize + cellSize * 0.5f, gridOrigin.y + y * cellSize + cellSize * 0.5f, 0);
+            int _x = i % gridCount.x;
+            int _y = i / gridCount.x;
+            Vector3 _cellPos = new Vector3(gridOrigin.x + _x * cellSize + cellSize * 0.5f, gridOrigin.y + _y * cellSize + cellSize * 0.5f, 0);
 
-            bool hasObjects = staticGrid[i].Count > 0 || dynamicGrid[i].Count > 0;
-            if (hasObjects)
+            if (staticGrid[i].Count > 0 || dynamicGrid[i].Count > 0)
             {
                 Gizmos.color = activeGridColor;
-                Gizmos.DrawWireCube(center, new Vector3(cellSize, cellSize, 0));
-                
+                Gizmos.DrawWireCube(_cellPos, new Vector3(cellSize, cellSize, 0));
+
                 Gizmos.color = objectColor;
                 foreach (var e in staticGrid[i]) Gizmos.DrawWireSphere(e.center, e.radius);
                 foreach (var e in dynamicGrid[i]) Gizmos.DrawWireSphere(e.center, e.radius);
@@ -301,7 +289,7 @@ public class CollisionSystem : MonoBehaviour
             else if (showFullGrid)
             {
                 Gizmos.color = new Color(1, 1, 1, 0.02f);
-                Gizmos.DrawWireCube(center, new Vector3(cellSize, cellSize, 0));
+                Gizmos.DrawWireCube(_cellPos, new Vector3(cellSize, cellSize, 0));
             }
         }
     }

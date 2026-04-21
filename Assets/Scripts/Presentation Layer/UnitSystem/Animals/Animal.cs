@@ -288,4 +288,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         if (stateMachine != null)
             stateMachine.ChangeState<AS_IdleState>();
     }
+
+    public void DeActivate()
+    {
+        stateMachine.ChangeState<AS_DeadState>();
+    }
 }

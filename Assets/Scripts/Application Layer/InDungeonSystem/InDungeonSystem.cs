@@ -11,13 +11,13 @@ public class InDungeonSystem : MonoBehaviour
     [Header("Dungeon Data")]
     [SerializeField] private DungeonData dungeonData;
 
-    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider,IInventoryChecker _inventoryChecker)
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
     {
         environmentProvider = _environmentProvider;
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, dungeonData,_inventoryChecker);
+        inDungeonObjectManager.Initialize(environmentProvider, dungeonData, _inventoryChecker);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
@@ -105,8 +105,8 @@ public class InDungeonSystem : MonoBehaviour
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
     {
-        inDungeonUnitSpawner.ReleaseAllAnimals();
         inDungeonObjectManager.ClearObjManager();
+        inDungeonUnitSpawner.ReleaseAllAnimals();
 
         signalHub.Publish(new GoToHomeSignal());
     }

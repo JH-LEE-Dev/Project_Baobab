@@ -27,7 +27,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private List<int> availableIndices = new List<int>(1024); // GC 방지용 캐싱 인덱스 리스트
 
     // // 풀 설정 변수
-    [SerializeField] private bool collectionCheck = true;
+    [SerializeField] private bool collectionCheck = false; // 에디터 성능을 위해 false로 설정
     [SerializeField] private int defaultCapacity = 200;
     [SerializeField] private int maxSize = SYSTEM_VAR.MAX_ANIMAL_CNT;
 
@@ -156,7 +156,11 @@ public class InDungeonUnitSpawner : MonoBehaviour
     public void ReleaseAnimal(Animal _animal)
     {
         _animal.AnimalIsDeadEvent -= AnimalIsDead;
-        animalPool.Release(_animal);
+        
+        if (_animal.gameObject.activeSelf)
+        {
+            animalPool.Release(_animal);
+        }
     }
 
     public void ReleaseAllAnimals()
@@ -165,6 +169,10 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
         if (allSpawnedAnimals == null || animalPool == null) return;
 
+        // [최적화 핵심] 부모를 잠시 비활성화하여 에디터 Hierarchy 갱신 이벤트를 1번으로 압축
+        // 이 작업이 없으면 2,000번의 UI 리프레시가 발생하여 에디터가 멈춤
+        this.gameObject.SetActive(false);
+
         // 리스트를 역순으로 순회하며 안전하게 해제
         for (int i = allSpawnedAnimals.Count - 1; i >= 0; i--)
         {
@@ -172,12 +180,19 @@ public class InDungeonUnitSpawner : MonoBehaviour
             if (animal != null)
             {
                 animal.AnimalIsDeadEvent -= AnimalIsDead;
+                
+                animal.DeActivate();
+                // OnReleaseAnimal에서 SetActive(false)를 수행하지만, 
+                // 부모가 이미 꺼져있으므로 개별 UI 갱신 부하가 발생하지 않음
                 animalPool.Release(animal);
                 environmentProvider.densityProvider.UpdateAnimalCnt(false);
             }
         }
 
         allSpawnedAnimals.Clear();
+
+        // 작업 완료 후 부모 재활성화
+        this.gameObject.SetActive(true);
     }
 
     private void StopGrowth()
@@ -187,6 +202,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
             StopCoroutine(growthCoroutine);
             growthCoroutine = null;
         }
+        StopAllCoroutines();
     }
 
     // // 풀링 콜백 메서드
@@ -203,19 +219,26 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     private void OnReleaseAnimal(Animal _animal)
     {
-        _animal.gameObject.SetActive(false);
+        // 이미 부모가 꺼진 상태에서 호출되어도 안전함
+        if (_animal.gameObject.activeSelf)
+        {
+            _animal.gameObject.SetActive(false);
+        }
     }
 
     private void OnDestroyAnimal(Animal _animal)
     {
-        Destroy(_animal.gameObject);
+        if (_animal != null && _animal.gameObject != null)
+        {
+            Destroy(_animal.gameObject);
+        }
     }
 
-    private void AnimalIsDead(Animal _aniaml)
+    private void AnimalIsDead(Animal _animal)
     {
         environmentProvider.densityProvider.UpdateAnimalCnt(false);
-        AnimalIsDeadEvent?.Invoke(_aniaml);
-        allSpawnedAnimals.Remove(_aniaml);
-        ReleaseAnimal(_aniaml);
+        AnimalIsDeadEvent?.Invoke(_animal);
+        allSpawnedAnimals.Remove(_animal);
+        ReleaseAnimal(_animal);
     }
 }
