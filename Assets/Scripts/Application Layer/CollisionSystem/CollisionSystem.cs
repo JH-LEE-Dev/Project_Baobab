@@ -38,6 +38,7 @@ public class CollisionSystem : MonoBehaviour
     [SerializeField] private float cellSize = 1.5f;
     [SerializeField] private Vector2Int gridCount = new Vector2Int(200, 200);
     [SerializeField] private Vector2 gridOrigin = new Vector2(-150, -150);
+    [SerializeField] private int maxEntities = 10000; // 최대 관리 객체 수
 
     [Header("Debug")]
     [SerializeField] private bool showDebug = true;
@@ -45,11 +46,15 @@ public class CollisionSystem : MonoBehaviour
     [SerializeField] private Color objectColor = Color.cyan;
     [SerializeField] private Color activeGridColor = new Color(0, 1, 0, 0.1f);
 
-    private List<CollisionEntity>[] staticGrid;
-    private List<CollisionEntity>[] dynamicGrid;
-    
     // 1번 최적화: 나눗셈 연산을 피하기 위한 역수 캐싱
     private float invCellSize;
+
+    // Linked List in Array 구조
+    private int[] staticHeads;
+    private int[] dynamicHeads;
+    private CollisionEntity[] entities;
+    private int[] nextPointers;
+    private int freeListHead;
 
     private void Awake()
     {
@@ -63,21 +68,34 @@ public class CollisionSystem : MonoBehaviour
     {
         invCellSize = 1f / cellSize;
         int _totalCells = gridCount.x * gridCount.y;
-        staticGrid = new List<CollisionEntity>[_totalCells];
-        dynamicGrid = new List<CollisionEntity>[_totalCells];
 
+        // 그리드 헤드 배열 초기화 (-1은 비어있음을 의미)
+        staticHeads = new int[_totalCells];
+        dynamicHeads = new int[_totalCells];
         for (int i = 0; i < _totalCells; i++)
         {
-            staticGrid[i] = new List<CollisionEntity>(4);
-            dynamicGrid[i] = new List<CollisionEntity>(4);
+            staticHeads[i] = -1;
+            dynamicHeads[i] = -1;
         }
-        Debug.Log($"<color=green><b>[CollisionSystem]</b> Grid Initialized: {gridCount.x}x{gridCount.y} cells.</color>");
+
+        // 엔티티 풀 및 연결 포인터 초기화
+        entities = new CollisionEntity[maxEntities];
+        nextPointers = new int[maxEntities];
+        
+        // 프리 리스트(사용 가능한 빈 슬롯) 체인 생성
+        for (int i = 0; i < maxEntities - 1; i++)
+        {
+            nextPointers[i] = i + 1;
+        }
+        nextPointers[maxEntities - 1] = -1;
+        freeListHead = 0;
+
+        Debug.Log($"<color=green><b>[CollisionSystem]</b> Optimized Grid Initialized: {gridCount.x}x{gridCount.y} cells, Max Entities: {maxEntities}.</color>");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int WorldToGridIndex(Vector2 _worldPos)
     {
-        // 1번 최적화 적용: 곱셈 연산으로 변경
         int _x = (int)((_worldPos.x - gridOrigin.x) * invCellSize);
         int _y = (int)((_worldPos.y - gridOrigin.y) * invCellSize);
 
@@ -87,72 +105,108 @@ public class CollisionSystem : MonoBehaviour
 
     public void Register(IStaticCollidable _obj, bool _isStatic = true)
     {
-        int _index = WorldToGridIndex(_obj.Position + _obj.Offset);
-        if (_index < 0) return;
+        int _gridIndex = WorldToGridIndex(_obj.Position + _obj.Offset);
+        if (_gridIndex < 0 || freeListHead == -1) return;
 
-        var _targetGrid = _isStatic ? staticGrid[_index] : dynamicGrid[_index];
-
-        for (int i = 0; i < _targetGrid.Count; i++)
+        // 중복 등록 방지 체크 (해당 셀의 체인 순회)
+        int[] _heads = _isStatic ? staticHeads : dynamicHeads;
+        int _curr = _heads[_gridIndex];
+        while (_curr != -1)
         {
-            if (_targetGrid[i].owner == _obj) return;
+            if (entities[_curr].owner == _obj) return;
+            _curr = nextPointers[_curr];
         }
 
-        _targetGrid.Add(CreateEntity(_obj));
+        // 프리 리스트에서 슬롯 하나 할당
+        int _newIdx = freeListHead;
+        freeListHead = nextPointers[_newIdx];
+
+        // 데이터 채우기
+        entities[_newIdx] = CreateEntity(_obj);
+        
+        // 해당 그리드 체인의 맨 앞에 삽입 (LIFO)
+        nextPointers[_newIdx] = _heads[_gridIndex];
+        _heads[_gridIndex] = _newIdx;
     }
 
     public void Unregister(IStaticCollidable _obj, bool _isStatic = true)
     {
-        int _index = WorldToGridIndex(_obj.Position + _obj.Offset);
-        if (_index < 0) return;
+        int _gridIndex = WorldToGridIndex(_obj.Position + _obj.Offset);
+        if (_gridIndex < 0) return;
 
-        var _targetGrid = _isStatic ? staticGrid[_index] : dynamicGrid[_index];
-        for (int i = 0; i < _targetGrid.Count; i++)
+        int[] _heads = _isStatic ? staticHeads : dynamicHeads;
+        int _curr = _heads[_gridIndex];
+        int _prev = -1;
+
+        while (_curr != -1)
         {
-            if (_targetGrid[i].owner == _obj)
+            if (entities[_curr].owner == _obj)
             {
-                _targetGrid.RemoveAt(i);
+                // 링크 연결 끊기
+                if (_prev == -1) _heads[_gridIndex] = nextPointers[_curr];
+                else nextPointers[_prev] = nextPointers[_curr];
+
+                // 슬롯을 프리 리스트로 반환
+                entities[_curr].owner = null; // 참조 해제
+                nextPointers[_curr] = freeListHead;
+                freeListHead = _curr;
                 return;
             }
+            _prev = _curr;
+            _curr = nextPointers[_curr];
         }
     }
 
     public void UpdatePosition(IStaticCollidable _obj, Vector2 _oldPos, Vector2 _newPos)
     {
-        int _oldIndex = WorldToGridIndex(_oldPos + _obj.Offset);
-        int _newIndex = WorldToGridIndex(_newPos + _obj.Offset);
+        int _oldGridIdx = WorldToGridIndex(_oldPos + _obj.Offset);
+        int _newGridIdx = WorldToGridIndex(_newPos + _obj.Offset);
 
-        if (_oldIndex == _newIndex)
+        if (_oldGridIdx == _newGridIdx)
         {
-            if (_newIndex >= 0)
+            if (_newGridIdx >= 0)
             {
-                var _list = dynamicGrid[_newIndex];
-                for (int i = 0; i < _list.Count; i++)
+                // 같은 셀이면 데이터만 갱신
+                int _curr = dynamicHeads[_newGridIdx];
+                while (_curr != -1)
                 {
-                    if (_list[i].owner == _obj)
+                    if (entities[_curr].owner == _obj)
                     {
-                        var _entity = _list[i];
-                        _entity.center = _newPos + _obj.Offset;
-                        _list[i] = _entity;
+                        entities[_curr].center = _newPos + _obj.Offset;
                         break;
                     }
+                    _curr = nextPointers[_curr];
                 }
             }
             return;
         }
 
-        if (_oldIndex >= 0)
+        // 셀이 바뀌었으면 이전 셀에서 직접 제거 (Unregister를 호출하면 _obj.Position 때문에 엉뚱한 셀을 뒤짐)
+        if (_oldGridIdx >= 0)
         {
-            var _oldList = dynamicGrid[_oldIndex];
-            for (int i = 0; i < _oldList.Count; i++)
+            int _curr = dynamicHeads[_oldGridIdx];
+            int _prev = -1;
+            while (_curr != -1)
             {
-                if (_oldList[i].owner == _obj) { _oldList.RemoveAt(i); break; }
+                if (entities[_curr].owner == _obj)
+                {
+                    // 링크 끊기
+                    if (_prev == -1) dynamicHeads[_oldGridIdx] = nextPointers[_curr];
+                    else nextPointers[_prev] = nextPointers[_curr];
+
+                    // 프리 리스트로 반환
+                    entities[_curr].owner = null;
+                    nextPointers[_curr] = freeListHead;
+                    freeListHead = _curr;
+                    break;
+                }
+                _prev = _curr;
+                _curr = nextPointers[_curr];
             }
         }
 
-        if (_newIndex >= 0)
-        {
-            dynamicGrid[_newIndex].Add(CreateEntity(_obj));
-        }
+        // 새로운 위치에 등록
+        Register(_obj, false);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -162,7 +216,7 @@ public class CollisionSystem : MonoBehaviour
         {
             center = _obj.Position + _obj.Offset,
             radius = _obj.Radius,
-            layerBit = (1 << _obj.Layer), // 2번 최적화: 비트마스크 미리 계산
+            layerBit = (1 << _obj.Layer),
             owner = _obj
         };
     }
@@ -190,28 +244,31 @@ public class CollisionSystem : MonoBehaviour
             for (int y = _minY; y <= _maxY; y++)
             {
                 int _index = x + y * gridCount.x;
-                if (InternalCheck(staticGrid[_index], _start, _ab, _invAb2, _bulletRadius, _layerMask, out _hitObject)) return true;
-                if (InternalCheck(dynamicGrid[_index], _start, _ab, _invAb2, _bulletRadius, _layerMask, out _hitObject)) return true;
+                // Static 및 Dynamic 체인 순차 확인
+                if (InternalCheck(staticHeads[_index], _start, _ab, _invAb2, _bulletRadius, _layerMask, out _hitObject)) return true;
+                if (InternalCheck(dynamicHeads[_index], _start, _ab, _invAb2, _bulletRadius, _layerMask, out _hitObject)) return true;
             }
         }
 
         return false;
     }
 
-    private bool InternalCheck(List<CollisionEntity> _list, Vector2 _start, Vector2 _ab, float _invAb2, float _bulletRadius, int _mask, out IStaticCollidable _hit)
+    private bool InternalCheck(int _headIdx, Vector2 _start, Vector2 _ab, float _invAb2, float _bulletRadius, int _mask, out IStaticCollidable _hit)
     {
         _hit = null;
-        int _count = _list.Count;
-        for (int i = 0; i < _count; i++)
+        int _curr = _headIdx;
+        while (_curr != -1)
         {
-            if ((_list[i].layerBit & _mask) == 0) continue;
-
-            float _combinedRadius = _bulletRadius + _list[i].radius;
-            if (SqrDistancePointToSegmentOptimized(_start, _ab, _invAb2, _list[i].center) < _combinedRadius * _combinedRadius)
+            if ((entities[_curr].layerBit & _mask) != 0)
             {
-                _hit = _list[i].owner;
-                return true;
+                float _combinedRadius = _bulletRadius + entities[_curr].radius;
+                if (SqrDistancePointToSegmentOptimized(_start, _ab, _invAb2, entities[_curr].center) < _combinedRadius * _combinedRadius)
+                {
+                    _hit = entities[_curr].owner;
+                    return true;
+                }
             }
+            _curr = nextPointers[_curr];
         }
         return false;
     }
@@ -230,26 +287,28 @@ public class CollisionSystem : MonoBehaviour
             for (int y = _minY; y <= _maxY; y++)
             {
                 int _index = x + y * gridCount.x;
-                InternalCollect(staticGrid[_index], _center, _radius, _layerMask, _results);
-                InternalCollect(dynamicGrid[_index], _center, _radius, _layerMask, _results);
+                InternalCollect(staticHeads[_index], _center, _radius, _layerMask, _results);
+                InternalCollect(dynamicHeads[_index], _center, _radius, _layerMask, _results);
             }
         }
     }
 
-    private void InternalCollect(List<CollisionEntity> _list, Vector2 _center, float _radius, int _mask, List<IStaticCollidable> _results)
+    private void InternalCollect(int _headIdx, Vector2 _center, float _radius, int _mask, List<IStaticCollidable> _results)
     {
-        int _count = _list.Count;
-        for (int i = 0; i < _count; i++)
+        int _curr = _headIdx;
+        while (_curr != -1)
         {
-            if ((_list[i].layerBit & _mask) == 0) continue;
-
-            float _combinedRadius = _radius + _list[i].radius;
-            float _dx = _list[i].center.x - _center.x;
-            float _dy = _list[i].center.y - _center.y;
-            if ((_dx * _dx + _dy * _dy) <= _combinedRadius * _combinedRadius)
+            if ((entities[_curr].layerBit & _mask) != 0)
             {
-                _results.Add(_list[i].owner);
+                float _combinedRadius = _radius + entities[_curr].radius;
+                float _dx = entities[_curr].center.x - _center.x;
+                float _dy = entities[_curr].center.y - _center.y;
+                if ((_dx * _dx + _dy * _dy) <= _combinedRadius * _combinedRadius)
+                {
+                    _results.Add(entities[_curr].owner);
+                }
             }
+            _curr = nextPointers[_curr];
         }
     }
 
@@ -268,7 +327,7 @@ public class CollisionSystem : MonoBehaviour
 
     private void OnDrawGizmos()
     {
-        if (!showDebug || staticGrid == null) return;
+        if (!showDebug || staticHeads == null) return;
 
         int _totalCells = gridCount.x * gridCount.y;
         for (int i = 0; i < _totalCells; i++)
@@ -277,14 +336,31 @@ public class CollisionSystem : MonoBehaviour
             int _y = i / gridCount.x;
             Vector3 _cellPos = new Vector3(gridOrigin.x + _x * cellSize + cellSize * 0.5f, gridOrigin.y + _y * cellSize + cellSize * 0.5f, 0);
 
-            if (staticGrid[i].Count > 0 || dynamicGrid[i].Count > 0)
+            bool _hasStatic = staticHeads[i] != -1;
+            bool _hasDynamic = dynamicHeads[i] != -1;
+
+            if (_hasStatic || _hasDynamic)
             {
                 Gizmos.color = activeGridColor;
                 Gizmos.DrawWireCube(_cellPos, new Vector3(cellSize, cellSize, 0));
 
                 Gizmos.color = objectColor;
-                foreach (var e in staticGrid[i]) Gizmos.DrawWireSphere(e.center, e.radius);
-                foreach (var e in dynamicGrid[i]) Gizmos.DrawWireSphere(e.center, e.radius);
+                
+                // Static 객체 시각화
+                int _curr = staticHeads[i];
+                while (_curr != -1)
+                {
+                    Gizmos.DrawWireSphere(entities[_curr].center, entities[_curr].radius);
+                    _curr = nextPointers[_curr];
+                }
+
+                // Dynamic 객체 시각화
+                _curr = dynamicHeads[i];
+                while (_curr != -1)
+                {
+                    Gizmos.DrawWireSphere(entities[_curr].center, entities[_curr].radius);
+                    _curr = nextPointers[_curr];
+                }
             }
             else if (showFullGrid)
             {

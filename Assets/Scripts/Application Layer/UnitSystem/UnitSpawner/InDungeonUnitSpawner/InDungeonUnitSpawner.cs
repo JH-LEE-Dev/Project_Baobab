@@ -260,6 +260,8 @@ public class InDungeonUnitSpawner : MonoBehaviour
         isCullingDirty = true;
         animal.AnimalIsDeadEvent -= AnimalIsDead;
         animal.AnimalIsDeadEvent += AnimalIsDead;
+
+        //Debug.Log($"<color=cyan>[InDungeonUnitSpawner]</color> Animal Spawned. Current Total Animals: {allSpawnedAnimals.Count}");
     }
 
     public void ReleaseAnimal(Animal _animal)

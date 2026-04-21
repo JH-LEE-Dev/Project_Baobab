@@ -45,6 +45,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private bool[] isShoreline;
     private float halfCellY;
 
+    // // 최적화 캐싱 배열
+    private float[] falloffMap;
+    private Vector3[] worldPosMap;
+    private WaitForSeconds delayYield;
+
     // // 재사용 컬렉션 (GC 최소화)
     private List<int> largestBlob = new List<int>(22500);
     private List<int> currentBlob = new List<int>(22500);
@@ -87,6 +92,38 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         visited = new bool[size];
         isShoreline = new bool[size];
 
+        // 최적화: 맵 전체에 대한 고정 수치 미리 계산
+        falloffMap = new float[size];
+        worldPosMap = new Vector3[size];
+        
+        float invWidth = (width > 1) ? 1f / (width - 1f) : 1f;
+        float invHeight = (height > 1) ? 1f / (height - 1f) : 1f;
+
+        for (int y = 0; y < height; y++)
+        {
+            int rowOffset = y * width;
+            float ny = y * invHeight * 2f - 1f;
+
+            for (int x = 0; x < width; x++)
+            {
+                int i = x + rowOffset;
+                
+                // 1. Falloff 맵 미리 계산
+                if (useIslandPrevention)
+                {
+                    float nx = x * invWidth * 2f - 1f;
+                    float dist = Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny));
+                    falloffMap[i] = EvaluateFalloff(dist);
+                }
+
+                // 2. 월드 좌표 미리 계산
+                Vector3Int cellPos = new Vector3Int(x, y, 0);
+                worldPosMap[i] = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
+            }
+        }
+
+        if (delayYield == null) delayYield = new WaitForSeconds(5f);
+
         if (seed == 0) seed = UnityEngine.Random.Range(1, 100000);
     }
 
@@ -113,7 +150,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private System.Collections.IEnumerator AddDelayedGrassPositions()
     {
-        yield return new WaitForSeconds(5f);
+        yield return delayYield;
 
         if (delayedGrassPositions.Count > 0)
         {
@@ -215,21 +252,19 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         {
             int rowOffset = y * width;
             float yCoord = (y + 0.5f) * invHeight * scale + seed;
-            float ny = y * (y - 1f != 0 ? 1f / (height - 1f) : 1f) * 2f - 1f;
 
             for (int x = 0; x < width; x++)
             {
+                int i = x + rowOffset;
                 float xCoord = (x + 0.5f) * invWidth * scale + seed;
                 float val = Mathf.PerlinNoise(xCoord, yCoord);
 
                 if (useIslandPrevention)
                 {
-                    float nx = x * (x - 1f != 0 ? 1f / (width - 1f) : 1f) * 2f - 1f;
-                    float dist = Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny));
-                    val -= EvaluateFalloff(dist);
+                    val -= falloffMap[i];
                 }
 
-                noiseValues[x + rowOffset] = val;
+                noiseValues[i] = val;
             }
         }
     }
@@ -470,10 +505,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private Vector3 GetWorldPos(int _idx)
     {
-        if (_idx < 0) return Vector3.zero;
-
-        Vector3Int cellPos = new Vector3Int(_idx % width, _idx / width, 0);
-        return groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
+        if (_idx < 0 || _idx >= worldPosMap.Length) return Vector3.zero;
+        return worldPosMap[_idx];
     }
 
     private float EvaluateFalloff(float _v)

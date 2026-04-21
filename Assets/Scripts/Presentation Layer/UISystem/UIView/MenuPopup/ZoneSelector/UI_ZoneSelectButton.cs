@@ -36,7 +36,7 @@ public class UI_ZoneButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Debug.Log(dungeonType);
+        //Debug.Log(dungeonType);
 
         if (!isInteractable) 
             return;

@@ -119,9 +119,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
     private void OnEnable()
     {
-        // 동적 객체(동물)로 등록
-        lastGridPos = transform.position;
-        CollisionSystem.Instance?.Register(this, false);
+
     }
 
     private void OnDisable()

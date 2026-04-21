@@ -14,7 +14,10 @@ public class LogItemController : MonoBehaviour
 
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
-    private List<LogItem> activeItems = new List<LogItem>();
+    // 최적화: 검색 및 삭제 속도 향상을 위해 HashSet 사용 (O(1))
+    private HashSet<LogItem> activeItems = new HashSet<LogItem>(256);
+    private List<LogItem> activeItemsList = new List<LogItem>(256); // 최적화: 순회용 캐싱 리스트
+    private List<LogItem> cleanupList = new List<LogItem>(256); // ClearAll용 재사용 리스트
 
     private IInventoryChecker inventoryChecker;
 
@@ -28,9 +31,27 @@ public class LogItemController : MonoBehaviour
             actionOnRelease: OnReleaseLogItem,
             actionOnDestroy: OnDestroyLogItem,
             collectionCheck: true,
-            defaultCapacity: 10,
-            maxSize: 100
+            defaultCapacity: 100,
+            maxSize: 1000 // 최적화: 나무가 많은 게임 특성상 풀 크기를 넉넉하게 설정
         );
+    }
+
+    private void Update()
+    {
+        if (activeItems.Count == 0) return;
+
+        // HashSet을 리스트로 복사하여 순회 (GC 할당 최소화 및 컬렉션 변조 방지)
+        activeItemsList.Clear();
+        foreach (var item in activeItems)
+        {
+            activeItemsList.Add(item);
+        }
+
+        float deltaTime = Time.deltaTime;
+        for (int i = 0; i < activeItemsList.Count; i++)
+        {
+            activeItemsList[i].ManualUpdate(deltaTime);
+        }
     }
 
     private void LogItemAcquired(LogItem _item)
@@ -68,13 +89,21 @@ public class LogItemController : MonoBehaviour
 
     public void ClearAll()
     {
-        // OnReleaseLogItem에서 activeItems.Remove가 호출되므로, 
-        // 역순 순회를 통해 안전하게 모든 아이템을 풀에 반납합니다.
-        for (int i = activeItems.Count - 1; i >= 0; i--)
+        if (activeItems.Count == 0) return;
+
+        cleanupList.Clear();
+        foreach (var item in activeItems)
         {
-            logPool.Release(activeItems[i]);
+            cleanupList.Add(item);
         }
+
+        for (int i = 0; i < cleanupList.Count; i++)
+        {
+            logPool.Release(cleanupList[i]);
+        }
+        
         activeItems.Clear();
+        cleanupList.Clear();
     }
 
     public void SpawnLogItem(TreeObj _treeObj)
@@ -87,7 +116,7 @@ public class LogItemController : MonoBehaviour
         LogStateProbData stateProbData = GetStateProbData(dropData, treeData.treeState);
         if (stateProbData.probDatas == null || stateProbData.probDatas.Count == 0) return;
 
-        int spawnCount = UnityEngine.Random.Range(2, 4); // 2~3개
+        int spawnCount = UnityEngine.Random.Range(2, 4); 
 
         for (int i = 0; i < spawnCount; i++)
         {
