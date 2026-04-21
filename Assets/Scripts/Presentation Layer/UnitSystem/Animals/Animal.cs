@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
@@ -8,12 +9,16 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     private IEnvironmentProvider environmentProvider;
 
     //내부 의존성 (컴포넌트)
+    [Header("Internal Components")]
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
     [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
-    [SerializeField] private TriggerProxy characterSensorProxy;
+
+    [Header("Collision & Detection")]
     [SerializeField] private float collisionRadius = 0.14f;
-    [SerializeField] private Vector2 collisionOffset = new Vector2(0.02f,0.09f); // 충돌 오프셋 필드 추가
+    [SerializeField] private Vector2 collisionOffset = new Vector2(0.02f, 0.09f);
+    [SerializeField] private float detectionRadius = 2.75f;
+    [SerializeField] private LayerMask detectionLayerMask;
 
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
@@ -27,14 +32,14 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public Animator anim { get; private set; }
     public Rigidbody2D rb { get; private set; }
     public Collider2D col { get; private set; }
-    public Collider2D characterSensor { get; private set; }
 
     //현재 지형 물리 데이터 (캐싱)
     public GroundPhysicsData currentGroundData { get; private set; }
 
-    // 캐싱된 해시값 (GC 방지 및 성능 최적화)
+    // 캐싱된 해시 및 결과 리스트 (GC 방지 및 성능 최적화)
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
+    private readonly List<IStaticCollidable> detectionResults = new List<IStaticCollidable>(4);
 
     private PathFindComponent pathFindComponent;
 
@@ -46,7 +51,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     //도망 코드
     public bool bRunAway = false;
     public Vector3 FleeDirection { get; private set; }
-    private Transform playerTransform;
+    private Vector2 detectedEnemyPos;
 
     public AnimalAnimValueHandler animalAnimValueHandler { get; private set; }
 
@@ -81,11 +86,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         healthComponent = GetComponentInChildren<EHealthComponent>();
         healthComponent.Initialize();
 
-        if (characterSensorProxy != null)
-        {
-            characterSensor = characterSensorProxy.GetComponent<Collider2D>();
-        }
-
         shadowObject.Initialize();
         pathFindComponent.Initialize(environmentProvider.tilemapDataProvider, environmentProvider.pathfindGridProvider);
 
@@ -93,12 +93,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         {
             shadowSensor.OnTriggerEnterEvent += HandleShadowEnter;
             shadowSensor.OnTriggerExitEvent += HandleShadowExit;
-        }
-
-        if (characterSensorProxy != null)
-        {
-            characterSensorProxy.OnTriggerEnterEvent += HandleCharacterEnter;
-            characterSensorProxy.OnTriggerExitEvent += HandleCharacterExit;
         }
 
         SetupStateMachine();
@@ -188,9 +182,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     {
         stateMachine?.Update();
 
-        if (bRunAway && playerTransform != null)
+        if (bRunAway)
         {
-            FleeDirection = (transform.position - playerTransform.position).normalized;
+            FleeDirection = ((Vector2)transform.position - detectedEnemyPos).normalized;
         }
 
         shadowSR.sprite = sr.sprite;
@@ -211,8 +205,28 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         CollisionSystem.Instance?.UpdatePosition(this, lastGridPos, currentPos);
         lastGridPos = currentPos;
 
+        // 플레이어 감지 로직 (CollisionSystem 활용)
+        UpdateCharacterDetection();
+
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
+    }
+
+    private void UpdateCharacterDetection()
+    {
+        if (CollisionSystem.Instance == null) return;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, detectionRadius, detectionLayerMask, detectionResults);
+
+        if (detectionResults.Count > 0)
+        {
+            detectedEnemyPos = detectionResults[0].Position;
+            bRunAway = true;
+        }
+        else
+        {
+            bRunAway = false;
+        }
     }
 
     private void OnDestroy()
@@ -225,14 +239,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
             shadowSensor.OnTriggerExitEvent -= HandleShadowExit;
         }
 
-        if (characterSensorProxy != null)
-        {
-            characterSensorProxy.OnTriggerEnterEvent -= HandleCharacterEnter;
-            characterSensorProxy.OnTriggerExitEvent -= HandleCharacterExit;
-        }
-
         // 등록 해제
-        CollisionSystem.Instance?.Unregister(this);
+        CollisionSystem.Instance?.Unregister(this, false);
     }
 
     private void UpdateAnimalColor()
@@ -258,26 +266,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         }
     }
 
-    private void HandleCharacterEnter(Collider2D _other)
-    {
-        // "Player" 태그를 가진 객체가 감지되면 도망 상태 활성화
-        if (_other.CompareTag("Player"))
-        {
-            playerTransform = _other.transform;
-            bRunAway = true;
-        }
-    }
-
-    private void HandleCharacterExit(Collider2D _other)
-    {
-        // 플레이어가 감지 범위를 벗어나면 도망 상태 해제
-        if (_other.CompareTag("Player"))
-        {
-            playerTransform = null;
-            bRunAway = false;
-        }
-    }
-
     public void TakeDamage(float _damage)
     {
         healthComponent.DecreaseHealth(_damage);
@@ -299,5 +287,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
         if (stateMachine != null)
             stateMachine.ChangeState<AS_IdleState>();
+    }
+
+    public void DeActivate()
+    {
+        stateMachine.ChangeState<AS_DeadState>();
     }
 }

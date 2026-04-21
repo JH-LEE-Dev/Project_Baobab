@@ -206,6 +206,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
                 TreeObj tree = treePool.Get();
                 tree.transform.position = spawnPos;
+                tree.gameObject.SetActive(true);
                 activeTrees.Add(tree);
 
                 environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
@@ -236,14 +237,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void ClearTrees()
     {
-        for (int i = 0; i < activeTrees.Count; i++)
+        // 역순 순회로 안전하게 해제
+        for (int i = activeTrees.Count - 1; i >= 0; i--)
         {
             if (activeTrees[i] != null)
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
-                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
+                
+                // 순서 변경: 먼저 풀에 반환(OnDisable 호출)하여 정상적으로 Unregister 되게 함
                 treePool.Release(activeTrees[i]);
+                // 해제된 객체의 위치를 나중에 옮김
+                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
             }
         }
         activeTrees.Clear();
@@ -438,7 +443,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void OnGetTree(TreeObj _tree)
     {
-        _tree.gameObject.SetActive(true);
         _tree.ApplyData(CalculateRandomTreeData());
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeDeadEvent += OnTreeDead;

@@ -232,8 +232,8 @@ MonoBehaviour:
   cellSize: 2
   gridCount: {x: 200, y: 200}
   gridOrigin: {x: -150, y: -150}
-  showDebug: 1
-  showFullGrid: 1
+  showDebug: 0
+  showFullGrid: 0
   objectColor: {r: 0, g: 1, b: 1, a: 1}
   activeGridColor: {r: 0, g: 1, b: 0, a: 0.2}
 --- !u!1 &2554595008635905786
@@ -859,8 +859,8 @@ MonoBehaviour:
   animalPrefab: {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
   spawnInterval: 2
   collectionCheck: 1
-  defaultCapacity: 20
-  maxSize: 200
+  defaultCapacity: 200
+  maxSize: 2000
 --- !u!1 &6583048210432933352
 GameObject:
   m_ObjectHideFlags: 0

@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4267000666182763687}
-  - component: {fileID: 6321879945347207353}
   - component: {fileID: 5139410583856100867}
   m_Layer: 14
   m_Name: ShadowSensor
@@ -33,42 +32,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 8125574298360731873}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!58 &6321879945347207353
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 299770459973913469}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0.02, y: 0.03}
-  m_Radius: 0.07
 --- !u!114 &5139410583856100867
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,87 +88,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf5e00459b1eaaf44bb0def6eda12530, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PathFindComponent
---- !u!1 &4577984043536687335
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8032868998262436013}
-  - component: {fileID: 3538285812751744971}
-  - component: {fileID: 5794393059330898891}
-  m_Layer: 15
-  m_Name: CharacterSensor
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8032868998262436013
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4577984043536687335}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8125574298360731873}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!58 &3538285812751744971
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4577984043536687335}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 2.88
---- !u!114 &5794393059330898891
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4577984043536687335}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b6f2e6b8eb560be4da5a1871bf638b78, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TriggerProxy
 --- !u!1 &5476878515907285987
 GameObject:
   m_ObjectHideFlags: 0
@@ -348,7 +230,6 @@ Transform:
   - {fileID: 4818910548906014969}
   - {fileID: 4267000666182763687}
   - {fileID: 8195625567413121415}
-  - {fileID: 8032868998262436013}
   - {fileID: 8261266728720632710}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -367,8 +248,12 @@ MonoBehaviour:
   shadowObject: {fileID: 941508293144650439}
   animatorObject: {fileID: 8470380151137750416}
   shadowSensor: {fileID: 5139410583856100867}
-  characterSensorProxy: {fileID: 5794393059330898891}
   collisionRadius: 0.14
+  collisionOffset: {x: 0.02, y: 0.09}
+  detectionRadius: 2.75
+  detectionLayerMask:
+    serializedVersion: 2
+    m_Bits: 256
   centerPos: {x: 0, y: 0, z: 0}
   targetPos: {x: 0, y: 0, z: 0}
   scatterRadius: 0
@@ -407,7 +292,7 @@ CircleCollider2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5911788971367355826}
-  m_Enabled: 0
+  m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
   m_Material: {fileID: 0}
