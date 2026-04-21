@@ -4,6 +4,7 @@ public class AS_RunState : AnimalState
 {
     private int currentPathIndex;
     private const float stopDistance = 0.15f;
+    private const float stopDistanceSqr = stopDistance * stopDistance;
     private const float moveSpeed = 2f;
 
     private Vector3Int currentReservedPos; // 현재 내가 서있는 타일
@@ -13,6 +14,9 @@ public class AS_RunState : AnimalState
     private float stuckTimer;
     private float stuckThreshold;
     private bool isFleeingPath; // 현재 도망 중인 경로인지 여부
+
+    private Vector3Int cachedTargetCell; // 현재 목표 지점의 셀 좌표 캐시
+    private Vector3 cachedTargetWorldPos; // 현재 목표 지점의 월드 좌표 캐시
 
     public override void Enter()
     {
@@ -26,8 +30,21 @@ public class AS_RunState : AnimalState
         isFleeingPath = animal.bRunAway;
 
         // 시작 지점 확실히 점유
-        currentReservedPos = pathFindComponent.WorldToCell(animal.transform.position);
+        Vector3 currentPos = animal.transform.position;
+        currentReservedPos = pathFindComponent.WorldToCell(currentPos);
         pathFindComponent.Occupy(currentReservedPos);
+
+        UpdateTargetCache();
+    }
+
+    private void UpdateTargetCache()
+    {
+        var path = pathFindComponent.Path;
+        if (path != null && path.Count > 0 && currentPathIndex < path.Count)
+        {
+            cachedTargetWorldPos = path[currentPathIndex];
+            cachedTargetCell = pathFindComponent.WorldToCell(cachedTargetWorldPos);
+        }
     }
 
     public override void Exit()
@@ -50,6 +67,8 @@ public class AS_RunState : AnimalState
         // 0. 실시간 도망 전환 체크: 일반 이동 중 플레이어가 나타나면 즉시 도망 경로로 갱신
         if (animal.bRunAway && !isFleeingPath)
         {
+            if (!PathfindManager.CanRequest()) return;
+
             isFleeingPath = true;
             HandleStuck();
             return;
@@ -62,6 +81,7 @@ public class AS_RunState : AnimalState
         {
             if (animal.bRunAway)
             {
+                if (!PathfindManager.CanRequest()) return;
                 // 플레이어가 여전히 근처에 있다면 계속해서 멀리 도망
                 HandleStuck();
             }
@@ -72,14 +92,12 @@ public class AS_RunState : AnimalState
             return;
         }
 
-        Vector3Int targetCell = pathFindComponent.WorldToCell(path[currentPathIndex]);
-
         // 1. 다음 타일 예약 시도 (아직 예약하지 않았을 때만)
         if (!hasNextReservation)
         {
-            if (pathFindComponent.Occupy(targetCell))
+            if (pathFindComponent.Occupy(cachedTargetCell))
             {
-                nextReservedPos = targetCell;
+                nextReservedPos = cachedTargetCell;
                 hasNextReservation = true;
                 stuckTimer = 0f; // 예약 성공 시 타이머 리셋
                 animal.anim.SetBool(animal.isMovingHash, true);
@@ -124,7 +142,8 @@ public class AS_RunState : AnimalState
         }
 
         // 2. 이동 및 도착 판정
-        if (Vector2.Distance(animal.transform.position, path[currentPathIndex]) < stopDistance)
+        Vector3 currentPos = animal.transform.position;
+        if ((currentPos - cachedTargetWorldPos).sqrMagnitude < stopDistanceSqr)
         {
             // 도착 시점: 이전 타일 해제 및 현재 타일 갱신
             pathFindComponent.Release(currentReservedPos);
@@ -136,8 +155,8 @@ public class AS_RunState : AnimalState
             // 다음 목표 타일이 유효한지 미리 체크 (나무 등이 자랐을 경우 대비)
             if (currentPathIndex < path.Count)
             {
-                Vector3Int nextCell = pathFindComponent.WorldToCell(path[currentPathIndex]);
-                if (!pathFindComponent.IsWalkable(nextCell))
+                UpdateTargetCache();
+                if (!pathFindComponent.IsWalkable(cachedTargetCell))
                 {
                     HandleStuck();
                 }
@@ -147,9 +166,11 @@ public class AS_RunState : AnimalState
 
     private void HandleStuck()
     {
+        Vector3 currentPos = animal.transform.position;
         if (animal.bRunAway)
         {
             isFleeingPath = true;
+            Vector3 fleeDir = animal.FleeDirection;
             // 1. 플레이어 반대 방향(FleeDirection)을 기반으로 점진적으로 멀리 탐색 (5칸 ~ 15칸)
             for (int dist = 5; dist <= 15; dist += 3)
             {
@@ -157,10 +178,25 @@ public class AS_RunState : AnimalState
                 for (int i = 0; i < 3; i++)
                 {
                     float randomAngle = Random.Range(-30f, 30f);
-                    Vector3 direction = Quaternion.Euler(0, 0, randomAngle) * animal.FleeDirection;
-                    Vector3 fleeDest = animal.transform.position + direction * dist;
+                    float rad = randomAngle * Mathf.Deg2Rad;
+                    float cos = Mathf.Cos(rad);
+                    float sin = Mathf.Sin(rad);
 
-                    if (pathFindComponent.FindPath(animal.transform.position, fleeDest))
+                    // Quaternion 연산 대신 수동 회전 (더 가벼움)
+                    Vector3 rotatedDir = new Vector3(
+                        fleeDir.x * cos - fleeDir.y * sin,
+                        fleeDir.x * sin + fleeDir.y * cos,
+                        0
+                    );
+
+                    Vector3 fleeDest = currentPos + rotatedDir * dist;
+                    Vector3Int targetCell = pathFindComponent.WorldToCell(fleeDest);
+
+                    // 사전 검사: 목적지가 유효하지 않거나 이미 점유되어 있으면 A* 시도조차 하지 않음
+                    if (!pathFindComponent.IsWalkable(targetCell) || pathFindComponent.IsOccupied(targetCell))
+                        continue;
+
+                    if (pathFindComponent.FindPath(currentPos, fleeDest))
                     {
                         ResetPathAndStuckTimer();
                         return;
@@ -172,8 +208,8 @@ public class AS_RunState : AnimalState
         {
             isFleeingPath = false;
             // 일반 이동 중: 주변 무작위 지점 탐색
-            Vector3 newDest = GetRandomDestination();
-            if (pathFindComponent.FindPath(animal.transform.position, newDest))
+            Vector3 newDest = GetRandomDestination(currentPos);
+            if (pathFindComponent.FindPath(currentPos, newDest))
             {
                 ResetPathAndStuckTimer();
                 return;
@@ -195,14 +231,16 @@ public class AS_RunState : AnimalState
             pathFindComponent.Release(nextReservedPos);
             hasNextReservation = false;
         }
+
+        UpdateTargetCache();
     }
 
-    private Vector3 GetRandomDestination()
+    private Vector3 GetRandomDestination(Vector3 _currentPos)
     {
-        Vector3Int currentCell = pathFindComponent.WorldToCell(animal.transform.position);
+        Vector3Int currentCell = pathFindComponent.WorldToCell(_currentPos);
 
         // 주변 10칸 내외의 무작위 지점 탐색
-        for (int i = 0; i < 30; i++)
+        for (int i = 0; i < 20; i++) // 30회 -> 20회로 단축
         {
             int rx = Random.Range(-10, 11);
             int ry = Random.Range(-10, 11);
@@ -214,7 +252,7 @@ public class AS_RunState : AnimalState
             }
         }
 
-        return animal.transform.position; // 실패 시 현재 위치
+        return _currentPos; // 실패 시 현재 위치
     }
 
     public override void FixedUpdate()
@@ -224,9 +262,14 @@ public class AS_RunState : AnimalState
         var path = pathFindComponent.Path;
         if (currentPathIndex >= path.Count) return;
 
-        Vector2 targetPos = path[currentPathIndex];
         Vector2 currentPos = animal.transform.position;
-        Vector2 direction = (targetPos - currentPos).normalized;
+        Vector2 targetPos = (Vector2)cachedTargetWorldPos;
+        Vector2 diff = targetPos - currentPos;
+
+        // 거리가 이미 충분히 가까우면 연산 생략
+        if (diff.sqrMagnitude < 0.0001f) return;
+
+        Vector2 direction = diff.normalized;
 
         animal.rb.linearVelocity = Vector2.MoveTowards(
            animal.rb.linearVelocity,
