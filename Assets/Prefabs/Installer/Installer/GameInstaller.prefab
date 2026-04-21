@@ -121,8 +121,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45acdcfb0f73b344fab31c821e7fd95e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
-  TreeMaxDensityRatio: 0.07
-  TreeStartDensityRatio: 0.04
+  TreeMaxDensityRatio: 1
+  TreeStartDensityRatio: 0.1
   RabbitMaxDensityRatio: 0.05
   RabbitStartDensityRatio: 0.02
   applyToStartCnt: 1
@@ -858,6 +858,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   animalPrefab: {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
   spawnInterval: 2
+  cullingDistance: 25
   collectionCheck: 1
   defaultCapacity: 200
   maxSize: 2000

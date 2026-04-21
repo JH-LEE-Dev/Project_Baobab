@@ -36,7 +36,6 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Publish(new DungeonReadySignal(dungeonData));
         inDungeonObjectManager.SetDungeonData(dungeonData);
-        inDungeonUnitSpawner.SpawnAnimals();
     }
 
     private void BindEvents()
@@ -88,9 +87,10 @@ public class InDungeonSystem : MonoBehaviour
     private void MapGenerated(MapGeneratedSignal mapGeneratedSignal)
     {
         inDungeonObjectManager.ReadyTrees(mapGeneratedSignal.grassTilePositions);
-        inDungeonObjectManager.ReadyPortalAndCharacter();
+        inDungeonObjectManager.ReadyPortal();
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
+        inDungeonUnitSpawner.SpawnAnimals();
     }
 
     private void ItemAcquired(Item _item)

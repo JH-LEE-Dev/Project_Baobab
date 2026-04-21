@@ -119,7 +119,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         SpawnInitialTrees();
     }
 
-    public void ReadyPortalAndCharacter()
+    public void ReadyPortal()
     {
         if (portal == null)
         {

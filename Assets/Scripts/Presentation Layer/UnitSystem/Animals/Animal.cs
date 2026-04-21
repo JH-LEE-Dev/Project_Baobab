@@ -100,6 +100,23 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         animalAnimValueHandler.Initialize(anim);
     }
 
+    public void Hide()
+    {
+        shadowSR.enabled = false;
+        sr.enabled = false;
+        // 동적 객체에서 제거
+        CollisionSystem.Instance?.Unregister(this, false);
+    }
+
+    public void Show()
+    {
+        shadowSR.enabled = true;
+        sr.enabled = true;
+        // 동적 객체(동물)로 등록
+        lastGridPos = transform.position;
+        CollisionSystem.Instance?.Register(this, false);
+    }
+
     private void OnEnable()
     {
         // 동적 객체(동물)로 등록
