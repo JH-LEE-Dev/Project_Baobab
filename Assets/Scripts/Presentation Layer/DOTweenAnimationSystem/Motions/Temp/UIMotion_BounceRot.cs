@@ -28,7 +28,7 @@ public class UIMotion_BounceRot : ObjectMotionBase
 
 
         _rect.localScale = startScale;
-        _seq.Append(_rect.DOScale(new Vector3(1f, 1f, 1f), publicDuration))
+        _seq.Join(_rect.DOScale(new Vector3(1f, 1f, 1f), publicDuration))
             .SetEase(easeScale);
     }
 }

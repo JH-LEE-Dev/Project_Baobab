@@ -64,12 +64,17 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 if (null == _target)
                     continue;
 
-                if (null != _target.rectTransform) OnRectTransform(_seq, _target.rectTransform);
-                else if (null != _target.transform) OnTransform(_seq, _target.transform);
+                if (null != _target.rectTransform) 
+                    OnRectTransform(_seq, _target.rectTransform);
+                else if (null != _target.transform) 
+                    OnTransform(_seq, _target.transform);
 
-                if (null != _target.canvasGroup) OnCanvasGroup(_seq, _target.canvasGroup);
-                if (null != _target.spriteRenderer) OnSpriteRenderer(_seq, _target.spriteRenderer);
-                if (null != _target.uiGraphic) OnGraphic(_seq, _target.uiGraphic);
+                if (null != _target.canvasGroup) 
+                    OnCanvasGroup(_seq, _target.canvasGroup);
+                if (null != _target.spriteRenderer) 
+                    OnSpriteRenderer(_seq, _target.spriteRenderer);
+                if (null != _target.uiGraphic) 
+                    OnGraphic(_seq, _target.uiGraphic);
             }
         }
 
