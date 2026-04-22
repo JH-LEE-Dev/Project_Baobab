@@ -1,0 +1,11 @@
+{
+  "sections": [
+    {
+      "uiName": "UIView_Tent",
+      "entries": [
+        { "id": 400, "key": "SKILL_DASH_NAME", "kr": "대시", "en": "Dash" },
+        { "id": 401, "key": "SKILL_DASH_DESC", "kr": "전방으로 빠르게 이동합니다.", "en": "Dash forward quickly." }
+      ]
+    }
+  ]
+}

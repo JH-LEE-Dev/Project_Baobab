@@ -54,6 +54,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public void SetCharacterPos(Vector3 _pos)
     {
         character.transform.position = _pos;
+        Camera.main.transform.position = character.transform.position;
     }
 
     public Transform GetCharacterTransform()
@@ -77,7 +78,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     }
 
     private void CharacterStaminaIsEmpty()
-    {        
+    {
         CharacterStaminaIsEmptyEvent?.Invoke();
     }
 }

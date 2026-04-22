@@ -10,6 +10,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private static BootStrap instance;
     private SceneManager sceneManager;
     private InputManager inputManager;
+    private LocalizationManager localizationManager;
 
     [Header("Gameplay Level Object")]
     [SerializeField] private GameInstaller gameInstallerPrefab;
@@ -38,7 +39,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             if (gameInstaller == null)
             {
                 gameInstaller = Instantiate(gameInstallerPrefab);
-                gameInstaller.Initialize(this, inputManager);
+                gameInstaller.Initialize(this, inputManager, localizationManager);
             }
         }
         else if (_sceneName == dungeonSceneName)
@@ -59,7 +60,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         if (mainMenuInstaller == null)
         {
             mainMenuInstaller = Instantiate(mainMenuInstallerPrefab);
-            mainMenuInstaller.Initialize(this, inputManager);
+            mainMenuInstaller.Initialize(this, inputManager, localizationManager);
         }
     }
 
@@ -126,6 +127,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         sceneManager = GetComponent<SceneManager>();
         inputManager = GetComponent<InputManager>();
+        localizationManager = new LocalizationManager();
+
+        if (localizationManager != null)
+            localizationManager.Initialize();
 
         if (inputManager != null)
         {

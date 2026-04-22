@@ -5,6 +5,7 @@ public class GameInstaller : MonoBehaviour
     //외부 의존성
     private InputManager inputManager;
     private IBootStrapProvider bootStrapProvider;
+    private LocalizationManager localizationManager;
 
     //내부 의존성
     private UnitSpawner unitSpawner;
@@ -25,7 +26,7 @@ public class GameInstaller : MonoBehaviour
 
     private SkillSystem skillSystem;
 
-    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager)
+    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager)
     {
         DontDestroyOnLoad(gameObject);
 
@@ -35,6 +36,7 @@ public class GameInstaller : MonoBehaviour
 
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
+        localizationManager = _localizeManager;
 
         unitSpawner = GetComponentInChildren<UnitSpawner>();
         cameraManager = GetComponent<CameraManager>();
@@ -58,8 +60,8 @@ public class GameInstaller : MonoBehaviour
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,
-        inventoryManager);
-        
+        inventoryManager, localizationManager);
+
         skillDispatcher.Initialize(signalHub,
          inventoryManager,
           townSystem.logProcessingManager.logContainer,

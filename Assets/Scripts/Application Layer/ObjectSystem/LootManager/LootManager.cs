@@ -14,6 +14,10 @@ public class LootManager : MonoBehaviour
 
     // 내부 의존성
     private IObjectPool<LootItem> lootPool;
+    // 최적화: 검색 및 삭제 속도 향상을 위해 HashSet 사용 (O(1))
+    private HashSet<LootItem> activeItems = new HashSet<LootItem>(128);
+    private List<LootItem> activeItemsList = new List<LootItem>(128); // 최적화: 순회용 캐싱 리스트
+    private List<LootItem> cleanupList = new List<LootItem>(128); // ClearAll용 재사용 리스트
 
     /// <summary>
     /// 매니저 초기화 및 오브젝트 풀 설정
@@ -26,11 +30,29 @@ public class LootManager : MonoBehaviour
             actionOnRelease: OnReleaseLootItem,
             actionOnDestroy: OnDestroyLootItem,
             collectionCheck: true,
-            defaultCapacity: 10,
-            maxSize: 100
+            defaultCapacity: 50,
+            maxSize: 300 // 최적화: 전리품은 로그보다는 적으므로 300 정도로 설정
         );
 
         BindEvents();
+    }
+
+    private void Update()
+    {
+        if (activeItems.Count == 0) return;
+
+        // HashSet을 리스트로 복사하여 순회 (GC 할당 최소화 및 컬렉션 변조 방지)
+        activeItemsList.Clear();
+        foreach (var item in activeItems)
+        {
+            activeItemsList.Add(item);
+        }
+
+        float deltaTime = Time.deltaTime;
+        for (int i = 0; i < activeItemsList.Count; i++)
+        {
+            activeItemsList[i].ManualUpdate(deltaTime);
+        }
     }
 
     /// <summary>
@@ -43,12 +65,10 @@ public class LootManager : MonoBehaviour
 
     private void BindEvents()
     {
-        // 필요 시 전역 이벤트 바인딩
     }
 
     private void ReleaseEvents()
     {
-        // 이벤트 해제
     }
 
     /// <summary>
@@ -78,11 +98,13 @@ public class LootManager : MonoBehaviour
     {
         _item.gameObject.SetActive(true);
         _item.ResetItem();
+        activeItems.Add(_item);
     }
 
     private void OnReleaseLootItem(LootItem _item)
     {
         _item.gameObject.SetActive(false);
+        activeItems.Remove(_item);
     }
 
     private void OnDestroyLootItem(LootItem _item)
@@ -90,8 +112,28 @@ public class LootManager : MonoBehaviour
         if (_item != null)
         {
             _item.lootItemAcquiredEvent -= OnLootItemAcquired;
+            activeItems.Remove(_item);
             Destroy(_item.gameObject);
         }
+    }
+
+    public void ClearAll()
+    {
+        if (activeItems.Count == 0) return;
+
+        cleanupList.Clear();
+        foreach (var item in activeItems)
+        {
+            cleanupList.Add(item);
+        }
+
+        for (int i = 0; i < cleanupList.Count; i++)
+        {
+            lootPool.Release(cleanupList[i]);
+        }
+        
+        activeItems.Clear();
+        cleanupList.Clear();
     }
 
     /// <summary>
@@ -116,9 +158,9 @@ public class LootManager : MonoBehaviour
             lootItem.transform.position = _spawnPos;
             lootItem.Initialize(typeData);
 
-            // 포물선 운동 설정 (ItemManager 로직 기반)
+            // 포물선 운동 설정
             Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
-            float randomDist = UnityEngine.Random.Range(0.4f, 1.2f); // 전리품은 약간 더 멀리 튐
+            float randomDist = UnityEngine.Random.Range(0.4f, 1.2f); 
             Vector3 endPos = _spawnPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * randomDist;
 
             float height = UnityEngine.Random.Range(0.6f, 1.2f);

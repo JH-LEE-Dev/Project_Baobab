@@ -32,9 +32,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     // // 내부 상태 및 컬렉션
     private PortalObj portal;
     private List<Vector3> grassTileWorldPositions;
-    private List<Vector3> availablePositions = new List<Vector3>(2000);
-    private List<TreeObj> activeTrees = new List<TreeObj>(2000);
-    private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2000);
+    private List<Vector3> availablePositions = new List<Vector3>(2500);
+    private List<TreeObj> activeTrees = new List<TreeObj>(2500);
+    
+    // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
+    private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
+    private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(2500);
 
     private IObjectPool<TreeObj> treePool;
     private Coroutine growthCoroutine;
@@ -44,6 +47,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private float[] cullingDistances;
     private CullingGroup.StateChanged onCullingStateChangedDelegate;
     private bool isCullingDirty = false;
+    private Camera mainCam; // 최적화: 카메라 캐싱
 
     public IReadOnlyList<ITreeObj> trees => activeTrees;
 
@@ -53,6 +57,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         environmentProvider = _environmentProvider;
         dungeonData = _dungeonData;
+        mainCam = Camera.main;
 
         itemManager = GetComponentInChildren<ItemManager>();
         itemManager.Initialize(_inventoryChecker);
@@ -73,7 +78,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             actionOnDestroy: OnDestroyTree,
             collectionCheck: true,
             defaultCapacity: 200,
-            maxSize: 5000
+            maxSize: 2500
         );
 
         if (itemManager != null)
@@ -119,7 +124,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         SpawnInitialTrees();
     }
 
-    public void ReadyPortalAndCharacter()
+    public void ReadyPortal()
     {
         if (portal == null)
         {
@@ -211,6 +216,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
                 environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
                 environmentProvider.densityProvider.UpdateTreeCnt(true);
+                //Debug.Log($"<color=yellow>[InDungeonObjectManager]</color> Tree Spawned. Current Active Trees: {activeTrees.Count}");
                 return true;
             }
         }
@@ -253,6 +259,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         }
         activeTrees.Clear();
         activeTreesForUpdate.Clear();
+        activeTreesForUpdateSet.Clear();
         isCullingDirty = true;
     }
 
@@ -273,9 +280,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             cullingGroup.onStateChanged = onCullingStateChangedDelegate;
         }
 
-        cullingGroup.targetCamera = Camera.main;
+        if (mainCam == null) mainCam = Camera.main;
+        cullingGroup.targetCamera = mainCam;
         cullingGroup.SetBoundingDistances(cullingDistances);
-        cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
+        cullingGroup.SetDistanceReferencePoint(mainCam.transform);
     }
 
     private void RefreshCullingGroup()
@@ -296,6 +304,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         cullingGroup.SetBoundingSphereCount(count);
 
         activeTreesForUpdate.Clear();
+        activeTreesForUpdateSet.Clear();
         for (int i = 0; i < count; i++)
         {
             bool isVisible = cullingGroup.IsVisible(i);
@@ -306,6 +315,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             if (shouldBeActive)
             {
                 activeTreesForUpdate.Add(activeTrees[i]);
+                activeTreesForUpdateSet.Add(activeTrees[i]);
             }
         }
     }
@@ -324,14 +334,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         if (shouldBeActive)
         {
-            if (!activeTreesForUpdate.Contains(tree))
+            // 최적화: HashSet을 사용하여 O(1) 검색
+            if (activeTreesForUpdateSet.Add(tree))
             {
                 activeTreesForUpdate.Add(tree);
             }
         }
         else
         {
-            activeTreesForUpdate.Remove(tree);
+            if (activeTreesForUpdateSet.Remove(tree))
+            {
+                activeTreesForUpdate.Remove(tree);
+            }
         }
     }
 
@@ -394,7 +408,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             activeTrees.RemoveAt(lastIdx);
         }
 
-        activeTreesForUpdate.Remove(_treeObj);
+        if (activeTreesForUpdateSet.Remove(_treeObj))
+        {
+            activeTreesForUpdate.Remove(_treeObj);
+        }
+        
         isCullingDirty = true;
 
         treePool.Release(_treeObj);

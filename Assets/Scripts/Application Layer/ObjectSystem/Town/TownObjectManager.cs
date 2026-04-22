@@ -21,16 +21,22 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
     private CullingGroup.StateChanged onCullingStateChangedDelegate;
+    private Camera mainCam; // 최적화: 카메라 캐싱
 
     //내부 상태
     private PortalObj portal;
     private TreeObj[] trees;
+    
+    // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
+    private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(200);
+    
     private bool bCanJump = false;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
+        mainCam = Camera.main;
 
         // CullingGroup 및 거리 배열 미리 생성하여 재사용
         if (cullingGroup == null)
@@ -96,8 +102,10 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private void SetupCullingGroup()
     {
+        if (mainCam == null) mainCam = Camera.main;
+        
         // CullingGroup을 새로 생성하지 않고 기존 객체 설정만 갱신
-        cullingGroup.targetCamera = Camera.main;
+        cullingGroup.targetCamera = mainCam;
 
         for (int i = 0; i < trees.Length; i++)
         {
@@ -111,10 +119,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         // 캐싱된 배열 사용 (할당 방지)
         cullingDistances[0] = cullingDistance;
         cullingGroup.SetBoundingDistances(cullingDistances);
-        cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
+        cullingGroup.SetDistanceReferencePoint(mainCam.transform);
 
         // 초기 상태 갱신
         activeTreesForUpdate.Clear();
+        activeTreesForUpdateSet.Clear();
         for (int i = 0; i < trees.Length; i++)
         {
             bool isVisible = cullingGroup.IsVisible(i);
@@ -124,7 +133,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             if (trees[i].gameObject.activeSelf != shouldBeActive)
                 trees[i].gameObject.SetActive(shouldBeActive);
 
-            if (shouldBeActive) activeTreesForUpdate.Add(trees[i]);
+            if (shouldBeActive)
+            {
+                activeTreesForUpdate.Add(trees[i]);
+                activeTreesForUpdateSet.Add(trees[i]);
+            }
         }
     }
 
@@ -145,12 +158,19 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         if (shouldBeActive)
         {
-            if (!activeTreesForUpdate.Contains(tree))
+            // 최적화: HashSet을 사용하여 O(1) 검색 및 추가
+            if (activeTreesForUpdateSet.Add(tree))
+            {
                 activeTreesForUpdate.Add(tree);
+            }
         }
         else
         {
-            activeTreesForUpdate.Remove(tree);
+            // 최적화: HashSet을 사용하여 O(1) 검색 및 삭제
+            if (activeTreesForUpdateSet.Remove(tree))
+            {
+                activeTreesForUpdate.Remove(tree);
+            }
         }
     }
 
@@ -202,6 +222,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             cullingGroup.SetBoundingSphereCount(0);
         }
         activeTreesForUpdate.Clear();
+        activeTreesForUpdateSet.Clear();
         trees = null;
     }
 

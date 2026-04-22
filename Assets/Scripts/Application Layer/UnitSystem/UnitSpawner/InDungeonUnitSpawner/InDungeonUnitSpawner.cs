@@ -26,17 +26,28 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private List<Animal> allSpawnedAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
     private List<int> availableIndices = new List<int>(1024); // GC 방지용 캐싱 인덱스 리스트
 
+    [Header("Optimization")]
+    [SerializeField] private float cullingDistance = 25f;
+    private CullingGroup cullingGroup;
+    private BoundingSphere[] spheres;
+    private float[] cullingDistances;
+    private CullingGroup.StateChanged onCullingStateChangedDelegate;
+    private bool isCullingDirty = false;
+
     // // 풀 설정 변수
     [SerializeField] private bool collectionCheck = false; // 에디터 성능을 위해 false로 설정
     [SerializeField] private int defaultCapacity = 200;
     [SerializeField] private int maxSize = SYSTEM_VAR.MAX_ANIMAL_CNT;
 
     // // 퍼블릭 메서드
-
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
         tilemapDataProvider = environmentProvider.tilemapDataProvider;
+
+        cullingDistances = new float[] { cullingDistance };
+        spheres = new BoundingSphere[maxSize];
+        onCullingStateChangedDelegate = OnCullingStateChanged;
 
         spawnYield = new WaitForSeconds(spawnInterval);
 
@@ -58,6 +69,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
             return;
         }
 
+        SetupCullingGroup();
         StopGrowth();
 
         // 1. 전체 가용 타일 가져오기 (원본 리스트)
@@ -93,6 +105,8 @@ public class InDungeonUnitSpawner : MonoBehaviour
         }
 
         AnimalSpawnedEvent?.Invoke();
+        
+        RefreshCullingGroup();
 
         // 4. 5초 후 점진적 스폰 루틴 시작
         growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
@@ -112,7 +126,10 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
             if (environmentProvider.densityProvider.CanCreateAnimal())
             {
-                SpawnOneAnimalFromAvailable();
+                if (SpawnOneAnimalFromAvailable())
+                {
+                    isCullingDirty = true;
+                }
             }
         }
     }
@@ -139,6 +156,98 @@ public class InDungeonUnitSpawner : MonoBehaviour
         return false;
     }
 
+    private void SetupCullingGroup()
+    {
+        if (cullingGroup == null)
+        {
+            cullingGroup = new CullingGroup();
+            cullingGroup.onStateChanged = onCullingStateChangedDelegate;
+        }
+
+        cullingGroup.targetCamera = Camera.main;
+        cullingGroup.SetBoundingDistances(cullingDistances);
+        cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
+    }
+
+    public void RefreshCullingGroup()
+    {
+        if (cullingGroup == null) return;
+
+        int count = allSpawnedAnimals.Count;
+        if (spheres == null || spheres.Length < count)
+        {
+            spheres = new BoundingSphere[Mathf.Max(count + 100, maxSize)];
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            spheres[i].position = allSpawnedAnimals[i].transform.position;
+            spheres[i].radius = 3f; 
+        }
+
+        cullingGroup.SetBoundingSpheres(spheres);
+        cullingGroup.SetBoundingSphereCount(count);
+
+        for (int i = 0; i < count; i++)
+        {
+            bool isVisible = cullingGroup.IsVisible(i);
+            bool isNear = cullingGroup.GetDistance(i) == 0;
+            bool shouldBeActive = isVisible && isNear;
+
+            if (shouldBeActive == false)
+            {
+                allSpawnedAnimals[i].Hide();
+            }
+            else
+            {    
+                allSpawnedAnimals[i].Show();
+            }
+        }
+    }
+
+    private void UpdateCullingSpheres()
+    {
+        int count = allSpawnedAnimals.Count;
+        for (int i = 0; i < count; i++)
+        {
+            spheres[i].position = allSpawnedAnimals[i].transform.position;
+        }
+    }
+
+    private void OnCullingStateChanged(CullingGroupEvent _ev)
+    {
+        if (_ev.index >= allSpawnedAnimals.Count) return;
+
+        bool shouldBeActive = _ev.isVisible && (_ev.currentDistance == 0);
+        Animal animal = allSpawnedAnimals[_ev.index];
+
+        if (animal != null)
+        {
+            if (shouldBeActive == false)
+            { 
+                animal.Hide();
+            }
+            else
+            { 
+                animal.Show();
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (cullingGroup != null && allSpawnedAnimals.Count > 0)
+        {
+            UpdateCullingSpheres();
+        }
+
+        if (isCullingDirty)
+        {
+            RefreshCullingGroup();
+            isCullingDirty = false;
+        }
+    }
+
     private void SpawnAnimalAt(Vector3 _pos)
     {
         Animal animal = animalPool.Get();
@@ -148,15 +257,17 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
         allSpawnedAnimals.Add(animal);
         environmentProvider.densityProvider.UpdateAnimalCnt(true);
-
+        isCullingDirty = true;
         animal.AnimalIsDeadEvent -= AnimalIsDead;
         animal.AnimalIsDeadEvent += AnimalIsDead;
+
+        //Debug.Log($"<color=cyan>[InDungeonUnitSpawner]</color> Animal Spawned. Current Total Animals: {allSpawnedAnimals.Count}");
     }
 
     public void ReleaseAnimal(Animal _animal)
     {
         _animal.AnimalIsDeadEvent -= AnimalIsDead;
-        
+
         if (_animal.gameObject.activeSelf)
         {
             animalPool.Release(_animal);
@@ -167,10 +278,16 @@ public class InDungeonUnitSpawner : MonoBehaviour
     {
         StopGrowth();
 
+        if (cullingGroup != null)
+        {
+            cullingGroup.onStateChanged = null;
+            cullingGroup.Dispose();
+            cullingGroup = null;
+        }
+
         if (allSpawnedAnimals == null || animalPool == null) return;
 
         // [최적화 핵심] 부모를 잠시 비활성화하여 에디터 Hierarchy 갱신 이벤트를 1번으로 압축
-        // 이 작업이 없으면 2,000번의 UI 리프레시가 발생하여 에디터가 멈춤
         this.gameObject.SetActive(false);
 
         // 리스트를 역순으로 순회하며 안전하게 해제
@@ -180,16 +297,15 @@ public class InDungeonUnitSpawner : MonoBehaviour
             if (animal != null)
             {
                 animal.AnimalIsDeadEvent -= AnimalIsDead;
-                
+
                 animal.DeActivate();
-                // OnReleaseAnimal에서 SetActive(false)를 수행하지만, 
-                // 부모가 이미 꺼져있으므로 개별 UI 갱신 부하가 발생하지 않음
                 animalPool.Release(animal);
                 environmentProvider.densityProvider.UpdateAnimalCnt(false);
             }
         }
 
         allSpawnedAnimals.Clear();
+        isCullingDirty = true;
 
         // 작업 완료 후 부모 재활성화
         this.gameObject.SetActive(true);
@@ -234,11 +350,22 @@ public class InDungeonUnitSpawner : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        if (cullingGroup != null)
+        {
+            cullingGroup.onStateChanged = null;
+            cullingGroup.Dispose();
+            cullingGroup = null;
+        }
+    }
+
     private void AnimalIsDead(Animal _animal)
     {
         environmentProvider.densityProvider.UpdateAnimalCnt(false);
         AnimalIsDeadEvent?.Invoke(_animal);
         allSpawnedAnimals.Remove(_animal);
+        isCullingDirty = true;
         ReleaseAnimal(_animal);
     }
 }

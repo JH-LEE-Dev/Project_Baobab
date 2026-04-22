@@ -1,0 +1,17 @@
+{
+  "sections": [
+    {
+      "uiName": "UIView_HUD",
+      "entries": [
+        { "id": 200, "key": "LBL_LEVEL", "kr": "레벨: {0}", "en": "Lv: {0}" },
+        { "id": 201, "key": "LBL_STAMINA", "kr": "스테미너", "en": "Stamina" }
+      ]
+    },
+    {
+      "uiName": "UIView_MainMenu",
+      "entries": [
+        { "id": 300, "key": "BTN_START", "kr": "게임 시작", "en": "Start Game" }
+      ]
+    }
+  ]
+}

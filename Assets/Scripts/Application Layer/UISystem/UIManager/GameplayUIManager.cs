@@ -8,14 +8,16 @@ public class GameplayUIManager : UIManager
     private ISkillSystemProvider skillSystemProvider;
     private IShopNPC shopNPC;
     private IMoneyData moneyData;
+    private LocalizationManager localizationManager;
 
 
 
     public void Initialize(InputManager _inputManager,IInventory _inventory,IInDungeonObjProvider _inDungeonObjProvider,IInventory _container,
-    ILogCutter _logCutter,ISkillSystemProvider _skillSystemProvider,IShopNPC _shopNPC,IMoneyData _moneyData)
+    ILogCutter _logCutter,ISkillSystemProvider _skillSystemProvider,IShopNPC _shopNPC,IMoneyData _moneyData,LocalizationManager _localizeManager)
     {
-        base.Initialize(_inputManager);
+        base.Initialize(_inputManager,_localizeManager);
 
+        localizationManager = _localizeManager;
         inventory = _inventory;
         inDungeonObjProvider = _inDungeonObjProvider;
         container = _container;

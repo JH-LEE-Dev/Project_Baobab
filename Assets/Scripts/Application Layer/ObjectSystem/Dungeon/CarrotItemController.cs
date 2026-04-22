@@ -16,7 +16,10 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     // 내부 의존성
     private IObjectPool<CarrotItem> carrotPool;
-    private List<CarrotItem> activeItems = new List<CarrotItem>();
+    // 최적화: 검색 및 삭제 속도 향상을 위해 HashSet 사용 (O(1))
+    private HashSet<CarrotItem> activeItems = new HashSet<CarrotItem>(128);
+    private List<CarrotItem> activeItemsList = new List<CarrotItem>(128); // 최적화: 순회용 캐싱 리스트
+    private List<CarrotItem> cleanupList = new List<CarrotItem>(128); // ClearAll용 재사용 리스트
     private float dropMultiplier = 1.0f;
 
     public void Initialize()
@@ -27,9 +30,27 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
             actionOnRelease: OnReleaseCarrotItem,
             actionOnDestroy: OnDestroyCarrotItem,
             collectionCheck: true,
-            defaultCapacity: 10,
-            maxSize: 100
+            defaultCapacity: 50,
+            maxSize: 500
         );
+    }
+
+    private void Update()
+    {
+        if (activeItems.Count == 0) return;
+
+        // HashSet을 직접 순회하면 GC 할당이 발생할 수 있고 변조에 취약하므로 리스트로 복사 후 순회
+        activeItemsList.Clear();
+        foreach (var item in activeItems)
+        {
+            activeItemsList.Add(item);
+        }
+
+        float deltaTime = Time.deltaTime;
+        for (int i = 0; i < activeItemsList.Count; i++)
+        {
+            activeItemsList[i].ManualUpdate(deltaTime);
+        }
     }
 
     private void CarrotItemAcquired(CarrotItem _item)
@@ -49,7 +70,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     private void OnGetCarrotItem(CarrotItem _item)
     {
         _item.gameObject.SetActive(true);
-        _item.Initialize(); // CarrotItem.Initialize()는 매개변수가 없음
+        _item.Initialize(); 
         activeItems.Add(_item);
     }
 
@@ -68,13 +89,22 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void ClearAll()
     {
-        // OnReleaseCarrotItem에서 activeItems.Remove가 호출되므로, 
-        // 역순 순회를 통해 안전하게 모든 아이템을 풀에 반납합니다.
-        for (int i = activeItems.Count - 1; i >= 0; i--)
+        if (activeItems.Count == 0) return;
+
+        // HashSet을 직접 순회하며 Release하면 컬렉션 변조 에러가 발생하므로 임시 리스트 사용
+        cleanupList.Clear();
+        foreach (var item in activeItems)
         {
-            carrotPool.Release(activeItems[i]);
+            cleanupList.Add(item);
         }
+
+        for (int i = 0; i < cleanupList.Count; i++)
+        {
+            carrotPool.Release(cleanupList[i]);
+        }
+        
         activeItems.Clear();
+        cleanupList.Clear();
     }
 
     public void SpawnCarrotItem(Vector3 _position)
@@ -87,7 +117,6 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
             carrotItem.transform.position = _position;
 
-            // 당근 묶음 개수 설정 (기본 랜덤값 * 드랍 배율)
             int randomAmount = UnityEngine.Random.Range(minAmountPerBundle, maxAmountPerBundle + 1);
             float finalAmount = randomAmount * dropMultiplier;
             carrotItem.SetAmount(finalAmount);
@@ -112,9 +141,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     public void IncreaseCarrotDrop(float _amount)
     {
-        // _amount는 0보다 큰 퍼센트 (예: 100.0f는 100% 증가 즉 2배 용량)
         dropMultiplier += (_amount / 100.0f);
-
         Debug.Log($"[CarrotItemController] Carrot Bundle Capacity Increased: {dropMultiplier * 100}%");
     }
 }
