@@ -76,11 +76,11 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     {
         AttackEvent?.Invoke();
         axeAnimation.PlayReturn(OnAttackFinish);
+        StartCoroutine(nameof(AttackCoolDownRoutine));
     }
 
     private void OnAttackFinish()
     {
-        StartCoroutine(nameof(AttackCoolDownRoutine));
 
     }
 

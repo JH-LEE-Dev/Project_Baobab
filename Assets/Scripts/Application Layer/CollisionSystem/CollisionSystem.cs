@@ -7,10 +7,10 @@ using UnityEngine;
 /// </summary>
 public struct CollisionEntity
 {
-    public Vector2 center; 
+    public Vector2 center;
     public float radius;
     public int layerBit; // 2번 최적화: 미리 계산된 비트마스크 (1 << layer)
-    public IStaticCollidable owner; 
+    public IStaticCollidable owner;
 }
 
 public interface IStaticCollidable
@@ -81,7 +81,7 @@ public class CollisionSystem : MonoBehaviour
         // 엔티티 풀 및 연결 포인터 초기화
         entities = new CollisionEntity[maxEntities];
         nextPointers = new int[maxEntities];
-        
+
         // 프리 리스트(사용 가능한 빈 슬롯) 체인 생성
         for (int i = 0; i < maxEntities - 1; i++)
         {
@@ -123,7 +123,7 @@ public class CollisionSystem : MonoBehaviour
 
         // 데이터 채우기
         entities[_newIdx] = CreateEntity(_obj);
-        
+
         // 해당 그리드 체인의 맨 앞에 삽입 (LIFO)
         nextPointers[_newIdx] = _heads[_gridIndex];
         _heads[_gridIndex] = _newIdx;
@@ -155,6 +155,32 @@ public class CollisionSystem : MonoBehaviour
             _prev = _curr;
             _curr = nextPointers[_curr];
         }
+    }
+
+    /// <summary>
+    /// 모든 등록된 콜라이더를 제거하고 시스템을 초기화합니다. 맵 전환 시 사용됩니다.
+    /// </summary>
+    public void ClearAll()
+    {
+        if (staticHeads == null || dynamicHeads == null) return;
+
+        int _totalCells = gridCount.x * gridCount.y;
+        for (int i = 0; i < _totalCells; i++)
+        {
+            staticHeads[i] = -1;
+            dynamicHeads[i] = -1;
+        }
+
+        // 엔티티 참조 해제 및 프리 리스트 체인 재구축
+        for (int i = 0; i < maxEntities; i++)
+        {
+            entities[i].owner = null;
+            nextPointers[i] = i + 1;
+        }
+        nextPointers[maxEntities - 1] = -1;
+        freeListHead = 0;
+
+        Debug.Log("<color=yellow><b>[CollisionSystem]</b> All colliders cleared and system reset.</color>");
     }
 
     public void UpdatePosition(IStaticCollidable _obj, Vector2 _oldPos, Vector2 _newPos)
@@ -319,7 +345,7 @@ public class CollisionSystem : MonoBehaviour
         float _apY = _p.y - _a.y;
         float _t = (_apX * _ab.x + _apY * _ab.y) * _invAb2;
         _t = _t < 0 ? 0 : (_t > 1 ? 1 : _t);
-        
+
         float _dx = _apX - _t * _ab.x;
         float _dy = _apY - _t * _ab.y;
         return _dx * _dx + _dy * _dy;
@@ -345,7 +371,7 @@ public class CollisionSystem : MonoBehaviour
                 Gizmos.DrawWireCube(_cellPos, new Vector3(cellSize, cellSize, 0));
 
                 Gizmos.color = objectColor;
-                
+
                 // Static 객체 시각화
                 int _curr = staticHeads[i];
                 while (_curr != -1)

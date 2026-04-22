@@ -43,6 +43,7 @@ public class TownSystem : MonoBehaviour
 
     public void StartTownSystem(SceneChangeData _sceneChangeData)
     {
+        CollisionSystem.Instance?.ClearAll();
         townObjectManager.ReadyObj();
 
         if (_sceneChangeData.prevScene == SceneType.DungeonScene)

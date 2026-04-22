@@ -159,6 +159,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         // 1. 총알 생성 및 발사
         if (bulletObjManager != null && muzzlePoint != null)
         {
+            StartCoroutine(nameof(FireAfterDelayRoutine));
+
             originalSpeed = ctx.characterStat.speed;
             ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileFire;
 
@@ -233,12 +235,11 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private void OnFireFinish()
     {
         AttackCoolTimeStartEvent?.Invoke();
-        StartCoroutine(nameof(FireAfterDelayRoutine));
     }
 
     private System.Collections.IEnumerator FireAfterDelayRoutine()
     {
-        yield return new WaitForSeconds(ctx.characterStat.afterShotTime);
+        yield return new WaitForSeconds(ctx.characterStat.shotDelay);
 
         DeclareAttackStateEvent?.Invoke(false);
 
