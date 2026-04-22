@@ -63,7 +63,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public Vector2 Offset => collisionOffset; // 오프셋 반환
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
-    private Vector2 lastGridPos;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -97,7 +96,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     {
         shadowSR.enabled = false;
         sr.enabled = false;
-        // 동적 객체에서 제거
+        // 동적 객체에서 제거 (위치 인자 없이 안전하게 제거)
         CollisionSystem.Instance?.Unregister(this, false);
     }
 
@@ -106,7 +105,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         shadowSR.enabled = true;
         sr.enabled = true;
         // 동적 객체(동물)로 등록
-        lastGridPos = transform.position;
         CollisionSystem.Instance?.Register(this, false);
     }
 
@@ -208,10 +206,11 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     {
         stateMachine?.FixedUpdate();
 
+        // 죽었거나 숨겨진 상태에서는 충돌 갱신 및 감지 로직 중단
+        if (bDead || !sr.enabled) return;
+
         // 커스텀 충돌 시스템 격자 정보 갱신
-        Vector2 currentPos = transform.position;
-        CollisionSystem.Instance?.UpdatePosition(this, lastGridPos, currentPos);
-        lastGridPos = currentPos;
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
         // 플레이어 감지 로직 (CollisionSystem 활용)
         UpdateCharacterDetection();
