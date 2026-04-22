@@ -33,7 +33,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         environmentProvider = _environmentProvider;
 
-        healthComponent = GetComponentInChildren<EHealthComponent>();
+        healthComponent = GetComponent<EHealthComponent>();
         healthComponent.Initialize();
 
         treeCollider = GetComponent<Collider2D>();

@@ -12,7 +12,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     [Header("Internal Components")]
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
-    [SerializeField] private TriggerProxy shadowSensor; // 특정 콜라이더 감지용 센서
 
     [Header("Collision & Detection")]
     [SerializeField] private float collisionRadius = 0.14f;
@@ -82,18 +81,12 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
-        pathFindComponent = GetComponentInChildren<PathFindComponent>();
-        healthComponent = GetComponentInChildren<EHealthComponent>();
+        pathFindComponent = GetComponent<PathFindComponent>();
+        healthComponent = GetComponent<EHealthComponent>();
         healthComponent.Initialize();
 
         shadowObject.Initialize();
         pathFindComponent.Initialize(environmentProvider.tilemapDataProvider, environmentProvider.pathfindGridProvider);
-
-        if (shadowSensor != null)
-        {
-            shadowSensor.OnTriggerEnterEvent += HandleShadowEnter;
-            shadowSensor.OnTriggerExitEvent += HandleShadowExit;
-        }
 
         SetupStateMachine();
 
@@ -247,12 +240,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     private void OnDestroy()
     {
         stateMachine?.ReleaseAllState();
-
-        if (shadowSensor != null)
-        {
-            shadowSensor.OnTriggerEnterEvent -= HandleShadowEnter;
-            shadowSensor.OnTriggerExitEvent -= HandleShadowExit;
-        }
 
         // 등록 해제
         CollisionSystem.Instance?.Unregister(this, false);

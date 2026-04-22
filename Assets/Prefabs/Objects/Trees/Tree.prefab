@@ -81,7 +81,7 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
   m_Color: {r: 0.5176471, g: 0.4, b: 0.14117648, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -173,7 +173,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
   m_Color: {r: 0.5176471, g: 0.4, b: 0.14117648, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -197,51 +197,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShadowController
   defaultRotationZ: 225
   defaultScaleY: 1
---- !u!1 &2303735798830986947
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4782754401470922972}
-  - component: {fileID: 6465324624348013105}
-  m_Layer: 10
-  m_Name: HealthComponent
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4782754401470922972
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2303735798830986947}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1921179417615905477}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6465324624348013105
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2303735798830986947}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cf3ae12b6b6743c469cd1f405c94dcfc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::EHealthComponent
-  maxHealth: 4
 --- !u!1 &2935715581250871044
 GameObject:
   m_ObjectHideFlags: 0
@@ -286,6 +241,7 @@ GameObject:
   - component: {fileID: 1921179417615905477}
   - component: {fileID: 5272385284174554040}
   - component: {fileID: 7941305713547832146}
+  - component: {fileID: 3142599335365549467}
   m_Layer: 10
   m_Name: Tree
   m_TagString: Untagged
@@ -309,7 +265,6 @@ Transform:
   - {fileID: 3840560498236531255}
   - {fileID: 8038883340965128800}
   - {fileID: 5074767916962781381}
-  - {fileID: 4782754401470922972}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5272385284174554040
@@ -374,6 +329,19 @@ MonoBehaviour:
   swayMainSpeed: 0.55
   swayDetailSpeed: 1.45
   swayDetailWeight: 0.35
+--- !u!114 &3142599335365549467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2950277259561733017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf3ae12b6b6743c469cd1f405c94dcfc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EHealthComponent
+  maxHealth: 4
 --- !u!1 &3147413912486074957
 GameObject:
   m_ObjectHideFlags: 0
@@ -455,7 +423,7 @@ SpriteRenderer:
   m_SortingLayer: 4
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 0baebf858c2dac64e8099fe5f5f793cc, type: 3}
+  m_Sprite: {fileID: 21300000, guid: faa5d1f9decdec04dbb99edcea569d87, type: 3}
   m_Color: {r: 0.25882354, g: 0.7921569, b: 0.29803923, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -547,7 +515,7 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 0baebf858c2dac64e8099fe5f5f793cc, type: 3}
+  m_Sprite: {fileID: 21300000, guid: faa5d1f9decdec04dbb99edcea569d87, type: 3}
   m_Color: {r: 0.25882354, g: 0.7921569, b: 0.29803923, a: 1}
   m_FlipX: 0
   m_FlipY: 0
