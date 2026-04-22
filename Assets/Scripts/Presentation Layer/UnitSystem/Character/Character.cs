@@ -178,6 +178,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.ResetDurability();
             bWhileSwing = false;
             healthComponent.StaminaReset();
+            statComponent.ResetSpeed();
         }
 
         bInDungeon = _bInDungeon;

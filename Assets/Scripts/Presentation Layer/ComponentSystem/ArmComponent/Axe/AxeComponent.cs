@@ -14,6 +14,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     float IAxeComponent.durability => durability;
 
+    private float originalSpeed;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -64,6 +66,9 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         bAttacked = true;
         axeAnimation.PlaySwing(OnAttackImpact);
 
+        originalSpeed = ctx.characterStat.speed;
+        ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileSwing;
+
         DeclareAttackStateEvent?.Invoke(true);
     }
 
@@ -76,6 +81,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private void OnAttackFinish()
     {
         StartCoroutine(nameof(AttackCoolDownRoutine));
+
     }
 
     private System.Collections.IEnumerator AttackCoolDownRoutine()
@@ -83,7 +89,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         yield return new WaitForSeconds(ctx.characterStat.axeAttackCoolTime);
 
         bAttacked = false;
-
+        ctx.characterStat.speed = originalSpeed;
         DeclareAttackStateEvent?.Invoke(false);
 
         if (bLeftButtonClicked)

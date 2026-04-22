@@ -32,6 +32,8 @@ public class AttackComponent : PComponent
     private Vector2 lastMouseScreenPos;
     public Vector3 mouseTransform { get; private set; }
 
+    private float originalSpeed; // 무기 교체 전 원래 속도 캐싱용
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -246,14 +248,20 @@ public class AttackComponent : PComponent
 
     private System.Collections.IEnumerator WeaponChangeSpeedModifierRoutine()
     {
-        float _originalSpeed = ctx.characterStat.speed;
+        // 무기 교체 중이 아닐 때만 원래 속도를 저장합니다.
+        // 이미 교체 중이라면 originalSpeed에 진짜 원래 속도가 저장되어 있습니다.
+        if (!ctx.bWhileChangingWeapon)
+        {
+            originalSpeed = ctx.characterStat.speed;
+        }
+
         ctx.characterStat.speed = 0.5f;
         ctx.bWhileChangingWeapon = true;
 
         yield return new WaitForSeconds(ctx.characterStat.weaponChangeCoolTime);
 
         ctx.bWhileChangingWeapon = false;
-        ctx.characterStat.speed = _originalSpeed;
+        ctx.characterStat.speed = originalSpeed;
     }
 
     public void SetbAttack(bool _bAttack)

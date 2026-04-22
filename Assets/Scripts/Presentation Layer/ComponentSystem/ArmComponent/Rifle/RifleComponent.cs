@@ -40,6 +40,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     // 조준 보정을 위한 변수 (커스텀 시스템 활용)
     private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
 
+    private float originalSpeed;
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -153,11 +154,14 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void Fire()
     {
-        if (null == rifleAnimation || mag == 0 || bReload == true) return;
+        if (null == rifleAnimation || mag == 0 || bReload == true || bFired == true) return;
 
         // 1. 총알 생성 및 발사
         if (bulletObjManager != null && muzzlePoint != null)
         {
+            originalSpeed = ctx.characterStat.speed;
+            ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileFire;
+
             Quaternion fireRotation;
 
             if (bAimCorrection && CollisionSystem.Instance != null)
@@ -243,6 +247,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bInCoolDown = false;
         anim.SetBool(bReadyHash, bReady);
 
+        ctx.characterStat.speed = originalSpeed;
+
         EnterReady(false);
         // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
         if (bLeftButtonClicked)
@@ -254,6 +260,12 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     public override void SetEnable(bool _boolean)
     {
         base.SetEnable(_boolean);
+
+        if (_boolean == false)
+        {
+            StopCoroutine(nameof(ReloadRoutine));
+            bReload = false;
+        }
 
         bReady = false;
         bFired = false;

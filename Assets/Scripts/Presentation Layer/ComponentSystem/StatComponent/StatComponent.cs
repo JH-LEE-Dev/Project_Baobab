@@ -4,6 +4,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 {
     //Move
     public float speed = 1f;
+    public float originalSpeed =  1f;
 
     //Stamina
     public float maxStamina = 100f;
@@ -34,6 +35,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public int magCap = 2;
     public int ammoCap = 6;
     public float reloadDuration = 3f;
+    public float speedDecreaseWhileFire = 0.3f;
 
     private float baseWeaponChangeCoolTime;
     private float switchSpeedMultiplier = 1.0f;
@@ -112,5 +114,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
         maxStamina = baseMaxStamina + maxStaminaBonus;
 
         Debug.Log($"[StatComponent] Max Stamina Increased: {maxStamina} (Bonus: {maxStaminaBonus})");
+    }
+
+    public void ResetSpeed()
+    {
+        speed = originalSpeed;
     }
 }

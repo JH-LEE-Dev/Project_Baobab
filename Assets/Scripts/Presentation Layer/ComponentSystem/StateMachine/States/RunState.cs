@@ -139,12 +139,6 @@ public class RunState : CharacterState
 
         float speed = groundData.maxSpeed * ctx.characterStat.speed;
 
-        // 도끼질 중에는 이동속도 30% 감소
-        if (character.bWhileSwing)
-        {
-            speed *= 1 - character.statComponent.speedDecreaseWhileSwing;
-        }
-
         Vector2 targetVel = inputDir * speed;
         CircleCollider2D circleCol = character.col;
         character.rb.linearVelocity = Vector2.MoveTowards(
