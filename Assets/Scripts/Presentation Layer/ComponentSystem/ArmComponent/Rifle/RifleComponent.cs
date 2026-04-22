@@ -251,10 +251,18 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         ctx.characterStat.speed = originalSpeed;
 
         EnterReady(false);
-        // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
-        if (bLeftButtonClicked)
+
+        if (mag == 0)
         {
-            Fire();
+            Reload();
+        }
+        else
+        {
+            // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
+            if (bLeftButtonClicked)
+            {
+                Fire();
+            }
         }
     }
 
