@@ -19,7 +19,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     //Axe
     public float axeDamage = 1f; // 기본 데미지를 10으로 수정
-    public float speedDecreaseWhileSwing = 0.3f;
+    public float speedDecreaseWhileSwing = 0.5f;
     private float baseAxeDamage;
     private float axeDamageMultiplier = 1.0f;
     public float axeDurability = 30f;
@@ -35,7 +35,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public int magCap = 2;
     public int ammoCap = 6;
     public float reloadDuration = 3f;
-    public float speedDecreaseWhileFire = 0.3f;
+    public float speedDecreaseWhileFire = 0.5f;
 
     private float baseWeaponChangeCoolTime;
     private float switchSpeedMultiplier = 1.0f;
