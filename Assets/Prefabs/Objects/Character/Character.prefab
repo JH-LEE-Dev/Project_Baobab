@@ -742,7 +742,7 @@ MonoBehaviour:
   weaponChangeCoolTime: 0.5
   bCanHunting: 0
   axeDamage: 1
-  speedDecreaseWhileSwing: 0.3
+  speedDecreaseWhileSwing: 0.5
   axeDurability: 30
   axeDurabilityDecAmount: 1
   axeAttackCoolTime: 1.2
@@ -752,7 +752,7 @@ MonoBehaviour:
   magCap: 2
   ammoCap: 6
   reloadDuration: 3
-  speedDecreaseWhileFire: 0.3
+  speedDecreaseWhileFire: 0.5
 --- !u!1 &5310717925593560820
 GameObject:
   m_ObjectHideFlags: 0

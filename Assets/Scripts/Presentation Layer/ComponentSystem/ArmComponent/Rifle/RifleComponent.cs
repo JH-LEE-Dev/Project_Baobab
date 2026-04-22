@@ -41,6 +41,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
 
     private float originalSpeed;
+    private bool bIsSpeedReduced = false;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -161,8 +163,15 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         {
             StartCoroutine(nameof(FireAfterDelayRoutine));
 
-            originalSpeed = ctx.characterStat.speed;
-            ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileFire;
+            // 발사 시 이동 속도 감소 및 0.3초 후 회복 코루틴 시작
+            if (!bIsSpeedReduced)
+            {
+                originalSpeed = ctx.characterStat.speed;
+                ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileFire;
+                bIsSpeedReduced = true;
+            }
+            StopCoroutine(nameof(SpeedRecoveryRoutine));
+            StartCoroutine(nameof(SpeedRecoveryRoutine));
 
             Quaternion fireRotation;
 
@@ -248,7 +257,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bInCoolDown = false;
         anim.SetBool(bReadyHash, bReady);
 
-        ctx.characterStat.speed = originalSpeed;
+        // 이동 속도 회복은 SpeedRecoveryRoutine에서 처리하므로 여기서 제거
 
         EnterReady(false);
 
@@ -266,6 +275,17 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         }
     }
 
+    private System.Collections.IEnumerator SpeedRecoveryRoutine()
+    {
+        yield return new WaitForSeconds(0.3f);
+
+        if (bIsSpeedReduced)
+        {
+            ctx.characterStat.speed = originalSpeed;
+            bIsSpeedReduced = false;
+        }
+    }
+
     public override void SetEnable(bool _boolean)
     {
         base.SetEnable(_boolean);
@@ -273,6 +293,15 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         if (_boolean == false)
         {
             StopCoroutine(nameof(ReloadRoutine));
+            StopCoroutine(nameof(FireAfterDelayRoutine));
+            StopCoroutine(nameof(SpeedRecoveryRoutine));
+
+            if (bIsSpeedReduced)
+            {
+                ctx.characterStat.speed = originalSpeed;
+                bIsSpeedReduced = false;
+            }
+
             bReload = false;
         }
 
