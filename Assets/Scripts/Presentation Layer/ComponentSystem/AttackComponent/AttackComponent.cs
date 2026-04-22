@@ -149,7 +149,7 @@ public class AttackComponent : PComponent
 
         // 1. 공격 포인트(attackPointTransform) 기준으로 대상 탐지
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, attackRadius, targetLayer, collisionResults);
-        
+
         int hitCount = collisionResults.Count;
         if (hitCount <= 0) return;
 
@@ -230,7 +230,7 @@ public class AttackComponent : PComponent
 
     public void SwitchWeaponMode()
     {
-        if (ctx != null && ctx.bWhileChangingWeapon || ctx.characterStat.bCanHunting == false) return;
+        if (ctx == null || ctx.characterStat.bCanHunting == false || bAttack) return;     
 
         WeaponMode targetMode = (currentWeaponMode == WeaponMode.Axe) ? WeaponMode.Rifle : WeaponMode.Axe;
 
@@ -268,7 +268,7 @@ public class AttackComponent : PComponent
 
     public void GoToAxeMode()
     {
-        if (ctx != null && ctx.bWhileChangingWeapon) return;
+        if (ctx == null || bAttack) return;
         if (currentWeaponMode == WeaponMode.Axe) return;
 
         currentWeaponMode = WeaponMode.Axe;
@@ -283,7 +283,7 @@ public class AttackComponent : PComponent
 
     public void GoToRifleMode()
     {
-        if (ctx != null && ctx.bWhileChangingWeapon || ctx.characterStat.bCanHunting == false) return;
+        if (ctx == null || ctx.characterStat.bCanHunting == false || bAttack) return;
         if (currentWeaponMode == WeaponMode.Rifle) return;
 
         currentWeaponMode = WeaponMode.Rifle;
