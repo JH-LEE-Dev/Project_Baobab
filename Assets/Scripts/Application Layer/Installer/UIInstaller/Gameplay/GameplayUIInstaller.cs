@@ -5,6 +5,7 @@ public class GameplayUIInstaller : MonoBehaviour
     private InputManager inputManager;
     private IBootStrapProvider bootStrapProvider;
     private SignalHub signalHub;
+    private LocalizationManager localizationManager;
 
     private GameplayUIManager uiManager;
     private GameplayUICoordinator uICoordinator;
@@ -33,8 +34,9 @@ public class GameplayUIInstaller : MonoBehaviour
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
         InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
         ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC,
-        IMoneyData _moneyData)
+        IMoneyData _moneyData, LocalizationManager _localizeManager)
     {
+        localizationManager = _localizeManager;
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
         signalHub = _signalHub;
@@ -48,7 +50,7 @@ public class GameplayUIInstaller : MonoBehaviour
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider, shopNPC, moneyData);
+        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider, shopNPC, moneyData, localizationManager);
 
         SetupUIElement();
     }

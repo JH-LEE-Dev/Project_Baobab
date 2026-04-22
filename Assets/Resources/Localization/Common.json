@@ -1,0 +1,14 @@
+{
+  "sections": [
+    {
+      "uiName": "Common",
+      "entries": [
+        { "id": 100, "key": "BTN_OK", "kr": "확인", "en": "OK" },
+        { "id": 101, "key": "BTN_CANCEL", "kr": "취소", "en": "Cancel" },
+        { "id": 102, "key": "BTN_CLOSE", "kr": "닫기", "en": "Close" },
+        { "id": 103, "key": "CURRENCY_COIN", "kr": "코인", "en": "Coin" },
+        { "id": 104, "key": "CURRENCY_CARROT", "kr": "당근", "en": "Carrot" }
+      ]
+    }
+  ]
+}
