@@ -150,7 +150,7 @@ public class AttackComponent : PComponent
         if (CollisionSystem.Instance == null) return;
 
         // 1. 공격 포인트(attackPointTransform) 기준으로 대상 탐지
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, attackRadius, targetLayer, collisionResults,true);
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, attackRadius, targetLayer, collisionResults);
 
         int hitCount = collisionResults.Count;
         if (hitCount <= 0) return;

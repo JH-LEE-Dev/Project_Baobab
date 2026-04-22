@@ -101,8 +101,8 @@ public class CollisionSystem : MonoBehaviour
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int WorldToGridIndex(Vector2 _worldPos)
     {
-        int _x = (int)((_worldPos.x - gridOrigin.x) * invCellSize);
-        int _y = (int)((_worldPos.y - gridOrigin.y) * invCellSize);
+        int _x = Mathf.FloorToInt((_worldPos.x - gridOrigin.x) * invCellSize);
+        int _y = Mathf.FloorToInt((_worldPos.y - gridOrigin.y) * invCellSize);
 
         if (_x < 0 || _x >= gridCount.x || _y < 0 || _y >= gridCount.y) return -1;
         return _x + _y * gridCount.x;
@@ -153,7 +153,7 @@ public class CollisionSystem : MonoBehaviour
                 else nextPointers[_prev] = nextPointers[_curr];
 
                 // 슬롯을 프리 리스트로 반환
-                entities[_curr].owner = null; 
+                entities[_curr].owner = null;
                 nextPointers[_curr] = freeListHead;
                 freeListHead = _curr;
 
@@ -249,10 +249,10 @@ public class CollisionSystem : MonoBehaviour
         float _minY_val = (_start.y < _end.y ? _start.y : _end.y) - _bulletRadius;
         float _maxY_val = (_start.y > _end.y ? _start.y : _end.y) + _bulletRadius;
 
-        int _minX = Mathf.Clamp((int)((_minX_val - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
-        int _maxX = Mathf.Clamp((int)((_maxX_val - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
-        int _minY = Mathf.Clamp((int)((_minY_val - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
-        int _maxY = Mathf.Clamp((int)((_maxY_val - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
+        int _minX = Mathf.Clamp(Mathf.FloorToInt((_minX_val - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
+        int _maxX = Mathf.Clamp(Mathf.FloorToInt((_maxX_val - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
+        int _minY = Mathf.Clamp(Mathf.FloorToInt((_minY_val - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
+        int _maxY = Mathf.Clamp(Mathf.FloorToInt((_maxY_val - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
 
         for (int x = _minX; x <= _maxX; x++)
         {
@@ -287,22 +287,29 @@ public class CollisionSystem : MonoBehaviour
         return false;
     }
 
-    public void GetCollidablesInRadius(Vector2 _center, float _radius, int _layerMask, List<IStaticCollidable> _results,bool _b = false)
+    public void GetCollidablesInRadius(Vector2 _center, float _radius, int _layerMask, List<IStaticCollidable> _results)
     {
         _results.Clear();
 
-        int _minX = Mathf.Clamp((int)((_center.x - _radius - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
-        int _maxX = Mathf.Clamp((int)((_center.x + _radius - gridOrigin.x) * invCellSize), 0, gridCount.x - 1);
-        int _minY = Mathf.Clamp((int)((_center.y - _radius - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
-        int _maxY = Mathf.Clamp((int)((_center.y + _radius - gridOrigin.y) * invCellSize), 0, gridCount.y - 1);
+        // 1. 중심점이 위치한 셀 인덱스를 먼저 찾습니다.
+        int _centerX = Mathf.FloorToInt((_center.x - gridOrigin.x) * invCellSize);
+        int _centerY = Mathf.FloorToInt((_center.y - gridOrigin.y) * invCellSize);
+
+        // 2. 반지름이 커버할 수 있는 셀의 칸 수(Span)를 계산합니다.
+        // 경계선에 걸쳐 있을 때를 대비해 CeilToInt + 1로 여유 있게 범위를 잡습니다.
+        int _span = Mathf.CeilToInt(_radius * invCellSize) + 1;
+
+        int _minX = Mathf.Clamp(_centerX - _span, 0, gridCount.x - 1);
+        int _maxX = Mathf.Clamp(_centerX + _span, 0, gridCount.x - 1);
+        int _minY = Mathf.Clamp(_centerY - _span, 0, gridCount.y - 1);
+        int _maxY = Mathf.Clamp(_centerY + _span, 0, gridCount.y - 1);
 
         for (int x = _minX; x <= _maxX; x++)
         {
             for (int y = _minY; y <= _maxY; y++)
             {
                 int _index = x + y * gridCount.x;
-                if(_b)
-                    Debug.Log(_index);
+
                 InternalCollect(staticHeads[_index], _center, _radius, _layerMask, _results);
                 InternalCollect(dynamicHeads[_index], _center, _radius, _layerMask, _results);
             }
