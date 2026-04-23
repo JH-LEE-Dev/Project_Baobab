@@ -21,7 +21,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [Header("Collision Settings")]
     [SerializeField] private float collisionRadius = 0.15f;
     [SerializeField] private Vector2 collisionOffset = new Vector2(0f, 0.12f);
-    private Vector2 lastGridPos;
 
     private AttackComponent attackComponent;
     private PHealthComponent healthComponent;
@@ -173,11 +172,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
+        CollisionSystem.Instance?.Register(this, false);
+
         if (_bInDungeon == false)
         {
             armComponent.ResetDurability();
             bWhileSwing = false;
             healthComponent.StaminaReset();
+            statComponent.ResetSpeed();
         }
 
         bInDungeon = _bInDungeon;
@@ -300,13 +302,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void OnEnable()
     {
-        lastGridPos = transform.position;
-        CollisionSystem.Instance?.Register(this, false);
+
     }
 
     private void OnDisable()
     {
-        CollisionSystem.Instance?.Unregister(this, false);
+        
     }
 
     #region Unity Event Functions
@@ -341,9 +342,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         SetItemSensorPos();
 
         // 커스텀 충돌 시스템 격자 정보 갱신
-        Vector2 currentPos = transform.position;
-        CollisionSystem.Instance?.UpdatePosition(this, lastGridPos, currentPos);
-        lastGridPos = currentPos;
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
         stateMachine?.FixedUpdate();
@@ -360,6 +359,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
 
         ReleaseEvents();
+        CollisionSystem.Instance?.Unregister(this, false);
     }
 
     private void OnGUI()

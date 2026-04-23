@@ -4,6 +4,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 {
     //Move
     public float speed = 1f;
+    public float originalSpeed =  1f;
 
     //Stamina
     public float maxStamina = 100f;
@@ -17,23 +18,24 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public bool bCanHunting = false;
 
     //Axe
-    public float axeDamage = 10f; // 기본 데미지를 10으로 수정
-    public float speedDecreaseWhileSwing = 0.3f;
+    public float axeDamage = 1f; // 기본 데미지를 10으로 수정
+    public float speedDecreaseWhileSwing = 0.5f;
     private float baseAxeDamage;
     private float axeDamageMultiplier = 1.0f;
     public float axeDurability = 30f;
     public float axeDurabilityDecAmount = 1f;
-    public float axeAttackCoolTime = 0.5f;
+    public float axeAttackCoolTime = 1.2f;
 
     //Rifle
     public float rifleDamage = 10f; // 기본 데미지를 10으로 수정
     private float baseRifleDamage;
     private float rifleDamageMultiplier = 1.0f;
     public float rifleReadyTime = 0;
-    public float afterShotTime = 0.25f;
+    public float shotDelay = 1f;
     public int magCap = 2;
     public int ammoCap = 6;
     public float reloadDuration = 3f;
+    public float speedDecreaseWhileFire = 0.5f;
 
     private float baseWeaponChangeCoolTime;
     private float switchSpeedMultiplier = 1.0f;
@@ -48,7 +50,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     float IStatComponent.rifleDamage => rifleDamage;
     float IStatComponent.rifleReadyTime => rifleReadyTime;
-    float IStatComponent.afterShotTime => afterShotTime;
+    float IStatComponent.afterShotTime => shotDelay;
     int IStatComponent.magCap => magCap;
     int IStatComponent.ammoCap => ammoCap;
     float IStatComponent.reloadDuration => reloadDuration;
@@ -112,5 +114,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
         maxStamina = baseMaxStamina + maxStaminaBonus;
 
         Debug.Log($"[StatComponent] Max Stamina Increased: {maxStamina} (Bonus: {maxStaminaBonus})");
+    }
+
+    public void ResetSpeed()
+    {
+        speed = originalSpeed;
     }
 }

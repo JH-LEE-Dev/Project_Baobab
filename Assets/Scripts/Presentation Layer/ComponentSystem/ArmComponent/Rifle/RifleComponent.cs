@@ -40,6 +40,9 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     // 조준 보정을 위한 변수 (커스텀 시스템 활용)
     private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
 
+    private float originalSpeed;
+    private bool bIsSpeedReduced = false;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -153,11 +156,23 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void Fire()
     {
-        if (null == rifleAnimation || mag == 0 || bReload == true) return;
+        if (null == rifleAnimation || mag == 0 || bReload == true || bFired == true) return;
 
         // 1. 총알 생성 및 발사
         if (bulletObjManager != null && muzzlePoint != null)
         {
+            StartCoroutine(nameof(FireAfterDelayRoutine));
+
+            // 발사 시 이동 속도 감소 및 0.3초 후 회복 코루틴 시작
+            if (!bIsSpeedReduced)
+            {
+                originalSpeed = ctx.characterStat.speed;
+                ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileFire;
+                bIsSpeedReduced = true;
+            }
+            StopCoroutine(nameof(SpeedRecoveryRoutine));
+            StartCoroutine(nameof(SpeedRecoveryRoutine));
+
             Quaternion fireRotation;
 
             if (bAimCorrection && CollisionSystem.Instance != null)
@@ -229,12 +244,11 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private void OnFireFinish()
     {
         AttackCoolTimeStartEvent?.Invoke();
-        StartCoroutine(nameof(FireAfterDelayRoutine));
     }
 
     private System.Collections.IEnumerator FireAfterDelayRoutine()
     {
-        yield return new WaitForSeconds(ctx.characterStat.afterShotTime);
+        yield return new WaitForSeconds(ctx.characterStat.shotDelay);
 
         DeclareAttackStateEvent?.Invoke(false);
 
@@ -243,17 +257,53 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bInCoolDown = false;
         anim.SetBool(bReadyHash, bReady);
 
+        // 이동 속도 회복은 SpeedRecoveryRoutine에서 처리하므로 여기서 제거
+
         EnterReady(false);
-        // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
-        if (bLeftButtonClicked)
+
+        if (mag == 0)
         {
-            Fire();
+            Reload();
+        }
+        else
+        {
+            // 버튼을 계속 누르고 있다면 딜레이 없이 즉시 재조준
+            if (bLeftButtonClicked)
+            {
+                Fire();
+            }
+        }
+    }
+
+    private System.Collections.IEnumerator SpeedRecoveryRoutine()
+    {
+        yield return new WaitForSeconds(0.3f);
+
+        if (bIsSpeedReduced)
+        {
+            ctx.characterStat.speed = originalSpeed;
+            bIsSpeedReduced = false;
         }
     }
 
     public override void SetEnable(bool _boolean)
     {
         base.SetEnable(_boolean);
+
+        if (_boolean == false)
+        {
+            StopCoroutine(nameof(ReloadRoutine));
+            StopCoroutine(nameof(FireAfterDelayRoutine));
+            StopCoroutine(nameof(SpeedRecoveryRoutine));
+
+            if (bIsSpeedReduced)
+            {
+                ctx.characterStat.speed = originalSpeed;
+                bIsSpeedReduced = false;
+            }
+
+            bReload = false;
+        }
 
         bReady = false;
         bFired = false;

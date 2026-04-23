@@ -44,8 +44,11 @@ public class Bullet : MonoBehaviour
             // 충돌 지점으로 이동
             transform.position = hitObject.Position;
 
-            // 데미지 처리
-            hitObject.TakeDamage(damage);
+            // 데미지 처리 (TreeObj인 경우 데미지를 주지 않음)
+            if (!(hitObject is TreeObj))
+            {
+                hitObject.TakeDamage(damage);
+            }
 
             ReturnToPoolEvent?.Invoke(this);
             return;
