@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: f569c17aa813ec142ac7472eb0805e9c
+guid: c2f6545840cc7ea4fbdb2dea3d2b0da9
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7902177099226910640
-    second: Boarder_0
+      213: -5986659100959359604
+    second: New_Rifle_EquipedBulletBox_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,7 +52,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
-  spriteBorder: {x: 13, y: 6, z: 13, w: 4}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Boarder_0
+      name: New_Rifle_EquipedBulletBox_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 32
-        height: 32
+        x: 6
+        y: 2
+        width: 55
+        height: 63
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0bf85a7443c2aad60800000000000000
-      internalID: 7902177099226910640
+      spriteID: c8d35ff244d1beca0800000000000000
+      internalID: -5986659100959359604
       vertices: []
       indices: 
       edges: []
@@ -126,7 +126,7 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 1537655665
+    internalID: 0
     vertices: []
     indices: 
     edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Boarder_0: 7902177099226910640
+      New_Rifle_EquipedBulletBox_0: -5986659100959359604
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
