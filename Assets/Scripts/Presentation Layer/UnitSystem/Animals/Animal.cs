@@ -63,6 +63,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public Vector2 Offset => collisionOffset; // 오프셋 반환
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
+    public int EntityIndex { get; set; } = -1;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -97,7 +98,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         shadowSR.enabled = false;
         sr.enabled = false;
         // 동적 객체에서 제거 (위치 인자 없이 안전하게 제거)
-        CollisionSystem.Instance?.Unregister(this, false);
+        CollisionSystem.Instance?.Unregister(this);
     }
 
     public void Show()
@@ -116,7 +117,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     private void OnDisable()
     {
         // 동적 객체에서 제거
-        CollisionSystem.Instance?.Unregister(this, false);
+        CollisionSystem.Instance?.Unregister(this);
     }
 
     public void SetFacingDirection(Vector2 _input)
@@ -241,7 +242,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         stateMachine?.ReleaseAllState();
 
         // 등록 해제
-        CollisionSystem.Instance?.Unregister(this, false);
+        CollisionSystem.Instance?.Unregister(this);
     }
 
     private void UpdateAnimalColor()

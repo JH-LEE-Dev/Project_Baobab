@@ -55,6 +55,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public Vector2 Offset => collisionOffset;
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
+    public int EntityIndex { get; set; } = -1;
     public void TakeDamage(float _damage) => healthComponent.DecreaseHealth(_damage);
 
     // 캐싱된 해시 및 프로퍼티 (성능 최적화)
@@ -180,6 +181,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             bWhileSwing = false;
             healthComponent.StaminaReset();
             statComponent.ResetSpeed();
+            attackComponent.SetbAttack(false);
+            bCanRotate = true;
         }
 
         bInDungeon = _bInDungeon;
@@ -283,11 +286,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         armComponent.WeaponModeChanged(_currentMode);
     }
 
-    private void SetbCanAction(bool _isAttacking)
+    private void SetbCanAction(bool _isAttacking,bool _bCanRotate = false)
     {
         bWhileSwing = _isAttacking; // 도끼질 등 액션 중일 때 true
-        bCanRotate = !_isAttacking;
-        attackComponent.SetbAttack(_isAttacking);
+        bCanRotate = _bCanRotate;
+        attackComponent.SetbAttack(!_bCanRotate);
         UpdateFacingByAttackPoint();
     }
 
@@ -359,7 +362,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
 
         ReleaseEvents();
-        CollisionSystem.Instance?.Unregister(this, false);
+        CollisionSystem.Instance?.Unregister(this);
     }
 
     private void OnGUI()

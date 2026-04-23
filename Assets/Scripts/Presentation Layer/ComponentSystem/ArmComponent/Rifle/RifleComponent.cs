@@ -4,7 +4,7 @@ using System;
 
 public class RifleComponent : WeaponComponent, IRifleComponent
 {
-    public event Action<bool> DeclareAttackStateEvent;
+    public event Action<bool, bool> DeclareAttackStateEvent;
     public event Action AttackCoolTimeStartEvent;
     public event Action ReloadStartEvent;
 
@@ -236,7 +236,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void OnFireStart()
     {
-        DeclareAttackStateEvent?.Invoke(true);
+        DeclareAttackStateEvent?.Invoke(true, true);
 
         rifleAnimation.PlayRecoil(OnFireFinish);
     }
@@ -250,7 +250,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     {
         yield return new WaitForSeconds(ctx.characterStat.shotDelay);
 
-        DeclareAttackStateEvent?.Invoke(false);
+        DeclareAttackStateEvent?.Invoke(false, true);
 
         bReady = false;
         bFired = false;

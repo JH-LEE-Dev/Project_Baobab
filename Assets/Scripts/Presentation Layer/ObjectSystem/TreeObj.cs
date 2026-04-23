@@ -28,6 +28,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public Vector2 Offset => collisionOffset;
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
+    public int EntityIndex { get; set; } = -1;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -58,7 +59,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     private void OnDisable()
     {
-        CollisionSystem.Instance?.Unregister(this, true);
+        CollisionSystem.Instance?.Unregister(this);
     }
 
 

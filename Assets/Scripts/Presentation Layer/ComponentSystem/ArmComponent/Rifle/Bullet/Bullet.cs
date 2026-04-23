@@ -39,7 +39,7 @@ public class Bullet : MonoBehaviour
 
         // 커스텀 충돌 시스템 사용 (레이어 마스크 추가)
         if (CollisionSystem.Instance != null && 
-            CollisionSystem.Instance.CheckCollision(startPos, endPos, bulletRadius, targetLayer, out IStaticCollidable hitObject))
+            CollisionSystem.Instance.CheckCollision(startPos, endPos, bulletRadius, (int)targetLayer, out IStaticCollidable hitObject))
         {
             // 충돌 지점으로 이동
             transform.position = hitObject.Position;

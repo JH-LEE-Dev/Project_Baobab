@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class AxeComponent : WeaponComponent, IAxeComponent
 {
-    public event Action<bool> DeclareAttackStateEvent;
+    public event Action<bool,bool> DeclareAttackStateEvent;
     public event Action AttackEvent;
 
     // 내부 의존성
@@ -69,7 +69,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         originalSpeed = ctx.characterStat.speed;
         ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileSwing;
 
-        DeclareAttackStateEvent?.Invoke(true);
+        DeclareAttackStateEvent?.Invoke(true,false);
     }
 
     private void OnAttackImpact()
@@ -90,7 +90,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         bAttacked = false;
         ctx.characterStat.speed = originalSpeed;
-        DeclareAttackStateEvent?.Invoke(false);
+        DeclareAttackStateEvent?.Invoke(false,true);
 
         if (bLeftButtonClicked)
         {
