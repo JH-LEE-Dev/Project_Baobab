@@ -266,6 +266,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             {
                 // 캐릭터 인벤토리에서 아이템 하나 추출 (가장 높은 등급의 로그부터)
                 ItemData sourceData = charSlot.itemData;
+
+                // [수정] 컨테이너에 넣을 공간이 있는지 먼저 확인
+                if (!CanAddItemByData(sourceData)) continue;
+
                 LogState takenState = charSlot.TakeOneItem();
 
                 // 컨테이너에 아이템 추가
@@ -292,6 +296,33 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 return true;
             }
         }
+        return false;
+    }
+
+    private bool CanAddItemByData(ItemData _sourceData)
+    {
+        if (_sourceData == null) return false;
+
+        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (containerSlots[i].itemData != null &&
+                containerSlots[i].totalCount < maxItemsPerSlot &&
+                IsSameItemByData(_sourceData, containerSlots[i].itemData))
+            {
+                return true;
+            }
+        }
+
+        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯이 있는지 확인
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (containerSlots[i].itemData == null)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 
