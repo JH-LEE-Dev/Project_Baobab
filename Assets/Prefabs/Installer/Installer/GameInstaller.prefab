@@ -233,8 +233,8 @@ MonoBehaviour:
   gridCount: {x: 50, y: 50}
   gridOrigin: {x: -50, y: -25}
   maxEntities: 10000
-  showDebug: 1
-  showFullGrid: 1
+  showDebug: 0
+  showFullGrid: 0
   objectColor: {r: 0, g: 1, b: 1, a: 1}
   activeGridColor: {r: 0, g: 1, b: 0, a: 0.2}
 --- !u!1 &2554595008635905786
