@@ -1,13 +1,13 @@
 fileFormatVersion: 2
-guid: b96a40ba247b9b24496d11b3b3e404bb
+guid: 1ad3dfe6f524bec43bcacb34238bdcd7
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2300182138327915676
-    second: RifleBulletBox_0
+      213: 1161201145128540330
+    second: Icons_0
   - first:
-      213: -2376872581349382317
-    second: RifleBulletBox_1
+      213: 2130535880278150251
+    second: Icons_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -103,11 +103,11 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: RifleBulletBox_0
+      name: Coin
       rect:
         serializedVersion: 2
         x: 0
-        y: 54
+        y: 304
         width: 16
         height: 16
       alignment: 0
@@ -118,18 +118,18 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4632446388c1410e0800000000000000
-      internalID: -2300182138327915676
+      spriteID: aa8d9280a4a6d1010800000000000000
+      internalID: 1161201145128540330
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: RifleBulletBox_1
+      name: Carrot
       rect:
         serializedVersion: 2
-        x: 16
-        y: 54
+        x: 0
+        y: 288
         width: 16
         height: 16
       alignment: 0
@@ -140,8 +140,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 357ed400bf6a30fd0800000000000000
-      internalID: -2376872581349382317
+      spriteID: b6c0435581f219d10800000000000000
+      internalID: 2130535880278150251
       vertices: []
       indices: 
       edges: []
@@ -150,7 +150,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: a5a4c2034978a6d478fa1ea4e199155f
+    spriteID: bd06446373016fc4593aadc76509650f
     internalID: 0
     vertices: []
     indices: 
@@ -162,8 +162,8 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":16.0,"y":16.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      RifleBulletBox_0: -2300182138327915676
-      RifleBulletBox_1: -2376872581349382317
+      Carrot: 2130535880278150251
+      Coin: 1161201145128540330
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
