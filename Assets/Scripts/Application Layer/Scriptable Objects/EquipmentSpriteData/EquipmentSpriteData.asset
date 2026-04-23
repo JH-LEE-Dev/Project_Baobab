@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSpriteData
   equipmentSprites:
   - type: 1
-    mainSprite: {fileID: 21300000, guid: 112b43c03fbf0524da3d5eb0ad41b7ea, type: 3}
+    mainSprite: {fileID: 21300000, guid: 27d979c631a34f94a9989ea5f7aed471, type: 3}
     subSprite: {fileID: 0}
   - type: 2
-    mainSprite: {fileID: 21300000, guid: 409f2321edd17ed4697f0b7988f4ac4c, type: 3}
+    mainSprite: {fileID: 21300000, guid: c2f6545840cc7ea4fbdb2dea3d2b0da9, type: 3}
     subSprite: {fileID: 21300000, guid: 9bbd2d674efc8f34f8ddcc901455979d, type: 3}
