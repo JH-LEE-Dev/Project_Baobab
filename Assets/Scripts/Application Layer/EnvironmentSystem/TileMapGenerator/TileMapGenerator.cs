@@ -16,6 +16,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private int seed;
     [SerializeField] private float waterThreshold = 0.38f;
 
+    [Header("중앙 보호 구역 설정")]
+    [SerializeField] private float centerSafeZoneRadius = 15f;
+
     [Header("육지 타일 밀도 설정")]
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
     [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
@@ -222,17 +225,30 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         float invWidth = 1f / width;
         float invHeight = 1f / height;
+        float centerX = width * 0.5f;
+        float centerY = height * 0.5f;
+        float radiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
 
         for (int y = 0; y < height; y++)
         {
             int rowOffset = y * width;
             float yCoord = (y + 0.5f) * invHeight * scale + seed;
+            float dy = y - centerY;
 
             for (int x = 0; x < width; x++)
             {
                 int i = x + rowOffset;
                 float xCoord = (x + 0.5f) * invWidth * scale + seed;
-                noiseValues[i] = Mathf.PerlinNoise(xCoord, yCoord);
+                float val = Mathf.PerlinNoise(xCoord, yCoord);
+
+                // 중앙 보호 구역 내에는 물이 생기지 않도록 보정
+                float dx = x - centerX;
+                if (dx * dx + dy * dy < radiusSq)
+                {
+                    val = Mathf.Max(val, waterThreshold + 0.05f);
+                }
+
+                noiseValues[i] = val;
             }
         }
     }
@@ -284,29 +300,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
-        if (innerEdgesList.Count > 0)
-        {
-            playerIdx = innerEdgesList[UnityEngine.Random.Range(0, innerEdgesList.Count)];
-        }
-        else if (shorelineList.Count > 0)
-        {
-            playerIdx = shorelineList[UnityEngine.Random.Range(0, shorelineList.Count)];
-        }
-        else
-        {
-            playerIdx = -1;
-            for (int i = 0; i < size; i++)
-            {
-                if (noiseValues[i] >= waterThreshold)
-                {
-                    playerIdx = i;
-                    break;
-                }
-            }
-        }
+        // 1. 플레이어 스폰 위치를 맵의 중앙(안전 구역의 정중앙)으로 설정
+        int centerX = width / 2;
+        int centerY = height / 2;
+        playerIdx = centerX + centerY * width;
 
-        if (playerIdx == -1) return;
+        if (playerIdx < 0 || playerIdx >= size) playerIdx = 0;
 
+        // 2. 포탈 스폰 위치 결정: 플레이어로부터 가장 먼 곳 선택
         List<int> candidates = innerEdgesList.Count > 0 ? innerEdgesList : shorelineList;
 
         if (candidates.Count > 0)
@@ -347,7 +348,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         walkablePositions.Clear();
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
 
-        // 밀도 기반 임계값 계산
         float totalDensity = sandDensity + grassDensity + rockDensity;
         float invTotal = totalDensity > 0 ? 1f / totalDensity : 0;
         float landRange = 1f - waterThreshold;
@@ -357,10 +357,20 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         Vector3 portalPos = GetPortalSpawnPosition();
         Vector3 playerPos = GetPlayerSpawnPosition();
+        
+        float centerX = width * 0.5f;
+        float centerY = height * 0.5f;
+        float radiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
 
         for (int i = 0; i < size; i++)
         {
             float v = noiseValues[i];
+            int x = i % width;
+            int y = i / width;
+            
+            float dx = x - centerX;
+            float dy = y - centerY;
+            bool inSafeZone = (dx * dx + dy * dy < radiusSq);
 
             if (v < waterThreshold)
             {
@@ -373,8 +383,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 cellToIndex[i] = walkablePositions.Count;
                 walkablePositions.Add(pos);
 
-                // 1. 물 주변(Shoreline)은 항상 모래
-                // 2. 또는 노이즈 값이 모래 임계값보다 낮은 경우 모래
                 if (isShoreline[i] || v < sandThreshold)
                 {
                     groundTiles[i] = sandTile;
@@ -388,13 +396,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                         decoTilesToApply[i] = decoTiles[UnityEngine.Random.Range(0, decoTiles.Count)];
                     }
 
-                    if ((pos - portalPos).sqrMagnitude > 2.25f && (pos - playerPos).sqrMagnitude > 2.25f)
+                    if (!inSafeZone)
                     {
-                        grassPositions.Add(pos);
-                    }
-                    else
-                    {
-                        delayedGrassPositions.Add(pos);
+                        if ((pos - portalPos).sqrMagnitude > 2.25f && (pos - playerPos).sqrMagnitude > 2.25f)
+                        {
+                            grassPositions.Add(pos);
+                        }
+                        else
+                        {
+                            delayedGrassPositions.Add(pos);
+                        }
                     }
                 }
                 else
