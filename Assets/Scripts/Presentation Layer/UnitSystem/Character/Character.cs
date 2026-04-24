@@ -225,9 +225,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
             armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction;
 
-            //armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
-            //armComponent.rifleComponent.DeclareAttackStateEvent += SetbCanAction;
-
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             armComponent.axeComponent.AttackEvent += attackComponent.Attack;
 
@@ -254,7 +251,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
-            //armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
         }

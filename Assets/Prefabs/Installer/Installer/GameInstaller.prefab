@@ -1146,11 +1146,10 @@ MonoBehaviour:
   height: 100
   scale: 10
   seed: 0
-  grassDensity: 0.65
-  useIslandPrevention: 1
-  falloffA: 3
-  falloffB: 6.5
-  waterThreshold: 0.2
+  waterThreshold: 0.25
+  sandDensity: 0.125
+  grassDensity: 0.575
+  rockDensity: 0.3
   waterTile: {fileID: 11400000, guid: 9994dfdbe2ef6f94baa506ce450e2381, type: 2}
   sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
   grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}

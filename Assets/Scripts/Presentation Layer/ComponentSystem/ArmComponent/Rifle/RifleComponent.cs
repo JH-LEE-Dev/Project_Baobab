@@ -314,6 +314,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             bReload = false;
         }
 
+        originalSpeed = ctx.characterStat.originalSpeed;
         bReady = false;
         bFired = false;
         bInCoolDown = false;

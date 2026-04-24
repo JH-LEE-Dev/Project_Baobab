@@ -255,7 +255,7 @@ public class AttackComponent : PComponent
         // 이미 교체 중이라면 originalSpeed에 진짜 원래 속도가 저장되어 있습니다.
         if (!ctx.bWhileChangingWeapon)
         {
-            originalSpeed = ctx.characterStat.speed;
+            originalSpeed = ctx.characterStat.originalSpeed;
         }
 
         ctx.characterStat.speed = 0.5f;

@@ -14,12 +14,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private int height = 150;
     [SerializeField] private float scale = 25f;
     [SerializeField] private int seed;
-
-    [Header("섬 방지 및 Falloff 설정")]
-    [SerializeField] private bool useIslandPrevention = true;
-    [SerializeField] private float falloffA = 3f;
-    [SerializeField] private float falloffB = 6.5f;
     [SerializeField] private float waterThreshold = 0.38f;
+
+    [Header("육지 타일 밀도 설정")]
+    [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
+    [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
+    [SerializeField, Range(0f, 1f)] private float rockDensity = 0.2f;
 
     [Header("타일 에셋")]
     [SerializeField] private TileBase waterTile;
@@ -40,25 +40,20 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] groundTiles;
     private TileBase[] collisionTiles;
     private TileBase[] decoTilesToApply;
-    private int[] cellToIndex; // Dictionary<Vector3Int, int> 대신 사용
-    private bool[] visited;
+    private int[] cellToIndex;
     private bool[] isShoreline;
     private float halfCellY;
 
     // // 최적화 캐싱 배열
-    private float[] falloffMap;
     private Vector3[] worldPosMap;
     private WaitForSeconds delayYield;
 
     // // 재사용 컬렉션 (GC 최소화)
-    private List<int> largestBlob = new List<int>(22500);
-    private List<int> currentBlob = new List<int>(22500);
     private List<int> shorelineList = new List<int>(5000);
     private List<int> innerEdgesList = new List<int>(5000);
     private List<Vector3> grassPositions = new List<Vector3>(5000);
     private List<Vector3> delayedGrassPositions = new List<Vector3>(100);
     private List<Vector3> walkablePositions = new List<Vector3>(22500);
-    private Queue<int> bfsQueue = new Queue<int>(22500);
 
     private int playerIdx = -1;
     private int portalIdx = -1;
@@ -89,34 +84,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         decoTilesToApply = new TileBase[size];
         cellToIndex = new int[size];
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
-        visited = new bool[size];
         isShoreline = new bool[size];
 
-        // 최적화: 맵 전체에 대한 고정 수치 미리 계산
-        falloffMap = new float[size];
         worldPosMap = new Vector3[size];
         
-        float invWidth = (width > 1) ? 1f / (width - 1f) : 1f;
-        float invHeight = (height > 1) ? 1f / (height - 1f) : 1f;
-
         for (int y = 0; y < height; y++)
         {
             int rowOffset = y * width;
-            float ny = y * invHeight * 2f - 1f;
-
             for (int x = 0; x < width; x++)
             {
                 int i = x + rowOffset;
-                
-                // 1. Falloff 맵 미리 계산
-                if (useIslandPrevention)
-                {
-                    float nx = x * invWidth * 2f - 1f;
-                    float dist = Mathf.Max(Mathf.Abs(nx), Mathf.Abs(ny));
-                    falloffMap[i] = EvaluateFalloff(dist);
-                }
-
-                // 2. 월드 좌표 미리 계산
                 Vector3Int cellPos = new Vector3Int(x, y, 0);
                 worldPosMap[i] = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
             }
@@ -136,14 +113,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         decoTilemap.ClearAllTiles();
 
         GenerateNoiseMap();
-        RemoveIslands();
         DetermineSpawns();
         ApplyTiles();
 
         DeclareActiveTilesCntEvent?.Invoke(walkablePositions.Count, grassPositions.Count);
         TilemapGeneratedEvent?.Invoke(grassPositions);
 
-        // 5초 후 누락된 잔디 타일 추가를 위한 코루틴 시작
         StopCoroutine(nameof(AddDelayedGrassPositions));
         StartCoroutine(nameof(AddDelayedGrassPositions));
     }
@@ -257,80 +232,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             {
                 int i = x + rowOffset;
                 float xCoord = (x + 0.5f) * invWidth * scale + seed;
-                float val = Mathf.PerlinNoise(xCoord, yCoord);
-
-                if (useIslandPrevention)
-                {
-                    val -= falloffMap[i];
-                }
-
-                noiseValues[i] = val;
-            }
-        }
-    }
-
-    private void RemoveIslands()
-    {
-        int size = width * height;
-        Array.Clear(visited, 0, size);
-        largestBlob.Clear();
-
-        ReadOnlySpan<int> dx = stackalloc int[] { 1, -1, 0, 0 };
-        ReadOnlySpan<int> dy = stackalloc int[] { 0, 0, 1, -1 };
-
-        for (int i = 0; i < size; i++)
-        {
-            if (noiseValues[i] < waterThreshold || visited[i]) continue;
-
-            currentBlob.Clear();
-            bfsQueue.Clear();
-
-            bfsQueue.Enqueue(i);
-            visited[i] = true;
-
-            while (bfsQueue.Count > 0)
-            {
-                int c = bfsQueue.Dequeue();
-                currentBlob.Add(c);
-
-                int cx = c % width;
-                int cy = c / width;
-
-                for (int j = 0; j < 4; j++)
-                {
-                    int nx = cx + dx[j];
-                    int ny = cy + dy[j];
-
-                    if (nx >= 0 && nx < width && ny >= 0 && ny < height)
-                    {
-                        int ni = nx + ny * width;
-                        if (!visited[ni] && noiseValues[ni] >= waterThreshold)
-                        {
-                            visited[ni] = true;
-                            bfsQueue.Enqueue(ni);
-                        }
-                    }
-                }
-            }
-
-            if (currentBlob.Count > largestBlob.Count)
-            {
-                largestBlob.Clear();
-                largestBlob.AddRange(currentBlob);
-            }
-        }
-
-        Array.Clear(visited, 0, size);
-        for (int i = 0; i < largestBlob.Count; i++)
-        {
-            visited[largestBlob[i]] = true;
-        }
-
-        for (int i = 0; i < size; i++)
-        {
-            if (noiseValues[i] >= waterThreshold && !visited[i])
-            {
-                noiseValues[i] = waterThreshold - 0.05f;
+                noiseValues[i] = Mathf.PerlinNoise(xCoord, yCoord);
             }
         }
     }
@@ -342,29 +244,29 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         shorelineList.Clear();
         innerEdgesList.Clear();
 
-        for (int i = 0; i < largestBlob.Count; i++)
+        for (int i = 0; i < size; i++)
         {
-            int idx = largestBlob[i];
-            int x = idx % width;
-            int y = idx / width;
+            if (noiseValues[i] < waterThreshold) continue;
+
+            int x = i % width;
+            int y = i / width;
 
             if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1))
             {
-                isShoreline[idx] = true;
-                shorelineList.Add(idx);
+                isShoreline[i] = true;
+                shorelineList.Add(i);
             }
         }
 
         ReadOnlySpan<int> dx = stackalloc int[] { 1, -1, 0, 0 };
         ReadOnlySpan<int> dy = stackalloc int[] { 0, 0, 1, -1 };
 
-        for (int i = 0; i < largestBlob.Count; i++)
+        for (int i = 0; i < size; i++)
         {
-            int idx = largestBlob[i];
-            if (isShoreline[idx]) continue;
+            if (noiseValues[i] < waterThreshold || isShoreline[i]) continue;
 
-            int x = idx % width;
-            int y = idx / width;
+            int x = i % width;
+            int y = i / width;
 
             for (int j = 0; j < 4; j++)
             {
@@ -375,14 +277,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 {
                     if (isShoreline[nx + ny * width])
                     {
-                        innerEdgesList.Add(idx);
+                        innerEdgesList.Add(i);
                         break;
                     }
                 }
             }
         }
 
-        // 1. 플레이어 스폰 위치 먼저 결정 (기존 포탈 후보 로직 활용)
         if (innerEdgesList.Count > 0)
         {
             playerIdx = innerEdgesList[UnityEngine.Random.Range(0, innerEdgesList.Count)];
@@ -393,12 +294,19 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         }
         else
         {
-            playerIdx = largestBlob.Count > 0 ? largestBlob[0] : -1;
+            playerIdx = -1;
+            for (int i = 0; i < size; i++)
+            {
+                if (noiseValues[i] >= waterThreshold)
+                {
+                    playerIdx = i;
+                    break;
+                }
+            }
         }
 
         if (playerIdx == -1) return;
 
-        // 2. 포탈 스폰 위치 결정: 플레이어로부터 가장 먼 곳 선택
         List<int> candidates = innerEdgesList.Count > 0 ? innerEdgesList : shorelineList;
 
         if (candidates.Count > 0)
@@ -439,8 +347,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         walkablePositions.Clear();
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
 
-        float sandT = waterThreshold + 0.1f;
-        float mountT = 0.7f;
+        // 밀도 기반 임계값 계산
+        float totalDensity = sandDensity + grassDensity + rockDensity;
+        float invTotal = totalDensity > 0 ? 1f / totalDensity : 0;
+        float landRange = 1f - waterThreshold;
+
+        float sandThreshold = waterThreshold + (landRange * (sandDensity * invTotal));
+        float grassThreshold = sandThreshold + (landRange * (grassDensity * invTotal));
+
         Vector3 portalPos = GetPortalSpawnPosition();
         Vector3 playerPos = GetPlayerSpawnPosition();
 
@@ -459,28 +373,27 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 cellToIndex[i] = walkablePositions.Count;
                 walkablePositions.Add(pos);
 
-                if (v < sandT)
+                // 1. 물 주변(Shoreline)은 항상 모래
+                // 2. 또는 노이즈 값이 모래 임계값보다 낮은 경우 모래
+                if (isShoreline[i] || v < sandThreshold)
                 {
                     groundTiles[i] = sandTile;
                 }
-                else if (v < mountT)
+                else if (v < grassThreshold)
                 {
                     groundTiles[i] = grassTile;
                     
-                    // 30% 확률로 Deco 타일 배치
                     if (decoTiles != null && decoTiles.Count > 0 && UnityEngine.Random.value < 0.3f)
                     {
                         decoTilesToApply[i] = decoTiles[UnityEngine.Random.Range(0, decoTiles.Count)];
                     }
 
-                    // 포탈 및 플레이어 스폰 지점 주변에는 나무(Deco) 생성을 방지
                     if ((pos - portalPos).sqrMagnitude > 2.25f && (pos - playerPos).sqrMagnitude > 2.25f)
                     {
                         grassPositions.Add(pos);
                     }
                     else
                     {
-                        // 스폰 지점 주변 잔디 좌표는 나중에 추가하기 위해 따로 저장
                         delayedGrassPositions.Add(pos);
                     }
                 }
@@ -499,7 +412,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private bool IsWater(int _x, int _y)
     {
-        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return true;
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return false;
         return noiseValues[_x + _y * width] < waterThreshold;
     }
 
@@ -507,12 +420,5 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         if (_idx < 0 || _idx >= worldPosMap.Length) return Vector3.zero;
         return worldPosMap[_idx];
-    }
-
-    private float EvaluateFalloff(float _v)
-    {
-        float p = Mathf.Pow(_v, falloffA);
-        float q = Mathf.Pow(falloffB - falloffB * _v, falloffA);
-        return p / (p + q);
     }
 }
