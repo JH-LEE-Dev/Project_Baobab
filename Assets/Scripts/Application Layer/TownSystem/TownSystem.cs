@@ -13,6 +13,8 @@ public class TownSystem : MonoBehaviour
     public LogProcessingManager logProcessingManager { get; private set; }
     private TentManager tentManager;
 
+    [SerializeField] private Board boardObject;
+
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
     {
         inputManager = _inputManager;
@@ -29,6 +31,9 @@ public class TownSystem : MonoBehaviour
 
         BindEvents();
         SubscribeSignals();
+
+        var board = Instantiate(boardObject, transform.position, Quaternion.identity);
+        board.Initialize(environmentProvider);
     }
 
     public void Release()
