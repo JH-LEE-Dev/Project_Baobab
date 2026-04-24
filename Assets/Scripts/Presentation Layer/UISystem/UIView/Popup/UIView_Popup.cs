@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using static UnityEngine.LowLevelPhysics2D.PhysicsShape;
 
 public class UIView_Popup : UIView
 {
@@ -14,6 +15,7 @@ public class UIView_Popup : UIView
 
     //내부 의존성
     private IInventory inventory;
+    private IMoneyData moneyData;
     private UI_Inventory uI_Inventory;
 
     private const int defaultPopupCap = 12;
@@ -26,11 +28,12 @@ public class UIView_Popup : UIView
         BindEvents();
     }
 
-    public void DependencyInjection(IInventory _inventory)
+    public void DependencyInjection(IInventory _inventory, IMoneyData _moneyData)
     {
         inventory = _inventory;
+        moneyData = _moneyData;
 
-        uI_Inventory?.BindInventory(inventory);
+        uI_Inventory.BindData(inventory, _moneyData);
     }
 
     private void BindEvents()
@@ -108,13 +111,15 @@ public class UIView_Popup : UIView
         GoHomeButtonClickedEvent.Invoke();
     }
 
-     public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
+    public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
     {
-
+        uI_Inventory?.CharacterEarnMoney(_moneyType);
     }
 
     public void CharactersMoneyChanged()
     {
-
+        uI_Inventory?.CharactersMoneyChanged();
     }
+
+    // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
 }

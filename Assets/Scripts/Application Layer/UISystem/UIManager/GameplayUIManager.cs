@@ -30,7 +30,7 @@ public class GameplayUIManager : UIManager
     protected override void DataInjection(UIView view)
     {
         if(view is UIView_Popup invUI)
-            invUI.DependencyInjection(inventory);
+            invUI.DependencyInjection(inventory, moneyData);
 
         if(view is UIView_Unit unitUI)
             unitUI.DependencyInjection(inDungeonObjProvider.trees);
@@ -42,6 +42,6 @@ public class GameplayUIManager : UIManager
             tentUI.DependencyInjection(skillSystemProvider,moneyData);
 
         if(view is UIView_HUD hudUI)
-            hudUI.DependencyInjection(moneyData);
+            hudUI.DependencyInjection();
     }
 }
