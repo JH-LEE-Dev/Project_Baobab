@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: c2f6545840cc7ea4fbdb2dea3d2b0da9
+guid: 8853ba9246ae07d449bbfb94f23c9e68
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5986659100959359604
-    second: New_Rifle_EquipedBulletBox_0
+      213: 2546248642167607797
+    second: AmmoBox_Base_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: New_Rifle_EquipedBulletBox_0
+      name: AmmoBox_Base_0
       rect:
         serializedVersion: 2
-        x: 6
+        x: 3
         y: 2
-        width: 55
-        height: 63
+        width: 15
+        height: 16
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c8d35ff244d1beca0800000000000000
-      internalID: -5986659100959359604
+      spriteID: 5f1983246a7165320800000000000000
+      internalID: 2546248642167607797
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      New_Rifle_EquipedBulletBox_0: -5986659100959359604
+      AmmoBox_Base_0: 2546248642167607797
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

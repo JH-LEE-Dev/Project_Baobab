@@ -232,7 +232,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Keyboard_0
+      name: 1
       rect:
         serializedVersion: 2
         x: 0
@@ -240,7 +240,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -254,7 +254,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_1
+      name: 2
       rect:
         serializedVersion: 2
         x: 16
@@ -262,7 +262,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -276,7 +276,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_2
+      name: 3
       rect:
         serializedVersion: 2
         x: 32
@@ -284,7 +284,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -298,7 +298,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_3
+      name: 4
       rect:
         serializedVersion: 2
         x: 48
@@ -306,7 +306,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -320,7 +320,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_4
+      name: 5
       rect:
         serializedVersion: 2
         x: 64
@@ -328,7 +328,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -342,7 +342,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_5
+      name: 6
       rect:
         serializedVersion: 2
         x: 80
@@ -350,7 +350,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -364,7 +364,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_6
+      name: 7
       rect:
         serializedVersion: 2
         x: 96
@@ -372,7 +372,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -386,7 +386,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_7
+      name: 8
       rect:
         serializedVersion: 2
         x: 112
@@ -394,7 +394,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -408,7 +408,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_8
+      name: 9
       rect:
         serializedVersion: 2
         x: 128
@@ -416,7 +416,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -430,7 +430,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_9
+      name: 0
       rect:
         serializedVersion: 2
         x: 144
@@ -438,7 +438,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -452,7 +452,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_10
+      name: Q
       rect:
         serializedVersion: 2
         x: 0
@@ -460,7 +460,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -474,7 +474,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_11
+      name: A
       rect:
         serializedVersion: 2
         x: 0
@@ -482,7 +482,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -496,7 +496,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_12
+      name: W
       rect:
         serializedVersion: 2
         x: 16
@@ -504,7 +504,7 @@ TextureImporter:
         width: 17
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -518,7 +518,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_13
+      name: S
       rect:
         serializedVersion: 2
         x: 16
@@ -526,7 +526,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -540,7 +540,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_14
+      name: D
       rect:
         serializedVersion: 2
         x: 32
@@ -548,7 +548,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -562,7 +562,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_15
+      name: E
       rect:
         serializedVersion: 2
         x: 33
@@ -570,7 +570,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -584,7 +584,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_16
+      name: F
       rect:
         serializedVersion: 2
         x: 48
@@ -592,7 +592,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -606,7 +606,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_17
+      name: R
       rect:
         serializedVersion: 2
         x: 49
@@ -614,7 +614,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -628,7 +628,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_18
+      name: G
       rect:
         serializedVersion: 2
         x: 64
@@ -636,7 +636,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -650,7 +650,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_19
+      name: T
       rect:
         serializedVersion: 2
         x: 65
@@ -658,7 +658,7 @@ TextureImporter:
         width: 15
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -672,7 +672,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_20
+      name: Y
       rect:
         serializedVersion: 2
         x: 80
@@ -680,7 +680,7 @@ TextureImporter:
         width: 15
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -694,7 +694,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_21
+      name: H
       rect:
         serializedVersion: 2
         x: 80
@@ -702,7 +702,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -716,7 +716,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_22
+      name: U
       rect:
         serializedVersion: 2
         x: 95
@@ -724,7 +724,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -738,7 +738,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_23
+      name: J
       rect:
         serializedVersion: 2
         x: 96
@@ -746,7 +746,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -760,7 +760,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_24
+      name: I
       rect:
         serializedVersion: 2
         x: 111
@@ -768,7 +768,7 @@ TextureImporter:
         width: 15
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -782,7 +782,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_25
+      name: K
       rect:
         serializedVersion: 2
         x: 112
@@ -790,7 +790,7 @@ TextureImporter:
         width: 15
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -804,7 +804,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_26
+      name: O
       rect:
         serializedVersion: 2
         x: 126
@@ -812,7 +812,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -826,7 +826,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_27
+      name: L
       rect:
         serializedVersion: 2
         x: 127
@@ -834,7 +834,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -848,7 +848,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_28
+      name: P
       rect:
         serializedVersion: 2
         x: 142
@@ -856,7 +856,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -870,7 +870,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_29
+      name: Z
       rect:
         serializedVersion: 2
         x: 0
@@ -878,7 +878,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -892,7 +892,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_30
+      name: X
       rect:
         serializedVersion: 2
         x: 16
@@ -900,7 +900,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -914,7 +914,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_31
+      name: C
       rect:
         serializedVersion: 2
         x: 32
@@ -922,7 +922,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -936,7 +936,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_32
+      name: V
       rect:
         serializedVersion: 2
         x: 48
@@ -944,7 +944,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -958,7 +958,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_33
+      name: B
       rect:
         serializedVersion: 2
         x: 64
@@ -966,7 +966,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -980,7 +980,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_34
+      name: N
       rect:
         serializedVersion: 2
         x: 80
@@ -988,7 +988,7 @@ TextureImporter:
         width: 16
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1002,7 +1002,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_35
+      name: M
       rect:
         serializedVersion: 2
         x: 96
@@ -1010,7 +1010,7 @@ TextureImporter:
         width: 17
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1024,7 +1024,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_36
+      name: Ctrl
       rect:
         serializedVersion: 2
         x: 0
@@ -1032,7 +1032,7 @@ TextureImporter:
         width: 36
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1046,7 +1046,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_37
+      name: RALT
       rect:
         serializedVersion: 2
         x: 0
@@ -1054,7 +1054,7 @@ TextureImporter:
         width: 36
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1068,7 +1068,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_38
+      name: Caps
       rect:
         serializedVersion: 2
         x: 36
@@ -1076,7 +1076,7 @@ TextureImporter:
         width: 37
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1090,7 +1090,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_39
+      name: LALT
       rect:
         serializedVersion: 2
         x: 36
@@ -1098,7 +1098,7 @@ TextureImporter:
         width: 36
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1112,7 +1112,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_40
+      name: Tab
       rect:
         serializedVersion: 2
         x: 73
@@ -1120,7 +1120,7 @@ TextureImporter:
         width: 29
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1134,7 +1134,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_41
+      name: RSHIFT
       rect:
         serializedVersion: 2
         x: 0
@@ -1142,7 +1142,7 @@ TextureImporter:
         width: 51
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1156,7 +1156,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_42
+      name: SPACE
       rect:
         serializedVersion: 2
         x: 0
@@ -1164,7 +1164,7 @@ TextureImporter:
         width: 45
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1178,7 +1178,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_43
+      name: ENTER
       rect:
         serializedVersion: 2
         x: 45
@@ -1186,7 +1186,7 @@ TextureImporter:
         width: 45
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1200,7 +1200,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Keyboard_44
+      name: LSHIFT
       rect:
         serializedVersion: 2
         x: 51
@@ -1208,7 +1208,7 @@ TextureImporter:
         width: 51
         height: 16
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -1225,7 +1225,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 4270fde83bb85c54c99f7b386ac4f376
     internalID: 0
     vertices: []
     indices: 
@@ -1235,51 +1235,51 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Keyboard_0: -2823838568841336431
-      Keyboard_1: 6085385420470213244
-      Keyboard_10: 6995106176698162816
-      Keyboard_11: 1187537212550703846
-      Keyboard_12: -104301533446479032
-      Keyboard_13: 9029442942846419443
-      Keyboard_14: 6795409371067449872
-      Keyboard_15: 5224451155267696052
-      Keyboard_16: -2728171450271835044
-      Keyboard_17: -5111816237784847471
-      Keyboard_18: 1578856458138360065
-      Keyboard_19: 5304374964397039406
-      Keyboard_2: -577686727893085468
-      Keyboard_20: 7261671367060460251
-      Keyboard_21: 2359759391466069042
-      Keyboard_22: -3206160940168010927
-      Keyboard_23: 5133221404087000118
-      Keyboard_24: -8948357247204089987
-      Keyboard_25: 3750867712092460386
-      Keyboard_26: -7252917745367865128
-      Keyboard_27: 2757793284116737166
-      Keyboard_28: -4582116138006726093
-      Keyboard_29: 168199103464885658
-      Keyboard_3: 9153071815677446063
-      Keyboard_30: -4717221262036896043
-      Keyboard_31: 3919843185787552682
-      Keyboard_32: -1190337126863604971
-      Keyboard_33: 8220729595389855589
-      Keyboard_34: -4971385317342494184
-      Keyboard_35: -7244943512847257755
-      Keyboard_36: -8988453363871436054
-      Keyboard_37: -4295832443051884682
-      Keyboard_38: 6271378091339648738
-      Keyboard_39: 4941791989709898505
-      Keyboard_4: -8273527477377572067
-      Keyboard_40: -5498943590745462462
-      Keyboard_41: 5951346227163084395
-      Keyboard_42: -3235559010797341466
-      Keyboard_43: 2257818715793367387
-      Keyboard_44: -7252323885057726273
-      Keyboard_5: -8487786551566072494
-      Keyboard_6: 3753843634913423252
-      Keyboard_7: 6402719276169280715
-      Keyboard_8: -2435546281298495274
-      Keyboard_9: -5987542093376887276
+      0: -5987542093376887276
+      1: -2823838568841336431
+      2: 6085385420470213244
+      3: -577686727893085468
+      4: 9153071815677446063
+      5: -8273527477377572067
+      6: -8487786551566072494
+      7: 3753843634913423252
+      8: 6402719276169280715
+      9: -2435546281298495274
+      A: 1187537212550703846
+      B: 8220729595389855589
+      C: 3919843185787552682
+      Caps: 6271378091339648738
+      Ctrl: -8988453363871436054
+      D: 6795409371067449872
+      E: 5224451155267696052
+      ENTER: 2257818715793367387
+      F: -2728171450271835044
+      G: 1578856458138360065
+      H: 2359759391466069042
+      I: -8948357247204089987
+      J: 5133221404087000118
+      K: 3750867712092460386
+      L: 2757793284116737166
+      LALT: 4941791989709898505
+      LSHIFT: -7252323885057726273
+      M: -7244943512847257755
+      N: -4971385317342494184
+      O: -7252917745367865128
+      P: -4582116138006726093
+      Q: 6995106176698162816
+      R: -5111816237784847471
+      RALT: -4295832443051884682
+      RSHIFT: 5951346227163084395
+      S: 9029442942846419443
+      SPACE: -3235559010797341466
+      T: 5304374964397039406
+      Tab: -5498943590745462462
+      U: -3206160940168010927
+      V: -1190337126863604971
+      W: -104301533446479032
+      X: -4717221262036896043
+      Y: 7261671367060460251
+      Z: 168199103464885658
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

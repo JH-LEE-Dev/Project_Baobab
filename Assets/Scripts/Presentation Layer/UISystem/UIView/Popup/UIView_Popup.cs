@@ -12,12 +12,10 @@ public class UIView_Popup : UIView
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiInventoryPrefab;
-    [SerializeField] private GameObject uiHomingPrefab;
 
     //내부 의존성
     private IInventory inventory;
     private UI_Inventory uI_Inventory;
-    private UI_Homing uI_Homing;
 
     private const int defaultPopupCap = 12;
 
@@ -25,9 +23,7 @@ public class UIView_Popup : UIView
     {
         base.Initialize(_ctx);
 
-        Init_Homing();
         Init_Inventory();
-
         BindEvents();
     }
 
@@ -63,7 +59,7 @@ public class UIView_Popup : UIView
         if (null == uI_Inventory)
             return;
 
-        uI_Inventory.Initialize(uiRoot);
+        uI_Inventory.Initialize(uiRoot, OnHomingButtonClicked);
         uI_Inventory.OnHide();
     }
 
@@ -74,30 +70,6 @@ public class UIView_Popup : UIView
 
     public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
 
-    #endregion
-
-#region [ Homing UI ]
-
-    private void Init_Homing()
-    {
-        if (null == uiHomingPrefab)
-            return;
-
-        uI_Homing = Instantiate(uiHomingPrefab, this.transform.parent).GetComponent<UI_Homing>();
-
-        if (null == uI_Homing)
-            return;
-
-        uI_Homing.Initialize();
-
-        uI_Homing.clickedEvent -= OnHomingButtonClicked;
-        uI_Homing.clickedEvent += OnHomingButtonClicked;
-
-        uI_Homing.gameObject.SetActive(false);
-    }
-
-    #endregion
-
     public void InventorySpecChanged() //인벤토리 스펙이 변경되었을 때,
     {
         if (null != uI_Inventory)
@@ -107,18 +79,20 @@ public class UIView_Popup : UIView
         }
     }
 
+    #endregion
+
+
+
     protected override void OnShow()
     {
         base.OnShow();
 
         uI_Inventory?.OnShow();
-        uI_Homing?.OnShow();
     }
 
     protected override void OnHide()
     {
         uI_Inventory?.OnHide();
-        uI_Homing?.OnHide();
 
         base.OnHide();
     }
@@ -127,8 +101,7 @@ public class UIView_Popup : UIView
     {
         ReleaseEvents();
 
-        uI_Inventory?.OnDestroy();
-        //uI_Homing?.OnDestroy();
+        uI_Inventory?.Destory();
     }
 
     private void OnHomingButtonClicked()
