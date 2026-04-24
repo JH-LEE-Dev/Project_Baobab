@@ -32,7 +32,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     [SerializeField] private LayerMask targetLayer; // 일반 타겟 레이어
     [SerializeField] private LayerMask aimCorrectionLayer; // 조준 보정 전용 레이어
 
-    private bool bAimCorrection = false;
+    private bool bAimCorrection = true;
     private Transform attackTransform;
     private int mag;
     private int ammo;

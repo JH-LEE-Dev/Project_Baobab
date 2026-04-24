@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 public class GameplayUICoordinator
 {
     private UIView_Popup popUpUI;
