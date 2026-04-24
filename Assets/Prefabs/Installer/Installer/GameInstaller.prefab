@@ -1285,6 +1285,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownSystem
   townStartPoint: {fileID: 4434414126251310962, guid: 7e2fffb1c09c60c4e86d94bff7fd2f97, type: 3}
+  boardObject: {fileID: 3483514603918842098, guid: 0c4bcb0a63b2cc14a8d374f26111d162, type: 3}
 --- !u!1 &7829982200698710532
 GameObject:
   m_ObjectHideFlags: 0
