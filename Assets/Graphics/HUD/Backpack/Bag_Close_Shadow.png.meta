@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: ff9c5098009e1094bb5d6d7792b7d542
+guid: 38155bf2dc767ef498ed7f4c298fafea
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8938166904968844180
-    second: NewSlot_3_0
+      213: -470080702150636375
+    second: Bag_Close_Shadow_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: NewSlot_3_0
+      name: Bag_Close_Shadow_0
       rect:
         serializedVersion: 2
-        x: 0
+        x: 4
         y: 0
-        width: 24
-        height: 24
+        width: 56
+        height: 69
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 49312d1917fba0c70800000000000000
-      internalID: 8938166904968844180
+      spriteID: 9ac8b8c8710f979f0800000000000000
+      internalID: -470080702150636375
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      NewSlot_3_0: 8938166904968844180
+      Bag_Close_Shadow_0: -470080702150636375
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
