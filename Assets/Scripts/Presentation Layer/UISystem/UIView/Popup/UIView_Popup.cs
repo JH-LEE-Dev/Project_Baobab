@@ -7,7 +7,6 @@ public class UIView_Popup : UIView
     public event Action GoHomeButtonClickedEvent;
     public event Action<IInventorySlot> SendDeleteItemEvent;
 
-
     //외부 의존성
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
