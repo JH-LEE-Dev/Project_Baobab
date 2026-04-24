@@ -121,8 +121,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45acdcfb0f73b344fab31c821e7fd95e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
-  TreeMaxDensityRatio: 1
-  TreeStartDensityRatio: 0.1
+  TreeMaxDensityRatio: 0.07
+  TreeStartDensityRatio: 0.04
   RabbitMaxDensityRatio: 0.05
   RabbitStartDensityRatio: 0.02
   applyToStartCnt: 1
@@ -233,8 +233,8 @@ MonoBehaviour:
   gridCount: {x: 50, y: 50}
   gridOrigin: {x: -50, y: -25}
   maxEntities: 10000
-  showDebug: 1
-  showFullGrid: 1
+  showDebug: 0
+  showFullGrid: 0
   objectColor: {r: 0, g: 1, b: 1, a: 1}
   activeGridColor: {r: 0, g: 1, b: 0, a: 0.2}
 --- !u!1 &2554595008635905786
@@ -1146,10 +1146,11 @@ MonoBehaviour:
   height: 100
   scale: 10
   seed: 0
-  useIslandPrevention: 1
-  falloffA: 3
-  falloffB: 6.5
-  waterThreshold: 0.2
+  waterThreshold: 0.25
+  centerSafeZoneRadius: 5
+  sandDensity: 0.125
+  grassDensity: 0.575
+  rockDensity: 0.3
   waterTile: {fileID: 11400000, guid: 9994dfdbe2ef6f94baa506ce450e2381, type: 2}
   sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
   grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}

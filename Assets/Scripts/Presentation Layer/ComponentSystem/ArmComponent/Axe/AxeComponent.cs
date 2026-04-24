@@ -3,7 +3,8 @@ using UnityEngine;
 
 public class AxeComponent : WeaponComponent, IAxeComponent
 {
-    public event Action<bool,bool> DeclareAttackStateEvent;
+    public event Action<bool> DeclareCanSwapEvent;
+    public event Action<bool> DeclareAttackStateEvent;
     public event Action AttackEvent;
 
     // 내부 의존성
@@ -66,10 +67,11 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         bAttacked = true;
         axeAnimation.PlaySwing(OnAttackImpact);
 
-        originalSpeed = ctx.characterStat.speed;
+        originalSpeed = ctx.characterStat.originalSpeed;
         ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileSwing;
 
-        DeclareAttackStateEvent?.Invoke(true,false);
+        DeclareCanSwapEvent?.Invoke(false);
+        DeclareAttackStateEvent?.Invoke(true);
     }
 
     private void OnAttackImpact()
@@ -81,7 +83,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void OnAttackFinish()
     {
-
+        DeclareCanSwapEvent?.Invoke(true);
     }
 
     private System.Collections.IEnumerator AttackCoolDownRoutine()
@@ -90,7 +92,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         bAttacked = false;
         ctx.characterStat.speed = originalSpeed;
-        DeclareAttackStateEvent?.Invoke(false,true);
+        DeclareAttackStateEvent?.Invoke(false);
 
         if (bLeftButtonClicked)
         {
@@ -109,5 +111,16 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public override void ResetDurability()
     {
         durability = ctx.characterStat.axeDurability;
+    }
+
+    public void SetbAttack(bool _boolean)
+    {
+        bAttacked = _boolean;
+
+        if (!_boolean)
+        {
+            StopCoroutine(nameof(AttackCoolDownRoutine));
+            ctx.characterStat.speed = originalSpeed;
+        }
     }
 }

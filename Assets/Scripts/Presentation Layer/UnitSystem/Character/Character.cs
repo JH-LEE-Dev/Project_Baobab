@@ -1,4 +1,5 @@
 using System;
+using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable
@@ -112,7 +113,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void SetFacingDirection(Vector2 _input)
     {
-        if (_input.sqrMagnitude < 0.01f || bCanRotate == false) return;
+        if (_input.sqrMagnitude < 0.01f || bCanRotate == false || bWhileSwing == true) return;
 
         float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
@@ -183,6 +184,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             statComponent.ResetSpeed();
             attackComponent.SetbAttack(false);
             bCanRotate = true;
+            attackComponent.SetbCanSwap(false);
+        }
+        else
+        {
+            attackComponent.SetbCanSwap(true);
         }
 
         bInDungeon = _bInDungeon;
@@ -219,9 +225,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
             armComponent.axeComponent.DeclareAttackStateEvent += SetbCanAction;
 
-            armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
-            armComponent.rifleComponent.DeclareAttackStateEvent += SetbCanAction;
-
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             armComponent.axeComponent.AttackEvent += attackComponent.Attack;
 
@@ -230,6 +233,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
             healthComponent.StaminaIsEmptyEvent += StaminaIsEmpty;
+
+            armComponent.axeComponent.DeclareCanSwapEvent -= SetbCanRotate;
+            armComponent.axeComponent.DeclareCanSwapEvent += SetbCanRotate;
+
+            armComponent.rifleComponent.DeclareCanSwapEvent -= SetbCanRotate;
+            armComponent.rifleComponent.DeclareCanSwapEvent += SetbCanRotate;
         }
     }
 
@@ -242,7 +251,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
-            armComponent.rifleComponent.DeclareAttackStateEvent -= SetbCanAction;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
         }
@@ -284,14 +292,23 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         WeaponModeChangedEvent?.Invoke(_currentMode);
         armComponent.WeaponModeChanged(_currentMode);
+        bWhileSwing = false;
+        attackComponent.SetbAttack(false);
+        armComponent.axeComponent.SetbAttack(false);
+        armComponent.rifleComponent.SetbAttack(false);
     }
 
-    private void SetbCanAction(bool _isAttacking,bool _bCanRotate = false)
+    private void SetbCanAction(bool _isAttacking)
     {
         bWhileSwing = _isAttacking; // 도끼질 등 액션 중일 때 true
-        bCanRotate = _bCanRotate;
-        attackComponent.SetbAttack(!_bCanRotate);
+        attackComponent.SetbAttack(_isAttacking);
         UpdateFacingByAttackPoint();
+    }
+
+    private void SetbCanRotate(bool _bCanRotate)
+    {
+        bCanRotate = _bCanRotate;
+        attackComponent.SetbCanRotate(_bCanRotate);
     }
 
     private void StaminaIsEmpty()
@@ -310,7 +327,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void OnDisable()
     {
-        
+
     }
 
     #region Unity Event Functions
