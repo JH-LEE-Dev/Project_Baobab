@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 7eb375bb43b9c92419cc6bcef01ffd6d
+guid: b2f0c8e19d3c0fe45abab522ecb90e39
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4213189240757180704
-    second: Rifle_EquipedBulletBox_0
+      213: 8544433101054394357
+    second: Icon_Switching_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Rifle_EquipedBulletBox_0
+      name: Icon_Switching_0
       rect:
         serializedVersion: 2
-        x: 6
-        y: 1
-        width: 55
-        height: 64
+        x: 2
+        y: 3
+        width: 15
+        height: 13
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0e6ab2d35beb785c0800000000000000
-      internalID: -4213189240757180704
+      spriteID: 5ffbf6392ace39670800000000000000
+      internalID: 8544433101054394357
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Rifle_EquipedBulletBox_0: -4213189240757180704
+      Icon_Switching_0: 8544433101054394357
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

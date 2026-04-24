@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: b96a40ba247b9b24496d11b3b3e404bb
+guid: bf3c94be212686d4db232300d6558d54
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2300182138327915676
-    second: RifleBulletBox_0
-  - first:
-      213: -2376872581349382317
-    second: RifleBulletBox_1
+      213: 5221250840726959115
+    second: Rifle_Base_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -49,9 +46,9 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
-  spriteMeshType: 1
+  spriteMeshType: 0
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
@@ -103,45 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: RifleBulletBox_0
+      name: Rifle_Base_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 54
-        width: 16
-        height: 16
+        x: 4
+        y: 4
+        width: 55
+        height: 63
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4632446388c1410e0800000000000000
-      internalID: -2300182138327915676
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: RifleBulletBox_1
-      rect:
-        serializedVersion: 2
-        x: 16
-        y: 54
-        width: 16
-        height: 16
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 357ed400bf6a30fd0800000000000000
-      internalID: -2376872581349382317
+      spriteID: b047dbce9fb957840800000000000000
+      internalID: 5221250840726959115
       vertices: []
       indices: 
       edges: []
@@ -150,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: a5a4c2034978a6d478fa1ea4e199155f
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -158,12 +133,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries:
-      - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":16.0,"y":16.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+      entries: []
     nameFileIdTable:
-      RifleBulletBox_0: -2300182138327915676
-      RifleBulletBox_1: -2376872581349382317
+      Rifle_Base_0: 5221250840726959115
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

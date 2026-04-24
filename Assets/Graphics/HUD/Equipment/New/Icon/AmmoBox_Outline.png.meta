@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 9b84906db8162c6408942942f071c292
+guid: 1346a2a90282089448a469410d1f21a9
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -1174520554867778053
-    second: Rifle_NoBulletBox_0
+      213: -1022147168649652762
+    second: AmmoBox_Outline_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Rifle_NoBulletBox_0
+      name: AmmoBox_Outline_0
       rect:
         serializedVersion: 2
-        x: 6
+        x: 2
         y: 1
-        width: 55
-        height: 64
+        width: 17
+        height: 18
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: bfd16b937c343bfe0800000000000000
-      internalID: -1174520554867778053
+      spriteID: 6e55770d09a90d1f0800000000000000
+      internalID: -1022147168649652762
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Rifle_NoBulletBox_0: -1174520554867778053
+      AmmoBox_Outline_0: -1022147168649652762
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

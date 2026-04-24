@@ -1,12 +1,18 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class UI_Inventory : MonoBehaviour
 {
     //이벤트
     public event Action<IInventorySlot> SendDeleteItemEvent;
-    
+
+    [Header("Binding Obj")]
+    [SerializeField] private GameObject uiBackground;
+    [SerializeField] private UI_Homing uiHoming;
+
+    [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject uiPopupPrefab;
 
@@ -23,11 +29,14 @@ public class UI_Inventory : MonoBehaviour
 
     public bool isOpening { get; private set; } = false;
 
-    public void Initialize(Transform uiRoot)
+    public void Initialize(Transform uiRoot, Action clickedHomingEvent)
     {
+        Init_Background();
+        Init_Honing(clickedHomingEvent);
+        Init_InventoryPopup();
+
         inventorySlots.Clear();
         UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
-        Init_InventoryPopup();
     }
 
     public void BindInventory(IInventory _inventory)
@@ -46,7 +55,7 @@ public class UI_Inventory : MonoBehaviour
 
         while (0 < needCount--)
         {
-            UI_InventorySlot slot = Instantiate(uiSlotPrefab, this.transform).GetComponent<UI_InventorySlot>();
+            UI_InventorySlot slot = Instantiate(uiSlotPrefab, uiBackground.transform).GetComponent<UI_InventorySlot>();
 
             if (null == slot)
                 return;
@@ -150,6 +159,23 @@ public class UI_Inventory : MonoBehaviour
     }
     #endregion
 
+    private void Init_Background()
+    {
+        uiBackground?.SetActive(false);
+    }
+
+    private void Init_Honing(Action clickedHomingEvent)
+    {
+        if (null == uiHoming)
+            return;
+
+        uiHoming.gameObject.SetActive(false);
+
+        uiHoming.Initialize();
+        uiHoming.clickedEvent -= clickedHomingEvent;
+        uiHoming.clickedEvent += clickedHomingEvent;
+    }
+
     public void InventoryShowEvent()
     {
         if (null == inventory)
@@ -164,17 +190,19 @@ public class UI_Inventory : MonoBehaviour
     {
         ExitPopup();
 
-        gameObject.SetActive(isOpening = false);
+        uiBackground?.SetActive(isOpening = false);
+        uiHoming?.gameObject.SetActive(isOpening);
     }
 
     public void OnShow()
     {
-        gameObject.SetActive(isOpening = true);
+        uiBackground?.SetActive(isOpening = true);
+        uiHoming?.gameObject.SetActive(isOpening);
 
         InventoryShowEvent();
     }
 
-    public void OnDestroy()
+    public void Destory()
     {
         for (int i = 0; i < inventorySlots.Count; i++)
         {
