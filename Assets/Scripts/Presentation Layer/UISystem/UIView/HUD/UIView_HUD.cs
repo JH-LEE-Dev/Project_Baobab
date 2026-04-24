@@ -114,20 +114,6 @@ public class UIView_HUD : UIView
         hudEquipment?.UpdateState(_currentWeaponMode, 0);
     }
 
-    public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
-    {
-        if (MoneyType.Coin == _moneyType)
-            uI_Coin?.UpdateMoneyText();
-        else if (MoneyType.Carrot == _moneyType)
-            uI_CarrotCoin?.UpdateMoneyText();
-    }
-
-    public void CharactersMoneyChanged()
-    {
-        uI_Coin?.UpdateMoneyText();
-        uI_CarrotCoin?.UpdateMoneyText();
-    }
-
     #region Coin UI
 
     private void Init_Coin()

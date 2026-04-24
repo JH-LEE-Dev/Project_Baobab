@@ -144,7 +144,7 @@ public class GameplayUICoordinator
 
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
     {
-        hudUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
+        popUpUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
         tentUI.CharacterEarnMoney(characterEarnMoneySignal.moneyType);
     }
 
@@ -186,7 +186,7 @@ public class GameplayUICoordinator
 
     private void SpendMoney(SpendMoneySignal spendMoneySignal)
     {
-        hudUI.CharactersMoneyChanged();
+        popUpUI.CharactersMoneyChanged();
         tentUI.CharactersMoneyChanged();
     }
 }

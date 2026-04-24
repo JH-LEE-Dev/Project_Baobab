@@ -135,4 +135,14 @@ public class UIView_Popup : UIView
     {
         GoHomeButtonClickedEvent.Invoke();
     }
+
+     public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
+    {
+
+    }
+
+    public void CharactersMoneyChanged()
+    {
+
+    }
 }
