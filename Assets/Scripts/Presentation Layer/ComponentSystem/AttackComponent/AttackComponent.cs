@@ -29,10 +29,13 @@ public class AttackComponent : PComponent
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
     private bool bAttack = false;
+    private bool bCanRotate = true;
     private Vector2 lastMouseScreenPos;
     public Vector3 mouseTransform { get; private set; }
 
     private float originalSpeed; // 무기 교체 전 원래 속도 캐싱용
+
+    private bool bCanSwap = false;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -232,7 +235,7 @@ public class AttackComponent : PComponent
 
     public void SwitchWeaponMode()
     {
-        if (ctx == null || ctx.characterStat.bCanHunting == false || bAttack) return;     
+        if (ctx == null || ctx.characterStat.bCanHunting == false || bCanRotate == false || bCanSwap == false) return;
 
         WeaponMode targetMode = (currentWeaponMode == WeaponMode.Axe) ? WeaponMode.Rifle : WeaponMode.Axe;
 
@@ -274,9 +277,14 @@ public class AttackComponent : PComponent
         }
     }
 
+    public void SetbCanRotate(bool _bCanRotate)
+    {
+        bCanRotate = _bCanRotate;
+    }
+
     public void GoToAxeMode()
     {
-        if (ctx == null || bAttack) return;
+        if (ctx == null || bCanRotate == false || bCanSwap == false) return;
         if (currentWeaponMode == WeaponMode.Axe) return;
 
         currentWeaponMode = WeaponMode.Axe;
@@ -291,7 +299,7 @@ public class AttackComponent : PComponent
 
     public void GoToRifleMode()
     {
-        if (ctx == null || ctx.characterStat.bCanHunting == false || bAttack) return;
+        if (ctx == null || ctx.characterStat.bCanHunting == false || bCanRotate == false || bCanSwap == false) return;
         if (currentWeaponMode == WeaponMode.Rifle) return;
 
         currentWeaponMode = WeaponMode.Rifle;
@@ -302,5 +310,10 @@ public class AttackComponent : PComponent
             StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
             StartCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
         }
+    }
+
+    public void SetbCanSwap(bool _boolean)
+    {
+        bCanSwap = _boolean;
     }
 }

@@ -1146,6 +1146,7 @@ MonoBehaviour:
   height: 100
   scale: 10
   seed: 0
+  grassDensity: 0.65
   useIslandPrevention: 1
   falloffA: 3
   falloffB: 6.5

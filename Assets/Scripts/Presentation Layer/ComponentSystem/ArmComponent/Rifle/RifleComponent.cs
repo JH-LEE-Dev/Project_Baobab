@@ -4,7 +4,8 @@ using System;
 
 public class RifleComponent : WeaponComponent, IRifleComponent
 {
-    public event Action<bool, bool> DeclareAttackStateEvent;
+    public event Action<bool> DeclareCanSwapEvent;
+    //public event Action<bool> DeclareAttackStateEvent;
     public event Action AttackCoolTimeStartEvent;
     public event Action ReloadStartEvent;
 
@@ -156,7 +157,13 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void Fire()
     {
-        if (null == rifleAnimation || mag == 0 || bReload == true || bFired == true) return;
+        if (null == rifleAnimation || bReload == true || bFired == true) return;
+
+        if (mag == 0)
+        {
+            Reload();
+            return;
+        }
 
         // 1. 총알 생성 및 발사
         if (bulletObjManager != null && muzzlePoint != null)
@@ -166,7 +173,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             // 발사 시 이동 속도 감소 및 0.3초 후 회복 코루틴 시작
             if (!bIsSpeedReduced)
             {
-                originalSpeed = ctx.characterStat.speed;
+                originalSpeed = ctx.characterStat.originalSpeed;
                 ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileFire;
                 bIsSpeedReduced = true;
             }
@@ -236,7 +243,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void OnFireStart()
     {
-        DeclareAttackStateEvent?.Invoke(true, true);
+        //DeclareAttackStateEvent?.Invoke(true);
+        DeclareCanSwapEvent?.Invoke(false);
 
         rifleAnimation.PlayRecoil(OnFireFinish);
     }
@@ -244,13 +252,14 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private void OnFireFinish()
     {
         AttackCoolTimeStartEvent?.Invoke();
+        DeclareCanSwapEvent?.Invoke(true);
     }
 
     private System.Collections.IEnumerator FireAfterDelayRoutine()
     {
         yield return new WaitForSeconds(ctx.characterStat.shotDelay);
 
-        DeclareAttackStateEvent?.Invoke(false, true);
+        //DeclareAttackStateEvent?.Invoke(false);
 
         bReady = false;
         bFired = false;
@@ -386,5 +395,29 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         Gizmos.color = Color.red;
         Gizmos.DrawWireSphere(mouseTransform, mouseCol.radius);
+    }
+
+    public void SetbAttack(bool _boolean)
+    {
+        bFired = _boolean;
+
+        if (!_boolean)
+        {
+            StopCoroutine(nameof(RifleReadyCoolDownRoutine));
+            StopCoroutine(nameof(FireAfterDelayRoutine));
+            StopCoroutine(nameof(SpeedRecoveryRoutine));
+            StopCoroutine(nameof(ReloadRoutine));
+
+            if (bIsSpeedReduced)
+            {
+                ctx.characterStat.speed = originalSpeed;
+                bIsSpeedReduced = false;
+            }
+
+            bReady = false;
+            bInCoolDown = false;
+            bReload = false;
+            anim.SetBool(bReadyHash, false);
+        }
     }
 }
