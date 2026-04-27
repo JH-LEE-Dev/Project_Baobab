@@ -49,6 +49,12 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         private void PlayEjectMotion()
         {
+            if (null != filledImage)
+                filledImage.gameObject.SetActive(false);
+
+            return;
+
+
             if (null == motionPlayer)
             {
                 if (null != filledImage)

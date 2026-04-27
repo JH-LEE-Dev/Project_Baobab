@@ -34,10 +34,24 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         {
             character = _character;
 
-            Init_DefaultSettings();
+            UpdateSettings();
+
+            IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
+            IAxeComponent axeComponent = character.armComponent?.axeComponent;
+
+            if (null != rifleComponent)
+            {
+                rifleComponent.RifleFiredEvent -= UpdateSettings;
+                rifleComponent.RifleFiredEvent += UpdateSettings;
+            }
+
+            if (null != axeComponent)
+            {
+                
+            }
         }
 
-        private void Init_DefaultSettings()
+        private void UpdateSettings()
         {
             if (null == character)
                 return;
@@ -51,6 +65,9 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null != rifleItem)
                 rifleItem.UpdateAmmo(rifleComponent.mag, statComponent.magCap, rifleComponent.ammo);   
+
+            if (null != axeItem)
+                axeItem.UpdateGauge(axeComponent.durability / statComponent.axeDurability);
         }
 
         /// <summary>
@@ -69,7 +86,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         public void OnDestroy()
         {
-            
+            IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
+
+            if (null == rifleComponent)
+                rifleComponent.RifleFiredEvent -= UpdateSettings;
         }
 
         public void OnShow()
