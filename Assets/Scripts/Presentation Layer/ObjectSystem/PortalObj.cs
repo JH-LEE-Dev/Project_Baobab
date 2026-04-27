@@ -43,7 +43,7 @@ public class PortalObj : MonoBehaviour
         }
     }
 
-    public void SetCanJump(bool _canJump)
+    public void SetCanTravel(bool _canJump)
     {
         bCanJump = _canJump;
     }

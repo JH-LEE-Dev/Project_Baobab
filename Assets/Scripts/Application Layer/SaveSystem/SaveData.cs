@@ -149,6 +149,12 @@ public struct CarrotSaveData
 }
 
 [Serializable]
+public struct TownSaveData
+{
+    public bool bCanTravel;
+}
+
+[Serializable]
 public class GameSaveData
 {
     public CharacterStatSaveData characterStatData;
@@ -157,6 +163,7 @@ public class GameSaveData
     public LogProcessingSaveData logProcessingSaveData;
     public EnvironmentSaveData environmentSaveData;
     public CarrotSaveData carrotSaveData;
+    public TownSaveData townSaveData;
 
     public void Clear()
     {

@@ -95,6 +95,9 @@ public class InputReader
 
     private void OnESCButtonPressed(InputAction.CallbackContext context)
     {
+        if (LoadingManager.Instance != null && LoadingManager.Instance.IsLoading)
+            return;
+
         ESCButtonPressedEvent?.Invoke();
     }
 
