@@ -79,7 +79,7 @@ public class AbilityLineRenderer
                 if (_spawnedNodeMap.TryGetValue(parents[parentIndex], out AbilityNode parentNode) == false)
                     continue;
 
-                AbilityParentLineRouteJson route = FindParentLineRoute(_nodeDefinitionMap, childNode.SkillType, parents[parentIndex]);
+                AbilityParentJson route = FindParentLineRoute(_nodeDefinitionMap, childNode.SkillType, parents[parentIndex]);
                 if (route != null && route.usePivot)
                 {
                     lineConnections.Add(new AbilityLineConnection(
@@ -122,7 +122,7 @@ public class AbilityLineRenderer
     }
 
     // 자식 정의에서 특정 부모 연결에 대한 꺾임 경로 설정을 찾는다.
-    private AbilityParentLineRouteJson FindParentLineRoute(
+    private AbilityParentJson FindParentLineRoute(
         Dictionary<SkillType, AbilityNodeDefinitionJson> _nodeDefinitionMap,
         SkillType _childSkillType,
         SkillType _parentSkillType)

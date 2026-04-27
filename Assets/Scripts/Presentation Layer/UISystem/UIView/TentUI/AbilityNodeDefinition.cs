@@ -12,13 +12,9 @@ public class AbilityNodeDefinitionJson
     public string skillType;
     public string displayName;
     public string description;
-    public int maxLevel;
-    public AbilityLevelCostJson[] levelCosts;
     public int gridX;
     public int gridY;
     public AbilityParentJson[] parents;
-    public string[] parentSkillTypes;
-    public AbilityParentLineRouteJson[] parentLineRoutes;
 
     public string[] GetParentSkillTypeNames()
     {
@@ -31,10 +27,10 @@ public class AbilityNodeDefinitionJson
             return parentNames;
         }
 
-        return parentSkillTypes ?? Array.Empty<string>();
+        return Array.Empty<string>();
     }
 
-    public AbilityParentLineRouteJson FindParentLineRoute(SkillType _parentSkillType)
+    public AbilityParentJson FindParentLineRoute(SkillType _parentSkillType)
     {
         if (parents != null && parents.Length > 0)
         {
@@ -50,32 +46,10 @@ public class AbilityNodeDefinitionJson
                 if (parsedParentSkillType != _parentSkillType || parent.usePivot == false)
                     continue;
 
-                return new AbilityParentLineRouteJson
-                {
-                    parentSkillType = parent.skillType,
-                    usePivot = true,
-                    pivotX = parent.pivotX,
-                    pivotY = parent.pivotY
-                };
+                return parent;
             }
 
             return null;
-        }
-
-        if (parentLineRoutes == null || parentLineRoutes.Length == 0)
-            return null;
-
-        for (int i = 0; i < parentLineRoutes.Length; i++)
-        {
-            AbilityParentLineRouteJson route = parentLineRoutes[i];
-            if (route == null || string.IsNullOrWhiteSpace(route.parentSkillType))
-                continue;
-
-            if (Enum.TryParse(route.parentSkillType, true, out SkillType parsedParentSkillType) == false)
-                continue;
-
-            if (parsedParentSkillType == _parentSkillType)
-                return route;
         }
 
         return null;
@@ -89,23 +63,6 @@ public class AbilityParentJson
     public bool usePivot;
     public int pivotX;
     public int pivotY;
-}
-
-[Serializable]
-public class AbilityParentLineRouteJson
-{
-    public string parentSkillType;
-    public bool usePivot;
-    public int pivotX;
-    public int pivotY;
-}
-
-[Serializable]
-public class AbilityLevelCostJson
-{
-    public int level;
-    public string moneyType;
-    public int amount;
 }
 
 [Serializable]

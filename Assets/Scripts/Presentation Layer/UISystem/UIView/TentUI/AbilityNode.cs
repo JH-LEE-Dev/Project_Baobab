@@ -10,10 +10,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private string displayName;
     [SerializeField] private string description;
     [SerializeField] private int currentLevel;
-    [SerializeField] private int maxLevel;
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private SkillType[] parentSkillTypes;
-    [SerializeField] private AbilityLevelCostJson[] levelCosts;
 
     [Header("UI References")]
     [SerializeField] private Image abilityBaseImage;
@@ -30,7 +28,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public string DisplayName => displayName;
     public string Description => description;
     public int CurrentLevel => currentLevel;
-    public int MaxLevel => maxLevel;
     public Vector2Int GridPosition => gridPosition;
     public SkillType[] ParentSkillTypes => parentSkillTypes;
     public RectTransform RectTransform => transform as RectTransform;
@@ -52,18 +49,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         owner = _owner;
     }
 
-    /// 현재 노드가 어떤 스킬 타입인지 반환한다.
+    // 현재 노드가 어떤 스킬 타입인지 반환한다.
     public SkillType GetSkillType()
     {
         return skillType;
     }
 
-    /// <summary>
-    /// 이 노드가 다음에 요청할 레벨을 반환한다.
-    /// </summary>
+    // 이 노드가 다음에 요청할 레벨을 반환한다.
     public int GetNextLevel()
     {
-        return Mathf.Min(currentLevel + 1, maxLevel);
+        return currentLevel + 1;
     }
 
     // JSON에서 읽은 노드 정의를 현재 프리팹 인스턴스에 반영한다.
@@ -76,10 +71,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         displayName = _definition.displayName;
         description = _definition.description;
         currentLevel = 0;
-        maxLevel = Mathf.Max(_definition.maxLevel, 1);
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());
-        levelCosts = _definition.levelCosts ?? Array.Empty<AbilityLevelCostJson>();
 
         SetPicture(_pictureSprite);
         ApplyAnchoredPosition(_gridCellSize);
@@ -126,15 +119,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     // 현재 레벨을 외부에서 직접 반영한다.
     public void SetCurrentLevel(int _currentLevel)
     {
-        currentLevel = Mathf.Clamp(_currentLevel, 0, maxLevel);
-    }
-
-    /// <summary>
-    /// 승인된 특성 레벨업을 즉시 반영한다.
-    /// </summary>
-    public void ApplyApprovedLevelUp()
-    {
-        SetCurrentLevel(currentLevel + 1);
+        currentLevel = Mathf.Max(_currentLevel, 0);
     }
 
     // 현재 노드의 테두리/배경 표시 상태를 갱신한다.
@@ -149,68 +134,23 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             abilityBackgroundImage.color = _backgroundColor;
     }
 
-    /// <summary>
-    /// 툴팁 제목 줄에 표시할 "이름 현재레벨/최대레벨" 문자열을 만든다.
-    /// </summary>
+    // 툴팁 제목 줄에 표시할 이름과 현재 레벨 문자열을 만든다.
     public string GetToolTipTitleAndLevelText()
     {
-        return $"{displayName}\n레벨 : {currentLevel} / {maxLevel}";
+        return $"{displayName}\n레벨 : {currentLevel}";
     }
 
-    /// <summary>
-    /// 툴팁 설명 문자열을 반환한다.
-    /// </summary>
+    // 툴팁 설명 문자열을 반환한다.
     public string GetToolTipDescriptionText()
     {
         return description;
     }
 
-    /// <summary>
-    /// 현재 레벨 기준 다음 강화 비용 문자열을 만든다.
-    /// </summary>
+    // 비용 정보는 상위 시스템이 소유하므로 UI 노드는 직접 표시하지 않는다.
     public string GetToolTipCostText()
     {
-        if (currentLevel >= maxLevel)
-            return "Max Level";
-
-        AbilityLevelCostJson nextLevelCost = GetLevelCost(currentLevel + 1);
-        if (nextLevelCost == null)
-            return "Cost N/A";
-
-        if (nextLevelCost.amount <= 0)
-            return "Free";
-
-        if (Enum.TryParse(nextLevelCost.moneyType, true, out MoneyType parsedMoneyType) == false)
-            return "Cost N/A";
-
-        if (parsedMoneyType == MoneyType.None || parsedMoneyType == MoneyType.Max)
-            return "Cost N/A";
-
-        return $"{nextLevelCost.amount} {parsedMoneyType}";
+        return string.Empty;
     }
-
-    /// <summary>
-    /// 지정한 레벨에 해당하는 비용 정보를 찾는다.
-    /// </summary>
-    private AbilityLevelCostJson GetLevelCost(int _level)
-    {
-        if (levelCosts == null)
-            return null;
-
-        for (int i = 0; i < levelCosts.Length; i++)
-        {
-            AbilityLevelCostJson levelCost = levelCosts[i];
-            if (levelCost == null)
-                continue;
-
-            if (levelCost.level == _level)
-                return levelCost;
-        }
-
-        return null;
-    }
-
-
 
     // 마우스가 노드 위에 올라오면 상위 컴포넌트에 툴팁 표시를 요청한다.
     public void OnPointerEnter(PointerEventData eventData)
@@ -224,9 +164,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         owner?.HideToolTip(this);
     }
 
-    /// <summary>
-    /// 노드 클릭 시 상위 컴포넌트에 레벨업 요청을 전달한다.
-    /// </summary>
+    // 노드 클릭 시 상위 컴포넌트에 레벨업 요청을 전달한다.
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData != null && eventData.button != PointerEventData.InputButton.Left)

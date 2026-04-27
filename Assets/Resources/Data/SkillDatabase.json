@@ -1,220 +1,102 @@
-{
-  "skills": [
-    {
-      "skillType": "InventoryExpansion1",
-      "maxLevel": 5,
-      "cost": {
-        "moneyCurve": {
-          "type": "BaseTimesLevel",
-          "baseValue": 1000.0,
-          "manualValues": []
-        },
-        "carrotCurve": {
-          "type": "Constant",
-          "baseValue": 0.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
+﻿{
+    "skills": [
         {
-          "skillCommandType": "InventoryExpansion",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 1.0,
-            "manualValues": []
-          }
-        }
-      ],
-      "prerequisiteSkills": []
-    },
-    {
-      "skillType": "LogCapacityIncrease1",
-      "maxLevel": 5,
-      "cost": {
-        "moneyCurve": {
-          "type": "BasePlusLevelBase",
-          "baseValue": 500.0,
-          "manualValues": []
+            "skillType": "OffRoadVehicle",
+            "maxLevel": 1,
+            "cost": {
+                "moneyCurve": {
+                    "type": "Manual",
+                    "baseValue": 0.0,
+                    "manualValues": []
+                },
+                "carrotCurve": {
+                    "type": "Manual",
+                    "baseValue": 0.0,
+                    "manualValues": []
+                }
+            },
+            "skillTypes": [],
+            "prerequisiteSkills": []
         },
-        "carrotCurve": {
-          "type": "Constant",
-          "baseValue": 10.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
         {
-          "skillCommandType": "logCapacityIncrease",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 5.0,
-            "manualValues": []
-          }
-        }
-      ],
-      "prerequisiteSkills": []
-    },
-    {
-      "skillType": "AxeDamage1",
-      "maxLevel": 10,
-      "cost": {
-        "moneyCurve": {
-          "type": "BaseTimesLevel",
-          "baseValue": 800.0,
-          "manualValues": []
+            "skillType": "InventoryExpansion1",
+            "maxLevel": 1,
+            "cost": {
+                "moneyCurve": {
+                    "type": "Manual",
+                    "baseValue": 500.0,
+                    "manualValues": []
+                },
+                "carrotCurve": {
+                    "type": "Manual",
+                    "baseValue": 0.0,
+                    "manualValues": []
+                }
+            },
+            "skillTypes": [],
+            "prerequisiteSkills": [
+                "OffRoadVehicle"
+            ]
         },
-        "carrotCurve": {
-          "type": "Constant",
-          "baseValue": 5.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
         {
-          "skillCommandType": "AxeDamage",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 10.0,
-            "manualValues": []
-          }
-        }
-      ],
-      "prerequisiteSkills": []
-    },
-    {
-      "skillType": "EquipmentSwitchSpeed",
-      "maxLevel": 3,
-      "cost": {
-        "moneyCurve": {
-          "type": "Manual",
-          "baseValue": 0.0,
-          "manualValues": [2000.0, 5000.0, 10000.0]
+            "skillType": "InventoryExpansion2",
+            "maxLevel": 1,
+            "cost": {
+                "moneyCurve": {
+                    "type": "Manual",
+                    "baseValue": 3000.0,
+                    "manualValues": []
+                },
+                "carrotCurve": {
+                    "type": "Manual",
+                    "baseValue": 0.0,
+                    "manualValues": []
+                }
+            },
+            "skillTypes": [],
+            "prerequisiteSkills": [
+                "InventoryExpansion1"
+            ]
         },
-        "carrotCurve": {
-          "type": "Constant",
-          "baseValue": 50.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
         {
-          "skillCommandType": "EquipmentSwitchSpeed",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 15.0,
-            "manualValues": []
-          }
-        }
-      ],
-      "prerequisiteSkills": ["AxeDamage1"]
-    },
-    {
-      "skillType": "hunting",
-      "maxLevel": 1,
-      "cost": {
-        "moneyCurve": {
-          "type": "Constant",
-          "baseValue": 15000.0,
-          "manualValues": []
+            "skillType": "SawmillLogStorageExpansion1",
+            "maxLevel": 1,
+            "cost": {
+                "moneyCurve": {
+                    "type": "Manual",
+                    "baseValue": 0.0,
+                    "manualValues": []
+                },
+                "carrotCurve": {
+                    "type": "Manual",
+                    "baseValue": 500.0,
+                    "manualValues": []
+                }
+            },
+            "skillTypes": [],
+            "prerequisiteSkills": [
+                "InventoryExpansion1"
+            ]
         },
-        "carrotCurve": {
-          "type": "Constant",
-          "baseValue": 100.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
         {
-          "skillCommandType": "hunting",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 1.0,
-            "manualValues": []
-          }
+            "skillType": "LogCapacityIncrease1",
+            "maxLevel": 3,
+            "cost": {
+                "moneyCurve": {
+                    "type": "Manual",
+                    "baseValue": 80.0,
+                    "manualValues": []
+                },
+                "carrotCurve": {
+                    "type": "Manual",
+                    "baseValue": 0.0,
+                    "manualValues": []
+                }
+            },
+            "skillTypes": [],
+            "prerequisiteSkills": [
+                "InventoryExpansion1"
+            ]
         }
-      ],
-      "prerequisiteSkills": []
-    },
-    {
-      "skillType": "GunDamage1",
-      "maxLevel": 5,
-      "cost": {
-        "moneyCurve": {
-          "type": "BaseTimesLevel",
-          "baseValue": 2500.0,
-          "manualValues": []
-        },
-        "carrotCurve": {
-          "type": "BaseTimesLevel",
-          "baseValue": 20.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
-        {
-          "skillCommandType": "GunDamage",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 15.0,
-            "manualValues": []
-          }
-        }
-      ],
-      "prerequisiteSkills": ["hunting"]
-    },
-    {
-      "skillType": "Stamina1",
-      "maxLevel": 5,
-      "cost": {
-        "moneyCurve": {
-          "type": "BasePlusLevelBase",
-          "baseValue": 1000.0,
-          "manualValues": []
-        },
-        "carrotCurve": {
-          "type": "Constant",
-          "baseValue": 0.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
-        {
-          "skillCommandType": "Stamina",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 20.0,
-            "manualValues": []
-          }
-        }
-      ],
-      "prerequisiteSkills": []
-    },
-    {
-      "skillType": "LogValue1",
-      "maxLevel": 5,
-      "cost": {
-        "moneyCurve": {
-          "type": "BaseTimesLevel",
-          "baseValue": 3000.0,
-          "manualValues": []
-        },
-        "carrotCurve": {
-          "type": "Constant",
-          "baseValue": 0.0,
-          "manualValues": []
-        }
-      },
-      "skillTypes": [
-        {
-          "skillCommandType": "LogValue",
-          "amountCurve": {
-            "type": "Constant",
-            "baseValue": 10.0,
-            "manualValues": []
-          }
-        }
-      ],
-      "prerequisiteSkills": []
-    }
-  ]
+    ]
 }

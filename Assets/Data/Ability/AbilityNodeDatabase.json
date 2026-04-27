@@ -1,308 +1,72 @@
-{
-  "nodes": [
-    {
-      "skillType": "OffRoadVehicle",
-      "displayName": "오프로드 차량",
-      "description": "오프로드 차량을 사용할 수 있습니다.",
-      "maxLevel": 1,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 0 }
-      ],
-      "gridX": 0,
-      "gridY": 0,
-      "parents": []
-    },
-    {
-      "skillType": "InventoryExpansion1",
-      "displayName": "인벤토리 확장 I",
-      "description": "인벤토리 크기가 2 증가합니다.",
-      "maxLevel": 1,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 500 }
-      ],
-      "gridX": -12,
-      "gridY": 4,
-      "parents": [
-        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": -12, "pivotY": 0 }
-      ]
-    },
-    {
-      "skillType": "LogCapacityIncrease1",
-      "displayName": "원목 수납력 증가 I",
-      "description": "원목의 한 칸당 수납량이 1 증가합니다.",
-      "maxLevel": 1,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 80 }
-      ],
-      "gridX": -16,
-      "gridY": 4,
-      "parents": [
-        { "skillType": "InventoryExpansion1" }
-      ]
-    },
-    {
-      "skillType": "SawmillLogStorageExpansion1",
-      "displayName": "제재소 원목 보관함 확장 I",
-      "description": "제재소 보관함의 크기가 2 증가합니다.",
-      "maxLevel": 1,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Carrot", "amount": 500 }
-      ],
-      "gridX": -16,
-      "gridY": 8,
-      "parents": [
-        { "skillType": "InventoryExpansion1" }
-      ]
-    },
-    {
-      "skillType": "LogProcessingSpeed1",
-      "displayName": "원목 가공 속도 I",
-      "description": "원목 가공 속도가 50% 증가합니다.",
-      "maxLevel": 5,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Carrot", "amount": 10 },
-        { "level": 2, "moneyType": "Carrot", "amount": 10 },
-        { "level": 3, "moneyType": "Carrot", "amount": 10 },
-        { "level": 4, "moneyType": "Carrot", "amount": 10 },
-        { "level": 5, "moneyType": "Carrot", "amount": 10 }
-      ],
-      "gridX": -20,
-      "gridY": 12,
-      "parents": [
-        { "skillType": "SawmillLogStorageExpansion1" }
-      ]
-      
-    },
-
-
-
-
-    {
-      "skillType": "LogValue1",
-      "displayName": "원목 가치 I",
-      "description": "원목의 가치가 20% 증가합니다.",
-      "maxLevel": 10,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Carrot", "amount": 10 },
-        { "level": 2, "moneyType": "Carrot", "amount": 10 },
-        { "level": 3, "moneyType": "Carrot", "amount": 10 },
-        { "level": 4, "moneyType": "Carrot", "amount": 10 },
-        { "level": 5, "moneyType": "Carrot", "amount": 10 },
-        { "level": 6, "moneyType": "Carrot", "amount": 10 },
-        { "level": 7, "moneyType": "Carrot", "amount": 10 },
-        { "level": 8, "moneyType": "Carrot", "amount": 10 },
-        { "level": 9, "moneyType": "Carrot", "amount": 10 },
-        { "level": 10, "moneyType": "Carrot", "amount": 10 }
-      ],
-      "gridX": -8,
-      "gridY": 4,
-      "parents": [
-        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": -8, "pivotY": 0 }
-      ]
-    },
-    {
-      "skillType": "VerdantPlainsOvergrowth",
-      "displayName": "초목평원림 과성장",
-      "description": "초목평원림의 나무 밀도가 25% 증가합니다.",
-      "maxLevel": 10,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Carrot", "amount": 5 },
-        { "level": 2, "moneyType": "Carrot", "amount": 10 },
-        { "level": 3, "moneyType": "Carrot", "amount": 15 },
-        { "level": 4, "moneyType": "Carrot", "amount": 20 },
-        { "level": 5, "moneyType": "Carrot", "amount": 25 },
-        { "level": 6, "moneyType": "Carrot", "amount": 30 },
-        { "level": 7, "moneyType": "Carrot", "amount": 35 },
-        { "level": 8, "moneyType": "Carrot", "amount": 40 },
-        { "level": 9, "moneyType": "Carrot", "amount": 45 },
-        { "level": 10, "moneyType": "Carrot", "amount": 50 }
-      ],
-      "gridX": -8,
-      "gridY": 8,
-      "parents": [
-        { "skillType": "LogValue1" }
-      ]
-    },
-
-
-
-
-
-
-    {
-      "skillType": "AxeDamage1",
-      "displayName": "도끼 데미지 I",
-      "description": "도끼 데미지가 10% 증가합니다.",
-      "maxLevel": 5,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 10 },
-        { "level": 2, "moneyType": "Coin", "amount": 10 },
-        { "level": 3, "moneyType": "Coin", "amount": 10 },
-        { "level": 4, "moneyType": "Coin", "amount": 10 },
-        { "level": 5, "moneyType": "Coin", "amount": 10 }
-      ],
-      "gridX": -4,
-      "gridY": 8,
-      "parents": [
-        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": -4, "pivotY": 0 }
-      ]
-    },
-
-
-
-
-
-
-    {
-      "skillType": "EquipmentSwitchSpeed",
-      "displayName": "장비 스위칭 속도 I",
-      "description": "장비 스위칭 시간이 20% 감소합니다.",
-      "maxLevel": 1,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 50 }
-      ],
-      "gridX": 0,
-      "gridY": 12,
-      "parents": [
-        { "skillType": "AxeDamage1" },
-        { "skillType": "GunDamage1" }
-      ]
-    },
-
-
-
-
-
-
-
-    {
-      "skillType": "hunting",
-      "displayName": "수렵",
-      "description": "이제 맵에서 사냥을 할 수 있습니다.",
-      "maxLevel": 1,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 20 }
-      ],
-      "gridX": 4,
-      "gridY": 4,
-      "parents": [
-        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": 4, "pivotY": 0 }
-      ]
-    },
-    {
-      "skillType": "GunDamage1",
-      "displayName": "총기 데미지 I",
-      "description": "총기 데미지가 20% 증가합니다.",
-      "maxLevel": 5,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 30 },
-        { "level": 2, "moneyType": "Coin", "amount": 30 },
-        { "level": 3, "moneyType": "Coin", "amount": 30 },
-        { "level": 4, "moneyType": "Coin", "amount": 30 },
-        { "level": 5, "moneyType": "Coin", "amount": 30 }
-      ],
-      "gridX": 4,
-      "gridY": 8,
-      "parents": [
-        { "skillType": "hunting" }
-      ]
-    },
-
-
-
-    {
-      "skillType": "CarrotBundle",
-      "displayName": "당근 다발",
-      "description": "토끼가 당근을 40%만큼 더 드랍합니다.",
-      "maxLevel": 10,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 30 },
-        { "level": 2, "moneyType": "Coin", "amount": 30 },
-        { "level": 3, "moneyType": "Coin", "amount": 30 },
-        { "level": 4, "moneyType": "Coin", "amount": 30 },
-        { "level": 5, "moneyType": "Coin", "amount": 30 },        
-        { "level": 6, "moneyType": "Coin", "amount": 30 },
-        { "level": 7, "moneyType": "Coin", "amount": 30 },
-        { "level": 8, "moneyType": "Coin", "amount": 30 },
-        { "level": 9, "moneyType": "Coin", "amount": 30 },
-        { "level": 10, "moneyType": "Coin", "amount": 30 }
-      ],
-      "gridX": 8,
-      "gridY": 4,
-      "parents": [
-        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": 8, "pivotY": 0 }
-      ]
-    },
-    {
-      "skillType": "RabbitBoom",
-      "displayName": "토끼 대 번성",
-      "description": "토끼가 20%만큼 더 자주 등장합니다.",
-      "maxLevel": 10,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 5 },
-        { "level": 2, "moneyType": "Coin", "amount": 10 },
-        { "level": 3, "moneyType": "Coin", "amount": 15 },
-        { "level": 4, "moneyType": "Coin", "amount": 20 },
-        { "level": 5, "moneyType": "Coin", "amount": 25 },        
-        { "level": 6, "moneyType": "Coin", "amount": 30 },
-        { "level": 7, "moneyType": "Coin", "amount": 35 },
-        { "level": 8, "moneyType": "Coin", "amount": 40 },
-        { "level": 9, "moneyType": "Coin", "amount": 45 },
-        { "level": 10, "moneyType": "Coin", "amount": 50 }
-      ],
-      "gridX": 8,
-      "gridY": 8,
-      "parents": [
-        { "skillType": "CarrotBundle" }
-      ]
-    },
-
-
-
-    {
-      "skillType": "Stamina1",
-      "displayName": "지구력",
-      "description": "피로도 소모량이 2% 감소합니다.",
-      "maxLevel": 5,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 5 },
-        { "level": 2, "moneyType": "Coin", "amount": 100 },
-        { "level": 3, "moneyType": "Coin", "amount": 200 },
-        { "level": 4, "moneyType": "Coin", "amount": 300 },
-        { "level": 5, "moneyType": "Coin", "amount": 400 }  
-      ],
-      "gridX": 12,
-      "gridY": 4,
-      "parents": [
-        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": 12, "pivotY": 0 }
-      ]
-    },
-    {
-      "skillType": "FatigueMaxIncrease1",
-      "displayName": "피로도 최대치 증가 I",
-      "description": "피로도 최대치가 10 증가합니다.",
-      "maxLevel": 10,
-      "levelCosts": [
-        { "level": 1, "moneyType": "Coin", "amount": 10 },
-        { "level": 2, "moneyType": "Coin", "amount": 10 },
-        { "level": 3, "moneyType": "Coin", "amount": 10 },
-        { "level": 4, "moneyType": "Coin", "amount": 10 },
-        { "level": 5, "moneyType": "Coin", "amount": 10 },        
-        { "level": 6, "moneyType": "Coin", "amount": 10 },
-        { "level": 7, "moneyType": "Coin", "amount": 10 },
-        { "level": 8, "moneyType": "Coin", "amount": 10 },
-        { "level": 9, "moneyType": "Coin", "amount": 10 },
-        { "level": 10, "moneyType": "Coin", "amount": 10 }
-      ],
-      "gridX": 16,
-      "gridY": 8,
-      "parents": [
-        { "skillType": "Stamina1" }
-      ]
-    }
-
-
-  ]
-
-
+﻿{
+    "nodes": [
+        {
+            "skillType": "OffRoadVehicle",
+            "displayName": "오프로트 차량",
+            "description": "오프로트 일이삼",
+            "gridX": 0,
+            "gridY": 0,
+            "parents": []
+        },
+        {
+            "skillType": "hunting",
+            "displayName": "수렵",
+            "description": "수렵할수있어요",
+            "gridX": 3,
+            "gridY": 3,
+            "parents": [
+                {
+                    "skillType": "OffRoadVehicle",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "InventoryExpansion2",
+            "displayName": "인벤토리 증가요 II",
+            "description": "ㅇㅇㅈㅇ",
+            "gridX": 0,
+            "gridY": 3,
+            "parents": [
+                {
+                    "skillType": "OffRoadVehicle",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "InventoryExpansion1",
+            "displayName": "인벤토리 증가요",
+            "description": "ㅇㅇ",
+            "gridX": -3,
+            "gridY": 3,
+            "parents": [
+                {
+                    "skillType": "OffRoadVehicle",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AxeDamage1",
+            "displayName": "도끼데미지",
+            "description": "ㅇㅇ",
+            "gridX": 0,
+            "gridY": 6,
+            "parents": [
+                {
+                    "skillType": "InventoryExpansion2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        }
+    ]
 }

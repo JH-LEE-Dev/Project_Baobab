@@ -153,6 +153,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         abilityBackground.gameObject.SetActive(true);
         BuildNodesIfNeeded();
+        SyncNodeLevelsFromProvider();
         RefreshNodeVisibility();
         RefreshNodeAvailabilityVisuals();
         ResetView();
@@ -253,10 +254,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (nodeRect == null)
             return;
 
+        SkillInfo skillInfo = GetSkillInfo(_node.SkillType);
         toolTipInstance.SetContent(
-            _node.GetToolTipTitleAndLevelText(),
+            BuildToolTipTitleAndLevelText(_node, skillInfo),
             _node.GetToolTipDescriptionText(),
-            _node.GetToolTipCostText());
+            BuildToolTipCostText(skillInfo));
 
         toolTipInstance.Show();
         Vector2 toolTipSize = toolTipInstance.GetSize();
@@ -285,6 +287,41 @@ public class UI_TentAbilityComponent : MonoBehaviour
         float y = nodeCenter.y;
 
         toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
+    }
+
+    // 상위 스킬 시스템에서 툴팁에 필요한 레벨/비용 정보를 가져온다.
+    private SkillInfo GetSkillInfo(SkillType _skillType)
+    {
+        if (skillSystemProvider != null)
+            return skillSystemProvider.GetSkillInfo(_skillType);
+
+        return new SkillInfo
+        {
+            skillType = _skillType,
+            currentLevel = 0,
+            maxLevel = 0,
+            moneyType = MoneyType.None,
+            nextCost = 0
+        };
+    }
+
+    // 툴팁 제목과 현재/최대 레벨 문자열을 만든다.
+    private string BuildToolTipTitleAndLevelText(AbilityNode _node, SkillInfo _skillInfo)
+    {
+        int maxLevel = Mathf.Max(_skillInfo.maxLevel, 0);
+        return $"{_node.DisplayName}\n레벨 : {_skillInfo.currentLevel} / {maxLevel}";
+    }
+
+    // 상위 스킬 정보 기준으로 다음 강화 비용 문자열을 만든다.
+    private string BuildToolTipCostText(SkillInfo _skillInfo)
+    {
+        if (_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel)
+            return "최대 레벨";
+
+        if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
+            return "무료";
+
+        return $"{_skillInfo.nextCost} {_skillInfo.moneyType}";
     }
 
     // 현재 노드에 대한 툴팁을 숨긴다.
@@ -505,7 +542,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         bool wasLockedByLevel = node.IsUnlockedByLevel() == false;
-        node.ApplyApprovedLevelUp();
+        SyncNodeLevelsFromProvider();
 
         // 해금되는 순간임
         if (wasLockedByLevel && node.IsUnlockedByLevel())
@@ -534,6 +571,25 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
 
     // 부모 레벨 기준으로 자식 노드와 라인의 노출 상태를 갱신한다.
+    // 상위 스킬 시스템이 가진 실제 레벨 상태를 UI 노드에 반영한다.
+    private void SyncNodeLevelsFromProvider()
+    {
+        if (skillSystemProvider == null)
+            return;
+
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node == null)
+                continue;
+
+            if (skillSystemProvider.IsApplied(node.SkillType, out int currentLevel))
+                node.SetCurrentLevel(currentLevel);
+            else
+                node.SetCurrentLevel(0);
+        }
+    }
+
     private void RefreshNodeVisibility()
     {
         for (int i = 0; i < spawnedNodes.Count; i++)
@@ -579,20 +635,40 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 부모가 모두 1레벨 이상이면 자식 노드를 표시한다. 부모가 없으면 시작 노드로 본다.
     private bool ShouldShowNode(AbilityNode _node)
     {
-        SkillType[] parents = _node.ParentSkillTypes;
-        if (parents == null || parents.Length == 0)
+        if (_node == null)
+            return false;
+
+        if (skillSystemProvider != null)
+            return ShouldShowNodeByProvider(_node);
+
+        return ShouldShowNodeByVisualConnection(_node);
+    }
+
+    // 상위 스킬 시스템의 선행 조건 상태를 기준으로 노드 노출 여부를 판단한다.
+    private bool ShouldShowNodeByProvider(AbilityNode _node)
+    {
+        List<SkillNode> prerequisites = skillSystemProvider.GetPrerequisites(_node.SkillType);
+        if (prerequisites == null || prerequisites.Count == 0)
             return true;
 
-        for (int i = 0; i < parents.Length; i++)
+        for (int i = 0; i < prerequisites.Count; i++)
         {
-            if (spawnedNodeMap.TryGetValue(parents[i], out AbilityNode parentNode) == false)
-                return false;
-
-            if (parentNode.IsUnlockedByLevel() == false)
+            SkillNode prerequisite = prerequisites[i];
+            if (prerequisite == null || prerequisite.bApplied == false)
                 return false;
         }
 
         return true;
+    }
+
+    // Provider가 아직 연결되지 않은 테스트 상황에서는 UI 연결 정보의 루트 노드만 노출한다.
+    private bool ShouldShowNodeByVisualConnection(AbilityNode _node)
+    {
+        SkillType[] parents = _node.ParentSkillTypes;
+        if (parents == null || parents.Length == 0)
+            return true;
+
+        return false;
     }
 
 #endregion

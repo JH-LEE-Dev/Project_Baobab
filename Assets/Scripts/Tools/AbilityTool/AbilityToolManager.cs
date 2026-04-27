@@ -67,7 +67,8 @@ public class AbilityToolManager : MonoBehaviour
 
     [Header("Json IO")]
     [SerializeField] private TextAsset importJson;
-    [SerializeField] private string exportAssetPath = "Assets/Data/Ability/AbilityNodeDatabase.json";
+    [SerializeField] private SkillDataBase skillDataBaseAsset;
+    [SerializeField] private string uiExportAssetPath = "Assets/Data/Ability/AbilityNodeDatabase.json";
 
 
 #region Default
@@ -632,7 +633,7 @@ public class AbilityToolManager : MonoBehaviour
 
 #region Json IO
 
-    [ContextMenu("Export Ability Json")]
+    [ContextMenu("Export Ability Data")]
     public void ExportAbilityJson()
     {
         AbilityToolExportDatabaseJson databaseJson = new AbilityToolExportDatabaseJson
@@ -640,20 +641,13 @@ public class AbilityToolManager : MonoBehaviour
             nodes = BuildExportNodes()
         };
 
-        string json = JsonUtility.ToJson(databaseJson, true);
-        string absolutePath = GetAbsoluteExportPath();
-        string directoryPath = Path.GetDirectoryName(absolutePath);
+        string uiJson = JsonUtility.ToJson(databaseJson, true);
+        string uiAbsolutePath = GetAbsolutePath(uiExportAssetPath);
 
-        if (string.IsNullOrWhiteSpace(directoryPath) == false)
-            Directory.CreateDirectory(directoryPath);
+        WriteJsonFile(uiAbsolutePath, uiJson);
+        ExportSkillDataBaseAsset();
 
-        File.WriteAllText(absolutePath, json, Encoding.UTF8);
-
-#if UNITY_EDITOR
-        AssetDatabase.Refresh();
-#endif
-
-        Debug.Log($"Ability tool exported json: {absolutePath}");
+        Debug.Log($"Ability tool exported UI json: {uiAbsolutePath}");
     }
 
     [ContextMenu("Import Ability Json")]
@@ -702,6 +696,7 @@ public class AbilityToolManager : MonoBehaviour
         }
 
         ApplyImportedParentLinks(databaseJson.nodes, skillNodeMap);
+        ApplyImportedSkillLogic(skillNodeMap);
         RebuildLines();
     }
 
@@ -720,8 +715,6 @@ public class AbilityToolManager : MonoBehaviour
                 skillType = node.SkillType.ToString(),
                 displayName = node.DisplayName,
                 description = node.Description,
-                maxLevel = Mathf.Max(node.MaxLevel, 1),
-                levelCosts = BuildExportLevelCosts(node.LevelCosts),
                 gridX = node.GridPosition.x,
                 gridY = node.GridPosition.y,
                 parents = BuildExportParents(node.ParentLinks)
@@ -731,27 +724,106 @@ public class AbilityToolManager : MonoBehaviour
         return exportNodes.ToArray();
     }
 
-    private AbilityLevelCostJson[] BuildExportLevelCosts(List<AbilityToolLevelCostEntry> _levelCosts)
+    private void ExportSkillDataBaseAsset()
     {
-        if (_levelCosts == null || _levelCosts.Count == 0)
-            return Array.Empty<AbilityLevelCostJson>();
-
-        List<AbilityLevelCostJson> exportCosts = new List<AbilityLevelCostJson>();
-        for (int i = 0; i < _levelCosts.Count; i++)
+        if (skillDataBaseAsset == null)
         {
-            AbilityToolLevelCostEntry levelCost = _levelCosts[i];
-            if (levelCost == null)
+            Debug.LogWarning("Ability tool skipped SkillDataBase export. Skill Data Base Asset is not assigned.");
+            return;
+        }
+
+#if UNITY_EDITOR
+        Undo.RecordObject(skillDataBaseAsset, "Export Ability Skill Data");
+#endif
+
+        skillDataBaseAsset.skills = BuildExportSkills();
+
+#if UNITY_EDITOR
+        EditorUtility.SetDirty(skillDataBaseAsset);
+        AssetDatabase.SaveAssets();
+        AssetDatabase.Refresh();
+#endif
+
+        Debug.Log($"Ability tool exported SkillDataBase asset: {skillDataBaseAsset.name}");
+    }
+
+    private List<Skill> BuildExportSkills()
+    {
+        List<Skill> exportSkills = new List<Skill>();
+
+        for (int i = 0; i < nodeList.Count; i++)
+        {
+            AbilityToolNode node = nodeList[i];
+            if (node == null || node.SkillType == SkillType.None)
                 continue;
 
-            exportCosts.Add(new AbilityLevelCostJson
+            exportSkills.Add(new Skill
             {
-                level = levelCost.level,
-                moneyType = levelCost.moneyType.ToString(),
-                amount = levelCost.amount
+                skillType = node.SkillType,
+                maxLevel = Mathf.Max(node.MaxLevel, 1),
+                cost = new SkillCost
+                {
+                    moneyCurve = CloneCurve(node.MoneyCurve),
+                    carrotCurve = CloneCurve(node.CarrotCurve)
+                },
+                skillTypes = BuildExportSkillCommands(node.SkillCommands),
+                prerequisiteSkills = BuildExportPrerequisiteSkills(node.ParentLinks)
             });
         }
 
-        return exportCosts.ToArray();
+        return exportSkills;
+    }
+
+    private ProgressionCurve CloneCurve(ProgressionCurve _curve)
+    {
+        return new ProgressionCurve
+        {
+            type = _curve.type,
+            baseValue = _curve.baseValue,
+            manualValues = _curve.manualValues != null
+                ? new List<float>(_curve.manualValues)
+                : new List<float>()
+        };
+    }
+
+    private List<SkillCommandInfo> BuildExportSkillCommands(List<AbilityToolSkillCommandEntry> _skillCommands)
+    {
+        if (_skillCommands == null || _skillCommands.Count == 0)
+            return new List<SkillCommandInfo>();
+
+        List<SkillCommandInfo> exportCommands = new List<SkillCommandInfo>();
+        for (int i = 0; i < _skillCommands.Count; i++)
+        {
+            AbilityToolSkillCommandEntry command = _skillCommands[i];
+            if (command == null || command.skillCommandType == SkillCommandType.None)
+                continue;
+
+            exportCommands.Add(new SkillCommandInfo
+            {
+                skillCommandType = command.skillCommandType,
+                amountCurve = CloneCurve(command.amountCurve)
+            });
+        }
+
+        return exportCommands;
+    }
+
+    private List<SkillType> BuildExportPrerequisiteSkills(List<AbilityToolParentLink> _parentLinks)
+    {
+        if (_parentLinks == null || _parentLinks.Count == 0)
+            return new List<SkillType>();
+
+        List<SkillType> prerequisites = new List<SkillType>();
+        for (int i = 0; i < _parentLinks.Count; i++)
+        {
+            AbilityToolParentLink parentLink = _parentLinks[i];
+            if (parentLink == null || parentLink.parentNode == null || parentLink.parentNode.SkillType == SkillType.None)
+                continue;
+
+            prerequisites.Add(parentLink.parentNode.SkillType);
+        }
+
+        return prerequisites;
     }
 
     private AbilityParentJson[] BuildExportParents(List<AbilityToolParentLink> _parentLinks)
@@ -826,7 +898,7 @@ public class AbilityToolManager : MonoBehaviour
                 if (_skillNodeMap.TryGetValue(parentSkillType, out AbilityToolNode parentNode) == false)
                     continue;
 
-                AbilityParentLineRouteJson route = nodeDefinition.FindParentLineRoute(parentSkillType);
+                AbilityParentJson route = nodeDefinition.FindParentLineRoute(parentSkillType);
                 bool usePivot = route != null && route.usePivot;
                 Vector2Int pivotGrid = usePivot
                     ? new Vector2Int(route.pivotX, route.pivotY)
@@ -835,6 +907,45 @@ public class AbilityToolManager : MonoBehaviour
                 childNode.AddOrUpdateParentLink(parentNode, usePivot, pivotGrid);
             }
         }
+    }
+
+    private void ApplyImportedSkillLogic(Dictionary<SkillType, AbilityToolNode> _skillNodeMap)
+    {
+        if (skillDataBaseAsset == null || skillDataBaseAsset.skills == null)
+            return;
+
+        for (int i = 0; i < skillDataBaseAsset.skills.Count; i++)
+        {
+            Skill skillData = skillDataBaseAsset.skills[i];
+            if (_skillNodeMap.TryGetValue(skillData.skillType, out AbilityToolNode node) == false)
+                continue;
+
+            node.ApplyLogicData(
+                skillData.maxLevel,
+                skillData.cost.moneyCurve,
+                skillData.cost.carrotCurve,
+                ConvertSkillCommands(skillData.skillTypes));
+        }
+    }
+
+    private List<AbilityToolSkillCommandEntry> ConvertSkillCommands(List<SkillCommandInfo> _skillCommands)
+    {
+        List<AbilityToolSkillCommandEntry> result = new List<AbilityToolSkillCommandEntry>();
+        if (_skillCommands == null)
+            return result;
+
+        for (int i = 0; i < _skillCommands.Count; i++)
+        {
+            SkillCommandInfo command = _skillCommands[i];
+
+            result.Add(new AbilityToolSkillCommandEntry
+            {
+                skillCommandType = command.skillCommandType,
+                amountCurve = CloneCurve(command.amountCurve)
+            });
+        }
+
+        return result;
     }
 
     private void RemoveAllNodes()
@@ -868,19 +979,33 @@ public class AbilityToolManager : MonoBehaviour
         if (importJson != null)
             return importJson.text;
 
-        string absolutePath = GetAbsoluteExportPath();
+        string absolutePath = GetAbsolutePath(uiExportAssetPath);
         if (File.Exists(absolutePath))
             return File.ReadAllText(absolutePath, Encoding.UTF8);
 
         return string.Empty;
     }
 
-    private string GetAbsoluteExportPath()
+    private void WriteJsonFile(string _absolutePath, string _json)
     {
-        if (Path.IsPathRooted(exportAssetPath))
-            return exportAssetPath;
+        string directoryPath = Path.GetDirectoryName(_absolutePath);
 
-        return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), exportAssetPath));
+        if (string.IsNullOrWhiteSpace(directoryPath) == false)
+            Directory.CreateDirectory(directoryPath);
+
+        File.WriteAllText(_absolutePath, _json, Encoding.UTF8);
+
+#if UNITY_EDITOR
+        AssetDatabase.Refresh();
+#endif
+    }
+
+    private string GetAbsolutePath(string _assetPath)
+    {
+        if (Path.IsPathRooted(_assetPath))
+            return _assetPath;
+
+        return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), _assetPath));
     }
 
     [Serializable]
@@ -895,8 +1020,6 @@ public class AbilityToolManager : MonoBehaviour
         public string skillType;
         public string displayName;
         public string description;
-        public int maxLevel;
-        public AbilityLevelCostJson[] levelCosts;
         public int gridX;
         public int gridY;
         public AbilityParentJson[] parents;

@@ -4,19 +4,18 @@ using UnityEngine;
 using UnityEngine.UI;
 
 [Serializable]
-public class AbilityToolLevelCostEntry
-{
-    public int level = 1;
-    public MoneyType moneyType = MoneyType.Coin;
-    public int amount = 0;
-}
-
-[Serializable]
 public class AbilityToolParentLink
 {
     public AbilityToolNode parentNode;
     public bool usePivot;
     public Vector2Int pivotGrid;
+}
+
+[Serializable]
+public class AbilityToolSkillCommandEntry
+{
+    public SkillCommandType skillCommandType = SkillCommandType.None;
+    public ProgressionCurve amountCurve;
 }
 
 public class AbilityToolNode : MonoBehaviour
@@ -29,9 +28,13 @@ public class AbilityToolNode : MonoBehaviour
     [SerializeField] private string displayName;
     [SerializeField] [TextArea(2, 5)] private string description;
     [SerializeField] private int maxLevel = 1;
-    [SerializeField] private List<AbilityToolLevelCostEntry> levelCosts = new List<AbilityToolLevelCostEntry>();
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private List<AbilityToolParentLink> parentLinks = new List<AbilityToolParentLink>();
+
+    [Header("Logic Export Data")]
+    [SerializeField] private ProgressionCurve moneyCurve;
+    [SerializeField] private ProgressionCurve carrotCurve;
+    [SerializeField] private List<AbilityToolSkillCommandEntry> skillCommands = new List<AbilityToolSkillCommandEntry>();
 
     [Header("UI References")]
     [SerializeField] private Image abilityBaseImage;
@@ -46,7 +49,9 @@ public class AbilityToolNode : MonoBehaviour
     public string DisplayName => displayName;
     public string Description => description;
     public int MaxLevel => maxLevel;
-    public List<AbilityToolLevelCostEntry> LevelCosts => levelCosts;
+    public ProgressionCurve MoneyCurve => moneyCurve;
+    public ProgressionCurve CarrotCurve => carrotCurve;
+    public List<AbilityToolSkillCommandEntry> SkillCommands => skillCommands;
     public Vector2Int GridPosition => gridPosition;
     public RectTransform RectTransform => transform as RectTransform;
     public List<AbilityToolParentLink> ParentLinks => parentLinks;
@@ -59,13 +64,19 @@ public class AbilityToolNode : MonoBehaviour
         skillType = _skillType;
         displayName = _definition.displayName;
         description = _definition.description;
-        maxLevel = Mathf.Max(_definition.maxLevel, 1);
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
-        levelCosts = ConvertLevelCosts(_definition.levelCosts);
         parentLinks.Clear();
 
         ApplyAnchoredPosition(_gridCellSize);
         gameObject.name = $"AbilityToolNode_{skillType}_{gridPosition.x}_{gridPosition.y}";
+    }
+
+    public void ApplyLogicData(int _maxLevel, ProgressionCurve _moneyCurve, ProgressionCurve _carrotCurve, List<AbilityToolSkillCommandEntry> _skillCommands)
+    {
+        maxLevel = Mathf.Max(_maxLevel, 1);
+        moneyCurve = CloneCurve(_moneyCurve);
+        carrotCurve = CloneCurve(_carrotCurve);
+        skillCommands = CloneSkillCommands(_skillCommands);
     }
 
     public bool HasPictureRefreshRequest()
@@ -162,27 +173,34 @@ public class AbilityToolNode : MonoBehaviour
         }
     }
 
-    private List<AbilityToolLevelCostEntry> ConvertLevelCosts(AbilityLevelCostJson[] _levelCosts)
+    private ProgressionCurve CloneCurve(ProgressionCurve _curve)
     {
-        List<AbilityToolLevelCostEntry> result = new List<AbilityToolLevelCostEntry>();
-        if (_levelCosts == null)
+        return new ProgressionCurve
+        {
+            type = _curve.type,
+            baseValue = _curve.baseValue,
+            manualValues = _curve.manualValues != null
+                ? new List<float>(_curve.manualValues)
+                : new List<float>()
+        };
+    }
+
+    private List<AbilityToolSkillCommandEntry> CloneSkillCommands(List<AbilityToolSkillCommandEntry> _skillCommands)
+    {
+        List<AbilityToolSkillCommandEntry> result = new List<AbilityToolSkillCommandEntry>();
+        if (_skillCommands == null)
             return result;
 
-        for (int i = 0; i < _levelCosts.Length; i++)
+        for (int i = 0; i < _skillCommands.Count; i++)
         {
-            AbilityLevelCostJson levelCost = _levelCosts[i];
-            if (levelCost == null)
+            AbilityToolSkillCommandEntry command = _skillCommands[i];
+            if (command == null)
                 continue;
 
-            MoneyType moneyType = MoneyType.None;
-            if (string.IsNullOrWhiteSpace(levelCost.moneyType) == false)
-                Enum.TryParse(levelCost.moneyType, true, out moneyType);
-
-            result.Add(new AbilityToolLevelCostEntry
+            result.Add(new AbilityToolSkillCommandEntry
             {
-                level = levelCost.level,
-                moneyType = moneyType,
-                amount = levelCost.amount
+                skillCommandType = command.skillCommandType,
+                amountCurve = CloneCurve(command.amountCurve)
             });
         }
 

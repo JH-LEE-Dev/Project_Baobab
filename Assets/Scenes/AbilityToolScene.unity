@@ -1010,7 +1010,8 @@ MonoBehaviour:
   diagSENW8Sprite: {fileID: 21300000, guid: e0b1f27cfd54f0940bf417523d0a300e, type: 3}
   diagSWNE8Sprite: {fileID: 21300000, guid: 9332ba84a0244cc45bf631c79eb60716, type: 3}
   importJson: {fileID: 4900000, guid: f2dada2f7a2657d44ac7174b4ee787ca, type: 3}
-  exportAssetPath: Assets/Data/Ability/AbilityNodeDatabase.json
+  skillDataBaseAsset: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
+  uiExportAssetPath: Assets/Data/Ability/AbilityNodeDatabase.json
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
