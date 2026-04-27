@@ -11,6 +11,7 @@ public class Bullet : MonoBehaviour
     [SerializeField] private float bulletRadius = 0.2f;
     [SerializeField] private LayerMask targetLayer;
 
+    private float knockBackForce = 3f;
     private float timer;
 
     public void Initialize()
@@ -48,6 +49,11 @@ public class Bullet : MonoBehaviour
             if (!(hitObject is TreeObj))
             {
                 hitObject.TakeDamage(damage);
+
+                if (hitObject is IDamageable damageable)
+                {
+                    damageable.KnockBack(direction,knockBackForce);
+                }
             }
 
             ReturnToPoolEvent?.Invoke(this);

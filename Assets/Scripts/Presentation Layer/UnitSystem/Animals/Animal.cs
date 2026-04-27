@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -50,7 +51,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     //도망 코드
     public bool bRunAway = false;
     public Vector3 FleeDirection { get; private set; }
-    private Vector2 detectedEnemyPos;
+    private Vector2 detectedCharacterPos;
 
     public AnimalAnimValueHandler animalAnimValueHandler { get; private set; }
 
@@ -174,6 +175,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         AddState(new AS_IdleState());
         AddState(new AS_RunState());
         AddState(new AS_DeadState());
+        AddState(new AS_KnockBackState());
 
         // 초기 상태 설정
         stateMachine.ChangeState<AS_IdleState>();
@@ -191,7 +193,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
         if (bRunAway)
         {
-            FleeDirection = ((Vector2)transform.position - detectedEnemyPos).normalized;
+            FleeDirection = ((Vector2)transform.position - detectedCharacterPos).normalized;
         }
 
         shadowSR.sprite = sr.sprite;
@@ -228,7 +230,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
         if (detectionResults.Count > 0)
         {
-            detectedEnemyPos = detectionResults[0].Position;
+            detectedCharacterPos = detectionResults[0].Position;
             bRunAway = true;
         }
         else
@@ -294,5 +296,26 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public void DeActivate()
     {
         stateMachine.ChangeState<AS_DeadState>();
+    }
+
+    public void RunAway(Vector2 _characterPos)
+    {
+        StartCoroutine(RunAwayRoutine(_characterPos));
+    }
+
+    private IEnumerator RunAwayRoutine(Vector2 _characterPos)
+    {
+        yield return new WaitForSeconds(UnityEngine.Random.Range(0.25f, 0.5f));
+        bRunAway = true;
+        detectedCharacterPos = _characterPos;
+    }
+
+    public void KnockBack(Vector2 _knockBackDir,float _knockBackForce)
+    {
+        if (bDead) return;
+
+        var state = stateMachine.GetState<AS_KnockBackState>();
+        state.SetKnockBack(_knockBackDir, _knockBackForce);
+        stateMachine.ChangeState<AS_KnockBackState>();
     }
 }

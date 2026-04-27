@@ -21,7 +21,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     // // 내부 의존성
     [Header("Tree Settings")]
     [SerializeField] private TreeObj treePrefab;
-    [SerializeField] private float spawnInterval = 1.0f;
 
     [Header("Optimization")]
     [SerializeField] private float cullingDistance = 25f;
@@ -41,7 +40,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private IObjectPool<TreeObj> treePool;
     private Coroutine growthCoroutine;
-    private WaitForSeconds spawnYield;
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
@@ -68,8 +66,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         cullingDistances = new float[] { cullingDistance };
         spheres = new BoundingSphere[1000];
         onCullingStateChangedDelegate = OnCullingStateChanged;
-
-        spawnYield = new WaitForSeconds(spawnInterval);
 
         treePool = new ObjectPool<TreeObj>(
             createFunc: OnCreateTree,
@@ -228,7 +224,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         while (true)
         {
-            yield return spawnYield;
+            float interval = environmentProvider.densityProvider.GetTreeRegenTime();
+            yield return new WaitForSeconds(interval);
 
             if (environmentProvider.densityProvider.CanCreateTree() && availablePositions.Count > 0)
             {
