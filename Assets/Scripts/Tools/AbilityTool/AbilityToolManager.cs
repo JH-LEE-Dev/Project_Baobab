@@ -20,6 +20,7 @@ public class AbilityToolManager : MonoBehaviour
     private const float DragThreshold = 4f;
 
     private readonly Dictionary<Vector2Int, AbilityToolNode> nodeMap = new Dictionary<Vector2Int, AbilityToolNode>();
+    private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
     private readonly List<AbilityToolNode> nodeList = new List<AbilityToolNode>();
     private readonly AbilityToolLineRenderer lineRenderer = new AbilityToolLineRenderer();
 
@@ -52,6 +53,7 @@ public class AbilityToolManager : MonoBehaviour
     [SerializeField] private AbilityToolNode abilityToolNodePrefab;
     [SerializeField] private AbilityLine abilityLinePrefab;
     [SerializeField] private float gridCellSize = 32f;
+    [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
 
     [Header("Line Sprites")]
     [SerializeField] private Sprite row4Sprite;
@@ -73,6 +75,7 @@ public class AbilityToolManager : MonoBehaviour
     private void Awake()
     {
         rootCanvas = GetComponentInParent<Canvas>();
+        CachePictureBindings();
         EnsureGridCursorFollowsMoveTarget();
         EnsurePivotMarkerFollowsMoveTarget();
         lineRenderer.Initialize(
@@ -101,7 +104,25 @@ public class AbilityToolManager : MonoBehaviour
         UpdatePivotMarker();
         UpdateGridCoordinateText();
         RefreshLines();
+        RefreshNodePictures();
         HandleToolInput();
+    }
+
+    private void CachePictureBindings()
+    {
+        pictureSpriteMap.Clear();
+
+        if (pictureBindings == null)
+            return;
+
+        for (int i = 0; i < pictureBindings.Count; i++)
+        {
+            AbilityPictureBinding binding = pictureBindings[i];
+            if (binding == null || binding.sprite == null)
+                continue;
+
+            pictureSpriteMap[binding.skillType] = binding.sprite;
+        }
     }
 
     // 툴 화면의 이동과 확대 축소 상태를 기본값으로 되돌린다.
@@ -141,6 +162,7 @@ public class AbilityToolManager : MonoBehaviour
 
             node.ApplyAnchoredPosition(gridCellSize);
             node.SetSelectedVisual(false);
+            node.SetPicture(ResolvePicture(node.SkillType));
             nodeMap[node.GridPosition] = node;
             nodeList.Add(node);
         }
@@ -487,6 +509,7 @@ public class AbilityToolManager : MonoBehaviour
         AbilityToolNode node = Instantiate(abilityToolNodePrefab, moveTarget);
         node.SetGridPosition(_gridPosition, gridCellSize);
         node.SetSelectedVisual(false);
+        node.SetPicture(ResolvePicture(node.SkillType));
         nodeMap[_gridPosition] = node;
         nodeList.Add(node);
         RebuildLines();
@@ -577,6 +600,31 @@ public class AbilityToolManager : MonoBehaviour
         if (_node != null)
             Selection.activeGameObject = _node.gameObject;
 #endif
+    }
+
+#endregion
+
+
+#region Node Picture
+
+    private void RefreshNodePictures()
+    {
+        for (int i = 0; i < nodeList.Count; i++)
+        {
+            AbilityToolNode node = nodeList[i];
+            if (node == null || node.HasPictureRefreshRequest() == false)
+                continue;
+
+            node.SetPicture(ResolvePicture(node.SkillType));
+        }
+    }
+
+    private Sprite ResolvePicture(SkillType _skillType)
+    {
+        if (pictureSpriteMap.TryGetValue(_skillType, out Sprite sprite))
+            return sprite;
+
+        return null;
     }
 
 #endregion
@@ -745,6 +793,7 @@ public class AbilityToolManager : MonoBehaviour
         AbilityToolNode node = Instantiate(abilityToolNodePrefab, moveTarget);
         node.ApplyDefinition(_nodeDefinition, _skillType, gridCellSize);
         node.SetSelectedVisual(false);
+        node.SetPicture(ResolvePicture(_skillType));
         nodeMap[gridPosition] = node;
         nodeList.Add(node);
         return node;

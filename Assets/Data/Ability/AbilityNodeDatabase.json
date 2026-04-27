@@ -10,7 +10,7 @@
       ],
       "gridX": 0,
       "gridY": 0,
-      "parentSkillTypes": []
+      "parents": []
     },
     {
       "skillType": "InventoryExpansion1",
@@ -22,17 +22,9 @@
       ],
       "gridX": -12,
       "gridY": 4,
-      "parentSkillTypes": [
-        "OffRoadVehicle"
-      ],
-      "parentLineRoutes": [
-      {
-      "parentSkillType": "OffRoadVehicle",
-      "usePivot": true,
-      "pivotX": -12,
-      "pivotY": 0
-      }
-    ]
+      "parents": [
+        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": -12, "pivotY": 0 }
+      ]
     },
     {
       "skillType": "LogCapacityIncrease1",
@@ -44,8 +36,8 @@
       ],
       "gridX": -16,
       "gridY": 4,
-      "parentSkillTypes": [
-        "InventoryExpansion1"
+      "parents": [
+        { "skillType": "InventoryExpansion1" }
       ]
     },
     {
@@ -58,8 +50,8 @@
       ],
       "gridX": -16,
       "gridY": 8,
-      "parentSkillTypes": [
-        "InventoryExpansion1"
+      "parents": [
+        { "skillType": "InventoryExpansion1" }
       ]
     },
     {
@@ -76,8 +68,8 @@
       ],
       "gridX": -20,
       "gridY": 12,
-      "parentSkillTypes": [
-        "SawmillLogStorageExpansion1"
+      "parents": [
+        { "skillType": "SawmillLogStorageExpansion1" }
       ]
       
     },
@@ -104,17 +96,9 @@
       ],
       "gridX": -8,
       "gridY": 4,
-      "parentSkillTypes": [
-        "OffRoadVehicle"
-      ],
-      "parentLineRoutes": [
-      {
-      "parentSkillType": "OffRoadVehicle",
-      "usePivot": true,
-      "pivotX": -8,
-      "pivotY": 0
-      }
-    ]
+      "parents": [
+        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": -8, "pivotY": 0 }
+      ]
     },
     {
       "skillType": "VerdantPlainsOvergrowth",
@@ -135,8 +119,8 @@
       ],
       "gridX": -8,
       "gridY": 8,
-      "parentSkillTypes": [
-        "LogValue1"
+      "parents": [
+        { "skillType": "LogValue1" }
       ]
     },
 
@@ -159,17 +143,9 @@
       ],
       "gridX": -4,
       "gridY": 8,
-      "parentSkillTypes": [
-        "OffRoadVehicle"
-      ],
-      "parentLineRoutes": [
-      {
-      "parentSkillType": "OffRoadVehicle",
-      "usePivot": true,
-      "pivotX": -4,
-      "pivotY": 0
-      }
-    ]
+      "parents": [
+        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": -4, "pivotY": 0 }
+      ]
     },
 
 
@@ -187,8 +163,9 @@
       ],
       "gridX": 0,
       "gridY": 12,
-      "parentSkillTypes": [
-        "AxeDamage1", "GunDamage1"
+      "parents": [
+        { "skillType": "AxeDamage1" },
+        { "skillType": "GunDamage1" }
       ]
     },
 
@@ -208,17 +185,9 @@
       ],
       "gridX": 4,
       "gridY": 4,
-      "parentSkillTypes": [
-        "OffRoadVehicle"
-      ],
-      "parentLineRoutes": [
-      {
-      "parentSkillType": "OffRoadVehicle",
-      "usePivot": true,
-      "pivotX": 4,
-      "pivotY": 0
-      }
-    ]
+      "parents": [
+        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": 4, "pivotY": 0 }
+      ]
     },
     {
       "skillType": "GunDamage1",
@@ -234,8 +203,8 @@
       ],
       "gridX": 4,
       "gridY": 8,
-      "parentSkillTypes": [
-        "hunting"
+      "parents": [
+        { "skillType": "hunting" }
       ]
     },
 
@@ -260,17 +229,9 @@
       ],
       "gridX": 8,
       "gridY": 4,
-      "parentSkillTypes": [
-        "OffRoadVehicle"
-      ],
-      "parentLineRoutes": [
-      {
-      "parentSkillType": "OffRoadVehicle",
-      "usePivot": true,
-      "pivotX": 8,
-      "pivotY": 0
-      }
-    ]
+      "parents": [
+        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": 8, "pivotY": 0 }
+      ]
     },
     {
       "skillType": "RabbitBoom",
@@ -291,8 +252,8 @@
       ],
       "gridX": 8,
       "gridY": 8,
-      "parentSkillTypes": [
-        "CarrotBundle"
+      "parents": [
+        { "skillType": "CarrotBundle" }
       ]
     },
 
@@ -312,17 +273,9 @@
       ],
       "gridX": 12,
       "gridY": 4,
-      "parentSkillTypes": [
-        "OffRoadVehicle"
-      ],
-      "parentLineRoutes": [
-      {
-      "parentSkillType": "OffRoadVehicle",
-      "usePivot": true,
-      "pivotX": 12,
-      "pivotY": 0
-      }
-    ]
+      "parents": [
+        { "skillType": "OffRoadVehicle", "usePivot": true, "pivotX": 12, "pivotY": 0 }
+      ]
     },
     {
       "skillType": "FatigueMaxIncrease1",
@@ -343,8 +296,8 @@
       ],
       "gridX": 16,
       "gridY": 8,
-      "parentSkillTypes": [
-        "Stamina1"
+      "parents": [
+        { "skillType": "Stamina1" }
       ]
     }
 

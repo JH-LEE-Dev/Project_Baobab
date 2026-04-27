@@ -35,6 +35,12 @@ public class AbilityToolNode : MonoBehaviour
 
     [Header("UI References")]
     [SerializeField] private Image abilityBaseImage;
+    [SerializeField] private Image abilityPictureImage;
+
+    [Header("Default Visual")]
+    [SerializeField] private Sprite defaultPictureSprite;
+
+    private SkillType lastPictureSkillType = SkillType.None;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -60,6 +66,21 @@ public class AbilityToolNode : MonoBehaviour
 
         ApplyAnchoredPosition(_gridCellSize);
         gameObject.name = $"AbilityToolNode_{skillType}_{gridPosition.x}_{gridPosition.y}";
+    }
+
+    public bool HasPictureRefreshRequest()
+    {
+        return lastPictureSkillType != skillType;
+    }
+
+    public void SetPicture(Sprite _sprite)
+    {
+        lastPictureSkillType = skillType;
+
+        if (abilityPictureImage == null)
+            return;
+
+        abilityPictureImage.sprite = _sprite != null ? _sprite : defaultPictureSprite;
     }
 
     // 툴에서 지정한 그리드 좌표를 저장하고 실제 UI 위치에 반영한다.
