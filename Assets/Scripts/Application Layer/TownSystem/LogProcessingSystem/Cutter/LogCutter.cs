@@ -10,6 +10,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     // 외부 의존성
     private float totalSpeedMultiplier = 1.0f;
+    [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
     // 내부 상태
     private Animator anim;
@@ -121,6 +122,13 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 logState = _data.cuttingItemData.logState,
                 color = _data.cuttingItemData.color // 컬러 복구
             };
+
+            // 스프라이트 복구
+            var typeData = logItemTypeDataBase.Get(data.treeType);
+            if (typeData != null)
+            {
+                data.sprite = typeData.sprite;
+            }
 
             cuttingItem = _poolingManager.GetLogItem(data);
             if (cuttingItem != null)

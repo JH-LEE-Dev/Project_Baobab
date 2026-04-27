@@ -543,6 +543,7 @@ MonoBehaviour:
   currentSlotCount: 2
   maxItemsPerSlot: 5
   inventorySlots: []
+  logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
 --- !u!1 &3535782070355411120
 GameObject:
   m_ObjectHideFlags: 0

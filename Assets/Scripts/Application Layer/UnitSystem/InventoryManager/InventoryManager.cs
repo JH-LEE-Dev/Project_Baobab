@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -29,6 +30,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     int IMoneyData.money => money;
 
     int IMoneyData.carrot => carrot;
+
+    [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
     public void Initialize()
     {
@@ -351,6 +354,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                         {
                             logData.treeType = slotData.itemSaveData.treeType;
                             logData.logState = slotData.itemSaveData.logState;
+
+                            var typeData = logItemTypeDataBase.Get(logData.treeType);
+                            if (typeData != null)
+                            {
+                                logData.sprite = typeData.sprite;
+                            }
                         }
                         else if (newData is LootItemData lootData)
                         {
