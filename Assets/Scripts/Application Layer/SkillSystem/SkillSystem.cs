@@ -1,7 +1,7 @@
 
 public class SkillSystem
 {
-    private SkillManager skillManager;
+    public SkillManager skillManager { get; private set; }
     private SkillDispatcher skillDispatcher;
 
     public void Initialize(SkillManager _skillManager, SkillDispatcher _skillDispatcher)

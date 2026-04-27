@@ -144,4 +144,15 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         dropMultiplier += (_amount / 100.0f);
         Debug.Log($"[CarrotItemController] Carrot Bundle Capacity Increased: {dropMultiplier * 100}%");
     }
+
+    public CarrotSaveData GetSaveData()
+    {
+        return new CarrotSaveData { dropMultiplier = dropMultiplier };
+    }
+
+    public void LoadSaveData(CarrotSaveData _data)
+    {
+        dropMultiplier = _data.dropMultiplier;
+        Debug.Log("[CarrotItemController] Carrot Save Data Loaded.");
+    }
 }

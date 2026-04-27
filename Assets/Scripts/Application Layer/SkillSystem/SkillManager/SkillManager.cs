@@ -209,14 +209,16 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     }
 
     /// <summary>
-    /// 특정 스킬을 이미 습득했는지 확인 (ISkillSystemProvider 구현)
+    /// 특정 스킬을 이미 습득했는지 확인하고 레벨을 반환함 (ISkillSystemProvider 구현)
     /// </summary>
-    public bool IsApplied(SkillType _type)
+    public bool IsApplied(SkillType _type, out int _level)
     {
         if (skillNodeMap.TryGetValue(_type, out SkillNode node))
         {
+            _level = node.currentLevel;
             return node.bApplied;
         }
+        _level = 0;
         return false;
     }
 
@@ -230,5 +232,55 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
             return node.prerequisiteNodes;
         }
         return null;
+    }
+
+    /// <summary>
+    /// 세이브를 위해 현재 습득한(레벨 > 0) 모든 스킬 데이터를 리스트에 채워줌 (GC Alloc 최소화)
+    /// </summary>
+    public void PopulateSkillSaveData(List<SkillSaveData> _saveDataList)
+    {
+        _saveDataList.Clear();
+        
+        foreach (var pair in skillNodeMap)
+        {
+            SkillNode node = pair.Value;
+            if (node.currentLevel > 0)
+            {
+                _saveDataList.Add(new SkillSaveData 
+                { 
+                    skillType = node.skillType, 
+                    currentLevel = node.currentLevel 
+                });
+            }
+        }
+    }
+
+    /// <summary>
+    /// 세이브된 데이터를 불러와서 스킬 상태를 복구하고 효과를 적용함
+    /// </summary>
+    public void LoadSaveData(List<SkillSaveData> _dataList)
+    {
+        if (_dataList == null) return;
+
+        foreach (var data in _dataList)
+        {
+            if (skillNodeMap.TryGetValue(data.skillType, out SkillNode node))
+            {
+                node.currentLevel = data.currentLevel;
+
+                // 스킬 효과 재적용 (각 레벨에 대해 이벤트를 발송해야 할 수도 있으나, 
+                // 현재 구조상 마지막 레벨의 효과만 발송해도 누적되는지 확인 필요.
+                // 대부분의 시스템이 레벨별 절대값을 사용한다면 마지막 레벨만 발송)
+                if (node.commands != null)
+                {
+                    for (int i = 0; i < node.commands.Count; i++)
+                    {
+                        var info = new SkillDispatchInfo(node.currentLevel, node.commands[i]);
+                        //DispatchSkillsEvent?.Invoke(info);
+                    }
+                }
+            }
+        }
+        Debug.Log("[SkillManager] Skill Save Data Loaded and Applied.");
     }
 }

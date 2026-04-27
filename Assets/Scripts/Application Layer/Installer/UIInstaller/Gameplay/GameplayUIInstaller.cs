@@ -1,7 +1,9 @@
 using UnityEngine;
+using System;
 
 public class GameplayUIInstaller : MonoBehaviour
 {
+    public event Action SaveGameEvent;
     private InputManager inputManager;
     private IBootStrapProvider bootStrapProvider;
     private SignalHub signalHub;
@@ -53,6 +55,8 @@ public class GameplayUIInstaller : MonoBehaviour
         uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider, shopNPC, moneyData, localizationManager);
 
         SetupUIElement();
+
+        BindEvent();
     }
 
     public void Release()
@@ -122,8 +126,11 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_Tent tentUI = uiManager.Open<UIView_Tent>();
 
+        UIView_ESC escUI = uiManager.Open<UIView_ESC>();
+        escUI.Hide();
+
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI, tentUI);
+        menuPopupUI, tentUI, escUI);
 
         BindEvent();
     }
@@ -146,16 +153,31 @@ public class GameplayUIInstaller : MonoBehaviour
 
     private void BindEvent()
     {
+        uICoordinator.GoToMainMenuEvent -= GoToMainMenu;
+        uICoordinator.GoToMainMenuEvent += GoToMainMenu;
 
+        uICoordinator.SaveGameEvent -= SaveGame;
+        uICoordinator.SaveGameEvent += SaveGame;
     }
 
     private void ReleaseEvent()
     {
-
+        uICoordinator.SaveGameEvent -= SaveGame;
+        uICoordinator.GoToMainMenuEvent -= GoToMainMenu;
     }
 
     public void ReleaseDependency()
     {
         uiManager.ReleaseDependency();
+    }
+
+    private void GoToMainMenu()
+    {
+        bootStrapProvider.GoToMainMenuScene();
+    }
+
+    private void SaveGame()
+    {
+        SaveGameEvent?.Invoke();
     }
 }

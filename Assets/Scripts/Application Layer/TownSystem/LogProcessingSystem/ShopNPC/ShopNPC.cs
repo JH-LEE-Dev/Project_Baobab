@@ -47,6 +47,18 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         return money;
     }
 
+    public void LoadSaveData(int _money, bool _bFirstTime)
+    {
+        money = _money;
+        bFirstTimeEarnMoney = _bFirstTime;
+        ShopMoneyChangedEvent?.Invoke();
+    }
+
+    public bool GetbFirstTimeEarnMoney()
+    {
+        return bFirstTimeEarnMoney;
+    }
+
     private void BindEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractKeyPressed;

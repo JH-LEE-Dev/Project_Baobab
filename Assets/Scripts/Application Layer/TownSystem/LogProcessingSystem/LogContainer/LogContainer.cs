@@ -526,6 +526,94 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
+    public void PopulateContainerSaveData(ref InventorySaveData _saveData)
+    {
+        _saveData.money = 0;
+        _saveData.carrot = 0;
+        _saveData.currentSlotCount = currentSlotCount;
+        
+        _saveData.Initialize(currentSlotCount);
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = containerSlots[i];
+            InventorySlotSaveData slotData = new InventorySlotSaveData();
+            slotData.totalCount = slot.totalCount;
+
+            if (slot.itemData != null)
+            {
+                ItemSaveData itemSaveData = new ItemSaveData();
+                itemSaveData.itemType = slot.itemData.itemType;
+
+                if (slot.itemData is LogItemData logData)
+                {
+                    itemSaveData.treeType = logData.treeType;
+                    itemSaveData.logState = logData.logState;
+                    slotData.logStateCounts = slot.GetLogStateCounts();
+                }
+
+                slotData.itemSaveData = itemSaveData;
+            }
+
+            _saveData.slots.Add(slotData);
+        }
+    }
+
+    public void LoadSaveData(InventorySaveData _data, int _maxItemsPerSlot)
+    {
+        currentSlotCount = _data.currentSlotCount;
+        maxItemsPerSlot = _maxItemsPerSlot;
+
+        // 기존 슬롯 초기화 (풀 반환)
+        for (int i = 0; i < containerSlots.Count; i++)
+        {
+            if (containerSlots[i].itemData is ItemData itemData)
+            {
+                ReleaseToPool(itemData);
+            }
+            containerSlots[i].Setup(null, 0);
+        }
+
+        // 데이터 복구
+        if (_data.slots != null)
+        {
+            for (int i = 0; i < _data.slots.Count; i++)
+            {
+                if (i >= containerSlots.Count) break;
+
+                var slotData = _data.slots[i];
+                if (slotData.itemSaveData.itemType != ItemType.None)
+                {
+                    ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
+                    if (newData != null)
+                    {
+                        if (newData is LogItemData logData)
+                        {
+                            logData.treeType = slotData.itemSaveData.treeType;
+                            logData.logState = slotData.itemSaveData.logState;
+                        }
+
+                        containerSlots[i].Setup(newData, slotData.totalCount);
+                        
+                        if (slotData.logStateCounts != null && slotData.logStateCounts.Length > 0)
+                        {
+                            containerSlots[i].LoadLogStateCounts(slotData.logStateCounts);
+                        }
+                    }
+                }
+            }
+        }
+
+        ContainerUpdatedEvent?.Invoke();
+        ContainerSpecChangedEvent?.Invoke();
+        Debug.Log("[LogContainer] Container Save Data Loaded.");
+    }
+
+    public int GetMaxItemsPerSlot()
+    {
+        return maxItemsPerSlot;
+    }
+
     public void SetbStop(bool _bStop)
     {
         bStop = _bStop;

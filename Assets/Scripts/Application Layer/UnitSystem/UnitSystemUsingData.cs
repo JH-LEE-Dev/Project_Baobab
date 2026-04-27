@@ -122,6 +122,20 @@ public class InventorySlot : IInventorySlot
         return logStateCounts[(int)_state];
     }
 
+    public int[] GetLogStateCounts()
+    {
+        int[] copy = new int[logStateCounts.Length];
+        Array.Copy(logStateCounts, copy, logStateCounts.Length);
+        return copy;
+    }
+
+    public void LoadLogStateCounts(int[] _counts)
+    {
+        if (_counts == null || _counts.Length != logStateCounts.Length) return;
+        Array.Copy(_counts, logStateCounts, logStateCounts.Length);
+        isDirty = true;
+    }
+
     private void UpdateSortedCounts()
     {
         // 1. 현재 데이터 동기화
