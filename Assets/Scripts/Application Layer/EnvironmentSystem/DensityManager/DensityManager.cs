@@ -19,12 +19,26 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 
     private float treeDensityMultiplier = 1.0f;
     private float rabbitDensityMultiplier = 1.0f;
+    [SerializeField] private float treeRegenMinTime = 10f;
+    [SerializeField] private float treeRegenMaxTime = 15f;
+    [SerializeField] private float rabbitRegenMinTime = 10f;
+    [SerializeField] private float rabbitRegenMaxTime = 15f;
 
     [SerializeField] private bool applyToStartCnt = false;
 
     public void Initialize()
     {
 
+    }
+
+    public float GetTreeRegenTime()
+    {
+        return Random.Range(treeRegenMinTime, treeRegenMaxTime);
+    }
+
+    public float GetAnimalRegenTime()
+    {
+        return Random.Range(rabbitRegenMinTime, rabbitRegenMaxTime);
     }
 
     public void SetApplyToStartCnt(bool _value)

@@ -169,4 +169,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         return transform;
     }
+
+    public void KnockBack(Vector2 _knockBackDir,float _knockBackForce)
+    {
+
+    }
 }

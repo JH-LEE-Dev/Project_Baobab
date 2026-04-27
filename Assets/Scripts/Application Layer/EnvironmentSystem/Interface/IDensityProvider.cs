@@ -8,5 +8,7 @@ public interface IDensityProvider
     int GetTreeStartCnt();
     int GetAnimalStartCnt();
     void SetActiveTilesCnt(int _cnt1,int _cnt2);
+    float GetTreeRegenTime();
+    float GetAnimalRegenTime();
 }
 
