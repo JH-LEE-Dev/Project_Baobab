@@ -93,6 +93,11 @@ public class UI_Inventory : MonoBehaviour
         invPopup?.gameObject.SetActive(false);
     }
 
+    public void Refresh()
+    {
+        UpdateSlots(inventory?.inventorySlots);  
+    } 
+
     private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
     {
         if (null == _items)

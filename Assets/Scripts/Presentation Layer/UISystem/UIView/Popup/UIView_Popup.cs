@@ -122,7 +122,7 @@ public class UIView_Popup : UIView
 
     public override void Refresh()
     {
-
+        uI_Inventory?.Refresh();
     }
 
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.

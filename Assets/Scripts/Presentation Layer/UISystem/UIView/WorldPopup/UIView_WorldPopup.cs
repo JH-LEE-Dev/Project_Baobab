@@ -214,6 +214,7 @@ public class UIView_WorldPopup : UIView
 
     public override void Refresh()
     {
-
+        ui_Storage?.Refresh();
+        ui_Cutter?.Refresh();
     }
 }
