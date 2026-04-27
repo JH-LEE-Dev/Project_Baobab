@@ -38,6 +38,14 @@ public class UI_TreeCutter : MonoBehaviour
         }
     }
 
+    public void Refresh()
+    {
+        if (null != slot && null != cachedItemData)
+        {
+            slot.UpdateImage(cachedItemData.sprite, cachedItemData.color);
+        }
+    }
+
     public void BindRemaining(float _remaining) => remaining = _remaining;
 
     public void BindPosition(Vector3 _newPos)
