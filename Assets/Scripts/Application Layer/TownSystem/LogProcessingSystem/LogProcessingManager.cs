@@ -140,6 +140,13 @@ public class LogProcessingManager : MonoBehaviour
         {
             logContainer.PopulateContainerSaveData(ref _saveData.containerInventoryData);
             _saveData.maxItemsPerSlot = logContainer.GetMaxItemsPerSlot();
+            _saveData.bStop = logContainer.GetbStop();
+            _saveData.transferInterval = logContainer.GetTransferInterval();
+            
+            // 타이밍 정보 저장
+            _saveData.lastTransferTimeElapsed = logContainer.GetLastTransferTimeElapsed();
+            _saveData.lastOutputTimeElapsed = logContainer.GetLastOutputTimeElapsed();
+            _saveData.lastInterval = logContainer.GetLastInterval();
         }
 
         if (shopNPC != null)
@@ -158,7 +165,7 @@ public class LogProcessingManager : MonoBehaviour
     {
         if (logContainer != null)
         {
-            logContainer.LoadSaveData(_data.containerInventoryData, _data.maxItemsPerSlot);
+            logContainer.LoadSaveData(_data);
         }
 
         if (shopNPC != null)

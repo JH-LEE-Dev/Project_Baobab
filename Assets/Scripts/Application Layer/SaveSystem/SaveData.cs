@@ -113,7 +113,14 @@ public struct LogProcessingSaveData
     public int maxItemsPerSlot;
     public int shopMoney;
     public bool bFirstTimeEarnMoney;
+    public bool bStop;
+    public float transferInterval;
     
+    // 타이밍 정보
+    public float lastTransferTimeElapsed;
+    public float lastOutputTimeElapsed;
+    public float lastInterval;
+
     // 벨트, 커터, 평가기 상태
     public BeltSaveData logInBeltData;
     public BeltSaveData logOutBeltData;

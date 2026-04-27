@@ -58,7 +58,7 @@ public class UIView_WorldPopup : UIView
 
         ReleaseEvents();
     }
-    
+
     private void Init_UIStorage()
     {
         if (null == uiStoragePrefab)
@@ -131,7 +131,7 @@ public class UIView_WorldPopup : UIView
 
         ui_Storage?.BindStorage(container);
         ui_Cutter?.BindPosition(_logCutter.GetTransform().position);
-        
+
         BindEvents();
     }
 
@@ -154,7 +154,7 @@ public class UIView_WorldPopup : UIView
     {
         base.OnDestroy();
     }
-    
+
     //원목 보관함 최신화됨.
     public void ContainerUpdated()
     {
@@ -210,5 +210,10 @@ public class UIView_WorldPopup : UIView
     private void LogCuttingIsDone()
     {
         ui_Cutter?.ResetCutter();
+    }
+
+    public override void Refresh()
+    {
+
     }
 }
