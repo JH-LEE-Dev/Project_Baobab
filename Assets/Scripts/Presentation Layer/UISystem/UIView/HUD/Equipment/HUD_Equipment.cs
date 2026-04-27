@@ -34,37 +34,53 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         {
             character = _character;
 
-            UpdateSettings();
+            UpdateAmmo();
+            UpdateAxeDurability();
 
             IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
             IAxeComponent axeComponent = character.armComponent?.axeComponent;
 
             if (null != rifleComponent)
             {
-                rifleComponent.RifleFiredEvent -= UpdateSettings;
-                rifleComponent.RifleFiredEvent += UpdateSettings;
+                rifleComponent.RifleFiredEvent -= UpdateAmmo;
+                rifleComponent.RifleFiredEvent += UpdateAmmo;
+
+                rifleComponent.ReloadFinishedEvent -= UpdateAmmo;
+                rifleComponent.ReloadFinishedEvent += UpdateAmmo;
             }
 
             if (null != axeComponent)
             {
-                
+                axeComponent.AxeAttackedEvent -= UpdateAxeDurability;
+                axeComponent.AxeAttackedEvent += UpdateAxeDurability;
             }
         }
 
-        private void UpdateSettings()
+        private void UpdateAmmo()
         {
             if (null == character)
                 return;
 
             IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
-            IAxeComponent axeComponent = character.armComponent?.axeComponent;
             IStatComponent statComponent = character.statComponent;
 
-            if (null == rifleComponent || null == axeComponent || null == statComponent)
+            if (null == rifleComponent || null == statComponent)
                 return;
 
             if (null != rifleItem)
                 rifleItem.UpdateAmmo(rifleComponent.mag, statComponent.magCap, rifleComponent.ammo);   
+        }
+
+        private void UpdateAxeDurability()
+        {
+            if (null == character)
+                return;
+
+            IAxeComponent axeComponent = character.armComponent?.axeComponent;
+            IStatComponent statComponent = character.statComponent;
+
+            if (null == axeComponent || null == statComponent)
+                return;
 
             if (null != axeItem)
                 axeItem.UpdateGauge(axeComponent.durability / statComponent.axeDurability);
@@ -87,9 +103,16 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         public void OnDestroy()
         {
             IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
+            IAxeComponent axeComponent = character.armComponent?.axeComponent;
 
             if (null == rifleComponent)
-                rifleComponent.RifleFiredEvent -= UpdateSettings;
+            {
+                rifleComponent.RifleFiredEvent -= UpdateAmmo;
+                rifleComponent.ReloadFinishedEvent -= UpdateAmmo;
+            }
+
+            if (null == axeComponent)
+                axeComponent.AxeAttackedEvent -= UpdateAxeDurability;
         }
 
         public void OnShow()
