@@ -67,6 +67,16 @@ public struct Skill
     public List<SkillType> prerequisiteSkills;
 }
 
+public struct SkillInfo
+{
+    public SkillType skillType;
+    public int currentLevel;
+    public int maxLevel;
+    public MoneyType moneyType;
+    public int nextCost;
+    public List<SkillType> prerequisiteSkills;
+}
+
 public enum SkillType
 {
     None,

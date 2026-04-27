@@ -14,7 +14,7 @@ public class UIView_Tent : UIView
     [SerializeField] private TMP_Text carrotText;
 
 
-#region Default Logic
+    #region Default Logic
 
     // Tent UI 초기 설정을 진행한다.
     public override void Initialize(UIViewContext _ctx)
@@ -68,10 +68,10 @@ public class UIView_Tent : UIView
         }
     }
 
-#endregion
+    #endregion
 
 
-#region Money UI
+    #region Money UI
 
     // 캐릭터가 특정 재화를 획득했을 때 현재 재화 텍스트를 갱신한다.
     public void CharacterEarnMoney(MoneyType _moneyType)
@@ -98,11 +98,16 @@ public class UIView_Tent : UIView
             carrotText.text = moneyData.carrot.ToString();
     }
 
-#endregion
+    #endregion
 
 
     // Tent UI 정리 시 확장 포인트로 남겨둔다.
     public override void OnDestroy()
     {
+    }
+
+    public override void Refresh() //저장 파일 로드할 때 호출됨.
+    {
+       
     }
 }

@@ -31,7 +31,7 @@ public class SkillNode
         int nextLevel = currentLevel + 1;
         _money = (int)cost.moneyCurve.Evaluate(nextLevel);
         _carrot = (int)cost.carrotCurve.Evaluate(nextLevel);
-        
+
         return true;
     }
 }
@@ -81,14 +81,14 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         for (int i = 0; i < skillCount; i++)
         {
             Skill skillData = skillDataBase.skills[i];
-            
+
             // 중복 방지
             if (skillNodeMap.ContainsKey(skillData.skillType)) continue;
 
             SkillNode node = new SkillNode(
-                skillData.skillType, 
-                skillData.maxLevel, 
-                skillData.cost, 
+                skillData.skillType,
+                skillData.maxLevel,
+                skillData.cost,
                 skillData.skillTypes
             );
             skillNodeMap.Add(skillData.skillType, node);
@@ -120,12 +120,12 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     public AbilityLevelUpRejectReason TryApplySkill(SkillType _type)
     {
         //if (EnablePrototypeAutoPass)
-            //return AbilityLevelUpRejectReason.Pass;
+        //return AbilityLevelUpRejectReason.Pass;
 
         AbilityLevelUpRejectReason reason = CanApplySkill(_type);
         if (reason != AbilityLevelUpRejectReason.Pass) return reason;
 
-        if (!skillNodeMap.TryGetValue(_type, out SkillNode node)) 
+        if (!skillNodeMap.TryGetValue(_type, out SkillNode node))
             return AbilityLevelUpRejectReason.None;
 
         if (!node.GetNextLevelCost(out int moneyCost, out int carrotCost))
@@ -170,9 +170,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     public AbilityLevelUpRejectReason CanApplySkill(SkillType _type)
     {
         //if (EnablePrototypeAutoPass)
-            //return AbilityLevelUpRejectReason.Pass;
+        //return AbilityLevelUpRejectReason.Pass;
 
-        if (!skillNodeMap.TryGetValue(_type, out SkillNode node)) 
+        if (!skillNodeMap.TryGetValue(_type, out SkillNode node))
             return AbilityLevelUpRejectReason.None;
 
         // 1. 최대 레벨 체크
@@ -235,21 +235,65 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     }
 
     /// <summary>
+    /// 특정 스킬의 상세 정보(레벨, 비용, 선행 스킬 등)를 반환 (ISkillSystemProvider 구현)
+    /// </summary>
+    public SkillInfo GetSkillInfo(SkillType _type)
+    {
+        SkillInfo info = new SkillInfo();
+        info.skillType = _type;
+
+        if (skillNodeMap.TryGetValue(_type, out SkillNode node))
+        {
+            info.currentLevel = node.currentLevel;
+            info.maxLevel = node.maxLevel;
+
+            int nextCarrotCost;
+            int nextMoneyCost;
+            // 다음 레벨 비용 계산
+            node.GetNextLevelCost(out nextMoneyCost, out nextCarrotCost);
+
+            if (nextMoneyCost > 0)
+            {
+                info.nextCost = nextMoneyCost;
+                info.moneyType = MoneyType.Coin;
+            }
+            else if (nextCarrotCost > 0)
+            {
+                info.nextCost = nextCarrotCost;
+                info.moneyType = MoneyType.Carrot;
+            }
+
+
+            // 선행 스킬 리스트 구성
+            if (node.prerequisiteNodes != null && node.prerequisiteNodes.Count > 0)
+            {
+                info.prerequisiteSkills = new List<SkillType>(node.prerequisiteNodes.Count);
+                for (int i = 0; i < node.prerequisiteNodes.Count; i++)
+                {
+                    info.prerequisiteSkills.Add(node.prerequisiteNodes[i].skillType);
+                }
+            }
+        }
+
+        return info;
+    }
+
+    /// <summary>
     /// 세이브를 위해 현재 습득한(레벨 > 0) 모든 스킬 데이터를 리스트에 채워줌 (GC Alloc 최소화)
     /// </summary>
     public void PopulateSkillSaveData(List<SkillSaveData> _saveDataList)
     {
         _saveDataList.Clear();
-        
+
         foreach (var pair in skillNodeMap)
         {
             SkillNode node = pair.Value;
             if (node.currentLevel > 0)
             {
-                _saveDataList.Add(new SkillSaveData 
-                { 
-                    skillType = node.skillType, 
-                    currentLevel = node.currentLevel 
+                _saveDataList.Add(new SkillSaveData
+                {
+                    skillType = node.skillType,
+                    currentLevel = node.currentLevel
                 });
             }
         }

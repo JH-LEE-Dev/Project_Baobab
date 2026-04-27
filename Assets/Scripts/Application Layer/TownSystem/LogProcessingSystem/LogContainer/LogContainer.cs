@@ -47,6 +47,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private bool bStop = false;
 
+    [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
+    
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
@@ -104,7 +106,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (containerSlots[i].itemData != null && 
+            if (containerSlots[i].itemData != null &&
                 containerSlots[i].totalCount < maxItemsPerSlot &&
                 IsSameItem(_item, (ItemData)containerSlots[i].itemData))
             {
@@ -333,7 +335,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (containerSlots[i].itemData != null && 
+            if (containerSlots[i].itemData != null &&
                 containerSlots[i].totalCount < maxItemsPerSlot &&
                 IsSameItemByData(_sourceData, containerSlots[i].itemData))
             {
@@ -531,7 +533,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         _saveData.money = 0;
         _saveData.carrot = 0;
         _saveData.currentSlotCount = currentSlotCount;
-        
+
         _saveData.Initialize(currentSlotCount);
 
         for (int i = 0; i < currentSlotCount; i++)
@@ -545,7 +547,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 ItemSaveData itemSaveData = new ItemSaveData();
                 itemSaveData.itemType = slot.itemData.itemType;
                 itemSaveData.color = slot.itemData.color; // 컬러 저장
-    
+
                 if (slot.itemData is LogItemData logData)
                 {
                     itemSaveData.treeType = logData.treeType;
@@ -602,10 +604,16 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                         {
                             logData.treeType = slotData.itemSaveData.treeType;
                             logData.logState = slotData.itemSaveData.logState;
+
+                            var typeData = logItemTypeDataBase.Get(logData.treeType);
+                            if (typeData != null)
+                            {
+                                logData.sprite = typeData.sprite;
+                            }
                         }
 
                         containerSlots[i].Setup(newData, slotData.totalCount);
-                        
+
                         if (slotData.logStateCounts != null && slotData.logStateCounts.Length > 0)
                         {
                             containerSlots[i].LoadLogStateCounts(slotData.logStateCounts);
