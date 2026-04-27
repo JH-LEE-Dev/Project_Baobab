@@ -9,4 +9,5 @@ public interface IRifleComponent
     public event Action AttackCoolTimeStartEvent;
     public event Action ReloadStartEvent;
     public event Action RifleFiredEvent;
+    public event Action ReloadFinishedEvent;
 }

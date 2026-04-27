@@ -126,6 +126,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             {
                 ItemSaveData itemSaveData = new ItemSaveData();
                 itemSaveData.itemType = slot.itemData.itemType;
+                itemSaveData.color = slot.itemData.color; // 컬러 저장
 
                 if (slot.itemData is LogItemData logData)
                 {
@@ -343,17 +344,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                     ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
                     if (newData != null)
                     {
+                        newData.color = slotData.itemSaveData.color; // 컬러 복구
+
                         // 타입별 세부 정보 복구
                         if (newData is LogItemData logData)
                         {
                             logData.treeType = slotData.itemSaveData.treeType;
                             logData.logState = slotData.itemSaveData.logState;
-                            
-                            // LogItemData인 경우 상세 상태별 개수 설정이 필요함
-                            // InventorySlot.Setup에서 단일 개수만 처리하므로, 
-                            // 별도의 메서드로 상세 상태 배열을 직접 주입하거나 수정 필요.
-                            // 여기서는 Setup 이후 강제로 logStateCounts를 설정하는 방식을 위해
-                            // InventorySlot에 해당 기능이 있는지 확인 필요.
                         }
                         else if (newData is LootItemData lootData)
                         {

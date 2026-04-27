@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class AxeComponent : WeaponComponent, IAxeComponent
 {
+    public event Action AxeAttackedEvent;
     public event Action<bool> DeclareCanSwapEvent;
     public event Action<bool> DeclareAttackStateEvent;
     public event Action AttackEvent;
@@ -106,6 +107,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         if (durability < 0f)
             durability = 0f;
+
+        AxeAttackedEvent?.Invoke();
     }
 
     public override void ResetDurability()
