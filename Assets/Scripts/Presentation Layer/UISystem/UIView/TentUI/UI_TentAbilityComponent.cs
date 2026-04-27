@@ -44,7 +44,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private AbilityNode abilityNodePrefab;
     [SerializeField] private AbilityLine abilityLinePrefab;
     [SerializeField] private TextAsset abilityNodeJson;
-    [SerializeField] private float gridCellSize = 16f;
+    [SerializeField] private float gridCellSize = 32f;
     [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
     [SerializeField] private List<AbilityLineSegmentSpriteBinding> lineSpriteBindings = new List<AbilityLineSegmentSpriteBinding>();
     [SerializeField] private RectTransform lineParent;

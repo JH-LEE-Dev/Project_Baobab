@@ -74,31 +74,91 @@ public enum SkillType
 
 
     InventoryExpansion1,//인벤토리확장I
+    InventoryExpansion2,//인벤토리확장II
+
+
     LogCapacityIncrease1,//원목 수납력 증가I
-    SawmillLogStorageExpansion1,//제재소 원목 보관함 확장
-    LogProcessingSpeed1,//원목가공속도1
+    LogCapacityIncrease2,//원목 수납력 증가II
+
+
+    SawmillLogStorageExpansion1,//제재소 원목 보관함 확장 I
+    SawmillLogStorageExpansion2,//제재소 원목 보관함 확장 II
+
+
+
+    ConveyorSpeed1, //컨베이어 속도 I
+    PowerSupply, // 전력공급
+    LogProcessingSpeed1,//원목가공속도I
+    LogProcessingSpeed2, //원목가공속도II
+
+
+
 
 
     LogValue1, //원목 가치1
     VerdantPlainsOvergrowth, //초목 평원림 과성장
 
+    BountifulTree1, // 아낌없이주는나무1
+    RareLogChance1, // 희귀원목확률I
+
+
+
+
+
+    
+
 
     AxeDamage1,//도끼데미지I
+    AxeDamage2,//도끼데미지II
 
-    EquipmentSwitchSpeed,//장비 스위칭 속도1
+    AxeDurability1, //도끼 내구도I
+    SteelAxe1, // 강철도끼 I
+    AxeRange1, // 도끼 범위
+    Shockwave1, //충격파I
+    ShockwaveDamage1, //충격파데미지I
+    ShockwaveRange1, // 충격파 범위 I
+    AxeAttackSpeed1, // 도끼 공격 속도 I
+
+
+
+    EquipmentSwitchSpeed1,//장비 스위칭 속도1
+    EfficientMovement1, // 효율적인 이동I
+    MovementSpeed, //이동속도I
+
+
+
 
     hunting,//수렵
     GunDamage1,//총기데미지1
+    GunDamage2,//총기데미지2
+    ReserveAmmoIncrease1, // 예비탄창증가1
+    GunMagazineCapacity1, //총기탄창증가1
+    GunPenetration1, //총기관통1
+    Scattershot1, //확산탄1
+    ScattershotDamage1, //확산탄 데미지1
+    ScattershotRange1, //확산탄 범위
+    GunAttackSpeed1, //총기공격속도1
+    GunReloadSpeed1, //총기 재장전 속도1
 
 
 
     CarrotBundle, // 당근 다발
     RabbitBoom, // 토끼 대 번성
+    CarrotFarm, // 당근 농장
+    PickupRange1, //획득범위
 
 
     Stamina1, // 지구력1
     FatigueMaxIncrease1, // 피로도 최대치 증가1
-    Max
+    FatigueMaxIncrease2, // 피로도 최대치 증가 II
+    FatigueMaxIncrease3, // 피로도 최대치 증가3
+
+    HiddenMap, // 히든맵
+    HiddenMapGaugeGain1, // 히든맵 게이지 획득량I
+    HiddenMapGaugeGain2, // 히든맵 게이지 획득량2
+    HiddenMapFatigueRecovery, // 히든맵 피로도 회복 I
+
+    MAX
 }
 
 public enum SkillCommandType

@@ -996,6 +996,11 @@ MonoBehaviour:
   abilityToolNodePrefab: {fileID: 3681704514645111162, guid: 4269eb754883b6f41bc4714476be7f73, type: 3}
   abilityLinePrefab: {fileID: 5716816955533093396, guid: 837b53e06369c2849b172916f360208c, type: 3}
   gridCellSize: 32
+  pictureBindings:
+  - skillType: 1
+    sprite: {fileID: 21300000, guid: da1e8b091de6eae49ba4b8ef63f3dc25, type: 3}
+  - skillType: 3
+    sprite: {fileID: 21300000, guid: 3517f882da9f7fe46bf3ab653ecd8a25, type: 3}
   row4Sprite: {fileID: 21300000, guid: 31fd475482a51a04b8c4e3f34596cff6, type: 3}
   col4Sprite: {fileID: 21300000, guid: 482e36b06834a9e4abcd34e6eabb298a, type: 3}
   diagSENW4Sprite: {fileID: 21300000, guid: 1e05681849c2c2c41996e8209fe5da7c, type: 3}
@@ -1004,6 +1009,8 @@ MonoBehaviour:
   col8Sprite: {fileID: 21300000, guid: 86d6da9789b8f2a4c94ffa775c1fcf18, type: 3}
   diagSENW8Sprite: {fileID: 21300000, guid: e0b1f27cfd54f0940bf417523d0a300e, type: 3}
   diagSWNE8Sprite: {fileID: 21300000, guid: 9332ba84a0244cc45bf631c79eb60716, type: 3}
+  importJson: {fileID: 4900000, guid: f2dada2f7a2657d44ac7174b4ee787ca, type: 3}
+  exportAssetPath: Assets/Data/Ability/AbilityNodeDatabase.json
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -211,7 +211,7 @@ MonoBehaviour:
   abilityNodePrefab: {fileID: 186751372433236867, guid: f50dc13d7e7439444b4bed2520b62d96, type: 3}
   abilityLinePrefab: {fileID: 5716816955533093396, guid: 837b53e06369c2849b172916f360208c, type: 3}
   abilityNodeJson: {fileID: 4900000, guid: f2dada2f7a2657d44ac7174b4ee787ca, type: 3}
-  gridCellSize: 16
+  gridCellSize: 32
   pictureBindings:
   - skillType: 8
     sprite: {fileID: 21300000, guid: 14a8bf6de61f038419d328dfaeef34be, type: 3}
