@@ -553,7 +553,7 @@ Tilemap:
       - {fileID: 21300000, guid: df2bbfdeb5280bb4c80a228f572edf73, type: 3}
       - {fileID: 21300000, guid: 747fd7a4d0f55d94cb5af762139eb48e, type: 3}
       - {fileID: 21300000, guid: 8cd4a9b968cd23644b68bed99eb3771f, type: 3}
-      m_AnimationSpeed: 5
+      m_AnimationSpeed: 5.0000005
       m_AnimationTimeOffset: 0
       m_Flags: 0
   - first: {x: 12, y: 7, z: 0}
@@ -1805,6 +1805,10 @@ PrefabInstance:
       propertyPath: transferInterval
       value: 0.5
       objectReference: {fileID: 0}
+    - target: {fileID: -3285935100631786830, guid: 1849203d39807e94382b64a17192d150, type: 3}
+      propertyPath: logItemTypeDataBase
+      value: 
+      objectReference: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
     - target: {fileID: 4454283318106223034, guid: 1849203d39807e94382b64a17192d150, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.59

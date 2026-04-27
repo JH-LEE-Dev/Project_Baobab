@@ -83,7 +83,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         if (null == showItemData)
             return;
-
+        Debug.Log(showItemData.color);
         UpdateImage(showItemData.sprite, showItemData.color);
     }
 
