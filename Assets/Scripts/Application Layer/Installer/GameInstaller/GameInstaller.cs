@@ -87,6 +87,7 @@ public class GameInstaller : MonoBehaviour
     public void LoadGame()
     {
         saveManager.LoadGameData();
+        gameplayUIInstaller.Refresh();
     }
 
     public void SetupGameInstaller(SceneChangeData _sceneChangeData)

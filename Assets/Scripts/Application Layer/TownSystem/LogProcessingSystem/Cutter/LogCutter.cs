@@ -54,6 +54,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     public void CuttingDone()
     {
         anim.SetBool(startHash, false);
+        cuttingItem.gameObject.SetActive(true);
         CuttingDoneEvent?.Invoke();
     }
 
