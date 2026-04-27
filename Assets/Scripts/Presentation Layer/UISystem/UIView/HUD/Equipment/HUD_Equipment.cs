@@ -1,41 +1,128 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
-public class HUD_Equipment : MonoBehaviour
+namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
-    private HUD_EquipmentField equipmentField;
-    private HUD_EquipmentItem equipmentItem;
-
-    [SerializeField] private EquipmentSpriteData spriteData;
-
-    public void Initialize()
+    /// <summary>
+    /// 장비 HUD 시스템을 총괄하며 도끼와 라이플 HUD 아이템을 관리합니다.
+    /// </summary>
+    public class HUD_Equipment : MonoBehaviour
     {
-        equipmentField = GetComponentInChildren<HUD_EquipmentField>();
-        equipmentField?.Initialize();
+        // //외부 의존성
+        [SerializeField] private HUD_EquipmentAxe axeItem;
+        [SerializeField] private HUD_EquipmentRifle rifleItem;
 
-        equipmentItem = GetComponentInChildren<HUD_EquipmentItem>();
-        equipmentItem?.Initialize(spriteData);
-    }
+        // //내부 의존성
+        private ICharacter character;
 
-    public void OnDestroy()
-    {
-        equipmentField?.OnDestroy();
-    }
+        // //퍼블릭 초기화 및 제어 메서드
 
-    public void OnShow()
-    {
-        equipmentField?.OnShow();
-    }
+        public void Initialize()
+        {
+            if (null != axeItem)
+            {
+                axeItem.Initialize();
+            }
 
-    public void OnHide()
-    {
-        equipmentField?.OnHide();
-    }
+            if (null != rifleItem)
+            {
+                rifleItem.Initialize();
+            }
+        }
 
-    public void UpdateAmmoCount(int cnt) => equipmentItem?.ChangeText(cnt);
+        public void BindingRef(ICharacter _character)
+        {
+            character = _character;
 
-    public void UpdateState(WeaponMode type, int ammoCnt)
-    {
-        equipmentItem?.ChangeImage(type);
-        equipmentItem?.ChangeText(ammoCnt);
+            UpdateAmmo();
+            UpdateAxeDurability();
+
+            IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
+            IAxeComponent axeComponent = character.armComponent?.axeComponent;
+
+            if (null != rifleComponent)
+            {
+                rifleComponent.RifleFiredEvent -= UpdateAmmo;
+                rifleComponent.RifleFiredEvent += UpdateAmmo;
+
+                rifleComponent.ReloadFinishedEvent -= UpdateAmmo;
+                rifleComponent.ReloadFinishedEvent += UpdateAmmo;
+            }
+
+            if (null != axeComponent)
+            {
+                axeComponent.AxeAttackedEvent -= UpdateAxeDurability;
+                axeComponent.AxeAttackedEvent += UpdateAxeDurability;
+            }
+        }
+
+        private void UpdateAmmo()
+        {
+            if (null == character)
+                return;
+
+            IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
+            IStatComponent statComponent = character.statComponent;
+
+            if (null == rifleComponent || null == statComponent)
+                return;
+
+            if (null != rifleItem)
+                rifleItem.UpdateAmmo(rifleComponent.mag, statComponent.magCap, rifleComponent.ammo);   
+        }
+
+        private void UpdateAxeDurability()
+        {
+            if (null == character)
+                return;
+
+            IAxeComponent axeComponent = character.armComponent?.axeComponent;
+            IStatComponent statComponent = character.statComponent;
+
+            if (null == axeComponent || null == statComponent)
+                return;
+
+            if (null != axeItem)
+                axeItem.UpdateGauge(axeComponent.durability / statComponent.axeDurability);
+        }
+
+        /// <summary>
+        /// 무기 모드에 따라 HUD 아이템들의 활성 상태를 업데이트합니다.
+        /// </summary>
+        /// <param name="_mode">현재 무기 모드</param>
+        /// <param name="_index">인덱스 (필요 시 확장용)</param>
+        public void UpdateState(WeaponMode _mode)
+        {
+            if (null != axeItem)
+                axeItem.SetActivate(WeaponMode.Axe == _mode);
+
+            if (null != rifleItem)
+                rifleItem.SetActivate(WeaponMode.Rifle == _mode);
+        }
+
+        public void OnDestroy()
+        {
+            IRifleComponent rifleComponent = character.armComponent?.rifleComponent;
+            IAxeComponent axeComponent = character.armComponent?.axeComponent;
+
+            if (null == rifleComponent)
+            {
+                rifleComponent.RifleFiredEvent -= UpdateAmmo;
+                rifleComponent.ReloadFinishedEvent -= UpdateAmmo;
+            }
+
+            if (null == axeComponent)
+                axeComponent.AxeAttackedEvent -= UpdateAxeDurability;
+        }
+
+        public void OnShow()
+        {
+           
+        }
+
+        public void OnHide()
+        {
+            
+        }
     }
 }
