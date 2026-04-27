@@ -544,6 +544,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             {
                 ItemSaveData itemSaveData = new ItemSaveData();
                 itemSaveData.itemType = slot.itemData.itemType;
+                itemSaveData.color = slot.itemData.color; // 컬러 저장
 
                 if (slot.itemData is LogItemData logData)
                 {
@@ -587,6 +588,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
                     if (newData != null)
                     {
+                        newData.color = slotData.itemSaveData.color; // 컬러 복구
+
                         if (newData is LogItemData logData)
                         {
                             logData.treeType = slotData.itemSaveData.treeType;
