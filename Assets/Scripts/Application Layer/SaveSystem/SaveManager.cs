@@ -9,12 +9,13 @@ public class SaveManager : MonoBehaviour
     private LogProcessingManager logProcessingManager;
     private DensityManager densityManager;
     private InDungeonObjectManager inDungeonObjectManager;
+    private TownObjectManager townObjectManager;
 
     // GC Alloc 최적화를 위한 캐싱된 세이브 데이터 객체
     private GameSaveData cachedSaveData = new GameSaveData();
 
     public void Initialize(SignalHub _signalHub, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
-    DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager)
+    DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager)
     {
         signalHub = _signalHub;
         inDungeonObjectManager = _inDungeonObjectManager;
@@ -22,6 +23,7 @@ public class SaveManager : MonoBehaviour
         skillSystem = _skillSystem;
         inventoryManager = _inventoryManager;
         logProcessingManager = _logProcessingManager;
+        townObjectManager = _townObjectManager;
 
         SubscribeSignals();
     }
@@ -106,7 +108,13 @@ public class SaveManager : MonoBehaviour
             cachedSaveData.carrotSaveData = inDungeonObjectManager.itemManager.carrrotItemController.GetSaveData();
         }
 
-        // 7. JSON 저장
+        // 7. 마을 오브젝트 데이터 추출 (bCanTravel 등)
+        if (townObjectManager != null)
+        {
+            cachedSaveData.townSaveData = townObjectManager.GetSaveData();
+        }
+
+        // 8. JSON 저장
         string json = JsonUtility.ToJson(cachedSaveData, true);
         string path = System.IO.Path.Combine(Application.persistentDataPath, "SaveData.json");
         System.IO.File.WriteAllText(path, json);
@@ -168,6 +176,12 @@ public class SaveManager : MonoBehaviour
         if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null && inDungeonObjectManager.itemManager.carrrotItemController != null)
         {
             inDungeonObjectManager.itemManager.carrrotItemController.LoadSaveData(saveData.carrotSaveData);
+        }
+
+        // 7. 마을 오브젝트 데이터 복구
+        if (townObjectManager != null)
+        {
+            townObjectManager.LoadSaveData(saveData.townSaveData);
         }
 
         Debug.Log($"[SaveManager] Game Data Loaded from: {path}");

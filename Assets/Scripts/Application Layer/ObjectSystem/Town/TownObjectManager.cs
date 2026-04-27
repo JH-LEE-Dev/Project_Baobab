@@ -31,7 +31,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
     private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(200);
     
-    private bool bCanJump = false;
+    private bool bCanTravel = false;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -61,10 +61,10 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             portal = Instantiate(portalPrefab);
             portal.transform.position = portalSpawnPoint.position;
             portal.Initialize(PortalType.ToDungeonPortal);
-            portal.SetCanJump(bCanJump);
+            portal.SetCanTravel(bCanTravel);
         }
         else
-            portal.SetCanJump(bCanJump);
+            portal.SetCanTravel(bCanTravel);
 
         // 씬 내의 나무가 이미 관리 중이라면 다시 찾지 않음 (할당 방지)
         if (trees == null)
@@ -228,9 +228,23 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public void CanTravel()
     {
-        bCanJump = true;
+        bCanTravel = true;
 
         if (portal != null)
-            portal.SetCanJump(bCanJump);
+            portal.SetCanTravel(bCanTravel);
+    }
+
+    public TownSaveData GetSaveData()
+    {
+        return new TownSaveData { bCanTravel = bCanTravel };
+    }
+
+    public void LoadSaveData(TownSaveData _data)
+    {
+        bCanTravel = _data.bCanTravel;
+        if (portal != null)
+        {
+            portal.SetCanTravel(bCanTravel);
+        }
     }
 }

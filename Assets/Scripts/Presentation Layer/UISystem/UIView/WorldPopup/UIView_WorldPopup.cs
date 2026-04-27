@@ -214,7 +214,7 @@ public class UIView_WorldPopup : UIView
 
     public override void Refresh()
     {
-        if (null != ui_Cutter)
+        if (null != ui_Cutter && null != logCutter.logToCut)
         {
             ui_Cutter.BindItemData(logCutter.logToCut);
             ui_Cutter.BindRemaining(logCutter.timeRemaining);

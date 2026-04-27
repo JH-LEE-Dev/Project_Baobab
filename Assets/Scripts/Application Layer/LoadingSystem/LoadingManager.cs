@@ -35,6 +35,8 @@ public class LoadingManager : MonoBehaviour
         }
     }
 
+    public bool IsLoading => loadingCanvasGroup != null && loadingCanvasGroup.gameObject.activeSelf;
+
     public void Show(Action onComplete = null)
     {
         if (loadingCanvasGroup == null)
@@ -62,12 +64,15 @@ public class LoadingManager : MonoBehaviour
         }
 
         loadingCanvasGroup.DOKill();
-        Tweener tween = loadingCanvasGroup.DOFade(0f, fadeDuration);
         
+        // Sequence를 사용하여 람다 없이 여러 콜백을 순차적으로 실행
+        Sequence hideSequence = DOTween.Sequence();
+        hideSequence.Append(loadingCanvasGroup.DOFade(0f, fadeDuration));
+        hideSequence.AppendCallback(DisableCanvasGroup);
         if (onComplete != null)
-            tween.OnComplete(new TweenCallback(onComplete));
-            
-        tween.OnComplete(DisableCanvasGroup);
+        {
+            hideSequence.AppendCallback(new TweenCallback(onComplete));
+        }
     }
 
     private void DisableCanvasGroup()
