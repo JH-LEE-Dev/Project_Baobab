@@ -10,6 +10,9 @@ public class SaveManager : MonoBehaviour
     private DensityManager densityManager;
     private InDungeonObjectManager inDungeonObjectManager;
 
+    // GC Alloc 최적화를 위한 캐싱된 세이브 데이터 객체
+    private GameSaveData cachedSaveData = new GameSaveData();
+
     public void Initialize(SignalHub _signalHub, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
     DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager)
     {
@@ -47,11 +50,12 @@ public class SaveManager : MonoBehaviour
     {
         if (character == null || character.statComponent == null) return;
 
-        GameSaveData saveData = new GameSaveData();
+        // 기존 데이터 클리어 (리스트 등 재사용)
+        cachedSaveData.Clear();
         
         // 1. 캐릭터 스탯 데이터 추출
         var stats = character.statComponent;
-        saveData.characterStatData = new CharacterStatSaveData
+        cachedSaveData.characterStatData = new CharacterStatSaveData
         {
             speed = stats.speed,
             maxStamina = stats.maxStamina,
@@ -72,42 +76,42 @@ public class SaveManager : MonoBehaviour
             bCanHunting = stats.bCanHunting
         };
 
-        // 2. 스킬 데이터 추출
+        // 2. 스킬 데이터 추출 (리스트 재사용)
         if (skillSystem != null && skillSystem.skillManager != null)
         {
-            saveData.skillSaveDataList = skillSystem.skillManager.GetSkillSaveData();
+            skillSystem.skillManager.PopulateSkillSaveData(cachedSaveData.skillSaveDataList);
         }
 
-        // 3. 인벤토리 데이터 추출
+        // 3. 인벤토리 데이터 추출 (리스트 재사용)
         if (inventoryManager != null)
         {
-            saveData.inventorySaveData = inventoryManager.GetInventorySaveData();
+            inventoryManager.PopulateInventorySaveData(ref cachedSaveData.inventorySaveData);
         }
 
-        // 4. 로그 가공 시스템 데이터 추출
+        // 4. 로그 가공 시스템 데이터 추출 (리스트 재사용)
         if (logProcessingManager != null)
         {
-            saveData.logProcessingSaveData = logProcessingManager.GetSaveData();
+            logProcessingManager.PopulateSaveData(ref cachedSaveData.logProcessingSaveData);
         }
 
         // 5. 환경 밀도 데이터 추출
         if (densityManager != null)
         {
-            saveData.environmentSaveData = densityManager.GetSaveData();
+            cachedSaveData.environmentSaveData = densityManager.GetSaveData();
         }
 
         // 6. 당근 드랍 데이터 추출
         if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null && inDungeonObjectManager.itemManager.carrrotItemController != null)
         {
-            saveData.carrotSaveData = inDungeonObjectManager.itemManager.carrrotItemController.GetSaveData();
+            cachedSaveData.carrotSaveData = inDungeonObjectManager.itemManager.carrrotItemController.GetSaveData();
         }
 
         // 7. JSON 저장
-        string json = JsonUtility.ToJson(saveData, true);
+        string json = JsonUtility.ToJson(cachedSaveData, true);
         string path = System.IO.Path.Combine(Application.persistentDataPath, "SaveData.json");
         System.IO.File.WriteAllText(path, json);
 
-        Debug.Log($"[SaveManager] Game Data Saved to: {path}");
+        Debug.Log($"[SaveManager] Game Data Saved to: {path} (Alloc-minimized)");
     }
 
     public bool HasSaveData()

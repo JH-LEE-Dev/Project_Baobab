@@ -58,6 +58,12 @@ public struct BeltSaveData
 {
     public List<BeltItemSaveData> activeItems;
     public bool isMoving;
+
+    public void Initialize()
+    {
+        if (activeItems == null) activeItems = new List<BeltItemSaveData>(10);
+        else activeItems.Clear();
+    }
 }
 
 [Serializable]
@@ -89,6 +95,12 @@ public struct InventorySaveData
     public int carrot;
     public int currentSlotCount;
     public List<InventorySlotSaveData> slots;
+
+    public void Initialize(int _capacity)
+    {
+        if (slots == null) slots = new List<InventorySlotSaveData>(_capacity);
+        else slots.Clear();
+    }
 }
 
 [Serializable]
@@ -104,6 +116,13 @@ public struct LogProcessingSaveData
     public BeltSaveData logOutBeltData;
     public CutterSaveData cutterData;
     public EvaluatorSaveData evaluatorData;
+
+    public void Initialize()
+    {
+        containerInventoryData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
+        logInBeltData.Initialize();
+        logOutBeltData.Initialize();
+    }
 }
 
 [Serializable]
@@ -123,9 +142,16 @@ public struct CarrotSaveData
 public class GameSaveData
 {
     public CharacterStatSaveData characterStatData;
-    public List<SkillSaveData> skillSaveDataList;
+    public List<SkillSaveData> skillSaveDataList = new List<SkillSaveData>(30);
     public InventorySaveData inventorySaveData;
     public LogProcessingSaveData logProcessingSaveData;
     public EnvironmentSaveData environmentSaveData;
     public CarrotSaveData carrotSaveData;
+
+    public void Clear()
+    {
+        skillSaveDataList.Clear();
+        inventorySaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
+        logProcessingSaveData.Initialize();
+    }
 }

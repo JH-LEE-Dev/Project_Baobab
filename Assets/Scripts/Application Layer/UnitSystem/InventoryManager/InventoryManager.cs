@@ -107,13 +107,14 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
 
-    public InventorySaveData GetInventorySaveData()
+    public void PopulateInventorySaveData(ref InventorySaveData _saveData)
     {
-        InventorySaveData saveData = new InventorySaveData();
-        saveData.money = money;
-        saveData.carrot = carrot;
-        saveData.currentSlotCount = currentSlotCount;
-        saveData.slots = new List<InventorySlotSaveData>(currentSlotCount);
+        _saveData.money = money;
+        _saveData.carrot = carrot;
+        _saveData.currentSlotCount = currentSlotCount;
+        
+        // 리스트 초기화 (구조체 내의 Initialize 활용)
+        _saveData.Initialize(currentSlotCount);
 
         for (int i = 0; i < currentSlotCount; i++)
         {
@@ -140,10 +141,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 slotData.itemSaveData = itemSaveData;
             }
 
-            saveData.slots.Add(slotData);
+            _saveData.slots.Add(slotData);
         }
-
-        return saveData;
     }
 
     private bool IsSameItem(Item _item, ItemData _data)

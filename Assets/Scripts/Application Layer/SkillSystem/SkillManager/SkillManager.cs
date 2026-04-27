@@ -209,14 +209,16 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     }
 
     /// <summary>
-    /// 특정 스킬을 이미 습득했는지 확인 (ISkillSystemProvider 구현)
+    /// 특정 스킬을 이미 습득했는지 확인하고 레벨을 반환함 (ISkillSystemProvider 구현)
     /// </summary>
-    public bool IsApplied(SkillType _type)
+    public bool IsApplied(SkillType _type, out int _level)
     {
         if (skillNodeMap.TryGetValue(_type, out SkillNode node))
         {
+            _level = node.currentLevel;
             return node.bApplied;
         }
+        _level = 0;
         return false;
     }
 
@@ -233,26 +235,24 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     }
 
     /// <summary>
-    /// 세이브를 위해 현재 습득한(레벨 > 0) 모든 스킬 데이터를 반환
+    /// 세이브를 위해 현재 습득한(레벨 > 0) 모든 스킬 데이터를 리스트에 채워줌 (GC Alloc 최소화)
     /// </summary>
-    public List<SkillSaveData> GetSkillSaveData()
+    public void PopulateSkillSaveData(List<SkillSaveData> _saveDataList)
     {
-        List<SkillSaveData> saveDataList = new List<SkillSaveData>(skillNodeMap.Count);
+        _saveDataList.Clear();
         
         foreach (var pair in skillNodeMap)
         {
             SkillNode node = pair.Value;
             if (node.currentLevel > 0)
             {
-                saveDataList.Add(new SkillSaveData 
+                _saveDataList.Add(new SkillSaveData 
                 { 
                     skillType = node.skillType, 
                     currentLevel = node.currentLevel 
                 });
             }
         }
-        
-        return saveDataList;
     }
 
     /// <summary>

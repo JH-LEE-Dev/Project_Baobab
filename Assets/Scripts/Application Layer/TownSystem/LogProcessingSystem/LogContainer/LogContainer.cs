@@ -526,13 +526,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
-    public InventorySaveData GetContainerSaveData()
+    public void PopulateContainerSaveData(ref InventorySaveData _saveData)
     {
-        InventorySaveData saveData = new InventorySaveData();
-        saveData.money = 0;
-        saveData.carrot = 0;
-        saveData.currentSlotCount = currentSlotCount;
-        saveData.slots = new List<InventorySlotSaveData>(currentSlotCount);
+        _saveData.money = 0;
+        _saveData.carrot = 0;
+        _saveData.currentSlotCount = currentSlotCount;
+        
+        _saveData.Initialize(currentSlotCount);
 
         for (int i = 0; i < currentSlotCount; i++)
         {
@@ -555,10 +555,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 slotData.itemSaveData = itemSaveData;
             }
 
-            saveData.slots.Add(slotData);
+            _saveData.slots.Add(slotData);
         }
-
-        return saveData;
     }
 
     public void LoadSaveData(InventorySaveData _data, int _maxItemsPerSlot)

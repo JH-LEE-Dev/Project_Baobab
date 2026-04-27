@@ -123,11 +123,10 @@ public class LogInBelt : MonoBehaviour
         tilemap.RefreshAllTiles();
     }
 
-    public BeltSaveData GetSaveData()
+    public void PopulateSaveData(ref BeltSaveData _saveData)
     {
-        BeltSaveData saveData = new BeltSaveData();
-        saveData.isMoving = isMoving;
-        saveData.activeItems = new List<BeltItemSaveData>(activeItems.Count);
+        _saveData.isMoving = isMoving;
+        _saveData.activeItems.Clear();
 
         for (int i = 0; i < activeItems.Count; i++)
         {
@@ -146,10 +145,8 @@ public class LogInBelt : MonoBehaviour
                 durability = item.item.durability
             };
 
-            saveData.activeItems.Add(itemSaveData);
+            _saveData.activeItems.Add(itemSaveData);
         }
-
-        return saveData;
     }
 
     public void LoadSaveData(BeltSaveData _data, LogItemPoolingManager _poolingManager)
