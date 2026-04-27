@@ -8,6 +8,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     public event Action<bool> DeclareCanSwapEvent;
     public event Action AttackCoolTimeStartEvent;
     public event Action ReloadStartEvent;
+    public event Action ReloadFinishedEvent;
 
     //외부 의존성
     [SerializeField] private Transform muzzlePoint;
@@ -167,8 +168,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         // 1. 총알 생성 및 발사
         if (bulletObjManager != null && muzzlePoint != null)
         {
-            RifleFiredEvent?.Invoke();
-            
             StartCoroutine(nameof(FireAfterDelayRoutine));
 
             // 발사 시 이동 속도 감소 및 0.3초 후 회복 코루틴 시작
@@ -242,6 +241,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bFired = true;
 
         OnFireStart();
+
+        RifleFiredEvent?.Invoke();
     }
 
     private void NotifyNearbyAnimals()
@@ -389,6 +390,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         mag = amount;
         bReload = false;
+
+        ReloadFinishedEvent?.Invoke();
     }
 
     public void ResetAmmo()

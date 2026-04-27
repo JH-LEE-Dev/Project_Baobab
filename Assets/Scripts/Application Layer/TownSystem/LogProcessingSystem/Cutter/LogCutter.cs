@@ -98,7 +98,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 itemType = cuttingItem.itemType,
                 treeType = cuttingItem.treeType,
                 logState = cuttingItem.logState,
-                durability = cuttingItem.durability
+                durability = cuttingItem.durability,
+                color = cuttingItem.color // 컬러 저장
             };
         }
 
@@ -116,7 +117,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             {
                 itemType = _data.cuttingItemData.itemType,
                 treeType = _data.cuttingItemData.treeType,
-                logState = _data.cuttingItemData.logState
+                logState = _data.cuttingItemData.logState,
+                color = _data.cuttingItemData.color // 컬러 복구
             };
 
             cuttingItem = _poolingManager.GetLogItem(data);
@@ -128,6 +130,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 
                 logToCut = data;
             }
+
+            cuttingItem.gameObject.SetActive(false);
         }
         else
         {

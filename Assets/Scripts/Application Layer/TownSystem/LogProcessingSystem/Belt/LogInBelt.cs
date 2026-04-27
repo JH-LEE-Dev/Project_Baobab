@@ -142,7 +142,8 @@ public class LogInBelt : MonoBehaviour
                 itemType = item.item.itemType,
                 treeType = item.item.treeType,
                 logState = item.item.logState,
-                durability = item.item.durability
+                durability = item.item.durability,
+                color = item.item.color // 컬러 저장
             };
 
             _saveData.activeItems.Add(itemSaveData);
@@ -162,7 +163,8 @@ public class LogInBelt : MonoBehaviour
                 {
                     itemType = itemData.itemData.itemType,
                     treeType = itemData.itemData.treeType,
-                    logState = itemData.itemData.logState
+                    logState = itemData.itemData.logState,
+                    color = itemData.itemData.color // 컬러 복구
                 };
 
                 LogItem newItem = _poolingManager.GetLogItem(data);

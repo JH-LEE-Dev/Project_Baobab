@@ -41,6 +41,9 @@ public struct ItemSaveData
     // Loot 전용
     public LootType lootType;
     
+    // 공용
+    public Color color;
+
     // 실시간 상태 (벨트/커터 위 아이템용)
     public float durability;
 }
