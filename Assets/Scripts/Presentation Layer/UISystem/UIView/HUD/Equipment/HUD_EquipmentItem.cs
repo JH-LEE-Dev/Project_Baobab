@@ -38,16 +38,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null == canvasGroup)
                 canvasGroup = GetComponent<CanvasGroup>();
-
-            // 초기 시각적 상태 업데이트
-            UpdateVisuals();
         }
 
         public virtual void SetActivate(bool _isActive)
         {
-            if (_isActive == isActive)
-                return;
-
             isActive = _isActive;
 
             UpdateVisuals();

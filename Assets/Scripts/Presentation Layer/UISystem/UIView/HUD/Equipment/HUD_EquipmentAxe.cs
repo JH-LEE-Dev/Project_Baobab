@@ -8,6 +8,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         // //외부 의존성
         [Header("Axe Specific UI")]
         [SerializeField] private HUD_ProgressBar axeGaugeBar; // 도끼 특수 게이지 바
+        [SerializeField] private GameObject gaugeOutline;
 
         // //내부 의존성
 
@@ -21,14 +22,17 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             base.Initialize();
 
             if (null == axeGaugeBar)
-            {
                 axeGaugeBar = GetComponentInChildren<HUD_ProgressBar>();
-            }
 
             if (null != axeGaugeBar)
-            {
                 axeGaugeBar.Initialize();
-            }
+        }
+
+        protected override void UpdateVisuals()
+        {
+            base.UpdateVisuals();
+
+            gaugeOutline?.SetActive(isActive);
         }
 
         /// <summary>

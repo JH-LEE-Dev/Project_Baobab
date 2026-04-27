@@ -23,6 +23,8 @@ public class UIView_HUD : UIView
 
         Init_HUDEquipment();
         Init_HUDSteminaBar();
+
+        WeaponModeChanged(WeaponMode.Axe);
     }
 
     public override void OnDestroy()
@@ -104,6 +106,6 @@ public class UIView_HUD : UIView
 
     public void InventorySpecChanged() //인벤토리 스펙 변동 시 호출
     {
-
+        
     }
 }

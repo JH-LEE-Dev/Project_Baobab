@@ -37,13 +37,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         public void SetActive(bool _isActive)
         {
-            if (null == bulletIcons)
-                return;
-
             for (int i = 0; i < bulletIcons.Count; i++)
             {
                 HUD_BulletIcon _icon = bulletIcons[i];
-                if (null == _icon || false == _icon.gameObject.activeSelf)
+                if (null == _icon)
                     continue;
 
                 _icon.SetActive(_isActive);
