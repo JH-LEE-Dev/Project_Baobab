@@ -39,6 +39,7 @@ Transform:
   - {fileID: 2090011938990725870}
   - {fileID: 2150977159242293916}
   - {fileID: 7608407158150497205}
+  - {fileID: 3958681983859849714}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2618603934779584709
@@ -77,6 +78,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e2e1e3ac60ebb04498c4caba205f446, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TeleportManager
+--- !u!1 &2011389324134278026
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3958681983859849714}
+  - component: {fileID: 1019972275563231693}
+  m_Layer: 0
+  m_Name: SaveSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3958681983859849714
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011389324134278026}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1821968231370692703}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1019972275563231693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2011389324134278026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46528433298c00a49a403f4c4f735e97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveManager
 --- !u!1 &2145486368507981922
 GameObject:
   m_ObjectHideFlags: 0
@@ -125,6 +170,10 @@ MonoBehaviour:
   TreeStartDensityRatio: 0.04
   RabbitMaxDensityRatio: 0.05
   RabbitStartDensityRatio: 0.02
+  treeRegenMinTime: 10
+  treeRegenMaxTime: 15
+  rabbitRegenMinTime: 10
+  rabbitRegenMaxTime: 15
   applyToStartCnt: 1
 --- !u!1 &2327565162841499606
 GameObject:
@@ -858,7 +907,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   animalPrefab: {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
-  spawnInterval: 2
   cullingDistance: 25
   collectionCheck: 1
   defaultCapacity: 200
@@ -1237,6 +1285,7 @@ MonoBehaviour:
   - {fileID: -613090373202401440, guid: 131beea9666574744a72fd2993c1da15, type: 3}
   - {fileID: 1457280794132971112, guid: 341f66c902092e5458a826b17a99e48e, type: 3}
   - {fileID: 5251908933251639706, guid: 1896f9058a0bdab42ae4341930bfa21c, type: 3}
+  - {fileID: 7524718967522486410, guid: 0bd5670bcae6da44e879475ac190ee2c, type: 3}
 --- !u!1 &7565708588615142684
 GameObject:
   m_ObjectHideFlags: 0
@@ -1285,7 +1334,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownSystem
   townStartPoint: {fileID: 4434414126251310962, guid: 7e2fffb1c09c60c4e86d94bff7fd2f97, type: 3}
-  boardObject: {fileID: 3483514603918842098, guid: 0c4bcb0a63b2cc14a8d374f26111d162, type: 3}
 --- !u!1 &7829982200698710532
 GameObject:
   m_ObjectHideFlags: 0
@@ -1454,6 +1502,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonObjectManager
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
-  spawnInterval: 5
   cullingDistance: 25
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}

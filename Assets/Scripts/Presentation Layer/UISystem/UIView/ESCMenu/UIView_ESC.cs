@@ -2,19 +2,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 
-
-public class UIView_MainMenu : UIView
+public class UIView_ESC : UIView
 {
-    public event Action NewGameButtonClickedEvent;
-    public event Action LoadGameButtonClickedEvent;
+    public event Action SaveGameButtonClickedEvent;
+    public event Action GoToMainMenuButtonClickedEvent;
     public event Action ExitButtonClickedEvent;
-
 
     [Header("UI References")]
     [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
     [SerializeField] private GameObject uiPrefab; //생성할 uiPrefab인데 임의로 추가/제거해서 사용하면 됨.
-    [SerializeField] private Button newGameButton;
-    [SerializeField] private Button loadGameButton;
+    [SerializeField] private Button saveGameButton;
+    [SerializeField] private Button goToMainMenuButton;
     [SerializeField] private Button exitButton;
 
     public override void Initialize(UIViewContext _ctx)
@@ -24,11 +22,11 @@ public class UIView_MainMenu : UIView
         if (uiPrefab != null)
             Instantiate(uiPrefab, uiRoot);
 
-        if (newGameButton != null)
-            newGameButton.onClick.AddListener(OnNewGameStartButton);
+        if (saveGameButton != null)
+            saveGameButton.onClick.AddListener(OnSaveGameButton);
 
-        if (loadGameButton != null)
-            loadGameButton.onClick.AddListener(OnLoadGameButtonClicked);
+        if (goToMainMenuButton != null)
+            goToMainMenuButton.onClick.AddListener(OnGoToMainMenuButtonClicked);
 
         if (exitButton != null)
             exitButton.onClick.AddListener(OnExitButtonClicked);
@@ -36,8 +34,8 @@ public class UIView_MainMenu : UIView
 
     public override void OnDestroy()
     {
-        NewGameButtonClickedEvent = null;
-        LoadGameButtonClickedEvent = null;
+        SaveGameButtonClickedEvent = null;
+        GoToMainMenuButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
     }
 
@@ -51,14 +49,14 @@ public class UIView_MainMenu : UIView
         base.OnHide();
     }
 
-    public void OnNewGameStartButton()
+    public void OnSaveGameButton()
     {
-        NewGameButtonClickedEvent?.Invoke();
+        SaveGameButtonClickedEvent?.Invoke();
     }
 
-    public void OnLoadGameButtonClicked()
+    public void OnGoToMainMenuButtonClicked()
     {
-        LoadGameButtonClickedEvent?.Invoke();
+        GoToMainMenuButtonClickedEvent?.Invoke();
     }
 
     public void OnExitButtonClicked()

@@ -1,7 +1,11 @@
+using System;
 using System.Diagnostics;
+using UnityEngine;
 
 public class GameplayUICoordinator
 {
+    public event Action SaveGameEvent;
+    public event Action GoToMainMenuEvent;
     private UIView_Popup popUpUI;
     private InputManager inputManager;
     private UIView_Unit unitUI;
@@ -11,12 +15,13 @@ public class GameplayUICoordinator
     private UIView_WorldPopup worldPopupUI;
     private UIView_MenuPopup menuPopupUI;
     private UIView_Tent tentUI;
+    private UIView_ESC escUI;
 
 
     private bool bInventoryOpened = false;
-
+    private bool bESCMenuOpended = false;
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
-     UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI)
+     UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -26,6 +31,8 @@ public class GameplayUICoordinator
         worldPopupUI = _worldPopupUI;
         menuPopupUI = _menuPopupUI;
         tentUI = _tentUI;
+        escUI = _escUI;
+
 
         SubscribeSignals();
         BindEvents();
@@ -76,6 +83,18 @@ public class GameplayUICoordinator
 
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.DungeonSelectedEvent += DungeonSelected;
+
+        inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
+        inputManager.inputReader.ESCButtonPressedEvent += EscButtonPressed;
+
+        escUI.SaveGameButtonClickedEvent -= SaveGame;
+        escUI.SaveGameButtonClickedEvent += SaveGame;
+
+        escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
+        escUI.GoToMainMenuButtonClickedEvent += GoToMainMenu;
+
+        escUI.ExitButtonClickedEvent -= ExitGame;
+        escUI.ExitButtonClickedEvent += ExitGame;
     }
 
     private void ReleaseEvents()
@@ -84,6 +103,10 @@ public class GameplayUICoordinator
         popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         popUpUI.SendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
+        inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
+        escUI.ExitButtonClickedEvent -= ExitGame;
+        escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
+        escUI.SaveGameButtonClickedEvent -= SaveGame;
     }
 
     public void Release()
@@ -188,5 +211,41 @@ public class GameplayUICoordinator
     {
         popUpUI.CharactersMoneyChanged();
         tentUI.CharactersMoneyChanged();
+    }
+
+    private void SaveGame()
+    {
+        SaveGameEvent?.Invoke();
+    }
+
+    private void GoToMainMenu()
+    {
+        GoToMainMenuEvent?.Invoke();
+        Time.timeScale = 1f;
+    }
+
+    private void ExitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+    private void EscButtonPressed()
+    {
+        if (bESCMenuOpended == false)
+        {
+            bESCMenuOpended = true;
+            escUI.Show();
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            bESCMenuOpended = false;
+            escUI.Hide();
+            Time.timeScale = 1f;
+        }
     }
 }

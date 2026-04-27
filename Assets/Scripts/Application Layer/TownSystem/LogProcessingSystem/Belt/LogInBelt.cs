@@ -122,4 +122,63 @@ public class LogInBelt : MonoBehaviour
 
         tilemap.RefreshAllTiles();
     }
+
+    public BeltSaveData GetSaveData()
+    {
+        BeltSaveData saveData = new BeltSaveData();
+        saveData.isMoving = isMoving;
+        saveData.activeItems = new List<BeltItemSaveData>(activeItems.Count);
+
+        for (int i = 0; i < activeItems.Count; i++)
+        {
+            BeltItem item = activeItems[i];
+            if (item.item == null) continue;
+
+            BeltItemSaveData itemSaveData = new BeltItemSaveData();
+            itemSaveData.targetIndex = item.targetIndex;
+            itemSaveData.position = item.item.transform.position;
+            
+            itemSaveData.itemData = new ItemSaveData
+            {
+                itemType = item.item.itemType,
+                treeType = item.item.treeType,
+                logState = item.item.logState,
+                durability = item.item.durability
+            };
+
+            saveData.activeItems.Add(itemSaveData);
+        }
+
+        return saveData;
+    }
+
+    public void LoadSaveData(BeltSaveData _data, LogItemPoolingManager _poolingManager)
+    {
+        activeItems.Clear();
+        isMoving = _data.isMoving;
+
+        if (_data.activeItems != null)
+        {
+            foreach (var itemData in _data.activeItems)
+            {
+                LogItemData data = new LogItemData
+                {
+                    itemType = itemData.itemData.itemType,
+                    treeType = itemData.itemData.treeType,
+                    logState = itemData.itemData.logState
+                };
+
+                LogItem newItem = _poolingManager.GetLogItem(data);
+                if (newItem != null)
+                {
+                    newItem.transform.position = itemData.position;
+                    newItem.durability = itemData.itemData.durability;
+                    activeItems.Add(new BeltItem(newItem, itemData.targetIndex));
+                }
+            }
+        }
+
+        if (isMoving) StartBelt();
+        else if (tilemap != null) tilemap.animationFrameRate = 0f;
+    }
 }

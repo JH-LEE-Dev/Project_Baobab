@@ -163,4 +163,27 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 
         Debug.Log($"[DensityManager] Rabbit Density Increased: {rabbitDensityMultiplier * 100}% (MaxAnimal: {maxAnimalCnt}, StartAnimal: {animalStartCnt})");
     }
+
+    public EnvironmentSaveData GetSaveData()
+    {
+        return new EnvironmentSaveData
+        {
+            treeDensityMultiplier = treeDensityMultiplier,
+            rabbitDensityMultiplier = rabbitDensityMultiplier
+        };
+    }
+
+    public void LoadSaveData(EnvironmentSaveData _data)
+    {
+        treeDensityMultiplier = _data.treeDensityMultiplier;
+        rabbitDensityMultiplier = _data.rabbitDensityMultiplier;
+
+        // 현재 타일 수 정보가 있다면 데이터 갱신
+        if (grassTileCnt > 0 || walkableTilesCnt > 0)
+        {
+            SetActiveTilesCnt(grassTileCnt, walkableTilesCnt);
+        }
+
+        Debug.Log("[DensityManager] Environment Save Data Loaded.");
+    }
 }

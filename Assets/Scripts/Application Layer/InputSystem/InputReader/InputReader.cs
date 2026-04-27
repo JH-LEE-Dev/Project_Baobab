@@ -96,8 +96,6 @@ public class InputReader
     private void OnESCButtonPressed(InputAction.CallbackContext context)
     {
         ESCButtonPressedEvent?.Invoke();
-
-        ClearAllEvent();
     }
 
     private void OnMouseMove(InputAction.CallbackContext context)

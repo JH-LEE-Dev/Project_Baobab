@@ -11,6 +11,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private SceneManager sceneManager;
     private InputManager inputManager;
     private LocalizationManager localizationManager;
+    private SaveManager saveManager;
 
     [Header("Gameplay Level Object")]
     [SerializeField] private GameInstaller gameInstallerPrefab;
@@ -28,6 +29,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private SceneType prevSceneType = SceneType.None;
 
     private bool bFadeComplete = false;
+    private bool bNewGame = false;
 
     // 유니티 이벤트 함수
     private void Awake()
@@ -47,6 +49,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         sceneManager = GetComponent<SceneManager>();
         inputManager = GetComponent<InputManager>();
+        saveManager = GetComponent<SaveManager>();
 
         localizationManager = new LocalizationManager();
 
@@ -73,7 +76,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             if (gameInstaller == null)
             {
                 gameInstaller = Instantiate(gameInstallerPrefab);
-                gameInstaller.Initialize(this, inputManager, localizationManager);
+                gameInstaller.Initialize(this, inputManager, localizationManager,saveManager);
+                
+                if(bNewGame == false)
+                    gameInstaller.LoadGame();
             }
         }
         else if (_sceneName == dungeonSceneName)
@@ -108,8 +114,16 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         StartCoroutine(TransitionToScene(SceneType.MainMenu));
     }
 
-    public void GoToTownScene()
+    public void GoToTownScene(bool _bNewGame)
     {
+        if (_bNewGame == false && saveManager != null && saveManager.HasSaveData() == false)
+        {
+            Debug.LogError("[BootStrap] No Save Data found! Cannot load game.");
+            // TODO: UI 시스템을 통해 사용자에게 에러 팝업을 보여주는 로직을 여기에 추가할 수 있습니다.
+            return;
+        }
+
+        bNewGame = _bNewGame;
         StartCoroutine(TransitionToScene(SceneType.Town));
     }
 
@@ -196,21 +210,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     // 내부 로직
     private void BindEvent()
     {
-        if (inputManager != null && inputManager.inputReader != null)
-        {
-            inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
-            inputManager.inputReader.ESCButtonPressedEvent += GoToMainMenuScene;
-        }
+
     }
 
     private void ReleaseEvent()
     {
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-
-        if (inputManager != null && inputManager.inputReader != null)
-        {
-            inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
-        }
     }
 
     private void OnSceneLoaded(Scene _scene, LoadSceneMode _mode)

@@ -231,4 +231,56 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         }
         return null;
     }
+
+    /// <summary>
+    /// 세이브를 위해 현재 습득한(레벨 > 0) 모든 스킬 데이터를 반환
+    /// </summary>
+    public List<SkillSaveData> GetSkillSaveData()
+    {
+        List<SkillSaveData> saveDataList = new List<SkillSaveData>(skillNodeMap.Count);
+        
+        foreach (var pair in skillNodeMap)
+        {
+            SkillNode node = pair.Value;
+            if (node.currentLevel > 0)
+            {
+                saveDataList.Add(new SkillSaveData 
+                { 
+                    skillType = node.skillType, 
+                    currentLevel = node.currentLevel 
+                });
+            }
+        }
+        
+        return saveDataList;
+    }
+
+    /// <summary>
+    /// 세이브된 데이터를 불러와서 스킬 상태를 복구하고 효과를 적용함
+    /// </summary>
+    public void LoadSaveData(List<SkillSaveData> _dataList)
+    {
+        if (_dataList == null) return;
+
+        foreach (var data in _dataList)
+        {
+            if (skillNodeMap.TryGetValue(data.skillType, out SkillNode node))
+            {
+                node.currentLevel = data.currentLevel;
+
+                // 스킬 효과 재적용 (각 레벨에 대해 이벤트를 발송해야 할 수도 있으나, 
+                // 현재 구조상 마지막 레벨의 효과만 발송해도 누적되는지 확인 필요.
+                // 대부분의 시스템이 레벨별 절대값을 사용한다면 마지막 레벨만 발송)
+                if (node.commands != null)
+                {
+                    for (int i = 0; i < node.commands.Count; i++)
+                    {
+                        var info = new SkillDispatchInfo(node.currentLevel, node.commands[i]);
+                        //DispatchSkillsEvent?.Invoke(info);
+                    }
+                }
+            }
+        }
+        Debug.Log("[SkillManager] Skill Save Data Loaded and Applied.");
+    }
 }

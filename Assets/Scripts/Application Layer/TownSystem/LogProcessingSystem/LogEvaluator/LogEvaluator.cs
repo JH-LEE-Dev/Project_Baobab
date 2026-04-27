@@ -95,4 +95,15 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         
         Debug.Log($"[LogEvaluator] Log Value Multiplier Increased: {logValueMultiplier}");
     }
+
+    public EvaluatorSaveData GetSaveData()
+    {
+        return new EvaluatorSaveData { logValueMultiplier = logValueMultiplier };
+    }
+
+    public void LoadSaveData(EvaluatorSaveData _data)
+    {
+        logValueMultiplier = _data.logValueMultiplier;
+        Debug.Log("[LogEvaluator] Evaluator Save Data Loaded.");
+    }
 }
