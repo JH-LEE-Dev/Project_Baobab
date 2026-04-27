@@ -51,10 +51,15 @@ Material:
     - _IgnoreStencilMask: 3
     - _ShadowStencilBit: 4
     - _Skew: 0
+    - _StencilComp: 3
+    - _StencilPass: 4
+    - _StencilReadMask: 7
+    - _StencilRef: 0
+    - _StencilWriteMask: 7
     - _TreeStencilRef: 2
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0, g: 0, b: 0, a: 0}
+    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.4224019}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowOffset: {r: 0, g: 0, b: 0, a: 0}
