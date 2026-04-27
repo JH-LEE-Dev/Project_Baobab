@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using static UnityEngine.LowLevelPhysics2D.PhysicsShape;
 
 public class UI_Inventory : MonoBehaviour
 {
@@ -11,6 +12,9 @@ public class UI_Inventory : MonoBehaviour
     [Header("Binding Obj")]
     [SerializeField] private GameObject uiBackground;
     [SerializeField] private UI_Homing uiHoming;
+    [SerializeField] private UI_Coin uiCoin;
+    [SerializeField] private UI_Coin uiSubCoin;
+    [SerializeField] private UI_Backpack uiBackpack;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
@@ -18,12 +22,12 @@ public class UI_Inventory : MonoBehaviour
 
     [Header("Inventory Settings")]
     [SerializeField] private List<UI_InventorySlot> inventorySlots;
-
     [SerializeField] private float popupYOffset = 30.0f;
 
     private const int defaultPopupCap = 12;
 
     private IInventory inventory;
+    private IMoneyData moneyData;
 
     private UI_InventoryPopup invPopup;
 
@@ -34,17 +38,22 @@ public class UI_Inventory : MonoBehaviour
         Init_Background();
         Init_Honing(clickedHomingEvent);
         Init_InventoryPopup();
+        Init_Coins();
 
         inventorySlots.Clear();
         UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
     }
 
-    public void BindInventory(IInventory _inventory)
+    public void BindData(IInventory _inventory, IMoneyData _moneyData)
     {
         inventory = _inventory;
+        moneyData = _moneyData;
+
+        uiCoin?.BindMoneyData(moneyData, MoneyType.Coin);
+        uiSubCoin?.BindMoneyData(moneyData, MoneyType.Carrot);
     }
 
-#region [ Inventory UI ]
+    #region [ Inventory UI ]
 
     public void UpdateMaxSlotCount(int _cnt)
     {
@@ -172,8 +181,36 @@ public class UI_Inventory : MonoBehaviour
         uiHoming.gameObject.SetActive(false);
 
         uiHoming.Initialize();
+        // TODO :: 지워질 때 빼줘야 함
         uiHoming.clickedEvent -= clickedHomingEvent;
         uiHoming.clickedEvent += clickedHomingEvent;
+    }
+
+    private void Init_Coins()
+    {
+        uiCoin?.Initialize();
+        uiSubCoin?.Initialize();
+    }
+
+    public void CharacterEarnMoney(MoneyType _moneyType)
+    {
+        if (MoneyType.Coin == _moneyType)
+            uiCoin?.UpdateMoneyText();
+        else
+            uiSubCoin?.UpdateMoneyText();
+    }
+
+    public void CharactersMoneyChanged()
+    {
+        uiCoin?.UpdateMoneyText();
+        uiSubCoin?.UpdateMoneyText();
+    }
+
+    public void ChangedShowMoneyType()
+    {
+        if (null == uiSubCoin)
+            return;
+
     }
 
     public void InventoryShowEvent()
@@ -190,14 +227,20 @@ public class UI_Inventory : MonoBehaviour
     {
         ExitPopup();
 
-        uiBackground?.SetActive(isOpening = false);
+        isOpening = false;
+
+        uiBackground?.SetActive(isOpening);
         uiHoming?.gameObject.SetActive(isOpening);
+        uiBackpack?.CloseBackpack();
     }
 
     public void OnShow()
     {
-        uiBackground?.SetActive(isOpening = true);
+        isOpening = true;
+
+        uiBackground?.SetActive(isOpening);
         uiHoming?.gameObject.SetActive(isOpening);
+        uiBackpack?.OpenBackpack();
 
         InventoryShowEvent();
     }
