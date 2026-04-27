@@ -8,4 +8,5 @@ public interface IRifleComponent
     public int ammo { get; }
     public event Action AttackCoolTimeStartEvent;
     public event Action ReloadStartEvent;
+    public event Action RifleFiredEvent;
 }

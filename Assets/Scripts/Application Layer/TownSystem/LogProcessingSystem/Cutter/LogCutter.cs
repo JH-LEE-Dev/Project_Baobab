@@ -84,4 +84,58 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         // _amount는 0보다 큰 수이고 퍼센트 (예: 10.0f는 10% 속도 증가)
         totalSpeedMultiplier += (_amount / 100.0f);
     }
+
+    public CutterSaveData GetSaveData()
+    {
+        CutterSaveData saveData = new CutterSaveData();
+        saveData.bIsCutting = bIsCutting;
+        saveData.totalSpeedMultiplier = totalSpeedMultiplier;
+
+        if (bIsCutting && cuttingItem != null)
+        {
+            saveData.cuttingItemData = new ItemSaveData
+            {
+                itemType = cuttingItem.itemType,
+                treeType = cuttingItem.treeType,
+                logState = cuttingItem.logState,
+                durability = cuttingItem.durability
+            };
+        }
+
+        return saveData;
+    }
+
+    public void LoadSaveData(CutterSaveData _data, LogItemPoolingManager _poolingManager)
+    {
+        totalSpeedMultiplier = _data.totalSpeedMultiplier;
+        bIsCutting = _data.bIsCutting;
+
+        if (bIsCutting && _data.cuttingItemData.itemType != ItemType.None)
+        {
+            LogItemData data = new LogItemData
+            {
+                itemType = _data.cuttingItemData.itemType,
+                treeType = _data.cuttingItemData.treeType,
+                logState = _data.cuttingItemData.logState
+            };
+
+            cuttingItem = _poolingManager.GetLogItem(data);
+            if (cuttingItem != null)
+            {
+                cuttingItem.transform.position = transform.position; // 커터 위치로 설정
+                cuttingItem.durability = _data.cuttingItemData.durability;
+                anim.SetBool(startHash, true);
+                
+                logToCut = data;
+            }
+        }
+        else
+        {
+            cuttingItem = null;
+            anim.SetBool(startHash, false);
+            logToCut = null;
+        }
+        
+        Debug.Log("[LogCutter] Cutter Save Data Loaded.");
+    }
 }

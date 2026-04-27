@@ -105,9 +105,6 @@ public class InDungeonSystem : MonoBehaviour
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
     {
-        inDungeonObjectManager.ClearObjManager();
-        inDungeonUnitSpawner.ReleaseAllAnimals();
-
         signalHub.Publish(new GoToHomeSignal());
     }
 
@@ -119,5 +116,11 @@ public class InDungeonSystem : MonoBehaviour
     private void CarrotItemAcquired(CarrotItem _carrotItem)
     {
         signalHub.Publish(new CarrotItemAcquiredSignal(_carrotItem.amount));
+    }
+
+    public void ClearInDungeonSystem()
+    {
+        inDungeonObjectManager.ClearObjManager();
+        inDungeonUnitSpawner.ReleaseAllAnimals();
     }
 }

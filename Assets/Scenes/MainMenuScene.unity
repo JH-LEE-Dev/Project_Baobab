@@ -236,6 +236,7 @@ GameObject:
   - component: {fileID: 209871255}
   - component: {fileID: 209871258}
   - component: {fileID: 209871259}
+  - component: {fileID: 209871260}
   m_Layer: 0
   m_Name: Bootstrap
   m_TagString: Untagged
@@ -325,6 +326,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LoadingManager
   loadingCanvasGroup: {fileID: 485436093}
   fadeDuration: 1.5
+--- !u!114 &209871260
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 209871253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46528433298c00a49a403f4c4f735e97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SaveManager
 --- !u!1 &485436092
 GameObject:
   m_ObjectHideFlags: 0

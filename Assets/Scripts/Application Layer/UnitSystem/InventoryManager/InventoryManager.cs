@@ -107,6 +107,44 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     }
 
 
+    public void PopulateInventorySaveData(ref InventorySaveData _saveData)
+    {
+        _saveData.money = money;
+        _saveData.carrot = carrot;
+        _saveData.currentSlotCount = currentSlotCount;
+        
+        // 리스트 초기화 (구조체 내의 Initialize 활용)
+        _saveData.Initialize(currentSlotCount);
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            InventorySlotSaveData slotData = new InventorySlotSaveData();
+            slotData.totalCount = slot.totalCount;
+
+            if (slot.itemData != null)
+            {
+                ItemSaveData itemSaveData = new ItemSaveData();
+                itemSaveData.itemType = slot.itemData.itemType;
+
+                if (slot.itemData is LogItemData logData)
+                {
+                    itemSaveData.treeType = logData.treeType;
+                    itemSaveData.logState = logData.logState;
+                    slotData.logStateCounts = slot.GetLogStateCounts();
+                }
+                else if (slot.itemData is LootItemData lootData)
+                {
+                    itemSaveData.lootType = lootData.lootType;
+                }
+
+                slotData.itemSaveData = itemSaveData;
+            }
+
+            _saveData.slots.Add(slotData);
+        }
+    }
+
     private bool IsSameItem(Item _item, ItemData _data)
     {
         if (_item.itemType != _data.itemType) return false;
@@ -274,5 +312,78 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void LogCapacityIncrease(float _amount)
     {
         maxItemsPerSlot += (int)_amount;
+    }
+
+    public void LoadSaveData(InventorySaveData _data)
+    {
+        money = _data.money;
+        carrot = _data.carrot;
+        currentSlotCount = _data.currentSlotCount;
+
+        // 기존 슬롯 초기화 (풀 반환)
+        for (int i = 0; i < inventorySlots.Count; i++)
+        {
+            if (inventorySlots[i].itemData is ItemData itemData)
+            {
+                ReleaseToPool(itemData);
+            }
+            inventorySlots[i].Setup(null, 0);
+        }
+
+        // 데이터 복구
+        if (_data.slots != null)
+        {
+            for (int i = 0; i < _data.slots.Count; i++)
+            {
+                if (i >= inventorySlots.Count) break;
+
+                var slotData = _data.slots[i];
+                if (slotData.itemSaveData.itemType != ItemType.None)
+                {
+                    ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
+                    if (newData != null)
+                    {
+                        // 타입별 세부 정보 복구
+                        if (newData is LogItemData logData)
+                        {
+                            logData.treeType = slotData.itemSaveData.treeType;
+                            logData.logState = slotData.itemSaveData.logState;
+                            
+                            // LogItemData인 경우 상세 상태별 개수 설정이 필요함
+                            // InventorySlot.Setup에서 단일 개수만 처리하므로, 
+                            // 별도의 메서드로 상세 상태 배열을 직접 주입하거나 수정 필요.
+                            // 여기서는 Setup 이후 강제로 logStateCounts를 설정하는 방식을 위해
+                            // InventorySlot에 해당 기능이 있는지 확인 필요.
+                        }
+                        else if (newData is LootItemData lootData)
+                        {
+                            lootData.lootType = slotData.itemSaveData.lootType;
+                        }
+
+                        inventorySlots[i].Setup(newData, slotData.totalCount);
+                        
+                        // 상세 상태 개수 복구 (Log 아이템인 경우)
+                        if (slotData.logStateCounts != null && slotData.logStateCounts.Length > 0)
+                        {
+                            LoadLogStateCountsToSlot(inventorySlots[i], slotData.logStateCounts);
+                        }
+                    }
+                }
+            }
+        }
+
+        SpendMoneyEvent?.Invoke();
+        InventorySpecChangedEvent?.Invoke();
+        Debug.Log("[InventoryManager] Inventory Save Data Loaded.");
+    }
+
+    private void LoadLogStateCountsToSlot(InventorySlot _slot, int[] _counts)
+    {
+        // Reflection이나 별도 메서드 없이 직접 접근이 불가능하므로 
+        // InventorySlot에 LoadLogStateCounts 메서드를 추가하는 것이 정석이나,
+        // 여기서는 기존 AddCountByState를 활용하여 수동으로 채우거나 
+        // (단, Setup 시 logStateCounts가 초기화되므로 주의)
+        // 정석대로 InventorySlot에 메서드를 추가하겠습니다.
+        _slot.LoadLogStateCounts(_counts);
     }
 }

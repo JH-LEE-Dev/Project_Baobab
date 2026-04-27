@@ -8,8 +8,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     //Stamina
     public float maxStamina = 100f;
-    private float baseMaxStamina;
-    private float maxStaminaBonus = 0f;
+    public float baseMaxStamina { get; private set; }
+    public float maxStaminaBonus { get; private set; } = 0f;
     public float staminaIncreaseAlpha = 0f;
     public float staminaDecreaseAlpha = 0f;
 
@@ -20,16 +20,16 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     //Axe
     public float axeDamage = 1f; // 기본 데미지를 10으로 수정
     public float speedDecreaseWhileSwing = 0.5f;
-    private float baseAxeDamage;
-    private float axeDamageMultiplier = 1.0f;
+    public float baseAxeDamage { get; private set; }
+    public float axeDamageMultiplier { get; private set; } = 1.0f;
     public float axeDurability = 30f;
     public float axeDurabilityDecAmount = 1f;
     public float axeAttackCoolTime = 1.2f;
 
     //Rifle
     public float rifleDamage = 10f; // 기본 데미지를 10으로 수정
-    private float baseRifleDamage;
-    private float rifleDamageMultiplier = 1.0f;
+    public float baseRifleDamage { get; private set; }
+    public float rifleDamageMultiplier { get; private set; } = 1.0f;
     public float rifleReadyTime = 0;
     public float shotDelay = 1f;
     public int magCap = 2;
@@ -37,8 +37,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public float reloadDuration = 3f;
     public float speedDecreaseWhileFire = 0.5f;
 
-    private float baseWeaponChangeCoolTime;
-    private float switchSpeedMultiplier = 1.0f;
+    public float baseWeaponChangeCoolTime { get; private set; }
+    public float switchSpeedMultiplier { get; private set; } = 1.0f;
 
     float IStatComponent.speed => speed;
     float IStatComponent.weaponChangeCoolTime => weaponChangeCoolTime;
@@ -54,6 +54,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     int IStatComponent.magCap => magCap;
     int IStatComponent.ammoCap => ammoCap;
     float IStatComponent.reloadDuration => reloadDuration;
+
+    bool IStatComponent.bCanHunting => bCanHunting;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -119,5 +121,28 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public void ResetSpeed()
     {
         speed = originalSpeed;
+    }
+
+    public void LoadSaveData(CharacterStatSaveData _data)
+    {
+        speed = _data.speed;
+        maxStamina = _data.maxStamina;
+        maxStaminaBonus = _data.maxStaminaBonus;
+        staminaIncreaseAlpha = _data.staminaIncreaseAlpha;
+        staminaDecreaseAlpha = _data.staminaDecreaseAlpha;
+        
+        axeDamage = _data.axeDamage;
+        axeDamageMultiplier = _data.axeDamageMultiplier;
+        axeDurability = _data.axeDurability;
+        
+        rifleDamage = _data.rifleDamage;
+        rifleDamageMultiplier = _data.rifleDamageMultiplier;
+        
+        weaponChangeCoolTime = _data.weaponChangeCoolTime;
+        switchSpeedMultiplier = _data.switchSpeedMultiplier;
+        
+        bCanHunting = _data.bCanHunting;
+
+        Debug.Log("[StatComponent] Save Data Loaded and Applied.");
     }
 }

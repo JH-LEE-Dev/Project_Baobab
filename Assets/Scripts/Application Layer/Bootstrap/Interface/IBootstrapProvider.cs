@@ -3,6 +3,6 @@ public interface IBootStrapProvider
 {
     void GoToMainMenuScene();
 
-    void GoToTownScene();
+    void GoToTownScene(bool _bNewGame);
     void GoToOtherScene(string _sceneName);
 }

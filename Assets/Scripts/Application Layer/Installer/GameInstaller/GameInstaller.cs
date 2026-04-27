@@ -6,6 +6,7 @@ public class GameInstaller : MonoBehaviour
     private InputManager inputManager;
     private IBootStrapProvider bootStrapProvider;
     private LocalizationManager localizationManager;
+    private SaveManager saveManager;
 
     //내부 의존성
     private UnitSpawner unitSpawner;
@@ -26,7 +27,7 @@ public class GameInstaller : MonoBehaviour
 
     private SkillSystem skillSystem;
 
-    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager)
+    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager,SaveManager _saveManager)
     {
         DontDestroyOnLoad(gameObject);
 
@@ -37,6 +38,7 @@ public class GameInstaller : MonoBehaviour
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
         localizationManager = _localizeManager;
+        saveManager = _saveManager;
 
         unitSpawner = GetComponentInChildren<UnitSpawner>();
         cameraManager = GetComponent<CameraManager>();
@@ -74,7 +76,17 @@ public class GameInstaller : MonoBehaviour
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);
         skillSystem.Initialize(skillManager, skillDispatcher);
 
+        _saveManager.Initialize(signalHub, skillSystem, inventoryManager, townSystem.logProcessingManager,
+        environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager);
+
         unitSystem.CreateCharacter();
+
+        BindEvents();
+    }
+
+    public void LoadGame()
+    {
+        saveManager.LoadGameData();
     }
 
     public void SetupGameInstaller(SceneChangeData _sceneChangeData)
@@ -91,6 +103,7 @@ public class GameInstaller : MonoBehaviour
         {
             townSystem.StartTownSystem(_sceneChangeData);
             unitSystem.SetWhereIsCharacter(false);
+            inDungeonSystem.ClearInDungeonSystem();
         }
     }
 
@@ -105,7 +118,9 @@ public class GameInstaller : MonoBehaviour
         gameplayUIInstaller.Release();
         skillSystem.Release();
         skillDispatcher.Release();
+        saveManager.Release();
 
+        ReleaseEvents();
         Destroy(gameObject);
     }
 
@@ -117,5 +132,21 @@ public class GameInstaller : MonoBehaviour
     private void OnDestroy()
     {
 
+    }
+
+    private void SaveGame()
+    {
+        saveManager.SaveGameData();
+    }
+
+    private void BindEvents()
+    {
+        gameplayUIInstaller.SaveGameEvent -= SaveGame;
+        gameplayUIInstaller.SaveGameEvent += SaveGame;
+    }
+
+    private void ReleaseEvents()
+    {
+        gameplayUIInstaller.SaveGameEvent -= SaveGame;
     }
 }

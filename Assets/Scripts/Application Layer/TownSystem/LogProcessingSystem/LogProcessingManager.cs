@@ -131,6 +131,49 @@ public class LogProcessingManager : MonoBehaviour
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
     }
 
+    public void PopulateSaveData(ref LogProcessingSaveData _saveData)
+    {
+        // 리스트 초기화 (중요)
+        _saveData.Initialize();
+        
+        if (logContainer != null)
+        {
+            logContainer.PopulateContainerSaveData(ref _saveData.containerInventoryData);
+            _saveData.maxItemsPerSlot = logContainer.GetMaxItemsPerSlot();
+        }
+
+        if (shopNPC != null)
+        {
+            _saveData.shopMoney = shopNPC.GetMoney();
+            _saveData.bFirstTimeEarnMoney = shopNPC.GetbFirstTimeEarnMoney();
+        }
+
+        if (logInBelt != null) logInBelt.PopulateSaveData(ref _saveData.logInBeltData);
+        if (logOutBelt != null) logOutBelt.PopulateSaveData(ref _saveData.logOutBeltData);
+        if (logCutter != null) _saveData.cutterData = logCutter.GetSaveData();
+        if (logEvaluator != null) _saveData.evaluatorData = logEvaluator.GetSaveData();
+    }
+
+    public void LoadSaveData(LogProcessingSaveData _data)
+    {
+        if (logContainer != null)
+        {
+            logContainer.LoadSaveData(_data.containerInventoryData, _data.maxItemsPerSlot);
+        }
+
+        if (shopNPC != null)
+        {
+            shopNPC.LoadSaveData(_data.shopMoney, _data.bFirstTimeEarnMoney);
+        }
+
+        if (logInBelt != null) logInBelt.LoadSaveData(_data.logInBeltData, logItemPoolingManager);
+        if (logOutBelt != null) logOutBelt.LoadSaveData(_data.logOutBeltData, logItemPoolingManager);
+        if (logCutter != null) logCutter.LoadSaveData(_data.cutterData, logItemPoolingManager);
+        if (logEvaluator != null) logEvaluator.LoadSaveData(_data.evaluatorData);
+
+        Debug.Log("[LogProcessingManager] Log Processing System Save Data Loaded.");
+    }
+
     private void ContainerUpdated()
     {
         ContainerUpdatedEvent.Invoke();

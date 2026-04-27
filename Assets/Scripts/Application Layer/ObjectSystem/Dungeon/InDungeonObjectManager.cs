@@ -3,6 +3,7 @@ using UnityEngine.Pool;
 using System.Collections.Generic;
 using System.Collections;
 using System;
+using Unity.VisualScripting;
 
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
@@ -14,7 +15,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
-    public ItemManager itemManager {get; private set;}
+    public ItemManager itemManager { get; private set; }
     private DungeonData dungeonData;
     private LootManager lootManager;
 
@@ -33,7 +34,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private List<Vector3> grassTileWorldPositions;
     private List<Vector3> availablePositions = new List<Vector3>(2500);
     private List<TreeObj> activeTrees = new List<TreeObj>(2500);
-    
+
     // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
     private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(2500);
@@ -51,7 +52,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, DungeonData _dungeonData,IInventoryChecker _inventoryChecker)
+    public void Initialize(IEnvironmentProvider _environmentProvider, DungeonData _dungeonData, IInventoryChecker _inventoryChecker)
     {
         environmentProvider = _environmentProvider;
         dungeonData = _dungeonData;
@@ -141,8 +142,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     public void ClearObjManager()
     {
-        portal.gameObject.SetActive(false);
-        itemManager.ReleaseAllItems();
+        if (portal != null)
+            portal.gameObject.SetActive(false);
+        else
+            return;
+            
+        if (itemManager != null)
+            itemManager.ReleaseAllItems();
         StopGrowth();
         ClearTrees();
     }
@@ -247,7 +253,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
-                
+
                 // 순서 변경: 먼저 풀에 반환(OnDisable 호출)하여 정상적으로 Unregister 되게 함
                 treePool.Release(activeTrees[i]);
                 // 해제된 객체의 위치를 나중에 옮김
@@ -409,7 +415,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         {
             activeTreesForUpdate.Remove(_treeObj);
         }
-        
+
         isCullingDirty = true;
 
         treePool.Release(_treeObj);

@@ -11,6 +11,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private SceneManager sceneManager;
     private InputManager inputManager;
     private LocalizationManager localizationManager;
+    private SaveManager saveManager;
 
     [Header("Gameplay Level Object")]
     [SerializeField] private GameInstaller gameInstallerPrefab;
@@ -28,6 +29,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private SceneType prevSceneType = SceneType.None;
 
     private bool bFadeComplete = false;
+    private bool bNewGame = false;
 
     // 유니티 이벤트 함수
     private void Awake()
@@ -47,6 +49,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         sceneManager = GetComponent<SceneManager>();
         inputManager = GetComponent<InputManager>();
+        saveManager = GetComponent<SaveManager>();
 
         localizationManager = new LocalizationManager();
 
@@ -73,7 +76,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             if (gameInstaller == null)
             {
                 gameInstaller = Instantiate(gameInstallerPrefab);
-                gameInstaller.Initialize(this, inputManager, localizationManager);
+                gameInstaller.Initialize(this, inputManager, localizationManager,saveManager);
+                
+                if(bNewGame == false)
+                    gameInstaller.LoadGame();
             }
         }
         else if (_sceneName == dungeonSceneName)
@@ -100,24 +106,24 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void GoToMainMenuScene()
     {
-        prevSceneType = currentSceneType;
-
         if (isTempScene)
         {
             return;
         }
 
-        if (gameInstaller != null)
-        {
-            gameInstaller.Release();
-            gameInstaller = null; // 참조 해제하여 GC 대상 포함
-        }
-
-        sceneManager.ChangeScene(SceneType.MainMenu);
+        StartCoroutine(TransitionToScene(SceneType.MainMenu));
     }
 
-    public void GoToTownScene()
+    public void GoToTownScene(bool _bNewGame)
     {
+        if (_bNewGame == false && saveManager != null && saveManager.HasSaveData() == false)
+        {
+            Debug.LogError("[BootStrap] No Save Data found! Cannot load game.");
+            // TODO: UI 시스템을 통해 사용자에게 에러 팝업을 보여주는 로직을 여기에 추가할 수 있습니다.
+            return;
+        }
+
+        bNewGame = _bNewGame;
         StartCoroutine(TransitionToScene(SceneType.Town));
     }
 
@@ -140,10 +146,22 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         // 2. 이제 화면이 완전히 가려졌으므로 전환 로직 시작
         prevSceneType = currentSceneType;
 
-        if (_sceneType == SceneType.Town && mainMenuInstaller != null)
+        // 기존 인스톨러 해제
+        if (_sceneType == SceneType.MainMenu)
         {
-            mainMenuInstaller.Release();
-            mainMenuInstaller = null;
+            if (gameInstaller != null)
+            {
+                gameInstaller.Release();
+                gameInstaller = null;
+            }
+        }
+        else // Town, DungeonScene 등 게임플레이 관련 씬으로 이동할 때
+        {
+            if (mainMenuInstaller != null)
+            {
+                mainMenuInstaller.Release();
+                mainMenuInstaller = null;
+            }
         }
 
         // 3. 비동기 씬 로드
@@ -166,15 +184,13 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void GoToOtherScene(string _sceneName)
     {
-        prevSceneType = currentSceneType;
-
         if (_sceneName == townSceneName)
         {
-            sceneManager.ChangeScene(SceneType.Town);
+            StartCoroutine(TransitionToScene(SceneType.Town));
         }
         else if (_sceneName == dungeonSceneName)
         {
-            sceneManager.ChangeScene(SceneType.DungeonScene);
+            StartCoroutine(TransitionToScene(SceneType.DungeonScene));
         }
     }
 
@@ -194,21 +210,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     // 내부 로직
     private void BindEvent()
     {
-        if (inputManager != null && inputManager.inputReader != null)
-        {
-            inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
-            inputManager.inputReader.ESCButtonPressedEvent += GoToMainMenuScene;
-        }
+
     }
 
     private void ReleaseEvent()
     {
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-
-        if (inputManager != null && inputManager.inputReader != null)
-        {
-            inputManager.inputReader.ESCButtonPressedEvent -= GoToMainMenuScene;
-        }
     }
 
     private void OnSceneLoaded(Scene _scene, LoadSceneMode _mode)

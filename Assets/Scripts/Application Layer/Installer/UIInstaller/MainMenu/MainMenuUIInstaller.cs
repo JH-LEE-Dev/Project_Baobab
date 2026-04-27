@@ -74,8 +74,14 @@ public class MainMenuUIInstaller : MonoBehaviour
 
         if (mainMenuUIView != null)
         {
-            mainMenuUIView.PlayButtonClickedEvent -= bootStrapProvider.GoToTownScene;
-            mainMenuUIView.PlayButtonClickedEvent += bootStrapProvider.GoToTownScene;
+            mainMenuUIView.NewGameButtonClickedEvent -= NewGameStart;
+            mainMenuUIView.NewGameButtonClickedEvent += NewGameStart;
+
+            mainMenuUIView.LoadGameButtonClickedEvent -= LoadGame;
+            mainMenuUIView.LoadGameButtonClickedEvent += LoadGame;
+
+            mainMenuUIView.ExitButtonClickedEvent -= ExitGame;
+            mainMenuUIView.ExitButtonClickedEvent += ExitGame;
         }
     }
 
@@ -94,6 +100,27 @@ public class MainMenuUIInstaller : MonoBehaviour
     {
         UIView_MainMenu mainMenuUIView = uiManager.Open<UIView_MainMenu>();
 
-        mainMenuUIView.PlayButtonClickedEvent -= bootStrapProvider.GoToTownScene;
+        mainMenuUIView.NewGameButtonClickedEvent -= NewGameStart;
+        mainMenuUIView.LoadGameButtonClickedEvent -= LoadGame;
+        mainMenuUIView.ExitButtonClickedEvent -= ExitGame;
+    }
+
+    private void NewGameStart()
+    {
+        bootStrapProvider.GoToTownScene(true);
+    }
+
+    private void LoadGame()
+    {
+        bootStrapProvider.GoToTownScene(false);
+    }
+
+    private void ExitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
     }
 }
