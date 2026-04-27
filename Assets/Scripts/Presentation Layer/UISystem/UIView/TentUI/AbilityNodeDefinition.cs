@@ -16,8 +16,79 @@ public class AbilityNodeDefinitionJson
     public AbilityLevelCostJson[] levelCosts;
     public int gridX;
     public int gridY;
+    public AbilityParentJson[] parents;
     public string[] parentSkillTypes;
     public AbilityParentLineRouteJson[] parentLineRoutes;
+
+    public string[] GetParentSkillTypeNames()
+    {
+        if (parents != null && parents.Length > 0)
+        {
+            string[] parentNames = new string[parents.Length];
+            for (int i = 0; i < parents.Length; i++)
+                parentNames[i] = parents[i] != null ? parents[i].skillType : string.Empty;
+
+            return parentNames;
+        }
+
+        return parentSkillTypes ?? Array.Empty<string>();
+    }
+
+    public AbilityParentLineRouteJson FindParentLineRoute(SkillType _parentSkillType)
+    {
+        if (parents != null && parents.Length > 0)
+        {
+            for (int i = 0; i < parents.Length; i++)
+            {
+                AbilityParentJson parent = parents[i];
+                if (parent == null || string.IsNullOrWhiteSpace(parent.skillType))
+                    continue;
+
+                if (Enum.TryParse(parent.skillType, true, out SkillType parsedParentSkillType) == false)
+                    continue;
+
+                if (parsedParentSkillType != _parentSkillType || parent.usePivot == false)
+                    continue;
+
+                return new AbilityParentLineRouteJson
+                {
+                    parentSkillType = parent.skillType,
+                    usePivot = true,
+                    pivotX = parent.pivotX,
+                    pivotY = parent.pivotY
+                };
+            }
+
+            return null;
+        }
+
+        if (parentLineRoutes == null || parentLineRoutes.Length == 0)
+            return null;
+
+        for (int i = 0; i < parentLineRoutes.Length; i++)
+        {
+            AbilityParentLineRouteJson route = parentLineRoutes[i];
+            if (route == null || string.IsNullOrWhiteSpace(route.parentSkillType))
+                continue;
+
+            if (Enum.TryParse(route.parentSkillType, true, out SkillType parsedParentSkillType) == false)
+                continue;
+
+            if (parsedParentSkillType == _parentSkillType)
+                return route;
+        }
+
+        return null;
+    }
+}
+
+[Serializable]
+public class AbilityParentJson
+{
+    public string skillType;
+    public bool usePivot;
+    public int pivotX;
+    public int pivotY;
 }
 
 [Serializable]

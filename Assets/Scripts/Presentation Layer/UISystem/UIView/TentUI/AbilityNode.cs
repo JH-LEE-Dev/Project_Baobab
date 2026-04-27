@@ -78,7 +78,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         currentLevel = 0;
         maxLevel = Mathf.Max(_definition.maxLevel, 1);
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
-        parentSkillTypes = ConvertParentSkillTypes(_definition.parentSkillTypes);
+        parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());
         levelCosts = _definition.levelCosts ?? Array.Empty<AbilityLevelCostJson>();
 
         SetPicture(_pictureSprite);

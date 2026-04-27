@@ -130,24 +130,7 @@ public class AbilityLineRenderer
         if (_nodeDefinitionMap.TryGetValue(_childSkillType, out AbilityNodeDefinitionJson childDefinition) == false)
             return null;
 
-        AbilityParentLineRouteJson[] routes = childDefinition.parentLineRoutes;
-        if (routes == null || routes.Length == 0)
-            return null;
-
-        for (int i = 0; i < routes.Length; i++)
-        {
-            AbilityParentLineRouteJson route = routes[i];
-            if (route == null || string.IsNullOrWhiteSpace(route.parentSkillType))
-                continue;
-
-            if (Enum.TryParse(route.parentSkillType, true, out SkillType parsedParentSkillType) == false)
-                continue;
-
-            if (parsedParentSkillType == _parentSkillType)
-                return route;
-        }
-
-        return null;
+        return childDefinition.FindParentLineRoute(_parentSkillType);
     }
 
     // 한 부모-자식 연결을 실제 라인 세그먼트/직선으로 분해한다.
