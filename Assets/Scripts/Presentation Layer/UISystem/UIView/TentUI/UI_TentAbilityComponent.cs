@@ -30,9 +30,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
     private readonly List<AbilityNode> spawnedNodes = new List<AbilityNode>();
     private readonly Dictionary<SkillType, AbilityNode> spawnedNodeMap = new Dictionary<SkillType, AbilityNode>();
+    private readonly Queue<AbilityNode> nodePool = new Queue<AbilityNode>();
     private readonly AbilityLineRenderer lineRenderer = new AbilityLineRenderer();
 
     private bool hasBuiltNodes;
+    private bool hasPrewarmedNodePool;
     private AbilityNode currentToolTipNode;
     private AbilityToolTip toolTipInstance;
 
@@ -45,6 +47,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private AbilityLine abilityLinePrefab;
     [SerializeField] private TextAsset abilityNodeJson;
     [SerializeField] private float gridCellSize = 32f;
+    [SerializeField] private int prewarmNodePoolCount = 64;
     [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
     [SerializeField] private List<AbilityLineSegmentSpriteBinding> lineSpriteBindings = new List<AbilityLineSegmentSpriteBinding>();
     [SerializeField] private RectTransform lineParent;
@@ -65,6 +68,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         CachePictureBindings();
         CacheLineSpriteBindings();
         LoadNodeDefinitions();
+        PrewarmNodePool();
         EnsureToolTipInstance();
         Close();
     }
@@ -186,13 +190,49 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (nodeDefinitionMap.TryGetValue(_skillType, out AbilityNodeDefinitionJson nodeDefinition) == false)
             return null;
 
-        AbilityNode node = Instantiate(abilityNodePrefab, moveTarget);
+        AbilityNode node = GetNodeFromPool();
         node.gameObject.name = $"AbilityNode_{_skillType}";
         node.BindOwner(this);
         node.ApplyDefinition(nodeDefinition, _skillType, ResolvePicture(_skillType), gridCellSize);
         spawnedNodes.Add(node);
         spawnedNodeMap[_skillType] = node;
 
+        return node;
+    }
+
+    // 특성창 오픈 순간의 Instantiate 부하를 줄이기 위해 노드 프리팹을 미리 비활성 상태로 준비한다.
+    private void PrewarmNodePool()
+    {
+        if (hasPrewarmedNodePool || moveTarget == null || abilityNodePrefab == null)
+            return;
+
+        int targetCount = Mathf.Max(prewarmNodePoolCount, 0);
+        for (int i = nodePool.Count; i < targetCount; i++)
+        {
+            AbilityNode pooledNode = Instantiate(abilityNodePrefab, moveTarget);
+            pooledNode.BindOwner(this);
+            pooledNode.gameObject.SetActive(false);
+            nodePool.Enqueue(pooledNode);
+        }
+
+        hasPrewarmedNodePool = true;
+    }
+
+    // 풀에 준비된 노드를 꺼내고, 부족하면 새로 만들어 반환한다.
+    private AbilityNode GetNodeFromPool()
+    {
+        AbilityNode node = null;
+        while (nodePool.Count > 0 && node == null)
+            node = nodePool.Dequeue();
+
+        if (node == null)
+            node = Instantiate(abilityNodePrefab, moveTarget);
+
+        RectTransform rectTransform = node.RectTransform;
+        if (rectTransform != null && rectTransform.parent != moveTarget)
+            rectTransform.SetParent(moveTarget, false);
+
+        node.gameObject.SetActive(true);
         return node;
     }
 
@@ -231,6 +271,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         if (abilityBackground != null)
             abilityBackground.gameObject.SetActive(false);
+    }
+
+    public void Refresh()
+    {
+        BuildNodesIfNeeded();
+        SyncNodeLevelsFromProvider();
+        RefreshNodeVisibility();
+        RefreshNodeAvailabilityVisuals();
+
+        if (currentToolTipNode != null)
+            ShowToolTip(currentToolTipNode);
     }
 
 

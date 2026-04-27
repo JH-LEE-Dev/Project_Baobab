@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 [Serializable]
@@ -18,7 +19,7 @@ public class AbilityToolSkillCommandEntry
     public ProgressionCurve amountCurve;
 }
 
-public class AbilityToolNode : MonoBehaviour
+public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     private static readonly Color DefaultBaseColor = Color.white;
     private static readonly Color SelectedBaseColor = new Color32(0, 255, 0, 255);
@@ -44,6 +45,7 @@ public class AbilityToolNode : MonoBehaviour
     [SerializeField] private Sprite defaultPictureSprite;
 
     private SkillType lastPictureSkillType = SkillType.None;
+    private AbilityToolManager owner;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -55,6 +57,11 @@ public class AbilityToolNode : MonoBehaviour
     public Vector2Int GridPosition => gridPosition;
     public RectTransform RectTransform => transform as RectTransform;
     public List<AbilityToolParentLink> ParentLinks => parentLinks;
+
+    public void BindOwner(AbilityToolManager _owner)
+    {
+        owner = _owner;
+    }
 
     public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, float _gridCellSize)
     {
@@ -205,5 +212,15 @@ public class AbilityToolNode : MonoBehaviour
         }
 
         return result;
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        owner?.ShowToolTip(this);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        owner?.HideToolTip(this);
     }
 }

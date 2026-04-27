@@ -108,6 +108,7 @@ public class UIView_Tent : UIView
 
     public override void Refresh() //저장 파일 로드할 때 호출됨.
     {
-       
+        RefreshMoneyTexts();
+        abilityUIComponent?.Refresh();
     }
 }

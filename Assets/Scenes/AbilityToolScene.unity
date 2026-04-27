@@ -993,6 +993,8 @@ MonoBehaviour:
   pivotMarker: {fileID: 1182239494}
   lineParent: {fileID: 537577921}
   gridCoordinateText: {fileID: 1812807908}
+  toolTipPrefab: {fileID: 7118067883298631761, guid: 0693cecbf0fc4eb4e988a48e7663f4bf, type: 3}
+  toolTipParent: {fileID: 0}
   abilityToolNodePrefab: {fileID: 3681704514645111162, guid: 4269eb754883b6f41bc4714476be7f73, type: 3}
   abilityLinePrefab: {fileID: 5716816955533093396, guid: 837b53e06369c2849b172916f360208c, type: 3}
   gridCellSize: 32

@@ -18,6 +18,7 @@ public class AbilityToolManager : MonoBehaviour
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
     private const float DragThreshold = 4f;
+    private const float ToolTipSpacing = 32f;
 
     private readonly Dictionary<Vector2Int, AbilityToolNode> nodeMap = new Dictionary<Vector2Int, AbilityToolNode>();
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
@@ -40,6 +41,8 @@ public class AbilityToolManager : MonoBehaviour
     private float currentZoom = DefaultZoom;
     private float targetZoom = DefaultZoom;
     private AbilityToolNode selectedChildNode;
+    private AbilityToolNode currentToolTipNode;
+    private AbilityToolTip toolTipInstance;
 
     [Header("UI References")]
     [SerializeField] private RectTransform abilityBackground;
@@ -48,6 +51,10 @@ public class AbilityToolManager : MonoBehaviour
     [SerializeField] private RectTransform pivotMarker;
     [SerializeField] private RectTransform lineParent;
     [SerializeField] private TMP_Text gridCoordinateText;
+
+    [Header("ToolTip Setup")]
+    [SerializeField] private AbilityToolTip toolTipPrefab;
+    [SerializeField] private RectTransform toolTipParent;
 
     [Header("Node Setup")]
     [SerializeField] private AbilityToolNode abilityToolNodePrefab;
@@ -89,6 +96,7 @@ public class AbilityToolManager : MonoBehaviour
             ResolveStraightSprite,
             ResolveDiagonalSprite);
         ResetView();
+        EnsureToolTipInstance();
         CacheExistingNodes();
         RebuildLines();
         UpdateGridCursor();
@@ -106,6 +114,7 @@ public class AbilityToolManager : MonoBehaviour
         UpdateGridCoordinateText();
         RefreshLines();
         RefreshNodePictures();
+        UpdateToolTipPosition();
         HandleToolInput();
     }
 
@@ -162,6 +171,7 @@ public class AbilityToolManager : MonoBehaviour
                 continue;
 
             node.ApplyAnchoredPosition(gridCellSize);
+            node.BindOwner(this);
             node.SetSelectedVisual(false);
             node.SetPicture(ResolvePicture(node.SkillType));
             nodeMap[node.GridPosition] = node;
@@ -174,6 +184,116 @@ public class AbilityToolManager : MonoBehaviour
     {
         lineRenderer.RebuildConnections(nodeList);
         RefreshLines();
+    }
+
+    private void EnsureToolTipInstance()
+    {
+        if (toolTipInstance != null || toolTipPrefab == null || abilityBackground == null)
+            return;
+
+        RectTransform parent = toolTipParent != null ? toolTipParent : abilityBackground;
+        toolTipInstance = Instantiate(toolTipPrefab, parent);
+
+        RectTransform toolTipRoot = toolTipInstance.GetRoot();
+        if (toolTipRoot != null)
+        {
+            toolTipRoot.anchorMin = new Vector2(0.5f, 0.5f);
+            toolTipRoot.anchorMax = new Vector2(0.5f, 0.5f);
+            toolTipRoot.pivot = new Vector2(0.5f, 0.5f);
+        }
+
+        toolTipInstance.Hide();
+    }
+
+#endregion
+
+
+#region ToolTip
+
+    public void ShowToolTip(AbilityToolNode _node)
+    {
+        if (_node == null || abilityBackground == null)
+            return;
+
+        currentToolTipNode = _node;
+        EnsureToolTipInstance();
+        if (toolTipInstance == null)
+            return;
+
+        RectTransform nodeRect = _node.RectTransform;
+        if (nodeRect == null)
+            return;
+
+        toolTipInstance.SetContent(
+            BuildToolTipTitleAndLevelText(_node),
+            _node.Description,
+            BuildToolTipCostText(_node));
+
+        toolTipInstance.Show();
+        Vector2 toolTipSize = toolTipInstance.GetSize();
+
+        Vector3[] worldCorners = new Vector3[4];
+        nodeRect.GetWorldCorners(worldCorners);
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            abilityBackground,
+            RectTransformUtility.WorldToScreenPoint(null, worldCorners[0]),
+            null,
+            out Vector2 localBottomLeft);
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            abilityBackground,
+            RectTransformUtility.WorldToScreenPoint(null, worldCorners[2]),
+            null,
+            out Vector2 localTopRight);
+
+        Vector2 nodeCenter = (localBottomLeft + localTopRight) * 0.5f;
+        float nodeWidth = Mathf.Abs(localTopRight.x - localBottomLeft.x);
+        bool placeOnRight = nodeCenter.x < 0f;
+        float direction = placeOnRight ? 1f : -1f;
+
+        float x = nodeCenter.x + direction * ((nodeWidth * 0.5f) + ToolTipSpacing + (toolTipSize.x * 0.5f));
+        float y = nodeCenter.y;
+
+        toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
+    }
+
+    public void HideToolTip(AbilityToolNode _node)
+    {
+        if (currentToolTipNode != null && _node != currentToolTipNode)
+            return;
+
+        currentToolTipNode = null;
+
+        if (toolTipInstance != null)
+            toolTipInstance.Hide();
+    }
+
+    private void UpdateToolTipPosition()
+    {
+        if (currentToolTipNode == null || toolTipInstance == null || toolTipInstance.gameObject.activeSelf == false)
+            return;
+
+        ShowToolTip(currentToolTipNode);
+    }
+
+    private string BuildToolTipTitleAndLevelText(AbilityToolNode _node)
+    {
+        return $"{_node.DisplayName}\n레벨 : 0 / {Mathf.Max(_node.MaxLevel, 1)}";
+    }
+
+    private string BuildToolTipCostText(AbilityToolNode _node)
+    {
+        int moneyCost = Mathf.RoundToInt(_node.MoneyCurve.Evaluate(1));
+        int carrotCost = Mathf.RoundToInt(_node.CarrotCurve.Evaluate(1));
+
+        if (moneyCost > 0)
+            return $"{moneyCost} {MoneyType.Coin}";
+
+        if (carrotCost > 0)
+            return $"{carrotCost} {MoneyType.Carrot}";
+
+        return "무료";
     }
 
 #endregion
@@ -508,6 +628,7 @@ public class AbilityToolManager : MonoBehaviour
             return;
 
         AbilityToolNode node = Instantiate(abilityToolNodePrefab, moveTarget);
+        node.BindOwner(this);
         node.SetGridPosition(_gridPosition, gridCellSize);
         node.SetSelectedVisual(false);
         node.SetPicture(ResolvePicture(node.SkillType));
@@ -531,6 +652,9 @@ public class AbilityToolManager : MonoBehaviour
 
         if (selectedChildNode == node)
             ClearLinkSelectionMode();
+
+        if (currentToolTipNode == node)
+            HideToolTip(node);
 
         Destroy(node.gameObject);
         RebuildLines();
@@ -863,6 +987,7 @@ public class AbilityToolManager : MonoBehaviour
         }
 
         AbilityToolNode node = Instantiate(abilityToolNodePrefab, moveTarget);
+        node.BindOwner(this);
         node.ApplyDefinition(_nodeDefinition, _skillType, gridCellSize);
         node.SetSelectedVisual(false);
         node.SetPicture(ResolvePicture(_skillType));
