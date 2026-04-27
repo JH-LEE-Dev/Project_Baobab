@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Events;
-using static UnityEngine.LowLevelPhysics2D.PhysicsShape;
 
 public class UI_Inventory : MonoBehaviour
 {

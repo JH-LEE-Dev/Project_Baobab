@@ -94,4 +94,9 @@ public abstract class UIView : MonoBehaviour
     {
         
     }
+
+    public virtual void Refresh()
+    {
+        
+    }
 }

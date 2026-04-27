@@ -68,6 +68,11 @@ public class GameplayUIInstaller : MonoBehaviour
         ReleaseEvent();
     }
 
+    public void Refresh()
+    {
+        uICoordinator.Refresh();
+    }
+
     public void SetupUIElement()
     {
         SetupCanvas();

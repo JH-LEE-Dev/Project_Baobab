@@ -115,6 +115,17 @@ public class GameplayUICoordinator
         ReleaseEvents();
     }
 
+    public void Refresh()
+    {
+        hudUI.Refresh();
+        unitUI.Refresh();
+        popUpUI.Refresh();
+        worldPopupUI.Refresh();
+        menuPopupUI.Refresh();
+        tentUI.Refresh();
+        escUI.Refresh();
+    }
+
     private void OnInventoryKeyPressed()
     {
         if (bInventoryOpened == false)

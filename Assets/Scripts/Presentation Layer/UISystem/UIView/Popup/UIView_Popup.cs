@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using static UnityEngine.LowLevelPhysics2D.PhysicsShape;
 
 public class UIView_Popup : UIView
 {
@@ -119,6 +118,11 @@ public class UIView_Popup : UIView
     public void CharactersMoneyChanged()
     {
         uI_Inventory?.CharactersMoneyChanged();
+    }
+
+    public override void Refresh()
+    {
+
     }
 
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.

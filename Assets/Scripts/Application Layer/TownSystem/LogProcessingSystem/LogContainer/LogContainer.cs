@@ -545,7 +545,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 ItemSaveData itemSaveData = new ItemSaveData();
                 itemSaveData.itemType = slot.itemData.itemType;
                 itemSaveData.color = slot.itemData.color; // 컬러 저장
-
+    
                 if (slot.itemData is LogItemData logData)
                 {
                     itemSaveData.treeType = logData.treeType;
@@ -560,10 +560,17 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
-    public void LoadSaveData(InventorySaveData _data, int _maxItemsPerSlot)
+    public void LoadSaveData(LogProcessingSaveData _data)
     {
-        currentSlotCount = _data.currentSlotCount;
-        maxItemsPerSlot = _maxItemsPerSlot;
+        currentSlotCount = _data.containerInventoryData.currentSlotCount;
+        maxItemsPerSlot = _data.maxItemsPerSlot;
+        bStop = _data.bStop;
+        transferInterval = _data.transferInterval;
+
+        // 타이밍 정보 복구 (상대 시간 -> 현재 Time.time 기준 절대 시간)
+        lastTransferTime = Time.time - _data.lastTransferTimeElapsed;
+        lastOutputTime = Time.time - _data.lastOutputTimeElapsed;
+        lastInterval = _data.lastInterval;
 
         // 기존 슬롯 초기화 (풀 반환)
         for (int i = 0; i < containerSlots.Count; i++)
@@ -576,13 +583,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
 
         // 데이터 복구
-        if (_data.slots != null)
+        var inventoryData = _data.containerInventoryData;
+        if (inventoryData.slots != null)
         {
-            for (int i = 0; i < _data.slots.Count; i++)
+            for (int i = 0; i < inventoryData.slots.Count; i++)
             {
                 if (i >= containerSlots.Count) break;
 
-                var slotData = _data.slots[i];
+                var slotData = inventoryData.slots[i];
                 if (slotData.itemSaveData.itemType != ItemType.None)
                 {
                     ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
@@ -611,6 +619,20 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         ContainerSpecChangedEvent?.Invoke();
         Debug.Log("[LogContainer] Container Save Data Loaded.");
     }
+
+    public bool GetbStop()
+    {
+        return bStop;
+    }
+
+    public float GetTransferInterval()
+    {
+        return transferInterval;
+    }
+
+    public float GetLastTransferTimeElapsed() => Time.time - lastTransferTime;
+    public float GetLastOutputTimeElapsed() => Time.time - lastOutputTime;
+    public float GetLastInterval() => lastInterval;
 
     public int GetMaxItemsPerSlot()
     {
