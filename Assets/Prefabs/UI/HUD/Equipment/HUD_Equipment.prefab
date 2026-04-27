@@ -337,7 +337,10 @@ MonoBehaviour:
   outlineObject: {fileID: 2756164179181108811}
   shadowObject: {fileID: 5110569413746513369}
   canvasGroup: {fileID: 7975163883536258449}
-  colorTargets: []
+  colorTargets:
+  - {fileID: 8614871370824734834}
+  - {fileID: 8257918516394265571}
+  - {fileID: 276415372774956654}
   inactiveAlpha: 0.5
   inactiveColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
   motionPlayer: {fileID: 3140712221331536018}
@@ -1021,7 +1024,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 4, y: -3}
+  m_AnchoredPosition: {x: -1, y: -3}
   m_SizeDelta: {x: 64, y: 70}
   m_Pivot: {x: 1, y: 0}
 --- !u!222 &7622799711695136654
