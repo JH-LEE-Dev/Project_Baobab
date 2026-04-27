@@ -77,7 +77,7 @@ public class GameInstaller : MonoBehaviour
         skillSystem.Initialize(skillManager, skillDispatcher);
 
         _saveManager.Initialize(signalHub, skillSystem, inventoryManager, townSystem.logProcessingManager,
-        environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager);
+        environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager);
 
         unitSystem.CreateCharacter();
 
