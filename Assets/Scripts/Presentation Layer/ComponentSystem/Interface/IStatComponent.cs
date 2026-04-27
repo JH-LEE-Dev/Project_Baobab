@@ -2,6 +2,7 @@ public interface IStatComponent
 {
     public float speed { get; }
     public float weaponChangeCoolTime { get; }
+    public bool bCanHunting { get; }
 
     public float axeDamage { get; }
     public float axeDurability { get; }

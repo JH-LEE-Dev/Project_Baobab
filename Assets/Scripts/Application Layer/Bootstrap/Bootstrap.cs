@@ -100,20 +100,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void GoToMainMenuScene()
     {
-        prevSceneType = currentSceneType;
-
         if (isTempScene)
         {
             return;
         }
 
-        if (gameInstaller != null)
-        {
-            gameInstaller.Release();
-            gameInstaller = null; // 참조 해제하여 GC 대상 포함
-        }
-
-        sceneManager.ChangeScene(SceneType.MainMenu);
+        StartCoroutine(TransitionToScene(SceneType.MainMenu));
     }
 
     public void GoToTownScene()
@@ -140,10 +132,22 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         // 2. 이제 화면이 완전히 가려졌으므로 전환 로직 시작
         prevSceneType = currentSceneType;
 
-        if (_sceneType == SceneType.Town && mainMenuInstaller != null)
+        // 기존 인스톨러 해제
+        if (_sceneType == SceneType.MainMenu)
         {
-            mainMenuInstaller.Release();
-            mainMenuInstaller = null;
+            if (gameInstaller != null)
+            {
+                gameInstaller.Release();
+                gameInstaller = null;
+            }
+        }
+        else // Town, DungeonScene 등 게임플레이 관련 씬으로 이동할 때
+        {
+            if (mainMenuInstaller != null)
+            {
+                mainMenuInstaller.Release();
+                mainMenuInstaller = null;
+            }
         }
 
         // 3. 비동기 씬 로드
@@ -166,15 +170,13 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void GoToOtherScene(string _sceneName)
     {
-        prevSceneType = currentSceneType;
-
         if (_sceneName == townSceneName)
         {
-            sceneManager.ChangeScene(SceneType.Town);
+            StartCoroutine(TransitionToScene(SceneType.Town));
         }
         else if (_sceneName == dungeonSceneName)
         {
-            sceneManager.ChangeScene(SceneType.DungeonScene);
+            StartCoroutine(TransitionToScene(SceneType.DungeonScene));
         }
     }
 
