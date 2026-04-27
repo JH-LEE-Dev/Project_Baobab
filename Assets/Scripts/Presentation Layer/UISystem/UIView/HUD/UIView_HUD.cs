@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using PresentationLayer.UISystem.UIView.HUD.Equipment;
 
 public class UIView_HUD : UIView
 {
@@ -46,6 +47,8 @@ public class UIView_HUD : UIView
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+
+        hudEquipment?.BindingRef(character);
     }
 
     public void DependencyInjection()
@@ -70,7 +73,6 @@ public class UIView_HUD : UIView
         if (null != hudEquipment)
         {
             hudEquipment.Initialize();
-            hudEquipment.UpdateState(WeaponMode.Axe, 0);
         }
     }
 
@@ -97,7 +99,7 @@ public class UIView_HUD : UIView
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
     {
-        hudEquipment?.UpdateState(_currentWeaponMode, 0);
+       hudEquipment?.UpdateState(_currentWeaponMode);
     }
 
     public void InventorySpecChanged() //인벤토리 스펙 변동 시 호출
