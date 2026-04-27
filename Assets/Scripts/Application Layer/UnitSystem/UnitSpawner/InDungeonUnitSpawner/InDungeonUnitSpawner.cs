@@ -17,11 +17,9 @@ public class InDungeonUnitSpawner : MonoBehaviour
     //내부 의존성
     [Header("Spawn Settings")]
     [SerializeField] private Animal animalPrefab;
-    [SerializeField] private float spawnInterval = 2.0f;
 
     private IObjectPool<Animal> animalPool;
     private Coroutine growthCoroutine;
-    private WaitForSeconds spawnYield;
 
     private List<Animal> allSpawnedAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
     private List<int> availableIndices = new List<int>(1024); // GC 방지용 캐싱 인덱스 리스트
@@ -48,8 +46,6 @@ public class InDungeonUnitSpawner : MonoBehaviour
         cullingDistances = new float[] { cullingDistance };
         spheres = new BoundingSphere[maxSize];
         onCullingStateChangedDelegate = OnCullingStateChanged;
-
-        spawnYield = new WaitForSeconds(spawnInterval);
 
         animalPool = new ObjectPool<Animal>(
             CreateAnimal,
@@ -122,7 +118,8 @@ public class InDungeonUnitSpawner : MonoBehaviour
     {
         while (true)
         {
-            yield return spawnYield;
+            float interval = environmentProvider.densityProvider.GetAnimalRegenTime();
+            yield return new WaitForSeconds(interval);
 
             if (environmentProvider.densityProvider.CanCreateAnimal())
             {

@@ -27,6 +27,40 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private SceneType currentSceneType = SceneType.None;
     private SceneType prevSceneType = SceneType.None;
 
+    private bool bFadeComplete = false;
+
+    // 유니티 이벤트 함수
+    private void Awake()
+    {
+        if (instance != null)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        // 이벤트 중복 등록 방지
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+
+        sceneManager = GetComponent<SceneManager>();
+        inputManager = GetComponent<InputManager>();
+
+        localizationManager = new LocalizationManager();
+
+        if (localizationManager != null)
+            localizationManager.Initialize();
+
+        if (inputManager != null)
+        {
+            inputManager.Initialize();
+        }
+
+        BindEvent();
+        InitializeDoTweenPool();
+    }
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -66,79 +100,84 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void GoToMainMenuScene()
     {
-        prevSceneType = currentSceneType;
-
         if (isTempScene)
         {
             return;
         }
 
-        if (gameInstaller != null)
-        {
-            gameInstaller.Release();
-            gameInstaller = null; // 참조 해제하여 GC 대상 포함
-        }
-
-        sceneManager.ChangeScene(SceneType.MainMenu);
+        StartCoroutine(TransitionToScene(SceneType.MainMenu));
     }
 
     public void GoToTownScene()
     {
-        prevSceneType = currentSceneType;
+        StartCoroutine(TransitionToScene(SceneType.Town));
+    }
 
-        if (mainMenuInstaller != null)
+    private void OnFadeComplete()
+    {
+        bFadeComplete = true;
+    }
+
+    private System.Collections.IEnumerator TransitionToScene(SceneType _sceneType)
+    {
+        // 1. 로딩창 나타나기 시작 (화면 가리기)
+        bFadeComplete = false;
+        if (LoadingManager.Instance != null)
         {
-            mainMenuInstaller.Release();
-            mainMenuInstaller = null;
+            LoadingManager.Instance.FadeOut(OnFadeComplete);
+            // 로딩창이 완전히 가려질 때까지 대기
+            while (!bFadeComplete) yield return null;
         }
 
-        sceneManager.ChangeScene(SceneType.Town);
+        // 2. 이제 화면이 완전히 가려졌으므로 전환 로직 시작
+        prevSceneType = currentSceneType;
+
+        // 기존 인스톨러 해제
+        if (_sceneType == SceneType.MainMenu)
+        {
+            if (gameInstaller != null)
+            {
+                gameInstaller.Release();
+                gameInstaller = null;
+            }
+        }
+        else // Town, DungeonScene 등 게임플레이 관련 씬으로 이동할 때
+        {
+            if (mainMenuInstaller != null)
+            {
+                mainMenuInstaller.Release();
+                mainMenuInstaller = null;
+            }
+        }
+
+        // 3. 비동기 씬 로드
+        AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
+        if (asyncLoad != null)
+        {
+            while (!asyncLoad.isDone) yield return null;
+        }
+
+        // 4. 시스템 초기화 대기 (OnSceneLoaded 실행을 위해 1프레임 + 여유 시간)
+        yield return null; 
+        yield return new WaitForSeconds(0.2f); 
+
+        // 5. 모든 준비가 되면 로딩창 걷어내기 (화면 밝게)
+        if (LoadingManager.Instance != null)
+        {
+            LoadingManager.Instance.FadeIn();
+        }
     }
 
     public void GoToOtherScene(string _sceneName)
     {
-        prevSceneType = currentSceneType;
-
         if (_sceneName == townSceneName)
         {
-            sceneManager.ChangeScene(SceneType.Town);
+            StartCoroutine(TransitionToScene(SceneType.Town));
         }
         else if (_sceneName == dungeonSceneName)
         {
-            sceneManager.ChangeScene(SceneType.DungeonScene);
+            StartCoroutine(TransitionToScene(SceneType.DungeonScene));
         }
-    }
-
-    // 유니티 이벤트 함수
-    private void Awake()
-    {
-        if (instance != null)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
-        instance = this;
-        DontDestroyOnLoad(gameObject);
-
-        // 이벤트 중복 등록 방지
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
-
-        sceneManager = GetComponent<SceneManager>();
-        inputManager = GetComponent<InputManager>();
-        localizationManager = new LocalizationManager();
-
-        if (localizationManager != null)
-            localizationManager.Initialize();
-
-        if (inputManager != null)
-        {
-            inputManager.Initialize();
-        }
-
-        BindEvent();
-        InitializeDoTweenPool();
     }
 
     private void Start()

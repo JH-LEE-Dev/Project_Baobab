@@ -270,7 +270,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RifleComponent
   muzzlePoint: {fileID: 776704768645604309}
-  mouseCol: {fileID: 7244437549703191926}
+  mouseCol: {fileID: 0}
   targetLayer:
     serializedVersion: 2
     m_Bits: 16384
@@ -600,7 +600,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7420997691266354778}
-  - component: {fileID: 7244437549703191926}
   m_Layer: 8
   m_Name: AimCorrectionCollider
   m_TagString: Untagged
@@ -623,42 +622,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 4679200295719774274}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!58 &7244437549703191926
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4035353486790179823}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 0.5
 --- !u!1 &4661998410482120748
 GameObject:
   m_ObjectHideFlags: 0

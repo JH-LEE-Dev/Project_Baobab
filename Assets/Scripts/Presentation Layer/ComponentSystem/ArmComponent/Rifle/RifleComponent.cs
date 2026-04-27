@@ -4,8 +4,8 @@ using System;
 
 public class RifleComponent : WeaponComponent, IRifleComponent
 {
+    public event Action RifleFiredEvent;
     public event Action<bool> DeclareCanSwapEvent;
-    //public event Action<bool> DeclareAttackStateEvent;
     public event Action AttackCoolTimeStartEvent;
     public event Action ReloadStartEvent;
 
@@ -29,7 +29,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     int IRifleComponent.mag => mag;
     int IRifleComponent.ammo => ammo;
 
-    [SerializeField] private CircleCollider2D mouseCol;
     [SerializeField] private LayerMask targetLayer; // 일반 타겟 레이어
     [SerializeField] private LayerMask aimCorrectionLayer; // 조준 보정 전용 레이어
 
@@ -40,9 +39,12 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     // 조준 보정을 위한 변수 (커스텀 시스템 활용)
     private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
+    private List<IStaticCollidable> soundRangeResults = new List<IStaticCollidable>(16);
 
     private float originalSpeed;
     private bool bIsSpeedReduced = false;
+    private float mouseColRadius = 0.75f;
+    private float gunFireSoundRadius = 5.5f;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -55,9 +57,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         mag = ctx.characterStat.magCap;
         ammo = ctx.characterStat.ammoCap;
-
-        // 물리 엔진용 콜라이더 비활성화
-        if (mouseCol != null) mouseCol.enabled = false;
     }
 
     public override void SetFacingDir(Transform _attackTransform)
@@ -168,6 +167,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         // 1. 총알 생성 및 발사
         if (bulletObjManager != null && muzzlePoint != null)
         {
+            RifleFiredEvent?.Invoke();
+            
             StartCoroutine(nameof(FireAfterDelayRoutine));
 
             // 발사 시 이동 속도 감소 및 0.3초 후 회복 코루틴 시작
@@ -186,7 +187,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             {
                 // 조준 보정 로직: mouseTransform 주변의 Collidable 탐색
                 Vector2 searchPos = mouseTransform;
-                float radius = mouseCol != null ? mouseCol.radius : 1f;
+                float radius = 0.75f;
 
                 CollisionSystem.Instance.GetCollidablesInRadius(searchPos, radius, targetLayer, correctionResults);
 
@@ -232,6 +233,8 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             }
 
             bulletObjManager.GetBullet(muzzlePoint.position, fireRotation);
+
+            NotifyNearbyAnimals();
         }
 
         // 2. 후속 처리
@@ -239,6 +242,20 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bFired = true;
 
         OnFireStart();
+    }
+
+    private void NotifyNearbyAnimals()
+    {
+        if (CollisionSystem.Instance == null) return;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, gunFireSoundRadius, targetLayer, soundRangeResults);
+        for (int i = 0; i < soundRangeResults.Count; i++)
+        {
+            if (soundRangeResults[i] is Animal animal)
+            {
+                animal.RunAway(transform.position);
+            }
+        }
     }
 
     private void OnFireStart()
@@ -392,10 +409,10 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
     private void OnDrawGizmos()
     {
-        if (bAimCorrection == false || mouseCol == null) return;
+        if (bAimCorrection == false) return;
 
         Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(mouseTransform, mouseCol.radius);
+        Gizmos.DrawWireSphere(mouseTransform, mouseColRadius);
     }
 
     public void SetbAttack(bool _boolean)

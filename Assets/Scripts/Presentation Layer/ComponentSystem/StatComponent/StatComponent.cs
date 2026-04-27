@@ -55,6 +55,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     int IStatComponent.ammoCap => ammoCap;
     float IStatComponent.reloadDuration => reloadDuration;
 
+    bool IStatComponent.bCanHunting => bCanHunting;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
