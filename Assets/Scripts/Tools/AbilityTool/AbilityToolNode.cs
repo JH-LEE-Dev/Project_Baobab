@@ -23,6 +23,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
 {
     private static readonly Color DefaultBaseColor = Color.white;
     private static readonly Color SelectedBaseColor = new Color32(0, 255, 0, 255);
+    private static readonly Color MoveSelectedBaseColor = new Color32(64, 160, 255, 255);
 
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
@@ -129,6 +130,15 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
             return;
 
         abilityBaseImage.color = _selected ? SelectedBaseColor : DefaultBaseColor;
+    }
+
+    // 이동 모드에서 선택된 노드인지 파란색 테두리로 표시한다.
+    public void SetMoveSelectedVisual(bool _selected)
+    {
+        if (abilityBaseImage == null)
+            return;
+
+        abilityBaseImage.color = _selected ? MoveSelectedBaseColor : DefaultBaseColor;
     }
 
     // 지정한 부모 노드 연결을 추가하거나 기존 연결을 갱신한다.

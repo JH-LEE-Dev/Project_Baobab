@@ -23,6 +23,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private UI_TentAbilityComponent owner;
     private bool canApplyVisual;
+    private bool completedVisual;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -32,6 +33,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public SkillType[] ParentSkillTypes => parentSkillTypes;
     public RectTransform RectTransform => transform as RectTransform;
     public bool CanApplyVisual => canApplyVisual;
+    public bool CompletedVisual => completedVisual;
 
 
     // 특성 노드의 내부 그림을 외부에서 교체한다.
@@ -123,9 +125,10 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     }
 
     // 현재 노드의 테두리/배경 표시 상태를 갱신한다.
-    public void ApplyVisualState(Color _baseColor, Color _backgroundColor, bool _canApply)
+    public void ApplyVisualState(Color _baseColor, Color _backgroundColor, bool _canApply, bool _completed)
     {
         canApplyVisual = _canApply;
+        completedVisual = _completed;
 
         if (abilityBaseImage != null)
             abilityBaseImage.color = _baseColor;

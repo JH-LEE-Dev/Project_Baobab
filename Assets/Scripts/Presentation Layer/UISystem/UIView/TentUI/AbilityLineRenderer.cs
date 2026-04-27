@@ -18,6 +18,7 @@ public class AbilityLineRenderer
     private float gridCellSize;
     private int activeLineCount;
     private Func<SkillType, Color> lineColorResolver;
+    private Func<SkillType, bool> lineAboveDefaultResolver;
 
     // 라인 렌더러가 참조해야 하는 UI 루트와 콜백을 등록한다.
     public void Initialize(
@@ -27,7 +28,8 @@ public class AbilityLineRenderer
         AbilityLine _abilityLinePrefab,
         Canvas _rootCanvas,
         float _gridCellSize,
-        Func<SkillType, Color> _lineColorResolver)
+        Func<SkillType, Color> _lineColorResolver,
+        Func<SkillType, bool> _lineAboveDefaultResolver)
     {
         abilityBackground = _abilityBackground;
         moveTarget = _moveTarget;
@@ -36,6 +38,7 @@ public class AbilityLineRenderer
         rootCanvas = _rootCanvas;
         gridCellSize = _gridCellSize;
         lineColorResolver = _lineColorResolver;
+        lineAboveDefaultResolver = _lineAboveDefaultResolver;
     }
 
     // 인스펙터에서 연결된 라인 스프라이트를 타입별 조회 맵으로 캐시한다.
@@ -217,7 +220,7 @@ public class AbilityLineRenderer
                 ? $"Line_{_parentSkillType}_{_childSkillType}_{segmentIndex}"
                 : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}_{segmentIndex}";
             line.Setup(sprite, position, GetLineColor(_childSkillType));
-            line.MoveBehindSiblings();
+            ApplyLineSiblingOrder(line, _childSkillType);
         }
     }
 
@@ -262,7 +265,7 @@ public class AbilityLineRenderer
                 ? $"Line_{_parentSkillType}_{_childSkillType}"
                 : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
             anchoredLine.SetupAnchoredSize(_sprite, anchoredCornerPosition, _isHorizontal, length, anchorAtStart, lineColor);
-            anchoredLine.MoveBehindSiblings();
+            ApplyLineSiblingOrder(anchoredLine, _childSkillType);
             return;
         }
 
@@ -281,7 +284,7 @@ public class AbilityLineRenderer
             ? $"Line_{_parentSkillType}_{_childSkillType}"
             : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
         line.SetupScaled(_sprite, center, _isHorizontal, centerLength, lineColor);
-        line.MoveBehindSiblings();
+        ApplyLineSiblingOrder(line, _childSkillType);
     }
 
     // 현재 줌 비율에 따라 4px 또는 8px 대각선 세그먼트를 고른다.
@@ -442,5 +445,17 @@ public class AbilityLineRenderer
             return Color.white;
 
         return lineColorResolver(_childSkillType);
+    }
+
+    // 완료된 라인은 흰색 기본 라인보다 위에 오도록 sibling 순서를 분리한다.
+    private void ApplyLineSiblingOrder(AbilityLine _line, SkillType _childSkillType)
+    {
+        if (_line == null)
+            return;
+
+        if (lineAboveDefaultResolver != null && lineAboveDefaultResolver(_childSkillType))
+            _line.MoveAboveSiblings();
+        else
+            _line.MoveBehindSiblings();
     }
 }
