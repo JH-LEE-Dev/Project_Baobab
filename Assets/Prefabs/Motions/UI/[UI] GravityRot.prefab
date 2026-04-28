@@ -51,5 +51,9 @@ MonoBehaviour:
   publicDuration: 0.5
   publicDelay: 0
   jumpPower: 25
-  landOffset: {x: 30, y: 10}
-  rotateAmount: 360
+  jumpRangeX: 50
+  jumpRangeY: 30
+  rotationAngle: 480
+  jumpEase: 1
+  rotationEase: 6
+  fadeEase: 14

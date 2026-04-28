@@ -8,6 +8,22 @@ namespace PresentationLayer.DOTweenAnimationSystem
 {
     public abstract class ObjectMotionBase : MonoBehaviour
     {
+        // //구조체 정의
+        protected struct TargetInitialState
+        {
+            public RectTransform rectTransform;
+            public Transform transform;
+            public CanvasGroup canvasGroup;
+            public Graphic graphic;
+
+            public Vector2 anchoredPosition;
+            public Vector3 localPosition;
+            public Vector3 localRotation;
+            public Vector3 localScale;
+            public float alpha;
+            public Color color;
+        }
+
         // //외부 의존성
         [SerializeField] protected float publicDuration = 0.5f;
         [SerializeField] protected float publicDelay = 0f;
@@ -16,12 +32,14 @@ namespace PresentationLayer.DOTweenAnimationSystem
         protected Tween currentTween;
         protected UnityAction onStartAction;
         protected UnityAction onCompleteAction;
+        protected List<TargetInitialState> stateCache = new List<TargetInitialState>(4);
 
         public virtual void Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete)
         {
             if (null == _targets || 0 == _targets.Count)
                 return;
 
+            stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
             ProcessTargets(_seq, _targets);
             ApplyTweenSettings(_seq);
@@ -90,10 +108,47 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 onStartAction.Invoke();
         }
 
-        protected void InternalOnComplete()
+        protected virtual void InternalOnComplete()
         {
             if (null != onCompleteAction)
                 onCompleteAction.Invoke();
+
+            // 메모리 누수 방지를 위해 리셋 여부와 관계없이 캐시는 비워줌
+            stateCache.Clear();
+        }
+
+        protected void ResetToInitialState()
+        {
+            if (0 == stateCache.Count)
+                return;
+
+            for (int i = 0; i < stateCache.Count; i++)
+            {
+                TargetInitialState _state = stateCache[i];
+
+                if (null != _state.rectTransform)
+                {
+                    _state.rectTransform.anchoredPosition = _state.anchoredPosition;
+                    _state.rectTransform.localEulerAngles = _state.localRotation;
+                    _state.rectTransform.localScale = _state.localScale;
+                }
+                else if (null != _state.transform)
+                {
+                    _state.transform.localPosition = _state.localPosition;
+                    _state.transform.localEulerAngles = _state.localRotation;
+                    _state.transform.localScale = _state.localScale;
+                }
+
+                if (null != _state.canvasGroup)
+                {
+                    _state.canvasGroup.alpha = _state.alpha;
+                }
+
+                if (null != _state.graphic)
+                {
+                    _state.graphic.color = _state.color;
+                }
+            }
         }
 
         protected virtual void OnDestroy()
