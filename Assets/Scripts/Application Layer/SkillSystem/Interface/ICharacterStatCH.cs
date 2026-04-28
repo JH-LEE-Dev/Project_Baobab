@@ -9,4 +9,15 @@ public interface ICharacterStatCH
     public void StaminaDecreaseAlpha(float _amount);
     public void StaminaIncreaseAlpha(float _amount);
     public void IncreaseMaxStamina(float _amount);
+    public void IncreaseAmmoCap(int _amount);
+    public void IncreaseMagCap(int _amount);
+    public void IncreaseGunPenetration(float _amount);
+    public void IncreaseRicochetCnt(int _amount);
+    public void IncreaseSpeedWhileAction(float _amount);
+    public void IncreaseShockWaveChance(float _amount);
+    public void IncreaseShockWaveDamage(float _amount);
+    public void IncreaseShockWaveDuration(float _amount);
+    public void IncreaseAxeRangeMultiplier(float _amount);
+    public void IncreaseAxeDurability(float _amount);
+    public void IncreaseAxeDurabilityDecIgnoreChance(float _amount);
 }

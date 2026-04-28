@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class AttackComponent : PComponent
 {
+    [SerializeField] private GameObject componentCenterPoint;
+
     public event Action AttackSuccessEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
     //외부 의존성
@@ -14,13 +16,14 @@ public class AttackComponent : PComponent
     [SerializeField] private float maxAttackDistance = 0.15f; // 캐릭터로부터 공격 포인트가 떨어질 수 있는 최대 거리
     [SerializeField] private float attackRadius = 0.5f; // 공격 판정 반경
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (도끼용)
+    [SerializeField] private float shockWaveSpawnOffset = 0.2f; // 충격파 생성 시 공격 지점으로부터의 오프셋
 
     [Header("Aim Correction")]
     [SerializeField] private float aimCorrectionRadius = 1.0f; // 조준 보정 탐색 반경
     [SerializeField] private LayerMask aimCorrectionLayer; // 조준 보정 대상 레이어
 
     [SerializeField] private Transform attackPointTransform;
-    private Transform characterTransform;
+    private Transform componentCenterTransform;
 
     //최적화를 위한 재사용 컬렉션
     private List<IStaticCollidable> collisionResults = new List<IStaticCollidable>(16);
@@ -37,16 +40,17 @@ public class AttackComponent : PComponent
 
     private bool bCanSwap = false;
 
+    private AxeExtraAttackCreator axeExtraAttackCreator;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
 
-        characterTransform = transform.parent;
+        if (componentCenterPoint != null) componentCenterTransform = componentCenterPoint.transform;
         mainCamera = Camera.main;
 
-        // 물리 엔진용 콜라이더 비활성화
-        var col = GetComponent<Collider2D>();
-        if (col != null) col.enabled = false;
+        axeExtraAttackCreator = GetComponent<AxeExtraAttackCreator>();
+        if (axeExtraAttackCreator != null) axeExtraAttackCreator.Initialize(ctx);
 
         BindEvents();
     }
@@ -76,7 +80,7 @@ public class AttackComponent : PComponent
     {
         lastMouseScreenPos = _mouseScreenPos;
 
-        if (bAttack || characterTransform == null)
+        if (bAttack || componentCenterTransform == null)
             return;
 
         UpdateAttackColliderPosition(_mouseScreenPos);
@@ -127,9 +131,9 @@ public class AttackComponent : PComponent
 
         mouseTransform = mouseWorldPos;
 
-        // 5. 캐릭터에서 마우스 방향으로의 벡터 계산
-        Vector3 characterPos = characterTransform.position;
-        Vector3 direction = mouseWorldPos - characterPos;
+        // 5. 중심점에서 마우스 방향으로의 벡터 계산
+        Vector3 centerPos = componentCenterTransform.position;
+        Vector3 direction = mouseWorldPos - centerPos;
 
         // 6. 일정 거리(Radius) 무조건 유지
         if (direction.sqrMagnitude > 0.0001f)
@@ -138,28 +142,30 @@ public class AttackComponent : PComponent
         }
         else
         {
-            Vector3 currentOffset = attackPointTransform.position - characterPos;
+            Vector3 currentOffset = attackPointTransform.position - centerPos;
             direction = (currentOffset.sqrMagnitude > 0.0001f)
                 ? currentOffset.normalized * maxAttackDistance
                 : Vector3.right * maxAttackDistance;
         }
 
-        // 7. 위치 업데이트
+        // 7. 위치 업데이트 (계산된 오프셋 적용)
         attackPointTransform.position = mouseWorldPos;
     }
 
     public void Attack()
     {
-        if (CollisionSystem.Instance == null) return;
+        if (CollisionSystem.Instance == null || componentCenterTransform == null) return;
 
-        // 1. 공격 포인트(attackPointTransform) 기준으로 대상 탐지
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, attackRadius, targetLayer, collisionResults);
+        float effectiveAttackRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+
+        // 1. 중심점(componentCenterTransform) 기준으로 대상 탐지
+        CollisionSystem.Instance.GetCollidablesInRadius(componentCenterTransform.position, effectiveAttackRadius, targetLayer, collisionResults);
 
         int hitCount = collisionResults.Count;
         if (hitCount <= 0) return;
 
-        Vector3 characterPos = characterTransform.position;
-        Vector3 attackDir = (attackPointTransform.position - characterPos).normalized;
+        Vector3 centerPos = componentCenterTransform.position;
+        Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
         float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
 
         IStaticCollidable nearestDamageable = null;
@@ -169,13 +175,13 @@ public class AttackComponent : PComponent
         {
             var target = collisionResults[i];
             Vector3 targetPos = target.Position + target.Offset;
-            Vector3 targetDir = (targetPos - characterPos).normalized;
+            Vector3 targetDir = (targetPos - centerPos).normalized;
 
             float dot = Vector2.Dot(attackDir, targetDir);
 
             if (dot >= cosThreshold)
             {
-                float distSqr = (targetPos - characterPos).sqrMagnitude;
+                float distSqr = (targetPos - centerPos).sqrMagnitude;
                 if (distSqr < minDistanceSqr)
                 {
                     minDistanceSqr = distSqr;
@@ -188,6 +194,32 @@ public class AttackComponent : PComponent
         {
             nearestDamageable.TakeDamage(ctx.characterStat.axeDamage);
             AttackSuccessEvent?.Invoke();
+
+            // 나무 타격 시 확률적으로 충격파 생성
+            if (nearestDamageable is TreeObj && axeExtraAttackCreator != null)
+            {
+                if (UnityEngine.Random.value < ctx.characterStat.shockWaveChance)
+                {
+                    Vector3 hitPos = nearestDamageable.Position + nearestDamageable.Offset;
+                    Vector3 direction = (hitPos - centerPos).normalized;
+                    StartCoroutine(CreateShockWaveRoutine(hitPos, direction));
+                }
+            }
+        }
+    }
+
+    private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction)
+    {
+        yield return new WaitForSeconds(ctx.characterStat.shockWaveCreateDelay);
+
+        if (axeExtraAttackCreator != null)
+        {
+            Vector3 spawnPos = _position + (_direction * shockWaveSpawnOffset);
+            ShockWave sw = axeExtraAttackCreator.CreateShockWave(spawnPos);
+            if (sw != null)
+            {
+                sw.transform.right = _direction;
+            }
         }
     }
 
@@ -198,24 +230,26 @@ public class AttackComponent : PComponent
 
     private void OnDrawGizmos()
     {
-        if (characterTransform == null) return;
+        if (componentCenterPoint == null) return;
+        
+        Vector3 centerPos = componentCenterPoint.transform.position;
+        float effectiveAttackRadius = attackRadius * (ctx != null ? ctx.characterStat.axeAttackRangeMultiplier : 1f);
 
         Gizmos.color = Color.yellow;
-        Gizmos.DrawWireSphere(characterTransform.position, maxAttackDistance);
+        Gizmos.DrawWireSphere(centerPos, maxAttackDistance);
 
         if (attackPointTransform != null)
         {
-            Vector3 characterPos = characterTransform.position;
-            Vector3 attackDir = (attackPointTransform.position - characterPos).normalized;
+            Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
 
             Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(attackPointTransform.position, attackRadius);
+            Gizmos.DrawWireSphere(centerPos, effectiveAttackRadius);
 
-            Vector3 leftBoundary = Quaternion.Euler(0, 0, 45f) * attackDir * maxAttackDistance;
-            Vector3 rightBoundary = Quaternion.Euler(0, 0, -45f) * attackDir * maxAttackDistance;
+            Vector3 leftBoundary = Quaternion.Euler(0, 0, 45f) * attackDir * effectiveAttackRadius;
+            Vector3 rightBoundary = Quaternion.Euler(0, 0, -45f) * attackDir * effectiveAttackRadius;
 
-            Gizmos.DrawLine(characterPos, characterPos + leftBoundary);
-            Gizmos.DrawLine(characterPos, characterPos + rightBoundary);
+            Gizmos.DrawLine(centerPos, centerPos + leftBoundary);
+            Gizmos.DrawLine(centerPos, centerPos + rightBoundary);
         }
 
         // 조준 보정 범위 시각화

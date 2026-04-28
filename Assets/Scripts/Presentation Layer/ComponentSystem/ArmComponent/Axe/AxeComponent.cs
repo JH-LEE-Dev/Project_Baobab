@@ -69,7 +69,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         axeAnimation.PlaySwing(OnAttackImpact);
 
         originalSpeed = ctx.characterStat.originalSpeed;
-        ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileSwing;
+        ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileAction;
 
         DeclareCanSwapEvent?.Invoke(false);
         DeclareAttackStateEvent?.Invoke(true);
@@ -103,7 +103,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     public override void DecreaseDurability()
     {
-        durability -= ctx.characterStat.axeDurabilityDecAmount;
+        if (UnityEngine.Random.value >= ctx.characterStat.axeDurabilityDecIgnoreChance)
+            durability -= ctx.characterStat.axeDurabilityDecAmount;
 
         if (durability < 0f)
             durability = 0f;

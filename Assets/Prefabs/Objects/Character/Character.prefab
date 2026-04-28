@@ -270,7 +270,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RifleComponent
   muzzlePoint: {fileID: 776704768645604309}
-  mouseCol: {fileID: 0}
   targetLayer:
     serializedVersion: 2
     m_Bits: 16384
@@ -705,17 +704,26 @@ MonoBehaviour:
   weaponChangeCoolTime: 0.5
   bCanHunting: 0
   axeDamage: 1
-  speedDecreaseWhileSwing: 0.5
+  speedDecreaseWhileAction: 0.5
   axeDurability: 30
   axeDurabilityDecAmount: 1
   axeAttackCoolTime: 1.2
+  axeAttackRangeMultiplier: 1
+  shockWaveChance: 0
+  shockWaveDamage: 1
+  shockWaveDuration: 0.2
+  shockWaveCreateDelay: 0.3
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1
   magCap: 2
   ammoCap: 6
   reloadDuration: 3
-  speedDecreaseWhileFire: 0.5
+  gunPenetrationChance: 0
+  ricochetCnt: 0
+  ricochetAngle: 90
+  ricochetDist: 1.25
+  ricochetDamage: 1
 --- !u!1 &5310717925593560820
 GameObject:
   m_ObjectHideFlags: 0
@@ -746,6 +754,37 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1389021518043769419}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &6653437826344104507
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4306400059367289542}
+  m_Layer: 0
+  m_Name: CenterPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4306400059367289542
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6653437826344104507}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.141, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4964913031563422479}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7180607061540570690
 GameObject:
@@ -959,7 +998,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4964913031563422479}
   - component: {fileID: 2240896506997154807}
-  - component: {fileID: 4232634801544025722}
+  - component: {fileID: 5688827743639564748}
   m_Layer: 0
   m_Name: AttackComponent
   m_TagString: Untagged
@@ -981,6 +1020,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5107539740188412055}
+  - {fileID: 4306400059367289542}
   m_Father: {fileID: 1389021518043769419}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2240896506997154807
@@ -995,52 +1035,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4414742eddd92747b18dbfa44ddeda7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AttackComponent
+  componentCenterPoint: {fileID: 6653437826344104507}
   maxAttackDistance: 0.75
   attackRadius: 0.5
   targetLayer:
     serializedVersion: 2
     m_Bits: 1024
+  shockWaveSpawnOffset: -0.2
   aimCorrectionRadius: 1
   aimCorrectionLayer:
     serializedVersion: 2
     m_Bits: 0
   attackPointTransform: {fileID: 5107539740188412055}
---- !u!58 &4232634801544025722
-CircleCollider2D:
+--- !u!114 &5688827743639564748
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8366246158690645224}
   m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0.18}
-  m_Radius: 0.5
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 607f91aa193aa6747b9507fc6003586c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AxeExtraAttackCreator
+  shockWavePrefab: {fileID: 1065524423041008248, guid: c2e7f28940e13bc4ea336ffed68402b6, type: 3}
 --- !u!1 &8986451118296076970
 GameObject:
   m_ObjectHideFlags: 0

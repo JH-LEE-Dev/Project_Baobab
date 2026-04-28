@@ -5,7 +5,7 @@ using UnityEngine;
 [Serializable]
 public struct CharacterStatSaveData
 {
-    public float speed;
+    public float originalSpeed;
     public float maxStamina;
     public float maxStaminaBonus;
     public float staminaIncreaseAlpha;
@@ -14,14 +14,28 @@ public struct CharacterStatSaveData
     public float axeDamage;
     public float axeDamageMultiplier;
     public float axeDurability;
-    
+    public float speedDecreaseWhileAction;
+    public float axeAttackRangeMultiplier;
+    public float axeDurabilityDecIgnoreChance;
+
     public float rifleDamage;
     public float rifleDamageMultiplier;
+    public float gunPenetrationChance;
+
+    public int ricochetCnt;
+    public float ricochetAngle;
+    public float ricochetDist;
+    public float ricochetDamage;
     
     public float weaponChangeCoolTime;
     public float switchSpeedMultiplier;
     
     public bool bCanHunting;
+
+    public float shockWaveChance;
+    public float shockWaveDamage;
+    public float shockWaveDuration;
+    public float shockWaveCreateDelay;
 }
 
 [Serializable]
@@ -61,6 +75,7 @@ public struct BeltSaveData
 {
     public List<BeltItemSaveData> activeItems;
     public bool isMoving;
+    public float beltSpeed;
 
     public void Initialize()
     {
@@ -75,6 +90,7 @@ public struct CutterSaveData
     public bool bIsCutting;
     public ItemSaveData cuttingItemData;
     public float totalSpeedMultiplier;
+    public bool bPowerSupply;
 }
 
 [Serializable]

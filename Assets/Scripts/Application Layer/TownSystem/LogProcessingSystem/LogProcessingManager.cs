@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class LogProcessingManager : MonoBehaviour
+public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 {
     public event Action LogContainerSpecChangedEvent;
     public event Action FirstTimeEarnMoneyEvent;
@@ -233,5 +233,11 @@ public class LogProcessingManager : MonoBehaviour
     private void LogContainerSpecChanged()
     {
         LogContainerSpecChangedEvent.Invoke();
+    }
+
+    public void IncreaseConveyorSpeed(float _percentage)
+    {
+        if (logInBelt != null) logInBelt.IncreaseSpeed(_percentage);
+        if (logOutBelt != null) logOutBelt.IncreaseSpeed(_percentage);
     }
 }

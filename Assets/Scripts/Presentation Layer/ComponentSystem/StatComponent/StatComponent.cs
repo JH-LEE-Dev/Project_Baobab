@@ -5,44 +5,58 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 {
     public event Action CanHuntEvent;
 
-    //Move
+    [Header("Movement")]
     public float speed = 1f;
-    public float originalSpeed =  1f;
+    public float originalSpeed = 1f;
 
-    //Stamina
+    [Header("Stamina")]
     public float maxStamina = 100f;
-    public float baseMaxStamina { get; private set; }
-    public float maxStaminaBonus { get; private set; } = 0f;
     public float staminaIncreaseAlpha = 0f;
     public float staminaDecreaseAlpha = 0f;
+    public float baseMaxStamina { get; private set; }
+    public float maxStaminaBonus { get; private set; } = 0f;
 
-    //Weapon 범용
+    [Header("General Weapon Settings")]
     public float weaponChangeCoolTime = 0.5f;
     public bool bCanHunting = false;
+    public float baseWeaponChangeCoolTime { get; private set; }
+    public float switchSpeedMultiplier { get; private set; } = 1.0f;
 
-    //Axe
-    public float axeDamage = 1f; // 기본 데미지를 10으로 수정
-    public float speedDecreaseWhileSwing = 0.5f;
-    public float baseAxeDamage { get; private set; }
-    public float axeDamageMultiplier { get; private set; } = 1.0f;
+    [Header("Axe Settings")]
+    public float axeDamage = 1f;
+    public float speedDecreaseWhileAction = 0.5f;
     public float axeDurability = 30f;
     public float axeDurabilityDecAmount = 1f;
     public float axeAttackCoolTime = 1.2f;
+    public float axeAttackRangeMultiplier = 1f;
+    public float axeDurabilityDecIgnoreChance = 0f;
+    public float baseAxeDamage { get; private set; }
+    public float axeDamageMultiplier { get; private set; } = 1.0f;
 
-    //Rifle
-    public float rifleDamage = 10f; // 기본 데미지를 10으로 수정
-    public float baseRifleDamage { get; private set; }
-    public float rifleDamageMultiplier { get; private set; } = 1.0f;
+    [Header("Axe - Shockwave")]
+    public float shockWaveChance = 0f;
+    public float shockWaveDamage = 1f;
+    public float shockWaveDuration = 0f;
+    public float shockWaveCreateDelay = 0.3f;
+
+    [Header("Rifle Settings")]
+    public float rifleDamage = 10f;
     public float rifleReadyTime = 0;
     public float shotDelay = 1f;
     public int magCap = 2;
     public int ammoCap = 6;
     public float reloadDuration = 3f;
-    public float speedDecreaseWhileFire = 0.5f;
+    public float gunPenetrationChance = 0f;
+    public float baseRifleDamage { get; private set; }
+    public float rifleDamageMultiplier { get; private set; } = 1.0f;
 
-    public float baseWeaponChangeCoolTime { get; private set; }
-    public float switchSpeedMultiplier { get; private set; } = 1.0f;
+    [Header("Rifle - Ricochet")]
+    public int ricochetCnt = 0;
+    public float ricochetAngle = 90f;
+    public float ricochetDist = 0.5f;
+    public float ricochetDamage = 1f;
 
+    // 인터페이스 구현 프로퍼티들
     float IStatComponent.speed => speed;
     float IStatComponent.weaponChangeCoolTime => weaponChangeCoolTime;
 
@@ -64,14 +78,13 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     {
         base.Initialize(_ctx);
         baseMaxStamina = maxStamina;
-        baseAxeDamage = axeDamage; // 초기값(10)을 base로 캡처
-        baseRifleDamage = rifleDamage; // 초기값(10)을 base로 캡처
+        baseAxeDamage = axeDamage;
+        baseRifleDamage = rifleDamage;
         baseWeaponChangeCoolTime = weaponChangeCoolTime;
     }
 
     public void IncreaseAxeDamage(float _amount)
     {
-        // _amount가 10.0f이면 10% 증가
         axeDamageMultiplier += (_amount / 100.0f);
         axeDamage = baseAxeDamage * axeDamageMultiplier;
 
@@ -86,10 +99,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     public void IncreaseSwitchSpeed(float _amount)
     {
-        // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 속도 증가)
         switchSpeedMultiplier += (_amount / 100.0f);
-
-        // 속도가 빨라지면 쿨타임(시간)은 감소함: Time = BaseTime / Multiplier
         weaponChangeCoolTime = baseWeaponChangeCoolTime / switchSpeedMultiplier;
 
         Debug.Log($"[StatComponent] Switch Speed Increased! New CoolTime: {weaponChangeCoolTime} (Multiplier: {switchSpeedMultiplier})");
@@ -97,7 +107,6 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     public void IncreaseGunDamage(float _amount)
     {
-        // _amount가 10.0f이면 10% 증가
         rifleDamageMultiplier += (_amount / 100.0f);
         rifleDamage = baseRifleDamage * rifleDamageMultiplier;
 
@@ -129,24 +138,97 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     public void LoadSaveData(CharacterStatSaveData _data)
     {
-        speed = _data.speed;
+        originalSpeed = _data.originalSpeed;
+        speed = originalSpeed; // 현재 속도를 원본 속도로 초기화
+
         maxStamina = _data.maxStamina;
         maxStaminaBonus = _data.maxStaminaBonus;
         staminaIncreaseAlpha = _data.staminaIncreaseAlpha;
         staminaDecreaseAlpha = _data.staminaDecreaseAlpha;
-        
+
         axeDamage = _data.axeDamage;
         axeDamageMultiplier = _data.axeDamageMultiplier;
         axeDurability = _data.axeDurability;
-        
+        speedDecreaseWhileAction = _data.speedDecreaseWhileAction;
+        axeAttackRangeMultiplier = _data.axeAttackRangeMultiplier;
+        axeDurabilityDecIgnoreChance = _data.axeDurabilityDecIgnoreChance;
+
         rifleDamage = _data.rifleDamage;
         rifleDamageMultiplier = _data.rifleDamageMultiplier;
-        
+        gunPenetrationChance = _data.gunPenetrationChance;
+
+        ricochetCnt = _data.ricochetCnt;
+        ricochetAngle = _data.ricochetAngle;
+        ricochetDist = _data.ricochetDist;
+        ricochetDamage = _data.ricochetDamage;
+
         weaponChangeCoolTime = _data.weaponChangeCoolTime;
         switchSpeedMultiplier = _data.switchSpeedMultiplier;
-        
+
         bCanHunting = _data.bCanHunting;
 
+        shockWaveChance = _data.shockWaveChance;
+        shockWaveDamage = _data.shockWaveDamage;
+        shockWaveDuration = _data.shockWaveDuration;
+        shockWaveCreateDelay = _data.shockWaveCreateDelay;
+
         Debug.Log("[StatComponent] Save Data Loaded and Applied.");
+    }
+
+    public void IncreaseAmmoCap(int _amount)
+    {
+        ammoCap += _amount;
+    }
+
+    public void IncreaseMagCap(int _amount)
+    {
+        magCap += _amount;
+    }
+
+    public void IncreaseGunPenetration(float _amount)
+    {
+        gunPenetrationChance += _amount;
+
+        Debug.Log($"[StatComponent] Gun Penetration Chance Increased: {gunPenetrationChance * 100.0f}% (+{_amount}%)");
+    }
+
+    public void IncreaseRicochetCnt(int _amount)
+    {
+        ricochetCnt += _amount;
+    }
+
+    public void IncreaseSpeedWhileAction(float _amount)
+    {
+        speedDecreaseWhileAction -= (_amount / 100.0f);
+    }
+
+    public void IncreaseShockWaveChance(float _amount)
+    {
+        shockWaveChance += _amount;
+    }
+
+    public void IncreaseShockWaveDamage(float _amount)
+    {
+        shockWaveDamage += _amount;
+    }
+
+    public void IncreaseShockWaveDuration(float _amount)
+    {
+        shockWaveDuration += _amount;
+    }
+
+    public void IncreaseAxeRangeMultiplier(float _amount)
+    {
+        axeAttackRangeMultiplier += (_amount / 100.0f);
+    }
+
+    public void IncreaseAxeDurability(float _amount)
+    {
+        axeDurability += _amount;
+    }
+
+    public void IncreaseAxeDurabilityDecIgnoreChance(float _amount)
+    {
+        axeDurabilityDecIgnoreChance += _amount;
     }
 }

@@ -234,6 +234,7 @@ MonoBehaviour:
         probability: 0.5
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+  cullingUpdateInterval: 0.05
 --- !u!1 &2442542787030155420
 GameObject:
   m_ObjectHideFlags: 0
@@ -496,6 +497,7 @@ MonoBehaviour:
   maxAmountPerBundle: 5
   minSpawnBundle: 2
   maxSpawnBundle: 3
+  cullingUpdateInterval: 0.05
 --- !u!1 &3306528137990007570
 GameObject:
   m_ObjectHideFlags: 0
@@ -909,6 +911,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   animalPrefab: {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
   cullingDistance: 25
+  cullingUpdateInterval: 0.1
   collectionCheck: 1
   defaultCapacity: 200
   maxSize: 2000
@@ -960,6 +963,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   fadeDuration: 0.3
+  shadowFadeDuration: 0.1
+  updateInterval: 0.1
 --- !u!1 &6583048210432933352
 GameObject:
   m_ObjectHideFlags: 0
@@ -1505,6 +1510,17 @@ MonoBehaviour:
   - {fileID: 11400000, guid: beccb015ffbf9064db3731d795806a6f, type: 2}
   - {fileID: 11400000, guid: d00395cc68abed141b12822b81ffcaf3, type: 2}
   - {fileID: 11400000, guid: d8596666722d64847876e57a2dcec4fb, type: 2}
+  - {fileID: 11400000, guid: 815dc65a5b373954a884efdd909beb66, type: 2}
+  - {fileID: 11400000, guid: 175a02caa0ed3754fad675e3048de612, type: 2}
+  - {fileID: 11400000, guid: 3d5ba633eb0fddd48b206a6bed187cfe, type: 2}
+  - {fileID: 11400000, guid: c2e4e9802d506954e9a6713b2281b03b, type: 2}
+  - {fileID: 11400000, guid: 29cbfd82916b0e14898b1b6bc184d48a, type: 2}
+  - {fileID: 11400000, guid: 15966adb4b950a44e81e51c8810a9d27, type: 2}
+  - {fileID: 11400000, guid: ddb565a0796f353489cda4c844b663a2, type: 2}
+  - {fileID: 11400000, guid: 73a94e5077c6c404392d69ad6f2d192a, type: 2}
+  - {fileID: 11400000, guid: 8ebee735638b41846b68d3b18e86936e, type: 2}
+  - {fileID: 11400000, guid: b0b7453d44eda1b478bb7fe39b65b60c, type: 2}
+  - {fileID: 11400000, guid: 611da7cff0ea34241b281f106848aacb, type: 2}
 --- !u!1 &9097579308778333852
 GameObject:
   m_ObjectHideFlags: 0

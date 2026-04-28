@@ -38,6 +38,17 @@ public class LogInBelt : MonoBehaviour
         if (tilemap != null) tilemap.animationFrameRate = 0f;
     }
 
+    public void IncreaseSpeed(float _percentage)
+    {
+        // 0.1(10%) 증가 시 기존 속도에 1.1을 곱함
+        beltSpeed *= (1f + _percentage);
+        
+        if (isMoving && tilemap != null)
+        {
+            tilemap.animationFrameRate = beltSpeed * 3.33f;
+        }
+    }
+
     public void LogIn(LogItem _item)
     {
         if (_item == null || checkPoints.Count == 0) return;
@@ -118,7 +129,7 @@ public class LogInBelt : MonoBehaviour
             return;
 
         isMoving = true;
-        if (tilemap != null) tilemap.animationFrameRate = 5f;
+        if (tilemap != null) tilemap.animationFrameRate = beltSpeed * 3.33f;
 
         tilemap.RefreshAllTiles();
     }
@@ -126,6 +137,7 @@ public class LogInBelt : MonoBehaviour
     public void PopulateSaveData(ref BeltSaveData _saveData)
     {
         _saveData.isMoving = isMoving;
+        _saveData.beltSpeed = beltSpeed;
         _saveData.activeItems.Clear();
 
         for (int i = 0; i < activeItems.Count; i++)
@@ -154,6 +166,7 @@ public class LogInBelt : MonoBehaviour
     {
         activeItems.Clear();
         isMoving = _data.isMoving;
+        beltSpeed = _data.beltSpeed;
 
         if (_data.activeItems != null)
         {
