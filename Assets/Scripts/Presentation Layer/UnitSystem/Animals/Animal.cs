@@ -23,7 +23,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
-    private int shadowOverlapCount = 0;
+    
+    private bool bIsUnderShadow = false;
+    private float shadowLerp = 0f;
+    private float currentFadeDuration = 0.3f;
     private Color normalColor = Color.white;
     private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
 
@@ -249,25 +252,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
     private void UpdateAnimalColor()
     {
-        Color targetColor = (shadowOverlapCount > 0) ? shadowTint : normalColor;
-
-        sr.color = targetColor;
-    }
-
-    private void HandleShadowEnter(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow"))
-        {
-            shadowOverlapCount++;
-        }
-    }
-
-    private void HandleShadowExit(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow"))
-        {
-            shadowOverlapCount = Mathf.Max(0, shadowOverlapCount - 1);
-        }
+        float target = bIsUnderShadow ? 1f : 0f;
+        float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
+        shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
+        sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
     }
 
     public void TakeDamage(float _damage)
@@ -317,5 +305,11 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         var state = stateMachine.GetState<AS_KnockBackState>();
         state.SetKnockBack(_knockBackDir, _knockBackForce);
         stateMachine.ChangeState<AS_KnockBackState>();
+    }
+
+    public void SetInShadow(bool _isInShadow, float _duration)
+    {
+        bIsUnderShadow = _isInShadow;
+        currentFadeDuration = _duration;
     }
 }

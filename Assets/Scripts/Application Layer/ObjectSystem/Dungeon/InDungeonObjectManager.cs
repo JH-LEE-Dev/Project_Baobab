@@ -37,6 +37,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
+    public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
     private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(2500);
 
     private IObjectPool<TreeObj> treePool;

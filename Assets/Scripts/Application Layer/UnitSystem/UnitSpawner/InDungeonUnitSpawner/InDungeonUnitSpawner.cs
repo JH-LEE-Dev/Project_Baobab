@@ -22,6 +22,11 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private Coroutine growthCoroutine;
 
     private List<Animal> allSpawnedAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
+    public IReadOnlyList<Animal> Animals => allSpawnedAnimals;
+    
+    private List<Animal> activeAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
+    public IReadOnlyList<Animal> ActiveAnimals => activeAnimals;
+
     private List<int> availableIndices = new List<int>(1024); // GC 방지용 캐싱 인덱스 리스트
 
     [Header("Optimization")]
@@ -185,6 +190,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         cullingGroup.SetBoundingSpheres(spheres);
         cullingGroup.SetBoundingSphereCount(count);
 
+        activeAnimals.Clear();
         for (int i = 0; i < count; i++)
         {
             bool isVisible = cullingGroup.IsVisible(i);
@@ -198,6 +204,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
             else
             {    
                 allSpawnedAnimals[i].Show();
+                activeAnimals.Add(allSpawnedAnimals[i]);
             }
         }
     }
@@ -223,10 +230,15 @@ public class InDungeonUnitSpawner : MonoBehaviour
             if (shouldBeActive == false)
             { 
                 animal.Hide();
+                activeAnimals.Remove(animal);
             }
             else
             { 
                 animal.Show();
+                if (!activeAnimals.Contains(animal))
+                {
+                    activeAnimals.Add(animal);
+                }
             }
         }
     }
@@ -258,12 +270,13 @@ public class InDungeonUnitSpawner : MonoBehaviour
         animal.AnimalIsDeadEvent -= AnimalIsDead;
         animal.AnimalIsDeadEvent += AnimalIsDead;
 
-        //Debug.Log($"<color=cyan>[InDungeonUnitSpawner]</color> Animal Spawned. Current Total Animals: {allSpawnedAnimals.Count}");
+        // 생성 시점에는 CullingGroup에 의해 Show/Hide가 결정되므로 여기서 추가하지 않음
     }
 
     public void ReleaseAnimal(Animal _animal)
     {
         _animal.AnimalIsDeadEvent -= AnimalIsDead;
+        activeAnimals.Remove(_animal);
 
         if (_animal.gameObject.activeSelf)
         {
@@ -302,6 +315,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         }
 
         allSpawnedAnimals.Clear();
+        activeAnimals.Clear();
         isCullingDirty = true;
 
         // 작업 완료 후 부모 재활성화

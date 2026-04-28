@@ -279,11 +279,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d0d35d9cc318cd6479802620108b98b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Tree
-  shadowObject: {fileID: 2746110928990139193}
+  topShadowObject: {fileID: 2746110928990139193}
   bottomShadowObject: {fileID: 3831676453712277121}
   treeVisualComponent: {fileID: 7941305713547832146}
   collisionRadius: 0.29
   collisionOffset: {x: 0, y: 0}
+  alphaDownRadius: 0.5
+  adColliderOffset: {x: 0, y: 0.7}
+  topShadowRadius: 0.4
+  topShadowOffset: {x: 0, y: 0.7}
 --- !u!114 &7941305713547832146
 MonoBehaviour:
   m_ObjectHideFlags: 0
