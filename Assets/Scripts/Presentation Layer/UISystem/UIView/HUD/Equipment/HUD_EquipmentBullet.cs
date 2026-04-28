@@ -1,5 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System;
+using UnityEngine.Events;
 
 namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
@@ -79,6 +81,54 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
 
             lastKnownMagCount = _currentMag;
+        }
+
+        public void PlayReloadMotion(float _totalDuration, UnityAction _callEvent)
+        {
+            if (null == bulletIcons || 0 == bulletIcons.Count)
+                return;
+
+            // 재장전 연출을 위한 총알 간 간격 계산
+            // maxCapacity 만큼의 총알만 연출함
+            int _targetCount = 0;
+            for (int i = 0; i < bulletIcons.Count; i++)
+            {
+                if (null != bulletIcons[i] && true == bulletIcons[i].gameObject.activeSelf)
+                    _targetCount++;
+            }
+
+            if (0 == _targetCount)
+                return;
+
+            float _bulletDuration = _totalDuration * 0.5f;
+            float _interval = (_totalDuration - _bulletDuration) / _targetCount;
+
+            int _activeIndex = 0;
+            for (int i = 0; i < bulletIcons.Count; i++)
+            {
+                HUD_BulletIcon _icon = bulletIcons[i];
+                if (null == _icon || false == _icon.gameObject.activeSelf)
+                    continue;
+
+                _icon.PlayReloadMotion(_bulletDuration, _activeIndex * _interval, _callEvent);
+                _activeIndex++;
+            }
+        }
+
+        public void PlayResetMotion(float _duration)
+        {
+            if (null == bulletIcons || 0 == bulletIcons.Count)
+                return;
+
+            for (int i = 0; i < bulletIcons.Count; i++)
+            {
+                HUD_BulletIcon _icon = bulletIcons[i];
+                if (null == _icon || false == _icon.gameObject.activeSelf)
+                    continue;
+
+                // 재장전 완료는 딜레이 없이 한 번에 복구
+                _icon.PlayReloadMotion(_duration, 0f); // "Reload" 태그를 재사용하거나 별도 구현 가능
+            }
         }
 
         /// <summary>

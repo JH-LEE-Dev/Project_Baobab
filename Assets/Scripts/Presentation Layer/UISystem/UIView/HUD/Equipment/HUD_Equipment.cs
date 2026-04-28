@@ -1,3 +1,4 @@
+using PresentationLayer.DOTweenAnimationSystem;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -13,6 +14,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private HUD_EquipmentRifle rifleItem;
         [SerializeField] private RectTransform icons;
         [SerializeField] private CanvasGroup iconGroup;
+
+        [SerializeField] private ObjectMotionPlayer omp;
 
         [Header("Axe Position Settings")]
         [SerializeField] private Vector2 axePosWithRifle;
@@ -56,8 +59,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 rifleComponent.RifleFiredEvent -= UpdateAmmo;
                 rifleComponent.RifleFiredEvent += UpdateAmmo;
 
+                rifleComponent.ReloadStartEvent -= PlayReloadMotion;
+                rifleComponent.ReloadStartEvent += PlayReloadMotion;
+
                 rifleComponent.ReloadFinishedEvent -= UpdateAmmo;
                 rifleComponent.ReloadFinishedEvent += UpdateAmmo;
+
+                rifleComponent.ReloadFinishedEvent -= PlayResetMotion;
+                rifleComponent.ReloadFinishedEvent += PlayResetMotion;
             }
 
             if (null != axeComponent)
@@ -101,6 +110,26 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null != axeItem)
                 axeItem.UpdateGauge(axeComponent.durability / statComponent.axeDurability);
+        }
+
+        private void PlayReloadMotion()
+        {
+            if (null == character || null == character.statComponent)
+                return;
+
+            if (null != rifleItem)
+                rifleItem.PlayReloadMotion(character.statComponent.reloadDuration, PlayAmmoBoxPop);
+        }
+
+        private void PlayResetMotion()
+        {
+            if (null != rifleItem)
+                rifleItem.PlayResetMotion(0.3f); // 쓕 돌아오는 속도 (0.3초)
+        }
+
+        private void PlayAmmoBoxPop()
+        {
+            omp?.Play("Pop");
         }
 
         public void UpdateRifleVisibility()
@@ -147,6 +176,11 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null != rifleItem)
                 rifleItem.SetActivate(WeaponMode.Rifle == _mode);
+
+            if (WeaponMode.Axe == _mode)
+                omp?.Play("AxePop");
+            else if (WeaponMode.Rifle == _mode)
+                omp?.Play("RiflePop");
         }
 
         public void OnDestroy()
@@ -161,7 +195,9 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (null != rifleComponent)
             {
                 rifleComponent.RifleFiredEvent -= UpdateAmmo;
+                rifleComponent.ReloadStartEvent -= PlayReloadMotion;
                 rifleComponent.ReloadFinishedEvent -= UpdateAmmo;
+                rifleComponent.ReloadFinishedEvent -= PlayResetMotion;
             }
 
             if (null != axeComponent)

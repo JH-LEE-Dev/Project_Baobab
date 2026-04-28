@@ -48,6 +48,7 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-1-cd342e10fd24dc842b88530280f46250-2422840004263030618-0
         - globalObjectIdString: GlobalObjectId_V1-1-cd342e10fd24dc842b88530280f46250-9122224592044429979-0
         - globalObjectIdString: GlobalObjectId_V1-1-cd342e10fd24dc842b88530280f46250-0-0
+        - globalObjectIdString: GlobalObjectId_V1-1-cd342e10fd24dc842b88530280f46250-1977095776164161166-0
         values:
         - colorIndex: 0
           iconNameOrGuid: Folder Icon
@@ -89,6 +90,10 @@ MonoBehaviour:
           iconNameOrGuid: Favorite
           isIconRecursive: 0
           isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
     - goDatas_byGlobalId:
         keys:
         - globalObjectIdString: GlobalObjectId_V1-1-c12e0ecbfef8767468e41930b0814944-1467628027291062440-0
@@ -105,7 +110,12 @@ MonoBehaviour:
     - goDatas_byGlobalId:
         keys:
         - globalObjectIdString: GlobalObjectId_V1-1-d332fe446026a1b419722ca870929c1d-2190228305980497591-0
+        - globalObjectIdString: GlobalObjectId_V1-1-d332fe446026a1b419722ca870929c1d-7041159014515652473-0
         values:
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
         - colorIndex: 0
           iconNameOrGuid: Folder Icon
           isIconRecursive: 0
