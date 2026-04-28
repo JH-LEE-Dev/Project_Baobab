@@ -212,15 +212,8 @@ MonoBehaviour:
   abilityLinePrefab: {fileID: 5716816955533093396, guid: 837b53e06369c2849b172916f360208c, type: 3}
   abilityNodeJson: {fileID: 4900000, guid: f2dada2f7a2657d44ac7174b4ee787ca, type: 3}
   gridCellSize: 32
-  pictureBindings:
-  - skillType: 8
-    sprite: {fileID: 21300000, guid: 14a8bf6de61f038419d328dfaeef34be, type: 3}
-  - skillType: 2
-    sprite: {fileID: 21300000, guid: 6fd567d47276fa7418deb937000966d2, type: 3}
-  - skillType: 1
-    sprite: {fileID: 21300000, guid: da1e8b091de6eae49ba4b8ef63f3dc25, type: 3}
-  - skillType: 3
-    sprite: {fileID: 21300000, guid: 3517f882da9f7fe46bf3ab653ecd8a25, type: 3}
+  prewarmNodePoolCount: 64
+  pictureBindings: []
   lineSpriteBindings:
   - lineType: 0
     sprite: {fileID: 21300000, guid: 31fd475482a51a04b8c4e3f34596cff6, type: 3}

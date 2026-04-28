@@ -17,7 +17,7 @@ MonoBehaviour:
     maxLevel: 1
     cost:
       moneyCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
       carrotCurve:
@@ -31,16 +31,34 @@ MonoBehaviour:
         baseValue: 0
         manualValues: []
     prerequisiteSkills: 
+  - skillType: 16
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 10
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 5
+      amountCurve:
+        type: 3
+        baseValue: 10
+        manualValues: []
+    prerequisiteSkills: 01000000
   - skillType: 28
     maxLevel: 1
     cost:
       moneyCurve:
         type: 3
-        baseValue: 0
+        baseValue: 20
         manualValues: []
       carrotCurve:
-        type: 3
-        baseValue: 100
+        type: 0
+        baseValue: 0
         manualValues: []
     skillTypes:
     - skillCommandType: 6
@@ -49,8 +67,26 @@ MonoBehaviour:
         baseValue: 0
         manualValues: []
     prerequisiteSkills: 01000000
-  - skillType: 3
+  - skillType: 29
     maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 8
+      amountCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    prerequisiteSkills: 1c000000
+  - skillType: 25
+    maxLevel: 1
     cost:
       moneyCurve:
         type: 3
@@ -61,12 +97,403 @@ MonoBehaviour:
         baseValue: 0
         manualValues: []
     skillTypes:
-    - skillCommandType: 1
+    - skillCommandType: 7
       amountCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    prerequisiteSkills: 100000001d000000
+  - skillType: 12
+    maxLevel: 10
+    cost:
+      moneyCurve:
         type: 0
-        baseValue: 1
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 5
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 9
+      amountCurve:
+        type: 3
+        baseValue: 20
         manualValues: []
     prerequisiteSkills: 01000000
+  - skillType: 14
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 300
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 9
+      amountCurve:
+        type: 3
+        baseValue: 200
+        manualValues: []
+    prerequisiteSkills: 0c000000
+  - skillType: 13
+    maxLevel: 10
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 1
+        baseValue: 5
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 10
+      amountCurve:
+        type: 3
+        baseValue: 25
+        manualValues: []
+    prerequisiteSkills: 0c000000
+  - skillType: 20
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 10000000
+  - skillType: 18
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 10000000
+  - skillType: 19
+    maxLevel: 3
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 12000000
+  - skillType: 17
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 5
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    prerequisiteSkills: 10000000
+  - skillType: 21
+    maxLevel: 4
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 200
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 10000000
+  - skillType: 22
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 300
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 15000000
+  - skillType: 23
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 300
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 15000000
+  - skillType: 24
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 11000000
+  - skillType: 26
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 19000000
+  - skillType: 27
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 2000
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 1a000000
+  - skillType: 30
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 8
+      amountCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+    prerequisiteSkills: 1d000000
+  - skillType: 34
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 1d000000
+  - skillType: 23
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 22000000
+  - skillType: 35
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 1000
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 22000000
+  - skillType: 33
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 1d000000
+  - skillType: 31
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 50
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 1d000000
+  - skillType: 32
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 1f000000
+  - skillType: 37
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 1e000000
+  - skillType: 38
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 1e000000
+  - skillType: 15
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 1500
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 0d000000
+  - skillType: 39
+    maxLevel: 10
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 30
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 11
+      amountCurve:
+        type: 3
+        baseValue: 40
+        manualValues: []
+    prerequisiteSkills: 01000000
+  - skillType: 41
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 300
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 11
+      amountCurve:
+        type: 0
+        baseValue: 200
+        manualValues: []
+    prerequisiteSkills: 27000000
+  - skillType: 40
+    maxLevel: 10
+    cost:
+      moneyCurve:
+        type: 1
+        baseValue: 5
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 12
+      amountCurve:
+        type: 3
+        baseValue: 20
+        manualValues: []
+    prerequisiteSkills: 27000000
+  - skillType: 42
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 1000
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 28000000
   - skillType: 2
     maxLevel: 1
     cost:
@@ -85,21 +512,222 @@ MonoBehaviour:
         baseValue: 2
         manualValues: []
     prerequisiteSkills: 01000000
-  - skillType: 16
-    maxLevel: 10
+  - skillType: 4
+    maxLevel: 3
     cost:
       moneyCurve:
-        type: 1
-        baseValue: 30
+        type: 3
+        baseValue: 80
         manualValues: []
       carrotCurve:
         type: 0
         baseValue: 0
         manualValues: []
     skillTypes:
-    - skillCommandType: 5
+    - skillCommandType: 2
       amountCurve:
         type: 3
-        baseValue: 20
+        baseValue: 1
         manualValues: []
-    prerequisiteSkills: 03000000
+    prerequisiteSkills: 02000000
+  - skillType: 3
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 3000
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 1
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    prerequisiteSkills: 02000000
+  - skillType: 6
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 500
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 3
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    prerequisiteSkills: 02000000
+  - skillType: 5
+    maxLevel: 3
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 1500
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 2
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    prerequisiteSkills: 04000000
+  - skillType: 7
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 2000
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 3
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    prerequisiteSkills: 06000000
+  - skillType: 8
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 2
+        baseValue: 10
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 06000000
+  - skillType: 10
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 2
+        baseValue: 10
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 06000000
+  - skillType: 11
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 2
+        baseValue: 100
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 0a000000
+  - skillType: 9
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+      carrotCurve:
+        type: 3
+        baseValue: 1000
+        manualValues: []
+    skillTypes: []
+    prerequisiteSkills: 0a000000
+  - skillType: 43
+    maxLevel: 5
+    cost:
+      moneyCurve:
+        type: 0
+        baseValue: 0
+        manualValues:
+        - 5
+        - 100
+        - 200
+        - 300
+        - 400
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 13
+      amountCurve:
+        type: 3
+        baseValue: 2
+        manualValues: []
+    prerequisiteSkills: 01000000
+  - skillType: 44
+    maxLevel: 10
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 10
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 15
+      amountCurve:
+        type: 3
+        baseValue: 10
+        manualValues: []
+    prerequisiteSkills: 2b000000
+  - skillType: 45
+    maxLevel: 10
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 150
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 15
+      amountCurve:
+        type: 3
+        baseValue: 100
+        manualValues: []
+    prerequisiteSkills: 2c000000
+  - skillType: 46
+    maxLevel: 10
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 2000
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 15
+      amountCurve:
+        type: 3
+        baseValue: 150
+        manualValues: []
+    prerequisiteSkills: 2d000000

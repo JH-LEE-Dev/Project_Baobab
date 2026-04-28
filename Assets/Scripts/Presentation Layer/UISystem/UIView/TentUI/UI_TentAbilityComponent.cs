@@ -12,8 +12,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float ZoomFollowSpeed = 18f;
     private const float ToolTipSpacing = 32f;
     private const float StraightLineOverlap = 1f;
-    private static readonly Color CanApplyColor = new Color32(0, 255, 0, 255);
-    private static readonly Color CannotApplyColor = new Color32(255, 0, 0, 255);
+    private static readonly Color CanApplyNodeColor = new Color32(64, 220, 255, 255);
+    private static readonly Color CompletedColor = new Color32(0, 255, 0, 255);
+    private static readonly Color CannotApplyNodeColor = new Color32(255, 0, 0, 255);
+    private static readonly Color DefaultLineColor = new Color32(255, 255, 255, 255);
     private static readonly Color NodeBackgroundColor = new Color32(0, 0, 0, 255);
 
     private ISkillSystemProvider skillSystemProvider;
@@ -64,7 +66,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         skillSystemProvider = _skillSystemProvider;
         rootCanvas = GetComponentInParent<Canvas>();
-        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor);
+        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor, ShouldDrawLineAboveDefault);
         CachePictureBindings();
         CacheLineSpriteBindings();
         LoadNodeDefinitions();
@@ -524,9 +526,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private Color GetLineColor(SkillType _childSkillType)
     {
         if (spawnedNodeMap.TryGetValue(_childSkillType, out AbilityNode childNode) == false)
-            return CannotApplyColor;
+            return DefaultLineColor;
 
-        return childNode.CanApplyVisual ? CanApplyColor : CannotApplyColor;
+        return childNode.CompletedVisual ? CompletedColor : DefaultLineColor;
+    }
+
+    // MaxLevel까지 찍힌 노드로 들어오는 라인만 일반 라인보다 위에 그린다.
+    private bool ShouldDrawLineAboveDefault(SkillType _childSkillType)
+    {
+        return spawnedNodeMap.TryGetValue(_childSkillType, out AbilityNode childNode) &&
+               childNode.CompletedVisual;
     }
 
     // 현재 줌 비율에 따라 사용할 라인 세그먼트 크기를 선택한다.
@@ -666,18 +675,25 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 continue;
 
             bool canApply = false;
+            bool isCompleted = false;
             if (skillSystemProvider != null)
             {
                 AbilityLevelUpRejectReason reason = skillSystemProvider.CanApplySkill(node.SkillType);
-                canApply =
-                    reason == AbilityLevelUpRejectReason.Pass ||
-                    reason == AbilityLevelUpRejectReason.MaxLevel;
+                canApply = reason == AbilityLevelUpRejectReason.Pass;
+                isCompleted = reason == AbilityLevelUpRejectReason.MaxLevel;
             }
 
+            Color baseColor = CannotApplyNodeColor;
+            if (isCompleted)
+                baseColor = CompletedColor;
+            else if (canApply)
+                baseColor = CanApplyNodeColor;
+
             node.ApplyVisualState(
-                canApply ? CanApplyColor : CannotApplyColor,
+                baseColor,
                 NodeBackgroundColor,
-                canApply);
+                canApply,
+                isCompleted);
         }
 
         RefreshLines();

@@ -153,4 +153,11 @@ public class AbilityLine : MonoBehaviour
         if (rootRectTransform != null)
             rootRectTransform.SetAsFirstSibling();
     }
+
+    // 완료 상태 라인을 기본 라인보다 위에 그리기 위해 sibling 마지막으로 보낸다.
+    public void MoveAboveSiblings()
+    {
+        if (rootRectTransform != null)
+            rootRectTransform.SetAsLastSibling();
+    }
 }

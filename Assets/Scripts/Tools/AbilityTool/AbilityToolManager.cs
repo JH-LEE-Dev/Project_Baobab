@@ -41,6 +41,7 @@ public class AbilityToolManager : MonoBehaviour
     private float currentZoom = DefaultZoom;
     private float targetZoom = DefaultZoom;
     private AbilityToolNode selectedChildNode;
+    private AbilityToolNode selectedMoveNode;
     private AbilityToolNode currentToolTipNode;
     private AbilityToolTip toolTipInstance;
 
@@ -148,6 +149,7 @@ public class AbilityToolManager : MonoBehaviour
         isLinkSelectionMode = false;
         hasPendingPivot = false;
         selectedChildNode = null;
+        selectedMoveNode = null;
         currentZoom = DefaultZoom;
         targetZoom = DefaultZoom;
         moveTarget.anchoredPosition = Vector2.zero;
@@ -173,6 +175,7 @@ public class AbilityToolManager : MonoBehaviour
             node.ApplyAnchoredPosition(gridCellSize);
             node.BindOwner(this);
             node.SetSelectedVisual(false);
+            node.SetMoveSelectedVisual(false);
             node.SetPicture(ResolvePicture(node.SkillType));
             nodeMap[node.GridPosition] = node;
             nodeList.Add(node);
@@ -432,10 +435,18 @@ public class AbilityToolManager : MonoBehaviour
             return;
 
         bool linkModeHeld = keyboard.bKey.isPressed;
+        bool moveModeHeld = keyboard.tKey.isPressed;
         AbilityToolNode hoveredNode = GetNodeAtGrid(currentHoverGrid);
+
+        if (moveModeHeld)
+        {
+            HandleMoveModeClick(hoveredNode, currentHoverGrid);
+            return;
+        }
 
         if (linkModeHeld)
         {
+            ClearMoveSelectionMode();
             HandleLinkModeClick(hoveredNode, currentHoverGrid);
             return;
         }
@@ -444,9 +455,12 @@ public class AbilityToolManager : MonoBehaviour
         {
             SelectNodeInEditor(hoveredNode);
             ClearLinkSelectionMode();
+            ClearMoveSelectionMode();
             return;
         }
 
+        ClearLinkSelectionMode();
+        ClearMoveSelectionMode();
         CreateNodeAtGrid(currentHoverGrid);
     }
 
@@ -461,6 +475,7 @@ public class AbilityToolManager : MonoBehaviour
             selectedChildNode = _hoveredNode;
             isLinkSelectionMode = true;
             hasPendingPivot = false;
+            ClearMoveSelectionMode();
             selectedChildNode.SetSelectedVisual(true);
             SelectNodeInEditor(selectedChildNode);
             return;
@@ -484,6 +499,30 @@ public class AbilityToolManager : MonoBehaviour
 
         if (linked)
             RebuildLines();
+    }
+
+    // T+좌클릭으로 노드를 선택한 뒤, 빈 그리드를 다시 T+좌클릭하면 위치만 이동한다.
+    private void HandleMoveModeClick(AbilityToolNode _hoveredNode, Vector2Int _hoveredGrid)
+    {
+        if (selectedMoveNode == null)
+        {
+            if (_hoveredNode == null)
+                return;
+
+            ClearLinkSelectionMode();
+            selectedMoveNode = _hoveredNode;
+            selectedMoveNode.SetMoveSelectedVisual(true);
+            SelectNodeInEditor(selectedMoveNode);
+            return;
+        }
+
+        if (_hoveredNode != null)
+        {
+            ClearMoveSelectionMode();
+            return;
+        }
+
+        MoveSelectedNodeToGrid(_hoveredGrid);
     }
 
 #endregion
@@ -653,6 +692,9 @@ public class AbilityToolManager : MonoBehaviour
         if (selectedChildNode == node)
             ClearLinkSelectionMode();
 
+        if (selectedMoveNode == node)
+            ClearMoveSelectionMode();
+
         if (currentToolTipNode == node)
             HideToolTip(node);
 
@@ -665,6 +707,33 @@ public class AbilityToolManager : MonoBehaviour
     {
         nodeMap.TryGetValue(_gridPosition, out AbilityToolNode node);
         return node;
+    }
+
+    // 선택된 노드의 데이터는 유지하고 그리드 위치만 바꾼 뒤, 관련 라인을 다시 계산한다.
+    private void MoveSelectedNodeToGrid(Vector2Int _gridPosition)
+    {
+        if (selectedMoveNode == null)
+            return;
+
+        if (nodeMap.ContainsKey(_gridPosition))
+        {
+            ClearMoveSelectionMode();
+            return;
+        }
+
+        Vector2Int previousGridPosition = selectedMoveNode.GridPosition;
+        nodeMap.Remove(previousGridPosition);
+
+        selectedMoveNode.SetGridPosition(_gridPosition, gridCellSize);
+        nodeMap[_gridPosition] = selectedMoveNode;
+
+        AbilityToolNode movedNode = selectedMoveNode;
+        ClearMoveSelectionMode();
+        SelectNodeInEditor(movedNode);
+        RebuildLines();
+
+        if (currentToolTipNode == movedNode)
+            ShowToolTip(movedNode);
     }
 
     // 선택된 자식 노드와 나중에 찍은 부모 노드를 실제 연결한다.
@@ -716,6 +785,15 @@ public class AbilityToolManager : MonoBehaviour
         selectedChildNode = null;
         isLinkSelectionMode = false;
         hasPendingPivot = false;
+    }
+
+    // 이동 선택 모드를 해제하고 파란색 테두리를 원래 색으로 되돌린다.
+    private void ClearMoveSelectionMode()
+    {
+        if (selectedMoveNode != null)
+            selectedMoveNode.SetMoveSelectedVisual(false);
+
+        selectedMoveNode = null;
     }
 
     // 에디터에서 해당 노드를 선택해 인스펙터 수정이 바로 가능하게 한다.
@@ -1076,6 +1154,7 @@ public class AbilityToolManager : MonoBehaviour
     private void RemoveAllNodes()
     {
         ClearLinkSelectionMode();
+        ClearMoveSelectionMode();
 
         for (int i = nodeList.Count - 1; i >= 0; i--)
         {
