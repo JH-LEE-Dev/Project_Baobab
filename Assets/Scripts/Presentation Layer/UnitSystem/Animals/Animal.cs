@@ -3,8 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
+public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 {
+    public event Action<Animal> AnimalHitEvent;
     public event Action<Animal> AnimalIsDeadEvent;
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -72,6 +73,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
     public int EntityIndex { get; set; } = -1;
+
+    public IHealthComponent health => healthComponent;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -270,7 +273,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public void TakeDamage(float _damage)
     {
         healthComponent.DecreaseHealth(_damage);
-
+        AnimalHitEvent?.Invoke(this);
+        
         if (healthComponent.GetCurrentHealth() == 0f)
         {
             stateMachine.ChangeState<AS_DeadState>();
@@ -320,5 +324,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     {
         bIsUnderShadow = _isInShadow;
         currentFadeDuration = _duration;
+    }
+
+    public Transform GetTransform()
+    {
+        throw new NotImplementedException();
     }
 }

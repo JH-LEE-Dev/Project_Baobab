@@ -76,6 +76,11 @@ public class UIView_Unit : UIView
         trees = _trees;
     }
 
+    public void AnimalGetHit(IAnimalObj _animalObj)
+    {
+        
+    }
+
     public void SetCharacter(ICharacter _character)
     {
         character = _character;

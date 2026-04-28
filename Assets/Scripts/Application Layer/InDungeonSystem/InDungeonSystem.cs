@@ -55,6 +55,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
+
+        inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
+        inDungeonUnitSpawner.AnimalHitEvent += AnimalHit;
     }
 
     private void ReleaseEvents()
@@ -64,6 +67,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
+        inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
     }
 
     private void SubscribeSignals()
@@ -125,5 +129,10 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonObjectManager.ClearObjManager();
         inDungeonUnitSpawner.ReleaseAllAnimals();
+    }
+
+    private void AnimalHit(Animal _animal)
+    {
+        signalHub.Publish(new AnimalHitSignal(_animal));
     }
 }
