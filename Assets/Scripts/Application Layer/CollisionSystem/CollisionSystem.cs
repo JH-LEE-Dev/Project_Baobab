@@ -319,6 +319,32 @@ public class CollisionSystem : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 지정된 위치를 포함한 주변 9개 셀의 모든 충돌체를 수집합니다. (거리 체크 없이 레이어만 필터링)
+    /// </summary>
+    public void GetCollidablesInSurroundingCells(Vector2 _position, int _layerMask, List<IStaticCollidable> _results)
+    {
+        _results.Clear();
+
+        int _centerX = Mathf.FloorToInt((_position.x - gridOrigin.x) * invCellSize);
+        int _centerY = Mathf.FloorToInt((_position.y - gridOrigin.y) * invCellSize);
+
+        int _minX = Mathf.Clamp(_centerX - 1, 0, gridCount.x - 1);
+        int _maxX = Mathf.Clamp(_centerX + 1, 0, gridCount.x - 1);
+        int _minY = Mathf.Clamp(_centerY - 1, 0, gridCount.y - 1);
+        int _maxY = Mathf.Clamp(_centerY + 1, 0, gridCount.y - 1);
+
+        for (int x = _minX; x <= _maxX; x++)
+        {
+            for (int y = _minY; y <= _maxY; y++)
+            {
+                int _index = x + y * gridCount.x;
+                InternalCollectByLayer(staticHeads[_index], _layerMask, _results);
+                InternalCollectByLayer(dynamicHeads[_index], _layerMask, _results);
+            }
+        }
+    }
+
     private void InternalCollect(int _headIdx, Vector2 _center, float _radius, int _mask, List<IStaticCollidable> _results)
     {
         int _curr = _headIdx;
@@ -334,6 +360,20 @@ public class CollisionSystem : MonoBehaviour
                 {
                     _results.Add(_ent.owner);
                 }
+            }
+            _curr = nextPointers[_curr];
+        }
+    }
+
+    private void InternalCollectByLayer(int _headIdx, int _mask, List<IStaticCollidable> _results)
+    {
+        int _curr = _headIdx;
+        while (_curr != -1)
+        {
+            ref var _ent = ref entities[_curr];
+            if ((_ent.layerBit & _mask) != 0)
+            {
+                _results.Add(_ent.owner);
             }
             _curr = nextPointers[_curr];
         }

@@ -1,5 +1,8 @@
+using System;
 public interface IStatComponent
 {
+    public event Action CanHuntEvent;
+
     public float speed { get; }
     public float weaponChangeCoolTime { get; }
     public bool bCanHunting { get; }

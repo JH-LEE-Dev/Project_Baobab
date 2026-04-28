@@ -36,6 +36,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Publish(new DungeonReadySignal(dungeonData));
         inDungeonObjectManager.SetDungeonData(dungeonData);
+        inDungeonObjectManager.SetupItemManagerCulling();
     }
 
     private void BindEvents()
@@ -54,6 +55,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
+
+        inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
+        inDungeonUnitSpawner.AnimalHitEvent += AnimalHit;
     }
 
     private void ReleaseEvents()
@@ -63,6 +67,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
+        inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
     }
 
     private void SubscribeSignals()
@@ -91,6 +96,8 @@ public class InDungeonSystem : MonoBehaviour
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnAnimals();
+        
+        signalHub.Publish(new DecalreDungeonTypeSignal(MapType.Forest1_1));
     }
 
     private void ItemAcquired(Item _item)
@@ -122,5 +129,10 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonObjectManager.ClearObjManager();
         inDungeonUnitSpawner.ReleaseAllAnimals();
+    }
+
+    private void AnimalHit(Animal _animal)
+    {
+        signalHub.Publish(new AnimalHitSignal(_animal));
     }
 }

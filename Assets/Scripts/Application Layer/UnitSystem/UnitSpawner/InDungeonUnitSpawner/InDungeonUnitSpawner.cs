@@ -6,6 +6,7 @@ using UnityEngine.Pool;
 
 public class InDungeonUnitSpawner : MonoBehaviour
 {
+    public event Action<Animal> AnimalHitEvent;
     public event Action<Animal> AnimalIsDeadEvent;
     //그룹 정보를 넘기지 않도록 이벤트 수정 (필요 시 Action<IReadOnlyList<Animal>> 등으로 변경 가능)
     public event Action AnimalSpawnedEvent;
@@ -22,10 +23,17 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private Coroutine growthCoroutine;
 
     private List<Animal> allSpawnedAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
+    public IReadOnlyList<Animal> Animals => allSpawnedAnimals;
+    
+    private List<Animal> activeAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
+    public IReadOnlyList<Animal> ActiveAnimals => activeAnimals;
+
     private List<int> availableIndices = new List<int>(1024); // GC 방지용 캐싱 인덱스 리스트
 
     [Header("Optimization")]
     [SerializeField] private float cullingDistance = 25f;
+    [SerializeField] private float cullingUpdateInterval = 0.1f;
+    private float cullingUpdateTimer = 0f;
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
@@ -185,6 +193,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         cullingGroup.SetBoundingSpheres(spheres);
         cullingGroup.SetBoundingSphereCount(count);
 
+        activeAnimals.Clear();
         for (int i = 0; i < count; i++)
         {
             bool isVisible = cullingGroup.IsVisible(i);
@@ -198,6 +207,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
             else
             {    
                 allSpawnedAnimals[i].Show();
+                activeAnimals.Add(allSpawnedAnimals[i]);
             }
         }
     }
@@ -223,10 +233,15 @@ public class InDungeonUnitSpawner : MonoBehaviour
             if (shouldBeActive == false)
             { 
                 animal.Hide();
+                activeAnimals.Remove(animal);
             }
             else
             { 
                 animal.Show();
+                if (!activeAnimals.Contains(animal))
+                {
+                    activeAnimals.Add(animal);
+                }
             }
         }
     }
@@ -235,7 +250,12 @@ public class InDungeonUnitSpawner : MonoBehaviour
     {
         if (cullingGroup != null && allSpawnedAnimals.Count > 0)
         {
-            UpdateCullingSpheres();
+            cullingUpdateTimer += Time.deltaTime;
+            if (cullingUpdateTimer >= cullingUpdateInterval)
+            {
+                UpdateCullingSpheres();
+                cullingUpdateTimer = 0f;
+            }
         }
 
         if (isCullingDirty)
@@ -258,12 +278,19 @@ public class InDungeonUnitSpawner : MonoBehaviour
         animal.AnimalIsDeadEvent -= AnimalIsDead;
         animal.AnimalIsDeadEvent += AnimalIsDead;
 
-        //Debug.Log($"<color=cyan>[InDungeonUnitSpawner]</color> Animal Spawned. Current Total Animals: {allSpawnedAnimals.Count}");
+        animal.AnimalHitEvent -= AnimalHit;
+        animal.AnimalHitEvent += AnimalHit;
+
+        // 생성 시점에는 CullingGroup에 의해 Show/Hide가 결정되므로 여기서 추가하지 않음
     }
 
     public void ReleaseAnimal(Animal _animal)
     {
         _animal.AnimalIsDeadEvent -= AnimalIsDead;
+
+        _animal.AnimalHitEvent -= AnimalHit;
+
+        activeAnimals.Remove(_animal);
 
         if (_animal.gameObject.activeSelf)
         {
@@ -294,6 +321,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
             if (animal != null)
             {
                 animal.AnimalIsDeadEvent -= AnimalIsDead;
+                animal.AnimalHitEvent -= AnimalHit;
 
                 animal.DeActivate();
                 animalPool.Release(animal);
@@ -302,6 +330,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         }
 
         allSpawnedAnimals.Clear();
+        activeAnimals.Clear();
         isCullingDirty = true;
 
         // 작업 완료 후 부모 재활성화
@@ -364,5 +393,10 @@ public class InDungeonUnitSpawner : MonoBehaviour
         allSpawnedAnimals.Remove(_animal);
         isCullingDirty = true;
         ReleaseAnimal(_animal);
+    }
+
+    private void AnimalHit(Animal _animal)
+    {
+        AnimalHitEvent?.Invoke(_animal);
     }
 }

@@ -43,6 +43,19 @@ public class ItemManager : MonoBehaviour
 
     }
 
+    public void SetupCulling()
+    {
+        if (logItemController != null)
+        {
+            logItemController.SetupCullingGroup();
+        }
+
+        if (carrrotItemController != null)
+        {
+            carrrotItemController.SetupCullingGroup();
+        }
+    }
+
     // 외부에서 접근하기 위한 래퍼 메서드 (필요한 경우)
     public void SpawnLogItem(TreeObj _treeObj)
     {

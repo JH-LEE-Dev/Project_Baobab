@@ -3,8 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
+public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 {
+    public event Action<Animal> AnimalHitEvent;
     public event Action<Animal> AnimalIsDeadEvent;
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -23,7 +24,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
-    private int shadowOverlapCount = 0;
+    
+    private bool bIsUnderShadow = false;
+    private float shadowLerp = 0f;
+    private float currentFadeDuration = 0.3f;
     private Color normalColor = Color.white;
     private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
 
@@ -59,12 +63,18 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
     public bool bDead { get; private set; } = false;
 
+    // 최적화: 감지 주기 관리
+    private float detectionTimer = 0f;
+    private const float DETECTION_INTERVAL = 0.2f; // 5Hz
+
     // IStaticCollidable 구현
     public Vector2 Position => transform.position;
     public Vector2 Offset => collisionOffset; // 오프셋 반환
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
     public int EntityIndex { get; set; } = -1;
+
+    public IHealthComponent health => healthComponent;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -212,11 +222,16 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         // 죽었거나 숨겨진 상태에서는 충돌 갱신 및 감지 로직 중단
         if (bDead || !sr.enabled) return;
 
-        // 커스텀 충돌 시스템 격자 정보 갱신
+        // 커스텀 충돌 시스템 격자 정보 갱신 (위치 업데이트는 매번 수행)
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
-        // 플레이어 감지 로직 (CollisionSystem 활용)
-        UpdateCharacterDetection();
+        // 최적화: 플레이어 감지 로직 주기적 수행 (0.2초 간격)
+        detectionTimer += Time.fixedDeltaTime;
+        if (detectionTimer >= DETECTION_INTERVAL)
+        {
+            UpdateCharacterDetection();
+            detectionTimer = 0f;
+        }
 
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
@@ -249,31 +264,17 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
     private void UpdateAnimalColor()
     {
-        Color targetColor = (shadowOverlapCount > 0) ? shadowTint : normalColor;
-
-        sr.color = targetColor;
-    }
-
-    private void HandleShadowEnter(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow"))
-        {
-            shadowOverlapCount++;
-        }
-    }
-
-    private void HandleShadowExit(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow"))
-        {
-            shadowOverlapCount = Mathf.Max(0, shadowOverlapCount - 1);
-        }
+        float target = bIsUnderShadow ? 1f : 0f;
+        float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
+        shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
+        sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
     }
 
     public void TakeDamage(float _damage)
     {
         healthComponent.DecreaseHealth(_damage);
-
+        AnimalHitEvent?.Invoke(this);
+        
         if (healthComponent.GetCurrentHealth() == 0f)
         {
             stateMachine.ChangeState<AS_DeadState>();
@@ -317,5 +318,16 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         var state = stateMachine.GetState<AS_KnockBackState>();
         state.SetKnockBack(_knockBackDir, _knockBackForce);
         stateMachine.ChangeState<AS_KnockBackState>();
+    }
+
+    public void SetInShadow(bool _isInShadow, float _duration)
+    {
+        bIsUnderShadow = _isInShadow;
+        currentFadeDuration = _duration;
+    }
+
+    public Transform GetTransform()
+    {
+        throw new NotImplementedException();
     }
 }
