@@ -9,10 +9,17 @@ public enum ItemMoveState
     Sucking    // 캐릭터에게 흡수 중
 }
 
-public class CarrotItem : Item
+public class CarrotItem : Item, IStaticCollidable
 {
     // 이벤트
     public event Action<CarrotItem> CarrotItemAcquired;
+
+    // IStaticCollidable 구현
+    public Vector2 Position => transform.position;
+    public Vector2 Offset => Vector2.zero;
+    public float Radius => 0.1f;
+    public int Layer => gameObject.layer;
+    public void TakeDamage(float _damage) { }
 
     // 내부 의존성
     private SpriteRenderer spriteRenderer;
@@ -65,6 +72,26 @@ public class CarrotItem : Item
         duration = _duration;
         elapsed = 0f;
         state = ItemMoveState.Launching;
+
+        // 활성화 상태라면 등록
+        if (gameObject.activeInHierarchy)
+        {
+            CollisionSystem.Instance?.Register(this, false);
+        }
+    }
+
+    private void OnEnable()
+    {
+        // Launch가 이미 호출된 상태에서 활성화될 때만 등록
+        if (state != ItemMoveState.None)
+        {
+            CollisionSystem.Instance?.Register(this, false);
+        }
+    }
+
+    private void OnDisable()
+    {
+        CollisionSystem.Instance?.Unregister(this, false);
     }
 
     public override void ResetItem()
@@ -121,6 +148,8 @@ public class CarrotItem : Item
             transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
         }
 
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
+
         if (t >= 1.0f)
         {
             transform.position = GlobalPixelSnapper.Snap(endPos);
@@ -155,29 +184,18 @@ public class CarrotItem : Item
         {
             visualTransform.localPosition = Vector3.Lerp(visualTransform.localPosition, Vector3.zero, _deltaTime * 5f);
         }
+
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
     }
 
-    private void OnTriggerEnter2D(Collider2D _other)
+    public override void SetSuckTarget(Transform _target)
     {
         if (state == ItemMoveState.Sucking || !bDrop) return;
 
-        if (_other.CompareTag("ItemSensor"))
+        suckTarget = _target;
+        if (state == ItemMoveState.Dropped)
         {
-            suckTarget = _other.transform;
-            if (state == ItemMoveState.Dropped)
-            {
-                StartSucking(suckTarget);
-            }
-        }
-    }
-
-    private void OnTriggerExit2D(Collider2D _other)
-    {
-        if (!bDrop) return;
-
-        if (_other.CompareTag("ItemSensor") && suckTarget == _other.transform)
-        {
-            suckTarget = null;
+            StartSucking(suckTarget);
         }
     }
 

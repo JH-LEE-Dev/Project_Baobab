@@ -15,4 +15,9 @@ public class Item : MonoBehaviour
     {
 
     }
+
+    public virtual void SetSuckTarget(Transform _target)
+    {
+
+    }
 }

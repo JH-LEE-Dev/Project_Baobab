@@ -129,6 +129,8 @@ public class LogItemController : MonoBehaviour
 
     private void OnGetLogItem(LogItem _item)
     {
+        _item.gameObject.SetActive(true);
+        _item.ResetItem();
         activeItems.Add(_item);
         activeItemsList.Add(_item);
         isCullingDirty = true;
