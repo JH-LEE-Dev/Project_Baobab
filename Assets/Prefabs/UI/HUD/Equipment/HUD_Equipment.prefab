@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5175255327761468778}
+  - component: {fileID: 8023019420458693832}
   m_Layer: 5
   m_Name: Icons
   m_TagString: Untagged
@@ -37,6 +38,18 @@ RectTransform:
   m_AnchoredPosition: {x: -93, y: 17}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 1, y: 0}
+--- !u!225 &8023019420458693832
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 50668336732357801}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &384708409966834771
 GameObject:
   m_ObjectHideFlags: 0
@@ -661,8 +674,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4287072135
-  m_fontColor: {r: 0.5283019, g: 0.5283019, b: 0.5283019, a: 1}
+    rgba: 2160115904
+  m_fontColor: {r: 0.754717, g: 0.754717, b: 0.754717, a: 0.5019608}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -778,6 +791,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.UIView.HUD.Equipment.HUD_Equipment
   axeItem: {fileID: 3018060165584523092}
   rifleItem: {fileID: 5097517852129079586}
+  icons: {fileID: 5175255327761468778}
+  iconGroup: {fileID: 8023019420458693832}
+  axePosWithRifle: {x: -120, y: 7}
+  axePosAxeOnly: {x: -12, y: 7}
 --- !u!114 &3140712221331536018
 MonoBehaviour:
   m_ObjectHideFlags: 0

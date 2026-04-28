@@ -26,6 +26,12 @@ public class UIView_HUD : UIView
         Init_HUDEquipment();
         Init_HUDSteminaBar();
 
+        if (null != uiRoot)
+        {
+            // Town 맵일 경우 HUD를 숨기고, Forest1_1 등 전투 지역일 경우 보여줌
+            uiRoot.gameObject.SetActive(MapType.Town != currentMapType);
+        }
+
         WeaponModeChanged(WeaponMode.Axe);
     }
 
@@ -63,7 +69,9 @@ public class UIView_HUD : UIView
     public override void Update()
     {
         if (null != character && null != character.pHealthComponent)
+        {
             UsedSteminaEvent(character.pHealthComponent.GetCurrentStamina(), character.pHealthComponent.GetMaxStamina());
+        }
     }
 
     #endregion
@@ -76,7 +84,7 @@ public class UIView_HUD : UIView
 
         if (null != hudEquipment)
         {
-            hudEquipment.Initialize();
+            hudEquipment.Initialize(currentMapType);
         }
     }
 
@@ -89,7 +97,9 @@ public class UIView_HUD : UIView
         hudSteminaBar = Instantiate(hudSteminaBarPrefab, this.transform).GetComponent<HUD_ProgressBar>();
 
         if (null != hudSteminaBar)
+        {
             hudSteminaBar.Initialize();
+        }
     }
 
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
@@ -113,11 +123,12 @@ public class UIView_HUD : UIView
 
     public override void Refresh()
     {
-        
+        hudEquipment?.UpdateRifleVisibility();
     }
 
     public void SetCurrentMapType(MapType _currentMapType)
     {
         currentMapType = _currentMapType;
+        hudEquipment?.gameObject.SetActive(MapType.Town != currentMapType);
     }
 }
