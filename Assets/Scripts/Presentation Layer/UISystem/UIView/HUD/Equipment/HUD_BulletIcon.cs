@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
+using System;
+using UnityEngine.Events;
 
 namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
@@ -84,6 +86,23 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 return;
 
             outline.SetActive(_isActive);
+        }
+
+        public void PlayReloadMotion(float _duration, float _delay, UnityAction _callEvent = null)
+        {
+            if (null == motionPlayer)
+                return;
+
+            motionPlayer.Play("Reload", _duration, _delay, null, _callEvent);
+        }
+
+        public void PlayResetMotion(float _duration)
+        {
+            if (null == motionPlayer)
+                return;
+
+            // 딜레이 없이 즉시 복구 (내부적으로 0f 전달)
+            motionPlayer.Play("Reset", _duration, 0f);
         }
     }
 }

@@ -2,6 +2,8 @@ using UnityEngine;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine.Rendering;
+using System;
+using UnityEngine.Events;
 
 namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
@@ -19,14 +21,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [Header("UI Ref")]
         [SerializeField] private GameObject ammoBox;
 
-
-        // //내부 의존성
-
-        // //퍼블릭 초기화 및 제어 메서드
-
-        /// <summary>
-        /// 초기 설정 및 의존성 구성.
-        /// </summary>
         public override void Initialize()
         {
             base.Initialize();
@@ -47,6 +41,22 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             ammoBox?.SetActive(isActive);
             bulletDisplay?.SetActive(isActive);
             //bulletDisplay?.총알 흩어질지, 모일지 연출
+        }
+
+        public void PlayReloadMotion(float _duration, UnityAction _callEvent)
+        {
+            if (null == bulletDisplay)
+                return;
+
+            bulletDisplay.PlayReloadMotion(_duration, _callEvent);
+        }
+
+        public void PlayResetMotion(float _duration)
+        {
+            if (null == bulletDisplay)
+                return;
+
+            bulletDisplay.PlayResetMotion(_duration);
         }
 
         /// <summary>

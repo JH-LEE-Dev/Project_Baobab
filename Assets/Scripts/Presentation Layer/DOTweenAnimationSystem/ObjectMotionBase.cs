@@ -51,6 +51,12 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 currentTween.Kill();
         }
 
+        public void SetRuntimeSettings(float _duration, float _delay)
+        {
+            publicDuration = _duration;
+            publicDelay = _delay;
+        }
+
         protected virtual Sequence StopAndBinding(UnityAction _onStart, UnityAction _onComplete)
         {
             Stop();
