@@ -16,8 +16,15 @@ public class LogItemController : MonoBehaviour
     private IObjectPool<LogItem> logPool;
     // 최적화: 검색 및 삭제 속도 향상을 위해 HashSet 사용 (O(1))
     private HashSet<LogItem> activeItems = new HashSet<LogItem>(256);
-    private List<LogItem> activeItemsList = new List<LogItem>(256); // 최적화: 순회용 캐싱 리스트
+    private List<LogItem> activeItemsList = new List<LogItem>(256); // 최적화: 순회 및 컬링용 리스트
     private List<LogItem> cleanupList = new List<LogItem>(256); // ClearAll용 재사용 리스트
+
+    [Header("Optimization")]
+    [SerializeField] private float cullingUpdateInterval = 0.05f;
+    private float cullingUpdateTimer = 0f;
+    private CullingGroup cullingGroup;
+    private BoundingSphere[] spheres;
+    private bool isCullingDirty = false;
 
     private IInventoryChecker inventoryChecker;
 
@@ -36,21 +43,73 @@ public class LogItemController : MonoBehaviour
         );
     }
 
+    public void SetupCullingGroup()
+    {
+        if (cullingGroup == null)
+        {
+            cullingGroup = new CullingGroup();
+            cullingGroup.onStateChanged = OnCullingStateChanged;
+        }
+
+        cullingGroup.targetCamera = Camera.main;
+        spheres = new BoundingSphere[1000];
+    }
+
+    private void OnCullingStateChanged(CullingGroupEvent _ev)
+    {
+        if (_ev.index >= activeItemsList.Count) return;
+
+        bool isVisible = _ev.isVisible;
+        activeItemsList[_ev.index].gameObject.SetActive(isVisible);
+    }
+
     private void Update()
     {
-        if (activeItems.Count == 0) return;
-
-        // HashSet을 리스트로 복사하여 순회 (GC 할당 최소화 및 컬렉션 변조 방지)
-        activeItemsList.Clear();
-        foreach (var item in activeItems)
-        {
-            activeItemsList.Add(item);
-        }
+        if (activeItemsList.Count == 0) return;
 
         float deltaTime = Time.deltaTime;
         for (int i = 0; i < activeItemsList.Count; i++)
         {
             activeItemsList[i].ManualUpdate(deltaTime);
+        }
+
+        // 컬링 구체 위치 업데이트 (스로틀링)
+        if (cullingGroup != null)
+        {
+            cullingUpdateTimer += deltaTime;
+            if (cullingUpdateTimer >= cullingUpdateInterval)
+            {
+                UpdateCullingSpheres();
+                cullingUpdateTimer = 0f;
+            }
+        }
+
+        if (isCullingDirty)
+        {
+            RefreshCullingGroup();
+            isCullingDirty = false;
+        }
+    }
+
+    private void UpdateCullingSpheres()
+    {
+        int count = activeItemsList.Count;
+        for (int i = 0; i < count; i++)
+        {
+            spheres[i].position = activeItemsList[i].transform.position;
+            spheres[i].radius = 1f;
+        }
+    }
+
+    private void RefreshCullingGroup()
+    {
+        int count = activeItemsList.Count;
+        cullingGroup.SetBoundingSpheres(spheres);
+        cullingGroup.SetBoundingSphereCount(count);
+
+        for (int i = 0; i < count; i++)
+        {
+            activeItemsList[i].gameObject.SetActive(cullingGroup.IsVisible(i));
         }
     }
 
@@ -70,32 +129,34 @@ public class LogItemController : MonoBehaviour
 
     private void OnGetLogItem(LogItem _item)
     {
-        _item.gameObject.SetActive(true);
         activeItems.Add(_item);
+        activeItemsList.Add(_item);
+        isCullingDirty = true;
     }
 
     private void OnReleaseLogItem(LogItem _item)
     {
         _item.gameObject.SetActive(false);
         activeItems.Remove(_item);
+        activeItemsList.Remove(_item);
+        isCullingDirty = true;
     }
 
     private void OnDestroyLogItem(LogItem _item)
     {
         _item.LogItemAcquired -= LogItemAcquired;
         activeItems.Remove(_item);
+        activeItemsList.Remove(_item);
         Destroy(_item.gameObject);
+        isCullingDirty = true;
     }
 
     public void ClearAll()
     {
-        if (activeItems.Count == 0) return;
+        if (activeItemsList.Count == 0) return;
 
         cleanupList.Clear();
-        foreach (var item in activeItems)
-        {
-            cleanupList.Add(item);
-        }
+        cleanupList.AddRange(activeItemsList);
 
         for (int i = 0; i < cleanupList.Count; i++)
         {
@@ -103,7 +164,9 @@ public class LogItemController : MonoBehaviour
         }
         
         activeItems.Clear();
+        activeItemsList.Clear();
         cleanupList.Clear();
+        isCullingDirty = true;
     }
 
     public void SpawnLogItem(TreeObj _treeObj)
@@ -190,5 +253,15 @@ public class LogItemController : MonoBehaviour
     public void ReturnToPool(LogItem _item)
     {
         logPool.Release(_item);
+    }
+
+    private void OnDestroy()
+    {
+        if (cullingGroup != null)
+        {
+            cullingGroup.onStateChanged = null;
+            cullingGroup.Dispose();
+            cullingGroup = null;
+        }
     }
 }

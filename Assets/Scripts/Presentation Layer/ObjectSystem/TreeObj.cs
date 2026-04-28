@@ -31,7 +31,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public int EntityIndex { get; set; } = -1;
 
     [SerializeField] private float alphaDownRadius = 0.5f;
-    [SerializeField] private Vector2 adColliderOffset = new Vector2(0f, 0.7f);
+    [SerializeField] private Vector2 adColliderOffset = new Vector2(0f, 0.9f);
 
     public float AlphaDownRadius => alphaDownRadius;
     public Vector2 AdColliderOffset => adColliderOffset;

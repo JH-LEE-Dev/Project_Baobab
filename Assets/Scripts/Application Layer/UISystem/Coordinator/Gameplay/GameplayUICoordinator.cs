@@ -52,6 +52,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<InventorySpecChangedSignal>(InventorySpecChanged);
         signalHub.Subscribe<LogContainerSpecChangedSignal>(LogContainerSpecChanged);
         signalHub.Subscribe<SpendMoneySignal>(SpendMoney);
+        signalHub.Subscribe<TownStartedSignal>(TownStarted);
+        signalHub.Subscribe<DecalreDungeonTypeSignal>(DungeonStarted);
     }
 
     private void UnSubscribeSignals()
@@ -68,6 +70,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<InventorySpecChangedSignal>(InventorySpecChanged);
         signalHub.UnSubscribe<LogContainerSpecChangedSignal>(LogContainerSpecChanged);
         signalHub.UnSubscribe<SpendMoneySignal>(SpendMoney);
+        signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
+        signalHub.UnSubscribe<DecalreDungeonTypeSignal>(DungeonStarted);
     }
 
     private void BindEvents()
@@ -258,5 +262,15 @@ public class GameplayUICoordinator
             escUI.Hide();
             Time.timeScale = 1f;
         }
+    }
+
+    private void TownStarted(TownStartedSignal townStartedSignal)
+    {
+        hudUI.SetCurrentMapType(MapType.Town);
+    }
+
+    private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)
+    {
+        hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType);
     }
 }

@@ -14,6 +14,8 @@ public class UIView_HUD : UIView
 
     private ICharacter character;
 
+    private MapType currentMapType;
+
 
     #region Default Logic
 
@@ -107,5 +109,15 @@ public class UIView_HUD : UIView
     public void InventorySpecChanged() //인벤토리 스펙 변동 시 호출
     {
         
+    }
+
+    public override void Refresh()
+    {
+        
+    }
+
+    public void SetCurrentMapType(MapType _currentMapType)
+    {
+        currentMapType = _currentMapType;
     }
 }

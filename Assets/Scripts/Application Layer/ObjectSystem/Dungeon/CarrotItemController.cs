@@ -18,9 +18,16 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     private IObjectPool<CarrotItem> carrotPool;
     // 최적화: 검색 및 삭제 속도 향상을 위해 HashSet 사용 (O(1))
     private HashSet<CarrotItem> activeItems = new HashSet<CarrotItem>(128);
-    private List<CarrotItem> activeItemsList = new List<CarrotItem>(128); // 최적화: 순회용 캐싱 리스트
+    private List<CarrotItem> activeItemsList = new List<CarrotItem>(128); // 최적화: 순회 및 컬링용 리스트
     private List<CarrotItem> cleanupList = new List<CarrotItem>(128); // ClearAll용 재사용 리스트
     private float dropMultiplier = 1.0f;
+
+    [Header("Optimization")]
+    [SerializeField] private float cullingUpdateInterval = 0.05f;
+    private float cullingUpdateTimer = 0f;
+    private CullingGroup cullingGroup;
+    private BoundingSphere[] spheres;
+    private bool isCullingDirty = false;
 
     public void Initialize()
     {
@@ -35,21 +42,74 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         );
     }
 
-    private void Update()
+    public void SetupCullingGroup()
     {
-        if (activeItems.Count == 0) return;
-
-        // HashSet을 직접 순회하면 GC 할당이 발생할 수 있고 변조에 취약하므로 리스트로 복사 후 순회
-        activeItemsList.Clear();
-        foreach (var item in activeItems)
+        if (cullingGroup == null)
         {
-            activeItemsList.Add(item);
+            cullingGroup = new CullingGroup();
+            cullingGroup.onStateChanged = OnCullingStateChanged;
         }
 
+        cullingGroup.targetCamera = Camera.main;
+        spheres = new BoundingSphere[500];
+    }
+
+    private void OnCullingStateChanged(CullingGroupEvent _ev)
+    {
+        if (_ev.index >= activeItemsList.Count) return;
+
+        bool isVisible = _ev.isVisible;
+        activeItemsList[_ev.index].gameObject.SetActive(isVisible);
+    }
+
+    private void Update()
+    {
+        if (activeItemsList.Count == 0) return;
+
+        // 아이템 로직 업데이트 (HashSet 복사 없이 직접 순회하도록 로직 최적화 가능)
         float deltaTime = Time.deltaTime;
         for (int i = 0; i < activeItemsList.Count; i++)
         {
             activeItemsList[i].ManualUpdate(deltaTime);
+        }
+
+        // 컬링 구체 위치 업데이트 (스로틀링)
+        if (cullingGroup != null)
+        {
+            cullingUpdateTimer += deltaTime;
+            if (cullingUpdateTimer >= cullingUpdateInterval)
+            {
+                UpdateCullingSpheres();
+                cullingUpdateTimer = 0f;
+            }
+        }
+
+        if (isCullingDirty)
+        {
+            RefreshCullingGroup();
+            isCullingDirty = false;
+        }
+    }
+
+    private void UpdateCullingSpheres()
+    {
+        int count = activeItemsList.Count;
+        for (int i = 0; i < count; i++)
+        {
+            spheres[i].position = activeItemsList[i].transform.position;
+            spheres[i].radius = 1f; // 아이템 감지 반경
+        }
+    }
+
+    private void RefreshCullingGroup()
+    {
+        int count = activeItemsList.Count;
+        cullingGroup.SetBoundingSpheres(spheres);
+        cullingGroup.SetBoundingSphereCount(count);
+
+        for (int i = 0; i < count; i++)
+        {
+            activeItemsList[i].gameObject.SetActive(cullingGroup.IsVisible(i));
         }
     }
 
@@ -69,34 +129,35 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     private void OnGetCarrotItem(CarrotItem _item)
     {
-        _item.gameObject.SetActive(true);
         _item.Initialize(); 
         activeItems.Add(_item);
+        activeItemsList.Add(_item);
+        isCullingDirty = true;
     }
 
     private void OnReleaseCarrotItem(CarrotItem _item)
     {
         _item.gameObject.SetActive(false);
         activeItems.Remove(_item);
+        activeItemsList.Remove(_item);
+        isCullingDirty = true;
     }
 
     private void OnDestroyCarrotItem(CarrotItem _item)
     {
         _item.CarrotItemAcquired -= CarrotItemAcquired;
         activeItems.Remove(_item);
+        activeItemsList.Remove(_item);
         Destroy(_item.gameObject);
+        isCullingDirty = true;
     }
 
     public void ClearAll()
     {
-        if (activeItems.Count == 0) return;
+        if (activeItemsList.Count == 0) return;
 
-        // HashSet을 직접 순회하며 Release하면 컬렉션 변조 에러가 발생하므로 임시 리스트 사용
         cleanupList.Clear();
-        foreach (var item in activeItems)
-        {
-            cleanupList.Add(item);
-        }
+        cleanupList.AddRange(activeItemsList);
 
         for (int i = 0; i < cleanupList.Count; i++)
         {
@@ -104,7 +165,9 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         }
         
         activeItems.Clear();
+        activeItemsList.Clear();
         cleanupList.Clear();
+        isCullingDirty = true;
     }
 
     public void SpawnCarrotItem(Vector3 _position)
@@ -154,5 +217,15 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     {
         dropMultiplier = _data.dropMultiplier;
         Debug.Log("[CarrotItemController] Carrot Save Data Loaded.");
+    }
+
+    private void OnDestroy()
+    {
+        if (cullingGroup != null)
+        {
+            cullingGroup.onStateChanged = null;
+            cullingGroup.Dispose();
+            cullingGroup = null;
+        }
     }
 }

@@ -111,6 +111,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
     }
 
+    public void SetupItemManagerCulling()
+    {
+        itemManager.SetupCulling();
+    }
+
     public void SetDungeonData(DungeonData _dungeonData)
     {
         dungeonData = _dungeonData;

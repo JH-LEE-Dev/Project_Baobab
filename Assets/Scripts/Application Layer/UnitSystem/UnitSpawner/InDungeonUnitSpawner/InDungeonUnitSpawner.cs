@@ -31,6 +31,8 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     [Header("Optimization")]
     [SerializeField] private float cullingDistance = 25f;
+    [SerializeField] private float cullingUpdateInterval = 0.1f;
+    private float cullingUpdateTimer = 0f;
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
@@ -247,7 +249,12 @@ public class InDungeonUnitSpawner : MonoBehaviour
     {
         if (cullingGroup != null && allSpawnedAnimals.Count > 0)
         {
-            UpdateCullingSpheres();
+            cullingUpdateTimer += Time.deltaTime;
+            if (cullingUpdateTimer >= cullingUpdateInterval)
+            {
+                UpdateCullingSpheres();
+                cullingUpdateTimer = 0f;
+            }
         }
 
         if (isCullingDirty)

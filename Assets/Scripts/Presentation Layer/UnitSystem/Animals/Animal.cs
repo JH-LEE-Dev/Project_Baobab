@@ -62,6 +62,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
 
     public bool bDead { get; private set; } = false;
 
+    // 최적화: 감지 주기 관리
+    private float detectionTimer = 0f;
+    private const float DETECTION_INTERVAL = 0.2f; // 5Hz
+
     // IStaticCollidable 구현
     public Vector2 Position => transform.position;
     public Vector2 Offset => collisionOffset; // 오프셋 반환
@@ -215,11 +219,16 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable
         // 죽었거나 숨겨진 상태에서는 충돌 갱신 및 감지 로직 중단
         if (bDead || !sr.enabled) return;
 
-        // 커스텀 충돌 시스템 격자 정보 갱신
+        // 커스텀 충돌 시스템 격자 정보 갱신 (위치 업데이트는 매번 수행)
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
-        // 플레이어 감지 로직 (CollisionSystem 활용)
-        UpdateCharacterDetection();
+        // 최적화: 플레이어 감지 로직 주기적 수행 (0.2초 간격)
+        detectionTimer += Time.fixedDeltaTime;
+        if (detectionTimer >= DETECTION_INTERVAL)
+        {
+            UpdateCharacterDetection();
+            detectionTimer = 0f;
+        }
 
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
