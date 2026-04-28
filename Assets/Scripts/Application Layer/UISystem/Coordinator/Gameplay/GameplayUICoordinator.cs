@@ -54,6 +54,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<SpendMoneySignal>(SpendMoney);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<DecalreDungeonTypeSignal>(DungeonStarted);
+        signalHub.Subscribe<AnimalHitSignal>(AnimalHit);
     }
 
     private void UnSubscribeSignals()
@@ -72,6 +73,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<SpendMoneySignal>(SpendMoney);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(DungeonStarted);
+        signalHub.UnSubscribe<AnimalHitSignal>(AnimalHit);
     }
 
     private void BindEvents()
@@ -272,5 +274,10 @@ public class GameplayUICoordinator
     private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)
     {
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType);
+    }
+
+    private void AnimalHit(AnimalHitSignal animalHitSignal)
+    {
+        unitUI.AnimalGetHit(animalHitSignal.animal);
     }
 }

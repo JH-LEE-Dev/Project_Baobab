@@ -56,3 +56,12 @@ public struct CarrotItemAcquiredSignal
         amount = _amount;
     }
 }
+
+public struct AnimalHitSignal
+{
+    public IAnimalObj animal;
+    public AnimalHitSignal(IAnimalObj _animal)
+    {
+        animal = _animal;
+    }
+}
