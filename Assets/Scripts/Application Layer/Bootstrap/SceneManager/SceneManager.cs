@@ -1,5 +1,10 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+
+public enum MapType
+{
+    Town,
+    Forest1_1,
+}
 
 public class SceneManager : MonoBehaviour
 {

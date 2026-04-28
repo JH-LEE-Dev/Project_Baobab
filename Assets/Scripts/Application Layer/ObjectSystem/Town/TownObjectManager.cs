@@ -26,9 +26,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     //내부 상태
     private PortalObj portal;
     private TreeObj[] trees;
+    public IReadOnlyList<TreeObj> Trees => trees;
     
     // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
+    public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
     private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(200);
     
     private bool bCanTravel = false;

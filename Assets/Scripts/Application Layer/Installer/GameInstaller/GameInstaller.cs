@@ -52,8 +52,8 @@ public class GameInstaller : MonoBehaviour
         skillManager = GetComponentInChildren<SkillManager>();
         skillDispatcher = GetComponentInChildren<SkillDispatcher>();
 
-        cameraManager.Initialize(signalHub, inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
+        cameraManager.Initialize(signalHub, inputManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
         teleportManager.Initialize(signalHub, bootStrapProvider);
         townSystem.Initialize(signalHub, environmentSystem, inputManager);
@@ -80,7 +80,7 @@ public class GameInstaller : MonoBehaviour
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager);
 
         unitSystem.CreateCharacter();
-
+        environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager, inDungeonSystem.inDungeonUnitSpawner);
         BindEvents();
     }
 

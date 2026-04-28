@@ -36,6 +36,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Publish(new DungeonReadySignal(dungeonData));
         inDungeonObjectManager.SetDungeonData(dungeonData);
+        inDungeonObjectManager.SetupItemManagerCulling();
     }
 
     private void BindEvents()
@@ -91,6 +92,8 @@ public class InDungeonSystem : MonoBehaviour
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnAnimals();
+        
+        signalHub.Publish(new DecalreDungeonTypeSignal(MapType.Forest1_1));
     }
 
     private void ItemAcquired(Item _item)

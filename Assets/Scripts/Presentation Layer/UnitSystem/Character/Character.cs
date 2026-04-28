@@ -43,7 +43,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public bool bWhileSwing { get; private set; } = false;
     public bool bCanRotate { get; private set; } = true;
 
-    private int shadowOverlapCount = 0;
+    private bool bIsUnderShadow = false;
+    private float shadowLerp = 0f;
+    private float currentFadeDuration = 0.3f;
     private Color normalColor = Color.white;
     private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
 
@@ -100,12 +102,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
         statComponent.Initialize(ctx);
-
-        if (shadowSensor != null)
-        {
-            shadowSensor.OnTriggerEnterEvent += HandleShadowEnter;
-            shadowSensor.OnTriggerExitEvent += HandleShadowExit;
-        }
 
         SetupStateMachine();
         BindEvents();
@@ -198,6 +194,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public Transform GetTransform() => transform;
 
+    public void SetInShadow(bool _isInShadow, float _duration)
+    {
+        bIsUnderShadow = _isInShadow;
+        currentFadeDuration = _duration;
+    }
+
     #endregion
 
     #region Private Methods
@@ -258,7 +260,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateCharacterColor()
     {
-        sr.color = (shadowOverlapCount > 0) ? shadowTint : normalColor;
+        float target = bIsUnderShadow ? 1f : 0f;
+        float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
+        shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
+        sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
     }
 
     private void UpdateFacingByAttackPoint()
@@ -276,16 +281,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         armComponent.SetAttackTransform(attackComponent.GetAttackPointTransform());
         armComponent.SetMouseTransform(attackComponent.mouseTransform);
-    }
-
-    private void HandleShadowEnter(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow")) shadowOverlapCount++;
-    }
-
-    private void HandleShadowExit(Collider2D _other)
-    {
-        if (_other.CompareTag("TreeShadow")) shadowOverlapCount = Mathf.Max(0, shadowOverlapCount - 1);
     }
 
     private void WeaponModeChanged(WeaponMode _currentMode)
@@ -371,12 +366,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void OnDestroy()
     {
         stateMachine?.ReleaseAllState();
-
-        if (shadowSensor != null)
-        {
-            shadowSensor.OnTriggerEnterEvent -= HandleShadowEnter;
-            shadowSensor.OnTriggerExitEvent -= HandleShadowExit;
-        }
 
         ReleaseEvents();
         CollisionSystem.Instance?.Unregister(this);

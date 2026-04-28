@@ -6,7 +6,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public event Action<TreeObj> TreeDeadEvent;
     public event Action<TreeObj> TreeGetHitEvent;
 
-    [SerializeField] private Shadow shadowObject;
+    [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
     [SerializeField] private TreeVisualComponent treeVisualComponent;
     [SerializeField] private float collisionRadius = 0.29f;
@@ -30,6 +30,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public int Layer => gameObject.layer;
     public int EntityIndex { get; set; } = -1;
 
+    [SerializeField] private float alphaDownRadius = 0.5f;
+    [SerializeField] private Vector2 adColliderOffset = new Vector2(0f, 0.9f);
+
+    public float AlphaDownRadius => alphaDownRadius;
+    public Vector2 AdColliderOffset => adColliderOffset;
+
+    [SerializeField] private float topShadowRadius = 0.3f;
+    [SerializeField] private Vector2 topShadowOffset = new Vector2(0f, 0.7f);
+
+    public Shadow TopShadowObject => topShadowObject;
+    public float TopShadowRadius => topShadowRadius;
+    public Vector2 TopShadowOffset => topShadowOffset;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -45,7 +58,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.Initialize();
         }
 
-        InitializeShadow(shadowObject);
+        InitializeShadow(topShadowObject);
         InitializeShadow(bottomShadowObject);
 
         BindEvents();
@@ -102,13 +115,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public void ManualUpdate()
     {
-        UpdateShadow(shadowObject);
+        UpdateShadow(topShadowObject);
         UpdateShadow(bottomShadowObject);
     }
 
     public Color GetColor()
     {
-        return treeVisualComponent.GetBottomColor();   
+        return treeVisualComponent.GetBottomColor();
     }
 
     private void InitializeShadow(Shadow shadow)
@@ -170,8 +183,24 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         return transform;
     }
 
-    public void KnockBack(Vector2 _knockBackDir,float _knockBackForce)
+    public void KnockBack(Vector2 _knockBackDir, float _knockBackForce)
     {
 
+    }
+
+    public void SetAlpha(float _alpha)
+    {
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.SetAlpha(_alpha);
+        }
+    }
+
+    public void FadeAlpha(float _targetAlpha, float _duration)
+    {
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.FadeAlpha(_targetAlpha, _duration);
+        }
     }
 }

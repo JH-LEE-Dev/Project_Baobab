@@ -256,5 +256,54 @@ public class TreeVisualComponent : MonoBehaviour
         topRenderer.transform.localRotation = topRendererBaseLocalRotation;
     }
 
+    public void SetAlpha(float _alpha)
+    {
+        topRenderer.DOKill();
+        bottomRenderer.DOKill();
+        if (topShadowRenderer != null) topShadowRenderer.DOKill();
+        if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
+
+        Color topColor = topRenderer.color;
+        topColor.a = _alpha;
+        topRenderer.color = topColor;
+
+        Color bottomColor = bottomRenderer.color;
+        bottomColor.a = _alpha;
+        bottomRenderer.color = bottomColor;
+
+        if (topShadowRenderer != null)
+        {
+            Color tsColor = topShadowRenderer.color;
+            tsColor.a = _alpha;
+            topShadowRenderer.color = tsColor;
+        }
+
+        if (bottomShadowRenderer != null)
+        {
+            Color bsColor = bottomShadowRenderer.color;
+            bsColor.a = _alpha;
+            bottomShadowRenderer.color = bsColor;
+        }
+    }
+
+    public void FadeAlpha(float _targetAlpha, float _duration)
+    {
+        topRenderer.DOKill();
+        bottomRenderer.DOKill();
+        topRenderer.DOFade(_targetAlpha, _duration);
+        bottomRenderer.DOFade(_targetAlpha, _duration);
+
+        if (topShadowRenderer != null)
+        {
+            topShadowRenderer.DOKill();
+            topShadowRenderer.DOFade(_targetAlpha, _duration);
+        }
+        if (bottomShadowRenderer != null)
+        {
+            bottomShadowRenderer.DOKill();
+            bottomShadowRenderer.DOFade(_targetAlpha, _duration);
+        }
+    }
+
     #endregion
 }

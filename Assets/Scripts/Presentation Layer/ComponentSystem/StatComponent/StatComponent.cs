@@ -1,7 +1,10 @@
+using System;
 using UnityEngine;
 
 public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 {
+    public event Action CanHuntEvent;
+
     //Move
     public float speed = 1f;
     public float originalSpeed =  1f;
@@ -78,6 +81,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public void CanHunting()
     {
         bCanHunting = true;
+        CanHuntEvent?.Invoke();
     }
 
     public void IncreaseSwitchSpeed(float _amount)

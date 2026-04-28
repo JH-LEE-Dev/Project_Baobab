@@ -10,6 +10,15 @@ public struct DungeonReadySignal
     }
 }
 
+public struct DecalreDungeonTypeSignal
+{
+    public MapType mapType;
+    public DecalreDungeonTypeSignal(MapType _mapType)
+    {
+        mapType = _mapType;
+    }
+}
+
 public struct DungeonStartSignal
 {
     public Vector3 characterPos;

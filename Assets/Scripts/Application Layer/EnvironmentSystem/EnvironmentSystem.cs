@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
 
 public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 {
@@ -24,20 +23,22 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private GroundDataManager groundDataManager;
     private WeatherManager weatherManager;
     private PathfindGridManager pathfindGridManager;
-    public DensityManager densityManager {get; private set;}
+    public DensityManager densityManager { get; private set; }
+    public EnvironmentInteractionManager environmentInteractionManager { get; private set; }
 
+    //퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(SignalHub _signalHub, IUnitLogicProvider _unitLogicProvider)
     {
         signalHub = _signalHub;
 
         tileMapGenerator = GetComponentInChildren<TileMapGenerator>();
-
+        environmentInteractionManager = GetComponentInChildren<EnvironmentInteractionManager>();
         lightingController = GetComponentInChildren<LightingController>();
         timeController = GetComponentInChildren<TimeController>();
         groundDataManager = GetComponentInChildren<GroundDataManager>();
         weatherManager = GetComponentInChildren<WeatherManager>();
-        pathfindGridManager =GetComponentInChildren<PathfindGridManager>();
+        pathfindGridManager = GetComponentInChildren<PathfindGridManager>();
         densityManager = GetComponentInChildren<DensityManager>();
 
         if (timeController != null)
@@ -52,11 +53,22 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         if (weatherManager != null)
             weatherManager.Initialize(_unitLogicProvider);
 
-        if(densityManager != null)
+        if (densityManager != null)
             densityManager.Initialize();
+        
+        if (environmentInteractionManager != null)
+            environmentInteractionManager.Initialize();
 
         BindEvents();
         SubscribeSignals();
+    }
+
+    public void DI(IEnvironmentProvider _environmentProvider,
+        TownObjectManager _townObjectManager,
+        InDungeonObjectManager _inDungeonObjectManager,
+        InDungeonUnitSpawner _inDungeonUnitSpawner)
+    {
+        environmentInteractionManager.DI(_environmentProvider, _townObjectManager, _inDungeonObjectManager, _inDungeonUnitSpawner);
     }
 
     public void Release()
@@ -110,14 +122,15 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         signalHub.Publish(new MapGeneratedSignal(tilePositions));
     }
 
-    private void DeclareActiveTileCnt(int _grassTileCnt,int _walkableTileCnt)
+    private void DeclareActiveTileCnt(int _grassTileCnt, int _walkableTileCnt)
     {
-        densityManager.SetActiveTilesCnt(_grassTileCnt,_walkableTileCnt);
+        densityManager.SetActiveTilesCnt(_grassTileCnt, _walkableTileCnt);
     }
 
     private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
     {
         lightingController.DI(characterSpawendSignal.character);
+        environmentInteractionManager.DI_Character(characterSpawendSignal.character);
     }
 
     private void WeatherChanged(WeatherType _weatherType)
