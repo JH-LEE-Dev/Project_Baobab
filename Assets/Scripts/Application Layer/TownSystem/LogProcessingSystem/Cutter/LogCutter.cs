@@ -16,14 +16,20 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private Animator anim;
     private readonly int startHash = Animator.StringToHash("bStart");
     private bool bIsCutting = false;
+    private bool bPowerSupply = false;
+    private float bPowerSupplyValue = 5f; //500퍼센트를 의미.
 
     public float timeRemaining
     {
         get
         {
             if (cuttingItem == null || !bIsCutting) return 0f;
-            // 1초에 1 * Multiplier만큼 깎으므로, 남은 시간 = 남은 내구도 / (1 * Multiplier)
-            return cuttingItem.durability / totalSpeedMultiplier;
+
+            float currentSpeed = totalSpeedMultiplier;
+            if (bPowerSupply) currentSpeed *= bPowerSupplyValue;
+
+            // 1초에 1 * currentSpeed만큼 깎으므로, 남은 시간 = 남은 내구도 / currentSpeed
+            return cuttingItem.durability / currentSpeed;
         }
     }
 
@@ -40,8 +46,17 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         if (!bIsCutting || cuttingItem == null) return;
 
-        // 1초에 1 * totalSpeedMultiplier 만큼 내구도 감소
-        float decreaseAmount = Time.deltaTime * totalSpeedMultiplier;
+        float currentSpeed = totalSpeedMultiplier;
+        if (bPowerSupply) currentSpeed *= bPowerSupplyValue;
+
+        // 애니메이션 속도 동기화
+        if (anim != null)
+        {
+            anim.speed = currentSpeed;
+        }
+
+        // 1초에 1 * currentSpeed 만큼 내구도 감소
+        float decreaseAmount = Time.deltaTime * currentSpeed;
         cuttingItem.durability -= decreaseAmount;
 
         if (cuttingItem.durability <= 0f)
@@ -54,6 +69,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     public void CuttingDone()
     {
+        if (anim != null) anim.speed = 1.0f;
         anim.SetBool(startHash, false);
         cuttingItem.gameObject.SetActive(true);
         CuttingDoneEvent?.Invoke();
@@ -92,6 +108,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         CutterSaveData saveData = new CutterSaveData();
         saveData.bIsCutting = bIsCutting;
         saveData.totalSpeedMultiplier = totalSpeedMultiplier;
+        saveData.bPowerSupply = bPowerSupply;
 
         if (bIsCutting && cuttingItem != null)
         {
@@ -112,6 +129,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         totalSpeedMultiplier = _data.totalSpeedMultiplier;
         bIsCutting = _data.bIsCutting;
+        bPowerSupply = _data.bPowerSupply;
 
         if (bIsCutting && _data.cuttingItemData.itemType != ItemType.None)
         {
@@ -150,5 +168,10 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         }
         
         Debug.Log("[LogCutter] Cutter Save Data Loaded.");
+    }
+
+    public void SetPowerSupply(bool _bPowerSupply)
+    {
+        bPowerSupply = _bPowerSupply;
     }
 }

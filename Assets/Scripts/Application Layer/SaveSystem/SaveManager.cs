@@ -59,7 +59,7 @@ public class SaveManager : MonoBehaviour
         var stats = character.statComponent;
         cachedSaveData.characterStatData = new CharacterStatSaveData
         {
-            speed = stats.speed,
+            originalSpeed = stats.originalSpeed,
             maxStamina = stats.maxStamina,
             maxStaminaBonus = stats.maxStaminaBonus,
             staminaIncreaseAlpha = stats.staminaIncreaseAlpha,
@@ -68,14 +68,28 @@ public class SaveManager : MonoBehaviour
             axeDamage = stats.axeDamage,
             axeDamageMultiplier = stats.axeDamageMultiplier,
             axeDurability = stats.axeDurability,
+            speedDecreaseWhileAction = stats.speedDecreaseWhileAction,
+            axeAttackRangeMultiplier = stats.axeAttackRangeMultiplier,
+            axeDurabilityDecIgnoreChance = stats.axeDurabilityDecIgnoreChance,
             
             rifleDamage = stats.rifleDamage,
             rifleDamageMultiplier = stats.rifleDamageMultiplier,
+            gunPenetrationChance = stats.gunPenetrationChance,
+            
+            ricochetCnt = stats.ricochetCnt,
+            ricochetAngle = stats.ricochetAngle,
+            ricochetDist = stats.ricochetDist,
+            ricochetDamage = stats.ricochetDamage,
             
             weaponChangeCoolTime = stats.weaponChangeCoolTime,
             switchSpeedMultiplier = stats.switchSpeedMultiplier,
             
-            bCanHunting = stats.bCanHunting
+            bCanHunting = stats.bCanHunting,
+
+            shockWaveChance = stats.shockWaveChance,
+            shockWaveDamage = stats.shockWaveDamage,
+            shockWaveDuration = stats.shockWaveDuration,
+            shockWaveCreateDelay = stats.shockWaveCreateDelay
         };
 
         // 2. 스킬 데이터 추출 (리스트 재사용)

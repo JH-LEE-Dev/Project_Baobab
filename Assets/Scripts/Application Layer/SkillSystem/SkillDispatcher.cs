@@ -12,6 +12,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private IDensityCH densityCH;
     private ICarrotItemCH carrotItemCH;
     private ITownObjSystemCH townObjSystemCH;
+    private ILogProcessingSystemCH logProcessingSystemCH;
 
 
     [SerializeField] private List<SkillCommand> skillCommands;
@@ -33,9 +34,11 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     
     ITownObjSystemCH ICommandHandleSystem.townObjSystemCH => townObjSystemCH;
 
+    ILogProcessingSystemCH ICommandHandleSystem.logProcessingSystemCH => logProcessingSystemCH;
 
     public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
-    ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH)
+    ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH,
+    ILogProcessingSystemCH _logProcessingSystemCH)
     {
         signalHub = _signalHub;
         inventoryCH = _inventoryCH;
@@ -45,6 +48,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         densityCH = _densityCH;
         carrotItemCH = _carrotItemCH;
         townObjSystemCH = _townObjSystemCH;
+        logProcessingSystemCH = _logProcessingSystemCH;
         
         if (skillCommands == null) return;
 

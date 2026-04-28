@@ -144,9 +144,9 @@ public enum SkillType
     ReserveAmmoIncrease1, // 예비탄창증가1
     GunMagazineCapacity1, //총기탄창증가1
     GunPenetration1, //총기관통1
-    Scattershot1, //확산탄1
-    ScattershotDamage1, //확산탄 데미지1
-    ScattershotRange1, //확산탄 범위
+    Ricochet1, //확산탄1
+    RicochetDamage1, //확산탄 데미지1
+    RicochetRange1, //확산탄 범위
     GunAttackSpeed1, //총기공격속도1
     GunReloadSpeed1, //총기 재장전 속도1
 
@@ -190,6 +190,17 @@ public enum SkillCommandType
     StaminaRecoveryBoost,
     StaminaMaxIncrease,
     OffRoadVehicle,
+    ConveyorSpeed,
+    ReserveAmmoIncrease,
+    GunMagazineCapacity,
+    Ricochet,
+    GunPenetration,
+    EfficientMovement,
+    Shockwave,
+    AxeRange,
+    AxeDurability,
+    SteelAxe,
+    PowerSupply,
 }
 
 public enum AbilityLevelUpRejectReason

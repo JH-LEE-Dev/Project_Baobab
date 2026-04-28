@@ -9,4 +9,5 @@ public interface ICommandHandleSystem
     public IDensityCH densityCH { get; }
     public ICarrotItemCH carrotItemCH { get; }
     public ITownObjSystemCH townObjSystemCH { get; }
+    public ILogProcessingSystemCH logProcessingSystemCH { get; }
 }
