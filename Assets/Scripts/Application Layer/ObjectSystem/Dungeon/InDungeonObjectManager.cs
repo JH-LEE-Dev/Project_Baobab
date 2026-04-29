@@ -440,7 +440,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         if (dungeonData == null)
         {
-            return new TreeData(TreeType.None, TreeGrade.None, TreeState.Idle);
+            return new TreeData(TreeType.None, TreeGrade.None);
         }
 
         TreeType type = TreeType.None;
@@ -465,7 +465,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             }
         }
 
-        return new TreeData(type, grade, TreeState.Idle);
+        return new TreeData(type, grade);
     }
 
     private void OnGetTree(TreeObj _tree)

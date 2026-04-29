@@ -25,18 +25,10 @@ public enum TreeGrade
     Max,
 }
 
-public enum TreeState
-{
-    Idle,
-    Wet,
-    Max,
-}
-
 public enum LogState
 {
     Destoyed,
     Damaged,
-    Wet,
     Normal,
     Fascinating,
     Advanced,
@@ -47,11 +39,9 @@ public struct TreeData
 {
     public TreeType type;
     public TreeGrade grade;
-    public TreeState treeState;
 
-    public TreeData(TreeType _type, TreeGrade _grade,TreeState _treeState)
+    public TreeData(TreeType _type, TreeGrade _grade)
     {
-        treeState = _treeState;
         type = _type;
         grade = _grade;
     }
@@ -71,13 +61,6 @@ public enum ItemType
 public struct LogDropData
 {
     public TreeGrade treeGrade;
-    public List<LogStateProbData> probDatas;
-}
-
-[Serializable]
-public struct LogStateProbData
-{
-    public TreeState treeState;
     public List<LogProbData> probDatas;
 }
 

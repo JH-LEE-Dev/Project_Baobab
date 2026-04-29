@@ -1,52 +1,138 @@
 using UnityEngine;
 using DG.Tweening;
-using PresentationLayer.DOTweenAnimationSystem;
+using UnityEngine.Events;
 
 namespace PresentationLayer.DOTweenAnimationSystem.Motions.UI
 {
     /// <summary>
-    /// 아이템 획득이나 추가 시 '뽕' 하고 나타나는 찰진 느낌의 연출을 담당하는 모션 클래스입니다.
-    /// 연출 반복 시 회전값이 누적되지 않도록 초기화 로직이 포함되어 있습니다.
+    /// UI 요소가 '뽕' 하고 나타나는 찰진 느낌의 연출을 담당하는 독립 컴포넌트입니다.
     /// </summary>
-    public class UIMotion_Pop : ObjectMotionBase
+    public class UIMotion_Pop : MonoBehaviour
     {
-        // //외부 의존성
-        [Header("Scale Settings")]
-        [SerializeField] private float startScale = 0.5f;
-        [SerializeField] private float targetScale = 1f;
-        [SerializeField] private Ease scaleEase = Ease.OutBack;
-
-        [Header("Rotation Settings")]
-        [SerializeField] private Vector3 punchRotation = new Vector3(0f, 0f, 15f);
-        [SerializeField] private int punchVibrato = 10;
-        [SerializeField] private float punchElasticity = 1f;
-
-        // //내부 로직
-
-        protected override void OnRectTransform(Sequence _seq, RectTransform _rect)
+        [System.Serializable]
+        public class ValueSettings
         {
-            if (null == _rect)
-                return;
+            [Header("Duration Settings")]
+            public float duration = 0.3f;
 
-            // [핵심] 기울어짐 누적 방지: 시작 시 회전값과 크기를 즉시 초기화
-            _rect.localEulerAngles = Vector3.zero;
-            _rect.localScale = Vector3.one * startScale;
+            [Header("Scale Settings")]
+            public float startScale = 0.5f;
+            public Ease scaleEase = Ease.OutBack;
 
-            // 1. 크기 연출
-            _seq.Append(_rect.DOScale(targetScale, publicDuration).SetEase(scaleEase));
-
-            // 2. 회전 연출: 초기화된 zero 지점을 기준으로 흔들림
-            _seq.Join(_rect.DOPunchRotation(punchRotation, publicDuration, punchVibrato, punchElasticity));
+            [Header("Rotation Settings")]
+            public Vector3 punchRotation = new Vector3(0f, 0f, 15f);
+            public int punchVibrato = 10;
+            public float punchElasticity = 1f;
         }
 
-        protected override void OnCanvasGroup(Sequence _seq, CanvasGroup _group)
+        private struct InitialState
         {
-            if (null == _group)
+            public Vector2 position;
+            public Vector3 rotation;
+            public Vector3 scale;
+        }
+
+        // //외부 의존성
+        [Header("Target Settings")]
+        [SerializeField] private RectTransform targetRect;
+
+        [Header("Value Settings")]
+        [SerializeField] private ValueSettings valueSettings;
+
+        // //내부 의존성
+        private InitialState initialState;
+        private Sequence currentSequence;
+        private UnityAction onCompleteCallback;
+
+        // //퍼블릭 초기화 및 제어 메서드
+
+        public void Initialize()
+        {
+            CaptureInitialState();
+        }
+
+        /// <summary>
+        /// Pop 애니메이션을 재생합니다.
+        /// </summary>
+        /// <param name="_onComplete">완료 후 호출될 콜백</param>
+        public void Play(UnityAction _onComplete = null)
+        {
+            if (null == targetRect)
                 return;
 
-            // 알파 초기화 및 페이드인
-            _group.alpha = 0f;
-            _seq.Join(_group.DOFade(1f, publicDuration * 0.5f));
+            onCompleteCallback = _onComplete;
+
+            Stop();
+
+            // 캡처된 스케일이 0일 경우 재캡처를 시도하고, 실패 시 Vector3.one으로 강제 보호
+            if (0.001f > initialState.scale.sqrMagnitude)
+            {
+                CaptureInitialState();
+                if (0.001f > initialState.scale.sqrMagnitude)
+                    initialState.scale = Vector3.one;
+            }
+
+            // 초기화: 원래 스케일의 startScale 비율에서 시작
+            targetRect.localScale = initialState.scale * valueSettings.startScale;
+            targetRect.localEulerAngles = initialState.rotation;
+
+            currentSequence = DOTween.Sequence();
+
+            // 1. 크기 연출: 원래 캡처된 스케일로 복귀
+            currentSequence.Append(targetRect.DOScale(initialState.scale, valueSettings.duration)
+                .SetEase(valueSettings.scaleEase));
+            // 2. 회전 연출 (Punch)
+            currentSequence.Join(targetRect.DOPunchRotation(valueSettings.punchRotation, valueSettings.duration, valueSettings.punchVibrato, valueSettings.punchElasticity));
+
+            currentSequence.OnComplete(HandleComplete);
+        }
+
+        public void Stop()
+        {
+            if (null != currentSequence && true == currentSequence.IsActive())
+                currentSequence.Kill();
+        }
+
+        public void ResetToInitialState()
+        {
+            if (null == targetRect)
+                return;
+
+            targetRect.anchoredPosition = initialState.position;
+            targetRect.localEulerAngles = initialState.rotation;
+            targetRect.localScale = initialState.scale;
+        }
+
+        // //유니티 이벤트 함수
+
+        private void OnDestroy()
+        {
+            Stop();
+        }
+
+        // //내부 로직 메서드
+
+        private void CaptureInitialState()
+        {
+            if (null == targetRect)
+                return;
+
+            initialState.position = targetRect.anchoredPosition;
+            initialState.rotation = targetRect.localEulerAngles;
+
+            // 스케일이 0일 때 캡처되면 애니메이션 종료 후 사라지므로 안전하게 Vector3.one 처리
+            if (0.001f > targetRect.localScale.sqrMagnitude)
+                initialState.scale = Vector3.one;
+            else
+                initialState.scale = targetRect.localScale;
+        }
+
+        private void HandleComplete()
+        {
+            ResetToInitialState();
+
+            if (null != onCompleteCallback)
+                onCompleteCallback.Invoke();
         }
     }
 }

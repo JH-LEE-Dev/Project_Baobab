@@ -10,4 +10,5 @@ public interface ICommandHandleSystem
     public ICarrotItemCH carrotItemCH { get; }
     public ITownObjSystemCH townObjSystemCH { get; }
     public ILogProcessingSystemCH logProcessingSystemCH { get; }
+    public ILogItemCH logItemCH { get; }
 }

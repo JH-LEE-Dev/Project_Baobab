@@ -59,7 +59,9 @@ public class SaveManager : MonoBehaviour
         var stats = character.statComponent;
         cachedSaveData.characterStatData = new CharacterStatSaveData
         {
+            pickupRangeMultiplier = stats.pickupRangeMultiplier,
             originalSpeed = stats.originalSpeed,
+            speedMultiplier = stats.speedMultiplier,
             maxStamina = stats.maxStamina,
             maxStaminaBonus = stats.maxStaminaBonus,
             staminaIncreaseAlpha = stats.staminaIncreaseAlpha,
@@ -67,6 +69,8 @@ public class SaveManager : MonoBehaviour
             
             axeDamage = stats.axeDamage,
             axeDamageMultiplier = stats.axeDamageMultiplier,
+            axeAttackCoolTime = stats.axeAttackCoolTime,
+            axeAttackSpeedMultiplier = stats.axeAttackSpeedMultiplier,
             axeDurability = stats.axeDurability,
             speedDecreaseWhileAction = stats.speedDecreaseWhileAction,
             axeAttackRangeMultiplier = stats.axeAttackRangeMultiplier,
@@ -74,7 +78,11 @@ public class SaveManager : MonoBehaviour
             
             rifleDamage = stats.rifleDamage,
             rifleDamageMultiplier = stats.rifleDamageMultiplier,
+            shotDelay = stats.shotDelay,
+            rifleAttackSpeedMultiplier = stats.rifleAttackSpeedMultiplier,
             gunPenetrationChance = stats.gunPenetrationChance,
+            reloadDuration = stats.reloadDuration,
+            reloadSpeedMultiplier = stats.reloadSpeedMultiplier,
             
             ricochetCnt = stats.ricochetCnt,
             ricochetAngle = stats.ricochetAngle,
@@ -88,7 +96,9 @@ public class SaveManager : MonoBehaviour
 
             shockWaveChance = stats.shockWaveChance,
             shockWaveDamage = stats.shockWaveDamage,
-            shockWaveDuration = stats.shockWaveDuration,
+            shockWaveDamageMultiplier = stats.shockWaveDamageMultiplier,
+            shockWaveSpeed = stats.shockWaveSpeed,
+            shockWaveSpeedMultiplier = stats.shockWaveSpeedMultiplier,
             shockWaveCreateDelay = stats.shockWaveCreateDelay
         };
 
@@ -117,9 +127,17 @@ public class SaveManager : MonoBehaviour
         }
 
         // 6. 당근 드랍 데이터 추출
-        if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null && inDungeonObjectManager.itemManager.carrrotItemController != null)
+        if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null)
         {
-            cachedSaveData.carrotSaveData = inDungeonObjectManager.itemManager.carrrotItemController.GetSaveData();
+            if (inDungeonObjectManager.itemManager.carrrotItemController != null)
+            {
+                cachedSaveData.carrotSaveData = inDungeonObjectManager.itemManager.carrrotItemController.GetSaveData();
+            }
+
+            if (inDungeonObjectManager.itemManager.logItemController != null)
+            {
+                cachedSaveData.logDropProbSaveData = inDungeonObjectManager.itemManager.logItemController.GetSaveData();
+            }
         }
 
         // 7. 마을 오브젝트 데이터 추출 (bCanTravel 등)
@@ -186,10 +204,18 @@ public class SaveManager : MonoBehaviour
             densityManager.LoadSaveData(saveData.environmentSaveData);
         }
 
-        // 6. 당근 드랍 데이터 복구
-        if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null && inDungeonObjectManager.itemManager.carrrotItemController != null)
+        // 6. 드랍 데이터 복구
+        if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null)
         {
-            inDungeonObjectManager.itemManager.carrrotItemController.LoadSaveData(saveData.carrotSaveData);
+            if (inDungeonObjectManager.itemManager.carrrotItemController != null)
+            {
+                inDungeonObjectManager.itemManager.carrrotItemController.LoadSaveData(saveData.carrotSaveData);
+            }
+
+            if (inDungeonObjectManager.itemManager.logItemController != null)
+            {
+                inDungeonObjectManager.itemManager.logItemController.LoadSaveData(saveData.logDropProbSaveData);
+            }
         }
 
         // 7. 마을 오브젝트 데이터 복구

@@ -174,7 +174,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             if (!bIsSpeedReduced)
             {
                 originalSpeed = ctx.characterStat.originalSpeed;
-                ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileAction;
+                ctx.characterStat.speed = originalSpeed * ctx.characterStat.speedDecreaseWhileAction;
                 bIsSpeedReduced = true;
             }
             StopCoroutine(nameof(SpeedRecoveryRoutine));

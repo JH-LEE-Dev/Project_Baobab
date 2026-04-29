@@ -43,20 +43,28 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             //bulletDisplay?.총알 흩어질지, 모일지 연출
         }
 
-        public void PlayReloadMotion(float _duration, UnityAction _callEvent)
+        public void PlayReloadMotion(float _duration, UnityAction _onComplete = null)
         {
             if (null == bulletDisplay)
                 return;
 
-            bulletDisplay.PlayReloadMotion(_duration, _callEvent);
+            bulletDisplay.PlayReloadMotion(_duration, _onComplete);
         }
 
-        public void PlayResetMotion(float _duration)
+        public void PlayResetMotion(UnityAction _onStart = null, UnityAction _onComplete = null)
         {
             if (null == bulletDisplay)
                 return;
 
-            bulletDisplay.PlayResetMotion(_duration);
+            bulletDisplay.PlayResetMotion(_onStart, _onComplete);
+        }
+
+        public void PlayGatherMotion(UnityAction _onStart = null, UnityAction _onComplete = null)
+        {
+            if (null == bulletDisplay)
+                return;
+
+            bulletDisplay.PlayGatherMotion(_onStart, _onComplete);
         }
 
         /// <summary>

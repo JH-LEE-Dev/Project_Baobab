@@ -12,13 +12,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
     {
         // //외부 의존성
         [Header("Pool Settings")]
-        [SerializeField] private GameObject bulletPrefab;      // HUD_BulletIcon 컴포넌트가 포함된 프리팹
+        [SerializeField] private GameObject bulletPrefab;      // HUD_BulletIcon 컴포넌트가 포함된 프리발
         [SerializeField] private Transform bulletContainer;    // 아이콘 부모 컨테이너
         [SerializeField] private int defaultPoolSize = 30;     // 초기 생성할 총알 개수
 
         // //내부 의존성
         private List<HUD_BulletIcon> bulletIcons;
         private int lastKnownMagCount = -1;
+        private int lastKnownMaxMag = -1;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -39,7 +40,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         public void SetActive(bool _isActive)
         {
-            for (int i = 0; i < bulletIcons.Count; i++)
+            int _limit = (-1 == lastKnownMaxMag) ? bulletIcons.Count : lastKnownMaxMag;
+            for (int i = 0; i < _limit; i++)
             {
                 HUD_BulletIcon _icon = bulletIcons[i];
                 if (null == _icon)
@@ -57,7 +59,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (_maxMag > bulletIcons.Count)
                 PrewarmPool(_maxMag);
 
-            bool _shouldAnimate = (-1 != lastKnownMagCount) && (_currentMag < lastKnownMagCount);
+            bool _isFiring = (-1 != lastKnownMagCount) && (_currentMag < lastKnownMagCount);
 
             for (int i = 0; i < bulletIcons.Count; i++)
             {
@@ -77,60 +79,83 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     _icon.gameObject.SetActive(true);
                 
                 bool _isFilled = i < _currentMag;
+                bool _shouldAnimate = _isFiring && (i == _currentMag);
+                
                 _icon.SetState(_isFilled, _shouldAnimate);
             }
 
             lastKnownMagCount = _currentMag;
+            lastKnownMaxMag = _maxMag;
         }
 
-        public void PlayReloadMotion(float _totalDuration, UnityAction _callEvent)
+        public void PlayReloadMotion(float _totalDuration, UnityAction _onComplete)
         {
             if (null == bulletIcons || 0 == bulletIcons.Count)
                 return;
 
-            // 재장전 연출을 위한 총알 간 간격 계산
-            // maxCapacity 만큼의 총알만 연출함
-            int _targetCount = 0;
-            for (int i = 0; i < bulletIcons.Count; i++)
-            {
-                if (null != bulletIcons[i] && true == bulletIcons[i].gameObject.activeSelf)
-                    _targetCount++;
-            }
-
-            if (0 == _targetCount)
+            if (0 >= lastKnownMaxMag)
                 return;
 
-            float _bulletDuration = _totalDuration * 0.5f;
-            float _interval = (_totalDuration - _bulletDuration) / _targetCount;
+            float _interval = _totalDuration / lastKnownMaxMag;
 
-            int _activeIndex = 0;
-            for (int i = 0; i < bulletIcons.Count; i++)
+            for (int i = 0; i < lastKnownMaxMag; i++)
             {
                 HUD_BulletIcon _icon = bulletIcons[i];
-                if (null == _icon || false == _icon.gameObject.activeSelf)
+                if (null == _icon)
                     continue;
 
-                _icon.PlayReloadMotion(_bulletDuration, _activeIndex * _interval, _callEvent);
-                _activeIndex++;
+                _icon.PlayReloadMotion(i * _interval, _onComplete);
             }
         }
 
-        public void PlayResetMotion(float _duration)
+        public void PlayResetMotion(UnityAction _onStart = null, UnityAction _onComplete = null)
         {
             if (null == bulletIcons || 0 == bulletIcons.Count)
                 return;
 
-            for (int i = 0; i < bulletIcons.Count; i++)
+            int _limit = (-1 == lastKnownMaxMag) ? bulletIcons.Count : lastKnownMaxMag;
+            if (0 >= _limit)
+                return;
+
+            for (int i = 0; i < _limit; i++)
             {
                 HUD_BulletIcon _icon = bulletIcons[i];
-                if (null == _icon || false == _icon.gameObject.activeSelf)
+                if (null == _icon)
                     continue;
 
-                // 재장전 완료는 딜레이 없이 한 번에 복구
-                _icon.PlayReloadMotion(_duration, 0f); // "Reload" 태그를 재사용하거나 별도 구현 가능
+                // 현재 장전된 탄환 수에 따라 활성화 여부 결정
+                bool _isFilled = i < lastKnownMagCount;
+
+                // 첫 번째 아이콘 시작 시와 마지막 아이콘 종료 시 콜백 실행 (전체 연출 흐름 제어)
+                UnityAction _start = (0 == i) ? _onStart : null;
+                UnityAction _complete = (i == _limit - 1) ? _onComplete : null;
+
+                _icon.PlayResetMotion(i * 0.025f, _isFilled, _start, _complete); 
             }
         }
 
+        /// <summary>
+        /// 모든 총알이 첫 번째 총알 위치로 촤라락 뭉치는 연출을 재생합니다.
+        /// </summary>
+        public void PlayGatherMotion(UnityAction _onStart, UnityAction _onComplete)
+        {
+            if (null == bulletIcons || 0 == bulletIcons.Count)
+                return;
+
+            if (0 >= lastKnownMaxMag)
+                return;
+
+            Vector2 _targetPos = bulletIcons[0].GetPosition();
+
+            for (int i = 0; i < lastKnownMaxMag; i++)
+            {
+                HUD_BulletIcon _icon = bulletIcons[i];
+                if (null == _icon)
+                    continue;
+
+                _icon.PlayGatherMotion(i * 0.025f, _targetPos, _onStart, _onComplete);
+            }
+        }
         /// <summary>
         /// 오브젝트 풀을 생성하고 레이어 순서를 조정합니다.
         /// </summary>
@@ -146,8 +171,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 
                 if (null != _icon)
                 {
-                    // 신규 생성된 오브젝트를 계층 구조의 가장 첫 번째로 보냄으로써
-                    // 먼저 생성된 오브젝트(bulletIcons[0])가 항상 마지막 자식이 되어 레이어상 가장 위에 오게 함
                     _go.transform.SetAsFirstSibling();
                     
                     _icon.Initialize(true);
@@ -156,7 +179,5 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 }
             }
         }
-
-        // //유니티 이벤트 함수
     }
 }

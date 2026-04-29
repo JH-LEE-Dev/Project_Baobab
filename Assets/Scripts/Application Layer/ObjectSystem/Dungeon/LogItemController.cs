@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class LogItemController : MonoBehaviour
+public class LogItemController : MonoBehaviour, ILogItemCH
 {
     public event Action<Item> LogItemAcquiredEvent;
 
@@ -178,14 +178,11 @@ public class LogItemController : MonoBehaviour
 
         if (dropData.probDatas == null || dropData.probDatas.Count == 0) return;
 
-        LogStateProbData stateProbData = GetStateProbData(dropData, treeData.treeState);
-        if (stateProbData.probDatas == null || stateProbData.probDatas.Count == 0) return;
-
         int spawnCount = UnityEngine.Random.Range(2, 4); 
 
         for (int i = 0; i < spawnCount; i++)
         {
-            LogState logType = GetRandomLogState(stateProbData);
+            LogState logType = GetRandomLogState(dropData);
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = _treeObj.transform.position;
@@ -217,19 +214,7 @@ public class LogItemController : MonoBehaviour
         return default;
     }
 
-    private LogStateProbData GetStateProbData(LogDropData _dropData, TreeState _state)
-    {
-        for (int i = 0; i < _dropData.probDatas.Count; i++)
-        {
-            if (_dropData.probDatas[i].treeState == _state)
-            {
-                return _dropData.probDatas[i];
-            }
-        }
-        return default;
-    }
-
-    private LogState GetRandomLogState(LogStateProbData _data)
+    private LogState GetRandomLogState(LogDropData _data)
     {
         float totalProb = 0;
         for (int i = 0; i < _data.probDatas.Count; i++)
@@ -266,4 +251,64 @@ public class LogItemController : MonoBehaviour
             cullingGroup = null;
         }
     }
-}
+
+    public void IncreaseDropProb(LogState _logState, float _amount)
+    {
+        if (logProbDatas == null) return;
+
+        for (int i = 0; i < logProbDatas.Count; i++)
+        {
+            List<LogProbData> probList = logProbDatas[i].probDatas;
+            if (probList == null) continue;
+
+            int targetIndex = -1;
+            float targetProb = 0f;
+
+            // 1. 대상 인덱스와 현재 확률 찾기
+            for (int j = 0; j < probList.Count; j++)
+            {
+                if (probList[j].type == _logState)
+                {
+                    targetIndex = j;
+                    targetProb = probList[j].probability;
+                    break;
+                }
+            }
+
+            if (targetIndex == -1) continue;
+
+            // 2. 더 높은 단계의 logState 중 더 높은 확률이 있는지 체크
+            bool skipAdd = false;
+            for (int j = 0; j < probList.Count; j++)
+            {
+                if (probList[j].type > _logState && probList[j].probability > targetProb)
+                {
+                    skipAdd = true;
+                    break;
+                }
+            }
+
+            // 3. 조건 만족 시 확률 증가
+            if (!skipAdd)
+            {
+                LogProbData probData = probList[targetIndex];
+                probData.probability += _amount;
+                probList[targetIndex] = probData;
+            }
+        }
+    }
+
+    public LogDropProbSaveData GetSaveData()
+    {
+        return new LogDropProbSaveData
+        {
+            logProbDatas = new List<LogDropData>(logProbDatas)
+        };
+    }
+
+    public void LoadSaveData(LogDropProbSaveData _data)
+    {
+        if (_data.logProbDatas == null) return;
+        logProbDatas = new List<LogDropData>(_data.logProbDatas);
+    }
+    }

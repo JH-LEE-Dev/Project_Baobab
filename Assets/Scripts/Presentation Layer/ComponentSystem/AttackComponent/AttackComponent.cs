@@ -231,7 +231,7 @@ public class AttackComponent : PComponent
     private void OnDrawGizmos()
     {
         if (componentCenterPoint == null) return;
-        
+
         Vector3 centerPos = componentCenterPoint.transform.position;
         float effectiveAttackRadius = attackRadius * (ctx != null ? ctx.characterStat.axeAttackRangeMultiplier : 1f);
 
@@ -292,7 +292,7 @@ public class AttackComponent : PComponent
             originalSpeed = ctx.characterStat.originalSpeed;
         }
 
-        ctx.characterStat.speed = 0.5f;
+        ctx.characterStat.speed = originalSpeed * ctx.characterStat.speedDecreaseWhileAction;
         ctx.bWhileChangingWeapon = true;
 
         yield return new WaitForSeconds(ctx.characterStat.weaponChangeCoolTime);

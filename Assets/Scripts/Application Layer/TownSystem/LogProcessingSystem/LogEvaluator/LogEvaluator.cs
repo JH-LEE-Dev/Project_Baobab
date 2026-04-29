@@ -62,9 +62,6 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
                 float[] normalMultipliers = { 0.9f, 1.0f, 1.1f };
                 stateMultiplier = normalMultipliers[UnityEngine.Random.Range(0, normalMultipliers.Length)];
                 break;
-            case LogState.Wet:
-                stateMultiplier = 0.7f;
-                break;
             case LogState.Damaged:
                 float[] damagedMultipliers = { 0.5f, 0.6f, 0.7f };
                 stateMultiplier = damagedMultipliers[UnityEngine.Random.Range(0, damagedMultipliers.Length)];

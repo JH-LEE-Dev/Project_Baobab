@@ -13,14 +13,15 @@ public class ShockWave : MonoBehaviour
     [SerializeField] private float scaleFactor = 2f;
 
     private float timer;
+    private Vector3 startPosition;
     private float damage;
-    
+
     [Header("Sector Ring Settings")]
     public float minDist = 0f;
     public float maxDist = 2f;
     public float angle = 90f;
     public float findRange = 2.5f;
-    
+
     // 초기 설정값 캐싱용
     private Vector3 initialScale;
     private float initialMinDist;
@@ -39,18 +40,20 @@ public class ShockWave : MonoBehaviour
         initialFindRange = findRange;
     }
 
-    public void SetValue(float _damage, float _duration)
+    public void SetValue(float _damage, float _speed, float _duration)
     {
         damage = _damage;
+        moveSpeed = _speed;
         lifeTime = _duration;
     }
 
     public void Reset()
     {
         timer = 0f;
+        startPosition = transform.position;
         targetsInRange.Clear();
         hitTargets.Clear();
-        
+
         // 리셋 시 스케일과 범위를 초기 상태로 복구
         transform.localScale = initialScale;
         minDist = initialMinDist;
@@ -73,7 +76,7 @@ public class ShockWave : MonoBehaviour
         for (int i = 0; i < targetsInRange.Count; i++)
         {
             var target = targetsInRange[i];
-            
+
             if (!(target is TreeObj) || hitTargets.Contains(target)) continue;
 
             Vector2 targetPos = target.Position + target.Offset;
@@ -95,20 +98,22 @@ public class ShockWave : MonoBehaviour
     private void Update()
     {
         timer += Time.deltaTime;
-        float progress = Mathf.Clamp01(timer / lifeTime);
 
         // 1. 지정된 방향(transform.right)으로 이동
         transform.position += transform.right * (moveSpeed * Time.deltaTime);
 
-        // 2. 시간에 따른 스케일 및 충돌 범위 확장
-        float currentScaleMultiplier = Mathf.Lerp(1f, scaleFactor, progress);
+        // 2. 이동 거리에 따른 스케일 및 충돌 범위 확장
+        float distanceTraveled = Vector3.Distance(transform.position, startPosition);
+        // 이동 거리 1당 scaleFactor만큼 배율이 증가하도록 설정 (사용자 요청: 이동 거리에 따라 크기가 커지게)
+        float currentScaleMultiplier = 1f + (distanceTraveled * scaleFactor);
+
         transform.localScale = initialScale * currentScaleMultiplier;
-        
+
         // 판정 수치들도 동일한 비율로 확장
         minDist = initialMinDist * currentScaleMultiplier;
         maxDist = initialMaxDist * currentScaleMultiplier;
         findRange = initialFindRange * currentScaleMultiplier;
-        
+
         // 3. 매 프레임 판정 수행
         ApplyShockWaveDamage();
 
