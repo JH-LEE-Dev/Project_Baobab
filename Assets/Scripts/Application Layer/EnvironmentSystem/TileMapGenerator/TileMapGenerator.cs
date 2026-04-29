@@ -307,33 +307,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         if (playerIdx < 0 || playerIdx >= size) playerIdx = 0;
 
-        // 2. 포탈 스폰 위치 결정: 플레이어로부터 가장 먼 곳 선택
-        List<int> candidates = innerEdgesList.Count > 0 ? innerEdgesList : shorelineList;
-
-        if (candidates.Count > 0)
-        {
-            Vector3 playerPos = GetWorldPos(playerIdx);
-            float maxDistSq = -1f;
-            int bestPortalIdx = candidates[0];
-
-            for (int i = 0; i < candidates.Count; i++)
-            {
-                int cIdx = candidates[i];
-                Vector3 cPos = GetWorldPos(cIdx);
-                float distSq = (playerPos - cPos).sqrMagnitude;
-
-                if (distSq > maxDistSq)
-                {
-                    maxDistSq = distSq;
-                    bestPortalIdx = cIdx;
-                }
-            }
-            portalIdx = bestPortalIdx;
-        }
-        else
-        {
-            portalIdx = playerIdx;
-        }
+        // 2. 포탈 스폰 위치 결정: 캐릭터 스폰 위치에서 오른쪽으로 2칸 떨어진 위치
+        int portalX = centerX + 2;
+        int portalY = centerY;
+        
+        if (portalX >= width) portalX = width - 1;
+        
+        portalIdx = portalX + portalY * width;
     }
 
     private void ApplyTiles()
