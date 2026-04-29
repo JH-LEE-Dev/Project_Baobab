@@ -177,7 +177,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (_bInDungeon == false)
         {
-            armComponent.ResetDurability();
+            armComponent.ResetWeaponStatus();
             bWhileSwing = false;
             healthComponent.StaminaReset();
             statComponent.ResetSpeed();
@@ -187,6 +187,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
         else
         {
+            armComponent.ResetWeaponStatus();
             attackComponent.SetbCanSwap(true);
         }
 
