@@ -58,7 +58,8 @@ public class AxeAnimation : MonoBehaviour
 
     public void KillTweens()
     {
-        if (null != rotateTween && rotateTween.IsActive()) rotateTween.Kill();
+        if (null != rotateTween && rotateTween.IsActive()) 
+            rotateTween.Kill();
     }
 
     private void OnDestroy()

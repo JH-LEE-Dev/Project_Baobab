@@ -3,11 +3,14 @@ using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
 using System;
 using UnityEngine.Events;
+using DG.Tweening;
+using PresentationLayer.DOTweenAnimationSystem.Motions.UI;
 
 namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
     /// <summary>
     /// 개별 총알 아이콘의 시각적 상태와 연출을 관리하는 컴포넌트입니다.
+    /// 모든 연출 시작 전 StopAllMotions를 통해 중복 실행 문제를 방지합니다.
     /// </summary>
     public class HUD_BulletIcon : MonoBehaviour
     {
@@ -16,24 +19,71 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private Image filledImage;        // 전경 (차 있는 탄약)
         [SerializeField] private GameObject outline;
 
-        [SerializeField] private ObjectMotionPlayer motionPlayer; // 연출용 플레이어
+        [Header("Motions")]
+        [SerializeField] private UIMotion_GravityRot ejectMotion;
+        [SerializeField] private UIMotion_Reset resetMotion;
+        [SerializeField] private UIMotion_Reload reloadMotion;
+        [SerializeField] private UIMotion_Gather gatherMotion;
+
 
         // //내부 의존성
         private bool isCurrentlyFilled = true;
+        private RectTransform cachedRect;
+
+        private UnityAction onStartEvent;
+        private UnityAction onCompleteEvent;
 
         // //퍼블릭 초기화 및 제어 메서드
 
         public void Initialize(bool _startFilled)
         {
             isCurrentlyFilled = _startFilled;
+            cachedRect = GetComponent<RectTransform>();
 
             if (null != filledImage)
                 filledImage.gameObject.SetActive(isCurrentlyFilled);
+
+            if (null == ejectMotion)
+                ejectMotion = GetComponentInChildren<UIMotion_GravityRot>();
+
+            ejectMotion?.Initialize();
+
+            if (null == resetMotion)
+                resetMotion = GetComponentInChildren<UIMotion_Reset>();
+
+            resetMotion?.Initialize();
+
+            if (null == reloadMotion)
+                reloadMotion = GetComponentInChildren<UIMotion_Reload>();
+
+            reloadMotion?.Initialize();
+
+            if (null == gatherMotion)
+                gatherMotion = GetComponentInChildren<UIMotion_Gather>();
+
+            gatherMotion?.Initialize();
+        }
+
+        public Vector3 GetPosition()
+        {
+            return (null != cachedRect) ? cachedRect.position : Vector3.zero;
         }
 
         /// <summary>
-        /// 총알의 상태를 설정합니다.
+        /// 실행 중인 모든 모션을 정지하고 트윈을 제거합니다.
         /// </summary>
+        public void StopAllMotions()
+        {
+            ejectMotion?.Stop();
+            resetMotion?.Stop();
+            reloadMotion?.Stop();
+            gatherMotion?.Stop();
+
+            // 트윈 엔진 차원에서도 확실히 정리
+            if (null != cachedRect)
+                cachedRect.DOKill();
+        }
+
         /// <param name="_isFilled">채워짐 여부</param>
         /// <param name="_shouldAnimate">연출 재생 여부</param>
         public void SetState(bool _isFilled, bool _shouldAnimate)
@@ -45,40 +95,77 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (false == _isFilled && true == _shouldAnimate)
                 PlayEjectMotion();
-            else
-                ResetToFilled();
         }
+
+#region Motions
 
         private void PlayEjectMotion()
         {
-            if (null == motionPlayer)
-            {
-                if (null != filledImage)
-                    filledImage.gameObject.SetActive(false);
-                
+            //StopAllMotions();
+
+            if (null == ejectMotion)
                 return;
-            }
 
-            // 탄피 배출 연출 재생
-            motionPlayer.Play("Eject", null, OnEjectComplete);
+            ejectMotion.Play(HandleEjectComplete);
         }
 
-        private void OnEjectComplete()
-        {
-            if (null != filledImage)
-                filledImage.gameObject.SetActive(false);
-        }
-
-        private void ResetToFilled()
+        private void HandleEjectComplete()
         {
             if (null == filledImage)
                 return;
 
-            filledImage.gameObject.SetActive(true);
-            
-            if (null != motionPlayer)
-                motionPlayer.Play("Reset");
+            filledImage.gameObject.SetActive(false);
         }
+
+        public void PlayResetMotion(float _delay, bool _isFilled, UnityAction _onStart, UnityAction _onComplete)
+        {
+            StopAllMotions();
+
+            isCurrentlyFilled = _isFilled;
+
+            if (null != filledImage)
+                filledImage.gameObject.SetActive(_isFilled);
+
+            onStartEvent = _onStart;
+            onCompleteEvent = _onComplete;
+
+            resetMotion?.Play(_delay, HandleResetStart, HandleResetComplete);
+        }
+
+        private void HandleResetStart()
+        {
+            if (null != onStartEvent)
+                onStartEvent.Invoke();
+        }
+
+        private void HandleResetComplete()
+        {
+            onCompleteEvent?.Invoke();
+        }
+
+        public void PlayReloadMotion(float _delay, UnityAction _onComplete)
+        {
+            StopAllMotions();
+
+            if (null == reloadMotion)
+                return;
+
+            ejectMotion?.ResetToInitialState();
+
+            reloadMotion.Play(_delay, _onComplete);
+        }
+
+        public void PlayGatherMotion(float _delay, Vector3 _targetPos, UnityAction _onStart, UnityAction _onComplete)
+        {
+            StopAllMotions();
+
+            if (null == gatherMotion)
+                return;
+
+            gatherMotion.Play(_delay, _targetPos, _onStart, _onComplete);
+        }
+
+#endregion
 
         public void SetActive(bool _isActive)
         {
@@ -86,23 +173,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 return;
 
             outline.SetActive(_isActive);
-        }
-
-        public void PlayReloadMotion(float _duration, float _delay, UnityAction _callEvent = null)
-        {
-            if (null == motionPlayer)
-                return;
-
-            motionPlayer.Play("Reload", _duration, _delay, null, _callEvent);
-        }
-
-        public void PlayResetMotion(float _duration)
-        {
-            if (null == motionPlayer)
-                return;
-
-            // 딜레이 없이 즉시 복구 (내부적으로 0f 전달)
-            motionPlayer.Play("Reset", _duration, 0f);
         }
     }
 }

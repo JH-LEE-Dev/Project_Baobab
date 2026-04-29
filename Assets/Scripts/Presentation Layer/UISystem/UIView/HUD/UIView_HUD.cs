@@ -129,6 +129,14 @@ public class UIView_HUD : UIView
     public void SetCurrentMapType(MapType _currentMapType)
     {
         currentMapType = _currentMapType;
-        hudEquipment?.gameObject.SetActive(MapType.Town != currentMapType);
+        if (null != hudEquipment)
+        {
+            bool isActivate = MapType.Town != currentMapType;
+
+            hudEquipment.gameObject.SetActive(isActivate);
+
+            if (true == isActivate)
+                hudEquipment.UpdateAmmo();
+        }
     }
 }

@@ -1,4 +1,5 @@
 using PresentationLayer.DOTweenAnimationSystem;
+using PresentationLayer.DOTweenAnimationSystem.Motions.UI;
 using Unity.VisualScripting;
 using UnityEngine;
 
@@ -15,12 +16,13 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private RectTransform icons;
         [SerializeField] private CanvasGroup iconGroup;
 
-        [SerializeField] private ObjectMotionPlayer omp;
-
         [Header("Axe Position Settings")]
         [SerializeField] private Vector2 axePosWithRifle;
         [SerializeField] private Vector2 axePosAxeOnly;
 
+        [SerializeField] private UIMotion_Pop ammoBoxPop;
+        [SerializeField] private UIMotion_Pop axePop;
+        [SerializeField] private UIMotion_Pop riflePop;
 
         // //내부 의존성
         private ICharacter character;
@@ -82,7 +84,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
         }
 
-        private void UpdateAmmo()
+        public void UpdateAmmo()
         {
             if (null == character)
                 return;
@@ -118,18 +120,18 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 return;
 
             if (null != rifleItem)
-                rifleItem.PlayReloadMotion(character.statComponent.reloadDuration, PlayAmmoBoxPop);
+                rifleItem.PlayReloadMotion(character.statComponent.reloadDuration);
         }
 
         private void PlayResetMotion()
         {
             if (null != rifleItem)
-                rifleItem.PlayResetMotion(0.3f); // 쓕 돌아오는 속도 (0.3초)
+                rifleItem.PlayResetMotion(PlayAmmoBoxPop);
         }
 
         private void PlayAmmoBoxPop()
         {
-            omp?.Play("Pop");
+            ammoBoxPop?.Play();
         }
 
         public void UpdateRifleVisibility()
@@ -178,9 +180,15 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 rifleItem.SetActivate(WeaponMode.Rifle == _mode);
 
             if (WeaponMode.Axe == _mode)
-                omp?.Play("AxePop");
+            {
+                axePop?.Play();
+                rifleItem?.PlayGatherMotion();
+            }
             else if (WeaponMode.Rifle == _mode)
-                omp?.Play("RiflePop");
+            {
+                riflePop?.Play();
+                rifleItem?.PlayResetMotion();
+            }
         }
 
         public void OnDestroy()

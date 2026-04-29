@@ -709,6 +709,7 @@ MonoBehaviour:
   axeDurabilityDecAmount: 1
   axeAttackCoolTime: 1.2
   axeAttackRangeMultiplier: 1
+  axeDurabilityDecIgnoreChance: 0
   shockWaveChance: 0
   shockWaveDamage: 1
   shockWaveDuration: 0.2
@@ -716,7 +717,7 @@ MonoBehaviour:
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1
-  magCap: 2
+  magCap: 5
   ammoCap: 6
   reloadDuration: 3
   gunPenetrationChance: 0
