@@ -500,7 +500,7 @@ MonoBehaviour:
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 6}
-    duration: 0.4
+    duration: 0.3
     startDelay: 0.15
     moveEase: 6
     useFade: 1
@@ -588,7 +588,7 @@ MonoBehaviour:
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 30}
-    duration: 0.4
+    duration: 0.35
     startDelay: 0.2
     moveEase: 6
     useFade: 0
