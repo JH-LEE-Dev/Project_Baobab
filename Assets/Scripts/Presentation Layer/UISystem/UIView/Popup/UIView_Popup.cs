@@ -49,7 +49,7 @@ public class UIView_Popup : UIView
         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
     }
 
-#region [ Inventory UI ]
+    #region [ Inventory UI ]
     private void Init_Inventory()
     {
         if (null == uiInventoryPrefab)
@@ -125,5 +125,11 @@ public class UIView_Popup : UIView
         uI_Inventory?.Refresh();
     }
 
+    public void SetCurrentMapType(MapType _currentMapType)
+    {
+
+    }
+    
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
+
 }
