@@ -43,12 +43,13 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     [Header("Axe - Shockwave")]
     public float shockWaveChance = 0f;
     public float shockWaveDamage = 1f;
-    public float shockWaveDuration = 0f;
-    public float shockWaveCreateDelay = 0.3f;
+    public float shockWaveSpeed = 2f;
+    public float shockWaveDuration = 0.2f;
+    public float shockWaveCreateDelay = 0f;
     public float baseShockWaveDamage { get; private set; }
     public float shockWaveDamageMultiplier { get; private set; } = 1.0f;
-    public float baseShockWaveDuration { get; private set; }
-    public float shockWaveDurationMultiplier { get; private set; } = 1.0f;
+    public float baseShockWaveSpeed { get; private set; }
+    public float shockWaveSpeedMultiplier { get; private set; } = 1.0f;
 
     [Header("Rifle Settings")]
     public float rifleDamage = 10f;
@@ -101,7 +102,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
         baseWeaponChangeCoolTime = weaponChangeCoolTime;
         baseReloadDuration = reloadDuration;
         baseShockWaveDamage = shockWaveDamage;
-        baseShockWaveDuration = shockWaveDuration;
+        baseShockWaveSpeed = shockWaveSpeed;
     }
 
     public void IncreaseAxeDamage(float _amount)
@@ -199,8 +200,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
         shockWaveChance = _data.shockWaveChance;
         shockWaveDamage = _data.shockWaveDamage;
         shockWaveDamageMultiplier = _data.shockWaveDamageMultiplier;
-        shockWaveDuration = _data.shockWaveDuration;
-        shockWaveDurationMultiplier = _data.shockWaveDurationMultiplier;
+        shockWaveSpeed = _data.shockWaveSpeed;
+        shockWaveSpeedMultiplier = _data.shockWaveSpeedMultiplier;
         shockWaveCreateDelay = _data.shockWaveCreateDelay;
 
         Debug.Log("[StatComponent] Save Data Loaded and Applied.");
@@ -244,10 +245,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
         shockWaveDamage = baseShockWaveDamage * shockWaveDamageMultiplier;
     }
 
-    public void IncreaseShockWaveDuration(float _amount)
+    public void IncreaseShockWaveSpeed(float _amount)
     {
-        shockWaveDurationMultiplier += (_amount / 100.0f);
-        shockWaveDuration = baseShockWaveDuration * shockWaveDurationMultiplier;
+        shockWaveSpeedMultiplier += (_amount / 100.0f);
+        shockWaveSpeed = baseShockWaveSpeed * shockWaveSpeedMultiplier;
     }
 
     public void IncreaseAxeRangeMultiplier(float _amount)

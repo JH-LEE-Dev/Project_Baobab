@@ -43,8 +43,8 @@ public struct CharacterStatSaveData
     public float shockWaveChance;
     public float shockWaveDamage;
     public float shockWaveDamageMultiplier;
-    public float shockWaveDuration;
-    public float shockWaveDurationMultiplier;
+    public float shockWaveSpeed;
+    public float shockWaveSpeedMultiplier;
     public float shockWaveCreateDelay;
 }
 

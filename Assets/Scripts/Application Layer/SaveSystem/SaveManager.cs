@@ -97,8 +97,8 @@ public class SaveManager : MonoBehaviour
             shockWaveChance = stats.shockWaveChance,
             shockWaveDamage = stats.shockWaveDamage,
             shockWaveDamageMultiplier = stats.shockWaveDamageMultiplier,
-            shockWaveDuration = stats.shockWaveDuration,
-            shockWaveDurationMultiplier = stats.shockWaveDurationMultiplier,
+            shockWaveSpeed = stats.shockWaveSpeed,
+            shockWaveSpeedMultiplier = stats.shockWaveSpeedMultiplier,
             shockWaveCreateDelay = stats.shockWaveCreateDelay
         };
 

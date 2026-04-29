@@ -696,6 +696,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 540974064dcf14d49998bc5b8872a2c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StatComponent
+  pickupRangeMultiplier: 1
   speed: 1
   originalSpeed: 1
   maxStamina: 10000
@@ -710,10 +711,11 @@ MonoBehaviour:
   axeAttackCoolTime: 1.2
   axeAttackRangeMultiplier: 1
   axeDurabilityDecIgnoreChance: 0
-  shockWaveChance: 0
+  shockWaveChance: 100
   shockWaveDamage: 1
-  shockWaveDuration: 0.2
-  shockWaveCreateDelay: 0.3
+  shockWaveSpeed: 2
+  shockWaveDuration: 0.25
+  shockWaveCreateDelay: 0
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1

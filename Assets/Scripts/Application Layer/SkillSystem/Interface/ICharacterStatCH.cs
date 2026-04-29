@@ -16,7 +16,7 @@ public interface ICharacterStatCH
     public void IncreaseSpeedWhileAction(float _amount);
     public void IncreaseShockWaveChance(float _amount);
     public void IncreaseShockWaveDamage(float _amount);
-    public void IncreaseShockWaveDuration(float _amount);
+    public void IncreaseShockWaveSpeed(float _amount);
     public void IncreaseAxeRangeMultiplier(float _amount);
     public void IncreaseAxeDurability(float _amount);
     public void IncreaseAxeDurabilityDecIgnoreChance(float _amount);
