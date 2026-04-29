@@ -294,7 +294,12 @@ MonoBehaviour:
         type: 3
         baseValue: 500
         manualValues: []
-    skillTypes: []
+    skillTypes:
+    - skillCommandType: 37
+      amountCurve:
+        type: 3
+        baseValue: 4
+        manualValues: []
     prerequisiteSkills: 11000000
   - skillType: 26
     maxLevel: 1
