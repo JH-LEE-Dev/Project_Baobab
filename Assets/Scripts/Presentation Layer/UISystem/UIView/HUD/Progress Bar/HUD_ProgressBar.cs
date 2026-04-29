@@ -66,6 +66,11 @@ public class HUD_ProgressBar : MonoBehaviour, IPoolable
     }
     public void UpdateYOffset(float _in) => showYOffset = _in;
 
+    public void SetActivate(bool _is)
+    {
+        gameObject.SetActive(_is);
+    }
+
     /// <summary>
     /// 지정된 TargetValue까지 0부터 차오르는 충전/쿨타임 기능을 실행합니다.
     /// </summary>

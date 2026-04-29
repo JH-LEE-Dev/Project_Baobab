@@ -56,6 +56,7 @@ MonoBehaviour:
   ejectMotion: {fileID: 0}
   resetMotion: {fileID: 0}
   reloadMotion: {fileID: 0}
+  gatherMotion: {fileID: 0}
 --- !u!1 &3980838706994609506
 GameObject:
   m_ObjectHideFlags: 0
@@ -283,13 +284,13 @@ MonoBehaviour:
   targetRect: {fileID: 5301707719235818103}
   targetCanvasGroup: {fileID: 7417880921002530220}
   valueSettings:
-    spreadDuration: 0.3
-    appendInterval: -0.175
-    gatherDuration: 0.4
+    spreadDuration: 0.15
+    appendInterval: -0.1
+    gatherDuration: 0.3
     spreadOffset: {x: 0, y: 10}
     spreadEase: 26
     gatherEase: 27
-    fadeDuration: 0.5
+    fadeDuration: 0.35
 --- !u!114 &4891520061605291315
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -323,12 +324,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.Motions.UI.UIMotion_Gather
   targetRect: {fileID: 5301707719235818103}
-  targetCanvasGroup: {fileID: 7417880921002530220}
   valueSettings:
     duration: 0.25
     moveEase: 26
-    fadeDuration: 0.15
-    fadeEase: 6
 --- !u!1 &7821709219163881544
 GameObject:
   m_ObjectHideFlags: 0

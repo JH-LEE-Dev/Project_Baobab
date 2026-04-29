@@ -145,15 +145,13 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (0 >= lastKnownMaxMag)
                 return;
 
-            Vector2 _targetPos = bulletIcons[0].GetPosition();
-
             for (int i = 0; i < lastKnownMaxMag; i++)
             {
                 HUD_BulletIcon _icon = bulletIcons[i];
                 if (null == _icon)
                     continue;
 
-                _icon.PlayGatherMotion(i * 0.025f, _targetPos, _onStart, _onComplete);
+                _icon.PlayGatherMotion(i * 0.025f, bulletContainer.position, _onStart, _onComplete);
             }
         }
         /// <summary>

@@ -30,7 +30,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        public void Initialize(MapType _mapType)
+        public void Initialize()
         {
             if (null != axeItem)
             {

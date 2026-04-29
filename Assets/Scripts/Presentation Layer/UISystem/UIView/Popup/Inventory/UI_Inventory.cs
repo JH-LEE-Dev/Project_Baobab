@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class UI_Inventory : MonoBehaviour
 {
@@ -8,11 +10,13 @@ public class UI_Inventory : MonoBehaviour
     public event Action<IInventorySlot> SendDeleteItemEvent;
 
     [Header("Binding Obj")]
-    [SerializeField] private GameObject uiBackground;
+    [SerializeField] private GameObject invBackground;
     [SerializeField] private UI_Homing uiHoming;
     [SerializeField] private UI_Coin uiCoin;
     [SerializeField] private UI_Coin uiSubCoin;
     [SerializeField] private UI_Backpack uiBackpack;
+    [SerializeField] private UI_InvMotionPlayer uiInvBackground;
+    [SerializeField] private UI_InvMotionPlayer uiCoins;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
@@ -33,10 +37,11 @@ public class UI_Inventory : MonoBehaviour
 
     public void Initialize(Transform uiRoot, Action clickedHomingEvent)
     {
-        Init_Background();
+        Init_InvMotionPlayers();
         Init_Honing(clickedHomingEvent);
         Init_InventoryPopup();
         Init_Coins();
+        Init_Backpack();
 
         inventorySlots.Clear();
         UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
@@ -62,7 +67,7 @@ public class UI_Inventory : MonoBehaviour
 
         while (0 < needCount--)
         {
-            UI_InventorySlot slot = Instantiate(uiSlotPrefab, uiBackground.transform).GetComponent<UI_InventorySlot>();
+            UI_InventorySlot slot = Instantiate(uiSlotPrefab, invBackground.transform).GetComponent<UI_InventorySlot>();
 
             if (null == slot)
                 return;
@@ -171,9 +176,10 @@ public class UI_Inventory : MonoBehaviour
     }
     #endregion
 
-    private void Init_Background()
+    private void Init_InvMotionPlayers()
     {
-        uiBackground?.SetActive(false);
+        uiInvBackground?.Initialize();
+        uiCoins?.Initialize();
     }
 
     private void Init_Honing(Action clickedHomingEvent)
@@ -181,9 +187,8 @@ public class UI_Inventory : MonoBehaviour
         if (null == uiHoming)
             return;
 
-        uiHoming.gameObject.SetActive(false);
-
         uiHoming.Initialize();
+
         // TODO :: 지워질 때 빼줘야 함
         uiHoming.clickedEvent -= clickedHomingEvent;
         uiHoming.clickedEvent += clickedHomingEvent;
@@ -194,6 +199,12 @@ public class UI_Inventory : MonoBehaviour
         uiCoin?.Initialize();
         uiSubCoin?.Initialize();
     }
+
+    private void Init_Backpack()
+    {
+        uiBackpack?.Initialize();
+    }
+
 
     public void CharacterEarnMoney(MoneyType _moneyType)
     {
@@ -232,20 +243,32 @@ public class UI_Inventory : MonoBehaviour
 
         isOpening = false;
 
-        uiBackground?.SetActive(isOpening);
-        uiHoming?.gameObject.SetActive(isOpening);
-        uiBackpack?.CloseBackpack();
+        uiBackpack?.CloseInventory();
+        uiInvBackground?.CloseInventory();
+
+        Scene currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if ("TownScene" == currentScene.name)
+            return;
+
+        uiHoming?.CloseInventory();
+        uiCoins?.CloseInventory();
     }
 
     public void OnShow()
     {
         isOpening = true;
 
-        uiBackground?.SetActive(isOpening);
-        uiHoming?.gameObject.SetActive(isOpening);
-        uiBackpack?.OpenBackpack();
+        uiBackpack?.OpenInventory();
+        uiInvBackground?.OpenInventory();
 
         InventoryShowEvent();
+
+        Scene currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        if ("TownScene" == currentScene.name)
+            return;
+
+        uiHoming?.OpenInventory();
+        uiCoins?.OpenInventory();
     }
 
     public void Destory()
