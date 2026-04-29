@@ -16,8 +16,15 @@ public interface ICharacterStatCH
     public void IncreaseSpeedWhileAction(float _amount);
     public void IncreaseShockWaveChance(float _amount);
     public void IncreaseShockWaveDamage(float _amount);
-    public void IncreaseShockWaveDuration(float _amount);
+    public void IncreaseShockWaveSpeed(float _amount);
     public void IncreaseAxeRangeMultiplier(float _amount);
     public void IncreaseAxeDurability(float _amount);
     public void IncreaseAxeDurabilityDecIgnoreChance(float _amount);
+    public void IncreasePickupRange(float _amount);
+    public void IncreaseRicochetRange(float _amount);
+    public void IncreaseRicochetDamage(float _amount);
+    public void IncreaseReloadSpeed(float _amount);
+    public void IncreaseRifleAttackSpeed(float _amount);
+    public void IncreaseMovementSpeed(float _amount);
+    public void IncreaseAxeAttackSpeed(float _amount);
 }

@@ -5,7 +5,9 @@ using UnityEngine;
 [Serializable]
 public struct CharacterStatSaveData
 {
+    public float pickupRangeMultiplier;
     public float originalSpeed;
+    public float speedMultiplier;
     public float maxStamina;
     public float maxStaminaBonus;
     public float staminaIncreaseAlpha;
@@ -13,6 +15,8 @@ public struct CharacterStatSaveData
     
     public float axeDamage;
     public float axeDamageMultiplier;
+    public float axeAttackCoolTime;
+    public float axeAttackSpeedMultiplier;
     public float axeDurability;
     public float speedDecreaseWhileAction;
     public float axeAttackRangeMultiplier;
@@ -20,7 +24,11 @@ public struct CharacterStatSaveData
 
     public float rifleDamage;
     public float rifleDamageMultiplier;
+    public float shotDelay;
+    public float rifleAttackSpeedMultiplier;
     public float gunPenetrationChance;
+    public float reloadDuration;
+    public float reloadSpeedMultiplier;
 
     public int ricochetCnt;
     public float ricochetAngle;
@@ -34,7 +42,9 @@ public struct CharacterStatSaveData
 
     public float shockWaveChance;
     public float shockWaveDamage;
-    public float shockWaveDuration;
+    public float shockWaveDamageMultiplier;
+    public float shockWaveSpeed;
+    public float shockWaveSpeedMultiplier;
     public float shockWaveCreateDelay;
 }
 
@@ -171,6 +181,12 @@ public struct TownSaveData
 }
 
 [Serializable]
+public struct LogDropProbSaveData
+{
+    public List<LogDropData> logProbDatas;
+}
+
+[Serializable]
 public class GameSaveData
 {
     public CharacterStatSaveData characterStatData;
@@ -179,6 +195,7 @@ public class GameSaveData
     public LogProcessingSaveData logProcessingSaveData;
     public EnvironmentSaveData environmentSaveData;
     public CarrotSaveData carrotSaveData;
+    public LogDropProbSaveData logDropProbSaveData;
     public TownSaveData townSaveData;
 
     public void Clear()
@@ -186,5 +203,6 @@ public class GameSaveData
         skillSaveDataList.Clear();
         inventorySaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
         logProcessingSaveData.Initialize();
+        if (logDropProbSaveData.logProbDatas != null) logDropProbSaveData.logProbDatas.Clear();
     }
 }

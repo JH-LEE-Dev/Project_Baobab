@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1697929661119316008}
   - component: {fileID: 5707672045869052037}
-  - component: {fileID: 2406695123517981938}
   m_Layer: 11
   m_Name: CarrotItem
   m_TagString: Untagged
@@ -48,42 +47,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CarrotItem
   sprite: {fileID: 21300000, guid: 2563f86288e2dfe49a9bf642544f2d5b, type: 3}
   color: {r: 0, g: 0, b: 0, a: 0}
---- !u!58 &2406695123517981938
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4166615417341623730}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 0.4
 --- !u!1 &5577978796133744793
 GameObject:
   m_ObjectHideFlags: 0

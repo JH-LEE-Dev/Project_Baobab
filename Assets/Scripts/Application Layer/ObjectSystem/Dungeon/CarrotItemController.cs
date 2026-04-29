@@ -124,12 +124,15 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         CarrotItem newItem = Instantiate(carrotItemPrefab, transform);
         newItem.CarrotItemAcquired -= CarrotItemAcquired;
         newItem.CarrotItemAcquired += CarrotItemAcquired;
+        newItem.Initialize();
+        
         return newItem;
     }
 
     private void OnGetCarrotItem(CarrotItem _item)
     {
-        _item.Initialize(); 
+        _item.gameObject.SetActive(true);
+        _item.ResetItem();
         activeItems.Add(_item);
         activeItemsList.Add(_item);
         isCullingDirty = true;

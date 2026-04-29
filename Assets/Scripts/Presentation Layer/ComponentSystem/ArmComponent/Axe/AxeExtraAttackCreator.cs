@@ -59,7 +59,7 @@ public class AxeExtraAttackCreator : MonoBehaviour
 
     private void OnGetShockWave(ShockWave _shockWave)
     {
-        _shockWave.SetValue(ctx.characterStat.shockWaveDamage, ctx.characterStat.shockWaveDuration);
+        _shockWave.SetValue(ctx.characterStat.shockWaveDamage, ctx.characterStat.shockWaveSpeed,ctx.characterStat.shockWaveDuration);
         _shockWave.gameObject.SetActive(true);
     }
 

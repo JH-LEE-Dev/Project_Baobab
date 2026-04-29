@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Unity.Burst.Intrinsics;
 using UnityEngine;
 
@@ -16,8 +17,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [Header("Internal Components")]
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
-    [SerializeField] private TriggerProxy shadowSensor;
-    [SerializeField] private GameObject itemSensor;
 
     [Header("Collision Settings")]
     [SerializeField] private float collisionRadius = 0.15f;
@@ -34,7 +33,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public CircleCollider2D col { get; private set; }
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
-    private Rigidbody2D itemSensorRB;
 
     // 상태 및 데이터
     [Header("Character Stats & States")]
@@ -71,6 +69,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
     public readonly int bInHubHash = Animator.StringToHash("bInHub");
+    private float itemSensorRadius = 1.15f;
+    private readonly List<IStaticCollidable> itemDetectionResults = new List<IStaticCollidable>(16);
+    private float itemDetectionInterval = 0.2f; // 최적화: 0.2초 간격 (5Hz)
+    private float itemDetectionTimer = 0f;
+
+    [SerializeField] private LayerMask itemLayer; // 아이템 레이어
 
     #region Public Methods (Initialization & Control)
 
@@ -86,7 +90,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent = GetComponentInChildren<AttackComponent>();
         healthComponent = GetComponentInChildren<PHealthComponent>();
         armComponent = GetComponentInChildren<ArmComponent>();
-        itemSensorRB = itemSensor.GetComponent<Rigidbody2D>();
         statComponent = GetComponentInChildren<StatComponent>();
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
@@ -311,7 +314,20 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         StaminaIsEmptyEvent?.Invoke();
     }
 
-    private void SetItemSensorPos() => itemSensorRB.MovePosition(transform.position);
+    private void UpdateItemDetection()
+    {
+        if (CollisionSystem.Instance == null) return;
+
+        float finalRadius = itemSensorRadius * statComponent.pickupRangeMultiplier;
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, finalRadius, itemLayer.value, itemDetectionResults);
+        for (int i = 0; i < itemDetectionResults.Count; i++)
+        {
+            if (itemDetectionResults[i] is Item item)
+            {
+                item.SetSuckTarget(transform);
+            }
+        }
+    }
 
     #endregion
 
@@ -354,7 +370,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void FixedUpdate()
     {
-        SetItemSensorPos();
+        itemDetectionTimer += Time.fixedDeltaTime;
+        if (itemDetectionTimer >= itemDetectionInterval)
+        {
+            UpdateItemDetection();
+            itemDetectionTimer = 0f;
+        }
 
         // 커스텀 충돌 시스템 격자 정보 갱신
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);

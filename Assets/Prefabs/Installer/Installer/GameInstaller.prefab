@@ -222,16 +222,8 @@ MonoBehaviour:
   logProbDatas:
   - treeGrade: 1
     probDatas:
-    - treeState: 0
-      probDatas:
-      - type: 0
-        probability: 2
-      - type: 3
-        probability: 95
-      - type: 4
-        probability: 2.5
-      - type: 5
-        probability: 0.5
+    - type: 3
+      probability: 100
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
   cullingUpdateInterval: 0.05
@@ -1521,6 +1513,15 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 8ebee735638b41846b68d3b18e86936e, type: 2}
   - {fileID: 11400000, guid: b0b7453d44eda1b478bb7fe39b65b60c, type: 2}
   - {fileID: 11400000, guid: 611da7cff0ea34241b281f106848aacb, type: 2}
+  - {fileID: 11400000, guid: ba5d5f3fccd8e33428a0bd181fd742be, type: 2}
+  - {fileID: 11400000, guid: 548812e8ac708344797fdecdcc220066, type: 2}
+  - {fileID: 11400000, guid: 19d4976b4f06afe46857485a1915a7d7, type: 2}
+  - {fileID: 11400000, guid: ee50942453068a240af9a88cbbd06ffe, type: 2}
+  - {fileID: 11400000, guid: ac2a2c44697e9b449b265db276263968, type: 2}
+  - {fileID: 11400000, guid: b2767708e93abdd4ebfa8ef7256ac89a, type: 2}
+  - {fileID: 11400000, guid: cbd757d520e087141b18e416cb65f3b6, type: 2}
+  - {fileID: 11400000, guid: 653018685f1fb1141a29752a50fe097b, type: 2}
+  - {fileID: 11400000, guid: 2d74edaef491e54459c42bc0fe3bab45, type: 2}
 --- !u!1 &9097579308778333852
 GameObject:
   m_ObjectHideFlags: 0

@@ -69,7 +69,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         axeAnimation.PlaySwing(OnAttackImpact);
 
         originalSpeed = ctx.characterStat.originalSpeed;
-        ctx.characterStat.speed = ctx.characterStat.speed * ctx.characterStat.speedDecreaseWhileAction;
+        ctx.characterStat.speed = originalSpeed * ctx.characterStat.speedDecreaseWhileAction;
 
         DeclareCanSwapEvent?.Invoke(false);
         DeclareAttackStateEvent?.Invoke(true);
