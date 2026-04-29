@@ -89,7 +89,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
                 if (trees[i] != null)
                 {
                     trees[i].Initialize(environmentProvider);
-                    trees[i].ApplyData(new TreeData(TreeType.BirchTree, TreeGrade.Normal, TreeState.Idle));
+                    trees[i].ApplyData(new TreeData(TreeType.BirchTree, TreeGrade.Normal));
                 }
             }
         }

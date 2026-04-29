@@ -50,6 +50,8 @@ public class TownSystem : MonoBehaviour
             signalHub.Publish(new TownStartedSignal(townObjectManager.GetPortalTransform()));
         else
             signalHub.Publish(new TownStartedSignal(townStartPoint));
+
+        logProcessingManager.SetMapType(MapType.Town);
     }
 
     private void BindEvents()
@@ -91,12 +93,14 @@ public class TownSystem : MonoBehaviour
     {
         signalHub.Subscribe<InventoryInitializedSignal>(InventoryInitialized);
         signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
+        signalHub.Subscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<InventoryInitializedSignal>(InventoryInitialized);
         signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
+        signalHub.UnSubscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
     }
 
     private void PortalActivated()
@@ -127,17 +131,6 @@ public class TownSystem : MonoBehaviour
 
     private void TentInteract(bool _bInteract)
     {
-        if (_bInteract == true)
-        {
-            //Time.timeScale = 0;
-            //inputManager.Pause(true);
-        }
-        else
-        {
-            //Time.timeScale = 1;
-            //inputManager.Pause(false);
-        }
-
         signalHub.Publish(new TentInteractSignal(_bInteract));
     }
 
@@ -155,5 +148,10 @@ public class TownSystem : MonoBehaviour
     private void logContainerSpecChanged()
     {
         signalHub.Publish(new LogContainerSpecChangedSignal());
+    }
+
+    private void CurrentlyInDungeon(DecalreDungeonTypeSignal decalreDungeonTypeSignal)
+    {
+        logProcessingManager.SetMapType(decalreDungeonTypeSignal.mapType);
     }
 }

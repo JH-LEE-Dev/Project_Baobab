@@ -109,7 +109,7 @@ public enum SkillType
     VerdantPlainsOvergrowth, //초목 평원림 과성장
 
     BountifulTree1, // 아낌없이주는나무1
-    RareLogChance1, // 희귀원목확률I
+    FascinatingLogChance1, // 희귀원목확률I
 
 
 
@@ -201,6 +201,15 @@ public enum SkillCommandType
     AxeDurability,
     SteelAxe,
     PowerSupply,
+    PickupRange,
+    FascinatingLogChance,
+    RicochetRange,
+    RicochetDamage,
+    GunReloadSpeed,
+    GunAttackSpeed,
+    MovementSpeed,
+    ShockwaveDamage,
+    ShockwaveRange,
 }
 
 public enum AbilityLevelUpRejectReason

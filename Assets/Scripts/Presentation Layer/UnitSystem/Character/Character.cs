@@ -69,7 +69,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
     public readonly int bInHubHash = Animator.StringToHash("bInHub");
-
     private float itemSensorRadius = 1.15f;
     private readonly List<IStaticCollidable> itemDetectionResults = new List<IStaticCollidable>(16);
     private float itemDetectionInterval = 0.2f; // 최적화: 0.2초 간격 (5Hz)
@@ -319,11 +318,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         if (CollisionSystem.Instance == null) return;
 
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, itemSensorRadius, itemLayer.value, itemDetectionResults);
+        float finalRadius = itemSensorRadius * statComponent.pickupRangeMultiplier;
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, finalRadius, itemLayer.value, itemDetectionResults);
         for (int i = 0; i < itemDetectionResults.Count; i++)
         {
             if (itemDetectionResults[i] is Item item)
-            {Debug.Log("AAA");
+            {
                 item.SetSuckTarget(transform);
             }
         }

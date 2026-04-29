@@ -37,6 +37,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     private ILogItemData logToCut;
 
+    private MapType mapType;
+
     public void Initialize()
     {
         anim = GetComponent<Animator>();
@@ -47,7 +49,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         if (!bIsCutting || cuttingItem == null) return;
 
         float currentSpeed = totalSpeedMultiplier;
-        if (bPowerSupply) currentSpeed *= bPowerSupplyValue;
+        if (bPowerSupply && mapType != MapType.Town) currentSpeed *= bPowerSupplyValue;
 
         // 애니메이션 속도 동기화
         if (anim != null)
@@ -154,7 +156,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 cuttingItem.transform.position = transform.position; // 커터 위치로 설정
                 cuttingItem.durability = _data.cuttingItemData.durability;
                 anim.SetBool(startHash, true);
-                
+
                 logToCut = data;
             }
 
@@ -166,12 +168,17 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             anim.SetBool(startHash, false);
             logToCut = null;
         }
-        
+
         Debug.Log("[LogCutter] Cutter Save Data Loaded.");
     }
 
     public void SetPowerSupply(bool _bPowerSupply)
     {
         bPowerSupply = _bPowerSupply;
+    }
+
+    public void SetMapType(MapType _mapType)
+    {
+        mapType = _mapType;
     }
 }

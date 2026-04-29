@@ -240,4 +240,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         if (logInBelt != null) logInBelt.IncreaseSpeed(_percentage);
         if (logOutBelt != null) logOutBelt.IncreaseSpeed(_percentage);
     }
+
+    public void SetMapType(MapType _mapType)
+    {
+        logCutter.SetMapType(_mapType);
+    }
 }
