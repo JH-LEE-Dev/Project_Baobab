@@ -143,7 +143,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
             }
         }
 
-        Debug.Log($"[DensityManager] Tree Density Increased: {treeDensityMultiplier * 100}% (MaxTree: {maxTreeCnt}, StartTree: {treeStartCnt})");
+        //Debug.Log($"[DensityManager] Tree Density Increased: {treeDensityMultiplier * 100}% (MaxTree: {maxTreeCnt}, StartTree: {treeStartCnt})");
     }
 
     public void IncreaseRabbitDensity(float _amount)
@@ -161,7 +161,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
             }
         }
 
-        Debug.Log($"[DensityManager] Rabbit Density Increased: {rabbitDensityMultiplier * 100}% (MaxAnimal: {maxAnimalCnt}, StartAnimal: {animalStartCnt})");
+        //Debug.Log($"[DensityManager] Rabbit Density Increased: {rabbitDensityMultiplier * 100}% (MaxAnimal: {maxAnimalCnt}, StartAnimal: {animalStartCnt})");
     }
 
     public EnvironmentSaveData GetSaveData()

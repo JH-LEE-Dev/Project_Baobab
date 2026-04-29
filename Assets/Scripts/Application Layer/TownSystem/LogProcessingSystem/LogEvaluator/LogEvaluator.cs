@@ -89,8 +89,6 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
         logValueMultiplier += (_amount / 100.0f);
-        
-        Debug.Log($"[LogEvaluator] Log Value Multiplier Increased: {logValueMultiplier}");
     }
 
     public EvaluatorSaveData GetSaveData()

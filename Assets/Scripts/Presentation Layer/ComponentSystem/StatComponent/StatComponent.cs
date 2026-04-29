@@ -109,8 +109,6 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     {
         axeDamageMultiplier += (_amount / 100.0f);
         axeDamage = baseAxeDamage * axeDamageMultiplier;
-
-        Debug.Log($"[StatComponent] Axe Damage Increased: {axeDamage} (Multiplier: {axeDamageMultiplier})");
     }
 
     public void CanHunting()
@@ -123,16 +121,12 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     {
         switchSpeedMultiplier += (_amount / 100.0f);
         weaponChangeCoolTime = baseWeaponChangeCoolTime / switchSpeedMultiplier;
-
-        Debug.Log($"[StatComponent] Switch Speed Increased! New CoolTime: {weaponChangeCoolTime} (Multiplier: {switchSpeedMultiplier})");
     }
 
     public void IncreaseGunDamage(float _amount)
     {
         rifleDamageMultiplier += (_amount / 100.0f);
         rifleDamage = baseRifleDamage * rifleDamageMultiplier;
-
-        Debug.Log($"[StatComponent] Rifle Damage Increased: {rifleDamage} (Multiplier: {rifleDamageMultiplier})");
     }
 
     public void StaminaDecreaseAlpha(float _amount)
@@ -149,8 +143,6 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     {
         maxStaminaBonus += _amount;
         maxStamina = baseMaxStamina + maxStaminaBonus;
-
-        Debug.Log($"[StatComponent] Max Stamina Increased: {maxStamina} (Bonus: {maxStaminaBonus})");
     }
 
     public void ResetSpeed()
@@ -220,8 +212,6 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public void IncreaseGunPenetration(float _amount)
     {
         gunPenetrationChance += _amount;
-
-        Debug.Log($"[StatComponent] Gun Penetration Chance Increased: {gunPenetrationChance * 100.0f}% (+{_amount}%)");
     }
 
     public void IncreaseRicochetCnt(int _amount)
@@ -286,8 +276,6 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     {
         reloadSpeedMultiplier += (_amount / 100.0f);
         reloadDuration = baseReloadDuration / reloadSpeedMultiplier;
-
-        Debug.Log($"[StatComponent] Reload Speed Increased! New Duration: {reloadDuration} (Multiplier: {reloadSpeedMultiplier})");
     }
 
     public void IncreaseRifleAttackSpeed(float _amount)
@@ -306,7 +294,5 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     {
         axeAttackSpeedMultiplier += (_amount / 100.0f);
         axeAttackCoolTime = baseAxeAttackCoolTime / axeAttackSpeedMultiplier;
-
-        Debug.Log($"[StatComponent] Axe Attack Speed Increased! New CoolTime: {axeAttackCoolTime} (Multiplier: {axeAttackSpeedMultiplier})");
     }
 }

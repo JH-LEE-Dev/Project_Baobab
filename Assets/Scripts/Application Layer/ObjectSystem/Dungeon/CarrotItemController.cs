@@ -208,7 +208,6 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     public void IncreaseCarrotDrop(float _amount)
     {
         dropMultiplier += (_amount / 100.0f);
-        Debug.Log($"[CarrotItemController] Carrot Bundle Capacity Increased: {dropMultiplier * 100}%");
     }
 
     public CarrotSaveData GetSaveData()
