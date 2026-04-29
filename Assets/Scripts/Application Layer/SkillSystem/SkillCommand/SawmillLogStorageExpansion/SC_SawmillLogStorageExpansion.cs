@@ -5,6 +5,7 @@ public class SC_SawmillLogStorageExpansion : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.containerCH.ExpandContainerSlotCnt(amount);
     }
 

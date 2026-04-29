@@ -5,6 +5,7 @@ public class SC_LogProcessingSpeed : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.cutterCH.IncreaseCutSpeed(amount);
     }
 

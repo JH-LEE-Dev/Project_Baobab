@@ -55,10 +55,20 @@ MonoBehaviour:
   displayName: 
   description: 
   maxLevel: 1
-  levelCosts: []
   gridPosition: {x: 0, y: 0}
   parentLinks: []
+  moneyCurve:
+    type: 0
+    baseValue: 0
+    manualValues: []
+  carrotCurve:
+    type: 0
+    baseValue: 0
+    manualValues: []
+  skillCommands: []
   abilityBaseImage: {fileID: 7370077868986915197}
+  abilityPictureImage: {fileID: 2566001950763146976}
+  defaultPictureSprite: {fileID: 21300000, guid: e5298198a64592941849ea8b38428bab, type: 3}
 --- !u!1 &3346064768178279084
 GameObject:
   m_ObjectHideFlags: 0
@@ -274,7 +284,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fda2c5314dc5e9848ad9468948481a7d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d147f51665417884f81c9bfea2f148b8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

@@ -5,6 +5,7 @@ public class SC_StaminaRecoveryBoost : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.StaminaIncreaseAlpha(amount);
     }
 

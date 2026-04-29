@@ -153,6 +153,8 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         // 스킬 적용 이벤트 발생 (등록된 모든 커맨드 발송)
         if (node.commands != null)
         {
+            Debug.Log($"특성 적용 -> 타입 : {_type} (Level: {node.currentLevel})");
+
             for (int i = 0; i < node.commands.Count; i++)
             {
                 var info = new SkillDispatchInfo(node.currentLevel, node.commands[i]);

@@ -5,6 +5,7 @@ public class SC_Hunting : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.CanHunting();
     }
 

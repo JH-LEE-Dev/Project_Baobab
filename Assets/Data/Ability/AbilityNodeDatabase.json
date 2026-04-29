@@ -285,7 +285,7 @@
             ]
         },
         {
-            "skillType": "Scattershot1",
+            "skillType": "Ricochet1",
             "displayName": "확산탄 I",
             "description": "확산탄이 1 만큼 증가합니다.",
             "gridX": 2,
@@ -300,14 +300,14 @@
             ]
         },
         {
-            "skillType": "ShockwaveRange1",
+            "skillType": "RicochetRange1",
             "displayName": "확산탄 범위 I",
             "description": "확산탄 범위가 10% 증가합니다.",
             "gridX": 2,
             "gridY": 8,
             "parents": [
                 {
-                    "skillType": "Scattershot1",
+                    "skillType": "Ricochet1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -315,14 +315,14 @@
             ]
         },
         {
-            "skillType": "ScattershotDamage1",
+            "skillType": "RicochetDamage1",
             "displayName": "확산탄 데미지 I",
             "description": "확산탄 데미지가 50% 증가합니다.",
             "gridX": 4,
             "gridY": 8,
             "parents": [
                 {
-                    "skillType": "Scattershot1",
+                    "skillType": "Ricochet1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -405,7 +405,7 @@
             ]
         },
         {
-            "skillType": "RareLogChance1",
+            "skillType": "FascinatingLogChance1",
             "displayName": "희귀 원목 확률 I",
             "description": "매력 등급 원목을 얻을 확률이 3% 증가합니다.",
             "gridX": -10,

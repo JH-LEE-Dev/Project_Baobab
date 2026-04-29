@@ -5,6 +5,7 @@ public class SC_OffRoadVehicle : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.townObjSystemCH.CanTravel();
     }
 

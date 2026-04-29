@@ -205,10 +205,8 @@ MonoBehaviour:
   displayName: 
   description: 
   currentLevel: 0
-  maxLevel: 0
   gridPosition: {x: 0, y: 0}
   parentSkillTypes: 
-  levelCosts: []
   abilityBaseImage: {fileID: 3304097743168148013}
   abilityBackgroundImage: {fileID: 1363425424598749706}
   abilityPictureImage: {fileID: 6666146036124203983}
@@ -278,7 +276,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: fda2c5314dc5e9848ad9468948481a7d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d147f51665417884f81c9bfea2f148b8, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

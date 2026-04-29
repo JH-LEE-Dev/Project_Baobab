@@ -193,7 +193,7 @@ public class ArmComponent : PComponent, IArmComponent
         }
     }
 
-    public void ResetDurability()
+    public void ResetWeaponStatus()
     {
         axeComponent.ResetDurability();
         rifleComponent.ResetDurability();
