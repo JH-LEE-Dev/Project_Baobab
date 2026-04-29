@@ -5,6 +5,7 @@ public class SC_Ricochet : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.IncreaseRicochetCnt((int)amount);
     }
 

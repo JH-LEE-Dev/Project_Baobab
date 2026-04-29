@@ -5,6 +5,7 @@ public class SC_FascinatingLogChance : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.logItemCH.IncreaseDropProb(LogState.Fascinating, amount);
     }
 

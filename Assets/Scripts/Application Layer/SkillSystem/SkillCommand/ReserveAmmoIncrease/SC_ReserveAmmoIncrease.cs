@@ -5,6 +5,7 @@ public class SC_ReserveAmmoIncrease : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.IncreaseAmmoCap((int)amount);
     }
 

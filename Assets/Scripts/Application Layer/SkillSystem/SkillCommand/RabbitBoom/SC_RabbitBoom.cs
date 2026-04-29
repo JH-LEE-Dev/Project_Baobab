@@ -5,6 +5,7 @@ public class SC_RabbitBoom : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.densityCH.IncreaseRabbitDensity(amount);
     }
 

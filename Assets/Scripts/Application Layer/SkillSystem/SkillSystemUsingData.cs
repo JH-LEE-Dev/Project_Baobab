@@ -212,6 +212,7 @@ public enum SkillCommandType
     MovementSpeed,
     ShockwaveDamage,
     ShockwaveRange,
+    AxeAttackSpeed,
 }
 
 public enum AbilityLevelUpRejectReason

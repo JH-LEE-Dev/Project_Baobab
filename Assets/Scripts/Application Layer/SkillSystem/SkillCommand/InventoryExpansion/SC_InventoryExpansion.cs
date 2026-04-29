@@ -5,6 +5,7 @@ public class SC_InventoryExpansion : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.inventoryCH.ExpandInventorySlotCnt(amount);
     }
 

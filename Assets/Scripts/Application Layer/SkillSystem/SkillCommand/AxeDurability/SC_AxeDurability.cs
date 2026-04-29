@@ -5,6 +5,7 @@ public class SC_AxeDurability : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.IncreaseAxeDurability(amount);
     }
 

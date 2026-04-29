@@ -5,6 +5,7 @@ public class SC_VerdantPlainsOvergrowth : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.densityCH.IncreaseTreeDensity(amount);
     }
 
