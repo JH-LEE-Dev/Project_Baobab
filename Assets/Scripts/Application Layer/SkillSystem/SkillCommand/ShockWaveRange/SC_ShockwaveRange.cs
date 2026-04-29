@@ -5,6 +5,7 @@ public class SC_ShockwaveRange : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.IncreaseShockWaveSpeed(amount);
     }
 

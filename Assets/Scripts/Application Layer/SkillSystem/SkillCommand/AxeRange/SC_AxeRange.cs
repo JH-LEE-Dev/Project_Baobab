@@ -5,6 +5,7 @@ public class SC_AxeRange : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.IncreaseAxeRangeMultiplier(amount);
     }
 

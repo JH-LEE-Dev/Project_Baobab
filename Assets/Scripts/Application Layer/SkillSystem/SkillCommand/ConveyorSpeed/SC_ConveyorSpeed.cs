@@ -5,6 +5,7 @@ public class SC_ConveyorSpeed : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.logProcessingSystemCH.IncreaseConveyorSpeed(amount);
     }
 

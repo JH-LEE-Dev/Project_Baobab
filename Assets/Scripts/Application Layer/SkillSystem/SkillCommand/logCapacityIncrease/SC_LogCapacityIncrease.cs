@@ -5,6 +5,7 @@ public class SC_LogCapacityIncrease : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.inventoryCH.LogCapacityIncrease(amount);
     }
 

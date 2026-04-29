@@ -5,6 +5,7 @@ public class SC_PowerSupply : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.cutterCH.SetPowerSupply(true);
     }
 

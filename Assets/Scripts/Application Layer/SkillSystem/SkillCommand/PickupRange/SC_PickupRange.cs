@@ -5,6 +5,7 @@ public class SC_PickupRange : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.IncreasePickupRange(amount);
     }
 

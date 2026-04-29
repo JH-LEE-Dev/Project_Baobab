@@ -5,6 +5,7 @@ public class SC_CarrotBundle : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.carrotItemCH.IncreaseCarrotDrop(amount);
     }
 

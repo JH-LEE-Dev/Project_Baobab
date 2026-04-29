@@ -5,6 +5,7 @@ public class SC_GunPenetration : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.characterStatCH.IncreaseGunPenetration(amount);
     }
 

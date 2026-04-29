@@ -5,6 +5,7 @@ public class SC_LogValue : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
+        PrintDebug();
         _system.logEvaluatorCH.IncreaseLogValueMultiplier(amount);
     }
 
