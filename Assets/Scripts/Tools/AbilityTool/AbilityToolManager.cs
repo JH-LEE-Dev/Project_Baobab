@@ -812,13 +812,19 @@ public class AbilityToolManager : MonoBehaviour
 
     private void RefreshNodePictures()
     {
+        CachePictureBindings();
+
         for (int i = 0; i < nodeList.Count; i++)
         {
             AbilityToolNode node = nodeList[i];
-            if (node == null || node.HasPictureRefreshRequest() == false)
+            if (node == null)
                 continue;
 
-            node.SetPicture(ResolvePicture(node.SkillType));
+            Sprite sprite = ResolvePicture(node.SkillType);
+            if (node.HasPictureRefreshRequest(sprite) == false)
+                continue;
+
+            node.SetPicture(sprite);
         }
     }
 
@@ -855,6 +861,8 @@ public class AbilityToolManager : MonoBehaviour
     [ContextMenu("Import Ability Json")]
     public void ImportAbilityJson()
     {
+        CachePictureBindings();
+
         string json = ResolveImportJsonText();
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -899,6 +907,7 @@ public class AbilityToolManager : MonoBehaviour
 
         ApplyImportedParentLinks(databaseJson.nodes, skillNodeMap);
         ApplyImportedSkillLogic(skillNodeMap);
+        RefreshNodePictures();
         RebuildLines();
     }
 

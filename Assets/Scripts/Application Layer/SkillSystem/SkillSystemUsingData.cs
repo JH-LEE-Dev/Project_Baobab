@@ -159,6 +159,8 @@ public enum SkillType
 
 
     Stamina1, // 지구력1
+    Stamina2, // 지구력2
+
     FatigueMaxIncrease1, // 피로도 최대치 증가1
     FatigueMaxIncrease2, // 피로도 최대치 증가 II
     FatigueMaxIncrease3, // 피로도 최대치 증가3

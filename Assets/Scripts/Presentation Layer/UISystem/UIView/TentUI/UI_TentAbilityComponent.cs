@@ -11,12 +11,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
     private const float ToolTipSpacing = 32f;
-    private const float StraightLineOverlap = 1f;
-    private static readonly Color CanApplyNodeColor = new Color32(64, 220, 255, 255);
-    private static readonly Color CompletedColor = new Color32(0, 255, 0, 255);
-    private static readonly Color CannotApplyNodeColor = new Color32(255, 0, 0, 255);
+    private static readonly Color CanApplyNodeColor = new Color32(88, 215, 242, 255);
+    private static readonly Color CompletedColor = new Color32(84, 216, 106, 255);
+    private static readonly Color CannotApplyNodeColor = new Color32(185, 74, 66, 255);
     private static readonly Color DefaultLineColor = new Color32(255, 255, 255, 255);
-    private static readonly Color NodeBackgroundColor = new Color32(0, 0, 0, 255);
 
     private ISkillSystemProvider skillSystemProvider;
     private Canvas rootCanvas;
@@ -691,7 +689,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             node.ApplyVisualState(
                 baseColor,
-                NodeBackgroundColor,
                 canApply,
                 isCompleted);
         }

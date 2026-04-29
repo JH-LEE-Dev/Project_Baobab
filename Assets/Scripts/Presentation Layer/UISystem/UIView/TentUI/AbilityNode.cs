@@ -125,16 +125,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     }
 
     // 현재 노드의 테두리/배경 표시 상태를 갱신한다.
-    public void ApplyVisualState(Color _baseColor, Color _backgroundColor, bool _canApply, bool _completed)
+    public void ApplyVisualState(Color _baseColor, bool _canApply, bool _completed)
     {
         canApplyVisual = _canApply;
         completedVisual = _completed;
 
         if (abilityBaseImage != null)
             abilityBaseImage.color = _baseColor;
-
-        if (abilityBackgroundImage != null)
-            abilityBackgroundImage.color = _backgroundColor;
     }
 
     // 툴팁 제목 줄에 표시할 이름과 현재 레벨 문자열을 만든다.

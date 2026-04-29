@@ -1000,9 +1000,101 @@ MonoBehaviour:
   gridCellSize: 32
   pictureBindings:
   - skillType: 1
-    sprite: {fileID: 21300000, guid: da1e8b091de6eae49ba4b8ef63f3dc25, type: 3}
+    sprite: {fileID: 21300000, guid: bb13e1059502a934088ee7d180423ea7, type: 3}
+  - skillType: 2
+    sprite: {fileID: 21300000, guid: e1723d6b9b51db840ac1d6c50440d4bc, type: 3}
   - skillType: 3
-    sprite: {fileID: 21300000, guid: 3517f882da9f7fe46bf3ab653ecd8a25, type: 3}
+    sprite: {fileID: 21300000, guid: 13ec1df5ca79cbb4fbb363e36a224cf0, type: 3}
+  - skillType: 4
+    sprite: {fileID: 21300000, guid: a0a4b12b7f003564597001bf2c1ef167, type: 3}
+  - skillType: 5
+    sprite: {fileID: 21300000, guid: fa47398d892c10b4b9026d8131e2c42a, type: 3}
+  - skillType: 6
+    sprite: {fileID: 21300000, guid: 20b8cdfa798eb194ebd642688f9daa24, type: 3}
+  - skillType: 7
+    sprite: {fileID: 21300000, guid: 72a853e5c898c11489d401a2c9ec9ed6, type: 3}
+  - skillType: 8
+    sprite: {fileID: 21300000, guid: 85ed590e3eacb634d9660fb43b7f9cb1, type: 3}
+  - skillType: 9
+    sprite: {fileID: 21300000, guid: e6c08be1e01d1fa439773889387511b9, type: 3}
+  - skillType: 10
+    sprite: {fileID: 21300000, guid: 499c951957b2b9348b32704f4094e1f2, type: 3}
+  - skillType: 11
+    sprite: {fileID: 21300000, guid: 669432f98d06a6c49942c3590232ec69, type: 3}
+  - skillType: 12
+    sprite: {fileID: 21300000, guid: ee8d058b069a6f04bbda9872abd41304, type: 3}
+  - skillType: 13
+    sprite: {fileID: 21300000, guid: 0b628c86968c490429858fe44eff310d, type: 3}
+  - skillType: 14
+    sprite: {fileID: 21300000, guid: 4504f6c5bc2174e43b15be44fec5b23a, type: 3}
+  - skillType: 15
+    sprite: {fileID: 21300000, guid: c5329127662e94c46b36d69407149388, type: 3}
+  - skillType: 16
+    sprite: {fileID: 21300000, guid: 43cdaac68ca8eb540b8ab6adf38d7249, type: 3}
+  - skillType: 17
+    sprite: {fileID: 21300000, guid: ddd5acc5d53d8754389675f779ca9ef1, type: 3}
+  - skillType: 18
+    sprite: {fileID: 21300000, guid: 825b6ab4048b90943bfcce5ad8dfee06, type: 3}
+  - skillType: 19
+    sprite: {fileID: 21300000, guid: 4394627a6bb178e468cfc3c1e2ad11b7, type: 3}
+  - skillType: 20
+    sprite: {fileID: 21300000, guid: 76ab527decf831740a6e23ad75ff0ea7, type: 3}
+  - skillType: 21
+    sprite: {fileID: 21300000, guid: cc9e25c4fa3ed064a9463ad2da5cb651, type: 3}
+  - skillType: 22
+    sprite: {fileID: 21300000, guid: 6c36772287d0fcc4c908b21940dcb572, type: 3}
+  - skillType: 23
+    sprite: {fileID: 21300000, guid: 7fb52851b1df9b24ea8f7dd5bd7b261c, type: 3}
+  - skillType: 24
+    sprite: {fileID: 21300000, guid: d96a3912eba703e4d9794fc5a20c9936, type: 3}
+  - skillType: 25
+    sprite: {fileID: 21300000, guid: 440920b9a3999ac4586a433d71a711fe, type: 3}
+  - skillType: 26
+    sprite: {fileID: 21300000, guid: 13ce0f5c518e3094c888407c92267630, type: 3}
+  - skillType: 27
+    sprite: {fileID: 21300000, guid: 9012ebad9bd32124ba2a775445efd849, type: 3}
+  - skillType: 28
+    sprite: {fileID: 21300000, guid: 07fbfa1ad341c8240905d70de309a337, type: 3}
+  - skillType: 29
+    sprite: {fileID: 21300000, guid: 1def04659fe3da547bc48780c753b998, type: 3}
+  - skillType: 30
+    sprite: {fileID: 21300000, guid: 3191ebca0b079214185033d7b6b6b29a, type: 3}
+  - skillType: 31
+    sprite: {fileID: 21300000, guid: 107dcdab7817389449a656ed0ea377b8, type: 3}
+  - skillType: 32
+    sprite: {fileID: 21300000, guid: 2412a0766ebc2b94fb17466e78f66ac4, type: 3}
+  - skillType: 33
+    sprite: {fileID: 21300000, guid: b8359ad916503e44d8ccce10882445e5, type: 3}
+  - skillType: 34
+    sprite: {fileID: 21300000, guid: d437fc2ad45b9094980e7ca9e10b93a4, type: 3}
+  - skillType: 35
+    sprite: {fileID: 21300000, guid: 2c5ce7e12fb69de4482e5054d8496d38, type: 3}
+  - skillType: 36
+    sprite: {fileID: 21300000, guid: ba3668c73b43c1a42b4bd38f51f2e844, type: 3}
+  - skillType: 37
+    sprite: {fileID: 21300000, guid: 9940263cd35e8494888f78ea5b30c30d, type: 3}
+  - skillType: 38
+    sprite: {fileID: 21300000, guid: 9dab1c2b6215b4a44bdd9737e442fd1f, type: 3}
+  - skillType: 39
+    sprite: {fileID: 21300000, guid: 10d7209d5aad13044996d57230159bf9, type: 3}
+  - skillType: 40
+    sprite: {fileID: 21300000, guid: c522f57f4582bc94fb99cd73dbbca679, type: 3}
+  - skillType: 41
+    sprite: {fileID: 21300000, guid: d14b4c8e431a5054894e2a903cb50da2, type: 3}
+  - skillType: 42
+    sprite: {fileID: 21300000, guid: aa409d5422e15ac4c87d798bde13f6b3, type: 3}
+  - skillType: 43
+    sprite: {fileID: 21300000, guid: 4fe25bc00f38b8a428e618f8c89ffa64, type: 3}
+  - skillType: 44
+    sprite: {fileID: 21300000, guid: 01513018ea3d0954f8af289f19fddc35, type: 3}
+  - skillType: 45
+    sprite: {fileID: 21300000, guid: 42b0baaaa869f8a4f9b7927e64d93765, type: 3}
+  - skillType: 46
+    sprite: {fileID: 21300000, guid: fb46ffed471b2004fbc572897287e1d1, type: 3}
+  - skillType: 47
+    sprite: {fileID: 21300000, guid: bbfc7c7b464931541b8108d63dad41d1, type: 3}
+  - skillType: 52
+    sprite: {fileID: 21300000, guid: bbfc7c7b464931541b8108d63dad41d1, type: 3}
   row4Sprite: {fileID: 21300000, guid: 31fd475482a51a04b8c4e3f34596cff6, type: 3}
   col4Sprite: {fileID: 21300000, guid: 482e36b06834a9e4abcd34e6eabb298a, type: 3}
   diagSENW4Sprite: {fileID: 21300000, guid: 1e05681849c2c2c41996e8209fe5da7c, type: 3}

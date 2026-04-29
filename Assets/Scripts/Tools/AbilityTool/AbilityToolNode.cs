@@ -46,6 +46,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     [SerializeField] private Sprite defaultPictureSprite;
 
     private SkillType lastPictureSkillType = SkillType.None;
+    private Sprite lastPictureSprite;
     private AbilityToolManager owner;
 
     public SkillType SkillType => skillType;
@@ -87,19 +88,21 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
         skillCommands = CloneSkillCommands(_skillCommands);
     }
 
-    public bool HasPictureRefreshRequest()
+    public bool HasPictureRefreshRequest(Sprite _expectedSprite)
     {
-        return lastPictureSkillType != skillType;
+        Sprite resolvedSprite = _expectedSprite != null ? _expectedSprite : defaultPictureSprite;
+        return lastPictureSkillType != skillType || lastPictureSprite != resolvedSprite;
     }
 
     public void SetPicture(Sprite _sprite)
     {
         lastPictureSkillType = skillType;
+        lastPictureSprite = _sprite != null ? _sprite : defaultPictureSprite;
 
         if (abilityPictureImage == null)
             return;
 
-        abilityPictureImage.sprite = _sprite != null ? _sprite : defaultPictureSprite;
+        abilityPictureImage.sprite = lastPictureSprite;
     }
 
     // 툴에서 지정한 그리드 좌표를 저장하고 실제 UI 위치에 반영한다.
