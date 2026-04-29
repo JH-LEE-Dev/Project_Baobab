@@ -16,23 +16,21 @@ public class UIView_HUD : UIView
 
     private MapType currentMapType;
 
-
     #region Default Logic
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
 
+        currentMapType = MapType.Town;
+
         Init_HUDEquipment();
         Init_HUDSteminaBar();
 
-        if (null != uiRoot)
-        {
-            // Town 맵일 경우 HUD를 숨기고, Forest1_1 등 전투 지역일 경우 보여줌
-            uiRoot.gameObject.SetActive(MapType.Town != currentMapType);
-        }
+        bool isTown = MapType.Town == currentMapType;
 
-        WeaponModeChanged(WeaponMode.Axe);
+        ChangedActiveStateEquipment(isTown);
+        ChangedActiveStateStemina(isTown);
     }
 
     public override void OnDestroy()
@@ -43,14 +41,10 @@ public class UIView_HUD : UIView
     protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
     {
         base.OnShow();
-
-        hudEquipment?.OnShow();
     }
 
     protected override void OnHide() //이 UI가 꺼졌을 때 호출 됨.
     {
-        hudEquipment?.OnHide();
-
         base.OnHide();
     }
 
@@ -80,11 +74,11 @@ public class UIView_HUD : UIView
 
     private void Init_HUDEquipment()
     {
-        hudEquipment = Instantiate(hudEquipmentPrefab, this.transform).GetComponent<HUD_Equipment>();
+        hudEquipment = Instantiate(hudEquipmentPrefab, uiRoot.transform).GetComponent<HUD_Equipment>();
 
         if (null != hudEquipment)
         {
-            hudEquipment.Initialize(currentMapType);
+            hudEquipment.Initialize();
         }
     }
 
@@ -94,7 +88,7 @@ public class UIView_HUD : UIView
 
     private void Init_HUDSteminaBar()
     {
-        hudSteminaBar = Instantiate(hudSteminaBarPrefab, this.transform).GetComponent<HUD_ProgressBar>();
+        hudSteminaBar = Instantiate(hudSteminaBarPrefab, uiRoot.transform).GetComponent<HUD_ProgressBar>();
 
         if (null != hudSteminaBar)
         {
@@ -129,14 +123,31 @@ public class UIView_HUD : UIView
     public void SetCurrentMapType(MapType _currentMapType)
     {
         currentMapType = _currentMapType;
-        if (null != hudEquipment)
-        {
-            bool isActivate = MapType.Town != currentMapType;
 
-            hudEquipment.gameObject.SetActive(isActivate);
+        bool bTown = MapType.Town == currentMapType;
 
-            if (true == isActivate)
-                hudEquipment.UpdateAmmo();
-        }
+        ChangedActiveStateEquipment(bTown);
+        ChangedActiveStateStemina(bTown);
+    }
+
+    private void ChangedActiveStateEquipment(bool _isTwon)
+    {
+        if (null == hudEquipment)
+            return;
+        
+        hudEquipment.gameObject.SetActive(!_isTwon);
+
+        if (false == _isTwon)
+            hudEquipment.UpdateAmmo();
+
+        WeaponModeChanged(WeaponMode.Axe);
+    }
+
+    private void ChangedActiveStateStemina(bool _isTwon)
+    {
+        if (null == hudSteminaBar)
+            return;
+
+        hudSteminaBar.SetActivate(!_isTwon);
     }
 }
