@@ -9,6 +9,6 @@ public abstract class SkillCommand : ScriptableObject
     public abstract void Undo(ICommandHandleSystem _system);
     public void PrintDebug()
     {
-        Debug.Log($"[SkillCommand] Execute: {skillCommandType}, Amount: {amount}");
+        Debug.Log($"특성 스킬 실행 : {skillCommandType}, 값 : {amount}");
     }
 }
