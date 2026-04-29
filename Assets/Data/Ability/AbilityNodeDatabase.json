@@ -405,7 +405,7 @@
             ]
         },
         {
-            "skillType": "RareLogChance1",
+            "skillType": "FascinatingLogChance1",
             "displayName": "희귀 원목 확률 I",
             "description": "매력 등급 원목을 얻을 확률이 3% 증가합니다.",
             "gridX": -10,
