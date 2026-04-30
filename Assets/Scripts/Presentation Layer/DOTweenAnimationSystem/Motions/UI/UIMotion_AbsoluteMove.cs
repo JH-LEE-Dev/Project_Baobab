@@ -15,7 +15,9 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             [Header("Animation Settings")]
             public float duration = 1.0f;
+            public float backwardDuration = 1.0f;
             public float startDelay = 0.0f;
+            public float backwardDelay = 0.0f;
             public Ease moveEase = Ease.OutQuad;
 
             [Header("Fade Settings")]
@@ -133,7 +135,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             
             currentSequence = DOTween.Sequence();
 
-            currentSequence.Append(targetRect.DOAnchorPos(_endPos, valueSettings.duration)
+            currentSequence.Append(targetRect.DOAnchorPos(_endPos, valueSettings.backwardDuration)
                 .SetEase(valueSettings.moveEase));
 
             if (true == valueSettings.useFade)
@@ -147,12 +149,12 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 if (null != canvasGroup)
                 {
                     SetAlpha(valueSettings.endAlpha);
-                    currentSequence.Join(canvasGroup.DOFade(valueSettings.startAlpha, valueSettings.duration)
+                    currentSequence.Join(canvasGroup.DOFade(valueSettings.startAlpha, valueSettings.backwardDuration)
                         .SetEase(valueSettings.fadeEase));
                 }
             }
 
-            currentSequence.SetDelay(valueSettings.startDelay);
+            currentSequence.SetDelay(valueSettings.backwardDelay);
             currentSequence.OnStart(HandleStart);
             currentSequence.OnComplete(HandleComplete);
         }
