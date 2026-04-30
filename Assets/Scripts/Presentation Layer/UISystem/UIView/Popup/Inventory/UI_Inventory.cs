@@ -10,13 +10,12 @@ public class UI_Inventory : MonoBehaviour
     public event Action<IInventorySlot> SendDeleteItemEvent;
 
     [Header("Binding Obj")]
+    [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
     [SerializeField] private UI_Homing uiHoming;
     [SerializeField] private UI_Coin uiCoin;
     [SerializeField] private UI_Coin uiSubCoin;
     [SerializeField] private UI_Backpack uiBackpack;
-    [SerializeField] private UI_InvMotionPlayer uiInvBackground;
-    [SerializeField] private UI_InvMotionPlayer uiCoins;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
@@ -40,7 +39,8 @@ public class UI_Inventory : MonoBehaviour
 
     public void Initialize(Transform uiRoot, Action clickedHomingEvent)
     {
-        Init_InvMotionPlayers();
+        omp?.Initialize();
+
         Init_Honing(clickedHomingEvent);
         Init_InventoryPopup();
         Init_Coins();
@@ -179,12 +179,6 @@ public class UI_Inventory : MonoBehaviour
     }
     #endregion
 
-    private void Init_InvMotionPlayers()
-    {
-        uiInvBackground?.Initialize();
-        uiCoins?.Initialize();
-    }
-
     private void Init_Honing(Action clickedHomingEvent)
     {
         if (null == uiHoming)
@@ -256,54 +250,49 @@ public class UI_Inventory : MonoBehaviour
 
     private void CloseInvAndAnimSkip()
     {
-        if (null == uiBackpack || null == uiInvBackground || null == uiHoming || null == uiCoins)
+        if (null == omp)
             return;
 
         ExitPopup();
 
         isOpening = false;
 
-        uiBackpack.CloseInventory();
-        uiInvBackground.CloseInventory();
-        uiHoming.CloseInventory();
-        uiCoins.CloseInventory();
-
-        uiBackpack.SkipAnimation(false);
-        uiInvBackground.SkipAnimation(false);
-        uiHoming.SkipAnimation(false);
-        uiCoins.SkipAnimation(false);
+        omp.PlayBackward("Backpack", bReset: true,  _skip: true);
+        omp.PlayBackward("Coins", bReset: true, _skip: true);
+        omp.PlayBackward("Popup", bReset: true, _skip: true);
+        omp.PlayBackward("Homing", bReset: true, _skip: true);
     }
 
     public void OnHide()
     {
-        ExitPopup();
-
         isOpening = false;
 
+        omp.PlayBackward("Backpack", bReset: true);
         uiBackpack?.CloseInventory();
-        uiInvBackground?.CloseInventory();
+        ExitPopup();
+        omp.PlayBackward("Popup", bReset: true);
 
         if (MapType.Town == currentMapType)
             return;
 
-        uiHoming?.CloseInventory();
-        uiCoins?.CloseInventory();
+        omp.PlayBackward("Homing", bReset: true);
+        omp.PlayBackward("Coins", bReset: true);
     }
 
     public void OnShow()
     {
         isOpening = true;
 
+        omp.Play("Backpack", bReset: true);
         uiBackpack?.OpenInventory();
-        uiInvBackground?.OpenInventory();
-
         InventoryShowEvent();
+        omp.Play("Popup", bReset: true);
 
         if (MapType.Town == currentMapType)
             return;
 
-        uiHoming?.OpenInventory();
-        uiCoins?.OpenInventory();
+        omp.Play("Homing", bReset: true);
+        omp.Play("Coins", bReset: true);
     }
 
     public void Destory()

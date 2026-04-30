@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
+using DG.Tweening;
 
 namespace PresentationLayer.DOTweenAnimationSystem
 {
@@ -22,7 +23,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
         // //내부 의존성
         private Dictionary<string, MotionEntry> motionMap;
 
-        private void Initialize()
+        public void Initialize()
         {
             InitializeMotionMap();
         }
@@ -49,7 +50,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             }
         }
 
-        public void Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null)
+        public void Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, bool bReset = false, bool _skip = false, bool _isSkipCallback = false)
         {
             if (null == motionMap)
                 InitializeMotionMap();
@@ -57,10 +58,16 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (false == motionMap.ContainsKey(_tag))
                 return;
 
-            PlayEntry(motionMap[_tag], _onStart, _onComplete);
+            PlayEntry(motionMap[_tag], _onStart, _onComplete, false, bReset);
+
+            if (_skip)
+            {
+                SkipAll(_isSkipCallback);
+                StopAll();
+            }
         }
 
-        public void PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null)
+        public void PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, bool bReset = false, bool _skip = false, bool _isSkipCallback = false)
         {
             if (null == motionMap)
                 InitializeMotionMap();
@@ -68,10 +75,16 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (false == motionMap.ContainsKey(_tag))
                 return;
 
-            PlayEntry(motionMap[_tag], _onStart, _onComplete, true);
+            PlayEntry(motionMap[_tag], _onStart, _onComplete, true, bReset);
+
+            if (_skip)
+            {
+                SkipAll(_isSkipCallback);
+                StopAll();
+            }
         }
 
-        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete, bool _isBackward = false)
+        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete, bool _isBackward, bool bReset)
         {
             if (null == _entry.motionInstance && null != _entry.motionPrefab)
             {
@@ -83,9 +96,9 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 return;
 
             if (false == _isBackward)
-                _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete);
+                _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete, bReset);
             else
-                _entry.motionInstance.PlayBackward(_entry.targets, _onStart, _onComplete);
+                _entry.motionInstance.PlayBackward(_entry.targets, _onStart, _onComplete, bReset);
         }
 
         public void Stop(string _tag)
@@ -100,6 +113,20 @@ namespace PresentationLayer.DOTweenAnimationSystem
             for (int i = 0; i < motionEntries.Count; i++)
                 if (null != motionEntries[i].motionInstance)
                     motionEntries[i].motionInstance.Stop();
+        }
+
+        public void SkipAll(bool _isCallback)
+        {
+            for (int i = 0; i < motionEntries.Count; i++)
+                if (null != motionEntries[i].motionInstance)
+                    motionEntries[i].motionInstance.Skip(_isCallback);
+        }
+
+        public void Skip(string _tag, bool _isCallback)
+        {
+            if (null != motionMap && motionMap.ContainsKey(_tag))
+                if (null != motionMap[_tag].motionInstance)
+                    motionMap[_tag].motionInstance.Skip(_isCallback);
         }
 
         private void OnDestroy()

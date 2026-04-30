@@ -36,53 +36,24 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         private PlayDirection currentDirection = PlayDirection.Forward;
 
-        public override bool Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete)
+        public override bool Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete, bool _bReset)
         {
             currentDirection = PlayDirection.Forward;
 
-            if (null == _targets || 0 == _targets.Count)
+            if (!base.Play(_targets, _onStart, _onComplete, _bReset))
                 return false;
-
-            stateCache.Clear();
-
-            Sequence _seq = StopAndBinding(_onStart, _onComplete);
-            ProcessTargets(_seq, _targets);
-            ApplyTweenSettings(_seq);
 
             return true;
         }
 
-        public bool PlayBackwards(List<MotionTarget> _targets, UnityAction _onStart = null, UnityAction _onComplete = null)
+        public override bool PlayBackward(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete, bool _bReset)
         {
             currentDirection = PlayDirection.Backward;
 
-            if (null == _targets || 0 == _targets.Count)
+            if (!base.PlayBackward(_targets, _onStart, _onComplete, _bReset))
                 return false;
 
-            stateCache.Clear();
-
-            Sequence _seq = StopAndBinding(_onStart, _onComplete);
-            ProcessTargets(_seq, _targets);
-            ApplyBackwardTweenSettings(_seq);
-
             return true;
-        }
-
-        public void Skip(bool _isCallbackCall)
-        {
-            if (null == currentTween || false == currentTween.IsActive())
-                return;
-
-            currentTween.Complete(_isCallbackCall);
-            Stop();
-        }
-
-        public override void Stop()
-        {
-            base.Stop();
-
-            // Sequence를 Kill하면 보통 내부 Tween도 같이 정리되지만,
-            // 개별 타겟 DOKill이 필요한 구조라면 MotionTarget 기반으로 따로 관리해야 함.
         }
 
         protected override void OnRectTransform(Sequence _seq, RectTransform _rect)
@@ -97,6 +68,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 localRotation = _rect.localEulerAngles,
                 localScale = _rect.localScale
             };
+
+            Debug.Log(_state.anchoredPosition);
 
             stateCache.Add(_state);
 
@@ -250,10 +223,9 @@ namespace PresentationLayer.DOTweenAnimationSystem
             );
         }
 
-        public void ResetMotionState()
+        protected override void InternalOnComplete()
         {
-            Stop();
-            ResetToInitialState();
+            base.InternalOnComplete();
         }
     }
 
