@@ -25,8 +25,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
         }
 
         // //외부 의존성
-        [SerializeField] protected float publicDuration = 0.5f;
-        [SerializeField] protected float publicDelay = 0f;
+        [SerializeField] protected float forwardDuration = 0.5f;
+        [SerializeField] protected float forwardDelay = 0f;
+
+        [SerializeField] protected float backwardDuration = 0.5f;
+        [SerializeField] protected float backwardDelay = 0f;
 
         // //내부 의존성
         protected Tween currentTween;
@@ -34,15 +37,30 @@ namespace PresentationLayer.DOTweenAnimationSystem
         protected UnityAction onCompleteAction;
         protected List<TargetInitialState> stateCache = new List<TargetInitialState>(4);
 
-        public virtual void Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete)
+        public virtual bool Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete)
         {
             if (null == _targets || 0 == _targets.Count)
-                return;
+                return false;
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
             ProcessTargets(_seq, _targets);
             ApplyTweenSettings(_seq);
+
+            return true;
+        }
+
+        public virtual bool PlayBackward(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete)
+        {
+            if (null == _targets || 0 == _targets.Count)
+                return false;
+
+            stateCache.Clear();
+            Sequence _seq = StopAndBinding(_onStart, _onComplete);
+            ProcessTargets(_seq, _targets);
+            ApplyTweenSettings(_seq);
+
+            return true;
         }
 
         public virtual void Stop()
@@ -53,8 +71,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         public void SetRuntimeSettings(float _duration, float _delay)
         {
-            publicDuration = _duration;
-            publicDelay = _delay;
+            forwardDuration = _duration;
+            forwardDelay = _delay;
         }
 
         protected virtual Sequence StopAndBinding(UnityAction _onStart, UnityAction _onComplete)
@@ -72,7 +90,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 return;
 
             currentTween = _tween;
-            currentTween.SetDelay(publicDelay)
+            currentTween.SetDelay(forwardDelay)
+                        .OnStart(InternalOnStart)
+                        .OnComplete(InternalOnComplete);
+        }
+
+        protected virtual void ApplyBackwardTweenSettings(Tween _tween)
+        {
+            if (null == _tween)
+                return;
+
+            currentTween = _tween;
+            currentTween.SetDelay(backwardDelay)
                         .OnStart(InternalOnStart)
                         .OnComplete(InternalOnComplete);
         }

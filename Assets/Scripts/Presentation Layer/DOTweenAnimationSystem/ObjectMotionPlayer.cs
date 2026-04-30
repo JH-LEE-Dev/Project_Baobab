@@ -60,7 +60,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             PlayEntry(motionMap[_tag], _onStart, _onComplete);
         }
 
-        public void Play(string _tag, float _duration, float _delay, UnityAction _onStart = null, UnityAction _onComplete = null)
+        public void PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null)
         {
             if (null == motionMap)
                 InitializeMotionMap();
@@ -68,36 +68,24 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (false == motionMap.ContainsKey(_tag))
                 return;
 
-            MotionEntry _entry = motionMap[_tag];
-            
-            // 인스턴스 초기화 보장
-            if (null == _entry.motionInstance)
-            {
-                if (null == _entry.motionPrefab)
-                    return;
-
-                _entry.motionInstance = Instantiate(_entry.motionPrefab, this.transform);
-                _entry.motionInstance.name = $"[Motion]_{_entry.motionTag}";
-            }
-
-            if (null != _entry.motionInstance)
-                _entry.motionInstance.SetRuntimeSettings(_duration, _delay);
-
-            PlayEntry(_entry, _onStart, _onComplete);
+            PlayEntry(motionMap[_tag], _onStart, _onComplete, true);
         }
 
-        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete)
+        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete, bool _isBackward = false)
         {
             if (null == _entry.motionInstance && null != _entry.motionPrefab)
             {
-                _entry.motionInstance = Instantiate(_entry.motionPrefab, this.transform);
+                _entry.motionInstance = _entry.motionPrefab.GetComponent<ObjectMotionBase>();
                 _entry.motionInstance.name = $"[Motion]_{_entry.motionTag}";
             }
 
             if (null == _entry.motionInstance || null == _entry.targets || 0 == _entry.targets.Count)
                 return;
 
-            _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete);
+            if (false == _isBackward)
+                _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete);
+            else
+                _entry.motionInstance.PlayBackward(_entry.targets, _onStart, _onComplete);
         }
 
         public void Stop(string _tag)
