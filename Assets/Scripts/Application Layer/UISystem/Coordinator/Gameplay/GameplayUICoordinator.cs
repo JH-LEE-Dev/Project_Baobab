@@ -269,11 +269,13 @@ public class GameplayUICoordinator
     private void TownStarted(TownStartedSignal townStartedSignal)
     {
         hudUI.SetCurrentMapType(MapType.Town);
+        popUpUI.SetCurrentMapType(MapType.Town);
     }
 
     private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)
     {
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType);
+        popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType);
     }
 
     private void AnimalHit(AnimalHitSignal animalHitSignal)
