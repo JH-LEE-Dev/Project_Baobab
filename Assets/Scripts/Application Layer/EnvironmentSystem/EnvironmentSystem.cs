@@ -55,7 +55,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
         if (densityManager != null)
             densityManager.Initialize();
-        
+
         if (environmentInteractionManager != null)
             environmentInteractionManager.Initialize();
 
@@ -136,5 +136,10 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void WeatherChanged(WeatherType _weatherType)
     {
         lightingController.WeatherChanged(_weatherType);
+    }
+
+    public void SetupForMapType(MapType _mapType)
+    {
+        densityManager.SetDensityData(_mapType);
     }
 }

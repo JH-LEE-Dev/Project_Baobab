@@ -10,5 +10,7 @@ public interface IDensityProvider
     void SetActiveTilesCnt(int _cnt1,int _cnt2);
     float GetTreeRegenTime();
     float GetAnimalRegenTime();
+    TreeType GetTreeTypeToSpawn();
+    AnimalType GetAnimalTypeToSpawn();
 }
 

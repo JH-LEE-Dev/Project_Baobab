@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class UIView_MenuPopup : UIView
 {
-    public event Action<DungeonType> DungeonSelectedEvent;
+    public event Action<MapType> DungeonSelectedEvent;
 
     [Header("Sub UI Prefabs")]
     [SerializeField] private GameObject zoneSelectorPrefab;
@@ -77,7 +77,7 @@ public class UIView_MenuPopup : UIView
         zoneCancelButton?.Initialize(CloseTeleportUI);
     }
 
-    private void HandleEnterDungeon(DungeonType _type)
+    private void HandleEnterDungeon(MapType _type)
     {
         Debug.Log($"[UIView_MenuPopup] Entering Dungeon: {_type}");
         // 통신 및 던전 진입 로직 배치
@@ -94,7 +94,7 @@ public class UIView_MenuPopup : UIView
         }
     }
 
-    private void HandleZoneChanged(DungeonType _dungeonType)
+    private void HandleZoneChanged(MapType _dungeonType)
     {
         // 지역/구역 변경 시 선택 버튼의 던전 타입 정보 업데이트
         zoneSelectButton?.ChangeDungeonType(_dungeonType);

@@ -35,8 +35,14 @@ public class TeleportManager : MonoBehaviour
     {
         switch (goToDungeonSignal.type)
         {
-            case DungeonType.Forest1_1:
-                bootStrapProvider.GoToOtherScene("DungeonScene");
+            case MapType.Forest1_1:
+                bootStrapProvider.GoToOtherScene("DungeonScene", MapType.Forest1_1);
+                break;
+            case MapType.Forest1_2:
+                bootStrapProvider.GoToOtherScene("DungeonScene", MapType.Forest1_2);
+                break;
+            case MapType.Forest1_3:
+                bootStrapProvider.GoToOtherScene("DungeonScene", MapType.Forest1_3);
                 break;
         }
     }

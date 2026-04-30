@@ -166,14 +166,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 45acdcfb0f73b344fab31c821e7fd95e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
-  TreeMaxDensityRatio: 0.07
-  TreeStartDensityRatio: 0.04
-  RabbitMaxDensityRatio: 0.05
-  RabbitStartDensityRatio: 0.02
-  treeRegenMinTime: 10
-  treeRegenMaxTime: 15
-  rabbitRegenMinTime: 10
-  rabbitRegenMaxTime: 15
+  densityDataBase: {fileID: 11400000, guid: cb0b8bab5590ad8409bd563dc6f3cb61, type: 2}
   applyToStartCnt: 1
 --- !u!1 &2327565162841499606
 GameObject:

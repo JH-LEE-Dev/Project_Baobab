@@ -98,6 +98,7 @@ public class GameInstaller : MonoBehaviour
 
         if (_sceneChangeData.currentScene == SceneType.DungeonScene)
         {
+            environmentSystem.SetupForMapType(_sceneChangeData.mapType);
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
             gameplayUIInstaller.SetupCanvas();
             unitSystem.SetWhereIsCharacter(true);
