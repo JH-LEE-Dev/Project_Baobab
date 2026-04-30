@@ -699,7 +699,7 @@ MonoBehaviour:
   pickupRangeMultiplier: 1
   speed: 1
   originalSpeed: 1
-  maxStamina: 10000
+  maxStamina: 100
   staminaIncreaseAlpha: 0
   staminaDecreaseAlpha: 0
   weaponChangeCoolTime: 0.5
@@ -711,7 +711,7 @@ MonoBehaviour:
   axeAttackCoolTime: 1.2
   axeAttackRangeMultiplier: 1
   axeDurabilityDecIgnoreChance: 0
-  shockWaveChance: 100
+  shockWaveChance: 0
   shockWaveDamage: 1
   shockWaveSpeed: 2
   shockWaveDuration: 0.25

@@ -43,6 +43,6 @@ public class TeleportManager : MonoBehaviour
 
     private void GoToHome(GoToHomeSignal goToHomeSignal)
     {
-        bootStrapProvider.GoToTownScene(false);
+        bootStrapProvider.GoToTownScene(true);
     }
 }
