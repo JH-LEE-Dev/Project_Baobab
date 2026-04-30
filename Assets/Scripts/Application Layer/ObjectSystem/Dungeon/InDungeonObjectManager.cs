@@ -438,19 +438,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private TreeData CalculateRandomTreeData()
     {
-        if (dungeonData == null)
-        {
-            return new TreeData(TreeType.None, TreeGrade.None);
-        }
-
-        TreeType type = TreeType.None;
-        if (dungeonData.treeTypes != null && dungeonData.treeTypes.Count > 0)
-        {
-            type = dungeonData.treeTypes[UnityEngine.Random.Range(0, dungeonData.treeTypes.Count)];
-        }
+        TreeType type = environmentProvider.densityProvider.GetTreeTypeToSpawn();
 
         TreeGrade grade = TreeGrade.Normal;
-        if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
+        if (dungeonData != null && dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
         {
             float rand = UnityEngine.Random.Range(0f, 1f);
             float cumulative = 0f;

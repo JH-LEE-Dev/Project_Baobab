@@ -189,3 +189,9 @@ public enum MoneyType
     Carrot,
     Max
 }
+
+public enum AnimalType
+{
+    None,
+    Rabbit,
+}

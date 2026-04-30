@@ -4,18 +4,18 @@ using UnityEngine.EventSystems;
 
 public class UI_ZoneButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    private Action<DungeonType> enterDungeonEvent;
-    private DungeonType dungeonType;
+    private Action<MapType> enterDungeonEvent;
+    private MapType dungeonType;
     private Action enterHideEvent;
     private bool isInteractable = true;
 
     [SerializeField] private RectTransform visualRect; 
 
-    public void Initialize(Action<DungeonType> _bindEvent) => enterDungeonEvent = _bindEvent;
+    public void Initialize(Action<MapType> _bindEvent) => enterDungeonEvent = _bindEvent;
     public void Initialize(Action _bindEvent) => enterHideEvent = _bindEvent;
 
 
-    public void ChangeDungeonType(DungeonType _type)
+    public void ChangeDungeonType(MapType _type)
     {
         dungeonType = _type;
     }
@@ -41,7 +41,7 @@ public class UI_ZoneButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         if (!isInteractable) 
             return;
 
-        if (dungeonType == DungeonType.None)
+        if (dungeonType == MapType.None)
         {
             enterHideEvent?.Invoke();
             return;

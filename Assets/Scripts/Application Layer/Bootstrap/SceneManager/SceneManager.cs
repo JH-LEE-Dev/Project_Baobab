@@ -2,8 +2,11 @@ using UnityEngine;
 
 public enum MapType
 {
+    None,
     Town,
     Forest1_1,
+    Forest1_2,
+    Forest1_3,
 }
 
 public class SceneManager : MonoBehaviour

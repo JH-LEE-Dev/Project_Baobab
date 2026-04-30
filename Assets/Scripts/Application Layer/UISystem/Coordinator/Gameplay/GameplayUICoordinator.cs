@@ -204,7 +204,7 @@ public class GameplayUICoordinator
         menuPopupUI.TeleportUIOpen();
     }
 
-    private void DungeonSelected(DungeonType _type)
+    private void DungeonSelected(MapType _type)
     {
         signalHub.Publish(new DungeonSelectedSignal(_type));
     }
@@ -270,12 +270,18 @@ public class GameplayUICoordinator
     {
         hudUI.SetCurrentMapType(MapType.Town);
         popUpUI.SetCurrentMapType(MapType.Town);
+
+        bInventoryOpened = false;
+        popUpUI.Hide();
     }
 
     private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)
     {
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType);
+
+        bInventoryOpened = false;
+        popUpUI.Hide();
     }
 
     private void AnimalHit(AnimalHitSignal animalHitSignal)

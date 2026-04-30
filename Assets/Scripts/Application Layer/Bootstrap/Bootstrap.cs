@@ -30,6 +30,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     private bool bFadeComplete = false;
     private bool bNewGame = false;
+    private MapType currentMapType = MapType.Town;
 
     // 유니티 이벤트 함수
     private void Awake()
@@ -76,9 +77,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             if (gameInstaller == null)
             {
                 gameInstaller = Instantiate(gameInstallerPrefab);
-                gameInstaller.Initialize(this, inputManager, localizationManager,saveManager);
-                
-                if(bNewGame == false)
+                gameInstaller.Initialize(this, inputManager, localizationManager, saveManager);
+
+                if (bNewGame == false)
                     gameInstaller.LoadGame();
             }
         }
@@ -89,7 +90,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         if (gameInstaller != null)
         {
-            gameInstaller.SetupGameInstaller(new SceneChangeData(currentSceneType, prevSceneType));
+            gameInstaller.SetupGameInstaller(new SceneChangeData(currentSceneType, prevSceneType, currentMapType));
         }
     }
 
@@ -172,8 +173,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
 
         // 4. 시스템 초기화 대기 (OnSceneLoaded 실행을 위해 1프레임 + 여유 시간)
-        yield return null; 
-        yield return new WaitForSeconds(0.2f); 
+        yield return null;
+        yield return new WaitForSeconds(0.2f);
 
         // 5. 모든 준비가 되면 로딩창 걷어내기 (화면 밝게)
         if (LoadingManager.Instance != null)
@@ -182,8 +183,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
     }
 
-    public void GoToOtherScene(string _sceneName)
+    public void GoToOtherScene(string _sceneName, MapType _mapType)
     {
+        currentMapType = _mapType;
+
         if (_sceneName == townSceneName)
         {
             StartCoroutine(TransitionToScene(SceneType.Town));

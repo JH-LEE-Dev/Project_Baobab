@@ -11,8 +11,8 @@ public struct DeleteItemSignal
 
 public struct DungeonSelectedSignal
 {
-    public DungeonType type;
-    public DungeonSelectedSignal(DungeonType _type)
+    public MapType type;
+    public DungeonSelectedSignal(MapType _type)
     {
         type = _type;
     }

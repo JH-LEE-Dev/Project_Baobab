@@ -31,8 +31,8 @@ public struct TentInteractSignal
 
 public struct GoToDungeonSignal
 {
-    public DungeonType type;
-    public GoToDungeonSignal(DungeonType _type)
+    public MapType type;
+    public GoToDungeonSignal(MapType _type)
     {
         type = _type;
     }

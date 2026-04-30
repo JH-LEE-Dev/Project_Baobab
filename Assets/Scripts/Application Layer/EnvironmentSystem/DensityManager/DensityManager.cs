@@ -2,11 +2,7 @@ using UnityEngine;
 
 public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 {
-    // 밀도 설정 상수
-    [SerializeField] private float TreeMaxDensityRatio = 0.07f;
-    [SerializeField] private float TreeStartDensityRatio = 0.04f;
-    [SerializeField] private float RabbitMaxDensityRatio = 0.05f;
-    [SerializeField] private float RabbitStartDensityRatio = 0.02f;
+    [SerializeField] private DensityDataBase densityDataBase;
 
     private int grassTileCnt;
     private int walkableTilesCnt;
@@ -19,26 +15,89 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 
     private float treeDensityMultiplier = 1.0f;
     private float rabbitDensityMultiplier = 1.0f;
-    [SerializeField] private float treeRegenMinTime = 10f;
-    [SerializeField] private float treeRegenMaxTime = 15f;
-    [SerializeField] private float rabbitRegenMinTime = 10f;
-    [SerializeField] private float rabbitRegenMaxTime = 15f;
 
     [SerializeField] private bool applyToStartCnt = false;
+
+    private MapType currentMapType;
+    private DensityData currentDensityData;
 
     public void Initialize()
     {
 
     }
 
+    public void SetDensityData(MapType _mapType)
+    {
+        currentMapType = _mapType;
+        currentDensityData = densityDataBase.Get(_mapType);
+    }
+
     public float GetTreeRegenTime()
     {
-        return Random.Range(treeRegenMinTime, treeRegenMaxTime);
+        if (currentDensityData == null) return 10f;
+        return Random.Range(currentDensityData.treeRegenMinTime, currentDensityData.treeRegenMaxTime);
     }
 
     public float GetAnimalRegenTime()
     {
-        return Random.Range(rabbitRegenMinTime, rabbitRegenMaxTime);
+        if (currentDensityData == null) return 10f;
+        return Random.Range(currentDensityData.animalRegenMinTime, currentDensityData.animalRegenMaxTime);
+    }
+
+    public TreeType GetTreeTypeToSpawn()
+    {
+        if (currentDensityData == null || currentDensityData.spawnTreeTypes == null || currentDensityData.spawnTreeTypes.Count == 0)
+            return TreeType.None;
+
+        float totalProb = 0;
+        for (int i = 0; i < currentDensityData.spawnTreeTypes.Count; i++)
+        {
+            totalProb += currentDensityData.spawnTreeTypes[i].regenProb;
+        }
+
+        if (totalProb <= 0) return TreeType.None;
+
+        float randomValue = Random.Range(0, totalProb);
+        float cumulativeProb = 0;
+
+        for (int i = 0; i < currentDensityData.spawnTreeTypes.Count; i++)
+        {
+            cumulativeProb += currentDensityData.spawnTreeTypes[i].regenProb;
+            if (randomValue <= cumulativeProb)
+            {
+                return currentDensityData.spawnTreeTypes[i].treeType;
+            }
+        }
+
+        return currentDensityData.spawnTreeTypes[0].treeType;
+    }
+
+    public AnimalType GetAnimalTypeToSpawn()
+    {
+        if (currentDensityData == null || currentDensityData.spawnAnimalTypes == null || currentDensityData.spawnAnimalTypes.Count == 0)
+            return AnimalType.None;
+
+        float totalProb = 0;
+        for (int i = 0; i < currentDensityData.spawnAnimalTypes.Count; i++)
+        {
+            totalProb += currentDensityData.spawnAnimalTypes[i].regenProb;
+        }
+
+        if (totalProb <= 0) return AnimalType.None;
+
+        float randomValue = Random.Range(0, totalProb);
+        float cumulativeProb = 0;
+
+        for (int i = 0; i < currentDensityData.spawnAnimalTypes.Count; i++)
+        {
+            cumulativeProb += currentDensityData.spawnAnimalTypes[i].regenProb;
+            if (randomValue <= cumulativeProb)
+            {
+                return currentDensityData.spawnAnimalTypes[i].animalType;
+            }
+        }
+
+        return currentDensityData.spawnAnimalTypes[0].animalType;
     }
 
     public void SetApplyToStartCnt(bool _value)
@@ -106,40 +165,44 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 
     public void SetActiveTilesCnt(int _grassCnt, int _walkableCnt)
     {
+        if (currentDensityData == null) return;
+
         treeCnt = 0;
         animalCnt = 0;
 
         grassTileCnt = _grassCnt;
         walkableTilesCnt = _walkableCnt;
 
-        maxTreeCnt = (int)(grassTileCnt * TreeMaxDensityRatio * treeDensityMultiplier);
-        maxAnimalCnt = (int)(walkableTilesCnt * RabbitMaxDensityRatio * rabbitDensityMultiplier);
+        maxTreeCnt = (int)(grassTileCnt * currentDensityData.treeMaxDensityRatio * treeDensityMultiplier);
+        maxAnimalCnt = (int)(walkableTilesCnt * currentDensityData.animalMaxDensityRatio * rabbitDensityMultiplier);
 
         // applyToStartCnt가 true이면 현재 배율을 적용, 아니면 기본값 사용
         if (applyToStartCnt)
         {
-            treeStartCnt = (int)(grassTileCnt * TreeStartDensityRatio * treeDensityMultiplier);
-            animalStartCnt = (int)(walkableTilesCnt * RabbitStartDensityRatio * rabbitDensityMultiplier);
+            treeStartCnt = (int)(grassTileCnt * currentDensityData.treeStartDensityRatio * treeDensityMultiplier);
+            animalStartCnt = (int)(walkableTilesCnt * currentDensityData.animalStartDensityRatio * rabbitDensityMultiplier);
         }
         else
         {
-            treeStartCnt = (int)(grassTileCnt * TreeStartDensityRatio);
-            animalStartCnt = (int)(walkableTilesCnt * RabbitStartDensityRatio);
+            treeStartCnt = (int)(grassTileCnt * currentDensityData.treeStartDensityRatio);
+            animalStartCnt = (int)(walkableTilesCnt * currentDensityData.animalStartDensityRatio);
         }
     }
 
     public void IncreaseTreeDensity(float _amount)
     {
+        if (currentDensityData == null) return;
+
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
         treeDensityMultiplier += (_amount / 100.0f);
 
         if (grassTileCnt > 0)
         {
-            maxTreeCnt = (int)(grassTileCnt * TreeMaxDensityRatio * treeDensityMultiplier);
+            maxTreeCnt = (int)(grassTileCnt * currentDensityData.treeMaxDensityRatio * treeDensityMultiplier);
 
             if (applyToStartCnt)
             {
-                treeStartCnt = (int)(grassTileCnt * TreeStartDensityRatio * treeDensityMultiplier);
+                treeStartCnt = (int)(grassTileCnt * currentDensityData.treeStartDensityRatio * treeDensityMultiplier);
             }
         }
 
@@ -148,16 +211,18 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
 
     public void IncreaseRabbitDensity(float _amount)
     {
+        if (currentDensityData == null) return;
+
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
         rabbitDensityMultiplier += (_amount / 100.0f);
 
         if (walkableTilesCnt > 0)
         {
-            maxAnimalCnt = (int)(walkableTilesCnt * RabbitMaxDensityRatio * rabbitDensityMultiplier);
+            maxAnimalCnt = (int)(walkableTilesCnt * currentDensityData.animalMaxDensityRatio * rabbitDensityMultiplier);
 
             if (applyToStartCnt)
             {
-                animalStartCnt = (int)(walkableTilesCnt * RabbitStartDensityRatio * rabbitDensityMultiplier);
+                animalStartCnt = (int)(walkableTilesCnt * currentDensityData.animalStartDensityRatio * rabbitDensityMultiplier);
             }
         }
 
