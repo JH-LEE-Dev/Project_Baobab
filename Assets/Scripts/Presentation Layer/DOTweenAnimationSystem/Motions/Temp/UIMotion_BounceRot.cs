@@ -23,12 +23,12 @@ public class UIMotion_BounceRot : ObjectMotionBase
             return;
 
         _rect.eulerAngles = startAngle;
-        _seq.Append(_rect.DORotate(new Vector3(0f, 0f, 0f), publicDuration, RotateMode.FastBeyond360))
+        _seq.Append(_rect.DORotate(new Vector3(0f, 0f, 0f), forwardDuration, RotateMode.FastBeyond360))
             .SetEase(easeRot);
 
 
         _rect.localScale = startScale;
-        _seq.Join(_rect.DOScale(new Vector3(1f, 1f, 1f), publicDuration))
+        _seq.Join(_rect.DOScale(new Vector3(1f, 1f, 1f), forwardDuration))
             .SetEase(easeScale);
     }
 }

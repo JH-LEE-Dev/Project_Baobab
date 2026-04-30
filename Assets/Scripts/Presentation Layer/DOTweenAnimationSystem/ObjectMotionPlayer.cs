@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
+using DG.Tweening;
 
 namespace PresentationLayer.DOTweenAnimationSystem
 {
@@ -22,7 +23,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
         // //내부 의존성
         private Dictionary<string, MotionEntry> motionMap;
 
-        private void Initialize()
+        public void Initialize()
         {
             InitializeMotionMap();
         }
@@ -49,7 +50,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             }
         }
 
-        public void Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null)
+        public void Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, bool bReset = false, bool _skip = false, bool _isSkipCallback = false)
         {
             if (null == motionMap)
                 InitializeMotionMap();
@@ -57,47 +58,47 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (false == motionMap.ContainsKey(_tag))
                 return;
 
-            PlayEntry(motionMap[_tag], _onStart, _onComplete);
-        }
+            PlayEntry(motionMap[_tag], _onStart, _onComplete, false, bReset);
 
-        public void Play(string _tag, float _duration, float _delay, UnityAction _onStart = null, UnityAction _onComplete = null)
-        {
-            if (null == motionMap)
-                InitializeMotionMap();
-
-            if (false == motionMap.ContainsKey(_tag))
-                return;
-
-            MotionEntry _entry = motionMap[_tag];
-            
-            // 인스턴스 초기화 보장
-            if (null == _entry.motionInstance)
+            if (_skip)
             {
-                if (null == _entry.motionPrefab)
-                    return;
-
-                _entry.motionInstance = Instantiate(_entry.motionPrefab, this.transform);
-                _entry.motionInstance.name = $"[Motion]_{_entry.motionTag}";
+                SkipAll(_isSkipCallback);
+                StopAll();
             }
-
-            if (null != _entry.motionInstance)
-                _entry.motionInstance.SetRuntimeSettings(_duration, _delay);
-
-            PlayEntry(_entry, _onStart, _onComplete);
         }
 
-        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete)
+        public void PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, bool bReset = false, bool _skip = false, bool _isSkipCallback = false)
+        {
+            if (null == motionMap)
+                InitializeMotionMap();
+
+            if (false == motionMap.ContainsKey(_tag))
+                return;
+
+            PlayEntry(motionMap[_tag], _onStart, _onComplete, true, bReset);
+
+            if (_skip)
+            {
+                SkipAll(_isSkipCallback);
+                StopAll();
+            }
+        }
+
+        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete, bool _isBackward, bool bReset)
         {
             if (null == _entry.motionInstance && null != _entry.motionPrefab)
             {
-                _entry.motionInstance = Instantiate(_entry.motionPrefab, this.transform);
+                _entry.motionInstance = _entry.motionPrefab.GetComponent<ObjectMotionBase>();
                 _entry.motionInstance.name = $"[Motion]_{_entry.motionTag}";
             }
 
             if (null == _entry.motionInstance || null == _entry.targets || 0 == _entry.targets.Count)
                 return;
 
-            _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete);
+            if (false == _isBackward)
+                _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete, bReset);
+            else
+                _entry.motionInstance.PlayBackward(_entry.targets, _onStart, _onComplete, bReset);
         }
 
         public void Stop(string _tag)
@@ -112,6 +113,20 @@ namespace PresentationLayer.DOTweenAnimationSystem
             for (int i = 0; i < motionEntries.Count; i++)
                 if (null != motionEntries[i].motionInstance)
                     motionEntries[i].motionInstance.Stop();
+        }
+
+        public void SkipAll(bool _isCallback)
+        {
+            for (int i = 0; i < motionEntries.Count; i++)
+                if (null != motionEntries[i].motionInstance)
+                    motionEntries[i].motionInstance.Skip(_isCallback);
+        }
+
+        public void Skip(string _tag, bool _isCallback)
+        {
+            if (null != motionMap && motionMap.ContainsKey(_tag))
+                if (null != motionMap[_tag].motionInstance)
+                    motionMap[_tag].motionInstance.Skip(_isCallback);
         }
 
         private void OnDestroy()

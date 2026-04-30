@@ -11,9 +11,8 @@ GameObject:
   - component: {fileID: 5955985603632891772}
   - component: {fileID: 1277075411165431048}
   - component: {fileID: 1505915644088625483}
-  - component: {fileID: 6835553388373689748}
-  - component: {fileID: 7038466888030974640}
   - component: {fileID: 518389957901863509}
+  - component: {fileID: 6835553388373689748}
   m_Layer: 5
   m_Name: UI_Homing
   m_TagString: Untagged
@@ -78,6 +77,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!225 &518389957901863509
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7019952593193086363}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!114 &6835553388373689748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -90,40 +101,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2863fe1bbcf569f4aa68014233a6e587, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Homing
-  absoluteMove: {fileID: 0}
---- !u!114 &7038466888030974640
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7019952593193086363}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4b6ec91658870849bc2f00bff86b94d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.UIMotion_AbsoluteMove
-  targetRect: {fileID: 0}
-  canvasGroup: {fileID: 0}
-  valueSettings:
-    startOffset: {x: 0, y: 0}
-    endOffset: {x: 0, y: 0}
-    duration: 1
-    startDelay: 0
-    moveEase: 6
-    useFade: 1
-    startAlpha: 0
-    endAlpha: 1
-    fadeEase: 1
---- !u!225 &518389957901863509
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7019952593193086363}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
+  invMotionPlayer: {fileID: 0}

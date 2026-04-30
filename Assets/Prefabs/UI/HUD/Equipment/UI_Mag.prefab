@@ -53,10 +53,6 @@ MonoBehaviour:
   emptyImage: {fileID: 1349551475981657441}
   filledImage: {fileID: 6880148322127891312}
   outline: {fileID: 8806178074290409136}
-  ejectMotion: {fileID: 0}
-  resetMotion: {fileID: 0}
-  reloadMotion: {fileID: 0}
-  gatherMotion: {fileID: 0}
 --- !u!1 &3980838706994609506
 GameObject:
   m_ObjectHideFlags: 0
@@ -265,7 +261,7 @@ MonoBehaviour:
     jumpPower: 10
     jumpRangeX: 50
     jumpRangeY: 15
-    rotationAngle: 512
+    rotationAngle: 720
     jumpEase: 1
     rotationEase: 6
     fadeEase: 14

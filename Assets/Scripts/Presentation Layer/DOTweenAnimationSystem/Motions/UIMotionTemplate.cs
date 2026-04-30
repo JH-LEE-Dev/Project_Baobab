@@ -18,7 +18,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
         {
             _rect.anchoredPosition = startTransform.anchoredPosition;
 
-            _seq.Append(_rect.DOAnchorPos(targetTransform.anchoredPosition, publicDuration))
+            _seq.Append(_rect.DOAnchorPos(targetTransform.anchoredPosition, forwardDuration))
                 .SetEase(moveEase);
         }
 
@@ -27,7 +27,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             Color color = new Color(1f, 1f, 1f, 0f);
             _graphic.color = color;
 
-            _seq.Join(_graphic.DOFade(1f, publicDuration))
+            _seq.Join(_graphic.DOFade(1f, forwardDuration))
                 .SetEase(colorEase);
         }
 

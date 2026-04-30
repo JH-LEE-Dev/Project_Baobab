@@ -20,10 +20,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private GameObject outline;
 
         [Header("Motions")]
-        [SerializeField] private UIMotion_GravityRot ejectMotion;
-        [SerializeField] private UIMotion_Reset resetMotion;
-        [SerializeField] private UIMotion_Reload reloadMotion;
-        [SerializeField] private UIMotion_Gather gatherMotion;
+        private UIMotion_GravityRot ejectMotion;
+        private UIMotion_Reset resetMotion;
+        private UIMotion_Reload reloadMotion;
+        private UIMotion_Gather gatherMotion;
 
 
         // //내부 의존성
