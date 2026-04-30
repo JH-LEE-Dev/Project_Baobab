@@ -166,8 +166,10 @@ MonoBehaviour:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: -24}
     duration: 0.4
+    backwardDuration: 0.4
     startDelay: 0
-    moveEase: 6
+    backwardDelay: 0
+    moveEase: 18
     useFade: 0
     startAlpha: 0
     endAlpha: 1
@@ -500,13 +502,15 @@ MonoBehaviour:
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 6}
-    duration: 0.4
+    duration: 0.3
+    backwardDuration: 0.2
     startDelay: 0.15
+    backwardDelay: 0
     moveEase: 6
     useFade: 1
     startAlpha: 0
     endAlpha: 1
-    fadeEase: 1
+    fadeEase: 18
 --- !u!225 &4312291483352131633
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -589,8 +593,10 @@ MonoBehaviour:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 30}
     duration: 0.4
-    startDelay: 0.2
-    moveEase: 6
+    backwardDuration: 0.4
+    startDelay: 0.1
+    backwardDelay: 0.2
+    moveEase: 18
     useFade: 0
     startAlpha: 0
     endAlpha: 1
@@ -1049,6 +1055,14 @@ PrefabInstance:
       value: 0.4
       objectReference: {fileID: 0}
     - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
+      propertyPath: valueSettings.fadeEase
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
+      propertyPath: valueSettings.moveEase
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
       propertyPath: valueSettings.startDelay
       value: 0.2
       objectReference: {fileID: 0}
@@ -1061,12 +1075,20 @@ PrefabInstance:
       value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
+      propertyPath: valueSettings.backwardDelay
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
       propertyPath: valueSettings.startOffset.x
       value: -10
       objectReference: {fileID: 0}
     - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
       propertyPath: valueSettings.startOffset.y
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
+      propertyPath: valueSettings.backwardDuration
+      value: 0.2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

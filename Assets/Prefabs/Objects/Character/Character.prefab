@@ -719,7 +719,7 @@ MonoBehaviour:
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1
-  magCap: 2
+  magCap: 10
   ammoCap: 6
   reloadDuration: 3
   gunPenetrationChance: 0
