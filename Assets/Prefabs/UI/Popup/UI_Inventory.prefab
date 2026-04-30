@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 7567719939687046975}
   - component: {fileID: 6177818820070488920}
   - component: {fileID: 2694809326034854812}
+  - component: {fileID: 1275549040085864457}
   m_Layer: 5
   m_Name: Backpack
   m_TagString: Untagged
@@ -147,7 +148,7 @@ MonoBehaviour:
   shadowSrc:
   - {fileID: 21300000, guid: fb2e4b7a757c8904abce82331540640d, type: 3}
   - {fileID: 21300000, guid: 38155bf2dc767ef498ed7f4c298fafea, type: 3}
-  absoluteMove: {fileID: 2694809326034854812}
+  invMotionPlayer: {fileID: 1275549040085864457}
 --- !u!114 &2694809326034854812
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -174,6 +175,19 @@ MonoBehaviour:
     startAlpha: 0
     endAlpha: 1
     fadeEase: 1
+--- !u!114 &1275549040085864457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1108974525502667372}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 719b9f09e8d34d64b85ec50c42f862fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_InvMotionPlayer
+  absoluteMove: {fileID: 2694809326034854812}
 --- !u!1 &1467628027291062440
 GameObject:
   m_ObjectHideFlags: 0
@@ -946,10 +960,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5955985603632891772}
     m_Modifications:
-    - target: {fileID: 518389957901863509, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: m_Alpha
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5955985603632891772, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -1030,65 +1040,9 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6835553388373689748, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: absoluteMove
-      value: 
-      objectReference: {fileID: 4328710065563457514}
     - target: {fileID: 7019952593193086363, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
       propertyPath: m_Name
       value: UI_Homing
-      objectReference: {fileID: 0}
-    - target: {fileID: 7019952593193086363, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: targetRect
-      value: 
-      objectReference: {fileID: 1087878590980104742}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: canvasGroup
-      value: 
-      objectReference: {fileID: 6525349047004360463}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.duration
-      value: 0.4
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.fadeEase
-      value: 18
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.moveEase
-      value: 18
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.startDelay
-      value: 0.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.endOffset.x
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.endOffset.y
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.backwardDelay
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.startOffset.x
-      value: -10
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.startOffset.y
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-      propertyPath: valueSettings.backwardDuration
-      value: 0.2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1109,21 +1063,5 @@ MonoBehaviour:
 --- !u!224 &1087878590980104742 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5955985603632891772, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-  m_PrefabInstance: {fileID: 6755120754083112282}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &4328710065563457514 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7038466888030974640, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-  m_PrefabInstance: {fileID: 6755120754083112282}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4b6ec91658870849bc2f00bff86b94d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.UIMotion_AbsoluteMove
---- !u!225 &6525349047004360463 stripped
-CanvasGroup:
-  m_CorrespondingSourceObject: {fileID: 518389957901863509, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
   m_PrefabInstance: {fileID: 6755120754083112282}
   m_PrefabAsset: {fileID: 0}

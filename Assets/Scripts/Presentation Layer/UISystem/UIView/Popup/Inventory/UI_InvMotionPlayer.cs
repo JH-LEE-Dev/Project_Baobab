@@ -19,4 +19,9 @@ public class UI_InvMotionPlayer : MonoBehaviour
     {
         absoluteMove?.PlayBackwards();
     }
+
+    public void SkipAnimation(bool _isTrigger)
+    {
+        absoluteMove?.Skip(_isTrigger);
+    }
 }

@@ -159,6 +159,12 @@ namespace PresentationLayer.DOTweenAnimationSystem
             currentSequence.OnComplete(HandleComplete);
         }
 
+        public void Skip(bool _isCallbackkCall)
+        {
+            currentSequence.Complete(_isCallbackkCall);
+            Stop();
+        }
+
         public void Stop()
         {
             if (null != currentSequence && true == currentSequence.IsActive())

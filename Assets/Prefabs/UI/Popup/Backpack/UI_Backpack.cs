@@ -13,11 +13,11 @@ public class UI_Backpack : MonoBehaviour
     [SerializeField] private List<Sprite> baseSrc = new((int)BACKACK_STATE.END);
     [SerializeField] private List<Sprite> shadowSrc = new((int)BACKACK_STATE.END);
 
-    [SerializeField] private UIMotion_AbsoluteMove absoluteMove;
+    [SerializeField] private UI_InvMotionPlayer invMotionPlayer;
 
     public void Initialize()
     {
-        absoluteMove?.Initialize();
+        invMotionPlayer?.Initialize();
     }
 
     public void OpenInventory()
@@ -28,7 +28,7 @@ public class UI_Backpack : MonoBehaviour
         baseBackpack.sprite = baseSrc[(int)BACKACK_STATE.OPEN];
         shadowBackpack.sprite = shadowSrc[(int)BACKACK_STATE.CLOSE];
 
-        absoluteMove?.Play();
+        invMotionPlayer?.OpenInventory();
     }
 
     public void CloseInventory()
@@ -39,6 +39,11 @@ public class UI_Backpack : MonoBehaviour
         baseBackpack.sprite = baseSrc[(int)BACKACK_STATE.CLOSE];
         shadowBackpack.sprite = shadowSrc[(int)BACKACK_STATE.CLOSE];
 
-        absoluteMove?.PlayBackwards();
+        invMotionPlayer?.CloseInventory();
+    }
+
+    public void SkipAnimation(bool _isTrigger)
+    {
+        invMotionPlayer?.SkipAnimation(_isTrigger);
     }
 }

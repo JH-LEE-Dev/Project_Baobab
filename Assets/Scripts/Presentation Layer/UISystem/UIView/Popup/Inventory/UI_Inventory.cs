@@ -33,6 +33,9 @@ public class UI_Inventory : MonoBehaviour
 
     private UI_InventoryPopup invPopup;
 
+    public MapType currentMapType { get; set; } = MapType.Town;
+    private MapType prevMapType = MapType.Town;
+
     public bool isOpening { get; private set; } = false;
 
     public void Initialize(Transform uiRoot, Action clickedHomingEvent)
@@ -189,9 +192,7 @@ public class UI_Inventory : MonoBehaviour
 
         uiHoming.Initialize();
 
-        // TODO :: 지워질 때 빼줘야 함
-        uiHoming.clickedEvent -= clickedHomingEvent;
-        uiHoming.clickedEvent += clickedHomingEvent;
+        uiHoming.clickedEvent = clickedHomingEvent;
     }
 
     private void Init_Coins()
@@ -205,6 +206,10 @@ public class UI_Inventory : MonoBehaviour
         uiBackpack?.Initialize();
     }
 
+    public void ReleaseEvents()
+    {
+       
+    }
 
     public void CharacterEarnMoney(MoneyType _moneyType)
     {
@@ -237,6 +242,38 @@ public class UI_Inventory : MonoBehaviour
         UpdateSlots(items);
     }
 
+    public void MapChanged(MapType _currentMap)
+    {
+        prevMapType = currentMapType;
+
+        currentMapType = _currentMap;
+
+        if (null != uiHoming)
+            uiHoming.currentMapType = _currentMap;
+
+        CloseInvAndAnimSkip();
+    }
+
+    private void CloseInvAndAnimSkip()
+    {
+        if (null == uiBackpack || null == uiInvBackground || null == uiHoming || null == uiCoins)
+            return;
+
+        ExitPopup();
+
+        isOpening = false;
+
+        uiBackpack.CloseInventory();
+        uiInvBackground.CloseInventory();
+        uiHoming.CloseInventory();
+        uiCoins.CloseInventory();
+
+        uiBackpack.SkipAnimation(false);
+        uiInvBackground.SkipAnimation(false);
+        uiHoming.SkipAnimation(false);
+        uiCoins.SkipAnimation(false);
+    }
+
     public void OnHide()
     {
         ExitPopup();
@@ -246,8 +283,7 @@ public class UI_Inventory : MonoBehaviour
         uiBackpack?.CloseInventory();
         uiInvBackground?.CloseInventory();
 
-        Scene currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-        if ("TownScene" == currentScene.name)
+        if (MapType.Town == currentMapType)
             return;
 
         uiHoming?.CloseInventory();
@@ -263,8 +299,7 @@ public class UI_Inventory : MonoBehaviour
 
         InventoryShowEvent();
 
-        Scene currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-        if ("TownScene" == currentScene.name)
+        if (MapType.Town == currentMapType)
             return;
 
         uiHoming?.OpenInventory();
