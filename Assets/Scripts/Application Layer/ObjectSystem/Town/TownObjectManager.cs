@@ -35,6 +35,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     
     private bool bCanTravel = false;
 
+    [SerializeField] private TreeVisualDataBase treeVisualDataBase;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -88,8 +90,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             {
                 if (trees[i] != null)
                 {
+                    TreeType randomType = (TreeType)UnityEngine.Random.Range(1, (int)TreeType.Max);
                     trees[i].Initialize(environmentProvider);
-                    trees[i].ApplyData(new TreeData(TreeType.BirchTree, TreeGrade.Normal));
+                    trees[i].ApplyData(new TreeData(randomType, TreeGrade.Normal, treeVisualDataBase.Get(randomType)));
                 }
             }
         }

@@ -39,11 +39,14 @@ public struct TreeData
 {
     public TreeType type;
     public TreeGrade grade;
+    public TreeVisualData treeVisualData;
 
-    public TreeData(TreeType _type, TreeGrade _grade)
+    public TreeData(TreeType _type, TreeGrade _grade, TreeVisualData _treeVisualData)
     {
         type = _type;
         grade = _grade;
+        treeVisualData = _treeVisualData;
+    
     }
 }
 

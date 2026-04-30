@@ -24,6 +24,13 @@ public class TreeVisualComponent : MonoBehaviour
     [Header("Default Tint")]
     [SerializeField] private Color32 topBrightColor = new Color32(53, 204, 92, 255);
     [SerializeField] private Color32 bottomBrightColor = new Color32(132, 102, 36, 255);
+    [Range(0f, 0.1f)] [SerializeField] private float hueJitter = 0.02f;
+    [Range(0f, 0.2f)] [SerializeField] private float saturationJitter = 0.1f;
+    [Range(0f, 0.2f)] [SerializeField] private float valueJitter = 0.1f;
+
+    [Header("Scale Variation")]
+    [SerializeField] private float minScale = 0.9f;
+    [SerializeField] private float maxScale = 1.1f;
 
     [Header("Hit Feedback")]
     [SerializeField] private float hitPunchX = 0.1f;
@@ -108,41 +115,65 @@ public class TreeVisualComponent : MonoBehaviour
     #endregion
 
     #region Apply Data
-    // 트리 데이터가 적용될 때 스프라이트 조합과 색상 바리에이션을 새로 구성한다.
+    // 트리 데이터가 적용될 때 데이터에 정의된 스프라이트와 색상을 적용한다.
     public void ApplyVisual(TreeData _treeData)
     {
-        ApplyRandomVisual();
+        TreeVisualData visualData = _treeData.treeVisualData;
+
+        if (topRenderer != null)
+        {
+            SetRandomSprite(topRenderer, visualData.topSprites);
+            topRenderer.color = GetJitteredColor(visualData.topColor);
+        }
+
+        if (bottomRenderer != null)
+        {
+            SetRandomSprite(bottomRenderer, visualData.bottomSprites);
+            bottomRenderer.color = GetJitteredColor(visualData.bottomColor);
+        }
+
+        ApplyRandomScale();
+        SyncShadowSprite();
+        CacheSwayBasePose();
+        ResetTopSway();
     }
 
-    // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다.
+    // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
     private void ApplyRandomVisual()
     {
         SetRandomSprite(bottomRenderer, bottomSprites);
         SetRandomSprite(topRenderer, topSprites);
-        ApplyColors();
+        
+        if (topRenderer != null)
+        {
+            topRenderer.color = GetJitteredColor(ToColor(topBrightColor));
+        }
+
+        if (bottomRenderer != null)
+        {
+            bottomRenderer.color = GetJitteredColor(ToColor(bottomBrightColor));
+        }
+
+        ApplyRandomScale();
         SyncShadowSprite();
         CacheSwayBasePose();
         ResetTopSway();
+    }
+
+    // 나무의 전체적인 크기를 설정된 범위 내에서 무작위로 결정한다.
+    private void ApplyRandomScale()
+    {
+        if (visualRoot != null)
+        {
+            float scale = Random.Range(minScale, maxScale);
+            visualRoot.localScale = new Vector3(scale, scale, 1f);
+        }
     }
 
     // 상단/하단 스프라이트에 밝기 편차를 줘서 개체마다 미묘한 색 차이를 만든다.
     public Color GetBottomColor()
     {
         return bottomRenderer.color;
-    }
-
-    // 나무의 색상을 바꿔준다.
-    private void ApplyColors()
-    {
-        if (topRenderer != null)
-        {
-            topRenderer.color = ToColor(topBrightColor);
-        }
-
-        if (bottomRenderer != null)
-        {
-            bottomRenderer.color = ToColor(bottomBrightColor);
-        }
     }
 
     // 그림자 렌더러가 본체와 같은 스프라이트와 색상을 따라가도록 동기화한다.
@@ -161,15 +192,29 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
-    // 전달받은 렌더러에 스프라이트 배열 중 하나를 무작위로 적용한다.
-    private static void SetRandomSprite(SpriteRenderer _renderer, Sprite[] _sprites)
+    // 전달받은 렌더러에 스프라이트 리스트 중 하나를 무작위로 적용한다.
+    private static void SetRandomSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
     {
-        if (_renderer == null || _sprites == null || _sprites.Length == 0)
+        if (_renderer == null || _sprites == null || _sprites.Count == 0)
         {
             return;
         }
 
-        _renderer.sprite = _sprites[Random.Range(0, _sprites.Length)];
+        _renderer.sprite = _sprites[Random.Range(0, _sprites.Count)];
+    }
+
+    // 기준 색상에서 색상, 채도, 명도를 살짝 틀어 자연스러운 개체 차이를 만든다.
+    private Color GetJitteredColor(Color _baseColor)
+    {
+        Color.RGBToHSV(_baseColor, out float h, out float s, out float v);
+        
+        h = (h + Random.Range(-hueJitter, hueJitter) + 1f) % 1f;
+        s = Mathf.Clamp01(s + Random.Range(-saturationJitter, saturationJitter));
+        v = Mathf.Clamp01(v + Random.Range(-valueJitter, valueJitter));
+        
+        Color result = Color.HSVToRGB(h, s, v);
+        result.a = _baseColor.a;
+        return result;
     }
 
     // 기준 색상에서 밝기만 살짝 달라진 틴트를 만들어 자연스러운 개체 차이를 만든다.

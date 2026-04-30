@@ -51,12 +51,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     public IReadOnlyList<ITreeObj> trees => activeTrees;
 
+    [SerializeField] private TreeVisualDataBase treeVisualDataBase;
+
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, DungeonData _dungeonData, IInventoryChecker _inventoryChecker)
+    public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
     {
         environmentProvider = _environmentProvider;
-        dungeonData = _dungeonData;
         mainCam = Camera.main;
 
         itemManager = GetComponentInChildren<ItemManager>();
@@ -441,7 +442,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         TreeType type = environmentProvider.densityProvider.GetTreeTypeToSpawn();
 
         TreeGrade grade = TreeGrade.Normal;
-        if (dungeonData != null && dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
+        if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
         {
             float rand = UnityEngine.Random.Range(0f, 1f);
             float cumulative = 0f;
@@ -456,7 +457,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             }
         }
 
-        return new TreeData(type, grade);
+        return new TreeData(type, grade, treeVisualDataBase.Get(type));
     }
 
     private void OnGetTree(TreeObj _tree)
