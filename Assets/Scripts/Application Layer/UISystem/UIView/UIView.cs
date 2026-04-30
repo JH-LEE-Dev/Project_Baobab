@@ -40,13 +40,6 @@ public abstract class UIView : MonoBehaviour
     {
         viewCtx = ctx;
 
-        // 로컬라이징 컴포넌트 자동 주입
-        LocalizedText[] localizers = GetComponentsInChildren<LocalizedText>(true);
-        for (int i = 0; i < localizers.Length; i++)
-        {
-            localizers[i].Initialize(viewCtx.localizationManager);
-        }
-
         SetupUI();
     }
 

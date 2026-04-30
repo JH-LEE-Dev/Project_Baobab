@@ -8,8 +8,10 @@ public class InDungeonSystem : MonoBehaviour
     private IEnvironmentProvider environmentProvider;
 
 
-    [Header("Dungeon Data")]
-    [SerializeField] private DungeonData dungeonData;
+    [Header("Dungeon Data Base")]
+    [SerializeField] private DungeonValueDataBase dungeonDataBase;
+
+    private MapType currentMapType;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
     {
@@ -17,7 +19,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, dungeonData, _inventoryChecker);
+        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
@@ -34,8 +36,8 @@ public class InDungeonSystem : MonoBehaviour
 
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
-        signalHub.Publish(new DungeonReadySignal(dungeonData));
-        inDungeonObjectManager.SetDungeonData(dungeonData);
+        signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType)));
+        inDungeonObjectManager.SetDungeonData(dungeonDataBase.GetDungeonData(currentMapType));
         inDungeonObjectManager.SetupItemManagerCulling();
     }
 

@@ -432,7 +432,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cc37e7de64c27914dab8482bdda69589, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonSystem
-  dungeonData: {fileID: 11400000, guid: 1ac130def065a0142a5ce3f75ed357e3, type: 2}
+  dungeonDataBase: {fileID: 11400000, guid: d78798973289b29438b3b8501357779a, type: 2}
 --- !u!1 &3242092746378050533
 GameObject:
   m_ObjectHideFlags: 0
@@ -1133,6 +1133,7 @@ MonoBehaviour:
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   portalSpawnPoint: {fileID: 4103959821245234347, guid: 4b288be7fa674804ab828020e0b795ce, type: 3}
   cullingDistance: 25
+  treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
 --- !u!1 &7224331137657030612
 GameObject:
   m_ObjectHideFlags: 0
@@ -1565,3 +1566,4 @@ MonoBehaviour:
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
   cullingDistance: 25
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
+  treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}

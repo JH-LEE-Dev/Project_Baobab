@@ -55,7 +55,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         localizationManager = new LocalizationManager();
 
         if (localizationManager != null)
+        {
             localizationManager.Initialize();
+            LoadLocalizationData();
+        }
 
         if (inputManager != null)
         {
@@ -236,6 +239,25 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             if (mainMenuInstaller != null)
             {
                 mainMenuInstaller.StartMainMenuScene();
+            }
+        }
+    }
+
+    private void LoadLocalizationData()
+    {
+        TextAsset[] localizationAssets = Resources.LoadAll<TextAsset>("Localization");
+        
+        if (localizationAssets == null || localizationAssets.Length == 0)
+        {
+            Debug.LogWarning("[BootStrap] No localization files found in Resources/Localization");
+            return;
+        }
+
+        for (int i = 0; i < localizationAssets.Length; i++)
+        {
+            if (localizationAssets[i] != null)
+            {
+                localizationManager.LoadLocalizationJson(localizationAssets[i].text);
             }
         }
     }

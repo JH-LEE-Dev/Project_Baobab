@@ -7,7 +7,7 @@ public class LocalizationManager
 {
     // //내부 의존성
     private Dictionary<int, string> masterTable;
-    private List<string> loadedJsons; // 언어 변경 시 재파싱을 위해 원본 JSON 보관
+    private List<string> loadedJsons;
     private StringBuilder stringBuilder;
     private Language currentLanguage = Language.KR;
 
@@ -21,14 +21,10 @@ public class LocalizationManager
         stringBuilder = new StringBuilder(128);
     }
 
-    /// <summary>
-    /// JSON 텍스트를 파싱하여 ID 기반 마스터 테이블에 등록하고, 원본을 보관합니다.
-    /// </summary>
     public void LoadLocalizationJson(string _jsonText)
     {
         if (string.IsNullOrEmpty(_jsonText)) return;
         
-        // 중복 로드 방지 및 보관
         if (!loadedJsons.Contains(_jsonText))
         {
             loadedJsons.Add(_jsonText);
@@ -40,34 +36,33 @@ public class LocalizationManager
     private void ParseJson(string _jsonText)
     {
         var data = JsonUtility.FromJson<LocalizationDataJson>(_jsonText);
-        if (data == null || data.sections == null) return;
+        if (data == null || data.entries == null) return;
 
-        for (int i = 0; i < data.sections.Length; i++)
+        int jsonId = data.jsonId;
+
+        for (int i = 0; i < data.entries.Length; i++)
         {
-            var section = data.sections[i];
-            for (int j = 0; j < section.entries.Length; j++)
-            {
-                var entry = section.entries[j];
-                if (entry.id == 0) continue;
-                
-                masterTable[entry.id] = (currentLanguage == Language.KR) ? entry.kr : entry.en;
-            }
+            var entry = data.entries[i];
+            if (entry.id == 0) continue;
+            
+            int compositeKey = GenerateKey(jsonId, entry.id);
+            masterTable[compositeKey] = (currentLanguage == Language.KR) ? entry.kr : entry.en;
         }
     }
 
-    public string GetText(int _id)
+    public string GetText(int _compositeKey)
     {
-        if (masterTable.TryGetValue(_id, out string _value)) return _value;
+        if (masterTable.TryGetValue(_compositeKey, out string _value)) return _value;
         return string.Empty;
     }
 
-    public string GetFormatText(int _id, int _arg0)
+    public string GetFormatText(int _compositeKey, params object[] _args)
     {
-        string format = GetText(_id);
+        string format = GetText(_compositeKey);
         if (string.IsNullOrEmpty(format)) return string.Empty;
 
         stringBuilder.Clear();
-        stringBuilder.AppendFormat(format, _arg0);
+        stringBuilder.AppendFormat(format, _args);
         return stringBuilder.ToString();
     }
 
@@ -76,7 +71,6 @@ public class LocalizationManager
         if (currentLanguage == _lang) return;
         currentLanguage = _lang;
 
-        // 언어 변경 시 테이블을 비우고 보관된 모든 JSON을 다시 파싱합니다.
         masterTable.Clear();
         for (int i = 0; i < loadedJsons.Count; i++)
         {
@@ -84,5 +78,12 @@ public class LocalizationManager
         }
 
         OnLanguageChanged?.Invoke();
+    }
+
+    // 비트 연산을 통한 고유 키 생성
+    // jsonId: 10bit (0~1023), entryId: 21bit (0~2,097,151)
+    public int GenerateKey(int _jsonId, int _entryId)
+    {
+        return (_jsonId << 21) | (_entryId & 0x1FFFFF);
     }
 }
