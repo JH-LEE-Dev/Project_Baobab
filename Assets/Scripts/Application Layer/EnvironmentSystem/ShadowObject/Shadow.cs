@@ -7,11 +7,8 @@ public class Shadow : MonoBehaviour
     [SerializeField] private float defaultRotationZ = 225f;
     [SerializeField] private float defaultScaleY = 1f;
 
-    private Collider2D shadowCollider;
-
     public void Initialize()
     {
-        shadowCollider = GetComponent<Collider2D>();
         ApplyDefaultPose();
     }
 
@@ -19,11 +16,6 @@ public class Shadow : MonoBehaviour
     {
         transform.localRotation = _rotation;
         transform.localScale = new Vector3(1f, _scaleY, 1f);
-
-        if (shadowCollider != null)
-        {
-            shadowCollider.enabled = _isActive;
-        }
     }
 
     private void OnValidate()
