@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
+using PresentationLayer.DOTweenAnimationSystem;
 
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
@@ -21,9 +22,17 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Header("Default Visual")]
     [SerializeField] private Sprite defaultPictureSprite;
 
+    [Header("Motion Settings")]
+    [SerializeField] private ObjectMotionPlayer motionPlayer;
+    [SerializeField] private string hoverMotionTag = "UIHover";
+    [SerializeField] private string clickMotionTag = "UIClick";
+    [SerializeField] private bool resetCurrentMotionBeforePlay = false;
+
     private UI_TentAbilityComponent owner;
     private bool canApplyVisual;
     private bool completedVisual;
+    private MotionEntry hoverMotionEntry;
+    private MotionEntry clickMotionEntry;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -35,6 +44,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public bool CanApplyVisual => canApplyVisual;
     public bool CompletedVisual => completedVisual;
 
+    private void Awake()
+    {
+        if (null != motionPlayer)
+            return;
+
+        motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
+    }
 
     // 특성 노드의 내부 그림을 외부에서 교체한다.
     private void SetPicture(Sprite _sprite)
@@ -156,6 +172,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void OnPointerEnter(PointerEventData eventData)
     {
         owner?.ShowToolTip(this);
+        PlayHoverMotion();
     }
 
     // 마우스가 노드 밖으로 나가면 상위 컴포넌트에 툴팁 숨김을 요청한다.
@@ -170,6 +187,37 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
             return;
 
-        owner?.RequestNodeLevelUp(this);
+        bool isApproved = owner != null && owner.TryRequestNodeLevelUp(this);
+        if (true == isApproved)
+            PlayClickMotion();
+    }
+
+    private void PlayHoverMotion()
+    {
+        if (null == motionPlayer || string.IsNullOrEmpty(hoverMotionTag))
+            return;
+
+        if (motionPlayer.IsPlaying(hoverMotionTag))
+            return;
+
+        ResetEntryMotion(clickMotionEntry);
+        hoverMotionEntry = motionPlayer.Play(hoverMotionTag, bReset: resetCurrentMotionBeforePlay);
+    }
+
+    private void PlayClickMotion()
+    {
+        if (null == motionPlayer || string.IsNullOrEmpty(clickMotionTag))
+            return;
+
+        ResetEntryMotion(hoverMotionEntry);
+        clickMotionEntry = motionPlayer.Play(clickMotionTag, bReset: resetCurrentMotionBeforePlay);
+    }
+
+    private void ResetEntryMotion(MotionEntry _entry)
+    {
+        if (null == motionPlayer || null == _entry)
+            return;
+
+        motionPlayer.SettingEntryMotion(_entry, true, true);
     }
 }

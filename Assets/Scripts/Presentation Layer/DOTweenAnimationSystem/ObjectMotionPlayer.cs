@@ -112,6 +112,17 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     motionMap[_tag].motionInstance.Stop();
         }
 
+        public bool IsPlaying(string _tag)
+        {
+            if (null == motionMap)
+                InitializeMotionMap();
+
+            if (false == motionMap.ContainsKey(_tag))
+                return false;
+
+            return null != motionMap[_tag].motionInstance && motionMap[_tag].motionInstance.IsPlaying();
+        }
+
         public void StopAll()
         {
             for (int i = 0; i < motionEntries.Count; i++)
@@ -133,10 +144,10 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     motionMap[_tag].motionInstance.Skip(_isCallback);
         }
 
-        public bool SettingEntryMotion(MotionEntry _entry, bool _bStop, bool _bSkip = false, bool _bSkipCallback = false)
+        public void SettingEntryMotion(MotionEntry _entry, bool _bStop, bool _bResetPoint, bool _bSkip = false, bool _bSkipCallback = false)
         {
             if (null == _entry)
-                return true;
+                return;
 
             if (_bSkip)
                 _entry.motionInstance.Skip(_bSkipCallback);
@@ -144,7 +155,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (_bStop)
                 _entry.motionInstance.Stop();
 
-            return true;
+            if (_bResetPoint)
+                _entry.motionInstance.ResetToInitialState();
         }
 
         private void OnDestroy()

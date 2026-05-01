@@ -30,7 +30,6 @@ public class AbilityToolManager : MonoBehaviour
     private bool isPointerHeld;
     private bool dragPerformedThisPress;
     private bool dragPerformedOnReleasedFrame;
-    private bool isLinkSelectionMode;
     private bool hasPendingPivot;
     private Vector2 previousMousePosition;
     private Vector2 pointerPressScreenPosition;
@@ -146,7 +145,6 @@ public class AbilityToolManager : MonoBehaviour
         dragPerformedThisPress = false;
         dragPerformedOnReleasedFrame = false;
         hasZoomFocus = false;
-        isLinkSelectionMode = false;
         hasPendingPivot = false;
         selectedChildNode = null;
         selectedMoveNode = null;
@@ -473,7 +471,6 @@ public class AbilityToolManager : MonoBehaviour
                 return;
 
             selectedChildNode = _hoveredNode;
-            isLinkSelectionMode = true;
             hasPendingPivot = false;
             ClearMoveSelectionMode();
             selectedChildNode.SetSelectedVisual(true);
@@ -783,7 +780,6 @@ public class AbilityToolManager : MonoBehaviour
             selectedChildNode.SetSelectedVisual(false);
 
         selectedChildNode = null;
-        isLinkSelectionMode = false;
         hasPendingPivot = false;
     }
 
