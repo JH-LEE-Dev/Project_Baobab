@@ -10,22 +10,22 @@ namespace PresentationLayer.DOTweenAnimationSystem
         {
             [Header("Scale Settings")]
             public float shrinkScale = 0.92f;
-            public float shrinkDuration = 0.05f;
-            public float restoreDuration = 0.08f;
+            [Range(0f, 1f)] public float shrinkTimeRatio = 0.08f;
+            [Range(0f, 1f)] public float restoreTimeRatio = 0.12f;
             public Ease scaleEase = Ease.OutBack;
 
             [Header("Rotation Settings")]
             public float startAngle = 9f;
             public float angleDamping = 0.62f;
             public int swingCount = 6;
-            public float swingDuration = 0.08f;
+            [Range(0f, 1f)] public float rotationTimeRatio = 0.8f;
             public Ease rotationEase = Ease.OutSine;
         }
 
         [Header("Value Settings")]
         [SerializeField] private ValueSettings valueSettings = new ValueSettings();
 
-        protected override void OnRectTransform(Sequence _seq, RectTransform _rect)
+        protected override void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase)
         {
             if (null == _seq || null == _rect)
                 return;
@@ -43,7 +43,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             _seq.Join(BuildRotationTween(_rect, _state.localRotation));
         }
 
-        protected override void OnTransform(Sequence _seq, Transform _trans)
+        protected override void OnTransform(Sequence _seq, Transform _trans, Ease _currPublicEase)
         {
             if (null == _seq || null == _trans)
                 return;
@@ -63,7 +63,6 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         protected override void ApplyTweenSettings(Tween _tween)
         {
-            ApplyDurationScale(_tween, forwardDuration);
             base.ApplyTweenSettings(_tween);
 
             if (null != currentTween)
@@ -89,10 +88,12 @@ namespace PresentationLayer.DOTweenAnimationSystem
         private Tween BuildScaleTween(Transform _target, Vector3 _initialScale)
         {
             Vector3 shrinkScale = _initialScale * valueSettings.shrinkScale;
+            float shrinkDuration = forwardDuration * Mathf.Clamp01(valueSettings.shrinkTimeRatio);
+            float restoreDuration = forwardDuration * Mathf.Clamp01(valueSettings.restoreTimeRatio);
 
             return DOTween.Sequence()
-                .Append(_target.DOScale(shrinkScale, valueSettings.shrinkDuration).SetEase(Ease.OutQuad))
-                .Append(_target.DOScale(_initialScale, valueSettings.restoreDuration).SetEase(valueSettings.scaleEase));
+                .Append(_target.DOScale(shrinkScale, shrinkDuration).SetEase(Ease.OutQuad))
+                .Append(_target.DOScale(_initialScale, restoreDuration).SetEase(valueSettings.scaleEase));
         }
 
         private Tween BuildRotationTween(Transform _target, Vector3 _initialRotation)
@@ -100,6 +101,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             Sequence sequence = DOTween.Sequence();
             float angle = Mathf.Abs(valueSettings.startAngle);
             int swingCount = Mathf.Max(valueSettings.swingCount, 1);
+            float rotationDuration = forwardDuration * Mathf.Clamp01(valueSettings.rotationTimeRatio);
+            float swingDuration = rotationDuration / (swingCount + 1);
 
             for (int i = 0; i < swingCount; i++)
             {
@@ -108,14 +111,14 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 targetRotation.z += angle * direction;
 
                 sequence.Append(
-                    _target.DOLocalRotate(targetRotation, valueSettings.swingDuration, RotateMode.Fast)
+                    _target.DOLocalRotate(targetRotation, swingDuration, RotateMode.Fast)
                            .SetEase(valueSettings.rotationEase));
 
                 angle *= Mathf.Clamp01(valueSettings.angleDamping);
             }
 
             sequence.Append(
-                _target.DOLocalRotate(_initialRotation, valueSettings.swingDuration, RotateMode.Fast)
+                _target.DOLocalRotate(_initialRotation, swingDuration, RotateMode.Fast)
                        .SetEase(valueSettings.rotationEase));
 
             return sequence;

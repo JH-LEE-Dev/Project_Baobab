@@ -172,9 +172,8 @@ MonoBehaviour:
   motionPlayer: {fileID: 1227652658}
   hoverMotionTag: Hover
   clickMotionTag: Click
-  resetOnPlay: 1
+  resetCurrentMotionBeforePlay: 0
   hoverReplayCooldown: 0.15
-  stopHoverBeforeClick: 1
 --- !u!224 &305793991 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 7768809352605303072, guid: 25f9d9e4b6ba4e049a97049feacd50ed, type: 3}
@@ -341,22 +340,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: def10f7b1de1d494d96c53c98e836a64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIClickTwistFlash
-  forwardDuration: 0.19
+  forwardDuration: 0.45
   forwardDelay: 0
+  forwardEase: 0
   backwardDuration: 0.5
   backwardDelay: 0
+  backwardEase: 0
   resetOnValidateInPlayMode: 1
   valueSettings:
-    squashScale: {x: 1.24, y: 0.74}
-    recoilScale: {x: 0.88, y: 1.08}
-    squashDuration: 0.045
-    recoilDuration: 0.065
-    restoreDuration: 0.08
+    squashScale: {x: 1.7, y: 0.3}
+    recoilScale: {x: 0.7, y: 1.2}
+    bounceCount: 2
+    bounceDamping: 0.25
+    squashTimeRatio: 0.15
+    recoilTimeRatio: 0.2
+    restoreTimeRatio: 0.4
     squashEase: 6
     restoreEase: 27
     flashColor: {r: 1, g: 1, b: 1, a: 1}
-    flashInDuration: 0.035
-    flashOutDuration: 0.12
+    flashInTimeRatio: 0.22
+    flashOutTimeRatio: 0.78
     flashEase: 6
 --- !u!1 &975285711
 GameObject:
@@ -575,18 +578,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIHoverWiggle
   forwardDuration: 0.7
   forwardDelay: 0
+  forwardEase: 0
   backwardDuration: 0.5
   backwardDelay: 0
+  backwardEase: 0
   resetOnValidateInPlayMode: 1
   valueSettings:
     shrinkScale: 0.8
-    shrinkDuration: 0.045
-    restoreDuration: 0.07
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
     scaleEase: 27
-    startAngle: 12
+    startAngle: 20
     angleDamping: 0.62
     swingCount: 5
-    swingDuration: 0.1
+    rotationTimeRatio: 0.8
     rotationEase: 3
 --- !u!1 &1170629580
 GameObject:

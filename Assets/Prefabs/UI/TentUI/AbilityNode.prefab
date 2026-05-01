@@ -124,19 +124,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bdec77a19650a545991ad23329b6d12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIHoverWiggle
-  forwardDuration: 0.5
+  forwardDuration: 0.7
   forwardDelay: 0
+  forwardEase: 0
   backwardDuration: 0.5
   backwardDelay: 0
+  backwardEase: 0
+  resetOnValidateInPlayMode: 1
   valueSettings:
-    shrinkScale: 0.92
-    shrinkDuration: 0.05
-    restoreDuration: 0.08
+    shrinkScale: 0.8
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
     scaleEase: 27
-    startAngle: 9
+    startAngle: 20
     angleDamping: 0.62
-    swingCount: 6
-    swingDuration: 0.08
+    swingCount: 5
+    rotationTimeRatio: 0.8
     rotationEase: 3
 --- !u!1 &3681080422180222388
 GameObject:
@@ -336,7 +339,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 597ff1f3e8ce72346bc305fbba413bde, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.ObjectMotionPlayer
-  motionEntries: []
+  motionEntries:
+  - motionTag: UIHover
+    motionPrefab: {fileID: 869314140198009130}
+    targets:
+    - transform: {fileID: 0}
+      rectTransform: {fileID: 6143929027132920225}
+      canvasGroup: {fileID: 0}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 0}
+    motionInstance: {fileID: 0}
+  - motionTag: UIClick
+    motionPrefab: {fileID: 1723511359002893466}
+    targets:
+    - transform: {fileID: 0}
+      rectTransform: {fileID: 6143929027132920225}
+      canvasGroup: {fileID: 0}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 0}
+    motionInstance: {fileID: 0}
 --- !u!1 &6273393684008167884
 GameObject:
   m_ObjectHideFlags: 0
@@ -347,7 +368,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3923181264527570548}
   - component: {fileID: 186751372433236867}
-  - component: {fileID: 2665368134010148673}
   m_Layer: 5
   m_Name: AbilityNode
   m_TagString: Untagged
@@ -398,22 +418,10 @@ MonoBehaviour:
   abilityBackgroundImage: {fileID: 1363425424598749706}
   abilityPictureImage: {fileID: 6666146036124203983}
   defaultPictureSprite: {fileID: 21300000, guid: e5298198a64592941849ea8b38428bab, type: 3}
---- !u!114 &2665368134010148673
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6273393684008167884}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 971f93814e2e4cc6ad5881868c667e2c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.UIObjectMotionEventTrigger
-  motionPlayer: {fileID: 0}
-  hoverMotionTag: Hover
-  clickMotionTag: Click
-  resetOnPlay: 1
+  motionPlayer: {fileID: 1173830248015622911}
+  hoverMotionTag: UIHover
+  clickMotionTag: UIClick
+  resetCurrentMotionBeforePlay: 0
 --- !u!1 &6942825010293521783
 GameObject:
   m_ObjectHideFlags: 0
@@ -537,19 +545,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: def10f7b1de1d494d96c53c98e836a64, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIClickTwistFlash
-  forwardDuration: 0.5
+  forwardDuration: 0.45
   forwardDelay: 0
+  forwardEase: 0
   backwardDuration: 0.5
   backwardDelay: 0
+  backwardEase: 0
+  resetOnValidateInPlayMode: 1
   valueSettings:
-    squashScale: {x: 1.24, y: 0.74}
-    recoilScale: {x: 0.88, y: 1.08}
-    squashDuration: 0.045
-    recoilDuration: 0.065
-    restoreDuration: 0.08
+    squashScale: {x: 1.7, y: 0.3}
+    recoilScale: {x: 0.7, y: 1.2}
+    bounceCount: 2
+    bounceDamping: 0.25
+    squashTimeRatio: 0.15
+    recoilTimeRatio: 0.2
+    restoreTimeRatio: 0.4
     squashEase: 6
     restoreEase: 27
     flashColor: {r: 1, g: 1, b: 1, a: 1}
-    flashInDuration: 0.035
-    flashOutDuration: 0.12
+    flashInTimeRatio: 0.22
+    flashOutTimeRatio: 0.78
     flashEase: 6

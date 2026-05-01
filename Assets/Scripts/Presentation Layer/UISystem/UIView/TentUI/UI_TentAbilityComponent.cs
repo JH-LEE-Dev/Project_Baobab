@@ -552,30 +552,41 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 노드 클릭 시 상위 시스템에 전달할 요청 함수다.
     public void RequestNodeLevelUp(AbilityNode _node)
     {
+        TryRequestNodeLevelUp(_node);
+    }
+
+    public bool TryRequestNodeLevelUp(AbilityNode _node)
+    {
         if (_node == null)
-            return;
+            return false;
 
         SkillType requestedSkillType = _node.SkillType;
 
-        OnAbilityLevelUpRequested(requestedSkillType);
+        return OnAbilityLevelUpRequested(requestedSkillType);
     }
 
 
     // 상위 로직에 어떤 스킬을 찍으려는지 전달하는 자리다.
-    private void OnAbilityLevelUpRequested(SkillType _skillType)
+    private bool OnAbilityLevelUpRequested(SkillType _skillType)
     {
         if (skillSystemProvider == null)
         {
             Debug.LogWarning($"SkillSystemProvider is null. Request skipped: {_skillType}");
-            return;
+            return false;
         }
 
         AbilityLevelUpRejectReason reason = skillSystemProvider.TryApplySkill(_skillType);
 
         if (reason == AbilityLevelUpRejectReason.Pass)
+        {
             OnAbilityLevelUpApproved(_skillType);
+            return true;
+        }
         else
+        {
             OnAbilityLevelUpRejected(_skillType, NormalizeRejectReason(reason));
+            return false;
+        }
     }
 
     // 상위 시스템의 세부 실패 사유를 UI에서 사용할 공통 사유로 정리한다.

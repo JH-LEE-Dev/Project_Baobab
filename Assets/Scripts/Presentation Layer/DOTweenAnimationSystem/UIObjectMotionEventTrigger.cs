@@ -13,12 +13,13 @@ namespace PresentationLayer.DOTweenAnimationSystem
         [SerializeField] private string clickMotionTag = "Click";
 
         [Header("Play Settings")]
-        [SerializeField] private bool resetOnPlay = true;
+        [SerializeField] private bool resetCurrentMotionBeforePlay = false;
         [SerializeField] private float hoverReplayCooldown = 0.15f;
-        [SerializeField] private bool stopHoverBeforeClick = true;
 
         private bool isPointerInside;
         private float nextHoverPlayTime;
+        private MotionEntry hoverEntry;
+        private MotionEntry clickEntry;
 
         private void Awake()
         {
@@ -66,8 +67,10 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (motionPlayer.IsPlaying(hoverMotionTag))
                 return;
 
+            ResetEntryMotion(clickEntry);
+
             nextHoverPlayTime = Time.unscaledTime + hoverReplayCooldown;
-            motionPlayer.Play(hoverMotionTag, bReset: resetOnPlay);
+            hoverEntry = motionPlayer.Play(hoverMotionTag, bReset: resetCurrentMotionBeforePlay);
         }
 
         public void PlayClickMotion()
@@ -75,11 +78,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (null == motionPlayer || string.IsNullOrEmpty(clickMotionTag))
                 return;
 
-            if (true == stopHoverBeforeClick && string.IsNullOrEmpty(hoverMotionTag) == false)
-                motionPlayer.Stop(hoverMotionTag);
+            ResetEntryMotion(hoverEntry);
 
             nextHoverPlayTime = Time.unscaledTime + hoverReplayCooldown;
-            motionPlayer.Play(clickMotionTag, bReset: resetOnPlay);
+            clickEntry = motionPlayer.Play(clickMotionTag, bReset: resetCurrentMotionBeforePlay);
+        }
+
+        private void ResetEntryMotion(MotionEntry _entry)
+        {
+            if (null == motionPlayer || null == _entry)
+                return;
+
+            motionPlayer.SettingEntryMotion(_entry, true, true);
         }
 
         private bool IsPointerInsideRoot(PointerEventData _eventData)
