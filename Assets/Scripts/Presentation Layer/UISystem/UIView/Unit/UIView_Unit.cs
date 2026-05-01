@@ -23,8 +23,8 @@ public class UIView_Unit : UIView
     [Header("Other")]
     [SerializeField] private float showCount = 1.5f;
 
-    private Dictionary<ITreeObj, HUD_ProgressBar> damagedTrees = new Dictionary<ITreeObj, HUD_ProgressBar>(32);
-    private HUD_ProgressBar uiCharge;
+    private Dictionary<ITreeObj, HUD_HPBar> damagedTrees = new Dictionary<ITreeObj, HUD_HPBar>(32);
+    private HUD_ChargeGageBar uiCharge;
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -56,7 +56,7 @@ public class UIView_Unit : UIView
             return;
 
         // 이미 캐싱 돼 있으면 시간 연장
-        if (damagedTrees.TryGetValue(_treeObj, out HUD_ProgressBar _bar))
+        if (damagedTrees.TryGetValue(_treeObj, out HUD_HPBar _bar))
         {
             _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
             _bar.TriggerActiveForDuration(showCount, FinishedBar);
@@ -93,7 +93,7 @@ public class UIView_Unit : UIView
         if (null == hpBarPool || null == _treeObj)
             return;
 
-        HUD_ProgressBar _bar = hpBarPool.Spawn<HUD_ProgressBar>(hpBarPrefab, Vector3.zero, Quaternion.identity, this.transform);
+        HUD_HPBar _bar = hpBarPool.Spawn<HUD_HPBar>(hpBarPrefab, Vector3.zero, Quaternion.identity, this.transform);
         if (null == _bar)
             return;
 
@@ -108,7 +108,7 @@ public class UIView_Unit : UIView
         _bar.TriggerActiveForDuration(showCount, FinishedBar);
     }
 
-    private void FinishedBar(HUD_ProgressBar _bar)
+    private void FinishedBar(HUD_HPBar _bar)
     {
         if (null == _bar)
             return;
@@ -141,7 +141,7 @@ public class UIView_Unit : UIView
         if (null == chargePrefab)
             return;
 
-        uiCharge = Instantiate(chargePrefab, Vector3.zero, Quaternion.identity, uiRoot).GetComponent<HUD_ProgressBar>();
+        uiCharge = Instantiate(chargePrefab, Vector3.zero, Quaternion.identity, uiRoot).GetComponent<HUD_ChargeGageBar>();
         if (null == uiCharge)
             return;
 
@@ -212,3 +212,4 @@ public class UIView_Unit : UIView
         base.OnDestroy();
     }
 }
+
