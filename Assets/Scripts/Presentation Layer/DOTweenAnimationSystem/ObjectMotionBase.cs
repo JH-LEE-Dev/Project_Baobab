@@ -31,6 +31,9 @@ namespace PresentationLayer.DOTweenAnimationSystem
         [SerializeField] protected float backwardDuration = 0.5f;
         [SerializeField] protected float backwardDelay = 0f;
 
+        [Header("Debug Settings")]
+        [SerializeField] protected bool resetOnValidateInPlayMode = true;
+
         // //내부 의존성
         protected Tween currentTween;
         protected UnityAction onStartAction;
@@ -74,6 +77,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
         {
             if (null != currentTween && currentTween.IsActive())
                 currentTween.Kill();
+        }
+
+        public bool IsPlaying()
+        {
+            return null != currentTween && currentTween.IsActive() && currentTween.IsPlaying();
         }
 
         public void Skip(bool _isCallback)
@@ -162,26 +170,63 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 onCompleteAction.Invoke();
         }
 
+        protected virtual void OnValidate()
+        {
+            if (false == Application.isPlaying)
+                return;
+
+            if (false == resetOnValidateInPlayMode)
+                return;
+
+            Stop();
+            RestoreAfterValidate();
+        }
+
+        protected virtual void RestoreAfterValidate()
+        {
+            RestoreCachedState();
+        }
+
+        protected void ApplyDurationScale(Tween _tween, float _targetDuration)
+        {
+            if (null == _tween || _targetDuration <= 0f)
+                return;
+
+            float currentDuration = _tween.Duration(false);
+            if (currentDuration <= 0f)
+                return;
+
+            _tween.timeScale = currentDuration / _targetDuration;
+        }
+
         protected void ResetToInitialState()
         {
             if (0 == stateCache.Count)
                 return;
 
             Stop();
+            RestoreCachedState();
+        }
 
+        protected void RestoreCachedState(bool _restorePosition = true)
+        {
             for (int i = 0; i < stateCache.Count; i++)
             {
                 TargetInitialState _state = stateCache[i];
 
                 if (null != _state.rectTransform)
                 {
-                    _state.rectTransform.anchoredPosition = _state.anchoredPosition;
+                    if (true == _restorePosition)
+                        _state.rectTransform.anchoredPosition = _state.anchoredPosition;
+
                     _state.rectTransform.localEulerAngles = _state.localRotation;
                     _state.rectTransform.localScale = _state.localScale;
                 }
                 else if (null != _state.transform)
                 {
-                    _state.transform.localPosition = _state.localPosition;
+                    if (true == _restorePosition)
+                        _state.transform.localPosition = _state.localPosition;
+
                     _state.transform.localEulerAngles = _state.localRotation;
                     _state.transform.localScale = _state.localScale;
                 }

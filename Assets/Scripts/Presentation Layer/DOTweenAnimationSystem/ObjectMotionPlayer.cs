@@ -108,6 +108,17 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     motionMap[_tag].motionInstance.Stop();
         }
 
+        public bool IsPlaying(string _tag)
+        {
+            if (null == motionMap)
+                InitializeMotionMap();
+
+            if (false == motionMap.ContainsKey(_tag))
+                return false;
+
+            return null != motionMap[_tag].motionInstance && motionMap[_tag].motionInstance.IsPlaying();
+        }
+
         public void StopAll()
         {
             for (int i = 0; i < motionEntries.Count; i++)
