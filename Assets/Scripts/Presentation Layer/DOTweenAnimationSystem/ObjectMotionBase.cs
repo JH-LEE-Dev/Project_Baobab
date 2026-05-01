@@ -165,7 +165,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 onCompleteAction.Invoke();
         }
 
-        protected void ResetToInitialState()
+        public void ResetToInitialState()
         {
             if (0 == stateCache.Count)
                 return;
