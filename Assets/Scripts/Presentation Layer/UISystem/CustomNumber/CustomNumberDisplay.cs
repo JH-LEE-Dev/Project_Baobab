@@ -13,11 +13,9 @@ namespace PresentationLayer.UISystem.CustomNumber
         // //외부 의존성
         [Header("Resources")]
         [SerializeField] private Sprite[] numberSprites;    // 0~9까지 순서대로 배치된 스프라이트 배열
-        [SerializeField] private GameObject digitPrefab;    // 개별 숫자를 표시할 이미지 프리팹
-        [SerializeField] private Transform digitContainer;  // 숫자 이미지들이 배치될 부모 컨테이너
+        [SerializeField] private Transform digitContainer;  // 숫자 이미지들이 자식으로 배치된 부모 컨테이너
 
         [Header("Settings")]
-        [SerializeField] private int initialPoolSize = 5;   // 초기 생성할 자릿수 개수
         [SerializeField] private bool hideLeadingZeros = true; // 앞자리의 0을 숨길지 여부
 
         // //내부 의존성
@@ -27,17 +25,26 @@ namespace PresentationLayer.UISystem.CustomNumber
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
-        /// 초기 설정 및 오브젝트 풀을 생성합니다.
+        /// 초기 설정 및 컨테이너의 자식 오브젝트들로부터 이미지 컴포넌트를 수집합니다.
         /// </summary>
         public void Initialize()
         {
             if (null == digitContainer)
                 digitContainer = this.transform;
 
-            if (null == digitPool)
+            int _childCount = digitContainer.childCount;
+            digitPool = new List<Image>(_childCount);
+
+            for (int i = 0; i < _childCount; i++)
             {
-                digitPool = new List<Image>(initialPoolSize);
-                EnsurePoolSize(initialPoolSize);
+                Transform _child = digitContainer.GetChild(i);
+                Image _img = _child.GetComponent<Image>();
+                
+                if (null != _img)
+                {
+                    _img.gameObject.SetActive(false);
+                    digitPool.Add(_img);
+                }
             }
         }
 
@@ -47,7 +54,7 @@ namespace PresentationLayer.UISystem.CustomNumber
         /// <param name="_value">표시할 정수값</param>
         public void SetNumber(int _value)
         {
-            if (_value == lastDisplayedValue)
+            if (lastDisplayedValue == _value)
                 return;
 
             lastDisplayedValue = _value;
@@ -92,7 +99,8 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private void DisplaySingleDigit(int _index, int _number)
         {
-            EnsurePoolSize(_index + 1);
+            if (_index >= digitPool.Count)
+                return;
 
             Image _img = digitPool[_index];
             if (null == _img)
@@ -113,24 +121,6 @@ namespace PresentationLayer.UISystem.CustomNumber
             {
                 if (true == digitPool[i].gameObject.activeSelf)
                     digitPool[i].gameObject.SetActive(false);
-            }
-        }
-
-        private void EnsurePoolSize(int _size)
-        {
-            if (null == digitPrefab)
-                return;
-
-            while (digitPool.Count < _size)
-            {
-                GameObject _go = Instantiate(digitPrefab, digitContainer);
-                Image _img = _go.GetComponent<Image>();
-                
-                if (null != _img)
-                {
-                    _img.gameObject.SetActive(false);
-                    digitPool.Add(_img);
-                }
             }
         }
 
