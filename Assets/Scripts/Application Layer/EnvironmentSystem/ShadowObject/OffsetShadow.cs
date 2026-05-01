@@ -17,8 +17,7 @@ public class OffsetShadow : MonoBehaviour
     private MaterialPropertyBlock propertyBlock;
     
     //쉐이더 속성 ID 캐싱
-    private static readonly int xyAngleId = Shader.PropertyToID("_XYAngle");
-    private static readonly int zAngleId = Shader.PropertyToID("_ZAngle");
+    private static readonly int shadowAngleId = Shader.PropertyToID("_ShadowAngle");
     private static readonly int maxDistanceId = Shader.PropertyToID("_MaxDistance");
 
     private void Awake()
@@ -43,24 +42,23 @@ public class OffsetShadow : MonoBehaviour
 
     public void ManualUpdate(Quaternion _rotation, float _scaleY, bool _isActive)
     {
-        if (shadowRenderer == null) Initialize();
+        if (shadowRenderer == null || propertyBlock == null) Initialize();
         if (shadowRenderer == null) return;
 
         // 렌더러 활성화 상태 제어
         shadowRenderer.enabled = _isActive;
         if (!_isActive) return;
 
-        // 쿼터니언으로부터 Z축 회전각(Degree)을 추출하여 라디안으로 변환
-        float angleRad = _rotation.eulerAngles.z * Mathf.Deg2Rad;
+        // 쿼터니언으로부터 Z축 회전각(Degree)을 추출
+        float angleDeg = _rotation.eulerAngles.z;
 
         // MaterialPropertyBlock에 값 설정
         shadowRenderer.GetPropertyBlock(propertyBlock);
         
-        propertyBlock.SetFloat(xyAngleId, angleRad);
+        propertyBlock.SetFloat(shadowAngleId, angleDeg);
         
-        // _scaleY를 사용하여 그림자의 '고도(ZAngle)'를 조절
-        float zAngle = Mathf.Clamp(_scaleY, 0.1f, 3.0f);
-        propertyBlock.SetFloat(zAngleId, zAngle);
+        // _scaleY를 _MaxDistance 속성에 전달
+        propertyBlock.SetFloat(maxDistanceId, _scaleY);
 
         shadowRenderer.SetPropertyBlock(propertyBlock);
     }
