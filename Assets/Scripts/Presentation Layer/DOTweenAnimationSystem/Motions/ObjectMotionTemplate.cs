@@ -12,14 +12,14 @@ namespace PresentationLayer.DOTweenAnimationSystem
         [SerializeField] private Transform startTransform;
         [SerializeField] private Transform targetTransform;
 
-        protected override void OnTransform(Sequence _seq, Transform _trans)
+        protected override void OnTransform(Sequence _seq, Transform _trans, Ease _currPublicEase)
         {
             transform.position = startTransform.position;
 
             _seq.Append(_trans.DOMove(targetTransform.position, forwardDuration));
         }
 
-        protected override void OnSpriteRenderer(Sequence _seq, SpriteRenderer _renderer)
+        protected override void OnSpriteRenderer(Sequence _seq, SpriteRenderer _renderer, Ease _currPublicEase)
         {
             Color alphaZero = new Color(1f, 1f, 1f, 0f);
             _renderer.color = alphaZero;
