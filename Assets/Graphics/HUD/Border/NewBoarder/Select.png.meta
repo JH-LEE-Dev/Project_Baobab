@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: 2399ce2be922d9a4380be27f78129016
+guid: 76b04375a60dc404a9239dc2ff820f34
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -9100914887639551131
-    second: AbilityToolTip_0
+      213: 4148023920394844618
+    second: Select_0
+  - first:
+      213: -1736840564374045135
+    second: Select_1
+  - first:
+      213: -4959218741625957732
+    second: Select_2
+  - first:
+      213: 8238017609631751394
+    second: Select_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,7 +61,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
-  spriteBorder: {x: 6, y: 6, z: 6, w: 6}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -100,23 +109,89 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: AbilityToolTip_0
+      name: Select_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
-        width: 32
-        height: 32
+        y: 26
+        width: 6
+        height: 6
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 5633e2fd02e03b180800000000000000
-      internalID: -9100914887639551131
+      spriteID: ac935f647cdb09930800000000000000
+      internalID: 4148023920394844618
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Select_1
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 26
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 13efef875b085e7e0800000000000000
+      internalID: -1736840564374045135
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Select_2
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c92dced54d05d2bb0800000000000000
+      internalID: -4959218741625957732
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Select_3
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 0
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2ec538b7e51535270800000000000000
+      internalID: 8238017609631751394
       vertices: []
       indices: 
       edges: []
@@ -126,7 +201,7 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 1537655665
+    internalID: 0
     vertices: []
     indices: 
     edges: []
@@ -135,7 +210,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      AbilityToolTip_0: -9100914887639551131
+      Select_0: 4148023920394844618
+      Select_1: -1736840564374045135
+      Select_2: -4959218741625957732
+      Select_3: 8238017609631751394
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

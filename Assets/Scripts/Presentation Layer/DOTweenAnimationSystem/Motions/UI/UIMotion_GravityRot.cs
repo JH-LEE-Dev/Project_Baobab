@@ -57,7 +57,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             currentSequence = DOTween.Sequence();
 
             Vector2 _endPos = new Vector2(
-                initialState.position.x + Random.Range(valueSettings.jumpRangeX * 0.5f, valueSettings.jumpRangeX),
+                initialState.position.x + Random.Range(-valueSettings.jumpRangeX, valueSettings.jumpRangeX),
                 initialState.position.y + valueSettings.jumpRangeY
             );
 
@@ -67,8 +67,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             currentSequence.Join(targetRect.DORotate(new Vector3(0f, 0f, valueSettings.rotationAngle), valueSettings.duration, RotateMode.FastBeyond360)
                 .SetEase(valueSettings.rotationEase));
 
-            currentSequence.Join(targetRect.DOScale(Vector3.zero, valueSettings.duration)
-                .SetEase(valueSettings.fadeEase));
+            //currentSequence.Join(targetRect.DOScale(Vector3.zero, valueSettings.duration)
+            //    .SetEase(valueSettings.fadeEase));
 
             if (null != targetImage)
                 currentSequence.Join(targetImage.DOFade(0f, valueSettings.duration)

@@ -8,14 +8,13 @@ public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 {
     public Action clickedEvent;
 
-    [SerializeField] private UIMotion_AbsoluteMove absoluteMove;
+    public MapType currentMapType { get; set; } = MapType.Town;
 
     // TODO :: DOTWEEN 할 이미지 받기.
 
     public void Initialize()
     {
-        // TODO :: 컴포넌트 바인딩
-        absoluteMove?.Initialize();
+
     }
 
     public void OnShow()
@@ -33,23 +32,11 @@ public class UI_Homing : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         clickedEvent.Invoke();
     }
 
-    public void OpenInventory()
-    {
-        absoluteMove?.Play();
-    }
-
-    public void CloseInventory()
-    {
-        absoluteMove?.PlayBackwards();
-    }
-
     // TODO :: DOTWEEN 
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        Scene currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-
-        if ("TownScene" == currentScene.name)
+        if (MapType.Town == currentMapType)
             return;
 
         Homing();

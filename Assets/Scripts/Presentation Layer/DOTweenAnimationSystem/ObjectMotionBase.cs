@@ -9,7 +9,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
     public abstract class ObjectMotionBase : MonoBehaviour
     {
         // //구조체 정의
-        protected struct TargetInitialState
+        protected class TargetInitialState
         {
             public RectTransform rectTransform;
             public Transform transform;
@@ -25,24 +25,49 @@ namespace PresentationLayer.DOTweenAnimationSystem
         }
 
         // //외부 의존성
-        [SerializeField] protected float publicDuration = 0.5f;
-        [SerializeField] protected float publicDelay = 0f;
+        [SerializeField] protected float forwardDuration = 0.5f;
+        [SerializeField] protected float forwardDelay = 0f;
+
+        [SerializeField] protected float backwardDuration = 0.5f;
+        [SerializeField] protected float backwardDelay = 0f;
 
         // //내부 의존성
         protected Tween currentTween;
         protected UnityAction onStartAction;
         protected UnityAction onCompleteAction;
+
         protected List<TargetInitialState> stateCache = new List<TargetInitialState>(4);
 
-        public virtual void Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete)
+        public virtual bool Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete, bool bReset)
         {
             if (null == _targets || 0 == _targets.Count)
-                return;
+                return false;
+
+            if (true == bReset)
+                ResetToInitialState();
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
             ProcessTargets(_seq, _targets);
             ApplyTweenSettings(_seq);
+
+            return true;
+        }
+
+        public virtual bool PlayBackward(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete, bool bReset)
+        {
+            if (null == _targets || 0 == _targets.Count)
+                return false;
+
+            if (true == bReset)
+                ResetToInitialState();
+
+            stateCache.Clear();
+            Sequence _seq = StopAndBinding(_onStart, _onComplete);
+            ProcessTargets(_seq, _targets);
+            ApplyTweenSettings(_seq);
+
+            return true;
         }
 
         public virtual void Stop()
@@ -51,10 +76,16 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 currentTween.Kill();
         }
 
+        public void Skip(bool _isCallback)
+        {
+            if (null != currentTween && currentTween.IsActive())
+                currentTween.Complete(_isCallback);
+        }
+
         public void SetRuntimeSettings(float _duration, float _delay)
         {
-            publicDuration = _duration;
-            publicDelay = _delay;
+            forwardDuration = _duration;
+            forwardDelay = _delay;
         }
 
         protected virtual Sequence StopAndBinding(UnityAction _onStart, UnityAction _onComplete)
@@ -72,7 +103,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 return;
 
             currentTween = _tween;
-            currentTween.SetDelay(publicDelay)
+            currentTween.SetDelay(forwardDelay)
+                        .OnStart(InternalOnStart)
+                        .OnComplete(InternalOnComplete);
+        }
+
+        protected virtual void ApplyBackwardTweenSettings(Tween _tween)
+        {
+            if (null == _tween)
+                return;
+
+            currentTween = _tween;
+            currentTween.SetDelay(backwardDelay)
                         .OnStart(InternalOnStart)
                         .OnComplete(InternalOnComplete);
         }
@@ -108,7 +150,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
         protected virtual void OnSpriteRenderer(Sequence _seq, SpriteRenderer _renderer) { }
         protected virtual void OnGraphic(Sequence _seq, Graphic _graphic) { }
 
-        protected void InternalOnStart()
+        protected virtual void InternalOnStart()
         {
             if (null != onStartAction)
                 onStartAction.Invoke();
@@ -118,15 +160,14 @@ namespace PresentationLayer.DOTweenAnimationSystem
         {
             if (null != onCompleteAction)
                 onCompleteAction.Invoke();
-
-            // 메모리 누수 방지를 위해 리셋 여부와 관계없이 캐시는 비워줌
-            stateCache.Clear();
         }
 
         protected void ResetToInitialState()
         {
             if (0 == stateCache.Count)
                 return;
+
+            Stop();
 
             for (int i = 0; i < stateCache.Count; i++)
             {

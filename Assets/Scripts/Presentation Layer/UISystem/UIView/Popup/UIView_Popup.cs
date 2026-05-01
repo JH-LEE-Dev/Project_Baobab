@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class UIView_Popup : UIView
 {
@@ -47,6 +48,8 @@ public class UIView_Popup : UIView
     private void ReleaseEvents()
     {
         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
+
+        uI_Inventory.ReleaseEvents();
     }
 
     #region [ Inventory UI ]
@@ -127,9 +130,8 @@ public class UIView_Popup : UIView
 
     public void SetCurrentMapType(MapType _currentMapType)
     {
-
+        uI_Inventory?.MapChanged(_currentMapType);
     }
     
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
-
 }
