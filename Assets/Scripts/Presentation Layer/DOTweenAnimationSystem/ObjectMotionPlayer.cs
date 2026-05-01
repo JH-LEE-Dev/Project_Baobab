@@ -133,10 +133,10 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     motionMap[_tag].motionInstance.Skip(_isCallback);
         }
 
-        public bool SettingEntryMotion(MotionEntry _entry, bool _bStop, bool _bSkip = false, bool _bSkipCallback = false)
+        public void SettingEntryMotion(MotionEntry _entry, bool _bStop, bool _bResetPoint, bool _bSkip = false, bool _bSkipCallback = false)
         {
             if (null == _entry)
-                return true;
+                return;
 
             if (_bSkip)
                 _entry.motionInstance.Skip(_bSkipCallback);
@@ -144,7 +144,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (_bStop)
                 _entry.motionInstance.Stop();
 
-            return true;
+            if (_bResetPoint)
+                _entry.motionInstance.ResetToInitialState();
         }
 
         private void OnDestroy()
