@@ -12,7 +12,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     //내부 의존성
     [Header("Portal")]
-    [SerializeField] private PortalObj portalPrefab;
+    [SerializeField] private OffroadVehicleObj portalPrefab;
     [SerializeField] private Transform portalSpawnPoint;
 
     [Header("Optimization")]
@@ -24,15 +24,15 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private Camera mainCam; // 최적화: 카메라 캐싱
 
     //내부 상태
-    private PortalObj portal;
+    private OffroadVehicleObj portal;
     private TreeObj[] trees;
     public IReadOnlyList<TreeObj> Trees => trees;
-    
+
     // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
     public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
     private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(200);
-    
+
     private bool bCanTravel = false;
 
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
@@ -64,7 +64,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             portal = Instantiate(portalPrefab);
             portal.transform.position = portalSpawnPoint.position;
-            portal.Initialize(PortalType.ToDungeonPortal);
+            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider);
             portal.SetCanTravel(bCanTravel);
         }
         else
@@ -108,7 +108,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private void SetupCullingGroup()
     {
         if (mainCam == null) mainCam = Camera.main;
-        
+
         // CullingGroup을 새로 생성하지 않고 기존 객체 설정만 갱신
         cullingGroup.targetCamera = mainCam;
 

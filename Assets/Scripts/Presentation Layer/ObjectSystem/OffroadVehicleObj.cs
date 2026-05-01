@@ -1,8 +1,10 @@
 using System;
 using UnityEngine;
 
-public class PortalObj : MonoBehaviour
+public class OffroadVehicleObj : MonoBehaviour
 {
+    private IEnvironmentProvider environmentProvider;
+
     //이벤트
     public event Action PortalActivated;
 
@@ -14,13 +16,37 @@ public class PortalObj : MonoBehaviour
 
     private bool bCanJump = false;
 
+    [SerializeField] private OffsetShadow baseShadow;
+    [SerializeField] private OffsetShadow wheelShadow;
+
     //퍼블릭 초기화 및 제어 메서드
-    public void Initialize(PortalType _type)
+    public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider)
     {
+        environmentProvider = _environmentProvider;
         type = _type;
         characterLayer = LayerMask.NameToLayer("Character");
 
         lastActivatedTime = Time.time;
+    }
+
+    private void Update()
+    {
+        UpdateShadow(baseShadow);
+        UpdateShadow(wheelShadow);
+    }
+
+    private void UpdateShadow(OffsetShadow shadow)
+    {
+        if (shadow == null)
+        {
+            return;
+        }
+
+        shadow.ManualUpdate(
+            environmentProvider.shadowDataProvider.CurrentShadowRotation,
+            environmentProvider.shadowDataProvider.CurrentShadowScaleY,
+            environmentProvider.shadowDataProvider.IsShadowActive
+        );
     }
 
     public void ResetPortal()

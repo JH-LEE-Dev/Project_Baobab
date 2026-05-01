@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 2399ce2be922d9a4380be27f78129016
+guid: b9aca24532397b84a8230f2c3b740e49
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -9100914887639551131
-    second: AbilityToolTip_0
+      213: 957249152237877306
+    second: AbilityToolTip2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: AbilityToolTip_0
+      name: AbilityToolTip2_0
       rect:
         serializedVersion: 2
         x: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 5633e2fd02e03b180800000000000000
-      internalID: -9100914887639551131
+      spriteID: a38bea04805d84d00800000000000000
+      internalID: 957249152237877306
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      AbilityToolTip_0: -9100914887639551131
+      AbilityToolTip2_0: 957249152237877306
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

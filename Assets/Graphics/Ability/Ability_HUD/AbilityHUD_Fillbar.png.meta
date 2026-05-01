@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 2399ce2be922d9a4380be27f78129016
+guid: 44fb0ed1fde087841bf6e4746fc9d1c2
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -9100914887639551131
-    second: AbilityToolTip_0
+      213: -4855719239860542697
+    second: AbilityHUD_Fillbar_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -52,7 +52,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
-  spriteBorder: {x: 6, y: 6, z: 6, w: 6}
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -100,23 +100,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: AbilityToolTip_0
+      name: AbilityHUD_Fillbar_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 32
+        width: 132
+        height: 14
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 5633e2fd02e03b180800000000000000
-      internalID: -9100914887639551131
+      spriteID: 713251bf3150d9cb0800000000000000
+      internalID: -4855719239860542697
       vertices: []
       indices: 
       edges: []
@@ -126,7 +126,7 @@ TextureImporter:
     physicsShape: []
     bones: []
     spriteID: 5e97eb03825dee720800000000000000
-    internalID: 1537655665
+    internalID: 0
     vertices: []
     indices: 
     edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      AbilityToolTip_0: -9100914887639551131
+      AbilityHUD_Fillbar_0: -4855719239860542697
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -27,10 +27,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     [SerializeField] private float cullingDistance = 25f;
 
     [Header("Portal")]
-    [SerializeField] private PortalObj portalPrefab;
+    [SerializeField] private OffroadVehicleObj portalPrefab;
 
     // // 내부 상태 및 컬렉션
-    private PortalObj portal;
+    private OffroadVehicleObj portal;
     private List<Vector3> grassTileWorldPositions;
     private List<Vector3> availablePositions = new List<Vector3>(2500);
     private List<TreeObj> activeTrees = new List<TreeObj>(2500);
@@ -133,7 +133,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null)
         {
             portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal);
+            portal.Initialize(PortalType.ToTownPortal, environmentProvider);
         }
 
         portal.ResetPortal();
@@ -153,7 +153,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             portal.gameObject.SetActive(false);
         else
             return;
-            
+
         if (itemManager != null)
             itemManager.ReleaseAllItems();
         StopGrowth();
