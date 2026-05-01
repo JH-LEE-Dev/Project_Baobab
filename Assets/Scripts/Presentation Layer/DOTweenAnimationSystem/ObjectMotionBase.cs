@@ -202,7 +202,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             _tween.timeScale = currentDuration / _targetDuration;
         }
 
-        protected void ResetToInitialState()
+        public void ResetToInitialState()
         {
             if (0 == stateCache.Count)
                 return;
