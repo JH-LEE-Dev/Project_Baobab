@@ -3,6 +3,7 @@ using PresentationLayer.ObjectSystem;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
+using PresentationLayer.DOTweenAnimationSystem;
 
 /// <summary>
 /// HUD에서 진행도를 표시하는 프로그레스 바입니다.
@@ -37,9 +38,7 @@ public class HUD_ProgressBar : MonoBehaviour, IPoolable
     public void Initialize()
     {
         if (null == progressSlider)
-        {
             progressSlider = GetComponentInChildren<Slider>();
-        }
 
         if (null == progressSlider)
             return;

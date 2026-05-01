@@ -25,11 +25,14 @@ namespace PresentationLayer.DOTweenAnimationSystem
         }
 
         // //외부 의존성
+        [Header("Duration Settings")]
         [SerializeField] protected float forwardDuration = 0.5f;
         [SerializeField] protected float forwardDelay = 0f;
+        [SerializeField] protected Ease forwardEase = Ease.Unset;
 
         [SerializeField] protected float backwardDuration = 0.5f;
         [SerializeField] protected float backwardDelay = 0f;
+        [SerializeField] protected Ease backwardEase = Ease.Unset;
 
         // //내부 의존성
         protected Tween currentTween;
@@ -48,7 +51,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
-            ProcessTargets(_seq, _targets);
+            ProcessTargets(_seq, _targets, forwardEase);
             ApplyTweenSettings(_seq);
 
             return true;
@@ -64,8 +67,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
-            ProcessTargets(_seq, _targets);
-            ApplyTweenSettings(_seq);
+            ProcessTargets(_seq, _targets, backwardEase);
+            ApplyBackwardTweenSettings(_seq);
 
             return true;
         }
@@ -119,7 +122,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
                         .OnComplete(InternalOnComplete);
         }
 
-        protected void ProcessTargets(Sequence _seq, List<MotionTarget> _targets)
+        protected void ProcessTargets(Sequence _seq, List<MotionTarget> _targets, Ease _currentEase)
         {
             if (null == _targets)
                 return;
@@ -131,24 +134,24 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     continue;
 
                 if (null != _target.rectTransform) 
-                    OnRectTransform(_seq, _target.rectTransform);
+                    OnRectTransform(_seq, _target.rectTransform, _currentEase);
                 else if (null != _target.transform) 
-                    OnTransform(_seq, _target.transform);
+                    OnTransform(_seq, _target.transform, _currentEase);
 
                 if (null != _target.canvasGroup) 
-                    OnCanvasGroup(_seq, _target.canvasGroup);
+                    OnCanvasGroup(_seq, _target.canvasGroup, _currentEase);
                 if (null != _target.spriteRenderer) 
-                    OnSpriteRenderer(_seq, _target.spriteRenderer);
+                    OnSpriteRenderer(_seq, _target.spriteRenderer, _currentEase);
                 if (null != _target.uiGraphic) 
-                    OnGraphic(_seq, _target.uiGraphic);
+                    OnGraphic(_seq, _target.uiGraphic, _currentEase);
             }
         }
 
-        protected virtual void OnRectTransform(Sequence _seq, RectTransform _rect) { }
-        protected virtual void OnTransform(Sequence _seq, Transform _trans) { }
-        protected virtual void OnCanvasGroup(Sequence _seq, CanvasGroup _group) { }
-        protected virtual void OnSpriteRenderer(Sequence _seq, SpriteRenderer _renderer) { }
-        protected virtual void OnGraphic(Sequence _seq, Graphic _graphic) { }
+        protected virtual void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase) { }
+        protected virtual void OnTransform(Sequence _seq, Transform _trans, Ease _currPublicEase) { }
+        protected virtual void OnCanvasGroup(Sequence _seq, CanvasGroup _group, Ease _currPublicEase) { }
+        protected virtual void OnSpriteRenderer(Sequence _seq, SpriteRenderer _renderer, Ease _currPublicEase) { }
+        protected virtual void OnGraphic(Sequence _seq, Graphic _graphic, Ease _currPublicEase) { }
 
         protected virtual void InternalOnStart()
         {
