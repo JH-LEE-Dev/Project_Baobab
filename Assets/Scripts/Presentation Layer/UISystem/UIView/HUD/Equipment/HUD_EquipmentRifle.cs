@@ -71,6 +71,17 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             bulletDisplay.PlayGatherMotion(_onStart, _onComplete);
         }
 
+        public void PlayGatherMotion(int _currentMag, int _maxMag, int _totalAmmo, UnityAction _onStart = null, UnityAction _onComplete = null)
+        {
+            UpdateAmmo(_currentMag, _maxMag, _totalAmmo);
+
+            if (null == bulletDisplay)
+                return;
+
+            bulletDisplay.PlayGatherMotion(_onStart, _onComplete);
+        }
+
+
         /// <summary>
         /// 탄약 정보를 업데이트합니다.
         /// </summary>
