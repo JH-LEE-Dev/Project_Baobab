@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable

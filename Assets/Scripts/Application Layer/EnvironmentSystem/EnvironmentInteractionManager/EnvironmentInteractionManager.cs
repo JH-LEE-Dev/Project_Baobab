@@ -13,7 +13,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
     [SerializeField] private LayerMask treeLayer;
     [SerializeField] private float fadeDuration = 0.3f;
     [SerializeField] private float shadowFadeDuration = 0.1f;
-    [SerializeField] private float shadowOffsetMinScale = 0.7f; // 그림자 스케일이 최소일 때 Offset이 줄어드는 비율
+    [SerializeField] private float shadowOffsetMinScale = 0.6f; // 그림자 스케일이 최소일 때 Offset이 줄어드는 비율
     [SerializeField] private float shadowLengthDamping = 0.8f; // 그림자 장축 스케일이 줄어드는 정도를 완화하는 비율 (1: 그대로, 0: 항상 1)
 
     // 내부 상태 (최적화: HashSet 사용으로 중복 체크 O(1) 달성)

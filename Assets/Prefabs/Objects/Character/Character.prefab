@@ -41,7 +41,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3204427211746890799}
   - component: {fileID: 8061037964155472829}
-  - component: {fileID: 1776528523559945398}
+  - component: {fileID: 8695531816826255951}
   m_Layer: 8
   m_Name: Shadow
   m_TagString: Untagged
@@ -123,7 +123,7 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &1776528523559945398
+--- !u!114 &8695531816826255951
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -406,7 +406,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 699ec30f180d36a479ce2da0a2a41340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Character
-  shadowObject: {fileID: 1776528523559945398}
+  shadowObject: {fileID: 8695531816826255951}
   animatorObject: {fileID: 3984376963687474699}
   collisionRadius: 0.15
   collisionOffset: {x: 0, y: 0.12}

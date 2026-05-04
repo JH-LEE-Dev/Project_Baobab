@@ -500,12 +500,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a7f2ead9fbe4dc4f8360081c517cf9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OffsetShadow
-  useDebugValues: 0
-  debugAngle: 249
-  debugScaleY: 0.87
+  useDebugValues: 1
+  debugAngle: 212
+  debugScaleY: 1
   debugIsActive: 1
-  minScaleY: 0.15
-  maxScaleY: 0.25
+  minScaleY: 0
+  maxScaleY: 0.3
 --- !u!1 &3816919449108685317
 GameObject:
   m_ObjectHideFlags: 0

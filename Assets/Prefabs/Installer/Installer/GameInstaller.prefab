@@ -318,7 +318,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::IsometricShadowController
   characterPointLightPrefab: {fileID: -6427753554701023476, guid: 37b8d17d1c387c441864ea3d1ed1a209, type: 3}
   dayCycleSpeed: 0.01
-  minHeightScale: 1.15
+  minHeightScale: 0.5
   maxHeightScale: 1.5
   shadowMaterial: {fileID: 2100000, guid: f1d5d17c7e214ff4493987030f81849d, type: 2}
   buildingShadowMaterial: {fileID: 2100000, guid: e0b8ee3584667e948b90b95b7e9afd47, type: 2}
@@ -950,6 +950,8 @@ MonoBehaviour:
     m_Bits: 1024
   fadeDuration: 0.3
   shadowFadeDuration: 0.1
+  shadowOffsetMinScale: 0.1
+  shadowLengthDamping: 0.7
   updateInterval: 0.1
 --- !u!1 &6583048210432933352
 GameObject:

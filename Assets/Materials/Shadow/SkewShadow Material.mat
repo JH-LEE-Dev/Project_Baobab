@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: RaymarchingShadow Material
-  m_Shader: {fileID: 4800000, guid: ddd8e1f874a17854faac5f971223da5a, type: 3}
+  m_Name: SkewShadow Material
+  m_Shader: {fileID: 4800000, guid: 4023117929d82a240ae8efd5eba8e767, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -46,35 +46,20 @@ Material:
     m_Ints: []
     m_Floats:
     - _EnableExternalAlpha: 0
-    - _Expansion: 2
-    - _FlipShadowX: 0
-    - _FlipShadowY: 0
-    - _HeightOffset: 0.1
-    - _HeightSlope: 2
+    - _Expansion: 1.5
     - _HorizontalSkew: 1
-    - _MaxDistance: 0.5
+    - _MaxDistance: 0
     - _PPU: 32
-    - _PivotOffsetY: -0.5
-    - _PivotY: 0.15
-    - _RaySteps: 40
+    - _RaySteps: 30
+    - _SearchRange: 0.05
     - _ShadowAngle: 270
-    - _ShadowLengthMultiplier: 2
-    - _ShadowPivotY: 0.1
-    - _ShadowScale: 0.6
-    - _ShadowScaleY: 0.5
-    - _ShadowSkew: 0.5
-    - _ShadowSkewX: -0.5
-    - _SkewOriginY: -0.5
     - _VerticalScale: 0.5
-    - _XYAngle: 45
-    - _ZAngle: 30
+    - _VerticalSkew: 0
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.28358513}
+    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.5}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShadowColor: {r: 0, g: 0, b: 0, a: 0.5}
-    - _UVRect: {r: 0, g: 0, b: 1, a: 1}
     - _UvRect: {r: 0, g: 0, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
