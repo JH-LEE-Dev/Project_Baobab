@@ -95,16 +95,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (false == _isFilled && true == _shouldAnimate)
                 PlayEjectMotion();
-            
-            filledImage?.gameObject.SetActive(_isFilled);
+            else
+                 filledImage?.gameObject.SetActive(_isFilled);
         }
 
 #region Motions
 
         private void PlayEjectMotion()
         {
-            //StopAllMotions();
-
             if (null == ejectMotion)
                 return;
 

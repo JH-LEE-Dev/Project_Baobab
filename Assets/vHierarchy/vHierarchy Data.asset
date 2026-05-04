@@ -23,11 +23,41 @@ MonoBehaviour:
     - goDatas_byGlobalId:
         keys:
         - globalObjectIdString: GlobalObjectId_V1-2-4e867fa40683a19469a6b9ede1dd1800-799490709-0
+        - globalObjectIdString: GlobalObjectId_V1-2-4e867fa40683a19469a6b9ede1dd1800-1807874482-0
+        - globalObjectIdString: GlobalObjectId_V1-2-4e867fa40683a19469a6b9ede1dd1800-296821417-0
+        - globalObjectIdString: GlobalObjectId_V1-2-4e867fa40683a19469a6b9ede1dd1800-553147532-0
+        - globalObjectIdString: GlobalObjectId_V1-2-4e867fa40683a19469a6b9ede1dd1800-644257552-0
+        - globalObjectIdString: GlobalObjectId_V1-2-4e867fa40683a19469a6b9ede1dd1800-1213346683-0
+        - globalObjectIdString: GlobalObjectId_V1-2-4e867fa40683a19469a6b9ede1dd1800-214597404-0
         values:
         - colorIndex: 5
           iconNameOrGuid: Folder Icon
           isIconRecursive: 0
           isColorRecursive: 1
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: WheelCollider Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
     - goDatas_byGlobalId:
         keys:
         - globalObjectIdString: GlobalObjectId_V1-2-2a5f703facff00e46821ec4b650e97b3-799490709-0
