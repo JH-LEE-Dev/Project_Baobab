@@ -7,6 +7,7 @@ Shader "Custom/PixelArtDropShadowURP"
         _ShadowAngle("Shadow Angle (0-360)", Range(0, 360)) = 270
         _MaxDistance("Max Shadow Offset Distance", Range(0, 1)) = 0.2
         _Expansion("Mesh Expansion", Range(1, 10)) = 1.5
+        _UvRect("UV Rect (minX, minY, maxX, maxY)", Vector) = (0,0,1,1)
     }
 
     SubShader
@@ -34,7 +35,6 @@ Shader "Custom/PixelArtDropShadowURP"
             }
 
             HLSLPROGRAM
-
             #pragma vertex vert
             #pragma fragment frag
 
@@ -43,15 +43,15 @@ Shader "Custom/PixelArtDropShadowURP"
             struct Attributes
             {
                 float4 positionOS : POSITION;
-                float2 uv : TEXCOORD0;
+                float2 uv         : TEXCOORD0;
             };
 
             struct Varyings
             {
                 float4 positionHCS : SV_POSITION;
-                float2 uv : TEXCOORD0;
-                float3 worldPos : TEXCOORD1;
-                float2 posOS : TEXCOORD2;
+                float2 uv          : TEXCOORD0;
+                float3 worldPos    : TEXCOORD1;
+                float2 posOS       : TEXCOORD2;
             };
 
             TEXTURE2D(_BaseMap);
@@ -63,21 +63,18 @@ Shader "Custom/PixelArtDropShadowURP"
                 float _ShadowAngle;
                 float _MaxDistance;
                 float _Expansion;
+                float4 _UvRect;
             CBUFFER_END
 
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
-
-                // 원본 오브젝트 공간 좌표 저장 (UV 스케일링 기준점)
                 OUT.posOS = IN.positionOS.xy;
                 
-                // 메시 확장 적용
                 float3 pos = IN.positionOS.xyz;
                 pos.xy *= _Expansion;
                 
                 OUT.positionHCS = TransformObjectToHClip(pos);
-                // 스냅 계산을 위해 확장된 위치의 월드 좌표를 넘김
                 OUT.worldPos = TransformObjectToWorld(pos);
                 OUT.uv = IN.uv;
 
@@ -86,57 +83,72 @@ Shader "Custom/PixelArtDropShadowURP"
 
             half4 frag(Varyings IN) : SV_Target
             {
-                // --- 안정화된 월드 공간 32 PPU 픽셀 스냅 로직 (IsometricShadowURP와 동일하게 유지) ---
-                float ppu = 32.0;
+                // --- 1. 월드 공간 픽셀 스냅 (Jitter 및 고해상도 방지) ---
+                const float PPU = 32.0;
                 float2 worldPos = IN.worldPos.xy;
 
-                // 1. Point 필터 지터 방지를 위해 텍셀 경계가 아닌 '중앙(+0.5)'으로 스냅
-                float2 snappedWorldPos = (floor(worldPos * ppu) + 0.5) / ppu;
+                // 텍셀 중앙(+0.5)으로 스냅하여 계단 현상 강제 적용
+                float2 snappedWorldPos = (floor(worldPos * PPU) + 0.5) / PPU;
                 float2 worldDelta = snappedWorldPos - worldPos;
 
-                // 2. UV 변화량(ddx, ddy)과 월드 좌표 변화량 사이의 관계를 행렬로 계산
+                // 역행렬 계산을 위한 그라디언트 산출
                 float2 dx_wp = ddx(worldPos);
                 float2 dy_wp = ddy(worldPos);
                 float2 dx_uv = ddx(IN.uv);
                 float2 dy_uv = ddy(IN.uv);
+                float2 dx_pos = ddx(IN.posOS);
+                float2 dy_pos = ddy(IN.posOS);
 
-                // 행렬의 결정자(Determinant) 계산
-                float det = dx_wp.x * dy_wp.y - dx_wp.y * dy_wp.x;
+                // 결정자(Determinant) 계산 및 스냅 보정
+                float det = dx_wp.x * dy_wp.y - dy_wp.x * dx_wp.y;
                 float2 snappedUV = IN.uv;
+                float2 snappedPosOS = IN.posOS;
 
                 if (abs(det) > 1e-7)
                 {
-                    // 월드 좌표 변화량(worldDelta)에 대응하는 정확한 UV 변화량을 역행렬로 산출
-                    float2 uvDelta = (worldDelta.x * (dy_wp.y * dx_uv - dy_wp.x * dy_uv) + 
-                                      worldDelta.y * (dx_wp.x * dy_uv - dx_wp.y * dx_uv)) / det;
-                    snappedUV += uvDelta;
+                    float invDet = 1.0 / det;
+                    // UV 스냅
+                    snappedUV.x += (worldDelta.x * (dy_wp.y * dx_uv.x - dy_wp.x * dy_uv.x) + 
+                                    worldDelta.y * (dx_wp.x * dy_uv.x - dx_wp.y * dx_uv.x)) * invDet;
+                    snappedUV.y += (worldDelta.x * (dy_wp.y * dx_uv.y - dy_wp.x * dy_uv.y) + 
+                                    worldDelta.y * (dx_wp.x * dy_uv.y - dx_wp.y * dx_uv.y)) * invDet;
+                    
+                    // posOS 스냅 (저해상도 효과 유지의 핵심)
+                    snappedPosOS.x += (worldDelta.x * (dy_wp.y * dx_pos.x - dy_wp.x * dy_pos.x) + 
+                                       worldDelta.y * (dx_wp.x * dy_pos.x - dx_wp.y * dx_pos.x)) * invDet;
+                    snappedPosOS.y += (worldDelta.x * (dy_wp.y * dx_pos.y - dy_wp.x * dy_pos.y) + 
+                                       worldDelta.y * (dx_wp.x * dy_pos.y - dx_wp.y * dx_pos.y)) * invDet;
                 }
 
-                // 3. 보정된 UV를 사용하여 레이마칭 수행
-                // Expansion이 1일 때 불필요한 연산 오차 방지
+                // --- 2. 메시 확장에 따른 UV 보정 ---
                 float2 spriteUV = snappedUV;
-                if (_Expansion > 1.001) {
-                    // [핵심 수정] Multiple Sprite 대응: 하드코딩된 0.5 대신 피벗 기준 스케일링 수행
-                    // ddx/ddy를 통해 현재 픽셀에서의 UV/OS 비율을 구하여 아틀라스 내 실제 크기를 계산
-                    float2 posGrad = float2(length(ddx(IN.posOS)), length(ddy(IN.posOS)));
-                    float2 uvGrad = float2(length(ddx(IN.uv)), length(ddy(IN.uv)));
+                if (_Expansion > 1.001) 
+                {
+                    float2 posGrad = float2(length(dx_pos), length(dy_pos));
+                    float2 uvGrad = float2(length(dx_uv), length(dy_uv));
                     float2 uvScale = uvGrad / max(posGrad, 0.0001);
 
-                    // 피벗(posOS=0)을 기준으로 UV를 확장하여 스프라이트가 중앙에 원본 크기로 유지되게 함
-                    spriteUV = snappedUV + IN.posOS * uvScale * (_Expansion - 1.0);
+                    // 스냅된 posOS를 사용하여 보정함으로써 픽셀 단위 변화를 유지
+                    spriteUV = snappedUV + snappedPosOS * uvScale * (_Expansion - 1.0);
                 }
 
+                // --- 3. 레이마칭 그림자 생성 ---
                 float rad = radians(_ShadowAngle);
                 float2 shadowDir = float2(cos(rad), sin(rad));
 
+                [unroll(50)]
                 for (int i = 0; i < 50; i++) 
                 {
-                    float dist = (float(i) / 50.0) * _MaxDistance;
+                    float progress = (float)i / 50.0;
+                    float dist = progress * _MaxDistance;
                     float2 sampleUV = spriteUV + shadowDir * dist; 
 
-                    if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) continue;
+                    // 아틀라스 UV Rect 경계 체크
+                    bool isOutOfBounds = (sampleUV.x < _UvRect.x || sampleUV.x > _UvRect.z || 
+                                          sampleUV.y < _UvRect.y || sampleUV.y > _UvRect.w);
+                    
+                    if (isOutOfBounds) continue;
 
-                    // Point 필터라도 루프 내에서는 LOD 0으로 샘플링해야 카메라 이동 시 지터가 발생하지 않음
                     half4 sampled = SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_BaseMap, sampleUV, 0);
 
                     if (sampled.a > 0.1)

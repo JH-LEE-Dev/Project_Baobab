@@ -7,6 +7,7 @@ public interface IShadowDataProvider
     public float minHeightScale { get; }
     public float maxHeightScale { get; }
     public Quaternion CurrentShadowRotation { get; }
+    public float CurrentShadowAngle { get; }
     public float CurrentShadowScaleY { get; }
     public bool IsShadowActive { get; }
 }

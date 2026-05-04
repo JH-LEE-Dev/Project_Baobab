@@ -48,8 +48,8 @@ public class OffroadVehicleObj : MonoBehaviour
             return;
         }
 
-        shadow.ManualUpdate(
-            environmentProvider.shadowDataProvider.CurrentShadowRotation,
+       shadow.ManualUpdate(
+            environmentProvider.shadowDataProvider.CurrentShadowAngle,
             environmentProvider.shadowDataProvider.CurrentShadowScaleY,
             environmentProvider.shadowDataProvider.IsShadowActive
         );

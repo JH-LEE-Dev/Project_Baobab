@@ -140,7 +140,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
 
         shadow.ManualUpdate(
-            environmentProvider.shadowDataProvider.CurrentShadowRotation,
+            environmentProvider.shadowDataProvider.CurrentShadowAngle,
             environmentProvider.shadowDataProvider.CurrentShadowScaleY,
             environmentProvider.shadowDataProvider.IsShadowActive
         );

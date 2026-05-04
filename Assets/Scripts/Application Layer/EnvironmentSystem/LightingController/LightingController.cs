@@ -27,10 +27,12 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
     // 중앙 계산 결과 저장을 위한 프로퍼티
     public Quaternion CurrentShadowRotation => _currentShadowRotation;
+    public float CurrentShadowAngle => _currentShadowAngle;
     public float CurrentShadowScaleY => _currentShadowScaleY;
     public bool IsShadowActive => _isShadowActive; // 추가
 
     private Quaternion _currentShadowRotation;
+    private float _currentShadowAngle;
     private float _currentShadowScaleY;
     private bool _isShadowActive; // 추가
 
@@ -99,11 +101,14 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     {
         // 1. 중앙화된 그림자 연산 (모든 Shadow 객체가 공유)
         // 아침 6시(0.25) -> 350도, 저녁 6시(0.75) -> 170도
-        float shadowAngle = 350f - (_timePercent - 0.25f) * 360f;
-        _currentShadowRotation = Quaternion.Euler(0, 0, shadowAngle);
+        // Mathf.Repeat을 사용하여 0~360 범위를 부드럽게 순환시킴 (각도 점프 방지)
+        _currentShadowAngle = Mathf.Repeat(350f - (_timePercent - 0.25f) * 360f, 360f);
+        _currentShadowRotation = Quaternion.Euler(0, 0, _currentShadowAngle);
 
+        // 그림자 길이 연산: Mathf.Abs 대신 Sin^2을 사용하여 0 지점에서 부드러운 감가속 구현
         float timeAngle = _timePercent * Mathf.PI * 2f;
-        float heightFactor = Mathf.Abs(Mathf.Sin(timeAngle));
+        float sinValue = Mathf.Sin(timeAngle);
+        float heightFactor = sinValue * sinValue; 
         _currentShadowScaleY = Mathf.Lerp(minHeightScale, maxHeightScale, heightFactor);
 
         // 2. 머티리얼 알파 페이드 로직
@@ -113,7 +118,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         float finalAlphaMultiplier = fadeIn * fadeOut;
 
         // 그림자 활성화 여부 (알파가 0보다 크면 활성)
-        _isShadowActive = finalAlphaMultiplier > 0.4f;
+        _isShadowActive = finalAlphaMultiplier > 0.1f;
 
         Color targetColor = shadowColor;
         targetColor.a *= finalAlphaMultiplier;

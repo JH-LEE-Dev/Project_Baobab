@@ -193,6 +193,7 @@ GameObject:
   - component: {fileID: 185842772940056625}
   - component: {fileID: 8414229805712272734}
   - component: {fileID: 529097570073460126}
+  - component: {fileID: 7932099441000668507}
   m_Layer: 7
   m_Name: WheelShadow
   m_TagString: Untagged
@@ -286,10 +287,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a7f2ead9fbe4dc4f8360081c517cf9c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RaymarchingShadow
-  useDebugValues: 1
+  useDebugValues: 0
   debugAngle: 313
   debugScaleY: 0
   debugIsActive: 1
+  minScaleY: 0.01
+  maxScaleY: 0.03
+--- !u!114 &7932099441000668507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2570772007915760023}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d84d76b60281ec4c969e87b65fc8013, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpriteUvBoundarySetter
 --- !u!1 &2740630348156536629
 GameObject:
   m_ObjectHideFlags: 0
@@ -489,6 +504,8 @@ MonoBehaviour:
   debugAngle: 249
   debugScaleY: 0.87
   debugIsActive: 1
+  minScaleY: 0.15
+  maxScaleY: 0.25
 --- !u!1 &3816919449108685317
 GameObject:
   m_ObjectHideFlags: 0

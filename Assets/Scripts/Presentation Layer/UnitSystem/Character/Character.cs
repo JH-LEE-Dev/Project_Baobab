@@ -354,7 +354,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (shadowObject != null)
         {
             shadowObject.ManualUpdate(
-                environmentProvider.shadowDataProvider.CurrentShadowRotation,
+                environmentProvider.shadowDataProvider.CurrentShadowAngle,
                 environmentProvider.shadowDataProvider.CurrentShadowScaleY,
                 environmentProvider.shadowDataProvider.IsShadowActive);
         }

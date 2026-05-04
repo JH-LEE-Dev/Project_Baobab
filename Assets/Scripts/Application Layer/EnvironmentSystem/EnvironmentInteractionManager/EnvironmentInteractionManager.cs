@@ -125,8 +125,8 @@ public class EnvironmentInteractionManager : MonoBehaviour
     private void UpdateUnitShadowColor()
     {
         var _shadowData = environmentProvider.shadowDataProvider;
-        // CurrentShadowRotation에 Z축 90도 회전을 더한 값으로 Inverse 처리
-        Quaternion _invShadowRot = Quaternion.Inverse(_shadowData.CurrentShadowRotation * Quaternion.Euler(0, 0, 90f));
+        // CurrentShadowAngle을 사용하여 Inverse 처리 (Z축 90도 회전 보정 포함)
+        Quaternion _invShadowRot = Quaternion.Inverse(Quaternion.Euler(0, 0, _shadowData.CurrentShadowAngle + 90f));
         float _shadowScaleY = _shadowData.CurrentShadowScaleY; // 미리 계산
 
         // 1. 캐릭터 체크

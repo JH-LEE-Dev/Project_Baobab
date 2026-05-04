@@ -11,11 +11,14 @@ public class RaymarchingShadow : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float debugScaleY = 0.5f;
     [SerializeField] private bool debugIsActive = true;
+    [SerializeField] private float minScaleY = 0.1f;
+    [SerializeField] private float maxScaleY = 0.2f;
+
 
     //내부 의존성
     private Renderer shadowRenderer;
     private MaterialPropertyBlock propertyBlock;
-    
+
     //쉐이더 속성 ID 캐싱
     private static readonly int shadowAngleId = Shader.PropertyToID("_ShadowAngle");
     private static readonly int maxDistanceId = Shader.PropertyToID("_MaxDistance");
@@ -35,11 +38,11 @@ public class RaymarchingShadow : MonoBehaviour
         // 인스펙터에서 디버그 모드가 활성화된 경우에만 실행
         if (useDebugValues)
         {
-            ManualUpdate(Quaternion.Euler(0, 0, debugAngle), debugScaleY, debugIsActive);
+            ManualUpdate(debugAngle, debugScaleY, debugIsActive);
         }
     }
 
-    public void ManualUpdate(Quaternion _rotation, float _scaleY, bool _isActive)
+    public void ManualUpdate(float _angle, float _scaleY, bool _isActive)
     {
         if (shadowRenderer == null || propertyBlock == null) Initialize();
         if (shadowRenderer == null) return;
@@ -48,16 +51,13 @@ public class RaymarchingShadow : MonoBehaviour
         shadowRenderer.enabled = _isActive;
         if (!_isActive) return;
 
-        // 쿼터니언으로부터 Z축 회전각(Degree)을 추출
-        float angleDeg = _rotation.eulerAngles.z;
-
         // MaterialPropertyBlock에 값 설정
         shadowRenderer.GetPropertyBlock(propertyBlock);
-        
-        propertyBlock.SetFloat(shadowAngleId, angleDeg);
-        
+
+        propertyBlock.SetFloat(shadowAngleId, _angle);
+
         // _scaleY (0~1 factor)를 0.3~0.57 범위로 보간하여 _MaxDistance 속성에 전달
-        float remappedScaleY = Mathf.Lerp(0.1f, 0.2f, _scaleY);
+        float remappedScaleY = Mathf.Lerp(minScaleY, maxScaleY, _scaleY);
         propertyBlock.SetFloat(maxDistanceId, remappedScaleY);
 
         shadowRenderer.SetPropertyBlock(propertyBlock);
