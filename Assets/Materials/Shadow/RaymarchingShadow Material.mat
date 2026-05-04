@@ -52,6 +52,7 @@ Material:
     - _HeightOffset: 0.1
     - _HeightSlope: 2
     - _MaxDistance: 0.5
+    - _PPU: 32
     - _PivotOffsetY: -0.5
     - _PivotY: 0.15
     - _ShadowAngle: 270
@@ -65,7 +66,7 @@ Material:
     - _ZAngle: 30
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.4065216}
+    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.5}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 0.5}

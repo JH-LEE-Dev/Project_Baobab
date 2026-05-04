@@ -51,6 +51,7 @@ Shader "Custom/PixelArtDropShadowURP"
                 float4 positionHCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float3 worldPos : TEXCOORD1;
+                float2 posOS : TEXCOORD2;
             };
 
             TEXTURE2D(_BaseMap);
@@ -68,6 +69,9 @@ Shader "Custom/PixelArtDropShadowURP"
             {
                 Varyings OUT;
 
+                // 원본 오브젝트 공간 좌표 저장 (UV 스케일링 기준점)
+                OUT.posOS = IN.positionOS.xy;
+                
                 // 메시 확장 적용
                 float3 pos = IN.positionOS.xyz;
                 pos.xy *= _Expansion;
@@ -96,7 +100,7 @@ Shader "Custom/PixelArtDropShadowURP"
                 float2 dx_uv = ddx(IN.uv);
                 float2 dy_uv = ddy(IN.uv);
 
-                // 행렬의 결정자(Determinant) 계산 및 오타 수정 (dx_wp.x -> dy_wp.x)
+                // 행렬의 결정자(Determinant) 계산
                 float det = dx_wp.x * dy_wp.y - dx_wp.y * dy_wp.x;
                 float2 snappedUV = IN.uv;
 
@@ -112,7 +116,14 @@ Shader "Custom/PixelArtDropShadowURP"
                 // Expansion이 1일 때 불필요한 연산 오차 방지
                 float2 spriteUV = snappedUV;
                 if (_Expansion > 1.001) {
-                    spriteUV = (snappedUV - 0.5) * _Expansion + 0.5;
+                    // [핵심 수정] Multiple Sprite 대응: 하드코딩된 0.5 대신 피벗 기준 스케일링 수행
+                    // ddx/ddy를 통해 현재 픽셀에서의 UV/OS 비율을 구하여 아틀라스 내 실제 크기를 계산
+                    float2 posGrad = float2(length(ddx(IN.posOS)), length(ddy(IN.posOS)));
+                    float2 uvGrad = float2(length(ddx(IN.uv)), length(ddy(IN.uv)));
+                    float2 uvScale = uvGrad / max(posGrad, 0.0001);
+
+                    // 피벗(posOS=0)을 기준으로 UV를 확장하여 스프라이트가 중앙에 원본 크기로 유지되게 함
+                    spriteUV = snappedUV + IN.posOS * uvScale * (_Expansion - 1.0);
                 }
 
                 float rad = radians(_ShadowAngle);

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Shadow Material
-  m_Shader: {fileID: 4800000, guid: 89339c19e1c748f42a23c1f5ff81d9f2, type: 3}
+  m_Name: RaymarchingShadow(Expansion 1) Material
+  m_Shader: {fileID: 4800000, guid: ddd8e1f874a17854faac5f971223da5a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -46,22 +46,28 @@ Material:
     m_Ints: []
     m_Floats:
     - _EnableExternalAlpha: 0
-    - _HeightScale: -0.5510729
-    - _HorizontalOffset: 0.71203315
-    - _IgnoreStencilMask: 3
-    - _ShadowStencilBit: 4
-    - _Skew: 0
-    - _StencilComp: 3
-    - _StencilPass: 4
-    - _StencilReadMask: 7
-    - _StencilRef: 0
-    - _StencilWriteMask: 7
-    - _TreeStencilRef: 2
+    - _Expansion: 1
+    - _FlipShadowX: 0
+    - _FlipShadowY: 0
+    - _HeightOffset: 0.1
+    - _HeightSlope: 2
+    - _MaxDistance: 0.5
+    - _PivotOffsetY: -0.5
+    - _PivotY: 0.15
+    - _ShadowAngle: 270
+    - _ShadowLengthMultiplier: 2
+    - _ShadowPivotY: 0.1
+    - _ShadowScale: 0.6
+    - _ShadowScaleY: 0.5
+    - _ShadowSkew: 0.5
+    - _ShadowSkewX: -0.5
+    - _XYAngle: 45
+    - _ZAngle: 30
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.5}
+    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.30327564}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _ShadowOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _ShadowColor: {r: 0, g: 0, b: 0, a: 0.5}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
