@@ -2,8 +2,6 @@ using System;
 using PresentationLayer.ObjectSystem;
 using UnityEngine;
 using UnityEngine.UI;
-using DG.Tweening;
-using PresentationLayer.DOTweenAnimationSystem;
 
 /// <summary>
 /// HUD에서 HP 바 등 캐릭터의 상태를 추적하며 표시하는 프로그레스 바입니다.
@@ -21,8 +19,6 @@ public class HUD_HPBar : HUD_ProgressBar, IPoolable
     private Action<HUD_HPBar> onHideCallback;
 
     private GameObject targetObj;
-
-    private Tween chargeTween;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -59,7 +55,6 @@ public class HUD_HPBar : HUD_ProgressBar, IPoolable
             return;
         }
 
-        chargeTween?.Kill();
         activeTimer = _duration;
         isTimerActive = true;
         onHideCallback = _onHide;
@@ -76,9 +71,6 @@ public class HUD_HPBar : HUD_ProgressBar, IPoolable
     {
         if (true == gameObject.activeSelf)
         {
-            chargeTween?.Kill();
-            chargeTween = null;
-
             isTimerActive = false;
             activeTimer = 0.0f;
             gameObject.SetActive(false);
@@ -98,12 +90,16 @@ public class HUD_HPBar : HUD_ProgressBar, IPoolable
 
     public void OnDespawn()
     {
-        chargeTween?.Kill();
-        chargeTween = null;
         isTimerActive = false;
         activeTimer = 0.0f;
         onHideCallback = null;
+        targetObj = null;
+        Owner = null;
+
+        if (null != progressSlider)
+            progressSlider.value = 0.0f;
     }
+
 
     // //유니티 이벤트 함수
 
@@ -126,12 +122,15 @@ public class HUD_HPBar : HUD_ProgressBar, IPoolable
             newPos.y += showYOffset;
 
             if (null != rect)
-                rect.position = GlobalUI.SnapToScreenPixel(newPos, Camera.main);
+                rect.position = GlobalUI.SnapToScreenPixel(newPos, mainCam);
         }
     }
 
-    private void OnDestroy()
+
+    public object Owner { get; private set; }
+
+    public void SetOwner(object _owner)
     {
-        chargeTween?.Kill();
+        Owner = _owner;
     }
 }

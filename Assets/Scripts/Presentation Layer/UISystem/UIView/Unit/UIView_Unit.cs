@@ -24,6 +24,7 @@ public class UIView_Unit : UIView
     [SerializeField] private float showCount = 1.5f;
 
     private Dictionary<ITreeObj, HUD_HPBar> damagedTrees = new Dictionary<ITreeObj, HUD_HPBar>(32);
+    private Dictionary<IAnimalObj, HUD_HPBar> damagedAnimals = new Dictionary<IAnimalObj, HUD_HPBar>(32);
     private HUD_ChargeGageBar uiCharge;
 
     //퍼블릭 초기화 및 제어 메서드
@@ -55,21 +56,39 @@ public class UIView_Unit : UIView
         if (null == _treeObj)
             return;
 
-        // 이미 캐싱 돼 있으면 시간 연장
         if (damagedTrees.TryGetValue(_treeObj, out HUD_HPBar _bar))
         {
-            _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
-            _bar.TriggerActiveForDuration(showCount, FinishedBar);
-
-            if (true == _treeObj.bDead)
-            {
-                _bar.OnHide();
-                return;
-            }
+            UpdateTreeHP(_bar, _treeObj);
         }
         else
-            ShowHP_Trees(_treeObj, treesYOffset);
+        {
+            HUD_HPBar _newBar = hpBarPool.Spawn<HUD_HPBar>(hpBarPrefab, Vector3.zero, Quaternion.identity, this.transform);
+            if (null != _newBar)
+            {
+                damagedTrees.Add(_treeObj, _newBar);
+                UpdateTreeHP(_newBar, _treeObj);
+            }
+        }
     }
+
+    private void UpdateTreeHP(HUD_HPBar _bar, ITreeObj _treeObj)
+    {
+        if (null == _bar || null == _treeObj)
+            return;
+
+        if (true == _treeObj.bDead)
+        {
+            _bar.OnHide();
+            return;
+        }
+
+        _bar.SetOwner(_treeObj);
+        _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
+        _bar.UpdateYOffset(treesYOffset);
+        _bar.UpdateTargetObj(_treeObj.GetTransform().gameObject);
+        _bar.TriggerActiveForDuration(showCount, FinishedBar);
+    }
+
 
     public void DependencyInjection(IReadOnlyList<ITreeObj> _trees)
     {
@@ -78,8 +97,56 @@ public class UIView_Unit : UIView
 
     public void AnimalGetHit(IAnimalObj _animalObj)
     {
-        
+        if (null == _animalObj)
+            return;
+
+        if (damagedAnimals.TryGetValue(_animalObj, out HUD_HPBar _bar))
+        {
+            UpdateAnimalHP(_bar, _animalObj);
+        }
+        else
+        {
+            if (true == _animalObj.bDead)
+                return;
+
+            HUD_HPBar _newBar = hpBarPool.Spawn<HUD_HPBar>(hpBarPrefab, Vector3.zero, Quaternion.identity, this.transform);
+            if (null != _newBar)
+            {
+                damagedAnimals.Add(_animalObj, _newBar);
+                UpdateAnimalHP(_newBar, _animalObj);
+            }
+        }
     }
+
+    private void UpdateAnimalHP(HUD_HPBar _bar, IAnimalObj _animalObj)
+    {
+        if (null == _bar || null == _animalObj)
+            return;
+
+        if (true == _animalObj.bDead)
+        {
+            _bar.OnHide();
+            return;
+        }
+
+        _bar.SetOwner(_animalObj);
+        _bar.UpdateValue(_animalObj.health.GetCurrentHealth() / _animalObj.health.GetMaxHealth());
+        _bar.UpdateYOffset(animalsYOffset);
+        _bar.UpdateTargetObj(_animalObj.GetTransform().gameObject);
+        _bar.TriggerActiveForDuration(showCount, FinishedAnimalBar);
+    }
+
+
+    private void FinishedAnimalBar(HUD_HPBar _bar)
+    {
+        if (null == _bar)
+            return;
+
+        ClearBarFromDictionaries(_bar);
+        hpBarPool?.Despawn(_bar.gameObject);
+    }
+
+
 
     public void SetCharacter(ICharacter _character)
     {
@@ -88,47 +155,32 @@ public class UIView_Unit : UIView
         Bind_ChargeUIFunction();
     }
 
-    private void ShowHP_Trees(ITreeObj _treeObj, float _YOffset)
-    {
-        if (null == hpBarPool || null == _treeObj)
-            return;
-
-        HUD_HPBar _bar = hpBarPool.Spawn<HUD_HPBar>(hpBarPrefab, Vector3.zero, Quaternion.identity, this.transform);
-        if (null == _bar)
-            return;
-
-        _bar.UpdateValue(_treeObj.health.GetCurrentHealth() / _treeObj.health.GetMaxHealth());
-        _bar.UpdateYOffset(_YOffset);
-        _bar.UpdateTargetObj(_treeObj.GetTransform().gameObject);
-
-        // 딕셔너리에 등록 (중복 체크는 TreeGetHit에서 수행함)
-        damagedTrees.Add(_treeObj, _bar);
-
-        // 3초 동안 활성화하고, 종료 시 풀에 반납하도록 콜백 등록
-        _bar.TriggerActiveForDuration(showCount, FinishedBar);
-    }
-
     private void FinishedBar(HUD_HPBar _bar)
     {
         if (null == _bar)
             return;
 
-        // 해당 바를 사용 중이던 나무를 찾아 딕셔너리에서 제거
-        ITreeObj _ownerTree = null;
-        foreach (var _kvp in damagedTrees)
-        {
-            if (_kvp.Value == _bar)
-            {
-                _ownerTree = _kvp.Key;
-                break;
-            }
-        }
-
-        if (null != _ownerTree)
-            damagedTrees.Remove(_ownerTree);
-
+        ClearBarFromDictionaries(_bar);
         hpBarPool?.Despawn(_bar.gameObject);
     }
+
+
+    private void ClearBarFromDictionaries(HUD_HPBar _bar)
+    {
+        if (null == _bar)
+            return;
+
+        if (null == _bar.Owner)
+            return;
+
+        if (_bar.Owner is ITreeObj _tree)
+            damagedTrees.Remove(_tree);
+
+        if (_bar.Owner is IAnimalObj _animal)
+            damagedAnimals.Remove(_animal);
+    }
+
+
 
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
