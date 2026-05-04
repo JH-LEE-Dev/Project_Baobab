@@ -16,8 +16,8 @@ public class OffroadVehicleObj : MonoBehaviour
 
     private bool bCanJump = false;
 
-    [SerializeField] private OffsetShadow baseShadow;
-    [SerializeField] private OffsetShadow wheelShadow;
+    [SerializeField] private RaymarchingShadow baseShadow;
+    [SerializeField] private RaymarchingShadow wheelShadow;
 
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider)
@@ -35,7 +35,7 @@ public class OffroadVehicleObj : MonoBehaviour
         UpdateShadow(wheelShadow);
     }
 
-    private void UpdateShadow(OffsetShadow shadow)
+    private void UpdateShadow(RaymarchingShadow shadow)
     {
         if (shadow == null)
         {

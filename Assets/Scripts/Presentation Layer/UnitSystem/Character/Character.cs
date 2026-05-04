@@ -181,9 +181,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             bWhileSwing = false;
             healthComponent.StaminaReset();
             statComponent.ResetSpeed();
-            attackComponent.SetbAttack(false);
             bCanRotate = true;
-            attackComponent.SetbCanSwap(false);
+            attackComponent.ResetAttackComponent();
         }
         else
         {
@@ -357,7 +356,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             shadowObject.ManualUpdate(
                 environmentProvider.shadowDataProvider.CurrentShadowRotation,
                 environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-                false);
+                environmentProvider.shadowDataProvider.IsShadowActive);
         }
 
         // 스태미나 로직

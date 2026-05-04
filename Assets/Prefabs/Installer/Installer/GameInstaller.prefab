@@ -318,10 +318,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::IsometricShadowController
   characterPointLightPrefab: {fileID: -6427753554701023476, guid: 37b8d17d1c387c441864ea3d1ed1a209, type: 3}
   dayCycleSpeed: 0.01
-  minHeightScale: 0.5
+  minHeightScale: 1.15
   maxHeightScale: 1.5
-  _shadowMaterial: {fileID: 2100000, guid: f1d5d17c7e214ff4493987030f81849d, type: 2}
-  _shadowColor: {r: 0, g: 0, b: 0, a: 0.5}
+  shadowMaterial: {fileID: 2100000, guid: f1d5d17c7e214ff4493987030f81849d, type: 2}
+  buildingShadowMaterial: {fileID: 2100000, guid: e0b8ee3584667e948b90b95b7e9afd47, type: 2}
+  shadowColor: {r: 0, g: 0, b: 0, a: 0.5}
   globalLightPrefab: {fileID: 4569121031774944733, guid: 55fe3e88bf27aed4ea50abf8af35873b, type: 3}
   lightColorGradient:
     serializedVersion: 2

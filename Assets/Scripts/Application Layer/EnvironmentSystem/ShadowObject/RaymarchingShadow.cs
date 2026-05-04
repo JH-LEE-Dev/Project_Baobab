@@ -1,14 +1,14 @@
 using UnityEngine;
 
 [ExecuteAlways]
-public class OffsetShadow : MonoBehaviour
+public class RaymarchingShadow : MonoBehaviour
 {
     //외부 설정 (디버깅용)
     [Header("Debug Settings")]
     [SerializeField] private bool useDebugValues = false;
     [Range(0, 360)]
     [SerializeField] private float debugAngle = 0f;
-    [Range(0.1f, 3.0f)]
+    [Range(0f, 1f)]
     [SerializeField] private float debugScaleY = 0.5f;
     [SerializeField] private bool debugIsActive = true;
 
@@ -57,8 +57,9 @@ public class OffsetShadow : MonoBehaviour
         
         propertyBlock.SetFloat(shadowAngleId, angleDeg);
         
-        // _scaleY를 _MaxDistance 속성에 전달
-        propertyBlock.SetFloat(maxDistanceId, _scaleY);
+        // _scaleY (0~1 factor)를 0.3~0.57 범위로 보간하여 _MaxDistance 속성에 전달
+        float remappedScaleY = Mathf.Lerp(0.1f, 0.2f, _scaleY);
+        propertyBlock.SetFloat(maxDistanceId, remappedScaleY);
 
         shadowRenderer.SetPropertyBlock(propertyBlock);
     }

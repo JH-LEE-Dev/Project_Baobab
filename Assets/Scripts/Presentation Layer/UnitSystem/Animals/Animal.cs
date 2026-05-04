@@ -211,7 +211,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         if (shadowObject != null)
         {
-            shadowObject.ManualUpdate(environmentProvider.shadowDataProvider.CurrentShadowRotation, environmentProvider.shadowDataProvider.CurrentShadowScaleY, false);
+            shadowObject.ManualUpdate(environmentProvider.shadowDataProvider.CurrentShadowRotation, 
+            environmentProvider.shadowDataProvider.CurrentShadowScaleY, environmentProvider.shadowDataProvider.IsShadowActive);
         }
     }
 

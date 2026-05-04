@@ -195,6 +195,10 @@ public class ArmComponent : PComponent, IArmComponent
 
     public void ResetWeaponStatus()
     {
+        axeComponent.SetEnable(false);
+        rifleComponent.SetEnable(false);
+        currentWeaponMode = WeaponMode.Axe;
+        currentWeapon = axeComponent;
         axeComponent.ResetDurability();
         rifleComponent.ResetDurability();
         rifleComponent.ResetAmmo();
