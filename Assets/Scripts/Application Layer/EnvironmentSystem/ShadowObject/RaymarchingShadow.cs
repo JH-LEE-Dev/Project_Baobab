@@ -19,16 +19,15 @@ public class RaymarchingShadow : MonoBehaviour
     //쉐이더 속성 ID 캐싱
     private static readonly int shadowAngleId = Shader.PropertyToID("_ShadowAngle");
     private static readonly int maxDistanceId = Shader.PropertyToID("_MaxDistance");
+    public void Initialize()
+    {
+        if (shadowRenderer == null) shadowRenderer = GetComponent<Renderer>();
+        if (propertyBlock == null) propertyBlock = new MaterialPropertyBlock();
+    }
 
     private void Awake()
     {
         Initialize();
-    }
-
-    private void Initialize()
-    {
-        if (shadowRenderer == null) shadowRenderer = GetComponent<Renderer>();
-        if (propertyBlock == null) propertyBlock = new MaterialPropertyBlock();
     }
 
     private void Update()

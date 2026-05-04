@@ -27,6 +27,9 @@ public class OffroadVehicleObj : MonoBehaviour
         characterLayer = LayerMask.NameToLayer("Character");
 
         lastActivatedTime = Time.time;
+
+        if (baseShadow != null)
+            baseShadow.Initialize();
     }
 
     private void Update()
@@ -59,7 +62,7 @@ public class OffroadVehicleObj : MonoBehaviour
     {
         if (bCanJump == false)
             return;
-            
+
         // 캐릭터 레이어인지 확인 및 쿨타임 체크
         if (_other.gameObject.layer == characterLayer && Time.time >= lastActivatedTime + cooldownTime)
         {

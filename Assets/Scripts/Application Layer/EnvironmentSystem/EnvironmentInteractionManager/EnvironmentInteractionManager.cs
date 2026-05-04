@@ -13,7 +13,8 @@ public class EnvironmentInteractionManager : MonoBehaviour
     [SerializeField] private LayerMask treeLayer;
     [SerializeField] private float fadeDuration = 0.3f;
     [SerializeField] private float shadowFadeDuration = 0.1f;
-    [SerializeField] private float shadowOffsetMinScale = 0.1f; // 그림자 스케일이 최소일 때 Offset이 줄어드는 비율
+    [SerializeField] private float shadowOffsetMinScale = 0.7f; // 그림자 스케일이 최소일 때 Offset이 줄어드는 비율
+    [SerializeField] private float shadowLengthDamping = 0.8f; // 그림자 장축 스케일이 줄어드는 정도를 완화하는 비율 (1: 그대로, 0: 항상 1)
 
     // 내부 상태 (최적화: HashSet 사용으로 중복 체크 O(1) 달성)
     private readonly List<IStaticCollidable> nearbyCollidables = new List<IStaticCollidable>(16);
@@ -126,7 +127,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
         var _shadowData = environmentProvider.shadowDataProvider;
         // CurrentShadowRotation에 Z축 90도 회전을 더한 값으로 Inverse 처리
         Quaternion _invShadowRot = Quaternion.Inverse(_shadowData.CurrentShadowRotation * Quaternion.Euler(0, 0, 90f));
-        float _shadowScaleY = _shadowData.CurrentShadowScaleY * 1.5f; // 미리 계산
+        float _shadowScaleY = _shadowData.CurrentShadowScaleY; // 미리 계산
 
         // 1. 캐릭터 체크
         CheckUnitShadow(character, _invShadowRot, _shadowScaleY);
@@ -185,14 +186,17 @@ public class EnvironmentInteractionManager : MonoBehaviour
 
     private bool IsUnderTreeShadow(Vector2 _unitPos, TreeObj _tree, Quaternion _invShadowRot, float _shadowScaleY)
     {
-        _shadowScaleY *= 1.5f;
+        // 1. 장축 배율 보정 (원형인 1.0을 기준으로 덜 줄어들고 덜 늘어나게 함)
+        float _baseScaleY = _shadowScaleY * 3.0f;
+        float _effectiveScaleY = Mathf.Lerp(1.0f, _baseScaleY, shadowLengthDamping);
+
         var _shadowData = environmentProvider.shadowDataProvider;
         Vector2 _treePos = _tree.transform.position;
         float _radius = _tree.TopShadowRadius;
         if (_radius <= 0) return false;
 
         // 최적화 1: 조기 종료 (그림자의 최대 길이보다 멀리 있으면 연산 건너뜀)
-        float _maxRange = _radius * Mathf.Max(1.0f, _shadowScaleY) + 0.5f;
+        float _maxRange = _radius * Mathf.Max(1.0f, _effectiveScaleY) + 0.5f;
         if (Vector2.SqrMagnitude(_unitPos - _treePos) > (_maxRange * _maxRange)) return false;
 
         // 2. 로컬 좌표계 변환
@@ -208,7 +212,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
         float _dy = _localPos.y - _dynamicOffset.y;
 
         // 4. 타원 판정 (나눗셈 제거 최적화)
-        float _ry = _radius * _shadowScaleY;
+        float _ry = _radius * _effectiveScaleY;
         float _term1 = _dx * _ry;
         float _term2 = _dy * _radius;
 

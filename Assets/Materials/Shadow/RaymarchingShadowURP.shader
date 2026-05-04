@@ -97,7 +97,7 @@ Shader "Custom/PixelArtDropShadowURP"
                 float2 dy_uv = ddy(IN.uv);
 
                 // 행렬의 결정자(Determinant) 계산 (원본의 식과 완전히 동일하게 유지)
-                float det = dx_wp.x * dy_wp.y - dx_wp.y * dx_wp.x;
+                float det = dx_wp.x * dy_wp.y - dx_wp.y * dy_wp.x;
                 float2 snappedUV = IN.uv;
 
                 if (abs(det) > 0.0000001)

@@ -40,8 +40,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3204427211746890799}
-  - component: {fileID: 2775399802894898738}
-  - component: {fileID: 1622961768033688538}
+  - component: {fileID: 8061037964155472829}
+  - component: {fileID: 2576420617877598568}
   m_Layer: 8
   m_Name: Shadow
   m_TagString: Untagged
@@ -64,21 +64,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1389021518043769419}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2775399802894898738
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2627143320550341532}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 157c2ed3ab0d72b4bba3702c2ca7f5ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Shadow
-  defaultRotationZ: 90
-  defaultScaleY: 1
---- !u!212 &1622961768033688538
+--- !u!212 &8061037964155472829
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
@@ -123,8 +109,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -1744559481
-  m_SortingLayer: 2
+  m_SortingLayerID: -1838057819
+  m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 5874384072131675086, guid: 18adebfa8156f8c4d9479483bb6cf7b5, type: 3}
@@ -136,7 +122,21 @@ SpriteRenderer:
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
-  m_SpriteSortPoint: 1
+  m_SpriteSortPoint: 0
+--- !u!114 &2576420617877598568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2627143320550341532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 157c2ed3ab0d72b4bba3702c2ca7f5ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Shadow
+  defaultRotationZ: 90
+  defaultScaleY: 1
 --- !u!1 &3168886551257118820
 GameObject:
   m_ObjectHideFlags: 0
@@ -406,7 +406,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 699ec30f180d36a479ce2da0a2a41340, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Character
-  shadowObject: {fileID: 2775399802894898738}
+  shadowObject: {fileID: 2576420617877598568}
   animatorObject: {fileID: 3984376963687474699}
   collisionRadius: 0.15
   collisionOffset: {x: 0, y: 0.12}

@@ -36,7 +36,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public float AlphaDownRadius => alphaDownRadius;
     public Vector2 AdColliderOffset => adColliderOffset;
 
-    [SerializeField] private float topShadowRadius = 0.3f;
+    [SerializeField] private float topShadowRadius = 0.2f;
     [SerializeField] private Vector2 topShadowOffset = new Vector2(0f, 0.7f);
 
     public Shadow TopShadowObject => topShadowObject;
