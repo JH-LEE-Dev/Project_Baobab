@@ -1,4 +1,5 @@
 using System;
+using PresentationLayer.UISystem.UIView.MenuPopup.Map;
 using UnityEngine;
 
 public class UIView_MenuPopup : UIView
@@ -17,6 +18,8 @@ public class UIView_MenuPopup : UIView
     private UI_ZoneInfo zoneInfo;
     private UI_ZoneButton zoneSelectButton;
     private UI_ZoneButton zoneCancelButton;
+
+    private HUD_MapSelector mapSelector;
 
     public override void Initialize(UIViewContext _ctx)
     {

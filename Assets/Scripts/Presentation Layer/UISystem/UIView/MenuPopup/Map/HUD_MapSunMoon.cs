@@ -68,15 +68,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             pivotRect.localRotation = Quaternion.Euler(0.0f, 0.0f, _zAngle);
         }
 
-        // //유니티 이벤트 함수
-
-        private void Awake()
-        {
-            // 초기화 누락 방지
-            if (false == isInitialized)
-                Initialize();
-        }
-
         private void LateUpdate()
         {
             if (false == isInitialized)

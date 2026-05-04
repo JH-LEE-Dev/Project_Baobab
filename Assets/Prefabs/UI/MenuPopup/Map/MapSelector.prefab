@@ -571,6 +571,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8cf4b9651b194b64e8cd375f497ed1be, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_MapSubSelector
+  subRegions:
+  - {fileID: 5776394112991910104}
+  - {fileID: 6397184368167527683}
+  - {fileID: 3548148323702148151}
+  selectorCursor: {fileID: 2188755542048806838}
 --- !u!1 &7825303494353220615
 GameObject:
   m_ObjectHideFlags: 0
@@ -588,7 +593,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2188755542048806838
 RectTransform:
   m_ObjectHideFlags: 0
@@ -747,6 +752,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
+--- !u!114 &3548148323702148151 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4247113325155901147, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
+  m_PrefabInstance: {fileID: 850416206943146732}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6879c257383c0aa4c84c70d99b403f6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HUD_MapSubRegion
 --- !u!224 &4904797714228569680 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
@@ -858,6 +874,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
   m_PrefabInstance: {fileID: 7077295055772351448}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &6397184368167527683 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4247113325155901147, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
+  m_PrefabInstance: {fileID: 7077295055772351448}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6879c257383c0aa4c84c70d99b403f6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HUD_MapSubRegion
 --- !u!1001 &7699212278682650115
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -964,3 +991,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
   m_PrefabInstance: {fileID: 7699212278682650115}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5776394112991910104 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4247113325155901147, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
+  m_PrefabInstance: {fileID: 7699212278682650115}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6879c257383c0aa4c84c70d99b403f6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HUD_MapSubRegion

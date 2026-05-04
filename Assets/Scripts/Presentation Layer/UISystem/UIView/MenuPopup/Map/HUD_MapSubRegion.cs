@@ -1,13 +1,15 @@
+using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using PresentationLayer.UISystem.CustomNumber;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
     /// <summary>
     /// 맵 선택 UI에서 세부 지역(Sub-Region) 항목을 관리하는 클래스입니다.
-    /// CustomNumberDisplay를 통해 지역 번호를 표시하고 자신의 위치 정보를 제공합니다.
+    /// 레이캐스트 상호작용을 통해 외부로 위치 정보와 지역 번호를 전달합니다.
     /// </summary>
-    public class HUD_MapSubRegion : MonoBehaviour
+    public class HUD_MapSubRegion : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
     {
         // //외부 의존성
         [Header("UI References")]
@@ -19,7 +21,21 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isSelected = false;
         private bool isInitialized = false;
 
+        private Action<RectTransform> onHoverEvent; // 커서 이동용
+        private Action<int> onSelectEvent;         // 값 전달용
+
         // //퍼블릭 초기화 및 제어 메서드
+
+        /// <summary>
+        /// 상위 매니저에서 콜백과 데이터를 주입합니다.
+        /// </summary>
+        public void Setup(int _number, Action<RectTransform> _onHover, Action<int> _onSelect)
+        {
+            Initialize(_number);
+
+            onHoverEvent = _onHover;
+            onSelectEvent = _onSelect;
+        }
 
         /// <summary>
         /// 서브 지역 항목을 초기화합니다.
@@ -85,6 +101,20 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 rect = GetComponent<RectTransform>();
 
             return rect;
+        }
+
+        // //Event System 구현부
+
+        public void OnPointerEnter(PointerEventData _eventData)
+        {
+            // 마우스가 진입하면 커서 이동을 위해 자신의 RectTransform을 전달
+            onHoverEvent?.Invoke(GetRectTransform());
+        }
+
+        public void OnPointerClick(PointerEventData _eventData)
+        {
+            // 클릭 시 최종 선택된 지역 번호를 전달
+            onSelectEvent?.Invoke(regionNumber);
         }
 
         // //유니티 이벤트 함수

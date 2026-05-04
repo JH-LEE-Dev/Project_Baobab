@@ -438,7 +438,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6879c257383c0aa4c84c70d99b403f6f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_MapSubRegion
-  numberDisplay: {fileID: 2126145860922418718}
+  numberDisplay: {fileID: 0}
 --- !u!114 &2126145860922418718
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -452,16 +452,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.CustomNumber.CustomNumberDisplay
   numberSprites:
-  - {fileID: 7004101171656967956, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -567472371, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -121899859186592416, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -8508388623670113464, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: 3492104637436524155, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -4156620675376093418, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -9167980850434073458, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -5027362380872815480, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -4917586038699324594, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
-  - {fileID: -243806683764612386, guid: 986ee7ed954eddc4b84f5fc9c5611424, type: 3}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   digitContainer: {fileID: 1341843833280612486}
   hideLeadingZeros: 1
 --- !u!1 &7160604399257841213
