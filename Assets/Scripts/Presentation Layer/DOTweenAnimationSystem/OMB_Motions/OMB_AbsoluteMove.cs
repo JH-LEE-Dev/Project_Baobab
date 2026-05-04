@@ -66,8 +66,6 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 localScale = _rect.localScale
             };
 
-            Debug.Log(_state.anchoredPosition);
-
             stateCache.Add(_state);
 
             Vector2 _startPos;

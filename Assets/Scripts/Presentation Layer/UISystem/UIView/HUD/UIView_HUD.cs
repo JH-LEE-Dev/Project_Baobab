@@ -135,10 +135,10 @@ public class UIView_HUD : UIView
     {
         if (null == hudEquipment)
             return;
-
+        
         WeaponModeChanged(WeaponMode.Axe, !_isTwon);
+        hudEquipment.gameObject.SetActive(!_isTwon);
     }
-
 
     private void ChangedActiveStateStemina(bool _isTwon)
     {

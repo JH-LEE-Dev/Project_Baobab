@@ -95,6 +95,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (false == _isFilled && true == _shouldAnimate)
                 PlayEjectMotion();
+            
+            filledImage?.gameObject.SetActive(_isFilled);
         }
 
 #region Motions

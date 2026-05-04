@@ -190,6 +190,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
                     if (null != _rifle && null != _stat)
                     {
+                        Debug.Log(_rifle.mag + "/" + _stat.magCap + "/" + _rifle.ammo);
                         rifleItem?.PlayGatherMotion(_rifle.mag, _stat.magCap, _rifle.ammo);
                         return;
                     }
