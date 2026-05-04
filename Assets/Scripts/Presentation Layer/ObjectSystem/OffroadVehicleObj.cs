@@ -30,6 +30,9 @@ public class OffroadVehicleObj : MonoBehaviour
 
         if (baseShadow != null)
             baseShadow.Initialize();
+
+        if(wheelShadow != null)
+            wheelShadow.Initialize();
     }
 
     private void Update()

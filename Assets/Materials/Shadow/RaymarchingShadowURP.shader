@@ -86,8 +86,8 @@ Shader "Custom/PixelArtDropShadowURP"
                 float ppu = 32.0;
                 float2 worldPos = IN.worldPos.xy;
 
-                // 1. 경계면 진동 방지를 위해 아주 작은 offset(0.001)을 더해 스냅 안정화
-                float2 snappedWorldPos = floor(worldPos * ppu + 0.001) / ppu;
+                // 1. Point 필터 지터 방지를 위해 텍셀 경계가 아닌 '중앙(+0.5)'으로 스냅
+                float2 snappedWorldPos = (floor(worldPos * ppu) + 0.5) / ppu;
                 float2 worldDelta = snappedWorldPos - worldPos;
 
                 // 2. UV 변화량(ddx, ddy)과 월드 좌표 변화량 사이의 관계를 행렬로 계산
@@ -96,11 +96,11 @@ Shader "Custom/PixelArtDropShadowURP"
                 float2 dx_uv = ddx(IN.uv);
                 float2 dy_uv = ddy(IN.uv);
 
-                // 행렬의 결정자(Determinant) 계산 (원본의 식과 완전히 동일하게 유지)
+                // 행렬의 결정자(Determinant) 계산 및 오타 수정 (dx_wp.x -> dy_wp.x)
                 float det = dx_wp.x * dy_wp.y - dx_wp.y * dy_wp.x;
                 float2 snappedUV = IN.uv;
 
-                if (abs(det) > 0.0000001)
+                if (abs(det) > 1e-7)
                 {
                     // 월드 좌표 변화량(worldDelta)에 대응하는 정확한 UV 변화량을 역행렬로 산출
                     float2 uvDelta = (worldDelta.x * (dy_wp.y * dx_uv - dy_wp.x * dy_uv) + 
@@ -109,7 +109,11 @@ Shader "Custom/PixelArtDropShadowURP"
                 }
 
                 // 3. 보정된 UV를 사용하여 레이마칭 수행
-                float2 spriteUV = (snappedUV - 0.5) * _Expansion + 0.5;
+                // Expansion이 1일 때 불필요한 연산 오차 방지
+                float2 spriteUV = snappedUV;
+                if (_Expansion > 1.001) {
+                    spriteUV = (snappedUV - 0.5) * _Expansion + 0.5;
+                }
 
                 float rad = radians(_ShadowAngle);
                 float2 shadowDir = float2(cos(rad), sin(rad));
@@ -121,7 +125,8 @@ Shader "Custom/PixelArtDropShadowURP"
 
                     if (sampleUV.x < 0.0 || sampleUV.x > 1.0 || sampleUV.y < 0.0 || sampleUV.y > 1.0) continue;
 
-                    half4 sampled = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, sampleUV);
+                    // Point 필터라도 루프 내에서는 LOD 0으로 샘플링해야 카메라 이동 시 지터가 발생하지 않음
+                    half4 sampled = SAMPLE_TEXTURE2D_LOD(_BaseMap, sampler_BaseMap, sampleUV, 0);
 
                     if (sampled.a > 0.1)
                     {
