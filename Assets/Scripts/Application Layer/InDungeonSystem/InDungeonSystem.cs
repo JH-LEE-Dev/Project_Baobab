@@ -12,6 +12,7 @@ public class InDungeonSystem : MonoBehaviour
     [SerializeField] private DungeonValueDataBase dungeonDataBase;
 
     private MapType currentMapType;
+    private ForestType currentForestType;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
     {
@@ -36,6 +37,9 @@ public class InDungeonSystem : MonoBehaviour
 
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
+        currentMapType = _sceneChangeData.mapType;
+        currentForestType = _sceneChangeData.forestType;
+
         signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType)));
         inDungeonObjectManager.SetDungeonData(dungeonDataBase.GetDungeonData(currentMapType));
         inDungeonObjectManager.SetupItemManagerCulling();
@@ -60,6 +64,12 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
         inDungeonUnitSpawner.AnimalHitEvent += AnimalHit;
+
+        inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
+        inDungeonObjectManager.TreeDeadEvent += TreeIsDead;
+
+        inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
+        inDungeonUnitSpawner.AnimalIsDeadEvent += AnimalIsDead;
     }
 
     private void ReleaseEvents()
@@ -70,6 +80,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
+        inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
+        inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
     }
 
     private void SubscribeSignals()
@@ -98,8 +110,8 @@ public class InDungeonSystem : MonoBehaviour
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnAnimals();
-        
-        signalHub.Publish(new DecalreDungeonTypeSignal(MapType.Forest1_1));
+
+        signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
     }
 
     private void ItemAcquired(Item _item)
@@ -136,5 +148,15 @@ public class InDungeonSystem : MonoBehaviour
     private void AnimalHit(Animal _animal)
     {
         signalHub.Publish(new AnimalHitSignal(_animal));
+    }
+
+    private void TreeIsDead(TreeType _type)
+    {
+        signalHub.Publish(new TreeIsDeadSignal(_type));
+    }
+
+    private void AnimalIsDead(Animal _animal)
+    {
+        signalHub.Publish(new AnimalIsDeadSignal(_animal.animalType));
     }
 }

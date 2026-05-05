@@ -183,7 +183,7 @@ public struct TownSaveData
 [Serializable]
 public struct LogDropProbSaveData
 {
-    public List<LogDropData> logProbDatas;
+    public List<LogDropProbData> logProbDatas;
 }
 
 [Serializable]

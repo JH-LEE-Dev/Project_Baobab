@@ -13,9 +13,11 @@ public struct DungeonReadySignal
 public struct DecalreDungeonTypeSignal
 {
     public MapType mapType;
-    public DecalreDungeonTypeSignal(MapType _mapType)
+    public ForestType forestType;
+    public DecalreDungeonTypeSignal(MapType _mapType, ForestType _forestType)
     {
         mapType = _mapType;
+        forestType = _forestType;
     }
 }
 
@@ -65,3 +67,23 @@ public struct AnimalHitSignal
         animal = _animal;
     }
 }
+
+public struct TreeIsDeadSignal
+{
+    public TreeType type;
+    public TreeIsDeadSignal(TreeType _type)
+    {
+        type = _type;
+    }
+}
+
+public struct AnimalIsDeadSignal
+{
+    public AnimalType type;
+    public AnimalIsDeadSignal(AnimalType _type)
+    {
+        type = _type;
+    }
+}
+
+

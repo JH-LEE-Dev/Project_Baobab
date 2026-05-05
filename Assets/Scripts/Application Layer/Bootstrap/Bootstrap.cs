@@ -31,6 +31,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private bool bFadeComplete = false;
     private bool bNewGame = false;
     private MapType currentMapType = MapType.Town;
+    private ForestType currentForestType = ForestType.InTown;
 
     // 유니티 이벤트 함수
     private void Awake()
@@ -93,7 +94,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         if (gameInstaller != null)
         {
-            gameInstaller.SetupGameInstaller(new SceneChangeData(currentSceneType, prevSceneType, currentMapType));
+            gameInstaller.SetupGameInstaller(new SceneChangeData(currentSceneType, prevSceneType, currentForestType, currentMapType));
         }
     }
 
@@ -186,15 +187,16 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
     }
 
-    public void GoToOtherScene(string _sceneName, MapType _mapType)
+    public void GoToOtherScene(MapType _mapType, ForestType _forestType)
     {
         currentMapType = _mapType;
+        currentForestType = _forestType;
 
-        if (_sceneName == townSceneName)
+        if (MapType.Town == _mapType)
         {
             StartCoroutine(TransitionToScene(SceneType.Town));
         }
-        else if (_sceneName == dungeonSceneName)
+        else
         {
             StartCoroutine(TransitionToScene(SceneType.DungeonScene));
         }
@@ -246,7 +248,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private void LoadLocalizationData()
     {
         TextAsset[] localizationAssets = Resources.LoadAll<TextAsset>("Localization");
-        
+
         if (localizationAssets == null || localizationAssets.Length == 0)
         {
             Debug.LogWarning("[BootStrap] No localization files found in Resources/Localization");

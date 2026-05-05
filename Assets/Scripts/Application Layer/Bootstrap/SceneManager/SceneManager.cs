@@ -1,12 +1,23 @@
 using UnityEngine;
 
+public enum ForestType
+{
+    None,
+    InTown,
+    Vegetatedplains_1,
+    Vegetatedplains_2,
+    Vegetatedplains_3,
+    Deepmossforest_1,
+    Deepmossforest_2,
+    Deepmossforest_3,
+}
+
 public enum MapType
 {
     None,
     Town,
-    Forest1_1,
-    Forest1_2,
-    Forest1_3,
+    Vegetatedplains,
+    Deepmossforest,
 }
 
 public class SceneManager : MonoBehaviour

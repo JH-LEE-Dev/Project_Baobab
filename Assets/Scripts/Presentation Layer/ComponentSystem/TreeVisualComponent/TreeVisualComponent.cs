@@ -138,6 +138,29 @@ public class TreeVisualComponent : MonoBehaviour
         ResetTopSway();
     }
 
+    // 묘목(Sapling) 비주얼을 적용한다.
+    public void ApplySaplingVisual(TreeData _treeData)
+    {
+        TreeVisualData visualData = _treeData.treeVisualData;
+
+        if (topRenderer != null)
+        {
+            SetRandomSprite(topRenderer, visualData.saplingTopSprites);
+            topRenderer.color = GetJitteredColor(visualData.topColor);
+        }
+
+        if (bottomRenderer != null)
+        {
+            SetRandomSprite(bottomRenderer, visualData.saplingBottomSprites);
+            bottomRenderer.color = GetJitteredColor(visualData.bottomColor);
+        }
+
+        ApplyRandomScale();
+        SyncShadowSprite();
+        CacheSwayBasePose();
+        ResetTopSway();
+    }
+
     // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
     private void ApplyRandomVisual()
     {

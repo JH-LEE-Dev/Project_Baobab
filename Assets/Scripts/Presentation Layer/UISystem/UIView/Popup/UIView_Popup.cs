@@ -20,6 +20,10 @@ public class UIView_Popup : UIView
 
     private const int defaultPopupCap = 12;
 
+    private MapType currentMapType;
+    private ForestType currentForestType;
+
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
@@ -128,8 +132,11 @@ public class UIView_Popup : UIView
         uI_Inventory?.Refresh();
     }
 
-    public void SetCurrentMapType(MapType _currentMapType)
+    public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
     {
+        currentMapType = _currentMapType;
+        currentForestType = _currentForestType;
+
         uI_Inventory?.MapChanged(_currentMapType);
     }
     

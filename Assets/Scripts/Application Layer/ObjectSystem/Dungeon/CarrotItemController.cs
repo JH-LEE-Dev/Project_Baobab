@@ -29,6 +29,8 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     private BoundingSphere[] spheres;
     private bool isCullingDirty = false;
 
+    [SerializeField] private List<CarrotSpawnData> carrotSpawnData;
+
     public void Initialize()
     {
         carrotPool = new ObjectPool<CarrotItem>(
@@ -125,7 +127,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         newItem.CarrotItemAcquired -= CarrotItemAcquired;
         newItem.CarrotItemAcquired += CarrotItemAcquired;
         newItem.Initialize();
-        
+
         return newItem;
     }
 
@@ -166,16 +168,37 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         {
             carrotPool.Release(cleanupList[i]);
         }
-        
+
         activeItems.Clear();
         activeItemsList.Clear();
         cleanupList.Clear();
         isCullingDirty = true;
     }
 
-    public void SpawnCarrotItem(Vector3 _position)
+    public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
     {
-        int bundlesToSpawn = UnityEngine.Random.Range(minSpawnBundle, maxSpawnBundle + 1);
+        int minSB = minSpawnBundle;
+        int maxSB = maxSpawnBundle;
+        int minAPB = minAmountPerBundle;
+        int maxAPB = maxAmountPerBundle;
+
+        // carrotSpawnData에서 해당하는 AnimalType의 데이터를 찾아 적용
+        if (carrotSpawnData != null)
+        {
+            for (int i = 0; i < carrotSpawnData.Count; i++)
+            {
+                if (carrotSpawnData[i].animalType == _animalType)
+                {
+                    minSB = carrotSpawnData[i].minSpawnBundle;
+                    maxSB = carrotSpawnData[i].maxSpawnBundle;
+                    minAPB = carrotSpawnData[i].minAmountPerBundle;
+                    maxAPB = carrotSpawnData[i].maxAmountPerBundle;
+                    break;
+                }
+            }
+        }
+
+        int bundlesToSpawn = UnityEngine.Random.Range(minSB, maxSB + 1);
 
         for (int i = 0; i < bundlesToSpawn; i++)
         {
@@ -183,7 +206,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
             carrotItem.transform.position = _position;
 
-            int randomAmount = UnityEngine.Random.Range(minAmountPerBundle, maxAmountPerBundle + 1);
+            int randomAmount = UnityEngine.Random.Range(minAPB, maxAPB + 1);
             float finalAmount = randomAmount * dropMultiplier;
             carrotItem.SetAmount(finalAmount);
 

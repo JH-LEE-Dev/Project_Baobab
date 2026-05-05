@@ -4,7 +4,14 @@ using UnityEngine;
 
 public class UIView_MenuPopup : UIView
 {
-    public event Action<MapType> DungeonSelectedEvent;
+    public event Action<MapType, ForestType> DungeonSelectedEvent;
+
+    //외부 의존성
+    private IMapDataProvider mapDataProvider;
+    private IWeatherProvider weatherProvider;
+    private ITimeDataProvider timeDataProvider;
+
+    //내부 의존성
 
     // //외부 의존성
     [Header("Sub UI Prefabs")]
@@ -26,14 +33,21 @@ public class UIView_MenuPopup : UIView
         CloseTeleportUI();
     }
 
+    public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
+    {
+        weatherProvider = _weatherProvider;
+        timeDataProvider = _timeDataProvider;
+        mapDataProvider = _mapDataProvider;
+    }
+
     private void HandleEnterDungeon(MapType _type)
     {
         if (MapType.None == _type)
             return;
 
         Debug.Log($"[UIView_MenuPopup] Entering Dungeon: {_type}");
-        
-        DungeonSelectedEvent?.Invoke(_type);
+        // 통신 및 던전 진입 로직 배치
+        DungeonSelectedEvent?.Invoke(_type, ForestType.Vegetatedplains_1);
         CloseTeleportUI();
     }
 

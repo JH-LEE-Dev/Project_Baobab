@@ -43,6 +43,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public float TopShadowRadius => topShadowRadius;
     public Vector2 TopShadowOffset => topShadowOffset;
 
+    public bool bCanApplyDamage => !bIsSapling;
+
+    public bool bIsSapling = false;
+    private float growTime = 0f;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -87,6 +92,17 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
     }
 
+    public void SetIsSapling(bool _bIsSapling, float _growTime)
+    {
+        bIsSapling = _bIsSapling;
+        growTime = _growTime;
+
+        if (bIsSapling && treeVisualComponent != null)
+        {
+            treeVisualComponent.ApplySaplingVisual(treeData);
+        }
+    }
+
     public void ResetTree()
     {
         bDead = false;
@@ -117,6 +133,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         UpdateShadow(topShadowObject);
         UpdateShadow(bottomShadowObject);
+
+        if (bIsSapling)
+        {
+            growTime -= Time.deltaTime;
+            if (growTime <= 0f)
+            {
+                bIsSapling = false;
+                if (treeVisualComponent != null)
+                {
+                    treeVisualComponent.ApplyVisual(treeData);
+                }
+            }
+        }
     }
 
     public Color GetColor()

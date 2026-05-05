@@ -46,7 +46,6 @@ public struct TreeData
         type = _type;
         grade = _grade;
         treeVisualData = _treeVisualData;
-    
     }
 }
 
@@ -61,10 +60,18 @@ public enum ItemType
 
 
 [Serializable]
-public struct LogDropData
+public struct LogDropProbData
 {
     public TreeGrade treeGrade;
     public List<LogProbData> probDatas;
+}
+
+[Serializable]
+public struct LogDropCntData
+{
+    public TreeType treeType;
+    public int minCnt;
+    public int maxCnt;
 }
 
 [Serializable]
@@ -86,4 +93,14 @@ public struct LootDropData
 {
     public LootType lootType;
     public float probability;
+}
+
+[Serializable]
+public struct CarrotSpawnData
+{
+    public AnimalType animalType;
+    public int minAmountPerBundle;
+    public int maxAmountPerBundle;
+    public int minSpawnBundle;
+    public int maxSpawnBundle;
 }

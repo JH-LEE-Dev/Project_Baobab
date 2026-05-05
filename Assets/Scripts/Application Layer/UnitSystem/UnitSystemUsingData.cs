@@ -194,4 +194,6 @@ public enum AnimalType
 {
     None,
     Rabbit,
+    MRabbit,
+    HRabbit,
 }

@@ -17,7 +17,9 @@ public class GameplayUIInstaller : MonoBehaviour
     private ISkillSystemProvider skillSystemProvider;
     private IShopNPC shopNPC;
     private IMoneyData moneyData;
-
+    private IMapDataProvider mapDataProvider;
+    private IWeatherProvider weatherProvider;
+    private ITimeDataProvider timeDataProvider;
 
     //Canvas
 
@@ -36,8 +38,10 @@ public class GameplayUIInstaller : MonoBehaviour
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
         InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
         ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC,
-        IMoneyData _moneyData, LocalizationManager _localizeManager)
+        IMoneyData _moneyData, LocalizationManager _localizeManager, IMapDataProvider _mapDataProvider, 
+        IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
     {
+        mapDataProvider = _mapDataProvider;
         localizationManager = _localizeManager;
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -48,11 +52,14 @@ public class GameplayUIInstaller : MonoBehaviour
         skillSystemProvider = _skillSystemProvider;
         shopNPC = _shopNPC;
         moneyData = _moneyData;
+        weatherProvider = _weatherProvider;
+        timeDataProvider = _timeDataProvider;
 
         uiManager = GetComponent<GameplayUIManager>();
         uICoordinator = new GameplayUICoordinator();
 
-        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider, shopNPC, moneyData, localizationManager);
+        uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider,
+         shopNPC, moneyData, localizationManager, mapDataProvider, weatherProvider, timeDataProvider);
 
         SetupUIElement();
 

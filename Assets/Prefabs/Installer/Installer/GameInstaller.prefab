@@ -168,6 +168,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
   densityDataBase: {fileID: 11400000, guid: cb0b8bab5590ad8409bd563dc6f3cb61, type: 2}
   applyToStartCnt: 1
+  animalHiddenGaugeAmounts:
+  - animalType: 1
+    minAmount: 2
+    maxAmount: 4
+  - animalType: 2
+    minAmount: 3
+    maxAmount: 5
+  - animalType: 3
+    minAmount: 4
+    maxAmount: 6
+  treeHiddenGaugeAmounts:
+  - treeType: 1
+    minAmount: 1
+    maxAmount: 3
+  - treeType: 2
+    minAmount: 2
+    maxAmount: 4
+  - treeType: 3
+    minAmount: 3
+    maxAmount: 5
 --- !u!1 &2327565162841499606
 GameObject:
   m_ObjectHideFlags: 0
@@ -219,6 +239,16 @@ MonoBehaviour:
       probability: 100
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+  logDropCntDatas:
+  - treeType: 1
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 2
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 3
+    minCnt: 2
+    maxCnt: 3
   cullingUpdateInterval: 0.05
 --- !u!1 &2442542787030155420
 GameObject:
@@ -484,6 +514,22 @@ MonoBehaviour:
   minSpawnBundle: 2
   maxSpawnBundle: 3
   cullingUpdateInterval: 0.05
+  carrotSpawnData:
+  - animalType: 1
+    minAmountPerBundle: 3
+    maxAmountPerBundle: 5
+    minSpawnBundle: 2
+    maxSpawnBundle: 3
+  - animalType: 2
+    minAmountPerBundle: 6
+    maxAmountPerBundle: 10
+    minSpawnBundle: 4
+    maxSpawnBundle: 6
+  - animalType: 3
+    minAmountPerBundle: 24
+    maxAmountPerBundle: 40
+    minSpawnBundle: 16
+    maxSpawnBundle: 24
 --- !u!1 &3306528137990007570
 GameObject:
   m_ObjectHideFlags: 0
@@ -895,12 +941,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e39068f27ffa5ae4692647311d234cc3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
-  animalPrefab: {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
   cullingDistance: 25
   cullingUpdateInterval: 0.1
   collectionCheck: 1
   defaultCapacity: 200
   maxSize: 2000
+  animalsPrefab:
+  - {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
+  - {fileID: 2754930622058465131, guid: abc4a4931962c18408c254f7a6901059, type: 3}
+  - {fileID: 5574060826036245196, guid: c2551d0a6848766408bcda8ef7de9034, type: 3}
 --- !u!1 &6114502731513512976
 GameObject:
   m_ObjectHideFlags: 0
@@ -1137,6 +1186,7 @@ MonoBehaviour:
   portalSpawnPoint: {fileID: 4103959821245234347, guid: 4b288be7fa674804ab828020e0b795ce, type: 3}
   cullingDistance: 25
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
+  treeGrowTime: 10
 --- !u!1 &7224331137657030612
 GameObject:
   m_ObjectHideFlags: 0

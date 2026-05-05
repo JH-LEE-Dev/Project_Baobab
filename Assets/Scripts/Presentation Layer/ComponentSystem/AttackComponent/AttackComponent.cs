@@ -190,7 +190,7 @@ public class AttackComponent : PComponent
             }
         }
 
-        if (nearestDamageable != null)
+        if (nearestDamageable != null && nearestDamageable.bCanApplyDamage)
         {
             nearestDamageable.TakeDamage(ctx.characterStat.axeDamage);
             AttackSuccessEvent?.Invoke();
