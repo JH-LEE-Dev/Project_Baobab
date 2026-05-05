@@ -15,7 +15,7 @@ MonoBehaviour:
   densityDatas:
   - mapType: 2
     densityData:
-    - forestType: 1
+    - forestType: 2
       spawnTreeTypes:
       - treeType: 1
         regenProb: 100
@@ -30,7 +30,7 @@ MonoBehaviour:
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
-    - forestType: 2
+    - forestType: 3
       spawnTreeTypes:
       - treeType: 1
         regenProb: 60
@@ -49,7 +49,7 @@ MonoBehaviour:
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
-    - forestType: 3
+    - forestType: 4
       spawnTreeTypes:
       - treeType: 2
         regenProb: 60
