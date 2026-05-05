@@ -141,7 +141,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             toolTipRoot.pivot = new Vector2(0.5f, 0.5f);
         }
 
-        toolTipInstance.Hide();
+        toolTipInstance.HideImmediately();
     }
 
 
@@ -270,7 +270,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         currentToolTipNode = null;
 
         if (toolTipInstance != null)
-            toolTipInstance.Hide();
+            toolTipInstance.HideImmediately();
 
         if (abilityBackground != null)
             abilityBackground.gameObject.SetActive(false);
@@ -299,6 +299,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_node == null || abilityBackground == null)
             return;
 
+        bool shouldPlayShowMotion = currentToolTipNode != _node ||
+                                    toolTipInstance == null ||
+                                    toolTipInstance.gameObject.activeSelf == false;
         currentToolTipNode = _node;
         EnsureToolTipInstance();
         if (toolTipInstance == null)
@@ -309,10 +312,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         SkillInfo skillInfo = GetSkillInfo(_node.SkillType);
+        string costText = BuildToolTipCostText(skillInfo, out MoneyType costMoneyType);
         toolTipInstance.SetContent(
             BuildToolTipTitleAndLevelText(_node, skillInfo),
             _node.GetToolTipDescriptionText(),
-            BuildToolTipCostText(skillInfo));
+            costText,
+            costMoneyType);
 
         toolTipInstance.Show();
         Vector2 toolTipSize = toolTipInstance.GetSize();
@@ -341,6 +346,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         float y = nodeCenter.y;
 
         toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
+
+        if (shouldPlayShowMotion)
+            toolTipInstance.PlayShowMotion();
     }
 
     // 상위 스킬 시스템에서 툴팁에 필요한 레벨/비용 정보를 가져온다.
@@ -376,6 +384,20 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return "무료";
 
         return $"{_skillInfo.nextCost} {_skillInfo.moneyType}";
+    }
+
+    private string BuildToolTipCostText(SkillInfo _skillInfo, out MoneyType _costMoneyType)
+    {
+        _costMoneyType = MoneyType.None;
+
+        if (_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel)
+            return BuildToolTipCostText(_skillInfo);
+
+        if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
+            return BuildToolTipCostText(_skillInfo);
+
+        _costMoneyType = _skillInfo.moneyType;
+        return _skillInfo.nextCost.ToString();
     }
 
     // 현재 노드에 대한 툴팁을 숨긴다.
