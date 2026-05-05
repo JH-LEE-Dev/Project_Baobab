@@ -13,6 +13,8 @@ public class EnvironmentInteractionManager : MonoBehaviour
     [SerializeField] private LayerMask treeLayer;
     [SerializeField] private float fadeDuration = 0.3f;
     [SerializeField] private float shadowFadeDuration = 0.1f;
+    [SerializeField] private float shadowOffsetMinScale = 0.6f; // 그림자 스케일이 최소일 때 Offset이 줄어드는 비율
+    [SerializeField] private float shadowLengthDamping = 0.8f; // 그림자 장축 스케일이 줄어드는 정도를 완화하는 비율 (1: 그대로, 0: 항상 1)
 
     // 내부 상태 (최적화: HashSet 사용으로 중복 체크 O(1) 달성)
     private readonly List<IStaticCollidable> nearbyCollidables = new List<IStaticCollidable>(16);
@@ -123,8 +125,9 @@ public class EnvironmentInteractionManager : MonoBehaviour
     private void UpdateUnitShadowColor()
     {
         var _shadowData = environmentProvider.shadowDataProvider;
-        Quaternion _invShadowRot = Quaternion.Inverse(_shadowData.CurrentShadowRotation);
-        float _shadowScaleY = _shadowData.CurrentShadowScaleY * 1.5f; // 미리 계산
+        // CurrentShadowAngle을 사용하여 Inverse 처리 (Z축 90도 회전 보정 포함)
+        Quaternion _invShadowRot = Quaternion.Inverse(Quaternion.Euler(0, 0, _shadowData.CurrentShadowAngle + 90f));
+        float _shadowScaleY = _shadowData.CurrentShadowScaleY; // 미리 계산
 
         // 1. 캐릭터 체크
         CheckUnitShadow(character, _invShadowRot, _shadowScaleY);
@@ -183,24 +186,33 @@ public class EnvironmentInteractionManager : MonoBehaviour
 
     private bool IsUnderTreeShadow(Vector2 _unitPos, TreeObj _tree, Quaternion _invShadowRot, float _shadowScaleY)
     {
+        // 1. 장축 배율 보정 (원형인 1.0을 기준으로 덜 줄어들고 덜 늘어나게 함)
+        float _baseScaleY = _shadowScaleY * 3.0f;
+        float _effectiveScaleY = Mathf.Lerp(1.0f, _baseScaleY, shadowLengthDamping);
+
+        var _shadowData = environmentProvider.shadowDataProvider;
         Vector2 _treePos = _tree.transform.position;
         float _radius = _tree.TopShadowRadius;
         if (_radius <= 0) return false;
 
         // 최적화 1: 조기 종료 (그림자의 최대 길이보다 멀리 있으면 연산 건너뜀)
-        float _maxRange = _radius * Mathf.Max(1.0f, _shadowScaleY * 1.5f) + 0.5f;
+        float _maxRange = _radius * Mathf.Max(1.0f, _effectiveScaleY) + 0.5f;
         if (Vector2.SqrMagnitude(_unitPos - _treePos) > (_maxRange * _maxRange)) return false;
 
         // 2. 로컬 좌표계 변환
         Vector2 _localPos = _invShadowRot * (_unitPos - _treePos);
 
-        // 3. 중심점 보정
-        float _dx = _localPos.x - _tree.TopShadowOffset.x;
-        float _dy = _localPos.y - _tree.TopShadowOffset.y;
+        // 3. 중심점(Offset) 동적 보정
+        // ScaleY가 Max일 때가 기본 Offset이며, ScaleY가 작아질수록 Offset도 shadowOffsetMinScale 범위까지 줄어듭니다.
+        float _scaleFactor = Mathf.InverseLerp(_shadowData.minHeightScale, _shadowData.maxHeightScale, _shadowData.CurrentShadowScaleY);
+        float _offsetMultiplier = Mathf.Lerp(shadowOffsetMinScale, 1.0f, _scaleFactor);
+        Vector2 _dynamicOffset = _tree.TopShadowOffset * _offsetMultiplier;
+
+        float _dx = _localPos.x - _dynamicOffset.x;
+        float _dy = _localPos.y - _dynamicOffset.y;
 
         // 4. 타원 판정 (나눗셈 제거 최적화)
-        // (dx/rx)^2 + (dy/ry)^2 <= 1  =>  (dx*ry)^2 + (dy*rx)^2 <= (rx*ry)^2
-        float _ry = _radius * _shadowScaleY * 1.5f;
+        float _ry = _radius * _effectiveScaleY;
         float _term1 = _dx * _ry;
         float _term2 = _dy * _radius;
 

@@ -15,8 +15,9 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     [SerializeField] private float dayCycleSpeed;
     [SerializeField] private float minHeightScale;
     [SerializeField] private float maxHeightScale;
-    [SerializeField] private Material _shadowMaterial;
-    [SerializeField] private Color _shadowColor = new Color(0, 0, 0, 0.5f);
+    [SerializeField] private Material shadowMaterial;
+    [SerializeField] private Material buildingShadowMaterial;
+    [SerializeField] private Color shadowColor = new Color(0, 0, 0, 0.5f);
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     [Header("Light Settings")]
@@ -26,10 +27,12 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
     // 중앙 계산 결과 저장을 위한 프로퍼티
     public Quaternion CurrentShadowRotation => _currentShadowRotation;
+    public float CurrentShadowAngle => _currentShadowAngle;
     public float CurrentShadowScaleY => _currentShadowScaleY;
     public bool IsShadowActive => _isShadowActive; // 추가
 
     private Quaternion _currentShadowRotation;
+    private float _currentShadowAngle;
     private float _currentShadowScaleY;
     private bool _isShadowActive; // 추가
 
@@ -97,27 +100,38 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     private void UpdateShadows(float _timePercent)
     {
         // 1. 중앙화된 그림자 연산 (모든 Shadow 객체가 공유)
-        float timeAngle = _timePercent * Mathf.PI * 2f;
-        _currentShadowRotation = Quaternion.Euler(0, 0, timeAngle * Mathf.Rad2Deg);
+        // 아침 6시(0.25) -> 350도, 저녁 6시(0.75) -> 170도
+        // Mathf.Repeat을 사용하여 0~360 범위를 부드럽게 순환시킴 (각도 점프 방지)
+        _currentShadowAngle = Mathf.Repeat(350f - (_timePercent - 0.25f) * 360f, 360f);
+        _currentShadowRotation = Quaternion.Euler(0, 0, _currentShadowAngle);
 
-        float heightFactor = Mathf.Abs(Mathf.Sin(timeAngle));
+        // 그림자 길이 연산: Mathf.Abs 대신 Sin^2을 사용하여 0 지점에서 부드러운 감가속 구현
+        float timeAngle = _timePercent * Mathf.PI * 2f;
+        float sinValue = Mathf.Sin(timeAngle);
+        float heightFactor = sinValue * sinValue; 
         _currentShadowScaleY = Mathf.Lerp(minHeightScale, maxHeightScale, heightFactor);
 
         // 2. 머티리얼 알파 페이드 로직
-        if (_shadowMaterial == null) return;
-
         // 알파 페이드 로직 (0.20 ~ 0.30 일출 페이드 인, 0.70 ~ 0.80 일몰 페이드 아웃)
         float fadeIn = Mathf.InverseLerp(0.20f, 0.30f, _timePercent);
         float fadeOut = 1f - Mathf.InverseLerp(0.70f, 0.80f, _timePercent);
         float finalAlphaMultiplier = fadeIn * fadeOut;
 
         // 그림자 활성화 여부 (알파가 0보다 크면 활성)
-        _isShadowActive = finalAlphaMultiplier > 0.4f;
+        _isShadowActive = finalAlphaMultiplier > 0.1f;
 
-        Color targetColor = _shadowColor;
+        Color targetColor = shadowColor;
         targetColor.a *= finalAlphaMultiplier;
 
-        _shadowMaterial.SetColor(BaseColorId, targetColor);
+        if (shadowMaterial != null)
+        {
+            shadowMaterial.SetColor(BaseColorId, targetColor);
+        }
+
+        if (buildingShadowMaterial != null)
+        {
+            buildingShadowMaterial.SetColor(BaseColorId, targetColor);
+        }
     }
 
     private void UpdateLights(float _timePercent)

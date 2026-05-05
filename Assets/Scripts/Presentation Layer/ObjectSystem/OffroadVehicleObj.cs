@@ -16,8 +16,8 @@ public class OffroadVehicleObj : MonoBehaviour
 
     private bool bCanJump = false;
 
-    [SerializeField] private OffsetShadow baseShadow;
-    [SerializeField] private OffsetShadow wheelShadow;
+    [SerializeField] private RaymarchingShadow baseShadow;
+    [SerializeField] private RaymarchingShadow wheelShadow;
 
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider)
@@ -27,6 +27,12 @@ public class OffroadVehicleObj : MonoBehaviour
         characterLayer = LayerMask.NameToLayer("Character");
 
         lastActivatedTime = Time.time;
+
+        if (baseShadow != null)
+            baseShadow.Initialize();
+
+        if(wheelShadow != null)
+            wheelShadow.Initialize();
     }
 
     private void Update()
@@ -35,15 +41,15 @@ public class OffroadVehicleObj : MonoBehaviour
         UpdateShadow(wheelShadow);
     }
 
-    private void UpdateShadow(OffsetShadow shadow)
+    private void UpdateShadow(RaymarchingShadow shadow)
     {
         if (shadow == null)
         {
             return;
         }
 
-        shadow.ManualUpdate(
-            environmentProvider.shadowDataProvider.CurrentShadowRotation,
+       shadow.ManualUpdate(
+            environmentProvider.shadowDataProvider.CurrentShadowAngle,
             environmentProvider.shadowDataProvider.CurrentShadowScaleY,
             environmentProvider.shadowDataProvider.IsShadowActive
         );
@@ -59,7 +65,7 @@ public class OffroadVehicleObj : MonoBehaviour
     {
         if (bCanJump == false)
             return;
-            
+
         // 캐릭터 레이어인지 확인 및 쿨타임 체크
         if (_other.gameObject.layer == characterLayer && Time.time >= lastActivatedTime + cooldownTime)
         {

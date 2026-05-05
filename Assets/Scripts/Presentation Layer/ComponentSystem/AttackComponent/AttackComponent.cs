@@ -350,4 +350,12 @@ public class AttackComponent : PComponent
     {
         bCanSwap = _boolean;
     }
+
+    public void ResetAttackComponent()
+    {
+        currentWeaponMode = WeaponMode.Axe;
+
+        SetbCanSwap(false);
+        SetbAttack(false);
+    }
 }

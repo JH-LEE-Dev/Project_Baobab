@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable
@@ -181,9 +180,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             bWhileSwing = false;
             healthComponent.StaminaReset();
             statComponent.ResetSpeed();
-            attackComponent.SetbAttack(false);
             bCanRotate = true;
-            attackComponent.SetbCanSwap(false);
+            attackComponent.ResetAttackComponent();
         }
         else
         {
@@ -355,9 +353,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (shadowObject != null)
         {
             shadowObject.ManualUpdate(
-                environmentProvider.shadowDataProvider.CurrentShadowRotation,
+                environmentProvider.shadowDataProvider.CurrentShadowAngle,
                 environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-                false);
+                environmentProvider.shadowDataProvider.IsShadowActive);
         }
 
         // 스태미나 로직
