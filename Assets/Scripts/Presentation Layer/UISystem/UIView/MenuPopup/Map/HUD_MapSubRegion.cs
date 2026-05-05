@@ -14,11 +14,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //외부 의존성
         [Header("UI References")]
         [SerializeField] private CustomNumberDisplay numberDisplay; // 숫자 표시 컴포넌트
+        [SerializeField] private GameObject lockObject;             // 잠금 시 활성화될 오브젝트
+        [SerializeField] private GameObject unlockObject;           // 해제 시 활성화될 오브젝트
 
         // //내부 의존성
         private RectTransform rect;
         private int regionNumber = 0;
         private bool isSelected = false;
+        private bool isLocked = false;
         private bool isInitialized = false;
 
         private Action<RectTransform> onHoverEvent; // 커서 이동용
@@ -54,7 +57,30 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
 
             SetSelect(false);
+            SetLock(true);
             isInitialized = true;
+        }
+
+        /// <summary>
+        /// 잠금 상태를 설정합니다.
+        /// </summary>
+        public void SetLock(bool _isLock)
+        {
+            isLocked = _isLock;
+
+            if (null != lockObject)
+                lockObject.SetActive(isLocked);
+
+            if (null != unlockObject)
+                unlockObject.SetActive(false == isLocked);
+        }
+
+        /// <summary>
+        /// 현재 잠금 여부를 반환합니다.
+        /// </summary>
+        public bool IsLocked()
+        {
+            return isLocked;
         }
 
         /// <summary>
@@ -107,12 +133,18 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
+            if (true == isLocked)
+                return;
+
             // 마우스가 진입하면 커서 이동을 위해 자신의 RectTransform을 전달
             onHoverEvent?.Invoke(GetRectTransform());
         }
 
         public void OnPointerClick(PointerEventData _eventData)
         {
+            if (true == isLocked)
+                return;
+
             // 클릭 시 최종 선택된 지역 번호를 전달
             onSelectEvent?.Invoke(regionNumber);
         }
