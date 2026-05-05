@@ -93,13 +93,5 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             // _subNumber가 1부터 시작하므로 (_subNumber - 1)을 더함
             return (MapType)((int)_baseType + (_subNumber - 1));
         }
-
-        // //유니티 이벤트 함수
-
-        private void Awake()
-        {
-            if (false == isInitialized)
-                Initialize();
-        }
     }
 }
