@@ -118,7 +118,12 @@ public class UIView_HUD : UIView
 
     public override void Refresh()
     {
-        hudEquipment?.UpdateRifleVisibility();
+        if (null != hudEquipment)
+        {
+            hudEquipment.UpdateRifleVisibility();
+            hudEquipment.UpdateAmmo();
+            hudEquipment.UpdateAxeDurability();
+        }
     }
 
     public void SetCurrentMapType(MapType _currentMapType)

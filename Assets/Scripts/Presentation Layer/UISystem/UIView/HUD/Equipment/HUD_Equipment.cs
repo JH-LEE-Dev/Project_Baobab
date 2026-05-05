@@ -99,7 +99,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 rifleItem.UpdateAmmo(rifleComponent.mag, statComponent.magCap, rifleComponent.ammo);   
         }
 
-        private void UpdateAxeDurability()
+        public void UpdateAxeDurability()
         {
             if (null == character)
                 return;
