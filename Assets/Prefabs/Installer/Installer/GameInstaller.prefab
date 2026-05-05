@@ -219,6 +219,16 @@ MonoBehaviour:
       probability: 100
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+  logDropCntDatas:
+  - treeType: 1
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 2
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 3
+    minCnt: 2
+    maxCnt: 3
   cullingUpdateInterval: 0.05
 --- !u!1 &2442542787030155420
 GameObject:

@@ -24,7 +24,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
-    
+
     private bool bIsUnderShadow = false;
     private float shadowLerp = 0f;
     private float currentFadeDuration = 0.3f;
@@ -77,6 +77,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public IHealthComponent health => healthComponent;
     public AnimalType animalType;
 
+    public GameObject statusEffectObject;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -103,6 +105,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         SetupStateMachine();
 
         animalAnimValueHandler.Initialize(anim);
+
+        if (statusEffectObject != null)
+            statusEffectObject.SetActive(false);
     }
 
     public void Hide()
@@ -278,7 +283,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     {
         healthComponent.DecreaseHealth(_damage);
         AnimalHitEvent?.Invoke(this);
-        
+
         if (healthComponent.GetCurrentHealth() == 0f)
         {
             stateMachine.ChangeState<AS_DeadState>();
@@ -315,7 +320,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         detectedCharacterPos = _characterPos;
     }
 
-    public void KnockBack(Vector2 _knockBackDir,float _knockBackForce)
+    public void KnockBack(Vector2 _knockBackDir, float _knockBackForce)
     {
         if (bDead) return;
 

@@ -8,9 +8,10 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     public event Action<Item> LogItemAcquiredEvent;
 
     // 외부 의존성
-    [SerializeField] private List<LogDropData> logProbDatas;
+    [SerializeField] private List<LogDropProbData> logProbDatas;
     [SerializeField] private LogItem logItemPrefab;
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
+    [SerializeField] private List<LogDropCntData> logDropCntDatas;
 
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
@@ -174,15 +175,16 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     public void SpawnLogItem(TreeObj _treeObj)
     {
         TreeData treeData = _treeObj.treeData;
-        LogDropData dropData = GetDropData(treeData.grade);
+        LogDropProbData dropProbData = GetDropProbData(treeData.grade);
 
-        if (dropData.probDatas == null || dropData.probDatas.Count == 0) return;
+        if (dropProbData.probDatas == null || dropProbData.probDatas.Count == 0) return;
 
-        int spawnCount = UnityEngine.Random.Range(2, 4); 
+        LogDropCntData dropCntData = GetDropCntData(treeData.type);
+        int spawnCount = UnityEngine.Random.Range(dropCntData.minCnt, dropCntData.maxCnt + 1);
 
         for (int i = 0; i < spawnCount; i++)
         {
-            LogState logType = GetRandomLogState(dropData);
+            LogState logType = GetRandomLogState(dropProbData);
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = _treeObj.transform.position;
@@ -202,7 +204,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         }
     }
 
-    private LogDropData GetDropData(TreeGrade _grade)
+    private LogDropProbData GetDropProbData(TreeGrade _grade)
     {
         for (int i = 0; i < logProbDatas.Count; i++)
         {
@@ -214,7 +216,21 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         return default;
     }
 
-    private LogState GetRandomLogState(LogDropData _data)
+    private LogDropCntData GetDropCntData(TreeType _type)
+    {
+        for (int i = 0; i < logDropCntDatas.Count; i++)
+        {
+            if (logDropCntDatas[i].treeType == _type)
+            {
+                return logDropCntDatas[i];
+            }
+        }
+
+        // 기본값 반환 (데이터가 없을 경우)
+        return new LogDropCntData { treeType = _type, minCnt = 2, maxCnt = 4 };
+    }
+
+    private LogState GetRandomLogState(LogDropProbData _data)
     {
         float totalProb = 0;
         for (int i = 0; i < _data.probDatas.Count; i++)
@@ -302,13 +318,13 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     {
         return new LogDropProbSaveData
         {
-            logProbDatas = new List<LogDropData>(logProbDatas)
+            logProbDatas = new List<LogDropProbData>(logProbDatas)
         };
     }
 
     public void LoadSaveData(LogDropProbSaveData _data)
     {
         if (_data.logProbDatas == null) return;
-        logProbDatas = new List<LogDropData>(_data.logProbDatas);
+        logProbDatas = new List<LogDropProbData>(_data.logProbDatas);
     }
     }
