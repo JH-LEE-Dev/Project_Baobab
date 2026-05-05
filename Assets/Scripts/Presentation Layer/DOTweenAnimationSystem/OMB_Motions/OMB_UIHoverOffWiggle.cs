@@ -9,7 +9,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
         public class ValueSettings
         {
             [Header("Rotation Settings")]
-            public float startAngle = 20f;
+            public float startAngle = 12f;
             public float angleDamping = 0.62f;
             public int swingCount = 5;
             [Range(0f, 1f)] public float rotationTimeRatio = 1f;
@@ -18,6 +18,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         [Header("Value Settings")]
         [SerializeField] private ValueSettings valueSettings = new ValueSettings();
+
+        private void Reset()
+        {
+            forwardDuration = 0.7f;
+            forwardDelay = 0f;
+            forwardEase = Ease.Unset;
+            backwardDuration = 0.5f;
+            backwardDelay = 0f;
+            backwardEase = Ease.Unset;
+            resetOnValidateInPlayMode = true;
+            valueSettings = new ValueSettings();
+        }
 
         protected override void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase)
         {

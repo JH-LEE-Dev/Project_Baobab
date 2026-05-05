@@ -9,15 +9,27 @@ namespace PresentationLayer.DOTweenAnimationSystem
         public class ValueSettings
         {
             [Header("Position Settings")]
-            public float startOffsetX = 6f;
-            public float offsetDamping = 0.58f;
+            public float startOffsetX = 4f;
+            public float offsetDamping = 0.4f;
             public int shakeCount = 6;
-            [Range(0f, 1f)] public float positionTimeRatio = 0.78f;
+            [Range(0f, 1f)] public float positionTimeRatio = 0.713f;
             public Ease positionEase = Ease.OutSine;
         }
 
         [Header("Value Settings")]
         [SerializeField] private ValueSettings valueSettings = new ValueSettings();
+
+        private void Reset()
+        {
+            forwardDuration = 0.7f;
+            forwardDelay = 0f;
+            forwardEase = Ease.Unset;
+            backwardDuration = 0.5f;
+            backwardDelay = 0f;
+            backwardEase = Ease.Unset;
+            resetOnValidateInPlayMode = true;
+            valueSettings = new ValueSettings();
+        }
 
         protected override void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase)
         {

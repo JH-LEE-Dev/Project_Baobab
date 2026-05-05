@@ -10,13 +10,13 @@ namespace PresentationLayer.DOTweenAnimationSystem
         public class ValueSettings
         {
             [Header("Scale Settings")]
-            public Vector2 squashScale = new Vector2(1.24f, 0.74f);
-            public Vector2 recoilScale = new Vector2(0.88f, 1.08f);
-            [Range(1, 5)] public int bounceCount = 3;
-            [Range(0f, 1f)] public float bounceDamping = 0.55f;
-            [Range(0f, 1f)] public float squashTimeRatio = 0.28f;
-            [Range(0f, 1f)] public float recoilTimeRatio = 0.32f;
-            [Range(0f, 1f)] public float restoreTimeRatio = 0.12f;
+            public Vector2 squashScale = new Vector2(1.4f, 0.7f);
+            public Vector2 recoilScale = new Vector2(0.8f, 1.3f);
+            [Range(1, 5)] public int bounceCount = 2;
+            [Range(0f, 1f)] public float bounceDamping = 0.25f;
+            [Range(0f, 1f)] public float squashTimeRatio = 0.15f;
+            [Range(0f, 1f)] public float recoilTimeRatio = 0.2f;
+            [Range(0f, 1f)] public float restoreTimeRatio = 0.4f;
             public Ease squashEase = Ease.OutQuad;
             public Ease restoreEase = Ease.OutBack;
 
@@ -29,6 +29,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         [Header("Value Settings")]
         [SerializeField] private ValueSettings valueSettings = new ValueSettings();
+
+        private void Reset()
+        {
+            forwardDuration = 0.45f;
+            forwardDelay = 0f;
+            forwardEase = Ease.Unset;
+            backwardDuration = 0.5f;
+            backwardDelay = 0f;
+            backwardEase = Ease.Unset;
+            resetOnValidateInPlayMode = true;
+            valueSettings = new ValueSettings();
+        }
 
         protected override void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase)
         {

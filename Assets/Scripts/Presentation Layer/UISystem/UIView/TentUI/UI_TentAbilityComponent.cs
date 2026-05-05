@@ -38,7 +38,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private bool lineLayoutDirty;
     private bool toolTipLayoutDirty;
     private AbilityNode currentToolTipNode;
+    private AbilityNode currentCursorNode;
     private AbilityToolTip toolTipInstance;
+    private UISelectionCursor selectionCursorInstance;
 
     [Header("UI References")]
     [SerializeField] private RectTransform abilityBackground;
@@ -58,6 +60,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private AbilityToolTip toolTipPrefab;
     [SerializeField] private RectTransform toolTipParent;
 
+    [Header("Selection Cursor Setup")]
+    [SerializeField] private UISelectionCursor selectionCursorPrefab;
+    [SerializeField] private RectTransform selectionCursorParent;
+    [SerializeField] private Vector2 selectionCursorSize = new Vector2(40f, 40f);
+
 
 
 #region Initializing
@@ -72,6 +79,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         LoadNodeDefinitions();
         PrewarmNodePool();
         EnsureToolTipInstance();
+        EnsureSelectionCursorInstance();
         Close();
     }
 
@@ -142,6 +150,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
 
         toolTipInstance.HideImmediately();
+    }
+
+    private void EnsureSelectionCursorInstance()
+    {
+        if (selectionCursorInstance != null || selectionCursorPrefab == null || moveTarget == null)
+            return;
+
+        RectTransform parent = selectionCursorParent != null ? selectionCursorParent : moveTarget;
+        selectionCursorInstance = Instantiate(selectionCursorPrefab, parent);
+        selectionCursorInstance.Initialize(selectionCursorSize);
     }
 
 
@@ -268,9 +286,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
         isDragging = false;
         hasZoomFocus = false;
         currentToolTipNode = null;
+        currentCursorNode = null;
 
         if (toolTipInstance != null)
             toolTipInstance.HideImmediately();
+
+        if (selectionCursorInstance != null)
+            selectionCursorInstance.Hide();
 
         if (abilityBackground != null)
             abilityBackground.gameObject.SetActive(false);
@@ -285,6 +307,36 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         if (currentToolTipNode != null)
             ShowToolTip(currentToolTipNode);
+    }
+
+
+#endregion
+
+
+#region Selection Cursor
+
+    public void ShowSelectionCursor(AbilityNode _node)
+    {
+        if (_node == null)
+            return;
+
+        currentCursorNode = _node;
+        EnsureSelectionCursorInstance();
+        if (selectionCursorInstance == null)
+            return;
+
+        selectionCursorInstance.Show(_node.RectTransform);
+    }
+
+    public void HideSelectionCursor(AbilityNode _node)
+    {
+        if (currentCursorNode != null && _node != currentCursorNode)
+            return;
+
+        currentCursorNode = null;
+
+        if (selectionCursorInstance != null)
+            selectionCursorInstance.Hide();
     }
 
 
@@ -731,6 +783,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             if (isVisible == false && currentToolTipNode == node)
                 HideToolTip(node);
+
+            if (isVisible == false && currentCursorNode == node)
+                HideSelectionCursor(node);
         }
 
         RefreshLines();

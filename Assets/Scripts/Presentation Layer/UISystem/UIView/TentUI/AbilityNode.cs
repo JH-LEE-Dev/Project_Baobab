@@ -200,6 +200,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         isPointerHovering = true;
+        owner?.ShowSelectionCursor(this);
         owner?.ShowToolTip(this);
         PlayHoverMotion();
     }
@@ -327,6 +328,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         isPointerHovering = false;
+        owner?.HideSelectionCursor(this);
         owner?.HideToolTip(this);
         PlayUnHoverMotion();
     }
