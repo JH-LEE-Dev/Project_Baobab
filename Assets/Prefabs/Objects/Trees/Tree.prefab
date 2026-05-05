@@ -81,8 +81,8 @@ SpriteRenderer:
   m_SortingLayer: 5
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
-  m_Color: {r: 0.44546193, g: 0.37299505, b: 0.1406433, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
+  m_Color: {r: 0.4698139, g: 0.35253102, b: 0.17112012, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -173,8 +173,8 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
-  m_Color: {r: 0.44546193, g: 0.37299505, b: 0.1406433, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
+  m_Color: {r: 0.4698139, g: 0.35253102, b: 0.17112012, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -223,7 +223,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.0049765, y: 1.0049765, z: 1}
+  m_LocalScale: {x: 1.017852, y: 1.017852, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 679678065870439302}
@@ -432,8 +432,8 @@ SpriteRenderer:
   m_SortingLayer: 5
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
-  m_Color: {r: 0.17537543, g: 0.6982165, b: 0.21370904, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 0baebf858c2dac64e8099fe5f5f793cc, type: 3}
+  m_Color: {r: 0.34109062, g: 0.856325, b: 0.41827992, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -524,8 +524,8 @@ SpriteRenderer:
   m_SortingLayer: 3
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
-  m_Color: {r: 0.17537543, g: 0.6982165, b: 0.21370904, a: 1}
+  m_Sprite: {fileID: 21300000, guid: 0baebf858c2dac64e8099fe5f5f793cc, type: 3}
+  m_Color: {r: 0.34109062, g: 0.856325, b: 0.41827992, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0

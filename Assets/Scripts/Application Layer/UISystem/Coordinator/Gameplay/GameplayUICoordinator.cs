@@ -55,6 +55,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<DecalreDungeonTypeSignal>(DungeonStarted);
         signalHub.Subscribe<AnimalHitSignal>(AnimalHit);
+        signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
     }
 
     private void UnSubscribeSignals()
@@ -74,6 +75,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(DungeonStarted);
         signalHub.UnSubscribe<AnimalHitSignal>(AnimalHit);
+        signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
     }
 
     private void BindEvents()
@@ -287,5 +289,12 @@ public class GameplayUICoordinator
     private void AnimalHit(AnimalHitSignal animalHitSignal)
     {
         unitUI.AnimalGetHit(animalHitSignal.animal);
+    }
+
+    private void SkillDispatched(SkillDispatchedSignal skillDispatchedSignal)
+    {
+        hudUI.Refresh();
+        popUpUI.Refresh();
+        worldPopupUI.Refresh();
     }
 }
