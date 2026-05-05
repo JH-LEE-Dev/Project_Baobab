@@ -81,4 +81,9 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     {
         CharacterStaminaIsEmptyEvent?.Invoke();
     }
+
+    public void RefreshCharacter()
+    {
+        character.RefreshCharacterStat();
+    }
 }

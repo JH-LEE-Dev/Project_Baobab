@@ -358,4 +358,9 @@ public class AttackComponent : PComponent
         SetbCanSwap(false);
         SetbAttack(false);
     }
+
+    public void Refresh()
+    {
+        
+    }
 }

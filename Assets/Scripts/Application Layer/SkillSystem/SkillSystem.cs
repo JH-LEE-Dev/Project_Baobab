@@ -33,6 +33,6 @@ public class SkillSystem
     private void SkillDispatched(SkillDispatchInfo _skillDispatchInfo)
     {
         skillDispatcher.DispatchCommand(_skillDispatchInfo);
-        signalHub.Publish(new SkillDispatchedSignal(_skillDispatchInfo));
+        signalHub.Publish(new SkillDispatchedSignal());
     }
 }

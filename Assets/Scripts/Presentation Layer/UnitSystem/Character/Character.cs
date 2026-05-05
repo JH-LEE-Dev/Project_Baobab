@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable
@@ -408,4 +409,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     }
 
     #endregion
+
+    public void RefreshCharacterStat()
+    {
+        armComponent.Refresh();
+    }
 }

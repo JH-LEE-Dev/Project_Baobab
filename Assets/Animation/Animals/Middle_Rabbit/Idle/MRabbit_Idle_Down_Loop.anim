@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Rabbit_Idle_Down_Loop
+  m_Name: MRabbit_Idle_Down_Loop
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -21,15 +21,15 @@ AnimationClip:
   - serializedVersion: 2
     curve:
     - time: 0
-      value: {fileID: 5400607245196206213, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
+      value: {fileID: -4929830542987322254, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
     - time: 0.2
-      value: {fileID: 1480691297606386592, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
+      value: {fileID: 1491490321163775006, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
     - time: 0.4
-      value: {fileID: 8923795495639259753, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
+      value: {fileID: -3419686949184159408, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
     - time: 0.6
-      value: {fileID: -1374320261301327265, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
+      value: {fileID: -5631639052312957834, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
     - time: 0.8
-      value: {fileID: 5400607245196206213, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
+      value: {fileID: -7976748807784899727, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
     attribute: m_Sprite
     path: 
     classID: 212
@@ -52,11 +52,11 @@ AnimationClip:
       isIntCurve: 0
       isSerializeReferenceCurve: 0
     pptrCurveMapping:
-    - {fileID: 5400607245196206213, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
-    - {fileID: 1480691297606386592, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
-    - {fileID: 8923795495639259753, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
-    - {fileID: -1374320261301327265, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
-    - {fileID: 5400607245196206213, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
+    - {fileID: -4929830542987322254, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
+    - {fileID: 1491490321163775006, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
+    - {fileID: -3419686949184159408, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
+    - {fileID: -5631639052312957834, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
+    - {fileID: -7976748807784899727, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
   m_AnimationClipSettings:
     serializedVersion: 2
     m_AdditiveReferencePoseClip: {fileID: 0}
@@ -81,11 +81,4 @@ AnimationClip:
   m_EulerEditorCurves: []
   m_HasGenericRootTransform: 0
   m_HasMotionFloatCurves: 0
-  m_Events:
-  - time: 0.8
-    functionName: IdleEnd
-    data: 
-    objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
-    intParameter: 0
-    messageOptions: 0
+  m_Events: []

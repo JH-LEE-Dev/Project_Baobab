@@ -441,4 +441,10 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             anim.SetBool(bReadyHash, false);
         }
     }
+
+    public void Refresh()
+    {
+        ammo = ctx.characterStat.ammoCap;
+        mag = ctx.characterStat.magCap;
+    }
 }
