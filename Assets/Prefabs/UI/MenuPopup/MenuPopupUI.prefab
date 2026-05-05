@@ -51,6 +51,4 @@ MonoBehaviour:
   layer: 2
   startHidden: 1
   bWorld: 0
-  zoneSelectorPrefab: {fileID: 6864007749244804662, guid: de8599146158acf4891d136e378244db, type: 3}
-  zoneInfoPrefab: {fileID: 5990094345817029606, guid: b5961a862ae014640834d1648dc94d2b, type: 3}
-  zoneDatabase: {fileID: 11400000, guid: 886824008df45914eb24a26b66de6186, type: 2}
+  mapSelectorPrefab: {fileID: 2420857969200121288, guid: 2f6a82479ef7f9045a4d2ff694565279, type: 3}

@@ -2,6 +2,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using PresentationLayer.DOTweenAnimationSystem;
+using UnityEngine.EventSystems;
+using System;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
@@ -19,6 +21,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private Image[] treeImages;        // 나무 이미지 2개
         [SerializeField] private Image animalImage;         // 동물 이미지 1개
 
+        [Header("State Visuals")]
+        [SerializeField] private GameObject lockObject;     // 잠금 시 활성화될 오브젝트
+        [SerializeField] private GameObject unlockObject;   // 해제 시 활성화될 오브젝트
+
         [Header("Text")]
         [SerializeField] private TextMeshProUGUI mapNameText; // 맵 이름 TMP
 
@@ -28,6 +34,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private MapType currentMapType;
         private string currentMapName = string.Empty;
+        private bool isLocked = false;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
@@ -59,6 +66,28 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             if (null != mapNameText)
                 mapNameText.text = currentMapName;
+        }
+
+        /// <summary>
+        /// 잠금 상태를 설정합니다.
+        /// </summary>
+        public void SetLock(bool _isLock)
+        {
+            isLocked = _isLock;
+
+            if (null != lockObject)
+                lockObject.SetActive(isLocked);
+
+            if (null != unlockObject)
+                unlockObject.SetActive(false == isLocked);
+        }
+
+        /// <summary>
+        /// 현재 잠금 여부를 반환합니다.
+        /// </summary>
+        public bool IsLocked()
+        {
+            return isLocked;
         }
 
         /// <summary>
