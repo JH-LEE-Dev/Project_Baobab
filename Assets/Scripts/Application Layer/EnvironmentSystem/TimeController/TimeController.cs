@@ -6,7 +6,7 @@ public class TimeController : MonoBehaviour, ITimeDataProvider
     private const float minutesInDay = 1440f;
     private const float timeMultiplier = 5;
     private float currentMinutes;
-    private bool isDay;
+    public bool isDay { get; private set; }
     private bool bInitialized = false;
 
     //공개 인터페이스 구현    

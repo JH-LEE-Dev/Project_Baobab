@@ -19,9 +19,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     //내부 의존성
     private TileMapGenerator tileMapGenerator;
     private LightingController lightingController;
-    private TimeController timeController;
+    public TimeController timeController { get; private set; }
     private GroundDataManager groundDataManager;
-    private WeatherManager weatherManager;
+    public WeatherManager weatherManager { get; private set; }
     private PathfindGridManager pathfindGridManager;
     public DensityManager densityManager { get; private set; }
     public EnvironmentInteractionManager environmentInteractionManager { get; private set; }
@@ -138,8 +138,8 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         lightingController.WeatherChanged(_weatherType);
     }
 
-    public void SetupForMapType(MapType _mapType)
+    public void SetupForMapType(ForestType _forestType, MapType _mapType)
     {
-        densityManager.SetDensityData(_mapType);
+        densityManager.SetDensityData(_forestType, _mapType);
     }
 }

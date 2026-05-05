@@ -12,6 +12,7 @@ public class InDungeonSystem : MonoBehaviour
     [SerializeField] private DungeonValueDataBase dungeonDataBase;
 
     private MapType currentMapType;
+    private ForestType currentForestType;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
     {
@@ -36,6 +37,9 @@ public class InDungeonSystem : MonoBehaviour
 
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
+        currentMapType = _sceneChangeData.mapType;
+        currentForestType = _sceneChangeData.forestType;
+
         signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType)));
         inDungeonObjectManager.SetDungeonData(dungeonDataBase.GetDungeonData(currentMapType));
         inDungeonObjectManager.SetupItemManagerCulling();
@@ -99,7 +103,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnAnimals();
         
-        signalHub.Publish(new DecalreDungeonTypeSignal(MapType.Forest1_1));
+        signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
     }
 
     private void ItemAcquired(Item _item)

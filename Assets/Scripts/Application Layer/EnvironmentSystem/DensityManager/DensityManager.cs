@@ -1,8 +1,9 @@
+using System.Collections.Generic;
 using UnityEngine;
 
-public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
+public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapDataProvider
 {
-    [SerializeField] private DensityDataBase densityDataBase;
+    [SerializeField] private MapDensityDataBase densityDataBase;
 
     private int grassTileCnt;
     private int walkableTilesCnt;
@@ -21,15 +22,40 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
     private MapType currentMapType;
     private DensityData currentDensityData;
 
+    private List<TreeType> mapTreeTypes = new List<TreeType>(8);
+    private List<AnimalType> mapAnimalTypes = new List<AnimalType>(8);
+
     public void Initialize()
     {
 
     }
 
-    public void SetDensityData(MapType _mapType)
+    public void SetDensityData(ForestType _forestType, MapType _mapType)
     {
         currentMapType = _mapType;
-        currentDensityData = densityDataBase.Get(_mapType);
+        currentDensityData = densityDataBase.Get(_mapType, _forestType);
+
+        mapTreeTypes.Clear();
+        mapAnimalTypes.Clear();
+
+        if (currentDensityData != null)
+        {
+            if (currentDensityData.spawnTreeTypes != null)
+            {
+                for (int i = 0; i < currentDensityData.spawnTreeTypes.Count; i++)
+                {
+                    mapTreeTypes.Add(currentDensityData.spawnTreeTypes[i].treeType);
+                }
+            }
+
+            if (currentDensityData.spawnAnimalTypes != null)
+            {
+                for (int i = 0; i < currentDensityData.spawnAnimalTypes.Count; i++)
+                {
+                    mapAnimalTypes.Add(currentDensityData.spawnAnimalTypes[i].animalType);
+                }
+            }
+        }
     }
 
     public float GetTreeRegenTime()
@@ -250,5 +276,20 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH
         }
 
         Debug.Log("[DensityManager] Environment Save Data Loaded.");
+    }
+
+    public IReadOnlyList<TreeType> GetMapTreeType()
+    {
+        return mapTreeTypes;
+    }
+
+    public IReadOnlyList<AnimalType> GetMapAnimalType()
+    {
+        return mapAnimalTypes;
+    }
+
+    public MapDensityDataBase GetMapDataBase()
+    {
+        return densityDataBase;
     }
 }

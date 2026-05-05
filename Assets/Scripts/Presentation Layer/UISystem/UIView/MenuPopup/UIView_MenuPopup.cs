@@ -4,7 +4,14 @@ using UnityEngine;
 
 public class UIView_MenuPopup : UIView
 {
-    public event Action<MapType> DungeonSelectedEvent;
+    public event Action<MapType, ForestType> DungeonSelectedEvent;
+
+    //외부 의존성
+    private IMapDataProvider mapDataProvider;
+    private IWeatherProvider weatherProvider;
+    private ITimeDataProvider timeDataProvider;
+
+    //내부 의존성
 
     [Header("Sub UI Prefabs")]
     [SerializeField] private GameObject zoneSelectorPrefab;
@@ -40,6 +47,13 @@ public class UIView_MenuPopup : UIView
         CloseTeleportUI();
     }
 
+    public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
+    {
+        weatherProvider = _weatherProvider;
+        timeDataProvider = _timeDataProvider;
+        mapDataProvider = _mapDataProvider;
+    }
+
     private void Init_ZoneInfo()
     {
         if (null != zoneInfoPrefab)
@@ -54,7 +68,7 @@ public class UIView_MenuPopup : UIView
     private void Init_ZoneSelector()
     {
         if (null != zoneSelectorPrefab)
-            zoneSelector = Instantiate(zoneSelectorPrefab, this.transform).GetComponent<UI_ZoneSelector>();    
+            zoneSelector = Instantiate(zoneSelectorPrefab, this.transform).GetComponent<UI_ZoneSelector>();
 
         if (null != zoneSelector)
         {
@@ -84,7 +98,7 @@ public class UIView_MenuPopup : UIView
     {
         Debug.Log($"[UIView_MenuPopup] Entering Dungeon: {_type}");
         // 통신 및 던전 진입 로직 배치
-        DungeonSelectedEvent?.Invoke(_type);
+        DungeonSelectedEvent?.Invoke(_type, ForestType.Vegetatedplains_1);
         CloseTeleportUI();
     }
 
@@ -108,7 +122,7 @@ public class UIView_MenuPopup : UIView
     {
         // 4. 특정 구역 해금 지시
         zoneSelector?.UnlockZone(_regionId, _zoneId);
-        
+
         // 5. 특정 지역 클리어 시 다음 지역 묶음 통째로 개방 (예: 지역 1을 2개의 구역으로 개방)
         // zoneSelector?.OpenRegion(_regionId + 1, 2);
     }

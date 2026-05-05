@@ -13,9 +13,11 @@ public struct DungeonReadySignal
 public struct DecalreDungeonTypeSignal
 {
     public MapType mapType;
-    public DecalreDungeonTypeSignal(MapType _mapType)
+    public ForestType forestType;
+    public DecalreDungeonTypeSignal(MapType _mapType, ForestType _forestType)
     {
         mapType = _mapType;
+        forestType = _forestType;
     }
 }
 

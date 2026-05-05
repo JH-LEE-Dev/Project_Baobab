@@ -3,7 +3,7 @@ using System.Collections.Generic;
 [System.Serializable]
 public class DensityData
 {
-    public MapType mapType;
+    public ForestType forestType;
     public List<TreeDensityData> spawnTreeTypes;
     public List<AnimalDensityData> spawnAnimalTypes;
     public float treeStartDensityRatio;
@@ -14,6 +14,13 @@ public class DensityData
     public float treeRegenMaxTime;
     public float animalRegenMinTime;
     public float animalRegenMaxTime;
+}
+
+[System.Serializable]
+public class MapDensityData
+{
+    public MapType mapType;
+    public List<DensityData> densityData;
 }
 
 [System.Serializable]

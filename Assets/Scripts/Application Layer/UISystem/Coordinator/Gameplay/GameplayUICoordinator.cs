@@ -206,9 +206,9 @@ public class GameplayUICoordinator
         menuPopupUI.TeleportUIOpen();
     }
 
-    private void DungeonSelected(MapType _type)
+    private void DungeonSelected(MapType _type,ForestType _forestType)
     {
-        signalHub.Publish(new DungeonSelectedSignal(_type));
+        signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
     }
 
     private void Sleep()
