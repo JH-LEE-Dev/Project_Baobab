@@ -56,5 +56,5 @@ MonoBehaviour:
   chargePrefab: {fileID: 5121283278471093161, guid: d8d9cf278813c2144b4cf893857907a4, type: 3}
   characterYOffset: 0.5
   treesYOffset: 1
-  animalsYOffset: 1
+  animalsYOffset: 0.35
   showCount: 1.5

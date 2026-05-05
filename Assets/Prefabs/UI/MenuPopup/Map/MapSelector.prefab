@@ -115,6 +115,7 @@ GameObject:
   - component: {fileID: 9082080251761978937}
   - component: {fileID: 1558271293068161108}
   - component: {fileID: 657234850766355873}
+  - component: {fileID: 1090126558119675184}
   m_Layer: 5
   m_Name: BTN_OK
   m_TagString: Untagged
@@ -179,6 +180,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1090126558119675184
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960944366084938687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d9e5c003608bcb4a90bff8a4f8657d1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.UIView.MenuPopup.Map.HUD_MapSelectButton
+  motionPlayer: {fileID: 0}
 --- !u!1 &2420857969200121288
 GameObject:
   m_ObjectHideFlags: 0
@@ -235,6 +249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_MapSelector
   subSelector: {fileID: 5421214289454330433}
   sunMoon: {fileID: 5192826426171166451}
+  selectButton: {fileID: 1090126558119675184}
   regionContainer: {fileID: 6358695605423527309}
   regionPrefab: {fileID: 5378699527577570030, guid: a79b591f980f19043b363b64099cb2e9, type: 3}
   snapSpeed: 10

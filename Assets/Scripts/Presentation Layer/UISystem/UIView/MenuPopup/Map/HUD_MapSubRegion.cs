@@ -16,6 +16,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private CustomNumberDisplay numberDisplay; // 숫자 표시 컴포넌트
         [SerializeField] private GameObject lockObject;             // 잠금 시 활성화될 오브젝트
         [SerializeField] private GameObject unlockObject;           // 해제 시 활성화될 오브젝트
+        [SerializeField] private HUD_ProgressBar progressBar;       // 진행도 표시 바
 
         // //내부 의존성
         private RectTransform rect;
@@ -56,9 +57,21 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 SetNumber(_number);
             }
 
+            if (null != progressBar)
+                progressBar.Initialize();
+
             SetSelect(false);
             SetLock(true);
             isInitialized = true;
+        }
+
+        /// <summary>
+        /// 진행도 값을 업데이트합니다.
+        /// </summary>
+        public void SetProgress(float _ratio)
+        {
+            if (null != progressBar)
+                progressBar.UpdateValue(_ratio);
         }
 
         /// <summary>

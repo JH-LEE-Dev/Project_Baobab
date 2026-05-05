@@ -1,24 +1,30 @@
 using System;
 using PresentationLayer.ObjectSystem;
+using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.Events;
 
 /// <summary>
-/// HUD에서 HP 바 등 캐릭터의 상태를 추적하며 표시하는 프로그레스 바입니다.
+/// HUD에서 캐릭터의 상태를 추적하며 표시하는 HP 바입니다.
+/// ObjectMotionPlayer를 통해 등장 및 퇴장 애니메이션을 처리하며 가시성을 제어합니다.
 /// </summary>
-public class HUD_HPBar : HUD_ProgressBar, IPoolable
+public class HUD_HPBar : HUD_ProgressBar
 {
+    // //외부 의존성
+    [SerializeField] private ObjectMotionPlayer motionPlayer;
+
     // //내부 의존성
-    private RectTransform rect;
-    private Camera mainCam;
-
-    private float activeTimer = 0.0f;
-    private float showYOffset = 0.0f;
-    private bool isTimerActive = false;
-
-    private Action<HUD_HPBar> onHideCallback;
-
+    private object owner;
     private GameObject targetObj;
+    private float yOffset;
+    private float showDuration;
+    private float displayTimer;
+    private Action<HUD_HPBar> onFinishCallback;
+    private bool isHiding;
+    private RectTransform rect;
+    private UnityAction onHideCompleteAction;
+
+    public object Owner => owner;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -26,111 +32,101 @@ public class HUD_HPBar : HUD_ProgressBar, IPoolable
     {
         base.Initialize();
 
-        if (null != progressSlider)
-            rect = progressSlider.GetComponent<RectTransform>();
+        onHideCompleteAction = HandleHideComplete;
 
-        if (null == mainCam)
-            mainCam = Camera.main;
+        if (null == motionPlayer)
+            motionPlayer = GetComponent<ObjectMotionPlayer>();
+
+        if (null != motionPlayer)
+            motionPlayer.Initialize();
+
+        rect = GetComponent<RectTransform>();
     }
 
-    public void UpdateTargetObj(GameObject _target)
+    public void SetOwner(object _owner)
+    {
+        owner = _owner;
+    }
+
+    public void Setup(GameObject _target, float _yOffset, float _duration)
     {
         targetObj = _target;
-    }
+        yOffset = _yOffset;
+        showDuration = _duration;
+        displayTimer = showDuration;
+        
+        UpdatePosition();
 
-    public void UpdateYOffset(float _in)
-    {
-        showYOffset = _in;
-    }
-
-    /// <summary>
-    /// 지정된 시간 동안 활성화하고, 종료 시 실행할 콜백을 등록합니다.
-    /// </summary>
-    public void TriggerActiveForDuration(float _duration, Action<HUD_HPBar> _onHide = null)
-    {
-        if (0.0f >= _duration)
+        if (true == isHiding || false == gameObject.activeSelf)
         {
-            onHideCallback = _onHide;
-            OnHide();
-            return;
+            isHiding = false;
+            gameObject.SetActive(true);
+            
+            if (null != motionPlayer)
+                motionPlayer.Play("Show", bReset: true);
         }
-
-        activeTimer = _duration;
-        isTimerActive = true;
-        onHideCallback = _onHide;
-        OnShow();
     }
 
-    public void OnShow()
+    public void TriggerActive(Action<HUD_HPBar> _onFinish)
     {
-        if (false == gameObject.activeSelf)
-            gameObject.SetActive(true);
+        onFinishCallback = _onFinish;
+        displayTimer = showDuration;
     }
 
     public void OnHide()
     {
-        if (true == gameObject.activeSelf)
-        {
-            isTimerActive = false;
-            activeTimer = 0.0f;
-            gameObject.SetActive(false);
+        if (true == isHiding) 
+            return;
 
-            // 반납 등을 위한 콜백 실행
-            onHideCallback?.Invoke(this);
-            onHideCallback = null;
-        }
+        isHiding = true;
+        
+        if (null != motionPlayer)
+            motionPlayer.PlayBackward("Show", _onComplete: onHideCompleteAction, bReset: true);
+        else
+            HandleHideComplete();
     }
 
-    // //IPoolable 구현부
-
-    public void OnSpawn()
+    private void HandleHideComplete()
     {
-        Initialize();
+        if (null != onFinishCallback)
+            onFinishCallback.Invoke(this);
     }
 
     public void OnDespawn()
     {
-        isTimerActive = false;
-        activeTimer = 0.0f;
-        onHideCallback = null;
+        owner = null;
         targetObj = null;
-        Owner = null;
-
-        if (null != progressSlider)
-            progressSlider.value = 0.0f;
+        onFinishCallback = null;
+        isHiding = false;
+        gameObject.SetActive(false);
     }
-
 
     // //유니티 이벤트 함수
 
     private void Update()
     {
-        if (false == isTimerActive)
+        if (null == targetObj || true == isHiding)
             return;
 
-        activeTimer -= Time.deltaTime;
-
-        if (0.0f >= activeTimer)
+        displayTimer -= Time.deltaTime;
+        
+        if (0.0f >= displayTimer)
             OnHide();
     }
 
     private void LateUpdate()
     {
-        if (true == isTimerActive && null != targetObj)
-        {
-            Vector3 newPos = targetObj.transform.position;
-            newPos.y += showYOffset;
-
-            if (null != rect)
-                rect.position = GlobalUI.SnapToScreenPixel(newPos, mainCam);
-        }
+        UpdatePosition();
     }
 
-
-    public object Owner { get; private set; }
-
-    public void SetOwner(object _owner)
+    private void UpdatePosition()
     {
-        Owner = _owner;
+        if (null == targetObj || null == rect)
+            return;
+
+        Vector3 _pos = targetObj.transform.position;
+        _pos.y += yOffset;
+        
+        rect.position = _pos;
     }
 }

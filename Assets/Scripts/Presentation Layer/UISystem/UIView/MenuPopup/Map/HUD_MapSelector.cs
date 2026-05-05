@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -15,6 +16,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [Header("References")]
         [SerializeField] private HUD_MapSubSelector subSelector; // 서브 지역 셀렉터
         [SerializeField] private HUD_MapSunMoon sunMoon;         // 밤낮 연출 관리자
+        [SerializeField] private HUD_MapSelectButton selectButton; // 선택 확인 버튼
         [SerializeField] private Transform regionContainer;     // 지역 항목 부모 컨테이너
         [SerializeField] private GameObject regionPrefab;       // 지역 항목 프리팹
 
@@ -25,6 +27,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //내부 의존성
         private List<HUD_MapRegion> spawnedRegions = new List<HUD_MapRegion>(8);
         private HUD_MapRegion currentFocusedRegion;
+        private Action<MapType> onConfirmCallback;
         private bool isInitialized = false;
         private bool isDayTime = true;
         private bool isDragging = false;
@@ -33,12 +36,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
-        /// 셀렉터를 초기화합니다.
+        /// 셀렉터를 초기화하고 콜백을 등록합니다.
         /// </summary>
-        public void Initialize()
+        public void Initialize(Action<MapType> _onConfirm)
         {
             if (true == isInitialized)
                 return;
+
+            onConfirmCallback = _onConfirm;
 
             if (null != subSelector)
                 subSelector.Initialize();
@@ -46,8 +51,20 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != sunMoon)
                 sunMoon.Initialize();
 
+            if (null != selectButton)
+                selectButton.Initialize(HandleConfirm);
+
             isInitialized = true;
             UpdateSunMoonState();
+        }
+
+        private void HandleConfirm()
+        {
+            // TODO: 추후 GetFinalMapType()을 사용하여 실제 선택된 타입을 가져와야 함
+            MapType _finalType = MapType.Forest1_1;
+
+            if (MapType.None != _finalType)
+                onConfirmCallback?.Invoke(_finalType);
         }
 
         /// <summary>
@@ -161,7 +178,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             
             FocusRegion(_closestIndex);
         }
-        
+
         private void Update()
         {
             if (false == isInitialized || true == isDragging)

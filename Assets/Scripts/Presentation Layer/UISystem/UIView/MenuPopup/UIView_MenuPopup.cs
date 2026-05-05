@@ -21,7 +21,7 @@ public class UIView_MenuPopup : UIView
             mapSelector = Instantiate(mapSelectorPrefab, this.transform).GetComponent<HUD_MapSelector>();
 
         if (null != mapSelector)
-            mapSelector.Initialize();
+            mapSelector.Initialize(HandleEnterDungeon);
 
         CloseTeleportUI();
     }
@@ -36,7 +36,7 @@ public class UIView_MenuPopup : UIView
         DungeonSelectedEvent?.Invoke(_type);
         CloseTeleportUI();
     }
-    
+
     protected override void OnShow()
     {
         base.OnShow();
