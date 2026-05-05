@@ -98,7 +98,7 @@ public class UIView_MenuPopup : UIView
     {
         Debug.Log($"[UIView_MenuPopup] Entering Dungeon: {_type}");
         // 통신 및 던전 진입 로직 배치
-        DungeonSelectedEvent?.Invoke(_type, ForestType.Vegetatedplains_2);
+        DungeonSelectedEvent?.Invoke(_type, ForestType.Vegetatedplains_1);
         CloseTeleportUI();
     }
 

@@ -22,9 +22,6 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     private MapType currentMapType;
     private DensityData currentDensityData;
 
-    private List<TreeType> mapTreeTypes = new List<TreeType>(8);
-    private List<AnimalType> mapAnimalTypes = new List<AnimalType>(8);
-
     public void Initialize()
     {
 
@@ -34,28 +31,6 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     {
         currentMapType = _mapType;
         currentDensityData = densityDataBase.Get(_mapType, _forestType);
-
-        mapTreeTypes.Clear();
-        mapAnimalTypes.Clear();
-
-        if (currentDensityData != null)
-        {
-            if (currentDensityData.spawnTreeTypes != null)
-            {
-                for (int i = 0; i < currentDensityData.spawnTreeTypes.Count; i++)
-                {
-                    mapTreeTypes.Add(currentDensityData.spawnTreeTypes[i].treeType);
-                }
-            }
-
-            if (currentDensityData.spawnAnimalTypes != null)
-            {
-                for (int i = 0; i < currentDensityData.spawnAnimalTypes.Count; i++)
-                {
-                    mapAnimalTypes.Add(currentDensityData.spawnAnimalTypes[i].animalType);
-                }
-            }
-        }
     }
 
     public float GetTreeRegenTime()
@@ -217,42 +192,14 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
     public void IncreaseTreeDensity(float _amount)
     {
-        if (currentDensityData == null) return;
-
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
         treeDensityMultiplier += (_amount / 100.0f);
-
-        if (grassTileCnt > 0)
-        {
-            maxTreeCnt = (int)(grassTileCnt * currentDensityData.treeMaxDensityRatio * treeDensityMultiplier);
-
-            if (applyToStartCnt)
-            {
-                treeStartCnt = (int)(grassTileCnt * currentDensityData.treeStartDensityRatio * treeDensityMultiplier);
-            }
-        }
-
-        //Debug.Log($"[DensityManager] Tree Density Increased: {treeDensityMultiplier * 100}% (MaxTree: {maxTreeCnt}, StartTree: {treeStartCnt})");
     }
 
     public void IncreaseRabbitDensity(float _amount)
     {
-        if (currentDensityData == null) return;
-
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
         rabbitDensityMultiplier += (_amount / 100.0f);
-
-        if (walkableTilesCnt > 0)
-        {
-            maxAnimalCnt = (int)(walkableTilesCnt * currentDensityData.animalMaxDensityRatio * rabbitDensityMultiplier);
-
-            if (applyToStartCnt)
-            {
-                animalStartCnt = (int)(walkableTilesCnt * currentDensityData.animalStartDensityRatio * rabbitDensityMultiplier);
-            }
-        }
-
-        //Debug.Log($"[DensityManager] Rabbit Density Increased: {rabbitDensityMultiplier * 100}% (MaxAnimal: {maxAnimalCnt}, StartAnimal: {animalStartCnt})");
     }
 
     public EnvironmentSaveData GetSaveData()
@@ -276,16 +223,6 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         }
 
         Debug.Log("[DensityManager] Environment Save Data Loaded.");
-    }
-
-    public IReadOnlyList<TreeType> GetMapTreeType()
-    {
-        return mapTreeTypes;
-    }
-
-    public IReadOnlyList<AnimalType> GetMapAnimalType()
-    {
-        return mapAnimalTypes;
     }
 
     public MapDensityDataBase GetMapDataBase()

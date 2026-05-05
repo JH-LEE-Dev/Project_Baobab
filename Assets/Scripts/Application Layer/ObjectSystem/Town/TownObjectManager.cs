@@ -37,6 +37,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
 
+    public float treeGrowTime = 10f;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;

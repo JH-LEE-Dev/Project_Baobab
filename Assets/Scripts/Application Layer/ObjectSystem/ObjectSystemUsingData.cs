@@ -46,7 +46,6 @@ public struct TreeData
         type = _type;
         grade = _grade;
         treeVisualData = _treeVisualData;
-    
     }
 }
 

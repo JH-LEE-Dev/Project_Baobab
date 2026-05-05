@@ -53,6 +53,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
 
+    private float treeGrowTime = 10f;
+
     // // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
@@ -182,7 +184,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         int startCount = environmentProvider.densityProvider.GetTreeStartCnt();
         for (int i = 0; i < startCount; i++)
         {
-            SpawnOneTreeFromAvailable();
+            SpawnOneTreeFromAvailable(false);
         }
 
         RefreshCullingGroup();
@@ -193,11 +195,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private IEnumerator StartGrowthAfterDelay()
     {
-        yield return new WaitForSeconds(5f);
+        yield return new WaitForSeconds(0.1f);
         growthCoroutine = StartCoroutine(GrowthRoutine());
     }
 
-    private bool SpawnOneTreeFromAvailable()
+    private bool SpawnOneTreeFromAvailable(bool _isGrowing)
     {
         int count = availablePositions.Count;
         if (count == 0) return false;
@@ -225,7 +227,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
                 environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
                 environmentProvider.densityProvider.UpdateTreeCnt(true);
-                //Debug.Log($"<color=yellow>[InDungeonObjectManager]</color> Tree Spawned. Current Active Trees: {activeTrees.Count}");
+
+                if (_isGrowing)
+                {   
+                    tree.SetIsSapling(true, treeGrowTime);
+                }
+
                 return true;
             }
         }
@@ -243,8 +250,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             if (environmentProvider.densityProvider.CanCreateTree() && availablePositions.Count > 0)
             {
                 // 성공적으로 생성했을 때만 컬링 그룹 갱신 플래그 설정
-                if (SpawnOneTreeFromAvailable())
-                {
+                if (SpawnOneTreeFromAvailable(true))
+                { 
                     isCullingDirty = true;
                 }
             }

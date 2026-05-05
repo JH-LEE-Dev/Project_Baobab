@@ -75,6 +75,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public int EntityIndex { get; set; } = -1;
 
     public IHealthComponent health => healthComponent;
+
+    public bool bCanApplyDamage => true;
+
     public AnimalType animalType;
 
     public GameObject statusEffectObject;

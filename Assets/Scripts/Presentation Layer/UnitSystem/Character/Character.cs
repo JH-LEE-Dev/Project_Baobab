@@ -68,6 +68,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     IArmComponent ICharacter.armComponent => armComponent;
 
+    public bool bCanApplyDamage => true;
+
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
     public readonly int bInHubHash = Animator.StringToHash("bInHub");

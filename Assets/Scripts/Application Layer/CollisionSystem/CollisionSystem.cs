@@ -22,6 +22,7 @@ public interface IStaticCollidable
     float Radius { get; }
     int Layer { get; }
     void TakeDamage(float _damage);
+    bool bCanApplyDamage { get; }
 }
 
 public class CollisionSystem : MonoBehaviour
