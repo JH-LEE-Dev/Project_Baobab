@@ -168,6 +168,7 @@ MonoBehaviour:
   targetPos: {x: 0, y: 0, z: 0}
   scatterRadius: 0
   bRunAway: 0
+  animalType: 1
 --- !u!50 &1015278686456738704
 Rigidbody2D:
   serializedVersion: 5

@@ -75,6 +75,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public int EntityIndex { get; set; } = -1;
 
     public IHealthComponent health => healthComponent;
+    public AnimalType animalType;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {

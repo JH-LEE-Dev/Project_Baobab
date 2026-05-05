@@ -531,7 +531,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     public void SpawnCarrots(Animal _animal)
     {
-        itemManager.SpawnCarrotItem(_animal.transform.position);
+        itemManager.SpawnCarrotItem(_animal.transform.position, _animal.animalType);
     }
 
     private void CarrotItemAcquired(CarrotItem _item)

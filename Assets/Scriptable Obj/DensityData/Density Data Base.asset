@@ -36,7 +36,9 @@ MonoBehaviour:
       regenProb: 40
     spawnAnimalTypes:
     - animalType: 1
-      regenProb: 100
+      regenProb: 70
+    - animalType: 2
+      regenProb: 30
     treeStartDensityRatio: 0.06
     treeMaxDensityRatio: 0.1
     animalStartDensityRatio: 0.05
@@ -53,7 +55,11 @@ MonoBehaviour:
       regenProb: 40
     spawnAnimalTypes:
     - animalType: 1
-      regenProb: 100
+      regenProb: 50
+    - animalType: 2
+      regenProb: 37.5
+    - animalType: 3
+      regenProb: 12.5
     treeStartDensityRatio: 0.06
     treeMaxDensityRatio: 0.1
     animalStartDensityRatio: 0.05

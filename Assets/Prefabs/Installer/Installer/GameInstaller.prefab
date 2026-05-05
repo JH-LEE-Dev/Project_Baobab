@@ -484,6 +484,22 @@ MonoBehaviour:
   minSpawnBundle: 2
   maxSpawnBundle: 3
   cullingUpdateInterval: 0.05
+  carrotSpawnData:
+  - animalType: 1
+    minAmountPerBundle: 3
+    maxAmountPerBundle: 5
+    minSpawnBundle: 2
+    maxSpawnBundle: 3
+  - animalType: 2
+    minAmountPerBundle: 6
+    maxAmountPerBundle: 10
+    minSpawnBundle: 4
+    maxSpawnBundle: 6
+  - animalType: 3
+    minAmountPerBundle: 24
+    maxAmountPerBundle: 40
+    minSpawnBundle: 16
+    maxSpawnBundle: 24
 --- !u!1 &3306528137990007570
 GameObject:
   m_ObjectHideFlags: 0
@@ -895,12 +911,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e39068f27ffa5ae4692647311d234cc3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
-  animalPrefab: {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
   cullingDistance: 25
   cullingUpdateInterval: 0.1
   collectionCheck: 1
   defaultCapacity: 200
   maxSize: 2000
+  animalsPrefab:
+  - {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
+  - {fileID: 2754930622058465131, guid: abc4a4931962c18408c254f7a6901059, type: 3}
+  - {fileID: 5574060826036245196, guid: c2551d0a6848766408bcda8ef7de9034, type: 3}
 --- !u!1 &6114502731513512976
 GameObject:
   m_ObjectHideFlags: 0

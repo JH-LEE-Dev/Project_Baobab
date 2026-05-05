@@ -87,3 +87,13 @@ public struct LootDropData
     public LootType lootType;
     public float probability;
 }
+
+[Serializable]
+public struct CarrotSpawnData
+{
+    public AnimalType animalType;
+    public int minAmountPerBundle;
+    public int maxAmountPerBundle;
+    public int minSpawnBundle;
+    public int maxSpawnBundle;
+}
