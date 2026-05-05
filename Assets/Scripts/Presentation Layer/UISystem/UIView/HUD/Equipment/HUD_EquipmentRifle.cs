@@ -4,6 +4,7 @@ using Unity.VisualScripting;
 using UnityEngine.Rendering;
 using System;
 using UnityEngine.Events;
+using PresentationLayer.UISystem.CustomNumber;
 
 namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
@@ -15,6 +16,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
     {
         // //외부 의존성
         [Header("Rifle Specific UI")]
+        [SerializeField] private CustomNumberDisplay ammoDisplay;
         [SerializeField] private TextMeshProUGUI totalAmmoText;      // 총 보유 탄약 표시 텍스트
         [SerializeField] private HUD_EquipmentBullet bulletDisplay; // 개별 총알 시각화 컴포넌트
 
@@ -30,6 +32,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null == bulletDisplay)
                 bulletDisplay = GetComponentInChildren<HUD_EquipmentBullet>();
+
+            ammoDisplay?.Initialize();
 
             bulletDisplay?.Initialize();
         }
@@ -67,6 +71,17 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             bulletDisplay.PlayGatherMotion(_onStart, _onComplete);
         }
 
+        public void PlayGatherMotion(int _currentMag, int _maxMag, int _totalAmmo, UnityAction _onStart = null, UnityAction _onComplete = null)
+        {
+            UpdateAmmo(_currentMag, _maxMag, _totalAmmo);
+
+            if (null == bulletDisplay)
+                return;
+
+            bulletDisplay.PlayGatherMotion(_onStart, _onComplete);
+        }
+
+
         /// <summary>
         /// 탄약 정보를 업데이트합니다.
         /// </summary>
@@ -76,6 +91,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         public void UpdateAmmo(int _currentMag, int _maxMag, int _totalAmmo)
         {
             UpdateTotalAmmoText(_totalAmmo);
+            ammoDisplay?.SetNumber(_totalAmmo);
 
             if (null == bulletDisplay)
                 return;

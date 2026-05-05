@@ -331,6 +331,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     public Transform GetTransform()
     {
-        throw new NotImplementedException();
+        return gameObject.transform;
     }
 }

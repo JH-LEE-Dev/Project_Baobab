@@ -105,10 +105,11 @@ public class UIView_HUD : UIView
     #endregion
 
     //무기 모드 변환 시 호출. 기본값은 Axe
-    public void WeaponModeChanged(WeaponMode _currentWeaponMode)
+    public void WeaponModeChanged(WeaponMode _currentWeaponMode, bool _isMapChanged = false)
     {
-       hudEquipment?.UpdateState(_currentWeaponMode);
+       hudEquipment?.UpdateState(_currentWeaponMode, _isMapChanged);
     }
+
 
     public void InventorySpecChanged() //인벤토리 스펙 변동 시 호출
     {
@@ -135,12 +136,8 @@ public class UIView_HUD : UIView
         if (null == hudEquipment)
             return;
         
+        WeaponModeChanged(WeaponMode.Axe, !_isTwon);
         hudEquipment.gameObject.SetActive(!_isTwon);
-
-        if (false == _isTwon)
-            hudEquipment.UpdateAmmo();
-
-        WeaponModeChanged(WeaponMode.Axe);
     }
 
     private void ChangedActiveStateStemina(bool _isTwon)

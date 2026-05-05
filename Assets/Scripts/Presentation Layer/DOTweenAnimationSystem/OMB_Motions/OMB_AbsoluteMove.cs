@@ -15,9 +15,6 @@ namespace PresentationLayer.DOTweenAnimationSystem
             public Vector2 startOffset;
             public Vector2 endOffset;
 
-            [Header("Animation Settings")]
-            public Ease moveEase = Ease.OutExpo;
-
             [Header("Fade Settings")]
             public bool useFade = true;
             public float startAlpha = 0.0f;
@@ -56,7 +53,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             return true;
         }
 
-        protected override void OnRectTransform(Sequence _seq, RectTransform _rect)
+        protected override void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase)
         {
             if (null == _seq || null == _rect)
                 return;
@@ -68,8 +65,6 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 localRotation = _rect.localEulerAngles,
                 localScale = _rect.localScale
             };
-
-            Debug.Log(_state.anchoredPosition);
 
             stateCache.Add(_state);
 
@@ -94,11 +89,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             _seq.Join(
                 _rect.DOAnchorPos(_endPos, _duration)
-                     .SetEase(valueSettings.moveEase)
+                     .SetEase(_currPublicEase)
             );
         }
 
-        protected override void OnTransform(Sequence _seq, Transform _trans)
+        protected override void OnTransform(Sequence _seq, Transform _trans, Ease _currPublicEase)
         {
             if (null == _seq || null == _trans)
                 return;
@@ -137,11 +132,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             _seq.Join(
                 _trans.DOLocalMove(_endPos, _duration)
-                      .SetEase(valueSettings.moveEase)
+                      .SetEase(_currPublicEase)
             );
         }
 
-        protected override void OnCanvasGroup(Sequence _seq, CanvasGroup _group)
+        protected override void OnCanvasGroup(Sequence _seq, CanvasGroup _group, Ease _currPublicEase)
         {
             if (null == _seq || null == _group)
                 return;
@@ -182,7 +177,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             );
         }
 
-        protected override void OnGraphic(Sequence _seq, Graphic _graphic)
+        protected override void OnGraphic(Sequence _seq, Graphic _graphic, Ease _currPublicEase)
         {
             if (null == _seq || null == _graphic)
                 return;

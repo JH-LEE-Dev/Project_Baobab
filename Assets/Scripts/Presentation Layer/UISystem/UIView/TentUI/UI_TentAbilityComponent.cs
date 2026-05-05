@@ -35,6 +35,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private bool hasBuiltNodes;
     private bool hasPrewarmedNodePool;
+    private bool lineLayoutDirty;
+    private bool toolTipLayoutDirty;
     private AbilityNode currentToolTipNode;
     private AbilityToolTip toolTipInstance;
 
@@ -257,6 +259,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         targetZoom = DefaultZoom;
         moveTarget.anchoredPosition = Vector2.zero;
         moveTarget.localScale = Vector3.one * currentZoom;
+        MarkViewLayoutDirty();
     }
 
     // 능력 화면을 닫고 입력 상태와 툴팁을 정리한다.
@@ -409,24 +412,29 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         // 드래그 이동
-        HandlePan();
+        bool viewChanged = false;
+
+        viewChanged |= HandlePan();
         // 줌 기능
         HandleZoom();
         // 줌 애니메이션 기능
-        UpdateZoomAnimation();
+        viewChanged |= UpdateZoomAnimation();
         // Line 스냅 및 재구성
-        RefreshLines();
+        if (viewChanged)
+            MarkViewLayoutDirty();
+
+        RefreshLinesIfNeeded();
         // 툴팁 포지션 스냅
-        UpdateToolTipPosition();
+        UpdateToolTipPositionIfNeeded();
     }
 
 
     // 마우스 드래그로 능력 컨텐츠를 이동시킨다.
-    private void HandlePan()
+    private bool HandlePan()
     {
         Mouse mouse = Mouse.current;
         if (mouse == null)
-            return;
+            return false;
 
         bool canDrag =
             mouse.leftButton.isPressed ||
@@ -438,24 +446,28 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (canDrag == false)
         {
             isDragging = false;
-            return;
+            return false;
         }
 
         if (isDragging == false)
         {
             isDragging = true;
             previousMousePosition = currentMousePosition;
-            return;
+            return false;
         }
 
         Vector2 delta = currentMousePosition - previousMousePosition;
         previousMousePosition = currentMousePosition;
+
+        if (delta.sqrMagnitude <= 0.0001f)
+            return false;
 
         float scaleFactor = 1f;
         if (rootCanvas != null)
             scaleFactor = Mathf.Max(rootCanvas.rootCanvas.scaleFactor, 0.0001f);
 
         moveTarget.anchoredPosition += delta / scaleFactor;
+        return true;
     }
 
     // 마우스 휠 입력으로 목표 줌 값을 갱신한다.
@@ -476,8 +488,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 목표 줌 값을 따라가며 현재 줌을 부드럽게 갱신한다.
-    private void UpdateZoomAnimation()
+    private bool UpdateZoomAnimation()
     {
+        if (Mathf.Approximately(currentZoom, targetZoom))
+            return false;
+
         float previousZoom = currentZoom;
         currentZoom = Mathf.Lerp(currentZoom, targetZoom, 1f - Mathf.Exp(-ZoomFollowSpeed * Time.unscaledDeltaTime));
 
@@ -488,6 +503,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             ApplyZoomAroundFocus(previousZoom, currentZoom);
 
         moveTarget.localScale = Vector3.one * currentZoom;
+        return Mathf.Approximately(previousZoom, currentZoom) == false;
     }
 
     // 마우스가 가리키는 지점을 기준으로 확대/축소가 일어나도록 위치를 보정한다.
@@ -515,6 +531,30 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private void RefreshLines()
     {
         lineRenderer.RefreshLines(currentZoom);
+        lineLayoutDirty = false;
+    }
+
+    private void MarkViewLayoutDirty()
+    {
+        lineLayoutDirty = true;
+        toolTipLayoutDirty = true;
+    }
+
+    private void RefreshLinesIfNeeded()
+    {
+        if (lineLayoutDirty == false)
+            return;
+
+        RefreshLines();
+    }
+
+    private void UpdateToolTipPositionIfNeeded()
+    {
+        if (toolTipLayoutDirty == false)
+            return;
+
+        UpdateToolTipPosition();
+        toolTipLayoutDirty = false;
     }
 
     // 한 부모-자식 연결에 대해 4px 또는 8px 세그먼트를 반복 배치한다.
@@ -552,30 +592,41 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 노드 클릭 시 상위 시스템에 전달할 요청 함수다.
     public void RequestNodeLevelUp(AbilityNode _node)
     {
+        TryRequestNodeLevelUp(_node);
+    }
+
+    public bool TryRequestNodeLevelUp(AbilityNode _node)
+    {
         if (_node == null)
-            return;
+            return false;
 
         SkillType requestedSkillType = _node.SkillType;
 
-        OnAbilityLevelUpRequested(requestedSkillType);
+        return OnAbilityLevelUpRequested(requestedSkillType);
     }
 
 
     // 상위 로직에 어떤 스킬을 찍으려는지 전달하는 자리다.
-    private void OnAbilityLevelUpRequested(SkillType _skillType)
+    private bool OnAbilityLevelUpRequested(SkillType _skillType)
     {
         if (skillSystemProvider == null)
         {
             Debug.LogWarning($"SkillSystemProvider is null. Request skipped: {_skillType}");
-            return;
+            return false;
         }
 
         AbilityLevelUpRejectReason reason = skillSystemProvider.TryApplySkill(_skillType);
 
         if (reason == AbilityLevelUpRejectReason.Pass)
+        {
             OnAbilityLevelUpApproved(_skillType);
+            return true;
+        }
         else
+        {
             OnAbilityLevelUpRejected(_skillType, NormalizeRejectReason(reason));
+            return false;
+        }
     }
 
     // 상위 시스템의 세부 실패 사유를 UI에서 사용할 공통 사유로 정리한다.

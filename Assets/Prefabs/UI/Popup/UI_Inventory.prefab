@@ -307,12 +307,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_AbsoluteMove
   forwardDuration: 0.4
   forwardDelay: 0
+  forwardEase: 18
   backwardDuration: 0.4
-  backwardDelay: 0
+  backwardDelay: 0.2
+  backwardEase: 18
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: -24}
-    moveEase: 18
     useFade: 0
     startAlpha: 0
     endAlpha: 1
@@ -529,12 +530,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_AbsoluteMove
   forwardDuration: 0.4
   forwardDelay: 0.2
+  forwardEase: 18
   backwardDuration: 0.2
   backwardDelay: 0
+  backwardEase: 18
   valueSettings:
     startOffset: {x: -10, y: 6}
     endOffset: {x: 6, y: 6}
-    moveEase: 18
     useFade: 1
     startAlpha: 0
     endAlpha: 1
@@ -712,17 +714,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_AbsoluteMove
   forwardDuration: 0.3
-  forwardDelay: 0.2
-  backwardDuration: 0.15
+  forwardDelay: 0.15
+  forwardEase: 18
+  backwardDuration: 0.1
   backwardDelay: 0
+  backwardEase: 18
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 6}
-    moveEase: 18
     useFade: 1
     startAlpha: 0
     endAlpha: 1
-    fadeEase: 18
+    fadeEase: 1
 --- !u!1 &8718527305197907244
 GameObject:
   m_ObjectHideFlags: 0
@@ -810,12 +813,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_AbsoluteMove
   forwardDuration: 0.4
   forwardDelay: 0.2
+  forwardEase: 18
   backwardDuration: 0.4
   backwardDelay: 0.1
+  backwardEase: 18
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 30}
-    moveEase: 18
     useFade: 0
     startAlpha: 0
     endAlpha: 1

@@ -1,16 +1,16 @@
 fileFormatVersion: 2
-guid: 71caae03785b4cd4580b2de7d5eeb6fa
+guid: 73a33872396580d4488dd43fcb3a6bc7
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3852864282127653989
-    second: collectionicon - 3_0
+      213: 8274289147424560240
+    second: SaplingTop_TypeA_N_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
-    sRGBTexture: 1
+    sRGBTexture: 0
     linearTexture: 0
     fadeOut: 0
     borderMipMap: 0
@@ -46,7 +46,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 0
   alignment: 0
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: collectionicon - 3_0
+      name: SaplingTop_TypeA_N_0
       rect:
         serializedVersion: 2
-        x: 1
-        y: 2
-        width: 13
-        height: 13
+        x: 11
+        y: 11
+        width: 10
+        height: 17
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 56c5208b6af187530800000000000000
-      internalID: 3852864282127653989
+      spriteID: 0745c19f32e24d270800000000000000
+      internalID: 8274289147424560240
       vertices: []
       indices: 
       edges: []
@@ -125,7 +125,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      collectionicon - 3_0: 3852864282127653989
+      SaplingTop_TypeA_N_0: 8274289147424560240
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

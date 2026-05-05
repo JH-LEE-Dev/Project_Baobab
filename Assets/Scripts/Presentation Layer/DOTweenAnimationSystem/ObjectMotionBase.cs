@@ -25,11 +25,17 @@ namespace PresentationLayer.DOTweenAnimationSystem
         }
 
         // //외부 의존성
+        [Header("Duration Settings")]
         [SerializeField] protected float forwardDuration = 0.5f;
         [SerializeField] protected float forwardDelay = 0f;
+        [SerializeField] protected Ease forwardEase = Ease.Unset;
 
         [SerializeField] protected float backwardDuration = 0.5f;
         [SerializeField] protected float backwardDelay = 0f;
+        [SerializeField] protected Ease backwardEase = Ease.Unset;
+
+        [Header("Debug Settings")]
+        [SerializeField] protected bool resetOnValidateInPlayMode = true;
 
         // //내부 의존성
         protected Tween currentTween;
@@ -48,7 +54,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
-            ProcessTargets(_seq, _targets);
+            ProcessTargets(_seq, _targets, forwardEase);
             ApplyTweenSettings(_seq);
 
             return true;
@@ -64,8 +70,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
-            ProcessTargets(_seq, _targets);
-            ApplyTweenSettings(_seq);
+            ProcessTargets(_seq, _targets, backwardEase);
+            ApplyBackwardTweenSettings(_seq);
 
             return true;
         }
@@ -74,6 +80,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
         {
             if (null != currentTween && currentTween.IsActive())
                 currentTween.Kill();
+        }
+
+        public bool IsPlaying()
+        {
+            return null != currentTween && currentTween.IsActive() && currentTween.IsPlaying();
         }
 
         public void Skip(bool _isCallback)
@@ -119,7 +130,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
                         .OnComplete(InternalOnComplete);
         }
 
-        protected void ProcessTargets(Sequence _seq, List<MotionTarget> _targets)
+        protected void ProcessTargets(Sequence _seq, List<MotionTarget> _targets, Ease _currentEase)
         {
             if (null == _targets)
                 return;
@@ -131,24 +142,24 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     continue;
 
                 if (null != _target.rectTransform) 
-                    OnRectTransform(_seq, _target.rectTransform);
+                    OnRectTransform(_seq, _target.rectTransform, _currentEase);
                 else if (null != _target.transform) 
-                    OnTransform(_seq, _target.transform);
+                    OnTransform(_seq, _target.transform, _currentEase);
 
                 if (null != _target.canvasGroup) 
-                    OnCanvasGroup(_seq, _target.canvasGroup);
+                    OnCanvasGroup(_seq, _target.canvasGroup, _currentEase);
                 if (null != _target.spriteRenderer) 
-                    OnSpriteRenderer(_seq, _target.spriteRenderer);
+                    OnSpriteRenderer(_seq, _target.spriteRenderer, _currentEase);
                 if (null != _target.uiGraphic) 
-                    OnGraphic(_seq, _target.uiGraphic);
+                    OnGraphic(_seq, _target.uiGraphic, _currentEase);
             }
         }
 
-        protected virtual void OnRectTransform(Sequence _seq, RectTransform _rect) { }
-        protected virtual void OnTransform(Sequence _seq, Transform _trans) { }
-        protected virtual void OnCanvasGroup(Sequence _seq, CanvasGroup _group) { }
-        protected virtual void OnSpriteRenderer(Sequence _seq, SpriteRenderer _renderer) { }
-        protected virtual void OnGraphic(Sequence _seq, Graphic _graphic) { }
+        protected virtual void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase) { }
+        protected virtual void OnTransform(Sequence _seq, Transform _trans, Ease _currPublicEase) { }
+        protected virtual void OnCanvasGroup(Sequence _seq, CanvasGroup _group, Ease _currPublicEase) { }
+        protected virtual void OnSpriteRenderer(Sequence _seq, SpriteRenderer _renderer, Ease _currPublicEase) { }
+        protected virtual void OnGraphic(Sequence _seq, Graphic _graphic, Ease _currPublicEase) { }
 
         protected virtual void InternalOnStart()
         {
@@ -162,26 +173,63 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 onCompleteAction.Invoke();
         }
 
-        protected void ResetToInitialState()
+        protected virtual void OnValidate()
+        {
+            if (false == Application.isPlaying)
+                return;
+
+            if (false == resetOnValidateInPlayMode)
+                return;
+
+            Stop();
+            RestoreAfterValidate();
+        }
+
+        protected virtual void RestoreAfterValidate()
+        {
+            RestoreCachedState();
+        }
+
+        protected void ApplyDurationScale(Tween _tween, float _targetDuration)
+        {
+            if (null == _tween || _targetDuration <= 0f)
+                return;
+
+            float currentDuration = _tween.Duration(false);
+            if (currentDuration <= 0f)
+                return;
+
+            _tween.timeScale = currentDuration / _targetDuration;
+        }
+
+        public void ResetToInitialState()
         {
             if (0 == stateCache.Count)
                 return;
 
             Stop();
+            RestoreCachedState();
+        }
 
+        protected void RestoreCachedState(bool _restorePosition = true)
+        {
             for (int i = 0; i < stateCache.Count; i++)
             {
                 TargetInitialState _state = stateCache[i];
 
                 if (null != _state.rectTransform)
                 {
-                    _state.rectTransform.anchoredPosition = _state.anchoredPosition;
+                    if (true == _restorePosition)
+                        _state.rectTransform.anchoredPosition = _state.anchoredPosition;
+
                     _state.rectTransform.localEulerAngles = _state.localRotation;
                     _state.rectTransform.localScale = _state.localScale;
                 }
                 else if (null != _state.transform)
                 {
-                    _state.transform.localPosition = _state.localPosition;
+                    if (true == _restorePosition)
+                        _state.transform.localPosition = _state.localPosition;
+
                     _state.transform.localEulerAngles = _state.localRotation;
                     _state.transform.localScale = _state.localScale;
                 }

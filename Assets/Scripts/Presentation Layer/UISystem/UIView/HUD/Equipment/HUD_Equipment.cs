@@ -171,7 +171,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         /// 무기 모드에 따라 HUD 아이템들의 활성 상태를 업데이트합니다.
         /// </summary>
         /// <param name="_mode">현재 무기 모드</param>
-        public void UpdateState(WeaponMode _mode)
+        public void UpdateState(WeaponMode _mode, bool _isMapChanged = false)
         {
             if (null != axeItem)
                 axeItem.SetActivate(WeaponMode.Axe == _mode);
@@ -182,6 +182,20 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (WeaponMode.Axe == _mode)
             {
                 axePop?.Play();
+                
+                if (true == _isMapChanged && null != character)
+                {
+                    IRifleComponent _rifle = character.armComponent?.rifleComponent;
+                    IStatComponent _stat = character.statComponent;
+
+                    if (null != _rifle && null != _stat)
+                    {
+                        Debug.Log(_rifle.mag + "/" + _stat.magCap + "/" + _rifle.ammo);
+                        rifleItem?.PlayGatherMotion(_rifle.mag, _stat.magCap, _rifle.ammo);
+                        return;
+                    }
+                }
+
                 rifleItem?.PlayGatherMotion();
             }
             else if (WeaponMode.Rifle == _mode)
@@ -190,6 +204,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 rifleItem?.PlayResetMotion();
             }
         }
+
 
         public void OnDestroy()
         {

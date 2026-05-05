@@ -1,5 +1,66 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2796751583571323689
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1097379476334710917}
+  - component: {fileID: 118657725991998958}
+  m_Layer: 5
+  m_Name: OMB_AbsoluteMove
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1097379476334710917
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2796751583571323689}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8628744602130650710}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &118657725991998958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2796751583571323689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffb463ca427c4a746b400e4dda48f4c4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_AbsoluteMove
+  forwardDuration: 0.3
+  forwardDelay: 0
+  forwardEase: 18
+  backwardDuration: 0.3
+  backwardDelay: 0
+  backwardEase: 18
+  valueSettings:
+    startOffset: {x: 0, y: 0}
+    endOffset: {x: 0, y: 5}
+    useFade: 1
+    startAlpha: 0
+    endAlpha: 1
+    fadeEase: 18
 --- !u!1 &3038123975774680363
 GameObject:
   m_ObjectHideFlags: 0
@@ -30,12 +91,12 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1404947365243209733}
-  m_Father: {fileID: 5314595175216006162}
+  m_Father: {fileID: 5650757437189431959}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.25}
   m_AnchorMax: {x: 1, y: 0.75}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -50, y: 0}
+  m_SizeDelta: {x: -50, y: -40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &654102559269926443
 CanvasRenderer:
@@ -45,6 +106,58 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3038123975774680363}
   m_CullTransparentMesh: 1
+--- !u!1 &3953597738852389877
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5650757437189431959}
+  - component: {fileID: 8931356589501339096}
+  m_Layer: 5
+  m_Name: Visual
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &5650757437189431959
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3953597738852389877}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5222346727447698012}
+  - {fileID: 5915949382885592721}
+  - {fileID: 6423329121716175038}
+  - {fileID: 8628744602130650710}
+  m_Father: {fileID: 5314595175216006162}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &8931356589501339096
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3953597738852389877}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &4050601129971947223
 GameObject:
   m_ObjectHideFlags: 0
@@ -74,12 +187,12 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5534203433488436452}
-  m_Father: {fileID: 5314595175216006162}
+  m_Father: {fileID: 5650757437189431959}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.005001068, y: 0}
-  m_SizeDelta: {x: -87.13, y: 0}
+  m_AnchoredPosition: {x: -0.5, y: 0}
+  m_SizeDelta: {x: -88, y: -80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &4821434973463509940
 GameObject:
@@ -166,8 +279,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5314595175216006162}
   - component: {fileID: 3686089145950256338}
-  - component: {fileID: 2343727539634463928}
-  - component: {fileID: 7567895761691479873}
+  - component: {fileID: 7375466869347578305}
   m_Layer: 5
   m_Name: HUD_ChargeGageBar
   m_TagString: Untagged
@@ -187,9 +299,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5222346727447698012}
-  - {fileID: 5915949382885592721}
-  - {fileID: 6423329121716175038}
+  - {fileID: 5650757437189431959}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -244,11 +354,11 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 1
+  m_Value: 0
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &2343727539634463928
+--- !u!114 &7375466869347578305
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -257,22 +367,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 5121283278471093161}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a58ed15105c2bc043a7612ed81d6de2f, type: 3}
+  m_Script: {fileID: 11500000, guid: 87f795c74b74c7c4fbb8899e412e8893, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.HUD.HUD_ProgressBar
+  m_EditorClassIdentifier: Assembly-CSharp::HUD_ChargeGageBar
   progressSlider: {fileID: 3686089145950256338}
---- !u!225 &7567895761691479873
-CanvasGroup:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5121283278471093161}
-  m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
-  m_IgnoreParentGroups: 0
+  motionPlayer: {fileID: 8854559431864679071}
 --- !u!1 &7461829135771204551
 GameObject:
   m_ObjectHideFlags: 0
@@ -348,6 +447,65 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &8474152305926086096
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8628744602130650710}
+  - component: {fileID: 8854559431864679071}
+  m_Layer: 5
+  m_Name: Motions
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &8628744602130650710
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8474152305926086096}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1097379476334710917}
+  m_Father: {fileID: 5650757437189431959}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &8854559431864679071
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8474152305926086096}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 597ff1f3e8ce72346bc305fbba413bde, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.ObjectMotionPlayer
+  motionEntries:
+  - motionTag: Show
+    motionPrefab: {fileID: 118657725991998958}
+    targets:
+    - transform: {fileID: 0}
+      rectTransform: {fileID: 5650757437189431959}
+      canvasGroup: {fileID: 8931356589501339096}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 0}
+    motionInstance: {fileID: 0}
 --- !u!1 &8848673944143884202
 GameObject:
   m_ObjectHideFlags: 0
@@ -376,10 +534,10 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 5314595175216006162}
+  m_Father: {fileID: 5650757437189431959}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.25}
   m_AnchorMax: {x: 1, y: 0.75}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: -60, y: 0}
+  m_SizeDelta: {x: -60, y: -40}
   m_Pivot: {x: 0.5, y: 0.5}

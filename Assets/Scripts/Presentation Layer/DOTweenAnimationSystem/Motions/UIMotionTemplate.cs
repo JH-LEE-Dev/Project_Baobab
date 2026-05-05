@@ -14,7 +14,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
         [SerializeField] private Ease colorEase = Ease.Linear;
 
 
-        protected override void OnRectTransform(Sequence _seq, RectTransform _rect)
+        protected override void OnRectTransform(Sequence _seq, RectTransform _rect, Ease _currPublicEase)
         {
             _rect.anchoredPosition = startTransform.anchoredPosition;
 
@@ -22,7 +22,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 .SetEase(moveEase);
         }
 
-        protected override void OnGraphic(Sequence _seq, Graphic _graphic)
+        protected override void OnGraphic(Sequence _seq, Graphic _graphic, Ease _currPublicEase)
         {
             Color color = new Color(1f, 1f, 1f, 0f);
             _graphic.color = color;
