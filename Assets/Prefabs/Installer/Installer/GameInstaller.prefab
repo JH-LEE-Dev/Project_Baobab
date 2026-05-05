@@ -168,6 +168,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
   densityDataBase: {fileID: 11400000, guid: cb0b8bab5590ad8409bd563dc6f3cb61, type: 2}
   applyToStartCnt: 1
+  animalHiddenGaugeAmounts:
+  - animalType: 1
+    minAmount: 2
+    maxAmount: 4
+  - animalType: 2
+    minAmount: 3
+    maxAmount: 5
+  - animalType: 3
+    minAmount: 4
+    maxAmount: 6
+  treeHiddenGaugeAmounts:
+  - treeType: 1
+    minAmount: 1
+    maxAmount: 3
+  - treeType: 2
+    minAmount: 2
+    maxAmount: 4
+  - treeType: 3
+    minAmount: 3
+    maxAmount: 5
 --- !u!1 &2327565162841499606
 GameObject:
   m_ObjectHideFlags: 0
@@ -1166,6 +1186,7 @@ MonoBehaviour:
   portalSpawnPoint: {fileID: 4103959821245234347, guid: 4b288be7fa674804ab828020e0b795ce, type: 3}
   cullingDistance: 25
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
+  treeGrowTime: 10
 --- !u!1 &7224331137657030612
 GameObject:
   m_ObjectHideFlags: 0

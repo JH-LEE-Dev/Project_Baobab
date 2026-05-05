@@ -81,12 +81,16 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         signalHub.Subscribe<DungeonReadySignal>(DungeonStarted);
         signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<AnimalIsDeadSignal>(AnimalIsDead);
+        signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<DungeonReadySignal>(DungeonStarted);
         signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<AnimalIsDeadSignal>(AnimalIsDead);
+        signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
     }
 
     private void BindEvents()
@@ -141,5 +145,15 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     public void SetupForMapType(ForestType _forestType, MapType _mapType)
     {
         densityManager.SetDensityData(_forestType, _mapType);
+    }
+
+    private void AnimalIsDead(AnimalIsDeadSignal animalIsDeadSignal)
+    {
+        densityManager.AddHiddenGauge(animalIsDeadSignal.type);
+    }
+
+    private void TreeIsDead(TreeIsDeadSignal treeIsDeadSignal)
+    {
+        densityManager.AddHiddenGauge(treeIsDeadSignal.type);
     }
 }

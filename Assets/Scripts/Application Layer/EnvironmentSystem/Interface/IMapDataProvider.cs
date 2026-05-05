@@ -2,5 +2,5 @@ using UnityEngine;
 
 public interface IMapDataProvider
 {
-    public MapDensityDataBase GetMapDataBase();
+    public MapEnvironmentDatabase GetMapEnvironmentDatabase();
 }

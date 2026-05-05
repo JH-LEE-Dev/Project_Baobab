@@ -43,7 +43,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public float TopShadowRadius => topShadowRadius;
     public Vector2 TopShadowOffset => topShadowOffset;
 
-    public bool bCanApplyDamage => bIsSapling;
+    public bool bCanApplyDamage => !bIsSapling;
 
     public bool bIsSapling = false;
     private float growTime = 0f;

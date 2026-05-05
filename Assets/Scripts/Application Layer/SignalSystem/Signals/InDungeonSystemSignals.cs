@@ -67,3 +67,23 @@ public struct AnimalHitSignal
         animal = _animal;
     }
 }
+
+public struct TreeIsDeadSignal
+{
+    public TreeType type;
+    public TreeIsDeadSignal(TreeType _type)
+    {
+        type = _type;
+    }
+}
+
+public struct AnimalIsDeadSignal
+{
+    public AnimalType type;
+    public AnimalIsDeadSignal(AnimalType _type)
+    {
+        type = _type;
+    }
+}
+
+

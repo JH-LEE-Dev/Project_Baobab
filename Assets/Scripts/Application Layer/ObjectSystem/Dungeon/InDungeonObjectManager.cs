@@ -3,11 +3,11 @@ using UnityEngine.Pool;
 using System.Collections.Generic;
 using System.Collections;
 using System;
-using Unity.VisualScripting;
 
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
+    public event Action<TreeType> TreeDeadEvent;
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
@@ -433,6 +433,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         isCullingDirty = true;
 
         treePool.Release(_treeObj);
+        
+        TreeDeadEvent?.Invoke(_treeObj.treeData.type);
     }
 
     // // 오브젝트 풀 콜백

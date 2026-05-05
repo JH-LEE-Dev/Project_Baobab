@@ -22,9 +22,17 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     private MapType currentMapType;
     private DensityData currentDensityData;
 
+    private Dictionary<MapType, ForestHiddenGaugeData> hiddenGaugeData;
+    public List<AnimalHiddenGaugeAmountData> animalHiddenGaugeAmounts;
+    public List<TreeHiddenGaugeAmountData> treeHiddenGaugeAmounts;
+
+    // //외부 의존성 및 캐시 데이터
+    private MapEnvironmentDatabase cachedDatabase;
+    private bool isDatabaseInitialized = false;
+
     public void Initialize()
     {
-
+        hiddenGaugeData = new Dictionary<MapType, ForestHiddenGaugeData>();
     }
 
     public void SetDensityData(ForestType _forestType, MapType _mapType)
@@ -228,5 +236,122 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     public MapDensityDataBase GetMapDataBase()
     {
         return densityDataBase;
+    }
+
+    private void EnsureDatabaseInitialized()
+    {
+        if (isDatabaseInitialized) return;
+        if (densityDataBase == null || densityDataBase.densityDatas == null) return;
+
+        cachedDatabase.mapDatas = new List<MapEnvironmentDataInfo>(densityDataBase.densityDatas.Count);
+        for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
+        {
+            var mapData = densityDataBase.densityDatas[i];
+            var mapInfo = new MapEnvironmentDataInfo();
+            mapInfo.mapType = mapData.mapType;
+            mapInfo.forestDatas = new List<ForestEnvironmentInfo>(mapData.densityData.Count);
+
+            for (int j = 0; j < mapData.densityData.Count; j++)
+            {
+                var density = mapData.densityData[j];
+                var forestInfo = new ForestEnvironmentInfo
+                {
+                    forestType = density.forestType,
+                    spawnTreeTypes = density.spawnTreeTypes,
+                    spawnAnimalTypes = density.spawnAnimalTypes,
+                    limitHiddenGauge = density.limitHiddenGauge,
+                    currentHiddenGauge = 0f
+                };
+                mapInfo.forestDatas.Add(forestInfo);
+            }
+            cachedDatabase.mapDatas.Add(mapInfo);
+        }
+        isDatabaseInitialized = true;
+    }
+
+    public MapEnvironmentDatabase GetMapEnvironmentDatabase()
+    {
+        EnsureDatabaseInitialized();
+
+        for (int i = 0; i < cachedDatabase.mapDatas.Count; i++)
+        {
+            var mapInfo = cachedDatabase.mapDatas[i];
+            // 해당 MapType에 저장된 게이지 정보가 있는지 확인
+            hiddenGaugeData.TryGetValue(mapInfo.mapType, out ForestHiddenGaugeData gaugeData);
+
+            for (int j = 0; j < mapInfo.forestDatas.Count; j++)
+            {
+                var forestInfo = mapInfo.forestDatas[j];
+                
+                // 게이지 정보가 있고 포레스트 타입이 일치하는 경우에만 현재 게이지 할당
+                if (gaugeData.forestType == forestInfo.forestType)
+                {
+                    forestInfo.currentHiddenGauge = gaugeData.hiddenGauge;
+                }
+                else
+                {
+                    forestInfo.currentHiddenGauge = 0f;
+                }
+
+                // 구조체 업데이트 (Write back to list)
+                mapInfo.forestDatas[j] = forestInfo;
+            }
+        }
+
+        return cachedDatabase;
+    }
+
+    public void AddHiddenGauge(AnimalType _type)
+    {
+        if (_type == AnimalType.None) return;
+
+        float amount = 0f;
+        for (int i = 0; i < animalHiddenGaugeAmounts.Count; i++)
+        {
+            if (animalHiddenGaugeAmounts[i].animalType == _type)
+            {
+                amount = Random.Range(animalHiddenGaugeAmounts[i].minAmount, animalHiddenGaugeAmounts[i].maxAmount);
+                break;
+            }
+        }
+
+        if (amount <= 0f) return;
+
+        AddAmountToHiddenGauge(amount);
+    }
+
+    public void AddHiddenGauge(TreeType _type)
+    {
+        if (_type == TreeType.None) return;
+
+        float amount = 0f;
+        for (int i = 0; i < treeHiddenGaugeAmounts.Count; i++)
+        {
+            if (treeHiddenGaugeAmounts[i].treeType == _type)
+            {
+                amount = Random.Range(treeHiddenGaugeAmounts[i].minAmount, treeHiddenGaugeAmounts[i].maxAmount);
+                break;
+            }
+        }
+
+        if (amount <= 0f) return;
+
+        AddAmountToHiddenGauge(amount);
+    }
+
+    private void AddAmountToHiddenGauge(float _amount)
+    {
+        if (hiddenGaugeData.TryGetValue(currentMapType, out ForestHiddenGaugeData data))
+        {
+            data.hiddenGauge += _amount;
+            hiddenGaugeData[currentMapType] = data;
+        }
+        else
+        {
+            ForestHiddenGaugeData newData = new ForestHiddenGaugeData();
+            newData.forestType = currentDensityData != null ? currentDensityData.forestType : ForestType.None;
+            newData.hiddenGauge = _amount;
+            hiddenGaugeData.Add(currentMapType, newData);
+        }
     }
 }
