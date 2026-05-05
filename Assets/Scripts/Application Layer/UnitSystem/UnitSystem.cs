@@ -46,6 +46,7 @@ public class UnitSystem
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.Subscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
         signalHub.Subscribe<SleepSignal>(CharacterSleep);
+        signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
     }
 
     private void UnSubscribeSignals()
@@ -58,6 +59,7 @@ public class UnitSystem
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.UnSubscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
         signalHub.UnSubscribe<SleepSignal>(CharacterSleep);
+        signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
     }
 
     private void BindEvents()
@@ -165,5 +167,10 @@ public class UnitSystem
     private void SpendMoney()
     {
         signalHub.Publish(new SpendMoneySignal());
+    }
+
+    private void SkillDispatched(SkillDispatchedSignal skillDispatchedSignal)
+    {
+        unitLogicManager.RefreshCharacter();
     }
 }

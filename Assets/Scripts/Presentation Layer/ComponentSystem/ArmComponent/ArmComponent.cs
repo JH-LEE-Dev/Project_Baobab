@@ -203,4 +203,10 @@ public class ArmComponent : PComponent, IArmComponent
         rifleComponent.ResetDurability();
         rifleComponent.ResetAmmo();
     }
+
+    public void Refresh()
+    {
+        axeComponent.Refresh();
+        rifleComponent.Refresh();
+    }
 }

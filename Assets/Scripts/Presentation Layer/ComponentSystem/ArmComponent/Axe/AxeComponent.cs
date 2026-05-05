@@ -127,4 +127,9 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             ctx.characterStat.speed = originalSpeed;
         }
     }
+
+    public void Refresh()
+    {
+        
+    }
 }

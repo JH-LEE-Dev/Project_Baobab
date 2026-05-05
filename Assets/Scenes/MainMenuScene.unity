@@ -350,6 +350,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Rabbit
       objectReference: {fileID: 0}
+    - target: {fileID: 5911788971367355826, guid: 4d70c10fe1852794994c653492155af1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8125574298360731873, guid: 4d70c10fe1852794994c653492155af1, type: 3}
       propertyPath: m_LocalPosition.x
       value: 7.91287
@@ -792,7 +796,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!1 &1255149280148348963
 GameObject:
   m_ObjectHideFlags: 0
@@ -813,7 +817,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1351996747791299975
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -881,7 +885,7 @@ SpriteRenderer:
   m_SortingLayer: 5
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 5400607245196206213, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}
+  m_Sprite: {fileID: -4929830542987322254, guid: b7bc02a82005175408ded532e8c9d33d, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -986,7 +990,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &4672310813466028349
 MonoBehaviour:
   m_ObjectHideFlags: 0
