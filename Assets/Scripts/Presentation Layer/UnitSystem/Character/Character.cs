@@ -33,6 +33,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public CircleCollider2D col { get; private set; }
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
+    private Animator shadowAnim;
 
     // 상태 및 데이터
     [Header("Character Stats & States")]
@@ -50,6 +51,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float staminaDecAmount = 0f;
     private float staminaIncAmount = 0f;
     private bool bStaminaUpDown = false;
+    private float currentFacingAngle = 0f; // 캐릭터의 현재 바라보는 각도 저장
 
     // IStaticCollidable 구현
     public Vector2 Position => transform.position;
@@ -65,6 +67,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     IStatComponent ICharacter.statComponent => statComponent;
 
     IArmComponent ICharacter.armComponent => armComponent;
+
+    public bool bCanApplyDamage => true;
 
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
@@ -84,7 +88,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         environmentProvider = _environmentProvider;
 
         // 컴포넌트 할당
-        anim = GetComponentInChildren<Animator>();
+        anim = animatorObject.GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<CircleCollider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
@@ -94,6 +98,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
+        shadowAnim = shadowObject.GetComponent<Animator>(); // 그림자 전용 애니메이터
 
         stateMachine = new StateMachine();
         ctx = new ComponentCtx();
@@ -117,27 +122,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
 
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        bool flipX = false;
-        int animIndex = -1;
-
-        switch (dirIndex)
-        {
-            case 0: animIndex = 0; break; // 우
-            case 1: animIndex = 1; break; // 우상
-            case 2: animIndex = 2; break; // 상
-            case 3: animIndex = 1; flipX = true; break; // 좌상
-            case 4: animIndex = 0; flipX = true; break; // 좌
-            case 5: animIndex = 4; flipX = true; break; // 좌하
-            case 6: animIndex = 3; break; // 하
-            case 7: animIndex = 4; break; // 우하
-        }
-
-        if (animIndex != -1)
-        {
-            sr.flipX = flipX;
-            anim.SetFloat(facingDirHash, animIndex);
-        }
+        currentFacingAngle = angle; // 각도 저장
+        SetAnimatorDirection(anim, sr, _input);
     }
 
     public void StaminaReset()
@@ -269,6 +255,71 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
     }
 
+    private void UpdateShadowVisual()
+    {
+        if (shadowAnim == null) return;
+
+        // 1. 애니메이션 파라미터 동기화
+        shadowAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
+        shadowAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
+
+        float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
+        float normalizedAngle = shadowAngle % 360;
+        if (normalizedAngle < 0) normalizedAngle += 360;
+
+        // 2. 수평 방향 강제 보정 로직 (그림자가 좌/우로 길게 늘어질 때)
+        // 오른쪽 방향 (337.5 ~ 22.5도)
+        if (normalizedAngle <= 22.5f || normalizedAngle >= 337.5f)
+        {
+            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.right);
+        }
+        // 왼쪽 방향 (157.5 ~ 202.5도)
+        else if (normalizedAngle >= 157.5f && normalizedAngle <= 202.5f)
+        {
+            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.left);
+        }
+        else
+        {
+            // 3. 수직 또는 대각선 각도는 광원 시점(Light Perspective) 로직 적용
+            float lightPerspectiveAngle = currentFacingAngle - shadowAngle + 90f;
+            Vector2 lightViewDir = new Vector2(
+                Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad), 
+                Mathf.Sin(lightPerspectiveAngle * Mathf.Deg2Rad)
+            );
+            SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir);
+        }
+    }
+
+    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input)
+    {
+        if (_input.sqrMagnitude < 0.01f) return;
+
+        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
+        if (angle < 0) angle += 360;
+
+        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
+        bool flipX = false;
+        int animIndex = -1;
+
+        switch (dirIndex)
+        {
+            case 0: animIndex = 0; break; // 우
+            case 1: animIndex = 1; break; // 우상
+            case 2: animIndex = 2; break; // 상
+            case 3: animIndex = 1; flipX = true; break; // 좌상
+            case 4: animIndex = 0; flipX = true; break; // 좌
+            case 5: animIndex = 4; flipX = true; break; // 좌하
+            case 6: animIndex = 3; break; // 하
+            case 7: animIndex = 4; break; // 우하
+        }
+
+        if (animIndex != -1)
+        {
+            _targetSR.flipX = flipX;
+            _targetAnim.SetFloat(facingDirHash, animIndex);
+        }
+    }
+
     private void UpdateFacingByAttackPoint()
     {
         if (attackComponent == null || bInDungeon == false) return;
@@ -348,8 +399,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine?.Update();
 
         // 비주얼 업데이트
-        shadowSR.sprite = sr.sprite;
         UpdateCharacterColor();
+        UpdateShadowVisual();
 
         if (shadowObject != null)
         {

@@ -142,7 +142,7 @@ public class TownSystem : MonoBehaviour
     private void DungeonSelected(DungeonSelectedSignal dungeonSelectedSignal)
     {
         townObjectManager.ClearObjManager();
-        signalHub.Publish(new GoToDungeonSignal(dungeonSelectedSignal.type));
+        signalHub.Publish(new GoToDungeonSignal(dungeonSelectedSignal.type, dungeonSelectedSignal.forestType));
     }
 
     private void logContainerSpecChanged()

@@ -17,9 +17,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     //내부 의존성
     [Header("Spawn Settings")]
-    [SerializeField] private Animal animalPrefab;
-
-    private IObjectPool<Animal> animalPool;
+    private Dictionary<AnimalType, IObjectPool<Animal>> animalPools = new Dictionary<AnimalType, IObjectPool<Animal>>();
     private Coroutine growthCoroutine;
 
     private List<Animal> allSpawnedAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
@@ -45,6 +43,8 @@ public class InDungeonUnitSpawner : MonoBehaviour
     [SerializeField] private int defaultCapacity = 200;
     [SerializeField] private int maxSize = SYSTEM_VAR.MAX_ANIMAL_CNT;
 
+    [SerializeField] private List<Animal> animalsPrefab;
+
     // // 퍼블릭 메서드
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -55,20 +55,30 @@ public class InDungeonUnitSpawner : MonoBehaviour
         spheres = new BoundingSphere[maxSize];
         onCullingStateChangedDelegate = OnCullingStateChanged;
 
-        animalPool = new ObjectPool<Animal>(
-            CreateAnimal,
-            OnGetAnimal,
-            OnReleaseAnimal,
-            OnDestroyAnimal,
-            collectionCheck,
-            defaultCapacity,
-            maxSize
-        );
+        animalPools.Clear();
+        foreach (var prefab in animalsPrefab)
+        {
+            if (prefab == null) continue;
+            
+            AnimalType type = prefab.animalType;
+            if (animalPools.ContainsKey(type)) continue;
+
+            var pool = new ObjectPool<Animal>(
+                () => Instantiate(prefab, transform),
+                OnGetAnimal,
+                OnReleaseAnimal,
+                OnDestroyAnimal,
+                collectionCheck,
+                defaultCapacity,
+                maxSize
+            );
+            animalPools.Add(type, pool);
+        }
     }
 
     public void SpawnAnimals()
     {
-        if (tilemapDataProvider == null || animalPrefab == null || environmentProvider.densityProvider == null)
+        if (tilemapDataProvider == null || animalsPrefab == null || animalsPrefab.Count == 0 || environmentProvider.densityProvider == null)
         {
             return;
         }
@@ -267,7 +277,20 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     private void SpawnAnimalAt(Vector3 _pos)
     {
-        Animal animal = animalPool.Get();
+        AnimalType typeToSpawn = environmentProvider.densityProvider.GetAnimalTypeToSpawn();
+        if (!animalPools.TryGetValue(typeToSpawn, out var pool))
+        {
+            // 해당 타입의 풀이 없는 경우 첫 번째 가용 풀 사용 (폴백)
+            if (animalPools.Count > 0)
+            {
+                var enumerator = animalPools.Values.GetEnumerator();
+                enumerator.MoveNext();
+                pool = enumerator.Current;
+            }
+            else return;
+        }
+
+        Animal animal = pool.Get();
         animal.transform.position = _pos;
         animal.gameObject.SetActive(true);
         animal.Initialize(environmentProvider);
@@ -294,7 +317,14 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
         if (_animal.gameObject.activeSelf)
         {
-            animalPool.Release(_animal);
+            if (animalPools.TryGetValue(_animal.animalType, out var pool))
+            {
+                pool.Release(_animal);
+            }
+            else
+            {
+                Destroy(_animal.gameObject);
+            }
         }
     }
 
@@ -309,7 +339,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
             cullingGroup = null;
         }
 
-        if (allSpawnedAnimals == null || animalPool == null) return;
+        if (allSpawnedAnimals == null) return;
 
         // [최적화 핵심] 부모를 잠시 비활성화하여 에디터 Hierarchy 갱신 이벤트를 1번으로 압축
         this.gameObject.SetActive(false);
@@ -324,7 +354,16 @@ public class InDungeonUnitSpawner : MonoBehaviour
                 animal.AnimalHitEvent -= AnimalHit;
 
                 animal.DeActivate();
-                animalPool.Release(animal);
+                
+                if (animalPools.TryGetValue(animal.animalType, out var pool))
+                {
+                    pool.Release(animal);
+                }
+                else
+                {
+                    Destroy(animal.gameObject);
+                }
+                
                 environmentProvider.densityProvider.UpdateAnimalCnt(false);
             }
         }
@@ -348,11 +387,6 @@ public class InDungeonUnitSpawner : MonoBehaviour
     }
 
     // // 풀링 콜백 메서드
-
-    private Animal CreateAnimal()
-    {
-        return Instantiate(animalPrefab, transform);
-    }
 
     private void OnGetAnimal(Animal _animal)
     {

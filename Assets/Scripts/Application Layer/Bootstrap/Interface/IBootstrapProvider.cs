@@ -4,5 +4,5 @@ public interface IBootStrapProvider
     void GoToMainMenuScene();
 
     void GoToTownScene(bool _bNewGame);
-    void GoToOtherScene(string _sceneName, MapType _mapType);
+    public void GoToOtherScene(MapType _mapType, ForestType _forestType);
 }

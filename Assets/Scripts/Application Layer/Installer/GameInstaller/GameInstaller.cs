@@ -27,7 +27,7 @@ public class GameInstaller : MonoBehaviour
 
     private SkillSystem skillSystem;
 
-    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager,SaveManager _saveManager)
+    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager, SaveManager _saveManager)
     {
         DontDestroyOnLoad(gameObject);
 
@@ -62,7 +62,7 @@ public class GameInstaller : MonoBehaviour
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,
-        inventoryManager, localizationManager);
+        inventoryManager, localizationManager, environmentSystem.densityManager, environmentSystem.weatherManager, environmentSystem.timeController);
 
         skillDispatcher.Initialize(signalHub,
          inventoryManager,
@@ -76,7 +76,7 @@ public class GameInstaller : MonoBehaviour
              inDungeonSystem.inDungeonObjectManager.itemManager.logItemController);
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);
-        skillSystem.Initialize(signalHub,skillManager, skillDispatcher);
+        skillSystem.Initialize(signalHub, skillManager, skillDispatcher);
 
         _saveManager.Initialize(signalHub, skillSystem, inventoryManager, townSystem.logProcessingManager,
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager);
@@ -98,7 +98,7 @@ public class GameInstaller : MonoBehaviour
 
         if (_sceneChangeData.currentScene == SceneType.DungeonScene)
         {
-            environmentSystem.SetupForMapType(_sceneChangeData.mapType);
+            environmentSystem.SetupForMapType(_sceneChangeData.forestType, _sceneChangeData.mapType);
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
             gameplayUIInstaller.SetupCanvas();
             unitSystem.SetWhereIsCharacter(true);

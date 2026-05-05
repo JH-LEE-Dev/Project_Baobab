@@ -17,6 +17,9 @@ public class LogItem : Item, IStaticCollidable
     // 내부 의존성
     public LogState logState { get; private set; }
     public TreeType treeType { get; private set; }
+
+    public bool bCanApplyDamage => false;
+
     private SpriteRenderer spriteRenderer;
     private Transform visualTransform;
 
@@ -64,7 +67,7 @@ public class LogItem : Item, IStaticCollidable
     {
         inventoryChecker = _inventoryChecker;
     }
-    
+
     public void IsDropItem(bool _boolean)
     {
         bDrop = _boolean;
@@ -148,7 +151,7 @@ public class LogItem : Item, IStaticCollidable
         {
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
-            
+
             state = ItemMoveState.Dropped;
             CheckAcquireCondition();
         }
@@ -185,7 +188,7 @@ public class LogItem : Item, IStaticCollidable
     private void UpdateDropped()
     {
         if (!bDrop || suckTarget == null) return;
-        
+
         CheckAcquireCondition();
     }
 

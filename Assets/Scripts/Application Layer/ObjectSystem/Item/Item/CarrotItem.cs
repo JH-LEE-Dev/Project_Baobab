@@ -31,6 +31,8 @@ public class CarrotItem : Item, IStaticCollidable
     private bool bDrop = true;
     public float amount { get; private set; } = 0;
 
+    public bool bCanApplyDamage => false;
+
     // 이동 관련 변수 (캐싱)
     private Vector3 startPos;
     private Vector3 endPos;

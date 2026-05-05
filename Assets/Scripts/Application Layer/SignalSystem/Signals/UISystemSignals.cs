@@ -12,9 +12,11 @@ public struct DeleteItemSignal
 public struct DungeonSelectedSignal
 {
     public MapType type;
-    public DungeonSelectedSignal(MapType _type)
+    public ForestType forestType;
+    public DungeonSelectedSignal(MapType _type, ForestType _forestType)
     {
         type = _type;
+        forestType = _forestType;
     }
 }
 

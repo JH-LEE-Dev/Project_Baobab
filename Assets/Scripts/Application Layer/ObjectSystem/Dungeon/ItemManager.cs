@@ -67,9 +67,9 @@ public class ItemManager : MonoBehaviour
         logItemController?.ReturnToPool(_item);
     }
 
-    public void SpawnCarrotItem(Vector3 _position)
+    public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)
     {
-        carrrotItemController?.SpawnCarrotItem(_position);
+        carrrotItemController?.SpawnCarrotItem(_position, _animalType);
     }
 
     public void ReturnCarrotToPool(CarrotItem _item)

@@ -15,6 +15,7 @@ public class UIView_HUD : UIView
     private ICharacter character;
 
     private MapType currentMapType;
+    private ForestType currentForestType;
 
     #region Default Logic
 
@@ -121,9 +122,10 @@ public class UIView_HUD : UIView
         hudEquipment?.UpdateRifleVisibility();
     }
 
-    public void SetCurrentMapType(MapType _currentMapType)
+    public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
     {
         currentMapType = _currentMapType;
+        currentForestType = _currentForestType;
 
         bool bTown = MapType.Town == currentMapType;
 

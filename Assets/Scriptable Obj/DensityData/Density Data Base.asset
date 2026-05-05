@@ -14,51 +14,61 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DensityDataBase
   densityDatas:
   - mapType: 2
-    spawnTreeTypes:
-    - treeType: 1
-      regenProb: 100
-    spawnAnimalTypes:
-    - animalType: 1
-      regenProb: 100
-    treeStartDensityRatio: 0.04
-    treeMaxDensityRatio: 0.07
-    animalStartDensityRatio: 0.03
-    animalMaxDensityRatio: 0.05
-    treeRegenMinTime: 10
-    treeRegenMaxTime: 15
-    animalRegenMinTime: 10
-    animalRegenMaxTime: 15
+    densityData:
+    - forestType: 2
+      spawnTreeTypes:
+      - treeType: 1
+        regenProb: 100
+      spawnAnimalTypes:
+      - animalType: 1
+        regenProb: 100
+      treeStartDensityRatio: 0.04
+      treeMaxDensityRatio: 0.07
+      animalStartDensityRatio: 0.03
+      animalMaxDensityRatio: 0.05
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
+      animalRegenMinTime: 10
+      animalRegenMaxTime: 15
+    - forestType: 3
+      spawnTreeTypes:
+      - treeType: 1
+        regenProb: 60
+      - treeType: 2
+        regenProb: 40
+      spawnAnimalTypes:
+      - animalType: 1
+        regenProb: 70
+      - animalType: 2
+        regenProb: 30
+      treeStartDensityRatio: 0.06
+      treeMaxDensityRatio: 0.1
+      animalStartDensityRatio: 0.05
+      animalMaxDensityRatio: 0.08
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
+      animalRegenMinTime: 10
+      animalRegenMaxTime: 15
+    - forestType: 4
+      spawnTreeTypes:
+      - treeType: 2
+        regenProb: 60
+      - treeType: 3
+        regenProb: 40
+      spawnAnimalTypes:
+      - animalType: 1
+        regenProb: 50
+      - animalType: 2
+        regenProb: 37.5
+      - animalType: 3
+        regenProb: 12.5
+      treeStartDensityRatio: 0.06
+      treeMaxDensityRatio: 0.1
+      animalStartDensityRatio: 0.05
+      animalMaxDensityRatio: 0.08
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
+      animalRegenMinTime: 10
+      animalRegenMaxTime: 15
   - mapType: 3
-    spawnTreeTypes:
-    - treeType: 3
-      regenProb: 60
-    - treeType: 2
-      regenProb: 40
-    spawnAnimalTypes:
-    - animalType: 1
-      regenProb: 100
-    treeStartDensityRatio: 0.06
-    treeMaxDensityRatio: 0.1
-    animalStartDensityRatio: 0.05
-    animalMaxDensityRatio: 0.08
-    treeRegenMinTime: 10
-    treeRegenMaxTime: 15
-    animalRegenMinTime: 10
-    animalRegenMaxTime: 15
-  - mapType: 4
-    spawnTreeTypes:
-    - treeType: 1
-      regenProb: 60
-    - treeType: 2
-      regenProb: 40
-    spawnAnimalTypes:
-    - animalType: 1
-      regenProb: 100
-    treeStartDensityRatio: 0.06
-    treeMaxDensityRatio: 0.1
-    animalStartDensityRatio: 0.05
-    animalMaxDensityRatio: 0.08
-    treeRegenMinTime: 10
-    treeRegenMaxTime: 15
-    animalRegenMinTime: 10
-    animalRegenMaxTime: 15
+    densityData: []
