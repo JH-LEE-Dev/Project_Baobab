@@ -17,6 +17,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     [SerializeField] private float maxHeightScale;
     [SerializeField] private Material shadowMaterial;
     [SerializeField] private Material buildingShadowMaterial;
+    [SerializeField] private Material characterShadowMaterial;
     [SerializeField] private Color shadowColor = new Color(0, 0, 0, 0.5f);
     private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
@@ -100,15 +101,15 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     private void UpdateShadows(float _timePercent)
     {
         // 1. 중앙화된 그림자 연산 (모든 Shadow 객체가 공유)
-        // 아침 6시(0.25) -> 350도, 저녁 6시(0.75) -> 170도
-        // Mathf.Repeat을 사용하여 0~360 범위를 부드럽게 순환시킴 (각도 점프 방지)
-        _currentShadowAngle = Mathf.Repeat(350f - (_timePercent - 0.25f) * 360f, 360f);
+        // 아침 6시(0.25) -> 서쪽(90도), 정오(0.5) -> 남쪽(180도), 저녁 6시(0.75) -> 동쪽(270도)
+        // Mathf.Repeat을 사용하여 0~360 범위를 부드럽게 순환시킴
+        _currentShadowAngle = Mathf.Repeat(-26 + (_timePercent - 0.25f) * 360f, 360f);
         _currentShadowRotation = Quaternion.Euler(0, 0, _currentShadowAngle);
 
         // 그림자 길이 연산: Mathf.Abs 대신 Sin^2을 사용하여 0 지점에서 부드러운 감가속 구현
         float timeAngle = _timePercent * Mathf.PI * 2f;
         float sinValue = Mathf.Sin(timeAngle);
-        float heightFactor = sinValue * sinValue; 
+        float heightFactor = sinValue * sinValue;
         _currentShadowScaleY = Mathf.Lerp(minHeightScale, maxHeightScale, heightFactor);
 
         // 2. 머티리얼 알파 페이드 로직
@@ -132,6 +133,11 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         {
             buildingShadowMaterial.SetColor(BaseColorId, targetColor);
         }
+
+        if (characterShadowMaterial != null)
+        {
+            characterShadowMaterial.SetColor(BaseColorId, targetColor);
+        }
     }
 
     private void UpdateLights(float _timePercent)
@@ -140,9 +146,9 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
         globalLight.SetCurrentTimePercent(_timePercent);
     }
-    
+
     public void WeatherChanged(WeatherType _weatherType)
     {
-        globalLight.SetCurrentWeather(_weatherType);   
+        globalLight.SetCurrentWeather(_weatherType);
     }
 }

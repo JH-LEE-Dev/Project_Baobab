@@ -55,6 +55,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private float treeGrowTime = 10f;
 
+    private bool bIsHiddenMap = false;
+
+    private HiddenMapGrade hiddenMapGrade;
+
     // // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
@@ -229,7 +233,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                 environmentProvider.densityProvider.UpdateTreeCnt(true);
 
                 if (_isGrowing)
-                {   
+                {
                     tree.SetIsSapling(true, treeGrowTime);
                 }
 
@@ -251,7 +255,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             {
                 // 성공적으로 생성했을 때만 컬링 그룹 갱신 플래그 설정
                 if (SpawnOneTreeFromAvailable(true))
-                { 
+                {
                     isCullingDirty = true;
                 }
             }
@@ -433,7 +437,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         isCullingDirty = true;
 
         treePool.Release(_treeObj);
-        
+
         TreeDeadEvent?.Invoke(_treeObj.treeData.type);
     }
 
@@ -546,5 +550,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private void CarrotItemAcquired(CarrotItem _item)
     {
         CarrotItemAcquiredEvent?.Invoke(_item);
+    }
+
+    public void SetIsHiddenMap(bool _bIsHiddenMap, HiddenMapGrade _hiddenMapGrade)
+    {
+        hiddenMapGrade = _hiddenMapGrade;
+        bIsHiddenMap = _bIsHiddenMap;
     }
 }

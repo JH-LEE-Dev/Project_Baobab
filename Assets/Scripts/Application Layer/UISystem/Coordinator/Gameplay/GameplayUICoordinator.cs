@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using UnityEngine;
 
 public class GameplayUICoordinator
@@ -296,5 +295,10 @@ public class GameplayUICoordinator
         hudUI.Refresh();
         popUpUI.Refresh();
         worldPopupUI.Refresh();
+    }
+
+    private void HiddenMapSelected(MapType _mapType, ForestType _forestType)
+    {
+        signalHub.Publish(new HiddenMapSelectedSignal(_mapType, _forestType));
     }
 }

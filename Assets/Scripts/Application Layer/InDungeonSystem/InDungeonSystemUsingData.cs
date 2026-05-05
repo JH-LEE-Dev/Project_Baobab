@@ -21,3 +21,13 @@ public struct TreeGradeProb
         probability = _probability;
     }
 }
+
+public enum HiddenMapGrade
+{
+    None,
+    Normal,
+    Fascinating,
+    Advanced,
+    Perfect,
+    Max,
+}

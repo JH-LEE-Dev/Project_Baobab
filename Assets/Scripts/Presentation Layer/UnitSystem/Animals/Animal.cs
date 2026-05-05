@@ -21,9 +21,13 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     [SerializeField] private float detectionRadius = 2.75f;
     [SerializeField] private LayerMask detectionLayerMask;
 
+    [Header("Shadow Visual")]
+    [SerializeField] private float shadowSideThreshold = 22.5f;
+
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
+    private Animator shadowAnim;
 
     private bool bIsUnderShadow = false;
     private float shadowLerp = 0f;
@@ -56,6 +60,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public bool bRunAway = false;
     public Vector3 FleeDirection { get; private set; }
     private Vector2 detectedCharacterPos;
+    private float currentFacingAngle = 0f;
 
     public AnimalAnimValueHandler animalAnimValueHandler { get; private set; }
 
@@ -89,7 +94,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         stateMachine = new StateMachine();
         animalAnimValueHandler = new AnimalAnimValueHandler();
 
-        anim = GetComponentInChildren<Animator>();
+        anim = animatorObject.GetComponent<Animator>();
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<Collider2D>();
 
@@ -98,6 +103,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
+        shadowAnim = shadowObject.GetComponent<Animator>();
         pathFindComponent = GetComponent<PathFindComponent>();
         healthComponent = GetComponent<EHealthComponent>();
         healthComponent.Initialize();
@@ -107,7 +113,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         SetupStateMachine();
 
-        animalAnimValueHandler.Initialize(anim);
+        animalAnimValueHandler.Initialize(anim, shadowAnim);
 
         if (statusEffectObject != null)
             statusEffectObject.SetActive(false);
@@ -144,38 +150,31 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     {
         if (_input.sqrMagnitude < 0.01f) return;
 
-        // 각도 계산 및 3방향 매핑 (0: 우/좌, 1: 상, 2: 하)
-        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
-        if (angle < 0) angle += 360;
+        // 90도 단위로 명확하게 4방향 구분 (absX, absY 비교)
+        float absX = Mathf.Abs(_input.x);
+        float absY = Mathf.Abs(_input.y);
 
         int dirIndex = 0;
         bool shouldFlip = false;
 
-        if (angle > 45 && angle <= 135)
+        if (absX > absY)
         {
-            dirIndex = 1; // Up
-        }
-        else if (angle > 135 && angle <= 225)
-        {
-            dirIndex = 0; // Right (Flipped to Left)
-            shouldFlip = true;
-        }
-        else if (angle > 225 && angle <= 315)
-        {
-            dirIndex = 2; // Down
+            dirIndex = 0; // Horizontal
+            shouldFlip = _input.x < 0;
         }
         else
         {
-            dirIndex = 0; // Right
-            shouldFlip = false;
+            if (_input.y > 0) dirIndex = 1; // Up
+            else dirIndex = 2; // Down
         }
 
+        // 1. 본체 방향 및 반전 설정
         anim.SetFloat(facingDirHash, dirIndex);
+        Vector3 bodyScale = animatorObject.transform.localScale;
+        bodyScale.x = shouldFlip ? -1f : 1f;
+        animatorObject.transform.localScale = bodyScale;
 
-        // 좌측 방향일 경우 transform 반전 처리
-        Vector3 localScale = animatorObject.transform.localScale;
-        localScale.x = shouldFlip ? -1f : 1f;
-        animatorObject.transform.localScale = localScale;
+        // 2. 그림자 방향 및 반전 설정 (UpdateShadowVisual에서 본체 상태를 기반으로 자동 동기화됨)
     }
 
     public void MoveTo(Vector3 _endPos, Vector3 _centerPos, float _scatterRadius)
@@ -215,7 +214,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
             FleeDirection = ((Vector2)transform.position - detectedCharacterPos).normalized;
         }
 
-        shadowSR.sprite = sr.sprite;
         UpdateAnimalColor();
 
         if (shadowObject != null)
@@ -225,6 +223,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
                 environmentProvider.shadowDataProvider.CurrentShadowScaleY,
                 environmentProvider.shadowDataProvider.IsShadowActive);
         }
+
+        UpdateShadowVisual();
     }
 
     private void FixedUpdate()
@@ -280,6 +280,64 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
         shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
         sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
+    }
+
+    private void UpdateShadowVisual()
+    {
+        if (shadowAnim == null || shadowSR == null) return;
+
+        bool isMoving = anim.GetBool(isMovingHash);
+        shadowAnim.SetBool(isMovingHash, isMoving);
+
+        // 본체의 현재 애니메이션 파라미터 및 Flip 상태를 기반으로 그림자 방향 동기화
+        int bodyDirIndex = Mathf.RoundToInt(anim.GetFloat(facingDirHash));
+        bool isFlipped = animatorObject.transform.localScale.x < 0;
+
+        int shadowDirIndex = bodyDirIndex;
+        float targetShadowX = isFlipped ? -1f : 1f;
+
+        // 광원 각도 동기화 및 방향 보정
+        float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
+        float normalizedAngle = shadowAngle % 360;
+        if (normalizedAngle < 0) normalizedAngle += 360;
+
+        // 1. 수평 방향 강제 보정 로직 (그림자가 좌/우로 길게 늘어질 때)
+        if (normalizedAngle <= shadowSideThreshold || normalizedAngle >= 360f - shadowSideThreshold)
+        {
+            shadowDirIndex = 0;
+            targetShadowX = 1f;
+        }
+        else if (normalizedAngle >= 180f - shadowSideThreshold && normalizedAngle <= 180f + shadowSideThreshold)
+        {
+            shadowDirIndex = 0;
+            targetShadowX = -1f;
+        }
+        else if (isMoving)
+        {
+            // 2. 그 외의 각도에서는 이동 방향에 따른 직교(Orthogonal) 그림자 로직 적용
+            if (bodyDirIndex == 0)
+            {
+                shadowDirIndex = isFlipped ? 2 : 1;
+            }
+            // 수직 이동(Up/Down)일 때는 그림자를 좌우(0)로 
+            // 이렇게 교차시켜야 그림자 방향이 180도(반원)를 차지하지 않고 90도씩 명확히 나뉨
+            else
+            {
+                shadowDirIndex = 0;
+                // 수직 이동 시에는 광원 각도에 따라 좌우 반전 결정
+                targetShadowX = (normalizedAngle > 90f && normalizedAngle < 270f) ? -1f : 1f;
+            }
+        }
+
+        shadowAnim.SetFloat(facingDirHash, shadowDirIndex);
+
+        // 그림자 Flip 설정 적용
+        Vector3 shadowScale = shadowSR.transform.localScale;
+        if (!Mathf.Approximately(shadowScale.x, targetShadowX))
+        {
+            shadowScale.x = targetShadowX;
+            shadowSR.transform.localScale = shadowScale;
+        }
     }
 
     public void TakeDamage(float _damage)

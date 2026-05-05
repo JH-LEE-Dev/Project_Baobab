@@ -30,6 +30,7 @@ MonoBehaviour:
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
+      limitHiddenGauge: 100
     - forestType: 3
       spawnTreeTypes:
       - treeType: 1
@@ -49,6 +50,7 @@ MonoBehaviour:
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
+      limitHiddenGauge: 150
     - forestType: 4
       spawnTreeTypes:
       - treeType: 2
@@ -70,5 +72,6 @@ MonoBehaviour:
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
+      limitHiddenGauge: 250
   - mapType: 3
     densityData: []
