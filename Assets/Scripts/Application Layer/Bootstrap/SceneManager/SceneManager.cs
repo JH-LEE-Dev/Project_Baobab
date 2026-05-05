@@ -3,6 +3,7 @@ using UnityEngine;
 public enum ForestType
 {
     None,
+    InTown,
     Vegetatedplains_1,
     Vegetatedplains_2,
     Vegetatedplains_3,

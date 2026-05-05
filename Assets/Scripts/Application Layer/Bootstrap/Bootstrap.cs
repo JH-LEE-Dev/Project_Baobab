@@ -31,7 +31,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private bool bFadeComplete = false;
     private bool bNewGame = false;
     private MapType currentMapType = MapType.Town;
-    private ForestType currentForestType = ForestType.None;
+    private ForestType currentForestType = ForestType.InTown;
 
     // 유니티 이벤트 함수
     private void Awake()
