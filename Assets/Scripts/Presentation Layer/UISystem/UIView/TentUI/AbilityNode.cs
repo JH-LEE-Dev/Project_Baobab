@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using PresentationLayer.DOTweenAnimationSystem;
 
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
@@ -25,14 +26,21 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Header("Motion Settings")]
     [SerializeField] private ObjectMotionPlayer motionPlayer;
     [SerializeField] private string hoverMotionTag = "UIHover";
+    [SerializeField] private string unHoverMotionTag = "UIUnHover";
     [SerializeField] private string clickMotionTag = "UIClick";
+    [SerializeField] private string nonPassClickMotionTag = "UIClick_Nonpass";
     [SerializeField] private bool resetCurrentMotionBeforePlay = false;
+    [SerializeField] private float hoverStablePadding = 8f;
 
     private UI_TentAbilityComponent owner;
+    private Canvas rootCanvas;
     private bool canApplyVisual;
     private bool completedVisual;
+    private bool isPointerHovering;
     private MotionEntry hoverMotionEntry;
+    private MotionEntry unHoverMotionEntry;
     private MotionEntry clickMotionEntry;
+    private MotionEntry nonPassClickMotionEntry;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -46,10 +54,27 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void Awake()
     {
+        rootCanvas = GetComponentInParent<Canvas>();
+
         if (null != motionPlayer)
             return;
 
         motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
+    }
+
+    private void Update()
+    {
+        if (isPointerHovering == false)
+            return;
+
+        Mouse mouse = Mouse.current;
+        if (mouse == null)
+            return;
+
+        if (IsScreenPointInsideStableHoverArea(mouse.position.ReadValue()))
+            return;
+
+        EndHover();
     }
 
     // 특성 노드의 내부 그림을 외부에서 교체한다.
@@ -171,6 +196,11 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     // 마우스가 노드 위에 올라오면 상위 컴포넌트에 툴팁 표시를 요청한다.
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (isPointerHovering)
+            return;
+
+        isPointerHovering = true;
+        owner?.ShowSelectionCursor(this);
         owner?.ShowToolTip(this);
         PlayHoverMotion();
     }
@@ -178,7 +208,10 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     // 마우스가 노드 밖으로 나가면 상위 컴포넌트에 툴팁 숨김을 요청한다.
     public void OnPointerExit(PointerEventData eventData)
     {
-        owner?.HideToolTip(this);
+        if (IsPointerInsideStableHoverArea(eventData))
+            return;
+
+        EndHover();
     }
 
     // 노드 클릭 시 상위 컴포넌트에 레벨업 요청을 전달한다.
@@ -190,6 +223,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         bool isApproved = owner != null && owner.TryRequestNodeLevelUp(this);
         if (true == isApproved)
             PlayClickMotion();
+        else
+            PlayNonPassClickMotion();
     }
 
     private void PlayHoverMotion()
@@ -201,7 +236,21 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         ResetEntryMotion(clickMotionEntry);
+        ResetEntryMotion(unHoverMotionEntry);
+        ResetEntryMotion(nonPassClickMotionEntry);
         hoverMotionEntry = motionPlayer.Play(hoverMotionTag, bReset: resetCurrentMotionBeforePlay);
+    }
+
+    private void PlayUnHoverMotion()
+    {
+        if (null == motionPlayer || string.IsNullOrEmpty(unHoverMotionTag))
+            return;
+
+        if (IsClickMotionPlaying())
+            return;
+
+        ResetEntryMotion(hoverMotionEntry);
+        unHoverMotionEntry = motionPlayer.Play(unHoverMotionTag, bReset: resetCurrentMotionBeforePlay);
     }
 
     private void PlayClickMotion()
@@ -210,7 +259,20 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         ResetEntryMotion(hoverMotionEntry);
+        ResetEntryMotion(unHoverMotionEntry);
+        ResetEntryMotion(nonPassClickMotionEntry);
         clickMotionEntry = motionPlayer.Play(clickMotionTag, bReset: resetCurrentMotionBeforePlay);
+    }
+
+    private void PlayNonPassClickMotion()
+    {
+        if (null == motionPlayer || string.IsNullOrEmpty(nonPassClickMotionTag))
+            return;
+
+        ResetEntryMotion(hoverMotionEntry);
+        ResetEntryMotion(unHoverMotionEntry);
+        ResetEntryMotion(clickMotionEntry);
+        nonPassClickMotionEntry = motionPlayer.Play(nonPassClickMotionTag, bReset: resetCurrentMotionBeforePlay);
     }
 
     private void ResetEntryMotion(MotionEntry _entry)
@@ -219,5 +281,77 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         motionPlayer.SettingEntryMotion(_entry, true, true);
+    }
+
+    private bool IsClickMotionPlaying()
+    {
+        if (motionPlayer == null)
+            return false;
+
+        bool isClickPlaying = string.IsNullOrEmpty(clickMotionTag) == false &&
+                              motionPlayer.IsPlaying(clickMotionTag);
+        bool isNonPassClickPlaying = string.IsNullOrEmpty(nonPassClickMotionTag) == false &&
+                                     motionPlayer.IsPlaying(nonPassClickMotionTag);
+
+        return isClickPlaying || isNonPassClickPlaying;
+    }
+
+    private bool IsPointerInsideStableHoverArea(PointerEventData _eventData)
+    {
+        if (_eventData == null)
+            return false;
+
+        return IsScreenPointInsideStableHoverArea(_eventData.position);
+    }
+
+    private bool IsScreenPointInsideStableHoverArea(Vector2 _screenPoint)
+    {
+        RectTransform nodeRectTransform = RectTransform;
+        RectTransform visualRectTransform = GetStableHoverVisualRectTransform();
+        if (nodeRectTransform == null || visualRectTransform == null)
+            return false;
+
+        Vector2 center = RectTransformUtility.WorldToScreenPoint(GetEventCamera(), nodeRectTransform.TransformPoint(Vector3.zero));
+        Vector2 size = visualRectTransform.rect.size;
+        Vector3 lossyScale = nodeRectTransform.lossyScale;
+        size.x *= Mathf.Abs(lossyScale.x);
+        size.y *= Mathf.Abs(lossyScale.y);
+        size += Vector2.one * hoverStablePadding * 2f;
+
+        Rect stableRect = new Rect(center - size * 0.5f, size);
+        return stableRect.Contains(_screenPoint);
+    }
+
+    private void EndHover()
+    {
+        if (isPointerHovering == false)
+            return;
+
+        isPointerHovering = false;
+        owner?.HideSelectionCursor(this);
+        owner?.HideToolTip(this);
+        PlayUnHoverMotion();
+    }
+
+    private RectTransform GetStableHoverVisualRectTransform()
+    {
+        if (abilityBaseImage != null)
+            return abilityBaseImage.rectTransform;
+
+        if (abilityBackgroundImage != null)
+            return abilityBackgroundImage.rectTransform;
+
+        if (abilityPictureImage != null)
+            return abilityPictureImage.rectTransform;
+
+        return RectTransform;
+    }
+
+    private Camera GetEventCamera()
+    {
+        if (rootCanvas == null || rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            return null;
+
+        return rootCanvas.worldCamera;
     }
 }

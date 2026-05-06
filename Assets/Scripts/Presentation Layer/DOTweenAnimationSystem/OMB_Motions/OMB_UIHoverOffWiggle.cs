@@ -3,22 +3,16 @@ using UnityEngine;
 
 namespace PresentationLayer.DOTweenAnimationSystem
 {
-    public class OMB_UIHoverWiggle : ObjectMotionBase
+    public class OMB_UIHoverOffWiggle : ObjectMotionBase
     {
         [System.Serializable]
         public class ValueSettings
         {
-            [Header("Scale Settings")]
-            public float shrinkScale = 0.8f;
-            [Range(0f, 1f)] public float shrinkTimeRatio = 0.08f;
-            [Range(0f, 1f)] public float restoreTimeRatio = 0.12f;
-            public Ease scaleEase = Ease.OutBack;
-
             [Header("Rotation Settings")]
-            public float startAngle = 20f;
+            public float startAngle = 12f;
             public float angleDamping = 0.62f;
             public int swingCount = 5;
-            [Range(0f, 1f)] public float rotationTimeRatio = 0.8f;
+            [Range(0f, 1f)] public float rotationTimeRatio = 1f;
             public Ease rotationEase = Ease.OutSine;
         }
 
@@ -51,7 +45,6 @@ namespace PresentationLayer.DOTweenAnimationSystem
             };
 
             stateCache.Add(_state);
-            _seq.Join(BuildScaleTween(_rect, _state.localScale));
             _seq.Join(BuildRotationTween(_rect, _state.localRotation));
         }
 
@@ -69,7 +62,6 @@ namespace PresentationLayer.DOTweenAnimationSystem
             };
 
             stateCache.Add(_state);
-            _seq.Join(BuildScaleTween(_trans, _state.localScale));
             _seq.Join(BuildRotationTween(_trans, _state.localRotation));
         }
 
@@ -97,17 +89,6 @@ namespace PresentationLayer.DOTweenAnimationSystem
             RestoreMotionState();
         }
 
-        private Tween BuildScaleTween(Transform _target, Vector3 _initialScale)
-        {
-            Vector3 shrinkScale = _initialScale * valueSettings.shrinkScale;
-            float shrinkDuration = forwardDuration * Mathf.Clamp01(valueSettings.shrinkTimeRatio);
-            float restoreDuration = forwardDuration * Mathf.Clamp01(valueSettings.restoreTimeRatio);
-
-            return DOTween.Sequence()
-                .Append(_target.DOScale(shrinkScale, shrinkDuration).SetEase(Ease.OutQuad))
-                .Append(_target.DOScale(_initialScale, restoreDuration).SetEase(valueSettings.scaleEase));
-        }
-
         private Tween BuildRotationTween(Transform _target, Vector3 _initialRotation)
         {
             Sequence sequence = DOTween.Sequence();
@@ -118,7 +99,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             for (int i = 0; i < swingCount; i++)
             {
-                float direction = i % 2 == 0 ? -1f : 1f;
+                float direction = i % 2 == 0 ? 1f : -1f;
                 Vector3 targetRotation = _initialRotation;
                 targetRotation.z += angle * direction;
 

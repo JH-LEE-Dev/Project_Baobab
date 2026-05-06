@@ -1,19 +1,19 @@
 fileFormatVersion: 2
-guid: 76b04375a60dc404a9239dc2ff820f34
+guid: 4ae96d8de2dccf34182b0f16bcd279bd
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4148023920394844618
-    second: Select_0
+      213: -4556293372219145032
+    second: Select2_0
   - first:
-      213: -1736840564374045135
-    second: Select_1
+      213: 5040387134723776744
+    second: Select2_1
   - first:
-      213: -4959218741625957732
-    second: Select_2
+      213: 4064895625642222594
+    second: Select2_2
   - first:
-      213: 8238017609631751394
-    second: Select_3
+      213: 3424755092874879334
+    second: Select2_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -61,7 +61,7 @@ TextureImporter:
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
-  spriteBorder: {x: 6, y: 6, z: 6, w: 6}
+  spriteBorder: {x: 10, y: 10, z: 10, w: 10}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
   alphaIsTransparency: 1
@@ -109,13 +109,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Select_0
+      name: Select2_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 26
-        width: 6
-        height: 6
+        y: 23
+        width: 9
+        height: 9
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -124,20 +124,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ac935f647cdb09930800000000000000
-      internalID: 4148023920394844618
+      spriteID: 8b44968715bc4c0c0800000000000000
+      internalID: -4556293372219145032
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Select_1
+      name: Select2_1
       rect:
         serializedVersion: 2
-        x: 26
-        y: 26
-        width: 6
-        height: 6
+        x: 23
+        y: 23
+        width: 9
+        height: 9
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -146,20 +146,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 13efef875b085e7e0800000000000000
-      internalID: -1736840564374045135
+      spriteID: 8e0e8a7d46d03f540800000000000000
+      internalID: 5040387134723776744
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Select_2
+      name: Select2_2
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 6
-        height: 6
+        width: 9
+        height: 9
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -168,20 +168,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: c92dced54d05d2bb0800000000000000
-      internalID: -4959218741625957732
+      spriteID: 204a177e809696830800000000000000
+      internalID: 4064895625642222594
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Select_3
+      name: Select2_3
       rect:
         serializedVersion: 2
-        x: 26
+        x: 23
         y: 0
-        width: 6
-        height: 6
+        width: 9
+        height: 9
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -190,8 +190,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2ec538b7e51535270800000000000000
-      internalID: 8238017609631751394
+      spriteID: 6616481ac9c278f20800000000000000
+      internalID: 3424755092874879334
       vertices: []
       indices: 
       edges: []
@@ -210,10 +210,10 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Select_0: 4148023920394844618
-      Select_1: -1736840564374045135
-      Select_2: -4959218741625957732
-      Select_3: 8238017609631751394
+      Select2_0: -4556293372219145032
+      Select2_1: 5040387134723776744
+      Select2_2: 4064895625642222594
+      Select2_3: 3424755092874879334
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
