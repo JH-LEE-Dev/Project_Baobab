@@ -9,7 +9,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     /// <summary>
     /// 맵 선택 UI를 닫는 기능을 수행하는 버튼 클래스입니다.
     /// </summary>
-    public class HUD_MapExitButton : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
+    public class HUD_MapExitButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler,  IPointerClickHandler
     {
         // //외부 의존성
         [Header("Animation")]
@@ -21,13 +21,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isInitialized = false;
 
         private MotionEntry enterAnim;
+        private MotionEntry exitAnim;
         private MotionEntry clickedAnim;
 
         private static readonly Color normalColor = Color.white;
         private static readonly Color dimmedColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
 
-        private static readonly string hoverMotionKey = "Hover";
-        private static readonly string clickMotionKey = "Click";
+        private static readonly string hoverMotionKey = "ExitWiggle";
+        private static readonly string hoverOffMotionKey = "ExitOffWiggle";
+        private static readonly string clickMotionKey = "ExitClickTwist";
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -69,18 +71,36 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
 
             motionPlayer.SettingEntryMotion(clickedAnim, true, true);
-            enterAnim = motionPlayer.Play(hoverMotionKey);
+            motionPlayer.SettingEntryMotion(exitAnim, true, true);
+
+            enterAnim = motionPlayer.Play(hoverMotionKey, bReset: true);
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            if (null == motionPlayer)
+                return;
+
+            motionPlayer.SettingEntryMotion(enterAnim, true, true);
+            motionPlayer.SettingEntryMotion(clickedAnim, true, true);
+
+            exitAnim = motionPlayer.Play(hoverOffMotionKey,  bReset: true);
         }
 
         public void OnPointerClick(PointerEventData _eventData)
         {
+            onExitEvent?.Invoke();
+            return;
+
             if (null != motionPlayer)
             {
                 motionPlayer.SettingEntryMotion(enterAnim, true, true);
-                clickedAnim = motionPlayer.Play(clickMotionKey);
-            }
+                motionPlayer.SettingEntryMotion(exitAnim, true, true);
 
-            onExitEvent?.Invoke();
+                clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: callBack);
+            }
         }
+
+        private void callBack() => onExitEvent?.Invoke();
     }
 }

@@ -137,6 +137,27 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
         }
 
+        /// <summary>
+        /// 현재 선택된 내역을 모두 지우고 초기화합니다.
+        /// </summary>
+        public void ClearSelection()
+        {
+            currentSelectedNumber = -1;
+
+            if (null != selectorCursor)
+                selectorCursor.HideImmediately();
+
+            for (int _i = 0; _i < subRegions.Length; _i++)
+            {
+                if (null != subRegions[_i])
+                {
+                    subRegions[_i].SetSelect(false);
+                }
+            }
+
+            onSelectionChanged?.Invoke();
+        }
+
         // //내부 로직 (콜백 메서드)
 
         private void OnRegionHoverEntered(RectTransform _targetRect)

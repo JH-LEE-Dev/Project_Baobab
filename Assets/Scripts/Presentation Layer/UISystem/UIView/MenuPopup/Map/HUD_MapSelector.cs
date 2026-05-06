@@ -34,6 +34,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private List<HUD_MapRegion> spawnedRegions = new List<HUD_MapRegion>(8);
         private HUD_MapRegion currentFocusedRegion;
         private Action<MapType, ForestType> onConfirmCallback;
+        private Action onExitCallback;
         
         private bool isInitialized = false;
         private bool isDayTime = true;
@@ -56,6 +57,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             mapDataProvider = _mapDataProvider;
             timeDataProvider = _timeDataProvider;
             onConfirmCallback = _onConfirm;
+            onExitCallback = _onExit;
 
             if (null != regionContainer)
                 containerRect = regionContainer.GetComponent<RectTransform>();
@@ -70,7 +72,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 selectButton.Initialize(HandleConfirm);
 
             if (null != exitButton)
-                exitButton.Initialize(_onExit);
+                exitButton.Initialize(HandleExit);
 
             SetupRegionsFromData();
 
@@ -153,6 +155,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             if (MapType.None != _mapType && ForestType.None != _forestType)
                 onConfirmCallback?.Invoke(_mapType, _forestType);
+        }
+
+        private void HandleExit()
+        {
+            if (null != subSelector)
+                subSelector.ClearSelection();
+
+            onExitCallback?.Invoke();
         }
 
         private void UpdateSunMoonState()

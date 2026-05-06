@@ -10,7 +10,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     /// 맵 선택 UI에서 최종 결정을 내리는 확인 버튼 클래스입니다.
     /// 마우스 호버 및 클릭 이벤트를 처리하며 상위 UIView로 이벤트를 전달합니다.
     /// </summary>
-    public class HUD_MapSelectButton : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
+    public class HUD_MapSelectButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         // //외부 의존성
         [Header("Animation")]
@@ -22,13 +22,17 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isInitialized = false;
 
         private MotionEntry enterAnim;
+        private MotionEntry exitAnim;
         private MotionEntry clickedAnim;
 
         private static readonly Color normalColor = Color.white;
         private static readonly Color dimmedColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
 
-        private static readonly string hoverMotionKey = "Hover";
-        private static readonly string clickMotionKey = "Click";
+        private static readonly string hoverMotionKey = "OkWiggle";
+        private static readonly string hoverOffMotionKey = "OkOffWiggle";
+        private static readonly string clickMotionKey = "OkClickTwist";
+
+        bool isDimmed = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -58,6 +62,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == buttonImage)
                 return;
 
+            isDimmed = _isDimmed;
+
             buttonImage.color = (true == _isDimmed) ? dimmedColor : normalColor;
             buttonImage.raycastTarget = (false == _isDimmed);
         }
@@ -66,22 +72,41 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            if (null == motionPlayer)
+            if (null == motionPlayer || isDimmed)
                 return;
 
             motionPlayer.SettingEntryMotion(clickedAnim, true, true);
-            enterAnim = motionPlayer.Play(hoverMotionKey);
+            motionPlayer.SettingEntryMotion(exitAnim, true, true);
+
+            enterAnim = motionPlayer.Play(hoverMotionKey, bReset: true);
+        }
+
+        
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            if (null == motionPlayer || isDimmed)
+                return;
+
+            motionPlayer.SettingEntryMotion(enterAnim, true, true);
+            motionPlayer.SettingEntryMotion(clickedAnim, true, true);
+
+            exitAnim = motionPlayer.Play(hoverOffMotionKey, bReset: true);
         }
 
         public void OnPointerClick(PointerEventData _eventData)
         {
-            if (null != motionPlayer)
+            onConfirmEvent?.Invoke();
+            return;
+
+            if (null != motionPlayer && !isDimmed)
             {
                 motionPlayer.SettingEntryMotion(enterAnim, true, true);
-                clickedAnim = motionPlayer.Play(clickMotionKey);
-            }
+                motionPlayer.SettingEntryMotion(exitAnim, true, true);
 
-            onConfirmEvent?.Invoke();
+                clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: callBack);
+            }
         }
+
+        private void callBack() => onConfirmEvent?.Invoke();
     }
 }
