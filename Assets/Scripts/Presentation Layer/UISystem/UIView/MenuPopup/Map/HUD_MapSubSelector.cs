@@ -54,17 +54,19 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 selectorCursor.HideImmediately();
 
             int _dataCount = _forestDatas.Count;
-            Debug.Log($"Region {_dataCount}");
 
             for (int _i = 0; _i < subRegions.Length; _i++)
+            {
                 if (null != subRegions[_i])
                     if (_i < _dataCount)
                     {
                         subRegions[_i].gameObject.SetActive(true);
                         subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHoverEntered, OnRegionHoverExited, OnRegionSelected);
+                        subRegions[_i].SetProgress(_forestDatas[_i].limitHiddenGauge / _forestDatas[_i].currentHiddenGauge);
                     }
                     else
                         subRegions[_i].gameObject.SetActive(false);
+            }
         }
 
         public ForestType GetSelectedForestType()
