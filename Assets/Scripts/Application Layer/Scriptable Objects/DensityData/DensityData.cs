@@ -38,6 +38,7 @@ public struct AnimalDensityData
     public float regenProb;
 }
 
+[System.Serializable]
 public struct ForestHiddenGaugeData
 {
     public ForestType forestType;

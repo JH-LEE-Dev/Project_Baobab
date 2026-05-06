@@ -162,10 +162,25 @@ public struct LogProcessingSaveData
 }
 
 [Serializable]
+public struct MapHiddenGaugeSaveData
+{
+    public MapType mapType;
+    public ForestType forestType;
+    public float hiddenGauge;
+}
+
+[Serializable]
 public struct EnvironmentSaveData
 {
     public float treeDensityMultiplier;
     public float rabbitDensityMultiplier;
+    public List<MapHiddenGaugeSaveData> hiddenGaugeDatas;
+
+    public void Initialize()
+    {
+        if (hiddenGaugeDatas == null) hiddenGaugeDatas = new List<MapHiddenGaugeSaveData>(8);
+        else hiddenGaugeDatas.Clear();
+    }
 }
 
 [Serializable]
@@ -204,5 +219,6 @@ public class GameSaveData
         inventorySaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
         logProcessingSaveData.Initialize();
         if (logDropProbSaveData.logProbDatas != null) logDropProbSaveData.logProbDatas.Clear();
+        environmentSaveData.Initialize();
     }
 }

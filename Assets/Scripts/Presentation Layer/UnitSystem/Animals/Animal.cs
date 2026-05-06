@@ -21,9 +21,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     [SerializeField] private float detectionRadius = 2.75f;
     [SerializeField] private LayerMask detectionLayerMask;
 
-    [Header("Shadow Visual")]
-    [SerializeField] private float shadowSideThreshold = 22.5f;
-
     public StateMachine stateMachine { get; private set; }
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
