@@ -59,7 +59,6 @@ Shader "Custom/OnWaterObject"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
-                float4 _BaseMap_ST;
                 float _WaveSpeed;
                 float _WaveStrength;
                 float _WaveFreq;
@@ -70,7 +69,7 @@ Shader "Custom/OnWaterObject"
             {
                 Varyings OUT;
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
-                OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);
+                OUT.uv = IN.uv;
                 
                 // 일렁임 계산을 위해 월드 XY 좌표 전달
                 float3 wPos = TransformObjectToWorld(IN.positionOS.xyz);

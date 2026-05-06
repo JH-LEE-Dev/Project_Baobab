@@ -278,8 +278,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         onWaterAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
         onWaterAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
 
-        // 메인 스프라이트의 스케일(FlipX 포함) 그대로 복사
-        onWaterSR.transform.localScale = sr.transform.localScale;
+        // 메인 스프라이트의 스케일(FlipX 포함)의 반대값 적용
+        Vector3 reversedScale = sr.transform.localScale;
+        reversedScale.x *= -1f;
+        onWaterSR.transform.localScale = reversedScale;
     }
 
     private void UpdateShadowVisual()
