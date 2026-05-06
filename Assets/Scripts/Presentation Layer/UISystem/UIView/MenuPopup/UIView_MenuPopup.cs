@@ -37,7 +37,7 @@ public class UIView_MenuPopup : UIView
         mapDataProvider = _mapDataProvider;
 
         if (null != mapSelector)
-            mapSelector.Initialize(mapDataProvider, weatherProvider, timeDataProvider, HandleEnterDungeon);
+            mapSelector.Initialize(mapDataProvider, weatherProvider, timeDataProvider, HandleEnterDungeon, CloseTeleportUI);
     }
 
     private void HandleEnterDungeon(MapType _type, ForestType _forestType)

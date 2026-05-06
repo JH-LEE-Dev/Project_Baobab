@@ -7,10 +7,9 @@ using PresentationLayer.DOTweenAnimationSystem;
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
     /// <summary>
-    /// 맵 선택 UI에서 최종 결정을 내리는 확인 버튼 클래스입니다.
-    /// 마우스 호버 및 클릭 이벤트를 처리하며 상위 UIView로 이벤트를 전달합니다.
+    /// 맵 선택 UI를 닫는 기능을 수행하는 버튼 클래스입니다.
     /// </summary>
-    public class HUD_MapSelectButton : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
+    public class HUD_MapExitButton : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
     {
         // //외부 의존성
         [Header("Animation")]
@@ -18,7 +17,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private Image buttonImage;
 
         // //내부 의존성
-        private Action onConfirmEvent;
+        private Action onExitEvent;
         private bool isInitialized = false;
 
         private MotionEntry enterAnim;
@@ -35,7 +34,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         /// <summary>
         /// 버튼을 초기화하고 콜백을 등록합니다.
         /// </summary>
-        public void Initialize(Action _onConfirm)
+        public void Initialize(Action _onExit)
         {
             if (true == isInitialized)
                 return;
@@ -46,7 +45,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == buttonImage)
                 buttonImage = GetComponent<Image>();
 
-            onConfirmEvent = _onConfirm;
+            onExitEvent = _onExit;
             isInitialized = true;
         }
 
@@ -81,7 +80,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 clickedAnim = motionPlayer.Play(clickMotionKey);
             }
 
-            onConfirmEvent?.Invoke();
+            onExitEvent?.Invoke();
         }
     }
 }

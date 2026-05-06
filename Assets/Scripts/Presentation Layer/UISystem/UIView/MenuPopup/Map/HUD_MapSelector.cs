@@ -17,6 +17,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private HUD_MapSubSelector subSelector; // 서브 지역 셀렉터
         [SerializeField] private HUD_MapSunMoon sunMoon;         // 밤낮 연출 관리자
         [SerializeField] private HUD_MapSelectButton selectButton; // 선택 확인 버튼
+        [SerializeField] private HUD_MapExitButton exitButton;     // 종료 버튼
         [SerializeField] private Transform regionContainer;     // 지역 항목 부모 컨테이너
         [SerializeField] private GameObject regionPrefab;       // 지역 항목 프리팹
 
@@ -47,7 +48,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         /// <summary>
         /// 셀렉터를 초기화하고 콜백을 등록합니다.
         /// </summary>
-        public void Initialize(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, Action<MapType, ForestType> _onConfirm)
+        public void Initialize(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, Action<MapType, ForestType> _onConfirm, Action _onExit)
         {
             if (true == isInitialized)
                 return;
@@ -60,13 +61,16 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 containerRect = regionContainer.GetComponent<RectTransform>();
 
             if (null != subSelector)
-                subSelector.Initialize();
+                subSelector.Initialize(RefreshSelectButtonState);
 
             if (null != sunMoon)
                 sunMoon.Initialize();
 
             if (null != selectButton)
                 selectButton.Initialize(HandleConfirm);
+
+            if (null != exitButton)
+                exitButton.Initialize(_onExit);
 
             SetupRegionsFromData();
 
@@ -78,9 +82,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 UpdateSunMoonState();
         }
 
-        /// <summary>
-        /// 밤낮 상태를 설정하고 관련 애니메이션을 재생합니다.
-        /// </summary>
         public void SetTimeState(bool _isDay)
         {
             isDayTime = _isDay;
@@ -168,7 +169,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private void FocusRegion(int _index)
         {
             if (0 > _index || _index >= spawnedRegions.Count)
+            {
+                if (null != selectButton)
+                    selectButton.SetDimmed(true);
                 return;
+            }
 
             currentFocusedRegion = spawnedRegions[_index];
             targetPosX = -(_index * itemSpacing);
@@ -182,6 +187,17 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             if (null != subSelector && null != currentFocusedRegion.GetMapEnvironmentInfo().forestDatas)
                 subSelector.SetSubRegions(currentFocusedRegion.GetMapEnvironmentInfo().forestDatas);
+
+            RefreshSelectButtonState();
+        }
+
+        private void RefreshSelectButtonState()
+        {
+            if (null == selectButton)
+                return;
+
+            bool _isDimmed = (null == currentFocusedRegion) || (ForestType.None == subSelector.GetSelectedForestType());
+            selectButton.SetDimmed(_isDimmed);
         }
 
         // //Event System 구현부
@@ -194,7 +210,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 subSelector.SetVisibility(false);
 
             if (null != selectButton)
-                selectButton.gameObject.SetActive(false);
+                selectButton.SetDimmed(true);
         }
 
         public void OnDrag(PointerEventData _eventData)
@@ -238,21 +254,20 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 _currentPos.x = Mathf.Lerp(_currentPos.x, targetPosX, Time.deltaTime * snapSpeed);
                 containerRect.localPosition = _currentPos;
 
-                // 이동 중에는 숨김
+                // 이동 중에는 숨김/흐리게
                 if (null != subSelector)
                     subSelector.SetVisibility(false);
 
                 if (null != selectButton)
-                    selectButton.gameObject.SetActive(false);
+                    selectButton.SetDimmed(true);
             }
             else
             {
-                // 목표 위치에 도달하여 멈췄을 때만 표시
+                // 목표 위치에 도달하여 멈췄을 때만 표시/밝게
                 if (null != subSelector)
                     subSelector.SetVisibility(true);
 
-                if (null != selectButton && false == selectButton.gameObject.activeSelf)
-                    selectButton.gameObject.SetActive(true);
+                RefreshSelectButtonState();
             }
         }
     }

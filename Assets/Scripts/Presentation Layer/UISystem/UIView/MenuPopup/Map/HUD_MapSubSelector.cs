@@ -15,15 +15,19 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private UISelectionCursor selectorCursor; // 선택 표시 커서
 
         // //내부 의존성
+        private Action onSelectionChanged;
         private int currentSelectedNumber = -1;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        public void Initialize()
+        public void Initialize(Action _onSelectionChanged = null)
         {
             if (true == isInitialized)
                 return;
+
+            if (null != _onSelectionChanged)
+                onSelectionChanged = _onSelectionChanged;
 
             if (null == subRegions)
                 return;
@@ -162,6 +166,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     subRegions[_i].SetSelect(subRegions[_i].GetNumber() == _number);
                 }
             }
+
+            onSelectionChanged?.Invoke();
         }
             
         // //유니티 이벤트 함수
