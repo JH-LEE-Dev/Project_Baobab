@@ -41,6 +41,7 @@ public class AbilityToolTip : MonoBehaviour
     private Tween motionTween;
     private Vector2 baseAnchoredPosition;
     private Vector3 baseLocalScale = Vector3.one;
+    private bool hasCachedBaseLocalScale;
 
     public RectTransform RootRectTransform => rootRectTransform;
     public TMP_Text TitleAndLevelText => titleAndLevelText;
@@ -130,8 +131,8 @@ public class AbilityToolTip : MonoBehaviour
         if (rootRectTransform == null)
             return;
 
+        CacheBaseLocalScale();
         rootRectTransform.anchoredPosition = _anchoredPosition;
-        baseLocalScale = rootRectTransform.localScale;
     }
 
     public void Show()
@@ -152,6 +153,7 @@ public class AbilityToolTip : MonoBehaviour
             return;
 
         EnsureCanvasGroup();
+        CacheBaseLocalScale();
         canvasGroup.alpha = 0f;
         rootRectTransform.anchoredPosition = baseAnchoredPosition + Vector2.up * showStartOffsetY;
         rootRectTransform.localEulerAngles = Vector3.zero;
@@ -179,6 +181,7 @@ public class AbilityToolTip : MonoBehaviour
         }
 
         EnsureCanvasGroup();
+        CacheBaseLocalScale();
         rootRectTransform.localEulerAngles = Vector3.zero;
         rootRectTransform.localScale = baseLocalScale;
 
@@ -198,6 +201,7 @@ public class AbilityToolTip : MonoBehaviour
             return;
 
         EnsureCanvasGroup();
+        CacheBaseLocalScale();
         canvasGroup.alpha = 1f;
         rootRectTransform.anchoredPosition = baseAnchoredPosition;
         rootRectTransform.localEulerAngles = Vector3.zero;
@@ -335,6 +339,15 @@ public class AbilityToolTip : MonoBehaviour
             motionTween.Kill(false);
 
         motionTween = null;
+    }
+
+    private void CacheBaseLocalScale()
+    {
+        if (hasCachedBaseLocalScale || rootRectTransform == null)
+            return;
+
+        baseLocalScale = rootRectTransform.localScale;
+        hasCachedBaseLocalScale = true;
     }
 
     private void OnDestroy()
