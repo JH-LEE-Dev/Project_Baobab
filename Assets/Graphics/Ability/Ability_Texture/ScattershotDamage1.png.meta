@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2c5ce7e12fb69de4482e5054d8496d38
+guid: 0a1fc70707fa0b541b967d0a57758cf5
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -103,10 +103,10 @@ TextureImporter:
       name: ScattershotDamage1_0
       rect:
         serializedVersion: 2
-        x: 2
+        x: 3
         y: 3
-        width: 27
-        height: 24
+        width: 26
+        height: 25
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

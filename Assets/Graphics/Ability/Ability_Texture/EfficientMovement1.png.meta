@@ -1,10 +1,13 @@
 fileFormatVersion: 2
-guid: 13ce0f5c518e3094c888407c92267630
+guid: 041b4211ec9c9674cb0218b10598cc98
 TextureImporter:
   internalIDToNameTable:
   - first:
       213: 6859287502441067958
     second: EfficientMovement1_0
+  - first:
+      213: 5838787687188031527
+    second: EfficientMovement1_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -104,9 +107,9 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 4
-        y: 3
-        width: 25
-        height: 27
+        y: 18
+        width: 11
+        height: 9
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -117,6 +120,28 @@ TextureImporter:
       bones: []
       spriteID: 6b5b64334a5113f50800000000000000
       internalID: 6859287502441067958
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: EfficientMovement1_1
+      rect:
+        serializedVersion: 2
+        x: 10
+        y: 3
+        width: 19
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 72864cd577a870150800000000000000
+      internalID: 5838787687188031527
       vertices: []
       indices: 
       edges: []
@@ -136,6 +161,7 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       EfficientMovement1_0: 6859287502441067958
+      EfficientMovement1_1: 5838787687188031527
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

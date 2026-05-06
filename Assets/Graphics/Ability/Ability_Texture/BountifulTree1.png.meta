@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 4504f6c5bc2174e43b15be44fec5b23a
+guid: 3a2a47ca71059034897664c5a76c892a
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -103,9 +103,9 @@ TextureImporter:
       name: BountifulTree1_0
       rect:
         serializedVersion: 2
-        x: 2
+        x: 3
         y: 2
-        width: 28
+        width: 27
         height: 28
       alignment: 0
       pivot: {x: 0, y: 0}

@@ -7,6 +7,8 @@ using PresentationLayer.DOTweenAnimationSystem;
 
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
+    private const float AbilityBarMaxHeight = 26f;
+
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private string displayName;
@@ -19,6 +21,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private Image abilityBaseImage;
     [SerializeField] private Image abilityBackgroundImage;
     [SerializeField] private Image abilityPictureImage;
+    [SerializeField] private Image abilityBarImage;
 
     [Header("Default Visual")]
     [SerializeField] private Sprite defaultPictureSprite;
@@ -119,6 +122,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());
 
         SetPicture(_pictureSprite);
+        ApplyLevelProgressBar(0, 0);
         ApplyAnchoredPosition(_gridCellSize);
     }
 
@@ -164,6 +168,26 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void SetCurrentLevel(int _currentLevel)
     {
         currentLevel = Mathf.Max(_currentLevel, 0);
+    }
+
+    public void ApplyLevelProgressBar(int _currentLevel, int _maxLevel)
+    {
+        if (abilityBarImage == null)
+            return;
+
+        bool shouldShow = _currentLevel > 0 && _maxLevel > 0 && _currentLevel < _maxLevel;
+        abilityBarImage.gameObject.SetActive(shouldShow);
+        if (shouldShow == false)
+            return;
+
+        RectTransform barRectTransform = abilityBarImage.rectTransform;
+        if (barRectTransform == null)
+            return;
+
+        float levelRatio = Mathf.Clamp01((float)_currentLevel / _maxLevel);
+        Vector2 sizeDelta = barRectTransform.sizeDelta;
+        sizeDelta.y = Mathf.Round(AbilityBarMaxHeight * levelRatio);
+        barRectTransform.sizeDelta = sizeDelta;
     }
 
     // 현재 노드의 테두리/배경 표시 상태를 갱신한다.

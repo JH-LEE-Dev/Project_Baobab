@@ -968,6 +968,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 isCompleted = reason == AbilityLevelUpRejectReason.MaxLevel;
             }
 
+            SkillInfo skillInfo = GetSkillInfo(node.SkillType);
+            node.ApplyLevelProgressBar(skillInfo.currentLevel, skillInfo.maxLevel);
+
             Color baseColor = CannotApplyNodeColor;
             if (isCompleted)
                 baseColor = CompletedColor;

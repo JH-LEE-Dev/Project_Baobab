@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b8359ad916503e44d8ccce10882445e5
+guid: 9d5b3fc96b6fd9340978ee9652f2267e
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -106,7 +106,7 @@ TextureImporter:
       name: GunPenetration1_0
       rect:
         serializedVersion: 2
-        x: 4
+        x: 3
         y: 18
         width: 10
         height: 10

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 9012ebad9bd32124ba2a775445efd849
+guid: c4859921f6cf0684bb1c49898fd03ba2
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -128,7 +128,7 @@ TextureImporter:
       name: MovementSpeed_1
       rect:
         serializedVersion: 2
-        x: 17
+        x: 18
         y: 19
         width: 11
         height: 9
