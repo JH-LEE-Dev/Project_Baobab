@@ -7,6 +7,8 @@ using PresentationLayer.DOTweenAnimationSystem;
 
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
+    private const float AbilityBarMaxHeight = 26f;
+
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private string displayName;
@@ -19,6 +21,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private Image abilityBaseImage;
     [SerializeField] private Image abilityBackgroundImage;
     [SerializeField] private Image abilityPictureImage;
+    [SerializeField] private Image abilityBarImage;
 
     [Header("Default Visual")]
     [SerializeField] private Sprite defaultPictureSprite;
@@ -36,6 +39,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private Canvas rootCanvas;
     private bool canApplyVisual;
     private bool completedVisual;
+    private bool visualHidden;
     private bool isPointerHovering;
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
@@ -118,6 +122,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());
 
         SetPicture(_pictureSprite);
+        ApplyLevelProgressBar(0, 0);
         ApplyAnchoredPosition(_gridCellSize);
     }
 
@@ -165,6 +170,26 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         currentLevel = Mathf.Max(_currentLevel, 0);
     }
 
+    public void ApplyLevelProgressBar(int _currentLevel, int _maxLevel)
+    {
+        if (abilityBarImage == null)
+            return;
+
+        bool shouldShow = _currentLevel > 0 && _maxLevel > 0 && _currentLevel < _maxLevel;
+        abilityBarImage.gameObject.SetActive(shouldShow);
+        if (shouldShow == false)
+            return;
+
+        RectTransform barRectTransform = abilityBarImage.rectTransform;
+        if (barRectTransform == null)
+            return;
+
+        float levelRatio = Mathf.Clamp01((float)_currentLevel / _maxLevel);
+        Vector2 sizeDelta = barRectTransform.sizeDelta;
+        sizeDelta.y = Mathf.Round(AbilityBarMaxHeight * levelRatio);
+        barRectTransform.sizeDelta = sizeDelta;
+    }
+
     // 현재 노드의 테두리/배경 표시 상태를 갱신한다.
     public void ApplyVisualState(Color _baseColor, bool _canApply, bool _completed)
     {
@@ -172,7 +197,23 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         completedVisual = _completed;
 
         if (abilityBaseImage != null)
+        {
+            _baseColor.a = visualHidden ? 0f : _baseColor.a;
             abilityBaseImage.color = _baseColor;
+        }
+    }
+
+    public void SetVisualVisible(bool _visible)
+    {
+        visualHidden = _visible == false;
+        ApplyImageAlpha(abilityBaseImage, _visible ? 1f : 0f);
+        ApplyImageAlpha(abilityBackgroundImage, _visible ? 1f : 0f);
+        ApplyImageAlpha(abilityPictureImage, _visible ? 1f : 0f);
+    }
+
+    public void PlayUnlockAppearMotion()
+    {
+        PlayClickMotion();
     }
 
     // 툴팁 제목 줄에 표시할 이름과 현재 레벨 문자열을 만든다.
@@ -281,6 +322,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         motionPlayer.SettingEntryMotion(_entry, true, true);
+    }
+
+    private void ApplyImageAlpha(Image _image, float _alpha)
+    {
+        if (_image == null)
+            return;
+
+        Color color = _image.color;
+        color.a = _alpha;
+        _image.color = color;
     }
 
     private bool IsClickMotionPlaying()

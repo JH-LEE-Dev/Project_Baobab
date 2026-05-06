@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 440920b9a3999ac4586a433d71a711fe
+guid: 8089456b50472364d85a7080d1b1683f
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -14,9 +14,6 @@ TextureImporter:
   - first:
       213: 8383992322658280680
     second: EquipmentSwitchSpeed1_3
-  - first:
-      213: 4567874274331204723
-    second: EquipmentSwitchSpeed1_4
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -116,9 +113,9 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 3
-        y: 10
-        width: 11
-        height: 11
+        y: 9
+        width: 12
+        height: 18
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -137,10 +134,10 @@ TextureImporter:
       name: EquipmentSwitchSpeed1_1
       rect:
         serializedVersion: 2
-        x: 11
-        y: 20
-        width: 11
-        height: 9
+        x: 12
+        y: 9
+        width: 8
+        height: 7
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -159,10 +156,10 @@ TextureImporter:
       name: EquipmentSwitchSpeed1_2
       rect:
         serializedVersion: 2
-        x: 18
-        y: 3
-        width: 12
-        height: 18
+        x: 13
+        y: 5
+        width: 8
+        height: 7
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -181,10 +178,10 @@ TextureImporter:
       name: EquipmentSwitchSpeed1_3
       rect:
         serializedVersion: 2
-        x: 12
-        y: 10
-        width: 8
-        height: 7
+        x: 18
+        y: 3
+        width: 12
+        height: 17
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -195,28 +192,6 @@ TextureImporter:
       bones: []
       spriteID: 8e426afd89ce95470800000000000000
       internalID: 8383992322658280680
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: EquipmentSwitchSpeed1_4
-      rect:
-        serializedVersion: 2
-        x: 13
-        y: 6
-        width: 8
-        height: 7
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 37c182c6379546f30800000000000000
-      internalID: 4567874274331204723
       vertices: []
       indices: 
       edges: []
@@ -239,7 +214,6 @@ TextureImporter:
       EquipmentSwitchSpeed1_1: -8631318557395508756
       EquipmentSwitchSpeed1_2: 6268633732996143921
       EquipmentSwitchSpeed1_3: 8383992322658280680
-      EquipmentSwitchSpeed1_4: 4567874274331204723
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -11,6 +11,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
     private const float ToolTipSpacing = 32f;
+    private const float UnlockRevealDuration = 0.1f;
+    private const float UnlockRevealStaggerDelay = 0.025f;
     private static readonly Color CanApplyNodeColor = new Color32(88, 215, 242, 255);
     private static readonly Color CompletedColor = new Color32(84, 216, 106, 255);
     private static readonly Color CannotApplyNodeColor = new Color32(185, 74, 66, 255);
@@ -22,8 +24,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private bool hasZoomFocus;
     private Vector2 previousMousePosition;
     private Vector2 zoomFocusScreenPosition;
+    private Vector2 currentViewShakeOffset;
     private float currentZoom = DefaultZoom;
     private float targetZoom = DefaultZoom;
+    private float viewShakeElapsed;
+    private bool isViewShaking;
 
     private readonly Dictionary<SkillType, AbilityNodeDefinitionJson> nodeDefinitionMap = new Dictionary<SkillType, AbilityNodeDefinitionJson>();
     private readonly List<SkillType> nodeBuildOrder = new List<SkillType>();
@@ -31,6 +36,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private readonly List<AbilityNode> spawnedNodes = new List<AbilityNode>();
     private readonly Dictionary<SkillType, AbilityNode> spawnedNodeMap = new Dictionary<SkillType, AbilityNode>();
     private readonly Queue<AbilityNode> nodePool = new Queue<AbilityNode>();
+    private readonly List<AbilityNodeUnlockReveal> activeUnlockReveals = new List<AbilityNodeUnlockReveal>(4);
     private readonly AbilityLineRenderer lineRenderer = new AbilityLineRenderer();
 
     private bool hasBuiltNodes;
@@ -64,6 +70,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private UISelectionCursor selectionCursorPrefab;
     [SerializeField] private RectTransform selectionCursorParent;
     [SerializeField] private Vector2 selectionCursorSize = new Vector2(40f, 40f);
+
+    [Header("View Shake Settings")]
+    [SerializeField] private float viewShakeDuration = 0.16f;
+    [SerializeField] private float viewShakeStrength = 8f;
+    [SerializeField] private float viewShakeFrequency = 72f;
+    [SerializeField, Range(0f, 1f)] private float viewShakeVerticalRatio = 0.45f;
 
 
 
@@ -178,7 +190,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         abilityBackground.gameObject.SetActive(true);
         BuildNodesIfNeeded();
         SyncNodeLevelsFromProvider();
-        RefreshNodeVisibility();
+        RefreshNodeVisibility(false);
         RefreshNodeAvailabilityVisuals();
         ResetView();
     }
@@ -273,6 +285,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         isDragging = false;
         hasZoomFocus = false;
+        StopViewShake();
         currentZoom = DefaultZoom;
         targetZoom = DefaultZoom;
         moveTarget.anchoredPosition = Vector2.zero;
@@ -285,6 +298,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         isDragging = false;
         hasZoomFocus = false;
+        StopViewShake();
         currentToolTipNode = null;
         currentCursorNode = null;
 
@@ -302,7 +316,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         BuildNodesIfNeeded();
         SyncNodeLevelsFromProvider();
-        RefreshNodeVisibility();
+        RefreshNodeVisibility(false);
         RefreshNodeAvailabilityVisuals();
 
         if (currentToolTipNode != null)
@@ -490,13 +504,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         viewChanged |= HandlePan();
         // 줌 기능
-        HandleZoom();
+        bool zoomChanged = HandleZoom();
+        if (zoomChanged)
+            StopViewShake();
         // 줌 애니메이션 기능
         viewChanged |= UpdateZoomAnimation();
         // Line 스냅 및 재구성
         if (viewChanged)
             MarkViewLayoutDirty();
 
+        UpdateUnlockReveals();
+        UpdateViewShake();
         RefreshLinesIfNeeded();
         // 툴팁 포지션 스냅
         UpdateToolTipPositionIfNeeded();
@@ -545,20 +563,21 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 마우스 휠 입력으로 목표 줌 값을 갱신한다.
-    private void HandleZoom()
+    private bool HandleZoom()
     {
         Mouse mouse = Mouse.current;
         if (mouse == null)
-            return;
+            return false;
 
         float scrollY = mouse.scroll.ReadValue().y;
         if (Mathf.Approximately(scrollY, 0f))
-            return;
+            return false;
 
         zoomFocusScreenPosition = mouse.position.ReadValue();
         hasZoomFocus = true;
         targetZoom += Mathf.Sign(scrollY) * ZoomStep;
         targetZoom = Mathf.Clamp(targetZoom, MinZoom, MaxZoom);
+        return true;
     }
 
     // 목표 줌 값을 따라가며 현재 줌을 부드럽게 갱신한다.
@@ -598,6 +617,77 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         moveTarget.anchoredPosition += localPointBeforeScale * (_previousZoom - _currentZoom);
+    }
+
+    private void PlayViewShake()
+    {
+        if (moveTarget == null)
+            return;
+
+        StopViewShake();
+        isViewShaking = true;
+        viewShakeElapsed = 0f;
+    }
+
+    private void UpdateViewShake()
+    {
+        if (isViewShaking == false || moveTarget == null)
+            return;
+
+        RemoveViewShakeOffset();
+
+        viewShakeElapsed += Time.unscaledDeltaTime;
+        float duration = Mathf.Max(viewShakeDuration, 0.0001f);
+        float progress = Mathf.Clamp01(viewShakeElapsed / duration);
+        float strength = viewShakeStrength * (1f - progress);
+        float time = viewShakeElapsed * viewShakeFrequency;
+        float x = Mathf.Sin(time) * strength;
+        float y = Mathf.Sin(time * 1.7f + 0.8f) * strength * viewShakeVerticalRatio;
+
+        currentViewShakeOffset = new Vector2(Mathf.Round(x), Mathf.Round(y));
+        ApplyViewShakeOffset(currentViewShakeOffset);
+
+        if (progress >= 1f)
+            StopViewShake();
+    }
+
+    private void StopViewShake()
+    {
+        if (moveTarget != null)
+            RemoveViewShakeOffset();
+
+        isViewShaking = false;
+        viewShakeElapsed = 0f;
+    }
+
+    private void RemoveViewShakeOffset()
+    {
+        if (currentViewShakeOffset == Vector2.zero || moveTarget == null)
+            return;
+
+        ApplyViewShakeOffset(-currentViewShakeOffset);
+        currentViewShakeOffset = Vector2.zero;
+    }
+
+    private void ApplyViewShakeOffset(Vector2 _offset)
+    {
+        if (moveTarget != null)
+            moveTarget.anchoredPosition += _offset;
+
+        RectTransform lineShakeTarget = GetLineShakeTarget();
+        if (lineShakeTarget != null)
+            lineShakeTarget.anchoredPosition += _offset;
+    }
+
+    private RectTransform GetLineShakeTarget()
+    {
+        if (lineParent == null)
+            return null;
+
+        if (moveTarget != null && lineParent.IsChildOf(moveTarget))
+            return null;
+
+        return lineParent;
     }
 
 
@@ -729,14 +819,20 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         // 해금되는 순간임
         if (wasLockedByLevel && node.IsUnlockedByLevel())
-            RefreshNodeVisibility();
+            RefreshNodeVisibility(true);
         else
             RefreshLines();
 
         RefreshNodeAvailabilityVisuals();
 
         if (currentToolTipNode == node)
+        {
             ShowToolTip(node);
+            if (toolTipInstance != null)
+                toolTipInstance.PlayClickMotion();
+        }
+
+        PlayViewShake();
     }
 
     // 상위 로직에서 거절 및 이유 (연출을 위함임)
@@ -773,13 +869,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
     }
 
-    private void RefreshNodeVisibility()
+    private void RefreshNodeVisibility(bool _playUnlockReveal)
     {
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
+            bool wasVisible = node != null && node.gameObject.activeSelf;
             bool isVisible = ShouldShowNode(node);
             node.gameObject.SetActive(isVisible);
+
+            if (_playUnlockReveal && wasVisible == false && isVisible)
+                StartUnlockReveal(node);
 
             if (isVisible == false && currentToolTipNode == node)
                 HideToolTip(node);
@@ -789,6 +889,65 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
 
         RefreshLines();
+    }
+
+    private void StartUnlockReveal(AbilityNode _node)
+    {
+        if (_node == null)
+            return;
+
+        for (int i = 0; i < activeUnlockReveals.Count; i++)
+        {
+            if (activeUnlockReveals[i].Node != _node)
+                continue;
+
+            activeUnlockReveals[i].Elapsed = 0f;
+            activeUnlockReveals[i].Delay = GetUnlockRevealDelay();
+            lineRenderer.SetLineRevealProgress(_node.SkillType, 0f);
+            _node.SetVisualVisible(false);
+            lineLayoutDirty = true;
+            return;
+        }
+
+        lineRenderer.SetLineRevealProgress(_node.SkillType, 0f);
+        _node.SetVisualVisible(false);
+        activeUnlockReveals.Add(new AbilityNodeUnlockReveal(_node, GetUnlockRevealDelay()));
+        lineLayoutDirty = true;
+    }
+
+    private void UpdateUnlockReveals()
+    {
+        if (activeUnlockReveals.Count == 0)
+            return;
+
+        float deltaTime = Time.unscaledDeltaTime;
+        for (int i = activeUnlockReveals.Count - 1; i >= 0; i--)
+        {
+            AbilityNodeUnlockReveal reveal = activeUnlockReveals[i];
+            if (reveal == null || reveal.Node == null || reveal.Node.gameObject.activeSelf == false)
+            {
+                activeUnlockReveals.RemoveAt(i);
+                continue;
+            }
+
+            reveal.Elapsed += deltaTime;
+            float progress = Mathf.Clamp01((reveal.Elapsed - reveal.Delay) / UnlockRevealDuration);
+            lineRenderer.SetLineRevealProgress(reveal.Node.SkillType, progress);
+            lineLayoutDirty = true;
+
+            if (progress < 1f)
+                continue;
+
+            lineRenderer.ClearLineRevealProgress(reveal.Node.SkillType);
+            reveal.Node.SetVisualVisible(true);
+            reveal.Node.PlayUnlockAppearMotion();
+            activeUnlockReveals.RemoveAt(i);
+        }
+    }
+
+    private float GetUnlockRevealDelay()
+    {
+        return activeUnlockReveals.Count * UnlockRevealStaggerDelay;
     }
 
     // 현재 보이는 노드를 순회하며 찍기 가능 여부를 확인하고 테두리/배경 색을 갱신한다.
@@ -808,6 +967,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 canApply = reason == AbilityLevelUpRejectReason.Pass;
                 isCompleted = reason == AbilityLevelUpRejectReason.MaxLevel;
             }
+
+            SkillInfo skillInfo = GetSkillInfo(node.SkillType);
+            node.ApplyLevelProgressBar(skillInfo.currentLevel, skillInfo.maxLevel);
 
             Color baseColor = CannotApplyNodeColor;
             if (isCompleted)
@@ -893,5 +1055,19 @@ public class AbilityLineConnection
         ChildNode = _childNode;
         HasPivot = _hasPivot;
         PivotGrid = _pivotGrid;
+    }
+}
+
+public class AbilityNodeUnlockReveal
+{
+    public AbilityNode Node { get; }
+    public float Elapsed { get; set; }
+    public float Delay { get; set; }
+
+    public AbilityNodeUnlockReveal(AbilityNode _node, float _delay)
+    {
+        Node = _node;
+        Elapsed = 0f;
+        Delay = _delay;
     }
 }

@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 42b0baaaa869f8a4f9b7927e64d93765
+guid: 34f4d9349611bca438494455ab2cece3
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -106,8 +106,8 @@ TextureImporter:
       name: FatigueMaxIncrease1_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 16
+        x: 3
+        y: 18
         width: 10
         height: 10
       alignment: 0

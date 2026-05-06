@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 20b8cdfa798eb194ebd642688f9daa24
+guid: 9783484468cd83f429646513269fecf6
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -103,9 +103,9 @@ TextureImporter:
       name: SawmillLogStorageExpansion1_0
       rect:
         serializedVersion: 2
-        x: 4
+        x: 3
         y: 3
-        width: 25
+        width: 26
         height: 25
       alignment: 0
       pivot: {x: 0, y: 0}
