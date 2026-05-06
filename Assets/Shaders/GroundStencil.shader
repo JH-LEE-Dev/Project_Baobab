@@ -18,12 +18,14 @@ Shader "Custom/GroundStencil"
 
         Pass
         {
-            // 스텐실 설정: Ground를 구분하기 위해 Ref 값을 2로 설정
+            // 스텐실 설정: 
+            // 1. Ref 2 (binary 10), WriteMask 3 (binary 11) 설정
+            // 2. 이를 통해 육지 비트(2)를 쓰면서 동시에 물 비트(1)를 0으로 덮어씀 (무효화)
             Stencil
             {
                 Ref 2
-                ReadMask 2
-                WriteMask 2
+                ReadMask 3
+                WriteMask 3
                 Comp Always
                 Pass Replace
             }

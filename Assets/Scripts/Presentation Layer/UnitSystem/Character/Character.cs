@@ -17,6 +17,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [Header("Internal Components")]
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
+    [SerializeField] private GameObject onWaterAnimatorObject;
 
     [Header("Collision Settings")]
     [SerializeField] private float collisionRadius = 0.15f;
@@ -32,7 +33,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public Rigidbody2D rb { get; private set; }
     public CircleCollider2D col { get; private set; }
     private SpriteRenderer sr;
+    private SpriteRenderer onWaterSR;
     private SpriteRenderer shadowSR;
+    private Animator onWaterAnim;
     private Animator shadowAnim;
 
     // 상태 및 데이터
@@ -97,7 +100,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent = GetComponentInChildren<StatComponent>();
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
+        onWaterSR = onWaterAnimatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
+
+        onWaterAnim = onWaterAnimatorObject.GetComponent<Animator>();
         shadowAnim = shadowObject.GetComponent<Animator>(); // 그림자 전용 애니메이터
 
         stateMachine = new StateMachine();
@@ -110,6 +116,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
         statComponent.Initialize(ctx);
+
+        // 수면 위 일렁임 강도 캐릭터에 맞춰 감소 (기본 1.0 -> 0.5)
+        if (onWaterSR != null)
+        {
+            onWaterSR.material.SetFloat("_DistortionAmount", 0.5f);
+        }
 
         SetupStateMachine();
         BindEvents();
@@ -252,7 +264,22 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         float target = bIsUnderShadow ? 1f : 0f;
         float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
         shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
-        sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
+        Color finalColor = Color.Lerp(normalColor, shadowTint, shadowLerp);
+        sr.color = finalColor;
+        if (onWaterSR != null) onWaterSR.color = finalColor;
+    }
+
+    private void UpdateOnWaterVisual()
+    {
+        if (onWaterAnim == null || onWaterSR == null) return;
+
+        // 메인 애니메이터의 파라미터 그대로 복사
+        onWaterAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
+        onWaterAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
+        onWaterAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
+
+        // 메인 스프라이트의 스케일(FlipX 포함) 그대로 복사
+        onWaterSR.transform.localScale = sr.transform.localScale;
     }
 
     private void UpdateShadowVisual()
@@ -404,6 +431,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 비주얼 업데이트
         UpdateCharacterColor();
         UpdateShadowVisual();
+        UpdateOnWaterVisual();
 
         if (shadowObject != null)
         {
