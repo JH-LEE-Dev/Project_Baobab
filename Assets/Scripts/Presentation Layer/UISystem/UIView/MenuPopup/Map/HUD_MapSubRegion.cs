@@ -10,7 +10,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     /// 맵 선택 UI에서 세부 지역(Sub-Region) 항목을 관리하는 클래스입니다.
     /// 레이캐스트 상호작용을 통해 외부로 위치 정보와 지역 번호를 전달합니다.
     /// </summary>
-    public class HUD_MapSubRegion : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
+    public class HUD_MapSubRegion : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         // //외부 의존성
         [Header("UI References")]
@@ -28,8 +28,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isLocked = false;
         private bool isInitialized = false;
 
-        private Action<RectTransform> onHoverEvent; // 커서 이동용
-        private Action<int> onSelectEvent;         // 값 전달용
+        private Action<RectTransform> onHoverEnterEvent; // 커서 이동 및 표시용
+        private Action onHoverExitEvent;                // 커서 숨김용
+        private Action<int> onSelectEvent;              // 값 전달용
 
         private static readonly string hoverMotionKey = "Hover";
         private static readonly string clickMotionKey = "Click";
@@ -39,12 +40,13 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         /// <summary>
         /// 상위 매니저에서 콜백과 데이터를 주입합니다.
         /// </summary>
-        public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform> _onHover, Action<int> _onSelect)
+        public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect)
         {
             forestInfo = _info;
             Initialize(_number);
 
-            onHoverEvent = _onHover;
+            onHoverEnterEvent = _onHoverEnter;
+            onHoverExitEvent = _onHoverExit;
             onSelectEvent = _onSelect;
         }
 
@@ -142,18 +144,26 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (true == isLocked)
                 return;
 
-            // 진입 시에는 애니메이션만 재생 (위치 반환 안 함)
+            // 진입 시 커서 이동 및 애니메이션 재생
+            onHoverEnterEvent?.Invoke(GetRectTransform());
+
             if (null != motionPlayer)
                 motionPlayer.Play(hoverMotionKey);
+        }
+
+        public void OnPointerExit(PointerEventData _eventData)
+        {
+            if (true == isLocked)
+                return;
+
+            // 퇴장 시 커서 숨김 애니메이션 재생
+            onHoverExitEvent?.Invoke();
         }
 
         public void OnPointerClick(PointerEventData _eventData)
         {
             if (true == isLocked)
                 return;
-
-            // 클릭 시에만 위치 정보를 전달하여 커서를 해당 위치로 고정시킴
-            onHoverEvent?.Invoke(GetRectTransform());
 
             // 최종 선택된 지역 번호를 전달
             onSelectEvent?.Invoke(regionNumber);

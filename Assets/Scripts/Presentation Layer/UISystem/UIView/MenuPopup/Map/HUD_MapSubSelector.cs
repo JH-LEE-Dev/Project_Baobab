@@ -57,7 +57,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     if (_i < _dataCount)
                     {
                         subRegions[_i].gameObject.SetActive(true);
-                        subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHovered, OnRegionSelected);
+                        subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHoverEntered, OnRegionHoverExited, OnRegionSelected);
                     }
                     else
                         subRegions[_i].gameObject.SetActive(false);
@@ -113,7 +113,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == _target || false == _target.gameObject.activeSelf)
                 return;
 
-            OnRegionHovered(_target.GetRectTransform());
+            OnRegionHoverEntered(_target.GetRectTransform());
             OnRegionSelected(_target.GetNumber());
         }
 
@@ -143,12 +143,20 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //내부 로직 (콜백 메서드)
 
-        private void OnRegionHovered(RectTransform _targetRect)
+        private void OnRegionHoverEntered(RectTransform _targetRect)
         {
             if (null == selectorCursor || null == _targetRect)
                 return;
 
             selectorCursor.Show(_targetRect);
+        }
+
+        private void OnRegionHoverExited()
+        {
+            if (null == selectorCursor)
+                return;
+
+            selectorCursor.Hide();
         }
 
         private void OnRegionSelected(int _number)
