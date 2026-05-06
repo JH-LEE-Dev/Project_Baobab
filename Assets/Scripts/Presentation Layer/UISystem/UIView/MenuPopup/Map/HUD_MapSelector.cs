@@ -61,10 +61,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private void HandleConfirm()
         {
             // TODO: 추후 GetFinalMapType()을 사용하여 실제 선택된 타입을 가져와야 함
-            MapType _finalType = MapType.Forest1_1;
+            //MapType _finalType = MapType.Vegetatedplains;
 
-            if (MapType.None != _finalType)
-                onConfirmCallback?.Invoke(_finalType);
+           //if (MapType.None != _finalType)
+                //onConfirmCallback?.Invoke(_finalType);
         }
 
         /// <summary>
