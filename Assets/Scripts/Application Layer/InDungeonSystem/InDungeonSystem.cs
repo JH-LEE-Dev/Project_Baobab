@@ -89,7 +89,6 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.Subscribe<GoHomeButtonClickedSignal>(GoHome);
         signalHub.Subscribe<FirstTimeEarnMoneySignal>(FirstTimeEarnMoney);
-        signalHub.Subscribe<HiddenMapSelectedSignal>(HiddenMapSelected);
     }
 
     private void UnSubscribeSignals()
@@ -97,7 +96,6 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.UnSubscribe<GoHomeButtonClickedSignal>(GoHome);
         signalHub.UnSubscribe<FirstTimeEarnMoneySignal>(FirstTimeEarnMoney);
-        signalHub.UnSubscribe<HiddenMapSelectedSignal>(HiddenMapSelected);
     }
 
     private void PortalActivated()
@@ -160,11 +158,5 @@ public class InDungeonSystem : MonoBehaviour
     private void AnimalIsDead(Animal _animal)
     {
         signalHub.Publish(new AnimalIsDeadSignal(_animal.animalType));
-    }
-
-    private void HiddenMapSelected(HiddenMapSelectedSignal hiddenMapSelectedSignal)
-    {
-        ClearInDungeonSystem();
-        signalHub.Publish(new GoToDungeonSignal(hiddenMapSelectedSignal.type, hiddenMapSelectedSignal.forestType));
     }
 }

@@ -31,11 +31,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private TileBase mountainTile;
     [SerializeField] private TileBase treeCollisionTile;
     [SerializeField] private List<TileBase> decoTiles;
+    [SerializeField] private TileBase stencilTile;
+    [SerializeField] private TileBase groundStencilTile;
 
     // // 외부 의존성
     private Tilemap groundTilemap;
     private Tilemap collisionTilemap;
     private Tilemap decoTilemap;
+    private Tilemap waterStencilTilemap;
+    private Tilemap groundStencilTilemap;
+
     private Grid grid;
 
     // // 내부 의존성 및 캐싱 필드
@@ -43,6 +48,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] groundTiles;
     private TileBase[] collisionTiles;
     private TileBase[] decoTilesToApply;
+    private TileBase[] waterStencilTiles;
+    private TileBase[] groundStencilTiles;
     private int[] cellToIndex;
     private bool[] isShoreline;
     private float halfCellY;
@@ -78,6 +85,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             if (maps[i].name == "GroundTilemap") groundTilemap = maps[i];
             else if (maps[i].name == "ColliderTilemap") collisionTilemap = maps[i];
             else if (maps[i].name == "DecoTilemap") decoTilemap = maps[i];
+            else if (maps[i].name == "WaterStencilTilemap") waterStencilTilemap = maps[i];
+            else if (maps[i].name == "GroundStencilTilemap") groundStencilTilemap = maps[i];
         }
 
         int size = width * height;
@@ -85,12 +94,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         groundTiles = new TileBase[size];
         collisionTiles = new TileBase[size];
         decoTilesToApply = new TileBase[size];
+        waterStencilTiles = new TileBase[size];
+        groundStencilTiles = new TileBase[size];
         cellToIndex = new int[size];
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
         isShoreline = new bool[size];
 
         worldPosMap = new Vector3[size];
-        
+
         for (int y = 0; y < height; y++)
         {
             int rowOffset = y * width;
@@ -114,6 +125,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
         decoTilemap.ClearAllTiles();
+        if (waterStencilTilemap != null) waterStencilTilemap.ClearAllTiles();
+        if (groundStencilTilemap != null) groundStencilTilemap.ClearAllTiles();
 
         GenerateNoiseMap();
         DetermineSpawns();
@@ -310,9 +323,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         // 2. 포탈 스폰 위치 결정: 캐릭터 스폰 위치에서 오른쪽으로 2칸 떨어진 위치
         int portalX = centerX + 2;
         int portalY = centerY;
-        
+
         if (portalX >= width) portalX = width - 1;
-        
+
         portalIdx = portalX + portalY * width;
     }
 
@@ -322,6 +335,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Array.Clear(groundTiles, 0, size);
         Array.Clear(collisionTiles, 0, size);
         Array.Clear(decoTilesToApply, 0, size);
+        Array.Clear(waterStencilTiles, 0, size);
+        Array.Clear(groundStencilTiles, 0, size);
 
         grassPositions.Clear();
         delayedGrassPositions.Clear();
@@ -337,7 +352,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         Vector3 portalPos = GetPortalSpawnPosition();
         Vector3 playerPos = GetPlayerSpawnPosition();
-        
+
         float centerX = width * 0.5f;
         float centerY = height * 0.5f;
         float radiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
@@ -347,7 +362,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             float v = noiseValues[i];
             int x = i % width;
             int y = i / width;
-            
+
             float dx = x - centerX;
             float dy = y - centerY;
             bool inSafeZone = (dx * dx + dy * dy < radiusSq);
@@ -355,9 +370,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             if (v < waterThreshold)
             {
                 collisionTiles[i] = waterTile;
+                waterStencilTiles[i] = stencilTile;
             }
             else
             {
+                groundStencilTiles[i] = groundStencilTile;
                 Vector3 pos = GetWorldPos(i);
 
                 cellToIndex[i] = walkablePositions.Count;
@@ -370,7 +387,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 else if (v < grassThreshold)
                 {
                     groundTiles[i] = grassTile;
-                    
+
                     if (decoTiles != null && decoTiles.Count > 0 && UnityEngine.Random.value < 0.3f)
                     {
                         decoTilesToApply[i] = decoTiles[UnityEngine.Random.Range(0, decoTiles.Count)];
@@ -399,6 +416,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         groundTilemap.SetTilesBlock(b, groundTiles);
         collisionTilemap.SetTilesBlock(b, collisionTiles);
         decoTilemap.SetTilesBlock(b, decoTilesToApply);
+        if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, waterStencilTiles);
+        if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);
     }
 
     private bool IsWater(int _x, int _y)

@@ -24,11 +24,11 @@ Shader "Custom/CharacterShadowURP"
 
             Stencil
             {
-                Ref 0
-                Comp Equal
-                ReadMask 7
-                WriteMask 7
-                Pass IncrSat
+                Ref 4
+                ReadMask 4
+                WriteMask 4
+                Comp NotEqual
+                Pass Replace
             }
 
             HLSLPROGRAM

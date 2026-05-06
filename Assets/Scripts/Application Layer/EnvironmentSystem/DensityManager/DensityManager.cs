@@ -210,19 +210,41 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         rabbitDensityMultiplier += (_amount / 100.0f);
     }
 
-    public EnvironmentSaveData GetSaveData()
+    public void PopulateSaveData(ref EnvironmentSaveData _data)
     {
-        return new EnvironmentSaveData
+        _data.treeDensityMultiplier = treeDensityMultiplier;
+        _data.rabbitDensityMultiplier = rabbitDensityMultiplier;
+
+        _data.hiddenGaugeDatas.Clear();
+        foreach (var kvp in hiddenGaugeData)
         {
-            treeDensityMultiplier = treeDensityMultiplier,
-            rabbitDensityMultiplier = rabbitDensityMultiplier
-        };
+            _data.hiddenGaugeDatas.Add(new MapHiddenGaugeSaveData
+            {
+                mapType = kvp.Key,
+                forestType = kvp.Value.forestType,
+                hiddenGauge = kvp.Value.hiddenGauge
+            });
+        }
     }
 
     public void LoadSaveData(EnvironmentSaveData _data)
     {
         treeDensityMultiplier = _data.treeDensityMultiplier;
         rabbitDensityMultiplier = _data.rabbitDensityMultiplier;
+
+        hiddenGaugeData.Clear();
+        if (_data.hiddenGaugeDatas != null)
+        {
+            for (int i = 0; i < _data.hiddenGaugeDatas.Count; i++)
+            {
+                var saved = _data.hiddenGaugeDatas[i];
+                hiddenGaugeData[saved.mapType] = new ForestHiddenGaugeData
+                {
+                    forestType = saved.forestType,
+                    hiddenGauge = saved.hiddenGauge
+                };
+            }
+        }
 
         // 현재 타일 수 정보가 있다면 데이터 갱신
         if (grassTileCnt > 0 || walkableTilesCnt > 0)

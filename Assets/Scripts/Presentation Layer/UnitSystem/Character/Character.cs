@@ -17,6 +17,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     [Header("Internal Components")]
     [SerializeField] private Shadow shadowObject;
     [SerializeField] private GameObject animatorObject;
+    [SerializeField] private GameObject onWaterAnimatorObject;
 
     [Header("Collision Settings")]
     [SerializeField] private float collisionRadius = 0.15f;
@@ -32,7 +33,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public Rigidbody2D rb { get; private set; }
     public CircleCollider2D col { get; private set; }
     private SpriteRenderer sr;
+    private SpriteRenderer onWaterSR;
     private SpriteRenderer shadowSR;
+    private Animator onWaterAnim;
     private Animator shadowAnim;
 
     // 상태 및 데이터
@@ -97,7 +100,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent = GetComponentInChildren<StatComponent>();
 
         sr = animatorObject.GetComponent<SpriteRenderer>();
+        onWaterSR = onWaterAnimatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
+
+        onWaterAnim = onWaterAnimatorObject.GetComponent<Animator>();
         shadowAnim = shadowObject.GetComponent<Animator>(); // 그림자 전용 애니메이터
 
         stateMachine = new StateMachine();
@@ -110,6 +116,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
         statComponent.Initialize(ctx);
+
+        // 수면 위 일렁임 강도 캐릭터에 맞춰 감소 (기본 1.0 -> 0.5)
+        if (onWaterSR != null)
+        {
+            onWaterSR.material.SetFloat("_DistortionAmount", 0.5f);
+        }
 
         SetupStateMachine();
         BindEvents();
@@ -252,76 +264,82 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         float target = bIsUnderShadow ? 1f : 0f;
         float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
         shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
-        sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
+        Color finalColor = Color.Lerp(normalColor, shadowTint, shadowLerp);
+        sr.color = finalColor;
+        if (onWaterSR != null) onWaterSR.color = finalColor;
+    }
+
+    private void UpdateOnWaterVisual()
+    {
+        if (onWaterAnim == null || onWaterSR == null) return;
+
+        // 메인 애니메이터의 파라미터 그대로 복사
+        onWaterAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
+        onWaterAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
+        onWaterAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
+
+        // 메인 스프라이트의 스케일(FlipX 포함)의 반대값 적용
+        Vector3 reversedScale = sr.transform.localScale;
+        reversedScale.x *= -1f;
+        onWaterSR.transform.localScale = reversedScale;
     }
 
     private void UpdateShadowVisual()
     {
-        if (shadowAnim == null || shadowSR == null) return;
+        if (shadowAnim == null) return;
 
         // 1. 애니메이션 파라미터 동기화
         shadowAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
         shadowAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
 
         float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
+        float normalizedAngle = shadowAngle % 360;
+        if (normalizedAngle < 0) normalizedAngle += 360;
 
-        // 2. 캐릭터의 바라보는 방향을 8방향으로 스냅
-        float snappedFacingAngle = Mathf.Round(currentFacingAngle / 45f) * 45f;
-        if (snappedFacingAngle >= 360f) snappedFacingAngle -= 360f;
-
-        // 상하 방향 이동 중인지 확인 (90도: 위, 270도: 아래)
-        bool isMovingVertical = (Mathf.Approximately(snappedFacingAngle, 90f) || Mathf.Approximately(snappedFacingAngle, 270f));
-
-        // 2:1 아이소매트릭 보정을 위한 기본 가중치는 1.5이며, 상하 이동 중일 때는 좌우 판정 범위를 더 줄이기 위해 2.5를 사용합니다.
-        float thresholdMultiplier = isMovingVertical ? 2.5f : 1.5f;
-
-        // 3. 광원 시점(Light Perspective) 로직 적용
-        // 2:1 아이소매트릭 비율을 반영하여 Y축 성분을 0.5배로 보정합니다.
-        float rad = (snappedFacingAngle - shadowAngle + 90f) * Mathf.Deg2Rad;
-        Vector2 lightViewDir = new Vector2(
-            Mathf.Cos(rad),
-            Mathf.Sin(rad) * 0.5f
-        );
-
-        SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir, thresholdMultiplier);
+        // 2. 수평 방향 강제 보정 로직 (그림자가 좌/우로 길게 늘어질 때)
+        // 오른쪽 방향 (337.5 ~ 22.5도)
+        if (normalizedAngle <= 22.5f || normalizedAngle >= 337.5f)
+        {
+            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.right);
+        }
+        // 왼쪽 방향 (157.5 ~ 202.5도)
+        else if (normalizedAngle >= 157.5f && normalizedAngle <= 202.5f)
+        {
+            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.left);
+        }
+        else
+        {
+            // 3. 수직 또는 대각선 각도는 광원 시점(Light Perspective) 로직 적용
+            float lightPerspectiveAngle = currentFacingAngle - shadowAngle + 90f;
+            Vector2 lightViewDir = new Vector2(
+                Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad), 
+                Mathf.Sin(lightPerspectiveAngle * Mathf.Deg2Rad)
+            );
+            SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir);
+        }
     }
 
-    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input, float _thresholdMultiplier = 1.0f)
+    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input)
     {
         if (_input.sqrMagnitude < 0.01f) return;
 
-        float absX = Mathf.Abs(_input.x);
-        float absY = Mathf.Abs(_input.y);
+        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
+        if (angle < 0) angle += 360;
 
-        int animIndex = -1;
+        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
         bool flipX = false;
+        int animIndex = -1;
 
-        // Animal.cs의 로직을 8방향 시스템(Character)에 맞게 확장 적용
-        // 1. 수평 판정 (Side)
-        if (absX > absY * _thresholdMultiplier)
+        switch (dirIndex)
         {
-            animIndex = 0; // Side
-            flipX = _input.x < 0;
-        }
-        // 2. 수직 판정 (Up, Down)
-        else if (absY > absX * _thresholdMultiplier)
-        {
-            if (_input.y > 0) animIndex = 2; // Up
-            else animIndex = 3; // Down
-        }
-        // 3. 대각선 판정 (UpSide, DownSide)
-        else
-        {
-            if (_input.y > 0) // Up
-            {
-                animIndex = 1; // UpSide
-                flipX = _input.x < 0;
-            }
-            else // Down
-            {
-                animIndex = 4; // DownSide
-                flipX = _input.x < 0;
-            }
+            case 0: animIndex = 0; break; // 우
+            case 1: animIndex = 1; break; // 우상
+            case 2: animIndex = 2; break; // 상
+            case 3: animIndex = 1; flipX = true; break; // 좌상
+            case 4: animIndex = 0; flipX = true; break; // 좌
+            case 5: animIndex = 4; flipX = true; break; // 좌하
+            case 6: animIndex = 3; break; // 하
+            case 7: animIndex = 4; break; // 우하
         }
 
         if (animIndex != -1)
@@ -415,6 +433,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 비주얼 업데이트
         UpdateCharacterColor();
         UpdateShadowVisual();
+        UpdateOnWaterVisual();
 
         if (shadowObject != null)
         {
