@@ -38,7 +38,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private bool lineLayoutDirty;
     private bool toolTipLayoutDirty;
     private AbilityNode currentToolTipNode;
+    private AbilityNode currentCursorNode;
     private AbilityToolTip toolTipInstance;
+    private UISelectionCursor selectionCursorInstance;
 
     [Header("UI References")]
     [SerializeField] private RectTransform abilityBackground;
@@ -58,6 +60,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private AbilityToolTip toolTipPrefab;
     [SerializeField] private RectTransform toolTipParent;
 
+    [Header("Selection Cursor Setup")]
+    [SerializeField] private UISelectionCursor selectionCursorPrefab;
+    [SerializeField] private RectTransform selectionCursorParent;
+    [SerializeField] private Vector2 selectionCursorSize = new Vector2(40f, 40f);
+
 
 
 #region Initializing
@@ -72,6 +79,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         LoadNodeDefinitions();
         PrewarmNodePool();
         EnsureToolTipInstance();
+        EnsureSelectionCursorInstance();
         Close();
     }
 
@@ -141,7 +149,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
             toolTipRoot.pivot = new Vector2(0.5f, 0.5f);
         }
 
-        toolTipInstance.Hide();
+        toolTipInstance.HideImmediately();
+    }
+
+    private void EnsureSelectionCursorInstance()
+    {
+        if (selectionCursorInstance != null || selectionCursorPrefab == null || moveTarget == null)
+            return;
+
+        RectTransform parent = selectionCursorParent != null ? selectionCursorParent : moveTarget;
+        selectionCursorInstance = Instantiate(selectionCursorPrefab, parent);
+        selectionCursorInstance.Initialize(selectionCursorSize);
     }
 
 
@@ -268,9 +286,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
         isDragging = false;
         hasZoomFocus = false;
         currentToolTipNode = null;
+        currentCursorNode = null;
 
         if (toolTipInstance != null)
-            toolTipInstance.Hide();
+            toolTipInstance.HideImmediately();
+
+        if (selectionCursorInstance != null)
+            selectionCursorInstance.Hide();
 
         if (abilityBackground != null)
             abilityBackground.gameObject.SetActive(false);
@@ -291,6 +313,36 @@ public class UI_TentAbilityComponent : MonoBehaviour
 #endregion
 
 
+#region Selection Cursor
+
+    public void ShowSelectionCursor(AbilityNode _node)
+    {
+        if (_node == null)
+            return;
+
+        currentCursorNode = _node;
+        EnsureSelectionCursorInstance();
+        if (selectionCursorInstance == null)
+            return;
+
+        selectionCursorInstance.Show(_node.RectTransform);
+    }
+
+    public void HideSelectionCursor(AbilityNode _node)
+    {
+        if (currentCursorNode != null && _node != currentCursorNode)
+            return;
+
+        currentCursorNode = null;
+
+        if (selectionCursorInstance != null)
+            selectionCursorInstance.Hide();
+    }
+
+
+#endregion
+
+
 #region ToolTip
 
     // 노드 기준 좌우 규칙과 일정 거리 규칙에 맞춰 툴팁을 표시한다.
@@ -299,6 +351,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_node == null || abilityBackground == null)
             return;
 
+        bool shouldPlayShowMotion = currentToolTipNode != _node ||
+                                    toolTipInstance == null ||
+                                    toolTipInstance.gameObject.activeSelf == false;
         currentToolTipNode = _node;
         EnsureToolTipInstance();
         if (toolTipInstance == null)
@@ -309,10 +364,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         SkillInfo skillInfo = GetSkillInfo(_node.SkillType);
+        string costText = BuildToolTipCostText(skillInfo, out MoneyType costMoneyType);
         toolTipInstance.SetContent(
             BuildToolTipTitleAndLevelText(_node, skillInfo),
             _node.GetToolTipDescriptionText(),
-            BuildToolTipCostText(skillInfo));
+            costText,
+            costMoneyType);
 
         toolTipInstance.Show();
         Vector2 toolTipSize = toolTipInstance.GetSize();
@@ -341,6 +398,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         float y = nodeCenter.y;
 
         toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
+
+        if (shouldPlayShowMotion)
+            toolTipInstance.PlayShowMotion();
     }
 
     // 상위 스킬 시스템에서 툴팁에 필요한 레벨/비용 정보를 가져온다.
@@ -376,6 +436,20 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return "무료";
 
         return $"{_skillInfo.nextCost} {_skillInfo.moneyType}";
+    }
+
+    private string BuildToolTipCostText(SkillInfo _skillInfo, out MoneyType _costMoneyType)
+    {
+        _costMoneyType = MoneyType.None;
+
+        if (_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel)
+            return BuildToolTipCostText(_skillInfo);
+
+        if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
+            return BuildToolTipCostText(_skillInfo);
+
+        _costMoneyType = _skillInfo.moneyType;
+        return _skillInfo.nextCost.ToString();
     }
 
     // 현재 노드에 대한 툴팁을 숨긴다.
@@ -709,6 +783,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             if (isVisible == false && currentToolTipNode == node)
                 HideToolTip(node);
+
+            if (isVisible == false && currentCursorNode == node)
+                HideSelectionCursor(node);
         }
 
         RefreshLines();

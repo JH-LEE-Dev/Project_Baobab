@@ -1,18 +1,19 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
 namespace PresentationLayer.DOTweenAnimationSystem
 {
-    public class OMB_UIHoverWiggle : ObjectMotionBase
+    public class OMB_UISelectionCursorShow : ObjectMotionBase
     {
         [System.Serializable]
         public class ValueSettings
         {
-            [Header("Scale Settings")]
-            public float shrinkScale = 0.8f;
+            [Header("Size Settings")]
+            public float shrinkSizeScale = 0.8f;
             [Range(0f, 1f)] public float shrinkTimeRatio = 0.08f;
             [Range(0f, 1f)] public float restoreTimeRatio = 0.12f;
-            public Ease scaleEase = Ease.OutBack;
+            public Ease sizeEase = Ease.OutBack;
 
             [Header("Rotation Settings")]
             public float startAngle = 20f;
@@ -21,6 +22,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             [Range(0f, 1f)] public float rotationTimeRatio = 0.8f;
             public Ease rotationEase = Ease.OutSine;
         }
+
+        private readonly Dictionary<RectTransform, Vector2> sizeCache = new Dictionary<RectTransform, Vector2>();
 
         [Header("Value Settings")]
         [SerializeField] private ValueSettings valueSettings = new ValueSettings();
@@ -42,7 +45,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (null == _seq || null == _rect)
                 return;
 
-            TargetInitialState _state = new TargetInitialState
+            TargetInitialState state = new TargetInitialState
             {
                 rectTransform = _rect,
                 anchoredPosition = _rect.anchoredPosition,
@@ -50,27 +53,19 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 localScale = _rect.localScale
             };
 
-            stateCache.Add(_state);
-            _seq.Join(BuildScaleTween(_rect, _state.localScale));
-            _seq.Join(BuildRotationTween(_rect, _state.localRotation));
+            stateCache.Add(state);
+            sizeCache.Clear();
+            sizeCache[_rect] = _rect.sizeDelta;
+            _seq.Join(BuildSizeTween(_rect, _rect.sizeDelta));
+            _seq.Join(BuildRotationTween(_rect, state.localRotation));
         }
 
-        protected override void OnTransform(Sequence _seq, Transform _trans, Ease _currPublicEase)
+        protected override void OnCanvasGroup(Sequence _seq, CanvasGroup _group, Ease _currPublicEase)
         {
-            if (null == _seq || null == _trans)
+            if (null == _group)
                 return;
 
-            TargetInitialState _state = new TargetInitialState
-            {
-                transform = _trans,
-                localPosition = _trans.localPosition,
-                localRotation = _trans.localEulerAngles,
-                localScale = _trans.localScale
-            };
-
-            stateCache.Add(_state);
-            _seq.Join(BuildScaleTween(_trans, _state.localScale));
-            _seq.Join(BuildRotationTween(_trans, _state.localRotation));
+            _group.alpha = 1f;
         }
 
         protected override void ApplyTweenSettings(Tween _tween)
@@ -87,25 +82,31 @@ namespace PresentationLayer.DOTweenAnimationSystem
             base.InternalOnComplete();
         }
 
-        private void RestoreMotionState()
-        {
-            RestoreCachedState(false);
-        }
-
         protected override void RestoreAfterValidate()
         {
             RestoreMotionState();
         }
 
-        private Tween BuildScaleTween(Transform _target, Vector3 _initialScale)
+        private void RestoreMotionState()
         {
-            Vector3 shrinkScale = _initialScale * valueSettings.shrinkScale;
+            RestoreCachedState(false);
+
+            foreach (KeyValuePair<RectTransform, Vector2> pair in sizeCache)
+            {
+                if (pair.Key != null)
+                    pair.Key.sizeDelta = pair.Value;
+            }
+        }
+
+        private Tween BuildSizeTween(RectTransform _target, Vector2 _initialSize)
+        {
+            Vector2 shrinkSize = _initialSize * valueSettings.shrinkSizeScale;
             float shrinkDuration = forwardDuration * Mathf.Clamp01(valueSettings.shrinkTimeRatio);
             float restoreDuration = forwardDuration * Mathf.Clamp01(valueSettings.restoreTimeRatio);
 
             return DOTween.Sequence()
-                .Append(_target.DOScale(shrinkScale, shrinkDuration).SetEase(Ease.OutQuad))
-                .Append(_target.DOScale(_initialScale, restoreDuration).SetEase(valueSettings.scaleEase));
+                .Append(_target.DOSizeDelta(shrinkSize, shrinkDuration).SetEase(Ease.OutQuad))
+                .Append(_target.DOSizeDelta(_initialSize, restoreDuration).SetEase(valueSettings.sizeEase));
         }
 
         private Tween BuildRotationTween(Transform _target, Vector3 _initialRotation)
@@ -122,17 +123,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 Vector3 targetRotation = _initialRotation;
                 targetRotation.z += angle * direction;
 
-                sequence.Append(
-                    _target.DOLocalRotate(targetRotation, swingDuration, RotateMode.Fast)
-                           .SetEase(valueSettings.rotationEase));
-
+                sequence.Append(_target.DOLocalRotate(targetRotation, swingDuration, RotateMode.Fast).SetEase(valueSettings.rotationEase));
                 angle *= Mathf.Clamp01(valueSettings.angleDamping);
             }
 
-            sequence.Append(
-                _target.DOLocalRotate(_initialRotation, swingDuration, RotateMode.Fast)
-                       .SetEase(valueSettings.rotationEase));
-
+            sequence.Append(_target.DOLocalRotate(_initialRotation, swingDuration, RotateMode.Fast).SetEase(valueSettings.rotationEase));
             return sequence;
         }
     }
