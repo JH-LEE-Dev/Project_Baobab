@@ -113,6 +113,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         shadowObject.Initialize();
         pathFindComponent.Initialize(environmentProvider.tilemapDataProvider, environmentProvider.pathfindGridProvider);
 
+        Hide();
         SetupStateMachine();
 
         animalAnimValueHandler.Initialize(anim, shadowAnim);
@@ -128,6 +129,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     {
         shadowSR.enabled = false;
         sr.enabled = false;
+        feetShadowObject.SetActive(false);
+        shadowAnim.enabled = false;
+
         // 동적 객체에서 제거 (위치 인자 없이 안전하게 제거)
         CollisionSystem.Instance?.Unregister(this);
     }
@@ -136,6 +140,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     {
         shadowSR.enabled = true;
         sr.enabled = true;
+        shadowAnim.enabled = true;
         // 동적 객체(동물)로 등록
         CollisionSystem.Instance?.Register(this, false);
     }
@@ -221,6 +226,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
             FleeDirection = ((Vector2)transform.position - detectedCharacterPos).normalized;
         }
 
+        // 본체가 숨겨진 상태(Hide)라면 시각적 업데이트를 중단하여 그림자가 다시 켜지는 것을 방지합니다.
+        if (!sr.enabled) return;
+
         UpdateAnimalColor();
 
         if (shadowObject != null)
@@ -299,48 +307,65 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         // 광원 각도 동기화 및 방향 보정
         float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
 
+        // 캐릭터의 바라보는 방향을 4방향으로 스냅하여 본체 스프라이트 판정 로직과 동기화합니다.
+        float snappedFacingAngle;
+        float cos = Mathf.Cos(currentFacingAngle * Mathf.Deg2Rad);
+        float sin = Mathf.Sin(currentFacingAngle * Mathf.Deg2Rad);
+
+        if (Mathf.Abs(cos) > Mathf.Abs(sin))
+        {
+            snappedFacingAngle = (cos > 0) ? 0f : 180f;
+        }
+        else
+        {
+            snappedFacingAngle = (sin > 0) ? 90f : 270f;
+        }
+
+        // 상하 이동 중인지 확인 (90도: 위, 270도: 아래)
+        bool isMovingVertical = (Mathf.Approximately(snappedFacingAngle, 90f) || Mathf.Approximately(snappedFacingAngle, 270f));
+
+        // 2:1 아이소매트릭 보정을 위한 기본 가중치는 2.0입니다 (Y축이 0.5배이므로).
+        // 상하 이동 중일 때는 좌우 판정 범위를 더 줄이기 위해 가중치를 높입니다 (예: 2.5).
+        float thresholdMultiplier = isMovingVertical ? 2.5f : 1.25f;
+
         // 광원 시점(Light Perspective) 로직 적용
-        // 캐릭터의 현재 바라보는 각도(currentFacingAngle)와 광원 각도(shadowAngle)를 결합하여
-        // 광원의 위치에 따라 캐릭터의 어떤 면이 그림자로 비쳐야 하는지 계산합니다.
-        float lightPerspectiveAngle = currentFacingAngle - shadowAngle + 90f;
+        // 2:1 아이소매트릭 비율을 반영하여 Y축 성분을 0.5배로 보정합니다.
+        float rad = (snappedFacingAngle - shadowAngle + 90f) * Mathf.Deg2Rad;
         Vector2 lightViewDir = new Vector2(
-            Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad),
-            Mathf.Sin(lightPerspectiveAngle * Mathf.Deg2Rad)
+            Mathf.Cos(rad),
+            Mathf.Sin(rad) * 0.5f
         );
-        SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir);
+        SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir, thresholdMultiplier);
     }
 
-    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input)
+    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input, float _thresholdMultiplier = 1.0f)
     {
         if (_input.sqrMagnitude < 0.01f) return;
 
-        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
-        if (angle < 0) angle += 360;
+        float absX = Mathf.Abs(_input.x);
+        float absY = Mathf.Abs(_input.y);
 
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        bool flipX = false;
-        int animIndex = -1;
+        int dirIndex = 0;
+        bool shouldFlip = false;
 
-        switch (dirIndex)
+        // _thresholdMultiplier가 높을수록 수평(Horizontal) 판정이 일어나기 위해 더 큰 X값이 필요합니다.
+        if (absX > absY * _thresholdMultiplier)
         {
-            case 0: animIndex = 0; break; // 우
-            case 1: animIndex = 1; break; // 우상
-            case 2: animIndex = 2; break; // 상
-            case 3: animIndex = 1; flipX = true; break; // 좌상
-            case 4: animIndex = 0; flipX = true; break; // 좌
-            case 5: animIndex = 4; flipX = true; break; // 좌하
-            case 6: animIndex = 3; break; // 하
-            case 7: animIndex = 4; break; // 우하
+            dirIndex = 0; // Horizontal
+            shouldFlip = _input.x < 0;
+        }
+        else
+        {
+            if (_input.y > 0) dirIndex = 1; // Up
+            else dirIndex = 2; // Down
         }
 
-        if (animIndex != -1)
-        {
-            Vector3 scale = _targetSR.transform.localScale;
-            scale.x = flipX ? 1f : -1f;
-            _targetSR.transform.localScale = scale;
+        // 애니메이터 파라미터 설정 및 반전 적용
+        _targetAnim.SetFloat(facingDirHash, dirIndex);
 
-            _targetAnim.SetFloat(facingDirHash, animIndex);
-        }
+        Vector3 scale = _targetSR.transform.localScale;
+        scale.x = shouldFlip ? 1f : -1f;
+        _targetSR.transform.localScale = scale;
     }
 
     public void TakeDamage(float _damage)

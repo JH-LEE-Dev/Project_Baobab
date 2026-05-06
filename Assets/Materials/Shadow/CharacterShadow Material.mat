@@ -45,7 +45,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _BottomWidth: 0.19
+    - _BottomWidth: 0.41
     - _EnableExternalAlpha: 0
     - _PPU: 32
     - _TaperCenter: 0.5

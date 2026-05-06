@@ -257,60 +257,71 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateShadowVisual()
     {
-        if (shadowAnim == null) return;
+        if (shadowAnim == null || shadowSR == null) return;
 
         // 1. 애니메이션 파라미터 동기화
         shadowAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
         shadowAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
 
         float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
-        float normalizedAngle = shadowAngle % 360;
-        if (normalizedAngle < 0) normalizedAngle += 360;
 
-        // 2. 수평 방향 강제 보정 로직 (그림자가 좌/우로 길게 늘어질 때)
-        // 오른쪽 방향 (337.5 ~ 22.5도)
-        if (normalizedAngle <= 22.5f || normalizedAngle >= 337.5f)
-        {
-            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.right);
-        }
-        // 왼쪽 방향 (157.5 ~ 202.5도)
-        else if (normalizedAngle >= 157.5f && normalizedAngle <= 202.5f)
-        {
-            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.left);
-        }
-        else
-        {
-            // 3. 수직 또는 대각선 각도는 광원 시점(Light Perspective) 로직 적용
-            float lightPerspectiveAngle = currentFacingAngle - shadowAngle + 90f;
-            Vector2 lightViewDir = new Vector2(
-                Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad), 
-                Mathf.Sin(lightPerspectiveAngle * Mathf.Deg2Rad)
-            );
-            SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir);
-        }
+        // 2. 캐릭터의 바라보는 방향을 8방향으로 스냅
+        float snappedFacingAngle = Mathf.Round(currentFacingAngle / 45f) * 45f;
+        if (snappedFacingAngle >= 360f) snappedFacingAngle -= 360f;
+
+        // 상하 방향 이동 중인지 확인 (90도: 위, 270도: 아래)
+        bool isMovingVertical = (Mathf.Approximately(snappedFacingAngle, 90f) || Mathf.Approximately(snappedFacingAngle, 270f));
+
+        // 2:1 아이소매트릭 보정을 위한 기본 가중치는 1.5이며, 상하 이동 중일 때는 좌우 판정 범위를 더 줄이기 위해 2.5를 사용합니다.
+        float thresholdMultiplier = isMovingVertical ? 2.5f : 1.5f;
+
+        // 3. 광원 시점(Light Perspective) 로직 적용
+        // 2:1 아이소매트릭 비율을 반영하여 Y축 성분을 0.5배로 보정합니다.
+        float rad = (snappedFacingAngle - shadowAngle + 90f) * Mathf.Deg2Rad;
+        Vector2 lightViewDir = new Vector2(
+            Mathf.Cos(rad),
+            Mathf.Sin(rad) * 0.5f
+        );
+
+        SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir, thresholdMultiplier);
     }
 
-    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input)
+    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input, float _thresholdMultiplier = 1.0f)
     {
         if (_input.sqrMagnitude < 0.01f) return;
 
-        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
-        if (angle < 0) angle += 360;
+        float absX = Mathf.Abs(_input.x);
+        float absY = Mathf.Abs(_input.y);
 
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        bool flipX = false;
         int animIndex = -1;
+        bool flipX = false;
 
-        switch (dirIndex)
+        // Animal.cs의 로직을 8방향 시스템(Character)에 맞게 확장 적용
+        // 1. 수평 판정 (Side)
+        if (absX > absY * _thresholdMultiplier)
         {
-            case 0: animIndex = 0; break; // 우
-            case 1: animIndex = 1; break; // 우상
-            case 2: animIndex = 2; break; // 상
-            case 3: animIndex = 1; flipX = true; break; // 좌상
-            case 4: animIndex = 0; flipX = true; break; // 좌
-            case 5: animIndex = 4; flipX = true; break; // 좌하
-            case 6: animIndex = 3; break; // 하
-            case 7: animIndex = 4; break; // 우하
+            animIndex = 0; // Side
+            flipX = _input.x < 0;
+        }
+        // 2. 수직 판정 (Up, Down)
+        else if (absY > absX * _thresholdMultiplier)
+        {
+            if (_input.y > 0) animIndex = 2; // Up
+            else animIndex = 3; // Down
+        }
+        // 3. 대각선 판정 (UpSide, DownSide)
+        else
+        {
+            if (_input.y > 0) // Up
+            {
+                animIndex = 1; // UpSide
+                flipX = _input.x < 0;
+            }
+            else // Down
+            {
+                animIndex = 4; // DownSide
+                flipX = _input.x < 0;
+            }
         }
 
         if (animIndex != -1)
