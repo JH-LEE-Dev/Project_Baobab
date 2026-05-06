@@ -27,9 +27,20 @@ public class AbilityToolTip : MonoBehaviour
     [SerializeField] private Ease showMoveEase = Ease.OutQuad;
     [SerializeField] private Ease showRotationEase = Ease.OutSine;
     [SerializeField] private Ease hideEase = Ease.InQuad;
+    [SerializeField] private float clickDuration = 0.45f;
+    [SerializeField] private Vector2 clickSquashScale = new Vector2(1.4f, 0.7f);
+    [SerializeField] private Vector2 clickRecoilScale = new Vector2(0.8f, 1.3f);
+    [SerializeField, Range(1, 5)] private int clickBounceCount = 2;
+    [SerializeField, Range(0f, 1f)] private float clickBounceDamping = 0.25f;
+    [SerializeField, Range(0f, 1f)] private float clickSquashTimeRatio = 0.15f;
+    [SerializeField, Range(0f, 1f)] private float clickRecoilTimeRatio = 0.2f;
+    [SerializeField, Range(0f, 1f)] private float clickRestoreTimeRatio = 0.4f;
+    [SerializeField] private Ease clickSquashEase = Ease.OutQuad;
+    [SerializeField] private Ease clickRestoreEase = Ease.OutBack;
 
     private Tween motionTween;
     private Vector2 baseAnchoredPosition;
+    private Vector3 baseLocalScale = Vector3.one;
 
     public RectTransform RootRectTransform => rootRectTransform;
     public TMP_Text TitleAndLevelText => titleAndLevelText;
@@ -120,6 +131,7 @@ public class AbilityToolTip : MonoBehaviour
             return;
 
         rootRectTransform.anchoredPosition = _anchoredPosition;
+        baseLocalScale = rootRectTransform.localScale;
     }
 
     public void Show()
@@ -143,6 +155,7 @@ public class AbilityToolTip : MonoBehaviour
         canvasGroup.alpha = 0f;
         rootRectTransform.anchoredPosition = baseAnchoredPosition + Vector2.up * showStartOffsetY;
         rootRectTransform.localEulerAngles = Vector3.zero;
+        rootRectTransform.localScale = baseLocalScale;
 
         Sequence sequence = DOTween.Sequence();
         sequence.Join(canvasGroup.DOFade(1f, showDuration).SetEase(showMoveEase));
@@ -167,12 +180,31 @@ public class AbilityToolTip : MonoBehaviour
 
         EnsureCanvasGroup();
         rootRectTransform.localEulerAngles = Vector3.zero;
+        rootRectTransform.localScale = baseLocalScale;
 
         Sequence sequence = DOTween.Sequence();
         sequence.Join(canvasGroup.DOFade(0f, hideDuration).SetEase(hideEase));
         sequence.Join(rootRectTransform.DOAnchorPos(baseAnchoredPosition + Vector2.up * hideEndOffsetY, hideDuration).SetEase(hideEase));
         sequence.OnComplete(CompleteHideMotion);
         motionTween = sequence;
+    }
+
+    public void PlayClickMotion()
+    {
+        Show();
+        StopMotion();
+
+        if (rootRectTransform == null)
+            return;
+
+        EnsureCanvasGroup();
+        canvasGroup.alpha = 1f;
+        rootRectTransform.anchoredPosition = baseAnchoredPosition;
+        rootRectTransform.localEulerAngles = Vector3.zero;
+        rootRectTransform.localScale = baseLocalScale;
+
+        motionTween = BuildClickScaleTween();
+        motionTween.OnComplete(RestoreVisibleState);
     }
 
     public void HideImmediately()
@@ -186,6 +218,7 @@ public class AbilityToolTip : MonoBehaviour
         {
             rootRectTransform.anchoredPosition = baseAnchoredPosition;
             rootRectTransform.localEulerAngles = Vector3.zero;
+            rootRectTransform.localScale = baseLocalScale;
         }
 
         gameObject.SetActive(false);
@@ -238,6 +271,7 @@ public class AbilityToolTip : MonoBehaviour
         {
             rootRectTransform.anchoredPosition = baseAnchoredPosition;
             rootRectTransform.localEulerAngles = Vector3.zero;
+            rootRectTransform.localScale = baseLocalScale;
         }
     }
 
@@ -252,9 +286,47 @@ public class AbilityToolTip : MonoBehaviour
         {
             rootRectTransform.anchoredPosition = baseAnchoredPosition;
             rootRectTransform.localEulerAngles = Vector3.zero;
+            rootRectTransform.localScale = baseLocalScale;
         }
 
         gameObject.SetActive(false);
+    }
+
+    private Tween BuildClickScaleTween()
+    {
+        Vector3 squashScale = new Vector3(
+            baseLocalScale.x * clickSquashScale.x,
+            baseLocalScale.y * clickSquashScale.y,
+            baseLocalScale.z);
+
+        Vector3 recoilScale = new Vector3(
+            baseLocalScale.x * clickRecoilScale.x,
+            baseLocalScale.y * clickRecoilScale.y,
+            baseLocalScale.z);
+
+        int bounceCount = Mathf.Max(clickBounceCount, 1);
+        float cycleRatio = clickSquashTimeRatio + clickRecoilTimeRatio;
+        float totalRatio = Mathf.Max((cycleRatio * bounceCount) + clickRestoreTimeRatio, 0.0001f);
+        float squashDuration = clickDuration * Mathf.Clamp01(clickSquashTimeRatio / totalRatio);
+        float recoilDuration = clickDuration * Mathf.Clamp01(clickRecoilTimeRatio / totalRatio);
+        float restoreDuration = clickDuration * Mathf.Clamp01(clickRestoreTimeRatio / totalRatio);
+
+        Sequence sequence = DOTween.Sequence();
+        float intensity = 1f;
+
+        for (int i = 0; i < bounceCount; i++)
+        {
+            Vector3 dampedSquashScale = Vector3.Lerp(baseLocalScale, squashScale, intensity);
+            Vector3 dampedRecoilScale = Vector3.Lerp(baseLocalScale, recoilScale, intensity);
+
+            sequence.Append(rootRectTransform.DOScale(dampedSquashScale, squashDuration).SetEase(clickSquashEase));
+            sequence.Append(rootRectTransform.DOScale(dampedRecoilScale, recoilDuration).SetEase(Ease.OutQuad));
+
+            intensity *= Mathf.Clamp01(clickBounceDamping);
+        }
+
+        sequence.Append(rootRectTransform.DOScale(baseLocalScale, restoreDuration).SetEase(clickRestoreEase));
+        return sequence;
     }
 
     private void StopMotion()

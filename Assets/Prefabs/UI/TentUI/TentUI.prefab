@@ -196,6 +196,10 @@ MonoBehaviour:
   selectionCursorPrefab: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
   selectionCursorParent: {fileID: 0}
   selectionCursorSize: {x: 38, y: 38}
+  viewShakeDuration: 0.2
+  viewShakeStrength: 4
+  viewShakeFrequency: 50
+  viewShakeVerticalRatio: 0.45
 --- !u!1 &1970689072727835323
 GameObject:
   m_ObjectHideFlags: 0

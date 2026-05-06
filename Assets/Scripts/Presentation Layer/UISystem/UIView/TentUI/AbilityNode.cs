@@ -36,6 +36,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private Canvas rootCanvas;
     private bool canApplyVisual;
     private bool completedVisual;
+    private bool visualHidden;
     private bool isPointerHovering;
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
@@ -172,7 +173,23 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         completedVisual = _completed;
 
         if (abilityBaseImage != null)
+        {
+            _baseColor.a = visualHidden ? 0f : _baseColor.a;
             abilityBaseImage.color = _baseColor;
+        }
+    }
+
+    public void SetVisualVisible(bool _visible)
+    {
+        visualHidden = _visible == false;
+        ApplyImageAlpha(abilityBaseImage, _visible ? 1f : 0f);
+        ApplyImageAlpha(abilityBackgroundImage, _visible ? 1f : 0f);
+        ApplyImageAlpha(abilityPictureImage, _visible ? 1f : 0f);
+    }
+
+    public void PlayUnlockAppearMotion()
+    {
+        PlayClickMotion();
     }
 
     // 툴팁 제목 줄에 표시할 이름과 현재 레벨 문자열을 만든다.
@@ -281,6 +298,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         motionPlayer.SettingEntryMotion(_entry, true, true);
+    }
+
+    private void ApplyImageAlpha(Image _image, float _alpha)
+    {
+        if (_image == null)
+            return;
+
+        Color color = _image.color;
+        color.a = _alpha;
+        _image.color = color;
     }
 
     private bool IsClickMotionPlaying()
