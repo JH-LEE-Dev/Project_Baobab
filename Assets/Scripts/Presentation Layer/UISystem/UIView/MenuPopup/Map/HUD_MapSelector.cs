@@ -23,27 +23,41 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [Header("Settings")]
         [SerializeField] private float snapSpeed = 10.0f;        // 스냅 이동 속도
         [SerializeField] private float itemSpacing = 600.0f;     // 항목 간 가로 간격
+        [SerializeField] private float dragSensitivity = 1.0f;   // 드래그 민감도 (추가)
 
         // //내부 의존성
+        private IMapDataProvider mapDataProvider;
+        private ITimeDataProvider timeDataProvider;
+        private RectTransform containerRect;
+
         private List<HUD_MapRegion> spawnedRegions = new List<HUD_MapRegion>(8);
         private HUD_MapRegion currentFocusedRegion;
-        private Action<MapType> onConfirmCallback;
+        private Action<MapType, ForestType> onConfirmCallback;
+        
         private bool isInitialized = false;
         private bool isDayTime = true;
         private bool isDragging = false;
         private float targetPosX = 0.0f;
+
+        private static readonly string dayMotionKey = "Day";
+        private static readonly string nightMotionKey = "Night";
 
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
         /// 셀렉터를 초기화하고 콜백을 등록합니다.
         /// </summary>
-        public void Initialize(Action<MapType> _onConfirm)
+        public void Initialize(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, Action<MapType, ForestType> _onConfirm)
         {
             if (true == isInitialized)
                 return;
 
+            mapDataProvider = _mapDataProvider;
+            timeDataProvider = _timeDataProvider;
             onConfirmCallback = _onConfirm;
+
+            if (null != regionContainer)
+                containerRect = regionContainer.GetComponent<RectTransform>();
 
             if (null != subSelector)
                 subSelector.Initialize();
@@ -54,17 +68,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != selectButton)
                 selectButton.Initialize(HandleConfirm);
 
+            SetupRegionsFromData();
+
             isInitialized = true;
-            UpdateSunMoonState();
-        }
 
-        private void HandleConfirm()
-        {
-            // TODO: 추후 GetFinalMapType()을 사용하여 실제 선택된 타입을 가져와야 함
-            //MapType _finalType = MapType.Vegetatedplains;
-
-           //if (MapType.None != _finalType)
-                //onConfirmCallback?.Invoke(_finalType);
+            if (null != timeDataProvider)
+                SetTimeState(timeDataProvider.isDay);
+            else
+                UpdateSunMoonState();
         }
 
         /// <summary>
@@ -79,7 +90,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         /// <summary>
         /// 새로운 지역 항목을 생성하고 등록합니다.
         /// </summary>
-        public void AddRegion(string _name, MapType _baseType, int _subCount)
+        public void AddRegion(MapEnvironmentDataInfo _info)
         {
             if (null == regionPrefab || null == regionContainer)
                 return;
@@ -90,7 +101,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != _region)
             {
                 _region.Initialize();
-                _region.Setup(_name, _baseType);
+                _region.Setup(_info.mapType.ToString(), _info);
                 
                 // 가로 배치를 위한 위치 설정
                 RectTransform _rect = _region.GetComponent<RectTransform>();
@@ -99,30 +110,49 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
                 spawnedRegions.Add(_region);
             }
+        }
 
-            // 최초 생성 시 첫 번째 지역으로 타겟 설정
-            if (1 == spawnedRegions.Count)
+        private void SetupRegionsFromData()
+        {
+            if (null == mapDataProvider)
+                return;
+
+            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+            if (null == _db.mapDatas)
+                return;
+
+            // 기존 생성된 지역 제거
+            for (int _i = 0; _i < spawnedRegions.Count; _i++)
+                if (null != spawnedRegions[_i])
+                    Destroy(spawnedRegions[_i].gameObject);
+            
+            spawnedRegions.Clear();
+
+            for (int _i = 0; _i < _db.mapDatas.Count; _i++)
+            {
+                MapEnvironmentDataInfo _info = _db.mapDatas[_i];
+                
+                if (MapType.Town == _info.mapType)
+                    continue;
+
+                AddRegion(_info);
+            }
+
+            if (0 < spawnedRegions.Count)
                 FocusRegion(0);
         }
 
-        /// <summary>
-        /// 현재 선택된 메인 지역의 타입과 서브 지역 번호를 조합하여 최종 MapType을 반환합니다.
-        /// </summary>
-        public MapType GetFinalMapType()
+        private void HandleConfirm()
         {
             if (null == currentFocusedRegion || null == subSelector)
-                return MapType.None;
+                return;
 
-            MapType _baseType = currentFocusedRegion.GetMapType();
-            int _subNumber = subSelector.GetSelectedRegionNumber();
+            MapType _mapType = currentFocusedRegion.GetMapType();
+            ForestType _forestType = subSelector.GetSelectedForestType();
 
-            if (-1 == _subNumber)
-                return _baseType;
-
-            return (MapType)((int)_baseType + (_subNumber - 1));
+            if (MapType.None != _mapType && ForestType.None != _forestType)
+                onConfirmCallback?.Invoke(_mapType, _forestType);
         }
-
-        // //내부 로직
 
         private void UpdateSunMoonState()
         {
@@ -130,9 +160,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
 
             if (true == isDayTime)
-                sunMoon.PlayMotion("Day");
+                sunMoon.PlayMotion(dayMotionKey);
             else
-                sunMoon.PlayMotion("Night");
+                sunMoon.PlayMotion(nightMotionKey);
         }
 
         private void FocusRegion(int _index)
@@ -143,9 +173,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             currentFocusedRegion = spawnedRegions[_index];
             targetPosX = -(_index * itemSpacing);
 
-            // TODO: 실제 데이터 시트에서 서브 지역 개수를 가져와야 함
-            if (null != subSelector)
-                subSelector.SetSubRegionCount(3);
+            // 모든 지역의 포커스 상태 업데이트
+            for (int _i = 0; _i < spawnedRegions.Count; _i++)
+            {
+                if (null != spawnedRegions[_i])
+                    spawnedRegions[_i].SetFocus(_i == _index);
+            }
+
+            if (null != subSelector && null != currentFocusedRegion.GetMapEnvironmentInfo().forestDatas)
+                subSelector.SetSubRegions(currentFocusedRegion.GetMapEnvironmentInfo().forestDatas);
         }
 
         // //Event System 구현부
@@ -153,16 +189,22 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public void OnBeginDrag(PointerEventData _eventData)
         {
             isDragging = true;
+
+            if (null != subSelector)
+                subSelector.SetVisibility(false);
+
+            if (null != selectButton)
+                selectButton.gameObject.SetActive(false);
         }
 
         public void OnDrag(PointerEventData _eventData)
         {
-            if (null == regionContainer)
+            if (null == containerRect)
                 return;
 
-            Vector3 _pos = regionContainer.localPosition;
-            _pos.x += _eventData.delta.x;
-            regionContainer.localPosition = _pos;
+            Vector3 _pos = containerRect.localPosition;
+            _pos.x += _eventData.delta.x * dragSensitivity;
+            containerRect.localPosition = _pos;
         }
 
         public void OnEndDrag(PointerEventData _eventData)
@@ -173,26 +215,44 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
 
             // 드래그 종료 시 가장 가까운 인덱스 계산하여 스냅
-            int _closestIndex = Mathf.RoundToInt(-regionContainer.localPosition.x / itemSpacing);
+            int _closestIndex = Mathf.RoundToInt(-containerRect.localPosition.x / itemSpacing);
             _closestIndex = Mathf.Clamp(_closestIndex, 0, spawnedRegions.Count - 1);
             
             FocusRegion(_closestIndex);
         }
+
+        // //유니티 이벤트 함수
 
         private void Update()
         {
             if (false == isInitialized || true == isDragging)
                 return;
 
-            if (null == regionContainer)
+            if (null == containerRect)
                 return;
 
             // 목표 위치로 부드럽게 스냅 이동 (Lerp)
-            Vector3 _currentPos = regionContainer.localPosition;
+            Vector3 _currentPos = containerRect.localPosition;
             if (0.1f < Mathf.Abs(_currentPos.x - targetPosX))
             {
                 _currentPos.x = Mathf.Lerp(_currentPos.x, targetPosX, Time.deltaTime * snapSpeed);
-                regionContainer.localPosition = _currentPos;
+                containerRect.localPosition = _currentPos;
+
+                // 이동 중에는 숨김
+                if (null != subSelector)
+                    subSelector.SetVisibility(false);
+
+                if (null != selectButton)
+                    selectButton.gameObject.SetActive(false);
+            }
+            else
+            {
+                // 목표 위치에 도달하여 멈췄을 때만 표시
+                if (null != subSelector)
+                    subSelector.SetVisibility(true);
+
+                if (null != selectButton)
+                    selectButton.gameObject.SetActive(true);
             }
         }
     }

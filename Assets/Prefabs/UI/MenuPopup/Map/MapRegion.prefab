@@ -836,7 +836,10 @@ MonoBehaviour:
   - {fileID: 7774187873736965230}
   - {fileID: 8517265149077529314}
   - {fileID: 4247502586708345126}
-  animalImage: {fileID: 2603577372597116118}
+  animalImages:
+  - {fileID: 2603577372597116118}
+  - {fileID: 7446208530695984470}
+  - {fileID: 8087318198568580695}
   lockObject: {fileID: 0}
   unlockObject: {fileID: 0}
   mapNameText: {fileID: 6628470352438654747}

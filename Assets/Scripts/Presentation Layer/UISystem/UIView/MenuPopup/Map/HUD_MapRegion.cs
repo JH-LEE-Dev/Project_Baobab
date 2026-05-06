@@ -19,7 +19,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         [Header("Object Visuals")]
         [SerializeField] private Image[] treeImages;        // 나무 이미지 2개
-        [SerializeField] private Image animalImage;         // 동물 이미지 1개
+        [SerializeField] private Image[] animalImages;      // 동물 이미지 3개
 
         [Header("State Visuals")]
         [SerializeField] private GameObject lockObject;     // 잠금 시 활성화될 오브젝트
@@ -28,20 +28,25 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [Header("Text")]
         [SerializeField] private TextMeshProUGUI mapNameText; // 맵 이름 TMP
 
-        // //내부 의존성
         [Header("Animation")]
         [SerializeField] private ObjectMotionPlayer motionPlayer;
 
-        private MapType currentMapType;
+        [Header("Focus Settings")]
+        [Range(0f, 1f)]
+        [SerializeField] private float dimFactor = 0.5f;     // 비포커스 시 명암 계수
+
+        // //내부 의존성
+        private Color[] groundOriginalColors;
+        private Color[] treeOriginalColors;
+        private Color[] animalOriginalColors;
+
+        private MapEnvironmentDataInfo mapEnvironmentInfo;
         private string currentMapName = string.Empty;
         private bool isLocked = false;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        /// <summary>
-        /// 지역 항목을 초기화합니다.
-        /// </summary>
         public void Initialize()
         {
             if (true == isInitialized)
@@ -50,27 +55,50 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == motionPlayer)
                 motionPlayer = GetComponent<ObjectMotionPlayer>();
 
+            CaptureOriginalColors();
+
             isInitialized = true;
         }
 
-        /// <summary>
-        /// 지역의 이름과 타입을 설정합니다.
-        /// </summary>
-        public void Setup(string _mapName, MapType _mapType)
+        private void CaptureOriginalColors()
+        {
+            if (null != groundImages)
+            {
+                groundOriginalColors = new Color[groundImages.Length];
+                for (int _i = 0; _i < groundImages.Length; _i++)
+                    if (null != groundImages[_i])
+                        groundOriginalColors[_i] = groundImages[_i].color;
+            }
+
+            if (null != treeImages)
+            {
+                treeOriginalColors = new Color[treeImages.Length];
+                for (int _i = 0; _i < treeImages.Length; _i++)
+                    if (null != treeImages[_i])
+                        treeOriginalColors[_i] = treeImages[_i].color;
+            }
+
+            if (null != animalImages)
+            {
+                animalOriginalColors = new Color[animalImages.Length];
+                for (int _i = 0; _i < animalImages.Length; _i++)
+                    if (null != animalImages[_i])
+                        animalOriginalColors[_i] = animalImages[_i].color;
+            }
+        }
+
+        public void Setup(string _mapName, MapEnvironmentDataInfo _info)
         {
             if (false == isInitialized)
                 Initialize();
 
             currentMapName = _mapName;
-            currentMapType = _mapType;
+            mapEnvironmentInfo = _info;
 
             if (null != mapNameText)
                 mapNameText.text = currentMapName;
         }
 
-        /// <summary>
-        /// 잠금 상태를 설정합니다.
-        /// </summary>
         public void SetLock(bool _isLock)
         {
             isLocked = _isLock;
@@ -82,39 +110,65 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 unlockObject.SetActive(false == isLocked);
         }
 
-        /// <summary>
-        /// 현재 잠금 여부를 반환합니다.
-        /// </summary>
+        public void SetFocus(bool _isFocus)
+        {
+            float _factor = (true == _isFocus) ? 1.0f : dimFactor;
+
+            if (null != groundImages && null != groundOriginalColors)
+            {
+                for (int _i = 0; _i < groundImages.Length; _i++)
+                {
+                    if (null != groundImages[_i])
+                    {
+                        Color _c = groundOriginalColors[_i];
+                        groundImages[_i].color = new Color(_c.r * _factor, _c.g * _factor, _c.b * _factor, _c.a);
+                    }
+                }
+            }
+
+            if (null != treeImages && null != treeOriginalColors)
+            {
+                for (int _i = 0; _i < treeImages.Length; _i++)
+                {
+                    if (null != treeImages[_i])
+                    {
+                        Color _c = treeOriginalColors[_i];
+                        treeImages[_i].color = new Color(_c.r * _factor, _c.g * _factor, _c.b * _factor, _c.a);
+                    }
+                }
+            }
+
+            if (null != animalImages && null != animalOriginalColors)
+            {
+                for (int _i = 0; _i < animalImages.Length; _i++)
+                {
+                    if (null != animalImages[_i])
+                    {
+                        Color _c = animalOriginalColors[_i];
+                        animalImages[_i].color = new Color(_c.r * _factor, _c.g * _factor, _c.b * _factor, _c.a);
+                    }
+                }
+            }
+        }
+
+        public MapEnvironmentDataInfo GetMapEnvironmentInfo()
+        {
+            return mapEnvironmentInfo;
+        }
+
         public bool IsLocked()
         {
             return isLocked;
         }
 
-        /// <summary>
-        /// 현재 설정된 지역 이름을 반환합니다.
-        /// </summary>
         public string GetMapName()
         {
             return currentMapName;
         }
 
-        /// <summary>
-        /// 현재 설정된 지역의 MapType을 반환합니다.
-        /// </summary>
         public MapType GetMapType()
         {
-            return currentMapType;
-        }
-
-        /// <summary>
-        /// 특정 모션 태그를 통해 애니메이션을 재생합니다.
-        /// </summary>
-        public void PlayMotion(string _motionTag)
-        {
-            if (null == motionPlayer)
-                return;
-
-            motionPlayer.Play(_motionTag);
+            return mapEnvironmentInfo.mapType;
         }
     }
 }

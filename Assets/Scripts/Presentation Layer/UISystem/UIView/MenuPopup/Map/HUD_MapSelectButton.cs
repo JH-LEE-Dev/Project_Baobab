@@ -10,7 +10,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     /// 마우스 호버 및 클릭 이벤트를 처리하며 상위 UIView로 이벤트를 전달합니다.
     /// </summary>
     public class HUD_MapSelectButton : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
-{
+    {
         // //외부 의존성
         [Header("Animation")]
         [SerializeField] private ObjectMotionPlayer motionPlayer;
@@ -18,6 +18,12 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //내부 의존성
         private Action onConfirmEvent;
         private bool isInitialized = false;
+
+        private MotionEntry enterAnim;
+        private MotionEntry clickedAnim;
+
+        private static readonly string hoverMotionKey = "Hover";
+        private static readonly string clickMotionKey = "Click";
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -40,21 +46,22 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            motionPlayer?.Play("Hover");
+            if (null == motionPlayer)
+                return;
+
+            motionPlayer.SettingEntryMotion(clickedAnim, true, true);
+            enterAnim = motionPlayer.Play(hoverMotionKey);
         }
 
         public void OnPointerClick(PointerEventData _eventData)
         {
-            motionPlayer?.Play("Click");
+            if (null != motionPlayer)
+            {
+                motionPlayer.SettingEntryMotion(enterAnim, true, true);
+                clickedAnim = motionPlayer.Play(clickMotionKey);
+            }
+
             onConfirmEvent?.Invoke();
-        }
-
-        // //유니티 이벤트 함수
-
-        private void Awake()
-        {
-            if (false == isInitialized)
-                Initialize(null);
         }
     }
 }

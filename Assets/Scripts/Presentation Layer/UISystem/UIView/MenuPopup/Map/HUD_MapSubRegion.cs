@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using PresentationLayer.UISystem.CustomNumber;
+using PresentationLayer.DOTweenAnimationSystem;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
@@ -17,9 +18,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private GameObject lockObject;             // 잠금 시 활성화될 오브젝트
         [SerializeField] private GameObject unlockObject;           // 해제 시 활성화될 오브젝트
         [SerializeField] private HUD_ProgressBar progressBar;       // 진행도 표시 바
+        [SerializeField] private ObjectMotionPlayer motionPlayer;   // 애니메이션 플레이어
 
         // //내부 의존성
         private RectTransform rect;
+        private ForestEnvironmentInfo forestInfo;
         private int regionNumber = 0;
         private bool isSelected = false;
         private bool isLocked = false;
@@ -28,28 +31,32 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private Action<RectTransform> onHoverEvent; // 커서 이동용
         private Action<int> onSelectEvent;         // 값 전달용
 
+        private static readonly string hoverMotionKey = "Hover";
+        private static readonly string clickMotionKey = "Click";
+
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
         /// 상위 매니저에서 콜백과 데이터를 주입합니다.
         /// </summary>
-        public void Setup(int _number, Action<RectTransform> _onHover, Action<int> _onSelect)
+        public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform> _onHover, Action<int> _onSelect)
         {
+            forestInfo = _info;
             Initialize(_number);
 
             onHoverEvent = _onHover;
             onSelectEvent = _onSelect;
         }
 
-        /// <summary>
-        /// 서브 지역 항목을 초기화합니다.
-        /// </summary>
         public void Initialize(int _number)
         {
             if (true == isInitialized)
                 return;
 
             rect = GetComponent<RectTransform>();
+
+            if (null == motionPlayer)
+                motionPlayer = GetComponentInParent<ObjectMotionPlayer>();
 
             if (null != numberDisplay)
             {
@@ -61,22 +68,16 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 progressBar.Initialize();
 
             SetSelect(false);
-            SetLock(true);
+            SetLock(false); // 일단 해제 상태로 테스트 (필요 시 로직 추가)
             isInitialized = true;
         }
 
-        /// <summary>
-        /// 진행도 값을 업데이트합니다.
-        /// </summary>
         public void SetProgress(float _ratio)
         {
             if (null != progressBar)
                 progressBar.UpdateValue(_ratio);
         }
 
-        /// <summary>
-        /// 잠금 상태를 설정합니다.
-        /// </summary>
         public void SetLock(bool _isLock)
         {
             isLocked = _isLock;
@@ -88,17 +89,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 unlockObject.SetActive(false == isLocked);
         }
 
-        /// <summary>
-        /// 현재 잠금 여부를 반환합니다.
-        /// </summary>
-        public bool IsLocked()
-        {
-            return isLocked;
-        }
-
-        /// <summary>
-        /// 지역 번호를 설정합니다.
-        /// </summary>
         public void SetNumber(int _number)
         {
             regionNumber = _number;
@@ -107,33 +97,36 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 numberDisplay.SetNumber(regionNumber);
         }
 
-        /// <summary>
-        /// 현재 설정된 지역 번호를 반환합니다.
-        /// </summary>
-        public int GetNumber()
-        {
-            return regionNumber;
-        }
-
-        /// <summary>
-        /// 선택 상태를 설정합니다.
-        /// </summary>
         public void SetSelect(bool _isSelect)
         {
             isSelected = _isSelect;
         }
 
-        /// <summary>
-        /// 현재 선택 여부를 반환합니다.
-        /// </summary>
+        public ForestType GetForestType()
+        {
+            return forestInfo.forestType;
+        }
+
+        public ForestEnvironmentInfo GetForestInfo()
+        {
+            return forestInfo;
+        }
+
+        public bool IsLocked()
+        {
+            return isLocked;
+        }
+
+        public int GetNumber()
+        {
+            return regionNumber;
+        }
+
         public bool IsSelected()
         {
             return isSelected;
         }
 
-        /// <summary>
-        /// 위치 추적을 위해 RectTransform을 반환합니다.
-        /// </summary>
         public RectTransform GetRectTransform()
         {
             if (null == rect)
@@ -149,8 +142,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (true == isLocked)
                 return;
 
-            // 마우스가 진입하면 커서 이동을 위해 자신의 RectTransform을 전달
-            onHoverEvent?.Invoke(GetRectTransform());
+            // 진입 시에는 애니메이션만 재생 (위치 반환 안 함)
+            if (null != motionPlayer)
+                motionPlayer.Play(hoverMotionKey);
         }
 
         public void OnPointerClick(PointerEventData _eventData)
@@ -158,8 +152,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (true == isLocked)
                 return;
 
-            // 클릭 시 최종 선택된 지역 번호를 전달
+            // 클릭 시에만 위치 정보를 전달하여 커서를 해당 위치로 고정시킴
+            onHoverEvent?.Invoke(GetRectTransform());
+
+            // 최종 선택된 지역 번호를 전달
             onSelectEvent?.Invoke(regionNumber);
+
+            // 클릭 애니메이션 재생
+            if (null != motionPlayer)
+                motionPlayer.Play(clickMotionKey);
         }
 
         // //유니티 이벤트 함수

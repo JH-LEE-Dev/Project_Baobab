@@ -16,10 +16,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private Image sunImage;              // 해 이미지
         [SerializeField] private Image moonImage;             // 달 이미지
 
-        // //내부 의존성
         [Header("Animation")]
         [SerializeField] private ObjectMotionPlayer motionPlayer;
 
+        // //내부 의존성
         private RectTransform sunRect;
         private RectTransform moonRect;
         private bool isInitialized = false;
@@ -67,6 +67,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             pivotRect.localRotation = Quaternion.Euler(0.0f, 0.0f, _zAngle);
         }
+
+        // //유니티 이벤트 함수
 
         private void LateUpdate()
         {

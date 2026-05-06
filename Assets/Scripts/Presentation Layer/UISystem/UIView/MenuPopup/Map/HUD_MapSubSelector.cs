@@ -12,7 +12,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //외부 의존성
         [Header("UI Elements")]
         [SerializeField] private HUD_MapSubRegion[] subRegions; // 최대 3개의 지역 항목
-        [SerializeField] private RectTransform selectorCursor; // 선택 표시 커서
+        [SerializeField] private UISelectionCursor selectorCursor; // 선택 표시 커서
 
         // //내부 의존성
         private int currentSelectedNumber = -1;
@@ -20,9 +20,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        /// <summary>
-        /// 서브 셀렉터의 일회성 설정을 수행합니다.
-        /// </summary>
         public void Initialize()
         {
             if (true == isInitialized)
@@ -32,26 +29,16 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
 
             for (int _i = 0; _i < subRegions.Length; _i++)
-            {
-                if (null == subRegions[_i])
-                    continue;
-
-                // 1부터 시작하는 고정 번호를 부여하고 콜백 주입
-                subRegions[_i].Setup(_i + 1, OnRegionHovered, OnRegionSelected);
-                subRegions[_i].gameObject.SetActive(false);
-            }
+                if (null != subRegions[_i])
+                    subRegions[_i].gameObject.SetActive(false);
 
             if (null != selectorCursor)
-                selectorCursor.gameObject.SetActive(false);
+                selectorCursor.Initialize(selectorCursor.CursorSize);
 
             isInitialized = true;
         }
 
-        /// <summary>
-        /// 메인 지역 전환 시 호출하여 표시할 서브 지역 개수를 갱신합니다.
-        /// </summary>
-        /// <param name="_activeCount">표시할 지역 개수 (1~3)</param>
-        public void SetSubRegionCount(int _activeCount)
+        public void SetSubRegions(System.Collections.Generic.List<ForestEnvironmentInfo> _forestDatas)
         {
             if (false == isInitialized)
                 Initialize();
@@ -60,16 +47,47 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             currentSelectedNumber = -1;
             
             if (null != selectorCursor)
-                selectorCursor.gameObject.SetActive(false);
+                selectorCursor.HideImmediately();
+
+            int _dataCount = _forestDatas.Count;
+            Debug.Log($"Region {_dataCount}");
 
             for (int _i = 0; _i < subRegions.Length; _i++)
-            {
-                if (null == subRegions[_i])
-                    continue;
+                if (null != subRegions[_i])
+                    if (_i < _dataCount)
+                    {
+                        subRegions[_i].gameObject.SetActive(true);
+                        subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHovered, OnRegionSelected);
+                    }
+                    else
+                        subRegions[_i].gameObject.SetActive(false);
+        }
 
-                // 요청된 개수만큼만 활성화하여 UI 축소/확장 연출
-                subRegions[_i].gameObject.SetActive(_i < _activeCount);
-            }
+        public ForestType GetSelectedForestType()
+        {
+            if (-1 == currentSelectedNumber || null == subRegions)
+                return ForestType.None;
+
+            int _index = currentSelectedNumber - 1;
+            if (0 > _index || _index >= subRegions.Length)
+                return ForestType.None;
+
+            return subRegions[_index].GetForestType();
+        }
+
+        /// <summary>
+        /// 현재 선택된 지역의 환경 정보를 반환합니다.
+        /// </summary>
+        public ForestEnvironmentInfo GetSelectedForestInfo()
+        {
+            if (-1 == currentSelectedNumber || null == subRegions)
+                return default;
+
+            int _index = currentSelectedNumber - 1;
+            if (0 > _index || _index >= subRegions.Length)
+                return default;
+
+            return subRegions[_index].GetForestInfo();
         }
 
         /// <summary>
@@ -88,7 +106,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == subRegions)
                 return;
 
-            if (_index < 0 || _index >= subRegions.Length)
+            if (0 > _index || _index >= subRegions.Length)
                 return;
 
             HUD_MapSubRegion _target = subRegions[_index];
@@ -99,6 +117,30 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             OnRegionSelected(_target.GetNumber());
         }
 
+        /// <summary>
+        /// 서브 셀렉터의 표시 여부를 설정합니다.
+        /// </summary>
+        public void SetVisibility(bool _isVisible)
+        {
+            this.gameObject.SetActive(_isVisible);
+
+            if (null != selectorCursor)
+            {
+                if (false == _isVisible)
+                    selectorCursor.HideImmediately();
+                else
+                {
+                    // 보이게 할 때는 이미 선택된 번호가 있을 때만 커서를 활성화합니다.
+                    if (-1 != currentSelectedNumber)
+                    {
+                        int _index = currentSelectedNumber - 1;
+                        if (_index >= 0 && _index < subRegions.Length && null != subRegions[_index])
+                            selectorCursor.Show(subRegions[_index].GetRectTransform());
+                    }
+                }
+            }
+        }
+
         // //내부 로직 (콜백 메서드)
 
         private void OnRegionHovered(RectTransform _targetRect)
@@ -106,12 +148,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == selectorCursor || null == _targetRect)
                 return;
 
-            // 특정 구역이 골라지면(마우스 오버 등) 커서 활성화
-            if (false == selectorCursor.gameObject.activeSelf)
-                selectorCursor.gameObject.SetActive(true);
-
-            // 커서를 해당 항목의 위치로 즉시 이동
-            selectorCursor.position = _targetRect.position;
+            selectorCursor.Show(_targetRect);
         }
 
         private void OnRegionSelected(int _number)
