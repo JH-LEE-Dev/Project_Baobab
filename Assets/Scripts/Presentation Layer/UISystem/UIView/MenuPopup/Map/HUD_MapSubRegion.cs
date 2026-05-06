@@ -45,6 +45,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             forestInfo = _info;
             Initialize(_number);
 
+            // 데이터가 새로 설정되므로 선택 상태 초기화
+            SetSelect(false);
+            SetNumber(_number);
+
             onHoverEnterEvent = _onHoverEnter;
             onHoverExitEvent = _onHoverExit;
             onSelectEvent = _onSelect;

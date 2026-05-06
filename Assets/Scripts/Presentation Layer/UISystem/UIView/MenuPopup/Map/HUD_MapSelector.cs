@@ -251,7 +251,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 if (null != subSelector)
                     subSelector.SetVisibility(true);
 
-                if (null != selectButton)
+                if (null != selectButton && false == selectButton.gameObject.activeSelf)
                     selectButton.gameObject.SetActive(true);
             }
         }

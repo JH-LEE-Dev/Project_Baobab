@@ -113,7 +113,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == _target || false == _target.gameObject.activeSelf)
                 return;
 
-            OnRegionHoverEntered(_target.GetRectTransform());
             OnRegionSelected(_target.GetNumber());
         }
 
@@ -122,22 +121,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         /// </summary>
         public void SetVisibility(bool _isVisible)
         {
+            if (this.gameObject.activeSelf == _isVisible)
+                return;
+
             this.gameObject.SetActive(_isVisible);
 
             if (null != selectorCursor)
             {
                 if (false == _isVisible)
                     selectorCursor.HideImmediately();
-                else
-                {
-                    // 보이게 할 때는 이미 선택된 번호가 있을 때만 커서를 활성화합니다.
-                    if (-1 != currentSelectedNumber)
-                    {
-                        int _index = currentSelectedNumber - 1;
-                        if (_index >= 0 && _index < subRegions.Length && null != subRegions[_index])
-                            selectorCursor.Show(subRegions[_index].GetRectTransform());
-                    }
-                }
             }
         }
 
@@ -162,6 +154,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private void OnRegionSelected(int _number)
         {
             currentSelectedNumber = _number;
+
+            for (int _i = 0; _i < subRegions.Length; _i++)
+            {
+                if (null != subRegions[_i])
+                {
+                    subRegions[_i].SetSelect(subRegions[_i].GetNumber() == _number);
+                }
+            }
         }
             
         // //유니티 이벤트 함수
