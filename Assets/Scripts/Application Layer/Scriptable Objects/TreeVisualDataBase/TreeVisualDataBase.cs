@@ -22,6 +22,12 @@ public struct TreeVisualData
     public List<Sprite> saplingTopSprites;
     public List<Sprite> saplingBottomSprites;
 
+    public List<TreeColorSet> treeColorSets;
+}
+
+[Serializable]
+public struct TreeColorSet
+{
     public Color topColor;
     public Color bottomColor;
 }

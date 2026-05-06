@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 6c36772287d0fcc4c908b21940dcb572
+guid: 1cf1a714c88f65c4bbec0c9bb24d9e3f
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -103,10 +103,10 @@ TextureImporter:
       name: ShockwaveDamage1_0
       rect:
         serializedVersion: 2
-        x: 2
+        x: 3
         y: 3
-        width: 27
-        height: 27
+        width: 26
+        height: 25
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

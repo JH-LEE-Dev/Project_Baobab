@@ -7,6 +7,7 @@ public class AbilityLineRenderer
     private const float StraightLineOverlap = 1f;
 
     private readonly Dictionary<AbilityLineSegmentSpriteType, Sprite> lineSpriteMap = new Dictionary<AbilityLineSegmentSpriteType, Sprite>();
+    private readonly Dictionary<SkillType, float> lineRevealProgressMap = new Dictionary<SkillType, float>();
     private readonly List<AbilityLineConnection> lineConnections = new List<AbilityLineConnection>();
     private readonly List<AbilityLine> spawnedLines = new List<AbilityLine>();
 
@@ -57,6 +58,17 @@ public class AbilityLineRenderer
 
             lineSpriteMap[binding.lineType] = binding.sprite;
         }
+    }
+
+    public void SetLineRevealProgress(SkillType _childSkillType, float _progress)
+    {
+        lineRevealProgressMap[_childSkillType] = Mathf.Clamp01(_progress);
+    }
+
+    public void ClearLineRevealProgress(SkillType _childSkillType)
+    {
+        if (lineRevealProgressMap.ContainsKey(_childSkillType))
+            lineRevealProgressMap.Remove(_childSkillType);
     }
 
     // 현재 노드 구조를 바탕으로 부모-자식 연결 리스트를 다시 만든다.
@@ -144,19 +156,22 @@ public class AbilityLineRenderer
 
         if (_connection.HasPivot)
         {
+            float connectionProgress = GetLineRevealProgress(_connection.ChildNode.SkillType);
             Vector2Int pivotGrid = _connection.PivotGrid;
             Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
             Vector2 pivotCenter = GetGridPointCenterInRectangle(pivotGrid, _targetParent);
             Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
+            float firstPathProgress = Mathf.Clamp01(connectionProgress * 2f);
+            float secondPathProgress = Mathf.Clamp01((connectionProgress - 0.5f) * 2f);
 
-            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "A", _connection.ParentNode.GridPosition, pivotGrid, startCenter, pivotCenter, _targetParent, _segmentSize, true, false);
-            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "B", pivotGrid, _connection.ChildNode.GridPosition, pivotCenter, endCenter, _targetParent, _segmentSize, true, true);
+            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "A", _connection.ParentNode.GridPosition, pivotGrid, startCenter, pivotCenter, _targetParent, _segmentSize, true, false, firstPathProgress);
+            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "B", pivotGrid, _connection.ChildNode.GridPosition, pivotCenter, endCenter, _targetParent, _segmentSize, true, true, secondPathProgress);
             return;
         }
 
         Vector2 directStartCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
         Vector2 directEndCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
-        BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, string.Empty, _connection.ParentNode.GridPosition, _connection.ChildNode.GridPosition, directStartCenter, directEndCenter, _targetParent, _segmentSize, false, false);
+        BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, string.Empty, _connection.ParentNode.GridPosition, _connection.ChildNode.GridPosition, directStartCenter, directEndCenter, _targetParent, _segmentSize, false, false, GetLineRevealProgress(_connection.ChildNode.SkillType));
     }
 
     // 두 점 사이 한 구간을 가로/세로/대각선 규칙에 맞춰 라인으로 그린다.
@@ -171,8 +186,12 @@ public class AbilityLineRenderer
         RectTransform _targetParent,
         int _segmentSize,
         bool _hasCornerAnchor,
-        bool _isStartCornerAnchor)
+        bool _isStartCornerAnchor,
+        float _progress)
     {
+        if (_progress <= 0f)
+            return;
+
         int dx = _endGrid.x - _startGrid.x;
         int dy = _endGrid.y - _startGrid.y;
         int stepX = Math.Sign(dx);
@@ -197,7 +216,7 @@ public class AbilityLineRenderer
 
         if (isHorizontal || isVertical)
         {
-            BuildStretchedStraightLine(_parentSkillType, _childSkillType, _pathSuffix, _startCenter, _endCenter, _targetParent, isHorizontal, sprite, _hasCornerAnchor, _isStartCornerAnchor);
+            BuildStretchedStraightLine(_parentSkillType, _childSkillType, _pathSuffix, _startCenter, _endCenter, _targetParent, isHorizontal, sprite, _hasCornerAnchor, _isStartCornerAnchor, _progress);
             return;
         }
 
@@ -211,7 +230,8 @@ public class AbilityLineRenderer
         Vector2 firstSegmentCenter = _startCenter + new Vector2(stepX, stepY) * (leadingOffset + (_segmentSize * 0.5f));
         firstSegmentCenter = SnapToPixel(firstSegmentCenter);
 
-        for (int segmentIndex = 0; segmentIndex < segmentCount; segmentIndex++)
+        int revealSegmentCount = Mathf.CeilToInt(segmentCount * Mathf.Clamp01(_progress));
+        for (int segmentIndex = 0; segmentIndex < revealSegmentCount; segmentIndex++)
         {
             Vector2 position = firstSegmentCenter + (segmentAxisStep * segmentIndex);
 
@@ -235,8 +255,10 @@ public class AbilityLineRenderer
         bool _isHorizontal,
         Sprite _sprite,
         bool _hasCornerAnchor,
-        bool _isStartCornerAnchor)
+        bool _isStartCornerAnchor,
+        float _progress)
     {
+        _progress = Mathf.Clamp01(_progress);
         Color lineColor = GetLineColor(_childSkillType);
         Vector2 snappedStart = SnapToPixel(_startCenter);
         Vector2 snappedEnd = SnapToPixel(_endCenter);
@@ -246,7 +268,7 @@ public class AbilityLineRenderer
         {
             Vector2 pivotCenter = _isStartCornerAnchor ? snappedStart : snappedEnd;
             Vector2 farCenter = _isStartCornerAnchor ? snappedEnd : snappedStart;
-            Vector2 axisDirection = (farCenter - pivotCenter).normalized;
+            Vector2 cornerAxisDirection = (farCenter - pivotCenter).normalized;
             baseLength = _isHorizontal
                 ? Mathf.Abs(farCenter.x - pivotCenter.x)
                 : Mathf.Abs(farCenter.y - pivotCenter.y);
@@ -254,17 +276,20 @@ public class AbilityLineRenderer
             if (baseLength <= 0.001f)
                 return;
 
-            float length = Mathf.Round(baseLength + StraightLineOverlap);
-            bool anchorAtStart = _isHorizontal
+            float length = Mathf.Round((baseLength + StraightLineOverlap) * _progress);
+            if (length <= 0f)
+                return;
+
+            bool cornerAnchorAtStart = _isHorizontal
                 ? farCenter.x >= pivotCenter.x
                 : farCenter.y >= pivotCenter.y;
-            Vector2 anchoredCornerPosition = SnapToPixel(pivotCenter - (axisDirection * StraightLineOverlap));
+            Vector2 anchoredCornerPosition = SnapToPixel(pivotCenter - (cornerAxisDirection * StraightLineOverlap));
 
             AbilityLine anchoredLine = GetOrCreatePooledLine(_targetParent);
             anchoredLine.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
                 ? $"Line_{_parentSkillType}_{_childSkillType}"
                 : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-            anchoredLine.SetupAnchoredSize(_sprite, anchoredCornerPosition, _isHorizontal, length, anchorAtStart, lineColor);
+            anchoredLine.SetupAnchoredSize(_sprite, anchoredCornerPosition, _isHorizontal, length, cornerAnchorAtStart, lineColor);
             ApplyLineSiblingOrder(anchoredLine, _childSkillType);
             return;
         }
@@ -276,14 +301,21 @@ public class AbilityLineRenderer
         if (baseLength <= 0.001f)
             return;
 
-        float centerLength = Mathf.Round(baseLength + (StraightLineOverlap * 2f));
-        Vector2 center = SnapToPixel((snappedStart + snappedEnd) * 0.5f);
+        Vector2 axisDirection = (snappedEnd - snappedStart).normalized;
+        float lineLength = Mathf.Round((baseLength + StraightLineOverlap) * _progress);
+        if (lineLength <= 0f)
+            return;
+
+        bool anchorAtStart = _isHorizontal
+            ? snappedEnd.x >= snappedStart.x
+            : snappedEnd.y >= snappedStart.y;
+        Vector2 anchoredStartPosition = SnapToPixel(snappedStart - (axisDirection * StraightLineOverlap));
 
         AbilityLine line = GetOrCreatePooledLine(_targetParent);
         line.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
             ? $"Line_{_parentSkillType}_{_childSkillType}"
             : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-        line.SetupScaled(_sprite, center, _isHorizontal, centerLength, lineColor);
+        line.SetupAnchoredSize(_sprite, anchoredStartPosition, _isHorizontal, lineLength, anchorAtStart, lineColor);
         ApplyLineSiblingOrder(line, _childSkillType);
     }
 
@@ -445,6 +477,14 @@ public class AbilityLineRenderer
             return Color.white;
 
         return lineColorResolver(_childSkillType);
+    }
+
+    private float GetLineRevealProgress(SkillType _childSkillType)
+    {
+        if (lineRevealProgressMap.TryGetValue(_childSkillType, out float progress))
+            return progress;
+
+        return 1f;
     }
 
     // 완료된 라인은 흰색 기본 라인보다 위에 오도록 sibling 순서를 분리한다.

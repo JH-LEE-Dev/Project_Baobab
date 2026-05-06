@@ -21,13 +21,6 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private Sprite[] topSprites;
     [SerializeField] private Sprite[] bottomSprites;
 
-    [Header("Default Tint")]
-    [SerializeField] private Color32 topBrightColor = new Color32(53, 204, 92, 255);
-    [SerializeField] private Color32 bottomBrightColor = new Color32(132, 102, 36, 255);
-    [Range(0f, 0.1f)] [SerializeField] private float hueJitter = 0.02f;
-    [Range(0f, 0.2f)] [SerializeField] private float saturationJitter = 0.1f;
-    [Range(0f, 0.2f)] [SerializeField] private float valueJitter = 0.1f;
-
     [Header("Scale Variation")]
     [SerializeField] private float minScale = 0.9f;
     [SerializeField] private float maxScale = 1.1f;
@@ -123,15 +116,14 @@ public class TreeVisualComponent : MonoBehaviour
         if (topRenderer != null)
         {
             SetRandomSprite(topRenderer, visualData.topSprites);
-            topRenderer.color = GetJitteredColor(visualData.topColor);
         }
 
         if (bottomRenderer != null)
         {
             SetRandomSprite(bottomRenderer, visualData.bottomSprites);
-            bottomRenderer.color = GetJitteredColor(visualData.bottomColor);
         }
 
+        ApplyColorSet(visualData);
         ApplyRandomScale();
         SyncShadowSprite();
         CacheSwayBasePose();
@@ -146,19 +138,38 @@ public class TreeVisualComponent : MonoBehaviour
         if (topRenderer != null)
         {
             SetRandomSprite(topRenderer, visualData.saplingTopSprites);
-            topRenderer.color = GetJitteredColor(visualData.topColor);
         }
 
         if (bottomRenderer != null)
         {
             SetRandomSprite(bottomRenderer, visualData.saplingBottomSprites);
-            bottomRenderer.color = GetJitteredColor(visualData.bottomColor);
         }
 
+        ApplyColorSet(visualData);
         ApplyRandomScale();
         SyncShadowSprite();
         CacheSwayBasePose();
         ResetTopSway();
+    }
+
+    private void ApplyColorSet(TreeVisualData _visualData)
+    {
+        if (_visualData.treeColorSets == null || _visualData.treeColorSets.Count == 0)
+        {
+            return;
+        }
+
+        TreeColorSet colorSet = _visualData.treeColorSets[Random.Range(0, _visualData.treeColorSets.Count)];
+        
+        if (topRenderer != null)
+        {
+            topRenderer.color = colorSet.topColor;
+        }
+
+        if (bottomRenderer != null)
+        {
+            bottomRenderer.color = colorSet.bottomColor;
+        }
     }
 
     // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
@@ -169,12 +180,12 @@ public class TreeVisualComponent : MonoBehaviour
         
         if (topRenderer != null)
         {
-            topRenderer.color = GetJitteredColor(ToColor(topBrightColor));
+            topRenderer.color = Color.white;
         }
 
         if (bottomRenderer != null)
         {
-            bottomRenderer.color = GetJitteredColor(ToColor(bottomBrightColor));
+            bottomRenderer.color = Color.white;
         }
 
         ApplyRandomScale();
@@ -224,31 +235,6 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         _renderer.sprite = _sprites[Random.Range(0, _sprites.Count)];
-    }
-
-    // 기준 색상에서 색상, 채도, 명도를 살짝 틀어 자연스러운 개체 차이를 만든다.
-    private Color GetJitteredColor(Color _baseColor)
-    {
-        Color.RGBToHSV(_baseColor, out float h, out float s, out float v);
-        
-        h = (h + Random.Range(-hueJitter, hueJitter) + 1f) % 1f;
-        s = Mathf.Clamp01(s + Random.Range(-saturationJitter, saturationJitter));
-        v = Mathf.Clamp01(v + Random.Range(-valueJitter, valueJitter));
-        
-        Color result = Color.HSVToRGB(h, s, v);
-        result.a = _baseColor.a;
-        return result;
-    }
-
-    // 기준 색상에서 밝기만 살짝 달라진 틴트를 만들어 자연스러운 개체 차이를 만든다.
-    private static Color ToColor(Color32 _color)
-    {
-        return new Color(
-            _color.r / 255f,
-            _color.g / 255f,
-            _color.b / 255f,
-            _color.a / 255f
-        );
     }
 
     #endregion

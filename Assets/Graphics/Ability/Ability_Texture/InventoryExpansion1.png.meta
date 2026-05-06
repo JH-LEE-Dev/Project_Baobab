@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: e1723d6b9b51db840ac1d6c50440d4bc
+guid: cb49491996d14fe49b223fd61c8d62b3
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -103,10 +103,10 @@ TextureImporter:
       name: InventoryExpansion1_0
       rect:
         serializedVersion: 2
-        x: 4
+        x: 3
         y: 3
-        width: 25
-        height: 26
+        width: 26
+        height: 25
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

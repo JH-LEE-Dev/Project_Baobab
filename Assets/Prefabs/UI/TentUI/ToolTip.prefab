@@ -205,6 +205,16 @@ MonoBehaviour:
   showMoveEase: 6
   showRotationEase: 3
   hideEase: 4
+  clickDuration: 0.25
+  clickSquashScale: {x: 1.2, y: 0.8}
+  clickRecoilScale: {x: 0.9, y: 1.1}
+  clickBounceCount: 1
+  clickBounceDamping: 0.9
+  clickSquashTimeRatio: 0.15
+  clickRecoilTimeRatio: 0.2
+  clickRestoreTimeRatio: 0.4
+  clickSquashEase: 6
+  clickRestoreEase: 27
 --- !u!1 &490129072912486613
 GameObject:
   m_ObjectHideFlags: 0

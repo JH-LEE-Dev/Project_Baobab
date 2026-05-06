@@ -20,8 +20,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             public Ease squashEase = Ease.OutQuad;
             public Ease restoreEase = Ease.OutBack;
 
-            [Header("Color Settings")]
-            public Color flashColor = Color.white;
+            [Header("Flash Overlay Settings")]
+            [Range(0f, 1f)] public float flashAlpha = 1f;
             [Range(0f, 1f)] public float flashInTimeRatio = 0.22f;
             [Range(0f, 1f)] public float flashOutTimeRatio = 0.78f;
             public Ease flashEase = Ease.OutQuad;
@@ -81,14 +81,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (null == _seq || null == _graphic)
                 return;
 
+            Color hiddenColor = _graphic.color;
+            hiddenColor.a = 0f;
+            _graphic.color = hiddenColor;
+
             TargetInitialState _state = new TargetInitialState
             {
                 graphic = _graphic,
-                color = _graphic.color
+                color = hiddenColor
             };
 
             stateCache.Add(_state);
-            _seq.Join(BuildFlashTween(_graphic, _state.color));
+            _seq.Join(BuildFlashTween(_graphic));
         }
 
         protected override void ApplyTweenSettings(Tween _tween)
@@ -152,7 +156,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             return sequence;
         }
 
-        private Tween BuildFlashTween(Graphic _graphic, Color _initialColor)
+        private Tween BuildFlashTween(Graphic _graphic)
         {
             float totalRatio = Mathf.Max(
                 valueSettings.flashInTimeRatio + valueSettings.flashOutTimeRatio,
@@ -161,8 +165,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             float flashOutDuration = forwardDuration * Mathf.Clamp01(valueSettings.flashOutTimeRatio / totalRatio);
 
             return DOTween.Sequence()
-                .Append(_graphic.DOColor(valueSettings.flashColor, flashInDuration).SetEase(valueSettings.flashEase))
-                .Append(_graphic.DOColor(_initialColor, flashOutDuration).SetEase(valueSettings.flashEase));
+                .Append(_graphic.DOFade(valueSettings.flashAlpha, flashInDuration).SetEase(valueSettings.flashEase))
+                .Append(_graphic.DOFade(0f, flashOutDuration).SetEase(valueSettings.flashEase));
         }
     }
 }
