@@ -20,6 +20,8 @@ public class AS_IdleState : AnimalState
         idleTimer = 0f;
         nextMoveTime = Random.Range(2f, 5f); // 2~5초 사이 무작위 대기
         isFleeing = false;
+
+        animal.feetShadowObject.SetActive(true);
     }
 
     public override void Exit()
@@ -27,6 +29,8 @@ public class AS_IdleState : AnimalState
         bActivated = false;
         // 상태 탈출 시 점유 해제
         pathFindComponent.Release(currentOccupiedPos);
+
+        animal.feetShadowObject.SetActive(false);
     }
 
     public override void Update()
@@ -103,7 +107,7 @@ public class AS_IdleState : AnimalState
     private bool TryStartMoving(Vector3 _currentPos)
     {
         Vector3 randomDest = GetRandomWalkablePos(_currentPos);
-        
+
         // 현재 위치와 같으면 길찾기 생략
         if ((randomDest - _currentPos).sqrMagnitude < 0.01f)
         {
@@ -129,7 +133,7 @@ public class AS_IdleState : AnimalState
     private Vector3 GetRandomWalkablePos(Vector3 _currentPos)
     {
         Vector3Int currentCell = pathFindComponent.WorldToCell(_currentPos);
-        
+
         // 주변 5~10칸 내외의 무작위 지점 탐색
         for (int i = 0; i < 20; i++) // 30회 -> 20회로 단축
         {

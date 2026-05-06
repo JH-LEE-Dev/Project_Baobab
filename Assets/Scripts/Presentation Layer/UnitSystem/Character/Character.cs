@@ -315,7 +315,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         if (animIndex != -1)
         {
-            _targetSR.flipX = flipX;
+            Vector3 scale = _targetSR.transform.localScale;
+            scale.x = flipX ? -1f : 1f;
+            _targetSR.transform.localScale = scale;
+
             _targetAnim.SetFloat(facingDirHash, animIndex);
         }
     }
