@@ -15,6 +15,9 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         private readonly Dictionary<RectTransform, Vector2> sizeCache = new Dictionary<RectTransform, Vector2>();
         private RectTransform currentRectTransform;
+        private Vector2 currentBaseSize;
+        private Vector2 currentExpandedSize;
+        private Vector2 currentContractedSize;
 
         [Header("Value Settings")]
         [SerializeField] private ValueSettings valueSettings = new ValueSettings();
@@ -48,9 +51,21 @@ namespace PresentationLayer.DOTweenAnimationSystem
             sizeCache.Clear();
             sizeCache[_rect] = _rect.sizeDelta;
             currentRectTransform = _rect;
-            _seq.Append(BuildSnappedSizeTween(_rect, _rect.sizeDelta, _rect.sizeDelta + Vector2.one * Mathf.Abs(valueSettings.sizeOffset), forwardDuration * 0.25f));
-            _seq.Append(BuildSnappedSizeTween(_rect, _rect.sizeDelta + Vector2.one * Mathf.Abs(valueSettings.sizeOffset), _rect.sizeDelta - Vector2.one * Mathf.Abs(valueSettings.sizeOffset), forwardDuration * 0.5f));
-            _seq.Append(BuildSnappedSizeTween(_rect, _rect.sizeDelta - Vector2.one * Mathf.Abs(valueSettings.sizeOffset), _rect.sizeDelta, forwardDuration * 0.25f));
+
+            currentBaseSize = RoundSize(_rect.sizeDelta);
+            float sizeDeltaOffset = Mathf.Abs(valueSettings.sizeOffset) * 2f;
+            currentExpandedSize = RoundSize(currentBaseSize + Vector2.one * sizeDeltaOffset);
+            currentContractedSize = RoundSize(currentBaseSize - Vector2.one * sizeDeltaOffset);
+
+            float stepDuration = Mathf.Max(forwardDuration / 4f, 0.0001f);
+            _seq.AppendCallback(SetExpandedSize);
+            _seq.AppendInterval(stepDuration);
+            _seq.AppendCallback(SetBaseSize);
+            _seq.AppendInterval(stepDuration);
+            _seq.AppendCallback(SetContractedSize);
+            _seq.AppendInterval(stepDuration);
+            _seq.AppendCallback(SetBaseSize);
+            _seq.AppendInterval(stepDuration);
         }
 
         protected override void ApplyTweenSettings(Tween _tween)
@@ -80,21 +95,25 @@ namespace PresentationLayer.DOTweenAnimationSystem
             }
         }
 
-        private Tween BuildSnappedSizeTween(RectTransform _target, Vector2 _from, Vector2 _to, float _duration)
+        private void SetExpandedSize()
         {
-            Vector2 from = RoundSize(_from);
-            Vector2 to = RoundSize(_to);
-
-            return _target.DOSizeDelta(to, _duration)
-                          .From(from)
-                          .SetEase(valueSettings.idleEase)
-                          .OnUpdate(RoundCurrentRectSize);
+            ApplyCurrentSize(currentExpandedSize);
         }
 
-        private void RoundCurrentRectSize()
+        private void SetBaseSize()
+        {
+            ApplyCurrentSize(currentBaseSize);
+        }
+
+        private void SetContractedSize()
+        {
+            ApplyCurrentSize(currentContractedSize);
+        }
+
+        private void ApplyCurrentSize(Vector2 _size)
         {
             if (currentRectTransform != null)
-                currentRectTransform.sizeDelta = RoundSize(currentRectTransform.sizeDelta);
+                currentRectTransform.sizeDelta = _size;
         }
 
         private Vector2 RoundSize(Vector2 _size)
