@@ -1,6 +1,4 @@
 using System;
-using UnityEngine;
-using System.Collections.Generic;
 
 public struct LogStateCount
 {
@@ -187,6 +185,9 @@ public enum MoneyType
     None,
     Coin,
     Carrot,
+    SunEssence,
+    MoonEssence,
+    LightningEssnece,
     Max
 }
 
