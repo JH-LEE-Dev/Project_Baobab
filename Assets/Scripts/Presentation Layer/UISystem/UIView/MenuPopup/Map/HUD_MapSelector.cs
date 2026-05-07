@@ -248,12 +248,21 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         {
             gameObject.SetActive(true);
 
-            if (null != subSelector)
+            if (null == subSelector)
+                return;
+
+            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+            if (null == _db.mapDatas)
+                return;
+
+            for (int _i = 0; _i < _db.mapDatas.Count; _i++)
             {
-                for (int _i = 0; _i < spawnedRegions.Count; _i++)
-                {
-                    subSelector.UpdateHiddenGauges(spawnedRegions[_i].GetMapEnvironmentInfo().forestDatas);
-                }
+                MapEnvironmentDataInfo _info = _db.mapDatas[_i];
+
+                if (MapType.Town == _info.mapType)
+                    continue;
+
+                subSelector.UpdateHiddenGauges(_info.forestDatas);
             }
         }
 

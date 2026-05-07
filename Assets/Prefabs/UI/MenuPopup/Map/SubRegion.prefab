@@ -514,7 +514,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.ObjectMotionPlayer
   motionEntries:
   - motionTag: Hover
-    motionPrefab: {fileID: 0}
+    motionPrefab: {fileID: 1770508404231277037}
     targets: []
     motionInstance: {fileID: 0}
   - motionTag: 
