@@ -24,7 +24,7 @@ public class LogInBelt : MonoBehaviour
 
     // 외부 의존성
     [SerializeField] private List<Transform> checkPoints = new List<Transform>(5);
-    [SerializeField] private float beltSpeed = 1.5f;
+    [SerializeField] private float beltSpeed = 0.1f;
 
 
     // 내부 상태

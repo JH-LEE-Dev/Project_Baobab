@@ -101,8 +101,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (bIsSapling && treeVisualComponent != null)
         {
-            Debug.Log("AAA");
+            treeVisualComponent.DeActivateOnWaterObject();
             treeVisualComponent.ApplySaplingVisual(treeData);
+            saplingVEComponent.AnimateSaplingVE(true);
         }
     }
 
@@ -145,8 +146,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
                 bIsSapling = false;
                 if (treeVisualComponent != null)
                 {
+                    treeVisualComponent.ActivateOnWaterObject();
                     treeVisualComponent.ApplyVisual(treeData);
-                    saplingVEComponent.AnimateSaplingVE();
+                    saplingVEComponent.AnimateSaplingVE(false);
                 }
             }
         }
