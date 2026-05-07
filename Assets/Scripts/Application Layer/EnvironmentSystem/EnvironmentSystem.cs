@@ -156,4 +156,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         densityManager.AddHiddenGauge(treeIsDeadSignal.type);
     }
+
+    public bool IsCurrentlyHiddenMap(MapType _mapType, ForestType _forestType)
+    {
+        return densityManager.IsCurrentlyHiddenMap(_mapType, _forestType);
+    }
 }

@@ -31,3 +31,15 @@ public enum HiddenMapGrade
     Perfect,
     Max,
 }
+
+[Serializable]
+public struct HiddenMapGradeProbData
+{
+    public HiddenMapGrade grade;
+    public float probability;
+    public HiddenMapGradeProbData(HiddenMapGrade _hiddenMapGrade, float _probability)
+    {
+        grade = _hiddenMapGrade;
+        probability = _probability;
+    }
+}

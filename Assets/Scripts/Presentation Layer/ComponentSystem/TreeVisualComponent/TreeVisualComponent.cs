@@ -16,14 +16,12 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomRenderer;
     [SerializeField] private SpriteRenderer topShadowRenderer;
     [SerializeField] private SpriteRenderer bottomShadowRenderer;
+    [SerializeField] private SpriteRenderer topOnWaterSR;
+    [SerializeField] private SpriteRenderer bottomOnWaterSR;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites;
     [SerializeField] private Sprite[] bottomSprites;
-
-    [Header("Scale Variation")]
-    [SerializeField] private float minScale = 0.9f;
-    [SerializeField] private float maxScale = 1.1f;
 
     [Header("Hit Feedback")]
     [SerializeField] private float hitPunchX = 0.1f;
@@ -61,6 +59,12 @@ public class TreeVisualComponent : MonoBehaviour
     private void Update()
     {
         ApplyWindSway();
+    }
+
+    private void LateUpdate()
+    {
+        topOnWaterSR.sortingOrder = (int)(transform.position.y * 100);
+        bottomOnWaterSR.sortingOrder = (int)(transform.position.y * 100);
     }
 
     // 에디터 미리보기 모드에서는 값이 바뀔 때마다 비주얼 조합을 즉시 다시 적용한다.
@@ -124,7 +128,7 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         ApplyColorSet(visualData);
-        ApplyRandomScale();
+        ApplyDefaultScale();
         SyncShadowSprite();
         CacheSwayBasePose();
         ResetTopSway();
@@ -146,10 +150,22 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         ApplyColorSet(visualData);
-        ApplyRandomScale();
+        ApplyDefaultScale();
         SyncShadowSprite();
         CacheSwayBasePose();
         ResetTopSway();
+    }
+
+    public void DeActivateOnWaterObject()
+    {
+        topOnWaterSR.enabled = false;
+        bottomOnWaterSR.enabled = false;
+    }
+
+    public void ActivateOnWaterObject()
+    {
+        topOnWaterSR.enabled = true;
+        bottomOnWaterSR.enabled = true;
     }
 
     private void ApplyColorSet(TreeVisualData _visualData)
@@ -160,7 +176,7 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         TreeColorSet colorSet = _visualData.treeColorSets[Random.Range(0, _visualData.treeColorSets.Count)];
-        
+
         if (topRenderer != null)
         {
             topRenderer.color = colorSet.topColor;
@@ -177,7 +193,7 @@ public class TreeVisualComponent : MonoBehaviour
     {
         SetRandomSprite(bottomRenderer, bottomSprites);
         SetRandomSprite(topRenderer, topSprites);
-        
+
         if (topRenderer != null)
         {
             topRenderer.color = Color.white;
@@ -188,19 +204,18 @@ public class TreeVisualComponent : MonoBehaviour
             bottomRenderer.color = Color.white;
         }
 
-        ApplyRandomScale();
+        ApplyDefaultScale();
         SyncShadowSprite();
         CacheSwayBasePose();
         ResetTopSway();
     }
 
-    // 나무의 전체적인 크기를 설정된 범위 내에서 무작위로 결정한다.
-    private void ApplyRandomScale()
+    // 나무의 전체적인 크기를 기본값(1.0)으로 설정한다.
+    private void ApplyDefaultScale()
     {
         if (visualRoot != null)
         {
-            float scale = Random.Range(minScale, maxScale);
-            visualRoot.localScale = new Vector3(scale, scale, 1f);
+            visualRoot.localScale = Vector3.one;
         }
     }
 

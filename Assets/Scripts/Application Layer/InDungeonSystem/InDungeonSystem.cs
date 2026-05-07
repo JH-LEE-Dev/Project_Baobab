@@ -6,6 +6,7 @@ public class InDungeonSystem : MonoBehaviour
     public InDungeonObjectManager inDungeonObjectManager { get; private set; }
     public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
     private IEnvironmentProvider environmentProvider;
+    private HiddenmapManager hiddenmapManager;
 
 
     [Header("Dungeon Data Base")]
@@ -24,6 +25,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
+
+        hiddenmapManager = GetComponentInChildren<HiddenmapManager>();
+        hiddenmapManager.Initialize();
 
         BindEvents();
         SubscribeSignals();
@@ -158,5 +162,15 @@ public class InDungeonSystem : MonoBehaviour
     private void AnimalIsDead(Animal _animal)
     {
         signalHub.Publish(new AnimalIsDeadSignal(_animal.animalType));
+    }
+
+    public void SetHiddenMapGrade()
+    {
+        inDungeonObjectManager.SetHiddenMapGrade(hiddenmapManager.CalcHiddenMapGrade());
+    }
+
+    public void ResetHiddenMapGrade()
+    {
+        inDungeonObjectManager.SetHiddenMapGrade(HiddenMapGrade.None);
     }
 }

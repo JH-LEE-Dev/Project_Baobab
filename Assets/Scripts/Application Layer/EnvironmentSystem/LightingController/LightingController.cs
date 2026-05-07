@@ -12,6 +12,9 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
     //내부 의존성
     [Header("Shadow Settings")]
+    [SerializeField] private float shadowAngleOffset = -26f;
+    [SerializeField] private bool useManualShadowAngle = false;
+    [SerializeField, Range(0f, 360f)] private float manualShadowAngle = 0f;
     [SerializeField] private float dayCycleSpeed;
     [SerializeField] private float minHeightScale;
     [SerializeField] private float maxHeightScale;
@@ -101,9 +104,17 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     private void UpdateShadows(float _timePercent)
     {
         // 1. 중앙화된 그림자 연산 (모든 Shadow 객체가 공유)
-        // 아침 6시(0.25) -> 서쪽(90도), 정오(0.5) -> 남쪽(180도), 저녁 6시(0.75) -> 동쪽(270도)
-        // Mathf.Repeat을 사용하여 0~360 범위를 부드럽게 순환시킴
-        _currentShadowAngle = Mathf.Repeat(-26 + (_timePercent - 0.25f) * 360f, 360f);
+        if (useManualShadowAngle)
+        {
+            _currentShadowAngle = manualShadowAngle;
+        }
+        else
+        {
+            // 아침 6시(0.25) -> 서쪽(90도), 정오(0.5) -> 남쪽(180도), 저녁 6시(0.75) -> 동쪽(270도)
+            // Mathf.Repeat을 사용하여 0~360 범위를 부드럽게 순환시킴
+            _currentShadowAngle = Mathf.Repeat(shadowAngleOffset + (_timePercent - 0.25f) * 360f, 360f);
+        }
+
         _currentShadowRotation = Quaternion.Euler(0, 0, _currentShadowAngle);
 
         // 그림자 길이 연산: Mathf.Abs 대신 Sin^2을 사용하여 0 지점에서 부드러운 감가속 구현

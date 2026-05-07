@@ -22,6 +22,8 @@ public enum TreeGrade
     None,
     Normal,
     Fascinating,
+    Advanced,
+    Perfect,
     Max,
 }
 
@@ -104,3 +106,19 @@ public struct CarrotSpawnData
     public int minSpawnBundle;
     public int maxSpawnBundle;
 }
+
+[Serializable]
+public struct HiddenMapTreeGradeData
+{
+    public TreeGrade treeGrade;
+    public float probability;
+}
+
+[Serializable]
+public struct HiddenMapTreeGradeProbData
+{
+    public HiddenMapGrade grade;
+    public List<HiddenMapTreeGradeData> probability;
+}
+
+

@@ -55,9 +55,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private float treeGrowTime = 10f;
 
-    private bool bIsHiddenMap = false;
+    private HiddenMapGrade hiddenMapGrade = HiddenMapGrade.None;
 
-    private HiddenMapGrade hiddenMapGrade;
+    [SerializeField] private List<HiddenMapTreeGradeProbData> hiddenMapTreeGradeDatas;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -453,8 +453,36 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private TreeData CalculateRandomTreeData()
     {
         TreeType type = environmentProvider.densityProvider.GetTreeTypeToSpawn();
-
         TreeGrade grade = TreeGrade.Normal;
+
+        // HiddenMap 등급이 지정되어 있다면 해당 등급의 확률 데이터 사용
+        if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
+        {
+            for (int i = 0; i < hiddenMapTreeGradeDatas.Count; i++)
+            {
+                if (hiddenMapTreeGradeDatas[i].grade == hiddenMapGrade)
+                {
+                    List<HiddenMapTreeGradeData> probList = hiddenMapTreeGradeDatas[i].probability;
+                    if (probList != null && probList.Count > 0)
+                    {
+                        float rand = UnityEngine.Random.Range(0f, 1f);
+                        float cumulative = 0f;
+                        for (int j = 0; j < probList.Count; j++)
+                        {
+                            cumulative += probList[j].probability;
+                            if (rand <= cumulative)
+                            {
+                                grade = probList[j].treeGrade;
+                                break;
+                            }
+                        }
+                        return new TreeData(type, grade, treeVisualDataBase.Get(type));
+                    }
+                }
+            }
+        }
+
+        // 일반 던전 확률 데이터 사용
         if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
         {
             float rand = UnityEngine.Random.Range(0f, 1f);
@@ -552,9 +580,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         CarrotItemAcquiredEvent?.Invoke(_item);
     }
 
-    public void SetIsHiddenMap(bool _bIsHiddenMap, HiddenMapGrade _hiddenMapGrade)
+    public void SetHiddenMapGrade(HiddenMapGrade _hiddenMapGrade)
     {
         hiddenMapGrade = _hiddenMapGrade;
-        bIsHiddenMap = _bIsHiddenMap;
     }
 }
