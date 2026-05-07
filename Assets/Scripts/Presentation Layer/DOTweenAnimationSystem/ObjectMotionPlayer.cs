@@ -92,7 +92,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
         {
             if (null == _entry.motionInstance && null != _entry.motionPrefab)
             {
-                _entry.motionInstance = _entry.motionPrefab.GetComponent<ObjectMotionBase>();
+                //_entry.motionInstance = _entry.motionPrefab.GetComponent<ObjectMotionBase>();
+                _entry.motionInstance = Instantiate(_entry.motionPrefab, this.transform).GetComponent<ObjectMotionBase>();
                 _entry.motionInstance.name = $"[Motion]_{_entry.motionTag}";
             }
 
