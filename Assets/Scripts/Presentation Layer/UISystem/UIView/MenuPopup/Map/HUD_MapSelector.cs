@@ -42,9 +42,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isDragging = false;
         private float targetPosX = 0.0f;
 
-        private static readonly string dayMotionKey = "Day";
-        private static readonly string nightMotionKey = "Night";
-
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
@@ -160,9 +157,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private void HandleExit()
         {
-            if (null != subSelector)
-                subSelector.ClearSelection();
-
             onExitCallback?.Invoke();
         }
 
@@ -204,6 +198,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private void RefreshSelectButtonState()
         {
+            SetTimeState(timeDataProvider.isDay);
+
             if (null == selectButton)
                 return;
 
@@ -264,6 +260,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public void MapSelectorClose()
         {
             gameObject.SetActive(false);
+            subSelector?.ClearSelection();
         }
 
         // //유니티 이벤트 함수
