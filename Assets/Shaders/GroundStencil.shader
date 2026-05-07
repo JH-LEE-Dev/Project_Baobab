@@ -1,0 +1,85 @@
+Shader "Custom/GroundStencil"
+{
+    Properties
+    {
+        [MainColor] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
+        [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
+        _Cutoff("Alpha Cutoff", Range(0, 1)) = 0.5
+    }
+
+    SubShader
+    {
+        Tags 
+        { 
+            "RenderType" = "Transparent" 
+            "Queue" = "Transparent" 
+            "RenderPipeline" = "UniversalPipeline" 
+        }
+
+        Pass
+        {
+            // 스텐실 설정: 
+            // 1. Ref 2 (binary 10), WriteMask 3 (binary 11) 설정
+            // 2. 이를 통해 육지 비트(2)를 쓰면서 동시에 물 비트(1)를 0으로 덮어씀 (무효화)
+            Stencil
+            {
+                Ref 2
+                ReadMask 3
+                WriteMask 3
+                Comp Always
+                Pass Replace
+            }
+
+            ZWrite Off
+            Blend SrcAlpha OneMinusSrcAlpha
+
+            HLSLPROGRAM
+
+            #pragma vertex vert
+            #pragma fragment frag
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            struct Varyings
+            {
+                float4 positionHCS : SV_POSITION;
+                float2 uv : TEXCOORD0;
+            };
+
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
+            CBUFFER_START(UnityPerMaterial)
+                half4 _BaseColor;
+                float4 _BaseMap_ST;
+                half _Cutoff;
+            CBUFFER_END
+
+            Varyings vert(Attributes IN)
+            {
+                Varyings OUT;
+                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
+                OUT.uv = TRANSFORM_TEX(IN.uv, _BaseMap);
+                return OUT;
+            }
+
+            half4 frag(Varyings IN) : SV_Target
+            {
+                half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, IN.uv) * _BaseColor;
+                
+                // 알파 값이 있는 픽셀에만 스텐실을 기록하기 위해 clip 사용
+                clip(color.a - _Cutoff);
+
+                // 색상은 0,0,0,0으로 출력
+                return half4(0, 0, 0, 0);
+            }
+            ENDHLSL
+        }
+    }
+}

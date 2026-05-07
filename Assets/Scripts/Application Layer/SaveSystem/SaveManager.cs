@@ -123,7 +123,7 @@ public class SaveManager : MonoBehaviour
         // 5. 환경 밀도 데이터 추출
         if (densityManager != null)
         {
-            cachedSaveData.environmentSaveData = densityManager.GetSaveData();
+            densityManager.PopulateSaveData(ref cachedSaveData.environmentSaveData);
         }
 
         // 6. 당근 드랍 데이터 추출

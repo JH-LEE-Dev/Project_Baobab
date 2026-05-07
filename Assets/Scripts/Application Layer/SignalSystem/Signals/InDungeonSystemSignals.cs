@@ -86,4 +86,13 @@ public struct AnimalIsDeadSignal
     }
 }
 
-
+public struct GoToHiddenMapSignal
+{
+    public MapType mapType;
+    public ForestType forestType;
+    public GoToHiddenMapSignal(MapType _mapType, ForestType _forestType)
+    {
+        mapType = _mapType;
+        forestType = _forestType;
+    }
+}
