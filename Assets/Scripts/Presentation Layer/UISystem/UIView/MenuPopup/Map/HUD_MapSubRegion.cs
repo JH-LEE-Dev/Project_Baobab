@@ -33,7 +33,13 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private Action<int> onSelectEvent;              // 값 전달용
 
         private static readonly string hoverMotionKey = "Hover";
+        private static readonly string hoverOffMotionKey = "HoverOff";
         private static readonly string clickMotionKey = "Click";
+
+        MotionEntry enterMotion;
+        MotionEntry exitMotion;
+        MotionEntry clickMotion;
+
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -152,7 +158,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             onHoverEnterEvent?.Invoke(GetRectTransform());
 
             if (null != motionPlayer)
-                motionPlayer.Play(hoverMotionKey);
+            {
+                motionPlayer.SettingEntryMotion(exitMotion, true, true);
+                motionPlayer.SettingEntryMotion(clickMotion, true, true);
+                enterMotion = motionPlayer.Play(hoverMotionKey, bReset: true);
+            }
         }
 
         public void OnPointerExit(PointerEventData _eventData)
@@ -162,6 +172,13 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             // 퇴장 시 커서 숨김 애니메이션 재생
             onHoverExitEvent?.Invoke();
+
+            if (null != motionPlayer)
+            {
+                motionPlayer.SettingEntryMotion(enterMotion, true, true);
+                motionPlayer.SettingEntryMotion(clickMotion, true, true);
+                exitMotion = motionPlayer.Play(hoverOffMotionKey, bReset: true);
+            }
         }
 
         public void OnPointerClick(PointerEventData _eventData)
@@ -174,7 +191,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             // 클릭 애니메이션 재생
             if (null != motionPlayer)
-                motionPlayer.Play(clickMotionKey);
+            {
+                motionPlayer.SettingEntryMotion(enterMotion, true, true);
+                motionPlayer.SettingEntryMotion(exitMotion, true, true);
+                clickMotion = motionPlayer.Play(clickMotionKey, bReset: true);
+            }
         }
 
         // //유니티 이벤트 함수

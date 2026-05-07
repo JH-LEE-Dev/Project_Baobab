@@ -307,7 +307,7 @@ MonoBehaviour:
   subSelector: {fileID: 5421214289454330433}
   sunMoon: {fileID: 5192826426171166451}
   selectButton: {fileID: 4485508533173806816}
-  exitButton: {fileID: 8626293219907103550}
+  exitButton: {fileID: 2193495580616618865}
   regionContainer: {fileID: 6358695605423527309}
   regionPrefab: {fileID: 5378699527577570030, guid: a79b591f980f19043b363b64099cb2e9, type: 3}
   snapSpeed: 10
@@ -651,7 +651,7 @@ GameObject:
   - component: {fileID: 1177172601339717896}
   - component: {fileID: 4351575605893328601}
   - component: {fileID: 5592184969871319721}
-  - component: {fileID: 8626293219907103550}
+  - component: {fileID: 2193495580616618865}
   m_Layer: 5
   m_Name: BTN_Exit
   m_TagString: Untagged
@@ -717,7 +717,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &8626293219907103550
+--- !u!114 &2193495580616618865
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -726,9 +726,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 5282098632526962772}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 822171bd10d7899448599c489e068bc8, type: 3}
+  m_Script: {fileID: 11500000, guid: 9d9e5c003608bcb4a90bff8a4f8657d1, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.UIView.MenuPopup.Map.HUD_MapExitButton
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.UIView.MenuPopup.Map.HUD_MapSelectorButton
   motionPlayer: {fileID: 1355467695516735062}
   buttonImage: {fileID: 2624800424855397868}
 --- !u!1 &5625472761376599141
@@ -933,7 +933,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.ObjectMotionPlayer
   motionEntries:
-  - motionTag: OkWiggle
+  - motionTag: OkHover
     motionPrefab: {fileID: 661564395831490360}
     targets:
     - transform: {fileID: 0}
@@ -942,16 +942,7 @@ MonoBehaviour:
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 657234850766355873}
     motionInstance: {fileID: 0}
-  - motionTag: ExitWiggle
-    motionPrefab: {fileID: 661564395831490360}
-    targets:
-    - transform: {fileID: 0}
-      rectTransform: {fileID: 5594682811628580810}
-      canvasGroup: {fileID: 0}
-      spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 2624800424855397868}
-    motionInstance: {fileID: 0}
-  - motionTag: OkOffWiggle
+  - motionTag: OkHoverOff
     motionPrefab: {fileID: 2685380690211675049}
     targets:
     - transform: {fileID: 0}
@@ -959,15 +950,6 @@ MonoBehaviour:
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 657234850766355873}
-    motionInstance: {fileID: 0}
-  - motionTag: ExitOffWiggle
-    motionPrefab: {fileID: 2685380690211675049}
-    targets:
-    - transform: {fileID: 0}
-      rectTransform: {fileID: 5594682811628580810}
-      canvasGroup: {fileID: 0}
-      spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 2624800424855397868}
     motionInstance: {fileID: 0}
   - motionTag: OkClickTwist
     motionPrefab: {fileID: 8829514522012455314}
@@ -977,6 +959,24 @@ MonoBehaviour:
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 657234850766355873}
+    motionInstance: {fileID: 0}
+  - motionTag: ExitHover
+    motionPrefab: {fileID: 661564395831490360}
+    targets:
+    - transform: {fileID: 0}
+      rectTransform: {fileID: 5594682811628580810}
+      canvasGroup: {fileID: 0}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 2624800424855397868}
+    motionInstance: {fileID: 0}
+  - motionTag: ExitHoverOff
+    motionPrefab: {fileID: 2685380690211675049}
+    targets:
+    - transform: {fileID: 0}
+      rectTransform: {fileID: 5594682811628580810}
+      canvasGroup: {fileID: 0}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 2624800424855397868}
     motionInstance: {fileID: 0}
   - motionTag: ExitClickTwist
     motionPrefab: {fileID: 8829514522012455314}
