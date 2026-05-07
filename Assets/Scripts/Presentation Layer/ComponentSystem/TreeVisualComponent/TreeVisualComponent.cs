@@ -16,6 +16,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomRenderer;
     [SerializeField] private SpriteRenderer topShadowRenderer;
     [SerializeField] private SpriteRenderer bottomShadowRenderer;
+    [SerializeField] private SpriteRenderer topOnWaterSR;
+    [SerializeField] private SpriteRenderer bottomOnWaterSR;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites;
@@ -61,6 +63,12 @@ public class TreeVisualComponent : MonoBehaviour
     private void Update()
     {
         ApplyWindSway();
+    }
+
+    private void LateUpdate()
+    {
+        topOnWaterSR.sortingOrder = (int)(transform.position.y * 100);
+        bottomOnWaterSR.sortingOrder = (int)(transform.position.y * 100);
     }
 
     // 에디터 미리보기 모드에서는 값이 바뀔 때마다 비주얼 조합을 즉시 다시 적용한다.
@@ -160,7 +168,7 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         TreeColorSet colorSet = _visualData.treeColorSets[Random.Range(0, _visualData.treeColorSets.Count)];
-        
+
         if (topRenderer != null)
         {
             topRenderer.color = colorSet.topColor;
@@ -177,7 +185,7 @@ public class TreeVisualComponent : MonoBehaviour
     {
         SetRandomSprite(bottomRenderer, bottomSprites);
         SetRandomSprite(topRenderer, topSprites);
-        
+
         if (topRenderer != null)
         {
             topRenderer.color = Color.white;

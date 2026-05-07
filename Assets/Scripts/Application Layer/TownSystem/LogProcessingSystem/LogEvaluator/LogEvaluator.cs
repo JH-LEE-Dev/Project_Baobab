@@ -22,9 +22,6 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     //Advance 등급 : value * 3
     //Fascinating 등급 : value * 1.3
     //Normal 등급 : value * (0.9,1.0,1.1 균등 확률로 설정)
-    //Wet 등급 : value * 0.7
-    //Damaged 등급 : value * (0.5,0.6,0.7 균등 확률로 설정)
-    //Destroyed 등급 : value * 0.1
 
     public void Initialize()
     {

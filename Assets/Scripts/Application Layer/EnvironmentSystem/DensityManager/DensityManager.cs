@@ -255,11 +255,6 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         Debug.Log("[DensityManager] Environment Save Data Loaded.");
     }
 
-    public MapDensityDataBase GetMapDataBase()
-    {
-        return densityDataBase;
-    }
-
     private void EnsureDatabaseInitialized()
     {
         if (isDatabaseInitialized) return;
@@ -304,7 +299,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
             for (int j = 0; j < mapInfo.forestDatas.Count; j++)
             {
                 var forestInfo = mapInfo.forestDatas[j];
-                
+
                 // 게이지 정보가 있고 포레스트 타입이 일치하는 경우에만 현재 게이지 할당
                 if (gaugeData.forestType == forestInfo.forestType)
                 {
@@ -367,6 +362,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         {
             data.hiddenGauge += _amount;
             hiddenGaugeData[currentMapType] = data;
+            Debug.Log(hiddenGaugeData[currentMapType].hiddenGauge);
         }
         else
         {
@@ -374,6 +370,27 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
             newData.forestType = currentDensityData != null ? currentDensityData.forestType : ForestType.None;
             newData.hiddenGauge = _amount;
             hiddenGaugeData.Add(currentMapType, newData);
+            Debug.Log(hiddenGaugeData[currentMapType].hiddenGauge);
         }
+    }
+
+    public bool IsCurrentlyHiddenMap(MapType _mapType, ForestType _forestType)
+    {
+        if (hiddenGaugeData.TryGetValue(_mapType, out ForestHiddenGaugeData data))
+        {
+            if (data.forestType != _forestType) return false;
+
+            DensityData densityData = densityDataBase.Get(_mapType, _forestType);
+            if (densityData == null) return false;
+
+            if (data.hiddenGauge >= densityData.limitHiddenGauge)
+            {
+                data.hiddenGauge = 0f;
+                hiddenGaugeData[_mapType] = data;
+                return true;
+            }
+        }
+
+        return false;
     }
 }

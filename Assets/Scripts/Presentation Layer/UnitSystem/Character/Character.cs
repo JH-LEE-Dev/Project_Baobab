@@ -312,7 +312,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             // 3. 수직 또는 대각선 각도는 광원 시점(Light Perspective) 로직 적용
             float lightPerspectiveAngle = currentFacingAngle - shadowAngle + 90f;
             Vector2 lightViewDir = new Vector2(
-                Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad), 
+                Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad),
                 Mathf.Sin(lightPerspectiveAngle * Mathf.Deg2Rad)
             );
             SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir);
@@ -452,6 +452,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         ConnectAttackToArm();
     }
 
+    private void LateUpdate()
+    {
+        SetOnWaterSROrder();
+    }
+
     private void FixedUpdate()
     {
         itemDetectionTimer += Time.fixedDeltaTime;
@@ -497,5 +502,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void RefreshCharacterStat()
     {
         armComponent.Refresh();
+    }
+
+    public void SetOnWaterSROrder()
+    {
+        onWaterSR.sortingOrder = (int)(transform.position.y * 100);
     }
 }

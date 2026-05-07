@@ -235,7 +235,27 @@ MonoBehaviour:
   logProbDatas:
   - treeGrade: 1
     probDatas:
+    - type: 2
+      probability: 100
+  - treeGrade: 2
+    probDatas:
+    - type: 2
+      probability: 20
     - type: 3
+      probability: 80
+  - treeGrade: 3
+    probDatas:
+    - type: 4
+      probability: 80
+    - type: 3
+      probability: 15
+    - type: 2
+      probability: 5
+  - treeGrade: 4
+    probDatas:
+    - type: 5
+      probability: 30
+    - type: 2
       probability: 100
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
@@ -450,6 +470,7 @@ Transform:
   m_Children:
   - {fileID: 7610549331774678628}
   - {fileID: 5520247588731712875}
+  - {fileID: 4224764067588888249}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7398738596507401122
@@ -1188,6 +1209,57 @@ MonoBehaviour:
   cullingDistance: 25
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
   treeGrowTime: 10
+--- !u!1 &6997225591927856054
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4224764067588888249}
+  - component: {fileID: 3891997474366743594}
+  m_Layer: 0
+  m_Name: HiddenmapManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4224764067588888249
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6997225591927856054}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6142116780314600098}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3891997474366743594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6997225591927856054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3ca4e7ed89708c4188a86b68a5df0fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HiddenmapManager
+  hiddenMapGradeProbDatas:
+  - grade: 2
+    probability: 65
+  - grade: 3
+    probability: 30
+  - grade: 4
+    probability: 5
 --- !u!1 &7224331137657030612
 GameObject:
   m_ObjectHideFlags: 0
@@ -1623,3 +1695,26 @@ MonoBehaviour:
   cullingDistance: 25
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
+  hiddenMapTreeGradeDatas:
+  - grade: 2
+    probability:
+    - treeGrade: 1
+      probability: 80
+    - treeGrade: 2
+      probability: 20
+  - grade: 3
+    probability:
+    - treeGrade: 1
+      probability: 50
+    - treeGrade: 2
+      probability: 30
+    - treeGrade: 3
+      probability: 20
+  - grade: 4
+    probability:
+    - treeGrade: 2
+      probability: 70
+    - treeGrade: 3
+      probability: 25
+    - treeGrade: 4
+      probability: 5
