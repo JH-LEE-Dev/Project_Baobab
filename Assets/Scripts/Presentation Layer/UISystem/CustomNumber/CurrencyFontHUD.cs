@@ -81,7 +81,7 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         [Header("Delta Amount Motion")]
         [SerializeField] private float deltaStartSpacing = 0.0f;
-        [SerializeField] private float deltaGlyphDelay = 0.03f;
+        [SerializeField] private float deltaGlyphWaveDuration = 0.25f;
         [SerializeField] private float deltaGlyphShowDuration = 0.15f;
         [SerializeField] private float deltaVisibleHoldDuration = 0.2f;
         [SerializeField] private float deltaGlyphHideDuration = 0.15f;
@@ -274,6 +274,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             int _length = BuildDeltaText(_amount);
             UpdateDeltaGlyphs(_length, _amount > 0L ? deltaIncreaseColor : deltaDecreaseColor);
 
+            float _glyphDelay = CalculateDeltaGlyphDelay(_length);
             deltaMotionSequence = DOTween.Sequence();
 
             for (int i = 0; i < _length; i++)
@@ -287,11 +288,11 @@ namespace PresentationLayer.UISystem.CustomNumber
                 _glyphRect.localScale = Vector3.zero;
 
                 deltaMotionSequence.Insert(
-                    deltaGlyphDelay * i,
+                    _glyphDelay * i,
                     _glyphRect.DOScale(Vector3.one, deltaGlyphShowDuration).SetEase(deltaGlyphShowEase, deltaGlyphShowOvershoot));
             }
 
-            float _hideStartTime = (deltaGlyphDelay * Mathf.Max(0, _length - 1)) + deltaGlyphShowDuration + deltaVisibleHoldDuration;
+            float _hideStartTime = (_glyphDelay * Mathf.Max(0, _length - 1)) + deltaGlyphShowDuration + deltaVisibleHoldDuration;
             for (int i = 0; i < _length; i++)
             {
                 RawImage _glyph = deltaGlyphPool[i];
@@ -300,12 +301,20 @@ namespace PresentationLayer.UISystem.CustomNumber
 
                 RectTransform _glyphRect = (RectTransform)_glyph.transform;
                 deltaMotionSequence.Insert(
-                    _hideStartTime + (deltaGlyphDelay * i),
+                    _hideStartTime + (_glyphDelay * i),
                     _glyphRect.DOScale(Vector3.zero, deltaGlyphHideDuration).SetEase(deltaGlyphHideEase, deltaGlyphHideOvershoot));
             }
 
             deltaMotionSequence.OnKill(HideDeltaGlyphs);
             deltaMotionSequence.OnComplete(HideDeltaGlyphs);
+        }
+
+        private float CalculateDeltaGlyphDelay(int _glyphCount)
+        {
+            if (_glyphCount <= 0)
+                return 0.0f;
+
+            return Mathf.Max(0.0f, deltaGlyphWaveDuration) / _glyphCount;
         }
 
         private void SetValue(long _value, bool _stopMotion)

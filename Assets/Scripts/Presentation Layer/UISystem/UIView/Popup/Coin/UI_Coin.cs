@@ -37,7 +37,7 @@ public class UI_Coin : MonoBehaviour
             moneyText.text = moneyData.carrot.ToString();
     }
 
-    public void UpdateMoneyText(long _money)
+    public void UpdateMoneyText(int _money)
     {
         if (null == moneyText)
             return;

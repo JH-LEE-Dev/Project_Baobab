@@ -6,14 +6,14 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     public event Action ShopMoneyChangedEvent;
     public event Action FirstTimeEarnMoneyEvent;
     public event Action<bool> InteractStateEvent;
-    public event Action<long> EarnMoneyEvent;
+    public event Action<int> EarnMoneyEvent;
 
     [SerializeField] private Transform npcTransform;
 
     private bool bCanInteract = false;
 
     private InputManager inputManager;
-    private long money;
+    private int money;
 
     private const string PLAYER_TAG = "Player";
 
@@ -21,7 +21,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
     Transform IShopNPC.npcTransform => npcTransform;
 
-    public long currentMoney => money;
+    public int currentMoney => money;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -36,18 +36,18 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         ReleaseEvents();
     }
 
-    public void InsertMoney(long _money)
+    public void InsertMoney(int _money)
     {
         money += _money;
         ShopMoneyChangedEvent?.Invoke();
     }
 
-    public long GetMoney()
+    public int GetMoney()
     {
         return money;
     }
 
-    public void LoadSaveData(long _money, bool _bFirstTime)
+    public void LoadSaveData(int _money, bool _bFirstTime)
     {
         money = _money;
         bFirstTimeEarnMoney = _bFirstTime;

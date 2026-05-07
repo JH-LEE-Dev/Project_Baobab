@@ -156,8 +156,8 @@ MonoBehaviour:
   glyphReturnOvershoot: 3.5
   glyphPreSquashRatio: 0.18
   glyphBounceRatio: 0.28
-  deltaStartSpacing: 0
-  deltaGlyphDelay: 0.03
+  deltaStartSpacing: 3
+  deltaGlyphWaveDuration: 0.25
   deltaGlyphShowDuration: 0.15
   deltaVisibleHoldDuration: 0.2
   deltaGlyphHideDuration: 0.15

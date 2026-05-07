@@ -13,32 +13,32 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
 
-    private long money = 10000;
-    private long carrot = 10000;
-    [SerializeField] private long sunEssence;
-    [SerializeField] private long moonEssence;
-    [SerializeField] private long lightningEssence;
+    private int money = 10000;
+    private int carrot = 10000;
+    [SerializeField] private int sunEssence;
+    [SerializeField] private int moonEssence;
+    [SerializeField] private int lightningEssence;
 
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
 
-    long IInventory.money => money;
+    int IInventory.money => money;
 
-    long IInventory.carrot => carrot;
+    int IInventory.carrot => carrot;
 
     public int currentSlotCnt => currentSlotCount;
 
-    long IMoneyData.money => money;
+    int IMoneyData.money => money;
 
-    long IMoneyData.carrot => carrot;
+    int IMoneyData.carrot => carrot;
 
-    long IMoneyData.sunEssence => sunEssence;
+    int IMoneyData.sunEssence => sunEssence;
 
-    long IMoneyData.moonEssence => moonEssence;
+    int IMoneyData.moonEssence => moonEssence;
 
-    long IMoneyData.lightningEssence => lightningEssence;
+    int IMoneyData.lightningEssence => lightningEssence;
 
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
@@ -251,7 +251,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return transform;
     }
 
-    public void MoneyEarned(long _money)
+    public void MoneyEarned(int _money)
     {
         money += _money;
     }
@@ -261,24 +261,24 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         carrot += (int)_amount;
     }
 
-    public long GetCurrentCarrot()
+    public int GetCurrentCarrot()
     {
         return carrot;
     }
 
-    public long GetCurrentMoney()
+    public int GetCurrentMoney()
     {
         return money;
     }
 
-    public void DecreaseCarrot(long _amount)
+    public void DecreaseCarrot(int _amount)
     {
         carrot -= _amount;
         if (carrot < 0) carrot = 0;
         SpendMoneyEvent?.Invoke();
     }
 
-    public void DecreaseMoney(long _amount)
+    public void DecreaseMoney(int _amount)
     {
         money -= _amount;
         if (money < 0) money = 0;
