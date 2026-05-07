@@ -120,8 +120,8 @@ public struct InventorySlotSaveData
 [Serializable]
 public struct InventorySaveData
 {
-    public int money;
-    public int carrot;
+    public long money;
+    public long carrot;
     public int currentSlotCount;
     public List<InventorySlotSaveData> slots;
 
@@ -137,7 +137,7 @@ public struct LogProcessingSaveData
 {
     public InventorySaveData containerInventoryData;
     public int maxItemsPerSlot;
-    public int shopMoney;
+    public long shopMoney;
     public bool bFirstTimeEarnMoney;
     public bool bStop;
     public float transferInterval;

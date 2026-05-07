@@ -2,6 +2,9 @@ using UnityEngine;
 
 public interface IMoneyData
 {
-    int money { get; }
-    int carrot { get; }
+    long money { get; }
+    long carrot { get; }
+    long sunEssence { get; }
+    long moonEssence { get; }
+    long lightningEssence { get; }
 }

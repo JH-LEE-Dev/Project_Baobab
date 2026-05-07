@@ -124,7 +124,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Publish(new ContainerInteractStateChangedSignal(_boolean));
     }
 
-    private void EarnMoney(int _money)
+    private void EarnMoney(long _money)
     {
         signalHub.Publish(new MoneyEarnedSignal(_money));
     }

@@ -5,7 +5,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 {
     public event Action LogContainerSpecChangedEvent;
     public event Action FirstTimeEarnMoneyEvent;
-    public event Action<int> EarnMoneyEvent;
+    public event Action<long> EarnMoneyEvent;
     public event Action ContainerUpdatedEvent;
     public event Action<bool> InteractStateChangedEvent;
 
@@ -220,7 +220,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         shopNPC.InsertMoney(_money);
     }
 
-    private void EarnMoney(int _money)
+    private void EarnMoney(long _money)
     {
         EarnMoneyEvent.Invoke(_money);
     }

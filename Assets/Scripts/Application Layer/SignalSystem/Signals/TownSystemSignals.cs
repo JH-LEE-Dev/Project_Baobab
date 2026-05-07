@@ -13,8 +13,8 @@ public struct ContainerUpdatedSignal { }
 
 public struct MoneyEarnedSignal
 {
-    public int money;
-    public MoneyEarnedSignal(int _money)
+    public long money;
+    public MoneyEarnedSignal(long _money)
     {
         money = _money;
     }

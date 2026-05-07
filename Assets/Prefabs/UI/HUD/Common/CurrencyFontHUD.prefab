@@ -1,0 +1,171 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4540705592233903731
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7976620843109558160}
+  - component: {fileID: 6713229548764201101}
+  - component: {fileID: 6713229548764201102}
+  - component: {fileID: 6713229548764201103}
+  - component: {fileID: 3118576089537169764}
+  m_Layer: 5
+  m_Name: CurrencyFontHUD
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7976620843109558160
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4540705592233903731}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 43, y: 12}
+  m_Pivot: {x: 0, y: 0.5}
+--- !u!223 &6713229548764201101
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4540705592233903731}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 0
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 1
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
+--- !u!114 &6713229548764201102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4540705592233903731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
+  m_UiScaleMode: 1
+  m_ReferencePixelsPerUnit: 32
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 640, y: 360}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 1
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 0
+--- !u!114 &6713229548764201103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4540705592233903731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &3118576089537169764
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4540705592233903731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a2f1cfa28464fd4a8c84457f56f89cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currency0: {fileID: 21300000, guid: fd54dd86a865725408f1c68f5e0f85ce, type: 3}
+  currency1: {fileID: 21300000, guid: 4b61233f5194df94a97941e9a715f2a6, type: 3}
+  currency2: {fileID: 21300000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
+  currency3: {fileID: 21300000, guid: 26ec6cfc7c4a0c046b624b05c029e370, type: 3}
+  currency4: {fileID: 21300000, guid: 4d6d56277ceb15242a26f876a9ee38c4, type: 3}
+  currency5: {fileID: 21300000, guid: aa8931fb0e954c34695ce8b010449d88, type: 3}
+  currency6: {fileID: 21300000, guid: 80ebad6da8aa7124ebf6835ff1f1cd25, type: 3}
+  currency7: {fileID: 21300000, guid: 55d55453215d23f4d97fb7ecc8f4d8fe, type: 3}
+  currency8: {fileID: 21300000, guid: 0a62482f62b0400498711ed169f74693, type: 3}
+  currency9: {fileID: 21300000, guid: bfd6730166c875e43a6d9a56f56d76f9, type: 3}
+  currencyDot: {fileID: 21300000, guid: 3d2224f496b9af741bbf2726c36c7aca, type: 3}
+  currencyK: {fileID: 21300000, guid: be587db86bf1d71429fc09dcb5048109, type: 3}
+  currencyM: {fileID: 21300000, guid: 4c80180b0c8ad7741b94418b583c1c25, type: 3}
+  currencyB: {fileID: 21300000, guid: 77b502a71e71a2d46bd03fd3518861d1, type: 3}
+  currencyT: {fileID: 21300000, guid: abfa9a475792223459f195fea5c8e173, type: 3}
+  currencyQ: {fileID: 21300000, guid: b10d8a9721ca6c44dbb305dc6d904828, type: 3}
+  currencyPlus: {fileID: 21300000, guid: d5c33335fa9892b469a4c14cb8175ca9, type: 3}
+  currencyMinus: {fileID: 21300000, guid: d41415b5873ec124cb0aa0f13b0bbdea, type: 3}
+  currencyComma: {fileID: 21300000, guid: 62e060f7516cf3f479d4ac8604d3e772, type: 3}
+  pixelScale: 1
+  characterSpacing: 0
+  numberLetterSpacingOffset: -1
+  valueTweenDuration: 1.2
+  valueTweenEase: 18
+  colorTweenDuration: 1.2
+  colorTweenEase: 17
+  increaseColor: {r: 0.35, g: 1, b: 0.45, a: 1}
+  decreaseColor: {r: 1, g: 0.32, b: 0.28, a: 1}
+  normalGlyphColor: {r: 1, g: 1, b: 1, a: 1}
+  glyphWaveDelay: 0.025
+  glyphMotionDuration: 0.25
+  glyphBounceDistance: 7
+  glyphPreSquashScale: {x: 1.1, y: 0.75}
+  glyphBounceSquashScale: {x: 0.7, y: 1.4}
+  glyphPreSquashEase: 27
+  glyphBounceMoveEase: 27
+  glyphReturnMoveEase: 27
+  glyphReturnScaleEase: 27
+  glyphReturnOvershoot: 3.5
+  glyphPreSquashRatio: 0.18
+  glyphBounceRatio: 0.28
+  deltaStartSpacing: 0
+  deltaGlyphDelay: 0.03
+  deltaGlyphShowDuration: 0.15
+  deltaVisibleHoldDuration: 0.2
+  deltaGlyphHideDuration: 0.15
+  deltaGlyphShowEase: 27
+  deltaGlyphShowOvershoot: 3.5
+  deltaGlyphHideEase: 26
+  deltaGlyphHideOvershoot: 3.5
+  deltaIncreaseColor: {r: 0.35, g: 1, b: 0.45, a: 1}
+  deltaDecreaseColor: {r: 1, g: 0.32, b: 0.28, a: 1}
+  previewInEditor: 1
+  previewValue: 0
