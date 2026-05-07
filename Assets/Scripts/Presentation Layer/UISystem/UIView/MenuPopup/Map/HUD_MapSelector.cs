@@ -17,8 +17,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [Header("References")]
         [SerializeField] private HUD_MapSubSelector subSelector; // 서브 지역 셀렉터
         [SerializeField] private HUD_MapSunMoon sunMoon;         // 밤낮 연출 관리자
-        [SerializeField] private HUD_MapSelectButton selectButton; // 선택 확인 버튼
-        [SerializeField] private HUD_MapExitButton exitButton;     // 종료 버튼
+        [SerializeField] private HUD_MapSelectorButton selectButton; // 선택 확인 버튼
+        [SerializeField] private HUD_MapSelectorButton exitButton;     // 종료 버튼
         [SerializeField] private Transform regionContainer;     // 지역 항목 부모 컨테이너
         [SerializeField] private GameObject regionPrefab;       // 지역 항목 프리팹
 
@@ -67,10 +67,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 sunMoon.Initialize();
 
             if (null != selectButton)
-                selectButton.Initialize(HandleConfirm);
+                selectButton.Initialize(HandleConfirm, "OkHover", "OkHoverOff", "OkClickTwist");
 
             if (null != exitButton)
-                exitButton.Initialize(HandleExit);
+                exitButton.Initialize(HandleExit, "ExitHover", "ExitHoverOff", "ExitClickTwist");
 
             SetupRegionsFromData();
 
@@ -248,12 +248,21 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         {
             gameObject.SetActive(true);
 
-            if (null != subSelector)
+            if (null == subSelector)
+                return;
+
+            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+            if (null == _db.mapDatas)
+                return;
+
+            for (int _i = 0; _i < _db.mapDatas.Count; _i++)
             {
-                for (int _i = 0; _i < spawnedRegions.Count; _i++)
-                {
-                    subSelector.UpdateHiddenGauges(spawnedRegions[_i].GetMapEnvironmentInfo().forestDatas);
-                }
+                MapEnvironmentDataInfo _info = _db.mapDatas[_i];
+
+                if (MapType.Town == _info.mapType)
+                    continue;
+
+                subSelector.UpdateHiddenGauges(_info.forestDatas);
             }
         }
 

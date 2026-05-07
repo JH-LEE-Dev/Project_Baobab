@@ -79,7 +79,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     if (_i < _dataCount)
                     {
                         float _ratio = _forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge;
-                        Debug.Log($"Sub Region {_forestDatas[_i]}:   {_ratio}");
                         subRegions[_i].SetProgress(_ratio);
                     }
             }

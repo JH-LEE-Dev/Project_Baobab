@@ -10,7 +10,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     /// 맵 선택 UI에서 최종 결정을 내리는 확인 버튼 클래스입니다.
     /// 마우스 호버 및 클릭 이벤트를 처리하며 상위 UIView로 이벤트를 전달합니다.
     /// </summary>
-    public class HUD_MapSelectButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+    public class HUD_MapSelectorButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         // //외부 의존성
         [Header("Animation")]
@@ -28,9 +28,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private static readonly Color normalColor = Color.white;
         private static readonly Color dimmedColor = new Color(0.5f, 0.5f, 0.5f, 1.0f);
 
-        private static readonly string hoverMotionKey = "OkWiggle";
-        private static readonly string hoverOffMotionKey = "OkOffWiggle";
-        private static readonly string clickMotionKey = "OkClickTwist";
+        private string hoverMotionKey;
+        private string hoverOffMotionKey;
+        private string clickMotionKey;
 
         bool isDimmed = false;
 
@@ -39,19 +39,17 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         /// <summary>
         /// 버튼을 초기화하고 콜백을 등록합니다.
         /// </summary>
-        public void Initialize(Action _onConfirm)
+        public void Initialize(Action _onConfirm, string _hoverTag, string _hoverOffTag, string _clickTag)
         {
             if (true == isInitialized)
                 return;
 
-            if (null == motionPlayer)
-                motionPlayer = GetComponent<ObjectMotionPlayer>();
-
-            if (null == buttonImage)
-                buttonImage = GetComponent<Image>();
-
             onConfirmEvent = _onConfirm;
             isInitialized = true;
+
+            hoverMotionKey = _hoverTag;
+            hoverOffMotionKey = _hoverOffTag;
+            clickMotionKey = _clickTag;
         }
 
         /// <summary>
@@ -105,7 +103,5 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             //    clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: callBack);
             //}
         }
-
-        private void callBack() => onConfirmEvent?.Invoke();
     }
 }
