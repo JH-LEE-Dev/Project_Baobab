@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
+using DG.Tweening;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
@@ -23,6 +24,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private RectTransform sunRect;
         private RectTransform moonRect;
         private bool isInitialized = false;
+        private bool isRebound = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -47,32 +49,48 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         }
 
         /// <summary>
-        /// 특정 모션 태그를 통해 애니메이션(공전, 알파 등)을 재생합니다.
-        /// </summary>
-        public void PlayMotion(string _motionTag)
-        {
-            if (null == motionPlayer)
-                return;
-
-            motionPlayer.Play(_motionTag);
-        }
-
-        /// <summary>
         /// 중앙축의 회전값을 수동으로 설정합니다. (필요 시)
         /// </summary>
-        public void SetRotation(float _zAngle)
+        public void SetRotation(float _zAngle, float _duration)
         {
             if (null == pivotRect)
                 return;
 
-            pivotRect.localRotation = Quaternion.Euler(0.0f, 0.0f, _zAngle);
+            pivotRect.DOKill();
+            Tween Rot = pivotRect.DOLocalRotate(new Vector3(0.0f, 0.0f, _zAngle), _duration, RotateMode.FastBeyond360);
+            Rot.OnComplete(ReboundSunMoon);
+        }
+
+        private void ReboundSunMoon()
+        {
+            if (null != sunRect || null != moonRect)
+                return;
+
+            isRebound = true;
+
+            sunRect.DOKill();
+            moonRect.DOKill();
+
+            Vector3 punchRot = new Vector3(0f, 0f, 10f);
+
+            Sequence seq = DOTween.Sequence();
+
+            seq.Join(sunRect.DOPunchRotation(punchRot, 0.25f));
+            seq.Join(moonRect.DOPunchRotation(punchRot, 0.25f));
+
+            seq.OnComplete(ReboundCompleted);
+        }
+
+        private void ReboundCompleted()
+        {
+            isRebound = false;
         }
 
         // //유니티 이벤트 함수
 
         private void LateUpdate()
         {
-            if (false == isInitialized)
+            if (false == isInitialized || true == isRebound)
                 return;
 
             // 중앙축이 회전하더라도 이미지는 월드 기준 정면(회전 0)을 유지하도록 처리

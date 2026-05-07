@@ -171,9 +171,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
 
             if (true == isDayTime)
-                sunMoon.PlayMotion(dayMotionKey);
+                sunMoon.SetRotation(180f, 0.25f);
             else
-                sunMoon.PlayMotion(nightMotionKey);
+                sunMoon.SetRotation(180f, 0.25f);
         }
 
         private void FocusRegion(int _index)
