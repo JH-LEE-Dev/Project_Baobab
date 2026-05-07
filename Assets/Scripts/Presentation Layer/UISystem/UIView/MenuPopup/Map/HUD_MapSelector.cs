@@ -1,8 +1,9 @@
+using PresentationLayer.DOTweenAnimationSystem;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using PresentationLayer.DOTweenAnimationSystem;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
@@ -245,6 +246,24 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             _closestIndex = Mathf.Clamp(_closestIndex, 0, spawnedRegions.Count - 1);
             
             FocusRegion(_closestIndex);
+        }
+
+        public void MapSelectorOpen()
+        {
+            gameObject.SetActive(true);
+
+            if (null != subSelector)
+            {
+                for (int _i = 0; _i < spawnedRegions.Count; _i++)
+                {
+                    subSelector.UpdateHiddenGauges(spawnedRegions[_i].GetMapEnvironmentInfo().forestDatas);
+                }
+            }
+        }
+
+        public void MapSelectorClose()
+        {
+            gameObject.SetActive(false);
         }
 
         // //유니티 이벤트 함수

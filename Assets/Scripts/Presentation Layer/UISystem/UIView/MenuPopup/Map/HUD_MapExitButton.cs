@@ -90,15 +90,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public void OnPointerClick(PointerEventData _eventData)
         {
             onExitEvent?.Invoke();
-            return;
+            //return;
 
-            if (null != motionPlayer)
-            {
-                motionPlayer.SettingEntryMotion(enterAnim, true, true);
-                motionPlayer.SettingEntryMotion(exitAnim, true, true);
+            //if (null != motionPlayer)
+            //{
+            //    motionPlayer.SettingEntryMotion(enterAnim, true, true);
+            //    motionPlayer.SettingEntryMotion(exitAnim, true, true);
 
-                clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: callBack);
-            }
+            //    clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: callBack);
+            //}
         }
 
         private void callBack() => onExitEvent?.Invoke();

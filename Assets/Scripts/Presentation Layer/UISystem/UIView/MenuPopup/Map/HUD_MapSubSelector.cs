@@ -62,10 +62,26 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     {
                         subRegions[_i].gameObject.SetActive(true);
                         subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHoverEntered, OnRegionHoverExited, OnRegionSelected);
-                        subRegions[_i].SetProgress(_forestDatas[_i].limitHiddenGauge / _forestDatas[_i].currentHiddenGauge);
+                        subRegions[_i].SetProgress(_forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge);
                     }
                     else
                         subRegions[_i].gameObject.SetActive(false);
+            }
+        }
+
+        public void UpdateHiddenGauges(System.Collections.Generic.List<ForestEnvironmentInfo> _forestDatas)
+        {
+            int _dataCount = _forestDatas.Count;
+
+            for (int _i = 0; _i < subRegions.Length; _i++)
+            {
+                if (null != subRegions[_i])
+                    if (_i < _dataCount)
+                    {
+                        float _ratio = _forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge;
+                        Debug.Log($"Sub Region {_forestDatas[_i]}:   {_ratio}");
+                        subRegions[_i].SetProgress(_ratio);
+                    }
             }
         }
 

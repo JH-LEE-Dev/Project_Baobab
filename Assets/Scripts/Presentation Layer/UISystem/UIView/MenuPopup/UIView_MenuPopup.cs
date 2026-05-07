@@ -64,12 +64,12 @@ public class UIView_MenuPopup : UIView
     public void TeleportUIOpen()
     {
         if (null != mapSelector)
-            mapSelector.gameObject.SetActive(true);
+            mapSelector.MapSelectorOpen();
     }
 
     public void CloseTeleportUI()
     {
         if (null != mapSelector)
-            mapSelector.gameObject.SetActive(false);
+            mapSelector.MapSelectorClose();
     }
 }
