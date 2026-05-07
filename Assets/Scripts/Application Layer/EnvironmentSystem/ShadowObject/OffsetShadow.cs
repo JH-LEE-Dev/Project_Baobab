@@ -9,7 +9,7 @@ public class OffsetShadow : MonoBehaviour
     [Header("Settings")]
     [SerializeField] private bool isSelfRotating = true;
     [SerializeField] private Vector2 offset = Vector2.zero;
-    [SerializeField] private float defaultRotationZ = 90f;
+    [SerializeField] private float defaultRotationZ = 0f;
 
     [Header("Orbit Settings")]
     [SerializeField] private float majorAxisLength = 1f;
@@ -63,7 +63,7 @@ public class OffsetShadow : MonoBehaviour
         }
 
         // 회전 적용 (Shadow.cs와 동일하게 defaultRotationZ를 오프셋으로 사용)
-        transform.rotation = Quaternion.Euler(0, 0, _angle + defaultRotationZ);
+        //transform.rotation = Quaternion.Euler(0, 0, _angle + defaultRotationZ);
 
         // 5. 스케일 계산: 장축쪽으로 회전할수록 y스케일이 줄어든다.
         // 실제 길이가 더 긴 축(장축) 방향을 향할 때 감쇠가 최대(minScaleYFactor 적용)가 되도록 합니다.
