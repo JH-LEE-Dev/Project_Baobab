@@ -101,6 +101,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (bIsSapling && treeVisualComponent != null)
         {
+            Debug.Log("AAA");
             treeVisualComponent.ApplySaplingVisual(treeData);
         }
     }
