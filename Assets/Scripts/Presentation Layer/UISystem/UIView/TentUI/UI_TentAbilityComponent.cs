@@ -48,9 +48,33 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private AbilityToolTip toolTipInstance;
     private UISelectionCursor selectionCursorInstance;
 
+    private struct PrestigeHUDState
+    {
+        public static PrestigeHUDState Invalid => new PrestigeHUDState(false, 0, 0, 1);
+
+        public bool IsValid { get; }
+        public int PrestigeLevel { get; }
+        public int Experience { get; }
+        public int ExperienceLimit { get; }
+
+        public PrestigeHUDState(int _prestigeLevel, int _experience, int _experienceLimit)
+            : this(true, _prestigeLevel, _experience, _experienceLimit)
+        {
+        }
+
+        private PrestigeHUDState(bool _isValid, int _prestigeLevel, int _experience, int _experienceLimit)
+        {
+            IsValid = _isValid;
+            PrestigeLevel = Mathf.Max(0, _prestigeLevel);
+            ExperienceLimit = Mathf.Max(1, _experienceLimit);
+            Experience = Mathf.Clamp(_experience, 0, ExperienceLimit);
+        }
+    }
+
     [Header("UI References")]
     [SerializeField] private RectTransform abilityBackground;
     [SerializeField] private RectTransform moveTarget;
+    [SerializeField] private AbilityHUD abilityHUD;
 
     [Header("Ability Node Setup")]
     [SerializeField] private AbilityNode abilityNodePrefab;
@@ -85,6 +109,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         skillSystemProvider = _skillSystemProvider;
         rootCanvas = GetComponentInParent<Canvas>();
+        BindAbilityHUDIfNeeded();
         lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor, ShouldDrawLineAboveDefault);
         CachePictureBindings();
         CacheLineSpriteBindings();
@@ -92,6 +117,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         PrewarmNodePool();
         EnsureToolTipInstance();
         EnsureSelectionCursorInstance();
+        RefreshAbilityHUDImmediately();
         Close();
     }
 
@@ -192,6 +218,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SyncNodeLevelsFromProvider();
         RefreshNodeVisibility(false);
         RefreshNodeAvailabilityVisuals();
+        RefreshAbilityHUDImmediately();
         ResetView();
     }
 
@@ -318,6 +345,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SyncNodeLevelsFromProvider();
         RefreshNodeVisibility(false);
         RefreshNodeAvailabilityVisuals();
+        RefreshAbilityHUDImmediately();
 
         if (currentToolTipNode != null)
             ShowToolTip(currentToolTipNode);
@@ -779,11 +807,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return false;
         }
 
+        PrestigeHUDState _previousHUDState = GetPrestigeHUDState();
         AbilityLevelUpRejectReason reason = skillSystemProvider.TryApplySkill(_skillType);
 
         if (reason == AbilityLevelUpRejectReason.Pass)
         {
-            OnAbilityLevelUpApproved(_skillType);
+            OnAbilityLevelUpApproved(_skillType, _previousHUDState, GetPrestigeHUDState());
             return true;
         }
         else
@@ -811,6 +840,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 해당 특성 찍기 승인
     public void OnAbilityLevelUpApproved(SkillType _skillType)
     {
+        OnAbilityLevelUpApproved(_skillType, GetPrestigeHUDState(), GetPrestigeHUDState());
+    }
+
+    private void OnAbilityLevelUpApproved(SkillType _skillType, PrestigeHUDState _previousHUDState, PrestigeHUDState _currentHUDState)
+    {
         if (spawnedNodeMap.TryGetValue(_skillType, out AbilityNode node) == false)
             return;
 
@@ -833,6 +867,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
 
         PlayViewShake();
+        PlayAbilityHUDEffect(_previousHUDState, _currentHUDState);
     }
 
     // 상위 로직에서 거절 및 이유 (연출을 위함임)
@@ -851,6 +886,76 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     // 부모 레벨 기준으로 자식 노드와 라인의 노출 상태를 갱신한다.
     // 상위 스킬 시스템이 가진 실제 레벨 상태를 UI 노드에 반영한다.
+    private void BindAbilityHUDIfNeeded()
+    {
+        if (abilityHUD != null)
+            return;
+
+        abilityHUD = GetComponentInChildren<AbilityHUD>(true);
+        if (abilityHUD != null)
+            return;
+
+        Transform parentTransform = transform.parent;
+        while (parentTransform != null && abilityHUD == null)
+        {
+            abilityHUD = parentTransform.GetComponentInChildren<AbilityHUD>(true);
+            parentTransform = parentTransform.parent;
+        }
+    }
+
+    private void RefreshAbilityHUDImmediately()
+    {
+        BindAbilityHUDIfNeeded();
+
+        if (abilityHUD == null || skillSystemProvider == null)
+            return;
+
+        PrestigeHUDState _state = GetPrestigeHUDState();
+        abilityHUD.SetState(_state.Experience, _state.ExperienceLimit, _state.PrestigeLevel);
+    }
+
+    private void PlayAbilityHUDEffect(PrestigeHUDState _previousState, PrestigeHUDState _currentState)
+    {
+        BindAbilityHUDIfNeeded();
+
+        if (abilityHUD == null || false == _currentState.IsValid)
+            return;
+
+        if (false == _previousState.IsValid)
+        {
+            abilityHUD.SetState(_currentState.Experience, _currentState.ExperienceLimit, _currentState.PrestigeLevel);
+            return;
+        }
+
+        if (_currentState.PrestigeLevel > _previousState.PrestigeLevel)
+        {
+            abilityHUD.SetState(_previousState.ExperienceLimit, _previousState.ExperienceLimit, _previousState.PrestigeLevel);
+            abilityHUD.ResetExperience_Effect(_currentState.Experience, _currentState.ExperienceLimit, _currentState.PrestigeLevel);
+            return;
+        }
+
+        if (_currentState.Experience != _previousState.Experience ||
+            _currentState.ExperienceLimit != _previousState.ExperienceLimit)
+        {
+            abilityHUD.SetFlowerStack(_currentState.PrestigeLevel);
+            abilityHUD.SetExperience_Effect(_currentState.Experience, _currentState.ExperienceLimit);
+            return;
+        }
+
+        abilityHUD.SetState(_currentState.Experience, _currentState.ExperienceLimit, _currentState.PrestigeLevel);
+    }
+
+    private PrestigeHUDState GetPrestigeHUDState()
+    {
+        if (skillSystemProvider == null)
+            return PrestigeHUDState.Invalid;
+
+        return new PrestigeHUDState(
+            skillSystemProvider.GetCurrentPrestigeLevel(),
+            skillSystemProvider.GetCurrentPrestigeExp(),
+            skillSystemProvider.GetPrestigeExpLimit());
+    }
+
     private void SyncNodeLevelsFromProvider()
     {
         if (skillSystemProvider == null)

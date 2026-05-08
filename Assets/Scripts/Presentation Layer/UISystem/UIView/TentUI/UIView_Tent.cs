@@ -117,7 +117,7 @@ public class UIView_Tent : UIView
         for (int i = 0; i < MoneyDisplayOrder.Length; i++)
         {
             MoneyType _moneyType = MoneyDisplayOrder[i];
-            int _value = GetMoneyValue(_moneyType);
+            long _value = GetMoneyValue(_moneyType);
 
             if (MoneyType.Coin == _moneyType || 0 < _value)
                 moneyVisibleOnce[(int)_moneyType] = true;
@@ -201,7 +201,7 @@ public class UIView_Tent : UIView
         }
     }
 
-    private int GetMoneyValue(MoneyType _moneyType)
+    private long GetMoneyValue(MoneyType _moneyType)
     {
         if (moneyData == null)
             return 0;

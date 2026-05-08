@@ -70,17 +70,18 @@ public class AbilityHUD : MonoBehaviour
     private Vector2 flowerStackFontInitialAnchoredPosition;
     private Color fillInitialColor = Color.white;
     private int resetDrainTargetExperience;
+    private int resetTargetFlowerStack;
 
     private void Awake()
     {
         BindReferencesIfNeeded();
-        Refresh();
+        RefreshOrSchedule();
     }
 
     private void OnEnable()
     {
         BindReferencesIfNeeded();
-        Refresh();
+        RefreshOrSchedule();
     }
 
     private void OnValidate()
@@ -90,7 +91,7 @@ public class AbilityHUD : MonoBehaviour
         flowerStack = Mathf.Max(0, flowerStack);
 
         BindReferencesIfNeeded();
-        Refresh();
+        RefreshOrSchedule();
     }
 
     public void SetExperience(int _currentExperience)
@@ -104,6 +105,15 @@ public class AbilityHUD : MonoBehaviour
         maxExperience = Mathf.Max(1, _maxExperience);
         currentExperience = ClampExperience(_currentExperience);
         RefreshAbilityBar();
+    }
+
+    public void SetState(int _currentExperience, int _maxExperience, int _flowerStack)
+    {
+        StopResetExperienceEffect(true);
+        maxExperience = Mathf.Max(1, _maxExperience);
+        currentExperience = ClampExperience(_currentExperience);
+        flowerStack = Mathf.Max(0, _flowerStack);
+        Refresh();
     }
 
     public void SetExperience_Effect(int _currentExperience)
@@ -135,6 +145,14 @@ public class AbilityHUD : MonoBehaviour
 
     public void ResetExperience_Effect()
     {
+        ResetExperience_Effect(0, maxExperience, flowerStack + 1);
+    }
+
+    public void ResetExperience_Effect(int _targetExperience, int _maxExperience, int _targetFlowerStack)
+    {
+        maxExperience = Mathf.Max(1, _maxExperience);
+        resetDrainTargetExperience = ClampExperience(_targetExperience);
+        resetTargetFlowerStack = Mathf.Max(0, _targetFlowerStack);
         PlayResetExperienceEffect();
     }
 
@@ -181,6 +199,38 @@ public class AbilityHUD : MonoBehaviour
         RefreshFlowerStack();
     }
 
+    private void RefreshOrSchedule()
+    {
+#if UNITY_EDITOR
+        if (false == Application.isPlaying)
+        {
+            ScheduleEditorRefresh();
+            return;
+        }
+#endif
+
+        Refresh();
+    }
+
+#if UNITY_EDITOR
+    private void ScheduleEditorRefresh()
+    {
+        EditorApplication.delayCall -= DelayedEditorRefresh;
+        EditorApplication.delayCall += DelayedEditorRefresh;
+    }
+
+    private void DelayedEditorRefresh()
+    {
+        EditorApplication.delayCall -= DelayedEditorRefresh;
+
+        if (null == this || Application.isPlaying)
+            return;
+
+        BindReferencesIfNeeded();
+        Refresh();
+    }
+#endif
+
     private void RefreshAbilityBar()
     {
         if (null != fillImage)
@@ -207,12 +257,12 @@ public class AbilityHUD : MonoBehaviour
 
         if (null == fontMakerForBar)
         {
-            currentExperience = 0;
-            RefreshAbilityBar();
+            currentExperience = ClampExperience(resetDrainTargetExperience);
+            SetFlowerStack(resetTargetFlowerStack);
+            Refresh();
             return;
         }
 
-        resetDrainTargetExperience = 0;
         barFontRectTransform = fontMakerForBar.GetComponent<RectTransform>();
         if (null != barFontRectTransform)
         {
@@ -360,12 +410,14 @@ public class AbilityHUD : MonoBehaviour
 
     private void StopResetExperienceEffect(bool _restoreState)
     {
-        if (null != resetEffectSequence && resetEffectSequence.IsActive())
+        bool _wasPlaying = null != resetEffectSequence && resetEffectSequence.IsActive();
+
+        if (_wasPlaying)
             resetEffectSequence.Kill(false);
 
         resetEffectSequence = null;
 
-        if (_restoreState)
+        if (_restoreState && _wasPlaying)
             RestoreResetExperienceEffectState();
     }
 
@@ -655,8 +707,14 @@ public class AbilityHUD : MonoBehaviour
 
     private FlowerVisual AddFlowerStackFromReset()
     {
-        int _newFlowerIndex = flowerStack;
-        SetFlowerStack(flowerStack + 1);
+        int _previousFlowerStack = flowerStack;
+        int _targetFlowerStack = Mathf.Max(0, resetTargetFlowerStack);
+        SetFlowerStack(_targetFlowerStack);
+
+        if (_targetFlowerStack <= _previousFlowerStack)
+            return null;
+
+        int _newFlowerIndex = _targetFlowerStack - 1;
         CollectFlowerObjectLists();
 
         for (int i = 0; i < spawnedFlowerObjects.Count; i++)
