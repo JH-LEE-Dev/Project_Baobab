@@ -4,7 +4,6 @@ using System;
 public class ShopNPC : MonoBehaviour, IShopNPC
 {
     public event Action ShopMoneyChangedEvent;
-    public event Action FirstTimeEarnMoneyEvent;
     public event Action<bool> InteractStateEvent;
     public event Action<int> EarnMoneyEvent;
 

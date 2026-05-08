@@ -7,6 +7,6 @@ public interface IInventory
     IReadOnlyList<IInventorySlot> inventorySlots { get; }
     int currentSlotCnt { get; }
     Transform GetTransform();
-    int money { get; }
+    long money { get; }
     int carrot { get; }
 }

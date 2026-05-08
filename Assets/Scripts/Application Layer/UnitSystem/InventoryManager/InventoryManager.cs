@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -13,7 +12,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
 
-    private int money = 10000;
+    private long money = 10000;
     private int carrot = 10000;
 
     // 타입별 아이템 데이터 풀링 (GC 최적화)
@@ -21,13 +20,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
 
-    int IInventory.money => money;
+    long IInventory.money => money;
 
     int IInventory.carrot => carrot;
 
     public int currentSlotCnt => currentSlotCount;
 
-    int IMoneyData.money => money;
+    long IMoneyData.money => money;
 
     int IMoneyData.carrot => carrot;
 
@@ -257,7 +256,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return carrot;
     }
 
-    public int GetCurrentMoney()
+    public long GetCurrentMoney()
     {
         return money;
     }

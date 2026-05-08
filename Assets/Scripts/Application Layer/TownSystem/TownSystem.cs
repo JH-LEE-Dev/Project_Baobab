@@ -71,9 +71,6 @@ public class TownSystem : MonoBehaviour
         tentManager.TentInteractEvent -= TentInteract;
         tentManager.TentInteractEvent += TentInteract;
 
-        logProcessingManager.FirstTimeEarnMoneyEvent -= FirstTimeEarnMoney;
-        logProcessingManager.FirstTimeEarnMoneyEvent += FirstTimeEarnMoney;
-
         logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
         logProcessingManager.LogContainerSpecChangedEvent += logContainerSpecChanged;
     }
@@ -85,7 +82,6 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.InteractStateChangedEvent -= LogContainerInteractStateChanged;
         logProcessingManager.EarnMoneyEvent -= EarnMoney;
         tentManager.TentInteractEvent -= TentInteract;
-        logProcessingManager.FirstTimeEarnMoneyEvent -= FirstTimeEarnMoney;
         logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
     }
 
@@ -133,11 +129,6 @@ public class TownSystem : MonoBehaviour
     {
         inputManager.Pause(_bInteract);
         signalHub.Publish(new TentInteractSignal(_bInteract));
-    }
-
-    private void FirstTimeEarnMoney()
-    {
-        signalHub.Publish(new FirstTimeEarnMoneySignal());
     }
 
     private void DungeonSelected(DungeonSelectedSignal dungeonSelectedSignal)
