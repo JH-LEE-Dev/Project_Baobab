@@ -311,6 +311,7 @@ MonoBehaviour:
   backwardDuration: 0.4
   backwardDelay: 0.2
   backwardEase: 18
+  resetOnValidateInPlayMode: 1
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: -24}
@@ -534,6 +535,7 @@ MonoBehaviour:
   backwardDuration: 0.2
   backwardDelay: 0
   backwardEase: 18
+  resetOnValidateInPlayMode: 1
   valueSettings:
     startOffset: {x: -10, y: 6}
     endOffset: {x: 6, y: 6}
@@ -719,6 +721,7 @@ MonoBehaviour:
   backwardDuration: 0.1
   backwardDelay: 0
   backwardEase: 18
+  resetOnValidateInPlayMode: 1
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 6}
@@ -817,6 +820,7 @@ MonoBehaviour:
   backwardDuration: 0.4
   backwardDelay: 0.1
   backwardEase: 18
+  resetOnValidateInPlayMode: 1
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 30}
@@ -838,7 +842,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1874562978956917509, guid: 91fb41b086325604ea63f2ba561068af, type: 3}
       propertyPath: m_Pivot.y
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1874562978956917509, guid: 91fb41b086325604ea63f2ba561068af, type: 3}
       propertyPath: m_AnchorMax.x
@@ -898,7 +902,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1874562978956917509, guid: 91fb41b086325604ea63f2ba561068af, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -15
       objectReference: {fileID: 0}
     - target: {fileID: 1874562978956917509, guid: 91fb41b086325604ea63f2ba561068af, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
