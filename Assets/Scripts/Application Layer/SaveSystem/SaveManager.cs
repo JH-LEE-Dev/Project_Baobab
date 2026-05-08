@@ -1,4 +1,7 @@
 using UnityEngine;
+using System.Security.Cryptography;
+using System.Text;
+using System.IO;
 
 public class SaveManager : MonoBehaviour
 {
@@ -10,6 +13,11 @@ public class SaveManager : MonoBehaviour
     private DensityManager densityManager;
     private InDungeonObjectManager inDungeonObjectManager;
     private TownObjectManager townObjectManager;
+
+    // // 내부 의존성 및 설정
+    // 암호화 키 (보안을 위해 실제 서비스 시에는 더 안전한 방식으로 관리 권장)
+    private readonly byte[] encryptionKey = Encoding.UTF8.GetBytes("BaobabProjectKey2026!@#$01234567"); // 32바이트 (AES-256)
+    private readonly byte[] encryptionIV = Encoding.UTF8.GetBytes("BaobabIV_2026!@#"); // 16바이트
 
     // GC Alloc 최적화를 위한 캐싱된 세이브 데이터 객체
     private GameSaveData cachedSaveData = new GameSaveData();
@@ -146,30 +154,40 @@ public class SaveManager : MonoBehaviour
             cachedSaveData.townSaveData = townObjectManager.GetSaveData();
         }
 
-        // 8. JSON 저장
-        string json = JsonUtility.ToJson(cachedSaveData, true);
-        string path = System.IO.Path.Combine(Application.persistentDataPath, "SaveData.json");
-        System.IO.File.WriteAllText(path, json);
+        // 8. JSON 직렬화 및 바이너리 암호화 저장
+        string json = JsonUtility.ToJson(cachedSaveData);
+        byte[] encryptedData = Encrypt(json);
 
-        Debug.Log($"[SaveManager] Game Data Saved to: {path} (Alloc-minimized)");
+        string path = Path.Combine(Application.persistentDataPath, "SaveData.dat");
+        File.WriteAllBytes(path, encryptedData);
+
+        Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {path} (Alloc-minimized)");
     }
 
     public bool HasSaveData()
     {
-        string path = System.IO.Path.Combine(Application.persistentDataPath, "SaveData.json");
-        return System.IO.File.Exists(path);
+        string path = Path.Combine(Application.persistentDataPath, "SaveData.dat");
+        return File.Exists(path);
     }
 
     public void LoadGameData()
     {
-        string path = System.IO.Path.Combine(Application.persistentDataPath, "SaveData.json");
-        if (!System.IO.File.Exists(path))
+        string path = Path.Combine(Application.persistentDataPath, "SaveData.dat");
+        if (!File.Exists(path))
         {
             Debug.LogWarning("[SaveManager] Save file not found.");
             return;
         }
 
-        string json = System.IO.File.ReadAllText(path);
+        byte[] encryptedData = File.ReadAllBytes(path);
+        string json = Decrypt(encryptedData);
+
+        if (string.IsNullOrEmpty(json))
+        {
+            Debug.LogError("[SaveManager] Failed to decrypt save data.");
+            return;
+        }
+
         GameSaveData saveData = JsonUtility.FromJson<GameSaveData>(json);
 
         if (saveData == null) return;
@@ -224,6 +242,61 @@ public class SaveManager : MonoBehaviour
             townObjectManager.LoadSaveData(saveData.townSaveData);
         }
 
-        Debug.Log($"[SaveManager] Game Data Loaded from: {path}");
+        Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
+    }
+
+    // // 프라이빗 암호화 로직
+
+    private byte[] Encrypt(string _plainText)
+    {
+        using (Aes aes = Aes.Create())
+        {
+            aes.Key = encryptionKey;
+            aes.IV = encryptionIV;
+
+            ICryptoTransform encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                using (CryptoStream cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                {
+                    using (StreamWriter sw = new StreamWriter(cs))
+                    {
+                        sw.Write(_plainText);
+                    }
+                    return ms.ToArray();
+                }
+            }
+        }
+    }
+
+    private string Decrypt(byte[] _cipherText)
+    {
+        try
+        {
+            using (Aes aes = Aes.Create())
+            {
+                aes.Key = encryptionKey;
+                aes.IV = encryptionIV;
+
+                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
+
+                using (MemoryStream ms = new MemoryStream(_cipherText))
+                {
+                    using (CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                    {
+                        using (StreamReader sr = new StreamReader(cs))
+                        {
+                            return sr.ReadToEnd();
+                        }
+                    }
+                }
+            }
+        }
+        catch (System.Exception _e)
+        {
+            Debug.LogError($"[SaveManager] Decryption Error: {_e.Message}");
+            return null;
+        }
     }
 }
