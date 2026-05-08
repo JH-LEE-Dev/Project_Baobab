@@ -60,6 +60,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 
     // 내부 의존성
     private Dictionary<SkillType, SkillNode> skillNodeMap;
+    [SerializeField] private int prestigeLevel = 0;
+    [SerializeField] private int skillExperience = 0;
+    private const int experienceToLevelUp = 50;
 
     /// <summary>
     /// 스킬 매니저 초기화 및 스킬 트리 구축
@@ -149,6 +152,15 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 
         // 레벨업
         node.currentLevel++;
+
+        // 경험치 증가 및 프레스티지 레벨업 처리
+        skillExperience++;
+        if (skillExperience >= experienceToLevelUp)
+        {
+            skillExperience = 0;
+            prestigeLevel++;
+            Debug.Log($"[SkillManager] 프레스티지 레벨업! 현재 레벨: {prestigeLevel}");
+        }
 
         // 스킬 적용 이벤트 발생 (등록된 모든 커맨드 발송)
         if (node.commands != null)
@@ -328,5 +340,20 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
             }
         }
         Debug.Log("[SkillManager] Skill Save Data Loaded and Applied.");
+    }
+
+    public int GetCurrentPrestigeLevel()
+    {
+        return prestigeLevel;
+    }
+
+    public int GetCurrentPrestigeExp()
+    {
+        return skillExperience;
+    }
+
+    public int GetPrestigeExpLimit()
+    {
+        return experienceToLevelUp;
     }
 }
