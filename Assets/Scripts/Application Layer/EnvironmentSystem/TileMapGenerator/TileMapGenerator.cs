@@ -26,6 +26,24 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     [Header("타일 에셋")]
     [SerializeField] private TileBase waterTile;
+    [SerializeField] private TileBase waterTile_BorderRU;
+    [SerializeField] private TileBase waterTile_BorderRD;
+    [SerializeField] private TileBase waterTile_BorderLU;
+    [SerializeField] private TileBase waterTile_BorderLD;
+    [SerializeField] private TileBase waterTile_BorderRU_RD;
+    [SerializeField] private TileBase waterTile_BorderRU_LU;
+    [SerializeField] private TileBase waterTile_BorderRU_LD;
+    [SerializeField] private TileBase waterTile_BorderRD_LU;
+    [SerializeField] private TileBase waterTile_BorderRD_LD;
+    [SerializeField] private TileBase waterTile_BorderLU_LD;
+    [SerializeField] private TileBase waterTile_BorderRU_RD_LU;
+    [SerializeField] private TileBase waterTile_BorderRU_RD_LD;
+    [SerializeField] private TileBase waterTile_BorderRU_LU_LD;
+    [SerializeField] private TileBase waterTile_BorderRD_LU_LD;
+    [SerializeField] private TileBase waterTile_BorderAll;
+
+
+
     [SerializeField] private TileBase sandTile;
     [SerializeField] private TileBase grassTile;
     [SerializeField] private TileBase mountainTile;
@@ -369,7 +387,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
             if (v < waterThreshold)
             {
-                collisionTiles[i] = waterTile;
+                collisionTiles[i] = GetWaterTile(x, y);
                 waterStencilTiles[i] = stencilTile;
             }
             else
@@ -418,6 +436,41 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         decoTilemap.SetTilesBlock(b, decoTilesToApply);
         if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, waterStencilTiles);
         if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);
+    }
+
+    private TileBase GetWaterTile(int _x, int _y)
+    {
+        int mask = 0;
+        if (IsLand(_x + 1, _y)) mask |= 1;  // RU
+        if (IsLand(_x, _y - 1)) mask |= 2;  // RD
+        if (IsLand(_x, _y + 1)) mask |= 4;  // LU
+        if (IsLand(_x - 1, _y)) mask |= 8;  // LD
+
+        switch (mask)
+        {
+            case 1: return waterTile_BorderRU;
+            case 2: return waterTile_BorderRD;
+            case 3: return waterTile_BorderRU_RD;
+            case 4: return waterTile_BorderLU;
+            case 5: return waterTile_BorderRU_LU;
+            case 6: return waterTile_BorderRD_LU;
+            case 7: return waterTile_BorderRU_RD_LU;
+            case 8: return waterTile_BorderLD;
+            case 9: return waterTile_BorderRU_LD;
+            case 10: return waterTile_BorderRD_LD;
+            case 11: return waterTile_BorderRU_RD_LD;
+            case 12: return waterTile_BorderLU_LD;
+            case 13: return waterTile_BorderRU_LU_LD;
+            case 14: return waterTile_BorderRD_LU_LD;
+            case 15: return waterTile_BorderAll;
+            default: return waterTile;
+        }
+    }
+
+    private bool IsLand(int _x, int _y)
+    {
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return false;
+        return noiseValues[_x + _y * width] >= waterThreshold;
     }
 
     private bool IsWater(int _x, int _y)

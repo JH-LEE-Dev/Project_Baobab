@@ -367,6 +367,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IsometricShadowController
   characterPointLightPrefab: {fileID: -6427753554701023476, guid: 37b8d17d1c387c441864ea3d1ed1a209, type: 3}
+  shadowAngleOffset: -26
+  useManualShadowAngle: 0
+  manualShadowAngle: 0
   dayCycleSpeed: 0.01
   minHeightScale: 0.75
   maxHeightScale: 1.5
@@ -1367,6 +1370,21 @@ MonoBehaviour:
   grassDensity: 0.575
   rockDensity: 0.3
   waterTile: {fileID: 11400000, guid: 9994dfdbe2ef6f94baa506ce450e2381, type: 2}
+  waterTile_BorderRU: {fileID: 11400000, guid: a24492d07e0885d44a678752b3f7d67e, type: 2}
+  waterTile_BorderRD: {fileID: 11400000, guid: 2089888c80809ca418f9151c902b2803, type: 2}
+  waterTile_BorderLU: {fileID: 11400000, guid: a108f0255b3ba844eb0dfc47205072e0, type: 2}
+  waterTile_BorderLD: {fileID: 11400000, guid: db7b0d82cb26e4840b594068ee1a5973, type: 2}
+  waterTile_BorderRU_RD: {fileID: 11400000, guid: f1653cffbdc3625439cacd773d858633, type: 2}
+  waterTile_BorderRU_LU: {fileID: 11400000, guid: 121de0c9beb020040a5a1bfd8ec66e8b, type: 2}
+  waterTile_BorderRU_LD: {fileID: 11400000, guid: 83d912eb45c3de143a8f2e75a7294044, type: 2}
+  waterTile_BorderRD_LU: {fileID: 11400000, guid: 2de251fa595e0cf48b086dffc4d3012e, type: 2}
+  waterTile_BorderRD_LD: {fileID: 11400000, guid: b101d3d62c458644192261298b5c100f, type: 2}
+  waterTile_BorderLU_LD: {fileID: 11400000, guid: f07970a1248f0fd4fb10b53f70202894, type: 2}
+  waterTile_BorderRU_RD_LU: {fileID: 11400000, guid: 39ea5f2c5954c964d8b898f3c7e62050, type: 2}
+  waterTile_BorderRU_RD_LD: {fileID: 11400000, guid: 3a03c2a1a66035b4ba82d7dd34b4c970, type: 2}
+  waterTile_BorderRU_LU_LD: {fileID: 11400000, guid: e14f24facd85e8443bc259655b5ee9bd, type: 2}
+  waterTile_BorderRD_LU_LD: {fileID: 11400000, guid: b682d462492a8b74eafbcd0b7d7f478d, type: 2}
+  waterTile_BorderAll: {fileID: 11400000, guid: 332dd6af18631a94abc1a086e22e1383, type: 2}
   sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
   grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}
   mountainTile: {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
