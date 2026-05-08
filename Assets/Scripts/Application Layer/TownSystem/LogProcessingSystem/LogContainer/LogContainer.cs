@@ -27,7 +27,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => containerSlots;
 
-    public int money => 0;
+    public long money => 0;
 
     public int carrot => 0;
 

@@ -85,7 +85,10 @@ public class InputReader
     public void OnMove(InputAction.CallbackContext context)
     {
         if (bPause)
+        {
+            MoveEvent?.Invoke(Vector2.zero);
             return;
+        }
 
         Vector2 move = context.ReadValue<Vector2>();
 

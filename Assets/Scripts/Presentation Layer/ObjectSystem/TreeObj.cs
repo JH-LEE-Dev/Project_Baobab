@@ -12,10 +12,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     [SerializeField] private float collisionRadius = 0.29f;
     [SerializeField] private Vector2 collisionOffset = Vector2.zero; // 충돌 오프셋 필드 추가
 
-
     private IEnvironmentProvider environmentProvider;
     private EHealthComponent healthComponent;
-    private Collider2D treeCollider;
+    private SaplingVEComponent saplingVEComponent;
 
     public TreeData treeData { get; private set; }
     public IHealthComponent health => healthComponent;
@@ -55,8 +54,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         healthComponent = GetComponent<EHealthComponent>();
         healthComponent.Initialize();
 
-        treeCollider = GetComponent<Collider2D>();
-        if (treeCollider != null) treeCollider.enabled = false; // 물리 엔진에서 제외
+        saplingVEComponent = GetComponentInChildren<SaplingVEComponent>();
+        if (saplingVEComponent != null)
+        {
+            saplingVEComponent.Initialize(treeVisualComponent.transform);
+        }
 
         if (treeVisualComponent != null)
         {
@@ -99,7 +101,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (bIsSapling && treeVisualComponent != null)
         {
+            treeVisualComponent.DeActivateOnWaterObject();
             treeVisualComponent.ApplySaplingVisual(treeData);
+            saplingVEComponent.AnimateSaplingVE(true);
         }
     }
 
@@ -142,7 +146,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
                 bIsSapling = false;
                 if (treeVisualComponent != null)
                 {
+                    treeVisualComponent.ActivateOnWaterObject();
                     treeVisualComponent.ApplyVisual(treeData);
+                    saplingVEComponent.AnimateSaplingVE(false);
                 }
             }
         }

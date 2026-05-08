@@ -235,7 +235,27 @@ MonoBehaviour:
   logProbDatas:
   - treeGrade: 1
     probDatas:
+    - type: 2
+      probability: 100
+  - treeGrade: 2
+    probDatas:
+    - type: 2
+      probability: 20
     - type: 3
+      probability: 80
+  - treeGrade: 3
+    probDatas:
+    - type: 4
+      probability: 80
+    - type: 3
+      probability: 15
+    - type: 2
+      probability: 5
+  - treeGrade: 4
+    probDatas:
+    - type: 5
+      probability: 30
+    - type: 2
       probability: 100
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
@@ -347,6 +367,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::IsometricShadowController
   characterPointLightPrefab: {fileID: -6427753554701023476, guid: 37b8d17d1c387c441864ea3d1ed1a209, type: 3}
+  shadowAngleOffset: -26
+  useManualShadowAngle: 0
+  manualShadowAngle: 0
   dayCycleSpeed: 0.01
   minHeightScale: 0.75
   maxHeightScale: 1.5
@@ -450,6 +473,7 @@ Transform:
   m_Children:
   - {fileID: 7610549331774678628}
   - {fileID: 5520247588731712875}
+  - {fileID: 4224764067588888249}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7398738596507401122
@@ -1188,6 +1212,57 @@ MonoBehaviour:
   cullingDistance: 25
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
   treeGrowTime: 10
+--- !u!1 &6997225591927856054
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4224764067588888249}
+  - component: {fileID: 3891997474366743594}
+  m_Layer: 0
+  m_Name: HiddenmapManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4224764067588888249
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6997225591927856054}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6142116780314600098}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3891997474366743594
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6997225591927856054}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3ca4e7ed89708c4188a86b68a5df0fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HiddenmapManager
+  hiddenMapGradeProbDatas:
+  - grade: 2
+    probability: 65
+  - grade: 3
+    probability: 30
+  - grade: 4
+    probability: 5
 --- !u!1 &7224331137657030612
 GameObject:
   m_ObjectHideFlags: 0
@@ -1295,6 +1370,21 @@ MonoBehaviour:
   grassDensity: 0.575
   rockDensity: 0.3
   waterTile: {fileID: 11400000, guid: 9994dfdbe2ef6f94baa506ce450e2381, type: 2}
+  waterTile_BorderRU: {fileID: 11400000, guid: a24492d07e0885d44a678752b3f7d67e, type: 2}
+  waterTile_BorderRD: {fileID: 11400000, guid: 2089888c80809ca418f9151c902b2803, type: 2}
+  waterTile_BorderLU: {fileID: 11400000, guid: a108f0255b3ba844eb0dfc47205072e0, type: 2}
+  waterTile_BorderLD: {fileID: 11400000, guid: db7b0d82cb26e4840b594068ee1a5973, type: 2}
+  waterTile_BorderRU_RD: {fileID: 11400000, guid: f1653cffbdc3625439cacd773d858633, type: 2}
+  waterTile_BorderRU_LU: {fileID: 11400000, guid: 121de0c9beb020040a5a1bfd8ec66e8b, type: 2}
+  waterTile_BorderRU_LD: {fileID: 11400000, guid: 83d912eb45c3de143a8f2e75a7294044, type: 2}
+  waterTile_BorderRD_LU: {fileID: 11400000, guid: 2de251fa595e0cf48b086dffc4d3012e, type: 2}
+  waterTile_BorderRD_LD: {fileID: 11400000, guid: b101d3d62c458644192261298b5c100f, type: 2}
+  waterTile_BorderLU_LD: {fileID: 11400000, guid: f07970a1248f0fd4fb10b53f70202894, type: 2}
+  waterTile_BorderRU_RD_LU: {fileID: 11400000, guid: 39ea5f2c5954c964d8b898f3c7e62050, type: 2}
+  waterTile_BorderRU_RD_LD: {fileID: 11400000, guid: 3a03c2a1a66035b4ba82d7dd34b4c970, type: 2}
+  waterTile_BorderRU_LU_LD: {fileID: 11400000, guid: e14f24facd85e8443bc259655b5ee9bd, type: 2}
+  waterTile_BorderRD_LU_LD: {fileID: 11400000, guid: b682d462492a8b74eafbcd0b7d7f478d, type: 2}
+  waterTile_BorderAll: {fileID: 11400000, guid: 332dd6af18631a94abc1a086e22e1383, type: 2}
   sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
   grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}
   mountainTile: {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
@@ -1623,3 +1713,26 @@ MonoBehaviour:
   cullingDistance: 25
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
+  hiddenMapTreeGradeDatas:
+  - grade: 2
+    probability:
+    - treeGrade: 1
+      probability: 80
+    - treeGrade: 2
+      probability: 20
+  - grade: 3
+    probability:
+    - treeGrade: 1
+      probability: 50
+    - treeGrade: 2
+      probability: 30
+    - treeGrade: 3
+      probability: 20
+  - grade: 4
+    probability:
+    - treeGrade: 2
+      probability: 70
+    - treeGrade: 3
+      probability: 25
+    - treeGrade: 4
+      probability: 5

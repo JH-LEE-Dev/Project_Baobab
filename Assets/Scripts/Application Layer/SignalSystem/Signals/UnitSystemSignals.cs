@@ -37,8 +37,6 @@ public struct CharacterEarnMoneySignal
     }
 }
 
-public struct FirstTimeEarnMoneySignal { }
-
 public struct WeaponModeChangedSignal
 {
     public WeaponMode weaponMode;

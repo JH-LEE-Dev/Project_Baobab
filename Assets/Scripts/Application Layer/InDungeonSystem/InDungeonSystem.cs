@@ -6,6 +6,7 @@ public class InDungeonSystem : MonoBehaviour
     public InDungeonObjectManager inDungeonObjectManager { get; private set; }
     public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
     private IEnvironmentProvider environmentProvider;
+    private HiddenmapManager hiddenmapManager;
 
 
     [Header("Dungeon Data Base")]
@@ -24,6 +25,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
+
+        hiddenmapManager = GetComponentInChildren<HiddenmapManager>();
+        hiddenmapManager.Initialize();
 
         BindEvents();
         SubscribeSignals();
@@ -88,14 +92,12 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Subscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.Subscribe<GoHomeButtonClickedSignal>(GoHome);
-        signalHub.Subscribe<FirstTimeEarnMoneySignal>(FirstTimeEarnMoney);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.UnSubscribe<GoHomeButtonClickedSignal>(GoHome);
-        signalHub.UnSubscribe<FirstTimeEarnMoneySignal>(FirstTimeEarnMoney);
     }
 
     private void PortalActivated()
@@ -129,11 +131,6 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new GoToHomeSignal());
     }
 
-    private void FirstTimeEarnMoney(FirstTimeEarnMoneySignal firstTimeEarnMoneySignal)
-    {
-        inDungeonObjectManager.CreateWelcomeNoobLoot();
-    }
-
     private void CarrotItemAcquired(CarrotItem _carrotItem)
     {
         signalHub.Publish(new CarrotItemAcquiredSignal(_carrotItem.amount));
@@ -158,5 +155,15 @@ public class InDungeonSystem : MonoBehaviour
     private void AnimalIsDead(Animal _animal)
     {
         signalHub.Publish(new AnimalIsDeadSignal(_animal.animalType));
+    }
+
+    public void SetHiddenMapGrade()
+    {
+        inDungeonObjectManager.SetHiddenMapGrade(hiddenmapManager.CalcHiddenMapGrade());
+    }
+
+    public void ResetHiddenMapGrade()
+    {
+        inDungeonObjectManager.SetHiddenMapGrade(HiddenMapGrade.None);
     }
 }

@@ -12,46 +12,37 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //외부 의존성
         [Header("UI Elements")]
         [SerializeField] private HUD_MapSubRegion[] subRegions; // 최대 3개의 지역 항목
-        [SerializeField] private RectTransform selectorCursor; // 선택 표시 커서
+        [SerializeField] private UISelectionCursor selectorCursor; // 선택 표시 커서
 
         // //내부 의존성
+        private Action onSelectionChanged;
         private int currentSelectedNumber = -1;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        /// <summary>
-        /// 서브 셀렉터의 일회성 설정을 수행합니다.
-        /// </summary>
-        public void Initialize()
+        public void Initialize(Action _onSelectionChanged = null)
         {
             if (true == isInitialized)
                 return;
+
+            if (null != _onSelectionChanged)
+                onSelectionChanged = _onSelectionChanged;
 
             if (null == subRegions)
                 return;
 
             for (int _i = 0; _i < subRegions.Length; _i++)
-            {
-                if (null == subRegions[_i])
-                    continue;
-
-                // 1부터 시작하는 고정 번호를 부여하고 콜백 주입
-                subRegions[_i].Setup(_i + 1, OnRegionHovered, OnRegionSelected);
-                subRegions[_i].gameObject.SetActive(false);
-            }
+                if (null != subRegions[_i])
+                    subRegions[_i].gameObject.SetActive(false);
 
             if (null != selectorCursor)
-                selectorCursor.gameObject.SetActive(false);
+                selectorCursor.Initialize(selectorCursor.CursorSize);
 
             isInitialized = true;
         }
 
-        /// <summary>
-        /// 메인 지역 전환 시 호출하여 표시할 서브 지역 개수를 갱신합니다.
-        /// </summary>
-        /// <param name="_activeCount">표시할 지역 개수 (1~3)</param>
-        public void SetSubRegionCount(int _activeCount)
+        public void SetSubRegions(System.Collections.Generic.List<ForestEnvironmentInfo> _forestDatas)
         {
             if (false == isInitialized)
                 Initialize();
@@ -60,16 +51,64 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             currentSelectedNumber = -1;
             
             if (null != selectorCursor)
-                selectorCursor.gameObject.SetActive(false);
+                selectorCursor.HideImmediately();
+
+            int _dataCount = _forestDatas.Count;
 
             for (int _i = 0; _i < subRegions.Length; _i++)
             {
-                if (null == subRegions[_i])
-                    continue;
-
-                // 요청된 개수만큼만 활성화하여 UI 축소/확장 연출
-                subRegions[_i].gameObject.SetActive(_i < _activeCount);
+                if (null != subRegions[_i])
+                    if (_i < _dataCount)
+                    {
+                        subRegions[_i].gameObject.SetActive(true);
+                        subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHoverEntered, OnRegionHoverExited, OnRegionSelected);
+                        subRegions[_i].SetProgress(_forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge);
+                    }
+                    else
+                        subRegions[_i].gameObject.SetActive(false);
             }
+        }
+
+        public void UpdateHiddenGauges(System.Collections.Generic.List<ForestEnvironmentInfo> _forestDatas)
+        {
+            int _dataCount = _forestDatas.Count;
+
+            for (int _i = 0; _i < subRegions.Length; _i++)
+            {
+                if (null != subRegions[_i])
+                    if (_i < _dataCount)
+                    {
+                        float _ratio = _forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge;
+                        subRegions[_i].SetProgress(_ratio);
+                    }
+            }
+        }
+
+        public ForestType GetSelectedForestType()
+        {
+            if (-1 == currentSelectedNumber || null == subRegions)
+                return ForestType.None;
+
+            int _index = currentSelectedNumber - 1;
+            if (0 > _index || _index >= subRegions.Length)
+                return ForestType.None;
+
+            return subRegions[_index].GetForestType();
+        }
+
+        /// <summary>
+        /// 현재 선택된 지역의 환경 정보를 반환합니다.
+        /// </summary>
+        public ForestEnvironmentInfo GetSelectedForestInfo()
+        {
+            if (-1 == currentSelectedNumber || null == subRegions)
+                return default;
+
+            int _index = currentSelectedNumber - 1;
+            if (0 > _index || _index >= subRegions.Length)
+                return default;
+
+            return subRegions[_index].GetForestInfo();
         }
 
         /// <summary>
@@ -88,35 +127,85 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == subRegions)
                 return;
 
-            if (_index < 0 || _index >= subRegions.Length)
+            if (0 > _index || _index >= subRegions.Length)
                 return;
 
             HUD_MapSubRegion _target = subRegions[_index];
             if (null == _target || false == _target.gameObject.activeSelf)
                 return;
 
-            OnRegionHovered(_target.GetRectTransform());
             OnRegionSelected(_target.GetNumber());
+        }
+
+        /// <summary>
+        /// 서브 셀렉터의 표시 여부를 설정합니다.
+        /// </summary>
+        public void SetVisibility(bool _isVisible)
+        {
+            if (this.gameObject.activeSelf == _isVisible)
+                return;
+
+            this.gameObject.SetActive(_isVisible);
+
+            if (null != selectorCursor)
+            {
+                if (false == _isVisible)
+                    selectorCursor.HideImmediately();
+            }
+        }
+
+        /// <summary>
+        /// 현재 선택된 내역을 모두 지우고 초기화합니다.
+        /// </summary>
+        public void ClearSelection()
+        {
+            currentSelectedNumber = -1;
+
+            if (null != selectorCursor)
+                selectorCursor.HideImmediately();
+
+            for (int _i = 0; _i < subRegions.Length; _i++)
+            {
+                if (null != subRegions[_i])
+                {
+                    subRegions[_i].SetSelect(false);
+                }
+            }
+
+            onSelectionChanged?.Invoke();
         }
 
         // //내부 로직 (콜백 메서드)
 
-        private void OnRegionHovered(RectTransform _targetRect)
+        private void OnRegionHoverEntered(RectTransform _targetRect)
         {
             if (null == selectorCursor || null == _targetRect)
                 return;
 
-            // 특정 구역이 골라지면(마우스 오버 등) 커서 활성화
-            if (false == selectorCursor.gameObject.activeSelf)
-                selectorCursor.gameObject.SetActive(true);
+            selectorCursor.Show(_targetRect);
+        }
 
-            // 커서를 해당 항목의 위치로 즉시 이동
-            selectorCursor.position = _targetRect.position;
+        private void OnRegionHoverExited()
+        {
+            if (null == selectorCursor)
+                return;
+
+            selectorCursor.Hide();
         }
 
         private void OnRegionSelected(int _number)
         {
             currentSelectedNumber = _number;
+
+            for (int _i = 0; _i < subRegions.Length; _i++)
+            {
+                if (null != subRegions[_i])
+                {
+                    subRegions[_i].SetSelect(subRegions[_i].GetNumber() == _number);
+                }
+            }
+
+            onSelectionChanged?.Invoke();
         }
             
         // //유니티 이벤트 함수

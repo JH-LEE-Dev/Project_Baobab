@@ -98,6 +98,11 @@ public class GameInstaller : MonoBehaviour
 
         if (_sceneChangeData.currentScene == SceneType.DungeonScene)
         {
+            if (environmentSystem.IsCurrentlyHiddenMap(_sceneChangeData.mapType, _sceneChangeData.forestType))
+                inDungeonSystem.SetHiddenMapGrade();
+            else
+                inDungeonSystem.ResetHiddenMapGrade();
+
             environmentSystem.SetupForMapType(_sceneChangeData.forestType, _sceneChangeData.mapType);
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
             gameplayUIInstaller.SetupCanvas();

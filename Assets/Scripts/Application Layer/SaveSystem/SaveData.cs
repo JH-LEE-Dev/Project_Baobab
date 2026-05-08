@@ -120,7 +120,7 @@ public struct InventorySlotSaveData
 [Serializable]
 public struct InventorySaveData
 {
-    public int money;
+    public long money;
     public int carrot;
     public int currentSlotCount;
     public List<InventorySlotSaveData> slots;
