@@ -86,6 +86,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     public GameObject feetShadowObject;
 
+    public bool bActivated = true;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -128,6 +130,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         sr.enabled = false;
         feetShadowObject.SetActive(false);
         shadowAnim.enabled = false;
+        bActivated = false;
 
         // 동적 객체에서 제거 (위치 인자 없이 안전하게 제거)
         CollisionSystem.Instance?.Unregister(this);
@@ -138,6 +141,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         shadowSR.enabled = true;
         sr.enabled = true;
         shadowAnim.enabled = true;
+        bActivated = true;
+
         // 동적 객체(동물)로 등록
         CollisionSystem.Instance?.Register(this, false);
     }

@@ -21,7 +21,8 @@ public class AS_IdleState : AnimalState
         nextMoveTime = Random.Range(2f, 5f); // 2~5초 사이 무작위 대기
         isFleeing = false;
 
-        animal.feetShadowObject.SetActive(true);
+        if (animal.bActivated == true)
+            animal.feetShadowObject.SetActive(true);
     }
 
     public override void Exit()
