@@ -225,6 +225,26 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 hiddenGauge = kvp.Value.hiddenGauge
             });
         }
+
+        // bCanAccess 정보 수집
+        _data.mapAccessDatas.Clear();
+        if (densityDataBase != null && densityDataBase.densityDatas != null)
+        {
+            for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
+            {
+                var mapData = densityDataBase.densityDatas[i];
+                for (int j = 0; j < mapData.densityData.Count; j++)
+                {
+                    var density = mapData.densityData[j];
+                    _data.mapAccessDatas.Add(new MapAccessSaveData
+                    {
+                        mapType = mapData.mapType,
+                        forestType = density.forestType,
+                        bCanAccess = density.bCanAccess
+                    });
+                }
+            }
+        }
     }
 
     public void LoadSaveData(EnvironmentSaveData _data)
@@ -243,6 +263,20 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                     forestType = saved.forestType,
                     hiddenGauge = saved.hiddenGauge
                 };
+            }
+        }
+
+        // bCanAccess 정보 복구
+        if (_data.mapAccessDatas != null)
+        {
+            for (int i = 0; i < _data.mapAccessDatas.Count; i++)
+            {
+                var saved = _data.mapAccessDatas[i];
+                var density = densityDataBase.Get(saved.mapType, saved.forestType);
+                if (density != null)
+                {
+                    density.bCanAccess = saved.bCanAccess;
+                }
             }
         }
 
@@ -277,7 +311,8 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                     spawnTreeTypes = density.spawnTreeTypes,
                     spawnAnimalTypes = density.spawnAnimalTypes,
                     limitHiddenGauge = density.limitHiddenGauge,
-                    currentHiddenGauge = 0f
+                    currentHiddenGauge = 0f,
+                    bCanAccess = density.bCanAccess
                 };
                 mapInfo.forestDatas.Add(forestInfo);
             }
@@ -308,6 +343,13 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 else
                 {
                     forestInfo.currentHiddenGauge = 0f;
+                }
+
+                // 최신 bCanAccess 정보 업데이트
+                var originalData = densityDataBase.Get(mapInfo.mapType, forestInfo.forestType);
+                if (originalData != null)
+                {
+                    forestInfo.bCanAccess = originalData.bCanAccess;
                 }
 
                 // 구조체 업데이트 (Write back to list)
@@ -392,5 +434,32 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         }
 
         return false;
+    }
+
+    public void PrestigeLevelIncreased(int _level)
+    {
+        if (densityDataBase == null || densityDataBase.densityDatas == null) return;
+
+        int globalForestIndex = 0;
+
+        // 모든 MapType을 순차적으로 순회
+        for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
+        {
+            var mapData = densityDataBase.densityDatas[i];
+            if (mapData.densityData == null) continue;
+
+            // 각 맵의 ForestType을 순차적으로 순회
+            for (int j = 0; j < mapData.densityData.Count; j++)
+            {
+                // 첫 번째 맵의 첫 번째 포레스트(globalForestIndex == 0)는 이미 해금되어 있음
+                // globalForestIndex가 1 이상이고 현재 명성 레벨(_level) 이하인 경우 해금
+                if (globalForestIndex > 0 && globalForestIndex <= _level)
+                {
+                    mapData.densityData[j].bCanAccess = true;
+                }
+                
+                globalForestIndex++;
+            }
+        }
     }
 }

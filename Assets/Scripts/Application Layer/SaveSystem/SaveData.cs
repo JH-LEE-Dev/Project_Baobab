@@ -56,6 +56,20 @@ public struct SkillSaveData
 }
 
 [Serializable]
+public struct SkillTreeSaveData
+{
+    public int prestigeLevel;
+    public int skillExperience;
+    public List<SkillSaveData> skillSaveDatas;
+
+    public void Initialize()
+    {
+        if (skillSaveDatas == null) skillSaveDatas = new List<SkillSaveData>(30);
+        else skillSaveDatas.Clear();
+    }
+}
+
+[Serializable]
 public struct ItemSaveData
 {
     public ItemType itemType;
@@ -170,16 +184,28 @@ public struct MapHiddenGaugeSaveData
 }
 
 [Serializable]
+public struct MapAccessSaveData
+{
+    public MapType mapType;
+    public ForestType forestType;
+    public bool bCanAccess;
+}
+
+[Serializable]
 public struct EnvironmentSaveData
 {
     public float treeDensityMultiplier;
     public float rabbitDensityMultiplier;
     public List<MapHiddenGaugeSaveData> hiddenGaugeDatas;
+    public List<MapAccessSaveData> mapAccessDatas;
 
     public void Initialize()
     {
         if (hiddenGaugeDatas == null) hiddenGaugeDatas = new List<MapHiddenGaugeSaveData>(8);
         else hiddenGaugeDatas.Clear();
+
+        if (mapAccessDatas == null) mapAccessDatas = new List<MapAccessSaveData>(8);
+        else mapAccessDatas.Clear();
     }
 }
 
@@ -205,7 +231,7 @@ public struct LogDropProbSaveData
 public class GameSaveData
 {
     public CharacterStatSaveData characterStatData;
-    public List<SkillSaveData> skillSaveDataList = new List<SkillSaveData>(30);
+    public SkillTreeSaveData skillTreeSaveData;
     public InventorySaveData inventorySaveData;
     public LogProcessingSaveData logProcessingSaveData;
     public EnvironmentSaveData environmentSaveData;
@@ -215,7 +241,7 @@ public class GameSaveData
 
     public void Clear()
     {
-        skillSaveDataList.Clear();
+        skillTreeSaveData.Initialize();
         inventorySaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
         logProcessingSaveData.Initialize();
         if (logDropProbSaveData.logProbDatas != null) logDropProbSaveData.logProbDatas.Clear();

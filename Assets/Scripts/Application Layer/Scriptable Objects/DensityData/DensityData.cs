@@ -15,6 +15,7 @@ public class DensityData
     public float animalRegenMinTime;
     public float animalRegenMaxTime;
     public float limitHiddenGauge;
+    public bool bCanAccess;
 }
 
 [System.Serializable]
@@ -69,6 +70,7 @@ public struct ForestEnvironmentInfo
     public List<AnimalDensityData> spawnAnimalTypes;
     public float limitHiddenGauge;
     public float currentHiddenGauge;
+    public bool bCanAccess;
 }
 
 [System.Serializable]

@@ -83,6 +83,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
         signalHub.Subscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.Subscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
     }
 
     private void UnSubscribeSignals()
@@ -91,6 +92,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
         signalHub.UnSubscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.UnSubscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
     }
 
     private void BindEvents()
@@ -160,5 +162,10 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     public bool IsCurrentlyHiddenMap(MapType _mapType, ForestType _forestType)
     {
         return densityManager.IsCurrentlyHiddenMap(_mapType, _forestType);
+    }
+
+    private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _prestigeLevelIncreasedSignal)
+    {
+
     }
 }

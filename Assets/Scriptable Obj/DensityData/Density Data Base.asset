@@ -31,6 +31,7 @@ MonoBehaviour:
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
       limitHiddenGauge: 100
+      bCanAccess: 1
     - forestType: 3
       spawnTreeTypes:
       - treeType: 1
@@ -51,6 +52,7 @@ MonoBehaviour:
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
       limitHiddenGauge: 150
+      bCanAccess: 0
     - forestType: 4
       spawnTreeTypes:
       - treeType: 2
@@ -73,5 +75,6 @@ MonoBehaviour:
       animalRegenMinTime: 10
       animalRegenMaxTime: 15
       limitHiddenGauge: 250
+      bCanAccess: 0
   - mapType: 3
     densityData: []
