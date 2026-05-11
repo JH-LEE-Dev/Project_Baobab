@@ -14,6 +14,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     private long money = 10000;
     private int carrot = 10000;
+    [SerializeField] private int sunEssence;
+    [SerializeField] private int moonEssence;
+    [SerializeField] private int lightningEssence;
 
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
@@ -29,6 +32,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     long IMoneyData.money => money;
 
     int IMoneyData.carrot => carrot;
+
+    int IMoneyData.sunEssence => sunEssence;
+
+    int IMoneyData.moonEssence => moonEssence;
+
+    int IMoneyData.lightningEssence => lightningEssence;
 
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
