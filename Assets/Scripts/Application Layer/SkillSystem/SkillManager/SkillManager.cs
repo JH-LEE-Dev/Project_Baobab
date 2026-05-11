@@ -49,8 +49,7 @@ public struct SkillDispatchInfo
 
 public class SkillManager : MonoBehaviour, ISkillSystemProvider
 {
-    private const bool EnablePrototypeAutoPass = false;
-
+    public event Action<int> PrestigeLevelIncreasedEvent;
     public Action<SkillDispatchInfo> DispatchSkillsEvent;
 
     // 외부 의존성
@@ -159,7 +158,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         {
             skillExperience = 0;
             prestigeLevel++;
-            Debug.Log($"[SkillManager] 프레스티지 레벨업! 현재 레벨: {prestigeLevel}");
+            PrestigeLevelIncreasedEvent?.Invoke(prestigeLevel);
         }
 
         // 스킬 적용 이벤트 발생 (등록된 모든 커맨드 발송)
@@ -295,16 +294,18 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     /// <summary>
     /// 세이브를 위해 현재 습득한(레벨 > 0) 모든 스킬 데이터를 리스트에 채워줌 (GC Alloc 최소화)
     /// </summary>
-    public void PopulateSkillSaveData(List<SkillSaveData> _saveDataList)
+    public void PopulateSkillSaveData(ref SkillTreeSaveData _saveData)
     {
-        _saveDataList.Clear();
+        _saveData.prestigeLevel = prestigeLevel;
+        _saveData.skillExperience = skillExperience;
+        _saveData.skillSaveDatas.Clear();
 
         foreach (var pair in skillNodeMap)
         {
             SkillNode node = pair.Value;
             if (node.currentLevel > 0)
             {
-                _saveDataList.Add(new SkillSaveData
+                _saveData.skillSaveDatas.Add(new SkillSaveData
                 {
                     skillType = node.skillType,
                     currentLevel = node.currentLevel
@@ -316,11 +317,14 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     /// <summary>
     /// 세이브된 데이터를 불러와서 스킬 상태를 복구하고 효과를 적용함
     /// </summary>
-    public void LoadSaveData(List<SkillSaveData> _dataList)
+    public void LoadSaveData(SkillTreeSaveData _data)
     {
-        if (_dataList == null) return;
+        prestigeLevel = _data.prestigeLevel;
+        skillExperience = _data.skillExperience;
 
-        foreach (var data in _dataList)
+        if (_data.skillSaveDatas == null) return;
+
+        foreach (var data in _data.skillSaveDatas)
         {
             if (skillNodeMap.TryGetValue(data.skillType, out SkillNode node))
             {

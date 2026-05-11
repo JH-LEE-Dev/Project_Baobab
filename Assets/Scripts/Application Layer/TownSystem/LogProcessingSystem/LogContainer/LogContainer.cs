@@ -14,6 +14,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private InputManager inputManager;
     private IInventory interactingContainer;
+    private Transform charTransform;
+    private LogItemPoolingManager logItemPoolManager;
+    [SerializeField] private Transform inputTransform;
+
 
     //외부 의존성
 
@@ -21,9 +25,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> containerSlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
-    [SerializeField] private float transferInterval = 1f;
+    [SerializeField] private float transferInterval = 2f;
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
+
+    private Transform visualTransform;
+    private float bounceTime = 1f;
+    private const float BOUNCE_DURATION = 0.4f;
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => containerSlots;
 
@@ -48,10 +56,22 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private bool bStop = false;
 
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
-    
-    public void Initialize(InputManager _inputManager)
+
+    // // 시각적 효과 (비행 중인 아이템 관리)
+    private List<LogItem> flyingItems = new List<LogItem>(32);
+    private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
+    private const float FLY_INTERVAL = 0.075f;
+    private LogItemData arrivalDataBuffer = new LogItemData();
+
+    public void Initialize(InputManager _inputManager, LogItemPoolingManager logItemPoolingManager)
     {
         inputManager = _inputManager;
+        logItemPoolManager = logItemPoolingManager;
+
+        // 시각적 효과를 위한 트랜스폼 캐싱
+        var sr = GetComponentInChildren<SpriteRenderer>();
+        if (sr != null) visualTransform = sr.transform;
+
         transferWait = new WaitForSeconds(transferInterval);
         lastTransferTime = -transferInterval;
         lastOutputTime = -transferInterval; // 초기화 시 즉시 실행 가능하도록 설정
@@ -89,6 +109,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         BindEvents();
     }
 
+    public void SetCharTransform(Transform _transform)
+    {
+        charTransform = _transform;
+    }
+
     public void Release()
     {
         ReleaseEvents();
@@ -99,42 +124,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         interactingContainer = _inventory;
     }
 
-    public void ItemAcquired(Item _item)
-    {
-        if (_item == null) return;
-
-        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (containerSlots[i].itemData != null &&
-                containerSlots[i].totalCount < maxItemsPerSlot &&
-                IsSameItem(_item, (ItemData)containerSlots[i].itemData))
-            {
-                containerSlots[i].AddCount(_item);
-                ContainerUpdatedEvent?.Invoke();
-                return;
-            }
-        }
-
-        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (containerSlots[i].itemData == null)
-            {
-                ItemData newData = GetFromPool(_item.itemType);
-                if (newData != null)
-                {
-                    newData.CopyFrom(_item);
-                    containerSlots[i].Setup(newData, 1);
-                }
-                ContainerUpdatedEvent?.Invoke();
-                return;
-            }
-        }
-    }
-
     private void Update()
     {
+        UpdateFlyingItems(Time.deltaTime);
+        UpdateBounce(Time.deltaTime);
+
         if (bStop == true)
         {
             lastOutputTime = Time.time - lastInterval;
@@ -147,6 +141,60 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             TakeFirstItem();
             lastOutputTime = Time.time;
             lastInterval = 0f;
+        }
+    }
+
+    private void UpdateFlyingItems(float _deltaTime)
+    {
+        for (int i = flyingItems.Count - 1; i >= 0; i--)
+        {
+            LogItem item = flyingItems[i];
+            item.ManualUpdate(_deltaTime);
+
+            if (item.MoveState != ItemMoveState.Transferring)
+            {
+                // 도착 연출 완료 (Scale 0 시점) - 실제 데이터 추가
+                arrivalDataBuffer.itemType = item.itemType;
+                arrivalDataBuffer.sprite = item.sprite;
+                arrivalDataBuffer.color = item.color;
+                arrivalDataBuffer.treeType = item.treeType;
+
+                AddItemByData(arrivalDataBuffer, item.logState);
+
+                ContainerUpdatedEvent?.Invoke();
+
+                TriggerBounce();
+
+                logItemPoolManager.ReturnLogItem(item);
+                flyingItems.RemoveAt(i);
+            }
+        }
+    }
+
+    private void TriggerBounce()
+    {
+        bounceTime = 0f;
+    }
+
+    private void UpdateBounce(float _deltaTime)
+    {
+        if (bounceTime >= BOUNCE_DURATION)
+        {
+            if (visualTransform != null && visualTransform.localScale != Vector3.one)
+                visualTransform.localScale = Vector3.one;
+            return;
+        }
+
+        bounceTime += _deltaTime;
+        float t = bounceTime / BOUNCE_DURATION;
+        
+        // 진폭을 0.4로 키우고 감쇠를 3f로 늦춰 더 찰진 느낌 부여
+        float curve = Mathf.Sin(t * Mathf.PI * 5f) * Mathf.Exp(-t * 3f) * 0.4f;
+        
+        if (visualTransform != null)
+        {
+            // X축 확대 시 Y축 축소 (Squash & Stretch)
+            visualTransform.localScale = new Vector3(1f + curve, 1f - curve, 1f);
         }
     }
 
@@ -266,50 +314,102 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             if (charSlots[i] is InventorySlot charSlot && charSlot.itemData != null && charSlot.count > 0)
             {
-                // 캐릭터 인벤토리에서 아이템 하나 추출 (가장 높은 등급의 로그부터)
-                ItemData sourceData = charSlot.itemData;
+                // 이미 전송 중인 슬롯이면 건너뛰기
+                if (transferringSlots.Contains(charSlot)) continue;
 
-                // [수정] 컨테이너에 넣을 공간이 있는지 먼저 확인
-                if (!CanAddItemByData(sourceData)) continue;
+                if (!(charSlot.itemData is LogItemData logSourceData)) continue;
 
-                LogState takenState = charSlot.TakeOneItem();
-
-                // 컨테이너에 아이템 추가
-                AddItemByData(sourceData, takenState);
-
-                // 만약 캐릭터 슬롯이 비었다면 정리 (풀 반환 등)
-                if (charSlot.count == 0)
-                {
-                    if (interactingContainer is InventoryManager invManager)
-                    {
-                        invManager.ItemDeleted(charSlot);
-                    }
-                    else if (interactingContainer is LogContainer container)
-                    {
-                        container.ItemDeleted(charSlot);
-                    }
-                }
-
-                lastTransferTime = Time.time; // 전송 시점 기록
-
-                DebugLogCharacterInventory();
-
-                ContainerUpdatedEvent?.Invoke();
+                // 해당 슬롯 전송 시작
+                StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
+                lastTransferTime = Time.time;
                 return true;
             }
         }
         return false;
     }
 
+    private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _charSlot)
+    {
+        transferringSlots.Add(_charSlot);
+
+        try
+        {
+            LogItemData sourceData = _charSlot.itemData as LogItemData;
+            int countToTransfer = _charSlot.count;
+
+            for (int i = 0; i < countToTransfer; i++)
+            {
+                // 컨테이너가 꽉 찼는지 매번 체크 (비행 중인 아이템까지 고려)
+                if (!CanAddItemByData(sourceData)) break;
+
+                LogState takenState = _charSlot.TakeOneItem();
+                // AddItemByData(sourceData, takenState); // [제거] 도착 시점으로 연기
+
+                // 시각적 비행 아이템 생성
+                LogItemData visualData = new LogItemData
+                {
+                    treeType = sourceData.treeType,
+                    logState = takenState,
+                    color = sourceData.color
+                };
+
+                LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+                flyingItem.IsDropItem(false);
+
+                Vector3 start = charTransform != null ? charTransform.position : transform.position;
+                Vector3 end = inputTransform != null ? inputTransform.position : transform.position;
+
+                // 궤적 jitter를 대폭 줄여서 포물선 형태가 뭉개지지 않도록 수정
+                Vector3 trajectoryJitter = new Vector3(UnityEngine.Random.Range(-0.3f, 0.0f), UnityEngine.Random.Range(-0.2f, 0.0f), 0f);
+
+                // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터)
+                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter);
+                flyingItems.Add(flyingItem);
+
+                ContainerUpdatedEvent?.Invoke();
+
+                yield return new WaitForSeconds(FLY_INTERVAL);
+            }
+
+            // 슬롯이 비었다면 정리
+            if (_charSlot.count == 0)
+            {
+                if (interactingContainer is InventoryManager invManager)
+                {
+                    invManager.ItemDeleted(_charSlot);
+                }
+                else if (interactingContainer is LogContainer container)
+                {
+                    container.ItemDeleted(_charSlot);
+                }
+            }
+        }
+        finally
+        {
+            transferringSlots.Remove(_charSlot);
+        }
+    }
+
     private bool CanAddItemByData(ItemData _sourceData)
     {
         if (_sourceData == null) return false;
+
+        // 현재 비행 중인 동일 타입 아이템 개수 계산
+        int pendingCount = 0;
+        if (_sourceData is LogItemData logSource)
+        {
+            for (int i = 0; i < flyingItems.Count; i++)
+            {
+                if (flyingItems[i].itemType == ItemType.Log && flyingItems[i].treeType == logSource.treeType)
+                    pendingCount++;
+            }
+        }
 
         // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
         for (int i = 0; i < currentSlotCount; i++)
         {
             if (containerSlots[i].itemData != null &&
-                containerSlots[i].totalCount < maxItemsPerSlot &&
+                (containerSlots[i].totalCount + pendingCount) < maxItemsPerSlot &&
                 IsSameItemByData(_sourceData, containerSlots[i].itemData))
             {
                 return true;
@@ -321,7 +421,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             if (containerSlots[i].itemData == null)
             {
-                return true;
+                // 빈 슬롯이 있으면 진입 가능 (비행 중인 것들이 이 슬롯을 채울 것임)
+                return pendingCount < maxItemsPerSlot;
             }
         }
 
@@ -366,6 +467,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     containerSlots[i].Setup(newData, 0);
                     containerSlots[i].AddCountByState(_state);
                 }
+
                 return;
             }
         }

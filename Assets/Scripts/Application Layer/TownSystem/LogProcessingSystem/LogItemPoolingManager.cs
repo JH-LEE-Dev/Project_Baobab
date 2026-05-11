@@ -71,6 +71,7 @@ public class LogItemPoolingManager : MonoBehaviour
 
     private void OnReleaseLogItem(LogItem _item)
     {
+        _item.gameObject.transform.SetParent(transform);
         _item.gameObject.SetActive(false);
     }
 

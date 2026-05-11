@@ -5,7 +5,7 @@ public class SkillSystem
     public SkillManager skillManager { get; private set; }
     private SkillDispatcher skillDispatcher;
 
-    public void Initialize(SignalHub _signalHub,SkillManager _skillManager, SkillDispatcher _skillDispatcher)
+    public void Initialize(SignalHub _signalHub, SkillManager _skillManager, SkillDispatcher _skillDispatcher)
     {
         skillManager = _skillManager;
         skillDispatcher = _skillDispatcher;
@@ -18,11 +18,16 @@ public class SkillSystem
     {
         skillManager.DispatchSkillsEvent -= SkillDispatched;
         skillManager.DispatchSkillsEvent += SkillDispatched;
+
+        skillManager.PrestigeLevelIncreasedEvent -= PrestigeLevelIncreased;
+        skillManager.PrestigeLevelIncreasedEvent += PrestigeLevelIncreased;
     }
 
     private void ReleaseEvents()
     {
         skillManager.DispatchSkillsEvent -= SkillDispatched;
+
+        skillManager.PrestigeLevelIncreasedEvent -= PrestigeLevelIncreased;
     }
 
     public void Release()
@@ -34,5 +39,10 @@ public class SkillSystem
     {
         skillDispatcher.DispatchCommand(_skillDispatchInfo);
         signalHub.Publish(new SkillDispatchedSignal());
+    }
+
+    private void PrestigeLevelIncreased(int _level)
+    {
+        signalHub.Publish(new PrestigeLevelIncreasedSignal(_level));
     }
 }

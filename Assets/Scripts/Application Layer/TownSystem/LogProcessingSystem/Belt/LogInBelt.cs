@@ -42,7 +42,7 @@ public class LogInBelt : MonoBehaviour
     {
         // 0.1(10%) 증가 시 기존 속도에 1.1을 곱함
         beltSpeed *= (1f + _percentage);
-        
+
         if (isMoving && tilemap != null)
         {
             tilemap.animationFrameRate = beltSpeed * 3.33f;
@@ -110,10 +110,12 @@ public class LogInBelt : MonoBehaviour
 
     private void LogOut(LogItem _item)
     {
+        _item.gameObject.SetActive(false);
+
         isMoving = false;
         if (tilemap != null) tilemap.animationFrameRate = 0f;
         tilemap.RefreshAllTiles();
-        
+
         logItemData.itemType = _item.itemType;
         logItemData.sprite = _item.sprite;
         logItemData.color = _item.color;
@@ -148,7 +150,7 @@ public class LogInBelt : MonoBehaviour
             BeltItemSaveData itemSaveData = new BeltItemSaveData();
             itemSaveData.targetIndex = item.targetIndex;
             itemSaveData.position = item.item.transform.position;
-            
+
             itemSaveData.itemData = new ItemSaveData
             {
                 itemType = item.item.itemType,

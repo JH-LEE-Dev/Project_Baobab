@@ -80,17 +80,19 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void SubscribeSignals()
     {
         signalHub.Subscribe<DungeonReadySignal>(DungeonStarted);
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.Subscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<DungeonReadySignal>(DungeonStarted);
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.UnSubscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
     }
 
     private void BindEvents()
@@ -131,7 +133,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         densityManager.SetActiveTilesCnt(_grassTileCnt, _walkableTileCnt);
     }
 
-    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
+    private void CharacterSpawned(CharacterSpawnedSignal characterSpawendSignal)
     {
         lightingController.DI(characterSpawendSignal.character);
         environmentInteractionManager.DI_Character(characterSpawendSignal.character);
@@ -160,5 +162,10 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     public bool IsCurrentlyHiddenMap(MapType _mapType, ForestType _forestType)
     {
         return densityManager.IsCurrentlyHiddenMap(_mapType, _forestType);
+    }
+
+    private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _prestigeLevelIncreasedSignal)
+    {
+
     }
 }

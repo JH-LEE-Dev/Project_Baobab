@@ -43,15 +43,15 @@ public class SaveManager : MonoBehaviour
 
     private void SubscribeSignals()
     {
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
     private void UnSubscribeSignals()
     {
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
-    public void CharacterSpawned(CharacterSpawendSignal _signal)
+    public void CharacterSpawned(CharacterSpawnedSignal _signal)
     {
         character = _signal.character;
     }
@@ -113,7 +113,7 @@ public class SaveManager : MonoBehaviour
         // 2. 스킬 데이터 추출 (리스트 재사용)
         if (skillSystem != null && skillSystem.skillManager != null)
         {
-            skillSystem.skillManager.PopulateSkillSaveData(cachedSaveData.skillSaveDataList);
+            skillSystem.skillManager.PopulateSkillSaveData(ref cachedSaveData.skillTreeSaveData);
         }
 
         // 3. 인벤토리 데이터 추출 (리스트 재사용)
@@ -201,7 +201,7 @@ public class SaveManager : MonoBehaviour
         // 2. 스킬 데이터 복구
         if (skillSystem != null && skillSystem.skillManager != null)
         {
-            skillSystem.skillManager.LoadSaveData(saveData.skillSaveDataList);
+            skillSystem.skillManager.LoadSaveData(saveData.skillTreeSaveData);
         }
 
         // 3. 인벤토리 데이터 복구
