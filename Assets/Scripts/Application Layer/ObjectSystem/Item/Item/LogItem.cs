@@ -185,7 +185,16 @@ public class LogItem : Item, IStaticCollidable
 
     private void UpdateTransferring(float _deltaTime)
     {
-        elapsed += _deltaTime;
+        float currentT = duration > 0 ? (elapsed / duration) : 1f;
+        float speedMultiplier = 1f;
+
+        if (currentT > 0.7f)
+        {
+            // 0.7f부터 가속도 적용 (도착할수록 속도 배율 증가)
+            speedMultiplier = 1f + (currentT - 0.7f) * 15f; 
+        }
+
+        elapsed += _deltaTime * speedMultiplier;
         float t = Mathf.Clamp01(elapsed / duration);
 
         // 시점과 종점은 jitter가 0이고 중간에서 최대가 되도록 (Parabolic factor: 4 * t * (1-t))

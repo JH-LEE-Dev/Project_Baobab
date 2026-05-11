@@ -25,7 +25,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> containerSlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
-    [SerializeField] private float transferInterval = 1f;
+    [SerializeField] private float transferInterval = 2f;
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
 
@@ -56,7 +56,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     // // 시각적 효과 (비행 중인 아이템 관리)
     private List<LogItem> flyingItems = new List<LogItem>(32);
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
-    private const float FLY_INTERVAL = 0.05f;
+    private const float FLY_INTERVAL = 0.075f;
     private LogItemData arrivalDataBuffer = new LogItemData();
 
     public void Initialize(InputManager _inputManager, LogItemPoolingManager logItemPoolingManager)
@@ -355,11 +355,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 Vector3 end = inputTransform != null ? inputTransform.position : transform.position;
 
                 // 궤적 jitter를 대폭 줄여서 포물선 형태가 뭉개지지 않도록 수정
-                Vector3 trajectoryJitter = new Vector3(UnityEngine.Random.Range(-0.3f, 0.3f), UnityEngine.Random.Range(-0.2f, 0.2f), 0f);
+                Vector3 trajectoryJitter = new Vector3(UnityEngine.Random.Range(-0.3f, 0.0f), UnityEngine.Random.Range(-0.2f, 0.0f), 0f);
 
                 // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터)
                 flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter);
                 flyingItems.Add(flyingItem);
+
+                ContainerUpdatedEvent?.Invoke();
 
                 yield return new WaitForSeconds(FLY_INTERVAL);
             }
