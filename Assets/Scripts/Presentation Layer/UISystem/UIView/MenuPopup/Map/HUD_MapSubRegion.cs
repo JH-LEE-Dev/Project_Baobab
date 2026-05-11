@@ -27,6 +27,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isSelected = false;
         private bool isLocked = false;
         private bool isInitialized = false;
+        private bool clicked = false;
 
         private Action<RectTransform> onHoverEnterEvent; // 커서 이동 및 표시용
         private Action onHoverExitEvent;                // 커서 숨김용
@@ -157,7 +158,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             // 진입 시 커서 이동 및 애니메이션 재생
             onHoverEnterEvent?.Invoke(GetRectTransform());
 
-            if (null != motionPlayer)
+            if (null != motionPlayer && false == clicked)
             {
                 motionPlayer.SettingEntryMotion(exitMotion, true, true);
                 motionPlayer.SettingEntryMotion(clickMotion, true, true);
@@ -173,7 +174,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             // 퇴장 시 커서 숨김 애니메이션 재생
             onHoverExitEvent?.Invoke();
 
-            if (null != motionPlayer)
+            if (null != motionPlayer && false == clicked)
             {
                 motionPlayer.SettingEntryMotion(enterMotion, true, true);
                 motionPlayer.SettingEntryMotion(clickMotion, true, true);
@@ -189,14 +190,18 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             // 최종 선택된 지역 번호를 전달
             onSelectEvent?.Invoke(regionNumber);
 
+            clicked = true;
+
             // 클릭 애니메이션 재생
             if (null != motionPlayer)
             {
                 motionPlayer.SettingEntryMotion(enterMotion, true, true);
                 motionPlayer.SettingEntryMotion(exitMotion, true, true);
-                clickMotion = motionPlayer.Play(clickMotionKey, bReset: true);
+                clickMotion = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: UnClicked);
             }
         }
+
+        private void UnClicked() => clicked = false;
 
         // //유니티 이벤트 함수
 
