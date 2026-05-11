@@ -29,6 +29,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
 
+    private Transform visualTransform;
+    private float bounceTime = 1f;
+    private const float BOUNCE_DURATION = 0.4f;
+
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => containerSlots;
 
     public long money => 0;
@@ -63,6 +67,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         inputManager = _inputManager;
         logItemPoolManager = logItemPoolingManager;
+
+        // 시각적 효과를 위한 트랜스폼 캐싱
+        var sr = GetComponentInChildren<SpriteRenderer>();
+        if (sr != null) visualTransform = sr.transform;
 
         transferWait = new WaitForSeconds(transferInterval);
         lastTransferTime = -transferInterval;
@@ -153,6 +161,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private void Update()
     {
         UpdateFlyingItems(Time.deltaTime);
+        UpdateBounce(Time.deltaTime);
 
         if (bStop == true)
         {
@@ -187,9 +196,38 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 AddItemByData(arrivalDataBuffer, item.logState);
                 ContainerUpdatedEvent?.Invoke();
 
+                TriggerBounce();
+
                 logItemPoolManager.ReturnLogItem(item);
                 flyingItems.RemoveAt(i);
             }
+        }
+    }
+
+    private void TriggerBounce()
+    {
+        bounceTime = 0f;
+    }
+
+    private void UpdateBounce(float _deltaTime)
+    {
+        if (bounceTime >= BOUNCE_DURATION)
+        {
+            if (visualTransform != null && visualTransform.localScale != Vector3.one)
+                visualTransform.localScale = Vector3.one;
+            return;
+        }
+
+        bounceTime += _deltaTime;
+        float t = bounceTime / BOUNCE_DURATION;
+        
+        // 진폭을 0.4로 키우고 감쇠를 3f로 늦춰 더 찰진 느낌 부여
+        float curve = Mathf.Sin(t * Mathf.PI * 5f) * Mathf.Exp(-t * 3f) * 0.4f;
+        
+        if (visualTransform != null)
+        {
+            // X축 확대 시 Y축 축소 (Squash & Stretch)
+            visualTransform.localScale = new Vector3(1f + curve, 1f - curve, 1f);
         }
     }
 
