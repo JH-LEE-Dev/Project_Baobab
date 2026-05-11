@@ -3,11 +3,13 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using PresentationLayer.DOTweenAnimationSystem;
 
 public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     //외부 의존성
     [SerializeField] private Image uiImage;
+    [SerializeField] private ObjectMotionPlayer omp;
     public Action<IItemData, LogStateCount[], Vector2> enterSlot;
     public Action exitSlot;
     public Action<IInventorySlot> deleteItem;
@@ -81,10 +83,24 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
 
+        if (null != invSlotRef)
+        {
+            invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
+            invSlotRef.SlotUpdatedEvent += PlayItemInteraction;
+        }
+
         if (null == showItemData)
             return;
-        Debug.Log(showItemData.color);
+
         UpdateImage(showItemData.sprite, showItemData.color);
+    }
+
+    private void PlayItemInteraction()
+    {
+        omp?.Play("ItemInteraction", bReset: true);
+
+        if (null != invSlotRef)
+            UpdateItemCount(invSlotRef.count);
     }
 
     public void DisableRayCast()
