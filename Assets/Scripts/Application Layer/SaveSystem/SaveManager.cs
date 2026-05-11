@@ -43,15 +43,15 @@ public class SaveManager : MonoBehaviour
 
     private void SubscribeSignals()
     {
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
     private void UnSubscribeSignals()
     {
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
-    public void CharacterSpawned(CharacterSpawendSignal _signal)
+    public void CharacterSpawned(CharacterSpawnedSignal _signal)
     {
         character = _signal.character;
     }

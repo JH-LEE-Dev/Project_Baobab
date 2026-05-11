@@ -91,15 +91,15 @@ public class CameraManager : MonoBehaviour
 
     private void SubscribeSignals()
     {
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
     private void UnSubscribeSignals()
     {
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
-    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
+    private void CharacterSpawned(CharacterSpawnedSignal characterSpawendSignal)
     {
         characterTransform = characterSpawendSignal.character.transform;
         lastCharacterPosition = characterTransform.position;

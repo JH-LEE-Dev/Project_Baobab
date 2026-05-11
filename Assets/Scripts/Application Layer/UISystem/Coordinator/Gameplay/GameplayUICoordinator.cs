@@ -41,7 +41,7 @@ public class GameplayUICoordinator
     {
         signalHub.Subscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.Subscribe<TreeGetHitSignal>(TreeGetHit);
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.Subscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
         signalHub.Subscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
@@ -61,7 +61,7 @@ public class GameplayUICoordinator
     {
         signalHub.UnSubscribe<InventoryUpdatedSignal>(InventoryUpdated);
         signalHub.UnSubscribe<TreeGetHitSignal>(TreeGetHit);
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<ContainerUpdatedSignal>(ContainerUpdated);
         signalHub.UnSubscribe<ContainerInteractStateChangedSignal>(ContainerInteractStateChanged);
         signalHub.UnSubscribe<CharacterEarnMoneySignal>(CharacterEarnMoney);
@@ -157,7 +157,7 @@ public class GameplayUICoordinator
         unitUI.TreeGetHit(treeGetHitSignal.treeObj);
     }
 
-    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
+    private void CharacterSpawned(CharacterSpawnedSignal characterSpawendSignal)
     {
         hudUI.SetCharacter(characterSpawendSignal.character);
         unitUI.SetCharacter(characterSpawendSignal.character);

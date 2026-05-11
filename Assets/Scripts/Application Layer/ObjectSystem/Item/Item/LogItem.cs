@@ -25,6 +25,7 @@ public class LogItem : Item, IStaticCollidable
 
     // 상태 변수
     private ItemMoveState state = ItemMoveState.None;
+    public ItemMoveState MoveState => state;
     private Transform suckTarget;
     private bool bDrop = true;
     public float durability = 0f;
@@ -34,6 +35,7 @@ public class LogItem : Item, IStaticCollidable
     // 이동 관련 변수 (캐싱)
     private Vector3 startPos;
     private Vector3 endPos;
+    private Vector3 trajectoryJitter;
     private float height;
     private float duration;
     private float elapsed;
@@ -61,6 +63,8 @@ public class LogItem : Item, IStaticCollidable
             spriteRenderer.color = color;
             visualTransform = spriteRenderer.transform;
         }
+
+        transform.localScale = Vector3.one;
     }
 
     public void SetInventoryChecker(IInventoryChecker _inventoryChecker)
@@ -79,6 +83,7 @@ public class LogItem : Item, IStaticCollidable
         endPos = _end;
         height = _height;
         duration = _duration;
+        trajectoryJitter = Vector3.zero;
         elapsed = 0f;
         state = ItemMoveState.Launching;
 
@@ -89,9 +94,25 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter)
+    {
+        startPos = _start;
+        endPos = _end;
+        height = _height;
+        duration = _duration;
+        trajectoryJitter = _jitter;
+        elapsed = 0f;
+        state = ItemMoveState.Transferring;
+
+        if (gameObject.activeInHierarchy)
+        {
+            CollisionSystem.Instance?.Register(this, false);
+        }
+    }
+
     private void OnEnable()
     {
-        // Launch가 이미 호출된 상태(상태가 None이 아님)에서 활성화될 때만 등록
+        // Launch나 TransferLaunch가 이미 호출된 상태에서 활성화될 때만 등록
         if (state != ItemMoveState.None)
         {
             CollisionSystem.Instance?.Register(this, false);
@@ -109,6 +130,8 @@ public class LogItem : Item, IStaticCollidable
         state = ItemMoveState.None;
         suckTarget = null;
         elapsed = 0;
+        trajectoryJitter = Vector3.zero;
+        transform.localScale = Vector3.one;
     }
 
     public void ManualUpdate(float _deltaTime)
@@ -117,6 +140,9 @@ public class LogItem : Item, IStaticCollidable
         {
             case ItemMoveState.Launching:
                 UpdateLaunching(_deltaTime);
+                break;
+            case ItemMoveState.Transferring:
+                UpdateTransferring(_deltaTime);
                 break;
             case ItemMoveState.Sucking:
                 UpdateSucking(_deltaTime);
@@ -154,6 +180,56 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             CheckAcquireCondition();
+        }
+    }
+
+    private void UpdateTransferring(float _deltaTime)
+    {
+        elapsed += _deltaTime;
+        float t = Mathf.Clamp01(elapsed / duration);
+
+        // 시점과 종점은 jitter가 0이고 중간에서 최대가 되도록 (Parabolic factor: 4 * t * (1-t))
+        float jitterFactor = 4f * t * (1f - t);
+        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t) + (trajectoryJitter * jitterFactor);
+        
+        float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
+
+        if (visualTransform != null)
+        {
+            transform.position = currentGroundPos;
+            visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+        }
+        else
+        {
+            transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
+        }
+
+        // Scale 연출 (0.4까지 스프링 댐퍼(Overshoot) 효과로 커지고, 0.7부터 작아짐)
+        float targetScale = 1f;
+        if (t < 0.4f)
+        {
+            float nt = t / 0.4f;
+            const float s = 1.70158f; // BackEaseOut 탄성 계수
+            float t1 = nt - 1f;
+            // (t-1)^2 * ((s+1)(t-1) + s) + 1 공식 적용
+            targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
+        }
+        else if (t > 0.7f)
+        {
+            float nt = (t - 0.7f) / 0.3f;
+            targetScale = 1f - nt;
+        }
+        
+        transform.localScale = Vector3.one * targetScale;
+
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
+
+        if (t >= 1.0f)
+        {
+            transform.position = GlobalPixelSnapper.Snap(endPos);
+            if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
+            
+            state = ItemMoveState.Dropped;
         }
     }
 

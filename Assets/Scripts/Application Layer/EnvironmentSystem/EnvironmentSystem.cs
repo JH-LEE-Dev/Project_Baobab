@@ -80,7 +80,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void SubscribeSignals()
     {
         signalHub.Subscribe<DungeonReadySignal>(DungeonStarted);
-        signalHub.Subscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
@@ -89,7 +89,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<DungeonReadySignal>(DungeonStarted);
-        signalHub.UnSubscribe<CharacterSpawendSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
@@ -133,7 +133,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         densityManager.SetActiveTilesCnt(_grassTileCnt, _walkableTileCnt);
     }
 
-    private void CharacterSpawned(CharacterSpawendSignal characterSpawendSignal)
+    private void CharacterSpawned(CharacterSpawnedSignal characterSpawendSignal)
     {
         lightingController.DI(characterSpawendSignal.character);
         environmentInteractionManager.DI_Character(characterSpawendSignal.character);

@@ -1,8 +1,8 @@
 
-public struct CharacterSpawendSignal
+public struct CharacterSpawnedSignal
 {
     public Character character;
-    public CharacterSpawendSignal(Character _character)
+    public CharacterSpawnedSignal(Character _character)
     {
         character = _character;
     }

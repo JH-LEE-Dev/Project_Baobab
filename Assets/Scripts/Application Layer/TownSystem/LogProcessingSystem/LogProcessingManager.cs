@@ -26,17 +26,20 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
     public LogContainer logContainer { get; private set; }
 
-    public ShopNPC shopNPC{ get; private set; }
+    public ShopNPC shopNPC { get; private set; }
 
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
+        
+        logItemPoolingManager = GetComponentInChildren<LogItemPoolingManager>();
+        logItemPoolingManager.Initialize();
 
         shopObj = Instantiate(shopPrefab, shopSpawnPoint.transform.position,
         Quaternion.identity, this.transform);
 
         logContainer = shopObj.GetComponentInChildren<LogContainer>();
-        logContainer.Initialize(inputManager);
+        logContainer.Initialize(inputManager, logItemPoolingManager);
 
         logEvaluator = shopObj.GetComponentInChildren<LogEvaluator>();
         logEvaluator.Initialize();
@@ -60,9 +63,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         if (logInBelt != null) logInBelt.Initialize();
         if (logOutBelt != null) logOutBelt.Initialize();
 
-        logItemPoolingManager = GetComponentInChildren<LogItemPoolingManager>();
-        logItemPoolingManager.Initialize();
-
         logCutter = GetComponentInChildren<LogCutter>();
         logCutter.Initialize();
 
@@ -81,6 +81,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     {
         inventory = _inventory;
         logContainer.DI_Inventory(inventory);
+    }
+
+    public void SetCharTransform(Transform _transform)
+    {
+        logContainer.SetCharTransform(_transform);
     }
 
     private void BindEvents()
@@ -130,14 +135,14 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     {
         // 리스트 초기화 (중요)
         _saveData.Initialize();
-        
+
         if (logContainer != null)
         {
             logContainer.PopulateContainerSaveData(ref _saveData.containerInventoryData);
             _saveData.maxItemsPerSlot = logContainer.GetMaxItemsPerSlot();
             _saveData.bStop = logContainer.GetbStop();
             _saveData.transferInterval = logContainer.GetTransferInterval();
-            
+
             // 타이밍 정보 저장
             _saveData.lastTransferTimeElapsed = logContainer.GetLastTransferTimeElapsed();
             _saveData.lastOutputTimeElapsed = logContainer.GetLastOutputTimeElapsed();

@@ -91,7 +91,7 @@ public class UnitSystem
 
     private void CharacterSpawned(Character _character)
     {
-        signalHub.Publish(new CharacterSpawendSignal(_character));
+        signalHub.Publish(new CharacterSpawnedSignal(_character));
         unitLogicManager.SetCharacter(_character);
     }
 

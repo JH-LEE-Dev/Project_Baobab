@@ -12,6 +12,7 @@ public class TownSystem : MonoBehaviour
     private IEnvironmentProvider environmentProvider;
     public LogProcessingManager logProcessingManager { get; private set; }
     private TentManager tentManager;
+    private Character character;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
     {
@@ -90,6 +91,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<InventoryInitializedSignal>(InventoryInitialized);
         signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.Subscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
     private void UnSubscribeSignals()
@@ -97,6 +99,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<InventoryInitializedSignal>(InventoryInitialized);
         signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
     private void PortalActivated()
@@ -145,5 +148,11 @@ public class TownSystem : MonoBehaviour
     private void CurrentlyInDungeon(DecalreDungeonTypeSignal decalreDungeonTypeSignal)
     {
         logProcessingManager.SetMapType(decalreDungeonTypeSignal.mapType);
+    }
+
+    private void CharacterSpawned(CharacterSpawnedSignal _signal)
+    {
+        character = _signal.character;
+        logProcessingManager.SetCharTransform(character.transform);
     }
 }
