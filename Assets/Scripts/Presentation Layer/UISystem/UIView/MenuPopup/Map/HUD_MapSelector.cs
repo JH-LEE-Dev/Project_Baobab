@@ -40,6 +40,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isInitialized = false;
         private bool isDayTime = true;
         private bool isDragging = false;
+        private bool isClosing = false;
         private float targetPosX = 0.0f;
 
         // //퍼블릭 초기화 및 제어 메서드
@@ -171,7 +172,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 sunMoon.SetRotation(180f, 0.25f);
         }
 
-        private void FocusRegion(int _index)
+        private void FocusRegion(int _index, bool _shouldPlayAnimation = false)
         {
             if (0 > _index || _index >= spawnedRegions.Count)
             {
@@ -183,11 +184,16 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             currentFocusedRegion = spawnedRegions[_index];
             targetPosX = -(_index * itemSpacing);
 
-            // 모든 지역의 포커스 상태 업데이트
+            // 모든 지역의 포커스 상태 및 셋업 업데이트
             for (int _i = 0; _i < spawnedRegions.Count; _i++)
             {
                 if (null != spawnedRegions[_i])
-                    spawnedRegions[_i].SetFocus(_i == _index);
+                {
+                    bool _isFocus = (_i == _index);
+                    // 포커스된 지역이고 애니메이션 재생 요청이 있을 때만 true 전달
+                    spawnedRegions[_i].Setup(spawnedRegions[_i].GetMapName(), spawnedRegions[_i].GetMapEnvironmentInfo(), _isFocus && _shouldPlayAnimation);
+                    spawnedRegions[_i].SetFocus(_isFocus);
+                }
             }
 
             if (null != subSelector && null != currentFocusedRegion.GetMapEnvironmentInfo().forestDatas)
@@ -198,7 +204,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private void RefreshSelectButtonState()
         {
-            SetTimeState(timeDataProvider.isDay);
+            if (null != timeDataProvider)
+                SetTimeState(timeDataProvider.isDay);
 
             if (null == selectButton)
                 return;
@@ -241,15 +248,26 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             int _closestIndex = Mathf.RoundToInt(-containerRect.localPosition.x / itemSpacing);
             _closestIndex = Mathf.Clamp(_closestIndex, 0, spawnedRegions.Count - 1);
             
-            FocusRegion(_closestIndex);
+            FocusRegion(_closestIndex, false); // 슬라이드 이동 시에는 애니메이션 재생 안 함
         }
 
         public void MapSelectorOpen()
         {
             gameObject.SetActive(true);
+            isClosing = false;
 
             if (null == subSelector)
                 return;
+
+            // UI가 열릴 때 현재 위치한 지역 애니메이션 재생
+            int _closestIndex = 0;
+            if (null != containerRect)
+            {
+                _closestIndex = Mathf.RoundToInt(-containerRect.localPosition.x / itemSpacing);
+                _closestIndex = Mathf.Clamp(_closestIndex, 0, spawnedRegions.Count - 1);
+            }
+            
+            FocusRegion(_closestIndex, true); // 오픈 시에는 애니메이션 재생 요청
 
             MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
             if (null == _db.mapDatas)
@@ -268,8 +286,26 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void MapSelectorClose()
         {
+            if (true == isClosing)
+                return;
+
+            isClosing = true;
+
+            if (null != currentFocusedRegion)
+            {
+                currentFocusedRegion.PlayEndAnimation(DeactivateSelector);
+                return;
+            }
+
+            DeactivateSelector();
+        }
+
+        private void DeactivateSelector()
+        {
             gameObject.SetActive(false);
-            subSelector?.ClearSelection();
+
+            if (null != subSelector)
+                subSelector.ClearSelection();
         }
 
         // //유니티 이벤트 함수

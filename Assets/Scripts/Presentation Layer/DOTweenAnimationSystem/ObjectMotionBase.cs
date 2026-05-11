@@ -14,6 +14,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             public RectTransform rectTransform;
             public Transform transform;
             public CanvasGroup canvasGroup;
+            public SpriteRenderer spriteRenderer;
             public Graphic graphic;
 
             public Vector2 anchoredPosition;
@@ -93,11 +94,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 currentTween.Complete(_isCallback);
         }
 
-        public void SetRuntimeSettings(float _duration, float _delay)
-        {
-            forwardDuration = _duration;
-            forwardDelay = _delay;
-        }
+        public void SetDelayForward(float _delay) => forwardDelay = _delay;
+        public void SetDelayBackward(float _delay) => backwardDelay = _delay;
 
         protected virtual Sequence StopAndBinding(UnityAction _onStart, UnityAction _onComplete)
         {
@@ -135,21 +133,25 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (null == _targets)
                 return;
 
-            for (int i = 0; i < _targets.Count; i++)
+            for (int _i = 0; _i < _targets.Count; _i++)
             {
-                MotionTarget _target = _targets[i];
+                MotionTarget _target = _targets[_i];
                 if (null == _target)
                     continue;
 
+                // 트랜스폼 애니메이션 (위치/회전/크기 등)
                 if (null != _target.rectTransform) 
                     OnRectTransform(_seq, _target.rectTransform, _currentEase);
                 else if (null != _target.transform) 
                     OnTransform(_seq, _target.transform, _currentEase);
 
+                // 시각적 애니메이션 (알파/컬러 등) - 병행 실행 허용
                 if (null != _target.canvasGroup) 
                     OnCanvasGroup(_seq, _target.canvasGroup, _currentEase);
+                
                 if (null != _target.spriteRenderer) 
                     OnSpriteRenderer(_seq, _target.spriteRenderer, _currentEase);
+                
                 if (null != _target.uiGraphic) 
                     OnGraphic(_seq, _target.uiGraphic, _currentEase);
             }
@@ -211,11 +213,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
             RestoreCachedState();
         }
 
-        protected void RestoreCachedState(bool _restorePosition = true)
+        protected void RestoreCachedState(bool _restorePosition = true, bool _restoreAlpha = true)
         {
-            for (int i = 0; i < stateCache.Count; i++)
+            for (int _i = 0; _i < stateCache.Count; _i++)
             {
-                TargetInitialState _state = stateCache[i];
+                TargetInitialState _state = stateCache[_i];
 
                 if (null != _state.rectTransform)
                 {
@@ -234,14 +236,16 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     _state.transform.localScale = _state.localScale;
                 }
 
-                if (null != _state.canvasGroup)
+                if (true == _restoreAlpha)
                 {
-                    _state.canvasGroup.alpha = _state.alpha;
-                }
+                    if (null != _state.canvasGroup)
+                        _state.canvasGroup.alpha = _state.alpha;
 
-                if (null != _state.graphic)
-                {
-                    _state.graphic.color = _state.color;
+                    if (null != _state.spriteRenderer)
+                        _state.spriteRenderer.color = _state.color;
+
+                    if (null != _state.graphic)
+                        _state.graphic.color = _state.color;
                 }
             }
         }

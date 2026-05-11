@@ -50,7 +50,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             }
         }
 
-        public MotionEntry Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, bool bReset = false, bool _skip = false, bool _isSkipCallback = false)
+        public MotionEntry Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, 
+            bool bReset = false, bool _skip = false, bool _isSkipCallback = false, float _forceDelayForward = -1f, float _forceDelayBackward = -1f)
         {
             if (null == motionMap)
                 InitializeMotionMap();
@@ -58,7 +59,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (false == motionMap.ContainsKey(_tag))
                 return null;
 
-            PlayEntry(motionMap[_tag], _onStart, _onComplete, false, bReset);
+            PlayEntry(motionMap[_tag], _onStart, _onComplete, false, bReset, _forceDelayForward, _forceDelayBackward);
 
             if (_skip)
             {
@@ -69,7 +70,8 @@ namespace PresentationLayer.DOTweenAnimationSystem
             return motionMap[_tag];
         }
 
-        public MotionEntry PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, bool bReset = false, bool _skip = false, bool _isSkipCallback = false)
+        public MotionEntry PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, 
+            bool bReset = false, bool _skip = false, bool _isSkipCallback = false, float _forceDelayForward = -1f, float _forceDelayBackward = -1f)
         {
             if (null == motionMap)
                 InitializeMotionMap();
@@ -77,7 +79,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (false == motionMap.ContainsKey(_tag))
                 return null;
 
-            PlayEntry(motionMap[_tag], _onStart, _onComplete, true, bReset);
+            PlayEntry(motionMap[_tag], _onStart, _onComplete, true, bReset, _forceDelayForward, _forceDelayBackward);
 
             if (_skip)
             {
@@ -88,7 +90,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
             return motionMap[_tag];
         }
 
-        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete, bool _isBackward, bool bReset)
+        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete, bool _isBackward, bool bReset, float _forceDelayForward, float _forceDelayBackward)
         {
             if (null == _entry.motionInstance && null != _entry.motionPrefab)
             {
@@ -99,6 +101,12 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
             if (null == _entry.motionInstance || null == _entry.targets || 0 == _entry.targets.Count)
                 return;
+
+            if (_forceDelayForward >= 0f) 
+                _entry.motionInstance.SetDelayForward(_forceDelayForward);
+
+            if (_forceDelayBackward >= 0f) 
+                _entry.motionInstance.SetDelayBackward(_forceDelayBackward);
 
             if (false == _isBackward)
                 _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete, bReset);
