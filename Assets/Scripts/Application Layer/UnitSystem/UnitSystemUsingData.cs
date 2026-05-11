@@ -19,6 +19,8 @@ public class InventorySlot : IInventorySlot
     private LogStateCount[] sortedLogStateCounts;
     private bool isDirty = true;
 
+    public event Action SlotUpdatedEvent;
+
     public int count => totalCount;
 
     IItemData IInventorySlot.itemData => itemData;
@@ -82,6 +84,8 @@ public class InventorySlot : IInventorySlot
             isDirty = true;
         }
         totalCount++;
+
+        SlotUpdatedEvent?.Invoke();
     }
 
     public void AddCountByState(LogState _state)
@@ -89,6 +93,8 @@ public class InventorySlot : IInventorySlot
         logStateCounts[(int)_state]++;
         totalCount++;
         isDirty = true;
+
+        SlotUpdatedEvent?.Invoke();
     }
 
     public LogState TakeOneItem()
@@ -112,6 +118,9 @@ public class InventorySlot : IInventorySlot
 
         totalCount--;
         isDirty = true;
+
+        SlotUpdatedEvent?.Invoke();
+
         return takenState;
     }
 

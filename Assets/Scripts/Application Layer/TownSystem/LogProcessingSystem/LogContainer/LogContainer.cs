@@ -124,40 +124,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         interactingContainer = _inventory;
     }
 
-    public void ItemAcquired(Item _item)
-    {
-        if (_item == null) return;
-
-        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (containerSlots[i].itemData != null &&
-                containerSlots[i].totalCount < maxItemsPerSlot &&
-                IsSameItem(_item, (ItemData)containerSlots[i].itemData))
-            {
-                containerSlots[i].AddCount(_item);
-                ContainerUpdatedEvent?.Invoke();
-                return;
-            }
-        }
-
-        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (containerSlots[i].itemData == null)
-            {
-                ItemData newData = GetFromPool(_item.itemType);
-                if (newData != null)
-                {
-                    newData.CopyFrom(_item);
-                    containerSlots[i].Setup(newData, 1);
-                }
-                ContainerUpdatedEvent?.Invoke();
-                return;
-            }
-        }
-    }
-
     private void Update()
     {
         UpdateFlyingItems(Time.deltaTime);
@@ -194,6 +160,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 arrivalDataBuffer.treeType = item.treeType;
 
                 AddItemByData(arrivalDataBuffer, item.logState);
+
                 ContainerUpdatedEvent?.Invoke();
 
                 TriggerBounce();
@@ -500,6 +467,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     containerSlots[i].Setup(newData, 0);
                     containerSlots[i].AddCountByState(_state);
                 }
+
                 return;
             }
         }
