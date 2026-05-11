@@ -44,6 +44,7 @@ GameObject:
   - component: {fileID: 8695531816826255951}
   - component: {fileID: 7141216252732980337}
   - component: {fileID: 759773559187026669}
+  - component: {fileID: 2682613477721886664}
   m_Layer: 8
   m_Name: Shadow
   m_TagString: Untagged
@@ -173,6 +174,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5d84d76b60281ec4c969e87b65fc8013, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpriteUvBoundarySetter
+--- !u!114 &2682613477721886664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2627143320550341532}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad1cc2e03b0bd0547b36e78f0111c831, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimTrigger
+  bActivated: 0
 --- !u!1 &3168886551257118820
 GameObject:
   m_ObjectHideFlags: 0
@@ -526,6 +540,7 @@ GameObject:
   - component: {fileID: 2767750851685985544}
   - component: {fileID: 9079651369485532021}
   - component: {fileID: 8627127040924059846}
+  - component: {fileID: 4152767235055664915}
   m_Layer: 0
   m_Name: Animator
   m_TagString: Untagged
@@ -629,6 +644,19 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!114 &4152767235055664915
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3984376963687474699}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad1cc2e03b0bd0547b36e78f0111c831, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimTrigger
+  bActivated: 1
 --- !u!1 &4035353486790179823
 GameObject:
   m_ObjectHideFlags: 0
@@ -808,6 +836,7 @@ GameObject:
   - component: {fileID: 910821007715428803}
   - component: {fileID: 4115595335084183282}
   - component: {fileID: 8202687316918872623}
+  - component: {fileID: 8040861928252899553}
   m_Layer: 0
   m_Name: OnWater
   m_TagString: Untagged
@@ -911,6 +940,19 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!114 &8040861928252899553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6499581948990469458}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad1cc2e03b0bd0547b36e78f0111c831, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimTrigger
+  bActivated: 0
 --- !u!1 &6653437826344104507
 GameObject:
   m_ObjectHideFlags: 0

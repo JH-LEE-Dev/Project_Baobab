@@ -2,7 +2,7 @@ using UnityEngine;
 
 public static class Sound
 {
-    public static void Play(string id, Vector3 position, float volume = 1f, bool is3D = true)
+    public static void Play(SoundID id, Vector3 position, float volume = 1f, bool is3D = true)
     {
         if (AudioManager.Instance == null)
             return;
@@ -11,7 +11,7 @@ public static class Sound
         AudioManager.Instance.EnqueueEvent(e);
     }
 
-    public static void PlayUI(string id, float volume = 1f)
+    public static void PlayUI(SoundID id, float volume = 1f)
     {
         if (AudioManager.Instance == null)
             return;
@@ -20,7 +20,7 @@ public static class Sound
         AudioManager.Instance.EnqueueEvent(e);
     }
 
-    public static void PlayBGM(string id, float volume = 1f)
+    public static void PlayBGM(SoundID id, float volume = 1f)
     {
         if (AudioManager.Instance == null)
             return;

@@ -12,4 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c6a7bbede13fbc43bb1bde232452007, type: 3}
   m_Name: AudioDatabase
   m_EditorClassIdentifier: Assembly-CSharp::AudioDatabase
-  sounds: []
+  sounds:
+  - id: -398605290
+    mixerId: 159138813
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: ff194b4cdbb05784cb18b184e892ec27, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 1
+    is3D: 1
+  mixers:
+  - id: 159138813
+    mixer: {fileID: 24100000, guid: fdb35ec274407f349a702af791fe9843, type: 2}
