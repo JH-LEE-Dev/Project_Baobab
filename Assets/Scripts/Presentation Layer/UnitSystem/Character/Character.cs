@@ -129,7 +129,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void SetFacingDirection(Vector2 _input)
     {
-        if (_input.sqrMagnitude < 0.01f || bCanRotate == false || bWhileSwing == true) return;
+        if (_input.sqrMagnitude < 0.01f /*|| bCanRotate == false || bWhileSwing == true*/) return;
 
         float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;

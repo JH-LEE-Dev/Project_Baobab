@@ -80,7 +80,7 @@ public class AttackComponent : PComponent
     {
         lastMouseScreenPos = _mouseScreenPos;
 
-        if (bAttack || componentCenterTransform == null)
+        if (/*bAttack ||*/ componentCenterTransform == null)
             return;
 
         UpdateAttackColliderPosition(_mouseScreenPos);
