@@ -4,9 +4,11 @@ using UnityEngine;
 public struct DungeonReadySignal
 {
     public DungeonData dungeonData;
-    public DungeonReadySignal(DungeonData _dungeonData)
+    public ForestType forestType;
+    public DungeonReadySignal(DungeonData _dungeonData, ForestType _forestType)
     {
         dungeonData = _dungeonData;
+        forestType = _forestType;
     }
 }
 

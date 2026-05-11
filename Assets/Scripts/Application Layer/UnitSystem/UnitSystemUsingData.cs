@@ -207,3 +207,10 @@ public enum AnimalType
     MRabbit,
     HRabbit,
 }
+
+[Serializable]
+public struct StaminaAmountData
+{
+    public ForestType forestType;
+    public float decAmount;
+}

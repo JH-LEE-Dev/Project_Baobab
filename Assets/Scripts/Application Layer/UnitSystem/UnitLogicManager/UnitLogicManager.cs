@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 {
@@ -7,6 +8,8 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action<WeaponMode> WeaponModeChangedEvent;
 
     private Character character;
+
+    [SerializeField] private List<StaminaAmountData> staminaData;
 
     public void Initialize()
     {
@@ -44,6 +47,18 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public void SetCharacterStaminaState(bool _bStaminaUpDown, float _staminaDecAmount, float _staminaIncAmount)
     {
         character.SetStaminaUpDownState(_bStaminaUpDown, _staminaDecAmount, _staminaIncAmount);
+    }
+
+    public void CharacterIsInDungeon(ForestType _forestType)
+    {
+        for (int i = 0; i < staminaData.Count; i++)
+        {
+            if (staminaData[i].forestType == _forestType)
+            {
+                SetCharacterStaminaState(false, staminaData[i].decAmount, 0);
+                return;
+            }
+        }
     }
 
     public void SetCharacterTransform(Transform _transform)
