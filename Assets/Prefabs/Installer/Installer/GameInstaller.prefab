@@ -602,6 +602,9 @@ MonoBehaviour:
   currentSlotCount: 2
   maxItemsPerSlot: 5
   inventorySlots: []
+  sunEssence: 0
+  moonEssence: 0
+  lightningEssence: 0
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
 --- !u!1 &3535782070355411120
 GameObject:
@@ -922,6 +925,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkillManager
   skillDataBase: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
+  prestigeLevel: 0
+  skillExperience: 0
 --- !u!1 &5702162027899865581
 GameObject:
   m_ObjectHideFlags: 0
@@ -1567,6 +1572,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a1ab0b45d87b9141bb09525dc9b835b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnitLogicManager
+  staminaData:
+  - forestType: 2
+    decAmount: 4
+  - forestType: 3
+    decAmount: 8
+  - forestType: 4
+    decAmount: 16
 --- !u!114 &8919172322634990837
 MonoBehaviour:
   m_ObjectHideFlags: 0

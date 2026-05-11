@@ -97,7 +97,7 @@ public class UnitSystem
 
     private void DungeonReady(DungeonReadySignal dungeonReadySignal)
     {
-        unitLogicManager.SetCharacterStaminaState(false, dungeonReadySignal.dungeonData.staminaDecAmount, dungeonReadySignal.dungeonData.staminaIncAmount);
+        unitLogicManager.CharacterIsInDungeon(dungeonReadySignal.forestType);
     }
 
     private void DungeonStarted(DungeonStartSignal dungeonStartSignal)

@@ -17,6 +17,4 @@ public struct DungeonData
 {
     public MapType mapTypeType;
     public List<TreeGradeProb> treeGradeProbs;
-    public float staminaDecAmount;
-    public float staminaIncAmount;
 }
