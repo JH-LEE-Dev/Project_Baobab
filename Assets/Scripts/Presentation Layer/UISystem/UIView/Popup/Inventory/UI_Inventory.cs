@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using PresentationLayer.UISystem.CustomNumber;
 
 public class UI_Inventory : MonoBehaviour
 {
@@ -13,8 +14,8 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
     [SerializeField] private UI_Homing uiHoming;
-    [SerializeField] private UI_Coin uiCoin;
-    [SerializeField] private UI_Coin uiSubCoin;
+    [SerializeField] private CurrencyCounterHUD uiCoin;
+    [SerializeField] private CurrencyCounterHUD uiSubCoin;
     [SerializeField] private UI_Backpack uiBackpack;
 
     [Header("Prefabs")]
@@ -55,8 +56,9 @@ public class UI_Inventory : MonoBehaviour
         inventory = _inventory;
         moneyData = _moneyData;
 
-        uiCoin?.BindMoneyData(moneyData, MoneyType.Coin);
-        uiSubCoin?.BindMoneyData(moneyData, MoneyType.Carrot);
+        uiCoin?.SetMoneyType(MoneyType.Coin);
+        uiSubCoin?.SetMoneyType(MoneyType.Carrot);
+        CharactersMoneyChanged();
     }
 
     #region [ Inventory UI ]
@@ -208,15 +210,15 @@ public class UI_Inventory : MonoBehaviour
     public void CharacterEarnMoney(MoneyType _moneyType)
     {
         if (MoneyType.Coin == _moneyType)
-            uiCoin?.UpdateMoneyText();
+            uiCoin?.SetNumberAnimated(moneyData.money);
         else
-            uiSubCoin?.UpdateMoneyText();
+            uiSubCoin?.SetNumberAnimated(moneyData.carrot);
     }
 
     public void CharactersMoneyChanged()
     {
-        uiCoin?.UpdateMoneyText();
-        uiSubCoin?.UpdateMoneyText();
+        uiCoin?.SetNumberAnimated(moneyData.money);
+        uiSubCoin?.SetNumberAnimated(moneyData.carrot);
     }
 
     public void ChangedShowMoneyType()

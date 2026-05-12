@@ -3,7 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using DG.Tweening;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
@@ -19,6 +21,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private HUD_MapSunMoon sunMoon;         // 밤낮 연출 관리자
         [SerializeField] private HUD_MapSelectorButton selectButton; // 선택 확인 버튼
         [SerializeField] private HUD_MapSelectorButton exitButton;     // 종료 버튼
+        [SerializeField] private CanvasGroup canvasGroup;          // 알파 통합 관리를 위한 캔버스 그룹
+        [SerializeField] private Image backgroundImage;          // 백그라운드 이미지
         [SerializeField] private Transform regionContainer;     // 지역 항목 부모 컨테이너
         [SerializeField] private GameObject regionPrefab;       // 지역 항목 프리팹
 
@@ -26,6 +30,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private float snapSpeed = 10.0f;        // 스냅 이동 속도
         [SerializeField] private float itemSpacing = 600.0f;     // 항목 간 가로 간격
         [SerializeField] private float dragSensitivity = 1.0f;   // 드래그 민감도 (추가)
+        [SerializeField] private float fadeDuration = 0.5f;      // 페이드 애니메이션 시간
+        [SerializeField] private float maxBackgroundAlpha = 0.9f; // 백그라운드 최대 알파
 
         // //내부 의존성
         private IMapDataProvider mapDataProvider;
@@ -58,6 +64,16 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             onConfirmCallback = _onConfirm;
             onExitCallback = _onExit;
 
+            if (null == canvasGroup)
+                canvasGroup = GetComponent<CanvasGroup>();
+
+            if (null != backgroundImage)
+            {
+                Color _color = backgroundImage.color;
+                _color.a = maxBackgroundAlpha;
+                backgroundImage.color = _color;
+            }
+
             if (null != regionContainer)
                 containerRect = regionContainer.GetComponent<RectTransform>();
 
@@ -81,6 +97,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 SetTimeState(timeDataProvider.isDay);
             else
                 UpdateSunMoonState();
+
+            SetUIAlpha(0.0f);
         }
 
         public void SetTimeState(bool _isDay)
@@ -191,7 +209,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 {
                     bool _isFocus = (_i == _index);
                     // 포커스된 지역이고 애니메이션 재생 요청이 있을 때만 true 전달
-                    spawnedRegions[_i].Setup(spawnedRegions[_i].GetMapName(), spawnedRegions[_i].GetMapEnvironmentInfo(), _isFocus && _shouldPlayAnimation);
+                    // 오픈 시에 포커스가 아닌 지역들은 등장 애니메이션을 스킵(즉시 로드 상태)
+                    bool _play = _isFocus && _shouldPlayAnimation;
+                    bool _instant = !_isFocus && _shouldPlayAnimation;
+
+                    spawnedRegions[_i].Setup(spawnedRegions[_i].GetMapName(), spawnedRegions[_i].GetMapEnvironmentInfo(), _play, _instant);
                     spawnedRegions[_i].SetFocus(_isFocus);
                 }
             }
@@ -212,6 +234,86 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             bool _isDimmed = (null == currentFocusedRegion) || (ForestType.None == subSelector.GetSelectedForestType());
             selectButton.SetDimmed(_isDimmed);
+        }
+
+        public void MapSelectorOpen()
+        {
+            gameObject.SetActive(true);
+            isClosing = false;
+
+            if (null == subSelector)
+                return;
+
+            // UI가 열릴 때 현재 위치한 지역 애니메이션 재생
+            int _closestIndex = 0;
+            if (null != containerRect)
+            {
+                _closestIndex = Mathf.RoundToInt(-containerRect.localPosition.x / itemSpacing);
+                _closestIndex = Mathf.Clamp(_closestIndex, 0, spawnedRegions.Count - 1);
+            }
+            
+            FocusRegion(_closestIndex, true); // 오픈 시에는 애니메이션 재생 요청
+
+            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+            if (null == _db.mapDatas)
+                return;
+
+            for (int _i = 0; _i < _db.mapDatas.Count; _i++)
+            {
+                MapEnvironmentDataInfo _info = _db.mapDatas[_i];
+
+                if (MapType.Town == _info.mapType)
+                    continue;
+
+                subSelector.UpdateHiddenGauges(_info.forestDatas);
+            }
+
+            PlayFadeAnimation(1.0f);
+        }
+
+        public void MapSelectorClose()
+        {
+            if (true == isClosing)
+                return;
+
+            isClosing = true;
+
+            if (null != subSelector)
+                subSelector.Close();
+
+            PlayFadeAnimation(0.0f, DeactivateSelector);
+
+            if (null != currentFocusedRegion)
+            {
+                currentFocusedRegion.PlayEndAnimation(null, true);
+            }
+        }
+
+        private void PlayFadeAnimation(float _targetAlpha, Action _onComplete = null)
+        {
+            if (null == canvasGroup)
+            {
+                _onComplete?.Invoke();
+                return;
+            }
+
+            canvasGroup.DOFade(_targetAlpha, fadeDuration)
+                .SetEase(Ease.InOutSine)
+                .OnComplete(() => _onComplete?.Invoke());
+        }
+
+        private void SetUIAlpha(float _alpha)
+        {
+            if (null != canvasGroup)
+                canvasGroup.alpha = _alpha;
+        }
+
+        private void DeactivateSelector()
+        {
+            gameObject.SetActive(false);
+
+            if (null != subSelector)
+                subSelector.ClearSelection();
         }
 
         // //Event System 구현부
@@ -251,68 +353,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             FocusRegion(_closestIndex, false); // 슬라이드 이동 시에는 애니메이션 재생 안 함
         }
 
-        public void MapSelectorOpen()
-        {
-            gameObject.SetActive(true);
-            isClosing = false;
-
-            if (null == subSelector)
-                return;
-
-            // UI가 열릴 때 현재 위치한 지역 애니메이션 재생
-            int _closestIndex = 0;
-            if (null != containerRect)
-            {
-                _closestIndex = Mathf.RoundToInt(-containerRect.localPosition.x / itemSpacing);
-                _closestIndex = Mathf.Clamp(_closestIndex, 0, spawnedRegions.Count - 1);
-            }
-            
-            FocusRegion(_closestIndex, true); // 오픈 시에는 애니메이션 재생 요청
-
-            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
-            if (null == _db.mapDatas)
-                return;
-
-            for (int _i = 0; _i < _db.mapDatas.Count; _i++)
-            {
-                MapEnvironmentDataInfo _info = _db.mapDatas[_i];
-
-                if (MapType.Town == _info.mapType)
-                    continue;
-
-                subSelector.UpdateHiddenGauges(_info.forestDatas);
-            }
-        }
-
-        public void MapSelectorClose()
-        {
-            if (true == isClosing)
-                return;
-
-            isClosing = true;
-
-            if (null != currentFocusedRegion)
-            {
-                currentFocusedRegion.PlayEndAnimation(DeactivateSelector);
-                return;
-            }
-
-            DeactivateSelector();
-        }
-
-        private void DeactivateSelector()
-        {
-            gameObject.SetActive(false);
-
-            if (null != subSelector)
-                subSelector.ClearSelection();
-        }
-
         // //유니티 이벤트 함수
 
         private void Update()
         {
-            if (false == isInitialized || true == isDragging)
+            if (false == isInitialized || true == isDragging || true == isClosing)
                 return;
 
             if (null == containerRect)

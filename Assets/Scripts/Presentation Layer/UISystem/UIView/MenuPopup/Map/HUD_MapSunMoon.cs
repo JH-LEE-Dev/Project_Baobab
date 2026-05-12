@@ -86,6 +86,23 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             isRebound = false;
         }
 
+        public void SetAlpha(float _alpha)
+        {
+            if (null != sunImage)
+            {
+                Color _color = sunImage.color;
+                _color.a = _alpha;
+                sunImage.color = _color;
+            }
+
+            if (null != moonImage)
+            {
+                Color _color = moonImage.color;
+                _color.a = _alpha;
+                moonImage.color = _color;
+            }
+        }
+
         // //유니티 이벤트 함수
 
         private void LateUpdate()

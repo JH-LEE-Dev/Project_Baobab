@@ -32,7 +32,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private string hoverOffMotionKey;
         private string clickMotionKey;
 
-        bool isDimmed = false;
+        private float currentAlpha = 1.0f;
+        private bool isDimmed = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -62,8 +63,23 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             isDimmed = _isDimmed;
 
-            buttonImage.color = (true == _isDimmed) ? dimmedColor : normalColor;
+            Color _targetColor = (true == _isDimmed) ? dimmedColor : normalColor;
+            _targetColor.a = currentAlpha;
+            
+            buttonImage.color = _targetColor;
             buttonImage.raycastTarget = (false == _isDimmed);
+        }
+
+        public void SetAlpha(float _alpha)
+        {
+            currentAlpha = _alpha;
+
+            if (null == buttonImage)
+                return;
+
+            Color _color = buttonImage.color;
+            _color.a = currentAlpha;
+            buttonImage.color = _color;
         }
 
         // //Event System 구현부

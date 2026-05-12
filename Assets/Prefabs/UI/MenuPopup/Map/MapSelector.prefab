@@ -258,6 +258,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8696961242616682236}
   - component: {fileID: 49375918489728327}
+  - component: {fileID: 536505075226860602}
   m_Layer: 5
   m_Name: MapSelector
   m_TagString: Untagged
@@ -308,11 +309,27 @@ MonoBehaviour:
   sunMoon: {fileID: 5192826426171166451}
   selectButton: {fileID: 4485508533173806816}
   exitButton: {fileID: 2193495580616618865}
+  canvasGroup: {fileID: 536505075226860602}
+  backgroundImage: {fileID: 4103077678711190649}
   regionContainer: {fileID: 6358695605423527309}
   regionPrefab: {fileID: 5378699527577570030, guid: a79b591f980f19043b363b64099cb2e9, type: 3}
   snapSpeed: 10
   itemSpacing: 250
   dragSensitivity: 0.3
+  fadeDuration: 0.05
+  maxBackgroundAlpha: 0.9
+--- !u!225 &536505075226860602
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2420857969200121288}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &3594431905257545498
 GameObject:
   m_ObjectHideFlags: 0
