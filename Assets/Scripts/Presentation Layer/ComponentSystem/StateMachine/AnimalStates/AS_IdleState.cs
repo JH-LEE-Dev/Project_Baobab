@@ -36,7 +36,7 @@ public class AS_IdleState : AnimalState
 
     public override void Update()
     {
-        if (!bActivated) return;
+        if (!bActivated || !animal.bActivated) return;
 
         Vector3 currentPos = animal.transform.position;
 
@@ -153,7 +153,7 @@ public class AS_IdleState : AnimalState
 
     public override void FixedUpdate()
     {
-        if (!bActivated) return;
+        if (!bActivated || !animal.bActivated) return;
 
         Vector2 velocity = animal.rb.linearVelocity;
         float sqrSpeed = velocity.sqrMagnitude;
