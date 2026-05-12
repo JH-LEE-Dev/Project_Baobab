@@ -274,18 +274,18 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
         }
 
-        public void PlayEndAnimation(UnityEngine.Events.UnityAction _onComplete)
+        public void PlayEndAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
         {
-            PlayEndAnimalAnimation(_onComplete);
-            PlayEndTreeAnimation(_onComplete);
-            PlayEndGroundAnimation(_onComplete);
+            PlayEndAnimalAnimation(_onComplete, _isSkip);
+            PlayEndTreeAnimation(_onComplete, _isSkip);
+            PlayEndGroundAnimation(_onComplete, _isSkip);
         }
 
-        private void PlayEndAnimalAnimation(UnityEngine.Events.UnityAction _onComplete)
+        private void PlayEndAnimalAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
         {
             if (null == animalImages || 0 == animalImages.Length)
             {
-                PlayEndTreeAnimation(_onComplete);
+                PlayEndTreeAnimation(_onComplete, _isSkip);
                 return;
             }
 
@@ -298,18 +298,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 if (null == animalImages[_i])
                     continue;
 
-                if (_i == _finalIdx)
-                    motionPlayer.PlayBackward(_animalAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayBackward: _delay * (animalImages.Length - 1 - _i));
-                else
-                    motionPlayer.PlayBackward(_animalAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayBackward: _delay * (animalImages.Length - 1 - _i));
+                motionPlayer.PlayBackward(_animalAnimationTag + (_i + 1).ToString(), bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (animalImages.Length - 1 - _i));
             }
         }
 
-        private void PlayEndTreeAnimation(UnityEngine.Events.UnityAction _onComplete)
+        private void PlayEndTreeAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
         {
             if (null == treeVisuals || 0 == treeVisuals.Length)
             {
-                PlayEndGroundAnimation(_onComplete);
+                PlayEndGroundAnimation(_onComplete, _isSkip);
                 return;
             }
 
@@ -322,14 +319,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 if (null == treeVisuals[_i].leafImage && null == treeVisuals[_i].trunkImage)
                     continue;
 
-                if (_i == _finalIdx)
-                    motionPlayer.PlayBackward(_treeAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayBackward: _delay * (treeVisuals.Length - 1 - _i));
-                else
-                    motionPlayer.PlayBackward(_treeAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayBackward: _delay * (treeVisuals.Length - 1 - _i));
+                motionPlayer.PlayBackward(_treeAnimationTag + (_i + 1).ToString(), bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (treeVisuals.Length - 1 - _i));
             }
         }
 
-        private void PlayEndGroundAnimation(UnityEngine.Events.UnityAction _onComplete)
+        private void PlayEndGroundAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
         {
             if (null == groundImages || 0 == groundImages.Length)
             {
@@ -347,9 +341,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     continue;
 
                 if (_i == _finalIdx)
-                    motionPlayer.PlayBackward(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _onComplete: _onComplete, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
+                    motionPlayer.PlayBackward(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _onComplete: _onComplete, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
                 else
-                    motionPlayer.PlayBackward(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
+                    motionPlayer.PlayBackward(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
             }
         }
 
