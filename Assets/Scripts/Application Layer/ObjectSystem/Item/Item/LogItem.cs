@@ -46,6 +46,10 @@ public class LogItem : Item, IStaticCollidable
 
     private Sprite timberSprite;
 
+    // 관리용 인덱스
+    public int PoolIndex { get; set; } = -1;
+    public int UpdateIndex { get; set; } = -1;
+
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -60,12 +64,20 @@ public class LogItem : Item, IStaticCollidable
         elapsed = 0;
         timberSprite = _logItemTypeData.timberSprite;
 
-        spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        // 최적화: GetComponentInChildren 캐싱
+        if (spriteRenderer == null)
+        {
+            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            if (spriteRenderer != null)
+            {
+                visualTransform = spriteRenderer.transform;
+            }
+        }
+
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
             spriteRenderer.color = color;
-            visualTransform = spriteRenderer.transform;
         }
 
         transform.localScale = Vector3.one;
@@ -139,9 +151,9 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = 0f;
         transform.localScale = Vector3.one;
 
-        if (sprite != null)
+        if (sprite != null && spriteRenderer != null)
             spriteRenderer.sprite = sprite;
-            
+
         if (visualTransform != null) visualTransform.localRotation = Quaternion.identity;
     }
 

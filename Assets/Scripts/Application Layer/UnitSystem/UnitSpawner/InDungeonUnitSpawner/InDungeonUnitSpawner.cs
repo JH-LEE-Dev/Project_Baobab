@@ -20,10 +20,10 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private Dictionary<AnimalType, IObjectPool<Animal>> animalPools = new Dictionary<AnimalType, IObjectPool<Animal>>();
     private Coroutine growthCoroutine;
 
-    private List<Animal> allSpawnedAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
+    private List<Animal> allSpawnedAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT); // 마스터 리스트 (컬링 그룹용)
     public IReadOnlyList<Animal> Animals => allSpawnedAnimals;
     
-    private List<Animal> activeAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT);
+    private List<Animal> activeAnimals = new List<Animal>(SYSTEM_VAR.MAX_ANIMAL_CNT); // 업데이트 및 가시성 리스트
     public IReadOnlyList<Animal> ActiveAnimals => activeAnimals;
 
     private List<int> availableIndices = new List<int>(1024); // GC 방지용 캐싱 인덱스 리스트
@@ -36,7 +36,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
     private CullingGroup.StateChanged onCullingStateChangedDelegate;
-    private bool isCullingDirty = false;
+    //private bool isCullingDirty = false;
 
     // // 풀 설정 변수
     [SerializeField] private bool collectionCheck = false; // 에디터 성능을 위해 false로 설정
@@ -141,10 +141,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
             if (environmentProvider.densityProvider.CanCreateAnimal())
             {
-                if (SpawnOneAnimalFromAvailable())
-                {
-                    isCullingDirty = true;
-                }
+                SpawnOneAnimalFromAvailable();
             }
         }
     }
@@ -182,6 +179,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         cullingGroup.targetCamera = Camera.main;
         cullingGroup.SetBoundingDistances(cullingDistances);
         cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
+        cullingGroup.SetBoundingSpheres(spheres);
     }
 
     public void RefreshCullingGroup()
@@ -198,6 +196,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         {
             spheres[i].position = allSpawnedAnimals[i].transform.position;
             spheres[i].radius = 3f; 
+            allSpawnedAnimals[i].PoolIndex = i;
         }
 
         cullingGroup.SetBoundingSpheres(spheres);
@@ -210,15 +209,8 @@ public class InDungeonUnitSpawner : MonoBehaviour
             bool isNear = cullingGroup.GetDistance(i) == 0;
             bool shouldBeActive = isVisible && isNear;
 
-            if (shouldBeActive == false)
-            {
-                allSpawnedAnimals[i].Hide();
-            }
-            else
-            {    
-                allSpawnedAnimals[i].Show();
-                activeAnimals.Add(allSpawnedAnimals[i]);
-            }
+            allSpawnedAnimals[i].UpdateIndex = -1;
+            UpdateAnimalVisibility(allSpawnedAnimals[i], shouldBeActive);
         }
     }
 
@@ -236,42 +228,57 @@ public class InDungeonUnitSpawner : MonoBehaviour
         if (_ev.index >= allSpawnedAnimals.Count) return;
 
         bool shouldBeActive = _ev.isVisible && (_ev.currentDistance == 0);
-        Animal animal = allSpawnedAnimals[_ev.index];
+        UpdateAnimalVisibility(allSpawnedAnimals[_ev.index], shouldBeActive);
+    }
 
-        if (animal != null)
+    private void UpdateAnimalVisibility(Animal _animal, bool _shouldBeActive)
+    {
+        if (_animal == null) return;
+
+        if (_animal.bActivated != _shouldBeActive)
         {
-            if (shouldBeActive == false)
-            { 
-                animal.Hide();
-                activeAnimals.Remove(animal);
+            if (_shouldBeActive) _animal.Show();
+            else _animal.Hide();
+        }
+
+        if (_shouldBeActive)
+        {
+            if (_animal.UpdateIndex == -1)
+            {
+                _animal.UpdateIndex = activeAnimals.Count;
+                activeAnimals.Add(_animal);
             }
-            else
-            { 
-                animal.Show();
-                if (!activeAnimals.Contains(animal))
+        }
+        else
+        {
+            int idx = _animal.UpdateIndex;
+            if (idx != -1)
+            {
+                int lastIdx = activeAnimals.Count - 1;
+                if (idx != lastIdx)
                 {
-                    activeAnimals.Add(animal);
+                    Animal lastAnimal = activeAnimals[lastIdx];
+                    activeAnimals[idx] = lastAnimal;
+                    lastAnimal.UpdateIndex = idx;
                 }
+                activeAnimals.RemoveAt(lastIdx);
+                _animal.UpdateIndex = -1;
             }
         }
     }
 
     private void Update()
     {
+        float deltaTime = Time.deltaTime;
+
         if (cullingGroup != null && allSpawnedAnimals.Count > 0)
         {
-            cullingUpdateTimer += Time.deltaTime;
+            cullingUpdateTimer += deltaTime;
             if (cullingUpdateTimer >= cullingUpdateInterval)
             {
                 UpdateCullingSpheres();
                 cullingUpdateTimer = 0f;
             }
-        }
-
-        if (isCullingDirty)
-        {
-            RefreshCullingGroup();
-            isCullingDirty = false;
         }
     }
 
@@ -295,36 +302,55 @@ public class InDungeonUnitSpawner : MonoBehaviour
         animal.gameObject.SetActive(true);
         animal.Initialize(environmentProvider);
 
+        // 최적화: 마스터 리스트 증분 업데이트 (O(1))
+        animal.PoolIndex = allSpawnedAnimals.Count;
         allSpawnedAnimals.Add(animal);
+
+        if (spheres.Length <= animal.PoolIndex)
+        {
+            Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, animal.PoolIndex + 1));
+            cullingGroup.SetBoundingSpheres(spheres);
+        }
+        spheres[animal.PoolIndex] = new BoundingSphere(_pos, 3f);
+
         environmentProvider.densityProvider.UpdateAnimalCnt(true);
-        isCullingDirty = true;
+        
+        if (cullingGroup != null)
+        {
+            cullingGroup.SetBoundingSphereCount(allSpawnedAnimals.Count);
+            // 즉시 가시성 체크 및 초기 상태 설정
+            bool shouldBeActive = cullingGroup.IsVisible(animal.PoolIndex) && (cullingGroup.GetDistance(animal.PoolIndex) == 0);
+            UpdateAnimalVisibility(animal, shouldBeActive);
+        }
+        else
+        {
+            animal.Show();
+            animal.UpdateIndex = activeAnimals.Count;
+            activeAnimals.Add(animal);
+        }
+
         animal.AnimalIsDeadEvent -= AnimalIsDead;
         animal.AnimalIsDeadEvent += AnimalIsDead;
 
         animal.AnimalHitEvent -= AnimalHit;
         animal.AnimalHitEvent += AnimalHit;
-
-        // 생성 시점에는 CullingGroup에 의해 Show/Hide가 결정되므로 여기서 추가하지 않음
     }
 
     public void ReleaseAnimal(Animal _animal)
     {
         _animal.AnimalIsDeadEvent -= AnimalIsDead;
-
         _animal.AnimalHitEvent -= AnimalHit;
 
-        activeAnimals.Remove(_animal);
+        // 최적화: 업데이트 리스트에서 제거
+        UpdateAnimalVisibility(_animal, false);
 
-        if (_animal.gameObject.activeSelf)
+        if (animalPools.TryGetValue(_animal.animalType, out var pool))
         {
-            if (animalPools.TryGetValue(_animal.animalType, out var pool))
-            {
-                pool.Release(_animal);
-            }
-            else
-            {
-                Destroy(_animal.gameObject);
-            }
+            pool.Release(_animal);
+        }
+        else
+        {
+            Destroy(_animal.gameObject);
         }
     }
 
@@ -370,7 +396,6 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
         allSpawnedAnimals.Clear();
         activeAnimals.Clear();
-        isCullingDirty = true;
 
         // 작업 완료 후 부모 재활성화
         this.gameObject.SetActive(true);
@@ -424,8 +449,28 @@ public class InDungeonUnitSpawner : MonoBehaviour
     {
         environmentProvider.densityProvider.UpdateAnimalCnt(false);
         AnimalIsDeadEvent?.Invoke(_animal);
-        allSpawnedAnimals.Remove(_animal);
-        isCullingDirty = true;
+
+        // 최적화: 마스터 리스트에서 Swap-with-last O(1) 제거
+        int index = _animal.PoolIndex;
+        if (index >= 0 && index < allSpawnedAnimals.Count)
+        {
+            int lastIdx = allSpawnedAnimals.Count - 1;
+            if (index != lastIdx)
+            {
+                Animal lastAnimal = allSpawnedAnimals[lastIdx];
+                allSpawnedAnimals[index] = lastAnimal;
+                lastAnimal.PoolIndex = index;
+                spheres[index] = spheres[lastIdx];
+            }
+            allSpawnedAnimals.RemoveAt(lastIdx);
+            _animal.PoolIndex = -1;
+
+            if (cullingGroup != null)
+            {
+                cullingGroup.SetBoundingSphereCount(allSpawnedAnimals.Count);
+            }
+        }
+
         ReleaseAnimal(_animal);
     }
 

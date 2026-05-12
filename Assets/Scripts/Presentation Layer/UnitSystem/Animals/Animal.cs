@@ -88,6 +88,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     public bool bActivated = true;
 
+    // 관리용 인덱스
+    public int PoolIndex { get; set; } = -1;
+    public int UpdateIndex { get; set; } = -1;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;

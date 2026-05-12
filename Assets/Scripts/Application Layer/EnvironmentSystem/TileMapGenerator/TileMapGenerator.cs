@@ -42,8 +42,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private TileBase waterTile_BorderRD_LU_LD;
     [SerializeField] private TileBase waterTile_BorderAll;
 
-
-
     [SerializeField] private TileBase sandTile;
     [SerializeField] private TileBase grassTile;
     [SerializeField] private TileBase mountainTile;
@@ -59,6 +57,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private Tilemap waterStencilTilemap;
     private Tilemap groundStencilTilemap;
     private Tilemap waterTilemap;
+    private Tilemap waterCollisionTilemap;
 
     private Grid grid;
 
@@ -67,6 +66,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] groundTiles;
     private TileBase[] collisionTiles;
     private TileBase[] waterTiles;
+    private TileBase[] waterCollisionTiles;
     private TileBase[] decoTilesToApply;
     private TileBase[] waterStencilTiles;
     private TileBase[] groundStencilTiles;
@@ -108,6 +108,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             else if (maps[i].name == "WaterStencilTilemap") waterStencilTilemap = maps[i];
             else if (maps[i].name == "GroundStencilTilemap") groundStencilTilemap = maps[i];
             else if (maps[i].name == "WaterTilemap") waterTilemap = maps[i];
+            else if (maps[i].name == "WaterColliderTilemap") waterCollisionTilemap = maps[i];
         }
 
         int size = width * height;
@@ -115,6 +116,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         groundTiles = new TileBase[size];
         collisionTiles = new TileBase[size];
         waterTiles = new TileBase[size];
+        waterCollisionTiles = new TileBase[size];
         decoTilesToApply = new TileBase[size];
         waterStencilTiles = new TileBase[size];
         groundStencilTiles = new TileBase[size];
@@ -148,6 +150,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         collisionTilemap.ClearAllTiles();
         decoTilemap.ClearAllTiles();
         if (waterTilemap != null) waterTilemap.ClearAllTiles();
+        if (waterCollisionTilemap != null) waterCollisionTilemap.ClearAllTiles();
         if (waterStencilTilemap != null) waterStencilTilemap.ClearAllTiles();
         if (groundStencilTilemap != null) groundStencilTilemap.ClearAllTiles();
 
@@ -358,6 +361,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Array.Clear(groundTiles, 0, size);
         Array.Clear(collisionTiles, 0, size);
         Array.Clear(waterTiles, 0, size);
+        Array.Clear(waterCollisionTiles, 0, size);
         Array.Clear(decoTilesToApply, 0, size);
         Array.Clear(waterStencilTiles, 0, size);
         Array.Clear(groundStencilTiles, 0, size);
@@ -394,7 +398,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             if (v < waterThreshold)
             {
                 waterTiles[i] = GetWaterTile(x, y);
-                collisionTiles[i] = treeCollisionTile;
+                waterCollisionTiles[i] = treeCollisionTile;
                 waterStencilTiles[i] = stencilTile;
             }
             else
@@ -441,6 +445,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         groundTilemap.SetTilesBlock(b, groundTiles);
         collisionTilemap.SetTilesBlock(b, collisionTiles);
         if (waterTilemap != null) waterTilemap.SetTilesBlock(b, waterTiles);
+        if (waterCollisionTilemap != null) waterCollisionTilemap.SetTilesBlock(b, waterCollisionTiles);
         decoTilemap.SetTilesBlock(b, decoTilesToApply);
         if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, waterStencilTiles);
         if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);

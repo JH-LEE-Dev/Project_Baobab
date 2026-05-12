@@ -26,6 +26,9 @@ public class LootItem : Item
     private const float SuckAccel = 12f;
     private const float MinAcquireDist = 0.2f;
 
+    // 관리용 인덱스
+    public int UpdateIndex { get; set; } = -1;
+
     public void Initialize(LootItemTypeData _lootItemTypeData)
     {
         base.Initialize(_lootItemTypeData.itemType);

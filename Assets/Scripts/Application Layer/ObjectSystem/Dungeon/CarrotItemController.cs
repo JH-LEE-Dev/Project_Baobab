@@ -16,9 +16,9 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     // 내부 의존성
     private IObjectPool<CarrotItem> carrotPool;
-    // 최적화: 검색 및 삭제 속도 향상을 위해 HashSet 사용 (O(1))
-    private HashSet<CarrotItem> activeItems = new HashSet<CarrotItem>(128);
-    private List<CarrotItem> activeItemsList = new List<CarrotItem>(128); // 최적화: 순회 및 컬링용 리스트
+    // 최적화: 인덱스 기반 관리로 HashSet 제거
+    private List<CarrotItem> activeItemsList = new List<CarrotItem>(128); // 마스터 리스트 (컬링 그룹용)
+    private List<CarrotItem> activeItemsForUpdate = new List<CarrotItem>(128); // 업데이트 리스트 (가시성 기준)
     private List<CarrotItem> cleanupList = new List<CarrotItem>(128); // ClearAll용 재사용 리스트
     private float dropMultiplier = 1.0f;
 
@@ -27,7 +27,6 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
     private float cullingUpdateTimer = 0f;
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
-    private bool isCullingDirty = false;
 
     [SerializeField] private List<CarrotSpawnData> carrotSpawnData;
 
@@ -54,6 +53,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
         cullingGroup.targetCamera = Camera.main;
         spheres = new BoundingSphere[500];
+        cullingGroup.SetBoundingSpheres(spheres);
     }
 
     private void OnCullingStateChanged(CullingGroupEvent _ev)
@@ -61,22 +61,58 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
         if (_ev.index >= activeItemsList.Count) return;
 
         bool isVisible = _ev.isVisible;
-        activeItemsList[_ev.index].gameObject.SetActive(isVisible);
+        UpdateItemVisibility(activeItemsList[_ev.index], isVisible);
+    }
+
+    private void UpdateItemVisibility(CarrotItem _item, bool _isVisible)
+    {
+        if (_item.gameObject.activeSelf != _isVisible)
+        {
+            _item.gameObject.SetActive(_isVisible);
+        }
+
+        if (_isVisible)
+        {
+            if (_item.UpdateIndex == -1)
+            {
+                _item.UpdateIndex = activeItemsForUpdate.Count;
+                activeItemsForUpdate.Add(_item);
+            }
+        }
+        else
+        {
+            int idx = _item.UpdateIndex;
+            if (idx != -1)
+            {
+                int lastIdx = activeItemsForUpdate.Count - 1;
+                if (idx != lastIdx)
+                {
+                    CarrotItem lastItem = activeItemsForUpdate[lastIdx];
+                    activeItemsForUpdate[idx] = lastItem;
+                    lastItem.UpdateIndex = idx;
+                }
+                activeItemsForUpdate.RemoveAt(lastIdx);
+                _item.UpdateIndex = -1;
+            }
+        }
     }
 
     private void Update()
     {
-        if (activeItemsList.Count == 0) return;
-
-        // 아이템 로직 업데이트 (HashSet 복사 없이 직접 순회하도록 로직 최적화 가능)
         float deltaTime = Time.deltaTime;
-        for (int i = 0; i < activeItemsList.Count; i++)
+
+        // 최적화: 가시 영역 내의 아이템만 업데이트
+        if (activeItemsForUpdate.Count > 0)
         {
-            activeItemsList[i].ManualUpdate(deltaTime);
+            // ManualUpdate 중 아이템이 해제(Release)되어 리스트가 변형될 수 있으므로 역순 순회
+            for (int i = activeItemsForUpdate.Count - 1; i >= 0; i--)
+            {
+                activeItemsForUpdate[i].ManualUpdate(deltaTime);
+            }
         }
 
-        // 컬링 구체 위치 업데이트 (스로틀링)
-        if (cullingGroup != null)
+        // 컬링 구체 위치 업데이트 (스로틀링) - 마스터 리스트 기반
+        if (cullingGroup != null && activeItemsList.Count > 0)
         {
             cullingUpdateTimer += deltaTime;
             if (cullingUpdateTimer >= cullingUpdateInterval)
@@ -84,12 +120,6 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
                 UpdateCullingSpheres();
                 cullingUpdateTimer = 0f;
             }
-        }
-
-        if (isCullingDirty)
-        {
-            RefreshCullingGroup();
-            isCullingDirty = false;
         }
     }
 
@@ -111,7 +141,7 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
         for (int i = 0; i < count; i++)
         {
-            activeItemsList[i].gameObject.SetActive(cullingGroup.IsVisible(i));
+            UpdateItemVisibility(activeItemsList[i], cullingGroup.IsVisible(i));
         }
     }
 
@@ -133,33 +163,81 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
 
     private void OnGetCarrotItem(CarrotItem _item)
     {
-        _item.gameObject.SetActive(true);
-        _item.ResetItem();
-        activeItems.Add(_item);
+        // 최적화: 마스터 리스트 추가 및 인덱스 설정 (O(1))
+        _item.PoolIndex = activeItemsList.Count;
         activeItemsList.Add(_item);
-        isCullingDirty = true;
+
+        // BoundingSphere 즉시 동기화
+        if (spheres == null)
+        {
+            spheres = new BoundingSphere[500];
+            if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
+        }
+
+        if (spheres.Length <= _item.PoolIndex)
+        {
+            Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, _item.PoolIndex + 1));
+            if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
+        }
+        spheres[_item.PoolIndex] = new BoundingSphere(_item.transform.position, 1f);
+
+        if (cullingGroup != null)
+        {
+            cullingGroup.SetBoundingSphereCount(activeItemsList.Count);
+            // 즉시 가시성 체크하여 활성화 및 업데이트 등록 여부 결정
+            UpdateItemVisibility(_item, cullingGroup.IsVisible(_item.PoolIndex));
+        }
+        else
+        {
+            _item.gameObject.SetActive(true);
+            // 컬링 그룹이 없으면 무조건 업데이트 리스트에 추가
+            _item.UpdateIndex = activeItemsForUpdate.Count;
+            activeItemsForUpdate.Add(_item);
+        }
+
+        _item.ResetItem();
     }
 
     private void OnReleaseCarrotItem(CarrotItem _item)
     {
+        // 최적화: 업데이트 리스트에서 제거
+        UpdateItemVisibility(_item, false);
+
+        // 최적화: 마스터 리스트에서 Swap-with-last 방식을 이용한 제거 (O(1))
+        int idx = _item.PoolIndex;
+        if (idx != -1 && idx < activeItemsList.Count)
+        {
+            int lastIdx = activeItemsList.Count - 1;
+            if (idx != lastIdx)
+            {
+                CarrotItem lastItem = activeItemsList[lastIdx];
+                activeItemsList[idx] = lastItem;
+                lastItem.PoolIndex = idx;
+                spheres[idx] = spheres[lastIdx];
+            }
+            activeItemsList.RemoveAt(lastIdx);
+            _item.PoolIndex = -1;
+
+            if (cullingGroup != null)
+            {
+                cullingGroup.SetBoundingSphereCount(activeItemsList.Count);
+            }
+        }
+
         _item.gameObject.SetActive(false);
-        activeItems.Remove(_item);
-        activeItemsList.Remove(_item);
-        isCullingDirty = true;
     }
 
     private void OnDestroyCarrotItem(CarrotItem _item)
     {
         _item.CarrotItemAcquired -= CarrotItemAcquired;
-        activeItems.Remove(_item);
-        activeItemsList.Remove(_item);
+        OnReleaseCarrotItem(_item);
         Destroy(_item.gameObject);
-        isCullingDirty = true;
     }
 
     public void ClearAll()
     {
-        if (activeItemsList.Count == 0) return;
+        int count = activeItemsList.Count;
+        if (count == 0) return;
 
         cleanupList.Clear();
         cleanupList.AddRange(activeItemsList);
@@ -169,10 +247,14 @@ public class CarrotItemController : MonoBehaviour, ICarrotItemCH
             carrotPool.Release(cleanupList[i]);
         }
 
-        activeItems.Clear();
         activeItemsList.Clear();
+        activeItemsForUpdate.Clear();
         cleanupList.Clear();
-        isCullingDirty = true;
+
+        if (cullingGroup != null)
+        {
+            cullingGroup.SetBoundingSphereCount(0);
+        }
     }
 
     public void SpawnCarrotItem(Vector3 _position, AnimalType _animalType)

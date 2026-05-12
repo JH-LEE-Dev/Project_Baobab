@@ -44,6 +44,10 @@ public class CarrotItem : Item, IStaticCollidable
     private const float SuckAccel = 12f;
     private const float MinAcquireDist = 0.2f;
 
+    // 관리용 인덱스
+    public int PoolIndex { get; set; } = -1;
+    public int UpdateIndex { get; set; } = -1;
+
     public void Initialize()
     {
         base.Initialize(ItemType.Carrot);

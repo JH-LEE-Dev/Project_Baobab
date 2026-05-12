@@ -47,6 +47,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public bool bIsSapling = false;
     private float growTime = 0f;
 
+    // 관리용 인덱스
+    public int PoolIndex { get; set; } = -1;
+    public int UpdateIndex { get; set; } = -1;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
