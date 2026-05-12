@@ -204,7 +204,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private void UnClicked() => clicked = false;
 
         // //유니티 이벤트 함수
-
         private void Awake()
         {
             if (false == isInitialized)
