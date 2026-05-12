@@ -94,9 +94,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             isInitialized = true;
 
             if (null != timeDataProvider)
+            {
+                if (null != sunMoon)
+                    sunMoon.SetInitialAlpha(timeDataProvider.isDay);
                 SetTimeState(timeDataProvider.isDay);
+            }
             else
+            {
                 UpdateSunMoonState();
+            }
 
             SetUIAlpha(0.0f);
         }
@@ -184,10 +190,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == sunMoon)
                 return;
 
-            if (true == isDayTime)
-                sunMoon.SetRotation(55f, 0.25f);
-            else
-                sunMoon.SetRotation(235f, 0.25f);
+            sunMoon.SetRotation(isDayTime, 0.25f);
         }
 
         private void FocusRegion(int _index, bool _shouldPlayAnimation = false)
@@ -270,6 +273,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
                 subSelector.UpdateHiddenGauges(_info.forestDatas);
             }
+
+            sunMoon?.PlayOpenAnim();
 
             PlayFadeAnimation(1.0f);
         }

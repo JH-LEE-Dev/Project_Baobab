@@ -16,9 +16,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private RectTransform pivotRect;      // 중앙 회전축
         [SerializeField] private Image sunImage;              // 해 이미지
         [SerializeField] private Image moonImage;             // 달 이미지
-
-        [Header("Animation")]
-        [SerializeField] private ObjectMotionPlayer motionPlayer;
+        [SerializeField] private ObjectMotionPlayer omp;
 
         // //내부 의존성
         private RectTransform sunRect;
@@ -36,9 +34,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (true == isInitialized)
                 return;
 
-            if (null == motionPlayer)
-                motionPlayer = GetComponent<ObjectMotionPlayer>();
-
             if (null != sunImage)
                 sunRect = sunImage.GetComponent<RectTransform>();
 
@@ -49,21 +44,38 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         }
 
         /// <summary>
-        /// 중앙축의 회전값을 수동으로 설정합니다. (필요 시)
+        /// 낮/밤 상태에 따라 중앙축을 회전시키고 해/달의 알파를 교차 페이드합니다.
         /// </summary>
-        public void SetRotation(float _zAngle, float _duration)
+        public void SetRotation(bool _isDay, float _duration)
         {
             if (null == pivotRect)
                 return;
 
+            float _targetAngle = _isDay ? 55f : 235f;
+
             pivotRect.DOKill();
-            Tween Rot = pivotRect.DOLocalRotate(new Vector3(0.0f, 0.0f, _zAngle), _duration, RotateMode.FastBeyond360);
-            Rot.OnComplete(ReboundSunMoon);
+            pivotRect.DOLocalRotate(new Vector3(0.0f, 0.0f, _targetAngle), _duration, RotateMode.FastBeyond360)
+                .OnComplete(ReboundSunMoon);
+
+            // 알파 페이드 연출
+            if (null != sunImage)
+                sunImage.DOFade(_isDay ? 1.0f : 0.0f, _duration);
+
+            if (null != moonImage)
+                moonImage.DOFade(_isDay ? 0.0f : 1.0f, _duration);
+        }
+
+        public void PlayOpenAnim()
+        {
+            if (null == omp)
+                return;
+
+            omp.Play("SunMoon", bReset: true);
         }
 
         private void ReboundSunMoon()
         {
-            if (null != sunRect || null != moonRect)
+            if (null == sunRect || null == moonRect)
                 return;
 
             isRebound = true;
@@ -86,19 +98,22 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             isRebound = false;
         }
 
-        public void SetAlpha(float _alpha)
+        /// <summary>
+        /// 초기 투명도 설정을 수행합니다.
+        /// </summary>
+        public void SetInitialAlpha(bool _isDay)
         {
             if (null != sunImage)
             {
                 Color _color = sunImage.color;
-                _color.a = _alpha;
+                _color.a = _isDay ? 1.0f : 0.0f;
                 sunImage.color = _color;
             }
 
             if (null != moonImage)
             {
                 Color _color = moonImage.color;
-                _color.a = _alpha;
+                _color.a = _isDay ? 0.0f : 1.0f;
                 moonImage.color = _color;
             }
         }
