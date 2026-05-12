@@ -108,6 +108,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     public LogItem GetCuttingLogItem()
     {
+        cuttingItem.SetTimberSprite();
         return cuttingItem;
     }
 
