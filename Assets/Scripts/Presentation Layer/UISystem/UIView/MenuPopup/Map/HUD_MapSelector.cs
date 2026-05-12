@@ -117,26 +117,23 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == subSelector)
                 return;
 
-            // UI가 열릴 때 현재 위치한 지역 애니메이션 재생
+            // UI가 열릴 때 현재 위치를 계산하여 즉시 스냅 (Update 루프에서 숨겨지는 것 방지)
             int _closestIndex = 0;
             if (null != containerRect)
             {
                 _closestIndex = Mathf.RoundToInt(-containerRect.localPosition.x / itemSpacing);
                 _closestIndex = Mathf.Clamp(_closestIndex, 0, spawnedRegions.Count - 1);
+                
+                Vector3 _snapPos = containerRect.localPosition;
+                _snapPos.x = -(_closestIndex * itemSpacing);
+                containerRect.localPosition = _snapPos;
+                targetPosX = _snapPos.x;
             }
             
             FocusRegion(_closestIndex, true);
 
-            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
-            if (null != _db.mapDatas)
-            {
-                for (int _i = 0; _i < _db.mapDatas.Count; _i++)
-                {
-                    MapEnvironmentDataInfo _info = _db.mapDatas[_i];
-                    if (MapType.Town == _info.mapType) continue;
-                    subSelector.UpdateHiddenGauges(_info.forestDatas);
-                }
-            }
+            // 하위 지역이 즉시 보이도록 설정
+            subSelector.SetVisibility(true);
 
             PlayFadeAnimation(1.0f);
         }

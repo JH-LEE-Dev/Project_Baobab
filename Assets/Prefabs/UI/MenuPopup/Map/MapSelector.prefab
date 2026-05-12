@@ -54,8 +54,7 @@ MonoBehaviour:
   pivotRect: {fileID: 2259264136857232045}
   sunImage: {fileID: 689672498707797847}
   moonImage: {fileID: 5090995232642941020}
-  omp: {fileID: 1355467695516735062}
-  motionPlayer: {fileID: 0}
+  motionPlayer: {fileID: 1355467695516735062}
 --- !u!225 &8403366231234381467
 CanvasGroup:
   m_ObjectHideFlags: 0

@@ -85,7 +85,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void PlayOpenAnim()
         {
-            // TODO: 필요한 경우 여는 연출 구현
+            if (null == motionPlayer)
+                return;
+
+            motionPlayer.Play("SunMoon", bReset: true);
         }
 
         // //내부 로직
