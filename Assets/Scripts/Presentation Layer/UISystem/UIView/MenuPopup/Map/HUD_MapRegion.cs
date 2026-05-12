@@ -55,7 +55,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private MapEnvironmentDataInfo mapEnvironmentInfo;
         private string currentMapName = string.Empty;
+        private float uiAlpha = 1.0f;
         private bool isLocked = false;
+        private bool isFocused = false;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
@@ -131,29 +133,48 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 unlockObject.SetActive(false == isLocked);
         }
 
+        public void SetUIAlpha(float _alpha)
+        {
+            uiAlpha = _alpha;
+            ApplyVisualState();
+        }
+
         public void SetFocus(bool _isFocus)
         {
-            float _factor = (true == _isFocus) ? 1.0f : dimFactor;
+            isFocused = _isFocus;
+            ApplyVisualState();
+        }
+
+        private void ApplyVisualState()
+        {
+            float _focusFactor = (true == isFocused) ? 1.0f : dimFactor;
 
             if (null != groundImages && null != groundOriginalColors)
                 for (int _i = 0; _i < groundImages.Length; _i++)
                     if (null != groundImages[_i])
-                        groundImages[_i].color = new Color(groundOriginalColors[_i].r * _factor, groundOriginalColors[_i].g * _factor, groundOriginalColors[_i].b * _factor, groundOriginalColors[_i].a);
+                        groundImages[_i].color = new Color(groundOriginalColors[_i].r * _focusFactor, groundOriginalColors[_i].g * _focusFactor, groundOriginalColors[_i].b * _focusFactor, groundOriginalColors[_i].a * uiAlpha);
 
             if (null != treeVisuals && null != treeOriginalColors)
                 for (int _i = 0; _i < treeVisuals.Length; _i++)
                 {
                     if (null != treeVisuals[_i].leafImage)
-                        treeVisuals[_i].leafImage.color = new Color(treeOriginalColors[_i].leafColor.r * _factor, treeOriginalColors[_i].leafColor.g * _factor, treeOriginalColors[_i].leafColor.b * _factor, treeOriginalColors[_i].leafColor.a);
+                        treeVisuals[_i].leafImage.color = new Color(treeOriginalColors[_i].leafColor.r * _focusFactor, treeOriginalColors[_i].leafColor.g * _focusFactor, treeOriginalColors[_i].leafColor.b * _focusFactor, treeOriginalColors[_i].leafColor.a * uiAlpha);
 
                     if (null != treeVisuals[_i].trunkImage)
-                        treeVisuals[_i].trunkImage.color = new Color(treeOriginalColors[_i].trunkColor.r * _factor, treeOriginalColors[_i].trunkColor.g * _factor, treeOriginalColors[_i].trunkColor.b * _factor, treeOriginalColors[_i].trunkColor.a);
+                        treeVisuals[_i].trunkImage.color = new Color(treeOriginalColors[_i].trunkColor.r * _focusFactor, treeOriginalColors[_i].trunkColor.g * _focusFactor, treeOriginalColors[_i].trunkColor.b * _focusFactor, treeOriginalColors[_i].trunkColor.a * uiAlpha);
                 }
 
             if (null != animalImages && null != animalOriginalColors)
                 for (int _i = 0; _i < animalImages.Length; _i++)
                     if (null != animalImages[_i])
-                        animalImages[_i].color = new Color(animalOriginalColors[_i].r * _factor, animalOriginalColors[_i].g * _factor, animalOriginalColors[_i].b * _factor, animalOriginalColors[_i].a);
+                        animalImages[_i].color = new Color(animalOriginalColors[_i].r * _focusFactor, animalOriginalColors[_i].g * _focusFactor, animalOriginalColors[_i].b * _focusFactor, animalOriginalColors[_i].a * uiAlpha);
+
+            if (null != mapNameText)
+            {
+                Color _textColor = mapNameText.color;
+                _textColor.a = uiAlpha;
+                mapNameText.color = _textColor;
+            }
         }
 
         public void PlayStartGroundAnimation()
