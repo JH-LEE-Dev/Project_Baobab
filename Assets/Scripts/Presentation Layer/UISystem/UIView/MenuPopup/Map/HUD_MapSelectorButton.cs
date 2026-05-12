@@ -19,8 +19,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //내부 의존성
         private Action onConfirmEvent;
-        private bool isInitialized = false;
-
         private MotionEntry enterAnim;
         private MotionEntry exitAnim;
         private MotionEntry clickedAnim;
@@ -34,6 +32,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private float currentAlpha = 1.0f;
         private bool isDimmed = false;
+        private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -46,11 +45,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
 
             onConfirmEvent = _onConfirm;
-            isInitialized = true;
-
             hoverMotionKey = _hoverTag;
             hoverOffMotionKey = _hoverOffTag;
             clickMotionKey = _clickTag;
+            
+            isInitialized = true;
         }
 
         /// <summary>
@@ -63,11 +62,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             isDimmed = _isDimmed;
 
-            Color _targetColor = (true == _isDimmed) ? dimmedColor : normalColor;
+            Color _targetColor = (true == isDimmed) ? dimmedColor : normalColor;
             _targetColor.a = currentAlpha;
             
             buttonImage.color = _targetColor;
-            buttonImage.raycastTarget = (false == _isDimmed);
+            buttonImage.raycastTarget = !isDimmed;
         }
 
         public void SetAlpha(float _alpha)
@@ -95,8 +94,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             enterAnim = motionPlayer.Play(hoverMotionKey, bReset: true);
         }
 
-        
-        public void OnPointerExit(PointerEventData eventData)
+        public void OnPointerExit(PointerEventData _eventData)
         {
             if (null == motionPlayer || isDimmed)
                 return;
@@ -110,14 +108,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public void OnPointerClick(PointerEventData _eventData)
         {
             onConfirmEvent?.Invoke();
-
-            //if (null != motionPlayer && !isDimmed)
-            //{
-            //    motionPlayer.SettingEntryMotion(enterAnim, true, true);
-            //    motionPlayer.SettingEntryMotion(exitAnim, true, true);
-
-            //    clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: callBack);
-            //}
         }
     }
 }

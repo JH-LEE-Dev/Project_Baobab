@@ -14,48 +14,43 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     {
         // //외부 의존성
         [Header("UI References")]
-        [SerializeField] private CustomNumberDisplay numberDisplay; // 숫자 표시 컴포넌트
-        [SerializeField] private GameObject lockObject;             // 잠금 시 활성화될 오브젝트
-        [SerializeField] private GameObject focusObject;            // 포커스(호버) 시 활성화될 오브젝트
-        [SerializeField] private HUD_ProgressBar progressBar;       // 진행도 표시 바
-        [SerializeField] private ObjectMotionPlayer motionPlayer;   // 애니메이션 플레이어
+        [SerializeField] private CustomNumberDisplay numberDisplay;
+        [SerializeField] private GameObject lockObject;
+        [SerializeField] private GameObject focusObject;
+        [SerializeField] private HUD_ProgressBar progressBar;
+        [SerializeField] private ObjectMotionPlayer motionPlayer;
 
         // //내부 의존성
         private RectTransform rect;
         private ForestEnvironmentInfo forestInfo;
+        private Action<RectTransform> onHoverEnterEvent;
+        private Action onHoverExitEvent;
+        private Action<int> onSelectEvent;
+
+        private MotionEntry enterMotion;
+        private MotionEntry exitMotion;
+        private MotionEntry clickMotion;
+
         private int regionNumber = 0;
         private bool isSelected = false;
         private bool isLocked = false;
         private bool isInitialized = false;
-        private bool clicked = false;
-
-        private Action<RectTransform> onHoverEnterEvent; // 커서 이동 및 표시용
-        private Action onHoverExitEvent;                // 커서 숨김용
-        private Action<int> onSelectEvent;              // 값 전달용
+        private bool isClicked = false;
 
         private static readonly string hoverMotionKey = "Hover";
         private static readonly string hoverOffMotionKey = "HoverOff";
         private static readonly string clickMotionKey = "Click";
 
-        MotionEntry enterMotion;
-        MotionEntry exitMotion;
-        MotionEntry clickMotion;
-
-
         // //퍼블릭 초기화 및 제어 메서드
 
-        /// <summary>
-        /// 상위 매니저에서 콜백과 데이터를 주입합니다.
-        /// </summary>
         public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect)
         {
             forestInfo = _info;
             Initialize(_number);
 
-            // 데이터가 새로 설정되므로 선택 상태 초기화
             SetSelect(false);
             SetNumber(_number);
-            SetLock(false == _info.bCanAccess);
+            SetLock(!_info.bCanAccess);
 
             onHoverEnterEvent = _onHoverEnter;
             onHoverExitEvent = _onHoverExit;
@@ -85,7 +80,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 focusObject.SetActive(false);
 
             SetSelect(false);
-            SetLock(false); // 일단 해제 상태로 테스트 (필요 시 로직 추가)
+            SetLock(false); 
             isInitialized = true;
         }
 
@@ -98,72 +93,34 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public void SetLock(bool _isLock)
         {
             isLocked = _isLock;
-
-            if (null != lockObject)
-                lockObject.SetActive(isLocked);
-
-            if (null != numberDisplay)
-                numberDisplay.gameObject.SetActive(false == isLocked);
+            if (null != lockObject) lockObject.SetActive(isLocked);
+            if (null != numberDisplay) numberDisplay.gameObject.SetActive(!isLocked);
         }
 
         public void SetNumber(int _number)
         {
             regionNumber = _number;
-
-            if (null != numberDisplay)
-                numberDisplay.SetNumber(regionNumber);
+            if (null != numberDisplay) numberDisplay.SetNumber(regionNumber);
         }
 
-        public void PlayOpenAnimation()
-        {
-            // TODO: 나중에 OMP(ObjectMotionPlayer)를 통한 애니메이션 재생 로직으로 교체할 자리입니다.
-            gameObject.SetActive(true);
-        }
-
-        public void PlayCloseAnimation()
-        {
-            // TODO: 나중에 OMP(ObjectMotionPlayer)를 통한 애니메이션 재생 로직으로 교체할 자리입니다.
-            gameObject.SetActive(false);
-        }
+        public void PlayOpenAnimation() => gameObject.SetActive(true);
+        public void PlayCloseAnimation() => gameObject.SetActive(false);
 
         public void SetSelect(bool _isSelect)
         {
             isSelected = _isSelect;
-
-            if (null != focusObject)
-                focusObject.SetActive(isSelected);
+            if (null != focusObject) focusObject.SetActive(isSelected);
         }
 
-        public ForestType GetForestType()
-        {
-            return forestInfo.forestType;
-        }
-
-        public ForestEnvironmentInfo GetForestInfo()
-        {
-            return forestInfo;
-        }
-
-        public bool IsLocked()
-        {
-            return isLocked;
-        }
-
-        public int GetNumber()
-        {
-            return regionNumber;
-        }
-
-        public bool IsSelected()
-        {
-            return isSelected;
-        }
+        public ForestType GetForestType() => forestInfo.forestType;
+        public ForestEnvironmentInfo GetForestInfo() => forestInfo;
+        public bool IsLocked() => isLocked;
+        public int GetNumber() => regionNumber;
+        public bool IsSelected() => isSelected;
 
         public RectTransform GetRectTransform()
         {
-            if (null == rect)
-                rect = GetComponent<RectTransform>();
-
+            if (null == rect) rect = GetComponent<RectTransform>();
             return rect;
         }
 
@@ -171,13 +128,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            if (true == isLocked)
-                return;
-
-            // 진입 시 커서 이동 및 애니메이션 재생
+            if (true == isLocked) return;
             onHoverEnterEvent?.Invoke(GetRectTransform());
 
-            if (null != motionPlayer && false == clicked)
+            if (null != motionPlayer && !isClicked)
             {
                 motionPlayer.SettingEntryMotion(exitMotion, true, true);
                 motionPlayer.SettingEntryMotion(clickMotion, true, true);
@@ -187,13 +141,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerExit(PointerEventData _eventData)
         {
-            if (true == isLocked)
-                return;
-
-            // 퇴장 시 커서 숨김 애니메이션 재생
+            if (true == isLocked) return;
             onHoverExitEvent?.Invoke();
 
-            if (null != motionPlayer && false == clicked)
+            if (null != motionPlayer && !isClicked)
             {
                 motionPlayer.SettingEntryMotion(enterMotion, true, true);
                 motionPlayer.SettingEntryMotion(clickMotion, true, true);
@@ -203,26 +154,22 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerClick(PointerEventData _eventData)
         {
-            if (true == isLocked)
-                return;
-
-            // 최종 선택된 지역 번호를 전달
+            if (true == isLocked) return;
             onSelectEvent?.Invoke(regionNumber);
 
-            clicked = true;
-
-            // 클릭 애니메이션 재생
+            isClicked = true;
             if (null != motionPlayer)
             {
                 motionPlayer.SettingEntryMotion(enterMotion, true, true);
                 motionPlayer.SettingEntryMotion(exitMotion, true, true);
-                clickMotion = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: UnClicked);
+                clickMotion = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: OnClickAnimationComplete);
             }
         }
 
-        private void UnClicked() => clicked = false;
+        private void OnClickAnimationComplete() => isClicked = false;
 
         // //유니티 이벤트 함수
+
         private void Awake()
         {
             if (false == isInitialized)

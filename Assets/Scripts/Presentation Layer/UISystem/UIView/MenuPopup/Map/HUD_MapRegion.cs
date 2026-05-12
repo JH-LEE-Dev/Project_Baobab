@@ -2,7 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using PresentationLayer.DOTweenAnimationSystem;
-using UnityEngine.EventSystems;
 using System;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
@@ -56,10 +55,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private MapEnvironmentDataInfo mapEnvironmentInfo;
         private string currentMapName = string.Empty;
         private float uiAlpha = 1.0f;
-        private int currentVisibleCount = 1; // 현재 노출 중인 오브젝트 개수 (초기값 1)
+        private int currentVisibleCount = 1; 
         private bool isLocked = false;
         private bool isFocused = false;
         private bool isInitialized = false;
+
+        // GC Alloc 최적화를 위한 문자열 캐싱
+        private static readonly string[] groundTags = { "Ground_1", "Ground_2", "Ground_3", "Ground_4" };
+        private static readonly string[] treeTags = { "Tree_1", "Tree_2", "Tree_3" };
+        private static readonly string[] animalTags = { "Animal_1", "Animal_2", "Animal_3" };
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -76,6 +80,190 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             currentVisibleCount = 1;
             isInitialized = true;
         }
+
+        public void Setup(string _mapName, MapEnvironmentDataInfo _info, bool _shouldPlayAnimation = false, bool _isInstant = false)
+        {
+            if (false == isInitialized)
+                Initialize();
+
+            currentMapName = _mapName;
+            mapEnvironmentInfo = _info;
+
+            if (null != mapNameText)
+                mapNameText.text = currentMapName;
+
+            // 새로운 지역 셋업 시 오브젝트 노출 상태 리셋 (초기 노출 개수 1)
+            currentVisibleCount = 1;
+            ResetObjectsVisibility();
+
+            if (true == _shouldPlayAnimation)
+            {
+                PlayStartGroundAnimation();
+            }
+            else if (true == _isInstant)
+            {
+                PlayStartAnimationInstant();
+            }
+        }
+
+        /// <summary>
+        /// 서브 지역 번호에 따라 나무와 동물의 노출 개수를 애니메이션과 함께 조절합니다.
+        /// </summary>
+        public void UpdateObjectCount(int _count)
+        {
+            if (false == isInitialized)
+                Initialize();
+
+            if (_count <= 0 || _count > 3)
+                return;
+
+            if (currentVisibleCount == _count)
+                return;
+
+            // 나무 연출 조절
+            if (null != treeVisuals)
+            {
+                for (int _i = 0; _i < treeVisuals.Length; _i++)
+                {
+                    bool _shouldBeVisible = (_i < _count);
+                    bool _wasVisible = (_i < currentVisibleCount);
+
+                    if (_shouldBeVisible && !_wasVisible)
+                    {
+                        if (null != treeVisuals[_i].leafImage) treeVisuals[_i].leafImage.gameObject.SetActive(true);
+                        if (null != treeVisuals[_i].trunkImage) treeVisuals[_i].trunkImage.gameObject.SetActive(true);
+                        motionPlayer.Play(treeTags[_i], bReset: true);
+                    }
+                    else if (!_shouldBeVisible && _wasVisible)
+                    {
+                        motionPlayer.PlayBackward(treeTags[_i], bReset: true);
+                    }
+                }
+            }
+
+            // 동물 연출 조절
+            if (null != animalImages)
+            {
+                for (int _i = 0; _i < animalImages.Length; _i++)
+                {
+                    bool _shouldBeVisible = (_i < _count);
+                    bool _wasVisible = (_i < currentVisibleCount);
+
+                    if (_shouldBeVisible && !_wasVisible)
+                    {
+                        if (null != animalImages[_i]) animalImages[_i].gameObject.SetActive(true);
+                        motionPlayer.Play(animalTags[_i], bReset: true);
+                    }
+                    else if (!_shouldBeVisible && _wasVisible)
+                    {
+                        motionPlayer.PlayBackward(animalTags[_i], bReset: true);
+                    }
+                }
+            }
+
+            currentVisibleCount = _count;
+        }
+
+        public void SetLock(bool _isLock)
+        {
+            isLocked = _isLock;
+
+            if (null != lockObject)
+                lockObject.SetActive(isLocked);
+
+            if (null != unlockObject)
+                unlockObject.SetActive(false == isLocked);
+        }
+
+        public void SetUIAlpha(float _alpha)
+        {
+            uiAlpha = _alpha;
+            ApplyVisualState();
+        }
+
+        public void SetFocus(bool _isFocus)
+        {
+            isFocused = _isFocus;
+            ApplyVisualState();
+        }
+
+        public void PlayStartGroundAnimation()
+        {
+            if (null == groundImages)
+                return;
+
+            int _finalIdx = groundImages.Length - 1;
+            const float _delay = 0.05f;
+
+            for (int _i = 0; _i < groundImages.Length; _i++)
+            {
+                if (null == groundImages[_i])
+                    continue;
+
+                if (_i == _finalIdx)
+                    motionPlayer.Play(groundTags[_i], bReset: true, _onComplete: PlayStartTreeAnimation, _forceDelayForward: _delay * _i);
+                else
+                    motionPlayer.Play(groundTags[_i], bReset: true, _forceDelayForward: _delay * _i);
+            }
+        }
+
+        public void PlayStartTreeAnimation()
+        {
+            if (null == treeVisuals)
+                return;
+
+            int _targetCount = Mathf.Min(currentVisibleCount, treeVisuals.Length);
+            int _finalIdx = _targetCount - 1;
+            const float _delay = 0.05f;
+
+            if (_targetCount <= 0)
+            {
+                PlayStartAnimalAnimation();
+                return;
+            }
+
+            for (int _i = 0; _i < _targetCount; _i++)
+            {
+                if (null == treeVisuals[_i].leafImage && null == treeVisuals[_i].trunkImage)
+                    continue;
+
+                if (_i == _finalIdx)
+                    motionPlayer.Play(treeTags[_i], bReset: true, _onComplete: PlayStartAnimalAnimation, _forceDelayForward: _delay * _i);
+                else
+                    motionPlayer.Play(treeTags[_i], bReset: true, _forceDelayForward: _delay * _i);
+            }
+        }
+
+        public void PlayStartAnimalAnimation()
+        {
+            if (null == animalImages)
+                return;
+
+            int _targetCount = Mathf.Min(currentVisibleCount, animalImages.Length);
+            const float _delay = 0.05f;
+
+            for (int _i = 0; _i < _targetCount; _i++)
+            {
+                if (null == animalImages[_i])
+                    continue;
+
+                motionPlayer.Play(animalTags[_i], bReset: true, _forceDelayForward: _delay * _i);
+            }
+        }
+
+        public void PlayEndAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
+        {
+            PlayEndAnimalAnimation(_onComplete, _isSkip);
+            PlayEndTreeAnimation(_onComplete, _isSkip);
+            PlayEndGroundAnimation(_onComplete, _isSkip);
+        }
+
+        public MapEnvironmentDataInfo GetMapEnvironmentInfo() => mapEnvironmentInfo;
+        public bool IsLocked() => isLocked;
+        public string GetMapName() => currentMapName;
+        public MapType GetMapType() => mapEnvironmentInfo.mapType;
+
+        // //내부 로직
 
         private void CaptureOriginalColors()
         {
@@ -109,31 +297,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
         }
 
-        public void Setup(string _mapName, MapEnvironmentDataInfo _info, bool _shouldPlayAnimation = false, bool _isInstant = false)
-        {
-            if (false == isInitialized)
-                Initialize();
-
-            currentMapName = _mapName;
-            mapEnvironmentInfo = _info;
-
-            if (null != mapNameText)
-                mapNameText.text = currentMapName;
-
-            // 새로운 지역 셋업 시 오브젝트 노출 상태 리셋 (초기 노출 개수 1)
-            currentVisibleCount = 1;
-            ResetObjectsVisibility();
-
-            if (true == _shouldPlayAnimation)
-            {
-                PlayStartGroundAnimation();
-            }
-            else if (true == _isInstant)
-            {
-                PlayStartAnimationInstant();
-            }
-        }
-
         private void ResetObjectsVisibility()
         {
             if (null != treeVisuals)
@@ -154,124 +317,86 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
         }
 
-        /// <summary>
-        /// 서브 지역 번호에 따라 나무와 동물의 노출 개수를 애니메이션과 함께 조절합니다.
-        /// </summary>
-        public void UpdateObjectCount(int _count)
-        {
-            if (false == isInitialized)
-                Initialize();
-
-            // 선택이 없거나(-1) 비정상적인 값이면 조절하지 않음 (초기 연출 유지)
-            if (_count <= 0 || _count > 3)
-                return;
-
-            if (currentVisibleCount == _count)
-                return;
-
-            // 나무 연출 조절
-            if (null != treeVisuals)
-            {
-                for (int _i = 0; _i < treeVisuals.Length; _i++)
-                {
-                    int _num = _i + 1;
-                    string _tag = "Tree_" + _num;
-                    bool _shouldBeVisible = (_i < _count);
-                    bool _wasVisible = (_i < currentVisibleCount);
-
-                    if (_shouldBeVisible && !_wasVisible)
-                    {
-                        // 등장 연출
-                        if (null != treeVisuals[_i].leafImage) treeVisuals[_i].leafImage.gameObject.SetActive(true);
-                        if (null != treeVisuals[_i].trunkImage) treeVisuals[_i].trunkImage.gameObject.SetActive(true);
-                        motionPlayer.Play(_tag, bReset: true);
-                    }
-                    else if (!_shouldBeVisible && _wasVisible)
-                    {
-                        // 퇴장 연출
-                        motionPlayer.PlayBackward(_tag, bReset: true);
-                    }
-                }
-            }
-
-            // 동물 연출 조절
-            if (null != animalImages)
-            {
-                for (int _i = 0; _i < animalImages.Length; _i++)
-                {
-                    int _num = _i + 1;
-                    string _tag = "Animal_" + _num;
-                    bool _shouldBeVisible = (_i < _count);
-                    bool _wasVisible = (_i < currentVisibleCount);
-
-                    if (_shouldBeVisible && !_wasVisible)
-                    {
-                        // 등장 연출
-                        if (null != animalImages[_i]) animalImages[_i].gameObject.SetActive(true);
-                        motionPlayer.Play(_tag, bReset: true);
-                    }
-                    else if (!_shouldBeVisible && _wasVisible)
-                    {
-                        // 퇴장 연출
-                        motionPlayer.PlayBackward(_tag, bReset: true);
-                    }
-                }
-            }
-
-            currentVisibleCount = _count;
-        }
-
         private void PlayStartAnimationInstant()
         {
             if (null == motionPlayer)
                 return;
 
-            // 모든 지형 애니메이션 즉시 적용
             if (null != groundImages)
-            {
                 for (int _i = 0; _i < groundImages.Length; _i++)
                     if (null != groundImages[_i])
-                        motionPlayer.Play("Ground_" + (_i + 1), bReset: true, _skip: true);
-            }
+                        motionPlayer.Play(groundTags[_i], bReset: true, _skip: true);
 
-            // 모든 나무 애니메이션 즉시 적용
             if (null != treeVisuals)
-            {
                 for (int _i = 0; _i < treeVisuals.Length; _i++)
                     if (null != treeVisuals[_i].leafImage || null != treeVisuals[_i].trunkImage)
-                        motionPlayer.Play("Tree_" + (_i + 1), bReset: true, _skip: true);
-            }
+                        motionPlayer.Play(treeTags[_i], bReset: true, _skip: true);
 
-            // 모든 동물 애니메이션 즉시 적용
             if (null != animalImages)
-            {
                 for (int _i = 0; _i < animalImages.Length; _i++)
                     if (null != animalImages[_i])
-                        motionPlayer.Play("Animal_" + (_i + 1), bReset: true, _skip: true);
+                        motionPlayer.Play(animalTags[_i], bReset: true, _skip: true);
+        }
+
+        private void PlayEndAnimalAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
+        {
+            if (null == animalImages || 0 == animalImages.Length)
+            {
+                PlayEndTreeAnimation(_onComplete, _isSkip);
+                return;
+            }
+
+            const float _delay = 0.05f;
+
+            for (int _i = animalImages.Length - 1; _i >= 0; _i--)
+            {
+                if (null == animalImages[_i])
+                    continue;
+
+                motionPlayer.PlayBackward(animalTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (animalImages.Length - 1 - _i));
             }
         }
 
-        public void SetLock(bool _isLock)
+        private void PlayEndTreeAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
         {
-            isLocked = _isLock;
+            if (null == treeVisuals || 0 == treeVisuals.Length)
+            {
+                PlayEndGroundAnimation(_onComplete, _isSkip);
+                return;
+            }
 
-            if (null != lockObject)
-                lockObject.SetActive(isLocked);
+            const float _delay = 0.05f;
 
-            if (null != unlockObject)
-                unlockObject.SetActive(false == isLocked);
+            for (int _i = treeVisuals.Length - 1; _i >= 0; _i--)
+            {
+                if (null == treeVisuals[_i].leafImage && null == treeVisuals[_i].trunkImage)
+                    continue;
+
+                motionPlayer.PlayBackward(treeTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (treeVisuals.Length - 1 - _i));
+            }
         }
 
-        public void SetUIAlpha(float _alpha)
+        private void PlayEndGroundAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
         {
-            uiAlpha = _alpha;
-            ApplyVisualState();
-        }
+            if (null == groundImages || 0 == groundImages.Length)
+            {
+                _onComplete?.Invoke();
+                return;
+            }
 
-        public void SetFocus(bool _isFocus)
-        {
-            isFocused = _isFocus;
-            ApplyVisualState();
+            int _finalIdx = 0;
+            const float _delay = 0.05f;
+
+            for (int _i = groundImages.Length - 1; _i >= 0; _i--)
+            {
+                if (null == groundImages[_i])
+                    continue;
+
+                if (_i == _finalIdx)
+                    motionPlayer.PlayBackward(groundTags[_i], bReset: true, _onComplete: _onComplete, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
+                else
+                    motionPlayer.PlayBackward(groundTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
+            }
         }
 
         private void ApplyVisualState()
@@ -290,7 +415,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                         treeVisuals[_i].leafImage.color = new Color(treeOriginalColors[_i].leafColor.r * _focusFactor, treeOriginalColors[_i].leafColor.g * _focusFactor, treeOriginalColors[_i].leafColor.b * _focusFactor, treeOriginalColors[_i].leafColor.a * uiAlpha);
 
                     if (null != treeVisuals[_i].trunkImage)
-                        treeVisuals[_i].trunkImage.color = new Color(treeOriginalColors[_i].trunkColor.r * _focusFactor, treeOriginalColors[_i].trunkColor.g * _focusFactor, treeOriginalColors[_i].trunkColor.b * _focusFactor, treeOriginalColors[_i].trunkColor.a * uiAlpha);
+                        treeOriginalColors[_i].trunkColor = new Color(treeOriginalColors[_i].trunkColor.r * _focusFactor, treeOriginalColors[_i].trunkColor.g * _focusFactor, treeOriginalColors[_i].trunkColor.b * _focusFactor, treeOriginalColors[_i].trunkColor.a * uiAlpha);
                 }
 
             if (null != animalImages && null != animalOriginalColors)
@@ -304,168 +429,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 _textColor.a = uiAlpha;
                 mapNameText.color = _textColor;
             }
-        }
-
-        public void PlayStartGroundAnimation()
-        {
-            if (null == groundImages)
-                return;
-
-            int _finalIdx = groundImages.Length - 1;
-            const string _groundAnimationTag = "Ground_"; 
-            const float delay = 0.05f;
-
-            for (int _i = 0; _i < groundImages.Length; _i++)
-            {
-                if (null == groundImages[_i])
-                    continue;
-
-                if (_i == _finalIdx)
-                    motionPlayer.Play(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _onComplete: PlayStartTreeAnimation, _forceDelayForward: delay * _i);
-                else
-                    motionPlayer.Play(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayForward: delay * _i);
-            }
-        }
-
-        public void PlayStartTreeAnimation()
-        {
-            if (null == treeVisuals)
-                return;
-
-            int _targetCount = Mathf.Min(currentVisibleCount, treeVisuals.Length);
-            int _finalIdx = _targetCount - 1;
-            const string _treeAnimationTag = "Tree_"; 
-            const float delay = 0.05f;
-
-            if (_targetCount <= 0)
-            {
-                PlayStartAnimalAnimation();
-                return;
-            }
-
-            for (int _i = 0; _i < _targetCount; _i++)
-            {
-                // 구조체는 null이 될 수 없으므로 실제 이미지 컴포넌트 유무를 확인합니다.
-                if (null == treeVisuals[_i].leafImage && null == treeVisuals[_i].trunkImage)
-                    continue;
-
-                if (_i == _finalIdx)
-                    motionPlayer.Play(_treeAnimationTag + (_i + 1).ToString(), 
-                        bReset: true, _onComplete: PlayStartAnimalAnimation, _forceDelayForward: delay * _i);
-                else
-                    motionPlayer.Play(_treeAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayForward: delay * _i);
-            }
-        }
-
-        public void PlayStartAnimalAnimation()
-        {
-            if (null == animalImages)
-                return;
-
-            int _targetCount = Mathf.Min(currentVisibleCount, animalImages.Length);
-            const string _animalAnimationTag = "Animal_";
-            const float _delay = 0.05f;
-
-            for (int _i = 0; _i < _targetCount; _i++)
-            {
-                if (null == animalImages[_i])
-                    continue;
-
-                motionPlayer.Play(_animalAnimationTag + (_i + 1).ToString(), bReset: true, _forceDelayForward: _delay * _i);
-            }
-        }
-
-        public void PlayEndAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
-        {
-            PlayEndAnimalAnimation(_onComplete, _isSkip);
-            PlayEndTreeAnimation(_onComplete, _isSkip);
-            PlayEndGroundAnimation(_onComplete, _isSkip);
-        }
-
-        private void PlayEndAnimalAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
-        {
-            if (null == animalImages || 0 == animalImages.Length)
-            {
-                PlayEndTreeAnimation(_onComplete, _isSkip);
-                return;
-            }
-
-            int _finalIdx = 0;
-            const string _animalAnimationTag = "Animal_";
-            const float _delay = 0.05f;
-
-            for (int _i = animalImages.Length - 1; _i >= 0; _i--)
-            {
-                if (null == animalImages[_i])
-                    continue;
-
-                motionPlayer.PlayBackward(_animalAnimationTag + (_i + 1).ToString(), bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (animalImages.Length - 1 - _i));
-            }
-        }
-
-        private void PlayEndTreeAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
-        {
-            if (null == treeVisuals || 0 == treeVisuals.Length)
-            {
-                PlayEndGroundAnimation(_onComplete, _isSkip);
-                return;
-            }
-
-            int _finalIdx = 0;
-            const string _treeAnimationTag = "Tree_";
-            const float _delay = 0.05f;
-
-            for (int _i = treeVisuals.Length - 1; _i >= 0; _i--)
-            {
-                if (null == treeVisuals[_i].leafImage && null == treeVisuals[_i].trunkImage)
-                    continue;
-
-                motionPlayer.PlayBackward(_treeAnimationTag + (_i + 1).ToString(), bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (treeVisuals.Length - 1 - _i));
-            }
-        }
-
-        private void PlayEndGroundAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
-        {
-            if (null == groundImages || 0 == groundImages.Length)
-            {
-                _onComplete?.Invoke();
-                return;
-            }
-
-            int _finalIdx = 0;
-            const string _groundAnimationTag = "Ground_";
-            const float _delay = 0.05f;
-
-            for (int _i = groundImages.Length - 1; _i >= 0; _i--)
-            {
-                if (null == groundImages[_i])
-                    continue;
-
-                if (_i == _finalIdx)
-                    motionPlayer.PlayBackward(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _onComplete: _onComplete, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
-                else
-                    motionPlayer.PlayBackward(_groundAnimationTag + (_i + 1).ToString(), bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
-            }
-        }
-
-        public MapEnvironmentDataInfo GetMapEnvironmentInfo()
-        {
-            return mapEnvironmentInfo;
-        }
-
-        public bool IsLocked()
-        {
-            return isLocked;
-        }
-
-        public string GetMapName()
-        {
-            return currentMapName;
-        }
-
-        public MapType GetMapType()
-        {
-            return mapEnvironmentInfo.mapType;
         }
     }
 }
