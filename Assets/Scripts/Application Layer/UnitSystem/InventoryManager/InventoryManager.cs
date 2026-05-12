@@ -143,7 +143,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 {
                     itemSaveData.treeType = logData.treeType;
                     itemSaveData.logState = logData.logState;
-                    slotData.logStateCounts = slot.GetLogStateCounts();
+                    slotData.treeTypeCounts = slot.GetTreeTypeCounts();
                 }
                 else if (slot.itemData is LootItemData lootData)
                 {
@@ -163,8 +163,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         if (_item is LogItem logItem && _data is LogItemData logData)
         {
-            // 같은 나무 종류라면 같은 슬롯에 보관
-            return logItem.treeType == logData.treeType;
+            // 같은 로그 상태라면 같은 슬롯에 보관 (나무 종류 상관 없음)
+            return logItem.logState == logData.logState;
         }
         else if (_item is LootItem lootItem && _data is LootItemData lootData)
         {
@@ -376,10 +376,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
                         inventorySlots[i].Setup(newData, slotData.totalCount);
                         
-                        // 상세 상태 개수 복구 (Log 아이템인 경우)
-                        if (slotData.logStateCounts != null && slotData.logStateCounts.Length > 0)
+                        // 상세 나무 종류 개수 복구 (Log 아이템인 경우)
+                        if (slotData.treeTypeCounts != null && slotData.treeTypeCounts.Length > 0)
                         {
-                            LoadLogStateCountsToSlot(inventorySlots[i], slotData.logStateCounts);
+                            inventorySlots[i].LoadTreeTypeCounts(slotData.treeTypeCounts);
                         }
                     }
                 }
@@ -389,15 +389,5 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         SpendMoneyEvent?.Invoke();
         InventorySpecChangedEvent?.Invoke();
         Debug.Log("[InventoryManager] Inventory Save Data Loaded.");
-    }
-
-    private void LoadLogStateCountsToSlot(InventorySlot _slot, int[] _counts)
-    {
-        // Reflection이나 별도 메서드 없이 직접 접근이 불가능하므로 
-        // InventorySlot에 LoadLogStateCounts 메서드를 추가하는 것이 정석이나,
-        // 여기서는 기존 AddCountByState를 활용하여 수동으로 채우거나 
-        // (단, Setup 시 logStateCounts가 초기화되므로 주의)
-        // 정석대로 InventorySlot에 메서드를 추가하겠습니다.
-        _slot.LoadLogStateCounts(_counts);
     }
 }

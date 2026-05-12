@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Tilemaps;
+using DG.Tweening;
 
 public class LogInBelt : MonoBehaviour
 {
     public event Action<LogItem, ILogItemData> LogOutEvent;
     private LogItemData logItemData = new LogItemData();
-    [SerializeField] Tilemap tilemap;
+    [SerializeField] List<BeltObj> belts;
 
 
     private struct BeltItem
@@ -22,31 +22,60 @@ public class LogInBelt : MonoBehaviour
         }
     }
 
+    private struct DeactivatingItem
+    {
+        public LogItem item;
+        public float remainingTime;
+
+        public DeactivatingItem(LogItem _item, float _time)
+        {
+            item = _item;
+            remainingTime = _time;
+        }
+    }
+
     // 외부 의존성
     [SerializeField] private List<Transform> checkPoints = new List<Transform>(5);
     [SerializeField] private float beltSpeed = 0.1f;
+    [SerializeField] private float acceleration = 2.5f;
+    [SerializeField] private float beltAnimationSpeedMultiplier = 1f;
 
 
     // 내부 상태
     private List<BeltItem> activeItems = new List<BeltItem>(10);
+    private List<DeactivatingItem> deactivatingItems = new List<DeactivatingItem>(10);
     private bool isMoving = false;
+    private float currentSpeed = 0f;
 
     public void Initialize()
     {
         activeItems.Clear();
+        deactivatingItems.Clear();
         isMoving = false;
-        if (tilemap != null) tilemap.animationFrameRate = 0f;
+        currentSpeed = 0f;
+
+        for (int i = 0; i < belts.Count; ++i)
+        {
+            belts[i].Initialize();
+        }
+        SetBeltsAnimationSpeed(0f);
+    }
+
+    private void SetBeltsAnimationSpeed(float _speed)
+    {
+        for (int i = 0; i < belts.Count; i++)
+        {
+            if (belts[i].animator != null)
+            {
+                belts[i].animator.speed = _speed * beltAnimationSpeedMultiplier;
+            }
+        }
     }
 
     public void IncreaseSpeed(float _percentage)
     {
         // 0.1(10%) 증가 시 기존 속도에 1.1을 곱함
         beltSpeed *= (1f + _percentage);
-
-        if (isMoving && tilemap != null)
-        {
-            tilemap.animationFrameRate = beltSpeed * 3.33f;
-        }
     }
 
     public void LogIn(LogItem _item)
@@ -55,6 +84,11 @@ public class LogInBelt : MonoBehaviour
 
         // 아이템을 첫 번째 체크포인트 위치로 즉시 이동
         _item.transform.position = checkPoints[0].position;
+
+        // 진입 연출 (스프링 댐퍼 효과)
+        _item.transform.DOKill();
+        _item.transform.localScale = Vector3.zero;
+        _item.transform.DOScale(Vector3.one, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f);
 
         // 다음 목표 인덱스 설정 (체크포인트가 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
         int nextTarget = checkPoints.Count > 1 ? 1 : 0;
@@ -65,9 +99,28 @@ public class LogInBelt : MonoBehaviour
 
     private void Update()
     {
-        if (!isMoving || activeItems.Count == 0) return;
+        float deltaTime = Time.deltaTime;
 
-        // 역순 순회하여 리스트 수정 시의 안정성 확보 및 GC 최소화
+        // 비활성화 예정 아이템 업데이트 (람다 대신 수동 관리)
+        UpdateDeactivatingItems(deltaTime);
+
+        // 1. 목표 속도 결정 (움직임 명령이 있고 아이템이 있는 경우에만 목표 속도 유지)
+        float targetSpeedValue = (isMoving && activeItems.Count > 0) ? beltSpeed : 0f;
+
+        // 2. 현재 속도를 목표 속도로 부드럽게 이동 및 애니메이션 적용
+        if (!Mathf.Approximately(currentSpeed, targetSpeedValue))
+        {
+            currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * deltaTime);
+            SetBeltsAnimationSpeed(currentSpeed);
+        }
+
+        // 3. 실행 조건 확인 (속도가 0이고 목표 속도도 0이면 중단)
+        if (currentSpeed <= 0f && targetSpeedValue <= 0f) return;
+
+        // 4. 아이템 이동 처리
+        if (activeItems.Count == 0) return;
+
+        float step = currentSpeed * deltaTime;
         for (int i = activeItems.Count - 1; i >= 0; i--)
         {
             BeltItem beltItem = activeItems[i];
@@ -79,7 +132,6 @@ public class LogInBelt : MonoBehaviour
             }
 
             Transform target = checkPoints[beltItem.targetIndex];
-            float step = beltSpeed * Time.deltaTime;
 
             // 이동 처리
             beltItem.item.transform.position = Vector3.MoveTowards(
@@ -108,21 +160,63 @@ public class LogInBelt : MonoBehaviour
         }
     }
 
+    private void UpdateDeactivatingItems(float _deltaTime)
+    {
+        for (int i = deactivatingItems.Count - 1; i >= 0; i--)
+        {
+            DeactivatingItem dItem = deactivatingItems[i];
+            dItem.remainingTime -= _deltaTime;
+
+            if (dItem.remainingTime <= 0f)
+            {
+                if (dItem.item != null)
+                {
+                    // 데이터 동기화 및 이벤트 호출 (연출 종료 시점)
+                    logItemData.itemType = dItem.item.itemType;
+                    logItemData.sprite = dItem.item.sprite;
+                    logItemData.color = dItem.item.color;
+                    logItemData.logState = dItem.item.logState;
+                    logItemData.treeType = dItem.item.treeType;
+
+                    LogOutEvent?.Invoke(dItem.item, logItemData);
+
+                    dItem.item.gameObject.SetActive(false);
+                }
+                deactivatingItems.RemoveAt(i);
+            }
+            else
+            {
+                deactivatingItems[i] = dItem;
+            }
+        }
+    }
+
     private void LogOut(LogItem _item)
     {
-        _item.gameObject.SetActive(false);
+        // _item.gameObject.SetActive(false); // 지연 비활성화를 위해 제거
 
         isMoving = false;
-        if (tilemap != null) tilemap.animationFrameRate = 0f;
-        tilemap.RefreshAllTiles();
 
-        logItemData.itemType = _item.itemType;
-        logItemData.sprite = _item.sprite;
-        logItemData.color = _item.color;
-        logItemData.logState = _item.logState;
-        logItemData.treeType = _item.treeType;
+        // 퇴출 연출: 스케일이 작아지는 동안 마지막 이동 방향으로 계속 전진
+        _item.transform.DOKill();
 
-        LogOutEvent?.Invoke(_item, logItemData);
+        Vector3 moveDir = Vector3.right; // 기본값
+        if (checkPoints.Count >= 2)
+        {
+            // 마지막 이동 방향 계산 (마지막 체크포인트 - 이전 체크포인트)
+            moveDir = (checkPoints[checkPoints.Count - 1].position - checkPoints[checkPoints.Count - 2].position).normalized;
+        }
+
+        float duration = 0.1f;
+        // 현재 벨트 속도를 반영하여 미끄러지는 거리 산출
+        float moveDist = currentSpeed * duration * 3;
+        Vector3 targetPos = _item.transform.position + (moveDir * moveDist);
+
+        _item.transform.DOMove(targetPos, duration).SetEase(Ease.Linear);
+        _item.transform.DOScale(Vector3.zero, duration).SetEase(Ease.InBack);
+
+        // 람다 대신 비활성화 대기 리스트에 추가
+        deactivatingItems.Add(new DeactivatingItem(_item, duration));
     }
 
     public void StartBelt()
@@ -131,9 +225,6 @@ public class LogInBelt : MonoBehaviour
             return;
 
         isMoving = true;
-        if (tilemap != null) tilemap.animationFrameRate = beltSpeed * 3.33f;
-
-        tilemap.RefreshAllTiles();
     }
 
     public void PopulateSaveData(ref BeltSaveData _saveData)
@@ -167,6 +258,7 @@ public class LogInBelt : MonoBehaviour
     public void LoadSaveData(BeltSaveData _data, LogItemPoolingManager _poolingManager)
     {
         activeItems.Clear();
+        deactivatingItems.Clear();
         isMoving = _data.isMoving;
         beltSpeed = _data.beltSpeed;
 
@@ -192,7 +284,15 @@ public class LogInBelt : MonoBehaviour
             }
         }
 
-        if (isMoving) StartBelt();
-        else if (tilemap != null) tilemap.animationFrameRate = 0f;
+        if (isMoving)
+        {
+            StartBelt();
+            currentSpeed = beltSpeed;
+        }
+        else
+        {
+            currentSpeed = 0f;
+            SetBeltsAnimationSpeed(0f);
+        }
     }
 }

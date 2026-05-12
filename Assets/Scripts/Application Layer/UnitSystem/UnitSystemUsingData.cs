@@ -6,18 +6,25 @@ public struct LogStateCount
     public int count;
 }
 
+public struct TreeTypeCount
+{
+    public TreeType treeType;
+    public int count;
+}
+
 [Serializable]
 public class InventorySlot : IInventorySlot
 {
     public ItemData itemData;
     public int totalCount;
 
-    // 내부 데이터 저장용 (인덱스 = LogState enum 값)
-    private int[] logStateCounts = new int[Enum.GetValues(typeof(LogState)).Length];
+    // 내부 데이터 저장용 (인덱스 = TreeType enum 값)
+    private int[] treeTypeCounts = new int[Enum.GetValues(typeof(TreeType)).Length];
 
     // 인터페이스 노출용 (정렬된 캐시)
-    private LogStateCount[] sortedLogStateCounts;
-    private bool isDirty = true;
+    private LogStateCount[] logStateCountsCache = new LogStateCount[1];
+    private TreeTypeCount[] sortedTreeTypeCounts;
+    private bool isTreeDirty = true;
 
     public event Action SlotUpdatedEvent;
 
@@ -29,12 +36,30 @@ public class InventorySlot : IInventorySlot
     {
         get
         {
-            if (isDirty)
+            if (itemData is LogItemData logData)
             {
-                UpdateSortedCounts();
-                isDirty = false;
+                logStateCountsCache[0].state = logData.logState;
+                logStateCountsCache[0].count = totalCount;
             }
-            return sortedLogStateCounts;
+            else
+            {
+                logStateCountsCache[0].state = LogState.Normal;
+                logStateCountsCache[0].count = 0;
+            }
+            return logStateCountsCache;
+        }
+    }
+
+    TreeTypeCount[] IInventorySlot.treeTypeCounts
+    {
+        get
+        {
+            if (isTreeDirty)
+            {
+                UpdateSortedTreeTypeCounts();
+                isTreeDirty = false;
+            }
+            return sortedTreeTypeCounts;
         }
     }
 
@@ -43,18 +68,18 @@ public class InventorySlot : IInventorySlot
         itemData = null;
         totalCount = 0;
 
-        // 캐시 배열 초기화
-        var states = (LogState[])Enum.GetValues(typeof(LogState));
-        sortedLogStateCounts = new LogStateCount[states.Length];
-        for (int i = 0; i < states.Length; i++)
+        // 캐시 배열 초기화 (TreeType)
+        var treeTypes = (TreeType[])Enum.GetValues(typeof(TreeType));
+        sortedTreeTypeCounts = new TreeTypeCount[treeTypes.Length];
+        for (int i = 0; i < treeTypes.Length; i++)
         {
-            sortedLogStateCounts[i].state = states[i];
-            sortedLogStateCounts[i].count = 0;
+            sortedTreeTypeCounts[i].treeType = treeTypes[i];
+            sortedTreeTypeCounts[i].count = 0;
         }
 
-        for (int i = 0; i < logStateCounts.Length; i++)
+        for (int i = 0; i < treeTypeCounts.Length; i++)
         {
-            logStateCounts[i] = 0;
+            treeTypeCounts[i] = 0;
         }
     }
 
@@ -63,36 +88,47 @@ public class InventorySlot : IInventorySlot
         itemData = _data;
         totalCount = _count;
 
-        for (int i = 0; i < logStateCounts.Length; i++)
+        for (int i = 0; i < treeTypeCounts.Length; i++)
         {
-            logStateCounts[i] = 0;
+            treeTypeCounts[i] = 0;
         }
 
         if (_data is LogItemData logData)
         {
-            logStateCounts[(int)logData.logState] = _count;
+            treeTypeCounts[(int)logData.treeType] = _count;
         }
 
-        isDirty = true;
+        isTreeDirty = true;
     }
 
     public void AddCount(Item _item)
     {
         if (_item is LogItem logItem)
         {
-            logStateCounts[(int)logItem.logState]++;
-            isDirty = true;
+            treeTypeCounts[(int)logItem.treeType]++;
+            isTreeDirty = true;
         }
         totalCount++;
 
         SlotUpdatedEvent?.Invoke();
     }
 
-    public void AddCountByState(LogState _state)
+    public void AddCountByState(LogState _state, TreeType _treeType = TreeType.None)
     {
-        logStateCounts[(int)_state]++;
+        // _treeType이 명시되지 않은 경우 현재 itemData의 treeType 사용
+        TreeType targetTreeType = _treeType;
+        if (targetTreeType == TreeType.None && itemData is LogItemData logData)
+        {
+            targetTreeType = logData.treeType;
+        }
+        
+        if (targetTreeType != TreeType.None)
+        {
+            treeTypeCounts[(int)targetTreeType]++;
+            isTreeDirty = true;
+        }
+
         totalCount++;
-        isDirty = true;
 
         SlotUpdatedEvent?.Invoke();
     }
@@ -102,70 +138,71 @@ public class InventorySlot : IInventorySlot
         if (totalCount <= 0) return LogState.Normal;
 
         LogState takenState = LogState.Normal;
-        if (itemData is LogItemData)
+        if (itemData is LogItemData logData)
         {
-            // 수량이 있는 로그 상태 중 가장 높은 등급부터 하나 가져옴
-            for (int i = logStateCounts.Length - 1; i >= 0; i--)
+            takenState = logData.logState;
+
+            // 수량이 있는 나무 종류 중 가장 높은 등급부터 하나 차감
+            for (int i = treeTypeCounts.Length - 1; i >= 0; i--)
             {
-                if (logStateCounts[i] > 0)
+                if (treeTypeCounts[i] > 0)
                 {
-                    logStateCounts[i]--;
-                    takenState = (LogState)i;
+                    treeTypeCounts[i]--;
                     break;
                 }
             }
         }
 
         totalCount--;
-        isDirty = true;
+        isTreeDirty = true;
 
         SlotUpdatedEvent?.Invoke();
 
         return takenState;
     }
 
-    public int GetCountByState(LogState _state)
+    public int GetCountByTreeType(TreeType _treeType)
     {
-        return logStateCounts[(int)_state];
+        return treeTypeCounts[(int)_treeType];
     }
 
-    public int[] GetLogStateCounts()
+    public int[] GetTreeTypeCounts()
     {
-        int[] copy = new int[logStateCounts.Length];
-        Array.Copy(logStateCounts, copy, logStateCounts.Length);
+        int[] copy = new int[treeTypeCounts.Length];
+        Array.Copy(treeTypeCounts, copy, treeTypeCounts.Length);
         return copy;
     }
 
-    public void LoadLogStateCounts(int[] _counts)
+    public void LoadTreeTypeCounts(int[] _counts)
     {
-        if (_counts == null || _counts.Length != logStateCounts.Length) return;
-        Array.Copy(_counts, logStateCounts, logStateCounts.Length);
-        isDirty = true;
+        if (_counts == null || _counts.Length != treeTypeCounts.Length) return;
+        Array.Copy(_counts, treeTypeCounts, treeTypeCounts.Length);
+        isTreeDirty = true;
     }
 
-    private void UpdateSortedCounts()
+    private void UpdateSortedTreeTypeCounts()
     {
         // 1. 현재 데이터 동기화
-        for (int i = 0; i < sortedLogStateCounts.Length; i++)
+        for (int i = 0; i < sortedTreeTypeCounts.Length; i++)
         {
-            sortedLogStateCounts[i].count = logStateCounts[(int)sortedLogStateCounts[i].state];
+            sortedTreeTypeCounts[i].count = treeTypeCounts[(int)sortedTreeTypeCounts[i].treeType];
         }
 
-        // 2. 버블 정렬 (N=7이므로 GC Alloc 없이 가장 효율적)
-        // 정렬 기준: 1. 수량 내림차순, 2. 등급(LogState) 내림차순
-        int n = sortedLogStateCounts.Length;
+        // 2. 버블 정렬
+        // 정렬 기준: 1. 수량 내림차순, 2. 등급(TreeType) 내림차순
+        int n = sortedTreeTypeCounts.Length;
         for (int i = 0; i < n - 1; i++)
         {
             for (int j = 0; j < n - i - 1; j++)
             {
                 bool swap = false;
-                if (sortedLogStateCounts[j].count < sortedLogStateCounts[j + 1].count)
+                if (sortedTreeTypeCounts[j].count < sortedTreeTypeCounts[j + 1].count)
                 {
                     swap = true;
                 }
-                else if (sortedLogStateCounts[j].count == sortedLogStateCounts[j + 1].count)
+                else if (sortedTreeTypeCounts[j].count == sortedTreeTypeCounts[j + 1].count)
                 {
-                    if (sortedLogStateCounts[j].state < sortedLogStateCounts[j + 1].state)
+                    if (sortedTreeTypeCounts[j].treeType < sortedTreeTypeCounts[j + 1].treeType)
                     {
                         swap = true;
                     }
@@ -173,9 +210,9 @@ public class InventorySlot : IInventorySlot
 
                 if (swap)
                 {
-                    LogStateCount temp = sortedLogStateCounts[j];
-                    sortedLogStateCounts[j] = sortedLogStateCounts[j + 1];
-                    sortedLogStateCounts[j + 1] = temp;
+                    TreeTypeCount temp = sortedTreeTypeCounts[j];
+                    sortedTreeTypeCounts[j] = sortedTreeTypeCounts[j + 1];
+                    sortedTreeTypeCounts[j + 1] = temp;
                 }
             }
         }

@@ -22,7 +22,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     private MapType currentMapType;
     private DensityData currentDensityData;
 
-    private Dictionary<MapType, ForestHiddenGaugeData> hiddenGaugeData;
+    private Dictionary<ForestType, MapHiddenGaugeSaveData> hiddenGaugeData;
     public List<AnimalHiddenGaugeAmountData> animalHiddenGaugeAmounts;
     public List<TreeHiddenGaugeAmountData> treeHiddenGaugeAmounts;
 
@@ -32,7 +32,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
     public void Initialize()
     {
-        hiddenGaugeData = new Dictionary<MapType, ForestHiddenGaugeData>();
+        hiddenGaugeData = new Dictionary<ForestType, MapHiddenGaugeSaveData>();
     }
 
     public void SetDensityData(ForestType _forestType, MapType _mapType)
@@ -218,12 +218,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         _data.hiddenGaugeDatas.Clear();
         foreach (var kvp in hiddenGaugeData)
         {
-            _data.hiddenGaugeDatas.Add(new MapHiddenGaugeSaveData
-            {
-                mapType = kvp.Key,
-                forestType = kvp.Value.forestType,
-                hiddenGauge = kvp.Value.hiddenGauge
-            });
+            _data.hiddenGaugeDatas.Add(kvp.Value);
         }
 
         // bCanAccess 정보 수집
@@ -258,11 +253,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
             for (int i = 0; i < _data.hiddenGaugeDatas.Count; i++)
             {
                 var saved = _data.hiddenGaugeDatas[i];
-                hiddenGaugeData[saved.mapType] = new ForestHiddenGaugeData
-                {
-                    forestType = saved.forestType,
-                    hiddenGauge = saved.hiddenGauge
-                };
+                hiddenGaugeData[saved.forestType] = saved;
             }
         }
 
@@ -328,15 +319,13 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         for (int i = 0; i < cachedDatabase.mapDatas.Count; i++)
         {
             var mapInfo = cachedDatabase.mapDatas[i];
-            // 해당 MapType에 저장된 게이지 정보가 있는지 확인
-            hiddenGaugeData.TryGetValue(mapInfo.mapType, out ForestHiddenGaugeData gaugeData);
 
             for (int j = 0; j < mapInfo.forestDatas.Count; j++)
             {
                 var forestInfo = mapInfo.forestDatas[j];
 
-                // 게이지 정보가 있고 포레스트 타입이 일치하는 경우에만 현재 게이지 할당
-                if (gaugeData.forestType == forestInfo.forestType)
+                // forestType을 키로 게이지 정보 조회
+                if (hiddenGaugeData.TryGetValue(forestInfo.forestType, out MapHiddenGaugeSaveData gaugeData))
                 {
                     forestInfo.currentHiddenGauge = gaugeData.hiddenGauge;
                 }
@@ -400,35 +389,36 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
     private void AddAmountToHiddenGauge(float _amount)
     {
-        if (hiddenGaugeData.TryGetValue(currentMapType, out ForestHiddenGaugeData data))
+        if (currentDensityData == null) return;
+
+        ForestType fType = currentDensityData.forestType;
+
+        if (hiddenGaugeData.TryGetValue(fType, out MapHiddenGaugeSaveData data))
         {
             data.hiddenGauge += _amount;
-            hiddenGaugeData[currentMapType] = data;
-            Debug.Log(hiddenGaugeData[currentMapType].hiddenGauge);
-        }
+            hiddenGaugeData[fType] = data;
+        }   
         else
         {
-            ForestHiddenGaugeData newData = new ForestHiddenGaugeData();
-            newData.forestType = currentDensityData != null ? currentDensityData.forestType : ForestType.None;
+            MapHiddenGaugeSaveData newData = new MapHiddenGaugeSaveData();
+            newData.mapType = currentMapType;
+            newData.forestType = fType;
             newData.hiddenGauge = _amount;
-            hiddenGaugeData.Add(currentMapType, newData);
-            Debug.Log(hiddenGaugeData[currentMapType].hiddenGauge);
+            hiddenGaugeData.Add(fType, newData);
         }
     }
 
     public bool IsCurrentlyHiddenMap(MapType _mapType, ForestType _forestType)
     {
-        if (hiddenGaugeData.TryGetValue(_mapType, out ForestHiddenGaugeData data))
+        if (hiddenGaugeData.TryGetValue(_forestType, out MapHiddenGaugeSaveData data))
         {
-            if (data.forestType != _forestType) return false;
-
             DensityData densityData = densityDataBase.Get(_mapType, _forestType);
             if (densityData == null) return false;
 
             if (data.hiddenGauge >= densityData.limitHiddenGauge)
             {
                 data.hiddenGauge = 0f;
-                hiddenGaugeData[_mapType] = data;
+                hiddenGaugeData[_forestType] = data;
                 return true;
             }
         }

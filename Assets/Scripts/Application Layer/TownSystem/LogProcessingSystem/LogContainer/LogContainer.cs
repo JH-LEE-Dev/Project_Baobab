@@ -1,9 +1,9 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 using System;
 using System.Text;
+using System.Collections;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
@@ -158,6 +158,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 arrivalDataBuffer.sprite = item.sprite;
                 arrivalDataBuffer.color = item.color;
                 arrivalDataBuffer.treeType = item.treeType;
+                arrivalDataBuffer.logState = item.logState;
 
                 AddItemByData(arrivalDataBuffer, item.logState);
 
@@ -196,19 +197,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             // X축 확대 시 Y축 축소 (Squash & Stretch)
             visualTransform.localScale = new Vector3(1f + curve, 1f - curve, 1f);
         }
-    }
-
-    private bool IsSameItem(Item _item, ItemData _data)
-    {
-        if (_item.itemType != _data.itemType) return false;
-
-        if (_item is LogItem logItem && _data is LogItemData logData)
-        {
-            // 같은 나무 종류라면 같은 슬롯에 보관
-            return logItem.treeType == logData.treeType;
-        }
-
-        return true;
     }
 
     private ItemData GetFromPool(ItemType _type)
@@ -362,8 +350,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 // 궤적 jitter를 대폭 줄여서 포물선 형태가 뭉개지지 않도록 수정
                 Vector3 trajectoryJitter = new Vector3(UnityEngine.Random.Range(-0.3f, 0.0f), UnityEngine.Random.Range(-0.2f, 0.0f), 0f);
 
-                // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터)
-                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter);
+                // 회전 속도 및 방향 결정 (빠르지 않게: 90~270도/s 정도)
+                float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+                // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
+                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter, rotationSpeed);
                 flyingItems.Add(flyingItem);
 
                 ContainerUpdatedEvent?.Invoke();
@@ -400,7 +391,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             for (int i = 0; i < flyingItems.Count; i++)
             {
-                if (flyingItems[i].itemType == ItemType.Log && flyingItems[i].treeType == logSource.treeType)
+                if (flyingItems[i].itemType == ItemType.Log && flyingItems[i].logState == logSource.logState)
                     pendingCount++;
             }
         }
@@ -440,7 +431,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 containerSlots[i].totalCount < maxItemsPerSlot &&
                 IsSameItemByData(_sourceData, containerSlots[i].itemData))
             {
-                containerSlots[i].AddCountByState(_state);
+                containerSlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
                 return;
             }
         }
@@ -465,7 +456,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     }
 
                     containerSlots[i].Setup(newData, 0);
-                    containerSlots[i].AddCountByState(_state);
+                    containerSlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
                 }
 
                 return;
@@ -479,7 +470,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         if (_data1 is LogItemData log1 && _data2 is LogItemData log2)
         {
-            return log1.treeType == log2.treeType;
+            return log1.logState == log2.logState;
         }
 
         return true;
@@ -499,15 +490,15 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             {
                 if (slot.itemData is LogItemData logData)
                 {
-                    sb.AppendFormat("Slot[{0}]: {1} Log (Total: {2})\n", i, logData.treeType, slot.count);
+                    sb.AppendFormat("Slot[{0}]: {1} Log (Total: {2})\n", i, logData.logState, slot.count);
 
-                    // 각 LogState별 상세 수량 정보 출력
-                    var stateCounts = slot.logStateCounts;
-                    for (int j = 0; j < stateCounts.Length; j++)
+                    // 각 나무 종류별 상세 수량 정보 출력
+                    var treeCounts = slot.treeTypeCounts;
+                    for (int j = 0; j < treeCounts.Length; j++)
                     {
-                        if (stateCounts[j].count > 0)
+                        if (treeCounts[j].count > 0)
                         {
-                            sb.AppendFormat("  - {0}: {1}\n", stateCounts[j].state, stateCounts[j].count);
+                            sb.AppendFormat("  - {0}: {1}\n", treeCounts[j].treeType, treeCounts[j].count);
                         }
                     }
                 }
@@ -654,7 +645,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 {
                     itemSaveData.treeType = logData.treeType;
                     itemSaveData.logState = logData.logState;
-                    slotData.logStateCounts = slot.GetLogStateCounts();
+                    slotData.treeTypeCounts = slot.GetTreeTypeCounts();
                 }
 
                 slotData.itemSaveData = itemSaveData;
@@ -716,9 +707,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                         containerSlots[i].Setup(newData, slotData.totalCount);
 
-                        if (slotData.logStateCounts != null && slotData.logStateCounts.Length > 0)
+                        if (slotData.treeTypeCounts != null && slotData.treeTypeCounts.Length > 0)
                         {
-                            containerSlots[i].LoadLogStateCounts(slotData.logStateCounts);
+                            containerSlots[i].LoadTreeTypeCounts(slotData.treeTypeCounts);
                         }
                     }
                 }

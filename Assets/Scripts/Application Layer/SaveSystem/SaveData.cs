@@ -128,7 +128,7 @@ public struct InventorySlotSaveData
 {
     public ItemSaveData itemSaveData;
     public int totalCount;
-    public int[] logStateCounts; // Log 아이템인 경우 세부 상태별 개수
+    public int[] treeTypeCounts; // Log 아이템인 경우 세부 나무 종류별 개수
 }
 
 [Serializable]

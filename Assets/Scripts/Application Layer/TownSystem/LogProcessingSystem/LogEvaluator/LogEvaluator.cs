@@ -9,6 +9,7 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     [SerializeField] private LogItemValueDataBase logItemValueDataBase;
     [SerializeField] private GameObject storageObj;
     [SerializeField] private float evaluationDelay = 1.5f;
+    [SerializeField] private LogStorage logStorage;
 
     private Animator anim;
     private Animator storageAnim;
@@ -27,6 +28,8 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     {
         anim = GetComponent<Animator>();
         storageAnim = storageObj.GetComponent<Animator>();
+
+        logStorage.Initialize();
     }
 
     public void EvaluateLog(ILogItemData _itemData)
@@ -71,6 +74,8 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         // 최종 가격 = 기본 가치 * 상태 배율 * 스킬 배율
         int finalPrice = Mathf.RoundToInt(baseValue * stateMultiplier * logValueMultiplier);
         logEvaluatedEvent?.Invoke(finalPrice);
+
+        if (logStorage != null) logStorage.TriggerBounce();
 
         stopAnimCoroutine = StartCoroutine(StopAnimationRoutine());
     }

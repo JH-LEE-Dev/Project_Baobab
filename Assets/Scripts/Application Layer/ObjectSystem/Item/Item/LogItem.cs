@@ -39,9 +39,12 @@ public class LogItem : Item, IStaticCollidable
     private float height;
     private float duration;
     private float elapsed;
+    private float rotationSpeed;
     private float suckSpeed;
     private const float SuckAccel = 12f;
     private const float MinAcquireDist = 0.2f;
+
+    private Sprite timberSprite;
 
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
@@ -55,6 +58,7 @@ public class LogItem : Item, IStaticCollidable
         color = _color;
         durability = _logItemTypeData.durability;
         elapsed = 0;
+        timberSprite = _logItemTypeData.timberSprite;
 
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         if (spriteRenderer != null)
@@ -94,13 +98,14 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
-    public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter)
+    public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
     {
         startPos = _start;
         endPos = _end;
         height = _height;
         duration = _duration;
         trajectoryJitter = _jitter;
+        rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.Transferring;
 
@@ -131,7 +136,18 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = null;
         elapsed = 0;
         trajectoryJitter = Vector3.zero;
+        rotationSpeed = 0f;
         transform.localScale = Vector3.one;
+        spriteRenderer.sprite = sprite;
+        if (visualTransform != null) visualTransform.localRotation = Quaternion.identity;
+    }
+
+    public void SetTimberSprite()
+    {
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.sprite = timberSprite;
+        }
     }
 
     public void ManualUpdate(float _deltaTime)
@@ -191,7 +207,7 @@ public class LogItem : Item, IStaticCollidable
         if (currentT > 0.7f)
         {
             // 0.7f부터 가속도 적용 (도착할수록 속도 배율 증가)
-            speedMultiplier = 1f + (currentT - 0.7f) * 15f; 
+            speedMultiplier = 1f + (currentT - 0.7f) * 15f;
         }
 
         elapsed += _deltaTime * speedMultiplier;
@@ -200,13 +216,14 @@ public class LogItem : Item, IStaticCollidable
         // 시점과 종점은 jitter가 0이고 중간에서 최대가 되도록 (Parabolic factor: 4 * t * (1-t))
         float jitterFactor = 4f * t * (1f - t);
         Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t) + (trajectoryJitter * jitterFactor);
-        
+
         float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
 
         if (visualTransform != null)
         {
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+            visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
         }
         else
         {
@@ -228,7 +245,7 @@ public class LogItem : Item, IStaticCollidable
             float nt = (t - 0.7f) / 0.3f;
             targetScale = 1f - nt;
         }
-        
+
         transform.localScale = Vector3.one * targetScale;
 
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
@@ -237,7 +254,9 @@ public class LogItem : Item, IStaticCollidable
         {
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
-            
+
+            visualTransform.rotation = Quaternion.identity;
+
             state = ItemMoveState.Dropped;
         }
     }
