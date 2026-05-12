@@ -229,6 +229,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != timeDataProvider)
                 SetTimeState(timeDataProvider.isDay);
 
+            if (null != currentFocusedRegion && null != subSelector)
+                currentFocusedRegion.UpdateObjectCount(subSelector.GetSelectedRegionNumber());
+
             if (null == selectButton)
                 return;
 

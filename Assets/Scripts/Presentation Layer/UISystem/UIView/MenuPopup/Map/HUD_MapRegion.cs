@@ -56,6 +56,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private MapEnvironmentDataInfo mapEnvironmentInfo;
         private string currentMapName = string.Empty;
         private float uiAlpha = 1.0f;
+        private int currentVisibleCount = 1; // 현재 노출 중인 오브젝트 개수 (초기값 1)
         private bool isLocked = false;
         private bool isFocused = false;
         private bool isInitialized = false;
@@ -72,6 +73,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             CaptureOriginalColors();
 
+            currentVisibleCount = 1;
             isInitialized = true;
         }
 
@@ -118,6 +120,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != mapNameText)
                 mapNameText.text = currentMapName;
 
+            // 새로운 지역 셋업 시 오브젝트 노출 상태 리셋 (초기 노출 개수 1)
+            currentVisibleCount = 1;
+            ResetObjectsVisibility();
+
             if (true == _shouldPlayAnimation)
             {
                 PlayStartGroundAnimation();
@@ -126,6 +132,93 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             {
                 PlayStartAnimationInstant();
             }
+        }
+
+        private void ResetObjectsVisibility()
+        {
+            if (null != treeVisuals)
+            {
+                for (int _i = 0; _i < treeVisuals.Length; _i++)
+                {
+                    bool _isVisible = (_i < currentVisibleCount);
+                    if (null != treeVisuals[_i].leafImage) treeVisuals[_i].leafImage.gameObject.SetActive(_isVisible);
+                    if (null != treeVisuals[_i].trunkImage) treeVisuals[_i].trunkImage.gameObject.SetActive(_isVisible);
+                }
+            }
+
+            if (null != animalImages)
+            {
+                for (int _i = 0; _i < animalImages.Length; _i++)
+                    if (null != animalImages[_i])
+                        animalImages[_i].gameObject.SetActive(_i < currentVisibleCount);
+            }
+        }
+
+        /// <summary>
+        /// 서브 지역 번호에 따라 나무와 동물의 노출 개수를 애니메이션과 함께 조절합니다.
+        /// </summary>
+        public void UpdateObjectCount(int _count)
+        {
+            if (false == isInitialized)
+                Initialize();
+
+            // 선택이 없거나(-1) 비정상적인 값이면 조절하지 않음 (초기 연출 유지)
+            if (_count <= 0 || _count > 3)
+                return;
+
+            if (currentVisibleCount == _count)
+                return;
+
+            // 나무 연출 조절
+            if (null != treeVisuals)
+            {
+                for (int _i = 0; _i < treeVisuals.Length; _i++)
+                {
+                    int _num = _i + 1;
+                    string _tag = "Tree_" + _num;
+                    bool _shouldBeVisible = (_i < _count);
+                    bool _wasVisible = (_i < currentVisibleCount);
+
+                    if (_shouldBeVisible && !_wasVisible)
+                    {
+                        // 등장 연출
+                        if (null != treeVisuals[_i].leafImage) treeVisuals[_i].leafImage.gameObject.SetActive(true);
+                        if (null != treeVisuals[_i].trunkImage) treeVisuals[_i].trunkImage.gameObject.SetActive(true);
+                        motionPlayer.Play(_tag, bReset: true);
+                    }
+                    else if (!_shouldBeVisible && _wasVisible)
+                    {
+                        // 퇴장 연출
+                        motionPlayer.PlayBackward(_tag, bReset: true);
+                    }
+                }
+            }
+
+            // 동물 연출 조절
+            if (null != animalImages)
+            {
+                for (int _i = 0; _i < animalImages.Length; _i++)
+                {
+                    int _num = _i + 1;
+                    string _tag = "Animal_" + _num;
+                    bool _shouldBeVisible = (_i < _count);
+                    bool _wasVisible = (_i < currentVisibleCount);
+
+                    if (_shouldBeVisible && !_wasVisible)
+                    {
+                        // 등장 연출
+                        if (null != animalImages[_i]) animalImages[_i].gameObject.SetActive(true);
+                        motionPlayer.Play(_tag, bReset: true);
+                    }
+                    else if (!_shouldBeVisible && _wasVisible)
+                    {
+                        // 퇴장 연출
+                        motionPlayer.PlayBackward(_tag, bReset: true);
+                    }
+                }
+            }
+
+            currentVisibleCount = _count;
         }
 
         private void PlayStartAnimationInstant()
@@ -239,11 +332,18 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == treeVisuals)
                 return;
 
-            int _finalIdx = treeVisuals.Length - 1;
+            int _targetCount = Mathf.Min(currentVisibleCount, treeVisuals.Length);
+            int _finalIdx = _targetCount - 1;
             const string _treeAnimationTag = "Tree_"; 
             const float delay = 0.05f;
 
-            for (int _i = 0; _i < treeVisuals.Length; _i++)
+            if (_targetCount <= 0)
+            {
+                PlayStartAnimalAnimation();
+                return;
+            }
+
+            for (int _i = 0; _i < _targetCount; _i++)
             {
                 // 구조체는 null이 될 수 없으므로 실제 이미지 컴포넌트 유무를 확인합니다.
                 if (null == treeVisuals[_i].leafImage && null == treeVisuals[_i].trunkImage)
@@ -262,10 +362,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == animalImages)
                 return;
 
+            int _targetCount = Mathf.Min(currentVisibleCount, animalImages.Length);
             const string _animalAnimationTag = "Animal_";
             const float _delay = 0.05f;
 
-            for (int _i = 0; _i < animalImages.Length; _i++)
+            for (int _i = 0; _i < _targetCount; _i++)
             {
                 if (null == animalImages[_i])
                     continue;
