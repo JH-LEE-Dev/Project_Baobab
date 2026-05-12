@@ -15,3 +15,7 @@ MonoBehaviour:
   datas:
   - treeType: 1
     value: 4
+  - treeType: 2
+    value: 12
+  - treeType: 3
+    value: 40
