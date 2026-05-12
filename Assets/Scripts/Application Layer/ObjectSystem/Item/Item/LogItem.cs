@@ -138,7 +138,10 @@ public class LogItem : Item, IStaticCollidable
         trajectoryJitter = Vector3.zero;
         rotationSpeed = 0f;
         transform.localScale = Vector3.one;
-        spriteRenderer.sprite = sprite;
+
+        if (sprite != null)
+            spriteRenderer.sprite = sprite;
+            
         if (visualTransform != null) visualTransform.localRotation = Quaternion.identity;
     }
 
