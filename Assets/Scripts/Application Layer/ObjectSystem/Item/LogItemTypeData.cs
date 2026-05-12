@@ -8,5 +8,6 @@ public class LogItemTypeData
     public TreeType treeType;
     public float durability;
     public Sprite sprite;
+    public Sprite timberSprite;
     public Color color;
 }
