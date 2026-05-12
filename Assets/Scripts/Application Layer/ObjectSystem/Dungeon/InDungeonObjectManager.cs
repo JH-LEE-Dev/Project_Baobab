@@ -223,7 +223,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
                 TreeObj tree = treePool.Get();
                 tree.transform.position = spawnPos;
-                
+
                 // 최적화: 증분 업데이트 (O(1))
                 tree.PoolIndex = activeTrees.Count;
                 activeTrees.Add(tree);
@@ -283,8 +283,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
+                //activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
                 treePool.Release(activeTrees[i]);
-                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
             }
         }
         activeTrees.Clear();
@@ -425,25 +425,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             availablePositions[swapIdx] = temp;
         }
 
-        // 최적화: Swap-with-last O(1) 증분 업데이트
-        int index = _treeObj.PoolIndex;
-        if (index >= 0 && index < activeTrees.Count)
-        {
-            int lastIdx = activeTrees.Count - 1;
-            if (index != lastIdx)
-            {
-                TreeObj lastTree = activeTrees[lastIdx];
-                activeTrees[index] = lastTree;
-                lastTree.PoolIndex = index;
-                spheres[index] = spheres[lastIdx];
-            }
-            activeTrees.RemoveAt(lastIdx);
-            cullingGroup.SetBoundingSphereCount(activeTrees.Count);
-        }
-
-        // 업데이트 리스트에서 제거 (이미 Visibility 로직에 포함됨)
-        UpdateTreeVisibility(_treeObj, false);
-
         treePool.Release(_treeObj);
         TreeDeadEvent?.Invoke(_treeObj.treeData.type);
     }
@@ -517,11 +498,35 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void OnReleaseTree(TreeObj _tree)
     {
+        // 최적화: 업데이트 리스트에서 제거
+        UpdateTreeVisibility(_tree, false);
+
+        // 최적화: Swap-with-last O(1) 증분 업데이트로 마스터 리스트에서 제거
+        int index = _tree.PoolIndex;
+        if (index >= 0 && index < activeTrees.Count)
+        {
+            int lastIdx = activeTrees.Count - 1;
+            if (index != lastIdx)
+            {
+                TreeObj lastTree = activeTrees[lastIdx];
+                activeTrees[index] = lastTree;
+                lastTree.PoolIndex = index;
+                spheres[index] = spheres[lastIdx];
+            }
+            activeTrees.RemoveAt(lastIdx);
+
+            if (cullingGroup != null)
+            {
+                cullingGroup.SetBoundingSphereCount(activeTrees.Count);
+            }
+        }
+
         _tree.PoolIndex = -1;
         _tree.UpdateIndex = -1;
         _tree.ResetTree();
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeGetHitEvent -= OnTreeHit;
+        //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
 

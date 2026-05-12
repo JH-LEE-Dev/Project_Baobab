@@ -397,6 +397,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public void Reset()
     {
         bDead = false;
+        PoolIndex = -1;
+        UpdateIndex = -1;
 
         if (healthComponent != null)
             healthComponent.Reset();
