@@ -280,6 +280,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 treeOriginalColors = new MapTreeColor[treeVisuals.Length];
                 for (int _i = 0; _i < treeVisuals.Length; _i++)
                 {
+                    treeOriginalColors[_i] = new MapTreeColor();
                     if (null != treeVisuals[_i].leafImage)
                         treeOriginalColors[_i].leafColor = treeVisuals[_i].leafImage.color;
 
@@ -415,7 +416,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                         treeVisuals[_i].leafImage.color = new Color(treeOriginalColors[_i].leafColor.r * _focusFactor, treeOriginalColors[_i].leafColor.g * _focusFactor, treeOriginalColors[_i].leafColor.b * _focusFactor, treeOriginalColors[_i].leafColor.a * uiAlpha);
 
                     if (null != treeVisuals[_i].trunkImage)
-                        treeOriginalColors[_i].trunkColor = new Color(treeOriginalColors[_i].trunkColor.r * _focusFactor, treeOriginalColors[_i].trunkColor.g * _focusFactor, treeOriginalColors[_i].trunkColor.b * _focusFactor, treeOriginalColors[_i].trunkColor.a * uiAlpha);
+                        treeVisuals[_i].trunkImage.color = new Color(treeOriginalColors[_i].trunkColor.r * _focusFactor, treeOriginalColors[_i].trunkColor.g * _focusFactor, treeOriginalColors[_i].trunkColor.b * _focusFactor, treeOriginalColors[_i].trunkColor.a * uiAlpha);
                 }
 
             if (null != animalImages && null != animalOriginalColors)
