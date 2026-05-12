@@ -28,10 +28,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private TreeObj[] trees;
     public IReadOnlyList<TreeObj> Trees => trees;
 
-    // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
+    // 최적화: 인덱스 기반 관리로 HashSet 제거 및 O(1) 처리
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
     public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
-    private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(200);
 
     private bool bCanTravel = false;
 
@@ -130,7 +129,6 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         // 초기 상태 갱신
         activeTreesForUpdate.Clear();
-        activeTreesForUpdateSet.Clear();
         for (int i = 0; i < trees.Length; i++)
         {
             bool isVisible = cullingGroup.IsVisible(i);
@@ -142,8 +140,12 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
             if (shouldBeActive)
             {
+                trees[i].UpdateIndex = activeTreesForUpdate.Count;
                 activeTreesForUpdate.Add(trees[i]);
-                activeTreesForUpdateSet.Add(trees[i]);
+            }
+            else
+            {
+                trees[i].UpdateIndex = -1;
             }
         }
     }
@@ -165,18 +167,28 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         if (shouldBeActive)
         {
-            // 최적화: HashSet을 사용하여 O(1) 검색 및 추가
-            if (activeTreesForUpdateSet.Add(tree))
+            // 최적화: 인덱스 기반 O(1) 추가
+            if (tree.UpdateIndex == -1)
             {
+                tree.UpdateIndex = activeTreesForUpdate.Count;
                 activeTreesForUpdate.Add(tree);
             }
         }
         else
         {
-            // 최적화: HashSet을 사용하여 O(1) 검색 및 삭제
-            if (activeTreesForUpdateSet.Remove(tree))
+            // 최적화: Swap-with-last 기반 O(1) 삭제
+            int idx = tree.UpdateIndex;
+            if (idx != -1 && idx < activeTreesForUpdate.Count)
             {
-                activeTreesForUpdate.Remove(tree);
+                int lastIdx = activeTreesForUpdate.Count - 1;
+                if (idx != lastIdx)
+                {
+                    TreeObj lastTree = activeTreesForUpdate[lastIdx];
+                    activeTreesForUpdate[idx] = lastTree;
+                    lastTree.UpdateIndex = idx;
+                }
+                activeTreesForUpdate.RemoveAt(lastIdx);
+                tree.UpdateIndex = -1;
             }
         }
     }
@@ -186,7 +198,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         if (trees == null || trees.Length == 0)
             return;
 
-        for (int i = 0; i < activeTreesForUpdate.Count; i++)
+        // 버그 수정: ManualUpdate 중 리스트 변형에 대비하여 역순 순회
+        for (int i = activeTreesForUpdate.Count - 1; i >= 0; i--)
         {
             activeTreesForUpdate[i].ManualUpdate();
         }
@@ -228,8 +241,12 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             cullingGroup.SetBoundingSphereCount(0);
         }
+        
+        for(int i = 0; i < activeTreesForUpdate.Count; i++)
+        {
+            activeTreesForUpdate[i].UpdateIndex = -1;
+        }
         activeTreesForUpdate.Clear();
-        activeTreesForUpdateSet.Clear();
         trees = null;
     }
 

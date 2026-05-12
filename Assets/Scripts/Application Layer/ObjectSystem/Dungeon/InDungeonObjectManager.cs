@@ -35,10 +35,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private List<Vector3> availablePositions = new List<Vector3>(2500);
     private List<TreeObj> activeTrees = new List<TreeObj>(2500);
 
-    // 최적화: HashSet을 사용하여 Contains 중복 체크 속도 향상 (O(1))
+    // 최적화: 인덱스 기반 관리로 HashSet 제거
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
     public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
-    private HashSet<TreeObj> activeTreesForUpdateSet = new HashSet<TreeObj>(2500);
 
     private IObjectPool<TreeObj> treePool;
     private Coroutine growthCoroutine;
@@ -46,7 +45,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
     private CullingGroup.StateChanged onCullingStateChangedDelegate;
-    private bool isCullingDirty = false;
     private Camera mainCam; // 최적화: 카메라 캐싱
 
     public IReadOnlyList<ITreeObj> trees => activeTrees;
@@ -73,7 +71,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         lootManager.Initialize();
 
         cullingDistances = new float[] { cullingDistance };
-        spheres = new BoundingSphere[1000];
+        spheres = new BoundingSphere[2500]; // 최대 개수에 맞춰 미리 할당
         onCullingStateChangedDelegate = OnCullingStateChanged;
 
         treePool = new ObjectPool<TreeObj>(
@@ -220,17 +218,36 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             if (!environmentProvider.pathfindGridProvider.IsOccupied(cellPos))
             {
                 int lastIdx = availablePositions.Count - 1;
-                // Swap-with-last for O(1) removal
                 availablePositions[checkIdx] = availablePositions[lastIdx];
                 availablePositions.RemoveAt(lastIdx);
 
                 TreeObj tree = treePool.Get();
                 tree.transform.position = spawnPos;
-                tree.gameObject.SetActive(true);
+
+                // 최적화: 증분 업데이트 (O(1))
+                tree.PoolIndex = activeTrees.Count;
                 activeTrees.Add(tree);
+
+                if (spheres.Length <= tree.PoolIndex)
+                {
+                    Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, tree.PoolIndex + 1));
+                    cullingGroup.SetBoundingSpheres(spheres);
+                }
+                spheres[tree.PoolIndex] = new BoundingSphere(spawnPos, 3f);
 
                 environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
                 environmentProvider.densityProvider.UpdateTreeCnt(true);
+
+                if (cullingGroup != null)
+                {
+                    cullingGroup.SetBoundingSphereCount(activeTrees.Count);
+                    // 즉시 가시성 체크 및 초기 상태 설정
+                    UpdateTreeVisibility(tree, cullingGroup.IsVisible(tree.PoolIndex) && (cullingGroup.GetDistance(tree.PoolIndex) == 0));
+                }
+                else
+                {
+                    tree.gameObject.SetActive(true);
+                }
 
                 if (_isGrowing)
                 {
@@ -253,35 +270,26 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
             if (environmentProvider.densityProvider.CanCreateTree() && availablePositions.Count > 0)
             {
-                // 성공적으로 생성했을 때만 컬링 그룹 갱신 플래그 설정
-                if (SpawnOneTreeFromAvailable(true))
-                {
-                    isCullingDirty = true;
-                }
+                SpawnOneTreeFromAvailable(true);
             }
         }
     }
 
     private void ClearTrees()
     {
-        // 역순 순회로 안전하게 해제
         for (int i = activeTrees.Count - 1; i >= 0; i--)
         {
             if (activeTrees[i] != null)
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
-
-                // 순서 변경: 먼저 풀에 반환(OnDisable 호출)하여 정상적으로 Unregister 되게 함
+                //activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
                 treePool.Release(activeTrees[i]);
-                // 해제된 객체의 위치를 나중에 옮김
-                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
             }
         }
         activeTrees.Clear();
         activeTreesForUpdate.Clear();
-        activeTreesForUpdateSet.Clear();
-        isCullingDirty = true;
+        if (cullingGroup != null) cullingGroup.SetBoundingSphereCount(0);
     }
 
     private void StopGrowth()
@@ -305,39 +313,27 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         cullingGroup.targetCamera = mainCam;
         cullingGroup.SetBoundingDistances(cullingDistances);
         cullingGroup.SetDistanceReferencePoint(mainCam.transform);
+        cullingGroup.SetBoundingSpheres(spheres);
     }
 
     private void RefreshCullingGroup()
     {
+        // 최적화: 전체 갱신은 던전 시작 시나 대규모 변경 시에만 사용 (O(N))
         int count = activeTrees.Count;
-        if (spheres == null || spheres.Length < count)
-        {
-            spheres = new BoundingSphere[Mathf.Max(count + 100, 1000)];
-        }
-
         for (int i = 0; i < count; i++)
         {
             spheres[i].position = activeTrees[i].transform.position;
             spheres[i].radius = 3f;
+            activeTrees[i].PoolIndex = i;
         }
 
-        cullingGroup.SetBoundingSpheres(spheres);
         cullingGroup.SetBoundingSphereCount(count);
 
         activeTreesForUpdate.Clear();
-        activeTreesForUpdateSet.Clear();
         for (int i = 0; i < count; i++)
         {
-            bool isVisible = cullingGroup.IsVisible(i);
-            bool isNear = cullingGroup.GetDistance(i) == 0;
-            bool shouldBeActive = isVisible && isNear;
-
-            activeTrees[i].gameObject.SetActive(shouldBeActive);
-            if (shouldBeActive)
-            {
-                activeTreesForUpdate.Add(activeTrees[i]);
-                activeTreesForUpdateSet.Add(activeTrees[i]);
-            }
+            bool shouldBeActive = cullingGroup.IsVisible(i) && (cullingGroup.GetDistance(i) == 0);
+            UpdateTreeVisibility(activeTrees[i], shouldBeActive);
         }
     }
 
@@ -346,26 +342,38 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (_ev.index >= activeTrees.Count) return;
 
         bool shouldBeActive = _ev.isVisible && (_ev.currentDistance == 0);
-        TreeObj tree = activeTrees[_ev.index];
+        UpdateTreeVisibility(activeTrees[_ev.index], shouldBeActive);
+    }
 
-        if (tree.gameObject.activeSelf != shouldBeActive)
+    private void UpdateTreeVisibility(TreeObj _tree, bool _shouldBeActive)
+    {
+        if (_tree.gameObject.activeSelf != _shouldBeActive)
         {
-            tree.gameObject.SetActive(shouldBeActive);
+            _tree.gameObject.SetActive(_shouldBeActive);
         }
 
-        if (shouldBeActive)
+        if (_shouldBeActive)
         {
-            // 최적화: HashSet을 사용하여 O(1) 검색
-            if (activeTreesForUpdateSet.Add(tree))
+            if (_tree.UpdateIndex == -1)
             {
-                activeTreesForUpdate.Add(tree);
+                _tree.UpdateIndex = activeTreesForUpdate.Count;
+                activeTreesForUpdate.Add(_tree);
             }
         }
         else
         {
-            if (activeTreesForUpdateSet.Remove(tree))
+            int idx = _tree.UpdateIndex;
+            if (idx != -1)
             {
-                activeTreesForUpdate.Remove(tree);
+                int lastIdx = activeTreesForUpdate.Count - 1;
+                if (idx != lastIdx)
+                {
+                    TreeObj lastTree = activeTreesForUpdate[lastIdx];
+                    activeTreesForUpdate[idx] = lastTree;
+                    lastTree.UpdateIndex = idx;
+                }
+                activeTreesForUpdate.RemoveAt(lastIdx);
+                _tree.UpdateIndex = -1;
             }
         }
     }
@@ -417,27 +425,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             availablePositions[swapIdx] = temp;
         }
 
-        // activeTrees 최적화 (Swap-with-last)
-        int index = activeTrees.IndexOf(_treeObj);
-        if (index >= 0)
-        {
-            int lastIdx = activeTrees.Count - 1;
-            if (index != lastIdx)
-            {
-                activeTrees[index] = activeTrees[lastIdx];
-            }
-            activeTrees.RemoveAt(lastIdx);
-        }
-
-        if (activeTreesForUpdateSet.Remove(_treeObj))
-        {
-            activeTreesForUpdate.Remove(_treeObj);
-        }
-
-        isCullingDirty = true;
-
         treePool.Release(_treeObj);
-
         TreeDeadEvent?.Invoke(_treeObj.treeData.type);
     }
 
@@ -455,7 +443,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         TreeType type = environmentProvider.densityProvider.GetTreeTypeToSpawn();
         TreeGrade grade = TreeGrade.Normal;
 
-        // HiddenMap 등급이 지정되어 있다면 해당 등급의 확률 데이터 사용
         if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
         {
             for (int i = 0; i < hiddenMapTreeGradeDatas.Count; i++)
@@ -482,7 +469,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             }
         }
 
-        // 일반 던전 확률 데이터 사용
         if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
         {
             float rand = UnityEngine.Random.Range(0f, 1f);
@@ -512,9 +498,35 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void OnReleaseTree(TreeObj _tree)
     {
+        // 최적화: 업데이트 리스트에서 제거
+        UpdateTreeVisibility(_tree, false);
+
+        // 최적화: Swap-with-last O(1) 증분 업데이트로 마스터 리스트에서 제거
+        int index = _tree.PoolIndex;
+        if (index >= 0 && index < activeTrees.Count)
+        {
+            int lastIdx = activeTrees.Count - 1;
+            if (index != lastIdx)
+            {
+                TreeObj lastTree = activeTrees[lastIdx];
+                activeTrees[index] = lastTree;
+                lastTree.PoolIndex = index;
+                spheres[index] = spheres[lastIdx];
+            }
+            activeTrees.RemoveAt(lastIdx);
+
+            if (cullingGroup != null)
+            {
+                cullingGroup.SetBoundingSphereCount(activeTrees.Count);
+            }
+        }
+
+        _tree.PoolIndex = -1;
+        _tree.UpdateIndex = -1;
         _tree.ResetTree();
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeGetHitEvent -= OnTreeHit;
+        //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
 
@@ -527,15 +539,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void Update()
     {
-        for (int i = 0; i < activeTreesForUpdate.Count; i++)
+        // 최적화 및 버그 수정: ManualUpdate 중 나무가 죽거나 상태가 변하여 리스트가 변형될 수 있으므로 역순 순회
+        for (int i = activeTreesForUpdate.Count - 1; i >= 0; i--)
         {
             activeTreesForUpdate[i].ManualUpdate();
-        }
-
-        if (isCullingDirty)
-        {
-            RefreshCullingGroup();
-            isCullingDirty = false;
         }
     }
 

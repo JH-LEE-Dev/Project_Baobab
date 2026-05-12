@@ -62,7 +62,7 @@ public class AS_RunState : AnimalState
 
     public override void Update()
     {
-        if (!bActivated) return;
+        if (!bActivated || !animal.bActivated) return;
 
         // 0. 실시간 도망 전환 체크: 일반 이동 중 플레이어가 나타나면 즉시 도망 경로로 갱신
         if (animal.bRunAway && !isFleeingPath)
@@ -257,7 +257,7 @@ public class AS_RunState : AnimalState
 
     public override void FixedUpdate()
     {
-        if (!bActivated || !hasNextReservation) return;
+        if (!bActivated || !animal.bActivated || !hasNextReservation) return;
 
         var path = pathFindComponent.Path;
         if (currentPathIndex >= path.Count) return;

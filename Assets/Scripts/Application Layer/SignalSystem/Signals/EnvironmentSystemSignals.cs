@@ -9,3 +9,8 @@ public struct MapGeneratedSignal
         grassTilePositions = _grassTilePositions;
     }
 }
+
+public struct MapCanAccessSignal
+{
+    
+}

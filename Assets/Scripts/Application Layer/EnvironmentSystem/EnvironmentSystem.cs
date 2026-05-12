@@ -166,6 +166,6 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _prestigeLevelIncreasedSignal)
     {
-
+        densityManager.PrestigeLevelIncreased(_prestigeLevelIncreasedSignal.level);
     }
 }

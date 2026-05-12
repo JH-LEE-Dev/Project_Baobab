@@ -14,9 +14,8 @@ public class LootManager : MonoBehaviour
 
     // 내부 의존성
     private IObjectPool<LootItem> lootPool;
-    // 최적화: 검색 및 삭제 속도 향상을 위해 HashSet 사용 (O(1))
-    private HashSet<LootItem> activeItems = new HashSet<LootItem>(128);
-    private List<LootItem> activeItemsList = new List<LootItem>(128); // 최적화: 순회용 캐싱 리스트
+    // 최적화: 인덱스 기반 관리로 HashSet 제거
+    private List<LootItem> activeItemsList = new List<LootItem>(128); // 최적화: 순회용 리스트
     private List<LootItem> cleanupList = new List<LootItem>(128); // ClearAll용 재사용 리스트
 
     /// <summary>
@@ -39,17 +38,11 @@ public class LootManager : MonoBehaviour
 
     private void Update()
     {
-        if (activeItems.Count == 0) return;
-
-        // HashSet을 리스트로 복사하여 순회 (GC 할당 최소화 및 컬렉션 변조 방지)
-        activeItemsList.Clear();
-        foreach (var item in activeItems)
-        {
-            activeItemsList.Add(item);
-        }
+        if (activeItemsList.Count == 0) return;
 
         float deltaTime = Time.deltaTime;
-        for (int i = 0; i < activeItemsList.Count; i++)
+        // 최적화 및 버그 수정: ManualUpdate 중 아이템이 해제(Release)되어 리스트가 변형될 수 있으므로 역순 순회
+        for (int i = activeItemsList.Count - 1; i >= 0; i--)
         {
             activeItemsList[i].ManualUpdate(deltaTime);
         }
@@ -96,15 +89,31 @@ public class LootManager : MonoBehaviour
 
     private void OnGetLootItem(LootItem _item)
     {
+        _item.UpdateIndex = activeItemsList.Count;
+        activeItemsList.Add(_item);
+
         _item.gameObject.SetActive(true);
         _item.ResetItem();
-        activeItems.Add(_item);
     }
 
     private void OnReleaseLootItem(LootItem _item)
     {
+        // 최적화: Swap-with-last 방식을 이용한 리스트 삭제 (O(1))
+        int idx = _item.UpdateIndex;
+        if (idx != -1 && idx < activeItemsList.Count)
+        {
+            int lastIdx = activeItemsList.Count - 1;
+            if (idx != lastIdx)
+            {
+                LootItem lastItem = activeItemsList[lastIdx];
+                activeItemsList[idx] = lastItem;
+                lastItem.UpdateIndex = idx;
+            }
+            activeItemsList.RemoveAt(lastIdx);
+            _item.UpdateIndex = -1;
+        }
+
         _item.gameObject.SetActive(false);
-        activeItems.Remove(_item);
     }
 
     private void OnDestroyLootItem(LootItem _item)
@@ -112,27 +121,25 @@ public class LootManager : MonoBehaviour
         if (_item != null)
         {
             _item.lootItemAcquiredEvent -= OnLootItemAcquired;
-            activeItems.Remove(_item);
+            OnReleaseLootItem(_item);
             Destroy(_item.gameObject);
         }
     }
 
     public void ClearAll()
     {
-        if (activeItems.Count == 0) return;
+        int count = activeItemsList.Count;
+        if (count == 0) return;
 
         cleanupList.Clear();
-        foreach (var item in activeItems)
-        {
-            cleanupList.Add(item);
-        }
+        cleanupList.AddRange(activeItemsList);
 
         for (int i = 0; i < cleanupList.Count; i++)
         {
             lootPool.Release(cleanupList[i]);
         }
         
-        activeItems.Clear();
+        activeItemsList.Clear();
         cleanupList.Clear();
     }
 

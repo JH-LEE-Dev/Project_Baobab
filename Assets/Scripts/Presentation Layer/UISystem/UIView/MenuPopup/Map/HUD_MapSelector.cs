@@ -21,6 +21,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private HUD_MapSunMoon sunMoon;         // 밤낮 연출 관리자
         [SerializeField] private HUD_MapSelectorButton selectButton; // 선택 확인 버튼
         [SerializeField] private HUD_MapSelectorButton exitButton;     // 종료 버튼
+        [SerializeField] private CanvasGroup canvasGroup;          // 알파 통합 관리를 위한 캔버스 그룹
         [SerializeField] private Image backgroundImage;          // 백그라운드 이미지
         [SerializeField] private Transform regionContainer;     // 지역 항목 부모 컨테이너
         [SerializeField] private GameObject regionPrefab;       // 지역 항목 프리팹
@@ -62,6 +63,16 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             timeDataProvider = _timeDataProvider;
             onConfirmCallback = _onConfirm;
             onExitCallback = _onExit;
+
+            if (null == canvasGroup)
+                canvasGroup = GetComponent<CanvasGroup>();
+
+            if (null != backgroundImage)
+            {
+                Color _color = backgroundImage.color;
+                _color.a = maxBackgroundAlpha;
+                backgroundImage.color = _color;
+            }
 
             if (null != regionContainer)
                 containerRect = regionContainer.GetComponent<RectTransform>();
@@ -270,49 +281,31 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != subSelector)
                 subSelector.Close();
 
-            PlayFadeAnimation(0.0f);
+            PlayFadeAnimation(0.0f, DeactivateSelector);
 
             if (null != currentFocusedRegion)
             {
-                currentFocusedRegion.PlayEndAnimation(DeactivateSelector);
-            }
-            else
-            {
-                DeactivateSelector();
+                currentFocusedRegion.PlayEndAnimation(null, true);
             }
         }
 
         private void PlayFadeAnimation(float _targetAlpha, Action _onComplete = null)
         {
-            float _startAlpha = (1.0f == _targetAlpha) ? 0.0f : 1.0f;
-            
-            DOTween.To(() => _startAlpha, SetUIAlpha, _targetAlpha, fadeDuration)
+            if (null == canvasGroup)
+            {
+                _onComplete?.Invoke();
+                return;
+            }
+
+            canvasGroup.DOFade(_targetAlpha, fadeDuration)
                 .SetEase(Ease.InOutSine)
                 .OnComplete(() => _onComplete?.Invoke());
         }
 
         private void SetUIAlpha(float _alpha)
         {
-            if (null != backgroundImage)
-            {
-                Color _color = backgroundImage.color;
-                _color.a = _alpha * maxBackgroundAlpha;
-                backgroundImage.color = _color;
-            }
-
-            if (null != spawnedRegions)
-                for (int _i = 0; _i < spawnedRegions.Count; _i++)
-                    if (null != spawnedRegions[_i])
-                        spawnedRegions[_i].SetUIAlpha(_alpha);
-
-            if (null != selectButton)
-                selectButton.SetAlpha(_alpha);
-
-            if (null != exitButton)
-                exitButton.SetAlpha(_alpha);
-
-            if (null != sunMoon)
-                sunMoon.SetAlpha(_alpha);
+            if (null != canvasGroup)
+                canvasGroup.alpha = _alpha;
         }
 
         private void DeactivateSelector()

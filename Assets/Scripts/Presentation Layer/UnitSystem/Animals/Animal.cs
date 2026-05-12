@@ -88,6 +88,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     public bool bActivated = true;
 
+    // 관리용 인덱스
+    public int PoolIndex { get; set; } = -1;
+    public int UpdateIndex { get; set; } = -1;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -131,6 +135,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         feetShadowObject.SetActive(false);
         shadowAnim.enabled = false;
         bActivated = false;
+
+        // 물리 속도 및 애니메이션 초기화
+        if (rb != null) rb.linearVelocity = Vector2.zero;
+        if (anim != null) anim.SetBool(isMovingHash, false);
 
         // 동적 객체에서 제거 (위치 인자 없이 안전하게 제거)
         CollisionSystem.Instance?.Unregister(this);
@@ -221,6 +229,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     private void Update()
     {
+        // 죽었거나 숨겨진 상태에서는 상태 머신 업데이트 중단
+        if (bDead || !bActivated) return;
+
         stateMachine?.Update();
 
         if (bRunAway)
@@ -246,10 +257,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     private void FixedUpdate()
     {
-        stateMachine?.FixedUpdate();
+        // 죽었거나 숨겨진 상태에서는 상태 머신 업데이트 및 로직 중단
+        if (bDead || !bActivated) return;
 
-        // 죽었거나 숨겨진 상태에서는 충돌 갱신 및 감지 로직 중단
-        if (bDead || !sr.enabled) return;
+        stateMachine?.FixedUpdate();
 
         // 커스텀 충돌 시스템 격자 정보 갱신 (위치 업데이트는 매번 수행)
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
@@ -386,6 +397,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public void Reset()
     {
         bDead = false;
+        PoolIndex = -1;
+        UpdateIndex = -1;
 
         if (healthComponent != null)
             healthComponent.Reset();
