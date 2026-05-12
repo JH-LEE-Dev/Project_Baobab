@@ -13,7 +13,7 @@ public class LogItemData : ItemData, ILogItemData
     {
         if (base.IsSameType(_other) && _other is LogItemData otherLog)
         {
-            return logState == otherLog.logState && treeType == otherLog.treeType;
+            return logState == otherLog.logState;
         }
         return false;
     }

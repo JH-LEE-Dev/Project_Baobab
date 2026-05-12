@@ -404,15 +404,13 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         {
             data.hiddenGauge += _amount;
             hiddenGaugeData[currentMapType] = data;
-            Debug.Log(hiddenGaugeData[currentMapType].hiddenGauge);
-        }
+        }   
         else
         {
             ForestHiddenGaugeData newData = new ForestHiddenGaugeData();
             newData.forestType = currentDensityData != null ? currentDensityData.forestType : ForestType.None;
             newData.hiddenGauge = _amount;
             hiddenGaugeData.Add(currentMapType, newData);
-            Debug.Log(hiddenGaugeData[currentMapType].hiddenGauge);
         }
     }
 

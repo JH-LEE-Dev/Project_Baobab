@@ -39,6 +39,7 @@ public class LogItem : Item, IStaticCollidable
     private float height;
     private float duration;
     private float elapsed;
+    private float rotationSpeed;
     private float suckSpeed;
     private const float SuckAccel = 12f;
     private const float MinAcquireDist = 0.2f;
@@ -94,13 +95,14 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
-    public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter)
+    public void TransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
     {
         startPos = _start;
         endPos = _end;
         height = _height;
         duration = _duration;
         trajectoryJitter = _jitter;
+        rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.Transferring;
 
@@ -131,7 +133,9 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = null;
         elapsed = 0;
         trajectoryJitter = Vector3.zero;
+        rotationSpeed = 0f;
         transform.localScale = Vector3.one;
+        if (visualTransform != null) visualTransform.localRotation = Quaternion.identity;
     }
 
     public void ManualUpdate(float _deltaTime)
@@ -207,6 +211,7 @@ public class LogItem : Item, IStaticCollidable
         {
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+            visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
         }
         else
         {
@@ -237,7 +242,9 @@ public class LogItem : Item, IStaticCollidable
         {
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
-            
+
+            visualTransform.rotation = Quaternion.identity;
+  
             state = ItemMoveState.Dropped;
         }
     }
