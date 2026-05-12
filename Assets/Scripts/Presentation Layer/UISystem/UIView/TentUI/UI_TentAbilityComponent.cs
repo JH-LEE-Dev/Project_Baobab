@@ -866,7 +866,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             currentLevel = 0,
             maxLevel = 0,
             moneyType = MoneyType.None,
-            nextCost = 0
+            nextCost = 0L
         };
     }
 
@@ -886,7 +886,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
             return "무료";
 
-        return $"{_skillInfo.nextCost} {_skillInfo.moneyType}";
+        return $"{AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost)} {_skillInfo.moneyType}";
     }
 
     private string BuildToolTipCostText(SkillInfo _skillInfo, out MoneyType _costMoneyType)
@@ -900,7 +900,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return BuildToolTipCostText(_skillInfo);
 
         _costMoneyType = _skillInfo.moneyType;
-        return _skillInfo.nextCost.ToString();
+        return AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost);
     }
 
     // 현재 노드에 대한 툴팁을 숨긴다.

@@ -8,5 +8,5 @@ public interface IInventory
     int currentSlotCnt { get; }
     Transform GetTransform();
     long money { get; }
-    int carrot { get; }
+    long carrot { get; }
 }

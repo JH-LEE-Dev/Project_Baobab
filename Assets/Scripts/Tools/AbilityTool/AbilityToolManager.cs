@@ -285,14 +285,14 @@ public class AbilityToolManager : MonoBehaviour
 
     private string BuildToolTipCostText(AbilityToolNode _node)
     {
-        int moneyCost = Mathf.RoundToInt(_node.MoneyCurve.Evaluate(1));
-        int carrotCost = Mathf.RoundToInt(_node.CarrotCurve.Evaluate(1));
+        long moneyCost = AbilityNumberFormatter.RoundToLong(_node.MoneyCurve.Evaluate(1));
+        long carrotCost = AbilityNumberFormatter.RoundToLong(_node.CarrotCurve.Evaluate(1));
 
         if (moneyCost > 0)
-            return $"{moneyCost} {MoneyType.Coin}";
+            return $"{AbilityNumberFormatter.FormatCompact(moneyCost)} {MoneyType.Coin}";
 
         if (carrotCost > 0)
-            return $"{carrotCost} {MoneyType.Carrot}";
+            return $"{AbilityNumberFormatter.FormatCompact(carrotCost)} {MoneyType.Carrot}";
 
         return "무료";
     }

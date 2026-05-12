@@ -73,7 +73,7 @@ public struct SkillInfo
     public int currentLevel;
     public int maxLevel;
     public MoneyType moneyType;
-    public int nextCost;
+    public long nextCost;
     public List<SkillType> prerequisiteSkills;
 }
 
