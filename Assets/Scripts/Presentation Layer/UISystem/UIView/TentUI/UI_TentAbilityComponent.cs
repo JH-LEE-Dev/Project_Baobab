@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class UI_TentAbilityComponent : MonoBehaviour
 {
@@ -30,17 +31,20 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private float viewShakeElapsed;
     private float closeFadeElapsed;
     private float openingZoomElapsed;
+    private float circleRevealElapsed;
     private float openingZoomStart;
     private float openingZoomTarget;
     private bool isViewShaking;
     private bool isCloseFading;
     private bool isOpeningZoomReveal;
+    private bool isCircleRevealPlaying;
     private bool hasSavedZoom;
     private float savedZoom = DefaultZoom;
     private bool hasLastApprovedFocusSkill;
     private SkillType lastApprovedFocusSkillType = SkillType.None;
     private AbilityNode openingZoomFocusNode;
     private CanvasGroup abilityCanvasGroup;
+    private Mask circleRevealMask;
 
     private readonly Dictionary<SkillType, AbilityNodeDefinitionJson> nodeDefinitionMap = new Dictionary<SkillType, AbilityNodeDefinitionJson>();
     private readonly List<SkillType> nodeBuildOrder = new List<SkillType>();
@@ -59,6 +63,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private AbilityNode currentCursorNode;
     private AbilityToolTip toolTipInstance;
     private UISelectionCursor selectionCursorInstance;
+    private Material circleRevealDimMaterialInstance;
 
     private struct PrestigeHUDState
     {
@@ -101,6 +106,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [Header("ToolTip Setup")]
     [SerializeField] private AbilityToolTip toolTipPrefab;
     [SerializeField] private RectTransform toolTipParent;
+    [SerializeField] private float toolTipRightSideScreenThreshold = 32f;
 
     [Header("Selection Cursor Setup")]
     [SerializeField] private UISelectionCursor selectionCursorPrefab;
@@ -114,9 +120,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float viewShakeVerticalRatio = 0.45f;
 
     [Header("Open/Close Animation")]
+    [SerializeField] private Image circleMaskImage;
+    [SerializeField] private Image circleRevealDimImage;
+    [SerializeField] private Material circleRevealDimMaterial;
     [SerializeField] private float closeFadeDuration = 0.2f;
-    [SerializeField] private float openZoomRevealDuration = 0.4f;
-    [SerializeField] private int openZoomRevealWheelSteps = 2;
+    [SerializeField] private float openZoomRevealDuration = 0.5f;
+    [SerializeField] private float openZoomRevealMultiplier = 2f;
+    [SerializeField] private float circleRevealDuration = 0.28f;
+    [SerializeField] private float circleRevealStartRadius = 4f;
+    [SerializeField, Range(0f, 1f)] private float circleRevealDimMaxAlpha = 0.5f;
+    [SerializeField] private float circleRevealDimRadiusInsetPixel = 5f;
 
 
 
@@ -127,6 +140,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         skillSystemProvider = _skillSystemProvider;
         rootCanvas = GetComponentInParent<Canvas>();
         EnsureAbilityCanvasGroup();
+        EnsureCircleRevealMask();
+        EnsureCircleRevealDim();
         BindAbilityHUDIfNeeded();
         lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor, ShouldDrawLineAboveDefault);
         CachePictureBindings();
@@ -232,15 +247,19 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         isCloseFading = false;
+        isCircleRevealPlaying = false;
+        SetCircleMaskActive(true);
         abilityBackground.gameObject.SetActive(true);
         SetAbilityAlpha(1f);
-        SetAbilityInputEnabled(true);
+        SetAbilityInputEnabled(false);
         BuildNodesIfNeeded();
         SyncNodeLevelsFromProvider();
         RefreshNodeVisibility(false);
         RefreshNodeAvailabilityVisuals();
         RefreshAbilityHUDImmediately();
         RestoreViewOnOpen();
+        BeginCircleReveal();
+        RefreshOpenTransitionInput();
         RefreshLinesIfNeeded();
     }
 
@@ -354,20 +373,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         openingZoomElapsed = 0f;
         openingZoomTarget = Mathf.Clamp(_finalZoom, MinZoom, MaxZoom);
-        openingZoomStart = Mathf.Clamp(openingZoomTarget + ZoomStep * Mathf.Max(openZoomRevealWheelSteps, 0), MinZoom, MaxZoom);
+        openingZoomStart = Mathf.Max(openingZoomTarget * Mathf.Max(openZoomRevealMultiplier, 1f), openingZoomTarget);
         openingZoomFocusNode = _hasFocusNode ? _focusNode : null;
         isOpeningZoomReveal = openZoomRevealDuration > 0f && Mathf.Approximately(openingZoomStart, openingZoomTarget) == false;
 
         if (isOpeningZoomReveal == false)
         {
-            SetAbilityInputEnabled(true);
             return;
         }
 
         currentZoom = openingZoomStart;
         targetZoom = openingZoomTarget;
         ApplyViewZoomForReveal(currentZoom);
-        SetAbilityInputEnabled(false);
     }
 
     private bool TryGetLastApprovedFocusNode(out AbilityNode _focusNode)
@@ -393,7 +410,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void ApplyViewZoomForReveal(float _zoom)
     {
-        currentZoom = Mathf.Clamp(_zoom, MinZoom, MaxZoom);
+        currentZoom = Mathf.Max(_zoom, MinZoom);
         moveTarget.localScale = Vector3.one * currentZoom;
 
         if (openingZoomFocusNode != null && openingZoomFocusNode.gameObject.activeSelf)
@@ -410,6 +427,122 @@ public class UI_TentAbilityComponent : MonoBehaviour
         abilityCanvasGroup = abilityBackground.GetComponent<CanvasGroup>();
         if (abilityCanvasGroup == null)
             abilityCanvasGroup = abilityBackground.gameObject.AddComponent<CanvasGroup>();
+    }
+
+    private void EnsureCircleRevealMask()
+    {
+        if (circleMaskImage == null)
+        {
+            Image[] images = GetComponentsInChildren<Image>(true);
+            for (int i = 0; i < images.Length; i++)
+            {
+                if (images[i] != null && images[i].name == "CircleMask")
+                {
+                    circleMaskImage = images[i];
+                    break;
+                }
+            }
+        }
+
+        if (circleMaskImage == null)
+            return;
+
+        PrepareCircleMaskRect(circleRevealStartRadius);
+        circleMaskImage.raycastTarget = false;
+        circleMaskImage.rectTransform.SetAsLastSibling();
+        circleRevealMask = circleMaskImage.GetComponent<Mask>();
+        if (circleRevealMask == null)
+            circleRevealMask = circleMaskImage.gameObject.AddComponent<Mask>();
+
+        circleRevealMask.showMaskGraphic = false;
+        circleMaskImage.material = null;
+
+        if (abilityBackground != null && abilityBackground.parent != circleMaskImage.rectTransform)
+        {
+            abilityBackground.SetParent(circleMaskImage.rectTransform, false);
+            PrepareAbilityBackgroundForCircleMask();
+            abilityBackground.SetAsLastSibling();
+        }
+        else if (abilityBackground != null)
+        {
+            PrepareAbilityBackgroundForCircleMask();
+        }
+
+        circleMaskImage.gameObject.SetActive(false);
+    }
+
+    private void EnsureCircleRevealDim()
+    {
+        if (circleRevealDimImage == null)
+        {
+            Image[] images = GetComponentsInChildren<Image>(true);
+            for (int i = 0; i < images.Length; i++)
+            {
+                if (images[i] != null && images[i].name == "CircleRevealDim")
+                {
+                    circleRevealDimImage = images[i];
+                    break;
+                }
+            }
+        }
+
+        if (circleRevealDimImage == null)
+            return;
+
+        PrepareFullScreenRect(circleRevealDimImage.rectTransform);
+        circleRevealDimImage.raycastTarget = false;
+        circleRevealDimImage.rectTransform.SetAsLastSibling();
+
+        if (circleRevealDimMaterialInstance == null && circleRevealDimMaterial != null)
+            circleRevealDimMaterialInstance = new Material(circleRevealDimMaterial);
+
+        if (circleRevealDimMaterialInstance != null)
+            circleRevealDimImage.material = circleRevealDimMaterialInstance;
+
+        circleRevealDimImage.gameObject.SetActive(false);
+    }
+
+    private void PrepareCircleMaskRect(float _radius)
+    {
+        if (circleMaskImage == null)
+            return;
+
+        RectTransform rectTransform = circleMaskImage.rectTransform;
+        rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchoredPosition = Vector2.zero;
+        rectTransform.sizeDelta = Vector2.one * Mathf.Max(_radius * 2f, 0f);
+        rectTransform.localScale = Vector3.one;
+        rectTransform.localRotation = Quaternion.identity;
+    }
+
+    private void PrepareAbilityBackgroundForCircleMask()
+    {
+        if (abilityBackground == null)
+            return;
+
+        abilityBackground.anchorMin = new Vector2(0.5f, 0.5f);
+        abilityBackground.anchorMax = new Vector2(0.5f, 0.5f);
+        abilityBackground.pivot = new Vector2(0.5f, 0.5f);
+        abilityBackground.anchoredPosition = Vector2.zero;
+        abilityBackground.sizeDelta = GetCircleMaskFullSize();
+        abilityBackground.localScale = Vector3.one;
+        abilityBackground.localRotation = Quaternion.identity;
+    }
+
+    private void PrepareFullScreenRect(RectTransform _rectTransform)
+    {
+        if (_rectTransform == null)
+            return;
+
+        _rectTransform.anchorMin = Vector2.zero;
+        _rectTransform.anchorMax = Vector2.one;
+        _rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        _rectTransform.offsetMin = Vector2.zero;
+        _rectTransform.offsetMax = Vector2.zero;
+        _rectTransform.localScale = Vector3.one;
+        _rectTransform.localRotation = Quaternion.identity;
     }
 
     private void SetAbilityAlpha(float _alpha)
@@ -429,6 +562,136 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         abilityCanvasGroup.interactable = _enabled;
         abilityCanvasGroup.blocksRaycasts = abilityBackground != null && abilityBackground.gameObject.activeSelf;
+    }
+
+    private void SetCircleMaskActive(bool _active)
+    {
+        EnsureCircleRevealMask();
+        if (circleMaskImage == null)
+            return;
+
+        circleMaskImage.gameObject.SetActive(_active);
+    }
+
+    private void SetCircleRevealDimActive(bool _active)
+    {
+        EnsureCircleRevealDim();
+        if (circleRevealDimImage == null)
+            return;
+
+        circleRevealDimImage.gameObject.SetActive(_active);
+    }
+
+    private void BeginCircleReveal()
+    {
+        EnsureCircleRevealMask();
+        if (circleMaskImage == null || circleRevealDuration <= 0f)
+        {
+            EndCircleRevealImmediately();
+            return;
+        }
+
+        circleRevealElapsed = 0f;
+        isCircleRevealPlaying = true;
+        SetCircleMaskActive(true);
+        ApplyCircleRevealRadius(circleRevealStartRadius);
+        SetCircleRevealDimActive(circleRevealDimImage != null && circleRevealDimMaterialInstance != null);
+    }
+
+    private void EndCircleRevealImmediately()
+    {
+        isCircleRevealPlaying = false;
+
+        if (circleMaskImage != null)
+            ApplyCircleRevealRadius(GetCircleRevealMaxRadius());
+
+        SetCircleRevealDimActive(false);
+    }
+
+    private bool UpdateCircleReveal()
+    {
+        if (circleMaskImage == null)
+        {
+            EndCircleRevealImmediately();
+            return false;
+        }
+
+        circleRevealElapsed += Time.unscaledDeltaTime;
+        float duration = Mathf.Max(circleRevealDuration, 0.0001f);
+        float progress = Mathf.Clamp01(circleRevealElapsed / duration);
+        float easedProgress = EaseInCubic(progress);
+        float radius = Mathf.Lerp(circleRevealStartRadius, GetCircleRevealMaxRadius(), easedProgress);
+        ApplyCircleRevealRadius(radius);
+
+        if (progress < 1f)
+            return true;
+
+        EndCircleRevealImmediately();
+        RefreshOpenTransitionInput();
+        return true;
+    }
+
+    private void ApplyCircleRevealRadius(float _radius)
+    {
+        PrepareCircleMaskRect(_radius);
+        PrepareAbilityBackgroundForCircleMask();
+        ApplyCircleRevealDim(_radius);
+    }
+
+    private void ApplyCircleRevealDim(float _radius)
+    {
+        if (circleRevealDimImage == null || circleRevealDimMaterialInstance == null)
+            return;
+
+        float pixelScaleFactor = GetCanvasPixelScaleFactor();
+        float dimRadius = Mathf.Max(0f, _radius * pixelScaleFactor - circleRevealDimRadiusInsetPixel);
+        circleRevealDimMaterialInstance.SetVector("_RevealCenter", new Vector4(0.5f, 0.5f, 0f, 0f));
+        circleRevealDimMaterialInstance.SetFloat("_RevealRadius", dimRadius);
+        circleRevealDimMaterialInstance.SetFloat("_RevealSoftness", Mathf.Max(1f, pixelScaleFactor));
+        circleRevealDimMaterialInstance.SetFloat("_OverlayAlpha", circleRevealDimMaxAlpha);
+        circleRevealDimImage.SetMaterialDirty();
+    }
+
+    private float GetCanvasPixelScaleFactor()
+    {
+        if (rootCanvas == null)
+            return 1f;
+
+        Canvas targetCanvas = rootCanvas.rootCanvas != null ? rootCanvas.rootCanvas : rootCanvas;
+        return Mathf.Max(targetCanvas.scaleFactor, 0.0001f);
+    }
+
+    private float GetCircleRevealMaxRadius()
+    {
+        Vector2 fullSize = GetCircleMaskFullSize();
+        float width = fullSize.x;
+        float height = fullSize.y;
+
+        return Mathf.Sqrt(width * width + height * height) * 0.5f + 4f;
+    }
+
+    private Vector2 GetCircleMaskFullSize()
+    {
+        RectTransform parentRectTransform = circleMaskImage != null ? circleMaskImage.rectTransform.parent as RectTransform : null;
+        if (parentRectTransform != null && parentRectTransform.rect.width > 0f && parentRectTransform.rect.height > 0f)
+            return parentRectTransform.rect.size;
+
+        RectTransform rootRectTransform = transform as RectTransform;
+        if (rootRectTransform != null && rootRectTransform.rect.width > 0f && rootRectTransform.rect.height > 0f)
+            return rootRectTransform.rect.size;
+
+        if (rootCanvas != null && rootCanvas.pixelRect.width > 0f && rootCanvas.pixelRect.height > 0f)
+        {
+            float scaleFactor = Mathf.Max(rootCanvas.scaleFactor, 0.0001f);
+            return rootCanvas.pixelRect.size / scaleFactor;
+        }
+
+        return new Vector2(Screen.width, Screen.height);
+    }
+
+    private void RefreshOpenTransitionInput()
+    {
+        SetAbilityInputEnabled(isOpeningZoomReveal == false && isCircleRevealPlaying == false && isCloseFading == false);
     }
 
     private void SaveCurrentZoom()
@@ -453,6 +716,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
         openingZoomFocusNode = null;
+        EndCircleRevealImmediately();
         StopViewShake();
         currentToolTipNode = null;
         currentCursorNode = null;
@@ -479,6 +743,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SetAbilityInputEnabled(false);
         if (abilityBackground != null)
             abilityBackground.gameObject.SetActive(false);
+
+        SetCircleMaskActive(false);
+        SetCircleRevealDimActive(false);
     }
 
     public void Refresh()
@@ -575,7 +842,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         Vector2 nodeCenter = (localBottomLeft + localTopRight) * 0.5f;
         float nodeWidth = Mathf.Abs(localTopRight.x - localBottomLeft.x);
-        bool placeOnRight = nodeCenter.x < 0f;
+        bool placeOnRight = nodeCenter.x < toolTipRightSideScreenThreshold;
         float direction = placeOnRight ? 1f : -1f;
 
         float x = nodeCenter.x + direction * ((nodeWidth * 0.5f) + ToolTipSpacing + (toolTipSize.x * 0.5f));
@@ -675,9 +942,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
         }
 
-        if (isOpeningZoomReveal)
+        if (isOpeningZoomReveal || isCircleRevealPlaying)
         {
-            bool revealViewChanged = UpdateOpenZoomReveal();
+            bool revealViewChanged = false;
+            if (isOpeningZoomReveal)
+                revealViewChanged |= UpdateOpenZoomReveal();
+
+            if (isCircleRevealPlaying)
+                revealViewChanged |= UpdateCircleReveal();
+
             if (revealViewChanged)
                 MarkViewLayoutDirty();
 
@@ -726,6 +999,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         if (abilityBackground != null)
             abilityBackground.gameObject.SetActive(false);
+
+        SetCircleMaskActive(false);
+        SetCircleRevealDimActive(false);
     }
 
     private bool UpdateOpenZoomReveal()
@@ -745,7 +1021,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             currentZoom = openingZoomTarget;
             targetZoom = openingZoomTarget;
             ApplyViewZoomForReveal(currentZoom);
-            SetAbilityInputEnabled(true);
+            RefreshOpenTransitionInput();
             openingZoomFocusNode = null;
         }
 
@@ -756,6 +1032,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         float inverse = 1f - Mathf.Clamp01(_value);
         return 1f - inverse * inverse * inverse;
+    }
+
+    private float EaseInCubic(float _value)
+    {
+        float value = Mathf.Clamp01(_value);
+        return value * value * value;
     }
 
     private bool HandlePan()
