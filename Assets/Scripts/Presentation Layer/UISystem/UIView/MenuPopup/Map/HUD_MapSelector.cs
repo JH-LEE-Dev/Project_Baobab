@@ -291,6 +291,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             isClosing = true;
 
+            if (null != subSelector)
+                subSelector.Close();
+
             if (null != currentFocusedRegion)
             {
                 currentFocusedRegion.PlayEndAnimation(DeactivateSelector);

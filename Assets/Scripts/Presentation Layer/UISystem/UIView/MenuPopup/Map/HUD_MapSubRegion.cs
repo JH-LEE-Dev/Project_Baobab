@@ -16,7 +16,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [Header("UI References")]
         [SerializeField] private CustomNumberDisplay numberDisplay; // 숫자 표시 컴포넌트
         [SerializeField] private GameObject lockObject;             // 잠금 시 활성화될 오브젝트
-        [SerializeField] private GameObject unlockObject;           // 해제 시 활성화될 오브젝트
+        [SerializeField] private GameObject focusObject;            // 포커스(호버) 시 활성화될 오브젝트
         [SerializeField] private HUD_ProgressBar progressBar;       // 진행도 표시 바
         [SerializeField] private ObjectMotionPlayer motionPlayer;   // 애니메이션 플레이어
 
@@ -55,6 +55,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             // 데이터가 새로 설정되므로 선택 상태 초기화
             SetSelect(false);
             SetNumber(_number);
+            SetLock(false == _info.bCanAccess);
 
             onHoverEnterEvent = _onHoverEnter;
             onHoverExitEvent = _onHoverExit;
@@ -80,6 +81,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != progressBar)
                 progressBar.Initialize();
 
+            if (null != focusObject)
+                focusObject.SetActive(false);
+
             SetSelect(false);
             SetLock(false); // 일단 해제 상태로 테스트 (필요 시 로직 추가)
             isInitialized = true;
@@ -98,8 +102,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != lockObject)
                 lockObject.SetActive(isLocked);
 
-            if (null != unlockObject)
-                unlockObject.SetActive(false == isLocked);
+            if (null != numberDisplay)
+                numberDisplay.gameObject.SetActive(false == isLocked);
         }
 
         public void SetNumber(int _number)
@@ -110,9 +114,24 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 numberDisplay.SetNumber(regionNumber);
         }
 
+        public void PlayOpenAnimation()
+        {
+            // TODO: 나중에 OMP(ObjectMotionPlayer)를 통한 애니메이션 재생 로직으로 교체할 자리입니다.
+            gameObject.SetActive(true);
+        }
+
+        public void PlayCloseAnimation()
+        {
+            // TODO: 나중에 OMP(ObjectMotionPlayer)를 통한 애니메이션 재생 로직으로 교체할 자리입니다.
+            gameObject.SetActive(false);
+        }
+
         public void SetSelect(bool _isSelect)
         {
             isSelected = _isSelect;
+
+            if (null != focusObject)
+                focusObject.SetActive(isSelected);
         }
 
         public ForestType GetForestType()

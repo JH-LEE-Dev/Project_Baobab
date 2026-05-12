@@ -58,14 +58,32 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             for (int _i = 0; _i < subRegions.Length; _i++)
             {
                 if (null != subRegions[_i])
+                {
                     if (_i < _dataCount)
                     {
-                        subRegions[_i].gameObject.SetActive(true);
+                        subRegions[_i].PlayOpenAnimation();
                         subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHoverEntered, OnRegionHoverExited, OnRegionSelected);
                         subRegions[_i].SetProgress(_forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge);
                     }
                     else
-                        subRegions[_i].gameObject.SetActive(false);
+                    {
+                        subRegions[_i].PlayCloseAnimation();
+                    }
+                }
+            }
+        }
+
+        public void Close()
+        {
+            if (null == subRegions)
+                return;
+
+            for (int _i = 0; _i < subRegions.Length; _i++)
+            {
+                if (null != subRegions[_i] && true == subRegions[_i].gameObject.activeSelf)
+                {
+                    subRegions[_i].PlayCloseAnimation();
+                }
             }
         }
 
