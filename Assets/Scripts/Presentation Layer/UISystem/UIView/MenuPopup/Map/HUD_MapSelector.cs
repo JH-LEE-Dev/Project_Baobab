@@ -198,7 +198,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 {
                     bool _isFocus = (_i == _index);
                     // 포커스된 지역이고 애니메이션 재생 요청이 있을 때만 true 전달
-                    spawnedRegions[_i].Setup(spawnedRegions[_i].GetMapName(), spawnedRegions[_i].GetMapEnvironmentInfo(), _isFocus && _shouldPlayAnimation);
+                    // 오픈 시에 포커스가 아닌 지역들은 등장 애니메이션을 스킵(즉시 로드 상태)
+                    bool _play = _isFocus && _shouldPlayAnimation;
+                    bool _instant = !_isFocus && _shouldPlayAnimation;
+
+                    spawnedRegions[_i].Setup(spawnedRegions[_i].GetMapName(), spawnedRegions[_i].GetMapEnvironmentInfo(), _play, _instant);
                     spawnedRegions[_i].SetFocus(_isFocus);
                 }
             }

@@ -314,7 +314,8 @@ MonoBehaviour:
   snapSpeed: 10
   itemSpacing: 250
   dragSensitivity: 0.3
-  fadeDuration: 0.5
+  fadeDuration: 0.3
+  maxBackgroundAlpha: 0.9
 --- !u!1 &3594431905257545498
 GameObject:
   m_ObjectHideFlags: 0

@@ -107,7 +107,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
         }
 
-        public void Setup(string _mapName, MapEnvironmentDataInfo _info, bool _shouldPlayAnimation = false)
+        public void Setup(string _mapName, MapEnvironmentDataInfo _info, bool _shouldPlayAnimation = false, bool _isInstant = false)
         {
             if (false == isInitialized)
                 Initialize();
@@ -119,7 +119,43 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 mapNameText.text = currentMapName;
 
             if (true == _shouldPlayAnimation)
+            {
                 PlayStartGroundAnimation();
+            }
+            else if (true == _isInstant)
+            {
+                PlayStartAnimationInstant();
+            }
+        }
+
+        private void PlayStartAnimationInstant()
+        {
+            if (null == motionPlayer)
+                return;
+
+            // 모든 지형 애니메이션 즉시 적용
+            if (null != groundImages)
+            {
+                for (int _i = 0; _i < groundImages.Length; _i++)
+                    if (null != groundImages[_i])
+                        motionPlayer.Play("Ground_" + (_i + 1), bReset: true, _skip: true);
+            }
+
+            // 모든 나무 애니메이션 즉시 적용
+            if (null != treeVisuals)
+            {
+                for (int _i = 0; _i < treeVisuals.Length; _i++)
+                    if (null != treeVisuals[_i].leafImage || null != treeVisuals[_i].trunkImage)
+                        motionPlayer.Play("Tree_" + (_i + 1), bReset: true, _skip: true);
+            }
+
+            // 모든 동물 애니메이션 즉시 적용
+            if (null != animalImages)
+            {
+                for (int _i = 0; _i < animalImages.Length; _i++)
+                    if (null != animalImages[_i])
+                        motionPlayer.Play("Animal_" + (_i + 1), bReset: true, _skip: true);
+            }
         }
 
         public void SetLock(bool _isLock)
