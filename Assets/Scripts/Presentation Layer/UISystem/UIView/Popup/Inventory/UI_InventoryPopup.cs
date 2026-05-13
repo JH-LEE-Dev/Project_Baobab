@@ -1,72 +1,42 @@
 using System.Collections.Generic;
+using PresentationLayer.UISystem.CustomNumber;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UI_InventoryPopup : MonoBehaviour
 {
-    [SerializeField] private GameObject slotPrefab;
+    //외부 의존성
+    [SerializeField] private TMP_Text itemNameText;
+    [SerializeField] private TMP_Text itemDescriptionText;
+    [SerializeField] private CurrencyCounterHUD uiCoin;
 
-    private List<UI_InventorySlot> slots;
-
+    //내부 의존성
+    
     private RectTransform rect;
 
-    public void Initialize(int defaultCap)
+    public void Initialize(int _defaultCap)
     {
-        slots = new List<UI_InventorySlot>(defaultCap);
-
-        if (null != slotPrefab)
-        {
-            for (int i = 0; i < defaultCap; ++i)
-            {
-                UI_InventorySlot newSlot = Instantiate(slotPrefab, this.transform).GetComponent<UI_InventorySlot>();
-                if (null == newSlot)
-                    continue;
-
-                newSlot.Initialize();
-                newSlot.DisableRayCast();
-                newSlot.gameObject.SetActive(false);
-
-                slots.Add(newSlot);
-            }
-        }
-
         rect = GetComponent<RectTransform>();
+        uiCoin?.SetNumber(0);
     }
 
-    public void ShowItems(ILogItemData iLogItemData, LogStateCount[] _logStateCounts, Vector2 position)
+    public void ShowItems(ILogItemData _iLogItemData, Vector2 _position)
     {
-        if (null == _logStateCounts || null == iLogItemData)
+        if (null == _iLogItemData)
             return;
 
-        for (int i = 0; i < _logStateCounts.Length; ++i)
+        // 임시 이름 및 설명 설정
+        if (null != itemNameText)
+            itemNameText.text = $"{_iLogItemData.treeType} Log ({_iLogItemData.logState})";
+
+        if (null != itemDescriptionText)
+            itemDescriptionText.text = $"이것은 {_iLogItemData.treeType} 타입 원목임.";
+
+        if (null != rect && Vector2.zero != _position)
         {
-            if (0 >= _logStateCounts[i].count)
-            {
-                slots[i].gameObject.SetActive(false);
-                continue;
-            }
-
-            slots[i].gameObject.SetActive(true);
-            
-            // 나중엔 등급별로 이미지 적용 해야 함.
-            slots[i].UpdateImage(iLogItemData.sprite, iLogItemData.color);
-            slots[i].UpdateItemCount(_logStateCounts[i].count);
-        }
-
-        for (int i = _logStateCounts.Length; i < slots.Count; ++i)
-            slots[i].gameObject.SetActive(false);
-
-        if (null != rect && Vector2.zero != position)
-        {
-            rect.position = position;
+            rect.position = _position;
             rect.position = GlobalUI.KeepInsideScreenforUI(rect); 
-        }
-    }
-    
-    public void InvisibleSlots()
-    {
-        foreach (UI_InventorySlot slot in slots)
-        {
-            slot.gameObject.SetActive(false);
         }
     }
 }

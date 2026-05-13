@@ -17,6 +17,7 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private CurrencyCounterHUD uiCoin;
     [SerializeField] private CurrencyCounterHUD uiSubCoin;
     [SerializeField] private UI_Backpack uiBackpack;
+    [SerializeField] private UISelectionCursor selectionCursor;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
@@ -44,6 +45,7 @@ public class UI_Inventory : MonoBehaviour
 
         Init_Honing(clickedHomingEvent);
         Init_InventoryPopup();
+        Init_SelectionCursor();
         Init_Coins();
         Init_Backpack();
 
@@ -154,29 +156,40 @@ public class UI_Inventory : MonoBehaviour
         invPopup.gameObject.SetActive(false);
     }
 
+    private void Init_SelectionCursor()
+    {
+        if (null == selectionCursor)
+            return;
+
+        selectionCursor.Initialize(selectionCursor.CursorSize);
+    }
+
 #endregion
 
 #region  [ Hover Event ]
 
-    private void EnterPopup(IItemData _itemData, LogStateCount[] _logStateCounts, Vector2 _position)
+    private void EnterPopup(UI_InventorySlot _slot, IItemData _itemData, Vector2 _position)
     {
         ILogItemData logItemData = _itemData as ILogItemData;
         
+        selectionCursor?.Show(_slot.GetComponent<RectTransform>());
+
         if (null == invPopup || null == logItemData)
             return;
 
         invPopup.gameObject.SetActive(true);
         
         _position.y += popupYOffset;
-        invPopup.ShowItems(logItemData, _logStateCounts, _position);
+        invPopup.ShowItems(logItemData, _position);
     }
 
     private void ExitPopup()
     {
+        selectionCursor?.Hide();
+
         if (null == invPopup)
             return;
 
-        invPopup.InvisibleSlots();
         invPopup.gameObject.SetActive(false);
     }
     #endregion

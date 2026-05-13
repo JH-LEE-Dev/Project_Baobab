@@ -10,7 +10,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     //외부 의존성
     [SerializeField] private Image uiImage;
     [SerializeField] private ObjectMotionPlayer omp;
-    public Action<IItemData, LogStateCount[], Vector2> enterSlot;
+    public Action<UI_InventorySlot, IItemData, Vector2> enterSlot;
     public Action exitSlot;
     public Action<IInventorySlot> deleteItem;
 
@@ -19,6 +19,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     public IItemData ShowItemData { get { return showItemData; } }
 
     private IInventorySlot invSlotRef;
+    public IInventorySlot InvSlotRef { get { return invSlotRef; } }
 
     private int showCnt = 0;
     public int ShowCnt { get { return showCnt; } }
@@ -121,7 +122,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     public void OnPointerEnter(PointerEventData _eventData)
     {
         if (null != enterSlot)
-            enterSlot.Invoke(showItemData, invSlotRef?.logStateCounts, uiImage.rectTransform.position);
+            enterSlot.Invoke(this, showItemData, uiImage.rectTransform.position);
     }
 
     public void OnPointerExit(PointerEventData _eventData)

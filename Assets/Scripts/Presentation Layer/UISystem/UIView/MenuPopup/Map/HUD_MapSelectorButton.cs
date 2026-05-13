@@ -32,6 +32,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private float currentAlpha = 1.0f;
         private bool isDimmed = false;
+        private bool isClicked = false;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
@@ -85,7 +86,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            if (null == motionPlayer || isDimmed)
+            if (null == motionPlayer || isDimmed || isClicked)
                 return;
 
             motionPlayer.SettingEntryMotion(clickedAnim, true, true);
@@ -96,7 +97,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerExit(PointerEventData _eventData)
         {
-            if (null == motionPlayer || isDimmed)
+            if (null == motionPlayer || isDimmed || isClicked)
                 return;
 
             motionPlayer.SettingEntryMotion(enterAnim, true, true);
@@ -107,7 +108,18 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerClick(PointerEventData _eventData)
         {
+            if (null == motionPlayer || isDimmed)
+                return;
+
+            motionPlayer.SettingEntryMotion(enterAnim, true, true);
+            motionPlayer.SettingEntryMotion(exitAnim, true, true);
+            isClicked = true;
+
+            clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: UnClicked);
+
             onConfirmEvent?.Invoke();
         }
+
+        private void UnClicked() => isClicked = false;
     }
 }
