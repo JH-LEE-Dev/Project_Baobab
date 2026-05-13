@@ -14,15 +14,15 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //외부 의존성
         [Header("Orbit References")]
         [SerializeField] private RectTransform pivotRect;
-        [SerializeField] private Image sunImage;
-        [SerializeField] private Image moonImage;
+        [SerializeField] private CanvasGroup sunGroup;
+        [SerializeField] private CanvasGroup moonGroup;
+        [SerializeField] private RectTransform sunRect;
+        [SerializeField] private RectTransform moonRect;
 
         [Header("Animation")]
         [SerializeField] private ObjectMotionPlayer motionPlayer;
 
         // //내부 의존성
-        private RectTransform sunRect;
-        private RectTransform moonRect;
         private bool isInitialized = false;
         private bool isRebound = false;
 
@@ -36,16 +36,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (true == isInitialized)
                 return;
 
-            if (null == motionPlayer)
-                motionPlayer = GetComponent<ObjectMotionPlayer>();
-
-            if (null != sunImage)
-                sunRect = sunImage.GetComponent<RectTransform>();
-
-            if (null != moonImage)
-                moonRect = moonImage.GetComponent<RectTransform>();
-
             isInitialized = true;
+            motionPlayer?.Play("SunFloating", bReset: true);
+            motionPlayer?.Play("Cloude1Floationg", bReset: true);
+            motionPlayer?.Play("Cloude2Floationg", bReset: true);
         }
 
         public void SetRotation(bool _isDay, float _duration)
@@ -53,34 +47,26 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == pivotRect)
                 return;
 
-            float _targetAngle = _isDay ? 55.0f : 235.0f;
+            float _targetAngle = _isDay ? 75.0f : 255.0f;
 
             pivotRect.DOKill();
             pivotRect.DOLocalRotate(new Vector3(0.0f, 0.0f, _targetAngle), _duration, RotateMode.FastBeyond360)
                 .OnComplete(ReboundSunMoon);
 
-            if (null != sunImage)
-                sunImage.DOFade(_isDay ? 1.0f : 0.0f, _duration);
+            if (null != sunGroup)
+                sunGroup.DOFade(_isDay ? 1.0f : 0.0f, _duration);
 
-            if (null != moonImage)
-                moonImage.DOFade(_isDay ? 0.0f : 1.0f, _duration);
+            if (null != moonGroup)
+                moonGroup.DOFade(_isDay ? 0.0f : 1.0f, _duration);
         }
 
         public void SetInitialAlpha(bool _isDay)
         {
-            if (null != sunImage)
-            {
-                Color _color = sunImage.color;
-                _color.a = _isDay ? 1.0f : 0.0f;
-                sunImage.color = _color;
-            }
+            if (null != sunGroup)
+                sunGroup.alpha = _isDay ? 1.0f : 0.0f;
 
-            if (null != moonImage)
-            {
-                Color _color = moonImage.color;
-                _color.a = _isDay ? 0.0f : 1.0f;
-                moonImage.color = _color;
-            }
+            if (null != moonGroup)
+                moonGroup.alpha = _isDay ? 0.0f : 1.0f;
         }
 
         public void PlayOpenAnim()
