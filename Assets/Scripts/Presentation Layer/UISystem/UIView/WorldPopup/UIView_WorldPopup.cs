@@ -180,6 +180,7 @@ public class UIView_WorldPopup : UIView
             }
 
             ui_Cutter?.OnShow();
+            ResetLogCutterUI();
         }
         else
         {
@@ -214,6 +215,13 @@ public class UIView_WorldPopup : UIView
 
     public override void Refresh()
     {
+        ResetLogCutterUI();
+
+        ui_Storage?.Refresh();
+    }
+
+    void ResetLogCutterUI()
+    {
         if (null != ui_Cutter && null != logCutter.logToCut && logCutter.bIsCutting == true)
         {
             ui_Cutter.BindItemData(logCutter.logToCut);
@@ -223,7 +231,5 @@ public class UIView_WorldPopup : UIView
         {
             ui_Cutter?.ResetCutter();
         }
-
-        ui_Storage?.Refresh();
     }
 }
