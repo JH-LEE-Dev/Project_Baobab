@@ -211,14 +211,14 @@ public class UI_Inventory : MonoBehaviour
     {
         if (MoneyType.Coin == _moneyType)
             uiCoin?.SetNumberAnimated(moneyData.money);
-        else
+        else if (MoneyType.Carrot == _moneyType)
             uiSubCoin?.SetNumberAnimated(moneyData.carrot);
     }
 
     public void CharactersMoneyChanged()
     {
-        uiCoin?.SetNumberAnimated(moneyData.money);
-        uiSubCoin?.SetNumberAnimated(moneyData.carrot);
+        uiCoin?.SetNumber(moneyData.money);
+        uiSubCoin?.SetNumber(moneyData.carrot);
     }
 
     public void ChangedShowMoneyType()
