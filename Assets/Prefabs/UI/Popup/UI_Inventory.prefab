@@ -392,7 +392,7 @@ MonoBehaviour:
   uiSlotPrefab: {fileID: 579466836129025464, guid: fb43f9e42a2b2fd4999daf76b9e7d5e0, type: 3}
   uiPopupPrefab: {fileID: 7047183625215616851, guid: 8f0199b641621114ea2b4c7bc8799070, type: 3}
   inventorySlots: []
-  popupYOffset: 30
+  popupYOffset: 200
 --- !u!1 &7283342038483755518
 GameObject:
   m_ObjectHideFlags: 0

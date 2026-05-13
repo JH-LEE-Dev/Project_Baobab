@@ -102,7 +102,7 @@ public class UI_Inventory : MonoBehaviour
         SendDeleteItemEvent.Invoke(_inData);
 
         UpdateSlots(inventory.inventorySlots);
-        invPopup?.gameObject.SetActive(false);
+        //invPopup?.gameObject.SetActive(false);
     }
 
     public void Refresh()
@@ -177,10 +177,9 @@ public class UI_Inventory : MonoBehaviour
         if (null == invPopup || null == logItemData)
             return;
 
-        invPopup.gameObject.SetActive(true);
-        
         _position.y += popupYOffset;
         invPopup.ShowItems(logItemData, _position);
+        invPopup.OnShow();
     }
 
     private void ExitPopup()
@@ -190,7 +189,7 @@ public class UI_Inventory : MonoBehaviour
         if (null == invPopup)
             return;
 
-        invPopup.gameObject.SetActive(false);
+        invPopup.OnHide();
     }
     #endregion
 
