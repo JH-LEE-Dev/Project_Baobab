@@ -1,9 +1,11 @@
 using UnityEngine;
+using PresentationLayer.DOTweenAnimationSystem;
 
 public class UI_TreeCutter : MonoBehaviour
 {
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject mainVisual;
+    [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private float yOffset = 30f;
 
     private ILogItemData cachedItemData;
@@ -11,6 +13,12 @@ public class UI_TreeCutter : MonoBehaviour
 
     private UI_InventorySlot slot;
     public UI_InventorySlot Slot { get { return slot;  } set { slot = value; } }
+
+    [SerializeField] private string popupTag = "Popup";
+    [SerializeField] private string popdownTag = "Popdown";
+
+    private MotionEntry popup;
+    private MotionEntry popdown;
 
     public void Initialize()
     {
@@ -25,6 +33,7 @@ public class UI_TreeCutter : MonoBehaviour
             }
         }
 
+        omp?.Initialize();
         OnHide();
     }
 
@@ -68,10 +77,22 @@ public class UI_TreeCutter : MonoBehaviour
     public void OnShow()
     {
         gameObject.SetActive(true);
+
+        if (null == omp)
+            return;
+        
+        omp.SettingEntryMotion(popdown, true, true);
+        popup = omp.Play(popupTag, bReset: true);
     }
 
     public void OnHide()
     {
-        gameObject.SetActive(false);
+        if (null == omp)
+            return;
+        
+        omp.SettingEntryMotion(popup, true, true);
+        popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompletedAnimation);
     }
+
+    private void OnCompletedAnimation() => gameObject.SetActive(false);
 }
