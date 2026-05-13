@@ -391,6 +391,7 @@ MonoBehaviour:
   treeVisualComponent: {fileID: 7941305713547832146}
   collisionRadius: 0.29
   collisionOffset: {x: 0, y: 0}
+  bDead: 0
   alphaDownRadius: 0.5
   adColliderOffset: {x: 0, y: 0.7}
   topShadowRadius: 0.3

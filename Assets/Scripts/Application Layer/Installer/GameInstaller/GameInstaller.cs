@@ -110,9 +110,9 @@ public class GameInstaller : MonoBehaviour
         }
         else
         {
+            inDungeonSystem.ClearInDungeonSystem();
             townSystem.StartTownSystem(_sceneChangeData);
             unitSystem.SetWhereIsCharacter(false);
-            inDungeonSystem.ClearInDungeonSystem();
         }
     }
 

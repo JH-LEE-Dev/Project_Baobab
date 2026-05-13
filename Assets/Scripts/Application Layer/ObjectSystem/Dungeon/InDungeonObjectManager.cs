@@ -142,6 +142,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         portal.ResetPortal();
         portal.transform.position = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
+        portal.gameObject.SetActive(true);
 
         BindPortalEvents();
     }
@@ -155,11 +156,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         if (portal != null)
             portal.gameObject.SetActive(false);
-        else
-            return;
 
         if (itemManager != null)
             itemManager.ReleaseAllItems();
+
         StopGrowth();
         ClearTrees();
     }
@@ -283,7 +283,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
-                //activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
+                activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
                 treePool.Release(activeTrees[i]);
             }
         }
@@ -347,6 +347,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void UpdateTreeVisibility(TreeObj _tree, bool _shouldBeActive)
     {
+        if (_tree.bDead == true && _shouldBeActive == true)
+            return;
+
         if (_tree.gameObject.activeSelf != _shouldBeActive)
         {
             _tree.gameObject.SetActive(_shouldBeActive);
@@ -520,7 +523,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                 cullingGroup.SetBoundingSphereCount(activeTrees.Count);
             }
         }
-
+        
+        _tree.bDead = true;
         _tree.PoolIndex = -1;
         _tree.UpdateIndex = -1;
         _tree.ResetTree();

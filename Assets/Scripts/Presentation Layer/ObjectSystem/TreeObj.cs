@@ -19,7 +19,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public TreeData treeData { get; private set; }
     public IHealthComponent health => healthComponent;
 
-    private bool bDead = false;
+    public bool bDead = false;
     bool ITreeObj.bDead => bDead;
 
     // IStaticCollidable 구현

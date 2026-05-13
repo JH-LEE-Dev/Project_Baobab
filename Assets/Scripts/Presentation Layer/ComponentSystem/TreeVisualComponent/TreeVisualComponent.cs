@@ -222,7 +222,10 @@ public class TreeVisualComponent : MonoBehaviour
     // 상단/하단 스프라이트에 밝기 편차를 줘서 개체마다 미묘한 색 차이를 만든다.
     public Color GetBottomColor()
     {
-        return bottomRenderer.color;
+        var color = bottomRenderer.color;
+        color.a = 1f;
+
+        return color;
     }
 
     // 그림자 렌더러가 본체와 같은 스프라이트와 색상을 따라가도록 동기화한다.

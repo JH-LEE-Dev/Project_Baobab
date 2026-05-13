@@ -46,6 +46,7 @@ public class LogInBelt : MonoBehaviour
     private List<DeactivatingItem> deactivatingItems = new List<DeactivatingItem>(10);
     private bool isMoving = false;
     private float currentSpeed = 0f;
+    private float slideSpeed = 1f;
 
     public void Initialize()
     {
@@ -209,7 +210,7 @@ public class LogInBelt : MonoBehaviour
 
         float duration = 0.1f;
         // 현재 벨트 속도를 반영하여 미끄러지는 거리 산출
-        float moveDist = currentSpeed * duration * 3;
+        float moveDist = slideSpeed * duration * 3;
         Vector3 targetPos = _item.transform.position + (moveDir * moveDist);
 
         _item.transform.DOMove(targetPos, duration).SetEase(Ease.Linear);

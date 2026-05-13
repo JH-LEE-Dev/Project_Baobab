@@ -74,5 +74,4 @@ public class OffroadVehicleObj : MonoBehaviour
     {
         bCanJump = _canJump;
     }
-
 }

@@ -9,4 +9,5 @@ public interface ILogCutter
     public ILogItemData logToCut { get; }
     public float timeRemaining { get; }
     public Transform GetTransform();
+    bool bIsCutting { get; }
 }

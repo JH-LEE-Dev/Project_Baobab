@@ -40,6 +40,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     ILogItemData ILogCutter.logToCut => logToCut;
 
+    bool ILogCutter.bIsCutting => bIsCutting;
+
     private ILogItemData logToCut;
 
     private MapType mapType;
