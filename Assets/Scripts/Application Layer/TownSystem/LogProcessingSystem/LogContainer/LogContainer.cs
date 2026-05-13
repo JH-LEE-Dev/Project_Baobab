@@ -37,7 +37,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     public long money => 0;
 
-    public int carrot => 0;
+    public long carrot => 0;
 
     public int currentSlotCnt => currentSlotCount;
 

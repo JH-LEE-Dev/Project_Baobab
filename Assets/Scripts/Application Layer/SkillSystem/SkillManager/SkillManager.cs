@@ -26,13 +26,22 @@ public class SkillNode
         prerequisiteNodes = new List<SkillNode>(4);
     }
 
-    public bool GetNextLevelCost(out int _money, out int _carrot)
+    public bool GetNextLevelCost(out long _money, out long _carrot)
     {
         int nextLevel = currentLevel + 1;
-        _money = (int)cost.moneyCurve.Evaluate(nextLevel);
-        _carrot = (int)cost.carrotCurve.Evaluate(nextLevel);
+        _money = EvaluateCost(cost.moneyCurve, nextLevel);
+        _carrot = EvaluateCost(cost.carrotCurve, nextLevel);
 
         return true;
+    }
+
+    private static long EvaluateCost(ProgressionCurve _curve, int _targetLevel)
+    {
+        float value = _curve.Evaluate(_targetLevel);
+        if (float.IsNaN(value) || float.IsInfinity(value))
+            return 0L;
+
+        return (long)Math.Round(value, MidpointRounding.AwayFromZero);
     }
 }
 
@@ -130,7 +139,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         if (!skillNodeMap.TryGetValue(_type, out SkillNode node))
             return AbilityLevelUpRejectReason.None;
 
-        if (!node.GetNextLevelCost(out int moneyCost, out int carrotCost))
+        if (!node.GetNextLevelCost(out long moneyCost, out long carrotCost))
             return AbilityLevelUpRejectReason.None;
 
         // 1. 재화 체크 (Money)
@@ -205,7 +214,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         }
 
         // 3. 재화 체크
-        if (!node.GetNextLevelCost(out int moneyCost, out int carrotCost))
+        if (!node.GetNextLevelCost(out long moneyCost, out long carrotCost))
             return AbilityLevelUpRejectReason.None;
 
         if (inventory.GetCurrentMoney() < moneyCost)
@@ -260,8 +269,8 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
             info.currentLevel = node.currentLevel;
             info.maxLevel = node.maxLevel;
 
-            int nextCarrotCost;
-            int nextMoneyCost;
+            long nextCarrotCost;
+            long nextMoneyCost;
             // 다음 레벨 비용 계산
             node.GetNextLevelCost(out nextMoneyCost, out nextCarrotCost);
 

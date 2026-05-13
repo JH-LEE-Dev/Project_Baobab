@@ -135,7 +135,7 @@ public struct InventorySlotSaveData
 public struct InventorySaveData
 {
     public long money;
-    public int carrot;
+    public long carrot;
     public int currentSlotCount;
     public List<InventorySlotSaveData> slots;
 

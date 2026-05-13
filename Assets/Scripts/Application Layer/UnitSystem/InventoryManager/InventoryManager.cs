@@ -13,10 +13,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
 
     private long money = 10000;
-    private int carrot = 10000;
-    [SerializeField] private int sunEssence;
-    [SerializeField] private int moonEssence;
-    [SerializeField] private int lightningEssence;
+    private long carrot = 10000;
+    [SerializeField] private long sunEssence;
+    [SerializeField] private long moonEssence;
+    [SerializeField] private long lightningEssence;
 
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
@@ -25,19 +25,19 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     long IInventory.money => money;
 
-    int IInventory.carrot => carrot;
+    long IInventory.carrot => carrot;
 
     public int currentSlotCnt => currentSlotCount;
 
     long IMoneyData.money => money;
 
-    int IMoneyData.carrot => carrot;
+    long IMoneyData.carrot => carrot;
 
-    int IMoneyData.sunEssence => sunEssence;
+    long IMoneyData.sunEssence => sunEssence;
 
-    int IMoneyData.moonEssence => moonEssence;
+    long IMoneyData.moonEssence => moonEssence;
 
-    int IMoneyData.lightningEssence => lightningEssence;
+    long IMoneyData.lightningEssence => lightningEssence;
 
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
@@ -257,10 +257,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void CarrotEarned(float _amount)
     {
-        carrot += (int)_amount;
+        carrot += (long)_amount;
     }
 
-    public int GetCurrentCarrot()
+    public long GetCurrentCarrot()
     {
         return carrot;
     }
@@ -270,14 +270,14 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return money;
     }
 
-    public void DecreaseCarrot(int _amount)
+    public void DecreaseCarrot(long _amount)
     {
         carrot -= _amount;
         if (carrot < 0) carrot = 0;
         SpendMoneyEvent?.Invoke();
     }
 
-    public void DecreaseMoney(int _amount)
+    public void DecreaseMoney(long _amount)
     {
         money -= _amount;
         if (money < 0) money = 0;
