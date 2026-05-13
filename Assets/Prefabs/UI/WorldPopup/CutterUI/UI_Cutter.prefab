@@ -368,13 +368,13 @@ MonoBehaviour:
   m_Padding:
     m_Left: 4
     m_Right: 4
-    m_Top: 5
-    m_Bottom: 6
+    m_Top: 4
+    m_Bottom: 4
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
   m_CellSize: {x: 24, y: 24}
-  m_Spacing: {x: 3, y: 3}
+  m_Spacing: {x: 2, y: 2}
   m_Constraint: 2
   m_ConstraintCount: 1
 --- !u!225 &4782117505763265202

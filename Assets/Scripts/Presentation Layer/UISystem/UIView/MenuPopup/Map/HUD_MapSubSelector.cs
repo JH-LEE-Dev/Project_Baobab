@@ -61,7 +61,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 {
                     subRegions[_i].PlayOpenAnimation();
                     subRegions[_i].Setup(_forestDatas[_i], _i + 1, OnRegionHoverEntered, OnRegionHoverExited, OnRegionSelected);
-                    subRegions[_i].SetProgress(_forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge);
                 }
                 else
                 {
@@ -79,20 +78,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             {
                 if (null != subRegions[_i] && subRegions[_i].gameObject.activeSelf)
                     subRegions[_i].PlayCloseAnimation();
-            }
-        }
-
-        public void UpdateHiddenGauges(List<ForestEnvironmentInfo> _forestDatas)
-        {
-            int _dataCount = _forestDatas.Count;
-
-            for (int _i = 0; _i < subRegions.Length; _i++)
-            {
-                if (null != subRegions[_i] && _i < _dataCount)
-                {
-                    float _ratio = _forestDatas[_i].currentHiddenGauge / _forestDatas[_i].limitHiddenGauge;
-                    subRegions[_i].SetProgress(_ratio);
-                }
             }
         }
 
