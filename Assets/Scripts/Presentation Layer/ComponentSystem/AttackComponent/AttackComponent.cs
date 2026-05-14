@@ -198,7 +198,7 @@ public class AttackComponent : PComponent
             // 나무 타격 시 확률적으로 충격파 생성
             if (nearestDamageable is TreeObj && axeExtraAttackCreator != null)
             {
-                if (UnityEngine.Random.value < ctx.characterStat.shockWaveChance)
+                if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
                 {
                     Vector3 hitPos = nearestDamageable.Position + nearestDamageable.Offset;
                     Vector3 direction = (hitPos - centerPos).normalized;
