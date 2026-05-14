@@ -14,7 +14,7 @@ public class OffroadVehicleObj : MonoBehaviour
     //내부 의존성
     private int characterLayer;
     [SerializeField] private PortalType type;
-    [SerializeField] private float cooldownTime = 2.0f; // 쿨타임 설정
+    //[SerializeField] private float cooldownTime = 2.0f; // 쿨타임 설정
     private float lastActivatedTime = -10.0f; // 마지막 활성화 시간 (초기값은 충분히 과거로 설정)
 
     private bool bCanJump = false;
