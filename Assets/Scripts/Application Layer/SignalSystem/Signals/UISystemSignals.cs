@@ -23,3 +23,5 @@ public struct DungeonSelectedSignal
 public struct SleepSignal { }
 
 public struct SpendMoneySignal { }
+
+public struct TeleportUIClosedSignal { }

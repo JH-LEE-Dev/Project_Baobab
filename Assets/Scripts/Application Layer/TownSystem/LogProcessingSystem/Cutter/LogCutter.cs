@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
@@ -23,6 +25,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private Transform visualTransform;
     private float bounceTime = 1f;
     private const float BOUNCE_DURATION = 0.2f;
+
+    [SerializeField] private List<LogItemDurabilityData> logItemDurabilityDatas;
 
     public float timeRemaining
     {
@@ -97,6 +101,19 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         cuttingItem = _item;
         bIsCutting = true;
         anim.SetBool(startHash, true);
+
+        // 내구도 멀티플라이어 적용
+        if (logItemDurabilityDatas != null)
+        {
+            for (int i = 0; i < logItemDurabilityDatas.Count; i++)
+            {
+                if (logItemDurabilityDatas[i].logState == _item.logState)
+                {
+                    cuttingItem.durability *= logItemDurabilityDatas[i].durabilityMultiplier;
+                    break;
+                }
+            }
+        }
 
         logToCut = _itemData;
         TriggerBounce();

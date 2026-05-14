@@ -9,6 +9,13 @@ public class EHealthComponent : EComponent, IHealthComponent
     private float currentHealth;
     private float prevHealth;
 
+    public void Setup(float _maxHealth)
+    {
+        maxHealth = _maxHealth;
+        currentHealth = maxHealth;
+        prevHealth = maxHealth;
+    }
+
     public void Initialize()
     {
         currentHealth = maxHealth;

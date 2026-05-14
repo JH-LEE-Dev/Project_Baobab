@@ -18,6 +18,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public ItemManager itemManager { get; private set; }
     private DungeonData dungeonData;
     private LootManager lootManager;
+    private InputManager inputManager;
 
     // // 내부 의존성
     [Header("Tree Settings")]
@@ -50,6 +51,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public IReadOnlyList<ITreeObj> trees => activeTrees;
 
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
+    [SerializeField] private TreeStatDataBase treeStatDataBase;
+    [SerializeField] private List<TreeGradeStatMultiplierData> treeGradeStatMultiplierDatas;
 
     private float treeGrowTime = 10f;
 
@@ -59,8 +62,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
+    public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager)
     {
+        inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         mainCam = Camera.main;
 
@@ -137,7 +141,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null)
         {
             portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal, environmentProvider);
+            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager);
         }
 
         portal.ResetPortal();
@@ -413,7 +417,21 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
         environmentProvider.densityProvider.UpdateTreeCnt(false);
-        itemManager.SpawnLogItem(_treeObj);
+
+        float dropMultiplier = 1f;
+        if (treeGradeStatMultiplierDatas != null)
+        {
+            for (int i = 0; i < treeGradeStatMultiplierDatas.Count; i++)
+            {
+                if (treeGradeStatMultiplierDatas[i].treeGrade == _treeObj.treeData.grade)
+                {
+                    dropMultiplier = treeGradeStatMultiplierDatas[i].dropMultiplier;
+                    break;
+                }
+            }
+        }
+
+        itemManager.SpawnLogItem(_treeObj, dropMultiplier);
 
         // 죽은 위치 재사용 준비
         Vector3 deadPos = _treeObj.transform.position;
@@ -446,6 +464,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         TreeType type = environmentProvider.densityProvider.GetTreeTypeToSpawn();
         TreeGrade grade = TreeGrade.Normal;
 
+        // 1. 등급 결정 (히든 맵 또는 일반 던전 데이터 기반)
         if (hiddenMapGrade != HiddenMapGrade.None && hiddenMapTreeGradeDatas != null)
         {
             for (int i = 0; i < hiddenMapTreeGradeDatas.Count; i++)
@@ -466,13 +485,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                                 break;
                             }
                         }
-                        return new TreeData(type, grade, treeVisualDataBase.Get(type));
                     }
+                    break;
                 }
             }
         }
-
-        if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
+        else if (dungeonData.treeGradeProbs != null && dungeonData.treeGradeProbs.Count > 0)
         {
             float rand = UnityEngine.Random.Range(0f, 1f);
             float cumulative = 0f;
@@ -487,7 +505,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             }
         }
 
-        return new TreeData(type, grade, treeVisualDataBase.Get(type));
+        // 2. 스탯 계산 (배율 적용)
+        TreeStatData statData = treeStatDataBase.Get(type);
+        float multiplier = 1f;
+
+        if (treeGradeStatMultiplierDatas != null)
+        {
+            for (int i = 0; i < treeGradeStatMultiplierDatas.Count; i++)
+            {
+                if (treeGradeStatMultiplierDatas[i].treeGrade == grade)
+                {
+                    multiplier = treeGradeStatMultiplierDatas[i].hpMultiplier;
+                    break;
+                }
+            }
+        }
+
+        statData.hp *= multiplier;
+
+        return new TreeData(type, grade, treeVisualDataBase.Get(type), statData);
     }
 
     private void OnGetTree(TreeObj _tree)
@@ -523,7 +559,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                 cullingGroup.SetBoundingSphereCount(activeTrees.Count);
             }
         }
-        
+
         _tree.bDead = true;
         _tree.PoolIndex = -1;
         _tree.UpdateIndex = -1;

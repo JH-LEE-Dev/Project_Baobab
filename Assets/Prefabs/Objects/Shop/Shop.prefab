@@ -128,6 +128,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LogCutter
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+  logItemDurabilityDatas:
+  - logState: 2
+    durabilityMultiplier: 1
+  - logState: 3
+    durabilityMultiplier: 3
+  - logState: 4
+    durabilityMultiplier: 5
+  - logState: 5
+    durabilityMultiplier: 10
 --- !u!1 &1729556953830199542
 GameObject:
   m_ObjectHideFlags: 0
@@ -543,6 +552,15 @@ MonoBehaviour:
   storageObj: {fileID: 1794665802467216876}
   evaluationDelay: 1.5
   logStorage: {fileID: 2956470588992608361}
+  logItemStateValueDatas:
+  - logState: 2
+    valueMultiplier: 1
+  - logState: 3
+    valueMultiplier: 3
+  - logState: 4
+    valueMultiplier: 10
+  - logState: 5
+    valueMultiplier: 30
 --- !u!212 &1973176704910301307
 SpriteRenderer:
   serializedVersion: 2

@@ -55,6 +55,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<DecalreDungeonTypeSignal>(DungeonStarted);
         signalHub.Subscribe<AnimalHitSignal>(AnimalHit);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.Subscribe<PortalDeActivatedSignal>(PortalDeActivated);
     }
 
     private void UnSubscribeSignals()
@@ -75,6 +76,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(DungeonStarted);
         signalHub.UnSubscribe<AnimalHitSignal>(AnimalHit);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.UnSubscribe<PortalDeActivatedSignal>(PortalDeActivated);
     }
 
     private void BindEvents()
@@ -102,6 +104,9 @@ public class GameplayUICoordinator
 
         escUI.ExitButtonClickedEvent -= ExitGame;
         escUI.ExitButtonClickedEvent += ExitGame;
+
+        menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
+        menuPopupUI.TeleportUIClosedEvent += TeleportUIClosed;
     }
 
     private void ReleaseEvents()
@@ -114,6 +119,7 @@ public class GameplayUICoordinator
         escUI.ExitButtonClickedEvent -= ExitGame;
         escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
         escUI.SaveGameButtonClickedEvent -= SaveGame;
+        menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
     }
 
     public void Release()
@@ -200,19 +206,19 @@ public class GameplayUICoordinator
         tentUI.TentInteract(tentInteractSignal.bInteract);
     }
 
-    private void PortalActivated(PortalActivatedSignal portalActivatedSignal)
+    private void PortalActivated(PortalActivatedSignal _portalActivatedSignal)
     {
         menuPopupUI.TeleportUIOpen();
+    }
+
+    private void PortalDeActivated(PortalDeActivatedSignal _portalDeActivatedSignal)
+    {
+        menuPopupUI.CloseTeleportUI();
     }
 
     private void DungeonSelected(MapType _type, ForestType _forestType)
     {
         signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
-    }
-
-    private void Sleep()
-    {
-        signalHub.Publish(new SleepSignal());
     }
 
     private void InventorySpecChanged(InventorySpecChangedSignal _inventorySpecChangedSignal)
@@ -295,5 +301,10 @@ public class GameplayUICoordinator
         hudUI.Refresh();
         popUpUI.Refresh();
         worldPopupUI.Refresh();
+    }
+
+    private void TeleportUIClosed()
+    {
+        signalHub.Publish(new TeleportUIClosedSignal());
     }
 }

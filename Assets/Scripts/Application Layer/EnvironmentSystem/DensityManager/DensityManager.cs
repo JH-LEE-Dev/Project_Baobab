@@ -32,6 +32,10 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
     public void Initialize()
     {
+        if (densityDataBase != null)
+        {
+            densityDataBase = Instantiate(densityDataBase);
+        }
         hiddenGaugeData = new Dictionary<ForestType, MapHiddenGaugeSaveData>();
     }
 

@@ -58,7 +58,7 @@ public class GameInstaller : MonoBehaviour
         teleportManager.Initialize(signalHub, bootStrapProvider);
         townSystem.Initialize(signalHub, environmentSystem, inputManager);
         inventoryManager.Initialize();
-        inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager);
+        inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager, inputManager);
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,

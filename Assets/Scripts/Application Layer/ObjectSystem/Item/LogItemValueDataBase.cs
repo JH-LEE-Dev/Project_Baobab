@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,4 +11,18 @@ public class LogItemValueDataBase : ScriptableObject
     {
         return datas.Find(x => x.treeType == _type);
     }
+}
+
+[Serializable]
+public struct LogItemStateValueData
+{
+    public LogState logState;
+    public float valueMultiplier;
+}
+
+[Serializable]
+public struct LogItemDurabilityData
+{
+    public LogState logState;
+    public float durabilityMultiplier;
 }

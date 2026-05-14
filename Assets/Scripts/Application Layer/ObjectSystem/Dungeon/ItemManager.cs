@@ -57,9 +57,9 @@ public class ItemManager : MonoBehaviour
     }
 
     // 외부에서 접근하기 위한 래퍼 메서드 (필요한 경우)
-    public void SpawnLogItem(TreeObj _treeObj)
+    public void SpawnLogItem(TreeObj _treeObj,float _multiplier)
     {
-        logItemController?.SpawnLogItem(_treeObj);
+        logItemController?.SpawnLogItem(_treeObj,_multiplier);
     }
 
     public void ReturnLogToPool(LogItem _item)

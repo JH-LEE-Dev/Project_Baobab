@@ -255,7 +255,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         }
     }
 
-    public void SpawnLogItem(TreeObj _treeObj)
+    public void SpawnLogItem(TreeObj _treeObj, float _multiplier)
     {
         TreeData treeData = _treeObj.treeData;
         LogDropProbData dropProbData = GetDropProbData(treeData.grade);
@@ -263,7 +263,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         if (dropProbData.probDatas == null || dropProbData.probDatas.Count == 0) return;
 
         LogDropCntData dropCntData = GetDropCntData(treeData.type);
-        int spawnCount = UnityEngine.Random.Range(dropCntData.minCnt, dropCntData.maxCnt + 1);
+        int spawnCount = Mathf.RoundToInt(UnityEngine.Random.Range(dropCntData.minCnt, dropCntData.maxCnt + 1) * _multiplier);
 
         for (int i = 0; i < spawnCount; i++)
         {
