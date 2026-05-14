@@ -234,6 +234,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
             }
 
+            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+
             currentFocusedRegion = spawnedRegions[_index];
             targetPosX = -(_index * itemSpacing);
 
@@ -245,7 +247,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     bool _play = _isFocus && _shouldPlayAnimation;
                     bool _instant = !_isFocus && _shouldPlayAnimation;
 
-                    spawnedRegions[_i].Setup(spawnedRegions[_i].GetMapName(), spawnedRegions[_i].GetMapEnvironmentInfo(), _play, _instant);
+                    spawnedRegions[_i].Setup(spawnedRegions[_i].GetMapName(), _db.mapDatas[_index], _play, _instant);
                     spawnedRegions[_i].SetFocus(_isFocus);
                 }
             }
