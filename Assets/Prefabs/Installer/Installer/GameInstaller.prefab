@@ -1725,7 +1725,7 @@ MonoBehaviour:
   cullingDistance: 25
   portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
-  treeStatDataBase: {fileID: 0}
+  treeStatDataBase: {fileID: 11400000, guid: df999572525acc846a7dac39f0434b4c, type: 2}
   treeGradeStatMultiplierDatas:
   - treeGrade: 1
     hpMultiplier: 1
