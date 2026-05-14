@@ -178,7 +178,7 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         _position.y += popupYOffset;
-        invPopup.ShowItems(logItemData, _position);
+        invPopup.SetupItem(logItemData, _position);
         invPopup.OnShow();
     }
 

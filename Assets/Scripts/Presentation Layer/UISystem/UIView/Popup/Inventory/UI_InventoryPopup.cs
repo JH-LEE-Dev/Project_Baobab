@@ -13,8 +13,8 @@ public class UI_InventoryPopup : MonoBehaviour
     [SerializeField] private CurrencyCounterHUD uiCoin;
     [SerializeField] private ObjectMotionPlayer omp;
 
-    [SerializeField] private string animTag = "Absolute";
-    [SerializeField] private RectTransform visualRect;
+    [SerializeField] private string showTag = "Show";
+    [SerializeField] private string hideTag = "Hide";
 
     //내부 의존성
     private RectTransform rect;
@@ -29,7 +29,7 @@ public class UI_InventoryPopup : MonoBehaviour
         omp?.Initialize();
     }
 
-    public void ShowItems(ILogItemData _iLogItemData, Vector2 _position)
+    public void SetupItem(ILogItemData _iLogItemData, Vector2 _position)
     {
         if (null == _iLogItemData)
             return;
@@ -42,22 +42,21 @@ public class UI_InventoryPopup : MonoBehaviour
             itemDescriptionText.text = $"이것은 {_iLogItemData.treeType} 타입 원목임.";
 
         if (null != rect && Vector2.zero != _position)
-        {
             rect.position = _position;
-            rect.position = GlobalUI.KeepInsideScreenforUI(visualRect); 
-        }
+
+        Debug.Log(rect.position);
     }
 
     public void OnShow()
     {
         gameObject.SetActive(true);
-        rect.position = GlobalUI.KeepInsideScreenforUI(visualRect); 
+        rect.position = GlobalUI.KeepInsideScreenforUI(rect);
 
         if (null == omp)
             return;
 
         omp.SettingEntryMotion(exit, true, true);
-        enter = omp.Play(animTag, bReset: true);
+        enter = omp.Play(showTag, bReset: true);
     }
 
     public void OnHide()
@@ -66,7 +65,7 @@ public class UI_InventoryPopup : MonoBehaviour
             return;
 
         omp.SettingEntryMotion(enter, true, true);
-        exit = omp.PlayBackward(animTag, bReset: true, _onComplete: OnCompletedAnimation);
+        exit = omp.Play(hideTag, bReset: true, _onComplete: OnCompletedAnimation);
     }
 
     private void OnCompletedAnimation() => gameObject.SetActive(false);

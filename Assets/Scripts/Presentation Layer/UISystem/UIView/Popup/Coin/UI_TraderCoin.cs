@@ -30,7 +30,7 @@ public class UI_TraderCoin : MonoBehaviour
         if (null == currencyCounter)
             return;
 
-        currencyCounter.SetNumberAnimated(_newMoney);
+        currencyCounter.SetNumberAnimated(_newMoney, true);
     }
 
     private void PlayTwistMotion()
