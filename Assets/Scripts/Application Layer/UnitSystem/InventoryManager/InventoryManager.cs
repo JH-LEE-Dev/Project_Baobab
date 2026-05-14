@@ -163,8 +163,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         if (_item is LogItem logItem && _data is LogItemData logData)
         {
-            // 같은 로그 상태라면 같은 슬롯에 보관 (나무 종류 상관 없음)
-            return logItem.logState == logData.logState;
+            // 같은 로그 상태와 나무 종류인 경우에만 같은 슬롯에 보관
+            return logItem.logState == logData.logState && logItem.treeType == logData.treeType;
         }
         else if (_item is LootItem lootItem && _data is LootItemData lootData)
         {

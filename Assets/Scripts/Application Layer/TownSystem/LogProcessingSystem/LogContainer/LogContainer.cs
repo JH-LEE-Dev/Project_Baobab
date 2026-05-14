@@ -393,7 +393,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             for (int i = 0; i < flyingItems.Count; i++)
             {
-                if (flyingItems[i].itemType == ItemType.Log && flyingItems[i].logState == logSource.logState)
+                if (flyingItems[i].itemType == ItemType.Log && 
+                    flyingItems[i].logState == logSource.logState && 
+                    flyingItems[i].treeType == logSource.treeType)
                     pendingCount++;
             }
         }
@@ -472,7 +474,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         if (_data1 is LogItemData log1 && _data2 is LogItemData log2)
         {
-            return log1.logState == log2.logState;
+            // 같은 로그 상태와 나무 종류인 경우에만 같은 슬롯에 보관
+            return log1.logState == log2.logState && log1.treeType == log2.treeType;
         }
 
         return true;
