@@ -79,6 +79,7 @@ public class InputReader
 
     public void Pause(bool _bPause)
     {
+        MoveEvent?.Invoke(Vector2.zero);
         bPause = _bPause;
     }
 

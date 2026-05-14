@@ -316,7 +316,11 @@ public class LogItem : Item, IStaticCollidable
         if (suckTarget != null && inventoryChecker.CanAcquired(this))
         {
             StartSucking(suckTarget);
+
+            return;
         }
+
+        suckTarget = null;
     }
 
     public override void SetSuckTarget(Transform _target)

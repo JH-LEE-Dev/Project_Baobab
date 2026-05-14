@@ -117,6 +117,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         bDead = false;
         healthComponent.Reset();
+        bIsSapling = false;
+        growTime = 0f;
 
         if (treeVisualComponent != null)
         {

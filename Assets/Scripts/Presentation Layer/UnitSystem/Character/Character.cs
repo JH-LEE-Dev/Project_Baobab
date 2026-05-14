@@ -346,22 +346,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         CollisionSystem.Instance?.Unregister(this);
     }
 
-    private void OnGUI()
-    {
-        if (healthComponent == null) return;
-
-        float width = 200f;
-        float height = 50f;
-        float posX = Screen.width - width - 10f;
-        float posY = Screen.height - height - 10f;
-
-        GUIStyle style = new GUIStyle { fontSize = 12, alignment = TextAnchor.LowerRight };
-        style.normal.textColor = Color.white;
-
-        string debugText = $"Stamina: {healthComponent.CurrentStamina:F1} / {healthComponent.MaxStamina:F1}";
-        GUI.Label(new Rect(posX, posY, width, height), debugText, style);
-    }
-
     #endregion
 
     public void RefreshCharacterStat()

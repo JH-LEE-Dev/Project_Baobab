@@ -54,7 +54,6 @@ public class PHealthComponent : PComponent, IPHealthComponent
 
         if (currentStamina <= 0)
         {
-            StaminaReset();
             StaminaIsEmptyEvent?.Invoke();
         }
     }
