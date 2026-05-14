@@ -37,7 +37,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 70, y: 10}
-  m_SizeDelta: {x: 40, y: 21}
+  m_SizeDelta: {x: 42, y: 22}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &1277075411165431048
 CanvasRenderer:
@@ -67,7 +67,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 1073cae00fd515448a60d4d50b5f5731, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 94dc78f9ad764c64589d3e41a410f50e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -101,4 +101,3 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2863fe1bbcf569f4aa68014233a6e587, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_Homing
-  invMotionPlayer: {fileID: 0}
