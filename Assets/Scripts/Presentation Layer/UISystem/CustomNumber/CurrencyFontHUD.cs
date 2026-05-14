@@ -18,6 +18,8 @@ namespace PresentationLayer.UISystem.CustomNumber
         private const int FixedGlyphSlotCount = 7;
         private const string MainGlyphPrefix = "CurrencyGlyph_";
         private const string DeltaGlyphPrefix = "CurrencyDeltaGlyph_";
+        private const string AmountPivotAName = "AmountPivot_A";
+        private const string AmountPivotBName = "AmountPivot_B";
 
         private static readonly ulong[] SuffixDivisors =
         {
@@ -80,7 +82,7 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] private float glyphBounceRatio = 0.28f;
 
         [Header("Delta Amount Motion")]
-        [SerializeField] private float deltaStartSpacing = 0.0f;
+        [SerializeField] private float deltaStartSpacing = 4.0f;
         [SerializeField] private float deltaGlyphWaveDuration = 0.25f;
         [SerializeField] private float deltaGlyphShowDuration = 0.15f;
         [SerializeField] private float deltaVisibleHoldDuration = 0.2f;
@@ -91,6 +93,8 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] private float deltaGlyphHideOvershoot = 3.5f;
         [SerializeField] private Color deltaIncreaseColor = new Color(0.35f, 1.0f, 0.45f, 1.0f);
         [SerializeField] private Color deltaDecreaseColor = new Color(1.0f, 0.32f, 0.28f, 1.0f);
+        [SerializeField] private float deltaHoldShakeDuration = 0.12f;
+        [SerializeField] private float deltaHoldShakeDistance = 2.0f;
 
         [Header("Editor Preview")]
         [SerializeField] private bool previewInEditor = true;
@@ -104,14 +108,22 @@ namespace PresentationLayer.UISystem.CustomNumber
         private readonly Sprite[] sourceSprites = new Sprite[19];
 
         private RectTransform rectTransform;
+        private RectTransform amountPivotA;
+        private RectTransform amountPivotB;
         private long lastDisplayedValue = long.MinValue;
         private float mainLayoutWidth;
+        private float mainVisibleRightEdge;
         private bool initialized;
         private readonly List<GlyphMotionState> glyphMotionStates = new List<GlyphMotionState>(8);
         private readonly List<Sequence> glyphMotionTweens = new List<Sequence>(8);
         private Tween numberTween;
         private Tween colorTween;
         private Sequence deltaMotionSequence;
+        private DeltaAmountPhase deltaAmountPhase = DeltaAmountPhase.None;
+        private long activeDeltaAmount;
+        private bool activeDeltaUsesPivotB;
+        private int activeDeltaLength;
+        private float currentDeltaShowTime;
         private Color currentGlyphColor = Color.white;
 
         public void Initialize()
@@ -125,6 +137,7 @@ namespace PresentationLayer.UISystem.CustomNumber
                 rectTransform.pivot = new Vector2(0.0f, 0.5f);
 
             CacheSprites();
+            CacheAmountPivots();
 #if UNITY_EDITOR
             if (false == Application.isPlaying)
                 CleanupLegacyEditorGlyphs();
@@ -220,15 +233,20 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         public void SetNumberAnimated(long _value)
         {
-            SetNumberAnimatedInternal(_value, null);
+            SetNumberAnimatedInternal(_value, null, false);
         }
 
-        public void SetNumberAnimated(long _value, long _deltaAmount)
+        public void SetNumberAnimated(long _value, bool _useAmountPivotB = false)
         {
-            SetNumberAnimatedInternal(_value, _deltaAmount);
+            SetNumberAnimatedInternal(_value, null, _useAmountPivotB);
         }
 
-        private void SetNumberAnimatedInternal(long _value, long? _overrideDeltaAmount)
+        public void SetNumberAnimated(long _value, long _deltaAmount, bool _useAmountPivotB = false)
+        {
+            SetNumberAnimatedInternal(_value, _deltaAmount, _useAmountPivotB);
+        }
+
+        private void SetNumberAnimatedInternal(long _value, long? _overrideDeltaAmount, bool _useAmountPivotB)
         {
             Initialize();
 
@@ -258,55 +276,220 @@ namespace PresentationLayer.UISystem.CustomNumber
                 PlayGlyphColorTween(decreaseColor);
             }
 
-            PlayDeltaAmountMotion(_overrideDeltaAmount ?? (_value - _previousValue));
+            PlayDeltaAmountMotion(_overrideDeltaAmount ?? (_value - _previousValue), _useAmountPivotB);
             PlayNumberTween(_previousValue, _value);
         }
 
-        public void PlayDeltaAmountMotion(long _amount)
+        public void PlayDeltaAmountMotion(long _amount, bool _useAmountPivotB = false)
         {
             Initialize();
 
             if (0L == _amount)
                 return;
 
+            bool _canMergeWithActiveDelta = CanMergeWithActiveDelta(_amount);
+            if (_canMergeWithActiveDelta && deltaAmountPhase == DeltaAmountPhase.Showing)
+            {
+                activeDeltaAmount += _amount;
+                activeDeltaUsesPivotB = _useAmountPivotB;
+                if (0L == activeDeltaAmount)
+                {
+                    StopDeltaAmountMotion();
+                    return;
+                }
+
+                RebuildActiveDeltaGlyphs();
+                ApplyDeltaShowState(currentDeltaShowTime);
+                RestartDeltaShowMotion(currentDeltaShowTime);
+                return;
+            }
+
+            if (_canMergeWithActiveDelta && deltaAmountPhase == DeltaAmountPhase.Holding)
+            {
+                activeDeltaAmount += _amount;
+                activeDeltaUsesPivotB = _useAmountPivotB;
+                if (0L == activeDeltaAmount)
+                {
+                    StopDeltaAmountMotion();
+                    return;
+                }
+
+                RebuildActiveDeltaGlyphs();
+                SetDeltaGlyphScales(Vector3.one);
+                RestartDeltaHoldMotion(true);
+                return;
+            }
+
             StopDeltaAmountMotion();
+            activeDeltaAmount = _amount;
+            activeDeltaUsesPivotB = _useAmountPivotB;
+            currentDeltaShowTime = 0.0f;
 
-            int _length = BuildDeltaText(_amount);
-            UpdateDeltaGlyphs(_length, _amount > 0L ? deltaIncreaseColor : deltaDecreaseColor);
+            RebuildActiveDeltaGlyphs();
+            SetDeltaGlyphScales(Vector3.zero);
+            RestartDeltaShowMotion(0.0f);
+        }
 
-            float _glyphDelay = CalculateDeltaGlyphDelay(_length);
+        private bool CanMergeWithActiveDelta(long _amount)
+        {
+            if (deltaAmountPhase == DeltaAmountPhase.None ||
+                deltaAmountPhase == DeltaAmountPhase.Hiding ||
+                0L == activeDeltaAmount)
+            {
+                return false;
+            }
+
+            return (activeDeltaAmount > 0L && _amount > 0L) ||
+                   (activeDeltaAmount < 0L && _amount < 0L);
+        }
+
+        private void RestartDeltaShowMotion(float _startTime)
+        {
+            KillDeltaSequenceOnly();
+
+            float _showEndTime = GetDeltaShowEndTime(activeDeltaLength);
+            float _duration = Mathf.Max(0.0f, _showEndTime - _startTime);
+            deltaAmountPhase = DeltaAmountPhase.Showing;
+
             deltaMotionSequence = DOTween.Sequence();
+            if (_duration > 0.0f)
+            {
+                deltaMotionSequence.Append(
+                    DOVirtual.Float(_startTime, _showEndTime, _duration, _time =>
+                    {
+                        currentDeltaShowTime = _time;
+                        ApplyDeltaShowState(_time);
+                    }).SetEase(Ease.Linear));
+            }
+            else
+            {
+                currentDeltaShowTime = _showEndTime;
+                ApplyDeltaShowState(_showEndTime);
+            }
 
-            for (int i = 0; i < _length; i++)
+            deltaMotionSequence.AppendCallback(() =>
+            {
+                deltaAmountPhase = DeltaAmountPhase.Holding;
+                SetDeltaGlyphScales(Vector3.one);
+            });
+            AppendDeltaHoldAndHide(deltaMotionSequence, false);
+        }
+
+        private void RestartDeltaHoldMotion(bool _playShake)
+        {
+            KillDeltaSequenceOnly();
+            deltaAmountPhase = DeltaAmountPhase.Holding;
+
+            deltaMotionSequence = DOTween.Sequence();
+            AppendDeltaHoldAndHide(deltaMotionSequence, _playShake);
+        }
+
+        private void AppendDeltaHoldAndHide(Sequence _sequence, bool _playShake)
+        {
+            if (_playShake)
+                _sequence.Append(CreateDeltaShakeTween());
+
+            _sequence.AppendInterval(Mathf.Max(0.0f, deltaVisibleHoldDuration));
+            _sequence.AppendCallback(() => deltaAmountPhase = DeltaAmountPhase.Hiding);
+
+            float _hideEndTime = GetDeltaHideEndTime(activeDeltaLength);
+            _sequence.Append(
+                DOVirtual.Float(0.0f, _hideEndTime, _hideEndTime, ApplyDeltaHideState).SetEase(Ease.Linear));
+            _sequence.OnComplete(HideDeltaGlyphs);
+        }
+
+        private Tween CreateDeltaShakeTween()
+        {
+            float _shakeDuration = Mathf.Max(0.01f, deltaHoldShakeDuration);
+            float _shakeDistance = Mathf.Max(0.0f, deltaHoldShakeDistance);
+
+            return DOVirtual.Float(0.0f, 1.0f, _shakeDuration, _progress =>
+            {
+                RebuildActiveDeltaGlyphs();
+                float _offset = Mathf.Sin(_progress * Mathf.PI * 6.0f) * (1.0f - _progress) * _shakeDistance * pixelScale;
+                for (int i = 0; i < activeDeltaLength; i++)
+                {
+                    RawImage _glyph = deltaGlyphPool[i];
+                    if (null == _glyph)
+                        continue;
+
+                    RectTransform _glyphRect = (RectTransform)_glyph.transform;
+                    Vector2 _position = _glyphRect.anchoredPosition;
+                    _position.x += _offset;
+                    _glyphRect.anchoredPosition = _position;
+                }
+            }).SetEase(Ease.Linear).OnComplete(() => RebuildActiveDeltaGlyphs());
+        }
+
+        private void RebuildActiveDeltaGlyphs()
+        {
+            activeDeltaLength = BuildDeltaText(activeDeltaAmount);
+            UpdateDeltaGlyphs(activeDeltaLength, activeDeltaAmount > 0L ? deltaIncreaseColor : deltaDecreaseColor, activeDeltaUsesPivotB);
+        }
+
+        private void ApplyDeltaShowState(float _time)
+        {
+            float _glyphDelay = CalculateDeltaGlyphDelay(activeDeltaLength);
+            for (int i = 0; i < activeDeltaLength; i++)
             {
                 RawImage _glyph = deltaGlyphPool[i];
                 if (null == _glyph)
                     continue;
 
-                RectTransform _glyphRect = (RectTransform)_glyph.transform;
-                _glyph.gameObject.SetActive(true);
-                _glyphRect.localScale = Vector3.zero;
-
-                deltaMotionSequence.Insert(
-                    _glyphDelay * i,
-                    _glyphRect.DOScale(Vector3.one, deltaGlyphShowDuration).SetEase(deltaGlyphShowEase, deltaGlyphShowOvershoot));
+                float _progress = Mathf.Clamp01((_time - (_glyphDelay * i)) / Mathf.Max(0.01f, deltaGlyphShowDuration));
+                float _scale = EvaluateOutBack(_progress, deltaGlyphShowOvershoot);
+                _glyph.transform.localScale = Vector3.one * _scale;
             }
+        }
 
-            float _hideStartTime = (_glyphDelay * Mathf.Max(0, _length - 1)) + deltaGlyphShowDuration + deltaVisibleHoldDuration;
-            for (int i = 0; i < _length; i++)
+        private void ApplyDeltaHideState(float _time)
+        {
+            float _glyphDelay = CalculateDeltaGlyphDelay(activeDeltaLength);
+            for (int i = 0; i < activeDeltaLength; i++)
             {
                 RawImage _glyph = deltaGlyphPool[i];
                 if (null == _glyph)
                     continue;
 
-                RectTransform _glyphRect = (RectTransform)_glyph.transform;
-                deltaMotionSequence.Insert(
-                    _hideStartTime + (_glyphDelay * i),
-                    _glyphRect.DOScale(Vector3.zero, deltaGlyphHideDuration).SetEase(deltaGlyphHideEase, deltaGlyphHideOvershoot));
+                float _progress = Mathf.Clamp01((_time - (_glyphDelay * i)) / Mathf.Max(0.01f, deltaGlyphHideDuration));
+                float _scale = 1.0f - Mathf.Clamp01(EvaluateInBack(_progress, deltaGlyphHideOvershoot));
+                _glyph.transform.localScale = Vector3.one * _scale;
             }
+        }
 
-            deltaMotionSequence.OnKill(HideDeltaGlyphs);
-            deltaMotionSequence.OnComplete(HideDeltaGlyphs);
+        private void SetDeltaGlyphScales(Vector3 _scale)
+        {
+            for (int i = 0; i < activeDeltaLength; i++)
+            {
+                if (null != deltaGlyphPool[i])
+                    deltaGlyphPool[i].transform.localScale = _scale;
+            }
+        }
+
+        private float GetDeltaShowEndTime(int _length)
+        {
+            return (CalculateDeltaGlyphDelay(_length) * Mathf.Max(0, _length - 1)) + Mathf.Max(0.01f, deltaGlyphShowDuration);
+        }
+
+        private float GetDeltaHideEndTime(int _length)
+        {
+            return (CalculateDeltaGlyphDelay(_length) * Mathf.Max(0, _length - 1)) + Mathf.Max(0.01f, deltaGlyphHideDuration);
+        }
+
+        private float EvaluateOutBack(float _progress, float _overshoot)
+        {
+            float _x = Mathf.Clamp01(_progress) - 1.0f;
+            float _c1 = Mathf.Max(0.0f, _overshoot);
+            float _c3 = _c1 + 1.0f;
+            return 1.0f + (_c3 * _x * _x * _x) + (_c1 * _x * _x);
+        }
+
+        private float EvaluateInBack(float _progress, float _overshoot)
+        {
+            float _x = Mathf.Clamp01(_progress);
+            float _c1 = Mathf.Max(0.0f, _overshoot);
+            float _c3 = _c1 + 1.0f;
+            return (_c3 * _x * _x * _x) - (_c1 * _x * _x);
         }
 
         private float CalculateDeltaGlyphDelay(int _glyphCount)
@@ -515,10 +698,17 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private void StopDeltaAmountMotion()
         {
+            KillDeltaSequenceOnly();
+
+            HideDeltaGlyphs();
+        }
+
+        private void KillDeltaSequenceOnly()
+        {
             if (null != deltaMotionSequence && deltaMotionSequence.IsActive())
                 deltaMotionSequence.Kill();
 
-            HideDeltaGlyphs();
+            deltaMotionSequence = null;
         }
 
         private bool HasActiveNumberTween()
@@ -746,6 +936,7 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             float _cursor = 0.0f;
             float _scaledGlyphSize = GlyphPixelSize * pixelScale;
+            mainVisibleRightEdge = 0.0f;
 
             int _visibleLength = Mathf.Min(_length, _slotCount);
             for (int i = 0; i < _slotCount; i++)
@@ -772,6 +963,8 @@ namespace PresentationLayer.UISystem.CustomNumber
                 SetGlyphVisible(i, _isVisible);
 
                 _cursor += _metrics.InkWidth * pixelScale;
+                if (_isVisible)
+                    mainVisibleRightEdge = _cursor;
 
                 if (i < _slotCount - 1)
                 {
@@ -789,27 +982,34 @@ namespace PresentationLayer.UISystem.CustomNumber
             HideRemainingGlyphs(_slotCount);
         }
 
-        private void UpdateDeltaGlyphs(int _length, Color _color)
+        private void UpdateDeltaGlyphs(int _length, Color _color, bool _useAmountPivotB)
         {
             EnsureDeltaPoolSize(_length);
 
-            float _cursor = mainLayoutWidth + (deltaStartSpacing * pixelScale);
+            Vector2 _startPosition = GetAmountStartPosition(_useAmountPivotB);
+            float _cursor = _startPosition.x;
             float _scaledGlyphSize = GlyphPixelSize * pixelScale;
 
             for (int i = 0; i < _length; i++)
             {
                 char _char = deltaTextBuffer[i];
                 GlyphMetrics _metrics = GetMetrics(_char);
+                if (0 == i)
+                    _cursor += _metrics.LeftPadding * pixelScale;
+
                 RawImage _image = deltaGlyphPool[i];
                 RectTransform _imageRect = (RectTransform)_image.transform;
 
                 _image.texture = GetTexture(_char);
                 _image.raycastTarget = false;
                 _image.color = _color;
+                if (false == _image.gameObject.activeSelf)
+                    _image.gameObject.SetActive(true);
+
                 _imageRect.sizeDelta = new Vector2(_scaledGlyphSize, _scaledGlyphSize);
                 _imageRect.anchoredPosition = new Vector2(
                     _cursor - (_metrics.LeftPadding * pixelScale) + (_scaledGlyphSize * 0.5f),
-                    0.0f);
+                    _startPosition.y);
 
                 _cursor += _metrics.InkWidth * pixelScale;
 
@@ -825,6 +1025,27 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             if (null != rectTransform)
                 rectTransform.sizeDelta = new Vector2(Mathf.Max(mainLayoutWidth, _cursor), _scaledGlyphSize);
+        }
+
+        private Vector2 GetAmountStartPosition(bool _useAmountPivotB)
+        {
+            RectTransform _pivot = _useAmountPivotB ? amountPivotB : amountPivotA;
+            if (null != _pivot)
+                return _pivot.anchoredPosition;
+
+            return new Vector2(mainVisibleRightEdge + (deltaStartSpacing * pixelScale), 0.0f);
+        }
+
+        private void CacheAmountPivots()
+        {
+            amountPivotA = FindDirectChildRect(AmountPivotAName);
+            amountPivotB = FindDirectChildRect(AmountPivotBName);
+        }
+
+        private RectTransform FindDirectChildRect(string _name)
+        {
+            Transform _child = transform.Find(_name);
+            return null != _child ? _child as RectTransform : null;
         }
 
         private void CacheSprites()
@@ -962,6 +1183,11 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private void HideDeltaGlyphs()
         {
+            deltaAmountPhase = DeltaAmountPhase.None;
+            activeDeltaAmount = 0L;
+            activeDeltaLength = 0;
+            currentDeltaShowTime = 0.0f;
+
             for (int i = 0; i < deltaGlyphPool.Count; i++)
             {
                 if (null == deltaGlyphPool[i])
@@ -1114,6 +1340,14 @@ namespace PresentationLayer.UISystem.CustomNumber
                 LeftPadding = _leftPadding;
                 InkWidth = _inkWidth;
             }
+        }
+
+        private enum DeltaAmountPhase
+        {
+            None,
+            Showing,
+            Holding,
+            Hiding,
         }
 
         private sealed class GlyphMotionState

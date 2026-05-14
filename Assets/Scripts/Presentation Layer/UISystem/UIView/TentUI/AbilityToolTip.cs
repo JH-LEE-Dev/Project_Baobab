@@ -1,7 +1,7 @@
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using PresentationLayer.DOTweenAnimationSystem;
 
 public class AbilityToolTip : MonoBehaviour
 {
@@ -15,33 +15,21 @@ public class AbilityToolTip : MonoBehaviour
     [SerializeField] private Sprite coinCostIcon;
     [SerializeField] private Sprite carrotCostIcon;
 
-    [Header("Motion Settings")]
+    [Header("Motion References")]
     [SerializeField] private CanvasGroup canvasGroup;
-    [SerializeField] private float showDuration = 0.7f;
-    [SerializeField] private float hideDuration = 0.18f;
-    [SerializeField] private float showStartOffsetY = -12f;
-    [SerializeField] private float hideEndOffsetY = -10f;
-    [SerializeField] private float showStartAngle = 12f;
-    [SerializeField] private float showAngleDamping = 0.62f;
-    [SerializeField] private int showSwingCount = 2;
-    [SerializeField] private Ease showMoveEase = Ease.OutQuad;
-    [SerializeField] private Ease showRotationEase = Ease.OutSine;
-    [SerializeField] private Ease hideEase = Ease.InQuad;
-    [SerializeField] private float clickDuration = 0.45f;
-    [SerializeField] private Vector2 clickSquashScale = new Vector2(1.4f, 0.7f);
-    [SerializeField] private Vector2 clickRecoilScale = new Vector2(0.8f, 1.3f);
-    [SerializeField, Range(1, 5)] private int clickBounceCount = 2;
-    [SerializeField, Range(0f, 1f)] private float clickBounceDamping = 0.25f;
-    [SerializeField, Range(0f, 1f)] private float clickSquashTimeRatio = 0.15f;
-    [SerializeField, Range(0f, 1f)] private float clickRecoilTimeRatio = 0.2f;
-    [SerializeField, Range(0f, 1f)] private float clickRestoreTimeRatio = 0.4f;
-    [SerializeField] private Ease clickSquashEase = Ease.OutQuad;
-    [SerializeField] private Ease clickRestoreEase = Ease.OutBack;
+    [SerializeField] private ObjectMotionPlayer motionPlayer;
+    [SerializeField] private string showMotionTag = "ToolTipShow";
+    [SerializeField] private string hideMotionTag = "ToolTipHide";
+    [SerializeField] private string clickMotionTag = "ToolTipClick";
 
-    private Tween motionTween;
+    private MotionEntry showMotionEntry;
+    private MotionEntry hideMotionEntry;
+    private MotionEntry clickMotionEntry;
     private Vector2 baseAnchoredPosition;
+    private Vector2 baseMotionAnchoredPosition;
     private Vector3 baseLocalScale = Vector3.one;
     private bool hasCachedBaseLocalScale;
+    private bool hasCachedMotionAnchoredPosition;
 
     public RectTransform RootRectTransform => rootRectTransform;
     public TMP_Text TitleAndLevelText => titleAndLevelText;
@@ -131,7 +119,6 @@ public class AbilityToolTip : MonoBehaviour
         if (rootRectTransform == null)
             return;
 
-        CacheBaseLocalScale();
         rootRectTransform.anchoredPosition = _anchoredPosition;
     }
 
@@ -139,6 +126,7 @@ public class AbilityToolTip : MonoBehaviour
     {
         gameObject.SetActive(true);
         EnsureCanvasGroup();
+        CacheMotionPlayer();
 
         if (backgroundRectTransform != null)
             LayoutRebuilder.ForceRebuildLayoutImmediate(backgroundRectTransform);
@@ -147,24 +135,7 @@ public class AbilityToolTip : MonoBehaviour
     public void PlayShowMotion()
     {
         Show();
-        StopMotion();
-
-        if (rootRectTransform == null)
-            return;
-
-        EnsureCanvasGroup();
-        CacheBaseLocalScale();
-        canvasGroup.alpha = 0f;
-        rootRectTransform.anchoredPosition = baseAnchoredPosition + Vector2.up * showStartOffsetY;
-        rootRectTransform.localEulerAngles = Vector3.zero;
-        rootRectTransform.localScale = baseLocalScale;
-
-        Sequence sequence = DOTween.Sequence();
-        sequence.Join(canvasGroup.DOFade(1f, showDuration).SetEase(showMoveEase));
-        sequence.Join(rootRectTransform.DOAnchorPos(baseAnchoredPosition, showDuration).SetEase(showMoveEase));
-        sequence.Join(BuildShowRotationTween());
-        sequence.OnComplete(RestoreVisibleState);
-        motionTween = sequence;
+        PlayShowObjectMotion();
     }
 
     public void PlayHideMotion()
@@ -172,57 +143,35 @@ public class AbilityToolTip : MonoBehaviour
         if (gameObject.activeSelf == false)
             return;
 
-        StopMotion();
-
-        if (rootRectTransform == null)
-        {
-            HideImmediately();
+        if (PlayHideObjectMotion())
             return;
-        }
 
-        EnsureCanvasGroup();
-        CacheBaseLocalScale();
-        rootRectTransform.localEulerAngles = Vector3.zero;
-        rootRectTransform.localScale = baseLocalScale;
-
-        Sequence sequence = DOTween.Sequence();
-        sequence.Join(canvasGroup.DOFade(0f, hideDuration).SetEase(hideEase));
-        sequence.Join(rootRectTransform.DOAnchorPos(baseAnchoredPosition + Vector2.up * hideEndOffsetY, hideDuration).SetEase(hideEase));
-        sequence.OnComplete(CompleteHideMotion);
-        motionTween = sequence;
+        HideImmediately();
     }
 
     public void PlayClickMotion()
     {
         Show();
-        StopMotion();
-
-        if (rootRectTransform == null)
-            return;
-
-        EnsureCanvasGroup();
-        CacheBaseLocalScale();
-        canvasGroup.alpha = 1f;
-        rootRectTransform.anchoredPosition = baseAnchoredPosition;
-        rootRectTransform.localEulerAngles = Vector3.zero;
-        rootRectTransform.localScale = baseLocalScale;
-
-        motionTween = BuildClickScaleTween();
-        motionTween.OnComplete(RestoreVisibleState);
+        PlayClickObjectMotion();
     }
 
     public void HideImmediately()
     {
-        StopMotion();
+        StopObjectMotions();
+        CacheBaseMotionState();
 
         if (canvasGroup != null)
             canvasGroup.alpha = 0f;
 
         if (rootRectTransform != null)
-        {
             rootRectTransform.anchoredPosition = baseAnchoredPosition;
-            rootRectTransform.localEulerAngles = Vector3.zero;
-            rootRectTransform.localScale = baseLocalScale;
+
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionRectTransform != null)
+        {
+            motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
+            motionRectTransform.localEulerAngles = Vector3.zero;
+            motionRectTransform.localScale = baseLocalScale;
         }
 
         gameObject.SetActive(false);
@@ -243,24 +192,17 @@ public class AbilityToolTip : MonoBehaviour
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
     }
 
-    private Tween BuildShowRotationTween()
+    private void CacheMotionPlayer()
     {
-        Sequence sequence = DOTween.Sequence();
-        float angle = Mathf.Abs(showStartAngle);
-        int swingCount = Mathf.Max(showSwingCount, 1);
-        float rotationDuration = showDuration;
-        float swingDuration = rotationDuration / (swingCount + 1);
+        if (motionPlayer != null)
+            return;
 
-        for (int i = 0; i < swingCount; i++)
-        {
-            float direction = i % 2 == 0 ? -1f : 1f;
-            Vector3 targetRotation = Vector3.forward * angle * direction;
-            sequence.Append(rootRectTransform.DOLocalRotate(targetRotation, swingDuration, RotateMode.Fast).SetEase(showRotationEase));
-            angle *= Mathf.Clamp01(showAngleDamping);
-        }
+        motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
+    }
 
-        sequence.Append(rootRectTransform.DOLocalRotate(Vector3.zero, swingDuration, RotateMode.Fast).SetEase(showRotationEase));
-        return sequence;
+    private RectTransform GetMotionRectTransform()
+    {
+        return backgroundRectTransform != null ? backgroundRectTransform : rootRectTransform;
     }
 
     private void RestoreVisibleState()
@@ -268,90 +210,139 @@ public class AbilityToolTip : MonoBehaviour
         if (gameObject.activeSelf == false)
             return;
 
+        CacheBaseMotionState();
+
         if (canvasGroup != null)
             canvasGroup.alpha = 1f;
 
-        if (rootRectTransform != null)
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionRectTransform != null)
         {
-            rootRectTransform.anchoredPosition = baseAnchoredPosition;
-            rootRectTransform.localEulerAngles = Vector3.zero;
-            rootRectTransform.localScale = baseLocalScale;
+            motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
+            motionRectTransform.localEulerAngles = Vector3.zero;
+            motionRectTransform.localScale = baseLocalScale;
         }
     }
 
     private void CompleteHideMotion()
     {
-        motionTween = null;
+        CacheBaseMotionState();
 
         if (canvasGroup != null)
             canvasGroup.alpha = 0f;
 
-        if (rootRectTransform != null)
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionRectTransform != null)
         {
-            rootRectTransform.anchoredPosition = baseAnchoredPosition;
-            rootRectTransform.localEulerAngles = Vector3.zero;
-            rootRectTransform.localScale = baseLocalScale;
+            motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
+            motionRectTransform.localEulerAngles = Vector3.zero;
+            motionRectTransform.localScale = baseLocalScale;
         }
 
         gameObject.SetActive(false);
     }
 
-    private Tween BuildClickScaleTween()
+    private bool PlayShowObjectMotion()
     {
-        Vector3 squashScale = new Vector3(
-            baseLocalScale.x * clickSquashScale.x,
-            baseLocalScale.y * clickSquashScale.y,
-            baseLocalScale.z);
+        CacheMotionPlayer();
 
-        Vector3 recoilScale = new Vector3(
-            baseLocalScale.x * clickRecoilScale.x,
-            baseLocalScale.y * clickRecoilScale.y,
-            baseLocalScale.z);
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionPlayer == null || string.IsNullOrEmpty(showMotionTag) || motionRectTransform == null)
+            return false;
 
-        int bounceCount = Mathf.Max(clickBounceCount, 1);
-        float cycleRatio = clickSquashTimeRatio + clickRecoilTimeRatio;
-        float totalRatio = Mathf.Max((cycleRatio * bounceCount) + clickRestoreTimeRatio, 0.0001f);
-        float squashDuration = clickDuration * Mathf.Clamp01(clickSquashTimeRatio / totalRatio);
-        float recoilDuration = clickDuration * Mathf.Clamp01(clickRecoilTimeRatio / totalRatio);
-        float restoreDuration = clickDuration * Mathf.Clamp01(clickRestoreTimeRatio / totalRatio);
+        EnsureCanvasGroup();
+        CacheBaseMotionState();
 
-        Sequence sequence = DOTween.Sequence();
-        float intensity = 1f;
-
-        for (int i = 0; i < bounceCount; i++)
-        {
-            Vector3 dampedSquashScale = Vector3.Lerp(baseLocalScale, squashScale, intensity);
-            Vector3 dampedRecoilScale = Vector3.Lerp(baseLocalScale, recoilScale, intensity);
-
-            sequence.Append(rootRectTransform.DOScale(dampedSquashScale, squashDuration).SetEase(clickSquashEase));
-            sequence.Append(rootRectTransform.DOScale(dampedRecoilScale, recoilDuration).SetEase(Ease.OutQuad));
-
-            intensity *= Mathf.Clamp01(clickBounceDamping);
-        }
-
-        sequence.Append(rootRectTransform.DOScale(baseLocalScale, restoreDuration).SetEase(clickRestoreEase));
-        return sequence;
+        StopEntryMotion(hideMotionEntry);
+        StopEntryMotion(clickMotionEntry);
+        StopEntryMotion(showMotionEntry);
+        motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
+        motionRectTransform.localEulerAngles = Vector3.zero;
+        motionRectTransform.localScale = baseLocalScale;
+        showMotionEntry = motionPlayer.Play(showMotionTag, _onComplete: RestoreVisibleState, bReset: false);
+        return showMotionEntry != null && showMotionEntry.motionInstance != null;
     }
 
-    private void StopMotion()
+    private bool PlayHideObjectMotion()
     {
-        if (motionTween != null && motionTween.IsActive())
-            motionTween.Kill(false);
+        CacheMotionPlayer();
 
-        motionTween = null;
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionPlayer == null || string.IsNullOrEmpty(hideMotionTag) || motionRectTransform == null)
+            return false;
+
+        EnsureCanvasGroup();
+        CacheBaseMotionState();
+        canvasGroup.alpha = 1f;
+
+        StopEntryMotion(showMotionEntry);
+        StopEntryMotion(clickMotionEntry);
+        StopEntryMotion(hideMotionEntry);
+        motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
+        motionRectTransform.localEulerAngles = Vector3.zero;
+        motionRectTransform.localScale = baseLocalScale;
+        hideMotionEntry = motionPlayer.Play(hideMotionTag, _onComplete: CompleteHideMotion, bReset: false);
+        return hideMotionEntry != null && hideMotionEntry.motionInstance != null;
     }
 
-    private void CacheBaseLocalScale()
+    private bool PlayClickObjectMotion()
     {
-        if (hasCachedBaseLocalScale || rootRectTransform == null)
+        CacheMotionPlayer();
+
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionPlayer == null || string.IsNullOrEmpty(clickMotionTag) || motionRectTransform == null)
+            return false;
+
+        EnsureCanvasGroup();
+        CacheBaseMotionState();
+        canvasGroup.alpha = 1f;
+
+        StopEntryMotion(showMotionEntry);
+        StopEntryMotion(hideMotionEntry);
+        StopEntryMotion(clickMotionEntry);
+        motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
+        motionRectTransform.localEulerAngles = Vector3.zero;
+        motionRectTransform.localScale = baseLocalScale;
+        clickMotionEntry = motionPlayer.Play(clickMotionTag, _onComplete: RestoreVisibleState, bReset: false);
+        return clickMotionEntry != null && clickMotionEntry.motionInstance != null;
+    }
+
+    private void StopEntryMotion(MotionEntry _entry)
+    {
+        if (motionPlayer == null || _entry == null || _entry.motionInstance == null)
             return;
 
-        baseLocalScale = rootRectTransform.localScale;
+        motionPlayer.SettingEntryMotion(_entry, true, false);
+    }
+
+    private void StopObjectMotions()
+    {
+        StopEntryMotion(showMotionEntry);
+        StopEntryMotion(hideMotionEntry);
+        StopEntryMotion(clickMotionEntry);
+    }
+
+    private void CacheBaseMotionState()
+    {
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionRectTransform == null)
+            return;
+
+        if (hasCachedMotionAnchoredPosition == false)
+        {
+            baseMotionAnchoredPosition = motionRectTransform.anchoredPosition;
+            hasCachedMotionAnchoredPosition = true;
+        }
+
+        if (hasCachedBaseLocalScale)
+            return;
+
+        baseLocalScale = motionRectTransform.localScale;
         hasCachedBaseLocalScale = true;
     }
 
     private void OnDestroy()
     {
-        StopMotion();
+        StopObjectMotions();
     }
 }

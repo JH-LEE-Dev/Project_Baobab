@@ -43,6 +43,10 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         invSlotRef = null;
         showItemData = null;
+
+        // 함수 바인딩 빼주기
+        if (null != invSlotRef)
+            invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
     }
 
     public void UpdateItemCount(int _newCnt)
@@ -80,6 +84,10 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             ResetData();
             return;
         }
+
+        // 이전에 바인딩 된 주소가 남아있다면 함수 바인딩 빼주기
+        if (null != invSlotRef)
+            invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
         showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
