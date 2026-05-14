@@ -12,6 +12,7 @@ public interface ITilemapDataProvider
 
     // 길찾기 지원
     bool IsWalkable(Vector3Int _cellPos);
+    bool IsWaterTile(Vector3Int _cellPos);
     Vector3Int WorldToCell(Vector3 _worldPos);
     Vector3 CellToWorld(Vector3Int _cellPos);
 }

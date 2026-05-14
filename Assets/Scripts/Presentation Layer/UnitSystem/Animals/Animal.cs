@@ -9,6 +9,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public event Action<Animal> AnimalIsDeadEvent;
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
+    private IShadowDataProvider shadowDataProvider;
+    private IGroundDataProvider groundDataProvider;
 
     //내부 의존성 (컴포넌트)
     [Header("Internal Components")]
@@ -25,6 +27,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     private SpriteRenderer sr;
     private SpriteRenderer shadowSR;
     private Animator shadowAnim;
+
+    private Transform cachedTransform;
+    private Transform animatorTransform;
+    private Transform shadowTransform;
 
     private bool bIsUnderShadow = false;
     private float shadowLerp = 0f;
@@ -69,8 +75,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     private float detectionTimer = 0f;
     private const float DETECTION_INTERVAL = 0.2f; // 5Hz
 
-    // IStaticCollidable 구현
-    public Vector2 Position => transform.position;
+    // IStaticCollidable 구현 - 캐싱된 트랜스폼 사용
+    public Vector2 Position => cachedTransform != null ? (Vector2)cachedTransform.position : (Vector2)transform.position;
     public Vector2 Offset => collisionOffset; // 오프셋 반환
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
@@ -95,6 +101,12 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
+        shadowDataProvider = _environmentProvider.shadowDataProvider;
+        groundDataProvider = _environmentProvider.groundDataProvider;
+
+        cachedTransform = transform;
+        animatorTransform = animatorObject.transform;
+        shadowTransform = shadowObject.transform;
 
         stateMachine = new StateMachine();
         animalAnimValueHandler = new AnimalAnimValueHandler();
@@ -132,7 +144,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     {
         shadowSR.enabled = false;
         sr.enabled = false;
-        feetShadowObject.SetActive(false);
+        if (feetShadowObject != null) feetShadowObject.SetActive(false);
         shadowAnim.enabled = false;
         bActivated = false;
 
@@ -194,9 +206,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         // 1. 본체 방향 및 반전 설정
         anim.SetFloat(facingDirHash, dirIndex);
-        Vector3 bodyScale = animatorObject.transform.localScale;
+        Vector3 bodyScale = animatorTransform.localScale;
         bodyScale.x = shouldFlip ? -1f : 1f;
-        animatorObject.transform.localScale = bodyScale;
+        animatorTransform.localScale = bodyScale;
     }
 
     public void MoveTo(Vector3 _endPos, Vector3 _centerPos, float _scatterRadius)
@@ -205,7 +217,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         centerPos = _centerPos;
         scatterRadius = _scatterRadius;
 
-        pathFindComponent.FindPath(transform.position, _endPos);
+        pathFindComponent.FindPath(cachedTransform.position, _endPos);
 
         stateMachine.ChangeState<AS_RunState>();
     }
@@ -234,9 +246,11 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         stateMachine?.Update();
 
+        Vector3 currentPos = cachedTransform.position;
+
         if (bRunAway)
         {
-            FleeDirection = ((Vector2)transform.position - detectedCharacterPos).normalized;
+            FleeDirection = ((Vector2)currentPos - detectedCharacterPos).normalized;
         }
 
         // 본체가 숨겨진 상태(Hide)라면 시각적 업데이트를 중단하여 그림자가 다시 켜지는 것을 방지합니다.
@@ -244,15 +258,16 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         UpdateAnimalColor();
 
+        float shadowAngle = shadowDataProvider.CurrentShadowAngle;
         if (shadowObject != null)
         {
             shadowObject.ManualUpdate(
-                environmentProvider.shadowDataProvider.CurrentShadowAngle,
-                environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-                environmentProvider.shadowDataProvider.IsShadowActive);
+                shadowAngle,
+                shadowDataProvider.CurrentShadowScaleY,
+                shadowDataProvider.IsShadowActive);
         }
 
-        UpdateShadowVisual();
+        UpdateShadowVisual(shadowAngle);
     }
 
     private void FixedUpdate()
@@ -262,26 +277,28 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         stateMachine?.FixedUpdate();
 
+        Vector2 currentPos = (Vector2)cachedTransform.position;
+
         // 커스텀 충돌 시스템 격자 정보 갱신 (위치 업데이트는 매번 수행)
-        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
+        CollisionSystem.Instance?.UpdatePosition(this, currentPos);
 
         // 최적화: 플레이어 감지 로직 주기적 수행 (0.2초 간격)
         detectionTimer += Time.fixedDeltaTime;
         if (detectionTimer >= DETECTION_INTERVAL)
         {
-            UpdateCharacterDetection();
+            UpdateCharacterDetection(currentPos);
             detectionTimer = 0f;
         }
 
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
-        currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
+        currentGroundData = groundDataProvider.GetGroundPhysicsData(currentPos);
     }
 
-    private void UpdateCharacterDetection()
+    private void UpdateCharacterDetection(Vector2 _currentPos)
     {
         if (CollisionSystem.Instance == null) return;
 
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, detectionRadius, detectionLayerMask, detectionResults);
+        CollisionSystem.Instance.GetCollidablesInRadius(_currentPos, detectionRadius, detectionLayerMask, detectionResults);
 
         if (detectionResults.Count > 0)
         {
@@ -310,15 +327,12 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         sr.color = Color.Lerp(normalColor, shadowTint, shadowLerp);
     }
 
-    private void UpdateShadowVisual()
+    private void UpdateShadowVisual(float _shadowAngle)
     {
         if (shadowAnim == null || shadowSR == null) return;
 
         bool isMoving = anim.GetBool(isMovingHash);
         shadowAnim.SetBool(isMovingHash, isMoving);
-
-        // 광원 각도 동기화 및 방향 보정
-        float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
 
         // 캐릭터의 바라보는 방향을 4방향으로 스냅하여 본체 스프라이트 판정 로직과 동기화합니다.
         float snappedFacingAngle;
@@ -343,7 +357,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         // 광원 시점(Light Perspective) 로직 적용
         // 2:1 아이소매트릭 비율을 반영하여 Y축 성분을 0.5배로 보정합니다.
-        float rad = (snappedFacingAngle - shadowAngle + 90f) * Mathf.Deg2Rad;
+        float rad = (snappedFacingAngle - _shadowAngle + 90f) * Mathf.Deg2Rad;
         Vector2 lightViewDir = new Vector2(
             Mathf.Cos(rad),
             Mathf.Sin(rad) * 0.5f
@@ -376,9 +390,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         // 애니메이터 파라미터 설정 및 반전 적용
         _targetAnim.SetFloat(facingDirHash, dirIndex);
 
-        Vector3 scale = _targetSR.transform.localScale;
+        Transform srTransform = _targetSR.transform;
+        Vector3 scale = srTransform.localScale;
         scale.x = shouldFlip ? 1f : -1f;
-        _targetSR.transform.localScale = scale;
+        srTransform.localScale = scale;
     }
 
     public void TakeDamage(float _damage)
@@ -441,6 +456,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     public Transform GetTransform()
     {
-        return gameObject.transform;
+        return cachedTransform;
     }
 }

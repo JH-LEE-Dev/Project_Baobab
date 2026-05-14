@@ -41,9 +41,12 @@ public class TreeVisualComponent : MonoBehaviour
 
     #region Private Fields
 
+    private Transform cachedTransform;
+    private Transform topTransform;
     private Vector3 topRendererBaseLocalPosition;
     private Quaternion topRendererBaseLocalRotation;
     private float swayPhase;
+    private bool isOnWaterActive = false;
 
     #endregion
 
@@ -52,6 +55,8 @@ public class TreeVisualComponent : MonoBehaviour
     // 플레이 시작 시 바람 흔들림의 기준이 되는 상단 스프라이트 기본 포즈를 저장한다.
     private void Awake()
     {
+        cachedTransform = transform;
+        if (topRenderer != null) topTransform = topRenderer.transform;
         CacheSwayBasePose();
     }
 
@@ -63,8 +68,12 @@ public class TreeVisualComponent : MonoBehaviour
 
     private void LateUpdate()
     {
-        topOnWaterSR.sortingOrder = (int)(transform.position.y * 100);
-        bottomOnWaterSR.sortingOrder = (int)(transform.position.y * 100);
+        // 물 위 효과가 활성화된 경우에만 실행하여 불필요한 계산 방지
+        if (!isOnWaterActive) return;
+
+        int order = (int)(cachedTransform.position.y * 100);
+        if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
+        if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
     }
 
     // 에디터 미리보기 모드에서는 값이 바뀔 때마다 비주얼 조합을 즉시 다시 적용한다.
@@ -84,6 +93,9 @@ public class TreeVisualComponent : MonoBehaviour
 
     public void Initialize()
     {
+        if (cachedTransform == null) cachedTransform = transform;
+        if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
+        
         CacheSwayBasePose();
         ResetVisualState();
     }
@@ -158,14 +170,16 @@ public class TreeVisualComponent : MonoBehaviour
 
     public void DeActivateOnWaterObject()
     {
-        topOnWaterSR.enabled = false;
-        bottomOnWaterSR.enabled = false;
+        isOnWaterActive = false;
+        if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(false);
+        if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(false);
     }
 
     public void ActivateOnWaterObject()
     {
-        topOnWaterSR.enabled = true;
-        bottomOnWaterSR.enabled = true;
+        isOnWaterActive = true;
+        if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(true);
+        if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(true);
     }
 
     private void ApplyColorSet(TreeVisualData _visualData)
@@ -293,15 +307,17 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
-        topRendererBaseLocalPosition = topRenderer.transform.localPosition;
-        topRendererBaseLocalRotation = topRenderer.transform.localRotation;
+        if (topTransform == null) topTransform = topRenderer.transform;
+        
+        topRendererBaseLocalPosition = topTransform.localPosition;
+        topRendererBaseLocalRotation = topTransform.localRotation;
         swayPhase = Random.Range(0f, Mathf.PI * 2f);
     }
 
     // 느린 큰 파형과 빠른 작은 파형을 섞어 나무 윗부분만 자연스럽게 흔들리게 만든다.
     private void ApplyWindSway()
     {
-        if (!Application.isPlaying || !enableWindSway || topRenderer == null)
+        if (!Application.isPlaying || !enableWindSway || topTransform == null)
         {
             return;
         }
@@ -311,7 +327,6 @@ public class TreeVisualComponent : MonoBehaviour
         float detailWave = Mathf.Sin((time * swayDetailSpeed) + (swayPhase * 1.73f)) * swayDetailWeight;
         float sway = mainWave + detailWave;
 
-        Transform topTransform = topRenderer.transform;
         topTransform.localPosition = topRendererBaseLocalPosition + new Vector3(sway * swayPositionAmplitude, 0f, 0f);
         topTransform.localRotation = topRendererBaseLocalRotation * Quaternion.Euler(0f, 0f, -sway * swayRotationAmplitude);
     }
@@ -319,13 +334,13 @@ public class TreeVisualComponent : MonoBehaviour
     // 바람 흔들림을 제거하고 상단 스프라이트를 저장된 기본 포즈로 되돌린다.
     private void ResetTopSway()
     {
-        if (topRenderer == null)
+        if (topTransform == null)
         {
             return;
         }
 
-        topRenderer.transform.localPosition = topRendererBaseLocalPosition;
-        topRenderer.transform.localRotation = topRendererBaseLocalRotation;
+        topTransform.localPosition = topRendererBaseLocalPosition;
+        topTransform.localRotation = topRendererBaseLocalRotation;
     }
 
     public void SetAlpha(float _alpha)

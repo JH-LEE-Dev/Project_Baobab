@@ -190,6 +190,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         return cellToIndex[_cellPos.x + _cellPos.y * width] != -1;
     }
 
+    public bool IsWaterTile(Vector3Int _cellPos)
+    {
+        return IsWater(_cellPos.x, _cellPos.y);
+    }
+
     public Vector3Int WorldToCell(Vector3 _worldPos)
     {
         if (groundTilemap == null) return Vector3Int.zero;

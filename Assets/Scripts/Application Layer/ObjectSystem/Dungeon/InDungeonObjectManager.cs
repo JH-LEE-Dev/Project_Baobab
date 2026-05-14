@@ -228,6 +228,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                 TreeObj tree = treePool.Get();
                 tree.transform.position = spawnPos;
 
+                // 물 타일 체크: 아래로 두 타일 검토
+                bool isWaterNearby = environmentProvider.tilemapDataProvider.IsWaterTile(cellPos + new Vector3Int(-1, -1, 0)) ||
+                                     environmentProvider.tilemapDataProvider.IsWaterTile(cellPos + new Vector3Int(-2, -2, 0));
+                tree.SetOnWaterObjectState(isWaterNearby);
+
                 // 최적화: 증분 업데이트 (O(1))
                 tree.PoolIndex = activeTrees.Count;
                 activeTrees.Add(tree);

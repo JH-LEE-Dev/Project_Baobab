@@ -13,8 +13,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     [SerializeField] private Vector2 collisionOffset = Vector2.zero; // 충돌 오프셋 필드 추가
 
     private IEnvironmentProvider environmentProvider;
+    private IShadowDataProvider shadowDataProvider;
     private EHealthComponent healthComponent;
     private SaplingVEComponent saplingVEComponent;
+    private Transform cachedTransform;
 
     public TreeData treeData { get; private set; }
     public IHealthComponent health => healthComponent;
@@ -22,8 +24,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public bool bDead = false;
     bool ITreeObj.bDead => bDead;
 
-    // IStaticCollidable 구현
-    public Vector2 Position => transform.position;
+    // IStaticCollidable 구현 - 캐싱된 트랜스폼 사용
+    public Vector2 Position => cachedTransform != null ? (Vector2)cachedTransform.position : (Vector2)transform.position;
     public Vector2 Offset => collisionOffset;
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
@@ -51,9 +53,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
 
+    private bool bWaterNearBy = false;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
+        shadowDataProvider = _environmentProvider.shadowDataProvider;
+        cachedTransform = transform;
 
         healthComponent = GetComponent<EHealthComponent>();
         healthComponent.Initialize();
@@ -119,6 +125,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
+        bWaterNearBy = false;
 
         if (treeVisualComponent != null)
         {
@@ -143,8 +150,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public void ManualUpdate()
     {
-        UpdateShadow(topShadowObject);
-        UpdateShadow(bottomShadowObject);
+        // 캐싱된 shadowDataProvider 사용
+        float shadowAngle = shadowDataProvider.CurrentShadowAngle;
+        float shadowScaleY = shadowDataProvider.CurrentShadowScaleY;
+        bool isShadowActive = shadowDataProvider.IsShadowActive;
+
+        if (topShadowObject != null) topShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
+        if (bottomShadowObject != null) bottomShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
 
         if (bIsSapling)
         {
@@ -152,12 +164,23 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             if (growTime <= 0f)
             {
                 bIsSapling = false;
+
                 if (treeVisualComponent != null)
                 {
-                    treeVisualComponent.ActivateOnWaterObject();
+                    if (bWaterNearBy == true)
+                        treeVisualComponent.ActivateOnWaterObject();
+                    else
+                        treeVisualComponent.DeActivateOnWaterObject();
+
+                    // 기존 로직의 결과(항상 마지막에 Activate 호출)를 유지하면서 중복만 제거
+                    if (bWaterNearBy == false)
+                        treeVisualComponent.ActivateOnWaterObject();
+
                     treeVisualComponent.ApplyVisual(treeData);
-                    saplingVEComponent.AnimateSaplingVE(false);
                 }
+
+                if (saplingVEComponent != null)
+                    saplingVEComponent.AnimateSaplingVE(false);
             }
         }
     }
@@ -173,20 +196,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             shadow.Initialize();
         }
-    }
-
-    private void UpdateShadow(Shadow shadow)
-    {
-        if (shadow == null)
-        {
-            return;
-        }
-
-        shadow.ManualUpdate(
-            environmentProvider.shadowDataProvider.CurrentShadowAngle,
-            environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-            environmentProvider.shadowDataProvider.IsShadowActive
-        );
     }
 
     private void BindEvents()
@@ -223,7 +232,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public Transform GetTransform()
     {
-        return transform;
+        return cachedTransform;
     }
 
     public void KnockBack(Vector2 _knockBackDir, float _knockBackForce)
@@ -244,6 +253,22 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         if (treeVisualComponent != null)
         {
             treeVisualComponent.FadeAlpha(_targetAlpha, _duration);
+        }
+    }
+
+    public void SetOnWaterObjectState(bool _isWaterNearby)
+    {
+        if (treeVisualComponent == null)
+            return;
+            
+        bWaterNearBy = _isWaterNearby;
+
+        if (bIsSapling == false)
+        {
+            if (bWaterNearBy == true)
+                treeVisualComponent.ActivateOnWaterObject();
+            else
+                treeVisualComponent.DeActivateOnWaterObject();
         }
     }
 }
