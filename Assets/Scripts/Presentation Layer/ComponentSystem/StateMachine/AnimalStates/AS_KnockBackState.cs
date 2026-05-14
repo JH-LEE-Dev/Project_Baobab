@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class AS_KnockBackState : AnimalState
@@ -21,16 +20,21 @@ public class AS_KnockBackState : AnimalState
     {
         bActivated = true;
         timer = knockBackDuration + idleWaitDuration;
+        
+        // Rigidbody 직접 접근 최소화 및 초기 속도 설정
         animal.rb.linearVelocity = knockBackDir * knockBackForce;
         animal.anim.SetBool(animal.isMovingHash, false);
 
-        if (statusEffectAnimator == null)
-            animal.statusEffectObject.GetComponent<Animator>();
-        if (statusEffectSR == null)
-            animal.statusEffectObject.GetComponent<SpriteRenderer>();
-
+        // 컴포넌트 캐싱 최적화 (Enter 마다 GetComponent 호출 방지)
         if (animal.statusEffectObject != null)
+        {
+            if (statusEffectAnimator == null)
+                statusEffectAnimator = animal.statusEffectObject.GetComponent<Animator>();
+            if (statusEffectSR == null)
+                statusEffectSR = animal.statusEffectObject.GetComponent<SpriteRenderer>();
+
             animal.statusEffectObject.SetActive(true);
+        }
     }
 
     public override void Exit()
@@ -56,9 +60,10 @@ public class AS_KnockBackState : AnimalState
     {
         if (!bActivated) return;
 
-        // 지형 감속도를 반영하여 속도를 0으로 서서히 줄임
+        // 지형 감속도를 반영하여 속도를 0으로 서서히 줄임 - 로컬 변수로 프로퍼티 접근 최적화
+        Vector2 velocity = animal.rb.linearVelocity;
         animal.rb.linearVelocity = Vector2.MoveTowards(
-            animal.rb.linearVelocity,
+            velocity,
             Vector2.zero,
             animal.currentGroundData.deceleration * Time.fixedDeltaTime
         );

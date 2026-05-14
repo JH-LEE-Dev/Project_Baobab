@@ -29,8 +29,8 @@ public class AS_RunState : AnimalState
 
         isFleeingPath = animal.bRunAway;
 
-        // 시작 지점 확실히 점유
-        Vector3 currentPos = animal.transform.position;
+        // 시작 지점 확실히 점유 - 캐싱된 트랜스폼 사용
+        Vector3 currentPos = animal.GetTransform().position;
         currentReservedPos = pathFindComponent.WorldToCell(currentPos);
         pathFindComponent.Occupy(currentReservedPos);
 
@@ -141,8 +141,8 @@ public class AS_RunState : AnimalState
             }
         }
 
-        // 2. 이동 및 도착 판정
-        Vector3 currentPos = animal.transform.position;
+        // 2. 이동 및 도착 판정 - 캐싱된 트랜스폼 사용
+        Vector3 currentPos = animal.GetTransform().position;
         if ((currentPos - cachedTargetWorldPos).sqrMagnitude < stopDistanceSqr)
         {
             // 도착 시점: 이전 타일 해제 및 현재 타일 갱신
@@ -166,7 +166,8 @@ public class AS_RunState : AnimalState
 
     private void HandleStuck()
     {
-        Vector3 currentPos = animal.transform.position;
+        // 캐싱된 트랜스폼 사용
+        Vector3 currentPos = animal.GetTransform().position;
         if (animal.bRunAway)
         {
             isFleeingPath = true;
@@ -262,7 +263,8 @@ public class AS_RunState : AnimalState
         var path = pathFindComponent.Path;
         if (currentPathIndex >= path.Count) return;
 
-        Vector2 currentPos = animal.transform.position;
+        // 캐싱된 트랜스폼 및 Rigidbody 사용
+        Vector2 currentPos = (Vector2)animal.GetTransform().position;
         Vector2 targetPos = (Vector2)cachedTargetWorldPos;
         Vector2 diff = targetPos - currentPos;
 
@@ -270,9 +272,10 @@ public class AS_RunState : AnimalState
         if (diff.sqrMagnitude < 0.0001f) return;
 
         Vector2 direction = diff.normalized;
+        Vector2 velocity = animal.rb.linearVelocity;
 
         animal.rb.linearVelocity = Vector2.MoveTowards(
-           animal.rb.linearVelocity,
+           velocity,
            direction * moveSpeed,
            animal.currentGroundData.deceleration * Time.fixedDeltaTime
        );

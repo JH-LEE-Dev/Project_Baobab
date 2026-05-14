@@ -13,8 +13,8 @@ public class AS_IdleState : AnimalState
         animal.anim.SetBool(animal.isMovingHash, false);
         animal.rb.linearVelocity = Vector2.zero;
 
-        // 현재 위치 타일 점유
-        currentOccupiedPos = pathFindComponent.WorldToCell(animal.transform.position);
+        // 현재 위치 타일 점유 - 캐싱된 트랜스폼 사용
+        currentOccupiedPos = pathFindComponent.WorldToCell(animal.GetTransform().position);
         pathFindComponent.Occupy(currentOccupiedPos);
 
         idleTimer = 0f;
@@ -31,14 +31,16 @@ public class AS_IdleState : AnimalState
         // 상태 탈출 시 점유 해제
         pathFindComponent.Release(currentOccupiedPos);
 
-        animal.feetShadowObject.SetActive(false);
+        if (animal.feetShadowObject != null)
+            animal.feetShadowObject.SetActive(false);
     }
 
     public override void Update()
     {
         if (!bActivated || !animal.bActivated) return;
 
-        Vector3 currentPos = animal.transform.position;
+        // 캐싱된 트랜스폼 사용
+        Vector3 currentPos = animal.GetTransform().position;
 
         // 플레이어 감지 시 한 번만 도망 시도
         if (animal.bRunAway && !isFleeing)
