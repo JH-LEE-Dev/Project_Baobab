@@ -507,8 +507,8 @@ MonoBehaviour:
         baseValue: 0
         manualValues: []
       carrotCurve:
-        type: 0
-        baseValue: 0
+        type: 3
+        baseValue: 1500
         manualValues: []
     skillTypes:
     - skillCommandType: 29

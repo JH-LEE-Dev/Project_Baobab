@@ -103,10 +103,14 @@ public class InventorySlot : IInventorySlot
 
     public void AddCount(Item _item)
     {
-        if (_item is LogItem logItem)
+        if (_item is LogItem logItem && itemData is LogItemData logData)
         {
-            treeTypeCounts[(int)logItem.treeType]++;
-            isTreeDirty = true;
+            // 나무 종류가 일치할 때만 해당 종류 카운트 증가
+            if (logItem.treeType == logData.treeType)
+            {
+                treeTypeCounts[(int)logItem.treeType]++;
+                isTreeDirty = true;
+            }
         }
         totalCount++;
 
@@ -122,10 +126,14 @@ public class InventorySlot : IInventorySlot
             targetTreeType = logData.treeType;
         }
         
-        if (targetTreeType != TreeType.None)
+        if (targetTreeType != TreeType.None && itemData is LogItemData logData2)
         {
-            treeTypeCounts[(int)targetTreeType]++;
-            isTreeDirty = true;
+            // 슬롯의 나무 종류와 일치할 때만 해당 카운트 증가
+            if (targetTreeType == logData2.treeType)
+            {
+                treeTypeCounts[(int)targetTreeType]++;
+                isTreeDirty = true;
+            }
         }
 
         totalCount++;
@@ -142,14 +150,10 @@ public class InventorySlot : IInventorySlot
         {
             takenState = logData.logState;
 
-            // 수량이 있는 나무 종류 중 가장 높은 등급부터 하나 차감
-            for (int i = treeTypeCounts.Length - 1; i >= 0; i--)
+            // 해당 슬롯의 나무 종류 수량 차감
+            if (treeTypeCounts[(int)logData.treeType] > 0)
             {
-                if (treeTypeCounts[i] > 0)
-                {
-                    treeTypeCounts[i]--;
-                    break;
-                }
+                treeTypeCounts[(int)logData.treeType]--;
             }
         }
 
