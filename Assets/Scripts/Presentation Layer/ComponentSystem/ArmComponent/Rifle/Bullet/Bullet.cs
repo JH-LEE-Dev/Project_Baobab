@@ -85,7 +85,7 @@ public class Bullet : MonoBehaviour
             }
 
             // 관통 로직: 확률에 당첨된 경우 (당첨될 때마다 확률 반감)
-            if (UnityEngine.Random.value < penetrationChance)
+            if (UnityEngine.Random.Range(0f, 100f) < penetrationChance)
             {
                 penetrationChance *= 0.5f; // 관통 확률 절반으로 감소
                 // 관통했으므로 멈추지 않고 이번 프레임의 목표 지점까지 이동하여 계속 진행

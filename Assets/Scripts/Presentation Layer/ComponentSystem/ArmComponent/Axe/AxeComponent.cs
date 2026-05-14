@@ -103,7 +103,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     public override void DecreaseDurability()
     {
-        if (UnityEngine.Random.value >= ctx.characterStat.axeDurabilityDecIgnoreChance)
+        if (UnityEngine.Random.Range(0f, 100f) >= ctx.characterStat.axeDurabilityDecIgnoreChance)
             durability -= ctx.characterStat.axeDurabilityDecAmount;
 
         if (durability < 0f)

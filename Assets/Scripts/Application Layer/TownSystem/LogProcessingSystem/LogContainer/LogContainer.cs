@@ -353,6 +353,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 // 회전 속도 및 방향 결정 (빠르지 않게: 90~270도/s 정도)
                 float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
+                flyingItem.transform.position = start;
+
                 // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
                 flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter, rotationSpeed);
                 flyingItems.Add(flyingItem);
@@ -391,7 +393,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             for (int i = 0; i < flyingItems.Count; i++)
             {
-                if (flyingItems[i].itemType == ItemType.Log && flyingItems[i].logState == logSource.logState)
+                if (flyingItems[i].itemType == ItemType.Log && 
+                    flyingItems[i].logState == logSource.logState && 
+                    flyingItems[i].treeType == logSource.treeType)
                     pendingCount++;
             }
         }
@@ -470,7 +474,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         if (_data1 is LogItemData log1 && _data2 is LogItemData log2)
         {
-            return log1.logState == log2.logState;
+            // 같은 로그 상태와 나무 종류인 경우에만 같은 슬롯에 보관
+            return log1.logState == log2.logState && log1.treeType == log2.treeType;
         }
 
         return true;

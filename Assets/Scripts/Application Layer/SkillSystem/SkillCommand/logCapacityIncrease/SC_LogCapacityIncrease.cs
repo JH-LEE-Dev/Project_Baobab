@@ -7,10 +7,12 @@ public class SC_LogCapacityIncrease : SkillCommand
     {
         PrintDebug();
         _system.inventoryCH.LogCapacityIncrease(amount);
+        _system.containerCH.LogCapacityIncrease(amount);
     }
 
     public override void Undo(ICommandHandleSystem _system)
     {
         _system.inventoryCH.LogCapacityIncrease(-amount);
+        _system.containerCH.LogCapacityIncrease(-amount);
     }
 }
