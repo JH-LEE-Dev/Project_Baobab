@@ -18,6 +18,8 @@ namespace PresentationLayer.UISystem.CustomNumber
         private const int FixedGlyphSlotCount = 7;
         private const string MainGlyphPrefix = "CurrencyGlyph_";
         private const string DeltaGlyphPrefix = "CurrencyDeltaGlyph_";
+        private const string AmountPivotAName = "AmountPivot_A";
+        private const string AmountPivotBName = "AmountPivot_B";
 
         private static readonly ulong[] SuffixDivisors =
         {
@@ -80,7 +82,7 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] private float glyphBounceRatio = 0.28f;
 
         [Header("Delta Amount Motion")]
-        [SerializeField] private float deltaStartSpacing = 0.0f;
+        [SerializeField] private float deltaStartSpacing = 4.0f;
         [SerializeField] private float deltaGlyphWaveDuration = 0.25f;
         [SerializeField] private float deltaGlyphShowDuration = 0.15f;
         [SerializeField] private float deltaVisibleHoldDuration = 0.2f;
@@ -104,8 +106,11 @@ namespace PresentationLayer.UISystem.CustomNumber
         private readonly Sprite[] sourceSprites = new Sprite[19];
 
         private RectTransform rectTransform;
+        private RectTransform amountPivotA;
+        private RectTransform amountPivotB;
         private long lastDisplayedValue = long.MinValue;
         private float mainLayoutWidth;
+        private float mainVisibleRightEdge;
         private bool initialized;
         private readonly List<GlyphMotionState> glyphMotionStates = new List<GlyphMotionState>(8);
         private readonly List<Sequence> glyphMotionTweens = new List<Sequence>(8);
@@ -125,6 +130,7 @@ namespace PresentationLayer.UISystem.CustomNumber
                 rectTransform.pivot = new Vector2(0.0f, 0.5f);
 
             CacheSprites();
+            CacheAmountPivots();
 #if UNITY_EDITOR
             if (false == Application.isPlaying)
                 CleanupLegacyEditorGlyphs();
@@ -220,15 +226,20 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         public void SetNumberAnimated(long _value)
         {
-            SetNumberAnimatedInternal(_value, null);
+            SetNumberAnimatedInternal(_value, null, false);
         }
 
-        public void SetNumberAnimated(long _value, long _deltaAmount)
+        public void SetNumberAnimated(long _value, bool _useAmountPivotB = false)
         {
-            SetNumberAnimatedInternal(_value, _deltaAmount);
+            SetNumberAnimatedInternal(_value, null, _useAmountPivotB);
         }
 
-        private void SetNumberAnimatedInternal(long _value, long? _overrideDeltaAmount)
+        public void SetNumberAnimated(long _value, long _deltaAmount, bool _useAmountPivotB = false)
+        {
+            SetNumberAnimatedInternal(_value, _deltaAmount, _useAmountPivotB);
+        }
+
+        private void SetNumberAnimatedInternal(long _value, long? _overrideDeltaAmount, bool _useAmountPivotB)
         {
             Initialize();
 
@@ -258,11 +269,11 @@ namespace PresentationLayer.UISystem.CustomNumber
                 PlayGlyphColorTween(decreaseColor);
             }
 
-            PlayDeltaAmountMotion(_overrideDeltaAmount ?? (_value - _previousValue));
+            PlayDeltaAmountMotion(_overrideDeltaAmount ?? (_value - _previousValue), _useAmountPivotB);
             PlayNumberTween(_previousValue, _value);
         }
 
-        public void PlayDeltaAmountMotion(long _amount)
+        public void PlayDeltaAmountMotion(long _amount, bool _useAmountPivotB = false)
         {
             Initialize();
 
@@ -272,7 +283,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             StopDeltaAmountMotion();
 
             int _length = BuildDeltaText(_amount);
-            UpdateDeltaGlyphs(_length, _amount > 0L ? deltaIncreaseColor : deltaDecreaseColor);
+            UpdateDeltaGlyphs(_length, _amount > 0L ? deltaIncreaseColor : deltaDecreaseColor, _useAmountPivotB);
 
             float _glyphDelay = CalculateDeltaGlyphDelay(_length);
             deltaMotionSequence = DOTween.Sequence();
@@ -746,6 +757,7 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             float _cursor = 0.0f;
             float _scaledGlyphSize = GlyphPixelSize * pixelScale;
+            mainVisibleRightEdge = 0.0f;
 
             int _visibleLength = Mathf.Min(_length, _slotCount);
             for (int i = 0; i < _slotCount; i++)
@@ -772,6 +784,8 @@ namespace PresentationLayer.UISystem.CustomNumber
                 SetGlyphVisible(i, _isVisible);
 
                 _cursor += _metrics.InkWidth * pixelScale;
+                if (_isVisible)
+                    mainVisibleRightEdge = _cursor;
 
                 if (i < _slotCount - 1)
                 {
@@ -789,17 +803,21 @@ namespace PresentationLayer.UISystem.CustomNumber
             HideRemainingGlyphs(_slotCount);
         }
 
-        private void UpdateDeltaGlyphs(int _length, Color _color)
+        private void UpdateDeltaGlyphs(int _length, Color _color, bool _useAmountPivotB)
         {
             EnsureDeltaPoolSize(_length);
 
-            float _cursor = mainLayoutWidth + (deltaStartSpacing * pixelScale);
+            Vector2 _startPosition = GetAmountStartPosition(_useAmountPivotB);
+            float _cursor = _startPosition.x;
             float _scaledGlyphSize = GlyphPixelSize * pixelScale;
 
             for (int i = 0; i < _length; i++)
             {
                 char _char = deltaTextBuffer[i];
                 GlyphMetrics _metrics = GetMetrics(_char);
+                if (0 == i)
+                    _cursor += _metrics.LeftPadding * pixelScale;
+
                 RawImage _image = deltaGlyphPool[i];
                 RectTransform _imageRect = (RectTransform)_image.transform;
 
@@ -809,7 +827,7 @@ namespace PresentationLayer.UISystem.CustomNumber
                 _imageRect.sizeDelta = new Vector2(_scaledGlyphSize, _scaledGlyphSize);
                 _imageRect.anchoredPosition = new Vector2(
                     _cursor - (_metrics.LeftPadding * pixelScale) + (_scaledGlyphSize * 0.5f),
-                    0.0f);
+                    _startPosition.y);
 
                 _cursor += _metrics.InkWidth * pixelScale;
 
@@ -825,6 +843,27 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             if (null != rectTransform)
                 rectTransform.sizeDelta = new Vector2(Mathf.Max(mainLayoutWidth, _cursor), _scaledGlyphSize);
+        }
+
+        private Vector2 GetAmountStartPosition(bool _useAmountPivotB)
+        {
+            RectTransform _pivot = _useAmountPivotB ? amountPivotB : amountPivotA;
+            if (null != _pivot)
+                return _pivot.anchoredPosition;
+
+            return new Vector2(mainVisibleRightEdge + (deltaStartSpacing * pixelScale), 0.0f);
+        }
+
+        private void CacheAmountPivots()
+        {
+            amountPivotA = FindDirectChildRect(AmountPivotAName);
+            amountPivotB = FindDirectChildRect(AmountPivotBName);
+        }
+
+        private RectTransform FindDirectChildRect(string _name)
+        {
+            Transform _child = transform.Find(_name);
+            return null != _child ? _child as RectTransform : null;
         }
 
         private void CacheSprites()

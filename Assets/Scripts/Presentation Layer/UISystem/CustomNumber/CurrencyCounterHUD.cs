@@ -78,7 +78,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             currencyFontHUD?.SetNumber(currentValue);
         }
 
-        public void SetNumberAnimated(long _value)
+        public void SetNumberAnimated(long _value, bool _useAmountPivotB = false)
         {
             InitializeIfNeeded();
 
@@ -88,7 +88,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             long _previousValue = currentValue;
             currentValue = _value;
             hasDisplayedValue = true;
-            currencyFontHUD?.SetNumberAnimated(currentValue, currentValue - _previousValue);
+            currencyFontHUD?.SetNumberAnimated(currentValue, currentValue - _previousValue, _useAmountPivotB);
         }
 
         public MoneyType GetMoneyType()
@@ -136,6 +136,14 @@ namespace PresentationLayer.UISystem.CustomNumber
         {
             SetNumber(1234);
         }
+
+        [Button("Debug Play Plus Motion (Pivot B)")]
+        private void DebugPlayPlusMotionB()
+        {
+            InitializeIfNeeded();
+            SetNumberAnimated(currentValue + Math.Max(1L, debugIncreaseAmount), true);
+        }
+
 
 
         [Button("Debug Play Plus Motion")]
