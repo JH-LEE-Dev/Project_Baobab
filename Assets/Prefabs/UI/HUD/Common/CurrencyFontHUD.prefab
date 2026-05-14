@@ -204,6 +204,8 @@ MonoBehaviour:
   deltaGlyphHideOvershoot: 3.5
   deltaIncreaseColor: {r: 0.35, g: 1, b: 0.45, a: 1}
   deltaDecreaseColor: {r: 1, g: 0.32, b: 0.28, a: 1}
+  deltaHoldShakeDuration: 0.35
+  deltaHoldShakeDistance: 1.5
   previewInEditor: 1
   previewValue: 100
 --- !u!1 &6139975010779844595
