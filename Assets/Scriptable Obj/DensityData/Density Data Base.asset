@@ -24,8 +24,8 @@ MonoBehaviour:
         regenProb: 100
       treeStartDensityRatio: 0.04
       treeMaxDensityRatio: 0.07
-      animalStartDensityRatio: 0.03
-      animalMaxDensityRatio: 0.05
+      animalStartDensityRatio: 0.015
+      animalMaxDensityRatio: 0.025
       treeRegenMinTime: 10
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
@@ -45,8 +45,8 @@ MonoBehaviour:
         regenProb: 30
       treeStartDensityRatio: 0.06
       treeMaxDensityRatio: 0.1
-      animalStartDensityRatio: 0.05
-      animalMaxDensityRatio: 0.08
+      animalStartDensityRatio: 0.015
+      animalMaxDensityRatio: 0.025
       treeRegenMinTime: 10
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
@@ -61,15 +61,15 @@ MonoBehaviour:
         regenProb: 40
       spawnAnimalTypes:
       - animalType: 1
-        regenProb: 50
+        regenProb: 0
       - animalType: 2
-        regenProb: 37.5
+        regenProb: 60
       - animalType: 3
-        regenProb: 12.5
+        regenProb: 40
       treeStartDensityRatio: 0.06
       treeMaxDensityRatio: 0.1
-      animalStartDensityRatio: 0.05
-      animalMaxDensityRatio: 0.08
+      animalStartDensityRatio: 0.015
+      animalMaxDensityRatio: 0.025
       treeRegenMinTime: 10
       treeRegenMaxTime: 15
       animalRegenMinTime: 10

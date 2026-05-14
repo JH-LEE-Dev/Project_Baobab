@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Burst.Intrinsics;
 using UnityEngine;
 
 public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable
@@ -29,14 +28,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public StatComponent statComponent { get; private set; }
 
     public StateMachine stateMachine { get; private set; }
-    public Animator anim { get; private set; }
+    public Animator anim => characterVisualComponent.Anim;
     public Rigidbody2D rb { get; private set; }
     public CircleCollider2D col { get; private set; }
-    private SpriteRenderer sr;
-    private SpriteRenderer onWaterSR;
-    private SpriteRenderer shadowSR;
-    private Animator onWaterAnim;
-    private Animator shadowAnim;
 
     // 상태 및 데이터
     [Header("Character Stats & States")]
@@ -45,16 +39,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public bool bWhileSwing { get; private set; } = false;
     public bool bCanRotate { get; private set; } = true;
 
-    private bool bIsUnderShadow = false;
-    private float shadowLerp = 0f;
-    private float currentFadeDuration = 0.3f;
-    private Color normalColor = Color.white;
-    private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
-
     private float staminaDecAmount = 0f;
     private float staminaIncAmount = 0f;
     private bool bStaminaUpDown = false;
-    private float currentFacingAngle = 0f; // 캐릭터의 현재 바라보는 각도 저장
 
     // IStaticCollidable 구현
     public Vector2 Position => transform.position;
@@ -73,7 +60,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public bool bCanApplyDamage => true;
 
-    private readonly int facingDirHash = Animator.StringToHash("facingDir");
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
     public readonly int bInHubHash = Animator.StringToHash("bInHub");
     private float itemSensorRadius = 1.15f;
@@ -83,6 +69,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     [SerializeField] private LayerMask itemLayer; // 아이템 레이어
 
+    private CharacterVisualComponent characterVisualComponent;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -91,7 +79,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         environmentProvider = _environmentProvider;
 
         // 컴포넌트 할당
-        anim = animatorObject.GetComponent<Animator>();
+        characterVisualComponent = animatorObject.GetComponent<CharacterVisualComponent>();
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<CircleCollider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
@@ -99,29 +87,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         armComponent = GetComponentInChildren<ArmComponent>();
         statComponent = GetComponentInChildren<StatComponent>();
 
-        sr = animatorObject.GetComponent<SpriteRenderer>();
-        onWaterSR = onWaterAnimatorObject.GetComponent<SpriteRenderer>();
-        shadowSR = shadowObject.GetComponent<SpriteRenderer>();
-
-        onWaterAnim = onWaterAnimatorObject.GetComponent<Animator>();
-        shadowAnim = shadowObject.GetComponent<Animator>(); // 그림자 전용 애니메이터
-
         stateMachine = new StateMachine();
         ctx = new ComponentCtx();
         ctx.Initialize(inputManager, statComponent, environmentProvider.pathfindGridProvider, environmentProvider.tilemapDataProvider);
 
         // 컴포넌트 초기화
-        shadowObject.Initialize();
+        characterVisualComponent.Initialize(environmentProvider, onWaterAnimatorObject, shadowObject);
         attackComponent.Initialize(ctx);
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
         statComponent.Initialize(ctx);
-
-        // 수면 위 일렁임 강도 캐릭터에 맞춰 감소 (기본 1.0 -> 0.5)
-        if (onWaterSR != null)
-        {
-            onWaterSR.material.SetFloat("_DistortionAmount", 0.5f);
-        }
 
         SetupStateMachine();
         BindEvents();
@@ -129,13 +104,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void SetFacingDirection(Vector2 _input)
     {
-        if (_input.sqrMagnitude < 0.01f /*|| bCanRotate == false || bWhileSwing == true*/) return;
-
-        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
-        if (angle < 0) angle += 360;
-
-        currentFacingAngle = angle; // 각도 저장
-        SetAnimatorDirection(anim, sr, _input);
+        characterVisualComponent.SetFacingDirection(_input);
     }
 
     public void StaminaReset()
@@ -189,7 +158,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
 
         bInDungeon = _bInDungeon;
-        anim.SetBool(bInHubHash, !bInDungeon);
+        characterVisualComponent.SetHubState(!bInDungeon);
         armComponent.SetActivate(bInDungeon);
     }
 
@@ -197,8 +166,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void SetInShadow(bool _isInShadow, float _duration)
     {
-        bIsUnderShadow = _isInShadow;
-        currentFadeDuration = _duration;
+        characterVisualComponent.SetInShadow(_isInShadow, _duration);
     }
 
     #endregion
@@ -256,99 +224,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.AttackSuccessEvent -= armComponent.axeComponent.DecreaseDurability;
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
-        }
-    }
-
-    private void UpdateCharacterColor()
-    {
-        float target = bIsUnderShadow ? 1f : 0f;
-        float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
-        shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
-        Color finalColor = Color.Lerp(normalColor, shadowTint, shadowLerp);
-        sr.color = finalColor;
-        if (onWaterSR != null) onWaterSR.color = finalColor;
-    }
-
-    private void UpdateOnWaterVisual()
-    {
-        if (onWaterAnim == null || onWaterSR == null) return;
-
-        // 메인 애니메이터의 파라미터 그대로 복사
-        onWaterAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
-        onWaterAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
-        onWaterAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
-
-        // 메인 스프라이트의 스케일(FlipX 포함)의 반대값 적용
-        Vector3 reversedScale = sr.transform.localScale;
-        reversedScale.x *= -1f;
-        onWaterSR.transform.localScale = reversedScale;
-    }
-
-    private void UpdateShadowVisual()
-    {
-        if (shadowAnim == null) return;
-
-        // 1. 애니메이션 파라미터 동기화
-        shadowAnim.SetBool(isMovingHash, anim.GetBool(isMovingHash));
-        shadowAnim.SetBool(bInHubHash, anim.GetBool(bInHubHash));
-
-        float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
-        float normalizedAngle = shadowAngle % 360;
-        if (normalizedAngle < 0) normalizedAngle += 360;
-
-        // 2. 수평 방향 강제 보정 로직 (그림자가 좌/우로 길게 늘어질 때)
-        // 오른쪽 방향 (337.5 ~ 22.5도)
-        if (normalizedAngle <= 22.5f || normalizedAngle >= 337.5f)
-        {
-            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.right);
-        }
-        // 왼쪽 방향 (157.5 ~ 202.5도)
-        else if (normalizedAngle >= 157.5f && normalizedAngle <= 202.5f)
-        {
-            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.left);
-        }
-        else
-        {
-            // 3. 수직 또는 대각선 각도는 광원 시점(Light Perspective) 로직 적용
-            float lightPerspectiveAngle = currentFacingAngle - shadowAngle + 90f;
-            Vector2 lightViewDir = new Vector2(
-                Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad),
-                Mathf.Sin(lightPerspectiveAngle * Mathf.Deg2Rad)
-            );
-            SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir);
-        }
-    }
-
-    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input)
-    {
-        if (_input.sqrMagnitude < 0.01f) return;
-
-        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
-        if (angle < 0) angle += 360;
-
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        bool flipX = false;
-        int animIndex = -1;
-
-        switch (dirIndex)
-        {
-            case 0: animIndex = 0; break; // 우
-            case 1: animIndex = 1; break; // 우상
-            case 2: animIndex = 2; break; // 상
-            case 3: animIndex = 1; flipX = true; break; // 좌상
-            case 4: animIndex = 0; flipX = true; break; // 좌
-            case 5: animIndex = 4; flipX = true; break; // 좌하
-            case 6: animIndex = 3; break; // 하
-            case 7: animIndex = 4; break; // 우하
-        }
-
-        if (animIndex != -1)
-        {
-            Vector3 scale = _targetSR.transform.localScale;
-            scale.x = flipX ? -1f : 1f;
-            _targetSR.transform.localScale = scale;
-
-            _targetAnim.SetFloat(facingDirHash, animIndex);
         }
     }
 
@@ -431,17 +306,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine?.Update();
 
         // 비주얼 업데이트
-        UpdateCharacterColor();
-        UpdateShadowVisual();
-        UpdateOnWaterVisual();
-
-        if (shadowObject != null)
-        {
-            shadowObject.ManualUpdate(
-                environmentProvider.shadowDataProvider.CurrentShadowAngle,
-                environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-                environmentProvider.shadowDataProvider.IsShadowActive);
-        }
+        characterVisualComponent.UpdateVisuals(anim.GetBool(isMovingHash), !bInDungeon);
 
         // 스태미나 로직
         UpdateStaminaAmounts(); // 실시간 소모량 갱신 반영
@@ -454,7 +319,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void LateUpdate()
     {
-        SetOnWaterSROrder();
+        characterVisualComponent.SetOnWaterSROrder(transform.position);
     }
 
     private void FixedUpdate()
@@ -502,10 +367,5 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void RefreshCharacterStat()
     {
         armComponent.Refresh();
-    }
-
-    public void SetOnWaterSROrder()
-    {
-        onWaterSR.sortingOrder = (int)(transform.position.y * 100);
     }
 }

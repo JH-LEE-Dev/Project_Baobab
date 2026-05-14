@@ -7,6 +7,7 @@ public class InDungeonSystem : MonoBehaviour
     public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
     private IEnvironmentProvider environmentProvider;
     private HiddenmapManager hiddenmapManager;
+    private InputManager inputManager;
 
 
     [Header("Dungeon Data Base")]
@@ -15,13 +16,15 @@ public class InDungeonSystem : MonoBehaviour
     private MapType currentMapType;
     private ForestType currentForestType;
 
-    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker)
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
+    InputManager _inputManager)
     {
+        inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         signalHub = _signalHub;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker);
+        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);

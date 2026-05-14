@@ -6,9 +6,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 {
     //이벤트
     public event Action PortalActivatedEvent;
+    public event Action PortalDeActivatedEvent;
 
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
+    private InputManager inputManager;
 
     //내부 의존성
     [Header("Portal")]
@@ -38,9 +40,10 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public float treeGrowTime = 10f;
 
-    public void Initialize(IEnvironmentProvider _environmentProvider)
+    public void Initialize(IEnvironmentProvider _environmentProvider, InputManager _inputManager)
     {
         environmentProvider = _environmentProvider;
+        inputManager = _inputManager;
         mainCam = Camera.main;
 
         // CullingGroup 및 거리 배열 미리 생성하여 재사용
@@ -65,7 +68,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             portal = Instantiate(portalPrefab);
             portal.transform.position = portalSpawnPoint.position;
-            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider);
+            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager);
             portal.SetCanTravel(bCanTravel);
         }
         else
@@ -93,7 +96,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
                 {
                     TreeType randomType = (TreeType)UnityEngine.Random.Range(1, (int)TreeType.Max);
                     trees[i].Initialize(environmentProvider);
-                    trees[i].ApplyData(new TreeData(randomType, TreeGrade.Normal, treeVisualDataBase.Get(randomType)));
+                    trees[i].ApplyData(new TreeData(randomType, TreeGrade.Normal, treeVisualDataBase.Get(randomType), default));
                 }
             }
         }
@@ -222,11 +225,18 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         portal.PortalActivated -= PortalActivated;
         portal.PortalActivated += PortalActivated;
+
+        portal.PortalDeActivatedEvent -= PortalDeActivated;
+        portal.PortalDeActivatedEvent += PortalDeActivated;
     }
 
     private void ReleaseEvents()
     {
-        if (portal != null) portal.PortalActivated -= PortalActivated;
+        if (portal != null)
+        {
+            portal.PortalActivated -= PortalActivated;
+            portal.PortalDeActivatedEvent -= PortalDeActivated;
+        }
     }
 
     private void PortalActivated()
@@ -241,8 +251,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             cullingGroup.SetBoundingSphereCount(0);
         }
-        
-        for(int i = 0; i < activeTreesForUpdate.Count; i++)
+
+        for (int i = 0; i < activeTreesForUpdate.Count; i++)
         {
             activeTreesForUpdate[i].UpdateIndex = -1;
         }
@@ -270,5 +280,18 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             portal.SetCanTravel(bCanTravel);
         }
+    }
+
+    public void TeleportUIClosed()
+    {
+        if (portal != null)
+        {
+            portal.SetUIActivated(false);
+        }
+    }
+
+    private void PortalDeActivated()
+    {
+        PortalDeActivatedEvent?.Invoke();
     }
 }

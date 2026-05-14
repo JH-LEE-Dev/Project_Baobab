@@ -92,6 +92,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         treeData = _treeData;
         ResetTree();
 
+        healthComponent.Setup(treeData.treeStatData.hp);
+
         if (treeVisualComponent != null)
         {
             treeVisualComponent.ApplyVisual(treeData);

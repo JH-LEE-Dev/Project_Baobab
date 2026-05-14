@@ -5,6 +5,7 @@ using UnityEngine;
 public class UIView_MenuPopup : UIView
 {
     public event Action<MapType, ForestType> DungeonSelectedEvent;
+    public event Action TeleportUIClosedEvent;
 
     //외부 의존성
     private IMapDataProvider mapDataProvider;
@@ -70,6 +71,9 @@ public class UIView_MenuPopup : UIView
     public void CloseTeleportUI()
     {
         if (null != mapSelector)
+        {
             mapSelector.MapSelectorClose();
+            TeleportUIClosedEvent?.Invoke();
+        }
     }
 }

@@ -24,7 +24,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager = GetComponentInChildren<LogProcessingManager>();
         tentManager = GetComponentInChildren<TentManager>();
 
-        townObjectManager.Initialize(environmentProvider);
+        townObjectManager.Initialize(environmentProvider, inputManager);
         logProcessingManager.Initialize(inputManager);
         tentManager.Initialize(inputManager);
 
@@ -74,6 +74,9 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
         logProcessingManager.LogContainerSpecChangedEvent += logContainerSpecChanged;
+
+        townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
+        townObjectManager.PortalDeActivatedEvent += PortalDeActivated;
     }
 
     private void ReleaseEvents()
@@ -84,6 +87,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.EarnMoneyEvent -= EarnMoney;
         tentManager.TentInteractEvent -= TentInteract;
         logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
+        townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
     }
 
     private void SubscribeSignals()
@@ -92,6 +96,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.Subscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
+        signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
     }
 
     private void UnSubscribeSignals()
@@ -100,6 +105,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
     }
 
     private void PortalActivated()
@@ -154,5 +160,15 @@ public class TownSystem : MonoBehaviour
     {
         character = _signal.character;
         logProcessingManager.SetCharTransform(character.transform);
+    }
+
+    private void TeleportUIClosed(TeleportUIClosedSignal _teleportUIClosedSignal)
+    {
+        townObjectManager.TeleportUIClosed();
+    }
+
+    private void PortalDeActivated()
+    {
+        signalHub.Publish(new PortalDeActivatedSignal());
     }
 }

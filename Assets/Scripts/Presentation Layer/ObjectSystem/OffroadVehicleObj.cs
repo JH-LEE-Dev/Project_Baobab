@@ -3,10 +3,13 @@ using UnityEngine;
 
 public class OffroadVehicleObj : MonoBehaviour
 {
-    private IEnvironmentProvider environmentProvider;
-
     //이벤트
     public event Action PortalActivated;
+    public event Action PortalDeActivatedEvent;
+
+    private IEnvironmentProvider environmentProvider;
+
+    private InputManager inputManager;
 
     //내부 의존성
     private int characterLayer;
@@ -16,12 +19,17 @@ public class OffroadVehicleObj : MonoBehaviour
 
     private bool bCanJump = false;
 
+    private bool bOverlapped = false;
+
+    private bool bUIActivated = false;
+
     [SerializeField] private OffsetShadow baseShadow;
 
     //퍼블릭 초기화 및 제어 메서드
-    public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider)
+    public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
     {
         environmentProvider = _environmentProvider;
+        inputManager = _inputManager;
         type = _type;
         characterLayer = LayerMask.NameToLayer("Character");
 
@@ -29,6 +37,8 @@ public class OffroadVehicleObj : MonoBehaviour
 
         if (baseShadow != null)
             baseShadow.Initialize();
+
+        BindEvents();
     }
 
     private void Update()
@@ -43,16 +53,17 @@ public class OffroadVehicleObj : MonoBehaviour
             return;
         }
 
-       shadow.ManualUpdate(
-            environmentProvider.shadowDataProvider.CurrentShadowAngle,
-            environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-            environmentProvider.shadowDataProvider.IsShadowActive
-        );
+        shadow.ManualUpdate(
+             environmentProvider.shadowDataProvider.CurrentShadowAngle,
+             environmentProvider.shadowDataProvider.CurrentShadowScaleY,
+             environmentProvider.shadowDataProvider.IsShadowActive
+         );
     }
 
     public void ResetPortal()
     {
         lastActivatedTime = Time.time;
+        bOverlapped = false;
     }
 
     //유니티 이벤트 함수
@@ -61,17 +72,60 @@ public class OffroadVehicleObj : MonoBehaviour
         if (bCanJump == false)
             return;
 
-        // 캐릭터 레이어인지 확인 및 쿨타임 체크
-        if (_other.gameObject.layer == characterLayer && Time.time >= lastActivatedTime + cooldownTime)
-        {
-            lastActivatedTime = Time.time;
+        bOverlapped = true;
+    }
 
-            PortalActivated?.Invoke();
-        }
+    private void OnTriggerExit2D(Collider2D _other)
+    {
+        if (bCanJump == false)
+            return;
+
+        bOverlapped = false;
+        PortalDeActivatedEvent?.Invoke();
     }
 
     public void SetCanTravel(bool _canJump)
     {
         bCanJump = _canJump;
+    }
+
+    public void BindEvents()
+    {
+        inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+    }
+
+    public void ReleaseEvents()
+    {
+        inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+    }
+
+    public void OnDestroy()
+    {
+        ReleaseEvents();
+    }
+
+    private void InteractionKeyPressed()
+    {
+        if (bCanJump == false)
+            return;
+
+        if (bUIActivated)
+        {
+            PortalDeActivatedEvent?.Invoke();
+            bUIActivated = false;
+            return;
+        }
+
+        if (bOverlapped == true)
+        {
+            bUIActivated = true;
+            PortalActivated?.Invoke();
+        }
+    }
+
+    public void SetUIActivated(bool _boolean)
+    {
+        bUIActivated = _boolean;
     }
 }
