@@ -23,10 +23,11 @@ public class UI_Storage : MonoBehaviour
     private MotionEntry popdown;
 
 
-    public void Initialize()
+    public void Initialize(float _yOffset)
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
         gameObject.SetActive(false);
+        yOffset = _yOffset;
 
         omp?.Initialize();
     }

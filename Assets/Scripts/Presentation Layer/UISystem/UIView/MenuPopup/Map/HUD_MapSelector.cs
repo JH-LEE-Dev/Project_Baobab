@@ -135,6 +135,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             // 하위 지역이 즉시 보이도록 설정
             subSelector.SetVisibility(true);
 
+            sunMoon?.PlayOpenAnim();
+
             PlayFadeAnimation(1.0f);
         }
 

@@ -1590,7 +1590,7 @@ MonoBehaviour:
     motionPrefab: {fileID: 8374576097110008788}
     targets:
     - transform: {fileID: 0}
-      rectTransform: {fileID: 2259264136857232045}
+      rectTransform: {fileID: 7391082046358408952}
       canvasGroup: {fileID: 8403366231234381467}
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 0}

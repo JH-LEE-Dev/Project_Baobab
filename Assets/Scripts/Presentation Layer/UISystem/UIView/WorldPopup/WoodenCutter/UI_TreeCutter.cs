@@ -20,7 +20,7 @@ public class UI_TreeCutter : MonoBehaviour
     private MotionEntry popup;
     private MotionEntry popdown;
 
-    public void Initialize()
+    public void Initialize(float _yOffset)
     {
         if (null != uiSlotPrefab)
         {
@@ -32,6 +32,8 @@ public class UI_TreeCutter : MonoBehaviour
                 slot.DisableRayCast();
             }
         }
+
+        yOffset = _yOffset;
 
         omp?.Initialize();
         OnHide();
