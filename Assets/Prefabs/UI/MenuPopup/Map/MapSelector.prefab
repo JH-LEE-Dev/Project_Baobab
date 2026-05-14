@@ -721,11 +721,11 @@ MonoBehaviour:
   backwardEase: 18
   resetOnValidateInPlayMode: 1
   valueSettings:
-    shrinkScale: 0.8
+    shrinkScale: 1
     shrinkTimeRatio: 0.08
     restoreTimeRatio: 0.12
     scaleEase: 27
-    startAngle: 20
+    startAngle: 7
     angleDamping: 0.62
     swingCount: 5
     rotationTimeRatio: 0.8
@@ -1083,7 +1083,7 @@ MonoBehaviour:
   backwardEase: 18
   resetOnValidateInPlayMode: 1
   valueSettings:
-    startAngle: 12
+    startAngle: 5
     angleDamping: 0.62
     swingCount: 5
     rotationTimeRatio: 1
@@ -2172,11 +2172,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1125404888247100002, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 36
+      value: 35
       objectReference: {fileID: 0}
     - target: {fileID: 1125404888247100002, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 36
+      value: 35
       objectReference: {fileID: 0}
     - target: {fileID: 1125404888247100002, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
       propertyPath: m_LocalPosition.x
@@ -2228,11 +2228,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
       propertyPath: cursorSize.x
-      value: 36
+      value: 35
       objectReference: {fileID: 0}
     - target: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
       propertyPath: cursorSize.y
-      value: 36
+      value: 35
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
