@@ -53,6 +53,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             SetNumber(_number);
             SetLock(!_info.bCanAccess);
             SetProgress(Mathf.Clamp01(_info.currentHiddenGauge / _info.limitHiddenGauge));
+            Debug.Log(Mathf.Clamp01(_info.currentHiddenGauge / _info.limitHiddenGauge));
 
             onHoverEnterEvent = _onHoverEnter;
             onHoverExitEvent = _onHoverExit;

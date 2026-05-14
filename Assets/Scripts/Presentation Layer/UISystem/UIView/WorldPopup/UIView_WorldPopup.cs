@@ -7,6 +7,12 @@ public class UIView_WorldPopup : UIView
     private ILogCutter logCutter;
     private IShopNPC shopNPC;
 
+    [SerializeField] private float storageYOffset = 0.5f;
+    [SerializeField] private float cutterYOffset = 0.5f;
+
+    [SerializeField] private bool bTraderCoinAnim = false;
+    [SerializeField] private float traderCoinYOffset = 0.5f;
+
 
     //내부 의존성
     [Header("UI References")]
@@ -17,7 +23,7 @@ public class UIView_WorldPopup : UIView
 
     private UI_Storage ui_Storage;
     private UI_TreeCutter ui_Cutter;
-    private UI_Coin ui_TraderCoin;
+    private UI_TraderCoin ui_TraderCoin;
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -68,7 +74,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_Storage)
             return;
 
-        ui_Storage.Initialize();
+        ui_Storage.Initialize(storageYOffset);
     }
 
     private void Init_UICutter()
@@ -80,7 +86,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_Cutter)
             return;
 
-        ui_Cutter.Initialize();
+        ui_Cutter.Initialize(cutterYOffset);
     }
 
     private void Init_UITraderCoin()
@@ -88,7 +94,7 @@ public class UIView_WorldPopup : UIView
         if (null == uiTraderCoinPrefab)
             return;
 
-        ui_TraderCoin = Instantiate(uiTraderCoinPrefab, uiRoot).GetComponent<UI_Coin>();
+        ui_TraderCoin = Instantiate(uiTraderCoinPrefab, uiRoot).GetComponent<UI_TraderCoin>();
         if (null == ui_TraderCoin)
             return;
 
@@ -106,7 +112,7 @@ public class UIView_WorldPopup : UIView
         UpdateTraderMoneyText();
 
         Vector3 newPos = shopNPC.npcTransform.position;
-        newPos.y += 0.5f;
+        newPos.y += traderCoinYOffset;
 
         if (null != ui_TraderCoin)
             ui_TraderCoin.gameObject.transform.position = newPos;
@@ -120,7 +126,13 @@ public class UIView_WorldPopup : UIView
         if (null == shopNPC || null == ui_TraderCoin)
             return;
 
-        ui_TraderCoin.UpdateMoneyText(shopNPC.currentMoney);
+        if (bTraderCoinAnim)
+        {
+            ui_TraderCoin.UpddateMoneyText_Anim(shopNPC.currentMoney);
+            return;
+        }
+
+        ui_TraderCoin.UpddateMoneyText(shopNPC.currentMoney);
     }
 
     public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC)
