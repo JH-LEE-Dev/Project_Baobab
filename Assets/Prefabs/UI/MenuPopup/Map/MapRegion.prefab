@@ -736,7 +736,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -86}
+  m_AnchoredPosition: {x: 0, y: -45}
   m_SizeDelta: {x: 480, y: 128}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &3238579529797287811
@@ -1176,6 +1176,7 @@ GameObject:
   - component: {fileID: 4520500570343445827}
   - component: {fileID: 33192003420650448}
   - component: {fileID: 6628470352438654747}
+  - component: {fileID: 1842203475948676814}
   m_Layer: 5
   m_Name: TMP_Title
   m_TagString: Untagged
@@ -1232,8 +1233,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\uCD08\uBAA9\uD3C9\uC6D0\uB9BC"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e371f76b2db090243860b7a24ca36a9e, type: 2}
-  m_sharedMaterial: {fileID: -4245052357062469366, guid: e371f76b2db090243860b7a24ca36a9e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: f99a924b3971edc4c9cc52d384d30f39, type: 2}
+  m_sharedMaterial: {fileID: 995271539950029637, guid: f99a924b3971edc4c9cc52d384d30f39, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1302,6 +1303,20 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &1842203475948676814
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5365059658079626504}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91d7f4b66c5a413ab524a3b63c43602f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TMPPixelOutlineMeshPadding
+  outlineTexelPadding: 4
+  useMaterialOutlineWidth: 1
 --- !u!1 &5378699527577570030
 GameObject:
   m_ObjectHideFlags: 0
