@@ -24,8 +24,8 @@ MonoBehaviour:
         regenProb: 100
       treeStartDensityRatio: 0.04
       treeMaxDensityRatio: 0.07
-      animalStartDensityRatio: 0.015
-      animalMaxDensityRatio: 0.025
+      animalStartDensityRatio: 0.005
+      animalMaxDensityRatio: 0.01
       treeRegenMinTime: 10
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
@@ -45,8 +45,8 @@ MonoBehaviour:
         regenProb: 30
       treeStartDensityRatio: 0.06
       treeMaxDensityRatio: 0.1
-      animalStartDensityRatio: 0.015
-      animalMaxDensityRatio: 0.025
+      animalStartDensityRatio: 0.005
+      animalMaxDensityRatio: 0.01
       treeRegenMinTime: 10
       treeRegenMaxTime: 15
       animalRegenMinTime: 10
@@ -68,8 +68,8 @@ MonoBehaviour:
         regenProb: 40
       treeStartDensityRatio: 0.06
       treeMaxDensityRatio: 0.1
-      animalStartDensityRatio: 0.015
-      animalMaxDensityRatio: 0.025
+      animalStartDensityRatio: 0.005
+      animalMaxDensityRatio: 0.01
       treeRegenMinTime: 10
       treeRegenMaxTime: 15
       animalRegenMinTime: 10

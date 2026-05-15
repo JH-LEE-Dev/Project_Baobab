@@ -114,7 +114,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.ReadyPortal();
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
-        //inDungeonUnitSpawner.SpawnAnimals();
+        inDungeonUnitSpawner.SpawnAnimals();
 
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
     }
