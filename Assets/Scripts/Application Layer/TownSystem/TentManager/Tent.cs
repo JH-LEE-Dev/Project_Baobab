@@ -62,10 +62,8 @@ public class Tent : MonoBehaviour
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            bCanInteract = false;
+            if (bInteract == false)
+                bCanInteract = false;
         }
-
-        if (bInteract == true)
-            TentInteractEvent?.Invoke(false);
     }
 }
