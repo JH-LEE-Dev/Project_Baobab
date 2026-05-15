@@ -49,6 +49,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         }
 
         /// <summary>
+        /// 실행 중인 모든 연출을 정지하고 위치/회전 등 상태를 초기값으로 원복합니다.
+        /// </summary>
+        public virtual void ResetAllMotions()
+        {
+            motionPlayer?.ResetAllMotions();
+        }
+
+        /// <summary>
         /// 상태에 따라 테두리, 그림자, 알파, 색상을 모두 업데이트합니다.
         /// </summary>
         protected virtual void UpdateVisuals()

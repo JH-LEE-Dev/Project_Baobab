@@ -84,6 +84,20 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 cachedRect.DOKill();
         }
 
+        /// <summary>
+        /// 모든 모션을 정지하고 위치/회전 등 상태를 초기값으로 원복합니다.
+        /// </summary>
+        public void ResetAllMotions()
+        {
+            StopAllMotions();
+
+            ejectMotion?.ResetToInitialState();
+            gatherMotion?.ResetToInitialState();
+
+            if (null != filledImage)
+                filledImage.gameObject.SetActive(isCurrentlyFilled);
+        }
+
         /// <param name="_isFilled">채워짐 여부</param>
         /// <param name="_shouldAnimate">연출 재생 여부</param>
         public void SetState(bool _isFilled, bool _shouldAnimate)

@@ -208,6 +208,19 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             }
         }
 
+        /// <summary>
+        /// 모든 장비 아이템의 연출을 정지하고 초기 상태로 원복합니다.
+        /// </summary>
+        public void ResetAllMotions()
+        {
+            axeItem?.ResetAllMotions();
+            rifleItem?.ResetAllMotions();
+
+            ammoBoxPop?.Stop();
+            axePop?.Stop();
+            riflePop?.Stop();
+        }
+
 
         public void OnDestroy()
         {

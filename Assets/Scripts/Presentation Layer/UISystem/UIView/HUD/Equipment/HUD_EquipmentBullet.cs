@@ -52,6 +52,21 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         }
 
         /// <summary>
+        /// 모든 총알 아이콘의 모션을 정지하고 초기 상태로 원복합니다.
+        /// </summary>
+        public void ResetAllMotions()
+        {
+            if (null == bulletIcons)
+                return;
+
+            for (int i = 0; i < bulletIcons.Count; i++)
+            {
+                if (null != bulletIcons[i])
+                    bulletIcons[i].ResetAllMotions();
+            }
+        }
+
+        /// <summary>
         /// 탄창 정보를 업데이트합니다. 인덱스 0번이 레이어상 가장 위에 위치합니다.
         /// </summary>
         public void UpdateBulletStatus(int _currentMag, int _maxMag, int _totalAmmo)

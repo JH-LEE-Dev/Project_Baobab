@@ -38,15 +38,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void ResetData()
     {
+        // 함수 바인딩 해제를 가장 먼저 수행 (null로 만들기 전)
+        if (null != invSlotRef)
+            invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
+
         UpdateImage(null, Color.white);
         UpdateItemCount(0);
 
         invSlotRef = null;
         showItemData = null;
-
-        // 함수 바인딩 빼주기
-        if (null != invSlotRef)
-            invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
     }
 
     public void UpdateItemCount(int _newCnt)
@@ -65,7 +65,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateImage(Sprite _sprite, Color _color)
     {
-        if (null == uiImage || uiImage.sprite == _sprite)
+        if (null == uiImage)
             return;
 
         uiImage.sprite = _sprite;
@@ -75,22 +75,23 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)
     {
-        if (invSlotRef == _newSlot && showItemData == _newSlot.itemData)
+        // 슬롯 레퍼런스와 아이템 데이터가 모두 동일한지 체크
+        if (invSlotRef == _newSlot)
             return;
 
-        // 아이템 데이터가 없다면.
-        if (null == _newSlot.itemData)
+        // 새로운 데이터가 없거나 아이템 데이터가 없다면 리셋
+        if (null == _newSlot || null == _newSlot.itemData)
         {
             ResetData();
             return;
         }
 
-        // 이전에 바인딩 된 주소가 남아있다면 함수 바인딩 빼주기
+        // 이전에 바인딩 된 주소가 남아있다면 함수 바인딩 빼주기 (새 데이터 할당 전)
         if (null != invSlotRef)
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
-        showItemData = _newSlot.itemData;
         invSlotRef = _newSlot;
+        showItemData = _newSlot.itemData;
 
         if (null != invSlotRef)
         {
@@ -98,10 +99,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             invSlotRef.SlotUpdatedEvent += PlayItemInteraction;
         }
 
-        if (null == showItemData)
-            return;
-
         UpdateImage(showItemData.sprite, showItemData.color);
+        UpdateItemCount(invSlotRef.count);
     }
 
     private void PlayItemInteraction()
