@@ -108,7 +108,7 @@ public class UIView_HUD : UIView
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode, bool _isMapChanged = false)
     {
-       hudEquipment?.UpdateState(_currentWeaponMode, _isMapChanged);
+       //hudEquipment?.UpdateState(_currentWeaponMode, _isMapChanged);
     }
 
 
@@ -121,9 +121,9 @@ public class UIView_HUD : UIView
     {
         if (null != hudEquipment)
         {
-            hudEquipment.UpdateRifleVisibility();
+            //hudEquipment.UpdateRifleVisibility();
+            //hudEquipment.UpdateAmmo();
             hudEquipment.UpdateAxeDurability();
-            hudEquipment.UpdateAmmo();
         }
     }
 
@@ -146,7 +146,7 @@ public class UIView_HUD : UIView
         if (null == hudEquipment)
             return;
         
-        WeaponModeChanged(WeaponMode.Axe, !_isTwon);
+        //WeaponModeChanged(WeaponMode.Axe, !_isTwon);
         hudEquipment.gameObject.SetActive(!_isTwon);
 
         if (!_isTwon)

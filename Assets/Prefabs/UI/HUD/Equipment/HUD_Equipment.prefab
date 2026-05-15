@@ -16,7 +16,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5175255327761468778
 RectTransform:
   m_ObjectHideFlags: 0
@@ -142,7 +142,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8398892545146681141
 RectTransform:
   m_ObjectHideFlags: 0
@@ -383,7 +383,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -127, y: 7}
+  m_AnchoredPosition: {x: -24, y: 7}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 1, y: 0}
 --- !u!114 &3018060165584523092
@@ -841,14 +841,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.UIView.HUD.Equipment.HUD_Equipment
   axeItem: {fileID: 3018060165584523092}
-  rifleItem: {fileID: 5097517852129079586}
-  icons: {fileID: 5175255327761468778}
-  iconGroup: {fileID: 8023019420458693832}
-  axePosWithRifle: {x: -126, y: 7}
-  axePosAxeOnly: {x: -20, y: 7}
-  ammoBoxPop: {fileID: 3506104821156844451}
   axePop: {fileID: 6459669261124252473}
-  riflePop: {fileID: 8895669541220676825}
 --- !u!1 &4018395521620533246
 GameObject:
   m_ObjectHideFlags: 0
@@ -1032,7 +1025,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &4205505425820929242
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1537,7 +1530,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3103595156384486494
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2246,11 +2239,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3835216987649587610, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3835216987649587610, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3835216987649587610, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_SizeDelta.x
@@ -2262,11 +2255,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3835216987649587610, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 5.75
       objectReference: {fileID: 0}
     - target: {fileID: 3835216987649587610, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -10.5
       objectReference: {fileID: 0}
     - target: {fileID: 5237409709266775723, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_Pivot.y
@@ -2286,11 +2279,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6056329274921093784, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6056329274921093784, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6056329274921093784, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_SizeDelta.x
@@ -2302,11 +2295,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6056329274921093784, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 10.25
       objectReference: {fileID: 0}
     - target: {fileID: 6056329274921093784, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: -10.5
       objectReference: {fileID: 0}
     - target: {fileID: 7732522213037114432, guid: a5b2348af95b63b429a3d6fe3bc02169, type: 3}
       propertyPath: m_Color.a
