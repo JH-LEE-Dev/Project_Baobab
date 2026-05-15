@@ -4,7 +4,7 @@ using UnityEngine;
 public class Bullet : MonoBehaviour
 {
     public event Action<Bullet> ReturnToPoolEvent;
-    public event Action<Bullet, Vector2, Vector2, int,IStaticCollidable> RicochetEvent;
+    public event Action<Bullet, Vector2, Vector2, int, IStaticCollidable> RicochetEvent;
 
     [SerializeField] private float damage = 1f;
     [SerializeField] private float speed = 10f;
@@ -52,6 +52,7 @@ public class Bullet : MonoBehaviour
 
     public void Reset()
     {
+        ignoreTarget = null;
         timer = 0f;
     }
 
@@ -80,7 +81,7 @@ public class Bullet : MonoBehaviour
                 // 관통 여부 관계 없이 Animal에 맞았을 때 도비탄 이벤트 발생
                 if (hitObject is Animal && ricochetCnt > 0)
                 {
-                    RicochetEvent?.Invoke(this, hitObject.Position, direction, ricochetCnt,hitObject);
+                    RicochetEvent?.Invoke(this, hitObject.Position, direction, ricochetCnt, hitObject);
                 }
             }
 
@@ -88,6 +89,7 @@ public class Bullet : MonoBehaviour
             if (UnityEngine.Random.Range(0f, 100f) < penetrationChance)
             {
                 penetrationChance *= 0.5f; // 관통 확률 절반으로 감소
+                ignoreTarget = hitObject;
                 // 관통했으므로 멈추지 않고 이번 프레임의 목표 지점까지 이동하여 계속 진행
                 transform.position = endPos;
             }
