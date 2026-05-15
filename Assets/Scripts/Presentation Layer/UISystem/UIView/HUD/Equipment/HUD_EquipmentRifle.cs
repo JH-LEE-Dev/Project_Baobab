@@ -38,6 +38,13 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             bulletDisplay?.Initialize();
         }
 
+        public override void ResetAllMotions()
+        {
+            base.ResetAllMotions();
+
+            bulletDisplay?.ResetAllMotions();
+        }
+
         protected override void UpdateVisuals()
         {
             base.UpdateVisuals();

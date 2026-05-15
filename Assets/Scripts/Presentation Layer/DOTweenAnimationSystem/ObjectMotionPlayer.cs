@@ -153,6 +153,21 @@ namespace PresentationLayer.DOTweenAnimationSystem
                     motionMap[_tag].motionInstance.Skip(_isCallback);
         }
 
+        /// <summary>
+        /// 모든 모션을 정지하고 초기 상태(위치, 회전 등)로 되돌립니다.
+        /// </summary>
+        public void ResetAllMotions()
+        {
+            for (int i = 0; i < motionEntries.Count; i++)
+            {
+                if (null != motionEntries[i].motionInstance)
+                {
+                    motionEntries[i].motionInstance.Stop();
+                    motionEntries[i].motionInstance.ResetToInitialState();
+                }
+            }
+        }
+
         public void SettingEntryMotion(MotionEntry _entry, bool _bStop, bool _bResetPoint, bool _bSkip = false, bool _bSkipCallback = false)
         {
             if (null == _entry)
