@@ -247,4 +247,9 @@ public class UIView_Unit : UIView
     {
         base.OnHide();
     }
+
+    public override void Refresh()
+    {
+        
+    }
 }

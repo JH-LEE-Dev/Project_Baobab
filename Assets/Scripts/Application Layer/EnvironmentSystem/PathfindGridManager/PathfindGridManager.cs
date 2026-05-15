@@ -1,29 +1,62 @@
 using UnityEngine;
-using System.Collections.Generic;
+using System;
 
 public class PathfindGridManager : MonoBehaviour, IPathfindGridProvider
 {
-    // 점유된 타일 정보를 저장 (GC 최소화를 위해 HashSet 사용)
-    private readonly HashSet<Vector3Int> occupiedTiles = new HashSet<Vector3Int>(512);
+    private bool[] occupiedTiles;
+    private int width;
+    private int height;
+
+    // // 퍼블릭 초기화 메서드 (인터페이스 아님)
+    public void Initialize(int _width, int _height)
+    {
+        width = _width;
+        height = _height;
+        int size = width * height;
+
+        if (occupiedTiles == null || occupiedTiles.Length != size)
+        {
+            occupiedTiles = new bool[size];
+        }
+        else
+        {
+            Array.Clear(occupiedTiles, 0, size);
+        }
+    }
 
     public bool IsOccupied(Vector3Int _cellPos)
     {
-        return occupiedTiles.Contains(_cellPos);
+        if (occupiedTiles == null) return false;
+        if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return true;
+
+        return occupiedTiles[_cellPos.x + _cellPos.y * width];
     }
 
     public bool Occupy(Vector3Int _cellPos)
     {
-        return occupiedTiles.Add(_cellPos);
+        if (occupiedTiles == null) return false;
+        if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;
+
+        int index = _cellPos.x + _cellPos.y * width;
+        if (occupiedTiles[index]) return false;
+
+        occupiedTiles[index] = true;
+        return true;
     }
 
     public void Release(Vector3Int _cellPos)
     {
-        occupiedTiles.Remove(_cellPos);
+        if (occupiedTiles == null) return;
+        if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return;
+
+        occupiedTiles[_cellPos.x + _cellPos.y * width] = false;
     }
 
-    // 씬 전환이나 초기화 시 호출 가능
     public void ClearAllOccupancy()
     {
-        occupiedTiles.Clear();
+        if (occupiedTiles != null)
+        {
+            Array.Clear(occupiedTiles, 0, occupiedTiles.Length);
+        }
     }
 }

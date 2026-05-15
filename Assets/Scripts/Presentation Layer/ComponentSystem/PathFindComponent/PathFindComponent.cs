@@ -5,15 +5,15 @@ public class PathFindComponent : MonoBehaviour
 {
     private struct Node
     {
-        public Vector3Int pos;
+        public int index;
         public int gCost;
         public int hCost;
 
         public int fCost => gCost + hCost;
 
-        public Node(Vector3Int _pos, int _gCost, int _hCost)
+        public Node(int _index, int _gCost, int _hCost)
         {
-            pos = _pos;
+            index = _index;
             gCost = _gCost;
             hCost = _hCost;
         }
@@ -103,8 +103,12 @@ public class PathFindComponent : MonoBehaviour
 
     // // 내부 의존성 (재사용을 위한 컬렉션, GC 최소화)
     private readonly FastPriorityQueue openList = new FastPriorityQueue(1024);
-    private readonly Dictionary<Vector3Int, Vector3Int> parentMap = new Dictionary<Vector3Int, Vector3Int>(1024);
-    private readonly Dictionary<Vector3Int, int> gCostMap = new Dictionary<Vector3Int, int>(1024);
+    
+    // Dictionary 대체: 1차원 배열 최적화
+    private int[] parentIndices;
+    private int[] gCosts;
+    private int gridWidth;
+    private int gridHeight;
 
     private static readonly Vector3Int[] neighborOffsets = new Vector3Int[]
     {
@@ -120,6 +124,16 @@ public class PathFindComponent : MonoBehaviour
     {
         tilemapDataProvider = _tilemapDataProvider;
         pathfindGridProvider = _pathfindGridProvider;
+
+        gridWidth = tilemapDataProvider.GridWidth;
+        gridHeight = tilemapDataProvider.GridHeight;
+
+        int size = gridWidth * gridHeight;
+        parentIndices = new int[size];
+        gCosts = new int[size];
+        
+        System.Array.Fill(parentIndices, -1);
+        System.Array.Fill(gCosts, int.MaxValue);
     }
 
     // // 점유 관리 API
@@ -147,18 +161,31 @@ public class PathFindComponent : MonoBehaviour
         Vector3Int startPos = tilemapDataProvider.WorldToCell(_startWorldPos);
         Vector3Int targetPos = tilemapDataProvider.WorldToCell(_endWorldPos);
 
+        // 범위 밖 예외 처리
+        if (startPos.x < 0 || startPos.x >= gridWidth || startPos.y < 0 || startPos.y >= gridHeight ||
+            targetPos.x < 0 || targetPos.x >= gridWidth || targetPos.y < 0 || targetPos.y >= gridHeight)
+        {
+            return false;
+        }
+
         if (!tilemapDataProvider.IsWalkable(targetPos) || pathfindGridProvider.IsOccupied(targetPos))
         {
             return false;
         }
 
-        openList.Clear();
-        parentMap.Clear();
-        gCostMap.Clear();
+        // 초기화 최적화: Dictionary.Clear() 대신 사용했던 인덱스들만 추적해서 초기화하는 방식도 있으나, 
+        // 여기서는 매번 전체 초기화 대신 int.MaxValue를 활용하여 방문 여부 체크
+        // 단, 이전 경로 데이터가 남아있으면 안 되므로 최소한의 초기화는 필요
+        // 실무에서는 '방문 번호(Visited Counter)' 방식을 써서 배열 초기화 자체를 없애기도 함.
+        ResetArrays();
 
-        Node startNode = new Node(startPos, 0, GetDistance(startPos, targetPos));
-        openList.Push(startNode);
-        gCostMap[startPos] = 0;
+        int startIndex = PosToIndex(startPos);
+        int targetIndex = PosToIndex(targetPos);
+
+        openList.Clear();
+        
+        gCosts[startIndex] = 0;
+        openList.Push(new Node(startIndex, 0, GetDistance(startPos, targetPos)));
 
         int iterations = 0;
         while (openList.Count > 0)
@@ -166,20 +193,25 @@ public class PathFindComponent : MonoBehaviour
             Node currentNode = openList.Pop();
 
             // 이미 더 좋은 경로를 찾은 노드라면 스킵
-            if (gCostMap.TryGetValue(currentNode.pos, out int bestGCost) && currentNode.gCost > bestGCost)
+            if (currentNode.gCost > gCosts[currentNode.index])
             {
                 continue;
             }
 
-            if (currentNode.pos == targetPos)
+            if (currentNode.index == targetIndex)
             {
-                RetracePath(startPos, targetPos, _pathResult);
+                RetracePath(startIndex, targetIndex, _pathResult);
                 return true;
             }
 
+            Vector3Int currentPos = IndexToPos(currentNode.index);
+
             for (int i = 0; i < neighborOffsets.Length; i++)
             {
-                Vector3Int neighborPos = currentNode.pos + neighborOffsets[i];
+                Vector3Int neighborPos = currentPos + neighborOffsets[i];
+
+                if (neighborPos.x < 0 || neighborPos.x >= gridWidth || neighborPos.y < 0 || neighborPos.y >= gridHeight)
+                    continue;
 
                 if (!tilemapDataProvider.IsWalkable(neighborPos) || pathfindGridProvider.IsOccupied(neighborPos))
                 {
@@ -189,20 +221,22 @@ public class PathFindComponent : MonoBehaviour
                 // 대각선 이동 시 코너 커팅 방지
                 if (i >= 4)
                 {
-                    Vector3Int side1 = currentNode.pos + new Vector3Int(neighborOffsets[i].x, 0, 0);
-                    Vector3Int side2 = currentNode.pos + new Vector3Int(0, neighborOffsets[i].y, 0);
+                    Vector3Int side1 = currentPos + new Vector3Int(neighborOffsets[i].x, 0, 0);
+                    Vector3Int side2 = currentPos + new Vector3Int(0, neighborOffsets[i].y, 0);
                     if (!tilemapDataProvider.IsWalkable(side1) || !tilemapDataProvider.IsWalkable(side2))
                     {
                         continue;
                     }
                 }
 
+                int neighborIndex = PosToIndex(neighborPos);
                 int newGCost = currentNode.gCost + neighborCosts[i];
-                if (!gCostMap.TryGetValue(neighborPos, out int currentNeighborGCost) || newGCost < currentNeighborGCost)
+
+                if (newGCost < gCosts[neighborIndex])
                 {
-                    gCostMap[neighborPos] = newGCost;
-                    parentMap[neighborPos] = currentNode.pos;
-                    openList.Push(new Node(neighborPos, newGCost, GetDistance(neighborPos, targetPos)));
+                    gCosts[neighborIndex] = newGCost;
+                    parentIndices[neighborIndex] = currentNode.index;
+                    openList.Push(new Node(neighborIndex, newGCost, GetDistance(neighborPos, targetPos)));
                 }
             }
 
@@ -212,6 +246,15 @@ public class PathFindComponent : MonoBehaviour
         return false;
     }
 
+    private void ResetArrays()
+    {
+        System.Array.Fill(parentIndices, -1);
+        System.Array.Fill(gCosts, int.MaxValue);
+    }
+
+    private int PosToIndex(Vector3Int _pos) => _pos.x + _pos.y * gridWidth;
+    private Vector3Int IndexToPos(int _index) => new Vector3Int(_index % gridWidth, _index / gridWidth, 0);
+
     private int GetDistance(Vector3Int _a, Vector3Int _b)
     {
         int dstX = Mathf.Abs(_a.x - _b.x);
@@ -220,13 +263,14 @@ public class PathFindComponent : MonoBehaviour
         return 14 * dstX + 10 * (dstY - dstX);
     }
 
-    private void RetracePath(Vector3Int _startPos, Vector3Int _targetPos, List<Vector3> _pathResult)
+    private void RetracePath(int _startIndex, int _targetIndex, List<Vector3> _pathResult)
     {
-        Vector3Int curr = _targetPos;
-        while (curr != _startPos)
+        int curr = _targetIndex;
+        while (curr != _startIndex)
         {
-            _pathResult.Add(tilemapDataProvider.CellToWorld(curr));
-            curr = parentMap[curr];
+            _pathResult.Add(tilemapDataProvider.CellToWorld(IndexToPos(curr)));
+            curr = parentIndices[curr];
+            if (curr == -1) break; // 안전장치
         }
         _pathResult.Reverse();
     }

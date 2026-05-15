@@ -120,6 +120,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         lightingController.EnablePointLights();
         tileMapGenerator.InitializeMapData();
+        pathfindGridManager.Initialize(tileMapGenerator.GridWidth, tileMapGenerator.GridHeight);
         tileMapGenerator.GenerateMap();
     }
 
