@@ -128,11 +128,11 @@ public class UIView_WorldPopup : UIView
 
         if (bTraderCoinAnim)
         {
-            ui_TraderCoin.UpddateMoneyText_Anim(shopNPC.currentMoney);
+            ui_TraderCoin.UpdateMoneyText_Anim(shopNPC.currentMoney);
             return;
         }
 
-        ui_TraderCoin.UpddateMoneyText(shopNPC.currentMoney);
+        ui_TraderCoin.UpdateMoneyText(shopNPC.currentMoney);
     }
 
     public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC)
