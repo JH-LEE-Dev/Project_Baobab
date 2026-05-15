@@ -210,7 +210,7 @@ public class AS_RunState : AnimalState
             isFleeingPath = false;
             // 일반 이동 중: 주변 무작위 지점 탐색
             Vector3 newDest = GetRandomDestination(currentPos);
-            if (pathFindComponent.FindPath(currentPos, newDest))
+            if (pathFindComponent.FindPath(currentPos, newDest, 50))
             {
                 ResetPathAndStuckTimer();
                 return;

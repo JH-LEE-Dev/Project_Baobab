@@ -119,7 +119,7 @@ public class AS_IdleState : AnimalState
             return false;
         }
 
-        if (pathFindComponent.FindPath(_currentPos, randomDest))
+        if (pathFindComponent.FindPath(_currentPos, randomDest, 50))
         {
             stateMachine.ChangeState<AS_RunState>();
             return true;
