@@ -48,6 +48,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public bool bIsSapling = false;
     private float growTime = 0f;
+    private float lastDisableTime = 0f;
 
     // 관리용 인덱스
     public int PoolIndex { get; set; } = -1;
@@ -85,11 +86,27 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         // 정적 객체(나무)로 등록
         CollisionSystem.Instance?.Register(this, true);
+
+        if (bIsSapling && lastDisableTime > 0f)
+        {
+            growTime -= (Time.time - lastDisableTime);
+            lastDisableTime = 0f;
+
+            if (growTime <= 0f)
+            {
+                GrowUp();
+            }
+        }
     }
 
     private void OnDisable()
     {
         CollisionSystem.Instance?.Unregister(this);
+
+        if (bIsSapling)
+        {
+            lastDisableTime = Time.time;
+        }
     }
 
 
@@ -111,6 +128,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         bIsSapling = _bIsSapling;
         growTime = _growTime;
 
+        if (bIsSapling && !gameObject.activeInHierarchy)
+        {
+            lastDisableTime = Time.time;
+        }
+
         if (bIsSapling && treeVisualComponent != null)
         {
             treeVisualComponent.DeActivateOnWaterObject();
@@ -125,6 +147,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
+        lastDisableTime = 0f;
         bWaterNearBy = false;
 
         if (treeVisualComponent != null)
@@ -163,26 +186,31 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             growTime -= Time.deltaTime;
             if (growTime <= 0f)
             {
-                bIsSapling = false;
-
-                if (treeVisualComponent != null)
-                {
-                    if (bWaterNearBy == true)
-                        treeVisualComponent.ActivateOnWaterObject();
-                    else
-                        treeVisualComponent.DeActivateOnWaterObject();
-
-                    // 기존 로직의 결과(항상 마지막에 Activate 호출)를 유지하면서 중복만 제거
-                    if (bWaterNearBy == false)
-                        treeVisualComponent.ActivateOnWaterObject();
-
-                    treeVisualComponent.ApplyVisual(treeData);
-                }
-
-                if (saplingVEComponent != null)
-                    saplingVEComponent.AnimateSaplingVE(false);
+                GrowUp();
             }
         }
+    }
+
+    private void GrowUp()
+    {
+        bIsSapling = false;
+
+        if (treeVisualComponent != null)
+        {
+            if (bWaterNearBy == true)
+                treeVisualComponent.ActivateOnWaterObject();
+            else
+                treeVisualComponent.DeActivateOnWaterObject();
+
+            // 기존 로직의 결과(항상 마지막에 Activate 호출)를 유지하면서 중복만 제거
+            if (bWaterNearBy == false)
+                treeVisualComponent.ActivateOnWaterObject();
+
+            treeVisualComponent.ApplyVisual(treeData);
+        }
+
+        if (saplingVEComponent != null)
+            saplingVEComponent.AnimateSaplingVE(false);
     }
 
     public Color GetColor()

@@ -123,6 +123,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         _saveData.money = money;
         _saveData.carrot = carrot;
         _saveData.currentSlotCount = currentSlotCount;
+        _saveData.maxItemsPerSlot = maxItemsPerSlot;
         
         // 리스트 초기화 (구조체 내의 Initialize 활용)
         _saveData.Initialize(currentSlotCount);
@@ -331,6 +332,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         money = _data.money;
         carrot = _data.carrot;
         currentSlotCount = _data.currentSlotCount;
+        maxItemsPerSlot = _data.maxItemsPerSlot;
 
         // 기존 슬롯 초기화 (풀 반환)
         for (int i = 0; i < inventorySlots.Count; i++)

@@ -137,6 +137,7 @@ public struct InventorySaveData
     public long money;
     public long carrot;
     public int currentSlotCount;
+    public int maxItemsPerSlot;
     public List<InventorySlotSaveData> slots;
 
     public void Initialize(int _capacity)
@@ -150,7 +151,6 @@ public struct InventorySaveData
 public struct LogProcessingSaveData
 {
     public InventorySaveData containerInventoryData;
-    public int maxItemsPerSlot;
     public int shopMoney;
     public bool bFirstTimeEarnMoney;
     public bool bStop;

@@ -139,7 +139,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         if (logContainer != null)
         {
             logContainer.PopulateContainerSaveData(ref _saveData.containerInventoryData);
-            _saveData.maxItemsPerSlot = logContainer.GetMaxItemsPerSlot();
             _saveData.bStop = logContainer.GetbStop();
             _saveData.transferInterval = logContainer.GetTransferInterval();
 

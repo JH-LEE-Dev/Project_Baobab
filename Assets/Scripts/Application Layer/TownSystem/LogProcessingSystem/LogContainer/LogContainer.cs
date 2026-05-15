@@ -631,6 +631,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         _saveData.money = 0;
         _saveData.carrot = 0;
         _saveData.currentSlotCount = currentSlotCount;
+        _saveData.maxItemsPerSlot = maxItemsPerSlot;
 
         _saveData.Initialize(currentSlotCount);
 
@@ -663,7 +664,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     public void LoadSaveData(LogProcessingSaveData _data)
     {
         currentSlotCount = _data.containerInventoryData.currentSlotCount;
-        maxItemsPerSlot = _data.maxItemsPerSlot;
+        maxItemsPerSlot = _data.containerInventoryData.maxItemsPerSlot;
         bStop = _data.bStop;
         transferInterval = _data.transferInterval;
 
