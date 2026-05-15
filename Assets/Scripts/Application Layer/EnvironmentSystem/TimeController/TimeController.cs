@@ -31,42 +31,21 @@ public class TimeController : MonoBehaviour, ITimeDataProvider
 
     private void Update()
     {
-        if (bInitialized == false)
-        {
-            return;
-        }
+        // if (bInitialized == false)
+        // {
+        //     return;
+        // }
 
-        // 시간 흐름 처리 (1초 = 5분)
-        currentMinutes += Time.deltaTime * timeMultiplier;
+        // // 시간 흐름 처리 (1초 = 5분)
+        // currentMinutes += Time.deltaTime * timeMultiplier;
 
-        // 24시간(1440분)이 지나면 초기화
-        if (currentMinutes >= minutesInDay)
-        {
-            currentMinutes -= minutesInDay;
-        }
+        // // 24시간(1440분)이 지나면 초기화
+        // if (currentMinutes >= minutesInDay)
+        // {
+        //     currentMinutes -= minutesInDay;
+        // }
 
-        UpdateDayNightStatus();
-    }
-
-    private void OnGUI()
-    {
-        if (bInitialized == false)
-        {
-            return;
-        }
-
-        // 현재 시간 계산 (시/분)
-        int hours = (int)(currentMinutes / 60f);
-        int minutes = (int)(currentMinutes % 60f);
-        string stateString = isDay ? "낮 (Day)" : "밤 (Night)";
-
-        // 화면 좌측 상단에 디버그 정보 표시
-        GUIStyle style = new GUIStyle();
-        style.fontSize = 15;
-        style.normal.textColor = Color.white;
-
-        string debugText = $"현재 시간: {hours:D2}:{minutes:D2}\n상태: {stateString}";
-        GUI.Label(new Rect(10, 10, 300, 100), debugText, style);
+        // UpdateDayNightStatus();
     }
 }
 

@@ -55,6 +55,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public int UpdateIndex { get; set; } = -1;
 
     private bool bWaterNearBy = false;
+    private bool bTreeShadowSet = false;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -71,13 +72,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             saplingVEComponent.Initialize(treeVisualComponent.transform);
         }
 
-        if (treeVisualComponent != null)
-        {
-            treeVisualComponent.Initialize();
-        }
-
         InitializeShadow(topShadowObject);
         InitializeShadow(bottomShadowObject);
+
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.Initialize(topShadowObject.transform);
+        }
 
         BindEvents();
     }
@@ -149,6 +150,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         growTime = 0f;
         lastDisableTime = 0f;
         bWaterNearBy = false;
+        bTreeShadowSet = false;
 
         if (treeVisualComponent != null)
         {
@@ -188,6 +190,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             {
                 GrowUp();
             }
+        }
+
+        if (bTreeShadowSet == false)
+        {
+            treeVisualComponent.CacheSwayBasePose();
+            bTreeShadowSet = true;
         }
     }
 
@@ -288,7 +296,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         if (treeVisualComponent == null)
             return;
-            
+
         bWaterNearBy = _isWaterNearby;
 
         if (bIsSapling == false)

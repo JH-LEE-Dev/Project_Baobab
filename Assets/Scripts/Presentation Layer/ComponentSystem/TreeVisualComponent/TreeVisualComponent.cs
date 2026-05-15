@@ -43,8 +43,11 @@ public class TreeVisualComponent : MonoBehaviour
 
     private Transform cachedTransform;
     private Transform topTransform;
+    private Transform topShadowTransform;
     private Vector3 topRendererBaseLocalPosition;
     private Quaternion topRendererBaseLocalRotation;
+    private Vector3 topShadowBaseLocalPosition;
+    private Quaternion topShadowBaseLocalRotation;
     private float swayPhase;
     private bool isOnWaterActive = false;
 
@@ -91,10 +94,11 @@ public class TreeVisualComponent : MonoBehaviour
 
     #region Initialize
 
-    public void Initialize()
+    public void Initialize(Transform _topShadowTransform)
     {
         if (cachedTransform == null) cachedTransform = transform;
         if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
+        if (topShadowRenderer != null && topShadowTransform == null) topShadowTransform = _topShadowTransform;
         
         CacheSwayBasePose();
         ResetVisualState();
@@ -300,7 +304,7 @@ public class TreeVisualComponent : MonoBehaviour
     }
 
     // 상단 스프라이트의 기본 위치와 회전, 그리고 개체별 랜덤 위상을 저장한다.
-    private void CacheSwayBasePose()
+    public void CacheSwayBasePose()
     {
         if (topRenderer == null)
         {
@@ -311,6 +315,14 @@ public class TreeVisualComponent : MonoBehaviour
         
         topRendererBaseLocalPosition = topTransform.localPosition;
         topRendererBaseLocalRotation = topTransform.localRotation;
+
+        if (topShadowRenderer != null)
+        {
+            if (topShadowTransform == null) topShadowTransform = topShadowRenderer.transform;
+            topShadowBaseLocalPosition = topShadowTransform.localPosition;
+            topShadowBaseLocalRotation = topShadowTransform.localRotation;
+        }
+
         swayPhase = Random.Range(0f, Mathf.PI * 2f);
     }
 
@@ -327,20 +339,33 @@ public class TreeVisualComponent : MonoBehaviour
         float detailWave = Mathf.Sin((time * swayDetailSpeed) + (swayPhase * 1.73f)) * swayDetailWeight;
         float sway = mainWave + detailWave;
 
-        topTransform.localPosition = topRendererBaseLocalPosition + new Vector3(sway * swayPositionAmplitude, 0f, 0f);
-        topTransform.localRotation = topRendererBaseLocalRotation * Quaternion.Euler(0f, 0f, -sway * swayRotationAmplitude);
+        Vector3 swayOffset = new Vector3(sway * swayPositionAmplitude, 0f, 0f);
+        Quaternion swayRotation = Quaternion.Euler(0f, 0f, -sway * swayRotationAmplitude);
+
+        topTransform.localPosition = topRendererBaseLocalPosition + swayOffset;
+        topTransform.localRotation = topRendererBaseLocalRotation * swayRotation;
+
+        if (topShadowTransform != null)
+        {
+            topShadowTransform.localPosition = topShadowBaseLocalPosition + swayOffset;
+            topShadowTransform.localRotation = topShadowBaseLocalRotation * swayRotation;
+        }
     }
 
     // 바람 흔들림을 제거하고 상단 스프라이트를 저장된 기본 포즈로 되돌린다.
     private void ResetTopSway()
     {
-        if (topTransform == null)
+        if (topTransform != null)
         {
-            return;
+            topTransform.localPosition = topRendererBaseLocalPosition;
+            topTransform.localRotation = topRendererBaseLocalRotation;
         }
 
-        topTransform.localPosition = topRendererBaseLocalPosition;
-        topTransform.localRotation = topRendererBaseLocalRotation;
+        if (topShadowTransform != null)
+        {
+            topShadowTransform.localPosition = topShadowBaseLocalPosition;
+            topShadowTransform.localRotation = topShadowBaseLocalRotation;
+        }
     }
 
     public void SetAlpha(float _alpha)
