@@ -15,7 +15,6 @@ public class UIView_Unit : UIView
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject hpBarPrefab;
-    [SerializeField] private GameObject chargePrefab;
 
     [Header("Offset Settings")]
     [SerializeField] private float characterYOffset = 1.5f;
@@ -27,7 +26,6 @@ public class UIView_Unit : UIView
 
     private Dictionary<object, HUD_HPBar> activeHpBars = new Dictionary<object, HUD_HPBar>(64);
     private List<HUD_HPBar> hpBarPool = new List<HUD_HPBar>(32);
-    private HUD_ChargeGageBar uiCharge;
     private System.Action<HUD_HPBar> returnToPoolAction;
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -39,13 +37,11 @@ public class UIView_Unit : UIView
         returnToPoolAction = ReturnHPBarToPool;
 
         InitHPBarPool();
-        InitChargeBar();
     }
 
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
-        BindChargeUIFunction();
     }
 
     public void TreeGetHit(ITreeObj _treeObj)
@@ -66,7 +62,6 @@ public class UIView_Unit : UIView
 
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
     {
-        PlayWeaponSwapCool(); 
     }
 
     public void DependencyInjection(IReadOnlyList<ITreeObj> _trees)
@@ -178,64 +173,6 @@ public class UIView_Unit : UIView
         hpBarPool.Add(_bar);
     }
 
-    private void InitChargeBar()
-    {
-        if (null == chargePrefab)
-            return;
-
-        GameObject _obj = Instantiate(chargePrefab, null != uiRoot ? uiRoot : this.transform);
-        uiCharge = _obj.GetComponent<HUD_ChargeGageBar>();
-        
-        if (null == uiCharge)
-            return;
-
-        uiCharge.Initialize();
-        uiCharge.UpdateYOffset(characterYOffset);
-        uiCharge.OnHide();
-    }
-
-    private void BindChargeUIFunction()
-    {
-        if (null == character || null == uiCharge)
-            return;
-
-        uiCharge.UpdateTargetObj(character.GetTransform().gameObject);
-
-        IRifleComponent _rifle = character.armComponent?.rifleComponent;
-        
-        if (null == _rifle)
-            return;
-
-        _rifle.ReloadStartEvent -= PlayRifleReloadCool;
-        _rifle.ReloadStartEvent += PlayRifleReloadCool;
-    }
-
-    private void PlayRifleReloadCool()
-    {
-        if (null == character || null == uiCharge)
-            return;
-
-        IStatComponent _stats = character.statComponent;
-        
-        if (null == _stats)
-            return;
-
-        uiCharge.SetCharge(_stats.reloadDuration);
-    }
-
-    private void PlayWeaponSwapCool()
-    {
-        if (null == character || null == uiCharge)
-            return;
-
-        IStatComponent _stats = character.statComponent;
-        
-        if (null == _stats)
-            return;
-
-        uiCharge.SetCharge(_stats.weaponChangeCoolTime);
-    }
-
     // //유니티 이벤트 함수
 
     protected override void OnShow()
@@ -246,10 +183,5 @@ public class UIView_Unit : UIView
     protected override void OnHide()
     {
         base.OnHide();
-    }
-
-    public override void Refresh()
-    {
-        uiCharge?.Refresh();
     }
 }
