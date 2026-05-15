@@ -53,6 +53,7 @@ public class GlobalSpriteDirectionalLight : MonoBehaviour
 
     [Header("Point Lights")]
     [SerializeField, Range(0, MaxPointLights)] private int maxPointLights = MaxPointLights;
+    [SerializeField, Min(0.1f)]
     private float objectPointLightRangeMultiplier = 2.5f;
 
     [Header("External Inputs")]
