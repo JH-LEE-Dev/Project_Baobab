@@ -479,7 +479,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                     List<HiddenMapTreeGradeData> probList = hiddenMapTreeGradeDatas[i].probability;
                     if (probList != null && probList.Count > 0)
                     {
-                        float rand = UnityEngine.Random.Range(0f, 1f);
+                        float rand = UnityEngine.Random.Range(0f, 100f);
                         float cumulative = 0f;
                         for (int j = 0; j < probList.Count; j++)
                         {
