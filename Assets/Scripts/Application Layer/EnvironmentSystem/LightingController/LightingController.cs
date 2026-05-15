@@ -133,7 +133,8 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         _isShadowActive = finalAlphaMultiplier > 0.1f;
 
         Color targetColor = shadowColor;
-        targetColor.a *= finalAlphaMultiplier;
+       //targetColor.a *= finalAlphaMultiplier;
+       targetColor.a = 0.45f;
 
         if (shadowMaterial != null)
         {
