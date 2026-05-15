@@ -311,14 +311,14 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
-        if (topTransform == null) topTransform = topRenderer.transform;
+        topTransform = topRenderer.transform;
         
         topRendererBaseLocalPosition = topTransform.localPosition;
         topRendererBaseLocalRotation = topTransform.localRotation;
 
         if (topShadowRenderer != null)
         {
-            if (topShadowTransform == null) topShadowTransform = topShadowRenderer.transform;
+            topShadowTransform = topShadowRenderer.transform;
             topShadowBaseLocalPosition = topShadowTransform.localPosition;
             topShadowBaseLocalRotation = topShadowTransform.localRotation;
         }
