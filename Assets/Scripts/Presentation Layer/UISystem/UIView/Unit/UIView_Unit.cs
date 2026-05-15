@@ -250,6 +250,6 @@ public class UIView_Unit : UIView
 
     public override void Refresh()
     {
-        
+        uiCharge?.Refresh();
     }
 }

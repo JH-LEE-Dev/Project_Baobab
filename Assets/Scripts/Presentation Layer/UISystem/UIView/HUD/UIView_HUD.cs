@@ -122,8 +122,8 @@ public class UIView_HUD : UIView
         if (null != hudEquipment)
         {
             hudEquipment.UpdateRifleVisibility();
-            hudEquipment.UpdateAmmo();
             hudEquipment.UpdateAxeDurability();
+            hudEquipment.UpdateAmmo();
         }
     }
 
