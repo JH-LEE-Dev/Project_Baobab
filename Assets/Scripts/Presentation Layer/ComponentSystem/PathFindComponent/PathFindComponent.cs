@@ -147,15 +147,15 @@ public class PathFindComponent : MonoBehaviour
     /// <summary>
     /// 내부 리스트(currentPath)를 사용하여 길을 찾습니다.
     /// </summary>
-    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos)
+    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos, int _maxIterations = 500)
     {
-        return FindPath(_startWorldPos, _endWorldPos, currentPath);
+        return FindPath(_startWorldPos, _endWorldPos, currentPath, _maxIterations);
     }
 
     /// <summary>
     /// A* 알고리즘을 사용하여 두 지점 사이의 길을 찾습니다.
     /// </summary>
-    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos, List<Vector3> _pathResult)
+    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos, List<Vector3> _pathResult, int _maxIterations = 500)
     {
         _pathResult.Clear();
         Vector3Int startPos = tilemapDataProvider.WorldToCell(_startWorldPos);
@@ -240,7 +240,7 @@ public class PathFindComponent : MonoBehaviour
                 }
             }
 
-            if (++iterations > 500) break;
+            if (++iterations > _maxIterations) break;
         }
 
         return false;

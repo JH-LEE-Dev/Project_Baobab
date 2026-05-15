@@ -75,7 +75,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             portal.SetCanTravel(bCanTravel);
 
         // 씬 내의 나무가 이미 관리 중이라면 다시 찾지 않음 (할당 방지)
-        if (trees == null)
+        //if (trees == null)
         {
             trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
         }
@@ -162,6 +162,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         bool shouldBeActive = ev.isVisible && (ev.currentDistance == 0);
         TreeObj tree = trees[ev.index];
+
+        if (tree == null)
+            return;
 
         if (tree.gameObject.activeSelf != shouldBeActive)
         {

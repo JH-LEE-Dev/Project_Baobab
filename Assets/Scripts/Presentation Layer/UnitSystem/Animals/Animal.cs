@@ -142,6 +142,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     public void Hide()
     {
+        gameObject.SetActive(false);
         shadowSR.enabled = false;
         sr.enabled = false;
         if (feetShadowObject != null) feetShadowObject.SetActive(false);
@@ -158,6 +159,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     public void Show()
     {
+        gameObject.SetActive(true);
         shadowSR.enabled = true;
         sr.enabled = true;
         shadowAnim.enabled = true;
@@ -175,7 +177,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     private void OnDisable()
     {
         // 동적 객체에서 제거
-        CollisionSystem.Instance?.Unregister(this);
+        //CollisionSystem.Instance?.Unregister(this);
     }
 
     public void SetFacingDirection(Vector2 _input)
