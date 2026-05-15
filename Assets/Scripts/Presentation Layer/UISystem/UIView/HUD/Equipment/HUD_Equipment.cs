@@ -111,7 +111,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 return;
 
             if (null != axeItem)
-                axeItem.UpdateGauge(axeComponent.durability / statComponent.axeDurability);
+            {
+                float _ratio = Mathf.Clamp01(axeComponent.durability / statComponent.axeDurability);
+                axeItem.UpdateGauge(_ratio);
+            }
         }
 
         private void PlayReloadMotion()

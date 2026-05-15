@@ -145,6 +145,9 @@ public class UIView_HUD : UIView
         
         WeaponModeChanged(WeaponMode.Axe, !_isTwon);
         hudEquipment.gameObject.SetActive(!_isTwon);
+
+        if (!_isTwon)
+            Refresh();
     }
 
     private void ChangedActiveStateStemina(bool _isTwon)
