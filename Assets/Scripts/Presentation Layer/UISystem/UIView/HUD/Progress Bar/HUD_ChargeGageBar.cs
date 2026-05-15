@@ -87,6 +87,12 @@ public class HUD_ChargeGageBar : HUD_ProgressBar, IPoolable
         Initialize();
     }
 
+    public void Refresh()
+    {
+        if (null != motionPlayer)
+            motionPlayer.PlayBackward("Show", bReset: true, _skip: true);
+    }
+
     public void OnDespawn()
     {
         chargeTween?.Kill();

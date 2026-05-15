@@ -11,12 +11,12 @@ public class UI_TraderCoin : MonoBehaviour
     public void Initialize()
     {
         currencyCounter?.Initialize();
-        UpddateMoneyText(0);
+        UpdateMoneyText(0);
 
         omp?.Initialize();
     }
 
-    public void UpddateMoneyText(int _newMoney)
+    public void UpdateMoneyText(int _newMoney)
     {
         if (null == currencyCounter)
             return;
@@ -25,7 +25,7 @@ public class UI_TraderCoin : MonoBehaviour
         PlayTwistMotion();
     }
 
-    public void UpddateMoneyText_Anim(int _newMoney)
+    public void UpdateMoneyText_Anim(int _newMoney)
     {
         if (null == currencyCounter)
             return;
