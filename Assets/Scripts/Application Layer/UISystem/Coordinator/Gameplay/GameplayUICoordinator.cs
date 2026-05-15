@@ -275,6 +275,7 @@ public class GameplayUICoordinator
 
     private void TownStarted(TownStartedSignal townStartedSignal)
     {
+        unitUI.Refresh();
         hudUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         popUpUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
 

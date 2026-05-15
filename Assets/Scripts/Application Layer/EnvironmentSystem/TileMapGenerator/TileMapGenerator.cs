@@ -184,6 +184,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     public List<Vector3> GetWalkableTileWorldPositions() => walkablePositions;
 
+    public int GridWidth => width;
+    public int GridHeight => height;
+
     public bool IsWalkable(Vector3Int _cellPos)
     {
         if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;

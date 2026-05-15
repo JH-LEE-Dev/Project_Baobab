@@ -11,6 +11,8 @@ public interface ITilemapDataProvider
     void ClearTreeCollisionTile(Vector3 _worldPos);
 
     // 길찾기 지원
+    int GridWidth { get; }
+    int GridHeight { get; }
     bool IsWalkable(Vector3Int _cellPos);
     bool IsWaterTile(Vector3Int _cellPos);
     Vector3Int WorldToCell(Vector3 _worldPos);
