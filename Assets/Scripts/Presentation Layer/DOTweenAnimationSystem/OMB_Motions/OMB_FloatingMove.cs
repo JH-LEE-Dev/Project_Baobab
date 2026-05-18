@@ -50,9 +50,10 @@ namespace PresentationLayer.DOTweenAnimationSystem
             float randomDelay = Random.Range(0f, 1f);
 
             // 각 축에 서로 다른 소수 주기를 주어 리사주 곡선 형성 (절대 튀지 않고 부드러움)
-            _seq.Join(_rect.DOAnchorPosX(initialPos.x + valueSettings.floatingStrength.x, speedInvert * 1.43f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay));
-            _seq.Join(_rect.DOAnchorPosY(initialPos.y + valueSettings.floatingStrength.y, speedInvert * 1.00f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay));
-            _seq.Join(_rect.DORotate(new Vector3(0, 0, initialRot.z + valueSettings.rotationStrength.z), speedInvert * 1.71f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay));
+            // Sequence에 Join하지 않고 직접 실행하여 경고 방지. 대신 Stop()에서 개별 Kill 처리 필요.
+            _rect.DOAnchorPosX(initialPos.x + valueSettings.floatingStrength.x, speedInvert * 1.43f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay).SetLink(_rect.gameObject);
+            _rect.DOAnchorPosY(initialPos.y + valueSettings.floatingStrength.y, speedInvert * 1.00f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay).SetLink(_rect.gameObject);
+            _rect.DORotate(new Vector3(0, 0, initialRot.z + valueSettings.rotationStrength.z), speedInvert * 1.71f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay).SetLink(_rect.gameObject);
         }
 
         protected override void OnTransform(Sequence _seq, Transform _trans, Ease _currPublicEase)
@@ -73,15 +74,28 @@ namespace PresentationLayer.DOTweenAnimationSystem
             float randomDelay = Random.Range(0f, 1f);
 
             // 3D 유영 (X, Y, Z 독립 주기)
-            _seq.Join(_trans.DOLocalMoveX(initialPos.x + valueSettings.floatingStrength.x, speedInvert * 1.32f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay));
-            _seq.Join(_trans.DOLocalMoveY(initialPos.y + valueSettings.floatingStrength.y, speedInvert * 1.00f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay));
-            _seq.Join(_trans.DOLocalMoveZ(initialPos.z + valueSettings.floatingStrength.z, speedInvert * 1.56f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay));
+            // Sequence에 Join하지 않고 직접 실행하여 경고 방지.
+            _trans.DOLocalMoveX(initialPos.x + valueSettings.floatingStrength.x, speedInvert * 1.32f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay).SetLink(_trans.gameObject);
+            _trans.DOLocalMoveY(initialPos.y + valueSettings.floatingStrength.y, speedInvert * 1.00f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay).SetLink(_trans.gameObject);
+            _trans.DOLocalMoveZ(initialPos.z + valueSettings.floatingStrength.z, speedInvert * 1.56f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay).SetLink(_trans.gameObject);
             
-            _seq.Join(_trans.DOLocalRotate(new Vector3(
+            _trans.DOLocalRotate(new Vector3(
                 initialRot.x + valueSettings.rotationStrength.x, 
                 initialRot.y + valueSettings.rotationStrength.y, 
                 initialRot.z + valueSettings.rotationStrength.z), 
-                speedInvert * 1.84f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay));
+                speedInvert * 1.84f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetDelay(randomDelay).SetLink(_trans.gameObject);
+        }
+
+        public override void Stop()
+        {
+            base.Stop();
+
+            for (int i = 0; i < stateCache.Count; i++)
+            {
+                var state = stateCache[i];
+                if (null != state.rectTransform) state.rectTransform.DOKill();
+                if (null != state.transform) state.transform.DOKill();
+            }
         }
 
         protected override void ApplyTweenSettings(Tween _tween)
