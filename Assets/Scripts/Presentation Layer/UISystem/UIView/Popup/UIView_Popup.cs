@@ -148,6 +148,12 @@ public class UIView_Popup : UIView
     {
         Debug.Log("언호버 호출");
     }
+
+    //원목 보관함 상호작용 범위에 들어가거나 나왔을 때 호출
+    public void LogContainerCanInteract(bool _bCanInteract)
+    {
+
+    }
     
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
 }
