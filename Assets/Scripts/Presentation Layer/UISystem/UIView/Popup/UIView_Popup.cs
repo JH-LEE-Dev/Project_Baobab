@@ -141,12 +141,12 @@ public class UIView_Popup : UIView
 
     private void InventoryHoverEvent()
     {
-        
+        Debug.Log("호버 호출");
     }
 
     private void InventoryUnHoverEvent()
     {
-        
+        Debug.Log("언호버 호출");
     }
     
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.

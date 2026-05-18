@@ -183,12 +183,12 @@ public class UI_Inventory : MonoBehaviour
         
         selectionCursor?.Show(_slot.GetComponent<RectTransform>());
 
+        inventoryHoverEvent?.Invoke();
+
         if (null == invPopup || null == logItemData)
             return;
 
         _position.y += popupYOffset;
-        
-        inventoryHoverEvent?.Invoke();
 
         invPopup.SetupItem(logItemData, _position);
         invPopup.OnShow();
@@ -198,11 +198,11 @@ public class UI_Inventory : MonoBehaviour
     {
         selectionCursor?.Hide();
 
-        if (null == invPopup)
-            return;
-
         inventoryUnHoverEvent?.Invoke();
 
+        if (null == invPopup)
+            return;
+            
         invPopup.OnHide();
     }
     #endregion
