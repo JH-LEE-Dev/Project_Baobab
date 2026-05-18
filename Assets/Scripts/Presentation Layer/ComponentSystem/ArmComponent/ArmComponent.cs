@@ -187,6 +187,6 @@ public class ArmComponent : PComponent, IArmComponent
     public void Refresh()
     {
         axeComponent.Refresh();
-        rifleComponent.Refresh();
+        //rifleComponent.Refresh();
     }
 }

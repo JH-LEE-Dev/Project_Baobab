@@ -25,6 +25,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private PathfindGridManager pathfindGridManager;
     public DensityManager densityManager { get; private set; }
     public EnvironmentInteractionManager environmentInteractionManager { get; private set; }
+    public EnvironmentObjManager environmentObjManager { get; private set; }
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -40,6 +41,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         weatherManager = GetComponentInChildren<WeatherManager>();
         pathfindGridManager = GetComponentInChildren<PathfindGridManager>();
         densityManager = GetComponentInChildren<DensityManager>();
+        environmentObjManager = GetComponentInChildren<EnvironmentObjManager>();
 
         if (timeController != null)
             timeController.Initialize();
@@ -59,6 +61,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         if (environmentInteractionManager != null)
             environmentInteractionManager.Initialize();
 
+        if (environmentObjManager != null)
+            environmentObjManager.Initialize(tileMapGenerator);
+
         BindEvents();
         SubscribeSignals();
     }
@@ -75,6 +80,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         ReleaseEvents();
         UnSubscribeSignals();
+
+        if (environmentObjManager != null)
+            environmentObjManager.ReleaseAllObjs();
     }
 
     private void SubscribeSignals()
@@ -127,6 +135,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void TilemapGenerated(List<Vector3> tilePositions)
     {
         signalHub.Publish(new MapGeneratedSignal(tilePositions));
+
+        if (environmentObjManager != null)
+            environmentObjManager.SpawnEnvironmentObjs();
     }
 
     private void DeclareActiveTileCnt(int _grassTileCnt, int _walkableTileCnt)
@@ -152,7 +163,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void AnimalIsDead(AnimalIsDeadSignal animalIsDeadSignal)
     {
-        densityManager.AddHiddenGauge(animalIsDeadSignal.type);
+        //densityManager.AddHiddenGauge(animalIsDeadSignal.type);
     }
 
     private void TreeIsDead(TreeIsDeadSignal treeIsDeadSignal)
