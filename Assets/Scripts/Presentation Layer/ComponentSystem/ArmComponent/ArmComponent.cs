@@ -30,11 +30,11 @@ public class ArmComponent : PComponent, IArmComponent
         initialLocalPosition = transform.localPosition;
 
         axeComponent = GetComponentInChildren<AxeComponent>();
-        rifleComponent = GetComponentInChildren<RifleComponent>();
+        //rifleComponent = GetComponentInChildren<RifleComponent>();
         axeComponent.Initialize(ctx);
-        rifleComponent.Initialize(ctx);
+        //rifleComponent.Initialize(ctx);
         axeComponent.SetEnable(false);
-        rifleComponent.SetEnable(false);
+        //rifleComponent.SetEnable(false);
 
         currentWeapon = axeComponent;
 
@@ -71,38 +71,18 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void BindEvents()
     {
-        ctx.inputManager.inputReader.MoveTriggerEvent -= rifleComponent.CancelReady;
-        ctx.inputManager.inputReader.MoveTriggerEvent += rifleComponent.CancelReady;
-
         ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
         ctx.inputManager.inputReader.MouseClickEvent += LeftButtonClicked;
 
         ctx.inputManager.inputReader.MouseReleaseEvent -= LeftButtonReleased;
         ctx.inputManager.inputReader.MouseReleaseEvent += LeftButtonReleased;
-
-        ctx.inputManager.inputReader.ReloadButtonPressedEvent -= rifleComponent.Reload;
-        ctx.inputManager.inputReader.ReloadButtonPressedEvent += rifleComponent.Reload;
-
-        ctx.inputManager.inputReader.AimCorrectionKeyPressedEvent -= rifleComponent.ActivateAimCorrection;
-        ctx.inputManager.inputReader.AimCorrectionKeyPressedEvent += rifleComponent.ActivateAimCorrection;
-
-        ctx.inputManager.inputReader.AimCorrectionKeyCanceledEvent -= rifleComponent.DeActivateAimCorrection;
-        ctx.inputManager.inputReader.AimCorrectionKeyCanceledEvent += rifleComponent.DeActivateAimCorrection;
     }
 
     private void ReleaseEvents()
     {
-        ctx.inputManager.inputReader.MoveTriggerEvent -= rifleComponent.CancelReady;
-
         ctx.inputManager.inputReader.MouseClickEvent -= LeftButtonClicked;
 
         ctx.inputManager.inputReader.MouseReleaseEvent -= LeftButtonReleased;
-
-        ctx.inputManager.inputReader.ReloadButtonPressedEvent -= rifleComponent.Reload;
-
-        ctx.inputManager.inputReader.AimCorrectionKeyPressedEvent -= rifleComponent.ActivateAimCorrection;
-
-        ctx.inputManager.inputReader.AimCorrectionKeyCanceledEvent -= rifleComponent.DeActivateAimCorrection;
     }
 
     private void UpdateRotation()
@@ -196,12 +176,12 @@ public class ArmComponent : PComponent, IArmComponent
     public void ResetWeaponStatus()
     {
         axeComponent.SetEnable(false);
-        rifleComponent.SetEnable(false);
+        //rifleComponent.SetEnable(false);
         currentWeaponMode = WeaponMode.Axe;
         currentWeapon = axeComponent;
         axeComponent.ResetDurability();
-        rifleComponent.ResetDurability();
-        rifleComponent.ResetAmmo();
+        //rifleComponent.ResetDurability();
+        //rifleComponent.ResetAmmo();
     }
 
     public void Refresh()

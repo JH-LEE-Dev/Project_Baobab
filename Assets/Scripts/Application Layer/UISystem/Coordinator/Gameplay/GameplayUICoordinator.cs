@@ -187,6 +187,7 @@ public class GameplayUICoordinator
     private void ContainerInteractStateChanged(ContainerInteractStateChangedSignal containerInteractStateChangedSignal)
     {
         worldPopupUI.LogContainerInteractStateChanged(containerInteractStateChangedSignal.state);
+        popUpUI.LogContainerCanInteract(containerInteractStateChangedSignal.state);
     }
 
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)

@@ -51,7 +51,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     public override void LeftButtonClicked()
     {
-        if (bAttacked || null == axeAnimation || bCanAction == false || durability == 0f || ctx.bWhileChangingWeapon == true) return;
+        if (bAttacked || null == axeAnimation || bCanAction == false || durability == 0f || ctx.bWhileChangingWeapon == true || ctx.inputManager.IsCursorHoveredOnUI()) return;
 
         bLeftButtonClicked = true;
 
@@ -130,6 +130,6 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     public void Refresh()
     {
-        
+
     }
 }

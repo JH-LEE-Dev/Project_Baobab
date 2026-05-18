@@ -52,7 +52,7 @@ public class UIView_Popup : UIView
     {
         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
         uI_Inventory.inventoryHoverEvent -= InventoryHoverEvent;
-        uI_Inventory.inventoryUnHoverEvent -= InventoryUnHoverEvent; 
+        uI_Inventory.inventoryUnHoverEvent -= InventoryUnHoverEvent;
     }
 
     #region [ Inventory UI ]
@@ -142,12 +142,19 @@ public class UIView_Popup : UIView
     private void InventoryHoverEvent()
     {
         Debug.Log("호버 호출");
+        viewCtx.inputManager.SetCursorHoveredOnUI(true);
     }
 
     private void InventoryUnHoverEvent()
     {
-        Debug.Log("언호버 호출");
+        viewCtx.inputManager.SetCursorHoveredOnUI(false);
     }
-    
+
+    //원목 보관함 상호작용 범위에 들어가거나 나왔을 때 호출
+    public void LogContainerCanInteract(bool _bCanInteract)
+    {
+        
+    }
+
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
 }
