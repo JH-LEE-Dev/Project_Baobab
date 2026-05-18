@@ -140,13 +140,13 @@ public class UIView_Popup : UIView
 
     private void InventoryHoverEvent()
     {
-        
+        viewCtx.inputManager.SetCursorHoveredOnUI(true);
     }
 
     private void InventoryUnHoverEvent()
     {
-        
+        viewCtx.inputManager.SetCursorHoveredOnUI(false);
     }
-    
+
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
 }

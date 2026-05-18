@@ -4,6 +4,8 @@ public class InputManager : MonoBehaviour
 {
     public InputReader inputReader { get; private set; }
 
+    private bool bCursorHoveredOnUI = false;
+
     public void Initialize()
     {
         inputReader = new InputReader();
@@ -30,5 +32,15 @@ public class InputManager : MonoBehaviour
     public void Pause(bool _bPause)
     {
         inputReader.Pause(_bPause);
+    }
+
+    public void SetCursorHoveredOnUI(bool _bCursorHoveredOnUI)
+    {
+        bCursorHoveredOnUI = _bCursorHoveredOnUI;
+    }
+
+    public bool IsCursorHoveredOnUI()
+    {
+        return bCursorHoveredOnUI;
     }
 }
