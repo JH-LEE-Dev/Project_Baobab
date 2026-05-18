@@ -42,6 +42,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         [Header("Animation")]
         [SerializeField] private ObjectMotionPlayer motionPlayer;
+        [SerializeField] private float groundShowDelay = 0.015f;
 
         [Header("Focus Settings")]
         [Range(0f, 1f)]
@@ -61,7 +62,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private bool isInitialized = false;
 
         // GC Alloc 최적화를 위한 문자열 캐싱
-        private static readonly string[] groundTags = { "Ground_1", "Ground_2", "Ground_3", "Ground_4" };
+        private static readonly string[] groundTags = 
+        { 
+            "Ground_1", "Ground_2", "Ground_3", "Ground_4", 
+            "Ground_5", "Ground_6", "Ground_7", "Ground_8",
+            "Ground_9", "Ground_10", "Ground_11", "Ground_12",
+            "Ground_13", "Ground_14", "Ground_15", "Ground_16"
+        };
+
         private static readonly string[] treeTags = { "Tree_1", "Tree_2", "Tree_3" };
         private static readonly string[] animalTags = { "Animal_1", "Animal_2", "Animal_3" };
 
@@ -132,11 +140,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     {
                         if (null != treeVisuals[_i].leafImage) treeVisuals[_i].leafImage.gameObject.SetActive(true);
                         if (null != treeVisuals[_i].trunkImage) treeVisuals[_i].trunkImage.gameObject.SetActive(true);
-                        motionPlayer.Play(treeTags[_i], bReset: true);
+                        
+                        if (_i < treeTags.Length)
+                            motionPlayer.Play(treeTags[_i], bReset: true);
                     }
                     else if (!_shouldBeVisible && _wasVisible)
                     {
-                        motionPlayer.PlayBackward(treeTags[_i], bReset: true);
+                        if (_i < treeTags.Length)
+                            motionPlayer.PlayBackward(treeTags[_i], bReset: true);
                     }
                 }
             }
@@ -152,11 +163,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     if (_shouldBeVisible && !_wasVisible)
                     {
                         if (null != animalImages[_i]) animalImages[_i].gameObject.SetActive(true);
-                        motionPlayer.Play(animalTags[_i], bReset: true);
+                        
+                        if (_i < animalTags.Length)
+                            motionPlayer.Play(animalTags[_i], bReset: true);
                     }
                     else if (!_shouldBeVisible && _wasVisible)
                     {
-                        motionPlayer.PlayBackward(animalTags[_i], bReset: true);
+                        if (_i < animalTags.Length)
+                            motionPlayer.PlayBackward(animalTags[_i], bReset: true);
                     }
                 }
             }
@@ -189,30 +203,32 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void PlayStartGroundAnimation()
         {
-            if (null == groundImages)
+            if (null == groundImages || null == groundTags)
                 return;
 
-            int _finalIdx = groundImages.Length - 1;
-            const float _delay = 0.05f;
+            int _loopCount = Mathf.Min(groundImages.Length, groundTags.Length);
+            int _finalIdx = _loopCount - 1;
 
-            for (int _i = 0; _i < groundImages.Length; _i++)
+            for (int _i = 0; _i < _loopCount; _i++)
             {
                 if (null == groundImages[_i])
                     continue;
 
                 if (_i == _finalIdx)
-                    motionPlayer.Play(groundTags[_i], bReset: true, _onComplete: PlayStartTreeAnimation, _forceDelayForward: _delay * _i);
+                    motionPlayer.Play(groundTags[_i], bReset: true, _onComplete: PlayStartTreeAnimation, _forceDelayForward: groundShowDelay * _i);
                 else
-                    motionPlayer.Play(groundTags[_i], bReset: true, _forceDelayForward: _delay * _i);
+                    motionPlayer.Play(groundTags[_i], bReset: true, _forceDelayForward: groundShowDelay * _i);
             }
         }
 
         public void PlayStartTreeAnimation()
         {
-            if (null == treeVisuals)
+            if (null == treeVisuals || null == treeTags)
                 return;
 
             int _targetCount = Mathf.Min(currentVisibleCount, treeVisuals.Length);
+            _targetCount = Mathf.Min(_targetCount, treeTags.Length);
+
             int _finalIdx = _targetCount - 1;
             const float _delay = 0.05f;
 
@@ -236,10 +252,12 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void PlayStartAnimalAnimation()
         {
-            if (null == animalImages)
+            if (null == animalImages || null == animalTags)
                 return;
 
             int _targetCount = Mathf.Min(currentVisibleCount, animalImages.Length);
+            _targetCount = Mathf.Min(_targetCount, animalTags.Length);
+            
             const float _delay = 0.05f;
 
             for (int _i = 0; _i < _targetCount; _i++)
@@ -323,20 +341,29 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == motionPlayer)
                 return;
 
-            if (null != groundImages)
-                for (int _i = 0; _i < groundImages.Length; _i++)
+            if (null != groundImages && null != groundTags)
+            {
+                int _count = Mathf.Min(groundImages.Length, groundTags.Length);
+                for (int _i = 0; _i < _count; _i++)
                     if (null != groundImages[_i])
                         motionPlayer.Play(groundTags[_i], bReset: true, _skip: true);
+            }
 
-            if (null != treeVisuals)
-                for (int _i = 0; _i < treeVisuals.Length; _i++)
+            if (null != treeVisuals && null != treeTags)
+            {
+                int _count = Mathf.Min(treeVisuals.Length, treeTags.Length);
+                for (int _i = 0; _i < _count; _i++)
                     if (null != treeVisuals[_i].leafImage || null != treeVisuals[_i].trunkImage)
                         motionPlayer.Play(treeTags[_i], bReset: true, _skip: true);
+            }
 
-            if (null != animalImages)
-                for (int _i = 0; _i < animalImages.Length; _i++)
+            if (null != animalImages && null != animalTags)
+            {
+                int _count = Mathf.Min(animalImages.Length, animalTags.Length);
+                for (int _i = 0; _i < _count; _i++)
                     if (null != animalImages[_i])
                         motionPlayer.Play(animalTags[_i], bReset: true, _skip: true);
+            }
         }
 
         private void PlayEndAnimalAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
@@ -348,13 +375,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
 
             const float _delay = 0.05f;
+            int _loopCount = Mathf.Min(animalImages.Length, animalTags.Length);
 
-            for (int _i = animalImages.Length - 1; _i >= 0; _i--)
+            for (int _i = _loopCount - 1; _i >= 0; _i--)
             {
                 if (null == animalImages[_i])
                     continue;
 
-                motionPlayer.PlayBackward(animalTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (animalImages.Length - 1 - _i));
+                motionPlayer.PlayBackward(animalTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (_loopCount - 1 - _i));
             }
         }
 
@@ -367,36 +395,38 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             }
 
             const float _delay = 0.05f;
+            int _loopCount = Mathf.Min(treeVisuals.Length, treeTags.Length);
 
-            for (int _i = treeVisuals.Length - 1; _i >= 0; _i--)
+            for (int _i = _loopCount - 1; _i >= 0; _i--)
             {
                 if (null == treeVisuals[_i].leafImage && null == treeVisuals[_i].trunkImage)
                     continue;
 
-                motionPlayer.PlayBackward(treeTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (treeVisuals.Length - 1 - _i));
+                motionPlayer.PlayBackward(treeTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (_loopCount - 1 - _i));
             }
         }
 
         private void PlayEndGroundAnimation(UnityEngine.Events.UnityAction _onComplete, bool _isSkip = false)
         {
-            if (null == groundImages || 0 == groundImages.Length)
+            if (null == groundImages || 0 == groundImages.Length || null == groundTags)
             {
                 _onComplete?.Invoke();
                 return;
             }
 
+            int _loopCount = Mathf.Min(groundImages.Length, groundTags.Length);
             int _finalIdx = 0;
             const float _delay = 0.05f;
 
-            for (int _i = groundImages.Length - 1; _i >= 0; _i--)
+            for (int _i = _loopCount - 1; _i >= 0; _i--)
             {
                 if (null == groundImages[_i])
                     continue;
 
                 if (_i == _finalIdx)
-                    motionPlayer.PlayBackward(groundTags[_i], bReset: true, _onComplete: _onComplete, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
+                    motionPlayer.PlayBackward(groundTags[_i], bReset: true, _onComplete: _onComplete, _skip: _isSkip, _forceDelayBackward: _delay * (_loopCount - 1 - _i));
                 else
-                    motionPlayer.PlayBackward(groundTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (groundImages.Length - 1 - _i));
+                    motionPlayer.PlayBackward(groundTags[_i], bReset: true, _skip: _isSkip, _forceDelayBackward: _delay * (_loopCount - 1 - _i));
             }
         }
 

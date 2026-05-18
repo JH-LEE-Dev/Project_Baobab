@@ -16,7 +16,7 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] private Transform digitContainer;  // 숫자 이미지들이 자식으로 배치된 부모 컨테이너
 
         [Header("Settings")]
-        [SerializeField] private bool hideLeadingZeros = true; // 앞자리의 0을 숨길지 여부
+        //[SerializeField] private bool hideLeadingZeros = true; // 앞자리의 0을 숨길지 여부
 
         // //내부 의존성
         private List<Image> digitPool;

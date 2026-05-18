@@ -20,6 +20,7 @@ public class HUD_HPBar : HUD_ProgressBar
     [SerializeField] private float ghostFollowDuration = 0.5f;
     [SerializeField] private float ghostDelay = 0.5f;
     [SerializeField] private bool useAccumulatedGhost = true;
+    [SerializeField] private bool resetDelayOnHit = false;
 
     // //내부 의존성
     private object owner;
@@ -108,34 +109,24 @@ public class HUD_HPBar : HUD_ProgressBar
             return;
         }
 
-        if (true == useAccumulatedGhost)
-        {
-            float _nextDelay = ghostDelay;
+        float _nextDelay = ghostDelay;
 
-            if (null != ghostTween && true == ghostTween.IsActive())
+        if (null != ghostTween && true == ghostTween.IsActive())
+        {
+            // 누적 고스트 모드이면서 '피격 시 지연 리셋'이 비활성화된 경우에만
+            // 이미 움직이는 중일 때 즉시 추적 (지연 시간 0)
+            if (true == useAccumulatedGhost && false == resetDelayOnHit)
             {
-                // 이미 움직이기 시작했다면(지연 시간이 끝났다면) 지연 없이 즉시 타겟 갱신 ("쭉" 닳게)
-                // 아직 지연 중이라면 지연 시간을 초기화하여 축적 유지
                 if (ghostTween.Elapsed(false) > 0.0f)
                     _nextDelay = 0.0f;
-
-                ghostTween.Kill();
             }
 
-            ghostTween = ghostSlider.DOValue(_ratio, ghostFollowDuration)
-                .SetDelay(_nextDelay)
-                .SetEase(Ease.OutQuad);
+            ghostTween.Kill();
         }
-        else
-        {
-            // 기존 로직: 매 피격 시 지연 시간 초기화 (뚝뚝 끊김)
-            if (null != ghostTween && true == ghostTween.IsActive())
-                ghostTween.Kill();
 
-            ghostTween = ghostSlider.DOValue(_ratio, ghostFollowDuration)
-                .SetDelay(ghostDelay)
-                .SetEase(Ease.OutQuad);
-        }
+        ghostTween = ghostSlider.DOValue(_ratio, ghostFollowDuration)
+            .SetDelay(_nextDelay)
+            .SetEase(Ease.OutQuad);
     }
 
     public void TriggerActive(Action<HUD_HPBar> _onFinish)
