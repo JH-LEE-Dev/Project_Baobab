@@ -84,11 +84,11 @@ public class GameplayUICoordinator
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         inputManager.inputReader.InventoryKeyEvent += OnInventoryKeyPressed;
 
-        popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
-        popUpUI.GoHomeButtonClickedEvent += GoHomeButtonClicked;
+        popUpUI.goHomeButtonClickedEvent -= GoHomeButtonClicked;
+        popUpUI.goHomeButtonClickedEvent += GoHomeButtonClicked;
 
-        popUpUI.SendDeleteItemEvent -= SendDeleteItem;
-        popUpUI.SendDeleteItemEvent += SendDeleteItem;
+        popUpUI.sendDeleteItemEvent -= SendDeleteItem;
+        popUpUI.sendDeleteItemEvent += SendDeleteItem;
 
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.DungeonSelectedEvent += DungeonSelected;
@@ -112,8 +112,8 @@ public class GameplayUICoordinator
     private void ReleaseEvents()
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
-        popUpUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
-        popUpUI.SendDeleteItemEvent -= SendDeleteItem;
+        popUpUI.goHomeButtonClickedEvent -= GoHomeButtonClicked;
+        popUpUI.sendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         escUI.ExitButtonClickedEvent -= ExitGame;

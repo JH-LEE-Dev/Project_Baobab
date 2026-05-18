@@ -15,6 +15,27 @@ namespace PresentationLayer.DOTweenAnimationSystem
         [HideInInspector] public ObjectMotionBase motionInstance;
     }   
 
+    public struct MotionPlaySettings
+    {
+        public UnityAction onStart;
+        public UnityAction onComplete;
+        public bool bReset;
+        public bool skip;
+        public bool isSkipCallback;
+        public float forceDelayForward;
+        public float forceDelayBackward;
+        public float forceDurationForward;
+        public float forceDurationBackward;
+
+        public static MotionPlaySettings Default => new MotionPlaySettings()
+        {
+            forceDelayForward = -1f,
+            forceDelayBackward = -1f,
+            forceDurationForward = -1f,
+            forceDurationBackward = -1f
+        };
+    }
+
     public class ObjectMotionPlayer : MonoBehaviour
     {
         // //외부 의존성
@@ -22,6 +43,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
 
         // //내부 의존성
         private Dictionary<string, MotionEntry> motionMap;
+        bool bInitialize = false;
 
         public void Initialize()
         {
@@ -31,12 +53,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
         private void Start()
         {
             Initialize();
-            Play("Test");
         }
 
         private void InitializeMotionMap()
         {
-            if (null != motionMap)
+            if (true == bInitialize || null != motionMap)
                 return;
 
             motionMap = new Dictionary<string, MotionEntry>(motionEntries.Count);
@@ -48,10 +69,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 
                 motionMap[motionEntries[i].motionTag] = motionEntries[i];
             }
+
+            bInitialize = true;
         }
 
-        public MotionEntry Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, 
-            bool bReset = false, bool _skip = false, bool _isSkipCallback = false, float _forceDelayForward = -1f, float _forceDelayBackward = -1f)
+        public MotionEntry PlayBackward(string _tag, MotionPlaySettings _settings)
         {
             if (null == motionMap)
                 InitializeMotionMap();
@@ -59,11 +81,75 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (false == motionMap.ContainsKey(_tag))
                 return null;
 
-            PlayEntry(motionMap[_tag], _onStart, _onComplete, false, bReset, _forceDelayForward, _forceDelayBackward);
+            PlayEntry(motionMap[_tag], true, _settings);
 
-            if (_skip)
+            if (_settings.skip)
             {
-                SkipAll(_isSkipCallback);
+                SkipAll(_settings.isSkipCallback);
+                StopAll();
+            }
+
+            return motionMap[_tag];
+        }
+
+        private void PlayEntry(MotionEntry _entry, bool _isBackward, MotionPlaySettings _settings)
+        {
+            if (null == _entry.motionInstance && null != _entry.motionPrefab)
+            {
+                _entry.motionInstance = Instantiate(_entry.motionPrefab, this.transform).GetComponent<ObjectMotionBase>();
+                _entry.motionInstance.name = $"[Motion]_{_entry.motionTag}";
+            }
+
+            if (null == _entry.motionInstance || null == _entry.targets || 0 == _entry.targets.Count)
+                return;
+
+            if (_settings.forceDelayForward >= 0f) 
+                _entry.motionInstance.SetDelayForward(_settings.forceDelayForward);
+
+            if (_settings.forceDelayBackward >= 0f) 
+                _entry.motionInstance.SetDelayBackward(_settings.forceDelayBackward);
+
+            if (_settings.forceDurationForward >= 0f)
+                _entry.motionInstance.SetDurationForward(_settings.forceDurationForward);
+
+            if (_settings.forceDurationBackward >= 0f)
+                _entry.motionInstance.SetDurationBackward(_settings.forceDurationBackward);
+
+            if (false == _isBackward)
+                _entry.motionInstance.Play(_entry.targets, _settings.onStart, _settings.onComplete, _settings.bReset);
+            else
+                _entry.motionInstance.PlayBackward(_entry.targets, _settings.onStart, _settings.onComplete, _settings.bReset);
+        }
+
+        // --- 기존 호환성 메서드 (향후 새 구조체 방식으로 교체 권장) ---
+        public MotionEntry Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, 
+            bool bReset = false, bool _skip = false, bool _isSkipCallback = false, float _forceDelayForward = -1f, float _forceDelayBackward = -1f)
+        {
+            MotionPlaySettings settings = MotionPlaySettings.Default;
+            settings.onStart = _onStart;
+            settings.onComplete = _onComplete;
+            settings.bReset = bReset;
+            settings.skip = _skip;
+            settings.isSkipCallback = _isSkipCallback;
+            settings.forceDelayForward = _forceDelayForward;
+            settings.forceDelayBackward = _forceDelayBackward;
+
+            return Play(_tag, settings);
+        }
+
+        public MotionEntry Play(string _tag, MotionPlaySettings _settings)
+        {
+            if (null == motionMap)
+                InitializeMotionMap();
+
+            if (false == motionMap.ContainsKey(_tag))
+                return null;
+
+            PlayEntry(motionMap[_tag], false, _settings);
+
+            if (_settings.skip)
+            {
+                SkipAll(_settings.isSkipCallback);
                 StopAll();
             }
 
@@ -73,45 +159,16 @@ namespace PresentationLayer.DOTweenAnimationSystem
         public MotionEntry PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, 
             bool bReset = false, bool _skip = false, bool _isSkipCallback = false, float _forceDelayForward = -1f, float _forceDelayBackward = -1f)
         {
-            if (null == motionMap)
-                InitializeMotionMap();
+            MotionPlaySettings settings = MotionPlaySettings.Default;
+            settings.onStart = _onStart;
+            settings.onComplete = _onComplete;
+            settings.bReset = bReset;
+            settings.skip = _skip;
+            settings.isSkipCallback = _isSkipCallback;
+            settings.forceDelayForward = _forceDelayForward;
+            settings.forceDelayBackward = _forceDelayBackward;
 
-            if (false == motionMap.ContainsKey(_tag))
-                return null;
-
-            PlayEntry(motionMap[_tag], _onStart, _onComplete, true, bReset, _forceDelayForward, _forceDelayBackward);
-
-            if (_skip)
-            {
-                SkipAll(_isSkipCallback);
-                StopAll();
-            }
-
-            return motionMap[_tag];
-        }
-
-        private void PlayEntry(MotionEntry _entry, UnityAction _onStart, UnityAction _onComplete, bool _isBackward, bool bReset, float _forceDelayForward, float _forceDelayBackward)
-        {
-            if (null == _entry.motionInstance && null != _entry.motionPrefab)
-            {
-                //_entry.motionInstance = _entry.motionPrefab.GetComponent<ObjectMotionBase>();
-                _entry.motionInstance = Instantiate(_entry.motionPrefab, this.transform).GetComponent<ObjectMotionBase>();
-                _entry.motionInstance.name = $"[Motion]_{_entry.motionTag}";
-            }
-
-            if (null == _entry.motionInstance || null == _entry.targets || 0 == _entry.targets.Count)
-                return;
-
-            if (_forceDelayForward >= 0f) 
-                _entry.motionInstance.SetDelayForward(_forceDelayForward);
-
-            if (_forceDelayBackward >= 0f) 
-                _entry.motionInstance.SetDelayBackward(_forceDelayBackward);
-
-            if (false == _isBackward)
-                _entry.motionInstance.Play(_entry.targets, _onStart, _onComplete, bReset);
-            else
-                _entry.motionInstance.PlayBackward(_entry.targets, _onStart, _onComplete, bReset);
+            return PlayBackward(_tag, settings);
         }
 
         public void Stop(string _tag)

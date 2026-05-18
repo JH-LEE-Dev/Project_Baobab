@@ -23,6 +23,7 @@ public class UIView_Unit : UIView
 
     [Header("Display Settings")]
     [SerializeField] private float hpBarShowDuration = 2.0f;
+    [SerializeField] private float hpBarDeadShowDuration = 0.2f;
 
     private Dictionary<object, HUD_HPBar> activeHpBars = new Dictionary<object, HUD_HPBar>(64);
     private List<HUD_HPBar> hpBarPool = new List<HUD_HPBar>(32);
@@ -118,7 +119,9 @@ public class UIView_Unit : UIView
             
             if (null != _newBar)
             {
-                _newBar.SetOwner(_owner);
+                float _maxHp = _health.GetMaxHealth();
+                float _prevRatio = _maxHp > 0.0f ? Mathf.Clamp01(_health.GetPrevHealth() / _maxHp) : 1.0f;
+                _newBar.SetOwner(_owner, _prevRatio);
                 activeHpBars.Add(_owner, _newBar);
                 UpdateHPBarState(_newBar, _health, _bDead, _tf, _yOffset);
             }
@@ -129,16 +132,17 @@ public class UIView_Unit : UIView
     {
         _bar.Setup(_tf.gameObject, _yOffset, hpBarShowDuration);
 
-        float _ratio = _health.GetCurrentHealth() / _health.GetMaxHealth();
-        
-        if (true == _bDead)
-            _ratio = 0.0f;
-
+        float _currentHp = _health.GetCurrentHealth();
+        float _maxHp = _health.GetMaxHealth();
+        float _ratio = Mathf.Clamp01(_currentHp / _maxHp);
         _bar.UpdateValue(_ratio);
+        
+        // bDead 타이밍 보완: 실제 체력이 0 이하인 경우도 사망으로 간주
+        bool _isDead = (true == _bDead || 0.0f >= _currentHp);
 
-        if (true == _bDead)
+        if (true == _isDead)
         {
-            _bar.OnHide();
+            _bar.OnHide(hpBarDeadShowDuration);
             return;
         }
 

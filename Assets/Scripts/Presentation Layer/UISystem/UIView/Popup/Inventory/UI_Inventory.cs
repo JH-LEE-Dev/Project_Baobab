@@ -2,14 +2,18 @@ using System;
 using System.Collections.Generic;
 using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using PresentationLayer.UISystem.CustomNumber;
 
+/// <summary>
+/// 인벤토리 UI의 전체적인 로직을 관리하는 클래스입니다.
+/// 슬롯 생성, 데이터 바인딩, 재화 표시 및 팝업 연동을 담당합니다.
+/// </summary>
 public class UI_Inventory : MonoBehaviour
 {
-    //이벤트
-    public event Action<IInventorySlot> SendDeleteItemEvent;
+    // //이벤트
+    public event Action<IInventorySlot> sendDeleteItemEvent;
 
+    // //외부 의존성
     [Header("Binding Obj")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
@@ -24,41 +28,41 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private GameObject uiPopupPrefab;
 
     [Header("Inventory Settings")]
-    [SerializeField] private List<UI_InventorySlot> inventorySlots;
+    [SerializeField] private List<UI_InventorySlot> inventorySlots = new List<UI_InventorySlot>(32);
     [SerializeField] private float popupYOffset = 30.0f;
 
+    // //내부 의존성
     private const int defaultPopupCap = 12;
 
     private IInventory inventory;
     private IMoneyData moneyData;
-
     private UI_InventoryPopup invPopup;
-
-    public MapType currentMapType { get; set; } = MapType.Town;
     private MapType prevMapType = MapType.Town;
 
+    public MapType currentMapType { get; set; } = MapType.Town;
     public bool isOpening { get; private set; } = false;
 
     public Action inventoryHoverEvent;
     public Action inventoryUnHoverEvent;
 
+    // //퍼블릭 초기화 및 제어 메서드
+
     public void Initialize(Transform _uiRoot, Action _clickedHomingEvent, Action _hoverEvent, Action _unHoverEvent)
     {
-        omp?.Initialize();
+        if (null != omp)
+            omp.Initialize();
 
-        Init_Honing(_clickedHomingEvent);
-        Init_InventoryPopup();
-        Init_SelectionCursor();
-        Init_Coins();
-        Init_Backpack();
+        InitHoning(_clickedHomingEvent);
+        InitInventoryPopup();
+        InitSelectionCursor();
+        InitCoins();
+        InitBackpack();
 
-        inventoryHoverEvent -= _hoverEvent;
-        inventoryHoverEvent += _hoverEvent;
+        inventoryHoverEvent = _hoverEvent;
+        inventoryUnHoverEvent = _unHoverEvent;
 
-        inventoryUnHoverEvent -= _unHoverEvent;
-        inventoryUnHoverEvent += _unHoverEvent;
-
-        inventorySlots.Clear();
+        // 기존 슬롯이 있다면 재사용하기 위해 Clear() 대신 상태만 관리하도록 수정 가능하나, 
+        // 여기서는 안전하게 리스트만 유지하고 부족분만 생성하는 방식으로 개선
         UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
     }
 
@@ -67,41 +71,48 @@ public class UI_Inventory : MonoBehaviour
         inventory = _inventory;
         moneyData = _moneyData;
 
-        uiCoin?.SetMoneyType(MoneyType.Coin);
-        uiSubCoin?.SetMoneyType(MoneyType.Carrot);
+        if (null != uiCoin)
+            uiCoin.SetMoneyType(MoneyType.Coin);
+        
+        if (null != uiSubCoin)
+            uiSubCoin.SetMoneyType(MoneyType.Carrot);
+            
         CharactersMoneyChanged();
     }
 
-    #region [ Inventory UI ]
-
     public void UpdateMaxSlotCount(int _cnt)
     {
-        if (null == uiSlotPrefab)
+        if (null == uiSlotPrefab || null == invBackground)
             return;
 
-        int needCount = _cnt - inventorySlots.Count;
+        int _currentCount = inventorySlots.Count;
+        int _needCount = _cnt - _currentCount;
 
-        while (0 < needCount--)
+        if (0 >= _needCount)
+            return;
+
+        for (int _i = 0; _i < _needCount; _i++)
         {
-            UI_InventorySlot slot = Instantiate(uiSlotPrefab, invBackground.transform).GetComponent<UI_InventorySlot>();
+            GameObject _slotObj = Instantiate(uiSlotPrefab, invBackground.transform);
+            UI_InventorySlot _slot = _slotObj.GetComponent<UI_InventorySlot>();
 
-            if (null == slot)
-                return;
+            if (null == _slot)
+                continue;
 
-            slot.Initialize();
+            _slot.Initialize();
 
-            slot.deleteItem -= SendDeleteItem;
-            slot.deleteItem += SendDeleteItem;
+            _slot.deleteItem -= SendDeleteItem;
+            _slot.deleteItem += SendDeleteItem;
 
-            slot.enterSlot -= EnterPopup;
-            slot.enterSlot += EnterPopup;
+            _slot.enterSlot -= HandleEnterPopup;
+            _slot.enterSlot += HandleEnterPopup;
 
-            slot.exitSlot -= ExitPopup;
-            slot.exitSlot += ExitPopup;
-            slot.exitSlot -= inventoryUnHoverEvent;
-            slot.exitSlot += inventoryUnHoverEvent;
+            _slot.exitSlot -= HandleExitPopup;
+            _slot.exitSlot += HandleExitPopup;
+            _slot.exitSlot -= inventoryUnHoverEvent;
+            _slot.exitSlot += inventoryUnHoverEvent;
 
-            inventorySlots.Add(slot);
+            inventorySlots.Add(_slot);
         }
     }
 
@@ -110,126 +121,123 @@ public class UI_Inventory : MonoBehaviour
         if (null == inventory)
             return;
 
-        SendDeleteItemEvent.Invoke(_inData);
-
+        sendDeleteItemEvent?.Invoke(_inData);
         UpdateSlots(inventory.inventorySlots);
-        //invPopup?.gameObject.SetActive(false);
     }
 
     public void Refresh()
     {
-        UpdateSlots(inventory?.inventorySlots);  
+        if (null != inventory)
+            UpdateSlots(inventory.inventorySlots);  
     } 
 
     private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
     {
-        if (null == _items)
+        if (null == _items || null == inventory)
             return;
 
-        int itemCount = inventory.currentSlotCnt;
+        int _itemCount = inventory.currentSlotCnt;
+        int _maxSlots = inventorySlots.Count;
 
-        for (int i = 0; i < inventorySlots.Count; ++i)
+        for (int _i = 0; _i < _maxSlots; ++_i)
         {
-            UI_InventorySlot slot = inventorySlots[i];
+            UI_InventorySlot _slot = inventorySlots[_i];
 
-            if (i < itemCount)
+            if (_i < _itemCount)
             {
-                IInventorySlot item = _items[i];
+                IInventorySlot _item = _items[_i];
 
-                if (false == slot.gameObject.activeSelf)
-                    slot.gameObject.SetActive(true);
+                if (false == _slot.gameObject.activeSelf)
+                    _slot.gameObject.SetActive(true);
 
-                slot.UpdateBindSlotData(item);
-                slot.UpdateItemCount(item.count);
+                _slot.UpdateBindSlotData(_item);
+                _slot.UpdateItemCount(_item.count);
             }
             else
             {
-                if (true == slot.gameObject.activeSelf)
+                if (true == _slot.gameObject.activeSelf)
                 {
-                    slot.ResetData();
-                    slot.gameObject.SetActive(false);
+                    _slot.ResetData();
+                    _slot.gameObject.SetActive(false);
                 }
             }
         }
     }
 
-    private void Init_InventoryPopup()
+    private void InitInventoryPopup()
     {
         if (null == uiPopupPrefab)
             return;
 
-        invPopup = Instantiate(uiPopupPrefab, this.transform.parent).GetComponent<UI_InventoryPopup>();
+        GameObject _popupObj = Instantiate(uiPopupPrefab, transform.parent);
+        invPopup = _popupObj.GetComponent<UI_InventoryPopup>();
 
-        if (null == invPopup)
-            return;
-
-        invPopup.Initialize(defaultPopupCap);
-        invPopup.gameObject.SetActive(false);
+        if (null != invPopup)
+        {
+            invPopup.Initialize(defaultPopupCap);
+            invPopup.gameObject.SetActive(false);
+        }
     }
 
-    private void Init_SelectionCursor()
+    private void InitSelectionCursor()
     {
-        if (null == selectionCursor)
-            return;
-
-        selectionCursor.Initialize(selectionCursor.CursorSize);
+        if (null != selectionCursor)
+            selectionCursor.Initialize(selectionCursor.CursorSize);
     }
 
-#endregion
-
-#region  [ Hover Event ]
-
-    private void EnterPopup(UI_InventorySlot _slot, IItemData _itemData, Vector2 _position)
+    private void HandleEnterPopup(UI_InventorySlot _slot, IItemData _itemData, Vector2 _position)
     {
-        ILogItemData logItemData = _itemData as ILogItemData;
+        ILogItemData _logItemData = _itemData as ILogItemData;
         
-        selectionCursor?.Show(_slot.GetComponent<RectTransform>());
+        if (null != selectionCursor)
+            selectionCursor.Show(_slot.GetComponent<RectTransform>());
 
         inventoryHoverEvent?.Invoke();
 
-        if (null == invPopup || null == logItemData)
+        if (null == invPopup || null == _logItemData)
             return;
 
         _position.y += popupYOffset;
 
-        invPopup.SetupItem(logItemData, _position);
+        invPopup.SetupItem(_logItemData, _position);
         invPopup.OnShow();
     }
 
-    private void ExitPopup()
+    private void HandleExitPopup()
     {
-        selectionCursor?.Hide();
+        if (null != selectionCursor)
+            selectionCursor.Hide();
 
-        if (null == invPopup)
-            return;
-            
-        invPopup.OnHide();
+        if (null != invPopup)
+            invPopup.OnHide();
     }
-    #endregion
 
-    private void Init_Honing(Action clickedHomingEvent)
+    private void InitHoning(Action _clickedHomingEvent)
     {
         if (null == uiHoming)
             return;
 
         uiHoming.Initialize();
-
-        uiHoming.clickedEvent = clickedHomingEvent;
+        uiHoming.clickedEvent = _clickedHomingEvent;
     }
 
-    private void Init_Coins()
+    private void InitCoins()
     {
-        uiCoin?.Initialize();
-        uiSubCoin?.Initialize();
+        if (null != uiCoin) uiCoin.Initialize();
+        if (null != uiSubCoin) uiSubCoin.Initialize();
     }
 
-    private void Init_Backpack()
+    private void InitBackpack()
     {
-        uiBackpack?.Initialize();
+        if (null != uiBackpack)
+            uiBackpack.Initialize();
     }
 
     public void CharacterEarnMoney(MoneyType _moneyType)
     {
+        if (null == moneyData)
+            return;
+
         if (MoneyType.Coin == _moneyType)
             uiCoin?.SetNumberAnimated(moneyData.money);
         else if (MoneyType.Carrot == _moneyType)
@@ -238,31 +246,22 @@ public class UI_Inventory : MonoBehaviour
 
     public void CharactersMoneyChanged()
     {
+        if (null == moneyData)
+            return;
+
         uiCoin?.SetNumber(moneyData.money);
         uiSubCoin?.SetNumber(moneyData.carrot);
     }
 
-    public void ChangedShowMoneyType()
-    {
-        if (null == uiSubCoin)
-            return;
-
-    }
-
     public void InventoryShowEvent()
     {
-        if (null == inventory)
-            return;
-
-        IReadOnlyList<IInventorySlot> items = inventory.inventorySlots;
-
-        UpdateSlots(items);
+        if (null != inventory)
+            UpdateSlots(inventory.inventorySlots);
     }
 
     public void MapChanged(MapType _currentMap)
     {
         prevMapType = currentMapType;
-
         currentMapType = _currentMap;
 
         if (null != uiHoming)
@@ -276,11 +275,10 @@ public class UI_Inventory : MonoBehaviour
         if (null == omp)
             return;
 
-        ExitPopup();
-
+        HandleExitPopup();
         isOpening = false;
 
-        omp.PlayBackward("Backpack", bReset: true,  _skip: true);
+        omp.PlayBackward("Backpack", bReset: true, _skip: true);
         omp.PlayBackward("Coins", bReset: true, _skip: true);
         omp.PlayBackward("Popup", bReset: true, _skip: true);
         omp.PlayBackward("Homing", bReset: true, _skip: true);
@@ -290,50 +288,63 @@ public class UI_Inventory : MonoBehaviour
     {
         isOpening = false;
 
-        omp.PlayBackward("Backpack", bReset: true);
+        if (null != omp)
+        {
+            omp.PlayBackward("Backpack", bReset: true);
+            omp.PlayBackward("Popup", bReset: true);
+        }
+
         uiBackpack?.CloseInventory();
-        ExitPopup();
-        omp.PlayBackward("Popup", bReset: true);
+        HandleExitPopup();
 
         if (MapType.Town == currentMapType)
             return;
 
-        omp.PlayBackward("Homing", bReset: true);
-        omp.PlayBackward("Coins", bReset: true);
+        if (null != omp)
+        {
+            omp.PlayBackward("Homing", bReset: true);
+            omp.PlayBackward("Coins", bReset: true);
+        }
     }
 
     public void OnShow()
     {
         isOpening = true;
 
-        omp.Play("Backpack", bReset: true);
+        if (null != omp)
+        {
+            omp.Play("Backpack", bReset: true);
+            omp.Play("Popup", bReset: true);
+        }
+
         uiBackpack?.OpenInventory();
         InventoryShowEvent();
-        omp.Play("Popup", bReset: true);
 
         if (MapType.Town == currentMapType)
             return;
 
-        omp.Play("Homing", bReset: true);
-        omp.Play("Coins", bReset: true);
+        if (null != omp)
+        {
+            omp.Play("Homing", bReset: true);
+            omp.Play("Coins", bReset: true);
+        }
     }
 
-    public void Destory()
+    public void Release()
     {
-        for (int i = 0; i < inventorySlots.Count; i++)
+        for (int _i = 0; _i < inventorySlots.Count; _i++)
         {
-            UI_InventorySlot slot = inventorySlots[i];
+            UI_InventorySlot _slot = inventorySlots[_i];
             
-            if (null == slot)
+            if (null == _slot)
                 continue;
 
-            slot.deleteItem -= SendDeleteItem;
-            slot.enterSlot -= EnterPopup;
-            slot.exitSlot -= ExitPopup;
-            slot.exitSlot -= inventoryUnHoverEvent;
+            _slot.deleteItem -= SendDeleteItem;
+            _slot.enterSlot -= HandleEnterPopup;
+            _slot.exitSlot -= HandleExitPopup;
+            _slot.exitSlot -= inventoryUnHoverEvent;
         }
-
-
+        
+        inventorySlots.Clear();
     }
-
 }

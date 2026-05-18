@@ -455,24 +455,6 @@ MonoBehaviour:
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
-  - motionTag: Coins
-    motionPrefab: {fileID: 4078735820030071434}
-    targets:
-    - transform: {fileID: 0}
-      rectTransform: {fileID: 6456015435980945757}
-      canvasGroup: {fileID: 0}
-      spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 0}
-    motionInstance: {fileID: 0}
-  - motionTag: Homing
-    motionPrefab: {fileID: 7184014922616199705}
-    targets:
-    - transform: {fileID: 0}
-      rectTransform: {fileID: 1087878590980104742}
-      canvasGroup: {fileID: 6525349047004360463}
-      spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 0}
-    motionInstance: {fileID: 0}
   - motionTag: Popup
     motionPrefab: {fileID: 8752792782165176703}
     targets:
@@ -498,7 +480,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &8726284360499561744
 RectTransform:
   m_ObjectHideFlags: 0
@@ -784,7 +766,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3273485972740379200
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1158,6 +1140,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: UI_Homing
       objectReference: {fileID: 0}
+    - target: {fileID: 7019952593193086363, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1177,11 +1163,6 @@ MonoBehaviour:
 --- !u!224 &1087878590980104742 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5955985603632891772, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
-  m_PrefabInstance: {fileID: 6755120754083112282}
-  m_PrefabAsset: {fileID: 0}
---- !u!225 &6525349047004360463 stripped
-CanvasGroup:
-  m_CorrespondingSourceObject: {fileID: 518389957901863509, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
   m_PrefabInstance: {fileID: 6755120754083112282}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7743275248728500856

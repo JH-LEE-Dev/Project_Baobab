@@ -29,7 +29,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private static readonly string hoverMotionKey = "ExitWiggle";
         private static readonly string hoverOffMotionKey = "ExitOffWiggle";
-        private static readonly string clickMotionKey = "ExitClickTwist";
 
         // //퍼블릭 초기화 및 제어 메서드
 
