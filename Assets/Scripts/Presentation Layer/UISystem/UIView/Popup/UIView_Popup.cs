@@ -23,7 +23,6 @@ public class UIView_Popup : UIView
     private MapType currentMapType;
     private ForestType currentForestType;
 
-
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
@@ -53,7 +52,7 @@ public class UIView_Popup : UIView
     {
         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
 
-        uI_Inventory.ReleaseEvents();
+        uI_Inventory?.ReleaseEvents(InventoryHoverEvent, InventoryUnHoverEvent);
     }
 
     #region [ Inventory UI ]
@@ -67,7 +66,7 @@ public class UIView_Popup : UIView
         if (null == uI_Inventory)
             return;
 
-        uI_Inventory.Initialize(uiRoot, OnHomingButtonClicked);
+        uI_Inventory.Initialize(uiRoot, OnHomingButtonClicked, InventoryHoverEvent, InventoryUnHoverEvent);
         uI_Inventory.OnHide();
     }
 
@@ -138,6 +137,16 @@ public class UIView_Popup : UIView
         currentForestType = _currentForestType;
 
         uI_Inventory?.MapChanged(_currentMapType);
+    }
+
+    private void InventoryHoverEvent()
+    {
+        
+    }
+
+    private void InventoryUnHoverEvent()
+    {
+        
     }
     
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.

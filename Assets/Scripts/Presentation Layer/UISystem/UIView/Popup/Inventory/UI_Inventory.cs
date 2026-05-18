@@ -39,11 +39,14 @@ public class UI_Inventory : MonoBehaviour
 
     public bool isOpening { get; private set; } = false;
 
-    public void Initialize(Transform uiRoot, Action clickedHomingEvent)
+    public Action inventoryHoverEvent;
+    public Action inventoryUnHoverEvent;
+
+    public void Initialize(Transform _uiRoot, Action _clickedHomingEvent, Action _hoverEvent, Action _unHoverEvent)
     {
         omp?.Initialize();
 
-        Init_Honing(clickedHomingEvent);
+        Init_Honing(_clickedHomingEvent);
         Init_InventoryPopup();
         Init_SelectionCursor();
         Init_Coins();
@@ -51,6 +54,12 @@ public class UI_Inventory : MonoBehaviour
 
         inventorySlots.Clear();
         UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
+
+        inventoryHoverEvent -= _hoverEvent;
+        inventoryHoverEvent += _hoverEvent;
+
+        inventoryUnHoverEvent -= _unHoverEvent;
+        inventoryUnHoverEvent += _unHoverEvent;
     }
 
     public void BindData(IInventory _inventory, IMoneyData _moneyData)
@@ -178,6 +187,9 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         _position.y += popupYOffset;
+        
+        inventoryHoverEvent?.Invoke();
+
         invPopup.SetupItem(logItemData, _position);
         invPopup.OnShow();
     }
@@ -188,6 +200,8 @@ public class UI_Inventory : MonoBehaviour
 
         if (null == invPopup)
             return;
+
+        inventoryUnHoverEvent?.Invoke();
 
         invPopup.OnHide();
     }
@@ -212,11 +226,6 @@ public class UI_Inventory : MonoBehaviour
     private void Init_Backpack()
     {
         uiBackpack?.Initialize();
-    }
-
-    public void ReleaseEvents()
-    {
-       
     }
 
     public void CharacterEarnMoney(MoneyType _moneyType)
@@ -322,6 +331,8 @@ public class UI_Inventory : MonoBehaviour
             slot.enterSlot -= EnterPopup;
             slot.exitSlot -= ExitPopup;
         }
+
+
     }
 
 }
