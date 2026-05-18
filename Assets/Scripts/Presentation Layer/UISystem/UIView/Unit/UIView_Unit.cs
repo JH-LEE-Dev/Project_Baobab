@@ -129,11 +129,7 @@ public class UIView_Unit : UIView
     {
         _bar.Setup(_tf.gameObject, _yOffset, hpBarShowDuration);
 
-        float _ratio = _health.GetCurrentHealth() / _health.GetMaxHealth();
-        
-        if (true == _bDead)
-            _ratio = 0.0f;
-
+        float _ratio = Mathf.Clamp01(_health.GetCurrentHealth() / _health.GetMaxHealth());
         _bar.UpdateValue(_ratio);
 
         if (true == _bDead)

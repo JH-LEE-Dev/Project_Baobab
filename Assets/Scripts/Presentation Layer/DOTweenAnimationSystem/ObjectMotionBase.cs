@@ -97,6 +97,9 @@ namespace PresentationLayer.DOTweenAnimationSystem
         public void SetDelayForward(float _delay) => forwardDelay = _delay;
         public void SetDelayBackward(float _delay) => backwardDelay = _delay;
 
+        public void SetDurationForward(float _duration) => forwardDuration = _duration;
+        public void SetDurationBackward(float _duration) => backwardDuration = _duration;
+
         protected virtual Sequence StopAndBinding(UnityAction _onStart, UnityAction _onComplete)
         {
             Stop();

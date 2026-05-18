@@ -81,7 +81,14 @@ public class HUD_HPBar : HUD_ProgressBar
         isHiding = true;
         
         if (null != motionPlayer)
-            motionPlayer.PlayBackward("Show", _onComplete: onHideCompleteAction, bReset: true);
+        {
+            MotionPlaySettings newPlaySettings = new MotionPlaySettings();
+            newPlaySettings.onStart = null;
+            newPlaySettings.onComplete = onHideCompleteAction;
+            newPlaySettings.bReset = true;
+
+            motionPlayer.PlayBackward("Show", newPlaySettings);
+        }
         else
             HandleHideComplete();
     }
