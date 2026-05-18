@@ -92,6 +92,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         signalHub.Subscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
+        signalHub.Subscribe<TownStartedSignal>(TownStarted);
     }
 
     private void UnSubscribeSignals()
@@ -101,6 +102,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         signalHub.UnSubscribe<AnimalIsDeadSignal>(AnimalIsDead);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
+        signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
     }
 
     private void BindEvents()
@@ -179,5 +181,10 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _prestigeLevelIncreasedSignal)
     {
         densityManager.PrestigeLevelIncreased(_prestigeLevelIncreasedSignal.level);
+    }
+
+    private void TownStarted(TownStartedSignal _townStartedSignal)
+    {
+        environmentObjManager.ReleaseAllObjs();
     }
 }
