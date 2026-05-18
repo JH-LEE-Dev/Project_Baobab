@@ -699,6 +699,66 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TentManager
   tentObj: {fileID: -9017872294789104538, guid: e600b07448022cd43b861ef01d5ce086, type: 3}
   tentSpawnPoint: {fileID: 1310982318135993695, guid: 1a6a63c7818566c4db71dc452b547509, type: 3}
+--- !u!1 &3821321540281660537
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5845326770336975498}
+  - component: {fileID: 3138065965067423404}
+  m_Layer: 0
+  m_Name: EnvironmentObjManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5845326770336975498
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3821321540281660537}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 163844690309674911}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3138065965067423404
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3821321540281660537}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eca2f5a2bea69514aa6b6be042df70dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnvironmentObjManager
+  envObjPrefabs:
+  - {fileID: 1247708929555277769, guid: 626303961cb4de4418c900b680db4cee, type: 3}
+  cullingDistance: 25
+  cullingUpdateInterval: 0.2
+  collectionCheck: 0
+  defaultCapacity: 50
+  maxSize: 200
+  cloudSprites:
+  - {fileID: 21300000, guid: 166bb817ec776e94d9d3ab9664e8592e, type: 3}
+  - {fileID: 21300000, guid: 1cf8b3dcf8d645f4da556c1e052d1cdd, type: 3}
+  - {fileID: 21300000, guid: 83c2bad7de0384e468ce12c34c95b8f1, type: 3}
+  - {fileID: 21300000, guid: 5ab479140c3366b4d83dc875c4087476, type: 3}
+  - {fileID: 21300000, guid: b600a6c252153fd48af425fb7aa2a924, type: 3}
+  cloudCnt: 500
+  cloudMinSpeed: 0.06
+  cloudMaxSpeed: 0.075
 --- !u!1 &3941740186820979649
 GameObject:
   m_ObjectHideFlags: 0
@@ -1306,6 +1366,7 @@ Transform:
   - {fileID: 1932927699553671600}
   - {fileID: 3106884116077858503}
   - {fileID: 1303317840303477457}
+  - {fileID: 5845326770336975498}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2826110377404474478

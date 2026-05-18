@@ -44,10 +44,12 @@ public class TreeVisualComponent : MonoBehaviour
     private Transform cachedTransform;
     private Transform topTransform;
     private Transform topShadowTransform;
+
     private Vector3 topRendererBaseLocalPosition;
     private Quaternion topRendererBaseLocalRotation;
     private Vector3 topShadowBaseLocalPosition;
     private Quaternion topShadowBaseLocalRotation;
+
     private float swayPhase;
     private bool isOnWaterActive = false;
 
@@ -204,6 +206,16 @@ public class TreeVisualComponent : MonoBehaviour
         {
             bottomRenderer.color = colorSet.bottomColor;
         }
+
+        if (topOnWaterSR != null)
+        {
+            topOnWaterSR.color = colorSet.topColor;
+        }
+
+        if (bottomOnWaterSR != null)
+        {
+            bottomOnWaterSR.color = colorSet.bottomColor;
+        }
     }
 
     // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
@@ -220,6 +232,16 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomRenderer != null)
         {
             bottomRenderer.color = Color.white;
+        }
+
+        if (topOnWaterSR != null)
+        {
+            topOnWaterSR.color = Color.white;
+        }
+
+        if (bottomOnWaterSR != null)
+        {
+            bottomOnWaterSR.color = Color.white;
         }
 
         ApplyDefaultScale();
@@ -246,19 +268,37 @@ public class TreeVisualComponent : MonoBehaviour
         return color;
     }
 
-    // 그림자 렌더러가 본체와 같은 스프라이트와 색상을 따라가도록 동기화한다.
+    // 그림자 및 물 위 렌더러가 본체와 같은 스프라이트와 색상을 따라가도록 동기화한다.
     private void SyncShadowSprite()
     {
-        if (topShadowRenderer != null && topRenderer != null)
+        if (topRenderer != null)
         {
-            topShadowRenderer.sprite = topRenderer.sprite;
-            topShadowRenderer.color = topRenderer.color;
+            if (topShadowRenderer != null)
+            {
+                topShadowRenderer.sprite = topRenderer.sprite;
+                topShadowRenderer.color = topRenderer.color;
+            }
+
+            if (topOnWaterSR != null)
+            {
+                topOnWaterSR.sprite = topRenderer.sprite;
+                topOnWaterSR.color = topRenderer.color;
+            }
         }
 
-        if (bottomShadowRenderer != null && bottomRenderer != null)
+        if (bottomRenderer != null)
         {
-            bottomShadowRenderer.sprite = bottomRenderer.sprite;
-            bottomShadowRenderer.color = bottomRenderer.color;
+            if (bottomShadowRenderer != null)
+            {
+                bottomShadowRenderer.sprite = bottomRenderer.sprite;
+                bottomShadowRenderer.color = bottomRenderer.color;
+            }
+
+            if (bottomOnWaterSR != null)
+            {
+                bottomOnWaterSR.sprite = bottomRenderer.sprite;
+                bottomOnWaterSR.color = bottomRenderer.color;
+            }
         }
     }
 
@@ -374,6 +414,8 @@ public class TreeVisualComponent : MonoBehaviour
         bottomRenderer.DOKill();
         if (topShadowRenderer != null) topShadowRenderer.DOKill();
         if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
+        if (topOnWaterSR != null) topOnWaterSR.DOKill();
+        if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
 
         Color topColor = topRenderer.color;
         topColor.a = _alpha;
@@ -396,6 +438,20 @@ public class TreeVisualComponent : MonoBehaviour
             bsColor.a = _alpha;
             bottomShadowRenderer.color = bsColor;
         }
+
+        if (topOnWaterSR != null)
+        {
+            Color towColor = topOnWaterSR.color;
+            towColor.a = _alpha;
+            topOnWaterSR.color = towColor;
+        }
+
+        if (bottomOnWaterSR != null)
+        {
+            Color bowColor = bottomOnWaterSR.color;
+            bowColor.a = _alpha;
+            bottomOnWaterSR.color = bowColor;
+        }
     }
 
     public void FadeAlpha(float _targetAlpha, float _duration)
@@ -414,6 +470,16 @@ public class TreeVisualComponent : MonoBehaviour
         {
             bottomShadowRenderer.DOKill();
             bottomShadowRenderer.DOFade(_targetAlpha, _duration);
+        }
+        if (topOnWaterSR != null)
+        {
+            topOnWaterSR.DOKill();
+            topOnWaterSR.DOFade(_targetAlpha, _duration);
+        }
+        if (bottomOnWaterSR != null)
+        {
+            bottomOnWaterSR.DOKill();
+            bottomOnWaterSR.DOFade(_targetAlpha, _duration);
         }
     }
 

@@ -1,6 +1,6 @@
-Shader "Custom/OnWaterObject"
+Shader "Custom/OnWaterCloud"
 {
-    Properties
+   Properties
     {
         _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1,1,1,1)
@@ -38,8 +38,8 @@ Shader "Custom/OnWaterObject"
             Stencil
             {
                 Ref 1
-                ReadMask 3
-                WriteMask 2
+                ReadMask 9
+                WriteMask 8
                 Comp Equal
                 Pass Invert
             }

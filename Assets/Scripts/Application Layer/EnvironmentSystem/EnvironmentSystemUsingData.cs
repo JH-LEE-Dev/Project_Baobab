@@ -1,9 +1,17 @@
+using UnityEngine;
 
 public enum WeatherType
 {
     Normal,
     Rain,
 }
+
+public enum EnvironmentObjType
+{
+    None,
+    Cloud,
+}
+
 public struct GroundPhysicsData
 {
     public float acceleration;  // 가속도
@@ -18,3 +26,14 @@ public struct GroundPhysicsData
     }
 }
 
+public struct WaterPuddleData
+{
+    public Vector3 center;
+    public float range;
+
+    public WaterPuddleData(Vector3 _center, float _range)
+    {
+        center = _center;
+        range = _range;
+    }
+}
