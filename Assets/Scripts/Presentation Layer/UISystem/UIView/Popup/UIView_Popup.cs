@@ -50,8 +50,8 @@ public class UIView_Popup : UIView
     private void ReleaseEvents()
     {
         uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
-
-        uI_Inventory?.ReleaseEvents(InventoryHoverEvent, InventoryUnHoverEvent);
+        uI_Inventory.inventoryHoverEvent -= InventoryHoverEvent;
+        uI_Inventory.inventoryUnHoverEvent -= InventoryUnHoverEvent; 
     }
 
     #region [ Inventory UI ]
