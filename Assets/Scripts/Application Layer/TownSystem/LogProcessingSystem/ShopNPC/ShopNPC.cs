@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using UnityEngine.UI;
 
 public class ShopNPC : MonoBehaviour, IShopNPC
 {
@@ -21,6 +22,9 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     Transform IShopNPC.npcTransform => npcTransform;
 
     public int currentMoney => money;
+
+    [SerializeField] private GameObject outLineObject;
+    [SerializeField] private GameObject frontObject;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -74,7 +78,9 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         if (_other.CompareTag(PLAYER_TAG))
         {
             bCanInteract = true;
-
+            frontObject.SetActive(false);
+            outLineObject.SetActive(true);
+            
             InteractStateEvent?.Invoke(true);
         }
     }
@@ -83,6 +89,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
+            frontObject.SetActive(true);
+            outLineObject.SetActive(false);
             bCanInteract = false;
             InteractStateEvent?.Invoke(false);
         }

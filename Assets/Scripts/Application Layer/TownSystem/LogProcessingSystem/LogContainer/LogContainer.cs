@@ -4,6 +4,7 @@ using UnityEngine.Pool;
 using System;
 using System.Text;
 using System.Collections;
+using UnityEngine.UI;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
@@ -18,6 +19,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private LogItemPoolingManager logItemPoolManager;
     [SerializeField] private Transform inputTransform;
 
+    [SerializeField] private GameObject outLineObject;
+
+    private SpriteRenderer sr;
 
     //외부 의존성
 
@@ -69,7 +73,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         logItemPoolManager = logItemPoolingManager;
 
         // 시각적 효과를 위한 트랜스폼 캐싱
-        var sr = GetComponentInChildren<SpriteRenderer>();
+        sr = GetComponent<SpriteRenderer>();
         if (sr != null) visualTransform = sr.transform;
 
         transferWait = new WaitForSeconds(transferInterval);
@@ -188,10 +192,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         bounceTime += _deltaTime;
         float t = bounceTime / BOUNCE_DURATION;
-        
+
         // 진폭을 0.4로 키우고 감쇠를 3f로 늦춰 더 찰진 느낌 부여
         float curve = Mathf.Sin(t * Mathf.PI * 5f) * Mathf.Exp(-t * 3f) * 0.4f;
-        
+
         if (visualTransform != null)
         {
             // X축 확대 시 Y축 축소 (Squash & Stretch)
@@ -393,8 +397,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             for (int i = 0; i < flyingItems.Count; i++)
             {
-                if (flyingItems[i].itemType == ItemType.Log && 
-                    flyingItems[i].logState == logSource.logState && 
+                if (flyingItems[i].itemType == ItemType.Log &&
+                    flyingItems[i].logState == logSource.logState &&
                     flyingItems[i].treeType == logSource.treeType)
                     pendingCount++;
             }
@@ -546,6 +550,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             bCanInteract = true;
             InteractStateEvent?.Invoke(true);
+
+            sr.enabled = false;
+            outLineObject.SetActive(true);
         }
     }
 
@@ -555,6 +562,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             bCanInteract = false;
             InteractStateEvent?.Invoke(false);
+
+            outLineObject.SetActive(false);
+            sr.enabled = true;
 
             if (transferCoroutine != null)
             {

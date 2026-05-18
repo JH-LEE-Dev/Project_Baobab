@@ -25,6 +25,9 @@ public class OffroadVehicleObj : MonoBehaviour
 
     [SerializeField] private OffsetShadow baseShadow;
 
+    [SerializeField] private GameObject outLineObject;
+    [SerializeField] private GameObject baseObject;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
     {
@@ -72,6 +75,9 @@ public class OffroadVehicleObj : MonoBehaviour
         if (bCanJump == false)
             return;
 
+        baseObject.SetActive(false);
+        outLineObject.SetActive(true);
+
         bOverlapped = true;
     }
 
@@ -79,6 +85,9 @@ public class OffroadVehicleObj : MonoBehaviour
     {
         if (bCanJump == false)
             return;
+
+        baseObject.SetActive(true);
+        outLineObject.SetActive(false);
 
         bOverlapped = false;
         PortalDeActivatedEvent?.Invoke();

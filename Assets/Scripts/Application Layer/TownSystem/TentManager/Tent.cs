@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using Unity.VisualScripting;
 public class Tent : MonoBehaviour
 {
     public event Action<bool> TentInteractEvent;
@@ -11,9 +12,14 @@ public class Tent : MonoBehaviour
     private bool bCanInteract = false;
     private bool bInteract = false;
 
+    private SpriteRenderer sr;
+
+    [SerializeField] private GameObject outLineObject;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
+        sr = GetComponent<SpriteRenderer>();
 
         BindEvents();
     }
@@ -54,6 +60,9 @@ public class Tent : MonoBehaviour
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
+            sr.enabled = false;
+            outLineObject.SetActive(true);
+
             bCanInteract = true;
         }
     }
@@ -62,6 +71,9 @@ public class Tent : MonoBehaviour
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
+            sr.enabled = true;
+            outLineObject.SetActive(false);
+
             if (bInteract == false)
                 bCanInteract = false;
         }
