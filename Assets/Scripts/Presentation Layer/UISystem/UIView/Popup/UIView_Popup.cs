@@ -23,6 +23,8 @@ public class UIView_Popup : UIView
     private MapType currentMapType;
     private ForestType currentForestType;
 
+    private bool isAutoOpenedByInteraction = false;
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
@@ -95,11 +97,13 @@ public class UIView_Popup : UIView
         base.OnShow();
 
         uI_Inventory?.OnShow();
+        isAutoOpenedByInteraction = false;
     }
 
     protected override void OnHide()
     {
         uI_Inventory?.OnHide();
+        isAutoOpenedByInteraction = false;
 
         base.OnHide();
     }
@@ -153,7 +157,22 @@ public class UIView_Popup : UIView
     //원목 보관함 상호작용 범위에 들어가거나 나왔을 때 호출
     public void LogContainerCanInteract(bool _bCanInteract)
     {
-        
+        if (true == _bCanInteract)
+        {
+            if (null != uI_Inventory && false == uI_Inventory.isOpening)
+            {
+                uI_Inventory.OnShow();
+                isAutoOpenedByInteraction = true;
+            }
+        }
+        else
+        {
+            if (true == isAutoOpenedByInteraction)
+            {
+                uI_Inventory?.OnHide();
+                isAutoOpenedByInteraction = false;
+            }
+        }
     }
 
     // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
