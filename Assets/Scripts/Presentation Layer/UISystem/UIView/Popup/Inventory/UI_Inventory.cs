@@ -52,14 +52,14 @@ public class UI_Inventory : MonoBehaviour
         Init_Coins();
         Init_Backpack();
 
-        inventorySlots.Clear();
-        UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
-
         inventoryHoverEvent -= _hoverEvent;
         inventoryHoverEvent += _hoverEvent;
 
         inventoryUnHoverEvent -= _unHoverEvent;
         inventoryUnHoverEvent += _unHoverEvent;
+
+        inventorySlots.Clear();
+        UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
     }
 
     public void BindData(IInventory _inventory, IMoneyData _moneyData)
@@ -98,6 +98,8 @@ public class UI_Inventory : MonoBehaviour
 
             slot.exitSlot -= ExitPopup;
             slot.exitSlot += ExitPopup;
+            slot.exitSlot -= inventoryUnHoverEvent;
+            slot.exitSlot += inventoryUnHoverEvent;
 
             inventorySlots.Add(slot);
         }
@@ -197,8 +199,6 @@ public class UI_Inventory : MonoBehaviour
     private void ExitPopup()
     {
         selectionCursor?.Hide();
-
-        inventoryUnHoverEvent?.Invoke();
 
         if (null == invPopup)
             return;
@@ -330,6 +330,7 @@ public class UI_Inventory : MonoBehaviour
             slot.deleteItem -= SendDeleteItem;
             slot.enterSlot -= EnterPopup;
             slot.exitSlot -= ExitPopup;
+            slot.exitSlot -= inventoryUnHoverEvent;
         }
 
 
