@@ -24,15 +24,15 @@ namespace PresentationLayer.DOTweenAnimationSystem
         public bool isSkipCallback;
         public float forceDelayForward;
         public float forceDelayBackward;
-        public float forceForwardDuration;
-        public float forceBackwardDuration;
+        public float forceDurationForward;
+        public float forceDurationBackward;
 
         public static MotionPlaySettings Default => new MotionPlaySettings()
         {
             forceDelayForward = -1f,
             forceDelayBackward = -1f,
-            forceForwardDuration = -1f,
-            forceBackwardDuration = -1f
+            forceDurationForward = -1f,
+            forceDurationBackward = -1f
         };
     }
 
@@ -109,11 +109,11 @@ namespace PresentationLayer.DOTweenAnimationSystem
             if (_settings.forceDelayBackward >= 0f) 
                 _entry.motionInstance.SetDelayBackward(_settings.forceDelayBackward);
 
-            if (_settings.forceForwardDuration >= 0f)
-                _entry.motionInstance.SetDurationForward(_settings.forceForwardDuration);
+            if (_settings.forceDurationForward >= 0f)
+                _entry.motionInstance.SetDurationForward(_settings.forceDurationForward);
 
-            if (_settings.forceBackwardDuration >= 0f)
-                _entry.motionInstance.SetDurationBackward(_settings.forceBackwardDuration);
+            if (_settings.forceDurationBackward >= 0f)
+                _entry.motionInstance.SetDurationBackward(_settings.forceDurationBackward);
 
             if (false == _isBackward)
                 _entry.motionInstance.Play(_entry.targets, _settings.onStart, _settings.onComplete, _settings.bReset);
