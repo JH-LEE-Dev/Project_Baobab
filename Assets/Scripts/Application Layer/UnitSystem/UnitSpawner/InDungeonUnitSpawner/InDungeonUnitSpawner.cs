@@ -123,7 +123,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         RefreshCullingGroup();
 
         // 4. 5초 후 점진적 스폰 루틴 시작
-        growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
+        //growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
     }
 
     private IEnumerator StartGrowthAfterDelay()

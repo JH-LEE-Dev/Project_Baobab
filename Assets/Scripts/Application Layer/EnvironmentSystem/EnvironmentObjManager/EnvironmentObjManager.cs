@@ -38,6 +38,7 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private int cloudCnt = 60;
     [SerializeField] private float cloudMinSpeed = 0.02f;
     [SerializeField] private float cloudMaxSpeed = 0.06f;
+    private List<int> cellIndices = new List<int>(100); // GC Alloc 방지용 재사용 리스트
 
 
     // // 퍼블릭 메서드
@@ -127,32 +128,43 @@ public class EnvironmentObjManager : MonoBehaviour
         float cellWidth = width / cols;
         float cellHeight = height / rows;
 
-        int spawnedCnt = 0;
         int totalCells = cols * rows;
+
+        // GC Alloc 방지
+        if (cellIndices.Capacity < totalCells)
+        {
+            cellIndices.Capacity = totalCells;
+        }
+        cellIndices.Clear();
 
         for (int i = 0; i < totalCells; i++)
         {
-            if (spawnedCnt >= cloudCnt) break;
+            cellIndices.Add(i);
+        }
 
-            int remainingCells = totalCells - i;
-            int remainingClouds = cloudCnt - spawnedCnt;
+        for (int i = 0; i < totalCells; i++)
+        {
+            int temp = cellIndices[i];
+            int randomIndex = UnityEngine.Random.Range(i, totalCells);
+            cellIndices[i] = cellIndices[randomIndex];
+            cellIndices[randomIndex] = temp;
+        }
 
-            if (UnityEngine.Random.Range(0, remainingCells) < remainingClouds)
-            {
-                int row = i / cols;
-                int col = i % cols;
+        int toSpawn = Mathf.Min(cloudCnt, totalCells);
+        for (int i = 0; i < toSpawn; i++)
+        {
+            int cellIdx = cellIndices[i];
+            int row = cellIdx / cols;
+            int col = cellIdx % cols;
 
-                float cellStartX = minX + col * cellWidth;
-                float cellStartY = minY + row * cellHeight;
+            float centerX = minX + (col + 0.5f) * cellWidth;
+            float centerY = minY + (row + 0.5f) * cellHeight;
 
-                float randomX = UnityEngine.Random.Range(cellStartX, cellStartX + cellWidth);
-                float randomY = UnityEngine.Random.Range(cellStartY, cellStartY + cellHeight);
+            float jitterX = UnityEngine.Random.Range(-cellWidth * 0.4f, cellWidth * 0.4f);
+            float jitterY = UnityEngine.Random.Range(-cellHeight * 0.4f, cellHeight * 0.4f);
 
-                Vector3 spawnPos = new Vector3(randomX, randomY, 0f);
-                SpawnCloudAt(spawnPos, minX, maxX);
-
-                spawnedCnt++;
-            }
+            Vector3 spawnPos = new Vector3(centerX + jitterX, centerY + jitterY, 0f);
+            SpawnCloudAt(spawnPos, minX, maxX);
         }
     }
 
