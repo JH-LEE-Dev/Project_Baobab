@@ -17,13 +17,13 @@ public class UIView_Unit : UIView
     [SerializeField] private GameObject hpBarPrefab;
 
     [Header("Offset Settings")]
-    [SerializeField] private float characterYOffset = 1.5f;
+    //[SerializeField] private float characterYOffset = 1.5f;
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
     [Header("Display Settings")]
     [SerializeField] private float hpBarShowDuration = 2.0f;
-    [SerializeField] private float hpBarDeadShowDuration = 0.2f;
+    [SerializeField] private float hpBarDeadShowDelay = 0.2f;
 
     private Dictionary<object, HUD_HPBar> activeHpBars = new Dictionary<object, HUD_HPBar>(64);
     private List<HUD_HPBar> hpBarPool = new List<HUD_HPBar>(32);
@@ -142,7 +142,7 @@ public class UIView_Unit : UIView
 
         if (true == _isDead)
         {
-            _bar.OnHide(hpBarDeadShowDuration);
+            _bar.OnHide(hpBarDeadShowDelay);
             return;
         }
 

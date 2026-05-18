@@ -17,9 +17,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //외부 의존성
         [Header("References")]
         [SerializeField] private HUD_MapSubSelector subSelector;
-        [SerializeField] private HUD_MapSunMoon sunMoon;
         [SerializeField] private HUD_MapSelectorButton selectButton;
         [SerializeField] private HUD_MapSelectorButton exitButton;
+        [SerializeField] private ObjectMotionPlayer motionPlayer;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private Image backgroundImage;
         [SerializeField] private Transform regionContainer;
@@ -76,9 +76,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != subSelector)
                 subSelector.Initialize(RefreshSelectButtonState);
 
-            if (null != sunMoon)
-                sunMoon.Initialize();
-
             if (null != selectButton)
                 selectButton.Initialize(HandleConfirm, "OkHover", "OkHoverOff", "OkClickTwist");
 
@@ -89,24 +86,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             isInitialized = true;
 
-            if (null != timeDataProvider)
-            {
-                if (null != sunMoon)
-                    sunMoon.SetInitialAlpha(timeDataProvider.isDay);
-                SetTimeState(timeDataProvider.isDay);
-            }
-            else
-            {
-                UpdateSunMoonState();
-            }
-
             SetUIAlpha(0.0f);
-        }
 
-        public void SetTimeState(bool _isDay)
-        {
-            isDayTime = _isDay;
-            UpdateSunMoonState();
+            
+            motionPlayer?.Play("Cloud1Floating"); 
+            motionPlayer?.Play("Cloud2Floating");
         }
 
         public void MapSelectorOpen()
@@ -134,8 +118,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             // 하위 지역이 즉시 보이도록 설정
             subSelector.SetVisibility(true);
-
-            sunMoon?.PlayOpenAnim();
 
             PlayFadeAnimation(1.0f);
         }
@@ -219,12 +201,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private void HandleExit() => onExitCallback?.Invoke();
 
-        private void UpdateSunMoonState()
-        {
-            if (null != sunMoon)
-                sunMoon.SetRotation(isDayTime, 0.25f);
-        }
-
         private void FocusRegion(int _index, bool _shouldPlayAnimation = false)
         {
             if (0 > _index || _index >= spawnedRegions.Count)
@@ -260,9 +236,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         private void RefreshSelectButtonState()
         {
-            if (null != timeDataProvider)
-                SetTimeState(timeDataProvider.isDay);
-
             if (null != currentFocusedRegion && null != subSelector)
                 currentFocusedRegion.UpdateObjectCount(subSelector.GetSelectedRegionNumber());
 

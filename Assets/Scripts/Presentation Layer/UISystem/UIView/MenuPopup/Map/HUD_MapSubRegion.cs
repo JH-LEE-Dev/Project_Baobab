@@ -17,8 +17,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private CustomNumberDisplay numberDisplay;
         [SerializeField] private GameObject lockObject;
         [SerializeField] private GameObject focusObject;
-        [SerializeField] private GameObject focusGauge;
-        [SerializeField] private HUD_ProgressBar progressBar;
         [SerializeField] private ObjectMotionPlayer motionPlayer;
 
         // //내부 의존성
@@ -52,7 +50,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             SetSelect(false);
             SetNumber(_number);
             SetLock(!_info.bCanAccess);
-            SetProgress(Mathf.Clamp01(_info.currentHiddenGauge / _info.limitHiddenGauge));
 
             onHoverEnterEvent = _onHoverEnter;
             onHoverExitEvent = _onHoverExit;
@@ -75,24 +72,12 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 SetNumber(_number);
             }
 
-            if (null != progressBar)
-                progressBar.Initialize();
-
             if (null != focusObject)
                 focusObject.SetActive(false);
-
-            if (null != focusGauge)
-                focusGauge.SetActive(false);
 
             SetSelect(false);
             SetLock(false); 
             isInitialized = true;
-        }
-
-        public void SetProgress(float _ratio)
-        {
-            if (null != progressBar)
-                progressBar.UpdateValue(_ratio);
         }
 
         public void SetLock(bool _isLock)
@@ -117,9 +102,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             
             if (null != focusObject) 
                 focusObject.SetActive(isSelected);
-
-            if (null != focusGauge) 
-                focusGauge.SetActive(isSelected);
         }
 
         public ForestType GetForestType() => forestInfo.forestType;

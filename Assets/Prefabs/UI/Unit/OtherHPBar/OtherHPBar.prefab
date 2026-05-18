@@ -355,14 +355,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f0ea5f5126034b549aaaa1d75e20cffa, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 028b95a313f7b37408482ef0ecaad659, type: 3}
   m_Type: 3
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -772,8 +772,9 @@ MonoBehaviour:
   motionPlayer: {fileID: 4842467345709385059}
   ghostSlider: {fileID: 4173234513121552780}
   ghostFollowDuration: 0.5
-  ghostDelay: 0.5
+  ghostDelay: 1
   useAccumulatedGhost: 1
+  resetDelayOnHit: 1
 --- !u!225 &8519792482927412532
 CanvasGroup:
   m_ObjectHideFlags: 0
