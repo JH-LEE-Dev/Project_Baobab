@@ -1,35 +1,38 @@
 using System;
 using UnityEngine;
-using UnityEngine.Rendering;
 
+/// <summary>
+/// 인벤토리, 팝업 관련 UI들을 총괄 관리하는 UIView 클래스입니다.
+/// </summary>
 public class UIView_Popup : UIView
 {
-    //이벤트
-    public event Action GoHomeButtonClickedEvent;
-    public event Action<IInventorySlot> SendDeleteItemEvent;
+    // //이벤트
+    public event Action goHomeButtonClickedEvent;
+    public event Action<IInventorySlot> sendDeleteItemEvent;
 
-    //외부 의존성
+    // //외부 의존성
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiInventoryPrefab;
 
-    //내부 의존성
+    // //내부 의존성
     private IInventory inventory;
     private IMoneyData moneyData;
-    private UI_Inventory uI_Inventory;
+    private UI_Inventory uiInventory;
 
     private const int defaultPopupCap = 12;
 
     private MapType currentMapType;
     private ForestType currentForestType;
-
     private bool isAutoOpenedByInteraction = false;
+
+    // //퍼블릭 초기화 및 제어 메서드
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
 
-        Init_Inventory();
+        InitInventory();
         BindEvents();
     }
 
@@ -38,71 +41,145 @@ public class UIView_Popup : UIView
         inventory = _inventory;
         moneyData = _moneyData;
 
-        uI_Inventory.BindData(inventory, _moneyData);
+        if (null != uiInventory)
+            uiInventory.BindData(inventory, _moneyData);
+    }
+
+    public void InventoryShowEvent()
+    {
+        if (null != uiInventory)
+            uiInventory.InventoryShowEvent();
+    }
+
+    public void InventorySpecChanged()
+    {
+        if (null != uiInventory && true == uiInventory.isOpening)
+            uiInventory.InventoryShowEvent();
+    }
+
+    public void CharacterEarnMoney(MoneyType _moneyType)
+    {
+        if (null != uiInventory)
+            uiInventory.CharacterEarnMoney(_moneyType);
+    }
+
+    public void CharactersMoneyChanged()
+    {
+        if (null != uiInventory)
+            uiInventory.CharactersMoneyChanged();
+    }
+
+    public override void Refresh()
+    {
+        if (null != uiInventory)
+            uiInventory.Refresh();
+    }
+
+    public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
+    {
+        currentMapType = _currentMapType;
+        currentForestType = _currentForestType;
+
+        if (null != uiInventory)
+            uiInventory.MapChanged(_currentMapType);
+    }
+
+    public void LogContainerCanInteract(bool _bCanInteract)
+    {
+        if (true == _bCanInteract)
+        {
+            if (null != uiInventory && false == uiInventory.isOpening)
+            {
+                uiInventory.OnShow();
+                isAutoOpenedByInteraction = true;
+            }
+        }
+        else
+        {
+            if (true == isAutoOpenedByInteraction)
+            {
+                if (null != uiInventory)
+                    uiInventory.OnHide();
+                isAutoOpenedByInteraction = false;
+            }
+        }
+    }
+
+    // //프라이빗 메서드
+
+    private void InitInventory()
+    {
+        if (null == uiInventoryPrefab)
+            return;
+
+        GameObject _invObj = Instantiate(uiInventoryPrefab, transform.parent);
+        uiInventory = _invObj.GetComponent<UI_Inventory>();
+
+        if (null == uiInventory)
+            return;
+
+        uiInventory.Initialize(uiRoot, HandleHomingButtonClicked, HandleInventoryHover, HandleInventoryUnHover);
+        uiInventory.OnHide();
     }
 
     private void BindEvents()
     {
-        if (uI_Inventory != null)
+        if (null != uiInventory)
         {
-            uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
-            uI_Inventory.SendDeleteItemEvent += SendDeleteItem;
+            uiInventory.sendDeleteItemEvent -= HandleDeleteItem;
+            uiInventory.sendDeleteItemEvent += HandleDeleteItem;
         }
     }
 
     private void ReleaseEvents()
     {
-        uI_Inventory.SendDeleteItemEvent -= SendDeleteItem;
-        uI_Inventory.inventoryHoverEvent -= InventoryHoverEvent;
-        uI_Inventory.inventoryUnHoverEvent -= InventoryUnHoverEvent;
-    }
-
-    #region [ Inventory UI ]
-    private void Init_Inventory()
-    {
-        if (null == uiInventoryPrefab)
-            return;
-
-        uI_Inventory = Instantiate(uiInventoryPrefab, this.transform.parent).GetComponent<UI_Inventory>();
-
-        if (null == uI_Inventory)
-            return;
-
-        uI_Inventory.Initialize(uiRoot, OnHomingButtonClicked, InventoryHoverEvent, InventoryUnHoverEvent);
-        uI_Inventory.OnHide();
-    }
-
-    private void SendDeleteItem(IInventorySlot _inData)
-    {
-        SendDeleteItemEvent.Invoke(_inData);
-    }
-
-    public void InventoryShowEvent() => uI_Inventory?.InventoryShowEvent();
-
-    public void InventorySpecChanged() //인벤토리 스펙이 변경되었을 때,
-    {
-        if (null != uI_Inventory)
+        if (null != uiInventory)
         {
-            if (uI_Inventory.isOpening)
-                uI_Inventory.InventoryShowEvent();
+            uiInventory.sendDeleteItemEvent -= HandleDeleteItem;
+            uiInventory.inventoryHoverEvent -= HandleInventoryHover;
+            uiInventory.inventoryUnHoverEvent -= HandleInventoryUnHover;
         }
     }
 
-    #endregion
+    private void HandleDeleteItem(IInventorySlot _inData)
+    {
+        sendDeleteItemEvent?.Invoke(_inData);
+    }
 
+    private void HandleHomingButtonClicked()
+    {
+        goHomeButtonClickedEvent?.Invoke();
+    }
 
+    private void HandleInventoryHover()
+    {
+        if (null != viewCtx && null != viewCtx.inputManager)
+            viewCtx.inputManager.SetCursorHoveredOnUI(true);
+    }
+
+    private void HandleInventoryUnHover()
+    {
+        if (null != viewCtx && null != viewCtx.inputManager)
+            viewCtx.inputManager.SetCursorHoveredOnUI(false);
+    }
+
+    // //유니티 이벤트 함수
 
     protected override void OnShow()
     {
         base.OnShow();
 
-        uI_Inventory?.OnShow();
+        if (null != uiInventory)
+            uiInventory.OnShow();
+            
         isAutoOpenedByInteraction = false;
     }
 
     protected override void OnHide()
     {
-        uI_Inventory?.OnHide();
+        if (null != uiInventory)
+            uiInventory.OnHide();
+            
         isAutoOpenedByInteraction = false;
 
         base.OnHide();
@@ -112,68 +189,9 @@ public class UIView_Popup : UIView
     {
         ReleaseEvents();
 
-        uI_Inventory?.Destory();
+        if (null != uiInventory)
+            uiInventory.Release();
+
+        base.OnDestroy();
     }
-
-    private void OnHomingButtonClicked()
-    {
-        GoHomeButtonClickedEvent.Invoke();
-    }
-
-    public void CharacterEarnMoney(MoneyType _moneyType) //캐릭터가 돈을 얻었을 때,
-    {
-        uI_Inventory?.CharacterEarnMoney(_moneyType);
-    }
-
-    public void CharactersMoneyChanged()
-    {
-        uI_Inventory?.CharactersMoneyChanged();
-    }
-
-    public override void Refresh()
-    {
-        uI_Inventory?.Refresh();
-    }
-
-    public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
-    {
-        currentMapType = _currentMapType;
-        currentForestType = _currentForestType;
-
-        uI_Inventory?.MapChanged(_currentMapType);
-    }
-
-    private void InventoryHoverEvent()
-    {
-        Debug.Log("호버 호출");
-        viewCtx.inputManager.SetCursorHoveredOnUI(true);
-    }
-
-    private void InventoryUnHoverEvent()
-    {
-        viewCtx.inputManager.SetCursorHoveredOnUI(false);
-    }
-
-    //원목 보관함 상호작용 범위에 들어가거나 나왔을 때 호출
-    public void LogContainerCanInteract(bool _bCanInteract)
-    {
-        if (true == _bCanInteract)
-        {
-            if (null != uI_Inventory && false == uI_Inventory.isOpening)
-            {
-                uI_Inventory.OnShow();
-                isAutoOpenedByInteraction = true;
-            }
-        }
-        else
-        {
-            if (true == isAutoOpenedByInteraction)
-            {
-                uI_Inventory?.OnHide();
-                isAutoOpenedByInteraction = false;
-            }
-        }
-    }
-
-    // 나중에 맵에 따른 보여줘야 할 머니 타입을 교체 해야 함.
 }

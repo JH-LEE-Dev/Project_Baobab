@@ -5,40 +5,48 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
 
+/// <summary>
+/// 인벤토리의 개별 아이템 슬롯을 관리하는 클래스입니다.
+/// 마우스 오버 시 팝업 이벤트를 발생시키고 수량 및 이미지를 업데이트합니다.
+/// </summary>
 public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    //외부 의존성
+    // //외부 의존성
     [SerializeField] private Image uiImage;
     [SerializeField] private ObjectMotionPlayer omp;
+
     public Action<UI_InventorySlot, IItemData, Vector2> enterSlot;
     public Action exitSlot;
     public Action<IInventorySlot> deleteItem;
 
-    //내부 의존성
+    // //내부 의존성
     private IItemData showItemData;
-    public IItemData ShowItemData { get { return showItemData; } }
-
     private IInventorySlot invSlotRef;
-    public IInventorySlot InvSlotRef { get { return invSlotRef; } }
-
     private int showCnt = 0;
-    public int ShowCnt { get { return showCnt; } }
-    
     private TMP_Text countText;
+
+    public IItemData ShowItemData => showItemData;
+    public IInventorySlot InvSlotRef => invSlotRef;
+    public int ShowCnt => showCnt;
+
+    // //퍼블릭 초기화 및 제어 메서드
 
     public void Initialize()
     {
         UpdateImage(null, Color.white);
-        if (null != uiImage && null != uiImage.sprite && uiImage.sprite.texture.isReadable)
+        
+        if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
-        countText = gameObject.GetComponentInChildren<TMP_Text>();
+        countText = GetComponentInChildren<TMP_Text>();
         UpdateItemCount(0);
+        
+        if (null != omp)
+            omp.Initialize();
     }
 
     public void ResetData()
     {
-        // 함수 바인딩 해제를 가장 먼저 수행 (null로 만들기 전)
         if (null != invSlotRef)
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
@@ -75,18 +83,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)
     {
-        // 슬롯 레퍼런스와 아이템 데이터가 모두 동일한지 체크
         if (invSlotRef == _newSlot)
             return;
 
-        // 새로운 데이터가 없거나 아이템 데이터가 없다면 리셋
         if (null == _newSlot || null == _newSlot.itemData)
         {
             ResetData();
             return;
         }
 
-        // 이전에 바인딩 된 주소가 남아있다면 함수 바인딩 빼주기 (새 데이터 할당 전)
         if (null != invSlotRef)
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
@@ -103,9 +108,16 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         UpdateItemCount(invSlotRef.count);
     }
 
+    public void DisableRayCast()
+    {
+        if (null != uiImage)
+            uiImage.raycastTarget = false;
+    }
+
     private void PlayItemInteraction()
     {
-        omp?.Play("ItemInteraction", bReset: true);
+        if (null != omp)
+            omp.Play("ItemInteraction", bReset: true);
 
         if (null != invSlotRef)
         {
@@ -119,15 +131,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    public void DisableRayCast()
-    {
-        if (null == uiImage)
-            return;
+    // //유니티 이벤트 함수 및 인터페이스 구현
 
-        uiImage.raycastTarget = false;
-    }
-
-    // 유니티 이벤트 함수 및 인터페이스 구현
     public virtual void OnPointerClick(PointerEventData _eventData)
     {
         if (null != deleteItem)
@@ -136,7 +141,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (null != enterSlot)
+        if (null != enterSlot && null != uiImage)
             enterSlot.Invoke(this, showItemData, uiImage.rectTransform.position);
     }
 
