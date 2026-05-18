@@ -254,6 +254,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Shadow
   defaultRotationZ: 90
   defaultScaleY: 1
+  cachedTransform: {fileID: 0}
 --- !u!95 &7141216252732980337
 Animator:
   serializedVersion: 7
@@ -321,7 +322,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &4679200295719774274
 Transform:
   m_ObjectHideFlags: 0
@@ -366,7 +367,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -531,7 +532,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -956,7 +957,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1161,7 +1162,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1890,7 +1891,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

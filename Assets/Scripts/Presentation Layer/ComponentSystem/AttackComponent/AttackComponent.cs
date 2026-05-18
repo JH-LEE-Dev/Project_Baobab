@@ -62,9 +62,6 @@ public class AttackComponent : PComponent
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
         ctx.inputManager.inputReader.MouseMoveEvent += MouseMove;
-
-        ctx.inputManager.inputReader.SwitchModeKeyPressedEvent -= SwitchWeaponMode;
-        ctx.inputManager.inputReader.SwitchModeKeyPressedEvent += SwitchWeaponMode;
     }
 
     private void ReleaseEvents()
@@ -73,7 +70,6 @@ public class AttackComponent : PComponent
             return;
 
         ctx.inputManager.inputReader.MouseMoveEvent -= MouseMove;
-        ctx.inputManager.inputReader.SwitchModeKeyPressedEvent -= SwitchWeaponMode;
     }
 
     private void MouseMove(Vector2 _mouseScreenPos)

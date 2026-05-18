@@ -188,9 +188,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void BindEvents()
     {
-        attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
-        attackComponent.WeaponModeChangedEvent += WeaponModeChanged;
-
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -207,17 +204,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
             armComponent.axeComponent.DeclareCanSwapEvent -= SetbCanRotate;
             armComponent.axeComponent.DeclareCanSwapEvent += SetbCanRotate;
-
-            armComponent.rifleComponent.DeclareCanSwapEvent -= SetbCanRotate;
-            armComponent.rifleComponent.DeclareCanSwapEvent += SetbCanRotate;
         }
     }
 
     private void ReleaseEvents()
     {
-        if (attackComponent != null)
-            attackComponent.WeaponModeChangedEvent -= WeaponModeChanged;
-
         if (armComponent != null && armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;

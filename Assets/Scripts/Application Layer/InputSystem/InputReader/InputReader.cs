@@ -15,9 +15,6 @@ public class InputReader
     public event Action ESCButtonPressedEvent;
     public event Action InteractionKeyPressedEvent;
     public event Action InteractionKeyCanceledEvent;
-    public event Action SwitchModeKeyPressedEvent;
-    public event Action GoToAxeModeEvent;
-    public event Action GoToRifleModeEvent;
     public event Action ReloadButtonPressedEvent;
     public event Action AimCorrectionKeyPressedEvent;
     public event Action AimCorrectionKeyCanceledEvent;
@@ -43,12 +40,6 @@ public class InputReader
             actions.Normal.Inventory.performed += OnInventoryKeyPressed;
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
-            actions.Normal.SwitchMode.performed += SwitchModeKeyPressed;
-            actions.Normal.AxeMode.performed += GoToAxeModeKeyPressed;
-            actions.Normal.RifleMode.performed += GoToRifleModeKeyPressed;
-            actions.Normal.Reload.performed += ReloadButtonPressed;
-            actions.Normal.AimCorrection.performed += AimCorrectionKeyPressed;
-            actions.Normal.AimCorrection.canceled += AimCorrectionKeyCanceled;
         }
 
         actions.Normal.Enable();
@@ -69,12 +60,6 @@ public class InputReader
         actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
-        actions.Normal.SwitchMode.performed -= SwitchModeKeyPressed;
-        actions.Normal.AxeMode.performed -= GoToAxeModeKeyPressed;
-        actions.Normal.RifleMode.performed -= GoToRifleModeKeyPressed;
-        actions.Normal.Reload.performed -= ReloadButtonPressed;
-        actions.Normal.AimCorrection.performed -= AimCorrectionKeyPressed;
-        actions.Normal.AimCorrection.canceled -= AimCorrectionKeyCanceled;
     }
 
     public void Pause(bool _bPause)
@@ -140,21 +125,6 @@ public class InputReader
     private void InteractionKeyCanceled(InputAction.CallbackContext context)
     {
         InteractionKeyCanceledEvent?.Invoke();
-    }
-
-    private void SwitchModeKeyPressed(InputAction.CallbackContext context)
-    {
-        SwitchModeKeyPressedEvent?.Invoke();
-    }
-
-    private void GoToAxeModeKeyPressed(InputAction.CallbackContext context)
-    {
-        GoToAxeModeEvent?.Invoke();
-    }
-
-    private void GoToRifleModeKeyPressed(InputAction.CallbackContext context)
-    {
-        GoToRifleModeEvent?.Invoke();
     }
 
     private void ReloadButtonPressed(InputAction.CallbackContext context)

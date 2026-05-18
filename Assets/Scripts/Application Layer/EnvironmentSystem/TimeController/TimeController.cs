@@ -7,7 +7,7 @@ public class TimeController : MonoBehaviour, ITimeDataProvider
     private const float timeMultiplier = 5;
     private float currentMinutes;
     public bool isDay { get; private set; }
-    private bool bInitialized = false;
+    //private bool bInitialized = false;
 
     //공개 인터페이스 구현    
     public float currentTimePercent => currentMinutes / minutesInDay;
@@ -19,7 +19,7 @@ public class TimeController : MonoBehaviour, ITimeDataProvider
         // 아침 6시 시작 (6 * 60 = 360분)
         currentMinutes = 360f;
         UpdateDayNightStatus();
-        bInitialized = true;
+        //bInitialized = true;
     }
 
     //내부 로직
