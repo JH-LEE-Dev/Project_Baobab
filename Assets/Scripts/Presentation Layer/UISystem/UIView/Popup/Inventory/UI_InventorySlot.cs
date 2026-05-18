@@ -108,7 +108,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         omp?.Play("ItemInteraction", bReset: true);
 
         if (null != invSlotRef)
+        {
+            showItemData = invSlotRef.itemData;
             UpdateItemCount(invSlotRef.count);
+
+            if (null == showItemData || 0 >= invSlotRef.count)
+                UpdateImage(null, Color.white);
+            else
+                UpdateImage(showItemData.sprite, showItemData.color);
+        }
     }
 
     public void DisableRayCast()
