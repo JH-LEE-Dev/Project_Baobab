@@ -305,32 +305,57 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         SpendMoneyEvent?.Invoke();
     }
 
+    private List<LogItem> reservedItems = new List<LogItem>(32);
+
     public bool CanAcquired(LogItem _item)
     {
         if (_item == null) return false;
 
-        // 1. 현재 활성화된 슬롯 중 공간이 있는 동일 아이템 슬롯이 있는지 확인
-        for (int i = 0; i < currentSlotCount; i++)
+        // 1. 기존 예약된 아이템 중 유효하지 않은 것(Sucking 상태가 아니거나 비활성화된 경우) 정리
+        for (int i = reservedItems.Count - 1; i >= 0; i--)
         {
-            if (i >= inventorySlots.Count) break;
-
-            if (inventorySlots[i].itemData != null &&
-                inventorySlots[i].totalCount < maxItemsPerSlot &&
-                IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
+            var reserved = reservedItems[i];
+            if (reserved == null || !reserved.gameObject.activeInHierarchy || reserved.MoveState != ItemMoveState.Sucking || reserved == _item)
             {
-                return true;
+                reservedItems.RemoveAt(i);
             }
         }
 
-        // 2. 빈 슬롯이 있는지 확인
+        // 2. 현재 남은 총 공간 계산
+        int totalSpace = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
             if (i >= inventorySlots.Count) break;
 
-            if (inventorySlots[i].itemData == null)
+            if (inventorySlots[i].itemData != null)
             {
-                return true;
+                if (inventorySlots[i].totalCount < maxItemsPerSlot && IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
+                {
+                    totalSpace += (maxItemsPerSlot - inventorySlots[i].totalCount);
+                }
             }
+            else
+            {
+                totalSpace += maxItemsPerSlot;
+            }
+        }
+
+        // 3. 같은 종류의 아이템 중 현재 예약된(Sucking 중인) 아이템 개수 계산
+        int reservedCount = 0;
+        for (int i = 0; i < reservedItems.Count; i++)
+        {
+            var reserved = reservedItems[i];
+            if (reserved.itemType == _item.itemType && reserved.treeType == _item.treeType && reserved.logState == _item.logState)
+            {
+                reservedCount++;
+            }
+        }
+
+        // 4. 예약 가능한 공간이 있으면 true 반환 및 예약 목록에 추가
+        if (totalSpace - reservedCount > 0)
+        {
+            reservedItems.Add(_item);
+            return true;
         }
 
         return false;
@@ -466,6 +491,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void ReleaseAllDroppedItem()
     {
+        reservedItems.Clear();
+        
         if (activeDroppedItems.Count == 0) return;
 
         for (int i = 0; i < activeDroppedItems.Count; i++)

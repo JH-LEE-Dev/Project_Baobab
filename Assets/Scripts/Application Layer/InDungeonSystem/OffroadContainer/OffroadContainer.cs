@@ -146,7 +146,6 @@ public class OffroadContainer : MonoBehaviour, IInventory
 
         while (true)
         {
-            bool anyTransferred = false;
             var charSlots = characterInventory.inventorySlots;
 
             for (int i = 0; i < characterInventory.currentSlotCnt; i++)
@@ -163,21 +162,10 @@ public class OffroadContainer : MonoBehaviour, IInventory
 
                     // 해당 슬롯 전송 코루틴 시작
                     StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
-                    anyTransferred = true;
-                    
-                    // 슬롯 단위 전송 시작 시 약간의 간격을 주어 겹치지 않게 함
-                    yield return new WaitForSeconds(0.1f);
                 }
             }
 
-            if (!anyTransferred)
-            {
-                yield return new WaitForSeconds(0.2f); // 보낼 게 없으면 잠시 대기 후 재확인
-            }
-            else
-            {
-                yield return null;
-            }
+            yield return null;
         }
     }
 
@@ -261,28 +249,21 @@ public class OffroadContainer : MonoBehaviour, IInventory
             }
         }
 
-        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
+        // 전체 수용 가능한 동일 아이템 남은 공간 계산
+        int availableSpace = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (inventorySlots[i].itemData != null &&
-                (inventorySlots[i].totalCount + pendingCount) < maxItemsPerSlot &&
-                IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
             {
-                return true;
+                availableSpace += Mathf.Max(0, maxItemsPerSlot - inventorySlots[i].totalCount);
+            }
+            else if (inventorySlots[i].itemData == null)
+            {
+                availableSpace += maxItemsPerSlot;
             }
         }
 
-        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯이 있는지 확인
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (inventorySlots[i].itemData == null)
-            {
-                // 빈 슬롯이 있으면 진입 가능 (비행 중인 것들이 이 슬롯을 채울 것임)
-                return pendingCount < maxItemsPerSlot;
-            }
-        }
-
-        return false;
+        return pendingCount < availableSpace;
     }
 
     private void AddItemByData(ItemData _sourceData, LogState _state)
@@ -340,38 +321,6 @@ public class OffroadContainer : MonoBehaviour, IInventory
         }
 
         return true;
-    }
-
-    public void ItemAcquired(Item _item)
-    {
-        if (_item == null) return;
-
-        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (inventorySlots[i].itemData != null &&
-                inventorySlots[i].totalCount < maxItemsPerSlot &&
-                IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
-            {
-                inventorySlots[i].AddCount(_item);
-                return;
-            }
-        }
-
-        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
-        for (int i = 0; i < currentSlotCount; i++)
-        {
-            if (inventorySlots[i].itemData == null)
-            {
-                ItemData newData = GetFromPool(_item.itemType);
-                if (newData != null)
-                {
-                    newData.CopyFrom(_item);
-                    inventorySlots[i].Setup(newData, 1);
-                }
-                return;
-            }
-        }
     }
 
     private bool IsSameItem(Item _item, ItemData _data)
