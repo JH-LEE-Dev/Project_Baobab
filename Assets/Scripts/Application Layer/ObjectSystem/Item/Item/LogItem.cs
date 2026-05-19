@@ -20,7 +20,7 @@ public class LogItem : Item, IStaticCollidable
 
     public bool bCanApplyDamage => false;
 
-    private SpriteRenderer spriteRenderer;
+    public SpriteRenderer spriteRenderer;
     private Transform visualTransform;
 
     // 상태 변수
@@ -36,6 +36,7 @@ public class LogItem : Item, IStaticCollidable
     private Vector3 startPos;
     private Vector3 endPos;
     private Vector3 trajectoryJitter;
+    private Vector3 sideDir; // 곡선 방향 (기울기에 수직)
     private float height;
     private float duration;
     private float elapsed;
@@ -127,6 +128,25 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    public void CurveTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, float _rotationSpeed = 0f)
+    {
+        startPos = _start;
+        endPos = _end;
+        height = _height;
+        duration = _duration;
+        rotationSpeed = _rotationSpeed;
+        elapsed = 0f;
+        state = ItemMoveState.CurveTransferring;
+
+        // 시점과 종점을 잇는 방향에 수직인 벡터 계산 (2D 법선)
+        Vector3 dir = (endPos - startPos).normalized;
+        sideDir = new Vector3(-dir.y, dir.x, 0f);
+
+        if (gameObject.activeInHierarchy)
+        {
+            CollisionSystem.Instance?.Register(this, false);
+        }
+    }
     private void OnEnable()
     {
         // Launch나 TransferLaunch가 이미 호출된 상태에서 활성화될 때만 등록
@@ -148,6 +168,7 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = null;
         elapsed = 0;
         trajectoryJitter = Vector3.zero;
+        sideDir = Vector3.zero;
         rotationSpeed = 0f;
         transform.localScale = Vector3.one;
 
@@ -174,6 +195,9 @@ public class LogItem : Item, IStaticCollidable
                 break;
             case ItemMoveState.Transferring:
                 UpdateTransferring(_deltaTime);
+                break;
+            case ItemMoveState.CurveTransferring:
+                UpdateCurveTransferring(_deltaTime);
                 break;
             case ItemMoveState.Sucking:
                 UpdateSucking(_deltaTime);
@@ -272,6 +296,55 @@ public class LogItem : Item, IStaticCollidable
 
             visualTransform.rotation = Quaternion.identity;
 
+            state = ItemMoveState.Dropped;
+        }
+    }
+
+    private void UpdateCurveTransferring(float _deltaTime)
+    {
+        elapsed += _deltaTime;
+        float linearT = Mathf.Clamp01(duration > 0 ? (elapsed / duration) : 1f);
+
+        // 쫀득한 연출 제거: 선형적인 t 사용
+        float t = linearT;
+
+        float clampedT = Mathf.Clamp01(t);
+        
+        // 기본 선형 이동 위치
+        Vector3 basePos = Vector3.Lerp(startPos, endPos, t);
+
+        // 곡선 오프셋 계산 (2차 곡선)
+        float heightFactor = 4f * clampedT * (1f - clampedT);
+        float currentHeight = height * heightFactor;
+
+        // 기울기에 상관없이 일관된 궤도를 위해 sideDir(법선) 방향으로 오프셋 적용
+        transform.position = basePos + (sideDir * currentHeight);
+
+        if (visualTransform != null)
+        {
+            visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
+        }
+
+        // Scale 연출: 쫀득한 오버슈트 제거, 0.7부터만 작아짐
+        float targetScale = 1f;
+        if (linearT > 0.7f)
+        {
+            float nt = (linearT - 0.7f) / 0.3f;
+            targetScale = 1f - nt;
+        }
+
+        transform.localScale = Vector3.one * targetScale;
+
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
+
+        if (linearT >= 1.0f)
+        {
+            transform.position = GlobalPixelSnapper.Snap(endPos);
+            if (visualTransform != null) 
+            {
+                visualTransform.localPosition = Vector3.zero;
+                visualTransform.rotation = Quaternion.identity;
+            }
             state = ItemMoveState.Dropped;
         }
     }

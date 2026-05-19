@@ -156,6 +156,7 @@ public class GameplayUICoordinator
     private void InventoryUpdated(InventoryUpdatedSignal inventoryUpdatedSignal)
     {
         popUpUI.InventoryShowEvent();
+        hudUI.InventoryUpdated();
     }
 
     private void TreeGetHit(TreeGetHitSignal treeGetHitSignal)
