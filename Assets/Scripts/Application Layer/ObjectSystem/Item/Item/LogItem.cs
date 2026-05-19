@@ -130,6 +130,23 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    public void ContainerTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
+    {
+        startPos = _start;
+        endPos = _end;
+        height = _height;
+        duration = _duration;
+        trajectoryJitter = _jitter;
+        rotationSpeed = _rotationSpeed;
+        elapsed = 0f;
+        state = ItemMoveState.ContainerTransferring;
+
+        if (gameObject.activeInHierarchy)
+        {
+            CollisionSystem.Instance?.Register(this, false);
+        }
+    }
+
     public void CurveTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, float _rotationSpeed = 0f)
     {
         startPos = _start;
@@ -198,6 +215,9 @@ public class LogItem : Item, IStaticCollidable
                 break;
             case ItemMoveState.Transferring:
                 UpdateTransferring(_deltaTime);
+                break;
+            case ItemMoveState.ContainerTransferring:
+                UpdateContainerTransferring(_deltaTime);
                 break;
             case ItemMoveState.Sucking:
                 UpdateSucking(_deltaTime);
@@ -296,6 +316,64 @@ public class LogItem : Item, IStaticCollidable
 
             visualTransform.rotation = Quaternion.identity;
 
+            state = ItemMoveState.Dropped;
+        }
+    }
+
+    private void UpdateContainerTransferring(float _deltaTime)
+    {
+        float currentT = duration > 0 ? (elapsed / duration) : 1f;
+        float speedMultiplier = 1f;
+
+        if (currentT > 0.7f)
+        {
+            // 오프로드 컨테이너 전용: 가속도를 대폭 완화 (15f -> 3f)하여 끊김 현상 방지
+            speedMultiplier = 1f + (currentT - 0.7f) * 3f;
+        }
+
+        elapsed += _deltaTime * speedMultiplier;
+        float t = Mathf.Clamp01(elapsed / duration);
+
+        float jitterFactor = 4f * t * (1f - t);
+        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t) + (trajectoryJitter * jitterFactor);
+
+        float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
+
+        if (visualTransform != null)
+        {
+            transform.position = currentGroundPos;
+            visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+            visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
+        }
+        else
+        {
+            transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
+        }
+
+        // Scale 연출 동일하게 적용
+        float targetScale = 1f;
+        if (t < 0.4f)
+        {
+            float nt = t / 0.4f;
+            const float s = 1.70158f;
+            float t1 = nt - 1f;
+            targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
+        }
+        else if (t > 0.7f)
+        {
+            float nt = (t - 0.7f) / 0.3f;
+            targetScale = 1f - nt;
+        }
+
+        transform.localScale = Vector3.one * targetScale;
+
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
+
+        if (t >= 1.0f)
+        {
+            transform.position = GlobalPixelSnapper.Snap(endPos);
+            if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
+            visualTransform.rotation = Quaternion.identity;
             state = ItemMoveState.Dropped;
         }
     }

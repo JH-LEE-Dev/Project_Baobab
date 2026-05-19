@@ -93,7 +93,10 @@ public class OffroadContainer : MonoBehaviour, IInventory
             LogItem item = flyingItems[i];
             item.ManualUpdate(_deltaTime);
 
-            if (item.MoveState != ItemMoveState.Transferring && item.MoveState != ItemMoveState.CurveTransferring)
+            // ContainerTransferring 상태도 비행 중인 상태로 간주
+            if (item.MoveState != ItemMoveState.Transferring && 
+                item.MoveState != ItemMoveState.CurveTransferring &&
+                item.MoveState != ItemMoveState.ContainerTransferring)
             {
                 // 도착 연출 완료 (Scale 0 시점) - 실제 데이터 추가
                 arrivalDataBuffer.itemType = item.itemType;
@@ -211,7 +214,7 @@ public class OffroadContainer : MonoBehaviour, IInventory
                 flyingItem.transform.position = start;
 
                 // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
-                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
+                flyingItem.ContainerTransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
                 flyingItems.Add(flyingItem);
 
                 yield return new WaitForSeconds(FLY_INTERVAL);
