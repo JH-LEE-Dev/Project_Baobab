@@ -71,6 +71,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private CharacterVisualComponent characterVisualComponent;
 
+    public Transform centerTransform;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)

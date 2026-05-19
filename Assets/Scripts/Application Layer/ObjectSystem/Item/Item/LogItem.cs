@@ -196,9 +196,6 @@ public class LogItem : Item, IStaticCollidable
             case ItemMoveState.Transferring:
                 UpdateTransferring(_deltaTime);
                 break;
-            case ItemMoveState.CurveTransferring:
-                UpdateCurveTransferring(_deltaTime);
-                break;
             case ItemMoveState.Sucking:
                 UpdateSucking(_deltaTime);
                 break;
@@ -296,55 +293,6 @@ public class LogItem : Item, IStaticCollidable
 
             visualTransform.rotation = Quaternion.identity;
 
-            state = ItemMoveState.Dropped;
-        }
-    }
-
-    private void UpdateCurveTransferring(float _deltaTime)
-    {
-        elapsed += _deltaTime;
-        float linearT = Mathf.Clamp01(duration > 0 ? (elapsed / duration) : 1f);
-
-        // 쫀득한 연출 제거: 선형적인 t 사용
-        float t = linearT;
-
-        float clampedT = Mathf.Clamp01(t);
-        
-        // 기본 선형 이동 위치
-        Vector3 basePos = Vector3.Lerp(startPos, endPos, t);
-
-        // 곡선 오프셋 계산 (2차 곡선)
-        float heightFactor = 4f * clampedT * (1f - clampedT);
-        float currentHeight = height * heightFactor;
-
-        // 기울기에 상관없이 일관된 궤도를 위해 sideDir(법선) 방향으로 오프셋 적용
-        transform.position = basePos + (sideDir * currentHeight);
-
-        if (visualTransform != null)
-        {
-            visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
-        }
-
-        // Scale 연출: 쫀득한 오버슈트 제거, 0.7부터만 작아짐
-        float targetScale = 1f;
-        if (linearT > 0.7f)
-        {
-            float nt = (linearT - 0.7f) / 0.3f;
-            targetScale = 1f - nt;
-        }
-
-        transform.localScale = Vector3.one * targetScale;
-
-        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
-
-        if (linearT >= 1.0f)
-        {
-            transform.position = GlobalPixelSnapper.Snap(endPos);
-            if (visualTransform != null) 
-            {
-                visualTransform.localPosition = Vector3.zero;
-                visualTransform.rotation = Quaternion.identity;
-            }
             state = ItemMoveState.Dropped;
         }
     }

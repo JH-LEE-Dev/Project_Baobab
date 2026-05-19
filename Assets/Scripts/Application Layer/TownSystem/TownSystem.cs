@@ -159,7 +159,7 @@ public class TownSystem : MonoBehaviour
     private void CharacterSpawned(CharacterSpawnedSignal _signal)
     {
         character = _signal.character;
-        logProcessingManager.SetCharTransform(character.transform);
+        logProcessingManager.SetCharTransform(character.centerTransform);
     }
 
     private void TeleportUIClosed(TeleportUIClosedSignal _teleportUIClosedSignal)

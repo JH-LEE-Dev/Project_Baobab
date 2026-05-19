@@ -30,6 +30,7 @@ public class OffroadContainer : MonoBehaviour, IInventory
     private Coroutine transferCoroutine;
     private const float FLY_INTERVAL = 0.075f;
     private List<LogItem> flyingItems = new List<LogItem>(32);
+    private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private LogItemData arrivalDataBuffer = new LogItemData();
     private SpriteRenderer sr;
     private Transform visualTransform;
@@ -152,46 +153,20 @@ public class OffroadContainer : MonoBehaviour, IInventory
             {
                 if (charSlots[i] is InventorySlot charSlot && charSlot.itemData != null && charSlot.count > 0)
                 {
+                    // 이미 전송 중인 슬롯이면 건너뛰기
+                    if (transferringSlots.Contains(charSlot)) continue;
+
                     if (!(charSlot.itemData is LogItemData logSourceData)) continue;
 
+                    // 해당 아이템을 OffroadContainer에 넣을 수 있는지 체크
                     if (!CanAddItemByData(logSourceData)) continue;
 
-                    LogState takenState = charSlot.TakeOneItem();
-
-                    LogItemData visualData = new LogItemData
-                    {
-                        treeType = logSourceData.treeType,
-                        logState = takenState,
-                        color = logSourceData.color
-                    };
-
-                    LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
-                    flyingItem.IsDropItem(false);
-                    flyingItem.spriteRenderer.sortingOrder = 100;
-
-                    Vector3 start = charTransform != null ? charTransform.position : transform.position;
-                    Vector3 end = transform.position; // 도착점은 OffroadContainer의 위치
-
-                    // 궤적 jitter는 0으로 유지하되, 높이를 무작위(-0.5 ~ 0.5)로 설정하여 상/하 볼록한 2차 곡선 연출
-                    float randomHeight = UnityEngine.Random.Range(-0.5f, 0.5f);
-                    float rotationSpeed = UnityEngine.Random.Range(180f, 360f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
-
-                    flyingItem.transform.position = start;
-                    flyingItem.CurveTransferLaunch(start, end, randomHeight, UnityEngine.Random.Range(0.35f, 0.5f), rotationSpeed);
-                    flyingItems.Add(flyingItem);
-
-
-                    if (charSlot.count == 0)
-                    {
-                        if (characterInventory is InventoryManager invManager)
-                        {
-                            invManager.ItemDeleted(charSlot);
-                        }
-                    }
-
+                    // 해당 슬롯 전송 코루틴 시작
+                    StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
                     anyTransferred = true;
-                    yield return new WaitForSeconds(FLY_INTERVAL);
-                    break; // 하나 보냈으면 다시 슬롯 처음부터 스캔 (우선순위 유지)
+                    
+                    // 슬롯 단위 전송 시작 시 약간의 간격을 주어 겹치지 않게 함
+                    yield return new WaitForSeconds(0.1f);
                 }
             }
 
@@ -199,6 +174,73 @@ public class OffroadContainer : MonoBehaviour, IInventory
             {
                 yield return new WaitForSeconds(0.2f); // 보낼 게 없으면 잠시 대기 후 재확인
             }
+            else
+            {
+                yield return null;
+            }
+        }
+    }
+
+    private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _charSlot)
+    {
+        transferringSlots.Add(_charSlot);
+
+        try
+        {
+            LogItemData sourceData = _charSlot.itemData as LogItemData;
+            int countToTransfer = _charSlot.count;
+
+            for (int i = 0; i < countToTransfer; i++)
+            {
+                if (!CanAddItemByData(sourceData)) break;
+
+                LogState takenState = _charSlot.TakeOneItem();
+
+                LogItemData visualData = new LogItemData
+                {
+                    treeType = sourceData.treeType,
+                    logState = takenState,
+                    color = sourceData.color
+                };
+
+                LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+                flyingItem.IsDropItem(false);
+                flyingItem.spriteRenderer.sortingOrder = 100;
+
+                Vector3 start = charTransform != null ? charTransform.position : transform.position;
+                Vector3 end = transform.position; // 도착점은 OffroadContainer의 위치
+
+                // 포물선이 모든 각도에서 어색하지 않도록 구현 (직교 벡터 활용)
+                Vector3 dir = (end - start).normalized;
+                Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
+                // 양방향 중 하나로 랜덤하게 약간 휘어지게
+                float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
+                Vector3 trajectoryJitter = normal * arcPower;
+
+                // 회전 속도 및 방향 결정
+                float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+                flyingItem.transform.position = start;
+
+                // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
+                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
+                flyingItems.Add(flyingItem);
+
+                yield return new WaitForSeconds(FLY_INTERVAL);
+            }
+
+            // 슬롯이 비었다면 정리
+            if (_charSlot.count == 0)
+            {
+                if (characterInventory is InventoryManager invManager)
+                {
+                    invManager.ItemDeleted(_charSlot);
+                }
+            }
+        }
+        finally
+        {
+            transferringSlots.Remove(_charSlot);
         }
     }
 
