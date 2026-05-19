@@ -40,6 +40,8 @@ public class UI_Inventory : MonoBehaviour
     private UI_InventoryPopup invPopup;
     private MapType prevMapType = MapType.Town;
 
+    private int hideAccCount = 0;
+
     public MapType currentMapType { get; set; } = MapType.Town;
     public bool isOpening { get; private set; } = false;
 
@@ -265,6 +267,8 @@ public class UI_Inventory : MonoBehaviour
     {
         if (null != inventory)
             UpdateSlots(inventory.inventorySlots);
+
+        UpdateNotification();
     }
 
     public void MapChanged(MapType _currentMap)
@@ -290,6 +294,14 @@ public class UI_Inventory : MonoBehaviour
         omp.PlayBackward("Coins", bReset: true, _skip: true);
         omp.PlayBackward("Popup", bReset: true, _skip: true);
         omp.PlayBackward("Homing", bReset: true, _skip: true);
+    }
+
+    public void UpdateNotification()
+    {
+        if (null == notificationBadge)
+            return;
+
+        notificationBadge.UpdateAndInteraction(!isOpening ? ++hideAccCount : 0); 
     }
 
     public void OnHide()
@@ -318,6 +330,7 @@ public class UI_Inventory : MonoBehaviour
     public void OnShow()
     {
         isOpening = true;
+        hideAccCount = 0;
 
         if (null != omp)
         {
