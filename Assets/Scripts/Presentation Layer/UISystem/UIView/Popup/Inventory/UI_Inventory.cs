@@ -57,7 +57,7 @@ public class UI_Inventory : MonoBehaviour
 
         InitHoning(_clickedHomingEvent);
         InitInventoryPopup();
-        InitSelectionCursor();
+        // InitSelectionCursor();
         InitCoins();
         InitBackpack();
         InitNotificationBadge();
@@ -105,14 +105,14 @@ public class UI_Inventory : MonoBehaviour
 
             _slot.Initialize();
 
-            _slot.deleteItem -= SendDeleteItem;
-            _slot.deleteItem += SendDeleteItem;
+            // _slot.deleteItem -= SendDeleteItem;
+            // _slot.deleteItem += SendDeleteItem;
 
-            _slot.enterSlot -= HandleEnterPopup;
-            _slot.enterSlot += HandleEnterPopup;
+            // _slot.enterSlot -= HandleEnterPopup;
+            // _slot.enterSlot += HandleEnterPopup;
 
-            _slot.exitSlot -= HandleExitPopup;
-            _slot.exitSlot += HandleExitPopup;
+            // _slot.exitSlot -= HandleExitPopup;
+            // _slot.exitSlot += HandleExitPopup;
             _slot.exitSlot -= inventoryUnHoverEvent;
             _slot.exitSlot += inventoryUnHoverEvent;
 
@@ -183,11 +183,11 @@ public class UI_Inventory : MonoBehaviour
         }
     }
 
-    private void InitSelectionCursor()
-    {
-        if (null != selectionCursor)
-            selectionCursor.Initialize(selectionCursor.CursorSize);
-    }
+    // private void InitSelectionCursor()
+    // {
+    //     if (null != selectionCursor)
+    //         selectionCursor.Initialize(selectionCursor.CursorSize);
+    // }
 
     private void HandleEnterPopup(UI_InventorySlot _slot, IItemData _itemData, Vector2 _position)
     {
@@ -196,8 +196,8 @@ public class UI_Inventory : MonoBehaviour
 
         ILogItemData _logItemData = _itemData as ILogItemData;
         
-        if (null != selectionCursor)
-            selectionCursor.Show(_slot.GetComponent<RectTransform>());
+        // if (null != selectionCursor)
+        //     selectionCursor.Show(_slot.GetComponent<RectTransform>());
 
         inventoryHoverEvent?.Invoke();
 
@@ -212,8 +212,8 @@ public class UI_Inventory : MonoBehaviour
 
     private void HandleExitPopup()
     {
-        if (null != selectionCursor)
-            selectionCursor.Hide();
+        // if (null != selectionCursor)
+        //     selectionCursor.Hide();
 
         if (null != invPopup)
             invPopup.OnHide();
@@ -363,9 +363,9 @@ public class UI_Inventory : MonoBehaviour
             if (null == _slot)
                 continue;
 
-            _slot.deleteItem -= SendDeleteItem;
-            _slot.enterSlot -= HandleEnterPopup;
-            _slot.exitSlot -= HandleExitPopup;
+            // _slot.deleteItem -= SendDeleteItem;
+            // _slot.enterSlot -= HandleEnterPopup;
+            // _slot.exitSlot -= HandleExitPopup;
             _slot.exitSlot -= inventoryUnHoverEvent;
         }
         

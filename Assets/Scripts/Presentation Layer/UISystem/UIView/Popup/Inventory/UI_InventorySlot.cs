@@ -1,5 +1,4 @@
 using System;
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -24,7 +23,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private IItemData showItemData;
     private IInventorySlot invSlotRef;
     private int showCnt = 0;
-    private TMP_Text countText;
     private CurrencyFontHUD currencyFont;
 
     public IItemData ShowItemData => showItemData;
@@ -40,8 +38,14 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
-        countText = GetComponentInChildren<TMP_Text>();
         currencyFont = GetComponentInChildren<CurrencyFontHUD>();
+
+        if (null != currencyFont)
+        {
+            currencyFont.Initialize();
+            currencyFont.SetMode(CurrencyFontAlignmentMode.Center);
+        }
+
         UpdateItemCount(0);
         
         if (null != omp)
@@ -62,16 +66,16 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateItemCount(int _newCnt)
     {
-        if (null == countText)
+        if (null == currencyFont)
             return;
 
-        countText.enabled = 0 < _newCnt;
+        currencyFont.gameObject.SetActive(0 < _newCnt);
 
         if (showCnt == _newCnt)
             return;
 
         showCnt = _newCnt;
-        countText.text = _newCnt.ToString();
+        currencyFont.SetNumber(_newCnt);
     }
 
     public void UpdateImage(Sprite _sprite, Color _color)
