@@ -4,13 +4,14 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
-#if UNITY_EDITOR
-using UnityEditor;
-using UnityEditor.SceneManagement;
-#endif
-
 namespace PresentationLayer.UISystem.CustomNumber
 {
+    public enum CurrencyFontAlignmentMode
+    {
+        Left,
+        Center,
+    }
+
     [ExecuteAlways]
     public class CurrencyFontHUD : MonoBehaviour
     {
@@ -20,6 +21,7 @@ namespace PresentationLayer.UISystem.CustomNumber
         private const string DeltaGlyphPrefix = "CurrencyDeltaGlyph_";
         private const string AmountPivotAName = "AmountPivot_A";
         private const string AmountPivotBName = "AmountPivot_B";
+        private const string CenterPivotName = "CenterPivot";
 
         private static readonly ulong[] SuffixDivisors =
         {
@@ -57,6 +59,8 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] private float pixelScale = 1.0f;
         [SerializeField] private float characterSpacing = 0.0f;
         [SerializeField] private float numberLetterSpacingOffset = -1.0f;
+        [SerializeField] private CurrencyFontAlignmentMode alignmentMode = CurrencyFontAlignmentMode.Left;
+        [SerializeField] private float centerModeWidth = 40.0f;
 
         [Header("Value Interpolation Motion")]
         [SerializeField] private float valueTweenDuration = 1.2f;
@@ -87,18 +91,12 @@ namespace PresentationLayer.UISystem.CustomNumber
         [SerializeField] private float deltaGlyphShowDuration = 0.15f;
         [SerializeField] private float deltaVisibleHoldDuration = 0.2f;
         [SerializeField] private float deltaGlyphHideDuration = 0.15f;
-        [SerializeField] private Ease deltaGlyphShowEase = Ease.OutBack;
         [SerializeField] private float deltaGlyphShowOvershoot = 3.5f;
-        [SerializeField] private Ease deltaGlyphHideEase = Ease.InBack;
         [SerializeField] private float deltaGlyphHideOvershoot = 3.5f;
         [SerializeField] private Color deltaIncreaseColor = new Color(0.35f, 1.0f, 0.45f, 1.0f);
         [SerializeField] private Color deltaDecreaseColor = new Color(1.0f, 0.32f, 0.28f, 1.0f);
         [SerializeField] private float deltaHoldShakeDuration = 0.12f;
         [SerializeField] private float deltaHoldShakeDistance = 2.0f;
-
-        [Header("Editor Preview")]
-        [SerializeField] private bool previewInEditor = true;
-        [SerializeField] private long previewValue = 1123;
 
         private readonly List<RawImage> glyphPool = new List<RawImage>(8);
         private readonly List<bool> glyphVisibility = new List<bool>(FixedGlyphSlotCount);
@@ -110,6 +108,7 @@ namespace PresentationLayer.UISystem.CustomNumber
         private RectTransform rectTransform;
         private RectTransform amountPivotA;
         private RectTransform amountPivotB;
+        private RectTransform centerPivot;
         private long lastDisplayedValue = long.MinValue;
         private float mainLayoutWidth;
         private float mainVisibleRightEdge;
@@ -138,6 +137,7 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             CacheSprites();
             CacheAmountPivots();
+            CacheCenterPivot();
 #if UNITY_EDITOR
             if (false == Application.isPlaying)
                 CleanupLegacyEditorGlyphs();
@@ -153,53 +153,6 @@ namespace PresentationLayer.UISystem.CustomNumber
             if (Application.isPlaying)
                 Initialize();
         }
-
-        private void OnValidate()
-        {
-            if (Application.isPlaying || false == previewInEditor)
-                return;
-
-#if UNITY_EDITOR
-            if (false == CanUpdateEditorPreview())
-                return;
-
-            EditorApplication.delayCall -= RefreshEditorPreview;
-            EditorApplication.delayCall += RefreshEditorPreview;
-#endif
-        }
-
-#if UNITY_EDITOR
-        private void RefreshEditorPreview()
-        {
-            EditorApplication.delayCall -= RefreshEditorPreview;
-
-            if (null == this || Application.isPlaying || false == previewInEditor)
-                return;
-
-            if (false == CanUpdateEditorPreview())
-                return;
-
-            initialized = false;
-            lastDisplayedValue = long.MinValue;
-            Initialize();
-            SetValue(previewValue);
-        }
-
-        private bool CanUpdateEditorPreview()
-        {
-            if (null == gameObject || EditorUtility.IsPersistent(gameObject))
-                return false;
-
-            if (false == gameObject.scene.IsValid())
-                return false;
-
-            PrefabStage _prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            if (null != _prefabStage)
-                return _prefabStage.IsPartOfPrefabContents(gameObject);
-
-            return gameObject.scene.isLoaded;
-        }
-#endif
 
         private void OnDestroy()
         {
@@ -224,6 +177,22 @@ namespace PresentationLayer.UISystem.CustomNumber
             StopDeltaAmountMotion();
             SetValue(_value, true);
             SetGlyphColor(normalGlyphColor);
+        }
+
+        public void SetMode(CurrencyFontAlignmentMode _mode)
+        {
+            Initialize();
+
+            if (alignmentMode == _mode)
+                return;
+
+            alignmentMode = _mode;
+            if (lastDisplayedValue != long.MinValue)
+            {
+                long _displayedValue = lastDisplayedValue;
+                lastDisplayedValue = long.MinValue;
+                SetValue(_displayedValue, false);
+            }
         }
 
         private void SetValue(long _value)
@@ -934,11 +903,15 @@ namespace PresentationLayer.UISystem.CustomNumber
             EnsurePoolSize(_slotCount);
             EnsureGlyphVisibilitySize(glyphPool.Count);
 
-            float _cursor = 0.0f;
             float _scaledGlyphSize = GlyphPixelSize * pixelScale;
             mainVisibleRightEdge = 0.0f;
 
             int _visibleLength = Mathf.Min(_length, _slotCount);
+            float _layoutWidth = CalculateMainLayoutWidth(_visibleLength, _slotCount);
+            if (alignmentMode == CurrencyFontAlignmentMode.Center)
+                _layoutWidth = Mathf.Max(0.0f, centerModeWidth);
+
+            float _cursor = GetMainStartCursor(_visibleLength, _layoutWidth);
             for (int i = 0; i < _slotCount; i++)
             {
                 bool _isVisible = i < _visibleLength;
@@ -975,11 +948,59 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             if (null != rectTransform)
             {
-                mainLayoutWidth = Mathf.Max(0.0f, _cursor);
+                mainLayoutWidth = Mathf.Max(0.0f, _layoutWidth);
                 rectTransform.sizeDelta = new Vector2(mainLayoutWidth, _scaledGlyphSize);
             }
 
             HideRemainingGlyphs(_slotCount);
+        }
+
+        private float GetMainStartCursor(int _visibleLength, float _layoutWidth)
+        {
+            if (alignmentMode != CurrencyFontAlignmentMode.Center)
+                return 0.0f;
+
+            float _textWidth = CalculateTextLayoutWidth(_visibleLength);
+            float _centerX = null != centerPivot ? GetChildLocalAnchorPositionX(centerPivot, _layoutWidth) : _layoutWidth * 0.5f;
+            return SnapToPixel(_centerX - (_textWidth * 0.5f));
+        }
+
+        private float CalculateMainLayoutWidth(int _visibleLength, int _slotCount)
+        {
+            float _cursor = 0.0f;
+            for (int i = 0; i < _slotCount; i++)
+            {
+                char _char = i < _visibleLength ? textBuffer[i] : '0';
+                GlyphMetrics _metrics = GetMetrics(_char);
+                _cursor += _metrics.InkWidth * pixelScale;
+
+                if (i < _slotCount - 1)
+                {
+                    char _nextChar = i + 1 < _visibleLength ? textBuffer[i + 1] : '0';
+                    _cursor += GetSpacing(_char, _nextChar);
+                }
+            }
+
+            return Mathf.Max(0.0f, _cursor);
+        }
+
+        private float CalculateTextLayoutWidth(int _visibleLength)
+        {
+            if (_visibleLength <= 0)
+                return 0.0f;
+
+            float _cursor = 0.0f;
+            for (int i = 0; i < _visibleLength; i++)
+            {
+                char _char = textBuffer[i];
+                GlyphMetrics _metrics = GetMetrics(_char);
+                _cursor += _metrics.InkWidth * pixelScale;
+
+                if (i < _visibleLength - 1)
+                    _cursor += GetSpacing(_char, textBuffer[i + 1]);
+            }
+
+            return Mathf.Max(0.0f, _cursor);
         }
 
         private void UpdateDeltaGlyphs(int _length, Color _color, bool _useAmountPivotB)
@@ -1040,6 +1061,26 @@ namespace PresentationLayer.UISystem.CustomNumber
         {
             amountPivotA = FindDirectChildRect(AmountPivotAName);
             amountPivotB = FindDirectChildRect(AmountPivotBName);
+        }
+
+        private void CacheCenterPivot()
+        {
+            centerPivot = FindDirectChildRect(CenterPivotName);
+        }
+
+        private float GetChildLocalAnchorPositionX(RectTransform _child, float _parentWidth)
+        {
+            if (null == rectTransform)
+                return _child.anchoredPosition.x;
+
+            float _anchorX = Mathf.Lerp(_child.anchorMin.x, _child.anchorMax.x, _child.pivot.x);
+            return ((_anchorX - rectTransform.pivot.x) * _parentWidth) + _child.anchoredPosition.x;
+        }
+
+        private float SnapToPixel(float _value)
+        {
+            float _pixelUnit = Mathf.Max(0.0001f, pixelScale);
+            return Mathf.Round(_value / _pixelUnit) * _pixelUnit;
         }
 
         private RectTransform FindDirectChildRect(string _name)
@@ -1134,11 +1175,6 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private RawImage CreateGlyphImage(int _index)
         {
-#if UNITY_EDITOR
-            if (false == Application.isPlaying && false == CanUpdateEditorPreview())
-                return null;
-#endif
-
             return CreateRawGlyphImage($"{MainGlyphPrefix}{_index}");
         }
 
@@ -1156,11 +1192,6 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private RawImage CreateRawGlyphImage(string _name)
         {
-#if UNITY_EDITOR
-            if (false == Application.isPlaying && false == CanUpdateEditorPreview())
-                return null;
-#endif
-
             GameObject _glyphObject = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
 #if UNITY_EDITOR
             if (false == Application.isPlaying)
