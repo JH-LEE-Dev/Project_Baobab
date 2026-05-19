@@ -771,8 +771,8 @@ MonoBehaviour:
   progressSlider: {fileID: 3204927539205405881}
   motionPlayer: {fileID: 4842467345709385059}
   ghostSlider: {fileID: 4173234513121552780}
-  ghostFollowDuration: 0.5
-  ghostDelay: 1
+  ghostFollowDuration: 0.08
+  ghostDelay: 0.3
   useAccumulatedGhost: 1
   resetDelayOnHit: 1
 --- !u!225 &8519792482927412532
