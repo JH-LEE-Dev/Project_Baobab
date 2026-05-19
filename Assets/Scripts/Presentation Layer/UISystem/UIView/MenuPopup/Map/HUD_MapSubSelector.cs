@@ -15,14 +15,14 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //내부 의존성
         private Action onSelectionChanged;
-        private Action<RectTransform> onHoverEnterEvent;
+        private Action<RectTransform, Vector2> onHoverEnterEvent;
         private Action onHoverExitEvent;
         private int currentSelectedNumber = -1;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        public void Initialize(Action _onSelectionChanged = null, Action<RectTransform> _onHoverEnter = null, Action _onHoverExit = null)
+        public void Initialize(Action _onSelectionChanged = null, Action<RectTransform, Vector2> _onHoverEnter = null, Action _onHoverExit = null)
         {
             if (true == isInitialized)
                 return;
@@ -134,7 +134,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //내부 로직 (콜백 메서드)
 
-        private void OnRegionHoverEntered(RectTransform _targetRect) => onHoverEnterEvent?.Invoke(_targetRect);
+        private void OnRegionHoverEntered(RectTransform _targetRect, Vector2 _targetSize) => onHoverEnterEvent?.Invoke(_targetRect, _targetSize);
 
         private void OnRegionHoverExited() => onHoverExitEvent?.Invoke();
 

@@ -43,15 +43,21 @@ public class UISelectionCursor : MonoBehaviour
     // 이곳에 보여주렴.
     public void Show(RectTransform _target)
     {
-        if (_target == null)
+        Show(_target, cursorSize);
+    }
+
+    public void Show(RectTransform _target, Vector2 _size)
+    {
+        if (null == _target)
             return;
 
+        cursorSize = _size;
         CacheReferences();
-        if (rootRectTransform == null)
+        if (null == rootRectTransform)
             return;
 
         RectTransform parentRectTransform = rootRectTransform.parent as RectTransform;
-        if (parentRectTransform == null)
+        if (null == parentRectTransform)
             return;
 
         StopAndResetAllMotions();

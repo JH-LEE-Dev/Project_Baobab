@@ -19,7 +19,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //내부 의존성
         private Action onConfirmEvent;
-        private Action<RectTransform> onHoverEnterEvent;
+        private Action<RectTransform, Vector2> onHoverEnterEvent;
         private Action onHoverExitEvent;
         private RectTransform rect;
         private MotionEntry enterAnim;
@@ -43,7 +43,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         /// <summary>
         /// 버튼을 초기화하고 콜백을 등록합니다.
         /// </summary>
-        public void Initialize(Action _onConfirm, string _hoverTag, string _hoverOffTag, string _clickTag, Action<RectTransform> _onHoverEnter = null, Action _onHoverExit = null)
+        public void Initialize(Action _onConfirm, string _hoverTag, string _hoverOffTag, string _clickTag, Action<RectTransform, Vector2> _onHoverEnter = null, Action _onHoverExit = null)
         {
             if (true == isInitialized)
                 return;
@@ -95,7 +95,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == motionPlayer || isDimmed || isClicked)
                 return;
 
-            onHoverEnterEvent?.Invoke(rect);
+            onHoverEnterEvent?.Invoke(rect, rect.rect.size);
 
             motionPlayer.SettingEntryMotion(clickedAnim, true, true);
             motionPlayer.SettingEntryMotion(exitAnim, true, true);
