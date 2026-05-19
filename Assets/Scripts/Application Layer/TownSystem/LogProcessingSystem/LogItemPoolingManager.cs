@@ -66,6 +66,7 @@ public class LogItemPoolingManager : MonoBehaviour
 
     private void OnGetLogItem(LogItem _item)
     {
+        _item.ResetItem();
         _item.gameObject.SetActive(true);
     }
 

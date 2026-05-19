@@ -445,7 +445,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OffroadContainer
   currentSlotCount: 2
-  maxItemsPerSlot: 100
+  maxItemsPerSlot: 5
   inventorySlots: []
 --- !u!212 &5079051115217624280
 SpriteRenderer:

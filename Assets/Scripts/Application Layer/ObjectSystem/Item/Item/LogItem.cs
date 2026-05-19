@@ -51,6 +51,8 @@ public class LogItem : Item, IStaticCollidable
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
 
+    bool bCanAcquired = true;
+
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -170,6 +172,7 @@ public class LogItem : Item, IStaticCollidable
         trajectoryJitter = Vector3.zero;
         sideDir = Vector3.zero;
         rotationSpeed = 0f;
+        bCanAcquired = true;
         transform.localScale = Vector3.one;
 
         if (sprite != null && spriteRenderer != null)
@@ -346,7 +349,7 @@ public class LogItem : Item, IStaticCollidable
 
     public override void SetSuckTarget(Transform _target)
     {
-        if (state == ItemMoveState.Sucking || !bDrop) return;
+        if (state == ItemMoveState.Sucking || !bDrop || bCanAcquired == false) return;
 
         suckTarget = _target;
         if (state == ItemMoveState.Dropped)
@@ -360,5 +363,10 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = _target;
         suckSpeed = 0f;
         state = ItemMoveState.Sucking;
+    }
+
+    public void SetbCanAcquired(bool _boolean)
+    {
+        bCanAcquired = _boolean;
     }
 }

@@ -41,8 +41,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
+    private LogItemPoolingManager logItemPoolingManager;
+    private List<LogItem> activeDroppedItems = new List<LogItem>(64);
+
     public void Initialize()
     {
+        logItemPoolingManager = GetComponent<LogItemPoolingManager>();
+        logItemPoolingManager.Initialize();
+
+        activeDroppedItems.Clear();
+
         // 1. 슬롯 리스트 최대 개수(SYSTEM_VAR.MAX_INVENTORY_CNT)만큼 미리 생성
         if (inventorySlots.Count < SYSTEM_VAR.MAX_INVENTORY_CNT)
         {
@@ -70,6 +78,18 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             if (!itemDataPools.ContainsKey(type))
             {
                 itemDataPools[type] = CreatePoolForType(type);
+            }
+        }
+    }
+
+    private void Update()
+    {
+        if (activeDroppedItems.Count > 0)
+        {
+            float deltaTime = Time.deltaTime;
+            for (int i = activeDroppedItems.Count - 1; i >= 0; i--)
+            {
+                activeDroppedItems[i].ManualUpdate(deltaTime);
             }
         }
     }
@@ -124,7 +144,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         _saveData.carrot = carrot;
         _saveData.currentSlotCount = currentSlotCount;
         _saveData.maxItemsPerSlot = maxItemsPerSlot;
-        
+
         // 리스트 초기화 (구조체 내의 Initialize 활용)
         _saveData.Initialize(currentSlotCount);
 
@@ -377,7 +397,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                         }
 
                         inventorySlots[i].Setup(newData, slotData.totalCount);
-                        
+
                         // 상세 나무 종류 개수 복구 (Log 아이템인 경우)
                         if (slotData.treeTypeCounts != null && slotData.treeTypeCounts.Length > 0)
                         {
@@ -391,5 +411,67 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         SpendMoneyEvent?.Invoke();
         InventorySpecChangedEvent?.Invoke();
         Debug.Log("[InventoryManager] Inventory Save Data Loaded.");
+    }
+
+    public void DropAllItem(Transform _charTransform)
+    {
+        if (_charTransform == null) return;
+
+        Vector3 startPos = _charTransform.position;
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (slot.itemData == null || slot.totalCount <= 0) continue;
+
+            // Log 아이템인 경우 처리
+            if (slot.itemData is LogItemData logData)
+            {
+                int count = slot.totalCount;
+                for (int j = 0; j < count; j++)
+                {
+                    LogItem logItem = logItemPoolingManager.GetLogItem(logData);
+                    logItem.SetbCanAcquired(false);
+
+                    if (logItem != null)
+                    {
+                        logItem.transform.position = startPos;
+                        logItem.SetInventoryChecker(this);
+                        logItem.IsDropItem(true);
+
+                        activeDroppedItems.Add(logItem);
+
+                        // 무작위 방향 및 거리 설정
+                        float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
+                        float distance = UnityEngine.Random.Range(0.5f, 1.2f);
+                        Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * distance;
+                        Vector3 endPos = startPos + offset;
+
+                        float height = UnityEngine.Random.Range(0.3f, 0.6f);
+                        float duration = UnityEngine.Random.Range(0.4f, 0.6f);
+
+                        logItem.Launch(startPos, endPos, height, duration);
+                    }
+                }
+            }
+            // TODO: Loot 아이템 등 다른 타입의 아이템 배출 로직 추가 필요 시 여기에 작성
+
+            // 슬롯 비우기 및 데이터 반환
+            ReleaseToPool((ItemData)slot.itemData);
+            slot.Setup(null, 0);
+        }
+
+        InventorySpecChangedEvent?.Invoke();
+    }
+
+    public void ReleaseAllDroppedItem()
+    {
+        if (activeDroppedItems.Count == 0) return;
+
+        for (int i = 0; i < activeDroppedItems.Count; i++)
+        {
+            logItemPoolingManager.ReturnLogItem(activeDroppedItems[i]);
+        }
+        activeDroppedItems.Clear();
     }
 }
