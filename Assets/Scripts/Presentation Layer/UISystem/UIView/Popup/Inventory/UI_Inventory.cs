@@ -22,6 +22,7 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private CurrencyCounterHUD uiSubCoin;
     [SerializeField] private UI_Backpack uiBackpack;
     [SerializeField] private UISelectionCursor selectionCursor;
+    [SerializeField] private HUD_NotificationBadge notificationBadge;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
@@ -57,6 +58,7 @@ public class UI_Inventory : MonoBehaviour
         InitSelectionCursor();
         InitCoins();
         InitBackpack();
+        InitNotificationBadge();
 
         inventoryHoverEvent = _hoverEvent;
         inventoryUnHoverEvent = _unHoverEvent;
@@ -231,6 +233,12 @@ public class UI_Inventory : MonoBehaviour
     {
         if (null != uiBackpack)
             uiBackpack.Initialize();
+    }
+
+    private void InitNotificationBadge()
+    {
+        if (null != notificationBadge)
+            notificationBadge.Initialize();
     }
 
     public void CharacterEarnMoney(MoneyType _moneyType)

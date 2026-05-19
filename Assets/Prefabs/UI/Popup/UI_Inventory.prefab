@@ -347,6 +347,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_NotificationBadge
   omp: {fileID: 9061330992110133810}
+  showTag: Show
+  hideTag: Hide
 --- !u!1 &6839634348417904896
 GameObject:
   m_ObjectHideFlags: 0
@@ -480,6 +482,7 @@ MonoBehaviour:
   uiSubCoin: {fileID: 5522441217747157005}
   uiBackpack: {fileID: 6177818820070488920}
   selectionCursor: {fileID: 1479872708698544494}
+  notificationBadge: {fileID: 466032390791215493}
   uiSlotPrefab: {fileID: 579466836129025464, guid: fb43f9e42a2b2fd4999daf76b9e7d5e0, type: 3}
   uiPopupPrefab: {fileID: 7047183625215616851, guid: 8f0199b641621114ea2b4c7bc8799070, type: 3}
   inventorySlots: []
