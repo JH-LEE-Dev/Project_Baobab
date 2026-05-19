@@ -191,6 +191,9 @@ public class UI_Inventory : MonoBehaviour
 
     private void HandleEnterPopup(UI_InventorySlot _slot, IItemData _itemData, Vector2 _position)
     {
+        if (false == isOpening)
+            return;
+
         ILogItemData _logItemData = _itemData as ILogItemData;
         
         if (null != selectionCursor)
