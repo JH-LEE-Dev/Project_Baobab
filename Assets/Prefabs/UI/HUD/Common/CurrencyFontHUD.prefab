@@ -69,6 +69,7 @@ RectTransform:
   m_Children:
   - {fileID: 83072248299875237}
   - {fileID: 1758740210851772883}
+  - {fileID: 7599239771438550070}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -174,6 +175,8 @@ MonoBehaviour:
   pixelScale: 1
   characterSpacing: 0
   numberLetterSpacingOffset: -1
+  alignmentMode: 0
+  centerModeWidth: 40
   valueTweenDuration: 1.2
   valueTweenEase: 18
   colorTweenDuration: 1.2
@@ -198,16 +201,12 @@ MonoBehaviour:
   deltaGlyphShowDuration: 0.15
   deltaVisibleHoldDuration: 0.2
   deltaGlyphHideDuration: 0.15
-  deltaGlyphShowEase: 27
   deltaGlyphShowOvershoot: 3.5
-  deltaGlyphHideEase: 26
   deltaGlyphHideOvershoot: 3.5
   deltaIncreaseColor: {r: 0.35, g: 1, b: 0.45, a: 1}
   deltaDecreaseColor: {r: 1, g: 0.32, b: 0.28, a: 1}
   deltaHoldShakeDuration: 0.35
   deltaHoldShakeDistance: 1.5
-  previewInEditor: 1
-  previewValue: 100
 --- !u!1 &6139975010779844595
 GameObject:
   m_ObjectHideFlags: 0
@@ -242,4 +241,39 @@ RectTransform:
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -2, y: 16}
   m_SizeDelta: {x: 2, y: 2}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &8564551551735323046
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7599239771438550070}
+  m_Layer: 5
+  m_Name: CenterPivot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7599239771438550070
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8564551551735323046}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7976620843109558160}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 1, y: 1}
   m_Pivot: {x: 0.5, y: 0.5}

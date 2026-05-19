@@ -91,6 +91,12 @@ namespace PresentationLayer.UISystem.CustomNumber
             currencyFontHUD?.SetNumberAnimated(currentValue, currentValue - _previousValue, _useAmountPivotB);
         }
 
+        public void SetMode(CurrencyFontAlignmentMode _mode)
+        {
+            InitializeIfNeeded();
+            currencyFontHUD?.SetMode(_mode);
+        }
+
         public MoneyType GetMoneyType()
         {
             return currentMoneyType;
@@ -136,6 +142,20 @@ namespace PresentationLayer.UISystem.CustomNumber
         {
             SetNumber(1234);
         }
+
+        [Button("Test CenterPivot")]
+        private void Test1()
+        {
+            currencyFontHUD.SetMode(CurrencyFontAlignmentMode.Center);
+        }
+
+        [Button("Test LeftPivot")]
+        private void Test2()
+        {
+            currencyFontHUD.SetMode(CurrencyFontAlignmentMode.Left);
+        }
+
+
 
         [Button("Debug Play Plus Motion (Pivot B)")]
         private void DebugPlayPlusMotionB()
