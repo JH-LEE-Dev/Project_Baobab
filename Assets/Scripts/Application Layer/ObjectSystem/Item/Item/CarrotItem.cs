@@ -4,10 +4,11 @@ using UnityEngine;
 public enum ItemMoveState
 {
     None,
-    Launching,    // 포물선 비행 중
-    Transferring, // 보관함으로 전송 중 (스케일 애니메이션 포함)
-    Dropped,      // 바닥에 떨어짐 (습득 대기)
-    Sucking       // 캐릭터에게 흡수 중
+    Launching,         // 포물선 비행 중
+    Transferring,      // 보관함으로 전송 중 (스케일 애니메이션 포함)
+    CurveTransferring, // 기울기 독립적 곡선 전송 중
+    Dropped,           // 바닥에 떨어짐 (습득 대기)
+    Sucking            // 캐릭터에게 흡수 중
 }
 
 public class CarrotItem : Item, IStaticCollidable

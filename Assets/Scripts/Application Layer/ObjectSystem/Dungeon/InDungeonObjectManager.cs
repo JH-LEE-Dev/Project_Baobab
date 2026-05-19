@@ -19,6 +19,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private DungeonData dungeonData;
     private LootManager lootManager;
     private InputManager inputManager;
+    private IInventory characterInventory;
 
     // // 내부 의존성
     [Header("Tree Settings")]
@@ -60,10 +61,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     [SerializeField] private List<HiddenMapTreeGradeProbData> hiddenMapTreeGradeDatas;
 
+    private Character character;
+
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager)
+    public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager,
+    IInventory _characterInventory)
     {
+        characterInventory = _characterInventory;
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         mainCam = Camera.main;
@@ -141,7 +146,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null)
         {
             portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager);
+            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, character.transform);
         }
 
         portal.ResetPortal();
@@ -635,5 +640,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void SetHiddenMapGrade(HiddenMapGrade _hiddenMapGrade)
     {
         hiddenMapGrade = _hiddenMapGrade;
+    }
+
+    public void SetCharacter(Character _character)
+    {
+        character = _character;
     }
 }

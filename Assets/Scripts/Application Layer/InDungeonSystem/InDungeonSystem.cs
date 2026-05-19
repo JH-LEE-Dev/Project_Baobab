@@ -8,6 +8,7 @@ public class InDungeonSystem : MonoBehaviour
     private IEnvironmentProvider environmentProvider;
     private HiddenmapManager hiddenmapManager;
     private InputManager inputManager;
+    private IInventory characterInventory;
 
 
     [Header("Dungeon Data Base")]
@@ -17,14 +18,15 @@ public class InDungeonSystem : MonoBehaviour
     private ForestType currentForestType;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
-    InputManager _inputManager)
+    InputManager _inputManager, IInventory _characterInventory)
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         signalHub = _signalHub;
+        characterInventory = _characterInventory;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager);
+        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
@@ -95,12 +97,14 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Subscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.Subscribe<GoHomeButtonClickedSignal>(GoHome);
+        signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.UnSubscribe<GoHomeButtonClickedSignal>(GoHome);
+        signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
     }
 
     private void PortalActivated()
@@ -168,5 +172,10 @@ public class InDungeonSystem : MonoBehaviour
     public void ResetHiddenMapGrade()
     {
         inDungeonObjectManager.SetHiddenMapGrade(HiddenMapGrade.None);
+    }
+
+    private void CharacterSpawned(CharacterSpawnedSignal _characterSpawnedSignal)
+    {
+        inDungeonObjectManager.SetCharacter(_characterSpawnedSignal.character);
     }
 }
