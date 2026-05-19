@@ -16,6 +16,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     {
         // //외부 의존성
         [Header("References")]
+        [SerializeField] private UISelectionCursor selectorCursor;
         [SerializeField] private HUD_MapSubSelector subSelector;
         [SerializeField] private HUD_MapSelectorButton selectButton;
         [SerializeField] private HUD_MapSelectorButton exitButton;
@@ -73,14 +74,17 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != regionContainer)
                 containerRect = regionContainer.GetComponent<RectTransform>();
 
+            if (null != selectorCursor)
+                selectorCursor.Initialize(selectorCursor.CursorSize);
+
             if (null != subSelector)
-                subSelector.Initialize(RefreshSelectButtonState);
+                subSelector.Initialize(RefreshSelectButtonState, OnHoverEnterItem, OnHoverExitItem);
 
             if (null != selectButton)
-                selectButton.Initialize(HandleConfirm, "OkHover", "OkHoverOff", "OkClickTwist");
+                selectButton.Initialize(HandleConfirm, "OkHover", "OkHoverOff", "OkClickTwist", OnHoverEnterItem, OnHoverExitItem);
 
             if (null != exitButton)
-                exitButton.Initialize(HandleExit, "ExitHover", "ExitHoverOff", "ExitClickTwist");
+                exitButton.Initialize(HandleExit, "ExitHover", "ExitHoverOff", "ExitClickTwist", OnHoverEnterItem, OnHoverExitItem);
 
             SetupRegionsFromData();
 
@@ -97,6 +101,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         {
             gameObject.SetActive(true);
             isClosing = false;
+
+            selectorCursor?.HideImmediately();
 
             if (null == subSelector)
                 return;
@@ -231,6 +237,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null != subSelector && null != currentFocusedRegion && null != currentFocusedRegion.GetMapEnvironmentInfo().forestDatas)
                 subSelector.SetSubRegions(currentFocusedRegion.GetMapEnvironmentInfo().forestDatas);
 
+            selectorCursor?.HideImmediately();
             RefreshSelectButtonState();
         }
 
@@ -270,7 +277,17 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             gameObject.SetActive(false);
             if (null != subSelector)
                 subSelector.ClearSelection();
+                
+            selectorCursor?.HideImmediately();
         }
+
+        private void OnHoverEnterItem(RectTransform _targetRect)
+        {
+            if (null != selectorCursor && null != _targetRect)
+                selectorCursor.Show(_targetRect);
+        }
+
+        private void OnHoverExitItem() => selectorCursor?.Hide();
 
         // //Event System 구현부
 
@@ -279,6 +296,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             isDragging = true;
             if (null != subSelector) subSelector.SetVisibility(false);
             if (null != selectButton) selectButton.SetDimmed(true);
+            selectorCursor?.HideImmediately();
         }
 
         public void OnDrag(PointerEventData _eventData)
@@ -317,6 +335,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
                 if (null != subSelector) subSelector.SetVisibility(false);
                 if (null != selectButton) selectButton.SetDimmed(true);
+                selectorCursor?.HideImmediately();
             }
             else
             {

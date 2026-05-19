@@ -371,6 +371,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe27c7023cea63748860dc9d15ea966e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_MapSelector
+  selectorCursor: {fileID: 6919728491717345213}
   subSelector: {fileID: 5421214289454330433}
   selectButton: {fileID: 4485508533173806816}
   exitButton: {fileID: 2193495580616618865}
@@ -1343,7 +1344,6 @@ MonoBehaviour:
   - {fileID: 5776394112991910104}
   - {fileID: 6397184368167527683}
   - {fileID: 3548148323702148151}
-  selectorCursor: {fileID: 6919728491717345213}
 --- !u!1001 &850416206943146732
 PrefabInstance:
   m_ObjectHideFlags: 0
