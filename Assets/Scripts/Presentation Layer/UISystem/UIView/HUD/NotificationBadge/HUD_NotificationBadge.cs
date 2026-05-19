@@ -1,16 +1,19 @@
 using UnityEngine;
+using PresentationLayer.DOTweenAnimationSystem;
+using TMPro;
 
 public class HUD_NotificationBadge : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+
+    [SerializeField] private ObjectMotionPlayer omp;
+    
+    private TMP_Text temp;
+
+    public void Initialize()
     {
-        
+        omp?.Initialize();
+        temp = GetComponent<TMP_Text>();
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    
 }
