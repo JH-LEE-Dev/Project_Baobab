@@ -59,6 +59,8 @@ public class LogItem : Item, IStaticCollidable
     private MaterialPropertyBlock mpb;
     private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
 
+    private CustomSortable customSortable;
+
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -91,6 +93,14 @@ public class LogItem : Item, IStaticCollidable
 
         transform.localScale = Vector3.one;
         originalMaterial = spriteRenderer.material;
+
+        customSortable = GetComponent<CustomSortable>();
+        
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+            customSortable.AddSpriteRenderer(spriteRenderer);
+        }
     }
 
     public void SetInventoryChecker(IInventoryChecker _inventoryChecker)

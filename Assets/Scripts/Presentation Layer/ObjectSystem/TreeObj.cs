@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 {
@@ -59,6 +60,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public Material outlineMaterial;
 
+    private CustomSortable customSortable;
+
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -77,9 +81,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         InitializeShadow(topShadowObject);
         InitializeShadow(bottomShadowObject);
 
+        customSortable = GetComponent<CustomSortable>();
+
         if (treeVisualComponent != null)
         {
-            treeVisualComponent.Initialize(topShadowObject.transform, outlineMaterial);
+            treeVisualComponent.Initialize(topShadowObject.transform, outlineMaterial, customSortable);
         }
 
         BindEvents();

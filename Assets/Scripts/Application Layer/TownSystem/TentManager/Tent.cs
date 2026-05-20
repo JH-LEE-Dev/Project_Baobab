@@ -1,6 +1,6 @@
 using UnityEngine;
 using System;
-using Unity.VisualScripting;
+
 public class Tent : MonoBehaviour
 {
     public event Action<bool> TentInteractEvent;
@@ -77,5 +77,11 @@ public class Tent : MonoBehaviour
             if (bInteract == false)
                 bCanInteract = false;
         }
+    }
+
+    public void ResetTent()
+    {
+        bCanInteract = false;
+        bInteract = false;
     }
 }
