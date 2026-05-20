@@ -12,15 +12,29 @@ public class UI_InteractionUnit : MonoBehaviour
     [SerializeField] private Sprite[] interactionIcons;
     [SerializeField] private string motionTag = "Default";
 
+    private RectTransform rectTransform;
+    private Transform targetTransform;
+    private Vector2 positionOffset;
+
     public void Initialize()
     {
+        rectTransform = GetComponent<RectTransform>();
+
         if (null != motionPlayer)
             motionPlayer.Initialize();
     }
 
     /// <summary>
+    /// 추적할 대상과 오프셋을 설정합니다.
+    /// </summary>
+    public void SetTarget(Transform _target, Vector2 _offset)
+    {
+        targetTransform = _target;
+        positionOffset = _offset;
+    }
+
+    /// <summary>
     /// 상호작용 UI를 노출합니다.
-    /// 추후 단축키 설정에 따라 _iconIndex를 넘겨받아 아이콘을 변경할 수 있습니다.
     /// </summary>
     public void ShowInteraction(int _iconIndex = 0)
     {
@@ -30,7 +44,6 @@ public class UI_InteractionUnit : MonoBehaviour
         if (null == interactionIcons || 0 == interactionIcons.Length)
             return;
             
-        // 인덱스 범위 체크
         if (0 > _iconIndex || _iconIndex >= interactionIcons.Length)
             return;
             
@@ -49,5 +62,15 @@ public class UI_InteractionUnit : MonoBehaviour
             return;
             
         motionPlayer.PlayBackward(motionTag, bReset: true);
+    }
+
+    private void LateUpdate()
+    {
+        if (null == targetTransform || null == rectTransform)
+            return;
+
+        Vector2 targetPosition = targetTransform.position;
+        Vector2 newPos = targetPosition + positionOffset;
+        rectTransform.position = newPos;
     }
 }
