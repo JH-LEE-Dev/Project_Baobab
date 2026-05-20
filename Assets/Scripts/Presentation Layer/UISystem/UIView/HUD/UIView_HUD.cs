@@ -160,9 +160,4 @@ public class UIView_HUD : UIView
 
         hudSteminaBar.SetActivate(!_isTwon);
     }
-
-    public void InventoryUpdated()
-    {
-        
-    }
 }
