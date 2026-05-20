@@ -48,6 +48,11 @@ public class UIView_Unit : UIView
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+
+        if (null != character)
+        {
+            interactionUnit?.SetTarget(character.GetTransform(), characterYOffset);
+        }
     }
 
     public void TreeGetHit(ITreeObj _treeObj)
@@ -99,11 +104,9 @@ public class UIView_Unit : UIView
         interactionUnit = Instantiate(interactionUnitPrefab, uiRoot.transform).GetComponent<UI_InteractionUnit>();
 
         if (null != interactionUnit)
-            interactionUnit.Initialize();
-
-        if (null != character)
         {
-            interactionUnit.SetTarget(character.GetTransform(), characterYOffset);
+            interactionUnit.Initialize();
+            interactionUnit.HideInteraction();
         }
     }
 
@@ -212,11 +215,29 @@ public class UIView_Unit : UIView
 
     public void LogContainerInteractStateChanged(bool _state)
     {
-        
+        if (true == _state)
+        {
+            if (null != interactionUnit)
+                interactionUnit.ShowInteraction();
+        }
+        else
+        {
+            if (null != interactionUnit)
+                interactionUnit.HideInteraction();
+        }
     }
 
     public void OffroadContainerInteractStateChanged(bool _state)
     {
-        
+        if (true == _state)
+        {
+            if (null != interactionUnit)
+                interactionUnit.ShowInteraction();
+        }
+        else
+        {
+            if (null != interactionUnit)
+                interactionUnit.HideInteraction();
+        }
     }
 }
