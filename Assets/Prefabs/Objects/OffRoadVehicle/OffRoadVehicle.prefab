@@ -406,10 +406,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1158083250687389499}
-  - component: {fileID: 3209934454597097855}
   - component: {fileID: 5079051115217624280}
-  - component: {fileID: 4252360701248011706}
-  - component: {fileID: 3503335281038940295}
   m_Layer: 7
   m_Name: Container
   m_TagString: Untagged
@@ -432,21 +429,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2765096103720082767}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3209934454597097855
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3726317326145381529}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2a0a2d98a534e16408e1abd00a447320, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OffroadContainer
-  currentSlotCount: 2
-  maxItemsPerSlot: 100
-  inventorySlots: []
 --- !u!212 &5079051115217624280
 SpriteRenderer:
   serializedVersion: 2
@@ -506,56 +488,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
---- !u!114 &4252360701248011706
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3726317326145381529}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1e2f8354df6dc3d4f8c3c825cdbf35d3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::LogItemPoolingManager
-  logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
-  logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
---- !u!58 &3503335281038940295
-CircleCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3726317326145381529}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 1
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_Radius: 1.3
 --- !u!1 &3816919449108685317
 GameObject:
   m_ObjectHideFlags: 0
@@ -609,6 +541,7 @@ MonoBehaviour:
   baseShadow: {fileID: 7482760703577703091}
   outLineObject: {fileID: 1874286788000652132}
   baseObject: {fileID: 7468739448676493258}
+  containerObject: {fileID: 3726317326145381529}
 --- !u!58 &4433508306021481703
 CircleCollider2D:
   m_ObjectHideFlags: 0

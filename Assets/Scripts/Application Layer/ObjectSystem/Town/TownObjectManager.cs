@@ -38,13 +38,20 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
 
+    private IInventory characterInventory;
+    private OffroadContainer offroadContainer;
+
+
     public float treeGrowTime = 10f;
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, InputManager _inputManager)
+    public void Initialize(IEnvironmentProvider _environmentProvider, InputManager _inputManager,
+    IInventory _characterInventory, OffroadContainer _offroadContainer)
     {
         environmentProvider = _environmentProvider;
         inputManager = _inputManager;
         mainCam = Camera.main;
+        characterInventory = _characterInventory;
+        offroadContainer = _offroadContainer;
 
         // CullingGroup 및 거리 배열 미리 생성하여 재사용
         if (cullingGroup == null)
@@ -68,11 +75,14 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             portal = Instantiate(portalPrefab);
             portal.transform.position = portalSpawnPoint.position;
-            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, null, null);
+            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, characterInventory, offroadContainer);
             portal.SetCanTravel(bCanTravel);
         }
         else
+        {
+            portal.ResetPortal();
             portal.SetCanTravel(bCanTravel);
+        }
 
         // 씬 내의 나무가 이미 관리 중이라면 다시 찾지 않음 (할당 방지)
         //if (trees == null)

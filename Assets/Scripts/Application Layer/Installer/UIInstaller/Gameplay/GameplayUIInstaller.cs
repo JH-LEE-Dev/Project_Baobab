@@ -20,6 +20,7 @@ public class GameplayUIInstaller : MonoBehaviour
     private IMapDataProvider mapDataProvider;
     private IWeatherProvider weatherProvider;
     private ITimeDataProvider timeDataProvider;
+    private IInventory offroadContainer;
 
     //Canvas
 
@@ -39,8 +40,9 @@ public class GameplayUIInstaller : MonoBehaviour
         InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
         ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC,
         IMoneyData _moneyData, LocalizationManager _localizeManager, IMapDataProvider _mapDataProvider, 
-        IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
+        IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, IInventory _offroadContainer)
     {
+        offroadContainer = _offroadContainer;
         mapDataProvider = _mapDataProvider;
         localizationManager = _localizeManager;
         inputManager = _inputManager;
@@ -59,7 +61,7 @@ public class GameplayUIInstaller : MonoBehaviour
         uICoordinator = new GameplayUICoordinator();
 
         uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider,
-         shopNPC, moneyData, localizationManager, mapDataProvider, weatherProvider, timeDataProvider);
+         shopNPC, moneyData, localizationManager, mapDataProvider, weatherProvider, timeDataProvider, offroadContainer);
 
         SetupUIElement();
 

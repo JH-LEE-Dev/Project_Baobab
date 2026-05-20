@@ -6,6 +6,7 @@ public class UIView_WorldPopup : UIView
     private IInventory container;
     private ILogCutter logCutter;
     private IShopNPC shopNPC;
+    private IInventory offroadContainer;
 
     [SerializeField] private float storageYOffset = 0.5f;
     [SerializeField] private float cutterYOffset = 0.5f;
@@ -135,8 +136,9 @@ public class UIView_WorldPopup : UIView
         ui_TraderCoin.UpdateMoneyText(shopNPC.currentMoney);
     }
 
-    public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC)
+    public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC,IInventory _offroadContainer)
     {
+        offroadContainer = _offroadContainer;
         container = _container;
         logCutter = _logCutter;
         shopNPC = _shopNPC;
@@ -232,7 +234,7 @@ public class UIView_WorldPopup : UIView
         ui_Storage?.Refresh();
     }
 
-    void ResetLogCutterUI()
+    private void ResetLogCutterUI()
     {
         if (null != ui_Cutter && null != logCutter.logToCut && logCutter.bIsCutting == true)
         {
@@ -243,5 +245,17 @@ public class UIView_WorldPopup : UIView
         {
             ui_Cutter?.ResetCutter();
         }
+    }
+
+    //true -> 오프로드 박스에 진입, false -> 그 반대.
+    public void OffroadContainerInteractStateChanged(bool _state)
+    {
+        
+    }
+
+    //오프로드 박스 스펙이 바뀌었음.
+    public void OffraodContainerSpecChanged()
+    {
+        
     }
 }

@@ -14,6 +14,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private ITownObjSystemCH townObjSystemCH;
     private ILogProcessingSystemCH logProcessingSystemCH;
     private ILogItemCH logItemCH;
+    private IOffroadContainerCH offroadContainerCH;
 
 
     [SerializeField] private List<SkillCommand> skillCommands;
@@ -39,10 +40,13 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     ILogItemCH ICommandHandleSystem.logItemCH => logItemCH;
 
+    IOffroadContainerCH ICommandHandleSystem.offroadContainerCH => offroadContainerCH;
+
     public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
     ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH,
-    ILogProcessingSystemCH _logProcessingSystemCH, ILogItemCH _logItemCH)
+    ILogProcessingSystemCH _logProcessingSystemCH, ILogItemCH _logItemCH, IOffroadContainerCH _offroadContainerCH)
     {
+        offroadContainerCH = _offroadContainerCH;
         signalHub = _signalHub;
         inventoryCH = _inventoryCH;
         containerCH = _containerCH;

@@ -12,14 +12,16 @@ public class GameplayUIManager : UIManager
     private IMapDataProvider mapDataProvider;
     private IWeatherProvider weatherProvider;
     private ITimeDataProvider timeDataProvider;
+    private IInventory offroadContainer;
 
 
     public void Initialize(InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
     ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC, IMoneyData _moneyData, LocalizationManager _localizeManager,
-    IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
+    IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider,IInventory _offroadContainer)
     {
         base.Initialize(_inputManager, _localizeManager);
 
+        offroadContainer = _offroadContainer;
         weatherProvider = _weatherProvider;
         timeDataProvider = _timeDataProvider;
         mapDataProvider = _mapDataProvider;
@@ -42,7 +44,7 @@ public class GameplayUIManager : UIManager
             unitUI.DependencyInjection(inDungeonObjProvider.trees);
 
         if (view is UIView_WorldPopup worldUI)
-            worldUI.DependencyInjection(container, logCutter, shopNPC);
+            worldUI.DependencyInjection(container, logCutter, shopNPC, offroadContainer);
 
         if (view is UIView_Tent tentUI)
             tentUI.DependencyInjection(skillSystemProvider, moneyData);

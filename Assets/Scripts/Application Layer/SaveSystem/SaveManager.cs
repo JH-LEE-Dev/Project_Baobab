@@ -13,6 +13,7 @@ public class SaveManager : MonoBehaviour
     private DensityManager densityManager;
     private InDungeonObjectManager inDungeonObjectManager;
     private TownObjectManager townObjectManager;
+    private OffroadContainer offroadContainer;
 
     // // 내부 의존성 및 설정
     // 암호화 키 (보안을 위해 실제 서비스 시에는 더 안전한 방식으로 관리 권장)
@@ -23,7 +24,7 @@ public class SaveManager : MonoBehaviour
     private GameSaveData cachedSaveData = new GameSaveData();
 
     public void Initialize(SignalHub _signalHub, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
-    DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager)
+    DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager, OffroadContainer _offroadContainer)
     {
         signalHub = _signalHub;
         inDungeonObjectManager = _inDungeonObjectManager;
@@ -32,6 +33,7 @@ public class SaveManager : MonoBehaviour
         inventoryManager = _inventoryManager;
         logProcessingManager = _logProcessingManager;
         townObjectManager = _townObjectManager;
+        offroadContainer = _offroadContainer;
 
         SubscribeSignals();
     }
@@ -154,7 +156,13 @@ public class SaveManager : MonoBehaviour
             cachedSaveData.townSaveData = townObjectManager.GetSaveData();
         }
 
-        // 8. JSON 직렬화 및 바이너리 암호화 저장
+        // 8. 오프로드 컨테이너 데이터 추출
+        if (offroadContainer != null)
+        {
+            offroadContainer.PopulateSaveData(ref cachedSaveData.offroadContainerSaveData);
+        }
+
+        // 9. JSON 직렬화 및 바이너리 암호화 저장
         string json = JsonUtility.ToJson(cachedSaveData);
         byte[] encryptedData = Encrypt(json);
 
@@ -240,6 +248,12 @@ public class SaveManager : MonoBehaviour
         if (townObjectManager != null)
         {
             townObjectManager.LoadSaveData(saveData.townSaveData);
+        }
+
+        // 8. 오프로드 컨테이너 데이터 복구
+        if (offroadContainer != null)
+        {
+            offroadContainer.LoadSaveData(saveData.offroadContainerSaveData);
         }
 
         Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
