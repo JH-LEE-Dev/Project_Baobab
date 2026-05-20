@@ -48,5 +48,15 @@ public struct WeaponModeChangedSignal
 
 public struct InventorySpecChangedSignal { }
 public struct LogContainerSpecChangedSignal { }
+public struct OffraodContainerSpecChangedSignal { }
 
 public struct CharacterStaminaIsEmptySignal { }
+
+public struct OffroadContainerInteractStateChangedSignal
+{
+    public bool state;
+    public OffroadContainerInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}

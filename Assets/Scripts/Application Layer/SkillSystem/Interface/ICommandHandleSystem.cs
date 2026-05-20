@@ -11,4 +11,5 @@ public interface ICommandHandleSystem
     public ITownObjSystemCH townObjSystemCH { get; }
     public ILogProcessingSystemCH logProcessingSystemCH { get; }
     public ILogItemCH logItemCH { get; }
+    public IOffroadContainerCH offroadContainerCH { get; }
 }

@@ -4,12 +4,17 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class OffroadContainer : MonoBehaviour, IInventory
+public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 {
+    public event Action<bool> InteractStateEvent;
+    public event Action ContainerUpdatedEvent;
+    public event Action SpecChangedEvent;
+
     // 외부 의존성
     private IInventory characterInventory;
     private Transform charTransform;
     private LogItemPoolingManager logItemPoolManager;
+    [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
@@ -35,19 +40,15 @@ public class OffroadContainer : MonoBehaviour, IInventory
     private SpriteRenderer sr;
     private Transform visualTransform;
     private float bounceTime = 1f;
-    private const float BOUNCE_DURATION = 0.4f;
+    private const float BOUNCE_DURATION = 0.2f;
 
-    public event Action ItemAcquiredEvent;
-
-    public void Initialize(IInventory _characterInventory, Transform _charTransform)
+    public void Initialize(IInventory _characterInventory)
     {
-        charTransform = _charTransform;
         characterInventory = _characterInventory;
         logItemPoolManager = GetComponent<LogItemPoolingManager>();
         logItemPoolManager.Initialize();
 
         sr = GetComponent<SpriteRenderer>();
-        if (sr != null) visualTransform = sr.transform;
 
         // 1. 슬롯 리스트 최대 개수(SYSTEM_VAR.MAX_INVENTORY_CNT)만큼 미리 생성
         if (inventorySlots.Count < SYSTEM_VAR.MAX_INVENTORY_CNT)
@@ -80,6 +81,16 @@ public class OffroadContainer : MonoBehaviour, IInventory
         }
     }
 
+    public void SetVisualTransform(Transform _transform)
+    {
+        visualTransform = _transform;
+    }
+
+    public void SetCharacterTransform(Transform _transform)
+    {
+        charTransform = _transform;
+    }
+
     private void Update()
     {
         UpdateFlyingItems(Time.deltaTime);
@@ -94,7 +105,7 @@ public class OffroadContainer : MonoBehaviour, IInventory
             item.ManualUpdate(_deltaTime);
 
             // ContainerTransferring 상태도 비행 중인 상태로 간주
-            if (item.MoveState != ItemMoveState.Transferring && 
+            if (item.MoveState != ItemMoveState.Transferring &&
                 item.MoveState != ItemMoveState.CurveTransferring &&
                 item.MoveState != ItemMoveState.ContainerTransferring)
             {
@@ -132,9 +143,9 @@ public class OffroadContainer : MonoBehaviour, IInventory
         bounceTime += _deltaTime;
         float t = bounceTime / BOUNCE_DURATION;
 
-        // 쫀득함 제거: 여러 번 진동하는 Sin 대신 단순한 반원 Sin 곡선 사용
-        // t=0에서 0, t=0.5에서 최대, t=1에서 0이 되는 정직한 바운스
-        float curve = Mathf.Sin(t * Mathf.PI) * 0.15f;
+        // 쫀득함(Squash & Stretch) 연출: 감쇠 진동 곡선(Damped Sine Wave) 사용
+        // t가 0~1로 흐를 때 1.5회(3번의 방향 전환) 진동하며 진폭이 점차 줄어듦
+        float curve = Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * 0.3f;
 
         if (visualTransform != null)
         {
@@ -281,6 +292,7 @@ public class OffroadContainer : MonoBehaviour, IInventory
                 IsSameItemByData(_sourceData, inventorySlots[i].itemData))
             {
                 inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                ContainerUpdatedEvent?.Invoke();
                 return;
             }
         }
@@ -306,6 +318,7 @@ public class OffroadContainer : MonoBehaviour, IInventory
 
                     inventorySlots[i].Setup(newData, 0);
                     inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                    ContainerUpdatedEvent?.Invoke();
                 }
 
                 return;
@@ -432,6 +445,8 @@ public class OffroadContainer : MonoBehaviour, IInventory
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
+            InteractStateEvent?.Invoke(true);
+
             if (transferCoroutine == null)
             {
                 transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
@@ -443,6 +458,8 @@ public class OffroadContainer : MonoBehaviour, IInventory
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
+            InteractStateEvent?.Invoke(false);
+
             if (transferCoroutine == null)
             {
                 transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
@@ -460,5 +477,110 @@ public class OffroadContainer : MonoBehaviour, IInventory
                 transferCoroutine = null;
             }
         }
+    }
+
+    public void ExpandInventorySlotCnt(float _amount)
+    {
+        currentSlotCount = Mathf.Min(currentSlotCount + (int)_amount, SYSTEM_VAR.MAX_INVENTORY_CNT);
+        SpecChangedEvent?.Invoke();
+    }
+
+    public void LogCapacityIncrease(float _amount)
+    {
+        maxItemsPerSlot += (int)_amount;
+    }
+
+    public void PopulateSaveData(ref InventorySaveData _saveData)
+    {
+        _saveData.money = 0;
+        _saveData.carrot = 0;
+        _saveData.currentSlotCount = currentSlotCount;
+        _saveData.maxItemsPerSlot = maxItemsPerSlot;
+
+        _saveData.Initialize(currentSlotCount);
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            InventorySlotSaveData slotData = new InventorySlotSaveData();
+            slotData.totalCount = slot.totalCount;
+
+            if (slot.itemData != null)
+            {
+                ItemSaveData itemSaveData = new ItemSaveData();
+                itemSaveData.itemType = slot.itemData.itemType;
+                itemSaveData.color = slot.itemData.color;
+
+                if (slot.itemData is LogItemData logData)
+                {
+                    itemSaveData.treeType = logData.treeType;
+                    itemSaveData.logState = logData.logState;
+                    slotData.treeTypeCounts = slot.GetTreeTypeCounts();
+                }
+
+                slotData.itemSaveData = itemSaveData;
+            }
+
+            _saveData.slots.Add(slotData);
+        }
+    }
+
+    public void LoadSaveData(InventorySaveData _data)
+    {
+        currentSlotCount = _data.currentSlotCount;
+        maxItemsPerSlot = _data.maxItemsPerSlot;
+
+        // 기존 슬롯 초기화
+        for (int i = 0; i < inventorySlots.Count; i++)
+        {
+            if (inventorySlots[i].itemData is ItemData itemData)
+            {
+                ReleaseToPool(itemData);
+            }
+            inventorySlots[i].Setup(null, 0);
+        }
+
+        if (_data.slots != null)
+        {
+            for (int i = 0; i < _data.slots.Count; i++)
+            {
+                if (i >= inventorySlots.Count) break;
+
+                var slotData = _data.slots[i];
+                if (slotData.itemSaveData.itemType != ItemType.None)
+                {
+                    ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
+                    if (newData != null)
+                    {
+                        newData.color = slotData.itemSaveData.color;
+
+                        if (newData is LogItemData logData)
+                        {
+                            logData.treeType = slotData.itemSaveData.treeType;
+                            logData.logState = slotData.itemSaveData.logState;
+
+                            if (logItemTypeDataBase != null)
+                            {
+                                var typeData = logItemTypeDataBase.Get(logData.treeType);
+                                if (typeData != null)
+                                {
+                                    logData.sprite = typeData.sprite;
+                                }
+                            }
+                        }
+
+                        inventorySlots[i].Setup(newData, slotData.totalCount);
+
+                        if (slotData.treeTypeCounts != null && slotData.treeTypeCounts.Length > 0)
+                        {
+                            inventorySlots[i].LoadTreeTypeCounts(slotData.treeTypeCounts);
+                        }
+                    }
+                }
+            }
+        }
+
+        ContainerUpdatedEvent?.Invoke();
+        SpecChangedEvent?.Invoke();
     }
 }

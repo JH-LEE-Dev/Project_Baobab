@@ -238,11 +238,13 @@ public class GameSaveData
     public CarrotSaveData carrotSaveData;
     public LogDropProbSaveData logDropProbSaveData;
     public TownSaveData townSaveData;
+    public InventorySaveData offroadContainerSaveData;
 
     public void Clear()
     {
         skillTreeSaveData.Initialize();
         inventorySaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
+        offroadContainerSaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
         logProcessingSaveData.Initialize();
         if (logDropProbSaveData.logProbDatas != null) logDropProbSaveData.logProbDatas.Clear();
         environmentSaveData.Initialize();

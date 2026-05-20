@@ -9,6 +9,7 @@ public class InDungeonSystem : MonoBehaviour
     private HiddenmapManager hiddenmapManager;
     private InputManager inputManager;
     private IInventory characterInventory;
+    private OffroadContainer offroadContainer;
 
 
     [Header("Dungeon Data Base")]
@@ -18,15 +19,16 @@ public class InDungeonSystem : MonoBehaviour
     private ForestType currentForestType;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
-    InputManager _inputManager, IInventory _characterInventory)
+    InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer)
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         signalHub = _signalHub;
         characterInventory = _characterInventory;
+        offroadContainer = _offroadContainer;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory);
+        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory, offroadContainer);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);

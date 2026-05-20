@@ -29,11 +29,14 @@ public class OffroadVehicleObj : MonoBehaviour
 
     [SerializeField] private GameObject outLineObject;
     [SerializeField] private GameObject baseObject;
+    [SerializeField] private GameObject containerObject;
 
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
-    IInventory _characterInventory, Transform _charTransform)
+    IInventory _characterInventory, OffroadContainer _offroadContainer)
     {
+        offroadContainer = _offroadContainer;
+
         if (_characterInventory != null)
             characterInventory = _characterInventory;
 
@@ -47,12 +50,8 @@ public class OffroadVehicleObj : MonoBehaviour
         if (baseShadow != null)
             baseShadow.Initialize();
 
-        offroadContainer = GetComponentInChildren<OffroadContainer>();
-
         if (characterInventory != null)
         {
-            offroadContainer.Initialize(characterInventory, _charTransform);
-
             offroadContainer.gameObject.SetActive(true);
         }
         else
@@ -84,6 +83,8 @@ public class OffroadVehicleObj : MonoBehaviour
     {
         lastActivatedTime = Time.time;
         bOverlapped = false;
+        offroadContainer.transform.position = containerObject.transform.position;
+        offroadContainer.SetVisualTransform(containerObject.transform);
     }
 
     //유니티 이벤트 함수

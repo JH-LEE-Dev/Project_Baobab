@@ -13,18 +13,23 @@ public class TownSystem : MonoBehaviour
     public LogProcessingManager logProcessingManager { get; private set; }
     private TentManager tentManager;
     private Character character;
+    private IInventory characterInventory;
+    private OffroadContainer offroadContainer;
 
-    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager)
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager, 
+    IInventory _characterInventory, OffroadContainer _offroadContainer)
     {
         inputManager = _inputManager;
         signalHub = _signalHub;
         environmentProvider = _environmentProvider;
+        characterInventory = _characterInventory;
+        offroadContainer = _offroadContainer;
 
         townObjectManager = GetComponentInChildren<TownObjectManager>();
         logProcessingManager = GetComponentInChildren<LogProcessingManager>();
         tentManager = GetComponentInChildren<TentManager>();
 
-        townObjectManager.Initialize(environmentProvider, inputManager);
+        townObjectManager.Initialize(environmentProvider, inputManager, characterInventory, offroadContainer);
         logProcessingManager.Initialize(inputManager);
         tentManager.Initialize(inputManager);
 

@@ -232,6 +232,11 @@ public class GameplayUICoordinator
         worldPopupUI.LogContainerSpecChanged();
     }
 
+    private void OffraodContainerSpecChanged()
+    {
+        
+    }
+
     private void SpendMoney(SpendMoneySignal spendMoneySignal)
     {
         popUpUI.CharactersMoneyChanged();
@@ -308,5 +313,10 @@ public class GameplayUICoordinator
     private void TeleportUIClosed()
     {
         signalHub.Publish(new TeleportUIClosedSignal());
+    }
+
+    private void OffroadContainerInteractStateChanged(OffroadContainerInteractStateChangedSignal _offroadContainerInteractStateChangedSignal)
+    {
+        
     }
 }

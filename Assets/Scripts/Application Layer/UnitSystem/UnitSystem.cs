@@ -7,16 +7,19 @@ public class UnitSystem
     private UnitSpawner unitSpawner;
     private UnitLogicManager unitLogicManager;
     private InventoryManager inventoryManager;
+    private OffroadContainer offroadContainer;
 
     //내부 의존성
 
 
-    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager, InventoryManager _inventoryManager)
+    public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager, InventoryManager _inventoryManager,
+    OffroadContainer _offroadContainer)
     {
         signalHub = _signalHub;
         unitSpawner = _unitSpawner;
         unitLogicManager = _unitLogicManager;
         inventoryManager = _inventoryManager;
+        offroadContainer = _offroadContainer;
 
         SubscribeSignals();
         BindEvents();
@@ -34,6 +37,7 @@ public class UnitSystem
     public void CreateCharacter()
     {
         unitSpawner.SpawnCharacter();
+        offroadContainer.SetCharacterTransform(unitSpawner.character.centerTransform);
     }
 
     private void SubscribeSignals()
@@ -78,6 +82,9 @@ public class UnitSystem
 
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         inventoryManager.SpendMoneyEvent += SpendMoney;
+
+        offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
+        offroadContainer.InteractStateEvent += OffroadContainerInteractStateChanged;
     }
 
     private void ReleaseEvents()
@@ -87,6 +94,7 @@ public class UnitSystem
         inventoryManager.InventorySpecChangedEvent -= InventorySpecChanged;
         unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
         inventoryManager.SpendMoneyEvent -= SpendMoney;
+        offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
     }
 
     private void CharacterSpawned(Character _character)
@@ -160,6 +168,11 @@ public class UnitSystem
         signalHub.Publish(new InventorySpecChangedSignal());
     }
 
+    private void OffraodContainerSpecChanged()
+    {
+        signalHub.Publish(new OffraodContainerSpecChangedSignal());
+    }
+
     private void CharacterStaminaIsEmpty()
     {
         inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
@@ -174,5 +187,10 @@ public class UnitSystem
     private void SkillDispatched(SkillDispatchedSignal skillDispatchedSignal)
     {
         unitLogicManager.RefreshCharacter();
+    }
+
+    private void OffroadContainerInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new OffroadContainerInteractStateChangedSignal(_boolean));
     }
 }

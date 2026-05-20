@@ -18,6 +18,7 @@ public class GameInstaller : MonoBehaviour
     private InventoryManager inventoryManager;
     private SkillDispatcher skillDispatcher;
     private SkillManager skillManager;
+    private OffroadContainer offroadContainer;
 
     //시스템 객체들
     private UnitSystem unitSystem;
@@ -51,18 +52,21 @@ public class GameInstaller : MonoBehaviour
         inventoryManager = GetComponentInChildren<InventoryManager>();
         skillManager = GetComponentInChildren<SkillManager>();
         skillDispatcher = GetComponentInChildren<SkillDispatcher>();
+        offroadContainer = GetComponentInChildren<OffroadContainer>();
 
         environmentSystem.Initialize(signalHub, unitLogicManager);
         cameraManager.Initialize(signalHub, inputManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
         teleportManager.Initialize(signalHub, bootStrapProvider);
-        townSystem.Initialize(signalHub, environmentSystem, inputManager);
         inventoryManager.Initialize();
-        inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager, inputManager, inventoryManager);
+        offroadContainer.Initialize(inventoryManager);
+        townSystem.Initialize(signalHub, environmentSystem, inputManager, inventoryManager, offroadContainer);
+        inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager, inputManager, inventoryManager, offroadContainer);
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,
-        inventoryManager, localizationManager, environmentSystem.densityManager, environmentSystem.weatherManager, environmentSystem.timeController);
+        inventoryManager, localizationManager, environmentSystem.densityManager, environmentSystem.weatherManager, environmentSystem.timeController,
+        offroadContainer);
 
         skillDispatcher.Initialize(signalHub,
          inventoryManager,
@@ -73,13 +77,14 @@ public class GameInstaller : MonoBehaviour
           inDungeonSystem.inDungeonObjectManager.itemManager.carrrotItemController,
            townSystem.townObjectManager,
             townSystem.logProcessingManager,
-             inDungeonSystem.inDungeonObjectManager.itemManager.logItemController);
+             inDungeonSystem.inDungeonObjectManager.itemManager.logItemController,
+             offroadContainer);
 
-        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager);
+        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager, offroadContainer);
         skillSystem.Initialize(signalHub, skillManager, skillDispatcher);
 
         _saveManager.Initialize(signalHub, skillSystem, inventoryManager, townSystem.logProcessingManager,
-        environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager);
+        environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager, offroadContainer);
 
         unitSystem.CreateCharacter();
         environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager, inDungeonSystem.inDungeonUnitSpawner);

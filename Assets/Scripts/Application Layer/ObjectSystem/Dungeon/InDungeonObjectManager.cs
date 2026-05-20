@@ -62,12 +62,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     [SerializeField] private List<HiddenMapTreeGradeProbData> hiddenMapTreeGradeDatas;
 
     private Character character;
+    private OffroadContainer offraodContainer;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager,
-    IInventory _characterInventory)
+    IInventory _characterInventory, OffroadContainer _offroadContainer)
     {
+        offraodContainer = _offroadContainer;
         characterInventory = _characterInventory;
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
@@ -146,11 +148,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null)
         {
             portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, character.centerTransform);
+            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offraodContainer);
         }
 
-        portal.ResetPortal();
         portal.transform.position = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
+        portal.ResetPortal();
         portal.gameObject.SetActive(true);
 
         BindPortalEvents();
