@@ -97,6 +97,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     // 관리용 인덱스
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
+    private CustomSortable customSortable;
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -138,6 +139,13 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         if (feetShadowObject != null)
             feetShadowObject.SetActive(false);
+
+        customSortable = GetComponent<CustomSortable>();
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+            customSortable.AddSpriteRenderer(sr);
+        }
     }
 
     public void Hide()
@@ -294,6 +302,8 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
         // 매 틱마다 현재 위치의 지형 정보를 갱신 (마찰력 적용을 위함)
         currentGroundData = groundDataProvider.GetGroundPhysicsData(currentPos);
+
+        customSortable.SetHeight(0f);
     }
 
     private void UpdateCharacterDetection(Vector2 _currentPos)
@@ -459,5 +469,10 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public Transform GetTransform()
     {
         return cachedTransform;
+    }
+
+    private void LateUpdate()
+    {
+        customSortable.ManualLateUpdate();
     }
 }

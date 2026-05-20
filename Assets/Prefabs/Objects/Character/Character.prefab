@@ -645,6 +645,7 @@ GameObject:
   - component: {fileID: 8662941010871122232}
   - component: {fileID: 1880944115013296388}
   - component: {fileID: 2458229477242988497}
+  - component: {fileID: 9036442478881247126}
   m_Layer: 8
   m_Name: Character
   m_TagString: Player
@@ -762,6 +763,22 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: -0.01, y: 0.02}
   m_Radius: 0.15
+--- !u!114 &9036442478881247126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3341736304246452574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100
 --- !u!1 &3418504347255478067
 GameObject:
   m_ObjectHideFlags: 0
@@ -1021,6 +1038,7 @@ MonoBehaviour:
   faceObjectBlink: {fileID: 4758584271530866959}
   onWaterFaceObject: {fileID: 3418504347255478067}
   onWaterFaceObjectBlink: {fileID: 14496658055370555}
+  characterVisualComponent: {fileID: 8234620837606309691}
 --- !u!1 &4035353486790179823
 GameObject:
   m_ObjectHideFlags: 0

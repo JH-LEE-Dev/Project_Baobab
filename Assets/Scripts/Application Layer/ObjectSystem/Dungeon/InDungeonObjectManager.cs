@@ -151,7 +151,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offraodContainer);
         }
 
-        portal.transform.position = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
+        var pos = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
+        pos.y -= 0.25f;
+
+        portal.transform.position = pos;
         portal.ResetPortal();
         portal.gameObject.SetActive(true);
 

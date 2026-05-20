@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 4031307687667120443}
   - component: {fileID: 651290691785911381}
   - component: {fileID: 6816314925318994502}
+  - component: {fileID: 6356660897013748324}
   m_Layer: 14
   m_Name: HRabbit
   m_TagString: Untagged
@@ -60,7 +61,6 @@ MonoBehaviour:
   detectionLayerMask:
     serializedVersion: 2
     m_Bits: 256
-  shadowSideThreshold: 22.5
   centerPos: {x: 0, y: 0, z: 0}
   targetPos: {x: 0, y: 0, z: 0}
   scatterRadius: 0
@@ -68,6 +68,7 @@ MonoBehaviour:
   animalType: 3
   statusEffectObject: {fileID: 8068010885075875607}
   feetShadowObject: {fileID: 3220502767311733363}
+  bActivated: 1
 --- !u!50 &3986312160508272429
 Rigidbody2D:
   serializedVersion: 5
@@ -156,6 +157,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EHealthComponent
   maxHealth: 10
+--- !u!114 &6356660897013748324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 107225309175950354}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100
 --- !u!1 &3220502767311733363
 GameObject:
   m_ObjectHideFlags: 0
@@ -329,7 +346,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -349,7 +366,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 5
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 5883554600633158819, guid: 19b965dfd6f70b248bbddd2109885173, type: 3}
@@ -453,7 +470,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1151066655
-  m_SortingLayer: 6
+  m_SortingLayer: 8
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 3156634924717718424, guid: 6b5f71a438b34104fa36189d9be79020, type: 3}
@@ -596,6 +613,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Shadow
   defaultRotationZ: 90
   defaultScaleY: 1
+  cachedTransform: {fileID: 0}
 --- !u!95 &622865807992615859
 Animator:
   serializedVersion: 7

@@ -98,7 +98,8 @@ public class LogItem : Item, IStaticCollidable
         
         if (customSortable != null)
         {
-            customSortable.Initialize(transform);
+            // 정렬 기준(Anchor)을 상하 이동하는 visualTransform으로 설정
+            customSortable.Initialize(visualTransform != null ? visualTransform : transform);
             customSortable.AddSpriteRenderer(spriteRenderer);
         }
     }
@@ -232,6 +233,11 @@ public class LogItem : Item, IStaticCollidable
             visualTransform.localRotation = Quaternion.identity;
             visualTransform.localScale = Vector3.one;
         }
+
+        if (customSortable != null)
+        {
+            customSortable.SetHeight(0f);
+        }
     }
 
     public void SetTimberSprite()
@@ -281,6 +287,11 @@ public class LogItem : Item, IStaticCollidable
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
             
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(heightOffset);
+            }
+
             // 3. Uniform Scale (수직 속도에 비례하여 부피감이 변함)
             // t=0.5(정점)에서 추가 스케일이 0이 되고, 시작과 끝에서 최대가 됨
             float verticalVelocity = -8 * height * (t - 0.5f) / duration;
@@ -318,6 +329,11 @@ public class LogItem : Item, IStaticCollidable
             }
             transform.localScale = Vector3.one;
 
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(0f);
+            }
+
             state = ItemMoveState.Dropped;
             CheckAcquireCondition();
         }
@@ -348,6 +364,11 @@ public class LogItem : Item, IStaticCollidable
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
             visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
+
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(heightOffset);
+            }
         }
         else
         {
@@ -381,6 +402,11 @@ public class LogItem : Item, IStaticCollidable
 
             visualTransform.rotation = Quaternion.identity;
 
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(0f);
+            }
+
             state = ItemMoveState.Dropped;
         }
     }
@@ -409,6 +435,11 @@ public class LogItem : Item, IStaticCollidable
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
             visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
+
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(heightOffset);
+            }
         }
         else
         {
@@ -439,6 +470,12 @@ public class LogItem : Item, IStaticCollidable
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
             visualTransform.rotation = Quaternion.identity;
+
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(0f);
+            }
+
             state = ItemMoveState.Dropped;
         }
     }
@@ -481,6 +518,11 @@ public class LogItem : Item, IStaticCollidable
             float springEffect = Mathf.Sin(elapsed * freq) * Mathf.Exp(-elapsed * decay) * 0.4f;
             
             visualTransform.localScale = Vector3.one * (1f + springEffect);
+
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(visualTransform.localPosition.y);
+            }
         }
 
         // 타겟에 매우 가까워지면 전체 스케일 축소 (최소 0.25 유지)
@@ -503,6 +545,11 @@ public class LogItem : Item, IStaticCollidable
             float posOffset = (transform.position.x + transform.position.y) * 10f;
             float floatOffset = Mathf.Sin(Time.time * 2.5f + posOffset) * 0.05f;
             visualTransform.localPosition = new Vector3(0, floatOffset, 0);
+
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(floatOffset);
+            }
         }
 
         if (!bDrop || suckTarget == null) return;
@@ -544,5 +591,10 @@ public class LogItem : Item, IStaticCollidable
     public void SetbCanAcquired(bool _boolean)
     {
         bCanAcquired = _boolean;
+    }
+
+    private void LateUpdate()
+    {
+        customSortable.ManualLateUpdate();
     }
 }

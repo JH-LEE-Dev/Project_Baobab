@@ -189,4 +189,9 @@ public class ArmComponent : PComponent, IArmComponent
         axeComponent.Refresh();
         //rifleComponent.Refresh();
     }
+
+    public void SortArmCompOrder()
+    {
+        axeComponent.SortingOrder();
+    }
 }

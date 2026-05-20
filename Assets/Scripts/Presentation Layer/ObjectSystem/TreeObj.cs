@@ -324,4 +324,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.SetOutline(_boolean);
         }
     }
+
+    private void LateUpdate()
+    {
+        customSortable.ManualLateUpdate();
+    }
 }

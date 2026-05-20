@@ -61,6 +61,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     private Color firstIndexBottomColor;
     private CustomSortable customSortable;
+    public GameObject baseVisualObj;
 
     #endregion
 
@@ -121,8 +122,7 @@ public class TreeVisualComponent : MonoBehaviour
         if (customSortable != null)
         {
             customSortable.Initialize(transform);
-            customSortable.AddSpriteRenderer(topRenderer);
-            customSortable.AddSpriteRenderer(bottomRenderer);
+            customSortable.SetSortingGroup(baseVisualObj.GetComponent<SortingGroup>());
         }
     }
 

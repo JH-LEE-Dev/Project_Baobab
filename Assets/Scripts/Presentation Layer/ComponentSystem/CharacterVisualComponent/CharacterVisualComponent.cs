@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class CharacterVisualComponent : MonoBehaviour
 {
@@ -52,12 +53,18 @@ public class CharacterVisualComponent : MonoBehaviour
 
     public Animator Anim => anim;
 
+    private CustomSortable customSortable;
+
+    public GameObject characterVisualComponent;
+
     #region Public Methods (Initialization & Control)
 
-    public void Initialize(IEnvironmentProvider _environmentProvider, GameObject _onWaterAnimatorObject, Shadow _shadowObject)
+    public void Initialize(IEnvironmentProvider _environmentProvider, GameObject _onWaterAnimatorObject, Shadow _shadowObject,
+        CustomSortable _customSortable)
     {
         environmentProvider = _environmentProvider;
         shadowObject = _shadowObject;
+        customSortable = _customSortable;
 
         anim = GetComponent<Animator>();
         sr = GetComponent<SpriteRenderer>();
@@ -115,6 +122,11 @@ public class CharacterVisualComponent : MonoBehaviour
             shadowSR = shadowObject.GetComponent<SpriteRenderer>();
             shadowAnim = shadowObject.GetComponent<Animator>();
             shadowObject.Initialize();
+        }
+
+        if(customSortable != null)
+        {
+            customSortable.SetSortingGroup(characterVisualComponent.GetComponent<SortingGroup>());
         }
     }
 
