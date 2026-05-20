@@ -22,7 +22,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //내부 의존성
         private RectTransform rect;
         private ForestEnvironmentInfo forestInfo;
-        private Action<RectTransform> onHoverEnterEvent;
+        private Action<RectTransform, Vector2> onHoverEnterEvent;
         private Action onHoverExitEvent;
         private Action<int> onSelectEvent;
 
@@ -42,7 +42,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect)
+        public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform, Vector2> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect)
         {
             forestInfo = _info;
             Initialize(_number);
@@ -121,7 +121,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public void OnPointerEnter(PointerEventData _eventData)
         {
             if (true == isLocked) return;
-            onHoverEnterEvent?.Invoke(GetRectTransform());
+            
+            RectTransform _targetRect = GetRectTransform();
+            onHoverEnterEvent?.Invoke(_targetRect, _targetRect.rect.size);
 
             if (null != motionPlayer && !isClicked)
             {

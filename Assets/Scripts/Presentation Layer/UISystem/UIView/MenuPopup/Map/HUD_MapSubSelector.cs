@@ -12,21 +12,24 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         // //외부 의존성
         [Header("UI Elements")]
         [SerializeField] private HUD_MapSubRegion[] subRegions; 
-        [SerializeField] private UISelectionCursor selectorCursor;
 
         // //내부 의존성
         private Action onSelectionChanged;
+        private Action<RectTransform, Vector2> onHoverEnterEvent;
+        private Action onHoverExitEvent;
         private int currentSelectedNumber = -1;
         private bool isInitialized = false;
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        public void Initialize(Action _onSelectionChanged = null)
+        public void Initialize(Action _onSelectionChanged = null, Action<RectTransform, Vector2> _onHoverEnter = null, Action _onHoverExit = null)
         {
             if (true == isInitialized)
                 return;
 
             onSelectionChanged = _onSelectionChanged;
+            onHoverEnterEvent = _onHoverEnter;
+            onHoverExitEvent = _onHoverExit;
 
             if (null != subRegions)
             {
@@ -34,9 +37,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     if (null != subRegions[_i])
                         subRegions[_i].gameObject.SetActive(false);
             }
-
-            if (null != selectorCursor)
-                selectorCursor.Initialize(selectorCursor.CursorSize);
 
             isInitialized = true;
         }
@@ -47,9 +47,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 Initialize();
 
             currentSelectedNumber = -1;
-            
-            if (null != selectorCursor)
-                selectorCursor.HideImmediately();
 
             int _dataCount = _forestDatas.Count;
 
@@ -119,17 +116,11 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 return;
 
             gameObject.SetActive(_isVisible);
-
-            if (null != selectorCursor && !_isVisible)
-                selectorCursor.HideImmediately();
         }
 
         public void ClearSelection()
         {
             currentSelectedNumber = -1;
-
-            if (null != selectorCursor)
-                selectorCursor.HideImmediately();
 
             if (null != subRegions)
             {
@@ -143,13 +134,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         // //내부 로직 (콜백 메서드)
 
-        private void OnRegionHoverEntered(RectTransform _targetRect)
-        {
-            if (null != selectorCursor && null != _targetRect)
-                selectorCursor.Show(_targetRect);
-        }
+        private void OnRegionHoverEntered(RectTransform _targetRect, Vector2 _targetSize) => onHoverEnterEvent?.Invoke(_targetRect, _targetSize);
 
-        private void OnRegionHoverExited() => selectorCursor?.Hide();
+        private void OnRegionHoverExited() => onHoverExitEvent?.Invoke();
 
         private void OnRegionSelected(int _number)
         {

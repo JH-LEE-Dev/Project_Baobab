@@ -1,9 +1,9 @@
 using System;
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
+using PresentationLayer.UISystem.CustomNumber;
 
 /// <summary>
 /// 인벤토리의 개별 아이템 슬롯을 관리하는 클래스입니다.
@@ -23,7 +23,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private IItemData showItemData;
     private IInventorySlot invSlotRef;
     private int showCnt = 0;
-    private TMP_Text countText;
+    private CurrencyFontHUD currencyFont;
 
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
@@ -38,7 +38,14 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
-        countText = GetComponentInChildren<TMP_Text>();
+        currencyFont = GetComponentInChildren<CurrencyFontHUD>();
+
+        if (null != currencyFont)
+        {
+            currencyFont.Initialize();
+            currencyFont.SetMode(CurrencyFontAlignmentMode.Center);
+        }
+
         UpdateItemCount(0);
         
         if (null != omp)
@@ -59,16 +66,16 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateItemCount(int _newCnt)
     {
-        if (null == countText)
+        if (null == currencyFont)
             return;
 
-        countText.enabled = 0 < _newCnt;
+        currencyFont.gameObject.SetActive(0 < _newCnt);
 
         if (showCnt == _newCnt)
             return;
 
         showCnt = _newCnt;
-        countText.text = _newCnt.ToString();
+        currencyFont.SetNumber(_newCnt);
     }
 
     public void UpdateImage(Sprite _sprite, Color _color)

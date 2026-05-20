@@ -1,12 +1,13 @@
 using UnityEngine;
 using PresentationLayer.DOTweenAnimationSystem;
 using PresentationLayer.UISystem.CustomNumber;
+using TMPro;
 
 public class HUD_NotificationBadge : MonoBehaviour
 {
 
     [SerializeField] private ObjectMotionPlayer omp;
-    [SerializeField] private CurrencyFontHUD fontHUD;
+    [SerializeField] private TMP_Text font;
     [SerializeField] private string onOffTag = "NotificationAbsol";
     [SerializeField] private string popTag = "NotificationPop";
     
@@ -18,12 +19,6 @@ public class HUD_NotificationBadge : MonoBehaviour
     public void Initialize()
     {
         omp?.Initialize();
-
-        if (null != fontHUD)
-        {
-            fontHUD.Initialize();
-            fontHUD.SetMode(CurrencyFontAlignmentMode.Center);
-        }
     }
 
     public void UpdateAndInteraction(int _newCnt)
@@ -74,10 +69,10 @@ public class HUD_NotificationBadge : MonoBehaviour
 
     public void SetCount(int _newCnt)
     {
-        if (null == fontHUD)
+        if (null == font)
             return;
 
-        fontHUD.SetNumber(_newCnt);
+        font.text = _newCnt.ToString();
     }
 
     public void OnShow() => gameObject.SetActive(true);
