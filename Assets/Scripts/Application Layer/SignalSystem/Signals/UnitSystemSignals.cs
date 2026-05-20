@@ -62,3 +62,5 @@ public struct OffroadContainerInteractStateChangedSignal
 }
 
 public struct LoosAllInventoryItemSignal { }
+
+public struct OffroadContainerUpdatedSignal { }
