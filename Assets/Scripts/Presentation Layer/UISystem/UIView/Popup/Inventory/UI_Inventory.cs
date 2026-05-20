@@ -359,4 +359,6 @@ public class UI_Inventory : MonoBehaviour
         
         inventorySlots.Clear();
     }
+
+    public void ClearNotification() => notificationBadge?.UpdateAndInteraction(0);
 }

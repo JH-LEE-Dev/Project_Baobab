@@ -135,6 +135,7 @@ Shader "Custom/NotificationBadge"
 
                 return finalColor;
             }
+
             ENDHLSL
         }
     }

@@ -197,6 +197,6 @@ public class UIView_Popup : UIView
 
     public void LoosAllInventoryItems()
     {
-        
+        uiInventory?.ClearNotification();
     }
 }
