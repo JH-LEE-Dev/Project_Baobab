@@ -21,6 +21,7 @@ public class UI_Storage : MonoBehaviour
 
     private MotionEntry popup;
     private MotionEntry popdown;
+    RectTransform rect;
 
 
     public void Initialize(float _yOffset)
@@ -38,14 +39,8 @@ public class UI_Storage : MonoBehaviour
         if (storage != null)
         {
             UpdateMaxSlotCount(storage.inventorySlots.Count);
-            RectTransform rect = GetComponent<RectTransform>();
 
-            if (null != rect)
-            {
-                Vector3 newPos = storage.GetTransform().position;
-                newPos.y += yOffset;
-                rect.position = newPos;
-            }
+            rect = GetComponent<RectTransform>();
         }
     }
 
@@ -88,31 +83,23 @@ public class UI_Storage : MonoBehaviour
         for (int i = 0; i < storageSlots.Count; ++i)
         {
             UI_InventorySlot slot = storageSlots[i];
+            IInventorySlot item = _items[i];
 
-            if (i < itemCount)
-            {
-                IInventorySlot item = _items[i];
-
-                if (false == slot.gameObject.activeSelf)
-                    slot.gameObject.SetActive(true);
-
-                slot.UpdateBindSlotData(item);
-                slot.UpdateItemCount(item.count);
-            }
-            else
-            {
-                if (true == slot.gameObject.activeSelf)
-                {
-                    slot.ResetData();
-                    slot.gameObject.SetActive(false);
-                }
-            }
+            slot.gameObject.SetActive(i < itemCount);
+            slot.UpdateBindSlotData(item);
         }
     }
 
     public void OnShow()
     {
         gameObject.SetActive(isOpening = true);
+
+        if (null != rect)
+        {
+            Vector3 newPos = storage.GetTransform().position;
+            newPos.y += yOffset;
+            rect.position = newPos;
+        }
 
         if (null == omp)
             return;

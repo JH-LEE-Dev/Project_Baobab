@@ -46,7 +46,6 @@ public class UIView_MenuPopup : UIView
         if (MapType.None == _type)
             return;
 
-        Debug.Log($"[UIView_MenuPopup] Entering Dungeon: {_type} / {_forestType}");
         // 통신 및 던전 진입 로직 배치
         DungeonSelectedEvent?.Invoke(_type, _forestType);
         CloseTeleportUI();

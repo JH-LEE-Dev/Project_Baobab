@@ -151,7 +151,7 @@ public class UIView_WorldPopup : UIView
         ui_TraderCoin.UpdateMoneyText(shopNPC.currentMoney);
     }
 
-    public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC,IInventory _offroadContainer)
+    public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC, IInventory _offroadContainer)
     {
         offroadContainer = _offroadContainer;
         container = _container;
@@ -248,6 +248,7 @@ public class UIView_WorldPopup : UIView
         ResetLogCutterUI();
 
         ui_Storage?.Refresh();
+        ui_CarStorage?.Refresh();
     }
 
     private void ResetLogCutterUI()
@@ -278,6 +279,7 @@ public class UIView_WorldPopup : UIView
     //오프로드 박스 스펙이 바뀌었음.
     public void OffraodContainerSpecChanged()
     {
+        Debug.Log("불림?");
         ui_CarStorage?.Refresh();
     }
 }
