@@ -98,9 +98,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)
     {
-        if (invSlotRef == _newSlot)
-            return;
-
         if (null == _newSlot.itemData)
         {
             ResetData();
