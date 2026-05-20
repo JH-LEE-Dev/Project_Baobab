@@ -107,6 +107,7 @@ RectTransform:
   m_Children:
   - {fileID: 7039290970557162733}
   - {fileID: 7316568340774369417}
+  - {fileID: 7710995094093309807}
   m_Father: {fileID: 5955985603632891772}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -197,7 +198,7 @@ MonoBehaviour:
   forwardDuration: 0.25
   forwardDelay: 0
   forwardEase: 6
-  backwardDuration: 0.15
+  backwardDuration: 0.1
   backwardDelay: 0
   backwardEase: 18
   resetOnValidateInPlayMode: 1
@@ -396,7 +397,7 @@ GameObject:
   - component: {fileID: 3398572888671915417}
   - component: {fileID: 422067291625476913}
   - component: {fileID: 466032390791215493}
-  - component: {fileID: 7231620743661233506}
+  - component: {fileID: 6308575793307732763}
   m_Layer: 5
   m_Name: NotificationBadge
   m_TagString: Untagged
@@ -421,7 +422,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 2, y: 0}
   m_SizeDelta: {x: 32, y: 32}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3398572888671915417
@@ -444,7 +445,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 2100000, guid: 102a442fe9372694ea69cf372b81d21a, type: 2}
+  m_Material: {fileID: 2100000, guid: 0fce0f575f1f9b64396751bf7f86129b, type: 2}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
@@ -478,7 +479,7 @@ MonoBehaviour:
   font: {fileID: 1684981575009709981}
   onOffTag: NotificationAbsol
   popTag: NotificationPop
---- !u!114 &7231620743661233506
+--- !u!114 &6308575793307732763
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -487,10 +488,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 4183948751266800595}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 031df6d6bdea5ea42b889e1c241203cc, type: 3}
+  m_Script: {fileID: 11500000, guid: c2c0e18308ea00d408f927ec01630845, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.Common.UIMaskPositionLinker
-  maskTarget: {fileID: 7316568340774369417}
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectBaobab.NotificationBadgeLinker
+  targetIcon: {fileID: 7316568340774369417}
 --- !u!1 &4609028443073690183
 GameObject:
   m_ObjectHideFlags: 0
@@ -652,17 +653,17 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6121418293077414973}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4467659322512094184}
-  m_Father: {fileID: 5955985603632891772}
+  m_Father: {fileID: 1727600902651143512}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 12, y: 14}
+  m_AnchoredPosition: {x: 15, y: 14}
   m_SizeDelta: {x: 32, y: 32}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!225 &161844645900401759
@@ -770,7 +771,6 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1727600902651143512}
-  - {fileID: 7710995094093309807}
   - {fileID: 808296747011894848}
   - {fileID: 6456015435980945757}
   - {fileID: 1087878590980104742}
