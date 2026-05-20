@@ -15,6 +15,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     [SerializeField] private Image uiImage;
     [SerializeField] private ObjectMotionPlayer omp;
 
+    [SerializeField] private Sprite emptySprite;
+
     public Action<UI_InventorySlot, IItemData, Vector2> enterSlot;
     public Action exitSlot;
     public Action<IInventorySlot> deleteItem;
@@ -83,17 +85,20 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == uiImage)
             return;
 
-        uiImage.sprite = _sprite;
-        uiImage.color = _color;
         uiImage.enabled = null != _sprite;
+
+        if (null == _sprite)
+            uiImage.sprite = emptySprite;
+        else
+        {
+            uiImage.sprite = _sprite;
+            uiImage.color = _color;
+        }
     }
 
     public void UpdateBindSlotData(IInventorySlot _newSlot)
     {
-        if (invSlotRef == _newSlot)
-            return;
-
-        if (null == _newSlot || null == _newSlot.itemData)
+        if (null == _newSlot.itemData)
         {
             ResetData();
             return;

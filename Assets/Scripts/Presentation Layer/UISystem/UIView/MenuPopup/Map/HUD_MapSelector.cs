@@ -284,7 +284,12 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private void OnHoverEnterItem(RectTransform _targetRect, Vector2 _targetSize)
         {
             if (null != selectorCursor && null != _targetRect)
+            {
+                _targetSize.x += 1f;
+                _targetSize.y += 1f;
+
                 selectorCursor.Show(_targetRect, _targetSize);
+            }
         }
 
         private void OnHoverExitItem() => selectorCursor?.Hide();

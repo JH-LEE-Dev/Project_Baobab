@@ -23,6 +23,7 @@ public class UIView_WorldPopup : UIView
     [SerializeField] private GameObject uiTraderCoinPrefab;
 
     private UI_Storage ui_Storage;
+    private UI_Storage ui_CarStorage;
     private UI_TreeCutter ui_Cutter;
     private UI_TraderCoin ui_TraderCoin;
 
@@ -33,6 +34,7 @@ public class UIView_WorldPopup : UIView
         base.Initialize(_ctx);
 
         Init_UIStorage();
+        Init_UICarStorage();
         Init_UICutter();
         Init_UITraderCoin();
     }
@@ -77,6 +79,19 @@ public class UIView_WorldPopup : UIView
 
         ui_Storage.Initialize(storageYOffset);
     }
+
+    private void Init_UICarStorage()
+    {
+        if (null == uiStoragePrefab)
+            return;
+
+        ui_CarStorage = Instantiate(uiStoragePrefab, uiRoot).GetComponent<UI_Storage>();
+        if (null == ui_CarStorage)
+            return;
+
+        ui_CarStorage.Initialize(storageYOffset);
+    }
+
 
     private void Init_UICutter()
     {
@@ -144,6 +159,7 @@ public class UIView_WorldPopup : UIView
         shopNPC = _shopNPC;
 
         ui_Storage?.BindStorage(container);
+        ui_CarStorage?.BindStorage(offroadContainer);
         ui_Cutter?.BindPosition(_logCutter.GetTransform().position);
 
         BindEvents();
@@ -250,12 +266,18 @@ public class UIView_WorldPopup : UIView
     //true -> 오프로드 박스에 진입, false -> 그 반대.
     public void OffroadContainerInteractStateChanged(bool _state)
     {
-        
+        if (true == _state)
+        {
+            ui_CarStorage?.OnShow();
+            ui_CarStorage?.Refresh();
+        }
+        else
+            ui_CarStorage?.OnHide();
     }
 
     //오프로드 박스 스펙이 바뀌었음.
     public void OffraodContainerSpecChanged()
     {
-        
+        ui_CarStorage?.Refresh();
     }
 }

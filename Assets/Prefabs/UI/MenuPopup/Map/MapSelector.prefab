@@ -447,17 +447,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIHoverWiggle
   forwardDuration: 0.7
   forwardDelay: 0
-  forwardEase: 18
+  forwardEase: 0
   backwardDuration: 0.5
   backwardDelay: 0
-  backwardEase: 18
+  backwardEase: 0
   resetOnValidateInPlayMode: 1
   valueSettings:
-    shrinkScale: 1
+    shrinkScale: 0.8
     shrinkTimeRatio: 0.08
     restoreTimeRatio: 0.12
     scaleEase: 27
-    startAngle: 7
+    startAngle: 20
     angleDamping: 0.62
     swingCount: 5
     rotationTimeRatio: 0.8
@@ -750,13 +750,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIHoverOffWiggle
   forwardDuration: 0.7
   forwardDelay: 0
-  forwardEase: 18
+  forwardEase: 0
   backwardDuration: 0.5
   backwardDelay: 0
-  backwardEase: 18
+  backwardEase: 0
   resetOnValidateInPlayMode: 1
   valueSettings:
-    startAngle: 5
+    startAngle: 12
     angleDamping: 0.62
     swingCount: 5
     rotationTimeRatio: 1
@@ -1320,7 +1320,7 @@ MonoBehaviour:
     m_Top: 0
     m_Bottom: 0
   m_ChildAlignment: 4
-  m_Spacing: 15
+  m_Spacing: 0
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
@@ -1386,11 +1386,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1507,11 +1507,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1628,11 +1628,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 0
+      value: 32
       objectReference: {fileID: 0}
     - target: {fileID: 5754507959474926780, guid: fc876f65f77fa44489ec1b54f136ca20, type: 3}
       propertyPath: m_LocalPosition.x

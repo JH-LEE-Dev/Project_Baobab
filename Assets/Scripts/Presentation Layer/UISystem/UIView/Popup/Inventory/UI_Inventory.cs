@@ -146,25 +146,13 @@ public class UI_Inventory : MonoBehaviour
         for (int _i = 0; _i < _maxSlots; ++_i)
         {
             UI_InventorySlot _slot = inventorySlots[_i];
+            IInventorySlot _item = _items[_i];
+            
+            if (null == _slot)
+                continue;
 
-            if (_i < _itemCount)
-            {
-                IInventorySlot _item = _items[_i];
-
-                if (false == _slot.gameObject.activeSelf)
-                    _slot.gameObject.SetActive(true);
-
-                _slot.UpdateBindSlotData(_item);
-                _slot.UpdateItemCount(_item.count);
-            }
-            else
-            {
-                if (true == _slot.gameObject.activeSelf)
-                {
-                    _slot.ResetData();
-                    _slot.gameObject.SetActive(false);
-                }
-            }
+            _slot.UpdateBindSlotData(_item);
+            _slot.gameObject.SetActive(_i < _itemCount);
         }
     }
 
