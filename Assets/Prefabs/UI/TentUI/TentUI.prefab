@@ -157,39 +157,39 @@ MonoBehaviour:
   prewarmNodePoolCount: 64
   pictureBindings:
   - skillType: 1
-    sprite: {fileID: 21300000, guid: bb13e1059502a934088ee7d180423ea7, type: 3}
-  - skillType: 2
     sprite: {fileID: 21300000, guid: cb49491996d14fe49b223fd61c8d62b3, type: 3}
-  - skillType: 3
-    sprite: {fileID: 21300000, guid: e8326ab39b211d54384ccff536b0a5af, type: 3}
-  - skillType: 4
+  - skillType: 2
     sprite: {fileID: 21300000, guid: 9ae61e89ed82e084db3d0fba70ad694d, type: 3}
-  - skillType: 5
+  - skillType: 3
     sprite: {fileID: 21300000, guid: 61ad8a92a654263419e4d9133a75a0ad, type: 3}
-  - skillType: 6
+  - skillType: 4
     sprite: {fileID: 21300000, guid: 9783484468cd83f429646513269fecf6, type: 3}
-  - skillType: 7
+  - skillType: 5
     sprite: {fileID: 21300000, guid: 33da5b12d960ab944ab99e9044fd8656, type: 3}
-  - skillType: 8
+  - skillType: 6
     sprite: {fileID: 21300000, guid: 2dbb062d66f20de48a0b4ca18b1e40f9, type: 3}
-  - skillType: 9
+  - skillType: 7
     sprite: {fileID: 21300000, guid: e6c08be1e01d1fa439773889387511b9, type: 3}
-  - skillType: 10
+  - skillType: 8
     sprite: {fileID: 21300000, guid: 499c951957b2b9348b32704f4094e1f2, type: 3}
-  - skillType: 11
+  - skillType: 9
     sprite: {fileID: 21300000, guid: 669432f98d06a6c49942c3590232ec69, type: 3}
-  - skillType: 12
+  - skillType: 10
     sprite: {fileID: 21300000, guid: be06059f23429804084226c83c8aa09c, type: 3}
-  - skillType: 13
+  - skillType: 11
     sprite: {fileID: 21300000, guid: 0b628c86968c490429858fe44eff310d, type: 3}
-  - skillType: 14
+  - skillType: 12
     sprite: {fileID: 21300000, guid: 3a2a47ca71059034897664c5a76c892a, type: 3}
-  - skillType: 15
+  - skillType: 13
+    sprite: {fileID: 21300000, guid: 1c6354be3afb9834d915ae9a52abc09a, type: 3}
+  - skillType: 14
     sprite: {fileID: 21300000, guid: c5329127662e94c46b36d69407149388, type: 3}
-  - skillType: 16
+  - skillType: 15
     sprite: {fileID: 21300000, guid: 43cdaac68ca8eb540b8ab6adf38d7249, type: 3}
-  - skillType: 17
+  - skillType: 16
     sprite: {fileID: 21300000, guid: ddd5acc5d53d8754389675f779ca9ef1, type: 3}
+  - skillType: 17
+    sprite: {fileID: 21300000, guid: 9a9002fa8bd89714da94042e91a5b52d, type: 3}
   - skillType: 18
     sprite: {fileID: 21300000, guid: 825b6ab4048b90943bfcce5ad8dfee06, type: 3}
   - skillType: 19
@@ -205,53 +205,31 @@ MonoBehaviour:
   - skillType: 24
     sprite: {fileID: 21300000, guid: d96a3912eba703e4d9794fc5a20c9936, type: 3}
   - skillType: 25
-    sprite: {fileID: 21300000, guid: 8089456b50472364d85a7080d1b1683f, type: 3}
+    sprite: {fileID: 21300000, guid: b64b320c9fa892f468ac1319b76599ce, type: 3}
   - skillType: 26
-    sprite: {fileID: 21300000, guid: 041b4211ec9c9674cb0218b10598cc98, type: 3}
+    sprite: {fileID: 21300000, guid: 1ff1012a6e3db0948aebbc4e574f5428, type: 3}
   - skillType: 27
-    sprite: {fileID: 21300000, guid: c4859921f6cf0684bb1c49898fd03ba2, type: 3}
+    sprite: {fileID: 21300000, guid: 041b4211ec9c9674cb0218b10598cc98, type: 3}
   - skillType: 28
-    sprite: {fileID: 21300000, guid: 07fbfa1ad341c8240905d70de309a337, type: 3}
+    sprite: {fileID: 21300000, guid: c4859921f6cf0684bb1c49898fd03ba2, type: 3}
   - skillType: 29
-    sprite: {fileID: 21300000, guid: 823044a3f39addf47910082c94829aed, type: 3}
+    sprite: {fileID: 0}
   - skillType: 30
-    sprite: {fileID: 21300000, guid: 857c752b2b7a21e439accd34c3d527ac, type: 3}
-  - skillType: 31
-    sprite: {fileID: 21300000, guid: 0e7c6f945ea31c14da32af81d0819aa1, type: 3}
-  - skillType: 32
-    sprite: {fileID: 21300000, guid: 2412a0766ebc2b94fb17466e78f66ac4, type: 3}
-  - skillType: 33
-    sprite: {fileID: 21300000, guid: 9d5b3fc96b6fd9340978ee9652f2267e, type: 3}
-  - skillType: 34
-    sprite: {fileID: 21300000, guid: c3941b8b51562e34198c8f79b50929fc, type: 3}
-  - skillType: 35
-    sprite: {fileID: 21300000, guid: 0a1fc70707fa0b541b967d0a57758cf5, type: 3}
-  - skillType: 36
-    sprite: {fileID: 21300000, guid: ba3668c73b43c1a42b4bd38f51f2e844, type: 3}
-  - skillType: 37
-    sprite: {fileID: 21300000, guid: 956089aa6c8b0ad419041b3eadb05005, type: 3}
-  - skillType: 38
-    sprite: {fileID: 21300000, guid: 9dab1c2b6215b4a44bdd9737e442fd1f, type: 3}
-  - skillType: 39
-    sprite: {fileID: 21300000, guid: 10d7209d5aad13044996d57230159bf9, type: 3}
-  - skillType: 40
-    sprite: {fileID: 21300000, guid: c522f57f4582bc94fb99cd73dbbca679, type: 3}
-  - skillType: 41
-    sprite: {fileID: 21300000, guid: d14b4c8e431a5054894e2a903cb50da2, type: 3}
-  - skillType: 42
     sprite: {fileID: 21300000, guid: aa409d5422e15ac4c87d798bde13f6b3, type: 3}
-  - skillType: 43
+  - skillType: 31
     sprite: {fileID: 21300000, guid: 9c4c502689b5a2a498505e0581b6dc5f, type: 3}
-  - skillType: 44
+  - skillType: 32
     sprite: {fileID: 21300000, guid: 4f8fce9b7c0b2364c97ddcba5b463bf5, type: 3}
-  - skillType: 45
+  - skillType: 33
     sprite: {fileID: 21300000, guid: 34f4d9349611bca438494455ab2cece3, type: 3}
-  - skillType: 46
+  - skillType: 34
     sprite: {fileID: 21300000, guid: f063e9aa26314974485223438bc96a92, type: 3}
-  - skillType: 47
+  - skillType: 35
     sprite: {fileID: 21300000, guid: 5ba5652c8b66365429ca20bd33b3c16b, type: 3}
-  - skillType: 52
-    sprite: {fileID: 21300000, guid: e5298198a64592941849ea8b38428bab, type: 3}
+  - skillType: 36
+    sprite: {fileID: 21300000, guid: 26dd757095b3a0e449f2246bd91bbc0e, type: 3}
+  - skillType: 37
+    sprite: {fileID: 0}
   lineSpriteBindings:
   - lineType: 0
     sprite: {fileID: 21300000, guid: 31fd475482a51a04b8c4e3f34596cff6, type: 3}
@@ -799,7 +777,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 7.5, y: 0}
+  m_AnchoredPosition: {x: 4.5, y: 0}
   m_SizeDelta: {x: 12, y: 12}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2774632630876670493
@@ -830,7 +808,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: fd54dd86a865725408f1c68f5e0f85ce, type: 3}
+  m_Texture: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -871,7 +849,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -3.5, y: 0}
+  m_AnchoredPosition: {x: -5.5, y: 0}
   m_SizeDelta: {x: 12, y: 12}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2554205633934032880
@@ -902,7 +880,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: 6014525d02e5a5e49a5c0873385a5a3d, type: 3}
+  m_Texture: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
   m_UVRect:
     serializedVersion: 2
     x: 0
@@ -923,7 +901,7 @@ PrefabInstance:
       objectReference: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
     - target: {fileID: 820676957926840965, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 913802642584626678, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
@@ -945,13 +923,21 @@ PrefabInstance:
       propertyPath: m_Texture
       value: 
       objectReference: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
+    - target: {fileID: 3378958046967802897, guid: a3715294014f52c469e6e708be23badc, type: 3}
+      propertyPath: m_Texture
+      value: 
+      objectReference: {fileID: 2800000, guid: 3b5086c4c1106fe439214ca88f69ebf2, type: 3}
     - target: {fileID: 3448267155040123733, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -0.5
+      value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4490371444358176308, guid: a3715294014f52c469e6e708be23badc, type: 3}
+      propertyPath: m_Texture
+      value: 
+      objectReference: {fileID: 2800000, guid: 4b61233f5194df94a97941e9a715f2a6, type: 3}
     - target: {fileID: 4571098424541202800, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -8.5
+      value: -11.5
       objectReference: {fileID: 0}
     - target: {fileID: 5100673485970373582, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Pivot.x
@@ -1043,7 +1029,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 4
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1055,7 +1041,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6519470873578380521, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 29
       objectReference: {fileID: 0}
     - target: {fileID: 7123575607171026928, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchorMax.y
@@ -1075,7 +1061,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7145085122874715204, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 1.5
+      value: -0.5
       objectReference: {fileID: 0}
     - target: {fileID: 8106255479541364671, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_IsActive
@@ -1092,7 +1078,7 @@ PrefabInstance:
     - target: {fileID: 8955753375711611131, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Texture
       value: 
-      objectReference: {fileID: 2800000, guid: aa8931fb0e954c34695ce8b010449d88, type: 3}
+      objectReference: {fileID: 2800000, guid: 6014525d02e5a5e49a5c0873385a5a3d, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
