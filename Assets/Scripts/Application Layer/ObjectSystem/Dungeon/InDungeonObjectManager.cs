@@ -146,7 +146,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null)
         {
             portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, character.transform);
+            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, character.centerTransform);
         }
 
         portal.ResetPortal();

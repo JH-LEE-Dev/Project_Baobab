@@ -34,7 +34,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
     public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
 
-    private bool bCanTravel = false;
+    private bool bCanTravel = true;
 
     [SerializeField] private TreeVisualDataBase treeVisualDataBase;
 

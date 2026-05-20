@@ -107,6 +107,7 @@ public class UnitSystem
 
     private void TownStarted(TownStartedSignal townStartedSignal)
     {
+        inventoryManager.ReleaseAllDroppedItem();
         unitLogicManager.SetCharacterStaminaState(true, 0, 1f);
         unitLogicManager.SetCharacterTransform(townStartedSignal.characterPos);
     }
@@ -161,6 +162,7 @@ public class UnitSystem
 
     private void CharacterStaminaIsEmpty()
     {
+        inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
         signalHub.Publish(new GoHomeButtonClickedSignal());
     }
 

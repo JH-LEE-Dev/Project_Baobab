@@ -51,6 +51,8 @@ public class LogItem : Item, IStaticCollidable
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
 
+    bool bCanAcquired = true;
+
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -128,6 +130,23 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    public void ContainerTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
+    {
+        startPos = _start;
+        endPos = _end;
+        height = _height;
+        duration = _duration;
+        trajectoryJitter = _jitter;
+        rotationSpeed = _rotationSpeed;
+        elapsed = 0f;
+        state = ItemMoveState.ContainerTransferring;
+
+        if (gameObject.activeInHierarchy)
+        {
+            CollisionSystem.Instance?.Register(this, false);
+        }
+    }
+
     public void CurveTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, float _rotationSpeed = 0f)
     {
         startPos = _start;
@@ -170,6 +189,7 @@ public class LogItem : Item, IStaticCollidable
         trajectoryJitter = Vector3.zero;
         sideDir = Vector3.zero;
         rotationSpeed = 0f;
+        bCanAcquired = true;
         transform.localScale = Vector3.one;
 
         if (sprite != null && spriteRenderer != null)
@@ -196,8 +216,8 @@ public class LogItem : Item, IStaticCollidable
             case ItemMoveState.Transferring:
                 UpdateTransferring(_deltaTime);
                 break;
-            case ItemMoveState.CurveTransferring:
-                UpdateCurveTransferring(_deltaTime);
+            case ItemMoveState.ContainerTransferring:
+                UpdateContainerTransferring(_deltaTime);
                 break;
             case ItemMoveState.Sucking:
                 UpdateSucking(_deltaTime);
@@ -300,36 +320,48 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
-    private void UpdateCurveTransferring(float _deltaTime)
+    private void UpdateContainerTransferring(float _deltaTime)
     {
-        elapsed += _deltaTime;
-        float linearT = Mathf.Clamp01(duration > 0 ? (elapsed / duration) : 1f);
+        float currentT = duration > 0 ? (elapsed / duration) : 1f;
+        float speedMultiplier = 1f;
 
-        // 쫀득한 연출 제거: 선형적인 t 사용
-        float t = linearT;
+        if (currentT > 0.7f)
+        {
+            // 오프로드 컨테이너 전용: 가속도를 대폭 완화 (15f -> 3f)하여 끊김 현상 방지
+            speedMultiplier = 1f + (currentT - 0.7f) * 3f;
+        }
 
-        float clampedT = Mathf.Clamp01(t);
-        
-        // 기본 선형 이동 위치
-        Vector3 basePos = Vector3.Lerp(startPos, endPos, t);
+        elapsed += _deltaTime * speedMultiplier;
+        float t = Mathf.Clamp01(elapsed / duration);
 
-        // 곡선 오프셋 계산 (2차 곡선)
-        float heightFactor = 4f * clampedT * (1f - clampedT);
-        float currentHeight = height * heightFactor;
+        float jitterFactor = 4f * t * (1f - t);
+        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t) + (trajectoryJitter * jitterFactor);
 
-        // 기울기에 상관없이 일관된 궤도를 위해 sideDir(법선) 방향으로 오프셋 적용
-        transform.position = basePos + (sideDir * currentHeight);
+        float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
 
         if (visualTransform != null)
         {
+            transform.position = currentGroundPos;
+            visualTransform.localPosition = new Vector3(0, heightOffset, 0);
             visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
         }
-
-        // Scale 연출: 쫀득한 오버슈트 제거, 0.7부터만 작아짐
-        float targetScale = 1f;
-        if (linearT > 0.7f)
+        else
         {
-            float nt = (linearT - 0.7f) / 0.3f;
+            transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
+        }
+
+        // Scale 연출 동일하게 적용
+        float targetScale = 1f;
+        if (t < 0.4f)
+        {
+            float nt = t / 0.4f;
+            const float s = 1.70158f;
+            float t1 = nt - 1f;
+            targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
+        }
+        else if (t > 0.7f)
+        {
+            float nt = (t - 0.7f) / 0.3f;
             targetScale = 1f - nt;
         }
 
@@ -337,14 +369,11 @@ public class LogItem : Item, IStaticCollidable
 
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
-        if (linearT >= 1.0f)
+        if (t >= 1.0f)
         {
             transform.position = GlobalPixelSnapper.Snap(endPos);
-            if (visualTransform != null) 
-            {
-                visualTransform.localPosition = Vector3.zero;
-                visualTransform.rotation = Quaternion.identity;
-            }
+            if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
+            visualTransform.rotation = Quaternion.identity;
             state = ItemMoveState.Dropped;
         }
     }
@@ -398,7 +427,7 @@ public class LogItem : Item, IStaticCollidable
 
     public override void SetSuckTarget(Transform _target)
     {
-        if (state == ItemMoveState.Sucking || !bDrop) return;
+        if (state == ItemMoveState.Sucking || !bDrop || bCanAcquired == false) return;
 
         suckTarget = _target;
         if (state == ItemMoveState.Dropped)
@@ -412,5 +441,10 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = _target;
         suckSpeed = 0f;
         state = ItemMoveState.Sucking;
+    }
+
+    public void SetbCanAcquired(bool _boolean)
+    {
+        bCanAcquired = _boolean;
     }
 }

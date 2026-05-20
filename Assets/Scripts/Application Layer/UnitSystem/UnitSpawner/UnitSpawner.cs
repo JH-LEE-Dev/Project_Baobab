@@ -14,7 +14,7 @@ public class UnitSpawner : MonoBehaviour
     [SerializeField] private Transform characterSpawnPoint;
     [SerializeField] private Character characterPrefab;
 
-    private Character character;
+    public Character character;
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
     {

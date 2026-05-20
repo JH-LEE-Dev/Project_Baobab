@@ -1,4 +1,4 @@
-﻿Shader "Custom/OutlineShader"
+Shader "Custom/OutlineShader"
 {
     Properties
     {
@@ -108,8 +108,13 @@
                 half alphaDown = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV - finalOffset_Y).a;
                 half alphaLeft = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV - finalOffset_X).a;
                 half alphaRight = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV + finalOffset_X).a;
+                half alphaUpLeft = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV + finalOffset_Y - finalOffset_X).a;
+                half alphaUpRight = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV + finalOffset_Y + finalOffset_X).a;
+                half alphaDownLeft = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV - finalOffset_Y - finalOffset_X).a;
+                half alphaDownRight = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV - finalOffset_Y + finalOffset_X).a;
                 
-                half outlineAlpha = max(max(alphaUp, alphaDown), max(alphaLeft, alphaRight));
+                half outlineAlpha = max(max(max(alphaUp, alphaDown), max(alphaLeft, alphaRight)), 
+                                        max(max(alphaUpLeft, alphaUpRight), max(alphaDownLeft, alphaDownRight)));
 
                 if (mainColor.a < 0.1 && outlineAlpha > 0.1)
                 {

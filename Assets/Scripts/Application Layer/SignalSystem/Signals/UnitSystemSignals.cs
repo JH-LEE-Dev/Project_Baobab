@@ -48,3 +48,5 @@ public struct WeaponModeChangedSignal
 
 public struct InventorySpecChangedSignal { }
 public struct LogContainerSpecChangedSignal { }
+
+public struct CharacterStaminaIsEmptySignal { }
