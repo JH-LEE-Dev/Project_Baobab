@@ -458,8 +458,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            InteractStateEvent?.Invoke(false);
-
             if (transferCoroutine == null)
             {
                 transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
@@ -471,6 +469,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
+            InteractStateEvent?.Invoke(false);
+
             if (transferCoroutine != null)
             {
                 StopCoroutine(transferCoroutine);
