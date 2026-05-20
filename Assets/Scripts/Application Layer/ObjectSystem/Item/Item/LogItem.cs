@@ -217,7 +217,11 @@ public class LogItem : Item, IStaticCollidable
         if (sprite != null && spriteRenderer != null)
             spriteRenderer.sprite = sprite;
 
-        if (visualTransform != null) visualTransform.localRotation = Quaternion.identity;
+        if (visualTransform != null)
+        {
+            visualTransform.localRotation = Quaternion.identity;
+            visualTransform.localScale = Vector3.one;
+        }
     }
 
     public void SetTimberSprite()
@@ -267,13 +271,13 @@ public class LogItem : Item, IStaticCollidable
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
             
-            // 3. Squash and Stretch (수직 속도에 비례하여 늘어남)
-            // t=0.5(정점)에서 stretch가 0이 되고, 시작과 끝에서 최대가 됨
+            // 3. Uniform Scale (수직 속도에 비례하여 부피감이 변함)
+            // t=0.5(정점)에서 추가 스케일이 0이 되고, 시작과 끝에서 최대가 됨
             float verticalVelocity = -8 * height * (t - 0.5f) / duration;
-            float stretch = Mathf.Abs(verticalVelocity) * 0.05f;
-            stretch = Mathf.Min(stretch, 0.3f); // 최대 변형치 제한
+            float pulse = Mathf.Abs(verticalVelocity) * 0.03f;
+            pulse = Mathf.Min(pulse, 0.2f); // 최대 변형치 제한
             
-            visualTransform.localScale = new Vector3(1f - stretch, 1f + stretch, 1f);
+            visualTransform.localScale = Vector3.one * (1f + pulse);
         }
         else
         {
@@ -437,21 +441,44 @@ public class LogItem : Item, IStaticCollidable
             return;
         }
 
+        elapsed += _deltaTime;
+
         Vector3 targetPos = suckTarget.position;
         float distance = Vector3.Distance(transform.position, targetPos);
 
-        if (distance < MinAcquireDist)
+        // 도착 조건: 거리가 가깝고 타겟을 향해 이동 중일 때
+        if (distance < MinAcquireDist && suckSpeed > 0f)
         {
             LogItemAcquired?.Invoke(this);
             return;
         }
 
-        suckSpeed += SuckAccel * _deltaTime;
-        transform.position = Vector3.MoveTowards(transform.position, targetPos, suckSpeed * _deltaTime);
+        // 가속도를 높여서 확 빨려들어가도록 설정
+        suckSpeed += (SuckAccel * 2.5f) * _deltaTime; 
+
+        // 타겟 방향으로 부드럽게 이동
+        Vector3 dir = (targetPos - transform.position).normalized;
+        transform.position += dir * suckSpeed * _deltaTime;
 
         if (visualTransform != null)
         {
-            visualTransform.localPosition = Vector3.Lerp(visualTransform.localPosition, Vector3.zero, _deltaTime * 5f);
+            visualTransform.localPosition = Vector3.Lerp(visualTransform.localPosition, Vector3.zero, _deltaTime * 10f);
+
+            // 스프링 댐퍼 연출 (Damped Sine Wave)
+            // elapsed 시간에 따라 진동(커짐/작아짐)하며 점차 안정화됨
+            float freq = 15f; 
+            float decay = 5f; 
+            float springEffect = Mathf.Sin(elapsed * freq) * Mathf.Exp(-elapsed * decay) * 0.4f;
+            
+            visualTransform.localScale = Vector3.one * (1f + springEffect);
+        }
+
+        // 타겟에 매우 가까워지면 전체 스케일 축소 (최소 0.25 유지)
+        if (distance < 1.5f && suckSpeed > 0f)
+        {
+            float scaleT = distance / 1.5f;
+            scaleT = Mathf.Max(0.35f, scaleT);
+            transform.localScale = Vector3.one * scaleT;
         }
 
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
@@ -499,7 +526,8 @@ public class LogItem : Item, IStaticCollidable
     private void StartSucking(Transform _target)
     {
         suckTarget = _target;
-        suckSpeed = 0f;
+        suckSpeed = -4.5f; // 뒤로 살짝 튕기는 쫀득한 연출을 위한 초기 음수 속도
+        elapsed = 0f;
         state = ItemMoveState.Sucking;
     }
 
