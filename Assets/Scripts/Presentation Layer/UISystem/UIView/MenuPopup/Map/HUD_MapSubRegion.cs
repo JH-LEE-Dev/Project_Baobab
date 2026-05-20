@@ -83,14 +83,19 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public void SetLock(bool _isLock)
         {
             isLocked = _isLock;
-            if (null != lockObject) lockObject.SetActive(isLocked);
-            if (null != numberDisplay) numberDisplay.gameObject.SetActive(!isLocked);
+
+            if (null != lockObject) 
+                lockObject.SetActive(isLocked);
+            if (null != numberDisplay) 
+                numberDisplay.gameObject.SetActive(!isLocked);
         }
 
         public void SetNumber(int _number)
         {
             regionNumber = _number;
-            if (null != numberDisplay) numberDisplay.SetNumber(regionNumber);
+
+            if (null != numberDisplay) 
+                numberDisplay.SetNumber(regionNumber);
         }
 
         public void PlayOpenAnimation() => gameObject.SetActive(true);
@@ -112,7 +117,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public RectTransform GetRectTransform()
         {
-            if (null == rect) rect = GetComponent<RectTransform>();
+            if (null == rect) 
+                rect = GetComponent<RectTransform>();
+            
             return rect;
         }
 
@@ -120,7 +127,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerEnter(PointerEventData _eventData)
         {
-            if (true == isLocked) return;
+            if (true == isLocked) 
+                return;
             
             RectTransform _targetRect = GetRectTransform();
             onHoverEnterEvent?.Invoke(_targetRect, _targetRect.rect.size);
@@ -135,7 +143,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerExit(PointerEventData _eventData)
         {
-            if (true == isLocked) return;
+            if (true == isLocked) 
+                return;
+
             onHoverExitEvent?.Invoke();
 
             if (null != motionPlayer && !isClicked)
@@ -148,7 +158,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
         public void OnPointerClick(PointerEventData _eventData)
         {
-            if (true == isLocked) return;
+            if (true == isLocked) 
+                return;
+                
             onSelectEvent?.Invoke(regionNumber);
 
             isClicked = true;
