@@ -194,7 +194,7 @@ public class UIView_WorldPopup : UIView
             return;
         }
 
-        ui_Storage?.Refresh();
+        ui_Storage?.UpdateSlots();
     }
 
     // true : 원목 보관함과 상호작용 가능 거리에 들어옴
@@ -235,7 +235,10 @@ public class UIView_WorldPopup : UIView
 
     public void LogContainerSpecChanged() //원목 보관함 스펙이 최신화됨.
     {
-        ui_Storage?.Refresh();
+        if (null == container)
+            return;
+
+        ui_Storage?.UpdateMaxSlotCount(container.inventorySlots.Count);
     }
 
     private void LogCuttingIsDone()
@@ -279,7 +282,9 @@ public class UIView_WorldPopup : UIView
     //오프로드 박스 스펙이 바뀌었음.
     public void OffraodContainerSpecChanged()
     {
-        Debug.Log("불림?");
-        ui_CarStorage?.Refresh();
+        if (null == offroadContainer)
+            return;
+
+        ui_CarStorage?.UpdateMaxSlotCount(offroadContainer.inventorySlots.Count);
     }
 }

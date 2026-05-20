@@ -31,17 +31,15 @@ public class UI_Storage : MonoBehaviour
         yOffset = _yOffset;
 
         omp?.Initialize();
+
+        rect = GetComponent<RectTransform>();
     }
 
     public void BindStorage(IInventory _storage)
     {
         storage = _storage;
         if (storage != null)
-        {
             UpdateMaxSlotCount(storage.inventorySlots.Count);
-
-            rect = GetComponent<RectTransform>();
-        }
     }
 
     public void UpdateMaxSlotCount(int _cnt)
@@ -70,13 +68,17 @@ public class UI_Storage : MonoBehaviour
         if (null == storage)
             return;
 
+        UpdateMaxSlotCount(storage.inventorySlots.Count);
         UpdateSlots(storage.inventorySlots);
     }
 
-    private void UpdateSlots(IReadOnlyList<IInventorySlot> _items)
+    public void UpdateSlots(IReadOnlyList<IInventorySlot> _items = null)
     {
-        if (null == _items)
+        if (null == _items && null == storage)
             return;
+
+        if (null == _items)
+            _items = storage.inventorySlots;
 
         int itemCount = storage.currentSlotCnt;
 
