@@ -88,6 +88,9 @@ public class UnitSystem
 
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
         inventoryManager.LoosAllInventoryItemEvent += LoosAllInventoryItem;
+
+        offroadContainer.ContainerUpdatedEvent -= OffroadContainerUpdated;
+        offroadContainer.ContainerUpdatedEvent += OffroadContainerUpdated;
     }
 
     private void ReleaseEvents()
@@ -99,6 +102,7 @@ public class UnitSystem
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
+        offroadContainer.ContainerUpdatedEvent -= OffroadContainerUpdated;
     }
 
     private void CharacterSpawned(Character _character)
@@ -201,5 +205,10 @@ public class UnitSystem
     private void LoosAllInventoryItem()
     {
         signalHub.Publish(new LoosAllInventoryItemSignal());
+    }
+
+    private void OffroadContainerUpdated()
+    {
+        signalHub.Publish(new OffroadContainerUpdatedSignal());
     }
 }

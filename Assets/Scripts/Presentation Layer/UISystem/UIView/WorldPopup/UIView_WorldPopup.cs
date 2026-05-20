@@ -287,4 +287,10 @@ public class UIView_WorldPopup : UIView
 
         ui_CarStorage?.UpdateMaxSlotCount(offroadContainer.inventorySlots.Count);
     }
+
+    //오프로드 박스가 최신화됨.
+    public void OffroadContainerUpdated()
+    {
+        
+    }
 }
