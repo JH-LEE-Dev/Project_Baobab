@@ -170,7 +170,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1151066655
-  m_SortingLayer: 6
+  m_SortingLayer: 8
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 3156634924717718424, guid: 6b5f71a438b34104fa36189d9be79020, type: 3}
@@ -313,6 +313,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Shadow
   defaultRotationZ: 90
   defaultScaleY: 1
+  cachedTransform: {fileID: 0}
 --- !u!95 &2431087214033331562
 Animator:
   serializedVersion: 7
@@ -361,6 +362,7 @@ GameObject:
   - component: {fileID: 8158245246769060474}
   - component: {fileID: 547081921860308336}
   - component: {fileID: 2071154465810606719}
+  - component: {fileID: 6248501233876590002}
   m_Layer: 14
   m_Name: Rabbit
   m_TagString: Untagged
@@ -407,7 +409,6 @@ MonoBehaviour:
   detectionLayerMask:
     serializedVersion: 2
     m_Bits: 256
-  shadowSideThreshold: 22.5
   centerPos: {x: 0, y: 0, z: 0}
   targetPos: {x: 0, y: 0, z: 0}
   scatterRadius: 0
@@ -415,6 +416,7 @@ MonoBehaviour:
   animalType: 1
   statusEffectObject: {fileID: 717467266957509674}
   feetShadowObject: {fileID: 540016262814194988}
+  bActivated: 1
 --- !u!50 &1015278686456738704
 Rigidbody2D:
   serializedVersion: 5
@@ -503,6 +505,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EHealthComponent
   maxHealth: 2
+--- !u!114 &6248501233876590002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5911788971367355826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100
 --- !u!1 &8470380151137750416
 GameObject:
   m_ObjectHideFlags: 0
@@ -585,7 +603,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -605,7 +623,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 5
+  m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 5400607245196206213, guid: 25b243f3d6593864a919754313e0bf1b, type: 3}

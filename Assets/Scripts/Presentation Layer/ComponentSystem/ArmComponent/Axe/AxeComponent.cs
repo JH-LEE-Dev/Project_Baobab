@@ -18,6 +18,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private float originalSpeed;
 
+    private int sortingOrder = 0;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -46,7 +48,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             anim.SetFloat(facingDirHash, dirIndex);
 
         // 정렬 레이어 처리
-        spriteRenderer.sortingOrder = (angle > 0 && angle < 180) ? -1 : 1;
+        sortingOrder = (angle > 0 && angle < 180) ? -1 : 1;
     }
 
     public override void LeftButtonClicked()
@@ -131,5 +133,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public void Refresh()
     {
 
+    }
+
+    public void SortingOrder()
+    {
+        spriteRenderer.sortingOrder += sortingOrder;
     }
 }

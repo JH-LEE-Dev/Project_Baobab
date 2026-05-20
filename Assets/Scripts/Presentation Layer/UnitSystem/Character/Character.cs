@@ -73,6 +73,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public Transform centerTransform;
 
+    private CustomSortable customSortable;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -88,13 +90,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent = GetComponentInChildren<PHealthComponent>();
         armComponent = GetComponentInChildren<ArmComponent>();
         statComponent = GetComponentInChildren<StatComponent>();
+        customSortable = GetComponent<CustomSortable>();
+
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+        }
 
         stateMachine = new StateMachine();
         ctx = new ComponentCtx();
         ctx.Initialize(inputManager, statComponent, environmentProvider.pathfindGridProvider, environmentProvider.tilemapDataProvider);
 
         // 컴포넌트 초기화
-        characterVisualComponent.Initialize(environmentProvider, onWaterAnimatorObject, shadowObject);
+        characterVisualComponent.Initialize(environmentProvider, onWaterAnimatorObject, shadowObject, customSortable);
         attackComponent.Initialize(ctx);
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
@@ -313,6 +321,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void LateUpdate()
     {
         characterVisualComponent.SetOnWaterSROrder(transform.position);
+
+        customSortable.ManualLateUpdate();
+        armComponent.SortArmCompOrder();
     }
 
     private void FixedUpdate()
@@ -329,6 +340,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
         stateMachine?.FixedUpdate();
+
+        customSortable.SetHeight(0);
     }
 
     private void OnDestroy()

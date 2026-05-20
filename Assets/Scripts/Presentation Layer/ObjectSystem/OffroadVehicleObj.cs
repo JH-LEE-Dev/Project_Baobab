@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class OffroadVehicleObj : MonoBehaviour
 {
@@ -31,6 +32,9 @@ public class OffroadVehicleObj : MonoBehaviour
     [SerializeField] private GameObject baseObject;
     [SerializeField] private GameObject containerObject;
 
+    private CustomSortable customSortable;
+    private CustomSortable customSortable_outline;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer)
@@ -57,12 +61,27 @@ public class OffroadVehicleObj : MonoBehaviour
         else
             offroadContainer.gameObject.SetActive(false);
 
+        customSortable = baseObject.GetComponent<CustomSortable>();
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+            customSortable.SetSortingGroup(baseObject.GetComponentInChildren<SortingGroup>());
+        }
+
+        customSortable_outline = outLineObject.GetComponent<CustomSortable>();
+        if (customSortable_outline != null)
+        {
+            customSortable_outline.Initialize(transform);
+            customSortable_outline.SetSortingGroup(outLineObject.GetComponentInChildren<SortingGroup>());
+        }
+
         BindEvents();
     }
 
     private void Update()
     {
         UpdateShadow(baseShadow);
+        customSortable.SetHeight(0);
     }
 
     private void UpdateShadow(OffsetShadow shadow)
@@ -154,5 +173,11 @@ public class OffroadVehicleObj : MonoBehaviour
     public void SetUIActivated(bool _boolean)
     {
         bUIActivated = _boolean;
+    }
+
+    private void LateUpdate()
+    {
+        customSortable.ManualLateUpdate();
+        customSortable_outline.ManualLateUpdate();
     }
 }

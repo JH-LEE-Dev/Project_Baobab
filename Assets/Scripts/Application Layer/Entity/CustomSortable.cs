@@ -14,12 +14,12 @@ public class CustomSortable : MonoBehaviour
     [SerializeField] private int precision = 100;
     protected float height = 0;
 
-    public void Initialize(Transform _sortAnchor, SpriteRenderer[] _initialRenderers = null)
+    public void Initialize(Transform _sortAnchor, SpriteRenderer[] _initialRenderers = null, SortingGroup _sortingGroup = null)
     {
         sortAnchor = _sortAnchor;
+        sortingGroup = _sortingGroup;
         
         spriteRenderers.Clear();
-        sortingGroup = null;
 
         if (_initialRenderers != null)
         {
@@ -28,8 +28,13 @@ public class CustomSortable : MonoBehaviour
         
         if (spriteRenderers.Count == 0)
         {
-            AddSpriteRenderers(GetComponentsInChildren<SpriteRenderer>(true));
+            spriteRenderers.AddRange(GetComponentsInChildren<SpriteRenderer>(true));
         }
+    }
+
+    public void SetSortingGroup(SortingGroup _sortingGroup)
+    {
+        sortingGroup = _sortingGroup;
     }
 
     public void AddSpriteRenderer(SpriteRenderer _renderer)
@@ -38,12 +43,6 @@ public class CustomSortable : MonoBehaviour
         if (!spriteRenderers.Contains(_renderer))
         {
             spriteRenderers.Add(_renderer);
-            
-            // 등록된 SpriteRenderer로부터 SortingGroup을 자동으로 찾아 할당
-            if (sortingGroup == null)
-            {
-                sortingGroup = _renderer.GetComponentInParent<SortingGroup>();
-            }
         }
     }
 
@@ -86,7 +85,7 @@ public class CustomSortable : MonoBehaviour
         }
     }
 
-    private void LateUpdate()
+    public void ManualLateUpdate()
     {
         UpdateSortingOrder();
     }
