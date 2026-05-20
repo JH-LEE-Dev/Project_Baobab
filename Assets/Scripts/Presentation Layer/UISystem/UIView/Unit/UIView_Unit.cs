@@ -188,4 +188,14 @@ public class UIView_Unit : UIView
     {
         base.OnHide();
     }
+
+    public void LogContainerInteractStateChanged(bool _state)
+    {
+        
+    }
+
+    public void OffroadContainerInteractStateChanged(bool _state)
+    {
+        
+    }
 }

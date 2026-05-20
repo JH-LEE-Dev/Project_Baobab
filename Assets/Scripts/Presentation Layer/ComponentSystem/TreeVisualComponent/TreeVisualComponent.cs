@@ -60,6 +60,7 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
 
     private Color firstIndexBottomColor;
+    private CustomSortable customSortable;
 
     #endregion
 
@@ -104,7 +105,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     #region Initialize
 
-    public void Initialize(Transform _topShadowTransform, Material _outLineMaterial)
+    public void Initialize(Transform _topShadowTransform, Material _outLineMaterial, CustomSortable _customSortable)
     {
         if (cachedTransform == null) cachedTransform = transform;
         if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
@@ -115,6 +116,14 @@ public class TreeVisualComponent : MonoBehaviour
 
         originalMaterial = topRenderer.material;
         outLineMaterial = _outLineMaterial;
+        customSortable = _customSortable;
+
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+            customSortable.AddSpriteRenderer(topRenderer);
+            customSortable.AddSpriteRenderer(bottomRenderer);
+        }
     }
 
     // 에디터에서 랜덤 스프라이트 조합을 다시 확인할 때 수동으로 호출한다.

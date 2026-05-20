@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -197,6 +198,7 @@ public class GameplayUICoordinator
     {
         worldPopupUI.LogContainerInteractStateChanged(containerInteractStateChangedSignal.state);
         popUpUI.LogContainerCanInteract(containerInteractStateChangedSignal.state);
+        unitUI.LogContainerInteractStateChanged(containerInteractStateChangedSignal.state);
     }
 
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
@@ -328,6 +330,7 @@ public class GameplayUICoordinator
     {
         worldPopupUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
         popUpUI.LogContainerCanInteract(_offroadContainerInteractStateChangedSignal.state);
+        unitUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
     }
 
     private void LoosAllInventoryItem(LoosAllInventoryItemSignal _loosAllInventoryItemSignal)

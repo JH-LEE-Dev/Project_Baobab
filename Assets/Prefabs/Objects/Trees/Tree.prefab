@@ -349,6 +349,7 @@ GameObject:
   - component: {fileID: 5272385284174554040}
   - component: {fileID: 7941305713547832146}
   - component: {fileID: 3142599335365549467}
+  - component: {fileID: 8282606329557726487}
   m_Layer: 10
   m_Name: Tree
   m_TagString: Untagged
@@ -452,6 +453,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EHealthComponent
   maxHealth: 4
+--- !u!114 &8282606329557726487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2950277259561733017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100
 --- !u!1 &3147413912486074957
 GameObject:
   m_ObjectHideFlags: 0
