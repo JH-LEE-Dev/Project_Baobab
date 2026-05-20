@@ -175,7 +175,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (!CanAddItemByData(logSourceData)) continue;
 
                     // 해당 슬롯 전송 코루틴 시작
-                    StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
+                    yield return StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
                 }
             }
 

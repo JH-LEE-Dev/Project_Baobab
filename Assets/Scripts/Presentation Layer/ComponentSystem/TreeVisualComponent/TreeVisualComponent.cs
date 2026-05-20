@@ -59,6 +59,9 @@ public class TreeVisualComponent : MonoBehaviour
     private MaterialPropertyBlock mpb;
     private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
 
+    private Color firstIndexBottomColor;
+    private CustomSortable customSortable;
+
     #endregion
 
     #region Unity Events
@@ -102,7 +105,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     #region Initialize
 
-    public void Initialize(Transform _topShadowTransform, Material _outLineMaterial)
+    public void Initialize(Transform _topShadowTransform, Material _outLineMaterial, CustomSortable _customSortable)
     {
         if (cachedTransform == null) cachedTransform = transform;
         if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
@@ -113,6 +116,14 @@ public class TreeVisualComponent : MonoBehaviour
 
         originalMaterial = topRenderer.material;
         outLineMaterial = _outLineMaterial;
+        customSortable = _customSortable;
+
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+            customSortable.AddSpriteRenderer(topRenderer);
+            customSortable.AddSpriteRenderer(bottomRenderer);
+        }
     }
 
     // 에디터에서 랜덤 스프라이트 조합을 다시 확인할 때 수동으로 호출한다.
@@ -205,6 +216,7 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         TreeColorSet colorSet = _visualData.treeColorSets[Random.Range(0, _visualData.treeColorSets.Count)];
+        firstIndexBottomColor = _visualData.treeColorSets[0].bottomColor;
 
         if (topRenderer != null)
         {
@@ -271,10 +283,7 @@ public class TreeVisualComponent : MonoBehaviour
     // 상단/하단 스프라이트에 밝기 편차를 줘서 개체마다 미묘한 색 차이를 만든다.
     public Color GetBottomColor()
     {
-        var color = bottomRenderer.color;
-        color.a = 1f;
-
-        return color;
+        return firstIndexBottomColor;
     }
 
     // 그림자 및 물 위 렌더러가 본체와 같은 스프라이트와 색상을 따라가도록 동기화한다.

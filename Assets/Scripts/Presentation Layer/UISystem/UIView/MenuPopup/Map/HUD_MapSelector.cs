@@ -44,7 +44,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         private Action onExitCallback;
         
         private bool isInitialized = false;
-        private bool isDayTime = true;
         private bool isDragging = false;
         private bool isClosing = false;
         private float targetPosX = 0.0f;

@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -60,6 +61,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
         signalHub.Subscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
         signalHub.Subscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
+        signalHub.Subscribe<OffroadContainerUpdatedSignal>(OffroadContainerUpdated);
     }
 
     private void UnSubscribeSignals()
@@ -84,6 +86,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
         signalHub.UnSubscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
         signalHub.UnSubscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
+        signalHub.UnSubscribe<OffroadContainerUpdatedSignal>(OffroadContainerUpdated);
     }
 
     private void BindEvents()
@@ -195,6 +198,7 @@ public class GameplayUICoordinator
     {
         worldPopupUI.LogContainerInteractStateChanged(containerInteractStateChangedSignal.state);
         popUpUI.LogContainerCanInteract(containerInteractStateChangedSignal.state);
+        unitUI.LogContainerInteractStateChanged(containerInteractStateChangedSignal.state);
     }
 
     private void CharacterEarnMoney(CharacterEarnMoneySignal characterEarnMoneySignal)
@@ -326,10 +330,16 @@ public class GameplayUICoordinator
     {
         worldPopupUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
         popUpUI.LogContainerCanInteract(_offroadContainerInteractStateChangedSignal.state);
+        unitUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
     }
 
     private void LoosAllInventoryItem(LoosAllInventoryItemSignal _loosAllInventoryItemSignal)
     {
         popUpUI.LoosAllInventoryItems();
+    }
+
+    private void OffroadContainerUpdated(OffroadContainerUpdatedSignal offroadContainerUpdatedSignal)
+    {
+        worldPopupUI.OffroadContainerUpdated();
     }
 }

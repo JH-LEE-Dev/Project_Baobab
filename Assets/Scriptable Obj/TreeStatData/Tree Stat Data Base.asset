@@ -18,4 +18,4 @@ MonoBehaviour:
   - treeType: 2
     hp: 16
   - treeType: 3
-    hp: 32
+    hp: 40

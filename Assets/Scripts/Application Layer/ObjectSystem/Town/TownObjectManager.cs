@@ -76,6 +76,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             portal = Instantiate(portalPrefab);
             portal.transform.position = portalSpawnPoint.position;
             portal.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, characterInventory, offroadContainer);
+            portal.ResetPortal();
             portal.SetCanTravel(bCanTravel);
         }
         else
