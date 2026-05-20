@@ -80,20 +80,15 @@ public struct SkillInfo
 public enum SkillType
 {
     None,
-    OffRoadVehicle,//오프로드차량 
-
-
     InventoryExpansion1,//인벤토리확장I
-    InventoryExpansion2,//인벤토리확장II
 
 
-    LogCapacityIncrease1,//원목 수납력 증가I
-    LogCapacityIncrease2,//원목 수납력 증가II
+    LogCapacityIncrease1, //원목 수납력 증가I
+    LogCapacityIncrease2, //원목 수납력 증가II
 
 
     SawmillLogStorageExpansion1,//제재소 원목 보관함 확장 I
     SawmillLogStorageExpansion2,//제재소 원목 보관함 확장 II
-
 
 
     ConveyorSpeed1, //컨베이어 속도 I
@@ -106,9 +101,11 @@ public enum SkillType
 
 
     LogValue1, //원목 가치1
-    VerdantPlainsOvergrowth, //초목 평원림 과성장
+    VerdantPlainsOvergrowth, // 풀빛너른숲 과성장 
 
     BountifulTree1, // 아낌없이주는나무1
+    BountifulTree2, // 아낌없이주는나무2
+
     FascinatingLogChance1, // 희귀원목확률I
 
 
@@ -120,42 +117,35 @@ public enum SkillType
 
     AxeDamage1,//도끼데미지I
     AxeDamage2,//도끼데미지II
+    AxeDamage3,//도끼데미지II
+
 
     AxeDurability1, //도끼 내구도I
+
     SteelAxe1, // 강철도끼 I
-    AxeRange1, // 도끼 범위
+
+    AxeRange1, // 도끼 범위 I
     Shockwave1, //충격파I
     ShockwaveDamage1, //충격파데미지I
     ShockwaveRange1, // 충격파 범위 I
+
+
     AxeAttackSpeed1, // 도끼 공격 속도 I
 
+    AxeCriticalChance1, // 도끼 치명타 확률1
+    AxeCriticalDamage1, // 도끼 치명타 데미지1
 
 
-    EquipmentSwitchSpeed1,//장비 스위칭 속도1
+
     EfficientMovement1, // 효율적인 이동I
     MovementSpeed, //이동속도I
 
+    SporeShieldRegenBlock1, // 포자막 회복 억제1
 
 
 
-    hunting,//수렵
-    GunDamage1,//총기데미지1
-    GunDamage2,//총기데미지2
-    ReserveAmmoIncrease1, // 예비탄창증가1
-    GunMagazineCapacity1, //총기탄창증가1
-    GunPenetration1, //총기관통1
-    Ricochet1, //확산탄1
-    RicochetDamage1, //확산탄 데미지1
-    RicochetRange1, //확산탄 범위
-    GunAttackSpeed1, //총기공격속도1
-    GunReloadSpeed1, //총기 재장전 속도1
 
-
-
-    CarrotBundle, // 당근 다발
-    RabbitBoom, // 토끼 대 번성
-    CarrotFarm, // 당근 농장
-    PickupRange1, //획득범위
+    PickupRange1, //획득범위 I
 
 
     Stamina1, // 지구력1
@@ -165,11 +155,7 @@ public enum SkillType
     FatigueMaxIncrease2, // 피로도 최대치 증가 II
     FatigueMaxIncrease3, // 피로도 최대치 증가3
 
-    HiddenMap, // 히든맵
-    HiddenMapGaugeGain1, // 히든맵 게이지 획득량I
-    HiddenMapGaugeGain2, // 히든맵 게이지 획득량2
-    HiddenMapFatigueRecovery, // 히든맵 피로도 회복 I
-
+    SourceOfSpeed1, // 속도의 원천
     MAX
 }
 
@@ -181,22 +167,22 @@ public enum SkillCommandType
     SawmillLogStorageExpansion,
     LogProcessingSpeed,
     AxeDamage,
-    hunting,
-    EquipmentSwitchSpeed,
-    GunDamage,
+    hunting,   // 불필요
+    EquipmentSwitchSpeed, // 불필요
+    GunDamage, // 불필요
     LogValue,
     VerdantPlainsOvergrowth,
-    CarrotBundle,
-    RabbitBoom,
+    CarrotBundle,   // 불필요
+    RabbitBoom,  // 불필요
     Stamina,
-    StaminaRecoveryBoost,
+    StaminaRecoveryBoost,   // 불필요
     StaminaMaxIncrease,
-    OffRoadVehicle,
+    OffRoadVehicle,  // 불필요
     ConveyorSpeed,
-    ReserveAmmoIncrease,
-    GunMagazineCapacity,
-    Ricochet,
-    GunPenetration,
+    ReserveAmmoIncrease, // 불필요
+    GunMagazineCapacity, // 불필요
+    Ricochet, // 불필요
+    GunPenetration, // 불필요
     EfficientMovement,
     Shockwave,
     AxeRange,
@@ -205,10 +191,10 @@ public enum SkillCommandType
     PowerSupply,
     PickupRange,
     FascinatingLogChance,
-    RicochetRange,
-    RicochetDamage,
-    GunReloadSpeed,
-    GunAttackSpeed,
+    RicochetRange, // 불필요
+    RicochetDamage, // 불필요
+    GunReloadSpeed, // 불필요
+    GunAttackSpeed, // 불필요
     MovementSpeed,
     ShockwaveDamage,
     ShockwaveRange,

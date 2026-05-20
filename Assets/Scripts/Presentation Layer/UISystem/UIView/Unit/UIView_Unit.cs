@@ -15,9 +15,10 @@ public class UIView_Unit : UIView
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject hpBarPrefab;
+    [SerializeField] private GameObject interactionUnitPrefab;
 
     [Header("Offset Settings")]
-    //[SerializeField] private float characterYOffset = 1.5f;
+    [SerializeField] private Vector2 characterYOffset = new Vector2(0.0f, 1.5f);
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
@@ -29,6 +30,9 @@ public class UIView_Unit : UIView
     private List<HUD_HPBar> hpBarPool = new List<HUD_HPBar>(32);
     private System.Action<HUD_HPBar> returnToPoolAction;
 
+
+    private UI_InteractionUnit interactionUnit;
+
     // //퍼블릭 초기화 및 제어 메서드
 
     public override void Initialize(UIViewContext _ctx)
@@ -38,11 +42,17 @@ public class UIView_Unit : UIView
         returnToPoolAction = ReturnHPBarToPool;
 
         InitHPBarPool();
+        InitInteractionUnit();
     }
 
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+
+        if (null != character)
+        {
+            interactionUnit?.SetTarget(character.GetTransform(), characterYOffset);
+        }
     }
 
     public void TreeGetHit(ITreeObj _treeObj)
@@ -83,6 +93,20 @@ public class UIView_Unit : UIView
             
             if (null != _bar)
                 hpBarPool.Add(_bar);
+        }
+    }
+
+    private void InitInteractionUnit()
+    {
+        if (null == interactionUnitPrefab)
+            return;
+
+        interactionUnit = Instantiate(interactionUnitPrefab, uiRoot.transform).GetComponent<UI_InteractionUnit>();
+
+        if (null != interactionUnit)
+        {
+            interactionUnit.Initialize();
+            interactionUnit.HideInteraction();
         }
     }
 
@@ -191,11 +215,29 @@ public class UIView_Unit : UIView
 
     public void LogContainerInteractStateChanged(bool _state)
     {
-        
+        if (true == _state)
+        {
+            if (null != interactionUnit)
+                interactionUnit.ShowInteraction();
+        }
+        else
+        {
+            if (null != interactionUnit)
+                interactionUnit.HideInteraction();
+        }
     }
 
     public void OffroadContainerInteractStateChanged(bool _state)
     {
-        
+        if (true == _state)
+        {
+            if (null != interactionUnit)
+                interactionUnit.ShowInteraction();
+        }
+        else
+        {
+            if (null != interactionUnit)
+                interactionUnit.HideInteraction();
+        }
     }
 }
