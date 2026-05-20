@@ -8,6 +8,7 @@ public class HUD_NotificationBadge : MonoBehaviour
 
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private TMP_Text font;
+    [SerializeField] private CurrencyFontHUD currencyFont;
     [SerializeField] private string onOffTag = "NotificationAbsol";
     [SerializeField] private string popTag = "NotificationPop";
     
@@ -19,6 +20,8 @@ public class HUD_NotificationBadge : MonoBehaviour
     public void Initialize()
     {
         omp?.Initialize();
+        currencyFont?.Initialize();
+        currencyFont?.SetMode(CurrencyFontAlignmentMode.Center);
     }
 
     public void UpdateAndInteraction(int _newCnt)
@@ -69,10 +72,11 @@ public class HUD_NotificationBadge : MonoBehaviour
 
     public void SetCount(int _newCnt)
     {
-        if (null == font)
-            return;
+        if (null != font)
+            font.text = _newCnt.ToString();
 
-        font.text = _newCnt.ToString();
+        if (null != currencyFont)
+            currencyFont.SetNumber(_newCnt);
     }
 
     public void OnShow() => gameObject.SetActive(true);
