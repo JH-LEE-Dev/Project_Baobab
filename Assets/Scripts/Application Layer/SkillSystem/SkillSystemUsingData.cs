@@ -213,6 +213,7 @@ public enum SkillCommandType
     ShockwaveDamage,
     ShockwaveRange,
     AxeAttackSpeed,
+    WoodenTransportBox,
 }
 
 public enum AbilityLevelUpRejectReason
