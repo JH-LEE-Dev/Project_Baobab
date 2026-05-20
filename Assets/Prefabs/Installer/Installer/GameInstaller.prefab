@@ -1755,7 +1755,7 @@ MonoBehaviour:
   - forestType: 3
     decAmount: 8
   - forestType: 4
-    decAmount: 16
+    decAmount: 12
 --- !u!114 &8919172322634990837
 MonoBehaviour:
   m_ObjectHideFlags: 0
