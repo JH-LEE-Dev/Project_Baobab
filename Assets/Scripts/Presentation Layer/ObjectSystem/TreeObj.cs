@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 {
@@ -61,6 +60,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public Material outlineMaterial;
 
     private CustomSortable customSortable;
+
+    //For Shadow
+    float shadowAngle;
+    float shadowScaleY;
+    bool isShadowActive;
 
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
@@ -130,6 +134,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             treeVisualComponent.ApplyVisual(treeData);
         }
+
+        shadowAngle = shadowDataProvider.CurrentShadowAngle;
+        shadowScaleY = shadowDataProvider.CurrentShadowScaleY;
+        isShadowActive = shadowDataProvider.IsShadowActive;
     }
 
     public void SetIsSapling(bool _bIsSapling, float _growTime)
@@ -184,14 +192,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public void ManualUpdate()
     {
-        // 캐싱된 shadowDataProvider 사용
-        float shadowAngle = shadowDataProvider.CurrentShadowAngle;
-        float shadowScaleY = shadowDataProvider.CurrentShadowScaleY;
-        bool isShadowActive = shadowDataProvider.IsShadowActive;
-
-        if (topShadowObject != null) topShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
-        if (bottomShadowObject != null) bottomShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
-
         if (bIsSapling)
         {
             growTime -= Time.deltaTime;
@@ -203,6 +203,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (bTreeShadowSet == false)
         {
+            if (topShadowObject != null) topShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
+            if (bottomShadowObject != null) bottomShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
+
             treeVisualComponent.CacheSwayBasePose();
             bTreeShadowSet = true;
         }
@@ -325,7 +328,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
     }
 
-    private void LateUpdate()
+    public void SetSortOrder()
     {
         customSortable.ManualLateUpdate();
     }

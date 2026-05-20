@@ -273,6 +273,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                     tree.SetIsSapling(true, treeGrowTime);
                 }
 
+                tree.SetSortOrder();
+
                 return true;
             }
         }

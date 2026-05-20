@@ -55,6 +55,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     private float swayPhase;
     private bool isOnWaterActive = false;
+    private bool bOnWaterOrderSet = false;
 
     private MaterialPropertyBlock mpb;
     private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
@@ -84,11 +85,12 @@ public class TreeVisualComponent : MonoBehaviour
     private void LateUpdate()
     {
         // 물 위 효과가 활성화된 경우에만 실행하여 불필요한 계산 방지
-        if (!isOnWaterActive) return;
+        if (!isOnWaterActive || bOnWaterOrderSet == true) return;
 
         int order = (int)(cachedTransform.position.y * 100);
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
+        bOnWaterOrderSet = true;
     }
 
     // 에디터 미리보기 모드에서는 값이 바뀔 때마다 비주얼 조합을 즉시 다시 적용한다.
@@ -197,6 +199,7 @@ public class TreeVisualComponent : MonoBehaviour
     public void DeActivateOnWaterObject()
     {
         isOnWaterActive = false;
+        bOnWaterOrderSet = false;
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(false);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(false);
     }
@@ -204,6 +207,7 @@ public class TreeVisualComponent : MonoBehaviour
     public void ActivateOnWaterObject()
     {
         isOnWaterActive = true;
+        bOnWaterOrderSet = false;
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(true);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(true);
     }
