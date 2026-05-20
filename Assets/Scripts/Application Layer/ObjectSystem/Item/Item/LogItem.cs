@@ -526,7 +526,7 @@ public class LogItem : Item, IStaticCollidable
     private void StartSucking(Transform _target)
     {
         suckTarget = _target;
-        suckSpeed = -4.5f; // 뒤로 살짝 튕기는 쫀득한 연출을 위한 초기 음수 속도
+        suckSpeed = -5.0f; // 뒤로 튕기는 동작을 더 크게 하기 위해 초기 음수 속도 상향
         elapsed = 0f;
         state = ItemMoveState.Sucking;
     }
