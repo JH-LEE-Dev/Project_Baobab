@@ -325,6 +325,7 @@ public class GameplayUICoordinator
     private void OffroadContainerInteractStateChanged(OffroadContainerInteractStateChangedSignal _offroadContainerInteractStateChangedSignal)
     {
         worldPopupUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
+        popUpUI.LogContainerCanInteract(_offroadContainerInteractStateChangedSignal.state);
     }
 
     private void LoosAllInventoryItem(LoosAllInventoryItemSignal _loosAllInventoryItemSignal)
