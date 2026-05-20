@@ -281,7 +281,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             Vector3 endPos = startPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * randomDist;
 
             float height = UnityEngine.Random.Range(0.5f, 1.0f);
-            float duration = UnityEngine.Random.Range(0.25f, 0.5f);
+            float duration = UnityEngine.Random.Range(0.5f, 0.75f);
 
             logItem.Launch(startPos, endPos, height, duration);
         }

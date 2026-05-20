@@ -53,6 +53,12 @@ public class LogItem : Item, IStaticCollidable
 
     bool bCanAcquired = true;
 
+    public Material outlineMaterial;
+    private Material originalMaterial;
+    
+    private MaterialPropertyBlock mpb;
+    private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
+
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -84,6 +90,7 @@ public class LogItem : Item, IStaticCollidable
         }
 
         transform.localScale = Vector3.one;
+        originalMaterial = spriteRenderer.material;
     }
 
     public void SetInventoryChecker(IInventoryChecker _inventoryChecker)
@@ -103,8 +110,17 @@ public class LogItem : Item, IStaticCollidable
         height = _height;
         duration = _duration;
         trajectoryJitter = Vector3.zero;
+        rotationSpeed = 0f;
         elapsed = 0f;
         state = ItemMoveState.Launching;
+        transform.localScale = Vector3.zero;
+        
+        spriteRenderer.material = outlineMaterial;
+        
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        spriteRenderer.GetPropertyBlock(mpb);
+        mpb.SetColor(baseColorID, spriteRenderer.color);
+        spriteRenderer.SetPropertyBlock(mpb);
 
         // 활성화 상태라면 등록 (OnEnable에서도 처리됨)
         if (gameObject.activeInHierarchy)
@@ -191,6 +207,12 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = 0f;
         bCanAcquired = true;
         transform.localScale = Vector3.one;
+        
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.material = originalMaterial;
+            spriteRenderer.SetPropertyBlock(null);
+        }
 
         if (sprite != null && spriteRenderer != null)
             spriteRenderer.sprite = sprite;
@@ -223,7 +245,7 @@ public class LogItem : Item, IStaticCollidable
                 UpdateSucking(_deltaTime);
                 break;
             case ItemMoveState.Dropped:
-                UpdateDropped();
+                UpdateDropped(_deltaTime);
                 break;
         }
     }
@@ -233,25 +255,54 @@ public class LogItem : Item, IStaticCollidable
         elapsed += _deltaTime;
         float t = Mathf.Clamp01(elapsed / duration);
 
-        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t);
+        // 1. 가로 이동에 EaseOutCubic 적용 (도착 지점에서 부드럽게 감속하여 쫀득한 느낌 부여)
+        float easeT = 1f - (1f - t) * (1f - t) * (1f - t);
+        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, easeT);
+        
+        // 2. 높이 계산 (포물선)
         float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
 
         if (visualTransform != null)
         {
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+            
+            // 3. Squash and Stretch (수직 속도에 비례하여 늘어남)
+            // t=0.5(정점)에서 stretch가 0이 되고, 시작과 끝에서 최대가 됨
+            float verticalVelocity = -8 * height * (t - 0.5f) / duration;
+            float stretch = Mathf.Abs(verticalVelocity) * 0.05f;
+            stretch = Mathf.Min(stretch, 0.3f); // 최대 변형치 제한
+            
+            visualTransform.localScale = new Vector3(1f - stretch, 1f + stretch, 1f);
         }
         else
         {
             transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
         }
 
+        // 4. 전체 Scale 팝업 (0.4까지 BackEaseOut 효과로 탄력 있게 커짐)
+        float targetScale = 1f;
+        if (t < 0.4f)
+        {
+            float nt = t / 0.4f;
+            const float s = 2.5f; // 약간 더 과장된 탄성 계수
+            float t1 = nt - 1f;
+            targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
+        }
+        transform.localScale = Vector3.one * targetScale;
+
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
         if (t >= 1.0f)
         {
             transform.position = GlobalPixelSnapper.Snap(endPos);
-            if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
+            if (visualTransform != null)
+            {
+                visualTransform.localPosition = Vector3.zero;
+                visualTransform.localRotation = Quaternion.identity;
+                visualTransform.localScale = Vector3.one; // 스케일 초기화
+            }
+            transform.localScale = Vector3.one;
 
             state = ItemMoveState.Dropped;
             CheckAcquireCondition();
@@ -406,8 +457,17 @@ public class LogItem : Item, IStaticCollidable
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
     }
 
-    private void UpdateDropped()
+    private void UpdateDropped(float _deltaTime)
     {
+        if (visualTransform != null)
+        {
+            // Y축 둥둥 떠있는 움직임 (Sine Wave)
+            // 위치 기반 오프셋을 주어 아이템마다 타이밍이 다르게 함
+            float posOffset = (transform.position.x + transform.position.y) * 10f;
+            float floatOffset = Mathf.Sin(Time.time * 2.5f + posOffset) * 0.05f;
+            visualTransform.localPosition = new Vector3(0, floatOffset, 0);
+        }
+
         if (!bDrop || suckTarget == null) return;
 
         CheckAcquireCondition();

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: SkewShadow Material
-  m_Shader: {fileID: 4800000, guid: 4023117929d82a240ae8efd5eba8e767, type: 3}
+  m_Name: LogItemOutline
+  m_Shader: {fileID: 4800000, guid: c3f1c52e288ff4243a2d8f7664a7924c, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -46,20 +46,12 @@ Material:
     m_Ints: []
     m_Floats:
     - _EnableExternalAlpha: 0
-    - _Expansion: 1.5
-    - _HorizontalSkew: 1
-    - _MaxDistance: 0
-    - _PPU: 32
-    - _RaySteps: 30
-    - _SearchRange: 0.05
-    - _ShadowAngle: 270
-    - _VerticalScale: 0.5
-    - _VerticalSkew: 0
+    - _OutlineWidth: 1
     - _ZWrite: 0
     m_Colors:
-    - _BaseColor: {r: 0, g: 0, b: 0, a: 0.5}
+    - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-    - _UvRect: {r: 0, g: 0, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

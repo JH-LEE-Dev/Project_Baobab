@@ -60,3 +60,5 @@ public struct OffroadContainerInteractStateChangedSignal
         state = _state;
     }
 }
+
+public struct LoosAllInventoryItemSignal { }

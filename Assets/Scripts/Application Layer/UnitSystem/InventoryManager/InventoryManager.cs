@@ -7,6 +7,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 {
     public event Action SpendMoneyEvent;
     public event Action InventorySpecChangedEvent;
+    public event Action LoosAllInventoryItemEvent;
+
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
@@ -486,7 +488,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             slot.Setup(null, 0);
         }
 
-        InventorySpecChangedEvent?.Invoke();
+        LoosAllInventoryItemEvent?.Invoke();
     }
 
     public void ReleaseAllDroppedItem()

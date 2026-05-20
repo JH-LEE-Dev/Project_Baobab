@@ -1,5 +1,6 @@
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class TreeVisualComponent : MonoBehaviour
 {
@@ -49,9 +50,14 @@ public class TreeVisualComponent : MonoBehaviour
     private Quaternion topRendererBaseLocalRotation;
     private Vector3 topShadowBaseLocalPosition;
     private Quaternion topShadowBaseLocalRotation;
+    private Material outLineMaterial;
+    private Material originalMaterial;
 
     private float swayPhase;
     private bool isOnWaterActive = false;
+
+    private MaterialPropertyBlock mpb;
+    private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
 
     #endregion
 
@@ -96,14 +102,17 @@ public class TreeVisualComponent : MonoBehaviour
 
     #region Initialize
 
-    public void Initialize(Transform _topShadowTransform)
+    public void Initialize(Transform _topShadowTransform, Material _outLineMaterial)
     {
         if (cachedTransform == null) cachedTransform = transform;
         if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
         if (topShadowRenderer != null && topShadowTransform == null) topShadowTransform = _topShadowTransform;
-        
+
         CacheSwayBasePose();
         ResetVisualState();
+
+        originalMaterial = topRenderer.material;
+        outLineMaterial = _outLineMaterial;
     }
 
     // 에디터에서 랜덤 스프라이트 조합을 다시 확인할 때 수동으로 호출한다.
@@ -352,7 +361,7 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         topTransform = topRenderer.transform;
-        
+
         topRendererBaseLocalPosition = topTransform.localPosition;
         topRendererBaseLocalRotation = topTransform.localRotation;
 
@@ -480,6 +489,33 @@ public class TreeVisualComponent : MonoBehaviour
         {
             bottomOnWaterSR.DOKill();
             bottomOnWaterSR.DOFade(_targetAlpha, _duration);
+        }
+    }
+
+    public void SetOutline(bool _boolean)
+    {
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+
+        topRenderer.material = _boolean ? outLineMaterial : originalMaterial;
+        bottomRenderer.material = _boolean ? outLineMaterial : originalMaterial;
+
+        if (_boolean)
+        {
+            // 상단 렌더러 색상 전달
+            topRenderer.GetPropertyBlock(mpb);
+            mpb.SetColor(baseColorID, topRenderer.color);
+            topRenderer.SetPropertyBlock(mpb);
+
+            // 하단 렌더러 색상 전달
+            bottomRenderer.GetPropertyBlock(mpb);
+            mpb.SetColor(baseColorID, bottomRenderer.color);
+            bottomRenderer.SetPropertyBlock(mpb);
+        }
+        else
+        {
+            // 아웃라인 해제 시 PropertyBlock 초기화
+            topRenderer.SetPropertyBlock(null);
+            bottomRenderer.SetPropertyBlock(null);
         }
     }
 

@@ -194,4 +194,9 @@ public class UIView_Popup : UIView
 
         base.OnDestroy();
     }
+
+    public void LoosAllInventoryItems()
+    {
+        
+    }
 }

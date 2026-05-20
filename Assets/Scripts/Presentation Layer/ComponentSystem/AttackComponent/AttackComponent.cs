@@ -40,6 +40,12 @@ public class AttackComponent : PComponent
 
     private bool bCanSwap = false;
 
+    private float detectionTimer = 0f;
+    private const float detectionInterval = 0.2f;
+    private List<IStaticCollidable> detectionResults = new List<IStaticCollidable>(16);
+    public IStaticCollidable nearestTarget { get; private set; }
+    private IStaticCollidable lastNearestTarget;
+
     private AxeExtraAttackCreator axeExtraAttackCreator;
 
     public override void Initialize(ComponentCtx _ctx)
@@ -219,6 +225,81 @@ public class AttackComponent : PComponent
         }
     }
 
+    private void Update()
+    {
+        detectionTimer += Time.deltaTime;
+        if (detectionTimer >= detectionInterval)
+        {
+            detectionTimer = 0f;
+            DetectNearestTarget();
+
+            if (lastNearestTarget != nearestTarget)
+            {
+                if (lastNearestTarget is TreeObj oldTree)
+                {
+                    oldTree.SetOutline(false);
+                }
+
+                if (nearestTarget is TreeObj newTree)
+                {
+                    newTree.SetOutline(true);
+                }
+
+                lastNearestTarget = nearestTarget;
+            }
+        }
+    }
+
+    private void DetectNearestTarget()
+    {
+        if (CollisionSystem.Instance == null || componentCenterTransform == null) return;
+        if (currentWeaponMode != WeaponMode.Axe)
+        {
+            nearestTarget = null;
+            return;
+        }
+
+        float effectiveAttackRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+
+        // 1. 중심점(componentCenterTransform) 기준으로 대상 탐지
+        CollisionSystem.Instance.GetCollidablesInRadius(componentCenterTransform.position, effectiveAttackRadius, targetLayer, detectionResults);
+
+        int hitCount = detectionResults.Count;
+        if (hitCount <= 0)
+        {
+            nearestTarget = null;
+            return;
+        }
+
+        Vector3 centerPos = componentCenterTransform.position;
+        Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
+        float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
+
+        IStaticCollidable nearest = null;
+        float minDistanceSqr = float.MaxValue;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            var target = detectionResults[i];
+            Vector3 targetPos = target.Position + target.Offset;
+            Vector3 targetDir = (targetPos - centerPos).normalized;
+
+            float dot = Vector2.Dot(attackDir, targetDir);
+
+            if (dot >= cosThreshold)
+            {
+                float distSqr = (targetPos - centerPos).sqrMagnitude;
+                if (distSqr < minDistanceSqr)
+                {
+                    minDistanceSqr = distSqr;
+                    nearest = target;
+                }
+            }
+        }
+
+        nearestTarget = nearest;
+    }
+
     private void OnDestroy()
     {
         ReleaseEvents();
@@ -353,6 +434,13 @@ public class AttackComponent : PComponent
 
         SetbCanSwap(false);
         SetbAttack(false);
+
+        if (lastNearestTarget is TreeObj tree)
+        {
+            tree.SetOutline(false);
+            lastNearestTarget = null;
+            nearestTarget = null;
+        }
     }
 
     public void Refresh()

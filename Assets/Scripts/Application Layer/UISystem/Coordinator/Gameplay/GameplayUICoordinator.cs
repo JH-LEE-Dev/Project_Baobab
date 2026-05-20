@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class GameplayUICoordinator
 {
@@ -56,6 +57,9 @@ public class GameplayUICoordinator
         signalHub.Subscribe<AnimalHitSignal>(AnimalHit);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<PortalDeActivatedSignal>(PortalDeActivated);
+        signalHub.Subscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
+        signalHub.Subscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
+        signalHub.Subscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
     }
 
     private void UnSubscribeSignals()
@@ -77,6 +81,9 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<AnimalHitSignal>(AnimalHit);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<PortalDeActivatedSignal>(PortalDeActivated);
+        signalHub.UnSubscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
+        signalHub.UnSubscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
+        signalHub.UnSubscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
     }
 
     private void BindEvents()
@@ -232,9 +239,9 @@ public class GameplayUICoordinator
         worldPopupUI.LogContainerSpecChanged();
     }
 
-    private void OffraodContainerSpecChanged()
+    private void OffraodContainerSpecChanged(OffraodContainerSpecChangedSignal offraodContainerSpecChangedSignal)
     {
-        
+        worldPopupUI.OffraodContainerSpecChanged();
     }
 
     private void SpendMoney(SpendMoneySignal spendMoneySignal)
@@ -317,6 +324,11 @@ public class GameplayUICoordinator
 
     private void OffroadContainerInteractStateChanged(OffroadContainerInteractStateChangedSignal _offroadContainerInteractStateChangedSignal)
     {
-        
+        worldPopupUI.OffroadContainerInteractStateChanged(_offroadContainerInteractStateChangedSignal.state);
+    }
+
+    private void LoosAllInventoryItem(LoosAllInventoryItemSignal _loosAllInventoryItemSignal)
+    {
+        popUpUI.LoosAllInventoryItems();
     }
 }

@@ -57,6 +57,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     private bool bWaterNearBy = false;
     private bool bTreeShadowSet = false;
 
+    public Material outlineMaterial;
+
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
         environmentProvider = _environmentProvider;
@@ -77,7 +79,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (treeVisualComponent != null)
         {
-            treeVisualComponent.Initialize(topShadowObject.transform);
+            treeVisualComponent.Initialize(topShadowObject.transform, outlineMaterial);
         }
 
         BindEvents();
@@ -154,6 +156,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (treeVisualComponent != null)
         {
+            SetOutline(false);
             treeVisualComponent.ResetVisualState();
         }
     }
@@ -305,6 +308,14 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
                 treeVisualComponent.ActivateOnWaterObject();
             else
                 treeVisualComponent.DeActivateOnWaterObject();
+        }
+    }
+
+    public void SetOutline(bool _boolean)
+    {
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.SetOutline(_boolean);
         }
     }
 }
