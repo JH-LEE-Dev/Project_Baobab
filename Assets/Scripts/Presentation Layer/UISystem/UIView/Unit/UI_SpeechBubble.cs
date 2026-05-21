@@ -19,6 +19,7 @@ public class UI_SpeechBubble : MonoBehaviour
     private RectTransform rootRect;
     private Vector2 offset;
 
+    private int currentId = -1;
     private float playDuration;
     private float playTimer;
     private bool isPlaying;
@@ -60,8 +61,12 @@ public class UI_SpeechBubble : MonoBehaviour
         motionPlayer.PlayBackward(absolTag, bReset: true);
     }
 
-    public void Play(string _text, float _duration = 3f)
+    public void Play(int _id, string _text, float _duration = 3f)
     {
+        if (isPlaying && currentId == _id)
+            return;
+
+        currentId = _id;
         SetText(_text);
         Show();
 
@@ -98,6 +103,7 @@ public class UI_SpeechBubble : MonoBehaviour
         {
             Hide();
             isPlaying = false;
+            currentId = -1;
         }
     }
 
