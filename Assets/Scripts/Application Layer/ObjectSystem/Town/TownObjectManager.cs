@@ -7,7 +7,6 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     //이벤트
     public event Action PortalActivatedEvent;
     public event Action PortalDeActivatedEvent;
-    public event Action OffroadDriveEndEvent;
 
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -27,7 +26,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private Camera mainCam; // 최적화: 카메라 캐싱
 
     //내부 상태
-    private OffroadVehicleObj portal;
+    public OffroadVehicleObj portal { get; private set; }
     private TreeObj[] trees;
     public IReadOnlyList<TreeObj> Trees => trees;
 
@@ -42,7 +41,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;
 
-    [SerializeField] private Transform offroadDriveEndPoint;
+    [SerializeField] private Transform townReturnPoint;
 
 
     public float treeGrowTime = 10f;
@@ -121,6 +120,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     public Transform GetPortalTransform()
     {
         return portal.transform;
+    }
+
+    public Transform GetTownReturnPoint()
+    {
+        return townReturnPoint;
     }
 
     private void SetupCullingGroup()
@@ -245,9 +249,6 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         portal.PortalDeActivatedEvent -= PortalDeActivated;
         portal.PortalDeActivatedEvent += PortalDeActivated;
-
-        portal.OffroadDriveEndEvent -= OffroadDriveEnd;
-        portal.OffroadDriveEndEvent += OffroadDriveEnd;
     }
 
     private void ReleaseEvents()
@@ -256,7 +257,6 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             portal.PortalActivated -= PortalActivated;
             portal.PortalDeActivatedEvent -= PortalDeActivated;
-            portal.OffroadDriveEndEvent -= OffroadDriveEnd;
         }
     }
 
@@ -314,18 +314,5 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private void PortalDeActivated()
     {
         PortalDeActivatedEvent?.Invoke();
-    }
-
-    public void StartOffroadDrive()
-    {
-        if (portal != null)
-        {
-            portal.StartDrive(offroadDriveEndPoint);
-        }
-    }
-
-    public void OffroadDriveEnd()
-    {
-        OffroadDriveEndEvent?.Invoke();
     }
 }

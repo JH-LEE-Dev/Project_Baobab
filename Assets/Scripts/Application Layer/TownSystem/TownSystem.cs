@@ -15,7 +15,7 @@ public class TownSystem : MonoBehaviour
     private Character character;
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;
-
+    private TownProductionManager townProductionManager;
     private MapType selectedMapType;
     private ForestType selectedForestType;
 
@@ -31,7 +31,9 @@ public class TownSystem : MonoBehaviour
         townObjectManager = GetComponentInChildren<TownObjectManager>();
         logProcessingManager = GetComponentInChildren<LogProcessingManager>();
         tentManager = GetComponentInChildren<TentManager>();
+        townProductionManager = GetComponentInChildren<TownProductionManager>();
 
+        townProductionManager.Initialize(inputManager);
         townObjectManager.Initialize(environmentProvider, inputManager, characterInventory, offroadContainer);
         logProcessingManager.Initialize(inputManager);
         tentManager.Initialize(inputManager);
@@ -45,6 +47,7 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.Release();
         townObjectManager.Release();
         tentManager.Release();
+        townProductionManager.Release();
 
         ReleaseEvents();
         UnSubscribeSignals();
@@ -55,8 +58,13 @@ public class TownSystem : MonoBehaviour
         CollisionSystem.Instance?.ClearAll();
         townObjectManager.ReadyObj();
 
+        if (townProductionManager.offroadVehicleObj == null)
+        {
+            townProductionManager.Offroad_DI(townObjectManager.portal);
+        }
+
         if (_sceneChangeData.prevScene == SceneType.DungeonScene)
-            signalHub.Publish(new TownStartedSignal(townObjectManager.GetPortalTransform()));
+            signalHub.Publish(new TownStartedSignal(townObjectManager.GetTownReturnPoint()));
         else
             signalHub.Publish(new TownStartedSignal(townStartPoint));
 
@@ -86,8 +94,8 @@ public class TownSystem : MonoBehaviour
         townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
         townObjectManager.PortalDeActivatedEvent += PortalDeActivated;
 
-        townObjectManager.OffroadDriveEndEvent -= OffroadDriveEnd;
-        townObjectManager.OffroadDriveEndEvent += OffroadDriveEnd;
+        townProductionManager.OffroadDriveEndEvent -= OffroadDriveEnd;
+        townProductionManager.OffroadDriveEndEvent += OffroadDriveEnd;
     }
 
     private void ReleaseEvents()
@@ -99,7 +107,7 @@ public class TownSystem : MonoBehaviour
         tentManager.TentInteractEvent -= TentInteract;
         logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
         townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
-        townObjectManager.OffroadDriveEndEvent -= OffroadDriveEnd;
+        townProductionManager.OffroadDriveEndEvent -= OffroadDriveEnd;
     }
 
     private void SubscribeSignals()
@@ -156,7 +164,8 @@ public class TownSystem : MonoBehaviour
     {
         selectedMapType = dungeonSelectedSignal.type;
         selectedForestType = dungeonSelectedSignal.forestType;
-        townObjectManager.StartOffroadDrive();
+
+        townProductionManager.StartDrive();
     }
 
     private void logContainerSpecChanged()
@@ -173,6 +182,7 @@ public class TownSystem : MonoBehaviour
     {
         character = _signal.character;
         logProcessingManager.SetCharTransform(character.centerTransform);
+        townProductionManager.Character_DI(character);
     }
 
     private void TeleportUIClosed(TeleportUIClosedSignal _teleportUIClosedSignal)

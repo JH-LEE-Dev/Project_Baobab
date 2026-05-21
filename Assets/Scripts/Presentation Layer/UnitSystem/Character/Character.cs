@@ -75,6 +75,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private CustomSortable customSortable;
 
+    private float visualHeight = 0f;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -177,6 +179,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void SetInShadow(bool _isInShadow, float _duration)
     {
         characterVisualComponent.SetInShadow(_isInShadow, _duration);
+    }
+
+    public void SetHeight(float _height)
+    {
+        visualHeight = _height;
     }
 
     #endregion
@@ -341,7 +348,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         currentGroundData = environmentProvider.groundDataProvider.GetGroundPhysicsData(transform.position);
         stateMachine?.FixedUpdate();
 
-        customSortable.SetHeight(0);
+        customSortable.SetHeight(visualHeight);
     }
 
     private void OnDestroy()

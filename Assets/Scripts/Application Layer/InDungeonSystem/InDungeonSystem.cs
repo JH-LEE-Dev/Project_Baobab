@@ -11,6 +11,8 @@ public class InDungeonSystem : MonoBehaviour
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;
 
+    private Character character;
+
 
     [Header("Dungeon Data Base")]
     [SerializeField] private DungeonValueDataBase dungeonDataBase;
@@ -54,6 +56,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType), currentForestType));
         inDungeonObjectManager.SetDungeonData(dungeonDataBase.GetDungeonData(currentMapType));
         inDungeonObjectManager.SetupItemManagerCulling();
+
+        
     }
 
     private void BindEvents()
@@ -123,6 +127,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.SpawnAnimals();
 
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
+
+        character.gameObject.SetActive(true);
     }
 
     private void ItemAcquired(Item _item)
@@ -178,6 +184,7 @@ public class InDungeonSystem : MonoBehaviour
 
     private void CharacterSpawned(CharacterSpawnedSignal _characterSpawnedSignal)
     {
+        character = _characterSpawnedSignal.character;
         inDungeonObjectManager.SetCharacter(_characterSpawnedSignal.character);
     }
 }
