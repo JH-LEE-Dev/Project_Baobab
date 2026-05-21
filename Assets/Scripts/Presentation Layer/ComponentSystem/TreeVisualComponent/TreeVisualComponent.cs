@@ -430,15 +430,29 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
-    public void SetAlpha(float _alpha)
-    {
-        topRenderer.DOKill();
-        bottomRenderer.DOKill();
-        if (topShadowRenderer != null) topShadowRenderer.DOKill();
-        if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
-        if (topOnWaterSR != null) topOnWaterSR.DOKill();
-        if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
+    private bool isOutlineActive = false;
 
+    private void SyncColorToMaterialPropertyBlock()
+    {
+        if (!isOutlineActive || mpb == null) return;
+
+        if (topRenderer != null)
+        {
+            topRenderer.GetPropertyBlock(mpb);
+            mpb.SetColor(baseColorID, topRenderer.color);
+            topRenderer.SetPropertyBlock(mpb);
+        }
+
+        if (bottomRenderer != null)
+        {
+            bottomRenderer.GetPropertyBlock(mpb);
+            mpb.SetColor(baseColorID, bottomRenderer.color);
+            bottomRenderer.SetPropertyBlock(mpb);
+        }
+    }
+
+    private void ApplyAlpha(float _alpha)
+    {
         Color topColor = topRenderer.color;
         topColor.a = _alpha;
         topRenderer.color = topColor;
@@ -474,39 +488,45 @@ public class TreeVisualComponent : MonoBehaviour
             bowColor.a = _alpha;
             bottomOnWaterSR.color = bowColor;
         }
+
+        SyncColorToMaterialPropertyBlock();
+    }
+
+    public void SetAlpha(float _alpha)
+    {
+        this.DOKill(this); // 현재 스크립트 기반 float 트윈 정지
+
+        topRenderer.DOKill();
+        bottomRenderer.DOKill();
+        if (topShadowRenderer != null) topShadowRenderer.DOKill();
+        if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
+        if (topOnWaterSR != null) topOnWaterSR.DOKill();
+        if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
+
+        ApplyAlpha(_alpha);
     }
 
     public void FadeAlpha(float _targetAlpha, float _duration)
     {
+        this.DOKill(this); // 기존 트윈 취소
+        
         topRenderer.DOKill();
         bottomRenderer.DOKill();
-        topRenderer.DOFade(_targetAlpha, _duration);
-        bottomRenderer.DOFade(_targetAlpha, _duration);
+        if (topShadowRenderer != null) topShadowRenderer.DOKill();
+        if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
+        if (topOnWaterSR != null) topOnWaterSR.DOKill();
+        if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
 
-        if (topShadowRenderer != null)
-        {
-            topShadowRenderer.DOKill();
-            topShadowRenderer.DOFade(_targetAlpha, _duration);
-        }
-        if (bottomShadowRenderer != null)
-        {
-            bottomShadowRenderer.DOKill();
-            bottomShadowRenderer.DOFade(_targetAlpha, _duration);
-        }
-        if (topOnWaterSR != null)
-        {
-            topOnWaterSR.DOKill();
-            topOnWaterSR.DOFade(_targetAlpha, _duration);
-        }
-        if (bottomOnWaterSR != null)
-        {
-            bottomOnWaterSR.DOKill();
-            bottomOnWaterSR.DOFade(_targetAlpha, _duration);
-        }
+        float startAlpha = topRenderer.color.a;
+
+        DOTween.To(() => startAlpha, x => {
+            ApplyAlpha(x);
+        }, _targetAlpha, _duration).SetTarget(this);
     }
 
     public void SetOutline(bool _boolean)
     {
+        isOutlineActive = _boolean;
         if (mpb == null) mpb = new MaterialPropertyBlock();
 
         topRenderer.material = _boolean ? outLineMaterial : originalMaterial;
@@ -514,15 +534,7 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (_boolean)
         {
-            // 상단 렌더러 색상 전달
-            topRenderer.GetPropertyBlock(mpb);
-            mpb.SetColor(baseColorID, topRenderer.color);
-            topRenderer.SetPropertyBlock(mpb);
-
-            // 하단 렌더러 색상 전달
-            bottomRenderer.GetPropertyBlock(mpb);
-            mpb.SetColor(baseColorID, bottomRenderer.color);
-            bottomRenderer.SetPropertyBlock(mpb);
+            SyncColorToMaterialPropertyBlock();
         }
         else
         {

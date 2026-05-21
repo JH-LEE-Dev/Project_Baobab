@@ -98,7 +98,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         ctx.characterStat.speed = originalSpeed;
         DeclareAttackStateEvent?.Invoke(false);
 
-        if (bLeftButtonClicked)
+        if (bLeftButtonClicked && durability > 0f)
         {
             OnAttackStart();
         }
