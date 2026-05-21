@@ -45,6 +45,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private bool bCollisionEnabled = true;
 
+    private bool bInTown = true;
+
     public void Initialize(IInventory _characterInventory)
     {
         characterInventory = _characterInventory;
