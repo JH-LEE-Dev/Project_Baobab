@@ -21,6 +21,13 @@ Shader "Custom/TreeOutlineShader"
         ZWrite Off
         Cull Off
 
+        Stencil
+        {
+            Ref 16
+            Comp NotEqual
+            Pass Keep
+        }
+
         Pass
         {
             HLSLPROGRAM
