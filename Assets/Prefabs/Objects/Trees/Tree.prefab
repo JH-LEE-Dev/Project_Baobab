@@ -535,6 +535,8 @@ MonoBehaviour:
   outlineVisualObj: {fileID: 2994185910018889447}
   outlineTopTransform: {fileID: 3212163163668593646}
   baseVisualObj: {fileID: 3309576156863803684}
+  outlineStencilMaterial: {fileID: 2100000, guid: 7269b25f5e470444eb535d06ad55c0d5, type: 2}
+  originalMaterial: {fileID: 2100000, guid: b67fe07a84e38264994e6c435bb30cc5, type: 2}
 --- !u!114 &3142599335365549467
 MonoBehaviour:
   m_ObjectHideFlags: 0

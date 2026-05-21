@@ -69,8 +69,9 @@ public class TreeVisualComponent : MonoBehaviour
     public GameObject baseVisualObj;
 
     private bool isOutlineActive = false;
-    private MaterialPropertyBlock mpb;
-    private static readonly int StencilRefProperty = Shader.PropertyToID("_StencilRef");
+
+    public Material outlineStencilMaterial;
+    public Material originalMaterial;
 
     #endregion
 
@@ -568,27 +569,16 @@ public class TreeVisualComponent : MonoBehaviour
             outlineVisualObj.SetActive(_boolean);
         }
 
-        if (mpb == null)
+        if(_boolean == true)
         {
-            mpb = new MaterialPropertyBlock();
+            bottomRenderer.material = outlineStencilMaterial;
+            topRenderer.material = outlineStencilMaterial;
         }
-
-        float stencilValue = _boolean ? 16f : 0f;
-
-        ApplyStencilRefToRenderer(topRenderer, stencilValue);
-        ApplyStencilRefToRenderer(bottomRenderer, stencilValue);
-    }
-
-    private void ApplyStencilRefToRenderer(SpriteRenderer _renderer, float _stencilValue)
-    {
-        if (_renderer == null)
+        else
         {
-            return;
+            bottomRenderer.material = originalMaterial;
+            topRenderer.material = originalMaterial;
         }
-
-        _renderer.GetPropertyBlock(mpb);
-        mpb.SetFloat(StencilRefProperty, _stencilValue);
-        _renderer.SetPropertyBlock(mpb);
     }
 
     #endregion
