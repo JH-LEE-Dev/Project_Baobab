@@ -16,9 +16,11 @@ public class UIView_Unit : UIView
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject hpBarPrefab;
     [SerializeField] private GameObject interactionUnitPrefab;
+    [SerializeField] private GameObject speechBubbleUnitPrefab;
 
     [Header("Offset Settings")]
-    [SerializeField] private Vector2 characterYOffset = new Vector2(0.0f, 1.5f);
+    [SerializeField] private Vector2 interactionYOffset = new Vector2(0.0f, 0.75f);
+    [SerializeField] private Vector2 speechBubbleYOffset = new Vector2(0.0f, 0.5f);
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
@@ -32,6 +34,7 @@ public class UIView_Unit : UIView
 
 
     private UI_InteractionUnit interactionUnit;
+    private UI_SpeechBubble speechBubble;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -43,6 +46,7 @@ public class UIView_Unit : UIView
 
         InitHPBarPool();
         InitInteractionUnit();
+        InitSpeechBubbleUnit();
     }
 
     public void SetCharacter(ICharacter _character)
@@ -51,7 +55,8 @@ public class UIView_Unit : UIView
 
         if (null != character)
         {
-            interactionUnit?.SetTarget(character.GetTransform(), characterYOffset);
+            interactionUnit?.SetTarget(character.GetTransform(), interactionYOffset);
+            speechBubble?.SetTarget(character.GetTransform(), speechBubbleYOffset);
         }
     }
 
@@ -107,6 +112,20 @@ public class UIView_Unit : UIView
         {
             interactionUnit.Initialize();
             interactionUnit.HideInteraction();
+        }
+    }
+
+    private void InitSpeechBubbleUnit()
+    {
+        if (null == speechBubbleUnitPrefab)
+            return;
+
+        speechBubble = Instantiate(speechBubbleUnitPrefab, uiRoot.transform).GetComponent<UI_SpeechBubble>();
+
+        if (null != speechBubble)
+        {
+            speechBubble.Initialize();
+            speechBubble.Hide();
         }
     }
 
@@ -219,6 +238,8 @@ public class UIView_Unit : UIView
         {
             if (null != interactionUnit)
                 interactionUnit.ShowInteraction();
+
+            speechBubble?.Play("이건 원목보관함이야\n<로컬라이징 해야 돼>", 3.5f);
         }
         else
         {
@@ -233,6 +254,8 @@ public class UIView_Unit : UIView
         {
             if (null != interactionUnit)
                 interactionUnit.ShowInteraction();
+
+            speechBubble?.Play("이건 차량보관함이야\n<로컬라이징 해야 돼>", 3.5f);
         }
         else
         {

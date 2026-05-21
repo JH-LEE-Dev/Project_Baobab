@@ -1,16 +1,24 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 //using PresentationLayer.UISystem.UIView.HUD.Common; // HUD_ProgressBar 등 공통 UI 요소 네임스페이스 가정
 
 namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
     public class HUD_EquipmentAxe : HUD_EquipmentItem
     {
+        private enum AxeMode { DB100, DB75, DB50, DB25, ZERO }
+
+        [Header("Images")]
+        [SerializeField] List<Sprite> axeImages;
+
         // //외부 의존성
         [Header("Axe Specific UI")]
+        [SerializeField] private Image axeImage; // 도끼 이미지
         [SerializeField] private HUD_ProgressBar axeGaugeBar; // 도끼 특수 게이지 바
-        [SerializeField] private GameObject gaugeOutline;
 
         // //내부 의존성
+        private AxeMode axeMode = AxeMode.DB100;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -31,8 +39,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         protected override void UpdateVisuals()
         {
             base.UpdateVisuals();
-
-            gaugeOutline?.SetActive(isActive);
         }
 
         /// <summary>
@@ -45,8 +51,27 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 return;
 
             axeGaugeBar.UpdateValue(_ratio);
+            UpdateAxeImage(_ratio);
         }
 
+        private void UpdateAxeImage(float _ratio)
+        {
+            if (null == axeImages || null == axeImage)
+                return;
+
+            if (_ratio > 0.75f)
+                axeMode = AxeMode.DB100;
+            else if (_ratio > 0.5f)
+                axeMode = AxeMode.DB75;
+            else if (_ratio > 0.25f)
+                axeMode = AxeMode.DB50;
+            else if (_ratio > 0.0f)
+                axeMode = AxeMode.DB25;
+            else
+                axeMode = AxeMode.ZERO;
+
+            axeImage.sprite = axeImages[(int)axeMode];
+        }
         // //유니티 이벤트 함수
     }
 }

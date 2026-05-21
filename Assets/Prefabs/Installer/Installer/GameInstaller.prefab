@@ -1751,9 +1751,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UnitLogicManager
   staminaData:
   - forestType: 2
-    decAmount: 4
+    decAmount: 2
   - forestType: 3
-    decAmount: 8
+    decAmount: 4
   - forestType: 4
     decAmount: 12
 --- !u!114 &8919172322634990837
