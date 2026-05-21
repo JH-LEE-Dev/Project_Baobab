@@ -566,7 +566,7 @@ MonoBehaviour:
   backwardEase: 0
   resetOnValidateInPlayMode: 1
   valueSettings:
-    startOffset: {x: 0, y: 0}
+    startOffset: {x: 0, y: -10}
     endOffset: {x: 0, y: 0}
     useFade: 1
     startAlpha: 0

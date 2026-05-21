@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -19,7 +18,10 @@ public class UI_SpeechBubble : MonoBehaviour
     private Transform targetTransform;
     private RectTransform rootRect;
     private Vector2 offset;
-    private Coroutine playCoroutine;
+
+    private float playDuration;
+    private float playTimer;
+    private bool isPlaying;
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize()
@@ -55,18 +57,17 @@ public class UI_SpeechBubble : MonoBehaviour
         if (null == motionPlayer)
             return;
 
-        motionPlayer.Play(impactTag, bReset: true);
+        motionPlayer.PlayBackward(absolTag, bReset: true);
     }
 
     public void Play(string _text, float _duration = 3f)
     {
-        if (null != playCoroutine)
-        {
-            StopCoroutine(playCoroutine);
-        }
-
-        playCoroutine = StartCoroutine(PlayRoutine(_duration));
         SetText(_text);
+        Show();
+
+        playDuration = _duration;
+        playTimer = 0f;
+        isPlaying = true;
     }
 
     public void UpdateLayout()
@@ -87,12 +88,16 @@ public class UI_SpeechBubble : MonoBehaviour
 
     // 유니티 이벤트 함수
 
-    private void OnDisable()
+    private void Update()
     {
-        if (null != playCoroutine)
+        if (false == isPlaying)
+            return;
+
+        playTimer += Time.deltaTime;
+        if (playTimer >= playDuration)
         {
-            StopCoroutine(playCoroutine);
-            playCoroutine = null;
+            Hide();
+            isPlaying = false;
         }
     }
 
@@ -105,20 +110,5 @@ public class UI_SpeechBubble : MonoBehaviour
         newPos += offset;
 
         rootRect.position = newPos;
-    }
-
-    private IEnumerator PlayRoutine(float _duration)
-    {
-        Show();
-
-        float timer = 0f;
-        while (timer < _duration)
-        {
-            timer += Time.deltaTime;
-            yield return null;
-        }
-
-        Hide();
-        playCoroutine = null;
     }
 }
