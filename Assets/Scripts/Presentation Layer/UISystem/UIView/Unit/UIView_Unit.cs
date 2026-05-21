@@ -19,7 +19,8 @@ public class UIView_Unit : UIView
     [SerializeField] private GameObject speechBubbleUnitPrefab;
 
     [Header("Offset Settings")]
-    [SerializeField] private Vector2 characterYOffset = new Vector2(0.0f, 1.5f);
+    [SerializeField] private Vector2 interactionYOffset = new Vector2(0.0f, 0.75f);
+    [SerializeField] private Vector2 speechBubbleYOffset = new Vector2(0.0f, 0.5f);
     [SerializeField] private float treesYOffset = 1.5f;
     [SerializeField] private float animalsYOffset = 1.5f;
 
@@ -54,8 +55,8 @@ public class UIView_Unit : UIView
 
         if (null != character)
         {
-            interactionUnit?.SetTarget(character.GetTransform(), characterYOffset);
-            speechBubble?.SetTarget(character.GetTransform(), characterYOffset);
+            interactionUnit?.SetTarget(character.GetTransform(), interactionYOffset);
+            speechBubble?.SetTarget(character.GetTransform(), speechBubbleYOffset);
         }
     }
 
