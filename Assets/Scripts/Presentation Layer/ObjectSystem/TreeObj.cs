@@ -57,15 +57,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     private bool bWaterNearBy = false;
     private bool bTreeShadowSet = false;
 
-    public Material outlineMaterial;
-
     private CustomSortable customSortable;
 
     //For Shadow
     float shadowAngle;
     float shadowScaleY;
     bool isShadowActive;
-
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -89,7 +86,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (treeVisualComponent != null)
         {
-            treeVisualComponent.Initialize(topShadowObject.transform, outlineMaterial, customSortable);
+            treeVisualComponent.Initialize(topShadowObject.transform, customSortable);
         }
 
         BindEvents();

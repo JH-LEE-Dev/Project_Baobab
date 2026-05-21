@@ -19,6 +19,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomShadowRenderer;
     [SerializeField] private SpriteRenderer topOnWaterSR;
     [SerializeField] private SpriteRenderer bottomOnWaterSR;
+    [SerializeField] private SpriteRenderer topOutlineSR;
+    [SerializeField] private SpriteRenderer bottomOutlineSR;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites;
@@ -38,6 +40,10 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private float swayDetailSpeed = 1.45f;
     [SerializeField] private float swayDetailWeight = 0.35f;
 
+    [Header("Outline")]
+    [SerializeField] private GameObject outlineVisualObj;
+    [SerializeField] private Transform outlineTopTransform;
+
     #endregion
 
     #region Private Fields
@@ -50,19 +56,21 @@ public class TreeVisualComponent : MonoBehaviour
     private Quaternion topRendererBaseLocalRotation;
     private Vector3 topShadowBaseLocalPosition;
     private Quaternion topShadowBaseLocalRotation;
-    private Material outLineMaterial;
-    private Material originalMaterial;
+    
+    private Vector3 outlineTopBaseLocalPosition;
+    private Quaternion outlineTopBaseLocalRotation;
 
     private float swayPhase;
     private bool isOnWaterActive = false;
     private bool bOnWaterOrderSet = false;
 
-    private MaterialPropertyBlock mpb;
-    private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
-
     private Color firstIndexBottomColor;
     private CustomSortable customSortable;
     public GameObject baseVisualObj;
+
+    private bool isOutlineActive = false;
+    private MaterialPropertyBlock mpb;
+    private static readonly int StencilRefProperty = Shader.PropertyToID("_StencilRef");
 
     #endregion
 
@@ -108,7 +116,7 @@ public class TreeVisualComponent : MonoBehaviour
 
     #region Initialize
 
-    public void Initialize(Transform _topShadowTransform, Material _outLineMaterial, CustomSortable _customSortable)
+    public void Initialize(Transform _topShadowTransform, CustomSortable _customSortable)
     {
         if (cachedTransform == null) cachedTransform = transform;
         if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
@@ -117,8 +125,6 @@ public class TreeVisualComponent : MonoBehaviour
         CacheSwayBasePose();
         ResetVisualState();
 
-        originalMaterial = topRenderer.material;
-        outLineMaterial = _outLineMaterial;
         customSortable = _customSortable;
 
         if (customSortable != null)
@@ -306,6 +312,14 @@ public class TreeVisualComponent : MonoBehaviour
                 topOnWaterSR.sprite = topRenderer.sprite;
                 topOnWaterSR.color = topRenderer.color;
             }
+            
+            if (topOutlineSR != null)
+            {
+                topOutlineSR.sprite = topRenderer.sprite;
+                Color outlineColor = topOutlineSR.color;
+                outlineColor.a = topRenderer.color.a;
+                topOutlineSR.color = outlineColor;
+            }
         }
 
         if (bottomRenderer != null)
@@ -320,6 +334,14 @@ public class TreeVisualComponent : MonoBehaviour
             {
                 bottomOnWaterSR.sprite = bottomRenderer.sprite;
                 bottomOnWaterSR.color = bottomRenderer.color;
+            }
+            
+            if (bottomOutlineSR != null)
+            {
+                bottomOutlineSR.sprite = bottomRenderer.sprite;
+                Color outlineColor = bottomOutlineSR.color;
+                outlineColor.a = bottomRenderer.color.a;
+                bottomOutlineSR.color = outlineColor;
             }
         }
     }
@@ -385,6 +407,12 @@ public class TreeVisualComponent : MonoBehaviour
             topShadowBaseLocalRotation = topShadowTransform.localRotation;
         }
 
+        if (outlineTopTransform != null)
+        {
+            outlineTopBaseLocalPosition = outlineTopTransform.localPosition;
+            outlineTopBaseLocalRotation = outlineTopTransform.localRotation;
+        }
+
         swayPhase = Random.Range(0f, Mathf.PI * 2f);
     }
 
@@ -412,6 +440,12 @@ public class TreeVisualComponent : MonoBehaviour
             topShadowTransform.localPosition = topShadowBaseLocalPosition + swayOffset;
             topShadowTransform.localRotation = topShadowBaseLocalRotation * swayRotation;
         }
+
+        if (isOutlineActive && outlineTopTransform != null)
+        {
+            outlineTopTransform.localPosition = outlineTopBaseLocalPosition + swayOffset;
+            outlineTopTransform.localRotation = outlineTopBaseLocalRotation * swayRotation;
+        }
     }
 
     // 바람 흔들림을 제거하고 상단 스프라이트를 저장된 기본 포즈로 되돌린다.
@@ -428,26 +462,11 @@ public class TreeVisualComponent : MonoBehaviour
             topShadowTransform.localPosition = topShadowBaseLocalPosition;
             topShadowTransform.localRotation = topShadowBaseLocalRotation;
         }
-    }
 
-    private bool isOutlineActive = false;
-
-    private void SyncColorToMaterialPropertyBlock()
-    {
-        if (!isOutlineActive || mpb == null) return;
-
-        if (topRenderer != null)
+        if (outlineTopTransform != null)
         {
-            topRenderer.GetPropertyBlock(mpb);
-            mpb.SetColor(baseColorID, topRenderer.color);
-            topRenderer.SetPropertyBlock(mpb);
-        }
-
-        if (bottomRenderer != null)
-        {
-            bottomRenderer.GetPropertyBlock(mpb);
-            mpb.SetColor(baseColorID, bottomRenderer.color);
-            bottomRenderer.SetPropertyBlock(mpb);
+            outlineTopTransform.localPosition = outlineTopBaseLocalPosition;
+            outlineTopTransform.localRotation = outlineTopBaseLocalRotation;
         }
     }
 
@@ -488,8 +507,20 @@ public class TreeVisualComponent : MonoBehaviour
             bowColor.a = _alpha;
             bottomOnWaterSR.color = bowColor;
         }
+        
+        if (topOutlineSR != null)
+        {
+            Color oTopColor = topOutlineSR.color;
+            oTopColor.a = _alpha;
+            topOutlineSR.color = oTopColor;
+        }
 
-        SyncColorToMaterialPropertyBlock();
+        if (bottomOutlineSR != null)
+        {
+            Color oBotColor = bottomOutlineSR.color;
+            oBotColor.a = _alpha;
+            bottomOutlineSR.color = oBotColor;
+        }
     }
 
     public void SetAlpha(float _alpha)
@@ -502,6 +533,8 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
         if (topOnWaterSR != null) topOnWaterSR.DOKill();
         if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
+        if (topOutlineSR != null) topOutlineSR.DOKill();
+        if (bottomOutlineSR != null) bottomOutlineSR.DOKill();
 
         ApplyAlpha(_alpha);
     }
@@ -516,6 +549,8 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomShadowRenderer != null) bottomShadowRenderer.DOKill();
         if (topOnWaterSR != null) topOnWaterSR.DOKill();
         if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
+        if (topOutlineSR != null) topOutlineSR.DOKill();
+        if (bottomOutlineSR != null) bottomOutlineSR.DOKill();
 
         float startAlpha = topRenderer.color.a;
 
@@ -527,22 +562,35 @@ public class TreeVisualComponent : MonoBehaviour
     public void SetOutline(bool _boolean)
     {
         isOutlineActive = _boolean;
-        if (mpb == null) mpb = new MaterialPropertyBlock();
 
-        topRenderer.material = _boolean ? outLineMaterial : originalMaterial;
-        bottomRenderer.material = _boolean ? outLineMaterial : originalMaterial;
+        if (outlineVisualObj != null)
+        {
+            outlineVisualObj.SetActive(_boolean);
+        }
 
-        if (_boolean)
+        if (mpb == null)
         {
-            SyncColorToMaterialPropertyBlock();
+            mpb = new MaterialPropertyBlock();
         }
-        else
+
+        float stencilValue = _boolean ? 16f : 0f;
+
+        ApplyStencilRefToRenderer(topRenderer, stencilValue);
+        ApplyStencilRefToRenderer(bottomRenderer, stencilValue);
+    }
+
+    private void ApplyStencilRefToRenderer(SpriteRenderer _renderer, float _stencilValue)
+    {
+        if (_renderer == null)
         {
-            // 아웃라인 해제 시 PropertyBlock 초기화
-            topRenderer.SetPropertyBlock(null);
-            bottomRenderer.SetPropertyBlock(null);
+            return;
         }
+
+        _renderer.GetPropertyBlock(mpb);
+        mpb.SetFloat(StencilRefProperty, _stencilValue);
+        _renderer.SetPropertyBlock(mpb);
     }
 
     #endregion
 }
+

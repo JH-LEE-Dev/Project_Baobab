@@ -1,4 +1,4 @@
-Shader "Universal Render Pipeline/2D/Sprite-Lit-Default"
+Shader "Custom/2D/Custom-Sprite-Default"
 {
     Properties
     {
@@ -17,6 +17,13 @@ Shader "Universal Render Pipeline/2D/Sprite-Lit-Default"
     SubShader
     {
         Tags {"Queue" = "Transparent" "RenderType" = "Transparent" "RenderPipeline" = "UniversalPipeline" }
+
+        Stencil
+        {
+            Ref 16
+            Comp Always       // 테스트는 무조건 통과하고
+            Pass Replace      // 기존 값을 16으로 덮어쓴다(Write)
+        }
 
         Blend SrcAlpha OneMinusSrcAlpha, One OneMinusSrcAlpha
         Cull Off
@@ -94,7 +101,9 @@ Shader "Universal Render Pipeline/2D/Sprite-Lit-Default"
                     input.uv += uvDelta;
                 }
 
-                return CommonLitFragment(input, input.color);
+                half4 color = CommonLitFragment(input, input.color);
+                clip(color.a - 0.01);
+                return color;
             }
             ENDHLSL
         }
@@ -168,7 +177,9 @@ Shader "Universal Render Pipeline/2D/Sprite-Lit-Default"
                     input.uv += uvDelta;
                 }
 
-                return CommonNormalsFragment(input, input.color);
+                half4 color = CommonNormalsFragment(input, input.color);
+                clip(color.a - 0.01);
+                return color;
             }
             ENDHLSL
         }
