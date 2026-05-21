@@ -156,6 +156,15 @@ public enum SkillType
     FatigueMaxIncrease3, // 피로도 최대치 증가3
 
     SourceOfSpeed1, // 속도의 원천
+
+    WoodenTransportBoxExpansion1,  // 운반상자확장1
+    WoodenTransportBoxExpansion2,   //  운반상자확장2
+    LogValue2, // 원목가치2
+
+    Shockwave2, //충격파2
+    ShockwaveDamage2, //충격파데미지2
+    ShockwaveRange2, // 충격파 범위2
+
     MAX
 }
 
