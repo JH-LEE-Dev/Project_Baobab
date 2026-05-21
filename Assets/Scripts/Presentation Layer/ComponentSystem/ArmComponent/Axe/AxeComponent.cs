@@ -7,6 +7,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public event Action<bool> DeclareCanSwapEvent;
     public event Action<bool> DeclareAttackStateEvent;
     public event Action AttackEvent;
+    public event Action DurabilityEmptyEvent;
 
     // 내부 의존성
     private AxeAnimation axeAnimation;
@@ -109,7 +110,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             durability -= ctx.characterStat.axeDurabilityDecAmount;
 
         if (durability < 0f)
+        {
             durability = 0f;
+            DurabilityEmptyEvent?.Invoke();
+        }
 
         AxeAttackedEvent?.Invoke();
     }

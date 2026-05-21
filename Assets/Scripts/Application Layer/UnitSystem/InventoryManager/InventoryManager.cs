@@ -8,6 +8,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public event Action SpendMoneyEvent;
     public event Action InventorySpecChangedEvent;
     public event Action LoosAllInventoryItemEvent;
+    public event Action InventoryIsFullEvent;
 
     // 내부 의존성
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
@@ -136,7 +137,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             }
         }
 
-        // TODO: 인벤토리가 가득 찼을 때의 처리 (아이템 획득 불가 등)
+        // 인벤토리가 가득 찼을 때의 처리
+        InventoryIsFullEvent?.Invoke();
     }
 
 

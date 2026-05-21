@@ -347,9 +347,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
-        // 1. 플레이어 스폰 위치를 맵의 중앙(안전 구역의 정중앙)으로 설정
+        // 1. 플레이어 스폰 위치를 맵의 중앙(안전 구역의 정중앙)에서 한 칸 아래로 설정
         int centerX = width / 2;
-        int centerY = height / 2;
+        int centerY = (height / 2);
         playerIdx = centerX + centerY * width;
 
         if (playerIdx < 0 || playerIdx >= size) playerIdx = 0;
@@ -361,6 +361,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (portalX >= width) portalX = width - 1;
 
         portalIdx = portalX + portalY * width;
+
+        //캐릭터 위치 좀 더 아래로 조정.
+        centerX = width / 2;
+        centerY = (height / 2) - 1;
+        playerIdx = centerX + centerY * width;
     }
 
     private void ApplyTiles()

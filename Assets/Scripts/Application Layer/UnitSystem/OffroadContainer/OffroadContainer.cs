@@ -9,6 +9,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
     public event Action SpecChangedEvent;
+    public event Action InventoryIsFullEvent { add { } remove { } }
 
     // 외부 의존성
     private IInventory characterInventory;
@@ -41,6 +42,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private Transform visualTransform;
     private float bounceTime = 1f;
     private const float BOUNCE_DURATION = 0.2f;
+
+    private bool bCollisionEnabled = true;
 
     public void Initialize(IInventory _characterInventory)
     {
@@ -443,6 +446,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void OnTriggerEnter2D(Collider2D _other)
     {
+        if (bCollisionEnabled == false)
+            return;
+
         if (_other.CompareTag(PLAYER_TAG))
         {
             InteractStateEvent?.Invoke(true);
@@ -456,6 +462,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void OnTriggerStay2D(Collider2D _other)
     {
+        if (bCollisionEnabled == false)
+            return;
+
         if (_other.CompareTag(PLAYER_TAG))
         {
             if (transferCoroutine == null)
@@ -467,6 +476,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void OnTriggerExit2D(Collider2D _other)
     {
+        if (bCollisionEnabled == false)
+            return;
+
         if (_other.CompareTag(PLAYER_TAG))
         {
             InteractStateEvent?.Invoke(false);
@@ -582,5 +594,19 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         ContainerUpdatedEvent?.Invoke();
         SpecChangedEvent?.Invoke();
+    }
+
+    public void DisableCollision()
+    {
+        InteractStateEvent?.Invoke(false);
+        bCollisionEnabled = false;
+
+        StopCoroutine(transferCoroutine);
+        transferCoroutine = null;
+    }
+
+    public void EnableCollision()
+    {
+        bCollisionEnabled = true;
     }
 }

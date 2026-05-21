@@ -26,7 +26,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private Camera mainCam; // 최적화: 카메라 캐싱
 
     //내부 상태
-    private OffroadVehicleObj portal;
+    public OffroadVehicleObj portal { get; private set; }
     private TreeObj[] trees;
     public IReadOnlyList<TreeObj> Trees => trees;
 
@@ -40,6 +40,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;
+
+    [SerializeField] private Transform townReturnPoint;
 
 
     public float treeGrowTime = 10f;
@@ -118,6 +120,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     public Transform GetPortalTransform()
     {
         return portal.transform;
+    }
+
+    public Transform GetTownReturnPoint()
+    {
+        return townReturnPoint;
     }
 
     private void SetupCullingGroup()

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,4 +9,5 @@ public interface IInventory
     Transform GetTransform();
     long money { get; }
     long carrot { get; }
+    public event Action InventoryIsFullEvent;
 }
