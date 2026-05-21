@@ -91,6 +91,9 @@ public class UnitSystem
 
         offroadContainer.ContainerUpdatedEvent -= OffroadContainerUpdated;
         offroadContainer.ContainerUpdatedEvent += OffroadContainerUpdated;
+
+        inventoryManager.InventoryIsFullEvent -= InventoryIsFull;
+        inventoryManager.InventoryIsFullEvent += InventoryIsFull;
     }
 
     private void ReleaseEvents()
@@ -103,6 +106,7 @@ public class UnitSystem
         offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
         offroadContainer.ContainerUpdatedEvent -= OffroadContainerUpdated;
+        inventoryManager.InventoryIsFullEvent -= InventoryIsFull;
     }
 
     private void CharacterSpawned(Character _character)
@@ -210,5 +214,10 @@ public class UnitSystem
     private void OffroadContainerUpdated()
     {
         signalHub.Publish(new OffroadContainerUpdatedSignal());
+    }
+
+    private void InventoryIsFull()
+    {
+        signalHub.Publish(new InventoryIsFullSignal());
     }
 }

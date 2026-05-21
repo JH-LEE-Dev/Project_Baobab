@@ -263,4 +263,9 @@ public class UIView_Unit : UIView
                 interactionUnit.HideInteraction();
         }
     }
+
+    public void InventoryIsFull()
+    {
+        
+    }
 }
