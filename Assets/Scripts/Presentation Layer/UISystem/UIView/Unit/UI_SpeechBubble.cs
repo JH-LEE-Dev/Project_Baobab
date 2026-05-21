@@ -39,7 +39,7 @@ public class UI_SpeechBubble : MonoBehaviour
             return;
 
         speechText.text = _text;
-        //UpdateLayout();
+        UpdateLayout();
     }
 
     public void Show()
@@ -58,7 +58,7 @@ public class UI_SpeechBubble : MonoBehaviour
         motionPlayer.Play(impactTag, bReset: true);
     }
 
-    public void Play(float _duration)
+    public void Play(string _text, float _duration = 3f)
     {
         if (null != playCoroutine)
         {
@@ -66,6 +66,7 @@ public class UI_SpeechBubble : MonoBehaviour
         }
 
         playCoroutine = StartCoroutine(PlayRoutine(_duration));
+        SetText(_text);
     }
 
     public void UpdateLayout()
