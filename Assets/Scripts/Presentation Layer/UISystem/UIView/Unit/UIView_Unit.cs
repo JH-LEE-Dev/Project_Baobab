@@ -239,7 +239,7 @@ public class UIView_Unit : UIView
             if (null != interactionUnit)
                 interactionUnit.ShowInteraction();
 
-            speechBubble?.Play("이건 원목보관함이야\n<로컬라이징 해야 돼>", 3.5f);
+            speechBubble?.Play(1, "이건 원목보관함이야\n<로컬라이징 해야 돼>", 3.5f);
         }
         else
         {
@@ -255,7 +255,7 @@ public class UIView_Unit : UIView
             if (null != interactionUnit)
                 interactionUnit.ShowInteraction();
 
-            speechBubble?.Play("이건 차량보관함이야\n<로컬라이징 해야 돼>", 3.5f);
+            speechBubble?.Play(2, "이건 차량보관함이야\n<로컬라이징 해야 돼>", 3.5f);
         }
         else
         {
