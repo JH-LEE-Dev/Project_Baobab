@@ -16,7 +16,10 @@ public class TownSystem : MonoBehaviour
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;
 
-    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager, 
+    private MapType selectedMapType;
+    private ForestType selectedForestType;
+
+    public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer)
     {
         inputManager = _inputManager;
@@ -82,6 +85,9 @@ public class TownSystem : MonoBehaviour
 
         townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
         townObjectManager.PortalDeActivatedEvent += PortalDeActivated;
+
+        townObjectManager.OffroadDriveEndEvent -= OffroadDriveEnd;
+        townObjectManager.OffroadDriveEndEvent += OffroadDriveEnd;
     }
 
     private void ReleaseEvents()
@@ -93,6 +99,7 @@ public class TownSystem : MonoBehaviour
         tentManager.TentInteractEvent -= TentInteract;
         logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
         townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
+        townObjectManager.OffroadDriveEndEvent -= OffroadDriveEnd;
     }
 
     private void SubscribeSignals()
@@ -147,8 +154,9 @@ public class TownSystem : MonoBehaviour
 
     private void DungeonSelected(DungeonSelectedSignal dungeonSelectedSignal)
     {
-        townObjectManager.ClearObjManager();
-        signalHub.Publish(new GoToDungeonSignal(dungeonSelectedSignal.type, dungeonSelectedSignal.forestType));
+        selectedMapType = dungeonSelectedSignal.type;
+        selectedForestType = dungeonSelectedSignal.forestType;
+        townObjectManager.StartOffroadDrive();
     }
 
     private void logContainerSpecChanged()
@@ -175,5 +183,11 @@ public class TownSystem : MonoBehaviour
     private void PortalDeActivated()
     {
         signalHub.Publish(new PortalDeActivatedSignal());
+    }
+
+    private void OffroadDriveEnd()
+    {
+        townObjectManager.ClearObjManager();
+        signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
     }
 }

@@ -1,10 +1,12 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 public class OffroadVehicleObj : MonoBehaviour
 {
     //이벤트
+    public event Action OffroadDriveEndEvent;
     public event Action PortalActivated;
     public event Action PortalDeActivatedEvent;
 
@@ -30,10 +32,23 @@ public class OffroadVehicleObj : MonoBehaviour
 
     [SerializeField] private GameObject outLineObject;
     [SerializeField] private GameObject baseObject;
+    [SerializeField] private GameObject wheelObject;
     [SerializeField] private GameObject containerObject;
+    [SerializeField] private GameObject visualObject;
+
+    [Header("Drive Settings")]
+    [SerializeField] private float acceleration = 5f;
+    [SerializeField] private float maxSpeed = 15f;
+    [SerializeField] private float shakeIntensity = 0.008f; // 떨림 세기 감소 (0.05 -> 0.02)
+    [SerializeField] private float ignitionDelay = 1.0f; // 시동 후 출발 전 대기 시간
+    [SerializeField] private float reachThreshold = 0.1f;
+
+    private Animator wheelAnimator;
 
     private CustomSortable customSortable;
     private CustomSortable customSortable_outline;
+
+    private Coroutine driveCoroutine;
 
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
@@ -61,11 +76,11 @@ public class OffroadVehicleObj : MonoBehaviour
         else
             offroadContainer.gameObject.SetActive(false);
 
-        customSortable = baseObject.GetComponent<CustomSortable>();
+        customSortable = visualObject.GetComponent<CustomSortable>();
         if (customSortable != null)
         {
             customSortable.Initialize(transform);
-            customSortable.SetSortingGroup(baseObject.GetComponentInChildren<SortingGroup>());
+            customSortable.SetSortingGroup(visualObject.GetComponentInChildren<SortingGroup>());
         }
 
         customSortable_outline = outLineObject.GetComponent<CustomSortable>();
@@ -73,6 +88,12 @@ public class OffroadVehicleObj : MonoBehaviour
         {
             customSortable_outline.Initialize(transform);
             customSortable_outline.SetSortingGroup(outLineObject.GetComponentInChildren<SortingGroup>());
+        }
+
+        if(wheelObject != null)
+        {
+            wheelAnimator = wheelObject.GetComponentInChildren<Animator>();
+            wheelAnimator.speed = 0;
         }
 
         BindEvents();
@@ -179,5 +200,80 @@ public class OffroadVehicleObj : MonoBehaviour
     {
         customSortable.ManualLateUpdate();
         customSortable_outline.ManualLateUpdate();
+    }
+
+    public void StartDrive(Transform _endPoint)
+    {
+        if (driveCoroutine != null)
+        {
+            StopCoroutine(driveCoroutine);
+        }
+
+        driveCoroutine = StartCoroutine(DriveRoutine(_endPoint));
+    }
+
+    private IEnumerator DriveRoutine(Transform _endPoint)
+    {
+        float currentSpeed = 0f;
+        Vector3 targetPosition = _endPoint.position;
+        Vector3 baseObjectInitialLocalPos = baseObject.transform.localPosition;
+
+        // 1. 시동 (약간의 대기 시간 동안 떨림 연출)
+        float elapsed = 0f;
+        while (elapsed < ignitionDelay)
+        {
+            float shakeX = UnityEngine.Random.Range(-shakeIntensity, shakeIntensity);
+            float shakeY = UnityEngine.Random.Range(-shakeIntensity, shakeIntensity);
+            baseObject.transform.localPosition = baseObjectInitialLocalPos + new Vector3(shakeX, shakeY, 0);
+            
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // 2. 가속 및 이동
+        while (Vector3.Distance(transform.position, targetPosition) > reachThreshold)
+        {
+            // 가속 로직
+            currentSpeed = Mathf.MoveTowards(currentSpeed, maxSpeed, acceleration * Time.deltaTime);
+            
+            // 루트 이동
+            transform.position = Vector3.MoveTowards(transform.position, targetPosition, currentSpeed * Time.deltaTime);
+
+            // 이동 중 떨림 효과 유지
+            float shakeX = UnityEngine.Random.Range(-shakeIntensity, shakeIntensity);
+            float shakeY = UnityEngine.Random.Range(-shakeIntensity, shakeIntensity);
+            baseObject.transform.localPosition = baseObjectInitialLocalPos + new Vector3(shakeX, shakeY, 0);
+
+            // 컨테이너 위치 동기화 (자식 객체가 아닌 경우 대응)
+            if (offroadContainer != null && containerObject != null)
+            {
+                offroadContainer.transform.position = containerObject.transform.position;
+            }
+
+            // 바퀴 애니메이션 속도 조절 (속도에 비례)
+            if (wheelAnimator != null)
+            {
+                wheelAnimator.speed = currentSpeed * 0.2f; // 주행 속도에 맞게 계수 조정
+            }
+
+            yield return null;
+        }
+
+        // 3. 목적지 도착 및 상태 초기화
+        transform.position = targetPosition;
+        baseObject.transform.localPosition = baseObjectInitialLocalPos;
+        
+        if (offroadContainer != null && containerObject != null)
+        {
+            offroadContainer.transform.position = containerObject.transform.position;
+        }
+
+        if (wheelAnimator != null)
+        {
+            wheelAnimator.speed = 0;
+        }
+
+        driveCoroutine = null;
+        OffroadDriveEndEvent?.Invoke();
     }
 }

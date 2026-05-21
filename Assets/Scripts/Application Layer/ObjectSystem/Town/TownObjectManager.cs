@@ -7,6 +7,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     //이벤트
     public event Action PortalActivatedEvent;
     public event Action PortalDeActivatedEvent;
+    public event Action OffroadDriveEndEvent;
 
     //외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -40,6 +41,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;
+
+    [SerializeField] private Transform offroadDriveEndPoint;
 
 
     public float treeGrowTime = 10f;
@@ -242,6 +245,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         portal.PortalDeActivatedEvent -= PortalDeActivated;
         portal.PortalDeActivatedEvent += PortalDeActivated;
+
+        portal.OffroadDriveEndEvent -= OffroadDriveEnd;
+        portal.OffroadDriveEndEvent += OffroadDriveEnd;
     }
 
     private void ReleaseEvents()
@@ -250,6 +256,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             portal.PortalActivated -= PortalActivated;
             portal.PortalDeActivatedEvent -= PortalDeActivated;
+            portal.OffroadDriveEndEvent -= OffroadDriveEnd;
         }
     }
 
@@ -307,5 +314,18 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private void PortalDeActivated()
     {
         PortalDeActivatedEvent?.Invoke();
+    }
+
+    public void StartOffroadDrive()
+    {
+        if (portal != null)
+        {
+            portal.StartDrive(offroadDriveEndPoint);
+        }
+    }
+
+    public void OffroadDriveEnd()
+    {
+        OffroadDriveEndEvent?.Invoke();
     }
 }

@@ -1391,6 +1391,7 @@ MonoBehaviour:
   portalSpawnPoint: {fileID: 4103959821245234347, guid: 4b288be7fa674804ab828020e0b795ce, type: 3}
   cullingDistance: 25
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
+  offroadDriveEndPoint: {fileID: 7909126257907575581, guid: 7b37f70e1b67e4040843e9414c6e3527, type: 3}
   treeGrowTime: 10
 --- !u!1 &6997225591927856054
 GameObject:
