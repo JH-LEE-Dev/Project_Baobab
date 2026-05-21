@@ -112,8 +112,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         if (durability < 0f)
         {
             durability = 0f;
-            DurabilityEmptyEvent?.Invoke();
         }
+
+        if (durability == 0f)
+            DurabilityEmptyEvent?.Invoke();
 
         AxeAttackedEvent?.Invoke();
     }
