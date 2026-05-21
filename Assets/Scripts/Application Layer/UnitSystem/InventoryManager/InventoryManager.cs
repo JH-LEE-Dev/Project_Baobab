@@ -110,6 +110,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         if (_item == null) return;
 
+        bool itemAdded = false;
+
         // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
         for (int i = 0; i < currentSlotCount; i++)
         {
@@ -118,26 +120,51 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
             {
                 inventorySlots[i].AddCount(_item);
-                return;
+                itemAdded = true;
+                break;
             }
         }
 
-        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
+        if (!itemAdded)
+        {
+            // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
+            for (int i = 0; i < currentSlotCount; i++)
+            {
+                if (inventorySlots[i].itemData == null)
+                {
+                    ItemData newData = GetFromPool(_item.itemType);
+                    if (newData != null)
+                    {
+                        newData.CopyFrom(_item);
+                        inventorySlots[i].Setup(newData, 1);
+                        itemAdded = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (itemAdded)
+        {
+            CheckInventoryFull();
+        }
+        else
+        {
+            // 인벤토리가 가득 찼을 때의 처리
+            InventoryIsFullEvent?.Invoke();
+        }
+    }
+
+    private void CheckInventoryFull()
+    {
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (inventorySlots[i].itemData == null)
+            if (inventorySlots[i].itemData == null || inventorySlots[i].totalCount < maxItemsPerSlot)
             {
-                ItemData newData = GetFromPool(_item.itemType);
-                if (newData != null)
-                {
-                    newData.CopyFrom(_item);
-                    inventorySlots[i].Setup(newData, 1);
-                }
                 return;
             }
         }
-
-        // 인벤토리가 가득 찼을 때의 처리
+        
         InventoryIsFullEvent?.Invoke();
     }
 
