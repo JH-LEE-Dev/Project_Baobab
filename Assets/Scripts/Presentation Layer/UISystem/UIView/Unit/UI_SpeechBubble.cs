@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -18,6 +19,7 @@ public class UI_SpeechBubble : MonoBehaviour
     private Transform targetTransform;
     private RectTransform rootRect;
     private Vector2 offset;
+    private Coroutine playCoroutine;
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize()
@@ -56,6 +58,16 @@ public class UI_SpeechBubble : MonoBehaviour
         motionPlayer.Play(impactTag, bReset: true);
     }
 
+    public void Play(float _duration)
+    {
+        if (null != playCoroutine)
+        {
+            StopCoroutine(playCoroutine);
+        }
+
+        playCoroutine = StartCoroutine(PlayRoutine(_duration));
+    }
+
     public void UpdateLayout()
     {
         if (null == bodyRect || null == tailRect)
@@ -74,6 +86,15 @@ public class UI_SpeechBubble : MonoBehaviour
 
     // 유니티 이벤트 함수
 
+    private void OnDisable()
+    {
+        if (null != playCoroutine)
+        {
+            StopCoroutine(playCoroutine);
+            playCoroutine = null;
+        }
+    }
+
     private void LateUpdate()
     {
         if (null == targetTransform || null == rootRect)
@@ -85,15 +106,18 @@ public class UI_SpeechBubble : MonoBehaviour
         rootRect.position = newPos;
     }
 
-    private void Awake()
+    private IEnumerator PlayRoutine(float _duration)
     {
-        if (null == bodyRect)
-            bodyRect = GetComponent<RectTransform>();
+        Show();
 
-        if (null == speechText)
-            speechText = GetComponentInChildren<TMP_Text>();
+        float timer = 0f;
+        while (timer < _duration)
+        {
+            timer += Time.deltaTime;
+            yield return null;
+        }
 
-        if (null == motionPlayer)
-            motionPlayer = GetComponent<ObjectMotionPlayer>();
+        Hide();
+        playCoroutine = null;
     }
 }

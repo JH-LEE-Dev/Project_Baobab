@@ -237,6 +237,8 @@ public class UIView_Unit : UIView
         {
             if (null != interactionUnit)
                 interactionUnit.ShowInteraction();
+
+            speechBubble?.Play(3.5f);
         }
         else
         {
