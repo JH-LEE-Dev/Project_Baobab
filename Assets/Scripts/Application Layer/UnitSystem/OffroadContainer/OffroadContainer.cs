@@ -9,6 +9,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
     public event Action SpecChangedEvent;
+    public event Action InventoryIsFullEvent { add { } remove { } }
 
     // 외부 의존성
     private IInventory characterInventory;

@@ -12,6 +12,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     public event Action<LogItemData> LogOutEvent;
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
+    public event Action InventoryIsFullEvent { add { } remove { } }
 
     private InputManager inputManager;
     private IInventory interactingContainer;
