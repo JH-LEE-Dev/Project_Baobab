@@ -16,6 +16,7 @@ public class UIView_Unit : UIView
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject hpBarPrefab;
     [SerializeField] private GameObject interactionUnitPrefab;
+    [SerializeField] private GameObject speechBubbleUnitPrefab;
 
     [Header("Offset Settings")]
     [SerializeField] private Vector2 characterYOffset = new Vector2(0.0f, 1.5f);
@@ -32,6 +33,7 @@ public class UIView_Unit : UIView
 
 
     private UI_InteractionUnit interactionUnit;
+    private UI_SpeechBubble speechBubble;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -43,6 +45,7 @@ public class UIView_Unit : UIView
 
         InitHPBarPool();
         InitInteractionUnit();
+        InitSpeechBubbleUnit();
     }
 
     public void SetCharacter(ICharacter _character)
@@ -52,6 +55,7 @@ public class UIView_Unit : UIView
         if (null != character)
         {
             interactionUnit?.SetTarget(character.GetTransform(), characterYOffset);
+            speechBubble?.SetTarget(character.GetTransform(), characterYOffset);
         }
     }
 
@@ -107,6 +111,20 @@ public class UIView_Unit : UIView
         {
             interactionUnit.Initialize();
             interactionUnit.HideInteraction();
+        }
+    }
+
+    private void InitSpeechBubbleUnit()
+    {
+        if (null == speechBubbleUnitPrefab)
+            return;
+
+        speechBubble = Instantiate(speechBubbleUnitPrefab, uiRoot.transform).GetComponent<UI_SpeechBubble>();
+
+        if (null != speechBubble)
+        {
+            speechBubble.Initialize();
+            speechBubble.Hide();
         }
     }
 
