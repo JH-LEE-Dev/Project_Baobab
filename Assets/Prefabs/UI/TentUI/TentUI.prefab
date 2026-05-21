@@ -229,6 +229,18 @@ MonoBehaviour:
   - skillType: 36
     sprite: {fileID: 21300000, guid: 26dd757095b3a0e449f2246bd91bbc0e, type: 3}
   - skillType: 37
+    sprite: {fileID: 21300000, guid: f800d2377b6de0c4d96e2dbcf8e5ff0e, type: 3}
+  - skillType: 38
+    sprite: {fileID: 21300000, guid: 6c3aba12e74d1de49b312f5b73dfda9a, type: 3}
+  - skillType: 39
+    sprite: {fileID: 21300000, guid: ea3acfe13b95429478b1a2a7cd71199c, type: 3}
+  - skillType: 40
+    sprite: {fileID: 21300000, guid: 5f3b771a445e1f542bc1a8cb0cb065a7, type: 3}
+  - skillType: 41
+    sprite: {fileID: 21300000, guid: d9d78735283b5d640b47f07cee8c2c3b, type: 3}
+  - skillType: 42
+    sprite: {fileID: 21300000, guid: a09469bd78acf354582908000affdea8, type: 3}
+  - skillType: 43
     sprite: {fileID: 0}
   lineSpriteBindings:
   - lineType: 0
@@ -1029,7 +1041,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1041,7 +1053,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6519470873578380521, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 23
       objectReference: {fileID: 0}
     - target: {fileID: 7123575607171026928, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchorMax.y

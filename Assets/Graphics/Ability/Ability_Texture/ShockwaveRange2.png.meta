@@ -1,13 +1,16 @@
 fileFormatVersion: 2
-guid: 9a9002fa8bd89714da94042e91a5b52d
+guid: a09469bd78acf354582908000affdea8
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3527030946190751243
-    second: AxeDamage3_0
+      213: 7683139641965561969
+    second: ShockwaveRange2_0
   - first:
-      213: 6598414281163138714
-    second: AxeDamage3_1
+      213: 5089098211360998076
+    second: ShockwaveRange2_1
+  - first:
+      213: -6005461927819339692
+    second: ShockwaveRange2_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -103,13 +106,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: AxeDamage3_0
+      name: ShockwaveRange2_0
       rect:
         serializedVersion: 2
-        x: 3
-        y: 18
-        width: 10
-        height: 10
+        x: 4
+        y: 4
+        width: 18
+        height: 26
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -118,20 +121,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b06728365f782f030800000000000000
-      internalID: 3527030946190751243
+      spriteID: 178441f1cceff9a60800000000000000
+      internalID: 7683139641965561969
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: AxeDamage3_1
+      name: ShockwaveRange2_1
       rect:
         serializedVersion: 2
-        x: 3
-        y: 3
-        width: 26
-        height: 24
+        x: 19
+        y: 20
+        width: 7
+        height: 8
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -140,8 +143,30 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a96e79d24d6429b50800000000000000
-      internalID: 6598414281163138714
+      spriteID: cb28f3b2cdb10a640800000000000000
+      internalID: 5089098211360998076
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShockwaveRange2_2
+      rect:
+        serializedVersion: 2
+        x: 19
+        y: 3
+        width: 10
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4581238e13058aca0800000000000000
+      internalID: -6005461927819339692
       vertices: []
       indices: 
       edges: []
@@ -160,8 +185,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      AxeDamage3_0: 3527030946190751243
-      AxeDamage3_1: 6598414281163138714
+      ShockwaveRange2_0: 7683139641965561969
+      ShockwaveRange2_1: 5089098211360998076
+      ShockwaveRange2_2: -6005461927819339692
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

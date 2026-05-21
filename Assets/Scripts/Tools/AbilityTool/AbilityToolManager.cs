@@ -216,6 +216,9 @@ public class AbilityToolManager : MonoBehaviour
         if (_node == null || abilityBackground == null)
             return;
 
+        bool shouldPlayShowMotion = currentToolTipNode != _node ||
+                                    toolTipInstance == null ||
+                                    toolTipInstance.gameObject.activeSelf == false;
         currentToolTipNode = _node;
         EnsureToolTipInstance();
         if (toolTipInstance == null)
@@ -225,10 +228,12 @@ public class AbilityToolManager : MonoBehaviour
         if (nodeRect == null)
             return;
 
+        string costText = BuildToolTipCostText(_node, out MoneyType costMoneyType);
         toolTipInstance.SetContent(
             BuildToolTipTitleAndLevelText(_node),
             _node.Description,
-            BuildToolTipCostText(_node));
+            costText,
+            costMoneyType);
 
         toolTipInstance.Show();
         Vector2 toolTipSize = toolTipInstance.GetSize();
@@ -257,6 +262,9 @@ public class AbilityToolManager : MonoBehaviour
         float y = nodeCenter.y;
 
         toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
+
+        if (shouldPlayShowMotion)
+            toolTipInstance.PlayShowMotion();
     }
 
     public void HideToolTip(AbilityToolNode _node)
@@ -283,16 +291,23 @@ public class AbilityToolManager : MonoBehaviour
         return $"{_node.DisplayName}\n레벨 : 0 / {Mathf.Max(_node.MaxLevel, 1)}";
     }
 
-    private string BuildToolTipCostText(AbilityToolNode _node)
+    private string BuildToolTipCostText(AbilityToolNode _node, out MoneyType _costMoneyType)
     {
         long moneyCost = AbilityNumberFormatter.RoundToLong(_node.MoneyCurve.Evaluate(1));
         long carrotCost = AbilityNumberFormatter.RoundToLong(_node.CarrotCurve.Evaluate(1));
+        _costMoneyType = MoneyType.None;
 
         if (moneyCost > 0)
-            return $"{AbilityNumberFormatter.FormatCompact(moneyCost)} {MoneyType.Coin}";
+        {
+            _costMoneyType = MoneyType.Coin;
+            return AbilityNumberFormatter.FormatCompact(moneyCost);
+        }
 
         if (carrotCost > 0)
-            return $"{AbilityNumberFormatter.FormatCompact(carrotCost)} {MoneyType.Carrot}";
+        {
+            _costMoneyType = MoneyType.Carrot;
+            return AbilityNumberFormatter.FormatCompact(carrotCost);
+        }
 
         return "무료";
     }
