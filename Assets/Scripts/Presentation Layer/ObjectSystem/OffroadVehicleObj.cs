@@ -6,6 +6,7 @@ using UnityEngine.Rendering;
 public class OffroadVehicleObj : MonoBehaviour
 {
     //이벤트
+    public event Action GoToTownEvent;
     public event Action OffroadDriveEndEvent;
     public event Action PortalActivated;
     public event Action PortalDeActivatedEvent;
@@ -29,6 +30,7 @@ public class OffroadVehicleObj : MonoBehaviour
     private bool bUIActivated = false;
     [SerializeField] private GameObject outLineObject;
     [SerializeField] private GameObject baseObject;
+    [SerializeField] private GameObject wheelObjectForStencil;
     [SerializeField] private GameObject wheelObject;
     [SerializeField] private GameObject containerObject;
     [SerializeField] private GameObject visualObject;
@@ -54,10 +56,10 @@ public class OffroadVehicleObj : MonoBehaviour
     private Animator wheelAnimator;
 
     private CustomSortable customSortable;
-    private CustomSortable customSortable_outline;
     private CustomSortable customSortable_wheel;
 
     private Coroutine driveCoroutine;
+    private Coroutine interactionHoldCoroutine;
 
     [SerializeField] private Transform containerCarryPoint;
     [SerializeField] private Transform containerDropPoint;
@@ -65,11 +67,28 @@ public class OffroadVehicleObj : MonoBehaviour
 
     private OffroadContainerVComponent offroadContainerVComponent;
 
+    private CircleCollider2D col;
+    private float colRadius;
+    private bool bCanReach = true;
+    private bool bCanInteract = false;
+
+    private Transform charTransform;
+
+    public Material originalMaterial;
+    public Material stencilMaterial;
+
+    public SpriteRenderer baseSR;
+    public SpriteRenderer wheelStencilSR;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
-    IInventory _characterInventory, OffroadContainer _offroadContainer)
+    IInventory _characterInventory, OffroadContainer _offroadContainer, Transform _characterTransform)
     {
         offroadContainer = _offroadContainer;
+        charTransform = _characterTransform;
+
+        col = GetComponent<CircleCollider2D>();
+        colRadius = col.radius;
 
         if (_characterInventory != null)
             characterInventory = _characterInventory;
@@ -95,13 +114,6 @@ public class OffroadVehicleObj : MonoBehaviour
             customSortable.SetSortingGroup(visualObject.GetComponent<SortingGroup>());
         }
 
-        customSortable_outline = outLineObject.GetComponent<CustomSortable>();
-        if (customSortable_outline != null)
-        {
-            customSortable_outline.Initialize(transform);
-            customSortable_outline.SetSortingGroup(outLineObject.GetComponentInChildren<SortingGroup>());
-        }
-
         if (wheelObject != null)
         {
             wheelAnimator = wheelObject.GetComponentInChildren<Animator>();
@@ -122,6 +134,8 @@ public class OffroadVehicleObj : MonoBehaviour
     private void Update()
     {
         customSortable.SetHeight(0);
+
+        CalcDistForCanReach();
     }
 
     public void ResetPortal()
@@ -140,7 +154,29 @@ public class OffroadVehicleObj : MonoBehaviour
         if (bCanJump == false)
             return;
 
-        baseObject.SetActive(false);
+        if (bCanReach == false)
+            return;
+
+        outLineObject.SetActive(true);
+
+        baseSR.material = stencilMaterial;
+        wheelStencilSR.material = stencilMaterial;
+
+        bOverlapped = true;
+    }
+
+    private void OnTriggerStay2D(Collider2D _other)
+    {
+        if (bCanJump == false)
+            return;
+
+        if (bCanReach == false)
+            return;
+
+        bCanInteract = true;
+        
+        baseSR.material = stencilMaterial;
+        wheelStencilSR.material = stencilMaterial;
         outLineObject.SetActive(true);
 
         bOverlapped = true;
@@ -148,11 +184,15 @@ public class OffroadVehicleObj : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D _other)
     {
-        if (bCanJump == false)
+        if (bCanJump == false || bCanInteract == false)
             return;
 
-        baseObject.SetActive(true);
         outLineObject.SetActive(false);
+
+        baseSR.material = originalMaterial;
+        wheelStencilSR.material = originalMaterial;
+
+        bCanInteract = false;
 
         bOverlapped = false;
         PortalDeActivatedEvent?.Invoke();
@@ -167,11 +207,14 @@ public class OffroadVehicleObj : MonoBehaviour
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
+        inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
     }
 
     public void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
     }
 
     public void OnDestroy()
@@ -181,21 +224,53 @@ public class OffroadVehicleObj : MonoBehaviour
 
     private void InteractionKeyPressed()
     {
+        if (gameObject.activeSelf == false) return;
+
+        if (interactionHoldCoroutine != null) StopCoroutine(interactionHoldCoroutine);
+        interactionHoldCoroutine = StartCoroutine(InteractionHoldRoutine());
+    }
+
+    private void InteractionKeyCanceled()
+    {
+        if (gameObject.activeSelf == false) return;
+
+        if (interactionHoldCoroutine != null)
+        {
+            StopCoroutine(interactionHoldCoroutine);
+            interactionHoldCoroutine = null;
+        }
+    }
+
+    private IEnumerator InteractionHoldRoutine()
+    {
+        yield return new WaitForSeconds(1.0f);
+
         if (bCanJump == false)
-            return;
+        {
+            interactionHoldCoroutine = null;
+            yield break;
+        }
 
         if (bUIActivated)
         {
-            PortalDeActivatedEvent?.Invoke();
-            bUIActivated = false;
-            return;
+            if (type == PortalType.ToDungeonPortal)
+            {
+                PortalDeActivatedEvent?.Invoke();
+                bUIActivated = false;
+            }
+        }
+        else if (bOverlapped == true)
+        {
+            if (type == PortalType.ToDungeonPortal)
+            {
+                bUIActivated = true;
+                PortalActivated?.Invoke();
+            }
+            else
+                GoToTownEvent?.Invoke();
         }
 
-        if (bOverlapped == true)
-        {
-            bUIActivated = true;
-            PortalActivated?.Invoke();
-        }
+        interactionHoldCoroutine = null;
     }
 
     public void SetUIActivated(bool _boolean)
@@ -206,16 +281,18 @@ public class OffroadVehicleObj : MonoBehaviour
     private void LateUpdate()
     {
         customSortable.ManualLateUpdate();
-        customSortable_outline.ManualLateUpdate();
         customSortable_wheel.ManualLateUpdate();
     }
 
     public void StartDrive(Transform _endPoint)
     {
         offroadContainer.DisableCollision();
-        baseObject.SetActive(true);
         outLineObject.SetActive(false);
-        
+        wheelObjectForStencil.SetActive(false);
+
+        baseSR.material = originalMaterial;
+        wheelStencilSR.material = originalMaterial;
+
         if (driveCoroutine != null)
         {
             StopCoroutine(driveCoroutine);
@@ -276,14 +353,14 @@ public class OffroadVehicleObj : MonoBehaviour
         {
             float t = elapsed / duration;
             float spring = Mathf.Exp(-containerSpringDamping * t) * Mathf.Sin(containerSpringFrequency * t);
-            
+
             // 아래로 눌리면서 양옆으로 퍼지는 쫀득한 연출
             visualObject.transform.localScale = initialScale + new Vector3(spring * 0.15f, -spring * 0.15f, 0);
-            
+
             elapsed += Time.deltaTime;
             yield return null;
         }
-        
+
         visualObject.transform.localScale = initialScale;
     }
 
@@ -295,7 +372,7 @@ public class OffroadVehicleObj : MonoBehaviour
             float progress = elapsed / ignitionSquashDuration;
             float spring = Mathf.Exp(-ignitionSpringDamping * progress) * Mathf.Sin(ignitionSpringFrequency * progress);
             float pulse = spring * ignitionScaleIntensity;
-            
+
             visualObject.transform.localScale = _initialScale + new Vector3(pulse, -pulse * 0.7f, 0);
 
             float shakeProgress = Mathf.Exp(-ignitionSpringDamping * progress);
@@ -354,9 +431,51 @@ public class OffroadVehicleObj : MonoBehaviour
         transform.position = _targetPos;
         visualObject.transform.localPosition = _initialLocalPos;
 
+        wheelObjectForStencil.SetActive(true);
+
         if (wheelAnimator != null) wheelAnimator.speed = 0;
-        
+
         driveCoroutine = null;
         OffroadDriveEndEvent?.Invoke();
+    }
+
+    public void CalcDistForCanReach()
+    {
+        if (charTransform == null || offroadContainer == null) return;
+
+        if (offroadContainer.gameObject.activeSelf == false)
+        {
+            SetbCanReach(true);
+            return;
+        }
+
+        float distToVehicleSq = (col.bounds.center - charTransform.position).sqrMagnitude;
+        float distToContainerSq = (offroadContainer.transform.position - charTransform.position).sqrMagnitude;
+
+        if (distToVehicleSq <= distToContainerSq)
+        {
+            SetbCanReach(true);
+            offroadContainer.SetCanReach(false);
+        }
+        else
+        {
+            SetbCanReach(false);
+            offroadContainer.SetCanReach(true);
+        }
+    }
+
+    public void SetbCanReach(bool _bCanReach)
+    {
+        bCanReach = _bCanReach;
+
+        if (bCanReach == false && bCanInteract == true)
+        {
+            bCanInteract = false;
+
+            outLineObject.SetActive(false);
+
+            bOverlapped = false;
+            PortalDeActivatedEvent?.Invoke();
+        }
     }
 }

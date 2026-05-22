@@ -123,6 +123,7 @@ public class UnitSystem
     private void DungeonStarted(DungeonStartSignal dungeonStartSignal)
     {
         unitLogicManager.SetCharacterPos(dungeonStartSignal.characterPos);
+        offroadContainer.SetInTown(false);
     }
 
     private void TownStarted(TownStartedSignal townStartedSignal)
@@ -130,6 +131,7 @@ public class UnitSystem
         inventoryManager.ReleaseAllDroppedItem();
         unitLogicManager.SetCharacterStaminaState(true, 0, 1f);
         unitLogicManager.SetCharacterTransform(townStartedSignal.characterPos);
+        offroadContainer.SetInTown(true);
     }
 
     private void ItemAcquired(ItemAcquiredSignal itemAcquiredSignal)

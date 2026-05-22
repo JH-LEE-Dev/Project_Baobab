@@ -27,6 +27,7 @@ public class LogItem : Item, IStaticCollidable
     private ItemMoveState state = ItemMoveState.None;
     public ItemMoveState MoveState => state;
     private Transform suckTarget;
+    private Transform dynamicTarget;
     private bool bDrop = true;
     public float durability = 0f;
 
@@ -55,20 +56,24 @@ public class LogItem : Item, IStaticCollidable
 
     public Material outlineMaterial;
     private Material originalMaterial;
-    
+
     private MaterialPropertyBlock mpb;
     private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
 
     private CustomSortable customSortable;
 
-    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color)
+    private bool bDisableCustomSortable = false;
+
+    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
 
+        bDisableCustomSortable = _bDisableCustomSortable;
         logState = _logState;
         treeType = _logItemTypeData.treeType;
         state = ItemMoveState.None;
         suckTarget = null;
+        dynamicTarget = null;
         sprite = _logItemTypeData.sprite;
         color = _color;
         durability = _logItemTypeData.durability;
@@ -95,7 +100,7 @@ public class LogItem : Item, IStaticCollidable
         originalMaterial = spriteRenderer.material;
 
         customSortable = GetComponent<CustomSortable>();
-        
+
         if (customSortable != null)
         {
             // 정렬 기준(Anchor)을 상하 이동하는 visualTransform으로 설정
@@ -125,9 +130,9 @@ public class LogItem : Item, IStaticCollidable
         elapsed = 0f;
         state = ItemMoveState.Launching;
         transform.localScale = Vector3.zero;
-        
+
         spriteRenderer.material = outlineMaterial;
-        
+
         if (mpb == null) mpb = new MaterialPropertyBlock();
         spriteRenderer.GetPropertyBlock(mpb);
         mpb.SetColor(baseColorID, spriteRenderer.color);
@@ -174,6 +179,24 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    public void DynamicTransferLaunch(Vector3 _start, Transform _target, float _height, float _duration, Vector3 _jitter, float _rotationSpeed = 0f)
+    {
+        startPos = _start;
+        dynamicTarget = _target;
+        endPos = _target != null ? _target.position : _start;
+        height = _height;
+        duration = _duration;
+        trajectoryJitter = _jitter;
+        rotationSpeed = _rotationSpeed;
+        elapsed = 0f;
+        state = ItemMoveState.DynamicTransferring;
+
+        if (gameObject.activeInHierarchy)
+        {
+            CollisionSystem.Instance?.Register(this, false);
+        }
+    }
+
     public void CurveTransferLaunch(Vector3 _start, Vector3 _end, float _height, float _duration, float _rotationSpeed = 0f)
     {
         startPos = _start;
@@ -212,13 +235,14 @@ public class LogItem : Item, IStaticCollidable
         base.ResetItem();
         state = ItemMoveState.None;
         suckTarget = null;
+        dynamicTarget = null;
         elapsed = 0;
         trajectoryJitter = Vector3.zero;
         sideDir = Vector3.zero;
         rotationSpeed = 0f;
         bCanAcquired = true;
         transform.localScale = Vector3.one;
-        
+
         if (spriteRenderer != null)
         {
             spriteRenderer.material = originalMaterial;
@@ -261,6 +285,9 @@ public class LogItem : Item, IStaticCollidable
             case ItemMoveState.ContainerTransferring:
                 UpdateContainerTransferring(_deltaTime);
                 break;
+            case ItemMoveState.DynamicTransferring:
+                UpdateDynamicTransferring(_deltaTime);
+                break;
             case ItemMoveState.Sucking:
                 UpdateSucking(_deltaTime);
                 break;
@@ -278,7 +305,7 @@ public class LogItem : Item, IStaticCollidable
         // 1. 가로 이동에 EaseOutCubic 적용 (도착 지점에서 부드럽게 감속하여 쫀득한 느낌 부여)
         float easeT = 1f - (1f - t) * (1f - t) * (1f - t);
         Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, easeT);
-        
+
         // 2. 높이 계산 (포물선)
         float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
 
@@ -286,7 +313,7 @@ public class LogItem : Item, IStaticCollidable
         {
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
-            
+
             if (customSortable != null)
             {
                 customSortable.SetHeight(heightOffset);
@@ -297,7 +324,7 @@ public class LogItem : Item, IStaticCollidable
             float verticalVelocity = -8 * height * (t - 0.5f) / duration;
             float pulse = Mathf.Abs(verticalVelocity) * 0.03f;
             pulse = Mathf.Min(pulse, 0.2f); // 최대 변형치 제한
-            
+
             visualTransform.localScale = Vector3.one * (1f + pulse);
         }
         else
@@ -480,6 +507,83 @@ public class LogItem : Item, IStaticCollidable
         }
     }
 
+    private void UpdateDynamicTransferring(float _deltaTime)
+    {
+        if (dynamicTarget == null)
+        {
+            state = ItemMoveState.Dropped;
+            return;
+        }
+
+        float currentT = duration > 0 ? (elapsed / duration) : 1f;
+        float speedMultiplier = 1f;
+
+        if (currentT > 0.7f)
+        {
+            speedMultiplier = 1f + (currentT - 0.7f) * 3f;
+        }
+
+        elapsed += _deltaTime * speedMultiplier;
+        float t = Mathf.Clamp01(elapsed / duration);
+
+        // 타겟 위치로 계속 업데이트
+        endPos = dynamicTarget.position;
+
+        float jitterFactor = 4f * t * (1f - t);
+        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t) + (trajectoryJitter * jitterFactor);
+
+        float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
+
+        if (visualTransform != null)
+        {
+            transform.position = currentGroundPos;
+            visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+            visualTransform.Rotate(Vector3.forward, rotationSpeed * _deltaTime);
+
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(heightOffset);
+            }
+        }
+        else
+        {
+            transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
+        }
+
+        // Scale 연출 동일하게 적용
+        float targetScale = 1f;
+        if (t < 0.4f)
+        {
+            float nt = t / 0.4f;
+            const float s = 1.70158f;
+            float t1 = nt - 1f;
+            targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
+        }
+        else if (t > 0.7f)
+        {
+            float nt = (t - 0.7f) / 0.3f;
+            targetScale = 1f - nt;
+        }
+
+        transform.localScale = Vector3.one * targetScale;
+
+        CollisionSystem.Instance?.UpdatePosition(this, transform.position);
+
+        if (t >= 1.0f)
+        {
+            transform.position = GlobalPixelSnapper.Snap(endPos);
+            if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
+            visualTransform.rotation = Quaternion.identity;
+
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(0f);
+            }
+
+            state = ItemMoveState.Dropped;
+        }
+    }
+
     private void UpdateSucking(float _deltaTime)
     {
         if (suckTarget == null)
@@ -501,7 +605,7 @@ public class LogItem : Item, IStaticCollidable
         }
 
         // 가속도를 높여서 확 빨려들어가도록 설정
-        suckSpeed += (SuckAccel * 2.5f) * _deltaTime; 
+        suckSpeed += (SuckAccel * 2.5f) * _deltaTime;
 
         // 타겟 방향으로 부드럽게 이동
         Vector3 dir = (targetPos - transform.position).normalized;
@@ -513,10 +617,10 @@ public class LogItem : Item, IStaticCollidable
 
             // 스프링 댐퍼 연출 (Damped Sine Wave)
             // elapsed 시간에 따라 진동(커짐/작아짐)하며 점차 안정화됨
-            float freq = 15f; 
-            float decay = 5f; 
+            float freq = 15f;
+            float decay = 5f;
             float springEffect = Mathf.Sin(elapsed * freq) * Mathf.Exp(-elapsed * decay) * 0.4f;
-            
+
             visualTransform.localScale = Vector3.one * (1f + springEffect);
 
             if (customSortable != null)
@@ -595,6 +699,7 @@ public class LogItem : Item, IStaticCollidable
 
     private void LateUpdate()
     {
-        customSortable.ManualLateUpdate();
+        if (bDisableCustomSortable == false)
+            customSortable.ManualLateUpdate();
     }
 }

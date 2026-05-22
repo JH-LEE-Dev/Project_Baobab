@@ -7,6 +7,7 @@ using System;
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
+    public event Action GoToTownEvent;
     public event Action<TreeType> TreeDeadEvent;
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
@@ -148,7 +149,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null)
         {
             portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offraodContainer);
+            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offraodContainer,
+            character.centerTransform);
         }
 
         var pos = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
@@ -157,7 +159,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         portal.transform.position = pos;
         portal.ResetPortal();
         portal.gameObject.SetActive(true);
-
+        portal.SetCanTravel(true);
         BindPortalEvents();
     }
 
@@ -423,6 +425,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null) return;
         portal.PortalActivated -= OnPortalActivated;
         portal.PortalActivated += OnPortalActivated;
+
+        portal.GoToTownEvent -= GoToTown;
+        portal.GoToTownEvent += GoToTown;
     }
 
     private void OnPortalActivated()
@@ -611,6 +616,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal != null)
         {
             portal.PortalActivated -= OnPortalActivated;
+            portal.GoToTownEvent -= GoToTown;
         }
 
         if (cullingGroup != null)
@@ -652,5 +658,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void SetCharacter(Character _character)
     {
         character = _character;
+    }
+
+    private void GoToTown()
+    {
+        GoToTownEvent?.Invoke();
     }
 }

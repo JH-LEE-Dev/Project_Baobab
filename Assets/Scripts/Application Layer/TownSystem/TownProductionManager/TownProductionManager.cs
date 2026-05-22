@@ -51,6 +51,8 @@ public class TownProductionManager : MonoBehaviour
 
     public void StartDrive()
     {
+        character.col.enabled = false;
+
         offroadVehicleObj.StartDrive(offroadDriveEndPoint);
 
         if (characterRideCoroutine != null)
@@ -66,7 +68,7 @@ public class TownProductionManager : MonoBehaviour
 
         if (character == null || characterRidePoint == null) yield break;
 
-        inputManager.Pause(true);
+        inputManager.PauseMove(true);
 
         Vector3 startPos = character.transform.position;
         float duration = 0.5f;
@@ -107,7 +109,9 @@ public class TownProductionManager : MonoBehaviour
 
     private void DriveEnd()
     {
+        character.col.enabled = true;
+
         OffroadDriveEndEvent?.Invoke();
-        inputManager.Pause(false);
+        inputManager.PauseMove(false);
     }
 }

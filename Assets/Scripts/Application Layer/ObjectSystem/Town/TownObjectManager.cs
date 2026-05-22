@@ -43,6 +43,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     [SerializeField] private Transform townReturnPoint;
 
+    private Character character;
 
     public float treeGrowTime = 10f;
 
@@ -71,13 +72,19 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         ReleaseEvents();
     }
 
+    public void SetCharacter(Character _character)
+    {
+        character = _character;
+    }
+
     public void ReadyObj()
     {
         if (portal == null)
         {
             portal = Instantiate(portalPrefab);
             portal.transform.position = portalSpawnPoint.position;
-            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, characterInventory, offroadContainer);
+            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
+            character.centerTransform);
             portal.ResetPortal();
             portal.SetCanTravel(bCanTravel);
         }

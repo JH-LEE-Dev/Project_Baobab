@@ -372,4 +372,14 @@ public class CharacterVisualComponent : MonoBehaviour
     }
 
     #endregion
+
+    public void CharacterIsDead(bool _boolean)
+    {
+        onWaterSR.enabled = !_boolean;
+        onWaterFaceSR.enabled = !_boolean;
+        onWaterFaceBlinkSR.enabled = !_boolean;
+        shadowSR.enabled = !_boolean;
+        faceSR.enabled = !_boolean;
+        faceBlinkSR.enabled = !_boolean;
+    }
 }

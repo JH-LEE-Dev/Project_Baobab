@@ -56,8 +56,6 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType), currentForestType));
         inDungeonObjectManager.SetDungeonData(dungeonDataBase.GetDungeonData(currentMapType));
         inDungeonObjectManager.SetupItemManagerCulling();
-
-        
     }
 
     private void BindEvents()
@@ -85,6 +83,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
         inDungeonUnitSpawner.AnimalIsDeadEvent += AnimalIsDead;
+
+        inDungeonObjectManager.GoToTownEvent -= GoToTown;
+        inDungeonObjectManager.GoToTownEvent += GoToTown;
     }
 
     private void ReleaseEvents()
@@ -97,6 +98,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
+        inDungeonObjectManager.GoToTownEvent -= GoToTown;
     }
 
     private void SubscribeSignals()
@@ -186,5 +188,10 @@ public class InDungeonSystem : MonoBehaviour
     {
         character = _characterSpawnedSignal.character;
         inDungeonObjectManager.SetCharacter(_characterSpawnedSignal.character);
+    }
+
+    private void GoToTown()
+    {
+        signalHub.Publish(new GoToHomeSignal());
     }
 }
