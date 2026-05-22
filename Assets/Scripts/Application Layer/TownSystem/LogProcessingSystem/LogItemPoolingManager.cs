@@ -11,8 +11,12 @@ public class LogItemPoolingManager : MonoBehaviour
     // 내부 의존성
     private IObjectPool<LogItem> logPool;
 
-    public void Initialize()
+    private bool bDisableCustomSortable = false;
+
+    public void Initialize(bool _bDisableCustomSortable)
     {
+        bDisableCustomSortable = _bDisableCustomSortable;
+
         logPool = new ObjectPool<LogItem>(
             createFunc: CreateLogItem,
             actionOnGet: OnGetLogItem,
@@ -39,7 +43,7 @@ public class LogItemPoolingManager : MonoBehaviour
 
         if (typeData != null)
         {
-            item.Initialize(typeData, _data.logState, _data.color);
+            item.Initialize(typeData, _data.logState, _data.color, bDisableCustomSortable);
         }
         else
         {

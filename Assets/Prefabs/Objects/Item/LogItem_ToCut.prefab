@@ -58,7 +58,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-    - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -78,7 +78,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 6
+  m_SortingLayer: 7
   m_SortingOrder: 1
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: dd3c942c9fb71bc438fdf260419b5da5, type: 3}
@@ -138,4 +138,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LogItem
   sprite: {fileID: 0}
   color: {r: 0, g: 0, b: 0, a: 0}
+  spriteRenderer: {fileID: 0}
   durability: 0
+  outlineMaterial: {fileID: 0}

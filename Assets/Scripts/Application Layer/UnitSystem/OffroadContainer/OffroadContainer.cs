@@ -21,6 +21,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     [SerializeField] private int currentSlotCount = 2; // 기본 슬롯 2개
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
+    [SerializeField] private float transferInterval = 0.5f;
 
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
@@ -35,7 +36,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 시각적 연출을 위한 변수
     private Coroutine transferCoroutine;
     private const float FLY_INTERVAL = 0.075f;
-    private List<LogItem> flyingItems = new List<LogItem>(32);
+    
+    private struct FlyingTransferItem
+    {
+        public LogItem item;
+        public bool toCharacter;
+    }
+    private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
+    
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private LogItemData arrivalDataBuffer = new LogItemData();
     private SpriteRenderer sr;
@@ -47,13 +55,21 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private bool bInTown = true;
 
-    public void Initialize(IInventory _characterInventory)
+    private InputManager inputManager;
+    private bool bCanInteract = false;
+    private float lastTransferTime = -1.0f;
+
+    public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
         characterInventory = _characterInventory;
+        inputManager = _inputManager;
+
         logItemPoolManager = GetComponent<LogItemPoolingManager>();
-        logItemPoolManager.Initialize();
+        logItemPoolManager.Initialize(false);
 
         sr = GetComponent<SpriteRenderer>();
+
+        lastTransferTime = -transferInterval;
 
         // 1. 슬롯 리스트 최대 개수(SYSTEM_VAR.MAX_INVENTORY_CNT)만큼 미리 생성
         if (inventorySlots.Count < SYSTEM_VAR.MAX_INVENTORY_CNT)
@@ -84,6 +100,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 itemDataPools[type] = CreatePoolForType(type);
             }
         }
+
+        BindEvents();
     }
 
     public void SetVisualTransform(Transform _transform)
@@ -106,13 +124,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         for (int i = flyingItems.Count - 1; i >= 0; i--)
         {
-            LogItem item = flyingItems[i];
+            var flyingData = flyingItems[i];
+            LogItem item = flyingData.item;
             item.ManualUpdate(_deltaTime);
 
-            // ContainerTransferring 상태도 비행 중인 상태로 간주
+            // ContainerTransferring 및 DynamicTransferring 상태도 비행 중인 상태로 간주
             if (item.MoveState != ItemMoveState.Transferring &&
                 item.MoveState != ItemMoveState.CurveTransferring &&
-                item.MoveState != ItemMoveState.ContainerTransferring)
+                item.MoveState != ItemMoveState.ContainerTransferring &&
+                item.MoveState != ItemMoveState.DynamicTransferring)
             {
                 // 도착 연출 완료 (Scale 0 시점) - 실제 데이터 추가
                 arrivalDataBuffer.itemType = item.itemType;
@@ -121,9 +141,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 arrivalDataBuffer.treeType = item.treeType;
                 arrivalDataBuffer.logState = item.logState;
 
-                AddItemByData(arrivalDataBuffer, item.logState);
-
-                TriggerBounce();
+                if (flyingData.toCharacter)
+                {
+                    AddToCharacterInventory(arrivalDataBuffer, item.logState);
+                }
+                else
+                {
+                    AddItemByData(arrivalDataBuffer, item.logState);
+                    TriggerBounce();
+                }
 
                 logItemPoolManager.ReturnLogItem(item);
                 flyingItems.RemoveAt(i);
@@ -165,43 +191,84 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         while (true)
         {
-            var charSlots = characterInventory.inventorySlots;
+            // 이전 전송으로부터 인터벌이 지날 때까지 대기
+            while (Time.time - lastTransferTime < transferInterval)
+            {
+                yield return null;
+            }
 
+            if (!TryTransferOneSlot())
+            {
+                break;
+            }
+        }
+        transferCoroutine = null;
+    }
+
+    private bool TryTransferOneSlot()
+    {
+        if (!bCanInteract || characterInventory == null) return false;
+
+        if (bInTown)
+        {
+            for (int i = 0; i < currentSlotCount; i++)
+            {
+                if (inventorySlots[i].itemData != null && inventorySlots[i].count > 0)
+                {
+                    if (transferringSlots.Contains(inventorySlots[i])) continue;
+                    if (!(inventorySlots[i].itemData is LogItemData logSourceData)) continue;
+
+                    if (!CanAddToCharacterInventory(logSourceData)) continue;
+
+                    StartCoroutine(TransferOneSlotVisualRoutine(inventorySlots[i], true));
+                    lastTransferTime = Time.time;
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            var charSlots = characterInventory.inventorySlots;
             for (int i = 0; i < characterInventory.currentSlotCnt; i++)
             {
                 if (charSlots[i] is InventorySlot charSlot && charSlot.itemData != null && charSlot.count > 0)
                 {
-                    // 이미 전송 중인 슬롯이면 건너뛰기
                     if (transferringSlots.Contains(charSlot)) continue;
-
                     if (!(charSlot.itemData is LogItemData logSourceData)) continue;
 
-                    // 해당 아이템을 OffroadContainer에 넣을 수 있는지 체크
                     if (!CanAddItemByData(logSourceData)) continue;
 
-                    // 해당 슬롯 전송 코루틴 시작
-                    yield return StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
+                    StartCoroutine(TransferOneSlotVisualRoutine(charSlot, false));
+                    lastTransferTime = Time.time;
+                    return true;
                 }
             }
-
-            yield return null;
         }
+
+        return false;
     }
 
-    private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _charSlot)
+    private IEnumerator TransferOneSlotVisualRoutine(InventorySlot _sourceSlot, bool _toCharacter)
     {
-        transferringSlots.Add(_charSlot);
+        transferringSlots.Add(_sourceSlot);
 
         try
         {
-            LogItemData sourceData = _charSlot.itemData as LogItemData;
-            int countToTransfer = _charSlot.count;
+            LogItemData sourceData = _sourceSlot.itemData as LogItemData;
+            int countToTransfer = _sourceSlot.count;
 
             for (int i = 0; i < countToTransfer; i++)
             {
-                if (!CanAddItemByData(sourceData)) break;
+                if (_toCharacter)
+                {
+                    if (!CanAddToCharacterInventory(sourceData)) break;
+                }
+                else
+                {
+                    if (!CanAddItemByData(sourceData)) break;
+                }
 
-                LogState takenState = _charSlot.TakeOneItem();
+                LogState takenState = _sourceSlot.TakeOneItem();
 
                 LogItemData visualData = new LogItemData
                 {
@@ -214,103 +281,120 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 flyingItem.IsDropItem(false);
                 flyingItem.spriteRenderer.sortingOrder = 100;
 
-                Vector3 start = charTransform != null ? charTransform.position : transform.position;
-                Vector3 end = transform.position; // 도착점은 OffroadContainer의 위치
+                Vector3 start = _toCharacter ? transform.position : (charTransform != null ? charTransform.position : transform.position);
+                Vector3 end = _toCharacter ? (charTransform != null ? charTransform.position : transform.position) : transform.position;
 
-                // 포물선이 모든 각도에서 어색하지 않도록 구현 (직교 벡터 활용)
                 Vector3 dir = (end - start).normalized;
+                if (dir == Vector3.zero) dir = Vector3.up;
                 Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
-                // 양방향 중 하나로 랜덤하게 약간 휘어지게
                 float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
                 Vector3 trajectoryJitter = normal * arcPower;
 
-                // 회전 속도 및 방향 결정
                 float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
                 flyingItem.transform.position = start;
 
-                // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
-                flyingItem.ContainerTransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
-                flyingItems.Add(flyingItem);
+                if (_toCharacter)
+                {
+                    flyingItem.DynamicTransferLaunch(start, charTransform, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
+                }
+                else
+                {
+                    flyingItem.ContainerTransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
+                }
+
+                flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter });
 
                 yield return new WaitForSeconds(FLY_INTERVAL);
             }
 
-            // 슬롯이 비었다면 정리
-            if (_charSlot.count == 0)
+            if (_sourceSlot.count == 0)
             {
-                if (characterInventory is InventoryManager invManager)
+                if (_toCharacter)
                 {
-                    invManager.ItemDeleted(_charSlot);
+                    ItemDeleted(_sourceSlot);
+                    ContainerUpdatedEvent?.Invoke();
                 }
+                else
+                {
+                    if (characterInventory is InventoryManager invManager)
+                    {
+                        invManager.ItemDeleted(_sourceSlot);
+                    }
+                }
+            }
+            else if (_toCharacter)
+            {
+                ContainerUpdatedEvent?.Invoke();
             }
         }
         finally
         {
-            transferringSlots.Remove(_charSlot);
+            transferringSlots.Remove(_sourceSlot);
         }
     }
 
-    private bool CanAddItemByData(ItemData _sourceData)
+    private bool CanAddToCharacterInventory(ItemData _sourceData)
     {
-        if (_sourceData == null) return false;
+        if (_sourceData == null || !(characterInventory is InventoryManager invManager)) return false;
 
-        // 현재 비행 중인 동일 타입 아이템 개수 계산
         int pendingCount = 0;
         if (_sourceData is LogItemData logSource)
         {
             for (int i = 0; i < flyingItems.Count; i++)
             {
-                if (flyingItems[i].itemType == ItemType.Log &&
-                    flyingItems[i].logState == logSource.logState &&
-                    flyingItems[i].treeType == logSource.treeType)
+                if (flyingItems[i].toCharacter &&
+                    flyingItems[i].item.itemType == ItemType.Log &&
+                    flyingItems[i].item.logState == logSource.logState &&
+                    flyingItems[i].item.treeType == logSource.treeType)
                     pendingCount++;
             }
         }
 
-        // 전체 수용 가능한 동일 아이템 남은 공간 계산
         int availableSpace = 0;
-        for (int i = 0; i < currentSlotCount; i++)
+        var slots = invManager.GetInventorySlots();
+        int maxItems = invManager.GetMaxItemsPerSlot();
+
+        for (int i = 0; i < invManager.currentSlotCnt; i++)
         {
-            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            if (slots[i].itemData != null && IsSameItemByData(_sourceData, slots[i].itemData))
             {
-                availableSpace += Mathf.Max(0, maxItemsPerSlot - inventorySlots[i].totalCount);
+                availableSpace += Mathf.Max(0, maxItems - slots[i].totalCount);
             }
-            else if (inventorySlots[i].itemData == null)
+            else if (slots[i].itemData == null)
             {
-                availableSpace += maxItemsPerSlot;
+                availableSpace += maxItems;
             }
         }
 
         return pendingCount < availableSpace;
     }
 
-    private void AddItemByData(ItemData _sourceData, LogState _state)
+    private void AddToCharacterInventory(ItemData _sourceData, LogState _state)
     {
-        if (_sourceData == null) return;
+        if (_sourceData == null || !(characterInventory is InventoryManager invManager)) return;
 
-        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
-        for (int i = 0; i < currentSlotCount; i++)
+        var slots = invManager.GetInventorySlots();
+        int maxItems = invManager.GetMaxItemsPerSlot();
+
+        for (int i = 0; i < invManager.currentSlotCnt; i++)
         {
-            if (inventorySlots[i].itemData != null &&
-                inventorySlots[i].totalCount < maxItemsPerSlot &&
-                IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            if (slots[i].itemData != null &&
+                slots[i].totalCount < maxItems &&
+                IsSameItemByData(_sourceData, slots[i].itemData))
             {
-                inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
-                ContainerUpdatedEvent?.Invoke();
+                slots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
                 return;
             }
         }
 
-        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
-        for (int i = 0; i < currentSlotCount; i++)
+        for (int i = 0; i < invManager.currentSlotCnt; i++)
         {
-            if (inventorySlots[i].itemData == null)
+            if (slots[i].itemData == null)
             {
                 ItemData newData = GetFromPool(_sourceData.itemType);
                 if (newData != null)
                 {
-                    // 데이터 복사
                     newData.itemType = _sourceData.itemType;
                     newData.sprite = _sourceData.sprite;
                     newData.color = _sourceData.color;
@@ -321,9 +405,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                         newLogData.logState = _state;
                     }
 
-                    inventorySlots[i].Setup(newData, 0);
-                    inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
-                    ContainerUpdatedEvent?.Invoke();
+                    slots[i].Setup(newData, 0);
+                    slots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
                 }
 
                 return;
@@ -437,13 +520,45 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return transform;
     }
 
-    private void OnDisable()
+    private void InteractionKeyPressed()
+    {
+        if (!bCanInteract || characterInventory == null) return;
+
+        if (transferCoroutine == null)
+        {
+            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+        }
+    }
+
+    private void InteractionKeyCanceled()
     {
         if (transferCoroutine != null)
         {
             StopCoroutine(transferCoroutine);
             transferCoroutine = null;
         }
+    }
+
+    private void BindEvents()
+    {
+        if (inputManager == null) return;
+        inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
+
+        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
+        inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
+    }
+
+    private void ReleaseEvents()
+    {
+        if (inputManager == null) return;
+        inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseEvents();
     }
 
     private void OnTriggerEnter2D(Collider2D _other)
@@ -453,27 +568,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (_other.CompareTag(PLAYER_TAG))
         {
+            bCanInteract = true;
             InteractStateEvent?.Invoke(true);
-
-            if (transferCoroutine == null)
-            {
-                transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
-            }
         }
     }
 
     private void OnTriggerStay2D(Collider2D _other)
     {
-        if (bCollisionEnabled == false)
-            return;
-
-        if (_other.CompareTag(PLAYER_TAG))
-        {
-            if (transferCoroutine == null)
-            {
-                transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
-            }
-        }
     }
 
     private void OnTriggerExit2D(Collider2D _other)
@@ -483,6 +584,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (_other.CompareTag(PLAYER_TAG))
         {
+            bCanInteract = false;
             InteractStateEvent?.Invoke(false);
 
             if (transferCoroutine != null)
@@ -603,12 +705,100 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         InteractStateEvent?.Invoke(false);
         bCollisionEnabled = false;
 
-        StopCoroutine(transferCoroutine);
+        if (transferCoroutine != null)
+            StopCoroutine(transferCoroutine);
+            
         transferCoroutine = null;
     }
 
     public void EnableCollision()
     {
         bCollisionEnabled = true;
+    }
+
+    public void SetInTown(bool _boolean)
+    {
+        bInTown = _boolean;
+    }
+
+    private bool CanAddItemByData(ItemData _sourceData)
+    {
+        if (_sourceData == null) return false;
+
+        // 현재 비행 중인 동일 타입 아이템 개수 계산
+        int pendingCount = 0;
+        if (_sourceData is LogItemData logSource)
+        {
+            for (int i = 0; i < flyingItems.Count; i++)
+            {
+                if (!flyingItems[i].toCharacter &&
+                    flyingItems[i].item.itemType == ItemType.Log &&
+                    flyingItems[i].item.logState == logSource.logState &&
+                    flyingItems[i].item.treeType == logSource.treeType)
+                    pendingCount++;
+            }
+        }
+
+        // 전체 수용 가능한 동일 아이템 남은 공간 계산
+        int availableSpace = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            {
+                availableSpace += Mathf.Max(0, maxItemsPerSlot - inventorySlots[i].totalCount);
+            }
+            else if (inventorySlots[i].itemData == null)
+            {
+                availableSpace += maxItemsPerSlot;
+            }
+        }
+
+        return pendingCount < availableSpace;
+    }
+
+    private void AddItemByData(ItemData _sourceData, LogState _state)
+    {
+        if (_sourceData == null) return;
+
+        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData != null &&
+                inventorySlots[i].totalCount < maxItemsPerSlot &&
+                IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            {
+                inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                ContainerUpdatedEvent?.Invoke();
+                return;
+            }
+        }
+
+        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯을 찾아 추가
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData == null)
+            {
+                ItemData newData = GetFromPool(_sourceData.itemType);
+                if (newData != null)
+                {
+                    // 데이터 복사
+                    newData.itemType = _sourceData.itemType;
+                    newData.sprite = _sourceData.sprite;
+                    newData.color = _sourceData.color;
+
+                    if (newData is LogItemData newLogData && _sourceData is LogItemData sourceLogData)
+                    {
+                        newLogData.treeType = sourceLogData.treeType;
+                        newLogData.logState = _state;
+                    }
+
+                    inventorySlots[i].Setup(newData, 0);
+                    inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                    ContainerUpdatedEvent?.Invoke();
+                }
+
+                return;
+            }
+        }
     }
 }

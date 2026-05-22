@@ -1,4 +1,5 @@
 using System;
+using NUnit.Framework.Constraints;
 using UnityEngine;
 
 public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
@@ -33,7 +34,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         inputManager = _inputManager;
         
         logItemPoolingManager = GetComponentInChildren<LogItemPoolingManager>();
-        logItemPoolingManager.Initialize();
+        logItemPoolingManager.Initialize(true);
 
         shopObj = Instantiate(shopPrefab, shopSpawnPoint.transform.position,
         Quaternion.identity, this.transform);

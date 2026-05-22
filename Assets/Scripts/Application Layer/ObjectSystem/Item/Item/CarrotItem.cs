@@ -8,6 +8,7 @@ public enum ItemMoveState
     Transferring,      // 보관함으로 전송 중 (스케일 애니메이션 포함)
     ContainerTransferring, // 오프로드 컨테이너 전용 전송 (부드러운 가속)
     CurveTransferring, // 기울기 독립적 곡선 전송 중
+    DynamicTransferring, // 동적 타겟(캐릭터 등)으로 전송 중
     Dropped,           // 바닥에 떨어짐 (습득 대기)
     Sucking            // 캐릭터에게 흡수 중
 }

@@ -32,6 +32,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public int currentSlotCnt => currentSlotCount;
 
+    public int GetMaxItemsPerSlot()
+    {
+        return maxItemsPerSlot;
+    }
+
     long IMoneyData.money => money;
 
     long IMoneyData.carrot => carrot;
@@ -50,7 +55,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void Initialize()
     {
         logItemPoolingManager = GetComponent<LogItemPoolingManager>();
-        logItemPoolingManager.Initialize();
+        logItemPoolingManager.Initialize(false);
 
         activeDroppedItems.Clear();
 
