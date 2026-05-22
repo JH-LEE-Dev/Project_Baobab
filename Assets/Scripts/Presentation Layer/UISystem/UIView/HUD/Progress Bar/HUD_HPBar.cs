@@ -44,9 +44,6 @@ public class HUD_HPBar : HUD_ProgressBar
 
         onHideCompleteAction = HandleHideComplete;
 
-        if (null == motionPlayer)
-            motionPlayer = GetComponent<ObjectMotionPlayer>();
-
         if (null != motionPlayer)
             motionPlayer.Initialize();
 

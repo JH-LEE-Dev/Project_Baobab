@@ -15,7 +15,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         // //외부 의존성
         [Header("Axe Specific UI")]
         [SerializeField] private Image axeImage; // 도끼 이미지
-        [SerializeField] private HUD_ProgressBar axeGaugeBar; // 도끼 특수 게이지 바
+        [SerializeField] private HUD_HPBar axeGaugeBar; // 도끼 특수 게이지 바
 
         // //내부 의존성
         private AxeMode axeMode = AxeMode.DB100;
@@ -28,9 +28,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         public override void Initialize()
         {
             base.Initialize();
-
-            if (null == axeGaugeBar)
-                axeGaugeBar = GetComponentInChildren<HUD_ProgressBar>();
 
             if (null != axeGaugeBar)
                 axeGaugeBar.Initialize();
