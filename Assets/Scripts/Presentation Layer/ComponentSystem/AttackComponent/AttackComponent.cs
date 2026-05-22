@@ -14,7 +14,8 @@ public class AttackComponent : PComponent
     //내부 의존성
     [Header("Attack Settings")]
     [SerializeField] private float maxAttackDistance = 0.15f; // 캐릭터로부터 공격 포인트가 떨어질 수 있는 최대 거리
-    [SerializeField] private float attackRadius = 0.5f; // 공격 판정 반경
+    [SerializeField] private float attackRadius = 0.5f; // 충돌 탐지 판정 반경
+    [SerializeField] private float ellipseAttackRadius = 1.5f; // 타원 공격 판정 반경
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (도끼용)
     [SerializeField] private float shockWaveSpawnOffset = 0.2f; // 충격파 생성 시 공격 지점으로부터의 오프셋
 
@@ -48,6 +49,11 @@ public class AttackComponent : PComponent
 
     private AxeExtraAttackCreator axeExtraAttackCreator;
 
+    [SerializeField] private GameObject ellipseRadiusIndicator;
+    private Material ellipseIndicatorMat;
+    private static readonly int EllipseRadiusID = Shader.PropertyToID("_EllipseRadius");
+    private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -57,6 +63,12 @@ public class AttackComponent : PComponent
 
         axeExtraAttackCreator = GetComponent<AxeExtraAttackCreator>();
         if (axeExtraAttackCreator != null) axeExtraAttackCreator.Initialize(ctx);
+
+        if (ellipseRadiusIndicator != null)
+        {
+            var renderer = ellipseRadiusIndicator.GetComponent<Renderer>();
+            if (renderer != null) ellipseIndicatorMat = renderer.material;
+        }
 
         BindEvents();
     }
@@ -134,7 +146,7 @@ public class AttackComponent : PComponent
         mouseTransform = mouseWorldPos;
 
         // 5. 중심점에서 마우스 방향으로의 벡터 계산
-        Vector3 centerPos = componentCenterTransform.position;
+        Vector3 centerPos = transform.position;
         Vector3 direction = mouseWorldPos - centerPos;
 
         // 6. 일정 거리(Radius) 무조건 유지
@@ -156,19 +168,21 @@ public class AttackComponent : PComponent
 
     public void Attack()
     {
-        if (CollisionSystem.Instance == null || componentCenterTransform == null) return;
+        if (CollisionSystem.Instance == null) return;
 
-        float effectiveAttackRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+        float effectiveSearchRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+        float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
-        // 1. 중심점(componentCenterTransform) 기준으로 대상 탐지
-        CollisionSystem.Instance.GetCollidablesInRadius(componentCenterTransform.position, effectiveAttackRadius, targetLayer, collisionResults);
+        // 1단계: 원형 반지름(attackRadius)으로 1차 탐색
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveSearchRadius, targetLayer, collisionResults);
 
         int hitCount = collisionResults.Count;
         if (hitCount <= 0) return;
 
-        Vector3 centerPos = componentCenterTransform.position;
+        Vector3 centerPos = transform.position;
         Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
         float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
+        float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
@@ -177,16 +191,19 @@ public class AttackComponent : PComponent
         {
             var target = collisionResults[i];
             Vector3 targetPos = target.Position + target.Offset;
-            Vector3 targetDir = (targetPos - centerPos).normalized;
 
+            // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
+            float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
+            if (isoDistSq > radiusSq) continue;
+
+            Vector3 targetDir = (targetPos - centerPos).normalized;
             float dot = Vector2.Dot(attackDir, targetDir);
 
             if (dot >= cosThreshold)
             {
-                float distSqr = (targetPos - centerPos).sqrMagnitude;
-                if (distSqr < minDistanceSqr)
+                if (isoDistSq < minDistanceSqr)
                 {
-                    minDistanceSqr = distSqr;
+                    minDistanceSqr = isoDistSq;
                     nearestDamageable = target;
                 }
             }
@@ -225,8 +242,33 @@ public class AttackComponent : PComponent
         }
     }
 
+    private void UpdateIndicator()
+    {
+        if (ellipseRadiusIndicator == null || ellipseIndicatorMat == null) return;
+
+        // 도끼 모드일 때 항상 표시
+        bool bShow = (currentWeaponMode == WeaponMode.Axe);
+
+        if (bShow)
+        {
+            Vector3 centerPos = transform.position;
+            Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
+            float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+            
+            // 셰이더 프로퍼티 업데이트
+            ellipseIndicatorMat.SetFloat(EllipseRadiusID, effectiveEllipseRadius);
+            ellipseIndicatorMat.SetVector(AttackDirID, (Vector2)attackDir);
+            
+            // 인디케이터 위치 및 스케일 업데이트
+            ellipseRadiusIndicator.transform.position = centerPos;
+            ellipseRadiusIndicator.transform.localScale = new Vector3((effectiveEllipseRadius + 0.5f) * 2f, effectiveEllipseRadius + 0.5f, 1f);
+        }
+    }
+
     private void Update()
     {
+        UpdateIndicator();
+
         detectionTimer += Time.deltaTime;
         if (detectionTimer >= detectionInterval)
         {
@@ -252,17 +294,18 @@ public class AttackComponent : PComponent
 
     private void DetectNearestTarget()
     {
-        if (CollisionSystem.Instance == null || componentCenterTransform == null) return;
+        if (CollisionSystem.Instance == null) return;
         if (currentWeaponMode != WeaponMode.Axe)
         {
             nearestTarget = null;
             return;
         }
 
-        float effectiveAttackRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+        float effectiveSearchRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
+        float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
-        // 1. 중심점(componentCenterTransform) 기준으로 대상 탐지
-        CollisionSystem.Instance.GetCollidablesInRadius(componentCenterTransform.position, effectiveAttackRadius, targetLayer, detectionResults);
+        // 1단계: 원형 반지름(attackRadius)으로 1차 탐색
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveSearchRadius, targetLayer, detectionResults);
 
         int hitCount = detectionResults.Count;
         if (hitCount <= 0)
@@ -271,9 +314,10 @@ public class AttackComponent : PComponent
             return;
         }
 
-        Vector3 centerPos = componentCenterTransform.position;
+        Vector3 centerPos = transform.position;
         Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
         float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
+        float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
         IStaticCollidable nearest = null;
         float minDistanceSqr = float.MaxValue;
@@ -282,16 +326,20 @@ public class AttackComponent : PComponent
         {
             var target = detectionResults[i];
             Vector3 targetPos = target.Position + target.Offset;
-            Vector3 targetDir = (targetPos - centerPos).normalized;
 
+            // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
+            float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
+    
+            if (isoDistSq > radiusSq) continue;
+
+            Vector3 targetDir = (targetPos - centerPos).normalized;
             float dot = Vector2.Dot(attackDir, targetDir);
 
             if (dot >= cosThreshold)
             {
-                float distSqr = (targetPos - centerPos).sqrMagnitude;
-                if (distSqr < minDistanceSqr)
+                if (isoDistSq < minDistanceSqr)
                 {
-                    minDistanceSqr = distSqr;
+                    minDistanceSqr = isoDistSq;
                     nearest = target;
                 }
             }
@@ -307,10 +355,9 @@ public class AttackComponent : PComponent
 
     private void OnDrawGizmos()
     {
-        if (componentCenterPoint == null) return;
-
-        Vector3 centerPos = componentCenterPoint.transform.position;
-        float effectiveAttackRadius = attackRadius * (ctx != null ? ctx.characterStat.axeAttackRangeMultiplier : 1f);
+        Vector3 centerPos = transform.position;
+        float effectiveSearchRadius = attackRadius * (ctx != null ? ctx.characterStat.axeAttackRangeMultiplier : 1f);
+        float effectiveEllipseRadius = ellipseAttackRadius * (ctx != null ? ctx.characterStat.axeAttackRangeMultiplier : 1f);
 
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(centerPos, maxAttackDistance);
@@ -319,11 +366,20 @@ public class AttackComponent : PComponent
         {
             Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
 
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(centerPos, effectiveAttackRadius);
+            // 1차 탐색 범위 (노란색 원 - 디버그용으로 연하게 표시 가능)
+            Gizmos.color = new Color(1, 1, 0, 0.3f);
+            Gizmos.DrawWireSphere(centerPos, effectiveSearchRadius);
 
-            Vector3 leftBoundary = Quaternion.Euler(0, 0, 45f) * attackDir * effectiveAttackRadius;
-            Vector3 rightBoundary = Quaternion.Euler(0, 0, -45f) * attackDir * effectiveAttackRadius;
+            // 2차 타원 판정 범위 (빨간색 타원)
+            Gizmos.color = Color.red;
+            DrawWireEllipse(centerPos, effectiveEllipseRadius, effectiveEllipseRadius * 0.5f);
+
+            // 45도 경계선 시각화 (아이소매트릭 비율 적용)
+            Vector3 leftDir = Quaternion.Euler(0, 0, 45f) * attackDir;
+            Vector3 rightDir = Quaternion.Euler(0, 0, -45f) * attackDir;
+
+            Vector3 leftBoundary = new Vector3(leftDir.x * effectiveEllipseRadius, leftDir.y * effectiveEllipseRadius * 0.5f, 0);
+            Vector3 rightBoundary = new Vector3(rightDir.x * effectiveEllipseRadius, rightDir.y * effectiveEllipseRadius * 0.5f, 0);
 
             Gizmos.DrawLine(centerPos, centerPos + leftBoundary);
             Gizmos.DrawLine(centerPos, centerPos + rightBoundary);
@@ -445,6 +501,32 @@ public class AttackComponent : PComponent
 
     public void Refresh()
     {
-        
+
+    }
+
+    private float GetIsometricDistSq(Vector3 _p1, Vector3 _p2)
+    {
+        float _dx = _p1.x - _p2.x;
+        float _dy = (_p1.y - _p2.y) * 2f;
+        return _dx * _dx + _dy * _dy;
+    }
+
+    private void DrawWireEllipse(Vector3 _center, float _radiusX, float _radiusY)
+    {
+        int _segments = 32;
+        float _angle = 0f;
+        Vector3 _lastPoint = _center + new Vector3(Mathf.Cos(0) * _radiusX, Mathf.Sin(0) * _radiusY, 0);
+        for (int i = 1; i <= _segments; i++)
+        {
+            _angle = i * 2 * Mathf.PI / _segments;
+            Vector3 _nextPoint = _center + new Vector3(Mathf.Cos(_angle) * _radiusX, Mathf.Sin(_angle) * _radiusY, 0);
+            Gizmos.DrawLine(_lastPoint, _nextPoint);
+            _lastPoint = _nextPoint;
+        }
+    }
+
+    public void SetEnable(bool _boolean)
+    {
+        ellipseRadiusIndicator.gameObject.SetActive(_boolean);
     }
 }
