@@ -183,6 +183,7 @@ public class TownSystem : MonoBehaviour
         character = _signal.character;
         logProcessingManager.SetCharTransform(character.centerTransform);
         townProductionManager.Character_DI(character);
+        townObjectManager.SetCharacter(character);
     }
 
     private void TeleportUIClosed(TeleportUIClosedSignal _teleportUIClosedSignal)

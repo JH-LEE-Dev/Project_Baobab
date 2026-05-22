@@ -51,6 +51,8 @@ public class TownProductionManager : MonoBehaviour
 
     public void StartDrive()
     {
+        character.col.enabled = false;
+
         offroadVehicleObj.StartDrive(offroadDriveEndPoint);
 
         if (characterRideCoroutine != null)
@@ -107,6 +109,8 @@ public class TownProductionManager : MonoBehaviour
 
     private void DriveEnd()
     {
+        character.col.enabled = true;
+
         OffroadDriveEndEvent?.Invoke();
         inputManager.Pause(false);
     }

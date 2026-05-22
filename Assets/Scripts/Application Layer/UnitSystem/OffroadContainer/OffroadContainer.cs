@@ -36,14 +36,14 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 시각적 연출을 위한 변수
     private Coroutine transferCoroutine;
     private const float FLY_INTERVAL = 0.075f;
-    
+
     private struct FlyingTransferItem
     {
         public LogItem item;
         public bool toCharacter;
     }
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
-    
+
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private LogItemData arrivalDataBuffer = new LogItemData();
     private SpriteRenderer sr;
@@ -56,8 +56,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private bool bInTown = true;
 
     private InputManager inputManager;
-    private bool bCanInteract = false;
+    public bool bCanInteract = false;
     private float lastTransferTime = -1.0f;
+    private bool bCanReach = true;
 
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
@@ -566,6 +567,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (bCollisionEnabled == false)
             return;
 
+        if (bCanReach == false)
+            return;
+
         if (_other.CompareTag(PLAYER_TAG))
         {
             bCanInteract = true;
@@ -575,11 +579,25 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void OnTriggerStay2D(Collider2D _other)
     {
+        if (bCollisionEnabled == false)
+            return;
+
+        if (bCanReach == false)
+            return;
+
+        if (_other.CompareTag(PLAYER_TAG))
+        {
+            if (bCanInteract == false)
+            {
+                bCanInteract = true;
+                InteractStateEvent?.Invoke(true);
+            }
+        }
     }
 
     private void OnTriggerExit2D(Collider2D _other)
     {
-        if (bCollisionEnabled == false)
+        if (bCollisionEnabled == false || bCanInteract == false)
             return;
 
         if (_other.CompareTag(PLAYER_TAG))
@@ -707,7 +725,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (transferCoroutine != null)
             StopCoroutine(transferCoroutine);
-            
+
         transferCoroutine = null;
     }
 
@@ -799,6 +817,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 return;
             }
+        }
+    }
+
+    public void SetCanReach(bool _bCanReach)
+    {
+        bCanReach = _bCanReach;
+
+        if (bCanReach == false && bCanInteract == true)
+        {
+            bCanInteract = false;
+            InteractStateEvent?.Invoke(false);
         }
     }
 }
