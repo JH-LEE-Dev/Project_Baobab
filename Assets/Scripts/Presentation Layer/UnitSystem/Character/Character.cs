@@ -75,6 +75,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private CustomSortable customSortable;
 
+    private bool bDead = false;
+
     private float visualHeight = 0f;
 
     #region Public Methods (Initialization & Control)
@@ -116,7 +118,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void SetFacingDirection(Vector2 _input)
     {
-        characterVisualComponent.SetFacingDirection(_input);
+        if (bDead == false)
+            characterVisualComponent.SetFacingDirection(_input);
     }
 
     public void StaminaReset()
@@ -162,6 +165,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             statComponent.ResetSpeed();
             bCanRotate = true;
             attackComponent.ResetAttackComponent();
+            stateMachine.ChangeState<IdleState>();
         }
         else
         {
@@ -169,8 +173,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.SetbCanSwap(true);
         }
 
+        bDead = false;
+        inputManager.PauseMove(false);
         bInDungeon = _bInDungeon;
         characterVisualComponent.SetHubState(!bInDungeon);
+        characterVisualComponent.CharacterIsDead(false);
         armComponent.SetActivate(bInDungeon);
     }
 
@@ -194,6 +201,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         AddState(new IdleState());
         AddState(new RunState());
+        AddState(new DeadState());
         stateMachine.ChangeState<IdleState>();
     }
 
@@ -277,6 +285,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void StaminaIsEmpty()
     {
+        stateMachine.ChangeState<DeadState>();
+        armComponent.SetActivate(false);
+        characterVisualComponent.CharacterIsDead(true);
+        bDead = true;
+
+        inputManager.PauseMove(true);
+
+        StartCoroutine(StaminaIsEmptyRoutine());
+    }
+
+    private System.Collections.IEnumerator StaminaIsEmptyRoutine()
+    {
+        yield return new WaitForSeconds(3.0f);
         StaminaIsEmptyEvent?.Invoke();
     }
 
@@ -314,7 +335,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine?.Update();
 
         // 비주얼 업데이트
-        characterVisualComponent.UpdateVisuals(anim.GetBool(isMovingHash), !bInDungeon);
+        if (bDead == false)
+            characterVisualComponent.UpdateVisuals(anim.GetBool(isMovingHash), !bInDungeon);
 
         // 스태미나 로직
         UpdateStaminaAmounts(); // 실시간 소모량 갱신 반영

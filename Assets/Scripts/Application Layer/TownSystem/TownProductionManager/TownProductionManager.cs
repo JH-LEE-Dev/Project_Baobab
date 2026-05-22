@@ -68,7 +68,7 @@ public class TownProductionManager : MonoBehaviour
 
         if (character == null || characterRidePoint == null) yield break;
 
-        inputManager.Pause(true);
+        inputManager.PauseMove(true);
 
         Vector3 startPos = character.transform.position;
         float duration = 0.5f;
@@ -112,6 +112,6 @@ public class TownProductionManager : MonoBehaviour
         character.col.enabled = true;
 
         OffroadDriveEndEvent?.Invoke();
-        inputManager.Pause(false);
+        inputManager.PauseMove(false);
     }
 }

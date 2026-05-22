@@ -21,7 +21,7 @@ public class InputReader
     //내부 의존성
     private InputActionSystem actions;
 
-    private bool bPause = false;
+    private bool bPauseMove = false;
 
     public void Initialize()
     {
@@ -62,15 +62,15 @@ public class InputReader
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
     }
 
-    public void Pause(bool _bPause)
+    public void PauseMove(bool _bPause)
     {
         MoveEvent?.Invoke(Vector2.zero);
-        bPause = _bPause;
+        bPauseMove = _bPause;
     }
 
     public void OnMove(InputAction.CallbackContext context)
     {
-        if (bPause)
+        if (bPauseMove)
         {
             MoveEvent?.Invoke(Vector2.zero);
             return;

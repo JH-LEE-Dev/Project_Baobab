@@ -29,9 +29,9 @@ public class InputManager : MonoBehaviour
         inputReader?.Release();
     }
 
-    public void Pause(bool _bPause)
+    public void PauseMove(bool _bPause)
     {
-        inputReader.Pause(_bPause);
+        inputReader.PauseMove(_bPause);
     }
 
     public void SetCursorHoveredOnUI(bool _bCursorHoveredOnUI)
