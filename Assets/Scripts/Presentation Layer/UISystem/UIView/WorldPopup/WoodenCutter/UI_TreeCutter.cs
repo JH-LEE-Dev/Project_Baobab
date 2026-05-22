@@ -6,6 +6,7 @@ public class UI_TreeCutter : MonoBehaviour
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject mainVisual;
     [SerializeField] private ObjectMotionPlayer omp;
+    [SerializeField] private HUD_ProgressBar progressBar;
     [SerializeField] private float yOffset = 30f;
 
     private ILogItemData cachedItemData;
@@ -19,6 +20,7 @@ public class UI_TreeCutter : MonoBehaviour
 
     private MotionEntry popup;
     private MotionEntry popdown;
+    private bool bOpen = false;
 
     public void Initialize(float _yOffset)
     {
@@ -36,6 +38,8 @@ public class UI_TreeCutter : MonoBehaviour
         yOffset = _yOffset;
 
         omp?.Initialize();
+        progressBar?.Initialize();
+
         OnHide();
     }
 
@@ -82,7 +86,10 @@ public class UI_TreeCutter : MonoBehaviour
 
         if (null == omp)
             return;
-        
+
+        bOpen = true;
+
+
         omp.SettingEntryMotion(popdown, true, true);
         popup = omp.Play(popupTag, bReset: true);
     }
@@ -96,5 +103,18 @@ public class UI_TreeCutter : MonoBehaviour
         popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompletedAnimation);
     }
 
-    private void OnCompletedAnimation() => gameObject.SetActive(false);
+    private void OnCompletedAnimation()
+    {
+        bOpen = false;
+        gameObject.SetActive(false);
+    }
+
+    private void Update()
+    {
+        if (true == bOpen)
+        {
+            float _ratio = Mathf.Clamp01(00);
+            progressBar?.UpdateValue(_ratio);
+        }
+    }
 }
