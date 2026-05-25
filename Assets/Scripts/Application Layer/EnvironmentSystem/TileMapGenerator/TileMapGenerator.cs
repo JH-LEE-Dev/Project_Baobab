@@ -22,7 +22,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [Header("육지 타일 밀도 설정")]
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
     [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
-    [SerializeField, Range(0f, 1f)] private float rockDensity = 0.2f;
 
     [Header("타일 에셋")]
     [SerializeField] private TileBase waterTile;
@@ -384,12 +383,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         walkablePositions.Clear();
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
 
-        float totalDensity = sandDensity + grassDensity + rockDensity;
+        float totalDensity = sandDensity + grassDensity;
         float invTotal = totalDensity > 0 ? 1f / totalDensity : 0;
         float landRange = 1f - waterThreshold;
 
         float sandThreshold = waterThreshold + (landRange * (sandDensity * invTotal));
-        float grassThreshold = sandThreshold + (landRange * (grassDensity * invTotal));
 
         Vector3 portalPos = GetPortalSpawnPosition();
         Vector3 playerPos = GetPlayerSpawnPosition();
@@ -426,7 +424,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 {
                     groundTiles[i] = sandTile;
                 }
-                else if (v < grassThreshold)
+                else
                 {
                     groundTiles[i] = grassTile;
 
@@ -446,10 +444,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                             delayedGrassPositions.Add(pos);
                         }
                     }
-                }
-                else
-                {
-                    groundTiles[i] = mountainTile;
                 }
             }
         }
