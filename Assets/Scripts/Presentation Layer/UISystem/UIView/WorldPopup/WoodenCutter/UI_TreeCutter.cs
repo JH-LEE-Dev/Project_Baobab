@@ -11,6 +11,7 @@ public class UI_TreeCutter : MonoBehaviour
 
     private ILogItemData cachedItemData;
     private float remaining = 0f;
+    private ILogCutter logCutter;
 
     private UI_InventorySlot slot;
     public UI_InventorySlot Slot { get { return slot;  } set { slot = value; } }
@@ -63,6 +64,11 @@ public class UI_TreeCutter : MonoBehaviour
 
     public void BindRemaining(float _remaining) => remaining = _remaining;
 
+    public void BindLogCutter(ILogCutter _logCutter)
+    {
+        logCutter = _logCutter;
+    }
+
     public void BindPosition(Vector3 _newPos)
     {
         RectTransform rt = GetComponent<RectTransform>();
@@ -113,7 +119,14 @@ public class UI_TreeCutter : MonoBehaviour
     {
         if (true == bOpen)
         {
-            float _ratio = Mathf.Clamp01(00);
+            float _ratio = 0f;
+            if (null != logCutter)
+            {
+                float _total = logCutter.totalProcessingTime;
+                if (0f < _total)
+                    _ratio = Mathf.Clamp01(logCutter.elapsedProcessingTime / _total);
+            }
+
             progressBar?.UpdateValue(_ratio);
         }
     }

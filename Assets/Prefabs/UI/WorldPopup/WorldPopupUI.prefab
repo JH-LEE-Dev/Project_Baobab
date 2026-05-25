@@ -52,7 +52,7 @@ MonoBehaviour:
   startHidden: 1
   bWorld: 1
   storageYOffset: 0.5
-  cutterYOffset: 1.25
+  cutterYOffset: 2
   bTraderCoinAnim: 1
   traderCoinYOffset: 1
   uiRoot: {fileID: 5973435824668062020}

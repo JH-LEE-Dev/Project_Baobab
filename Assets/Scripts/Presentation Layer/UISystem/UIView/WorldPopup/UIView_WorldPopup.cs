@@ -160,6 +160,7 @@ public class UIView_WorldPopup : UIView
         ui_Storage?.BindStorage(container);
         ui_CarStorage?.BindStorage(offroadContainer);
         ui_Cutter?.BindPosition(_logCutter.GetTransform().position);
+        ui_Cutter?.BindLogCutter(_logCutter);
 
         BindEvents();
     }
