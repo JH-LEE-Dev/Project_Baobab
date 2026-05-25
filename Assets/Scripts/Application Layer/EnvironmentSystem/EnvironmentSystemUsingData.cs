@@ -10,6 +10,7 @@ public enum EnvironmentObjType
 {
     None,
     Cloud,
+    BirdShadow,
 }
 
 public struct GroundPhysicsData

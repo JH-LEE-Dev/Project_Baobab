@@ -170,17 +170,23 @@ public class AttackComponent : PComponent
     {
         if (CollisionSystem.Instance == null) return;
 
-        float effectiveSearchRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
-        // 1단계: 원형 반지름(attackRadius)으로 1차 탐색
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveSearchRadius, targetLayer, collisionResults);
+        // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, collisionResults);
 
         int hitCount = collisionResults.Count;
         if (hitCount <= 0) return;
 
         Vector3 centerPos = transform.position;
-        Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
+        
+        Vector3 attackDirVec = attackPointTransform.position - centerPos;
+        Vector3 isoAttackDir = Vector3.right;
+        if (attackDirVec.sqrMagnitude > 0.0001f)
+        {
+            isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
+        }
+
         float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
@@ -196,8 +202,14 @@ public class AttackComponent : PComponent
             float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
             if (isoDistSq > radiusSq) continue;
 
-            Vector3 targetDir = (targetPos - centerPos).normalized;
-            float dot = Vector2.Dot(attackDir, targetDir);
+            Vector3 targetOffset = targetPos - centerPos;
+            Vector3 targetDir = Vector3.right;
+            if (targetOffset.sqrMagnitude > 0.0001f)
+            {
+                targetDir = new Vector3(targetOffset.x, targetOffset.y * 2f, 0f).normalized;
+            }
+
+            float dot = Vector2.Dot(isoAttackDir, targetDir);
 
             if (dot >= cosThreshold)
             {
@@ -252,12 +264,19 @@ public class AttackComponent : PComponent
         if (bShow)
         {
             Vector3 centerPos = transform.position;
-            Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
+            
+            Vector3 attackDirVec = attackPointTransform.position - centerPos;
+            Vector3 isoAttackDir = Vector3.right;
+            if (attackDirVec.sqrMagnitude > 0.0001f)
+            {
+                isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
+            }
+
             float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
             
             // 셰이더 프로퍼티 업데이트
             ellipseIndicatorMat.SetFloat(EllipseRadiusID, effectiveEllipseRadius);
-            ellipseIndicatorMat.SetVector(AttackDirID, (Vector2)attackDir);
+            ellipseIndicatorMat.SetVector(AttackDirID, (Vector2)isoAttackDir);
             
             // 인디케이터 위치 및 스케일 업데이트
             ellipseRadiusIndicator.transform.position = centerPos;
@@ -301,11 +320,10 @@ public class AttackComponent : PComponent
             return;
         }
 
-        float effectiveSearchRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
-        // 1단계: 원형 반지름(attackRadius)으로 1차 탐색
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveSearchRadius, targetLayer, detectionResults);
+        // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, detectionResults);
 
         int hitCount = detectionResults.Count;
         if (hitCount <= 0)
@@ -315,7 +333,14 @@ public class AttackComponent : PComponent
         }
 
         Vector3 centerPos = transform.position;
-        Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
+        
+        Vector3 attackDirVec = attackPointTransform.position - centerPos;
+        Vector3 isoAttackDir = Vector3.right;
+        if (attackDirVec.sqrMagnitude > 0.0001f)
+        {
+            isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
+        }
+
         float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
@@ -332,8 +357,14 @@ public class AttackComponent : PComponent
     
             if (isoDistSq > radiusSq) continue;
 
-            Vector3 targetDir = (targetPos - centerPos).normalized;
-            float dot = Vector2.Dot(attackDir, targetDir);
+            Vector3 targetOffset = targetPos - centerPos;
+            Vector3 targetDir = Vector3.right;
+            if (targetOffset.sqrMagnitude > 0.0001f)
+            {
+                targetDir = new Vector3(targetOffset.x, targetOffset.y * 2f, 0f).normalized;
+            }
+
+            float dot = Vector2.Dot(isoAttackDir, targetDir);
 
             if (dot >= cosThreshold)
             {
@@ -364,7 +395,12 @@ public class AttackComponent : PComponent
 
         if (attackPointTransform != null)
         {
-            Vector3 attackDir = (attackPointTransform.position - centerPos).normalized;
+            Vector3 attackDirVec = attackPointTransform.position - centerPos;
+            Vector3 isoAttackDir = Vector3.right;
+            if (attackDirVec.sqrMagnitude > 0.0001f)
+            {
+                isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
+            }
 
             // 1차 탐색 범위 (노란색 원 - 디버그용으로 연하게 표시 가능)
             Gizmos.color = new Color(1, 1, 0, 0.3f);
@@ -375,11 +411,11 @@ public class AttackComponent : PComponent
             DrawWireEllipse(centerPos, effectiveEllipseRadius, effectiveEllipseRadius * 0.5f);
 
             // 45도 경계선 시각화 (아이소매트릭 비율 적용)
-            Vector3 leftDir = Quaternion.Euler(0, 0, 45f) * attackDir;
-            Vector3 rightDir = Quaternion.Euler(0, 0, -45f) * attackDir;
+            Vector3 leftDir = Quaternion.Euler(0, 0, 45f) * isoAttackDir;
+            Vector3 rightDir = Quaternion.Euler(0, 0, -45f) * isoAttackDir;
 
-            Vector3 leftBoundary = new Vector3(leftDir.x * effectiveEllipseRadius, leftDir.y * effectiveEllipseRadius * 0.5f, 0);
-            Vector3 rightBoundary = new Vector3(rightDir.x * effectiveEllipseRadius, rightDir.y * effectiveEllipseRadius * 0.5f, 0);
+            Vector3 leftBoundary = new Vector3(leftDir.x * effectiveEllipseRadius, leftDir.y * 0.5f * effectiveEllipseRadius, 0);
+            Vector3 rightBoundary = new Vector3(rightDir.x * effectiveEllipseRadius, rightDir.y * 0.5f * effectiveEllipseRadius, 0);
 
             Gizmos.DrawLine(centerPos, centerPos + leftBoundary);
             Gizmos.DrawLine(centerPos, centerPos + rightBoundary);
