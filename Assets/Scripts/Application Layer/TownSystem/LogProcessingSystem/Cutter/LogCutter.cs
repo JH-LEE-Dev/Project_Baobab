@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
@@ -20,6 +19,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private bool bIsCutting = false;
     private bool bPowerSupply = false;
     private float bPowerSupplyValue = 5f; //500퍼센트를 의미.
+    private float maxDurability = 0f;
 
     // 시각적 효과용 (Squash & Stretch)
     private Transform visualTransform;
@@ -33,18 +33,35 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         get
         {
             if (cuttingItem == null || !bIsCutting) return 0f;
+            return cuttingItem.durability / GetCurrentSpeed();
+        }
+    }
 
-            float currentSpeed = totalSpeedMultiplier;
-            if (bPowerSupply) currentSpeed *= bPowerSupplyValue;
+    public float elapsedProcessingTime
+    {
+        get
+        {
+            if (cuttingItem == null || !bIsCutting) return 0f;
+            return (maxDurability - cuttingItem.durability) / GetCurrentSpeed();
+        }
+    }
 
-            // 1초에 1 * currentSpeed만큼 깎으므로, 남은 시간 = 남은 내구도 / currentSpeed
-            return cuttingItem.durability / currentSpeed;
+    public float totalProcessingTime
+    {
+        get
+        {
+            if (cuttingItem == null || !bIsCutting) return 0f;
+            return maxDurability / GetCurrentSpeed();
         }
     }
 
     ILogItemData ILogCutter.logToCut => logToCut;
 
     bool ILogCutter.bIsCutting => bIsCutting;
+
+    float ILogCutter.elapsedProcessingTime => elapsedProcessingTime;
+
+    float ILogCutter.totalProcessingTime => totalProcessingTime;
 
     private ILogItemData logToCut;
 
@@ -65,8 +82,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
         if (!bIsCutting || cuttingItem == null) return;
 
-        float currentSpeed = totalSpeedMultiplier;
-        if (bPowerSupply && mapType != MapType.Town) currentSpeed *= bPowerSupplyValue;
+        float currentSpeed = GetCurrentSpeed();
 
         // 애니메이션 속도 동기화
         if (anim != null)
@@ -115,6 +131,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             }
         }
 
+        maxDurability = cuttingItem.durability;
         logToCut = _itemData;
         TriggerBounce();
         CuttingStartEvent?.Invoke(logToCut);
@@ -185,6 +202,20 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             cuttingItem = _poolingManager.GetLogItem(data);
             if (cuttingItem != null)
             {
+                float baseDurability = cuttingItem.durability;
+                if (logItemDurabilityDatas != null)
+                {
+                    for (int i = 0; i < logItemDurabilityDatas.Count; i++)
+                    {
+                        if (logItemDurabilityDatas[i].logState == cuttingItem.logState)
+                        {
+                            baseDurability *= logItemDurabilityDatas[i].durabilityMultiplier;
+                            break;
+                        }
+                    }
+                }
+                maxDurability = baseDurability;
+
                 cuttingItem.transform.position = transform.position; // 커터 위치로 설정
                 cuttingItem.durability = _data.cuttingItemData.durability;
                 anim.SetBool(startHash, true);
@@ -199,6 +230,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             cuttingItem = null;
             anim.SetBool(startHash, false);
             logToCut = null;
+            maxDurability = 0f;
         }
 
         Debug.Log("[LogCutter] Cutter Save Data Loaded.");
@@ -239,5 +271,12 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             // X축 확대 시 Y축 축소 (Squash & Stretch)
             visualTransform.localScale = new Vector3(1f + curve, 1f - curve, 1f);
         }
+    }
+
+    private float GetCurrentSpeed()
+    {
+        float speed = totalSpeedMultiplier;
+        if (bPowerSupply && mapType != MapType.Town) speed *= bPowerSupplyValue;
+        return speed;
     }
 }
