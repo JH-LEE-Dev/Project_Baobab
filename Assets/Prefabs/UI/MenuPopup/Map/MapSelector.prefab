@@ -381,7 +381,7 @@ MonoBehaviour:
   regionContainer: {fileID: 6358695605423527309}
   regionPrefab: {fileID: 5378699527577570030, guid: a79b591f980f19043b363b64099cb2e9, type: 3}
   snapSpeed: 10
-  itemSpacing: 250
+  itemSpacing: 210
   dragSensitivity: 0.3
   fadeDuration: 0.1
   maxBackgroundAlpha: 0.9
