@@ -25,6 +25,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [SerializeField] private Image backgroundImage;
         [SerializeField] private Transform regionContainer;
         [SerializeField] private GameObject regionPrefab;
+        [SerializeField] private HUD_MapIndicator mapIndicator;
 
         [Header("Settings")]
         [SerializeField] private float snapSpeed = 10.0f;
@@ -188,6 +189,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 AddRegion(_info);
             }
 
+            if (null != mapIndicator)
+                mapIndicator.Initialize(spawnedRegions.Count);
+
             if (0 < spawnedRegions.Count)
                 FocusRegion(0);
         }
@@ -232,6 +236,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                     spawnedRegions[_i].SetFocus(_isFocus);
                 }
             }
+
+            if (null != mapIndicator)
+                mapIndicator.Refresh(_index);
 
             if (null != subSelector && null != currentFocusedRegion && null != currentFocusedRegion.GetMapEnvironmentInfo().forestDatas)
                 subSelector.SetSubRegions(currentFocusedRegion.GetMapEnvironmentInfo().forestDatas);
