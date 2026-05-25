@@ -10,7 +10,7 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudSteminaBarPrefab;
 
     private HUD_Equipment hudEquipment;
-    private HUD_ProgressBar hudSteminaBar;
+    private HUD_Stemina hudSteminaBar;
 
     private ICharacter character;
 
@@ -25,8 +25,8 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
-        Init_HUDEquipment();
         Init_HUDSteminaBar();
+        Init_HUDEquipment();
 
         bool isTown = MapType.Town == currentMapType;
 
@@ -89,7 +89,7 @@ public class UIView_HUD : UIView
 
     private void Init_HUDSteminaBar()
     {
-        hudSteminaBar = Instantiate(hudSteminaBarPrefab, uiRoot.transform).GetComponent<HUD_ProgressBar>();
+        hudSteminaBar = Instantiate(hudSteminaBarPrefab, uiRoot.transform).GetComponent<HUD_Stemina>();
 
         if (null != hudSteminaBar)
         {

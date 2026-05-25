@@ -231,13 +231,13 @@ namespace PresentationLayer.DOTweenAnimationSystem
                 return;
 
             if (_bSkip)
-                _entry.motionInstance.Skip(_bSkipCallback);
+                _entry.motionInstance?.Skip(_bSkipCallback);
 
             if (_bStop)
-                _entry.motionInstance.Stop();
+                _entry.motionInstance?.Stop();
 
             if (_bResetPoint)
-                _entry.motionInstance.ResetToInitialState();
+                _entry.motionInstance?.ResetToInitialState();
         }
 
         private void OnDestroy()
