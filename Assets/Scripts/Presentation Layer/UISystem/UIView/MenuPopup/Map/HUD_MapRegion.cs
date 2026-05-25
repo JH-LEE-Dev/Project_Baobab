@@ -19,6 +19,16 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public Color trunkColor;
     }
 
+    [Serializable]
+    public struct MapThemeData
+    {
+        public MapType mapType;
+        public Sprite[] groundSprites;
+        public Sprite leafSprite;
+        public Sprite trunkSprite;
+        public Sprite[] animalSprites;
+    }
+
     /// <summary>
     /// 특정 지역(Region)의 시각적 요소(지형, 나무, 동물, 이름)를 관리하고 애니메이션을 재생하는 클래스입니다.
     /// 해당 지역의 MapType 정보를 보유하여 상위 매니저와 소통합니다.
@@ -47,6 +57,9 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [Header("Focus Settings")]
         [Range(0f, 1f)]
         [SerializeField] private float dimFactor = 0.5f;     // 비포커스 시 명암 계수
+
+        [Header("Theme Configuration")]
+        [SerializeField] private MapThemeData[] mapThemes;
 
         // //내부 의존성
         private Color[] groundOriginalColors;
@@ -99,6 +112,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             if (null != mapNameText)
                 mapNameText.text = currentMapName;
+
+            ApplyTheme(_info.mapType);
 
             // 새로운 지역 셋업 시 오브젝트 노출 상태 리셋 (초기 노출 개수 1)
             currentVisibleCount = 1;
@@ -282,6 +297,62 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public MapType GetMapType() => mapEnvironmentInfo.mapType;
 
         // //내부 로직
+
+        /// <summary>
+        /// 맵 타입에 맞게 미리 세팅된 테마 스프라이트 에셋들을 일괄 교체합니다.
+        /// </summary>
+        private void ApplyTheme(MapType _mapType)
+        {
+            if (null == mapThemes)
+                return;
+
+            MapThemeData _targetTheme = default;
+            bool _found = false;
+
+            for (int _i = 0; _i < mapThemes.Length; _i++)
+            {
+                if (mapThemes[_i].mapType == _mapType)
+                {
+                    _targetTheme = mapThemes[_i];
+                    _found = true;
+                    break;
+                }
+            }
+
+            if (false == _found)
+                return;
+
+            // 지형 스프라이트 교체 적용
+            if (null != groundImages && null != _targetTheme.groundSprites)
+            {
+                int _len = Mathf.Min(groundImages.Length, _targetTheme.groundSprites.Length);
+                for (int _i = 0; _i < _len; _i++)
+                    if (null != groundImages[_i] && null != _targetTheme.groundSprites[_i])
+                        groundImages[_i].sprite = _targetTheme.groundSprites[_i];
+            }
+
+            // 나무 스프라이트 교체 적용
+            if (null != treeVisuals)
+            {
+                for (int _i = 0; _i < treeVisuals.Length; _i++)
+                {
+                    if (null != treeVisuals[_i].leafImage && null != _targetTheme.leafSprite)
+                        treeVisuals[_i].leafImage.sprite = _targetTheme.leafSprite;
+
+                    if (null != treeVisuals[_i].trunkImage && null != _targetTheme.trunkSprite)
+                        treeVisuals[_i].trunkImage.sprite = _targetTheme.trunkSprite;
+                }
+            }
+
+            // 동물 스프라이트 교체 적용
+            if (null != animalImages && null != _targetTheme.animalSprites)
+            {
+                int _len = Mathf.Min(animalImages.Length, _targetTheme.animalSprites.Length);
+                for (int _i = 0; _i < _len; _i++)
+                    if (null != animalImages[_i] && null != _targetTheme.animalSprites[_i])
+                        animalImages[_i].sprite = _targetTheme.animalSprites[_i];
+            }
+        }
 
         private void CaptureOriginalColors()
         {
