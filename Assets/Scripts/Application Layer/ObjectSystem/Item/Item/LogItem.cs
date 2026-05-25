@@ -70,6 +70,7 @@ public class LogItem : Item, IStaticCollidable
     private CustomSortable customSortable;
 
     private bool bDisableCustomSortable = false;
+    private float originalDurability;
 
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color, bool _bDisableCustomSortable = false)
     {
@@ -84,6 +85,7 @@ public class LogItem : Item, IStaticCollidable
         sprite = _logItemTypeData.sprite;
         color = _color;
         durability = _logItemTypeData.durability;
+        originalDurability = durability;
         elapsed = 0;
         timberSprite = _logItemTypeData.timberSprite;
         landingDampTime = landingDampDuration;
@@ -253,6 +255,7 @@ public class LogItem : Item, IStaticCollidable
         bCanAcquired = true;
         transform.localScale = Vector3.one;
         landingDampTime = landingDampDuration;
+        durability = originalDurability;
 
         if (spriteRenderer != null)
         {
