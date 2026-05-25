@@ -514,12 +514,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private TileBase GetWaterCornerTile(int _x, int _y)
     {
-        // 인접한 4방향에 땅이 하나라도 있으면 코너 타일맵에는 아무것도 그리지 않습니다 (null 반환)
-        if (IsLand(_x + 1, _y) || IsLand(_x, _y - 1) || IsLand(_x, _y + 1) || IsLand(_x - 1, _y))
-        {
-            return null;
-        }
-
         int cornerMask = 0;
         if (IsLand(_x + 1, _y + 1) && !IsLand(_x + 1, _y) && !IsLand(_x, _y + 1)) cornerMask |= 1;  // U
         if (IsLand(_x + 1, _y - 1) && !IsLand(_x + 1, _y) && !IsLand(_x, _y - 1)) cornerMask |= 2;  // R
