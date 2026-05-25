@@ -42,8 +42,9 @@ public class LogItem : Item, IStaticCollidable
     private float duration;
     private float elapsed;
     private float rotationSpeed;
+    private float totalRotation;
     private float suckSpeed;
-    private const float SuckAccel = 12f;
+    private const float SuckAccel = 16f;
     private const float MinAcquireDist = 0.2f;
 
     private Sprite timberSprite;
@@ -51,6 +52,12 @@ public class LogItem : Item, IStaticCollidable
     // 관리용 인덱스
     public int PoolIndex { get; set; } = -1;
     public int UpdateIndex { get; set; } = -1;
+
+    // 쫀득한 착지 연출용 변수
+    private float landingDampTime = 0.5f;
+    private const float landingDampDuration = 0.5f;
+
+    private bool bSuckAccelerating = false; // 튕김이 끝나고 흡입이 시작됨을 감지하는 플래그
 
     bool bCanAcquired = true;
 
@@ -79,6 +86,7 @@ public class LogItem : Item, IStaticCollidable
         durability = _logItemTypeData.durability;
         elapsed = 0;
         timberSprite = _logItemTypeData.timberSprite;
+        landingDampTime = landingDampDuration;
 
         // 최적화: GetComponentInChildren 캐싱
         if (spriteRenderer == null)
@@ -119,7 +127,7 @@ public class LogItem : Item, IStaticCollidable
         bDrop = _boolean;
     }
 
-    public void Launch(Vector3 _start, Vector3 _end, float _height, float _duration)
+    public void Launch(Vector3 _start, Vector3 _end, float _height, float _duration, float _totalRotation = 0f)
     {
         startPos = _start;
         endPos = _end;
@@ -127,6 +135,7 @@ public class LogItem : Item, IStaticCollidable
         duration = _duration;
         trajectoryJitter = Vector3.zero;
         rotationSpeed = 0f;
+        totalRotation = _totalRotation;
         elapsed = 0f;
         state = ItemMoveState.Launching;
         transform.localScale = Vector3.zero;
@@ -240,8 +249,10 @@ public class LogItem : Item, IStaticCollidable
         trajectoryJitter = Vector3.zero;
         sideDir = Vector3.zero;
         rotationSpeed = 0f;
+        totalRotation = 0f;
         bCanAcquired = true;
         transform.localScale = Vector3.one;
+        landingDampTime = landingDampDuration;
 
         if (spriteRenderer != null)
         {
@@ -313,6 +324,7 @@ public class LogItem : Item, IStaticCollidable
         {
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+            visualTransform.localRotation = Quaternion.Euler(0, 0, totalRotation * t);
 
             if (customSortable != null)
             {
@@ -334,9 +346,9 @@ public class LogItem : Item, IStaticCollidable
 
         // 4. 전체 Scale 팝업 (0.4까지 BackEaseOut 효과로 탄력 있게 커짐)
         float targetScale = 1f;
-        if (t < 0.4f)
+        if (t < 0.8f)
         {
-            float nt = t / 0.4f;
+            float nt = t / 0.8f;
             const float s = 2.5f; // 약간 더 과장된 탄성 계수
             float t1 = nt - 1f;
             targetScale = Mathf.Max(0, (t1 * t1 * ((s + 1f) * t1 + s) + 1f));
@@ -352,7 +364,6 @@ public class LogItem : Item, IStaticCollidable
             {
                 visualTransform.localPosition = Vector3.zero;
                 visualTransform.localRotation = Quaternion.identity;
-                visualTransform.localScale = Vector3.one; // 스케일 초기화
             }
             transform.localScale = Vector3.one;
 
@@ -360,6 +371,8 @@ public class LogItem : Item, IStaticCollidable
             {
                 customSortable.SetHeight(0f);
             }
+
+            landingDampTime = 0f;
 
             state = ItemMoveState.Dropped;
             CheckAcquireCondition();
@@ -604,8 +617,25 @@ public class LogItem : Item, IStaticCollidable
             return;
         }
 
-        // 가속도를 높여서 확 빨려들어가도록 설정
-        suckSpeed += (SuckAccel * 2.5f) * _deltaTime;
+        // 가속도 계산: 튕김 구간과 흡수 구간 분리 및 탄력적 가속 적용
+        if (suckSpeed < 0f)
+        {
+            // 뒤로 튕기는 구간 (기존 가속 30f에서 24f로 완화하여 튕김 모션 확보)
+            suckSpeed += (SuckAccel * 2.0f) * _deltaTime;
+        }
+        else
+        {
+            // 튕김이 끝나고 본격적으로 전진하기 시작하는 첫 프레임 감지
+            if (!bSuckAccelerating)
+            {
+                bSuckAccelerating = true;
+                elapsed = 0f; // 스프링 댐핑 애니메이션 리셋
+            }
+
+            // 끌려갈 때 속도가 빨라질수록 가속도도 기하급수적으로 증가하는 탄성 가속
+            float dynamicAccel = SuckAccel * 2.5f * (1f + suckSpeed * 0.15f);
+            suckSpeed += dynamicAccel * _deltaTime;
+        }
 
         // 타겟 방향으로 부드럽게 이동
         Vector3 dir = (targetPos - transform.position).normalized;
@@ -615,13 +645,25 @@ public class LogItem : Item, IStaticCollidable
         {
             visualTransform.localPosition = Vector3.Lerp(visualTransform.localPosition, Vector3.zero, _deltaTime * 10f);
 
-            // 스프링 댐퍼 연출 (Damped Sine Wave)
-            // elapsed 시간에 따라 진동(커짐/작아짐)하며 점차 안정화됨
-            float freq = 15f;
-            float decay = 5f;
-            float springEffect = Mathf.Sin(elapsed * freq) * Mathf.Exp(-elapsed * decay) * 0.4f;
+            // 스프링 댐퍼 연출 (진동 주기와 감쇠를 더 쫀득하게 튜닝)
+            float freq = 18f;
+            float decay = 4f;
+            float springEffect = Mathf.Sin(elapsed * freq) * Mathf.Exp(-elapsed * decay) * 0.5f;
 
-            visualTransform.localScale = Vector3.one * (1f + springEffect);
+            if (suckSpeed > 0f)
+            {
+                // 빨려 들어가는 속도에 비례해 타겟 방향으로 길어지는 Stretch 효과 추가
+                float speedStretch = Mathf.Min(suckSpeed * 0.04f, 0.25f);
+                visualTransform.localScale = new Vector3(
+                    (1f + springEffect) * (1f - speedStretch), // 가로축 축소
+                    (1f - springEffect) * (1f + speedStretch), // 세로축 확대 (타겟 방향)
+                    1f
+                );
+            }
+            else
+            {
+                visualTransform.localScale = Vector3.one * (1f + springEffect);
+            }
 
             if (customSortable != null)
             {
@@ -653,6 +695,26 @@ public class LogItem : Item, IStaticCollidable
             if (customSortable != null)
             {
                 customSortable.SetHeight(floatOffset);
+            }
+
+            // 착지 후 스프링 댐퍼 쫀득한 Scale 연출
+            if (landingDampTime < landingDampDuration)
+            {
+                landingDampTime += _deltaTime;
+
+                // 스프링 댐퍼 감쇠 코사인파 (착지 시 찌그러진 상태에서 시작하여 진동 감쇠)
+                float freq = 25f; // 진동 속도
+                float decay = 7f; // 감쇠율
+                float amp = 0.4f; // 최초 충격 변형량
+
+                float springEffect = Mathf.Cos(landingDampTime * freq) * Mathf.Exp(-landingDampTime * decay) * amp;
+
+                // Squash & Stretch: 수평(X)은 늘어나고 수직(Y)은 찌그러짐
+                visualTransform.localScale = new Vector3(1f + springEffect, 1f - springEffect, 1f);
+            }
+            else
+            {
+                visualTransform.localScale = Vector3.one;
             }
         }
 
@@ -689,6 +751,7 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = _target;
         suckSpeed = -5.0f; // 뒤로 튕기는 동작을 더 크게 하기 위해 초기 음수 속도 상향
         elapsed = 0f;
+        bSuckAccelerating = false; // 플래그 초기화
         state = ItemMoveState.Sucking;
     }
 

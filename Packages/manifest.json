@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.community.antigravity-unity": "https://github.com/usmanbutt-dev/antigravity-unity.git",
     "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
     "com.unity.2d.animation": "14.0.3",
     "com.unity.2d.aseprite": "4.0.1",

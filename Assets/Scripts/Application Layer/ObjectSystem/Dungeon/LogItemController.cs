@@ -283,7 +283,8 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             float height = UnityEngine.Random.Range(0.5f, 1.0f);
             float duration = UnityEngine.Random.Range(0.5f, 0.75f);
 
-            logItem.Launch(startPos, endPos, height, duration);
+            float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+            logItem.Launch(startPos, endPos, height, duration, randomRotation);
         }
     }
 
