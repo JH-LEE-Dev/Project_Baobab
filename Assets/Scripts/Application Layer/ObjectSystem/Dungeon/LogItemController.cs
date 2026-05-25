@@ -277,10 +277,10 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             // 포물선 운동 설정
             Vector3 startPos = _treeObj.transform.position;
             Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
-            float randomDist = UnityEngine.Random.Range(0.25f, 0.75f);
+            float randomDist = UnityEngine.Random.Range(1.25f, 1.75f);
             Vector3 endPos = startPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * randomDist;
 
-            float height = UnityEngine.Random.Range(0.5f, 1.0f);
+            float height = UnityEngine.Random.Range(0.75f, 1f);
             float duration = UnityEngine.Random.Range(0.5f, 0.75f);
 
             float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
