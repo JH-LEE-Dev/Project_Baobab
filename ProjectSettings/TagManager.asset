@@ -47,6 +47,9 @@ TagManager:
   - name: Tiles
     uniqueID: 463132847
     locked: 0
+  - name: Indicators
+    uniqueID: 3423320095
+    locked: 0
   - name: CharacterShadow
     uniqueID: 2550407815
     locked: 0

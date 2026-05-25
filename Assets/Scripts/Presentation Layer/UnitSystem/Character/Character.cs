@@ -166,11 +166,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             bCanRotate = true;
             attackComponent.ResetAttackComponent();
             stateMachine.ChangeState<IdleState>();
+            attackComponent.SetEnable(false);
         }
         else
         {
             armComponent.ResetWeaponStatus();
-            attackComponent.SetbCanSwap(true);
+            attackComponent.SetEnable(true);
         }
 
         bDead = false;
