@@ -517,7 +517,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _hasGroundDeco = false;
                 if (false == _hasRockDeco && false == _hasInsectDeco)
                 {
-                    if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < 0.15f)
+                    if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < 0.05f)
                     {
                         decoTilesToApply[i] = groundDecoTiles[UnityEngine.Random.Range(0, groundDecoTiles.Count)];
                         _hasGroundDeco = true;
@@ -526,7 +526,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                 if (false == _isSand && false == _hasRockDeco && false == _hasInsectDeco && false == _hasGroundDeco)
                 {
-                    if (grassDecoTiles != null && grassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.15f)
+                    if (grassDecoTiles != null && grassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.25f)
                     {
                         decoTilesToApply[i] = grassDecoTiles[UnityEngine.Random.Range(0, grassDecoTiles.Count)];
                     }
