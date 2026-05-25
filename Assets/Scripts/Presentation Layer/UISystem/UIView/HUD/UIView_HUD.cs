@@ -25,8 +25,8 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
-        Init_HUDEquipment();
         Init_HUDSteminaBar();
+        Init_HUDEquipment();
 
         bool isTown = MapType.Town == currentMapType;
 
