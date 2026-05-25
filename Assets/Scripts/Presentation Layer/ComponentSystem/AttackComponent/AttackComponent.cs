@@ -170,11 +170,10 @@ public class AttackComponent : PComponent
     {
         if (CollisionSystem.Instance == null) return;
 
-        float effectiveSearchRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
-        // 1단계: 원형 반지름(attackRadius)으로 1차 탐색
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveSearchRadius, targetLayer, collisionResults);
+        // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, collisionResults);
 
         int hitCount = collisionResults.Count;
         if (hitCount <= 0) return;
@@ -301,11 +300,10 @@ public class AttackComponent : PComponent
             return;
         }
 
-        float effectiveSearchRadius = attackRadius * ctx.characterStat.axeAttackRangeMultiplier;
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
-        // 1단계: 원형 반지름(attackRadius)으로 1차 탐색
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveSearchRadius, targetLayer, detectionResults);
+        // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, detectionResults);
 
         int hitCount = detectionResults.Count;
         if (hitCount <= 0)
