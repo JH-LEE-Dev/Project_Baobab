@@ -1594,8 +1594,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 4b1c420b76a582b449abfc8c69f420cb, type: 2}
   - {fileID: 11400000, guid: 6d5fb5cf9d91704479a8b3c48716ac2d, type: 2}
   - {fileID: 11400000, guid: 0cc3ff65d32fc7e419148d6a1d10565a, type: 2}
-  stencilTile: {fileID: 11400000, guid: 0eb5b42e9a551a64989077256ea1898f, type: 2}
-  groundStencilTile: {fileID: 11400000, guid: f3bda9cb7cba18c41b2a08b44b6c2bb3, type: 2}
+  stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
+  groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
 --- !u!1 &7432536287932878892
 GameObject:
   m_ObjectHideFlags: 0
