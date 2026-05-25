@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Corner_R_D
   m_EditorClassIdentifier: Unity.2D.Tilemap.Extras::UnityEngine.Tilemaps.AnimatedTile
   m_AnimatedSprites:
-  - {fileID: -518923042, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: -1984424399, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: 686587275, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: -1984424399, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: -518923042, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: 4091484963328241734, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: -5159361654488219728, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: 6991831236175195926, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: -5159361654488219728, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: 4091484963328241734, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
   m_MinSpeed: 1
   m_MaxSpeed: 1
   m_AnimationStartTime: 0

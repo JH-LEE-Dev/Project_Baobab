@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using NaughtyAttributes;
 using UnityEngine;
 using UnityEngine.Pool;
 
@@ -30,8 +29,10 @@ public class EnvironmentObjManager : MonoBehaviour
     private CullingGroup.StateChanged onCullingStateChangedDelegate;
 
     [SerializeField] private bool collectionCheck = false;
-    [SerializeField] private int defaultCapacity = 50;
-    [SerializeField] private int maxSize = SYSTEM_VAR.MAX_ENV_OBJ_CNT;
+    [SerializeField] private int cloudDefaultCapacity = 500;
+    [SerializeField] private int birdShadowDefaultCapacity = 50;
+    [SerializeField] private int cloudMaxSize = SYSTEM_VAR.MAX_CLOUD_OBJ_CNT;
+    [SerializeField] private int birdShadowMaxSize = SYSTEM_VAR.MAX_BIRDSHADOW_OBJ_CNT;
 
     [Header("Cloud Settings")]
     [SerializeField] private List<Sprite> cloudSprites;
@@ -39,6 +40,15 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private float cloudMinSpeed = 0.02f;
     [SerializeField] private float cloudMaxSpeed = 0.06f;
     private List<int> cellIndices = new List<int>(100); // GC Alloc 방지용 재사용 리스트
+
+    [Header("Bird Shadow Settings")]
+    [SerializeField] private int birdFlockCnt = 5;
+    [SerializeField] private float birdMinSpeed = 2f;
+    [SerializeField] private float birdMaxSpeed = 4f;
+    [SerializeField] private float birdSpawnRadiusPadding = 10f;
+    [SerializeField] private float birdFlockOffsetRange = 1.5f;
+    [SerializeField] private float birdMinDelay = 3f;
+    [SerializeField] private float birdMaxDelay = 8f;
 
 
     // // 퍼블릭 메서드
@@ -48,7 +58,7 @@ public class EnvironmentObjManager : MonoBehaviour
         tilemapDataProvider = _tilemapDataProvider;
 
         cullingDistances = new float[] { cullingDistance };
-        spheres = new BoundingSphere[maxSize];
+        spheres = new BoundingSphere[cloudMaxSize + birdShadowMaxSize];
         onCullingStateChangedDelegate = OnCullingStateChanged;
 
         SetupPools();
@@ -100,6 +110,7 @@ public class EnvironmentObjManager : MonoBehaviour
     {
         ReleaseAll();
         SpawnClouds();
+        SpawnBirdShadows();
     }
 
     private void SpawnClouds()
@@ -205,6 +216,92 @@ public class EnvironmentObjManager : MonoBehaviour
         UpdateObjVisibility(_obj, _shouldBeActive);
     }
 
+    private void SpawnBirdShadows()
+    {
+        if (null == tilemapDataProvider)
+            return;
+
+        Vector3 _bottomLeft = new Vector3Int(-tilemapDataProvider.GridWidth / 2, 0, 0);
+        Vector3 _topRight = new Vector3Int(tilemapDataProvider.GridWidth / 2, tilemapDataProvider.GridHeight / 2, 0);
+
+        Vector3 _mapCenter = new Vector3(
+            (_bottomLeft.x + _topRight.x) * 0.5f,
+            (_bottomLeft.y + _topRight.y) * 0.5f,
+            0f
+        );
+
+        float _mapWidth = _topRight.x - _bottomLeft.x;
+        float _mapHeight = _topRight.y - _bottomLeft.y;
+        float _spawnRadius = Mathf.Max(_mapWidth, _mapHeight) * 0.5f + birdSpawnRadiusPadding;
+
+        for (int _i = 0; _i < birdFlockCnt; _i++)
+        {
+            int _birdCountInFlock = UnityEngine.Random.Range(1, 4);
+
+            for (int _j = 0; _j < _birdCountInFlock; _j++)
+            {
+                Vector3 _flockOffset = Vector3.zero;
+                if (_j > 0)
+                {
+                    _flockOffset = new Vector3(
+                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
+                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
+                        0f
+                    );
+                }
+
+                SpawnBirdShadowAt(_i, _j, _mapCenter, _spawnRadius, _flockOffset);
+            }
+        }
+    }
+
+    private void SpawnBirdShadowAt(int _flockIndex, int _birdIndexInFlock, Vector3 _mapCenter, float _spawnRadius, Vector3 _flockOffset)
+    {
+        if (false == objPools.TryGetValue(EnvironmentObjType.BirdShadow, out IObjectPool<EnvironmentObj> _pool))
+            return;
+
+        if (null == cullingGroup)
+        {
+            SetupCullingGroup();
+        }
+
+        EnvironmentObj _obj = _pool.Get();
+
+        if (_obj is BirdShadow _birdShadow)
+        {
+            _birdShadow.SetupBird(
+                _flockIndex,
+                _birdIndexInFlock,
+                _mapCenter,
+                _spawnRadius,
+                birdMinSpeed,
+                birdMaxSpeed,
+                birdMinDelay,
+                birdMaxDelay,
+                _flockOffset
+            );
+        }
+
+        Vector3 _initialPos = _obj.GetCurrentPosition();
+        _obj.transform.position = _initialPos;
+        _obj.Initialize();
+
+        _obj.PoolIndex = allSpawnedObjs.Count;
+        allSpawnedObjs.Add(_obj);
+
+        if (spheres.Length <= _obj.PoolIndex)
+        {
+            Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, _obj.PoolIndex + 1));
+            cullingGroup.SetBoundingSpheres(spheres);
+        }
+        spheres[_obj.PoolIndex] = new BoundingSphere(_initialPos, 2f);
+
+        cullingGroup.SetBoundingSphereCount(allSpawnedObjs.Count);
+
+        bool _shouldBeActive = cullingGroup.IsVisible(_obj.PoolIndex) && (cullingGroup.GetDistance(_obj.PoolIndex) == 0);
+        UpdateObjVisibility(_obj, _shouldBeActive);
+    }
+
     public void ReleaseAllObjs()
     {
         ReleaseAll();
@@ -222,14 +319,28 @@ public class EnvironmentObjManager : MonoBehaviour
             EnvironmentObjType _type = _prefab.envObjType;
             if (true == objPools.ContainsKey(_type)) continue;
 
+            int _capacity = 50;
+            int _max = 100;
+
+            if (_type == EnvironmentObjType.Cloud)
+            {
+                _capacity = cloudDefaultCapacity;
+                _max = cloudMaxSize;
+            }
+            else if (_type == EnvironmentObjType.BirdShadow)
+            {
+                _capacity = birdShadowDefaultCapacity;
+                _max = birdShadowMaxSize;
+            }
+
             IObjectPool<EnvironmentObj> _pool = new ObjectPool<EnvironmentObj>(
                 () => Instantiate(_prefab, transform),
                 OnGetObj,
                 OnReleaseObj,
                 OnDestroyObj,
                 collectionCheck,
-                defaultCapacity,
-                maxSize
+                _capacity,
+                _max
             );
             objPools.Add(_type, _pool);
         }

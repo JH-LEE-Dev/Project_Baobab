@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 13b75c95f34a00d4e8c04f76b73312e6, type: 3}
+  m_Name: Butterfly
+  m_EditorClassIdentifier: Unity.2D.Tilemap.Extras::UnityEngine.Tilemaps.AnimatedTile
+  m_AnimatedSprites:
+  - {fileID: 9199170542279409196, guid: 873f64549643fee4cb4865a60217b56a, type: 3}
+  - {fileID: -3050869404684035660, guid: 873f64549643fee4cb4865a60217b56a, type: 3}
+  - {fileID: 4163986524479166534, guid: 873f64549643fee4cb4865a60217b56a, type: 3}
+  - {fileID: -3073736898668165059, guid: 873f64549643fee4cb4865a60217b56a, type: 3}
+  - {fileID: -3664790420504391189, guid: 873f64549643fee4cb4865a60217b56a, type: 3}
+  m_MinSpeed: 5
+  m_MaxSpeed: 5
+  m_AnimationStartTime: 0
+  m_AnimationStartFrame: 0
+  m_TileColliderType: 0
+  m_TileAnimationFlags: 0

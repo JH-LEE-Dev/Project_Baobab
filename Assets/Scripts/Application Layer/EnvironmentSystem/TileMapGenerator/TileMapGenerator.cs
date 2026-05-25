@@ -62,9 +62,14 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private TileBase grassTile;
     [SerializeField] private TileBase mountainTile;
     [SerializeField] private TileBase treeCollisionTile;
-    [SerializeField] private List<TileBase> decoTiles;
+    [SerializeField] private List<TileBase> grassDecoTiles;
+    [SerializeField] private List<TileBase> groundDecoTiles;
+    [SerializeField] private List<TileBase> rockDecoTiles;
+    [SerializeField] private List<TileBase> waterDecoTiles;
+    [SerializeField] private List<TileBase> insectDecoTiles;
     [SerializeField] private TileBase stencilTile;
     [SerializeField] private TileBase groundStencilTile;
+
 
     // // 외부 의존성
     private Tilemap groundTilemap;
@@ -75,6 +80,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private Tilemap waterTilemap;
     private Tilemap waterCornerTilemap;
     private Tilemap waterCollisionTilemap;
+    private Tilemap rockCollisionTilemap;
 
     private Grid grid;
 
@@ -85,6 +91,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] waterTiles;
     private TileBase[] waterCornerTiles;
     private TileBase[] waterCollisionTiles;
+    private TileBase[] rockCollisionTiles;
     private TileBase[] decoTilesToApply;
     private TileBase[] waterStencilTiles;
     private TileBase[] groundStencilTiles;
@@ -128,6 +135,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             else if (maps[i].name == "WaterTilemap") waterTilemap = maps[i];
             else if (maps[i].name == "WaterCornerTilemap") waterCornerTilemap = maps[i];
             else if (maps[i].name == "WaterColliderTilemap") waterCollisionTilemap = maps[i];
+            else if (maps[i].name == "RockColliderTilemap" || maps[i].name == "RockCollisionTilemap") rockCollisionTilemap = maps[i];
         }
 
         int size = width * height;
@@ -137,6 +145,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         waterTiles = new TileBase[size];
         waterCornerTiles = new TileBase[size];
         waterCollisionTiles = new TileBase[size];
+        rockCollisionTiles = new TileBase[size];
         decoTilesToApply = new TileBase[size];
         waterStencilTiles = new TileBase[size];
         groundStencilTiles = new TileBase[size];
@@ -171,6 +180,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         decoTilemap.ClearAllTiles();
         if (waterTilemap != null) waterTilemap.ClearAllTiles();
         if (waterCollisionTilemap != null) waterCollisionTilemap.ClearAllTiles();
+        if (rockCollisionTilemap != null) rockCollisionTilemap.ClearAllTiles();
         if (waterStencilTilemap != null) waterStencilTilemap.ClearAllTiles();
         if (groundStencilTilemap != null) groundStencilTilemap.ClearAllTiles();
 
@@ -216,6 +226,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     public bool IsWaterTile(Vector3Int _cellPos)
     {
         return IsWater(_cellPos.x, _cellPos.y);
+    }
+
+    public bool HasRockDeco(Vector3Int _cellPos)
+    {
+        if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;
+        return rockCollisionTiles[_cellPos.x + _cellPos.y * width] != null;
     }
 
     public Vector3Int WorldToCell(Vector3 _worldPos)
@@ -396,6 +412,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Array.Clear(waterTiles, 0, size);
         Array.Clear(waterCornerTiles, 0, size);
         Array.Clear(waterCollisionTiles, 0, size);
+        Array.Clear(rockCollisionTiles, 0, size);
         Array.Clear(decoTilesToApply, 0, size);
         Array.Clear(waterStencilTiles, 0, size);
         Array.Clear(groundStencilTiles, 0, size);
@@ -434,28 +451,89 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 waterCornerTiles[i] = GetWaterCornerTile(x, y);
                 waterCollisionTiles[i] = treeCollisionTile;
                 waterStencilTiles[i] = stencilTile;
+
+                if (waterDecoTiles != null && waterDecoTiles.Count > 0)
+                {
+                    bool _isDeepWater = true;
+                    for (int _dy = -1; _dy <= 1; _dy++)
+                    {
+                        for (int _dx = -1; _dx <= 1; _dx++)
+                        {
+                            if (_dx == 0 && _dy == 0) continue;
+                            if (IsLand(x + _dx, y + _dy))
+                            {
+                                _isDeepWater = false;
+                                break;
+                            }
+                        }
+                        if (!_isDeepWater) break;
+                    }
+
+                    if (_isDeepWater)
+                    {
+                        decoTilesToApply[i] = waterDecoTiles[UnityEngine.Random.Range(0, waterDecoTiles.Count)];
+                    }
+                }
             }
             else
             {
-                groundStencilTiles[i] = groundStencilTile;
+                if (isShoreline[i])
+                {
+                    groundStencilTiles[i] = groundStencilTile;
+                }
                 Vector3 pos = GetWorldPos(i);
 
                 cellToIndex[i] = walkablePositions.Count;
                 walkablePositions.Add(pos);
 
-                if (isShoreline[i] || v < sandThreshold)
+                bool _isSand = isShoreline[i] || v < sandThreshold;
+                if (_isSand)
                 {
                     groundTiles[i] = sandTile;
                 }
                 else
                 {
                     groundTiles[i] = grassTile;
+                }
 
-                    if (decoTiles != null && decoTiles.Count > 0 && UnityEngine.Random.value < 0.3f)
+                bool _hasRockDeco = false;
+                if (rockDecoTiles != null && rockDecoTiles.Count > 0 && UnityEngine.Random.value < 0.005f)
+                {
+                    decoTilesToApply[i] = rockDecoTiles[UnityEngine.Random.Range(0, rockDecoTiles.Count)];
+                    _hasRockDeco = true;
+                    rockCollisionTiles[i] = treeCollisionTile;
+                }
+
+                bool _hasInsectDeco = false;
+                if (false == _hasRockDeco && false == _isSand)
+                {
+                    if (insectDecoTiles != null && insectDecoTiles.Count > 0 && UnityEngine.Random.value < 0.01f)
                     {
-                        decoTilesToApply[i] = decoTiles[UnityEngine.Random.Range(0, decoTiles.Count)];
+                        decoTilesToApply[i] = insectDecoTiles[UnityEngine.Random.Range(0, insectDecoTiles.Count)];
+                        _hasInsectDeco = true;
                     }
+                }
 
+                bool _hasGroundDeco = false;
+                if (false == _hasRockDeco && false == _hasInsectDeco)
+                {
+                    if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < 0.15f)
+                    {
+                        decoTilesToApply[i] = groundDecoTiles[UnityEngine.Random.Range(0, groundDecoTiles.Count)];
+                        _hasGroundDeco = true;
+                    }
+                }
+
+                if (false == _isSand && false == _hasRockDeco && false == _hasInsectDeco && false == _hasGroundDeco)
+                {
+                    if (grassDecoTiles != null && grassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.15f)
+                    {
+                        decoTilesToApply[i] = grassDecoTiles[UnityEngine.Random.Range(0, grassDecoTiles.Count)];
+                    }
+                }
+
+                if (false == _isSand && false == _hasRockDeco)
+                {
                     if (!inSafeZone)
                     {
                         if ((pos - portalPos).sqrMagnitude > 2.25f && (pos - playerPos).sqrMagnitude > 2.25f)
@@ -478,6 +556,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (waterCornerTilemap != null) waterCornerTilemap.ClearAllTiles();
         if (waterCornerTilemap != null) waterCornerTilemap.SetTilesBlock(b, waterCornerTiles);
         if (waterCollisionTilemap != null) waterCollisionTilemap.SetTilesBlock(b, waterCollisionTiles);
+        if (rockCollisionTilemap != null) rockCollisionTilemap.SetTilesBlock(b, rockCollisionTiles);
         decoTilemap.SetTilesBlock(b, decoTilesToApply);
         if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, waterStencilTiles);
         if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);

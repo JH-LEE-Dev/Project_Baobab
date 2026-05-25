@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Water_RU
   m_EditorClassIdentifier: Unity.2D.Tilemap.Extras::UnityEngine.Tilemaps.AnimatedTile
   m_AnimatedSprites:
-  - {fileID: -915101771, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: 1121605884, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: -28107658, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: 1121605884, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
-  - {fileID: -915101771, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: -2441758015346859799, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: 3302458224928084531, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: -6371083934452314551, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: 3302458224928084531, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
+  - {fileID: -2441758015346859799, guid: 107672fb9f916084a8dc75671c0e16e1, type: 3}
   m_MinSpeed: 1
   m_MaxSpeed: 1
   m_AnimationStartTime: 0

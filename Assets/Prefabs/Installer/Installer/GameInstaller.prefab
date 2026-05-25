@@ -862,11 +862,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnvironmentObjManager
   envObjPrefabs:
   - {fileID: 1247708929555277769, guid: 626303961cb4de4418c900b680db4cee, type: 3}
+  - {fileID: 7529419962234095240, guid: 2514a7c8ad19a64448721c6c21e7a06c, type: 3}
   cullingDistance: 25
   cullingUpdateInterval: 0.2
   collectionCheck: 0
-  defaultCapacity: 50
-  maxSize: 200
+  cloudDefaultCapacity: 500
+  birdShadowDefaultCapacity: 50
+  cloudMaxSize: 1000
+  birdShadowMaxSize: 200
   cloudSprites:
   - {fileID: 21300000, guid: 166bb817ec776e94d9d3ab9664e8592e, type: 3}
   - {fileID: 21300000, guid: 1cf8b3dcf8d645f4da556c1e052d1cdd, type: 3}
@@ -876,6 +879,13 @@ MonoBehaviour:
   cloudCnt: 500
   cloudMinSpeed: 0.06
   cloudMaxSpeed: 0.075
+  birdFlockCnt: 5
+  birdMinSpeed: 2
+  birdMaxSpeed: 4
+  birdSpawnRadiusPadding: 10
+  birdFlockOffsetRange: 1.5
+  birdMinDelay: 3
+  birdMaxDelay: 8
 --- !u!1 &3941740186820979649
 GameObject:
   m_ObjectHideFlags: 0
@@ -1583,17 +1593,26 @@ MonoBehaviour:
   waterTileCornerUDL: {fileID: 11400000, guid: c6b153e63d3a140479946ede4c01ed0a, type: 2}
   waterTileCornerRDL: {fileID: 11400000, guid: 345945b8e86dc0c49b55590adf0dfb28, type: 2}
   waterTileCornerAll: {fileID: 11400000, guid: 5ef52f31b457ae04cb35e0f0a953d2de, type: 2}
-  sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
-  grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}
+  sandTile: {fileID: 11400000, guid: b22a737e40330174abd9889d1ab15578, type: 2}
+  grassTile: {fileID: 11400000, guid: 7b8329dc8ab116942bf0c77775877d08, type: 2}
   mountainTile: {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
   treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  decoTiles:
-  - {fileID: 11400000, guid: 9d7cb86a2c6ed0c4cb0740665ad6febd, type: 2}
-  - {fileID: 11400000, guid: be2955d52caddd94380efa18b54c060b, type: 2}
-  - {fileID: 11400000, guid: a2a61adf3cf3753478c7f1292a6a858d, type: 2}
-  - {fileID: 11400000, guid: 4b1c420b76a582b449abfc8c69f420cb, type: 2}
-  - {fileID: 11400000, guid: 6d5fb5cf9d91704479a8b3c48716ac2d, type: 2}
-  - {fileID: 11400000, guid: 0cc3ff65d32fc7e419148d6a1d10565a, type: 2}
+  grassDecoTiles:
+  - {fileID: 11400000, guid: 497de42aa6ec0b84cb4c6f2508584131, type: 2}
+  - {fileID: 11400000, guid: 8e29a0edf350c2d42ba0447165bd7dfa, type: 2}
+  - {fileID: 11400000, guid: a9bad7b8aef39254c95aea1c9ac66bf3, type: 2}
+  - {fileID: 11400000, guid: c09510ff2b60387489b381731cb4e307, type: 2}
+  - {fileID: 11400000, guid: 1d0b803c8fc55c1479136d5bd9f2ba9a, type: 2}
+  - {fileID: 11400000, guid: 37b81300cf762bf45a2a55c035ef8224, type: 2}
+  groundDecoTiles:
+  - {fileID: 11400000, guid: 8f76bb77283f27c4c91c61f69cd7b85c, type: 2}
+  - {fileID: 11400000, guid: edf0bc271764ee24ea84f6c093c53180, type: 2}
+  rockDecoTiles:
+  - {fileID: 11400000, guid: 0fccbf36a409cdd48b21970bdc3accbd, type: 2}
+  - {fileID: 11400000, guid: 6cd2bbedb3de9ea40b256bb48ba14ed3, type: 2}
+  waterDecoTiles: []
+  insectDecoTiles:
+  - {fileID: 11400000, guid: 08972e07b8b9178418d694537a14321e, type: 2}
   stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
 --- !u!1 &7432536287932878892
