@@ -231,7 +231,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(spawnPos);
 
             // 해당 타일이 점유 중(플레이어, 몬스터 등)이 아니면 생성 진행
-            if (!environmentProvider.pathfindGridProvider.IsOccupied(cellPos))
+            if (!environmentProvider.pathfindGridProvider.IsOccupied(cellPos) &&
+                !environmentProvider.tilemapDataProvider.HasRockDeco(cellPos))
             {
                 int lastIdx = availablePositions.Count - 1;
                 availablePositions[checkIdx] = availablePositions[lastIdx];

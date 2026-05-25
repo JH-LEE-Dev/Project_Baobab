@@ -168,7 +168,8 @@ public class PathFindComponent : MonoBehaviour
             return false;
         }
 
-        if (!tilemapDataProvider.IsWalkable(targetPos) || pathfindGridProvider.IsOccupied(targetPos))
+        if (!tilemapDataProvider.IsWalkable(targetPos) || pathfindGridProvider.IsOccupied(targetPos) ||
+            tilemapDataProvider.HasRockDeco(targetPos))
         {
             return false;
         }
@@ -213,7 +214,8 @@ public class PathFindComponent : MonoBehaviour
                 if (neighborPos.x < 0 || neighborPos.x >= gridWidth || neighborPos.y < 0 || neighborPos.y >= gridHeight)
                     continue;
 
-                if (!tilemapDataProvider.IsWalkable(neighborPos) || pathfindGridProvider.IsOccupied(neighborPos))
+                if (!tilemapDataProvider.IsWalkable(neighborPos) || pathfindGridProvider.IsOccupied(neighborPos) ||
+                    tilemapDataProvider.HasRockDeco(neighborPos))
                 {
                     continue;
                 }
@@ -223,7 +225,8 @@ public class PathFindComponent : MonoBehaviour
                 {
                     Vector3Int side1 = currentPos + new Vector3Int(neighborOffsets[i].x, 0, 0);
                     Vector3Int side2 = currentPos + new Vector3Int(0, neighborOffsets[i].y, 0);
-                    if (!tilemapDataProvider.IsWalkable(side1) || !tilemapDataProvider.IsWalkable(side2))
+                    if (!tilemapDataProvider.IsWalkable(side1) || tilemapDataProvider.HasRockDeco(side1) ||
+                        !tilemapDataProvider.IsWalkable(side2) || tilemapDataProvider.HasRockDeco(side2))
                     {
                         continue;
                     }

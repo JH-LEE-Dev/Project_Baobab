@@ -288,11 +288,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         stateMachine.ChangeState<DeadState>();
         armComponent.SetActivate(false);
+        attackComponent.SetEnable(false);
         characterVisualComponent.CharacterIsDead(true);
         bDead = true;
 
         inputManager.PauseMove(true);
-
         StartCoroutine(StaminaIsEmptyRoutine());
     }
 

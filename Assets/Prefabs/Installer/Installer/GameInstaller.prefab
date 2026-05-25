@@ -51,6 +51,7 @@ MonoBehaviour:
   maxItemsPerSlot: 5
   inventorySlots: []
   transferInterval: 1
+  bCanInteract: 0
 --- !u!114 &8344768423549439187
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -861,11 +862,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnvironmentObjManager
   envObjPrefabs:
   - {fileID: 1247708929555277769, guid: 626303961cb4de4418c900b680db4cee, type: 3}
+  - {fileID: 7529419962234095240, guid: 2514a7c8ad19a64448721c6c21e7a06c, type: 3}
   cullingDistance: 25
   cullingUpdateInterval: 0.2
   collectionCheck: 0
-  defaultCapacity: 50
-  maxSize: 200
+  cloudDefaultCapacity: 500
+  birdShadowDefaultCapacity: 50
+  cloudMaxSize: 1000
+  birdShadowMaxSize: 200
   cloudSprites:
   - {fileID: 21300000, guid: 166bb817ec776e94d9d3ab9664e8592e, type: 3}
   - {fileID: 21300000, guid: 1cf8b3dcf8d645f4da556c1e052d1cdd, type: 3}
@@ -875,6 +879,13 @@ MonoBehaviour:
   cloudCnt: 500
   cloudMinSpeed: 0.06
   cloudMaxSpeed: 0.075
+  birdFlockCnt: 5
+  birdMinSpeed: 2
+  birdMaxSpeed: 4
+  birdSpawnRadiusPadding: 10
+  birdFlockOffsetRange: 1.5
+  birdMinDelay: 3
+  birdMaxDelay: 8
 --- !u!1 &3941740186820979649
 GameObject:
   m_ObjectHideFlags: 0
@@ -1551,36 +1562,59 @@ MonoBehaviour:
   centerSafeZoneRadius: 5
   sandDensity: 0.125
   grassDensity: 0.575
-  rockDensity: 0.3
-  waterTile: {fileID: 11400000, guid: 9994dfdbe2ef6f94baa506ce450e2381, type: 2}
-  waterTile_BorderRU: {fileID: 11400000, guid: a24492d07e0885d44a678752b3f7d67e, type: 2}
-  waterTile_BorderRD: {fileID: 11400000, guid: 2089888c80809ca418f9151c902b2803, type: 2}
-  waterTile_BorderLU: {fileID: 11400000, guid: a108f0255b3ba844eb0dfc47205072e0, type: 2}
-  waterTile_BorderLD: {fileID: 11400000, guid: db7b0d82cb26e4840b594068ee1a5973, type: 2}
-  waterTile_BorderRU_RD: {fileID: 11400000, guid: f1653cffbdc3625439cacd773d858633, type: 2}
-  waterTile_BorderRU_LU: {fileID: 11400000, guid: 121de0c9beb020040a5a1bfd8ec66e8b, type: 2}
-  waterTile_BorderRU_LD: {fileID: 11400000, guid: 83d912eb45c3de143a8f2e75a7294044, type: 2}
-  waterTile_BorderRD_LU: {fileID: 11400000, guid: 2de251fa595e0cf48b086dffc4d3012e, type: 2}
-  waterTile_BorderRD_LD: {fileID: 11400000, guid: b101d3d62c458644192261298b5c100f, type: 2}
-  waterTile_BorderLU_LD: {fileID: 11400000, guid: f07970a1248f0fd4fb10b53f70202894, type: 2}
-  waterTile_BorderRU_RD_LU: {fileID: 11400000, guid: 39ea5f2c5954c964d8b898f3c7e62050, type: 2}
-  waterTile_BorderRU_RD_LD: {fileID: 11400000, guid: 3a03c2a1a66035b4ba82d7dd34b4c970, type: 2}
-  waterTile_BorderRU_LU_LD: {fileID: 11400000, guid: e14f24facd85e8443bc259655b5ee9bd, type: 2}
-  waterTile_BorderRD_LU_LD: {fileID: 11400000, guid: b682d462492a8b74eafbcd0b7d7f478d, type: 2}
-  waterTile_BorderAll: {fileID: 11400000, guid: 332dd6af18631a94abc1a086e22e1383, type: 2}
-  sandTile: {fileID: 11400000, guid: 7c247a9e4bd2f9346b118890c15a641e, type: 2}
-  grassTile: {fileID: 11400000, guid: da8a1ea02d969234b8882b69dfab7a12, type: 2}
+  waterTile: {fileID: 11400000, guid: cfdf1b9c56061eb46b3e864ff2fa83ef, type: 2}
+  waterTile_BorderRU: {fileID: 11400000, guid: 4d67f04681f10de41a231cc32ace48f8, type: 2}
+  waterTile_BorderRD: {fileID: 11400000, guid: 609d5492266db6d4fbec9368e2100ff3, type: 2}
+  waterTile_BorderLU: {fileID: 11400000, guid: 2a1237e6ef51ab04cad8360a426d57fd, type: 2}
+  waterTile_BorderLD: {fileID: 11400000, guid: c8c390385ecebf94f8d097eb9b4e7c2d, type: 2}
+  waterTile_BorderRU_RD: {fileID: 11400000, guid: 21ee3ddb1abcb0d41b7a314a6388cd60, type: 2}
+  waterTile_BorderRU_LU: {fileID: 11400000, guid: dd9e5f09f38d2ef4b890b9e3de5bb9b2, type: 2}
+  waterTile_BorderRU_LD: {fileID: 11400000, guid: afa8f5d48fb5654499700f36a4abc9fe, type: 2}
+  waterTile_BorderRD_LU: {fileID: 11400000, guid: 3012b0de753d50b428e12abab812bd4d, type: 2}
+  waterTile_BorderRD_LD: {fileID: 11400000, guid: 88db033d6aba3344c86c18ee96ff2400, type: 2}
+  waterTile_BorderLU_LD: {fileID: 11400000, guid: da78cd380a0338746ae78532ed05ad9f, type: 2}
+  waterTile_BorderRU_RD_LU: {fileID: 11400000, guid: c013171164277b14095dad5ca1bb0e10, type: 2}
+  waterTile_BorderRU_RD_LD: {fileID: 11400000, guid: 5a4e5b0fea46fe14cb8973e7f88d58b3, type: 2}
+  waterTile_BorderRU_LU_LD: {fileID: 11400000, guid: e3bce2dd71e465240a56f85e9a43ad59, type: 2}
+  waterTile_BorderRD_LU_LD: {fileID: 11400000, guid: db98acb2e797dc04aafaaca8d77205d7, type: 2}
+  waterTile_BorderAll: {fileID: 11400000, guid: fb2700989101cde40834b5627198d860, type: 2}
+  waterTileCornerU: {fileID: 11400000, guid: 8c5f0af08b4e4994d89be85df430cbc1, type: 2}
+  waterTileCornerR: {fileID: 11400000, guid: b8b8366e5b1931a4cad0dcc5c83aa8f4, type: 2}
+  waterTileCornerD: {fileID: 11400000, guid: e52ebf19cd6c185448d1f2fbc6383c25, type: 2}
+  waterTileCornerL: {fileID: 11400000, guid: ae18edf01c908b949a8802110e3231a5, type: 2}
+  waterTileCornerUR: {fileID: 11400000, guid: 9f90f279cfdd5cc4099dba563d36805b, type: 2}
+  waterTileCornerUD: {fileID: 11400000, guid: b256708ac42a19146ae870d8277a759d, type: 2}
+  waterTileCornerUL: {fileID: 11400000, guid: 810b7f6e2403874449741775804a0567, type: 2}
+  waterTileCornerRD: {fileID: 11400000, guid: 1e761e974f1acc8438ee03c56db36218, type: 2}
+  waterTileCornerRL: {fileID: 11400000, guid: f634aabea51b633428baaadec26c0762, type: 2}
+  waterTileCornerDL: {fileID: 11400000, guid: 19763e1fd5dadf0409042567a67d996b, type: 2}
+  waterTileCornerURD: {fileID: 11400000, guid: 8a63d014e42a0cc47a897eae4f81f4b2, type: 2}
+  waterTileCornerURL: {fileID: 11400000, guid: 684c77e406452364d99e6b76cebaa988, type: 2}
+  waterTileCornerUDL: {fileID: 11400000, guid: c6b153e63d3a140479946ede4c01ed0a, type: 2}
+  waterTileCornerRDL: {fileID: 11400000, guid: 345945b8e86dc0c49b55590adf0dfb28, type: 2}
+  waterTileCornerAll: {fileID: 11400000, guid: 5ef52f31b457ae04cb35e0f0a953d2de, type: 2}
+  sandTile: {fileID: 11400000, guid: b22a737e40330174abd9889d1ab15578, type: 2}
+  grassTile: {fileID: 11400000, guid: 7b8329dc8ab116942bf0c77775877d08, type: 2}
   mountainTile: {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
   treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  decoTiles:
-  - {fileID: 11400000, guid: 9d7cb86a2c6ed0c4cb0740665ad6febd, type: 2}
-  - {fileID: 11400000, guid: be2955d52caddd94380efa18b54c060b, type: 2}
-  - {fileID: 11400000, guid: a2a61adf3cf3753478c7f1292a6a858d, type: 2}
-  - {fileID: 11400000, guid: 4b1c420b76a582b449abfc8c69f420cb, type: 2}
-  - {fileID: 11400000, guid: 6d5fb5cf9d91704479a8b3c48716ac2d, type: 2}
-  - {fileID: 11400000, guid: 0cc3ff65d32fc7e419148d6a1d10565a, type: 2}
-  stencilTile: {fileID: 11400000, guid: 0eb5b42e9a551a64989077256ea1898f, type: 2}
-  groundStencilTile: {fileID: 11400000, guid: f3bda9cb7cba18c41b2a08b44b6c2bb3, type: 2}
+  grassDecoTiles:
+  - {fileID: 11400000, guid: 497de42aa6ec0b84cb4c6f2508584131, type: 2}
+  - {fileID: 11400000, guid: 8e29a0edf350c2d42ba0447165bd7dfa, type: 2}
+  - {fileID: 11400000, guid: a9bad7b8aef39254c95aea1c9ac66bf3, type: 2}
+  - {fileID: 11400000, guid: c09510ff2b60387489b381731cb4e307, type: 2}
+  - {fileID: 11400000, guid: 1d0b803c8fc55c1479136d5bd9f2ba9a, type: 2}
+  - {fileID: 11400000, guid: 37b81300cf762bf45a2a55c035ef8224, type: 2}
+  groundDecoTiles:
+  - {fileID: 11400000, guid: 8f76bb77283f27c4c91c61f69cd7b85c, type: 2}
+  - {fileID: 11400000, guid: edf0bc271764ee24ea84f6c093c53180, type: 2}
+  rockDecoTiles:
+  - {fileID: 11400000, guid: 0fccbf36a409cdd48b21970bdc3accbd, type: 2}
+  - {fileID: 11400000, guid: 6cd2bbedb3de9ea40b256bb48ba14ed3, type: 2}
+  waterDecoTiles: []
+  insectDecoTiles:
+  - {fileID: 11400000, guid: 08972e07b8b9178418d694537a14321e, type: 2}
+  stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
+  groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
 --- !u!1 &7432536287932878892
 GameObject:
   m_ObjectHideFlags: 0
