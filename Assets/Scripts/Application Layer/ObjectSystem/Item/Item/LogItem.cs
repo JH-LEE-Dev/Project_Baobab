@@ -643,6 +643,14 @@ public class LogItem : Item, IStaticCollidable
         Vector3 targetPos = suckTarget.position;
         float distance = Vector3.Distance(transform.position, targetPos);
 
+        // 프레임 드랍 방어 가드: 다음 이동 거리가 남은 거리보다 크거나 같다면 오버슈트 방지를 위해 바로 획득 처리
+        if (suckSpeed > 0f && (suckSpeed * _deltaTime) >= distance)
+        {
+            transform.position = targetPos;
+            LogItemAcquired?.Invoke(this);
+            return;
+        }
+
         // 도착 조건: 거리가 가깝고 타겟을 향해 이동 중일 때
         if (distance < MinAcquireDist && suckSpeed > 0f)
         {
@@ -668,6 +676,9 @@ public class LogItem : Item, IStaticCollidable
             // 끌려갈 때 속도가 빨라질수록 가속도도 기하급수적으로 증가하는 탄성 가속
             float dynamicAccel = SuckAccel * 2.5f * (1f + suckSpeed * 0.15f);
             suckSpeed += dynamicAccel * _deltaTime;
+
+            // 가속도 폭발 방지 (최대 속도 제한)
+            suckSpeed = Mathf.Min(suckSpeed, 35f);
         }
 
         // 타겟 방향으로 부드럽게 이동
