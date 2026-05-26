@@ -2025,7 +2025,14 @@ MonoBehaviour:
   unlockObject: {fileID: 0}
   mapNameText: {fileID: 6628470352438654747}
   motionPlayer: {fileID: 6328809702926277112}
+  groundShowDelay: 0.015
   dimFactor: 0.5
+  mapThemes:
+  - mapType: 2
+    groundSprites: []
+    leafSprite: {fileID: 0}
+    trunkSprite: {fileID: 0}
+    animalSprites: []
 --- !u!1 &5737211693050199057
 GameObject:
   m_ObjectHideFlags: 0
