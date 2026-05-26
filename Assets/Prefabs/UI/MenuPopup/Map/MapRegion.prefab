@@ -2020,19 +2020,16 @@ MonoBehaviour:
     trunkImage: {fileID: 781117260406929197}
   - leafImage: {fileID: 8362470208966425467}
     trunkImage: {fileID: 5796820359919085414}
-  animalImages: []
+  decoImages: []
   lockObject: {fileID: 0}
   unlockObject: {fileID: 0}
   mapNameText: {fileID: 6628470352438654747}
   motionPlayer: {fileID: 6328809702926277112}
   groundShowDelay: 0.015
   dimFactor: 0.5
-  mapThemes:
-  - mapType: 2
-    groundSprites: []
-    leafSprite: {fileID: 0}
-    trunkSprite: {fileID: 0}
-    animalSprites: []
+  themeConfig: {fileID: 11400000, guid: 356ff389cb284f24da07770c11354ff9, type: 2}
+  gridWidth: 4
+  gridHeight: 4
 --- !u!1 &5737211693050199057
 GameObject:
   m_ObjectHideFlags: 0
