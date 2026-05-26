@@ -787,6 +787,7 @@ MonoBehaviour:
   onWaterAnimatorObject: {fileID: 6499581948990469458}
   collisionRadius: 0.15
   collisionOffset: {x: 0, y: 0.12}
+  itemSensorRadius: 0.5
   itemLayer:
     serializedVersion: 2
     m_Bits: 2048

@@ -142,6 +142,7 @@ Transform:
   - {fileID: 2150977159242293916}
   - {fileID: 7608407158150497205}
   - {fileID: 3958681983859849714}
+  - {fileID: 5664393993823472281}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2618603934779584709
@@ -476,6 +477,7 @@ MonoBehaviour:
   minHeightScale: 0.75
   maxHeightScale: 1.5
   shadowMaterial: {fileID: 2100000, guid: f1d5d17c7e214ff4493987030f81849d, type: 2}
+  logItemMaterial: {fileID: 2100000, guid: 4c79fd3498b61aa4b83b66ba9ff1fd7c, type: 2}
   buildingShadowMaterial: {fileID: 2100000, guid: e0b8ee3584667e948b90b95b7e9afd47, type: 2}
   characterShadowMaterial: {fileID: 2100000, guid: 0fcd64f4cfc4a8343a2c02ca26e4d47a, type: 2}
   shadowColor: {r: 0, g: 0, b: 0, a: 0.5}
@@ -543,6 +545,51 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!1 &2882249921977560557
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7841501489216884872}
+  - component: {fileID: 199427839047545270}
+  m_Layer: 0
+  m_Name: CameraMoveController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7841501489216884872
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2882249921977560557}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5664393993823472281}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &199427839047545270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2882249921977560557}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2f413cd527c18444599a8282fc07301a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraMoveController
+  virtualCamera: {fileID: 0}
 --- !u!1 &3183484928994684872
 GameObject:
   m_ObjectHideFlags: 0
@@ -886,6 +933,10 @@ MonoBehaviour:
   birdFlockOffsetRange: 1.5
   birdMinDelay: 3
   birdMaxDelay: 8
+  birdSpawnPoint_LU: {fileID: 7926434781757991937, guid: 9c141138cbb21d042954300ed72e68e1, type: 3}
+  birdSpawnPoint_LD: {fileID: 2189180156696780080, guid: 46ac5ea4f3b4f0a42a7225ac74d86f2e, type: 3}
+  birdSpawnPoint_RU: {fileID: 1590439173435823183, guid: 7ba108d711c7ca84eb7807d044e71bad, type: 3}
+  birdSpawnPoint_RD: {fileID: 6114465032127502753, guid: c17c4d73521eef542acafeed059b41b7, type: 3}
 --- !u!1 &3941740186820979649
 GameObject:
   m_ObjectHideFlags: 0
@@ -1167,6 +1218,38 @@ MonoBehaviour:
   - {fileID: 6606156975207352883, guid: 4d70c10fe1852794994c653492155af1, type: 3}
   - {fileID: 2754930622058465131, guid: abc4a4931962c18408c254f7a6901059, type: 3}
   - {fileID: 5574060826036245196, guid: c2551d0a6848766408bcda8ef7de9034, type: 3}
+--- !u!1 &5766810988037463456
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5664393993823472281}
+  m_Layer: 0
+  m_Name: CameraSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5664393993823472281
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5766810988037463456}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7841501489216884872}
+  m_Father: {fileID: 1821968231370692703}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6114502731513512976
 GameObject:
   m_ObjectHideFlags: 0
@@ -1612,7 +1695,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6cd2bbedb3de9ea40b256bb48ba14ed3, type: 2}
   waterDecoTiles: []
   insectDecoTiles:
-  - {fileID: 11400000, guid: 08972e07b8b9178418d694537a14321e, type: 2}
+  - {fileID: 11400000, guid: 0d558cdb55ad84c43903e762812d0e57, type: 2}
   stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
 --- !u!1 &7432536287932878892

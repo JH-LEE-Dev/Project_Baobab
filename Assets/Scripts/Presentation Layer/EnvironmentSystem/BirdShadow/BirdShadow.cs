@@ -9,6 +9,14 @@ public class BirdShadow : EnvironmentObj
     [SerializeField] private SpriteRenderer sr;
     [SerializeField] private float rotationOffset = 0f;
 
+    private static readonly Vector3[] isoDirections = new Vector3[]
+    {
+        new Vector3(1f, 0.5f, 0f).normalized,   // 우상 (26.565도)
+        new Vector3(-1f, 0.5f, 0f).normalized,  // 좌상 (153.435도)
+        new Vector3(-1f, -0.5f, 0f).normalized, // 좌하 (-153.435도)
+        new Vector3(1f, -0.5f, 0f).normalized   // 우하 (-26.565도)
+    };
+
     private int flockIndex;
     private int birdIndexInFlock;
     private Vector3 mapCenter;
@@ -60,33 +68,58 @@ public class BirdShadow : EnvironmentObj
         int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
         float _elapsed = _totalTime - (_cycleIndex * cycleDuration);
 
-        // 대기 시간(딜레이) 구간
-        if (_elapsed < delayTime)
-        {
-            // 카메라에 걸리지 않도록 매우 먼 위치를 반환
-            return mapCenter + Vector3.down * 9999f;
-        }
-
-        float _flightElapsed = _elapsed - delayTime;
+        // 대기 시간(딜레이) 동안에는 이동 경과 시간을 0f으로 고정하여 대기 지점 유지
+        float _flightElapsed = Mathf.Max(0f, _elapsed - delayTime);
         int _cycleSeed = flockIndex * 10000 + _cycleIndex;
 
-        float _startAngle = GetPseudoRandom(_cycleSeed + 1, 0f, Mathf.PI * 2f);
-        Vector3 _startPos = mapCenter + new Vector3(Mathf.Cos(_startAngle), Mathf.Sin(_startAngle), 0f) * spawnRadius;
+        // 1. 아이소메트릭 변 방향 중 하나 선택
+        int _dirIndex = Mathf.FloorToInt(GetPseudoRandom(_cycleSeed + 1, 0f, 4f));
+        _dirIndex = Mathf.Clamp(_dirIndex, 0, 3);
+        Vector3 _dir = isoDirections[_dirIndex];
 
-        float _targetAngle = GetPseudoRandom(_cycleSeed + 2, 0f, Mathf.PI * 2f);
-        float _targetDist = GetPseudoRandom(_cycleSeed + 3, 0f, spawnRadius * 0.3f);
-        Vector3 _targetPos = mapCenter + new Vector3(Mathf.Cos(_targetAngle), Mathf.Sin(_targetAngle), 0f) * _targetDist;
+        // 2. 방향에 수직인 벡터 및 오프셋 계산 (경로 다양성 확보)
+        Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
+        // 수직 편차 오프셋 범위를 축소하여 새 무리가 마름모 맵의 중앙 플레이 영역을 관통하도록 유도
+        float _offsetDist = GetPseudoRandom(_cycleSeed + 2, -spawnRadius * 0.15f, spawnRadius * 0.15f);
 
-        Vector3 _dir = (_targetPos - _startPos).normalized;
-        float _speed = GetPseudoRandom(_cycleSeed + 4, minSpeed, maxSpeed);
+        // 3. 출발지 설정 (선택된 진행 방향의 정반대편 외곽 가장자리)
+        Vector3 _startPos = mapCenter - _dir * spawnRadius + _perp * _offsetDist;
 
-        return _startPos + _dir * (_speed * _flightElapsed) + flockOffset;
+        float _speed = GetPseudoRandom(_cycleSeed + 3, minSpeed, maxSpeed);
+
+        // 진행 방향을 기준으로 하는 쐐기 대형(V-formation) 오프셋 계산
+        Vector3 _vOffset = Vector3.zero;
+        if (birdIndexInFlock > 0)
+        {
+            float _side = (birdIndexInFlock % 2 == 1) ? -1f : 1f; // 홀수: 왼쪽, 짝수: 오른쪽
+            int _depth = (birdIndexInFlock + 1) / 2;
+            
+            float _stepBack = 0.4f;
+            float _stepSide = 0.4f;
+            
+            _vOffset = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
+        }
+
+        return _startPos + _dir * (_speed * _flightElapsed) + _vOffset;
     }
 
     public override void Show()
     {
+        bActivated = true;
+        if (sr != null)
+        {
+            sr.enabled = true;
+        }
         UpdatePositionAndRotation();
-        base.Show();
+    }
+
+    public override void Hide()
+    {
+        bActivated = false;
+        if (sr != null)
+        {
+            sr.enabled = false;
+        }
     }
 
     public override void ResetObj()
@@ -116,22 +149,31 @@ public class BirdShadow : EnvironmentObj
         int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
         float _elapsed = _totalTime - (_cycleIndex * cycleDuration);
 
-        // 대기 상태(딜레이)일 경우 회전 갱신을 생략함
-        if (_elapsed < delayTime)
+        // 컬링 비활성화 상태이거나 대기 상태(딜레이)일 경우 비주얼 렌더러를 끄고 회전 갱신을 생략함
+        if (false == bActivated || _elapsed < delayTime)
+        {
+            if (sr != null && sr.enabled)
+            {
+                sr.enabled = false;
+            }
             return;
+        }
+
+        // 비행 중일 경우 렌더러를 활성화함
+        if (sr != null && !sr.enabled)
+        {
+            sr.enabled = true;
+        }
 
         int _cycleSeed = flockIndex * 10000 + _cycleIndex;
 
-        float _startAngle = GetPseudoRandom(_cycleSeed + 1, 0f, Mathf.PI * 2f);
-        Vector3 _startPos = mapCenter + new Vector3(Mathf.Cos(_startAngle), Mathf.Sin(_startAngle), 0f) * spawnRadius;
+        // GetCurrentPosition과 완벽히 동일한 시드로 방향 유도
+        int _dirIndex = Mathf.FloorToInt(GetPseudoRandom(_cycleSeed + 1, 0f, 4f));
+        _dirIndex = Mathf.Clamp(_dirIndex, 0, 3);
+        Vector3 _dir = isoDirections[_dirIndex];
 
-        float _targetAngle = GetPseudoRandom(_cycleSeed + 2, 0f, Mathf.PI * 2f);
-        float _targetDist = GetPseudoRandom(_cycleSeed + 3, 0f, spawnRadius * 0.3f);
-        Vector3 _targetPos = mapCenter + new Vector3(Mathf.Cos(_targetAngle), Mathf.Sin(_targetAngle), 0f) * _targetDist;
-
-        Vector3 _dir = (_targetPos - _startPos).normalized;
-
-        float _angleDeg = Mathf.Atan2(_dir.y, _dir.x) * Mathf.Rad2Deg + rotationOffset;
+        // 기본 스프라이트가 위(Up)를 바라보고 있으므로 -90도 보정 적용
+        float _angleDeg = Mathf.Atan2(_dir.y, _dir.x) * Mathf.Rad2Deg - 90f + rotationOffset;
         transform.rotation = Quaternion.Euler(0f, 0f, _angleDeg);
     }
 
@@ -139,9 +181,6 @@ public class BirdShadow : EnvironmentObj
 
     private void Update()
     {
-        if (false == bActivated)
-            return;
-
         UpdatePositionAndRotation();
     }
 }

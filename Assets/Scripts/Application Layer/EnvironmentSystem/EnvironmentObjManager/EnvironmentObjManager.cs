@@ -50,6 +50,13 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private float birdMinDelay = 3f;
     [SerializeField] private float birdMaxDelay = 8f;
 
+    [Space]
+    [Header("BirdSpawnPoint")]
+    [SerializeField] Transform birdSpawnPoint_LU;
+    [SerializeField] Transform birdSpawnPoint_LD;
+    [SerializeField] Transform birdSpawnPoint_RU;
+    [SerializeField] Transform birdSpawnPoint_RD;
+
 
     // // 퍼블릭 메서드
 
@@ -236,7 +243,8 @@ public class EnvironmentObjManager : MonoBehaviour
 
         for (int _i = 0; _i < birdFlockCnt; _i++)
         {
-            int _birdCountInFlock = UnityEngine.Random.Range(1, 4);
+            // 쐐기 대형 구성을 위해 스폰 마리수 3 ~ 5마리로 상향
+            int _birdCountInFlock = UnityEngine.Random.Range(3, 6);
 
             for (int _j = 0; _j < _birdCountInFlock; _j++)
             {

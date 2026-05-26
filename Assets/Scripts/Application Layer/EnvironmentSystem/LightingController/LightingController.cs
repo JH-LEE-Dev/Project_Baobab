@@ -19,6 +19,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     [SerializeField] private float minHeightScale;
     [SerializeField] private float maxHeightScale;
     [SerializeField] private Material shadowMaterial;
+    [SerializeField] private Material logItemMaterial;
     [SerializeField] private Material buildingShadowMaterial;
     [SerializeField] private Material characterShadowMaterial;
     [SerializeField] private Color shadowColor = new Color(0, 0, 0, 0.5f);
@@ -133,8 +134,8 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         _isShadowActive = finalAlphaMultiplier > 0.1f;
 
         Color targetColor = shadowColor;
-       //targetColor.a *= finalAlphaMultiplier;
-       targetColor.a = 0.45f;
+        //targetColor.a *= finalAlphaMultiplier;
+        targetColor.a = 0.45f;
 
         if (shadowMaterial != null)
         {
@@ -149,6 +150,12 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         if (characterShadowMaterial != null)
         {
             characterShadowMaterial.SetColor(BaseColorId, targetColor);
+        }
+
+        if (logItemMaterial != null)
+        {
+            targetColor.a += 0.2f;
+            logItemMaterial.SetColor(BaseColorId, targetColor);
         }
     }
 

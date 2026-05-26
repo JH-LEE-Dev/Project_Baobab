@@ -131,6 +131,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
 
         character.gameObject.SetActive(true);
+
+        CameraMoveController.Instance.SetupCamera();
     }
 
     private void ItemAcquired(Item _item)
