@@ -223,6 +223,7 @@ public class AttackComponent : PComponent
 
         if (nearestDamageable != null && nearestDamageable.bCanApplyDamage)
         {
+            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
             nearestDamageable.TakeDamage(ctx.characterStat.axeDamage);
             AttackSuccessEvent?.Invoke();
 

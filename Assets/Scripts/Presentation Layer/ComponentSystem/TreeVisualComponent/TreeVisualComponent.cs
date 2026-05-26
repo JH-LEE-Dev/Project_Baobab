@@ -44,6 +44,19 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private GameObject outlineVisualObj;
     [SerializeField] private Transform outlineTopTransform;
 
+    [Header("Other Settings")]
+    public GameObject baseVisualObj;
+    public Material outlineStencilMaterial;
+    public Material originalMaterial;
+
+    
+    [Header("Editor Custom Colors & Type")]
+    public bool bUseCustomColor = false;
+    public TreeType customTreeType = TreeType.OakTree;
+    [SerializeField] private Color customTopColor = Color.white;
+    [SerializeField] private Color customBottomColor = Color.white;
+    public TreeVisualDataBase treeVisualDataBase;
+
     #endregion
 
     #region Private Fields
@@ -56,7 +69,7 @@ public class TreeVisualComponent : MonoBehaviour
     private Quaternion topRendererBaseLocalRotation;
     private Vector3 topShadowBaseLocalPosition;
     private Quaternion topShadowBaseLocalRotation;
-    
+
     private Vector3 outlineTopBaseLocalPosition;
     private Quaternion outlineTopBaseLocalRotation;
 
@@ -66,12 +79,9 @@ public class TreeVisualComponent : MonoBehaviour
 
     private Color firstIndexBottomColor;
     private CustomSortable customSortable;
-    public GameObject baseVisualObj;
+
 
     private bool isOutlineActive = false;
-
-    public Material outlineStencilMaterial;
-    public Material originalMaterial;
 
     #endregion
 
@@ -110,6 +120,19 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
+#if UNITY_EDITOR
+        // 에디터 상에서 데이터베이스 참조가 누락되어 있다면 자동으로 검색하여 할당
+        if (treeVisualDataBase == null)
+        {
+            string[] guids = UnityEditor.AssetDatabase.FindAssets("t:TreeVisualDataBase");
+            if (guids.Length > 0)
+            {
+                string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
+                treeVisualDataBase = UnityEditor.AssetDatabase.LoadAssetAtPath<TreeVisualDataBase>(path);
+            }
+        }
+#endif
+
         RefreshVisualPreview();
     }
 
@@ -135,14 +158,6 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
-    // 에디터에서 랜덤 스프라이트 조합을 다시 확인할 때 수동으로 호출한다.
-    [ContextMenu("Refresh Visual Preview")]
-    public void RefreshVisualPreview()
-    {
-        ApplyRandomVisual();
-        ResetVisualState();
-    }
-
     // 루트 트랜스폼이 틀어졌을 때 위치, 회전, 스케일을 모두 기본값으로 맞춘다.
     public void NormalizeVisualRootTransform()
     {
@@ -156,6 +171,49 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localScale = Vector3.one;
         ResetTopSway();
     }
+    
+    // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
+    private void ApplyRandomVisual()
+    {
+        if (bUseCustomColor && treeVisualDataBase != null)
+        {
+            TreeVisualData customVisualData = treeVisualDataBase.Get(customTreeType);
+            if (customVisualData.treeType != TreeType.None)
+            {
+                // 에디터 설정 시에는 바리에이션 요동을 막기 위해 첫 번째 대표 스프라이트로 고정
+                SetFirstSprite(bottomRenderer, customVisualData.bottomSprites);
+                SetFirstSprite(topRenderer, customVisualData.topSprites);
+            }
+        }
+        else
+        {
+            SetRandomSprite(bottomRenderer, bottomSprites);
+            SetRandomSprite(topRenderer, topSprites);
+        }
+
+        if (bUseCustomColor)
+        {
+            if (topRenderer != null) topRenderer.color = customTopColor;
+            if (bottomRenderer != null) bottomRenderer.color = customBottomColor;
+            if (topOnWaterSR != null) topOnWaterSR.color = customTopColor;
+            if (bottomOnWaterSR != null) bottomOnWaterSR.color = customBottomColor;
+        }
+        else
+        {
+            if (topRenderer != null) topRenderer.color = Color.white;
+            if (bottomRenderer != null) bottomRenderer.color = Color.white;
+            if (topOnWaterSR != null) topOnWaterSR.color = Color.white;
+            if (bottomOnWaterSR != null) bottomOnWaterSR.color = Color.white;
+        }
+
+        ApplyDefaultScale();
+    }
+
+    private void RefreshVisualPreview()
+    {
+        ApplyRandomVisual();
+        SyncShadowSprite();
+    }
     #endregion
 
     #region Apply Data
@@ -163,6 +221,15 @@ public class TreeVisualComponent : MonoBehaviour
     public void ApplyVisual(TreeData _treeData)
     {
         TreeVisualData visualData = _treeData.treeVisualData;
+
+        if (bUseCustomColor && treeVisualDataBase != null)
+        {
+            TreeVisualData customVisualData = treeVisualDataBase.Get(customTreeType);
+            if (customVisualData.treeType != TreeType.None)
+            {
+                visualData = customVisualData;
+            }
+        }
 
         if (topRenderer != null)
         {
@@ -185,6 +252,15 @@ public class TreeVisualComponent : MonoBehaviour
     public void ApplySaplingVisual(TreeData _treeData)
     {
         TreeVisualData visualData = _treeData.treeVisualData;
+
+        if (bUseCustomColor && treeVisualDataBase != null)
+        {
+            TreeVisualData customVisualData = treeVisualDataBase.Get(customTreeType);
+            if (customVisualData.treeType != TreeType.None)
+            {
+                visualData = customVisualData;
+            }
+        }
 
         if (topRenderer != null)
         {
@@ -219,69 +295,52 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(true);
     }
 
+
     private void ApplyColorSet(TreeVisualData _visualData)
     {
-        if (_visualData.treeColorSets == null || _visualData.treeColorSets.Count == 0)
-        {
-            return;
-        }
+        Color topColor;
+        Color bottomColor;
 
-        TreeColorSet colorSet = _visualData.treeColorSets[Random.Range(0, _visualData.treeColorSets.Count)];
-        firstIndexBottomColor = _visualData.treeColorSets[0].bottomColor;
+        if (bUseCustomColor)
+        {
+            topColor = customTopColor;
+            bottomColor = customBottomColor;
+            firstIndexBottomColor = customBottomColor;
+        }
+        else
+        {
+            if (_visualData.treeColorSets == null || _visualData.treeColorSets.Count == 0)
+            {
+                return;
+            }
+
+            TreeColorSet colorSet = _visualData.treeColorSets[Random.Range(0, _visualData.treeColorSets.Count)];
+            firstIndexBottomColor = _visualData.treeColorSets[0].bottomColor;
+
+            topColor = colorSet.topColor;
+            bottomColor = colorSet.bottomColor;
+        }
 
         if (topRenderer != null)
         {
-            topRenderer.color = colorSet.topColor;
+            topRenderer.color = topColor;
         }
 
         if (bottomRenderer != null)
         {
-            bottomRenderer.color = colorSet.bottomColor;
+            bottomRenderer.color = bottomColor;
         }
 
         if (topOnWaterSR != null)
         {
-            topOnWaterSR.color = colorSet.topColor;
+            topOnWaterSR.color = topColor;
         }
 
         if (bottomOnWaterSR != null)
         {
-            bottomOnWaterSR.color = colorSet.bottomColor;
+            bottomOnWaterSR.color = bottomColor;
         }
     }
-
-    // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
-    private void ApplyRandomVisual()
-    {
-        SetRandomSprite(bottomRenderer, bottomSprites);
-        SetRandomSprite(topRenderer, topSprites);
-
-        if (topRenderer != null)
-        {
-            topRenderer.color = Color.white;
-        }
-
-        if (bottomRenderer != null)
-        {
-            bottomRenderer.color = Color.white;
-        }
-
-        if (topOnWaterSR != null)
-        {
-            topOnWaterSR.color = Color.white;
-        }
-
-        if (bottomOnWaterSR != null)
-        {
-            bottomOnWaterSR.color = Color.white;
-        }
-
-        ApplyDefaultScale();
-        SyncShadowSprite();
-        CacheSwayBasePose();
-        ResetTopSway();
-    }
-
     // 나무의 전체적인 크기를 기본값(1.0)으로 설정한다.
     private void ApplyDefaultScale()
     {
@@ -313,7 +372,7 @@ public class TreeVisualComponent : MonoBehaviour
                 topOnWaterSR.sprite = topRenderer.sprite;
                 topOnWaterSR.color = topRenderer.color;
             }
-            
+
             if (topOutlineSR != null)
             {
                 topOutlineSR.sprite = topRenderer.sprite;
@@ -336,7 +395,7 @@ public class TreeVisualComponent : MonoBehaviour
                 bottomOnWaterSR.sprite = bottomRenderer.sprite;
                 bottomOnWaterSR.color = bottomRenderer.color;
             }
-            
+
             if (bottomOutlineSR != null)
             {
                 bottomOutlineSR.sprite = bottomRenderer.sprite;
@@ -356,6 +415,17 @@ public class TreeVisualComponent : MonoBehaviour
         }
 
         _renderer.sprite = _sprites[Random.Range(0, _sprites.Count)];
+    }
+
+    // 전달받은 렌더러에 스프라이트 리스트 중 첫 번째(기본) 스프라이트를 고정 적용한다.
+    private static void SetFirstSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
+    {
+        if (_renderer == null || _sprites == null || _sprites.Count == 0)
+        {
+            return;
+        }
+
+        _renderer.sprite = _sprites[0];
     }
 
     #endregion
@@ -508,7 +578,7 @@ public class TreeVisualComponent : MonoBehaviour
             bowColor.a = _alpha;
             bottomOnWaterSR.color = bowColor;
         }
-        
+
         if (topOutlineSR != null)
         {
             Color oTopColor = topOutlineSR.color;
@@ -543,7 +613,7 @@ public class TreeVisualComponent : MonoBehaviour
     public void FadeAlpha(float _targetAlpha, float _duration)
     {
         this.DOKill(this); // 기존 트윈 취소
-        
+
         topRenderer.DOKill();
         bottomRenderer.DOKill();
         if (topShadowRenderer != null) topShadowRenderer.DOKill();
@@ -555,7 +625,8 @@ public class TreeVisualComponent : MonoBehaviour
 
         float startAlpha = topRenderer.color.a;
 
-        DOTween.To(() => startAlpha, x => {
+        DOTween.To(() => startAlpha, x =>
+        {
             ApplyAlpha(x);
         }, _targetAlpha, _duration).SetTarget(this);
     }
@@ -569,7 +640,7 @@ public class TreeVisualComponent : MonoBehaviour
             outlineVisualObj.SetActive(_boolean);
         }
 
-        if(_boolean == true)
+        if (_boolean == true)
         {
             bottomRenderer.material = outlineStencilMaterial;
             topRenderer.material = outlineStencilMaterial;

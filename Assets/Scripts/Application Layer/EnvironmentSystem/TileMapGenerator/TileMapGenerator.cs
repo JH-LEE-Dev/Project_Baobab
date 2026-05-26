@@ -497,7 +497,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 }
 
                 bool _hasRockDeco = false;
-                if (rockDecoTiles != null && rockDecoTiles.Count > 0 && UnityEngine.Random.value < 0.005f)
+                if (rockDecoTiles != null && rockDecoTiles.Count > 0 && UnityEngine.Random.value < 0.0005f)
                 {
                     decoTilesToApply[i] = rockDecoTiles[UnityEngine.Random.Range(0, rockDecoTiles.Count)];
                     _hasRockDeco = true;
@@ -507,7 +507,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _hasInsectDeco = false;
                 if (false == _hasRockDeco && false == _isSand)
                 {
-                    if (insectDecoTiles != null && insectDecoTiles.Count > 0 && UnityEngine.Random.value < 0.01f)
+                    if (insectDecoTiles != null && insectDecoTiles.Count > 0 && UnityEngine.Random.value < 0.0025f)
                     {
                         decoTilesToApply[i] = insectDecoTiles[UnityEngine.Random.Range(0, insectDecoTiles.Count)];
                         _hasInsectDeco = true;
@@ -517,7 +517,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _hasGroundDeco = false;
                 if (false == _hasRockDeco && false == _hasInsectDeco)
                 {
-                    if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < 0.05f)
+                    float _groundDecoProb = _isSand ? 0.2f : 0.01f;
+                    if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
                     {
                         decoTilesToApply[i] = groundDecoTiles[UnityEngine.Random.Range(0, groundDecoTiles.Count)];
                         _hasGroundDeco = true;
@@ -526,7 +527,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                 if (false == _isSand && false == _hasRockDeco && false == _hasInsectDeco && false == _hasGroundDeco)
                 {
-                    if (grassDecoTiles != null && grassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.25f)
+                    if (grassDecoTiles != null && grassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.35f)
                     {
                         decoTilesToApply[i] = grassDecoTiles[UnityEngine.Random.Range(0, grassDecoTiles.Count)];
                     }

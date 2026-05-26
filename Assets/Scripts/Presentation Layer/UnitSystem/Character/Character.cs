@@ -62,7 +62,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
     public readonly int bInHubHash = Animator.StringToHash("bInHub");
-    private float itemSensorRadius = 1.15f;
+    [SerializeField] private float itemSensorRadius = 0.35f;
     private readonly List<IStaticCollidable> itemDetectionResults = new List<IStaticCollidable>(16);
     private float itemDetectionInterval = 0.2f; // 최적화: 0.2초 간격 (5Hz)
     private float itemDetectionTimer = 0f;

@@ -72,6 +72,8 @@ public class LogItem : Item, IStaticCollidable
     private bool bDisableCustomSortable = false;
     private float originalDurability;
 
+    [SerializeField] private GameObject shadow;
+
     public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -129,12 +131,20 @@ public class LogItem : Item, IStaticCollidable
         bDrop = _boolean;
     }
 
-    public void Launch(Vector3 _start, Vector3 _end, float _height, float _duration, float _totalRotation = 0f)
+    public void Launch(Vector3 _start, Vector3 _end, float _height, float _totalRotation = 0f)
     {
         startPos = _start;
         endPos = _end;
         height = _height;
-        duration = _duration;
+
+        // 포물선의 높이에 따라서만 비행시간(duration) 동적 계산
+        float gravityConstant = 15f;
+        duration = 2f * Mathf.Sqrt(2f * _height / gravityConstant);
+        if (duration < 0.1f)
+        {
+            duration = 0.1f; // 최소 비행시간 제한
+        }
+
         trajectoryJitter = Vector3.zero;
         rotationSpeed = 0f;
         totalRotation = _totalRotation;
@@ -276,6 +286,11 @@ public class LogItem : Item, IStaticCollidable
         {
             customSortable.SetHeight(0f);
         }
+
+        if (shadow != null)
+        {
+            shadow.transform.localScale = Vector3.one;
+        }
     }
 
     public void SetTimberSprite()
@@ -316,12 +331,11 @@ public class LogItem : Item, IStaticCollidable
         elapsed += _deltaTime;
         float t = Mathf.Clamp01(elapsed / duration);
 
-        // 1. 가로 이동에 EaseOutCubic 적용 (도착 지점에서 부드럽게 감속하여 쫀득한 느낌 부여)
-        float easeT = 1f - (1f - t) * (1f - t) * (1f - t);
-        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, easeT);
+        // 1. 가로 이동: 등속도(고정된 속도)로 목적지까지 이동
+        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t);
 
         // 2. 높이 계산 (포물선)
-        float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
+        float heightOffset = -4f * height * (t - 0.5f) * (t - 0.5f) + height;
 
         if (visualTransform != null)
         {
@@ -336,7 +350,7 @@ public class LogItem : Item, IStaticCollidable
 
             // 3. Uniform Scale (수직 속도에 비례하여 부피감이 변함)
             // t=0.5(정점)에서 추가 스케일이 0이 되고, 시작과 끝에서 최대가 됨
-            float verticalVelocity = -8 * height * (t - 0.5f) / duration;
+            float verticalVelocity = -8f * height * (t - 0.5f) / duration;
             float pulse = Mathf.Abs(verticalVelocity) * 0.03f;
             pulse = Mathf.Min(pulse, 0.2f); // 최대 변형치 제한
 
@@ -346,6 +360,8 @@ public class LogItem : Item, IStaticCollidable
         {
             transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
         }
+
+        UpdateShadowScale(heightOffset);
 
         // 4. 전체 Scale 팝업 (0.4까지 BackEaseOut 효과로 탄력 있게 커짐)
         float targetScale = 1f;
@@ -374,6 +390,8 @@ public class LogItem : Item, IStaticCollidable
             {
                 customSortable.SetHeight(0f);
             }
+
+            UpdateShadowScale(0f);
 
             landingDampTime = 0f;
 
@@ -418,6 +436,8 @@ public class LogItem : Item, IStaticCollidable
             transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
         }
 
+        UpdateShadowScale(heightOffset);
+
         // Scale 연출 (0.4까지 스프링 댐퍼(Overshoot) 효과로 커지고, 0.7부터 작아짐)
         float targetScale = 1f;
         if (t < 0.4f)
@@ -449,6 +469,8 @@ public class LogItem : Item, IStaticCollidable
             {
                 customSortable.SetHeight(0f);
             }
+
+            UpdateShadowScale(0f);
 
             state = ItemMoveState.Dropped;
         }
@@ -489,6 +511,8 @@ public class LogItem : Item, IStaticCollidable
             transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
         }
 
+        UpdateShadowScale(heightOffset);
+
         // Scale 연출 동일하게 적용
         float targetScale = 1f;
         if (t < 0.4f)
@@ -518,6 +542,8 @@ public class LogItem : Item, IStaticCollidable
             {
                 customSortable.SetHeight(0f);
             }
+
+            UpdateShadowScale(0f);
 
             state = ItemMoveState.Dropped;
         }
@@ -566,6 +592,8 @@ public class LogItem : Item, IStaticCollidable
             transform.position = currentGroundPos + new Vector3(0, heightOffset, 0);
         }
 
+        UpdateShadowScale(heightOffset);
+
         // Scale 연출 동일하게 적용
         float targetScale = 1f;
         if (t < 0.4f)
@@ -596,6 +624,8 @@ public class LogItem : Item, IStaticCollidable
                 customSortable.SetHeight(0f);
             }
 
+            UpdateShadowScale(0f);
+
             state = ItemMoveState.Dropped;
         }
     }
@@ -612,6 +642,14 @@ public class LogItem : Item, IStaticCollidable
 
         Vector3 targetPos = suckTarget.position;
         float distance = Vector3.Distance(transform.position, targetPos);
+
+        // 프레임 드랍 방어 가드: 다음 이동 거리가 남은 거리보다 크거나 같다면 오버슈트 방지를 위해 바로 획득 처리
+        if (suckSpeed > 0f && (suckSpeed * _deltaTime) >= distance)
+        {
+            transform.position = targetPos;
+            LogItemAcquired?.Invoke(this);
+            return;
+        }
 
         // 도착 조건: 거리가 가깝고 타겟을 향해 이동 중일 때
         if (distance < MinAcquireDist && suckSpeed > 0f)
@@ -638,6 +676,9 @@ public class LogItem : Item, IStaticCollidable
             // 끌려갈 때 속도가 빨라질수록 가속도도 기하급수적으로 증가하는 탄성 가속
             float dynamicAccel = SuckAccel * 2.5f * (1f + suckSpeed * 0.15f);
             suckSpeed += dynamicAccel * _deltaTime;
+
+            // 가속도 폭발 방지 (최대 속도 제한)
+            suckSpeed = Mathf.Min(suckSpeed, 35f);
         }
 
         // 타겟 방향으로 부드럽게 이동
@@ -672,6 +713,8 @@ public class LogItem : Item, IStaticCollidable
             {
                 customSortable.SetHeight(visualTransform.localPosition.y);
             }
+
+            UpdateShadowScale(visualTransform.localPosition.y);
         }
 
         // 타겟에 매우 가까워지면 전체 스케일 축소 (최소 0.25 유지)
@@ -699,6 +742,8 @@ public class LogItem : Item, IStaticCollidable
             {
                 customSortable.SetHeight(floatOffset);
             }
+
+            UpdateShadowScale(floatOffset);
 
             // 착지 후 스프링 댐퍼 쫀득한 Scale 연출
             if (landingDampTime < landingDampDuration)
@@ -740,7 +785,7 @@ public class LogItem : Item, IStaticCollidable
 
     public override void SetSuckTarget(Transform _target)
     {
-        if (state == ItemMoveState.Sucking || !bDrop || bCanAcquired == false) return;
+        if (state != ItemMoveState.Dropped || !bDrop || bCanAcquired == false) return;
 
         suckTarget = _target;
         if (state == ItemMoveState.Dropped)
@@ -761,6 +806,14 @@ public class LogItem : Item, IStaticCollidable
     public void SetbCanAcquired(bool _boolean)
     {
         bCanAcquired = _boolean;
+    }
+
+    private void UpdateShadowScale(float _heightOffset)
+    {
+        if (shadow == null) return;
+
+        float shadowScale = Mathf.Max(0.3f, 1f - (_heightOffset * 0.25f));
+        shadow.transform.localScale = new Vector3(shadowScale, shadowScale, 1f);
     }
 
     private void LateUpdate()

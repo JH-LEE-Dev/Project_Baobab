@@ -123,6 +123,15 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public void ApplyData(TreeData _treeData)
     {
         treeData = _treeData;
+
+        // 에디터 커스텀 모드일 경우 나무의 실질 종류 속성(TreeType)을 에디터 설정값으로 연동
+        if (treeVisualComponent != null && treeVisualComponent.bUseCustomColor)
+        {
+            var modifiedData = treeData;
+            modifiedData.type = treeVisualComponent.customTreeType;
+            treeData = modifiedData;
+        }
+
         ResetTree();
 
         healthComponent.Setup(treeData.treeStatData.hp);

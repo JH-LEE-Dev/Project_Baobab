@@ -283,7 +283,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: orthographic size
-      value: 4.484375
+      value: 5.625
       objectReference: {fileID: 0}
     - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_projectionMatrixMode
