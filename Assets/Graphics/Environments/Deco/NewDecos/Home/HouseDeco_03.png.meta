@@ -1,10 +1,19 @@
 fileFormatVersion: 2
-guid: 61054d819d9ecc4438261b22dc7797f9
+guid: 4ef7ad2c18477a74188fd58c8333dc63
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -693554155068518998
-    second: Car_BoxUnCarryShadow_0
+      213: -2910899215971880335
+    second: HouseDeco_03_0
+  - first:
+      213: 6767143858333172885
+    second: HouseDeco_03_1
+  - first:
+      213: 1742897660505467991
+    second: HouseDeco_03_2
+  - first:
+      213: -5235327635268953230
+    second: HouseDeco_03_3
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -46,7 +55,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 1
+  spriteMode: 2
   spriteExtrude: 1
   spriteMeshType: 0
   alignment: 0
@@ -100,23 +109,89 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Car_BoxUnCarryShadow_0
+      name: HouseDeco_03_0
       rect:
         serializedVersion: 2
-        x: 3
-        y: 4
-        width: 33
-        height: 19
+        x: 0
+        y: 0
+        width: 32
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: aad05aaab200066f0800000000000000
-      internalID: -693554155068518998
+      spriteID: 172780fe5986a97d0800000000000000
+      internalID: -2910899215971880335
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseDeco_03_1
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 0
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5944aeb3c79b9ed50800000000000000
+      internalID: 6767143858333172885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseDeco_03_2
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 0
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 75ca94e1034003810800000000000000
+      internalID: 1742897660505467991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseDeco_03_3
+      rect:
+        serializedVersion: 2
+        x: 96
+        y: 0
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 27b1201f0416857b0800000000000000
+      internalID: -5235327635268953230
       vertices: []
       indices: 
       edges: []
@@ -125,7 +200,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 5e97eb03825dee720800000000000000
+    spriteID: 8a73137a561bc0d4ea633726d62e46d6
     internalID: 0
     vertices: []
     indices: 
@@ -133,9 +208,14 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":32.0,"y":32.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Car_BoxUnCarryShadow_0: -693554155068518998
+      HouseDeco_03_0: -2910899215971880335
+      HouseDeco_03_1: 6767143858333172885
+      HouseDeco_03_2: 1742897660505467991
+      HouseDeco_03_3: -5235327635268953230
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

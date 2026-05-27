@@ -3,8 +3,8 @@ guid: 85797711b25486c45aefbe07cedaf42c
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3105941150536135955
-    second: CarShadow_0
+      213: -6082817277350303519
+    second: Car_Shadow_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,7 +100,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CarShadow_0
+      name: Car_Shadow_0
       rect:
         serializedVersion: 2
         x: 36
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: dea8605cafa75e4d0800000000000000
-      internalID: -3105941150536135955
+      spriteID: 1e82de51aed759ba0800000000000000
+      internalID: -6082817277350303519
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      CarShadow_0: -3105941150536135955
+      Car_Shadow_0: -6082817277350303519
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
