@@ -145,7 +145,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         lastActivatedTime = Time.time;
         bOverlapped = false;
-        offroadContainer.transform.position = containerObject.transform.position;
+        var conPos = containerObject.transform.position;
+        conPos.y += 0.25f;
+        offroadContainer.transform.position = conPos;
         offroadContainer.SetVisualTransform(containerObject.transform);
         containerObject.transform.position = containerDropPoint.position;
         offroadContainer.EnableCollision();
@@ -341,7 +343,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         if (offroadContainerVComponent == null || containerCarryPoint == null) yield break;
 
-        
+
         containerShadowObj.SetActive(false);
 
         yield return offroadContainerVComponent.JumpSequence(
