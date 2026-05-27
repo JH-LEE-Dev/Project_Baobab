@@ -63,6 +63,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
         signalHub.Subscribe<OffroadContainerUpdatedSignal>(OffroadContainerUpdated);
         signalHub.Subscribe<InventoryIsFullSignal>(InventoryIsFull);
+        signalHub.Subscribe<OffroadSpawnedSignal>(OffroadSpawned);
     }
 
     private void UnSubscribeSignals()
@@ -89,6 +90,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<LoosAllInventoryItemSignal>(LoosAllInventoryItem);
         signalHub.UnSubscribe<OffroadContainerUpdatedSignal>(OffroadContainerUpdated);
         signalHub.UnSubscribe<InventoryIsFullSignal>(InventoryIsFull);
+        signalHub.UnSubscribe<OffroadSpawnedSignal>(OffroadSpawned);
     }
 
     private void BindEvents()
@@ -348,5 +350,10 @@ public class GameplayUICoordinator
     private void InventoryIsFull(InventoryIsFullSignal _inventoryIsFullSignal)
     {
         unitUI.InventoryIsFull();
+    }
+
+    private void OffroadSpawned(OffroadSpawnedSignal _offroadSpawnedSignal)
+    {
+        hudUI.OffroadSpawned(_offroadSpawnedSignal.offroadVehicleObj);
     }
 }

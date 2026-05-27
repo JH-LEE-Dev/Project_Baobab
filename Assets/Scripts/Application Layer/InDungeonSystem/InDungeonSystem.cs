@@ -86,6 +86,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.GoToTownEvent -= GoToTown;
         inDungeonObjectManager.GoToTownEvent += GoToTown;
+
+        inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
+        inDungeonObjectManager.OffroadSpawnedEvent += OffroadSpawned;
     }
 
     private void ReleaseEvents()
@@ -99,6 +102,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
         inDungeonObjectManager.GoToTownEvent -= GoToTown;
+        inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
     }
 
     private void SubscribeSignals()
@@ -195,5 +199,10 @@ public class InDungeonSystem : MonoBehaviour
     private void GoToTown()
     {
         signalHub.Publish(new GoToHomeSignal());
+    }
+
+    private void OffroadSpawned(OffroadVehicleObj _offroadVehicleObj)
+    {
+        signalHub.Publish(new OffroadSpawnedSignal(_offroadVehicleObj));
     }
 }

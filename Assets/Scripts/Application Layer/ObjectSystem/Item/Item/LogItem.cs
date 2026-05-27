@@ -65,7 +65,6 @@ public class LogItem : Item, IStaticCollidable
     private Material originalMaterial;
 
     private MaterialPropertyBlock mpb;
-    private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
 
     private CustomSortable customSortable;
 
@@ -74,7 +73,9 @@ public class LogItem : Item, IStaticCollidable
 
     [SerializeField] private GameObject shadow;
 
-    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color, bool _bDisableCustomSortable = false)
+    private Color originalColor;
+
+    public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
 
@@ -85,12 +86,12 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = null;
         dynamicTarget = null;
         sprite = _logItemTypeData.sprite;
-        color = _color;
         durability = _logItemTypeData.durability;
         originalDurability = durability;
         elapsed = 0;
         timberSprite = _logItemTypeData.timberSprite;
         landingDampTime = landingDampDuration;
+        color = _color;
 
         // 최적화: GetComponentInChildren 캐싱
         if (spriteRenderer == null)
@@ -105,7 +106,6 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
-            spriteRenderer.color = color;
         }
 
         transform.localScale = Vector3.one;
@@ -119,6 +119,8 @@ public class LogItem : Item, IStaticCollidable
             customSortable.Initialize(visualTransform != null ? visualTransform : transform);
             customSortable.AddSpriteRenderer(spriteRenderer);
         }
+
+        originalColor = spriteRenderer.color;
     }
 
     public void SetInventoryChecker(IInventoryChecker _inventoryChecker)
@@ -156,7 +158,6 @@ public class LogItem : Item, IStaticCollidable
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
         spriteRenderer.GetPropertyBlock(mpb);
-        mpb.SetColor(baseColorID, spriteRenderer.color);
         spriteRenderer.SetPropertyBlock(mpb);
 
         // 활성화 상태라면 등록 (OnEnable에서도 처리됨)
@@ -270,6 +271,7 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.material = originalMaterial;
+            spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
         }
 
@@ -298,6 +300,7 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = timberSprite;
+            spriteRenderer.color = color;
         }
     }
 
@@ -465,11 +468,6 @@ public class LogItem : Item, IStaticCollidable
 
             visualTransform.rotation = Quaternion.identity;
 
-            if (customSortable != null)
-            {
-                customSortable.SetHeight(0f);
-            }
-
             UpdateShadowScale(0f);
 
             state = ItemMoveState.Dropped;
@@ -537,11 +535,6 @@ public class LogItem : Item, IStaticCollidable
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
             visualTransform.rotation = Quaternion.identity;
-
-            if (customSortable != null)
-            {
-                customSortable.SetHeight(0f);
-            }
 
             UpdateShadowScale(0f);
 
@@ -618,11 +611,6 @@ public class LogItem : Item, IStaticCollidable
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
             visualTransform.rotation = Quaternion.identity;
-
-            if (customSortable != null)
-            {
-                customSortable.SetHeight(0f);
-            }
 
             UpdateShadowScale(0f);
 
@@ -820,5 +808,10 @@ public class LogItem : Item, IStaticCollidable
     {
         if (bDisableCustomSortable == false)
             customSortable.ManualLateUpdate();
+    }
+
+    public void SetHeight(float _height)
+    {
+        customSortable.SetHeight(_height);
     }
 }

@@ -28,6 +28,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     [SerializeField] private List<LogItemDurabilityData> logItemDurabilityDatas;
 
+    private CustomSortable customSortable;
+
     public float timeRemaining
     {
         get
@@ -74,6 +76,10 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         // 자식 오브젝트의 SpriteRenderer Transform 캐싱
         var sr = GetComponentInChildren<SpriteRenderer>();
         if (sr != null) visualTransform = sr.transform;
+
+        customSortable = GetComponent<CustomSortable>();
+        customSortable.Initialize(transform);
+        customSortable.AddSpriteRenderer(sr);
     }
 
     private void Update()
@@ -100,6 +106,12 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             bIsCutting = false;
             CuttingDone();
         }
+    }
+
+    private void LateUpdate()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
     }
 
     public void CuttingDone()

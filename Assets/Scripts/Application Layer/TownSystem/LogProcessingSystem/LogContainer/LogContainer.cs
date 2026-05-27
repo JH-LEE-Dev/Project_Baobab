@@ -5,6 +5,7 @@ using System;
 using System.Text;
 using System.Collections;
 using UnityEngine.UI;
+using UnityEngine.Rendering;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
@@ -68,10 +69,16 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private const float FLY_INTERVAL = 0.075f;
     private LogItemData arrivalDataBuffer = new LogItemData();
 
+    private CustomSortable customSortable;
+
     public void Initialize(InputManager _inputManager, LogItemPoolingManager logItemPoolingManager)
     {
         inputManager = _inputManager;
         logItemPoolManager = logItemPoolingManager;
+
+        customSortable = GetComponent<CustomSortable>();
+        customSortable.Initialize(transform);
+        customSortable.SetSortingGroup(GetComponent<SortingGroup>());
 
         // 시각적 효과를 위한 트랜스폼 캐싱
         sr = GetComponent<SpriteRenderer>();
@@ -147,6 +154,15 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             lastOutputTime = Time.time;
             lastInterval = 0f;
         }
+
+        if (customSortable != null)
+            customSortable.SetHeight(0f);
+    }
+
+    private void LateUpdate()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
     }
 
     private void UpdateFlyingItems(float _deltaTime)
@@ -225,7 +241,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private IObjectPool<ItemData> CreatePoolForType(ItemType _type)
     {
-        return new ObjectPool<ItemData>(
+        return new UnityEngine.Pool.ObjectPool<ItemData>(
             createFunc: () => CreateItemData(_type),
             actionOnGet: (data) => { },
             actionOnRelease: (data) => data.Reset(),
@@ -295,6 +311,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 break;
             }
         }
+
         transferCoroutine = null;
     }
 
