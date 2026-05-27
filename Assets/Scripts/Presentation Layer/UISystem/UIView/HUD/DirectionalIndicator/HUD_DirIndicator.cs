@@ -63,14 +63,6 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                     indicatorImage.gameObject.SetActive(false);
         }
 
-        // //유니티 이벤트 함수
-
-        private void Awake()
-        {
-            if (null == rectTransform)
-                rectTransform = GetComponent<RectTransform>();
-        }
-
         private void Update()
         {
             if (false == isInitialized)

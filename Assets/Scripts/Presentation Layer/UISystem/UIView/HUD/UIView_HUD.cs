@@ -11,8 +11,6 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
 
-    [SerializeField] private Transform tempTargetTransform;
-
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudSteminaBar;
     private HUD_DirIndicator hudDirIndicator;
@@ -103,7 +101,6 @@ public class UIView_HUD : UIView
         }
     }
 
-    [ContextMenu("HUD_DirIndicator")]
     private void Init_HUDDirIndicator()
     {
         if (null == hudDirIndicator)
@@ -112,7 +109,7 @@ public class UIView_HUD : UIView
         if (null != hudDirIndicator)
         {
             hudDirIndicator.Initialize();
-            hudDirIndicator.SetTarget(tempTargetTransform);
+            //hudDirIndicator.SetTarget(tempTargetTransform);
         }
     }
 
