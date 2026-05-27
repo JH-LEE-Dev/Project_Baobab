@@ -73,7 +73,9 @@ public class LogItem : Item, IStaticCollidable
 
     [SerializeField] private GameObject shadow;
 
-    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, bool _bDisableCustomSortable = false)
+    private Color originalColor;
+
+    public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
 
@@ -89,6 +91,7 @@ public class LogItem : Item, IStaticCollidable
         elapsed = 0;
         timberSprite = _logItemTypeData.timberSprite;
         landingDampTime = landingDampDuration;
+        color = _color;
 
         // 최적화: GetComponentInChildren 캐싱
         if (spriteRenderer == null)
@@ -116,6 +119,8 @@ public class LogItem : Item, IStaticCollidable
             customSortable.Initialize(visualTransform != null ? visualTransform : transform);
             customSortable.AddSpriteRenderer(spriteRenderer);
         }
+
+        originalColor = spriteRenderer.color;
     }
 
     public void SetInventoryChecker(IInventoryChecker _inventoryChecker)
@@ -266,6 +271,7 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.material = originalMaterial;
+            spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
         }
 
@@ -294,6 +300,7 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = timberSprite;
+            spriteRenderer.color = color;
         }
     }
 
