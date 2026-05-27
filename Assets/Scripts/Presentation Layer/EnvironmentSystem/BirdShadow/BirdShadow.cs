@@ -32,6 +32,7 @@ public class BirdShadow : EnvironmentObj
     private float lifeTime;
     private float delayTime;
     private float cycleDuration;
+    private BirdShadow leaderBird;
 
     // 퍼블릭 초기화 및 제어 메서드
 
@@ -42,6 +43,11 @@ public class BirdShadow : EnvironmentObj
         {
             sr = GetComponentInChildren<SpriteRenderer>();
         }
+    }
+
+    public void SetLeader(BirdShadow _leaderBird)
+    {
+        leaderBird = _leaderBird;
     }
 
     public void SetupBird(int _flockIndex, int _birdIndexInFlock, Vector3 _mapCenter, float _spawnRadius, float _minSpeed, float _maxSpeed, float _minDelay, float _maxDelay, Vector3 _flockOffset)
@@ -65,6 +71,11 @@ public class BirdShadow : EnvironmentObj
 
     public override Vector3 GetCurrentPosition()
     {
+        if (birdIndexInFlock > 0)
+        {
+            return transform.position;
+        }
+
         if (cycleDuration <= 0f)
             return transform.position;
 
@@ -90,20 +101,7 @@ public class BirdShadow : EnvironmentObj
 
         float _speed = GetPseudoRandom(_cycleSeed + 3, minSpeed, maxSpeed);
 
-        // 진행 방향을 기준으로 하는 쐐기 대형(V-formation) 오프셋 계산
-        Vector3 _vOffset = Vector3.zero;
-        if (birdIndexInFlock > 0)
-        {
-            float _side = (birdIndexInFlock % 2 == 1) ? -1f : 1f; // 홀수: 왼쪽, 짝수: 오른쪽
-            int _depth = (birdIndexInFlock + 1) / 2;
-            
-            float _stepBack = 0.4f;
-            float _stepSide = 0.4f;
-            
-            _vOffset = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
-        }
-
-        return _startPos + _dir * (_speed * _flightElapsed) + _vOffset;
+        return _startPos + _dir * (_speed * _flightElapsed);
     }
 
     public override void Show()
@@ -128,6 +126,7 @@ public class BirdShadow : EnvironmentObj
     public override void ResetObj()
     {
         base.ResetObj();
+        leaderBird = null;
     }
 
     // 내부 메서드
@@ -142,6 +141,23 @@ public class BirdShadow : EnvironmentObj
 
     private void UpdatePositionAndRotation()
     {
+        if (birdIndexInFlock > 0)
+        {
+            if (sr != null)
+            {
+                if (null != leaderBird && null != leaderBird.sr)
+                {
+                    sr.enabled = leaderBird.sr.enabled && bActivated;
+                    sr.sharedMaterial = leaderBird.sr.sharedMaterial;
+                }
+                else
+                {
+                    sr.enabled = false;
+                }
+            }
+            return;
+        }
+
         Vector3 _currentPos = GetCurrentPosition();
         transform.position = _currentPos;
 
@@ -167,8 +183,6 @@ public class BirdShadow : EnvironmentObj
         {
             sr.enabled = true;
         }
-
-        int _cycleSeed = flockIndex * 10000 + _cycleIndex;
 
         // GetCurrentPosition과 완벽히 동일한 순환 공식으로 방향 유도
         int _dirIndex = (flockIndex + _cycleIndex) % 4;

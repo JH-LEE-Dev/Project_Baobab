@@ -205,23 +205,35 @@ public class EnvironmentObjManager : MonoBehaviour
         float mapHeight = townMaxY - townMinY;
         float spawnRadius = Mathf.Max(mapWidth, mapHeight) * 0.5f + birdSpawnRadiusPadding;
 
-        for (int i = 0; i < townBirdFlockCnt; i++)
+        for (int _i = 0; _i < townBirdFlockCnt; _i++)
         {
-            int birdCountInFlock = UnityEngine.Random.Range(3, 6);
+            // 쐐기 대형을 구성하기 위해 무조건 홀수(3마리 또는 5마리)로 제한
+            int _birdCountInFlock = UnityEngine.Random.Range(1, 3) * 2 + 1;
+            BirdShadow _leader = null;
 
-            for (int j = 0; j < birdCountInFlock; j++)
+            for (int _j = 0; _j < _birdCountInFlock; _j++)
             {
-                Vector3 flockOffset = Vector3.zero;
-                if (j > 0)
+                if (_j == 0)
                 {
-                    flockOffset = new Vector3(
-                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
-                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
-                        0f
-                    );
+                    _leader = SpawnBirdShadowAt(_i, 0, mapCenter, spawnRadius, Vector3.zero);
                 }
+                else
+                {
+                    BirdShadow _follower = SpawnBirdShadowAt(_i, _j, mapCenter, spawnRadius, Vector3.zero);
+                    if (null != _leader && null != _follower)
+                    {
+                        _follower.transform.SetParent(_leader.transform, false);
+                        _follower.SetLeader(_leader);
 
-                SpawnBirdShadowAt(i, j, mapCenter, spawnRadius, flockOffset);
+                        float _side = (_j % 2 == 1) ? -1f : 1f; // 홀수: 왼쪽, 짝수: 오른쪽
+                        int _depth = (_j + 1) / 2;
+                        float _stepSide = 0.5f;
+                        float _stepBack = 0.6f;
+
+                        _follower.transform.localPosition = new Vector3(_side * _stepSide * _depth, -_stepBack * _depth, 0f);
+                        _follower.transform.localRotation = Quaternion.identity;
+                    }
+                }
             }
         }
     }
@@ -349,30 +361,41 @@ public class EnvironmentObjManager : MonoBehaviour
 
         for (int _i = 0; _i < birdFlockCnt; _i++)
         {
-            // 쐐기 대형 구성을 위해 스폰 마리수 3 ~ 5마리로 상향
-            int _birdCountInFlock = UnityEngine.Random.Range(3, 6);
+            // 쐐기 대형을 구성하기 위해 무조건 홀수(3마리 또는 5마리)로 제한
+            int _birdCountInFlock = UnityEngine.Random.Range(1, 3) * 2 + 1;
+            BirdShadow _leader = null;
 
             for (int _j = 0; _j < _birdCountInFlock; _j++)
             {
-                Vector3 _flockOffset = Vector3.zero;
-                if (_j > 0)
+                if (_j == 0)
                 {
-                    _flockOffset = new Vector3(
-                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
-                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
-                        0f
-                    );
+                    _leader = SpawnBirdShadowAt(_i, 0, _mapCenter, _spawnRadius, Vector3.zero);
                 }
+                else
+                {
+                    BirdShadow _follower = SpawnBirdShadowAt(_i, _j, _mapCenter, _spawnRadius, Vector3.zero);
+                    if (null != _leader && null != _follower)
+                    {
+                        _follower.transform.SetParent(_leader.transform, false);
+                        _follower.SetLeader(_leader);
 
-                SpawnBirdShadowAt(_i, _j, _mapCenter, _spawnRadius, _flockOffset);
+                        float _side = (_j % 2 == 1) ? -1f : 1f; // 홀수: 왼쪽, 짝수: 오른쪽
+                        int _depth = (_j + 1) / 2;
+                        float _stepSide = 0.5f;
+                        float _stepBack = 0.6f;
+
+                        _follower.transform.localPosition = new Vector3(_side * _stepSide * _depth, -_stepBack * _depth, 0f);
+                        _follower.transform.localRotation = Quaternion.identity;
+                    }
+                }
             }
         }
     }
 
-    private void SpawnBirdShadowAt(int _flockIndex, int _birdIndexInFlock, Vector3 _mapCenter, float _spawnRadius, Vector3 _flockOffset)
+    private BirdShadow SpawnBirdShadowAt(int _flockIndex, int _birdIndexInFlock, Vector3 _mapCenter, float _spawnRadius, Vector3 _flockOffset)
     {
         if (false == objPools.TryGetValue(EnvironmentObjType.BirdShadow, out IObjectPool<EnvironmentObj> _pool))
-            return;
+            return null;
 
         if (null == cullingGroup)
         {
@@ -380,8 +403,9 @@ public class EnvironmentObjManager : MonoBehaviour
         }
 
         EnvironmentObj _obj = _pool.Get();
+        BirdShadow _birdShadow = _obj as BirdShadow;
 
-        if (_obj is BirdShadow _birdShadow)
+        if (null != _birdShadow)
         {
             _birdShadow.SetupBird(
                 _flockIndex,
@@ -414,6 +438,8 @@ public class EnvironmentObjManager : MonoBehaviour
 
         bool _shouldBeActive = cullingGroup.IsVisible(_obj.PoolIndex) && (cullingGroup.GetDistance(_obj.PoolIndex) == 0);
         UpdateObjVisibility(_obj, _shouldBeActive);
+
+        return _birdShadow;
     }
 
     public void ReleaseAllObjs()
@@ -558,6 +584,12 @@ public class EnvironmentObjManager : MonoBehaviour
         UpdateObjVisibility(_obj, false);
         RemoveFromMasterList(_obj);
         _obj.DeActivate();
+
+        _obj.transform.SetParent(transform, false);
+        if (_obj is BirdShadow _birdShadow)
+        {
+            _birdShadow.SetLeader(null);
+        }
 
         if (true == _obj.gameObject.activeSelf)
         {
