@@ -109,7 +109,6 @@ public class UIView_HUD : UIView
         if (null != hudDirIndicator)
         {
             hudDirIndicator.Initialize();
-            //hudDirIndicator.SetTarget(tempTargetTransform);
         }
     }
 
@@ -177,6 +176,6 @@ public class UIView_HUD : UIView
 
     public void OffroadSpawned(IOffroadProvider _offroadProvider)
     {
-        
+        hudDirIndicator?.SetTarget(_offroadProvider.transform);
     }
 }

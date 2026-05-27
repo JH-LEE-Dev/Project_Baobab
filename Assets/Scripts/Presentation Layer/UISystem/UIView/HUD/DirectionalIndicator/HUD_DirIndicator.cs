@@ -63,6 +63,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                     indicatorImage.gameObject.SetActive(false);
         }
 
+        // //유니티 이벤트 함수
+
+        private void Awake()
+        {
+            if (null == rectTransform)
+                rectTransform = GetComponent<RectTransform>();
+        }
+
         private void Update()
         {
             if (false == isInitialized)
@@ -120,13 +128,17 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
             float _finalY = 0f;
             int _snapIdleOffset = Mathf.RoundToInt(Mathf.Sin(Time.time * idleSpeed));
 
-            // 더 멀리 가야 하는 축(오프셋 절대값 비교) 판별
-            float _absX = Mathf.Abs(_dir.x);
-            float _absY = Mathf.Abs(_dir.y);
+            // 화면 종횡비(가로/세로 절반 크기) 반영
+            float _halfW = Screen.width * 0.5f - padding;
+            float _halfH = Screen.height * 0.5f - padding;
 
-            if (_absY >= _absX)
+            // 실제 화면 경계에 먼저 충돌하는 면(가까운 면) 판정 비율 계산
+            float _ratioX = Mathf.Abs(_dir.x) / _halfW;
+            float _ratioY = Mathf.Abs(_dir.y) / _halfH;
+
+            if (_ratioY >= _ratioX)
             {
-                // Y축(세로축) 이동량이 더 큰 경우 ➡️ 위쪽 혹은 아래쪽 면에 고정
+                // 세로 경계에 먼저 도달하거나 더 가까운 경우 ➡️ 위쪽 혹은 아래쪽 면에 고정
                 if (0f < _dir.y)
                 {
                     // 위(Top) 면 고정

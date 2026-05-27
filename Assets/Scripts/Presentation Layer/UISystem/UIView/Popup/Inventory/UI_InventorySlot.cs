@@ -116,7 +116,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             invSlotRef.SlotUpdatedEvent += PlayItemInteraction;
         }
 
-        UpdateImage(showItemData.sprite, showItemData.color);
+        UpdateImage(showItemData.sprite, Color.white);
         UpdateItemCount(invSlotRef.count);
     }
 
