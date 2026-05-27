@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
 [ExecuteAlways]
 public class LightingController : MonoBehaviour, IShadowDataProvider
@@ -63,6 +62,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
         }
 
         BindEvents();
+        Setup();
     }
 
     private void BindEvents()
@@ -87,6 +87,17 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     }
 
     private void Update()
+    {
+        if (timeDataProvider == null)
+            return;
+
+        float timePercent = timeDataProvider.currentTimePercent;
+
+        UpdateShadows(timePercent);
+        UpdateLights(timePercent);
+    }
+
+    private void Setup()
     {
         if (timeDataProvider == null)
             return;

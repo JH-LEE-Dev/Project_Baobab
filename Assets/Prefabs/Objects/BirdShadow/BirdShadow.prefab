@@ -139,3 +139,5 @@ MonoBehaviour:
   envObjType: 2
   sr: {fileID: 0}
   rotationOffset: 0
+  ldRuMaterial: {fileID: 2100000, guid: 76ea10b6e051684499823e12ae81466a, type: 2}
+  rdLuMaterial: {fileID: 2100000, guid: cde34b75206950148a9642211cc76ce0, type: 2}

@@ -933,6 +933,12 @@ MonoBehaviour:
   birdFlockOffsetRange: 1.5
   birdMinDelay: 3
   birdMaxDelay: 8
+  townCloudCnt: 50
+  townBirdFlockCnt: 3
+  townMinX: -15
+  townMaxX: 15
+  townMinY: -15
+  townMaxY: 15
   birdSpawnPoint_LU: {fileID: 7926434781757991937, guid: 9c141138cbb21d042954300ed72e68e1, type: 3}
   birdSpawnPoint_LD: {fileID: 2189180156696780080, guid: 46ac5ea4f3b4f0a42a7225ac74d86f2e, type: 3}
   birdSpawnPoint_RU: {fileID: 1590439173435823183, guid: 7ba108d711c7ca84eb7807d044e71bad, type: 3}
