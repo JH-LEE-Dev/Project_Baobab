@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4136428577803533724}
   - component: {fileID: 7783983704913653975}
+  - component: {fileID: 6140344899616592753}
   m_Layer: 5
   m_Name: HUD_DirectionalIndicator
   m_TagString: Untagged
@@ -57,6 +58,19 @@ MonoBehaviour:
   rightArrowSprite: {fileID: -8463291593813042295, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
   padding: 50
   idleSpeed: 5
+--- !u!210 &6140344899616592753
+SortingGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916422466606343881}
+  m_Enabled: 1
+  m_SortingLayerID: 962808927
+  m_SortingLayer: 10
+  m_SortingOrder: 99
+  m_SortAtRoot: 0
+  m_Sort3DAs2D: 0
 --- !u!1 &3563197388873671306
 GameObject:
   m_ObjectHideFlags: 0
