@@ -93,12 +93,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             portal.ResetPortal();
             portal.SetCanTravel(bCanTravel);
         }
-
-        // 씬 내의 나무가 이미 관리 중이라면 다시 찾지 않음 (할당 방지)
-        //if (trees == null)
-        {
-            trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
-        }
+       
+        trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
 
         if (trees != null && trees.Length > 0)
         {
@@ -114,9 +110,14 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             {
                 if (trees[i] != null)
                 {
-                    TreeType randomType = (TreeType)UnityEngine.Random.Range(1, (int)TreeType.Max);
                     trees[i].Initialize(environmentProvider);
-                    trees[i].ApplyData(new TreeData(randomType, TreeGrade.Normal, treeVisualDataBase.Get(randomType), default));
+                    trees[i].BTreeShadowSet = false;
+
+                    TreeType type = trees[i].GetTreeType();
+                    TreeGrade grade = TreeGrade.Normal;
+
+                    trees[i].ApplyData(new TreeData(type, grade, treeVisualDataBase.Get(type), default));
+                    trees[i].SetSortOrder();
                 }
             }
         }

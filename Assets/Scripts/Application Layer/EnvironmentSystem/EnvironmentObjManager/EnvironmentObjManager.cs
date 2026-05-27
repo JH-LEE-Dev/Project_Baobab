@@ -50,6 +50,14 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private float birdMinDelay = 3f;
     [SerializeField] private float birdMaxDelay = 8f;
 
+    [Header("Town Settings")]
+    [SerializeField] private int townCloudCnt = 30;
+    [SerializeField] private int townBirdFlockCnt = 2;
+    [SerializeField] private float townMinX = -40f;
+    [SerializeField] private float townMaxX = 40f;
+    [SerializeField] private float townMinY = 0f;
+    [SerializeField] private float townMaxY = 40f;
+
     [Space]
     [Header("BirdSpawnPoint")]
     [SerializeField] Transform birdSpawnPoint_LU;
@@ -113,11 +121,109 @@ public class EnvironmentObjManager : MonoBehaviour
         activeObjs.Clear();
     }
 
-    public void SpawnEnvironmentObjs()
+    public void SpawnInDungeonEnvironmentObjs()
     {
         ReleaseAll();
         SpawnClouds();
         SpawnBirdShadows();
+    }
+
+    public void SpawnTownEnvironmentObjs()
+    {
+        ReleaseAll();
+        SpawnTownClouds();
+        SpawnTownBirdShadows();
+    }
+
+    private void SpawnTownClouds()
+    {
+        float paddingX = 3f;
+        float minX = townMinX - paddingX;
+        float maxX = townMaxX + paddingX;
+        float minY = townMinY;
+        float maxY = townMaxY;
+
+        float width = Mathf.Max(0.1f, maxX - minX);
+        float height = Mathf.Max(0.1f, maxY - minY);
+
+        int cols = Mathf.CeilToInt(Mathf.Sqrt(townCloudCnt * (width / height)));
+        cols = Mathf.Max(1, cols);
+        int rows = Mathf.CeilToInt((float)townCloudCnt / cols);
+        rows = Mathf.Max(1, rows);
+
+        float cellWidth = width / cols;
+        float cellHeight = height / rows;
+
+        int totalCells = cols * rows;
+
+        if (cellIndices.Capacity < totalCells)
+        {
+            cellIndices.Capacity = totalCells;
+        }
+        cellIndices.Clear();
+
+        for (int i = 0; i < totalCells; i++)
+        {
+            cellIndices.Add(i);
+        }
+
+        for (int i = 0; i < totalCells; i++)
+        {
+            int temp = cellIndices[i];
+            int randomIndex = UnityEngine.Random.Range(i, totalCells);
+            cellIndices[i] = cellIndices[randomIndex];
+            cellIndices[randomIndex] = temp;
+        }
+
+        int toSpawn = Mathf.Min(townCloudCnt, totalCells);
+        for (int i = 0; i < toSpawn; i++)
+        {
+            int cellIdx = cellIndices[i];
+            int row = cellIdx / cols;
+            int col = cellIdx % cols;
+
+            float centerX = minX + (col + 0.5f) * cellWidth;
+            float centerY = minY + (row + 0.5f) * cellHeight;
+
+            float jitterX = UnityEngine.Random.Range(-cellWidth * 0.4f, cellWidth * 0.4f);
+            float jitterY = UnityEngine.Random.Range(-cellHeight * 0.4f, cellHeight * 0.4f);
+
+            Vector3 spawnPos = new Vector3(centerX + jitterX, centerY + jitterY, 0f);
+            SpawnCloudAt(spawnPos, minX, maxX);
+        }
+    }
+
+    private void SpawnTownBirdShadows()
+    {
+        Vector3 mapCenter = new Vector3(
+            (townMinX + townMaxX) * 0.5f,
+            (townMinY + townMaxY) * 0.5f,
+            0f
+        );
+
+        float mapWidth = townMaxX - townMinX;
+        float mapHeight = townMaxY - townMinY;
+        float spawnRadius = Mathf.Max(mapWidth, mapHeight) * 0.5f + birdSpawnRadiusPadding;
+
+        for (int i = 0; i < townBirdFlockCnt; i++)
+        {
+            int birdCountInFlock = UnityEngine.Random.Range(3, 6);
+
+            for (int j = 0; j < birdCountInFlock; j++)
+            {
+                Vector3 flockOffset = Vector3.zero;
+                if (j > 0)
+                {
+                    flockOffset = new Vector3(
+                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
+                        UnityEngine.Random.Range(-birdFlockOffsetRange, birdFlockOffsetRange),
+                        0f
+                    );
+                }
+
+                SpawnBirdShadowAt(i, j, mapCenter, spawnRadius, flockOffset);
+            }
+        }
     }
 
     private void SpawnClouds()

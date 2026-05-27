@@ -1,10 +1,10 @@
-Shader "Custom/BirdShadowURP"
+Shader "Custom/BirdShadow_LDRU_URP"
 {
     Properties
     {
         [MainColor] _BaseColor("Shadow Color", Color) = (0, 0, 0, 0.5)
         [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
-        _SkewX("Skew X", Float) = -0.5
+        _SkewX("Skew X", Float) = 0.5
         _SkewY("Skew Y", Float) = 0.0
     }
 
