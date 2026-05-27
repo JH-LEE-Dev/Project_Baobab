@@ -22,9 +22,9 @@ public class OffroadContainerVComponent : MonoBehaviour
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
         customSortable = GetComponent<CustomSortable>();
-        
+
         parentTransform = transform.parent != null ? transform.parent : transform;
-        
+
         customSortable.Initialize(transform);
         customSortable.AddSpriteRenderer(spriteRenderer);
         anim = GetComponent<Animator>();
@@ -76,45 +76,174 @@ public class OffroadContainerVComponent : MonoBehaviour
         parentTransform.localScale = initialScale;
     }
 
+    private Coroutine openCoroutine;
+
     public void Open()
     {
         if (anim.GetBool(bOpenHash)) return;
 
-        parentTransform.DOKill(true);
+        parentTransform.DOKill();
 
-        Sequence seq = DOTween.Sequence();
+        if (openCoroutine != null)
+        {
+            StopCoroutine(openCoroutine);
+        }
+
+        openCoroutine = StartCoroutine(OpenSequence());
+    }
+
+    private IEnumerator OpenSequence()
+    {
+        Vector3 startScale = parentTransform.localScale;
+        Vector3 squashedScale = new Vector3(originalScale.x * 1.3f, originalScale.y * 0.5f, originalScale.z);
+        Vector3 stretchedScale = new Vector3(originalScale.x * 0.8f, originalScale.y * 1.25f, originalScale.z);
+        Vector3 bounceScale = new Vector3(originalScale.x * 1.1f, originalScale.y * 0.9f, originalScale.z);
 
         // 1. 납작해짐 (Anticipation - 0.15초)
-        seq.Append(parentTransform.DOScale(new Vector3(originalScale.x * 1.3f, originalScale.y * 0.5f, originalScale.z), 0.15f).SetEase(Ease.OutQuad));
-
-        // 2. 튀어오르며 열리기 시작하는 지점
-        seq.AppendCallback(() =>
+        float elapsed = 0f;
+        float duration = 0.15f;
+        while (elapsed < duration)
         {
-            anim.SetBool(bOpenHash, true);
+            float t = elapsed / duration;
+            float ease = t * (2f - t); // OutQuad
+            parentTransform.localScale = Vector3.LerpUnclamped(startScale, squashedScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = squashedScale;
 
-            // 뒤뚱거림 (Z축 펀치 로테이션)
-            parentTransform.DOPunchRotation(new Vector3(0f, 0f, 15f), 0.8f, 8, 1f);
-        });
+        // 2. Animator 트리거 + 뒤뚱거림
+        anim.SetBool(bOpenHash, true);
+        parentTransform.DOPunchRotation(new Vector3(0f, 0f, 15f), 0.2f, 8, 1f);
 
         // 3. 위로 뽀잉 솟구침 (0.15초)
-        seq.Append(parentTransform.DOScale(new Vector3(originalScale.x * 0.8f, originalScale.y * 1.25f, originalScale.z), 0.15f).SetEase(Ease.OutQuad));
+        elapsed = 0f;
+        duration = 0.15f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float ease = t * (2f - t); // OutQuad
+            parentTransform.localScale = Vector3.LerpUnclamped(squashedScale, stretchedScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = stretchedScale;
 
         // 4. 아래로 살짝 찌그러짐 (0.12초)
-        seq.Append(parentTransform.DOScale(new Vector3(originalScale.x * 1.1f, originalScale.y * 0.9f, originalScale.z), 0.12f).SetEase(Ease.InOutQuad));
-
-        // 5. 원래 크기로 복귀 (0.1초)
-        seq.Append(parentTransform.DOScale(originalScale, 0.1f).SetEase(Ease.OutElastic));
-
-        // 최종 원복 보장
-        seq.OnComplete(() =>
+        elapsed = 0f;
+        duration = 0.08f;
+        while (elapsed < duration)
         {
-            parentTransform.localScale = originalScale;
-            parentTransform.localRotation = originalRot;
-        });
+            float t = elapsed / duration;
+            float ease = t * t * (3f - 2f * t); // SmoothStep
+            parentTransform.localScale = Vector3.LerpUnclamped(stretchedScale, bounceScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = bounceScale;
+
+        // 5. 원래 크기로 복귀 (0.15초)
+        elapsed = 0f;
+        duration = 0.11f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float ease = t * (2f - t); // OutQuad
+            parentTransform.localScale = Vector3.LerpUnclamped(bounceScale, originalScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        parentTransform.localScale = originalScale;
+        parentTransform.localRotation = originalRot;
+        openCoroutine = null;
     }
+
+    private Coroutine closeCoroutine;
 
     public void Close()
     {
+        if (!anim.GetBool(bOpenHash)) return;
+
+        parentTransform.DOKill();
+
+        if (openCoroutine != null)
+        {
+            StopCoroutine(openCoroutine);
+            openCoroutine = null;
+        }
+
+        if (closeCoroutine != null)
+        {
+            StopCoroutine(closeCoroutine);
+        }
+
+        closeCoroutine = StartCoroutine(CloseSequence());
+    }
+
+    private IEnumerator CloseSequence()
+    {
+        Vector3 startScale = parentTransform.localScale;
+        Vector3 stretchedScale = new Vector3(originalScale.x * 0.8f, originalScale.y * 1.2f, originalScale.z);
+        Vector3 squashedScale = new Vector3(originalScale.x * 1.35f, originalScale.y * 0.55f, originalScale.z);
+        Vector3 bounceScale = new Vector3(originalScale.x * 0.93f, originalScale.y * 1.07f, originalScale.z);
+
+        // 1. 살짝 위로 늘어남 (준비 동작 - 0.12초)
         anim.SetBool(bOpenHash, false);
+        float elapsed = 0f;
+        float duration = 0.12f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float ease = t * (2f - t); // OutQuad
+            parentTransform.localScale = Vector3.LerpUnclamped(startScale, stretchedScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = stretchedScale;
+
+        // 2. 쾅! 닫히며 강하게 찌그러짐 + 뒤뚱거림 (0.05초)
+        parentTransform.DOPunchRotation(new Vector3(0f, 0f, 20f), 0.5f, 10, 1f);
+
+        elapsed = 0f;
+        duration = 0.05f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float ease = t * t * t; // InCubic (급격하게 쿵!)
+            parentTransform.localScale = Vector3.LerpUnclamped(stretchedScale, squashedScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = squashedScale;
+
+        // 3. 반동으로 튕겨올라감 (0.07초)
+        elapsed = 0f;
+        duration = 0.07f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float ease = t * (2f - t); // OutQuad
+            parentTransform.localScale = Vector3.LerpUnclamped(squashedScale, bounceScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = bounceScale;
+
+        // 4. 원래 크기로 안착 (0.08초)
+        elapsed = 0f;
+        duration = 0.08f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            float ease = t * t * (3f - 2f * t); // SmoothStep
+            parentTransform.localScale = Vector3.LerpUnclamped(bounceScale, originalScale, ease);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        parentTransform.localScale = originalScale;
+        parentTransform.localRotation = originalRot;
+        closeCoroutine = null;
     }
 }

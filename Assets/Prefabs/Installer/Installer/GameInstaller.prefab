@@ -930,7 +930,6 @@ MonoBehaviour:
   birdMinSpeed: 2
   birdMaxSpeed: 4
   birdSpawnRadiusPadding: 10
-  birdFlockOffsetRange: 1.5
   birdMinDelay: 3
   birdMaxDelay: 8
   townCloudCnt: 50
