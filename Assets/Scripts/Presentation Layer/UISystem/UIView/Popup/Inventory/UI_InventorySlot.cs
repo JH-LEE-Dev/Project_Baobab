@@ -96,7 +96,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    public void UpdateBindSlotData(IInventorySlot _newSlot)
+    public void UpdateBindSlotData(IInventorySlot _newSlot, bool _isInventory = false)
     {
         if (null == _newSlot.itemData)
         {
@@ -116,7 +116,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             invSlotRef.SlotUpdatedEvent += PlayItemInteraction;
         }
 
-        UpdateImage(showItemData.sprite, showItemData.color);
+        UpdateImage(showItemData.sprite, false == _isInventory ? Color.white :showItemData.color);
         UpdateItemCount(invSlotRef.count);
     }
 

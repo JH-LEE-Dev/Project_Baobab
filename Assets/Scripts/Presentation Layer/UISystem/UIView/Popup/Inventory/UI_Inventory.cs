@@ -151,7 +151,7 @@ public class UI_Inventory : MonoBehaviour
             if (null == _slot)
                 continue;
 
-            _slot.UpdateBindSlotData(_item);
+            _slot.UpdateBindSlotData(_item, true);
             _slot.gameObject.SetActive(_i < _itemCount);
         }
     }
