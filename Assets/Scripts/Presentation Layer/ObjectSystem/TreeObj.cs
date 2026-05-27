@@ -338,4 +338,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         customSortable.ManualLateUpdate();
     }
+
+    public TreeType GetTreeType()
+    {
+        if (treeVisualComponent != null && treeVisualComponent.bUseCustomColor)
+        {
+            return treeVisualComponent.customTreeType;
+        }
+        return treeData.type;
+    }
+
+    public bool BTreeShadowSet
+    {
+        get => bTreeShadowSet;
+        set => bTreeShadowSet = value;
+    }
 }

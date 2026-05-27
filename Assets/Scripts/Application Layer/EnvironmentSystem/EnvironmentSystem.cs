@@ -139,7 +139,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         signalHub.Publish(new MapGeneratedSignal(tilePositions));
 
         if (environmentObjManager != null)
-            environmentObjManager.SpawnEnvironmentObjs();
+            environmentObjManager.SpawnInDungeonEnvironmentObjs();
     }
 
     private void DeclareActiveTileCnt(int _grassTileCnt, int _walkableTileCnt)
@@ -186,5 +186,6 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     private void TownStarted(TownStartedSignal _townStartedSignal)
     {
         environmentObjManager.ReleaseAllObjs();
+        environmentObjManager.SpawnTownEnvironmentObjs();
     }
 }

@@ -9,6 +9,10 @@ public class BirdShadow : EnvironmentObj
     [SerializeField] private SpriteRenderer sr;
     [SerializeField] private float rotationOffset = 0f;
 
+    [Header("Shadow Materials")]
+    [SerializeField] private Material ldRuMaterial;
+    [SerializeField] private Material rdLuMaterial;
+
     private static readonly Vector3[] isoDirections = new Vector3[]
     {
         new Vector3(1f, 0.5f, 0f).normalized,   // 우상 (26.565도)
@@ -72,9 +76,8 @@ public class BirdShadow : EnvironmentObj
         float _flightElapsed = Mathf.Max(0f, _elapsed - delayTime);
         int _cycleSeed = flockIndex * 10000 + _cycleIndex;
 
-        // 1. 아이소메트릭 변 방향 중 하나 선택
-        int _dirIndex = Mathf.FloorToInt(GetPseudoRandom(_cycleSeed + 1, 0f, 4f));
-        _dirIndex = Mathf.Clamp(_dirIndex, 0, 3);
+        // 1. 아이소메트릭 변 방향 중 하나 선택 (순환 방식으로 번갈아가며 생성)
+        int _dirIndex = (flockIndex + _cycleIndex) % 4;
         Vector3 _dir = isoDirections[_dirIndex];
 
         // 2. 방향에 수직인 벡터 및 오프셋 계산 (경로 다양성 확보)
@@ -167,10 +170,21 @@ public class BirdShadow : EnvironmentObj
 
         int _cycleSeed = flockIndex * 10000 + _cycleIndex;
 
-        // GetCurrentPosition과 완벽히 동일한 시드로 방향 유도
-        int _dirIndex = Mathf.FloorToInt(GetPseudoRandom(_cycleSeed + 1, 0f, 4f));
-        _dirIndex = Mathf.Clamp(_dirIndex, 0, 3);
+        // GetCurrentPosition과 완벽히 동일한 순환 공식으로 방향 유도
+        int _dirIndex = (flockIndex + _cycleIndex) % 4;
         Vector3 _dir = isoDirections[_dirIndex];
+
+        if (sr != null)
+        {
+            if (_dirIndex == 0 || _dirIndex == 2)
+            {
+                sr.sharedMaterial = ldRuMaterial;
+            }
+            else
+            {
+                sr.sharedMaterial = rdLuMaterial;
+            }
+        }
 
         // 기본 스프라이트가 위(Up)를 바라보고 있으므로 -90도 보정 적용
         float _angleDeg = Mathf.Atan2(_dir.y, _dir.x) * Mathf.Rad2Deg - 90f + rotationOffset;

@@ -517,7 +517,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _hasGroundDeco = false;
                 if (false == _hasRockDeco && false == _hasInsectDeco)
                 {
-                    float _groundDecoProb = _isSand ? 0.2f : 0.01f;
+                    float _groundDecoProb = _isSand ? 0.05f : 0.01f;
                     if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
                     {
                         decoTilesToApply[i] = groundDecoTiles[UnityEngine.Random.Range(0, groundDecoTiles.Count)];
