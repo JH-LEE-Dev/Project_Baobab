@@ -65,7 +65,6 @@ public class LogItem : Item, IStaticCollidable
     private Material originalMaterial;
 
     private MaterialPropertyBlock mpb;
-    private static readonly int baseColorID = Shader.PropertyToID("_BaseColor");
 
     private CustomSortable customSortable;
 
@@ -74,7 +73,7 @@ public class LogItem : Item, IStaticCollidable
 
     [SerializeField] private GameObject shadow;
 
-    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, Color _color, bool _bDisableCustomSortable = false)
+    public void Initialize(LogItemTypeData _logItemTypeData, LogState _logState, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
 
@@ -85,7 +84,6 @@ public class LogItem : Item, IStaticCollidable
         suckTarget = null;
         dynamicTarget = null;
         sprite = _logItemTypeData.sprite;
-        color = _color;
         durability = _logItemTypeData.durability;
         originalDurability = durability;
         elapsed = 0;
@@ -105,7 +103,6 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
-            spriteRenderer.color = color;
         }
 
         transform.localScale = Vector3.one;
@@ -156,7 +153,6 @@ public class LogItem : Item, IStaticCollidable
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
         spriteRenderer.GetPropertyBlock(mpb);
-        mpb.SetColor(baseColorID, spriteRenderer.color);
         spriteRenderer.SetPropertyBlock(mpb);
 
         // 활성화 상태라면 등록 (OnEnable에서도 처리됨)
@@ -465,11 +461,6 @@ public class LogItem : Item, IStaticCollidable
 
             visualTransform.rotation = Quaternion.identity;
 
-            if (customSortable != null)
-            {
-                customSortable.SetHeight(0f);
-            }
-
             UpdateShadowScale(0f);
 
             state = ItemMoveState.Dropped;
@@ -537,11 +528,6 @@ public class LogItem : Item, IStaticCollidable
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
             visualTransform.rotation = Quaternion.identity;
-
-            if (customSortable != null)
-            {
-                customSortable.SetHeight(0f);
-            }
 
             UpdateShadowScale(0f);
 
@@ -618,11 +604,6 @@ public class LogItem : Item, IStaticCollidable
             transform.position = GlobalPixelSnapper.Snap(endPos);
             if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
             visualTransform.rotation = Quaternion.identity;
-
-            if (customSortable != null)
-            {
-                customSortable.SetHeight(0f);
-            }
 
             UpdateShadowScale(0f);
 
@@ -820,5 +801,10 @@ public class LogItem : Item, IStaticCollidable
     {
         if (bDisableCustomSortable == false)
             customSortable.ManualLateUpdate();
+    }
+
+    public void SetHeight(float _height)
+    {
+        customSortable.SetHeight(_height);
     }
 }

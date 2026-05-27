@@ -7,11 +7,13 @@ public class BirdShadow : EnvironmentObj
 
     //내부 의존성
     [SerializeField] private SpriteRenderer sr;
-    [SerializeField] private float rotationOffset = 0f;
 
-    [Header("Shadow Materials")]
-    [SerializeField] private Material ldRuMaterial;
-    [SerializeField] private Material rdLuMaterial;
+
+    [Header("Shadow Sprites")]
+    [SerializeField] private Sprite ruSprite;
+    [SerializeField] private Sprite rDSprite;
+    [SerializeField] private Sprite lUSprite;
+    [SerializeField] private Sprite lDSprite;
 
     private static readonly Vector3[] isoDirections = new Vector3[]
     {
@@ -67,6 +69,16 @@ public class BirdShadow : EnvironmentObj
 
         float _initialProgress = GetPseudoRandom(flockIndex * 123, 0f, cycleDuration);
         timeOffset = -Time.time + _initialProgress;
+    }
+
+    public Vector3 GetFlightDirection()
+    {
+        if (cycleDuration <= 0f)
+            return Vector3.up;
+
+        float _totalTime = Time.time + timeOffset;
+        int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
+        return isoDirections[(flockIndex + _cycleIndex) % 4];
     }
 
     public override Vector3 GetCurrentPosition()
@@ -143,14 +155,26 @@ public class BirdShadow : EnvironmentObj
     {
         if (birdIndexInFlock > 0)
         {
-            if (sr != null)
+            if (null != leaderBird)
             {
-                if (null != leaderBird && null != leaderBird.sr)
+                if (sr != null)
                 {
-                    sr.enabled = leaderBird.sr.enabled && bActivated;
-                    sr.sharedMaterial = leaderBird.sr.sharedMaterial;
+                    sr.enabled = leaderBird.sr != null && leaderBird.sr.enabled && bActivated;
+                    sr.sprite = leaderBird.sr != null ? leaderBird.sr.sprite : null;
                 }
-                else
+
+                Vector3 _dir = leaderBird.GetFlightDirection();
+                Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
+                float _side = (birdIndexInFlock % 2 == 1) ? -1f : 1f;
+                int _depth = (birdIndexInFlock + 1) / 2;
+                float _stepSide = 0.5f;
+                float _stepBack = 0.6f;
+
+                transform.localPosition = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
+            }
+            else
+            {
+                if (sr != null)
                 {
                     sr.enabled = false;
                 }
@@ -168,7 +192,7 @@ public class BirdShadow : EnvironmentObj
         int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
         float _elapsed = _totalTime - (_cycleIndex * cycleDuration);
 
-        // 컬링 비활성화 상태이거나 대기 상태(딜레이)일 경우 비주얼 렌더러를 끄고 회전 갱신을 생략함
+        // 컬링 비활성화 상태이거나 대기 상태(딜레이)일 경우 비주얼 렌더러를 끄고 스프라이트 갱신을 생략함
         if (false == bActivated || _elapsed < delayTime)
         {
             if (sr != null && sr.enabled)
@@ -186,23 +210,25 @@ public class BirdShadow : EnvironmentObj
 
         // GetCurrentPosition과 완벽히 동일한 순환 공식으로 방향 유도
         int _dirIndex = (flockIndex + _cycleIndex) % 4;
-        Vector3 _dir = isoDirections[_dirIndex];
 
         if (sr != null)
         {
-            if (_dirIndex == 0 || _dirIndex == 2)
+            switch (_dirIndex)
             {
-                sr.sharedMaterial = ldRuMaterial;
-            }
-            else
-            {
-                sr.sharedMaterial = rdLuMaterial;
+                case 0:
+                    sr.sprite = ruSprite;
+                    break;
+                case 1:
+                    sr.sprite = lUSprite;
+                    break;
+                case 2:
+                    sr.sprite = lDSprite;
+                    break;
+                case 3:
+                    sr.sprite = rDSprite;
+                    break;
             }
         }
-
-        // 기본 스프라이트가 위(Up)를 바라보고 있으므로 -90도 보정 적용
-        float _angleDeg = Mathf.Atan2(_dir.y, _dir.x) * Mathf.Rad2Deg - 90f + rotationOffset;
-        transform.rotation = Quaternion.Euler(0f, 0f, _angleDeg);
     }
 
     // 유니티 이벤트 함수

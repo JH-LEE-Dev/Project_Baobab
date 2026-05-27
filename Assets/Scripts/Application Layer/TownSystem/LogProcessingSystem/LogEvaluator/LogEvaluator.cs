@@ -21,10 +21,17 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
     private float logValueMultiplier = 1.0f;
 
+    private CustomSortable customSortable;
+
+
     public void Initialize()
     {
         anim = GetComponent<Animator>();
         storageAnim = storageObj.GetComponent<Animator>();
+
+        customSortable = GetComponent<CustomSortable>();
+        customSortable.Initialize(transform);
+        customSortable.AddSpriteRenderer(GetComponent<SpriteRenderer>());
 
         logStorage.Initialize();
     }
@@ -77,5 +84,11 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     {
         logValueMultiplier = _data.logValueMultiplier;
         Debug.Log("[LogEvaluator] Evaluator Save Data Loaded.");
+    }
+
+    private void LateUpdate()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
     }
 }

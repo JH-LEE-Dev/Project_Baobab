@@ -7,6 +7,7 @@ using System;
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
+    public event Action<OffroadVehicleObj> OffroadSpawnedEvent;
     public event Action GoToTownEvent;
     public event Action<TreeType> TreeDeadEvent;
     public event Action PortalActivatedEvent;
@@ -151,6 +152,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             portal = Instantiate(portalPrefab, transform);
             portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offraodContainer,
             character.centerTransform);
+            OffroadSpawnedEvent?.Invoke(portal);
         }
 
         var pos = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();

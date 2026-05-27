@@ -10,6 +10,9 @@ public class LogStorage : MonoBehaviour
     private float bounceTime = 1f;
     private const float BOUNCE_DURATION = 0.2f;
 
+    private CustomSortable customSortable;
+
+
     public void Initialize()
     {
         animator = GetComponent<Animator>();
@@ -18,11 +21,21 @@ public class LogStorage : MonoBehaviour
         // 자식 오브젝트의 SpriteRenderer Transform 캐싱
         var sr = GetComponentInChildren<SpriteRenderer>();
         if (sr != null) visualTransform = sr.transform;
+
+        customSortable = GetComponent<CustomSortable>();
+        customSortable.Initialize(transform);
+        customSortable.AddSpriteRenderer(spriteRenderer);
     }
 
     private void Update()
     {
         UpdateBounce(Time.deltaTime);
+    }
+
+    private void LateUpdate()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
     }
 
     public void TriggerBounce()
@@ -35,7 +48,7 @@ public class LogStorage : MonoBehaviour
         if (bounceTime >= BOUNCE_DURATION)
         {
             if (visualTransform != null && visualTransform.localScale != Vector3.one)
-                visualTransform.localScale = Vector3.one;
+                visualTransform.localScale = new Vector3(-1f, 1f, 1f);
             return;
         }
 
@@ -48,7 +61,7 @@ public class LogStorage : MonoBehaviour
         if (visualTransform != null)
         {
             // X축 확대 시 Y축 축소 (Squash & Stretch)
-            visualTransform.localScale = new Vector3(1f + curve, 1f - curve, 1f);
+            visualTransform.localScale = new Vector3(-(1f + curve), 1f - curve, 1f);
         }
     }
 }

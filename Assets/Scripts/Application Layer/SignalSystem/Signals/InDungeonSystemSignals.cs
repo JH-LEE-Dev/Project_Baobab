@@ -98,3 +98,12 @@ public struct GoToHiddenMapSignal
         forestType = _forestType;
     }
 }
+
+public struct OffroadSpawnedSignal
+{
+    public OffroadVehicleObj offroadVehicleObj;
+    public OffroadSpawnedSignal(OffroadVehicleObj _offroadVehicleObj)
+    {
+        offroadVehicleObj = _offroadVehicleObj;
+    }
+}

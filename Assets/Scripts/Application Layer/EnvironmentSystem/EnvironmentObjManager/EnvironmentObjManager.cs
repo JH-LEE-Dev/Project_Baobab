@@ -46,7 +46,6 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private float birdMinSpeed = 2f;
     [SerializeField] private float birdMaxSpeed = 4f;
     [SerializeField] private float birdSpawnRadiusPadding = 10f;
-    [SerializeField] private float birdFlockOffsetRange = 1.5f;
     [SerializeField] private float birdMinDelay = 3f;
     [SerializeField] private float birdMaxDelay = 8f;
 
@@ -225,12 +224,14 @@ public class EnvironmentObjManager : MonoBehaviour
                         _follower.transform.SetParent(_leader.transform, false);
                         _follower.SetLeader(_leader);
 
+                        Vector3 _dir = _leader.GetFlightDirection();
+                        Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
                         float _side = (_j % 2 == 1) ? -1f : 1f; // 홀수: 왼쪽, 짝수: 오른쪽
                         int _depth = (_j + 1) / 2;
                         float _stepSide = 0.5f;
                         float _stepBack = 0.6f;
 
-                        _follower.transform.localPosition = new Vector3(_side * _stepSide * _depth, -_stepBack * _depth, 0f);
+                        _follower.transform.localPosition = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
                         _follower.transform.localRotation = Quaternion.identity;
                     }
                 }
@@ -379,12 +380,14 @@ public class EnvironmentObjManager : MonoBehaviour
                         _follower.transform.SetParent(_leader.transform, false);
                         _follower.SetLeader(_leader);
 
+                        Vector3 _dir = _leader.GetFlightDirection();
+                        Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
                         float _side = (_j % 2 == 1) ? -1f : 1f; // 홀수: 왼쪽, 짝수: 오른쪽
                         int _depth = (_j + 1) / 2;
                         float _stepSide = 0.5f;
                         float _stepBack = 0.6f;
 
-                        _follower.transform.localPosition = new Vector3(_side * _stepSide * _depth, -_stepBack * _depth, 0f);
+                        _follower.transform.localPosition = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
                         _follower.transform.localRotation = Quaternion.identity;
                     }
                 }

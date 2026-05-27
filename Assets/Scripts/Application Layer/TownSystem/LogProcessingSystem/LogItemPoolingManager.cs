@@ -42,7 +42,7 @@ public class LogItemPoolingManager : MonoBehaviour
 
         if (typeData != null)
         {
-            item.Initialize(typeData, _data.logState, _data.color, bDisableCustomSortable);
+            item.Initialize(typeData, _data.logState, bDisableCustomSortable);
         }
         else
         {
