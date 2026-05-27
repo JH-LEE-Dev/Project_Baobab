@@ -388,4 +388,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         armComponent.Refresh();
     }
+
+    public void DisableShadow()
+    {
+        shadowObject.gameObject.SetActive(false);
+    }
+
+    public void EnableShadow()
+    {
+        shadowObject.gameObject.SetActive(true);
+    }
 }

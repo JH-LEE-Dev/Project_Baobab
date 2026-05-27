@@ -34,6 +34,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [SerializeField] private GameObject wheelObject;
     [SerializeField] private GameObject containerObject;
     [SerializeField] private GameObject visualObject;
+    [SerializeField] private GameObject jitterVisualObject;
 
     [Header("Container Jump Settings")]
     [SerializeField] private float containerJumpDuration = 0.5f;
@@ -79,6 +80,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     public SpriteRenderer baseSR;
     public SpriteRenderer wheelStencilSR;
+
+    [SerializeField] private GameObject containerShadowObj;
 
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
@@ -126,7 +129,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             }
         }
 
-        offroadContainerVComponent = containerObject.GetComponent<OffroadContainerVComponent>();
+        offroadContainerVComponent = containerObject.GetComponentInChildren<OffroadContainerVComponent>();
 
         BindEvents();
     }
@@ -146,6 +149,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.SetVisualTransform(containerObject.transform);
         containerObject.transform.position = containerDropPoint.position;
         offroadContainer.EnableCollision();
+
+        containerShadowObj.SetActive(true);
     }
 
     //유니티 이벤트 함수
@@ -174,7 +179,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             return;
 
         bCanInteract = true;
-        
+
         baseSR.material = stencilMaterial;
         wheelStencilSR.material = stencilMaterial;
         outLineObject.SetActive(true);
@@ -209,12 +214,19 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
+
+        offroadContainer.ContainerOpendEvent -= ContainerOpend;
+        offroadContainer.ContainerOpendEvent += ContainerOpend;
+        offroadContainer.ContainerClosedEvent -= ContainerClosed;
+        offroadContainer.ContainerClosedEvent += ContainerClosed;
     }
 
     public void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
+        offroadContainer.ContainerOpendEvent -= ContainerOpend;
+        offroadContainer.ContainerClosedEvent -= ContainerClosed;
     }
 
     public void OnDestroy()
@@ -303,7 +315,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private IEnumerator DriveRoutine(Transform _endPoint)
     {
-        Vector3 visualObjectInitialLocalPos = visualObject.transform.localPosition;
+        Vector3 jitterVisualObjectInitialLocalPos = jitterVisualObject.transform.localPosition;
         Vector3 visualObjectInitialScale = visualObject.transform.localScale;
 
         // 0. 컨테이너 점프 시퀀스
@@ -313,21 +325,24 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         yield return new WaitForSeconds(1.5f);
 
         // 1. 시동 임팩트 시퀀스 (스프링 댐퍼)
-        yield return IgnitionImpactSequence(visualObjectInitialLocalPos, visualObjectInitialScale);
+        yield return IgnitionImpactSequence(jitterVisualObjectInitialLocalPos, visualObjectInitialScale);
 
         // 2. 시동 유지 시퀀스 (공회전)
-        yield return IgnitionIdleSequence(visualObjectInitialLocalPos);
+        yield return IgnitionIdleSequence(jitterVisualObjectInitialLocalPos);
 
         // 3. 주행 시퀀스
-        yield return TravelSequence(_endPoint.position, visualObjectInitialLocalPos);
+        yield return TravelSequence(_endPoint.position, jitterVisualObjectInitialLocalPos);
 
         // 4. 주행 종료 처리
-        FinishDrive(_endPoint.position, visualObjectInitialLocalPos);
+        FinishDrive(_endPoint.position, jitterVisualObjectInitialLocalPos);
     }
 
     private IEnumerator ContainerJumpSequence()
     {
         if (offroadContainerVComponent == null || containerCarryPoint == null) yield break;
+
+        
+        containerShadowObj.SetActive(false);
 
         yield return offroadContainerVComponent.JumpSequence(
             containerCarryPoint.position,
@@ -415,7 +430,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         float shakeX = UnityEngine.Random.Range(-_intensity, _intensity);
         float shakeY = UnityEngine.Random.Range(-_intensity, _intensity);
-        visualObject.transform.localPosition = _initialPos + new Vector3(shakeX, shakeY, 0);
+        jitterVisualObject.transform.localPosition = _initialPos + new Vector3(shakeX, shakeY, 0);
     }
 
     private void UpdateWheelAnimation(float _speed)
@@ -429,7 +444,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private void FinishDrive(Vector3 _targetPos, Vector3 _initialLocalPos)
     {
         transform.position = _targetPos;
-        visualObject.transform.localPosition = _initialLocalPos;
+        jitterVisualObject.transform.localPosition = _initialLocalPos;
 
         wheelObjectForStencil.SetActive(true);
 
@@ -477,5 +492,15 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             bOverlapped = false;
             PortalDeActivatedEvent?.Invoke();
         }
+    }
+
+    private void ContainerOpend()
+    {
+        offroadContainerVComponent.Open();
+    }
+
+    private void ContainerClosed()
+    {
+        offroadContainerVComponent.Close();
     }
 }

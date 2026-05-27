@@ -64,21 +64,33 @@ public class BirdShadow : EnvironmentObj
 
         float _avgSpeed = (minSpeed + maxSpeed) * 0.5f;
         lifeTime = (spawnRadius * 2.2f) / _avgSpeed;
-        delayTime = GetPseudoRandom(flockIndex * 789, _minDelay, _maxDelay);
-        cycleDuration = lifeTime + delayTime;
 
-        float _initialProgress = GetPseudoRandom(flockIndex * 123, 0f, cycleDuration);
-        timeOffset = -Time.time + _initialProgress;
+        // 무리 간 15~20초 간격을 두고 순차적으로 날기 시작하도록 누적 딜레이 계산 (첫 무리도 최소 15~20초 대기)
+        float _accumulatedDelay = 0f;
+        for (int _i = 0; _i <= flockIndex; _i++)
+        {
+            _accumulatedDelay += GetPseudoRandom((_i + 1) * 1234, 15f, 20f);
+        }
+        delayTime = _accumulatedDelay;
+
+        // 최초 딜레이 이후부터는 대기 시간 없이 비행(lifeTime)만 순환
+        cycleDuration = lifeTime;
+
+        timeOffset = -Time.time;
+    }
+
+    private struct FlightState
+    {
+        public int cycleIndex;
+        public bool isWaiting;
+        public float elapsedFlightTime;
     }
 
     public Vector3 GetFlightDirection()
     {
-        if (cycleDuration <= 0f)
-            return Vector3.up;
-
         float _totalTime = Time.time + timeOffset;
-        int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
-        return isoDirections[(flockIndex + _cycleIndex) % 4];
+        FlightState _state = GetFlightState(_totalTime);
+        return isoDirections[(flockIndex + _state.cycleIndex) % 4];
     }
 
     public override Vector3 GetCurrentPosition()
@@ -88,32 +100,23 @@ public class BirdShadow : EnvironmentObj
             return transform.position;
         }
 
-        if (cycleDuration <= 0f)
-            return transform.position;
-
         float _totalTime = Time.time + timeOffset;
-        int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
-        float _elapsed = _totalTime - (_cycleIndex * cycleDuration);
+        FlightState _state = GetFlightState(_totalTime);
 
-        // 대기 시간(딜레이) 동안에는 이동 경과 시간을 0f으로 고정하여 대기 지점 유지
-        float _flightElapsed = Mathf.Max(0f, _elapsed - delayTime);
-        int _cycleSeed = flockIndex * 10000 + _cycleIndex;
-
-        // 1. 아이소메트릭 변 방향 중 하나 선택 (순환 방식으로 번갈아가며 생성)
-        int _dirIndex = (flockIndex + _cycleIndex) % 4;
+        int _dirIndex = (flockIndex + _state.cycleIndex) % 4;
         Vector3 _dir = isoDirections[_dirIndex];
-
-        // 2. 방향에 수직인 벡터 및 오프셋 계산 (경로 다양성 확보)
         Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
-        // 수직 편차 오프셋 범위를 축소하여 새 무리가 마름모 맵의 중앙 플레이 영역을 관통하도록 유도
+        int _cycleSeed = flockIndex * 10000 + _state.cycleIndex;
         float _offsetDist = GetPseudoRandom(_cycleSeed + 2, -spawnRadius * 0.15f, spawnRadius * 0.15f);
-
-        // 3. 출발지 설정 (선택된 진행 방향의 정반대편 외곽 가장자리)
         Vector3 _startPos = mapCenter - _dir * spawnRadius + _perp * _offsetDist;
 
-        float _speed = GetPseudoRandom(_cycleSeed + 3, minSpeed, maxSpeed);
+        if (_state.isWaiting)
+        {
+            return _startPos;
+        }
 
-        return _startPos + _dir * (_speed * _flightElapsed);
+        float _speed = GetPseudoRandom(_cycleSeed + 3, minSpeed, maxSpeed);
+        return _startPos + _dir * (_speed * _state.elapsedFlightTime);
     }
 
     public override void Show()
@@ -142,6 +145,47 @@ public class BirdShadow : EnvironmentObj
     }
 
     // 내부 메서드
+
+    private FlightState GetFlightState(float _totalTime)
+    {
+        FlightState _state;
+        int _k = 0;
+        float _accumulatedTime = 0f;
+        float _currentCycleDelay = 0f;
+
+        while (true)
+        {
+            if (_k == 0)
+            {
+                _currentCycleDelay = delayTime;
+            }
+            else
+            {
+                _currentCycleDelay = GetPseudoRandom(flockIndex * 10000 + _k, 15f, 20f);
+            }
+
+            float _waitEnd = _accumulatedTime + _currentCycleDelay;
+            float _flightEnd = _waitEnd + lifeTime;
+
+            if (_totalTime < _waitEnd)
+            {
+                _state.cycleIndex = _k;
+                _state.isWaiting = true;
+                _state.elapsedFlightTime = 0f;
+                return _state;
+            }
+            else if (_totalTime < _flightEnd)
+            {
+                _state.cycleIndex = _k;
+                _state.isWaiting = false;
+                _state.elapsedFlightTime = _totalTime - _waitEnd;
+                return _state;
+            }
+
+            _accumulatedTime = _flightEnd;
+            _k++;
+        }
+    }
 
     private float GetPseudoRandom(int _seed, float _min, float _max)
     {
@@ -185,15 +229,11 @@ public class BirdShadow : EnvironmentObj
         Vector3 _currentPos = GetCurrentPosition();
         transform.position = _currentPos;
 
-        if (cycleDuration <= 0f)
-            return;
-
         float _totalTime = Time.time + timeOffset;
-        int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
-        float _elapsed = _totalTime - (_cycleIndex * cycleDuration);
+        FlightState _state = GetFlightState(_totalTime);
 
-        // 컬링 비활성화 상태이거나 대기 상태(딜레이)일 경우 비주얼 렌더러를 끄고 스프라이트 갱신을 생략함
-        if (false == bActivated || _elapsed < delayTime)
+        // 대기 중이거나 비활성화 시 렌더러 숨김
+        if (false == bActivated || _state.isWaiting)
         {
             if (sr != null && sr.enabled)
             {
@@ -202,14 +242,12 @@ public class BirdShadow : EnvironmentObj
             return;
         }
 
-        // 비행 중일 경우 렌더러를 활성화함
         if (sr != null && !sr.enabled)
         {
             sr.enabled = true;
         }
 
-        // GetCurrentPosition과 완벽히 동일한 순환 공식으로 방향 유도
-        int _dirIndex = (flockIndex + _cycleIndex) % 4;
+        int _dirIndex = (flockIndex + _state.cycleIndex) % 4;
 
         if (sr != null)
         {

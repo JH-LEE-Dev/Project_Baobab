@@ -95,7 +95,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             dirIndex = 0;
         }
 
-        anim.SetFloat(facingDirHash, dirIndex);
+        //anim.SetFloat(facingDirHash, dirIndex);
 
         // bReady 상태에 따라 뒤쪽(-1)으로 정렬할 각도 범위 결정
         bool isBehind;
@@ -130,7 +130,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private void EnterReady(bool _useDelay)
     {
         bReady = true;
-        anim.SetBool(bReadyHash, bReady);
+        //anim.SetBool(bReadyHash, bReady);
 
         if (_useDelay)
         {
@@ -282,7 +282,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bReady = false;
         bFired = false;
         bInCoolDown = false;
-        anim.SetBool(bReadyHash, bReady);
+        //anim.SetBool(bReadyHash, bReady);
 
         // 이동 속도 회복은 SpeedRecoveryRoutine에서 처리하므로 여기서 제거
 
@@ -337,7 +337,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bFired = false;
         bInCoolDown = false;
         bLeftButtonClicked = false;
-        anim.SetBool(bReadyHash, bReady);
+        //anim.SetBool(bReadyHash, bReady);
     }
 
     public void CancelReady()
@@ -348,7 +348,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         bReady = false;
         bInCoolDown = false;
 
-        anim.SetBool(bReadyHash, bReady);
+        //anim.SetBool(bReadyHash, bReady);
     }
 
     private void DecreaseMagAmmo()
@@ -438,7 +438,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             bReady = false;
             bInCoolDown = false;
             bReload = false;
-            anim.SetBool(bReadyHash, false);
+            //anim.SetBool(bReadyHash, false);
         }
     }
 

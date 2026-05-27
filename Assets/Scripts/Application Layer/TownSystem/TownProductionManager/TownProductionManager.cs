@@ -69,6 +69,7 @@ public class TownProductionManager : MonoBehaviour
         if (character == null || characterRidePoint == null) yield break;
 
         inputManager.PauseMove(true);
+        character.DisableShadow();
 
         Vector3 startPos = character.transform.position;
         float duration = 0.5f;
@@ -98,6 +99,8 @@ public class TownProductionManager : MonoBehaviour
         character.SetHeight(0f);
         character.gameObject.SetActive(false);
 
+        character.EnableShadow();
+        
         // 캐릭터 도착 시 차량 착륙 임팩트 연출 실행
         if (offroadVehicleObj != null)
         {
