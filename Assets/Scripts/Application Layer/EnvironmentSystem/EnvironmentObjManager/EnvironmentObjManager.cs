@@ -580,6 +580,7 @@ public class EnvironmentObjManager : MonoBehaviour
     private void OnGetObj(EnvironmentObj _obj)
     {
         _obj.ResetObj();
+        _obj.gameObject.SetActive(true);
     }
 
     private void OnReleaseObj(EnvironmentObj _obj)
