@@ -7,7 +7,7 @@ public class UI_TreeCutter : MonoBehaviour
     [SerializeField] private GameObject mainVisual;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private HUD_ProgressBar progressBar;
-    [SerializeField] private float yOffset = 30f;
+    [SerializeField] private Vector3 offset;
 
     private ILogItemData cachedItemData;
     private float remaining = 0f;
@@ -23,7 +23,7 @@ public class UI_TreeCutter : MonoBehaviour
     private MotionEntry popdown;
     private bool bOpen = false;
 
-    public void Initialize(float _yOffset)
+    public void Initialize(Vector2 _offset)
     {
         if (null != uiSlotPrefab)
         {
@@ -36,7 +36,7 @@ public class UI_TreeCutter : MonoBehaviour
             }
         }
 
-        yOffset = _yOffset;
+        offset = _offset;
 
         omp?.Initialize();
         progressBar?.Initialize();
@@ -50,15 +50,21 @@ public class UI_TreeCutter : MonoBehaviour
 
         if (null != slot)
         {
-            slot.UpdateImage(_itemData.sprite, _itemData.color);
+            if (null != _itemData)
+                slot.UpdateImage(_itemData.sprite, Color.white);
+            else
+                slot.ResetData();
         }
+
+        if (null != _itemData)
+            OnShow();
     }
 
     public void Refresh()
     {
         if (null != slot && null != cachedItemData)
         {
-            slot.UpdateImage(cachedItemData.sprite, cachedItemData.color);
+            slot.UpdateImage(cachedItemData.sprite, Color.white);
         }
     }
 
@@ -73,9 +79,7 @@ public class UI_TreeCutter : MonoBehaviour
     {
         RectTransform rt = GetComponent<RectTransform>();
         if (null != rt)
-        {
-            rt.position = _newPos + Vector3.up * yOffset;
-        }
+            rt.position = _newPos + offset;
     }
 
     public void ResetCutter()
@@ -84,10 +88,18 @@ public class UI_TreeCutter : MonoBehaviour
         remaining = 0f;
 
         slot?.ResetData();
+
+        OnHide();
     }
 
     public void OnShow()
     {
+        if (null == cachedItemData)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
         gameObject.SetActive(true);
 
         if (null == omp)

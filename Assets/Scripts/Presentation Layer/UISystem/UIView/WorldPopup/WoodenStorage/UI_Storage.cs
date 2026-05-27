@@ -8,7 +8,7 @@ public class UI_Storage : MonoBehaviour
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject mainVisual;
     [SerializeField] private ObjectMotionPlayer omp;
-    [SerializeField] private float yOffset = 30f;
+    [SerializeField] private Vector2 offset;
 
     private const int defaultCap = 2;
 
@@ -24,11 +24,11 @@ public class UI_Storage : MonoBehaviour
     RectTransform rect;
 
 
-    public void Initialize(float _yOffset)
+    public void Initialize(Vector2 _offset)
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
         gameObject.SetActive(false);
-        yOffset = _yOffset;
+        offset = _offset;
 
         omp?.Initialize();
 
@@ -98,8 +98,9 @@ public class UI_Storage : MonoBehaviour
 
         if (null != rect)
         {
-            Vector3 newPos = storage.GetTransform().position;
-            newPos.y += yOffset;
+            Vector2 newPos = storage.GetTransform().position;
+            newPos += offset;
+
             rect.position = newPos;
         }
 

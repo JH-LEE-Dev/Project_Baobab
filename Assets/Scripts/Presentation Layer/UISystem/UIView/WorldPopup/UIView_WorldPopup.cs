@@ -7,11 +7,12 @@ public class UIView_WorldPopup : UIView
     private IShopNPC shopNPC;
     private IInventory offroadContainer;
 
-    [SerializeField] private float storageYOffset = 0.5f;
-    [SerializeField] private float cutterYOffset = 0.5f;
+    [SerializeField] private Vector2 storageOffset = new Vector2(-2f, 0.5f);
+    [SerializeField] private Vector2 carStorageOffset = new Vector2(0f, 0.5f);
+    [SerializeField] private Vector2 cutterOffset = new Vector2(-1f, 0f);
 
     [SerializeField] private bool bTraderCoinAnim = false;
-    [SerializeField] private float traderCoinYOffset = 0.5f;
+    [SerializeField] private Vector2 traderCoinOffset = new Vector2(0.5f, 0.5f);
 
 
     //내부 의존성
@@ -76,7 +77,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_Storage)
             return;
 
-        ui_Storage.Initialize(storageYOffset);
+        ui_Storage.Initialize(storageOffset);
     }
 
     private void Init_UICarStorage()
@@ -88,7 +89,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_CarStorage)
             return;
 
-        ui_CarStorage.Initialize(storageYOffset);
+        ui_CarStorage.Initialize(carStorageOffset);
     }
 
 
@@ -101,7 +102,7 @@ public class UIView_WorldPopup : UIView
         if (null == ui_Cutter)
             return;
 
-        ui_Cutter.Initialize(cutterYOffset);
+        ui_Cutter.Initialize(cutterOffset);
     }
 
     private void Init_UITraderCoin()
@@ -126,8 +127,8 @@ public class UIView_WorldPopup : UIView
 
         UpdateTraderMoneyText();
 
-        Vector3 newPos = shopNPC.npcTransform.position;
-        newPos.y += traderCoinYOffset;
+        Vector2 newPos = shopNPC.npcTransform.position;
+        newPos += traderCoinOffset;
 
         if (null != ui_TraderCoin)
             ui_TraderCoin.gameObject.transform.position = newPos;

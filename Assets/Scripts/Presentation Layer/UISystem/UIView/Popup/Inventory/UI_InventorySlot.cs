@@ -92,7 +92,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         else
         {
             uiImage.sprite = _sprite;
-            uiImage.color = _color;
+            //uiImage.color = _color;
         }
     }
 
