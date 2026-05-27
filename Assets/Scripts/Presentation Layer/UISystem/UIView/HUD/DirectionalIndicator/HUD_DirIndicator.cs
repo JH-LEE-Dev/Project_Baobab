@@ -28,6 +28,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
         private Camera mainCamera;
         private bool isInitialized = false;
 
+        private bool isActivated = false;
+
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
@@ -63,16 +65,11 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                     indicatorImage.gameObject.SetActive(false);
         }
 
-        // //유니티 이벤트 함수
-
-        private void Awake()
-        {
-            if (null == rectTransform)
-                rectTransform = GetComponent<RectTransform>();
-        }
-
         private void Update()
         {
+            if (false == isActivated)
+                return;
+
             if (false == isInitialized)
                 return;
 
@@ -184,6 +181,18 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
             // 4. 픽셀 격자 스냅 및 좌표 대입
             if (null != rectTransform)
                 rectTransform.position = new Vector3(Mathf.Round(_finalX), Mathf.Round(_finalY), 0f);
+        }
+
+        public void OnHide()
+        {
+            isActivated = false;
+            gameObject.SetActive(false);
+        }
+
+        public void OnShow()
+        {
+            isActivated = true;
+            gameObject.SetActive(true);
         }
     }
 }

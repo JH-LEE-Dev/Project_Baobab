@@ -148,7 +148,14 @@ public class UIView_HUD : UIView
         bool bTown = MapType.Town == currentMapType;
 
         if (false == bTown)
+        {
             hudEquipment?.ResetAllMotions();
+            hudDirIndicator?.OnShow();
+        }
+        else
+        {
+            hudDirIndicator?.OnHide();
+        }
 
         ChangedActiveStateEquipment(bTown);
         ChangedActiveStateStemina(bTown);
