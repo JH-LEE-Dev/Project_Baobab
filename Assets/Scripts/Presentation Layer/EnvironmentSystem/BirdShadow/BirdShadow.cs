@@ -65,11 +65,11 @@ public class BirdShadow : EnvironmentObj
         float _avgSpeed = (minSpeed + maxSpeed) * 0.5f;
         lifeTime = (spawnRadius * 2.2f) / _avgSpeed;
 
-        // 무리 간 15~20초 간격을 두고 순차적으로 날기 시작하도록 누적 딜레이 계산
+        // 무리 간 15~20초 간격을 두고 순차적으로 날기 시작하도록 누적 딜레이 계산 (첫 무리도 최소 15~20초 대기)
         float _accumulatedDelay = 0f;
-        for (int _i = 1; _i <= flockIndex; _i++)
+        for (int _i = 0; _i <= flockIndex; _i++)
         {
-            _accumulatedDelay += GetPseudoRandom(_i * 1234, 15f, 20f);
+            _accumulatedDelay += GetPseudoRandom((_i + 1) * 1234, 15f, 20f);
         }
         delayTime = _accumulatedDelay;
 

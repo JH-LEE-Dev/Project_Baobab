@@ -81,6 +81,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public SpriteRenderer baseSR;
     public SpriteRenderer wheelStencilSR;
 
+    [SerializeField] private GameObject containerShadowObj;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, Transform _characterTransform)
@@ -127,7 +129,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             }
         }
 
-        offroadContainerVComponent = containerObject.GetComponent<OffroadContainerVComponent>();
+        offroadContainerVComponent = containerObject.GetComponentInChildren<OffroadContainerVComponent>();
 
         BindEvents();
     }
@@ -147,6 +149,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.SetVisualTransform(containerObject.transform);
         containerObject.transform.position = containerDropPoint.position;
         offroadContainer.EnableCollision();
+
+        containerShadowObj.SetActive(true);
     }
 
     //유니티 이벤트 함수
@@ -175,7 +179,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             return;
 
         bCanInteract = true;
-        
+
         baseSR.material = stencilMaterial;
         wheelStencilSR.material = stencilMaterial;
         outLineObject.SetActive(true);
@@ -210,12 +214,19 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         inputManager.inputReader.InteractionKeyPressedEvent += InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
+
+        offroadContainer.ContainerOpendEvent -= ContainerOpend;
+        offroadContainer.ContainerOpendEvent += ContainerOpend;
+        offroadContainer.ContainerClosedEvent -= ContainerClosed;
+        offroadContainer.ContainerClosedEvent += ContainerClosed;
     }
 
     public void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
+        offroadContainer.ContainerOpendEvent -= ContainerOpend;
+        offroadContainer.ContainerClosedEvent -= ContainerClosed;
     }
 
     public void OnDestroy()
@@ -329,6 +340,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private IEnumerator ContainerJumpSequence()
     {
         if (offroadContainerVComponent == null || containerCarryPoint == null) yield break;
+
+        
+        containerShadowObj.SetActive(false);
 
         yield return offroadContainerVComponent.JumpSequence(
             containerCarryPoint.position,
@@ -478,5 +492,15 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             bOverlapped = false;
             PortalDeActivatedEvent?.Invoke();
         }
+    }
+
+    private void ContainerOpend()
+    {
+        offroadContainerVComponent.Open();
+    }
+
+    private void ContainerClosed()
+    {
+        offroadContainerVComponent.Close();
     }
 }

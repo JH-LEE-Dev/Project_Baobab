@@ -6,6 +6,8 @@ using UnityEngine.Pool;
 
 public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 {
+    public event Action ContainerOpendEvent;
+    public event Action ContainerClosedEvent;
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
     public event Action SpecChangedEvent;
@@ -59,6 +61,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public bool bCanInteract = false;
     private float lastTransferTime = -1.0f;
     private bool bCanReach = true;
+
+    // 컨테이너 연출 이벤트 제어 변수
+    private bool bContainerOpen = false;
+    private float closeTimer = -1f;
 
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
@@ -119,6 +125,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         UpdateFlyingItems(Time.deltaTime);
         UpdateBounce(Time.deltaTime);
+        UpdateContainerState(Time.deltaTime);
     }
 
     private void UpdateFlyingItems(float _deltaTime)
@@ -527,6 +534,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         if (transferCoroutine == null)
         {
+            if (HasAnyItemToTransfer())
+            {
+                OpenContainerImmediately();
+            }
             transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
         }
     }
@@ -829,5 +840,92 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             bCanInteract = false;
             InteractStateEvent?.Invoke(false);
         }
+    }
+
+    private void UpdateContainerState(float _deltaTime)
+    {
+        bool _isTransferring = (transferCoroutine != null) || (flyingItems.Count > 0);
+
+        if (_isTransferring)
+        {
+            closeTimer = -1f;
+
+            if (!bContainerOpen)
+            {
+                bContainerOpen = true;
+                ContainerOpendEvent?.Invoke(); 
+            }
+        }
+        else
+        {
+            if (bContainerOpen)
+            {
+                if (closeTimer < 0f)
+                {
+                    closeTimer = 2f;
+                }
+                else
+                {
+                    closeTimer -= _deltaTime;
+                    if (closeTimer <= 0f)
+                    {
+                        bContainerOpen = false;
+                        closeTimer = -1f;
+                        ContainerClosedEvent?.Invoke();
+                    }
+                }
+            }
+        }
+    }
+
+    private void OpenContainerImmediately()
+    {
+        closeTimer = -1f;
+        if (!bContainerOpen)
+        {
+            bContainerOpen = true;
+            ContainerOpendEvent?.Invoke();
+        }
+    }
+
+    private bool HasAnyItemToTransfer()
+    {
+        if (!bCanInteract || characterInventory == null) return false;
+
+        if (bInTown)
+        {
+            for (int _i = 0; _i < currentSlotCount; _i++)
+            {
+                if (inventorySlots[_i].itemData != null && inventorySlots[_i].count > 0)
+                {
+                    if (transferringSlots.Contains(inventorySlots[_i])) continue;
+                    if (!(inventorySlots[_i].itemData is LogItemData _logSourceData)) continue;
+
+                    if (CanAddToCharacterInventory(_logSourceData))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        else
+        {
+            var _charSlots = characterInventory.inventorySlots;
+            for (int _i = 0; _i < characterInventory.currentSlotCnt; _i++)
+            {
+                if (_charSlots[_i] is InventorySlot _charSlot && _charSlot.itemData != null && _charSlot.count > 0)
+                {
+                    if (transferringSlots.Contains(_charSlot)) continue;
+                    if (!(_charSlot.itemData is LogItemData _logSourceData)) continue;
+
+                    if (CanAddItemByData(_logSourceData))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }

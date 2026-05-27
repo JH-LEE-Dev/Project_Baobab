@@ -9,17 +9,21 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public event Action AttackEvent;
     public event Action DurabilityEmptyEvent;
 
+    // 외부 의존성
+    [SerializeField] private Sprite halfDurabilityAxe;
+    [SerializeField] private Sprite zeroDurabilityAxe;
+
     // 내부 의존성
     private AxeAnimation axeAnimation;
     private bool bAttacked = false;
     private bool bLeftButtonClicked = false;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
+    private float originalSpeed;
+    private int sortingOrder = 0;
+    private Sprite originalSprite;
+    private Sprite targetSprite;
 
     float IAxeComponent.durability => durability;
-
-    private float originalSpeed;
-
-    private int sortingOrder = 0;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -29,6 +33,13 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         axeAnimation = GetComponent<AxeAnimation>();
 
         durability = ctx.characterStat.axeDurability;
+
+        if (null != spriteRenderer)
+        {
+            originalSprite = spriteRenderer.sprite;
+        }
+
+        UpdateSpriteByDurability();
     }
 
     public override void SetFacingDir(Transform _attackTransform)
@@ -43,10 +54,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
 
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
+        //int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
 
-        if (bAttacked == false)
-            anim.SetFloat(facingDirHash, dirIndex);
+        //if (bAttacked == false)
+            //anim.SetFloat(facingDirHash, dirIndex);
 
         // 정렬 레이어 처리
         sortingOrder = (angle > 0 && angle < 180) ? -1 : 1;
@@ -114,6 +125,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             durability = 0f;
         }
 
+        UpdateSpriteByDurability();
+
         if (durability == 0f)
             DurabilityEmptyEvent?.Invoke();
 
@@ -123,6 +136,24 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public override void ResetDurability()
     {
         durability = ctx.characterStat.axeDurability;
+        UpdateSpriteByDurability();
+    }
+
+    private void UpdateSpriteByDurability()
+    {
+        float maxDurability = ctx.characterStat.axeDurability;
+        if (durability <= 0f)
+        {
+            targetSprite = zeroDurabilityAxe != null ? zeroDurabilityAxe : originalSprite;
+        }
+        else if (durability <= maxDurability * 0.5f)
+        {
+            targetSprite = halfDurabilityAxe != null ? halfDurabilityAxe : originalSprite;
+        }
+        else
+        {
+            targetSprite = originalSprite;
+        }
     }
 
     public void SetbAttack(bool _boolean)
@@ -144,5 +175,13 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public void SortingOrder()
     {
         spriteRenderer.sortingOrder += sortingOrder;
+    }
+
+    private void LateUpdate()
+    {
+        if (null != spriteRenderer && null != targetSprite)
+        {
+            spriteRenderer.sprite = targetSprite;
+        }
     }
 }

@@ -35,7 +35,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
 
-    private Transform visualTransform;
+    public Transform visualTransform;
     private float bounceTime = 1f;
     private const float BOUNCE_DURATION = 0.4f;
 
@@ -82,7 +82,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         // 시각적 효과를 위한 트랜스폼 캐싱
         sr = GetComponent<SpriteRenderer>();
-        if (sr != null) visualTransform = sr.transform;
 
         transferWait = new WaitForSeconds(transferInterval);
         lastTransferTime = -transferInterval;
