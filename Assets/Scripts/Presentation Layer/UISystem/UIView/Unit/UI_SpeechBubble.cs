@@ -12,7 +12,7 @@ public class UI_SpeechBubble : MonoBehaviour
     [SerializeField] private ObjectMotionPlayer motionPlayer;
 
     [SerializeField] private string absolTag = "Absol";
-    [SerializeField] private string impactTag = "impact";
+    //[SerializeField] private string impactTag = "impact";
 
     // 내부 의존성
     private Transform targetTransform;

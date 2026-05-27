@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using PresentationLayer.UISystem.UIView.HUD.Equipment;
+using  PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator;
 
 public class UIView_HUD : UIView
 {
@@ -8,9 +9,11 @@ public class UIView_HUD : UIView
     [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
+    [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudSteminaBar;
+    private HUD_DirIndicator hudDirIndicator;
 
     private ICharacter character;
 
@@ -25,6 +28,7 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
+        Init_HUDDirIndicator();
         Init_HUDSteminaBar();
         Init_HUDEquipment();
 
@@ -97,6 +101,18 @@ public class UIView_HUD : UIView
         }
     }
 
+    private void Init_HUDDirIndicator()
+    {
+        if (null == hudDirIndicator)
+            hudDirIndicator = Instantiate(hudDirectionalIndicatorPrefab, uiRoot.transform).GetComponent<HUD_DirIndicator>();
+
+        if (null != hudDirIndicator)
+        {
+            hudDirIndicator.Initialize();
+            //hudDirIndicator.SetTarget(tempTargetTransform);
+        }
+    }
+
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
     {
         float newRatio = _currentStemina / _maxStemina;
@@ -108,7 +124,7 @@ public class UIView_HUD : UIView
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode, bool _isMapChanged = false)
     {
-       //hudEquipment?.UpdateState(_currentWeaponMode, _isMapChanged);
+      
     }
 
 
@@ -121,8 +137,6 @@ public class UIView_HUD : UIView
     {
         if (null != hudEquipment)
         {
-            //hudEquipment.UpdateRifleVisibility();
-            //hudEquipment.UpdateAmmo();
             hudEquipment.UpdateAxeDurability();
         }
     }
