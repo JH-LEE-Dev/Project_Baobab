@@ -1,6 +1,6 @@
 using UnityEngine;
 using System;
-using UnityEngine.UI;
+using UnityEngine.Rendering;
 
 public class ShopNPC : MonoBehaviour, IShopNPC
 {
@@ -26,9 +26,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     [SerializeField] private GameObject outLineObject;
     [SerializeField] private GameObject frontObject;
 
+    private CustomSortable customSortable;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
+        customSortable = GetComponent<CustomSortable>();
+        customSortable.Initialize(transform);
+        customSortable.SetSortingGroup(GetComponent<SortingGroup>());
+
         money = 0;
 
         BindEvents();
@@ -80,7 +86,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
             bCanInteract = true;
             frontObject.SetActive(false);
             outLineObject.SetActive(true);
-            
+
             InteractStateEvent?.Invoke(true);
         }
     }
@@ -111,5 +117,17 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         money = 0;
         ShopMoneyChangedEvent?.Invoke();
+    }
+
+    private void Update()
+    {
+        if (customSortable != null)
+            customSortable.SetHeight(0f);
+    }
+
+    private void LateUpdate()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
     }
 }

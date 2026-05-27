@@ -58,7 +58,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 76ea10b6e051684499823e12ae81466a, type: 2}
+  - {fileID: 2100000, guid: f1d5d17c7e214ff4493987030f81849d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -138,6 +138,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BirdShadow
   envObjType: 2
   sr: {fileID: 0}
-  rotationOffset: 0
-  ldRuMaterial: {fileID: 2100000, guid: 76ea10b6e051684499823e12ae81466a, type: 2}
-  rdLuMaterial: {fileID: 2100000, guid: cde34b75206950148a9642211cc76ce0, type: 2}
+  ruSprite: {fileID: 537756743838586989, guid: d536e47b79a71414b9adf0add316404c, type: 3}
+  rDSprite: {fileID: 1908031122899399828, guid: d536e47b79a71414b9adf0add316404c, type: 3}
+  lUSprite: {fileID: -8774949972500522898, guid: d536e47b79a71414b9adf0add316404c, type: 3}
+  lDSprite: {fileID: 7375799467376965881, guid: d536e47b79a71414b9adf0add316404c, type: 3}

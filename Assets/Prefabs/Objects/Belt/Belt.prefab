@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 4803681416765482191}
   - component: {fileID: 7164604389818214118}
   - component: {fileID: 7793256734193398864}
+  - component: {fileID: 2572398798934493341}
   m_Layer: 0
   m_Name: Belt
   m_TagString: Untagged
@@ -130,3 +131,20 @@ MonoBehaviour:
   animator: {fileID: 0}
   spriteRenderer: {fileID: 0}
   dir: 0
+  bRev: 0
+--- !u!114 &2572398798934493341
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4403669439933426119}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100

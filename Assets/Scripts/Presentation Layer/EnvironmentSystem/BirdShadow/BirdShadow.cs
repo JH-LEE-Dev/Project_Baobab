@@ -7,11 +7,13 @@ public class BirdShadow : EnvironmentObj
 
     //내부 의존성
     [SerializeField] private SpriteRenderer sr;
-    [SerializeField] private float rotationOffset = 0f;
 
-    [Header("Shadow Materials")]
-    [SerializeField] private Material ldRuMaterial;
-    [SerializeField] private Material rdLuMaterial;
+
+    [Header("Shadow Sprites")]
+    [SerializeField] private Sprite ruSprite;
+    [SerializeField] private Sprite rDSprite;
+    [SerializeField] private Sprite lUSprite;
+    [SerializeField] private Sprite lDSprite;
 
     private static readonly Vector3[] isoDirections = new Vector3[]
     {
@@ -32,6 +34,7 @@ public class BirdShadow : EnvironmentObj
     private float lifeTime;
     private float delayTime;
     private float cycleDuration;
+    private BirdShadow leaderBird;
 
     // 퍼블릭 초기화 및 제어 메서드
 
@@ -42,6 +45,11 @@ public class BirdShadow : EnvironmentObj
         {
             sr = GetComponentInChildren<SpriteRenderer>();
         }
+    }
+
+    public void SetLeader(BirdShadow _leaderBird)
+    {
+        leaderBird = _leaderBird;
     }
 
     public void SetupBird(int _flockIndex, int _birdIndexInFlock, Vector3 _mapCenter, float _spawnRadius, float _minSpeed, float _maxSpeed, float _minDelay, float _maxDelay, Vector3 _flockOffset)
@@ -63,8 +71,23 @@ public class BirdShadow : EnvironmentObj
         timeOffset = -Time.time + _initialProgress;
     }
 
+    public Vector3 GetFlightDirection()
+    {
+        if (cycleDuration <= 0f)
+            return Vector3.up;
+
+        float _totalTime = Time.time + timeOffset;
+        int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
+        return isoDirections[(flockIndex + _cycleIndex) % 4];
+    }
+
     public override Vector3 GetCurrentPosition()
     {
+        if (birdIndexInFlock > 0)
+        {
+            return transform.position;
+        }
+
         if (cycleDuration <= 0f)
             return transform.position;
 
@@ -90,20 +113,7 @@ public class BirdShadow : EnvironmentObj
 
         float _speed = GetPseudoRandom(_cycleSeed + 3, minSpeed, maxSpeed);
 
-        // 진행 방향을 기준으로 하는 쐐기 대형(V-formation) 오프셋 계산
-        Vector3 _vOffset = Vector3.zero;
-        if (birdIndexInFlock > 0)
-        {
-            float _side = (birdIndexInFlock % 2 == 1) ? -1f : 1f; // 홀수: 왼쪽, 짝수: 오른쪽
-            int _depth = (birdIndexInFlock + 1) / 2;
-            
-            float _stepBack = 0.4f;
-            float _stepSide = 0.4f;
-            
-            _vOffset = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
-        }
-
-        return _startPos + _dir * (_speed * _flightElapsed) + _vOffset;
+        return _startPos + _dir * (_speed * _flightElapsed);
     }
 
     public override void Show()
@@ -128,6 +138,7 @@ public class BirdShadow : EnvironmentObj
     public override void ResetObj()
     {
         base.ResetObj();
+        leaderBird = null;
     }
 
     // 내부 메서드
@@ -142,6 +153,35 @@ public class BirdShadow : EnvironmentObj
 
     private void UpdatePositionAndRotation()
     {
+        if (birdIndexInFlock > 0)
+        {
+            if (null != leaderBird)
+            {
+                if (sr != null)
+                {
+                    sr.enabled = leaderBird.sr != null && leaderBird.sr.enabled && bActivated;
+                    sr.sprite = leaderBird.sr != null ? leaderBird.sr.sprite : null;
+                }
+
+                Vector3 _dir = leaderBird.GetFlightDirection();
+                Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
+                float _side = (birdIndexInFlock % 2 == 1) ? -1f : 1f;
+                int _depth = (birdIndexInFlock + 1) / 2;
+                float _stepSide = 0.5f;
+                float _stepBack = 0.6f;
+
+                transform.localPosition = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
+            }
+            else
+            {
+                if (sr != null)
+                {
+                    sr.enabled = false;
+                }
+            }
+            return;
+        }
+
         Vector3 _currentPos = GetCurrentPosition();
         transform.position = _currentPos;
 
@@ -152,7 +192,7 @@ public class BirdShadow : EnvironmentObj
         int _cycleIndex = Mathf.FloorToInt(_totalTime / cycleDuration);
         float _elapsed = _totalTime - (_cycleIndex * cycleDuration);
 
-        // 컬링 비활성화 상태이거나 대기 상태(딜레이)일 경우 비주얼 렌더러를 끄고 회전 갱신을 생략함
+        // 컬링 비활성화 상태이거나 대기 상태(딜레이)일 경우 비주얼 렌더러를 끄고 스프라이트 갱신을 생략함
         if (false == bActivated || _elapsed < delayTime)
         {
             if (sr != null && sr.enabled)
@@ -168,27 +208,27 @@ public class BirdShadow : EnvironmentObj
             sr.enabled = true;
         }
 
-        int _cycleSeed = flockIndex * 10000 + _cycleIndex;
-
         // GetCurrentPosition과 완벽히 동일한 순환 공식으로 방향 유도
         int _dirIndex = (flockIndex + _cycleIndex) % 4;
-        Vector3 _dir = isoDirections[_dirIndex];
 
         if (sr != null)
         {
-            if (_dirIndex == 0 || _dirIndex == 2)
+            switch (_dirIndex)
             {
-                sr.sharedMaterial = ldRuMaterial;
-            }
-            else
-            {
-                sr.sharedMaterial = rdLuMaterial;
+                case 0:
+                    sr.sprite = ruSprite;
+                    break;
+                case 1:
+                    sr.sprite = lUSprite;
+                    break;
+                case 2:
+                    sr.sprite = lDSprite;
+                    break;
+                case 3:
+                    sr.sprite = rDSprite;
+                    break;
             }
         }
-
-        // 기본 스프라이트가 위(Up)를 바라보고 있으므로 -90도 보정 적용
-        float _angleDeg = Mathf.Atan2(_dir.y, _dir.x) * Mathf.Rad2Deg - 90f + rotationOffset;
-        transform.rotation = Quaternion.Euler(0f, 0f, _angleDeg);
     }
 
     // 유니티 이벤트 함수

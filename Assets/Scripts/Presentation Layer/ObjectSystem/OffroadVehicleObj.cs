@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class OffroadVehicleObj : MonoBehaviour
+public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 {
     //이벤트
     public event Action GoToTownEvent;

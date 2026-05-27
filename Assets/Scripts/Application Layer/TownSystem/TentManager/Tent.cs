@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using UnityEngine.Rendering;
 
 public class Tent : MonoBehaviour
 {
@@ -15,11 +16,18 @@ public class Tent : MonoBehaviour
     private SpriteRenderer sr;
 
     [SerializeField] private GameObject outLineObject;
+    [SerializeField] private GameObject basicObject;
+
+    private CustomSortable customSortable;
 
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
-        sr = GetComponent<SpriteRenderer>();
+        sr = basicObject.GetComponent<SpriteRenderer>();
+
+        customSortable = GetComponentInChildren<CustomSortable>();
+        customSortable.Initialize(transform);
+        customSortable.SetSortingGroup(GetComponentInChildren<SortingGroup>());
 
         BindEvents();
     }
@@ -83,5 +91,17 @@ public class Tent : MonoBehaviour
     {
         bCanInteract = false;
         bInteract = false;
+    }
+
+    private void Update()
+    {
+        if (customSortable != null)
+            customSortable.SetHeight(0f);
+    }
+
+    private void LateUpdate()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
     }
 }

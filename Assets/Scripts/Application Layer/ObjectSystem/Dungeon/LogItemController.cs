@@ -271,7 +271,8 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             LogItem logItem = logPool.Get();
 
             logItem.transform.position = _treeObj.transform.position;
-            logItem.Initialize(logItemTypeDataBase.Get(treeData.type), logType, _treeObj.GetColor());
+            var info = logItemTypeDataBase.Get(treeData.type);
+            logItem.Initialize(logItemTypeDataBase.Get(treeData.type), info.color, logType);
             logItem.SetInventoryChecker(inventoryChecker);
 
             // 포물선 운동 설정

@@ -78,8 +78,8 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 7
-  m_SortingOrder: 1
+  m_SortingLayer: 8
+  m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: dd3c942c9fb71bc438fdf260419b5da5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -101,6 +101,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8731325815366042455}
   - component: {fileID: 5360078145449572918}
+  - component: {fileID: 6032299973884273101}
   m_Layer: 11
   m_Name: LogItem_ToCut
   m_TagString: Untagged
@@ -141,3 +142,20 @@ MonoBehaviour:
   spriteRenderer: {fileID: 0}
   durability: 0
   outlineMaterial: {fileID: 0}
+  shadow: {fileID: 0}
+--- !u!114 &6032299973884273101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8058589196582885879}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100

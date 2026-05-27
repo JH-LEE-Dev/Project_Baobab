@@ -34,7 +34,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         inputManager = _inputManager;
         
         logItemPoolingManager = GetComponentInChildren<LogItemPoolingManager>();
-        logItemPoolingManager.Initialize(true);
+        logItemPoolingManager.Initialize(false);
 
         shopObj = Instantiate(shopPrefab, shopSpawnPoint.transform.position,
         Quaternion.identity, this.transform);
