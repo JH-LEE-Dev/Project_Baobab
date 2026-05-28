@@ -69,7 +69,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         flyingCoins = new List<FlyingCoin>(32);
 
-        money = 0;
+        money = 12345;
 
         BindEvents();
     }
@@ -155,39 +155,48 @@ public class ShopNPC : MonoBehaviour, IShopNPC
             bFirstTimeEarnMoney = false;
         }
 
-        // 동전 개수 계산 (금화=100,000, 은화=1,000, 동화=10)
-        int goldCount = tempMoney / 100000;
-        int remainder = tempMoney % 100000;
-        int silverCount = remainder / 1000;
-        remainder = remainder % 1000;
-        int bronzeCount = remainder / 10;
-        remainder = remainder % 10;
-        if (remainder > 0)
-        {
-            bronzeCount += 1;
-        }
+        // 동전 개수 계산 (최대 20개 제한, 금화=100,000, 은화=1,000, 동화=10)
+        int remainingMoney = tempMoney;
+        List<CoinSpawnInfo> coinsToSpawn = new List<CoinSpawnInfo>(20);
 
-        List<CoinSpawnInfo> coinsToSpawn = new List<CoinSpawnInfo>();
-
-        for (int i = 0; i < goldCount; i++)
+        while (remainingMoney > 0)
         {
-            coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, 100000));
-        }
+            if (coinsToSpawn.Count == 19)
+            {
+                CoinType type = CoinType.Bronze;
+                if (remainingMoney >= 100000)
+                {
+                    type = CoinType.Gold;
+                }
+                else if (remainingMoney >= 1000)
+                {
+                    type = CoinType.Silver;
+                }
+                coinsToSpawn.Add(new CoinSpawnInfo(type, remainingMoney));
+                remainingMoney = 0;
+                break;
+            }
 
-        for (int i = 0; i < silverCount; i++)
-        {
-            coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Silver, 1000));
-        }
-
-        int bronzeLoopCount = remainder > 0 ? bronzeCount - 1 : bronzeCount;
-        for (int i = 0; i < bronzeLoopCount; i++)
-        {
-            coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Bronze, 10));
-        }
-
-        if (remainder > 0)
-        {
-            coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Bronze, remainder));
+            if (remainingMoney >= 100000)
+            {
+                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, 100000));
+                remainingMoney -= 100000;
+            }
+            else if (remainingMoney >= 1000)
+            {
+                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Silver, 1000));
+                remainingMoney -= 1000;
+            }
+            else if (remainingMoney >= 10)
+            {
+                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Bronze, 10));
+                remainingMoney -= 10;
+            }
+            else
+            {
+                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Bronze, remainingMoney));
+                remainingMoney = 0;
+            }
         }
 
         if (coinThrowCoroutine != null)
@@ -200,12 +209,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private IEnumerator CoThrowCoins(List<CoinSpawnInfo> _coins)
     {
         int coinCount = _coins.Count;
-        float maxInterval = 0.05f;
-        float minInterval = 0.005f;
-        int threshold = 50;
-
-        float t = coinCount <= 1 ? 0f : Mathf.Clamp01((float)(coinCount - 1) / (threshold - 1));
-        float currentInterval = Mathf.Lerp(maxInterval, minInterval, t);
+        float currentInterval = 0.05f;
+        if (coinCount > 0)
+        {
+            float maxAllowedInterval = 0.5f / coinCount;
+            if (currentInterval > maxAllowedInterval)
+            {
+                currentInterval = maxAllowedInterval;
+            }
+        }
 
         for (int i = 0; i < coinCount; i++)
         {
