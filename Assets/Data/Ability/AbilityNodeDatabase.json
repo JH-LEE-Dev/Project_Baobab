@@ -148,10 +148,10 @@
             "displayName": "풀빛너른숲 과성장",
             "description": "풀빛너른숲의 나무 밀도가 25% 증가합니다.",
             "gridX": 5,
-            "gridY": 2,
+            "gridY": 0,
             "parents": [
                 {
-                    "skillType": "LogValue1",
+                    "skillType": "BountifulTree1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -327,11 +327,11 @@
             "skillType": "BountifulTree1",
             "displayName": "아낌없이 주는 나무 I",
             "description": "원목 판매 가치가 400% 증가합니다.",
-            "gridX": 7,
+            "gridX": 5,
             "gridY": 2,
             "parents": [
                 {
-                    "skillType": "VerdantPlainsOvergrowth",
+                    "skillType": "LogValue1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -346,7 +346,7 @@
             "gridY": 4,
             "parents": [
                 {
-                    "skillType": "VerdantPlainsOvergrowth",
+                    "skillType": "BountifulTree1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -361,7 +361,7 @@
             "gridY": 4,
             "parents": [
                 {
-                    "skillType": "BountifulTree1",
+                    "skillType": "LogValue2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -372,7 +372,7 @@
             "skillType": "LogValue2",
             "displayName": "원목 가치 II",
             "description": "원목 판매 가치가 70% 증가합니다.",
-            "gridX": 9,
+            "gridX": 7,
             "gridY": 2,
             "parents": [
                 {
@@ -387,7 +387,7 @@
             "skillType": "BountifulTree2",
             "displayName": "아낌없이 주는 나무 II",
             "description": "원목 판매 가치가 1000% 증가합니다.",
-            "gridX": 11,
+            "gridX": 9,
             "gridY": 2,
             "parents": [
                 {
