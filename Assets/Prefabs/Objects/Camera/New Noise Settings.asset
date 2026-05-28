@@ -15,11 +15,11 @@ MonoBehaviour:
   PositionNoise:
   - X:
       Frequency: 25
-      Amplitude: 0.15
+      Amplitude: 0.1
       Constant: 0
     Y:
       Frequency: 25
-      Amplitude: 0.15
+      Amplitude: 0.1
       Constant: 0
     Z:
       Frequency: 0
