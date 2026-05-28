@@ -49,8 +49,8 @@ Material:
     - _Alpha: 0.1
     - _DistortionAmount: 1
     - _EnableExternalAlpha: 0
-    - _WaveFreq: 5
-    - _WaveSpeed: 1.5
+    - _WaveFreq: 35
+    - _WaveSpeed: 5
     - _WaveStrength: 0.005
     - _ZWrite: 0
     m_Colors:
