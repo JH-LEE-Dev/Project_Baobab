@@ -71,6 +71,8 @@ public class AbilityHUD : MonoBehaviour
     private Color fillInitialColor = Color.white;
     private int resetDrainTargetExperience;
     private int resetTargetFlowerStack;
+    private bool playExperienceMotionAfterReset;
+    private bool playFlowerDangleAfterReset;
 
     private void Awake()
     {
@@ -102,6 +104,7 @@ public class AbilityHUD : MonoBehaviour
     public void SetExperience(int _currentExperience, int _maxExperience)
     {
         StopResetExperienceEffect(true);
+        ClearDeferredExperienceMotion();
         maxExperience = Mathf.Max(1, _maxExperience);
         currentExperience = ClampExperience(_currentExperience);
         RefreshAbilityBar();
@@ -110,6 +113,7 @@ public class AbilityHUD : MonoBehaviour
     public void SetState(int _currentExperience, int _maxExperience, int _flowerStack)
     {
         StopResetExperienceEffect(true);
+        ClearDeferredExperienceMotion();
         maxExperience = Mathf.Max(1, _maxExperience);
         currentExperience = ClampExperience(_currentExperience);
         flowerStack = Mathf.Max(0, _flowerStack);
@@ -129,6 +133,8 @@ public class AbilityHUD : MonoBehaviour
         if (IsResetExperienceEffectPlaying())
         {
             resetDrainTargetExperience = _clampedExperience;
+            playExperienceMotionAfterReset = true;
+            playFlowerDangleAfterReset = true;
             return;
         }
 
@@ -254,6 +260,9 @@ public class AbilityHUD : MonoBehaviour
     {
         BindReferencesIfNeeded();
         StopResetExperienceEffect(true);
+        StopBarFontExperienceMotion();
+        playExperienceMotionAfterReset = false;
+        playFlowerDangleAfterReset = false;
 
         if (null == fontMakerForBar)
         {
@@ -310,6 +319,7 @@ public class AbilityHUD : MonoBehaviour
             RefreshAbilityBar();
             RestoreResetExperienceEffectState();
             resetEffectSequence = null;
+            ScheduleDeferredExperienceMotion();
         });
     }
 
@@ -419,10 +429,18 @@ public class AbilityHUD : MonoBehaviour
 
         if (_restoreState && _wasPlaying)
             RestoreResetExperienceEffectState();
+
+        if (_wasPlaying == false)
+        {
+            playExperienceMotionAfterReset = false;
+            playFlowerDangleAfterReset = false;
+        }
     }
 
     private void RestoreResetExperienceEffectState()
     {
+        StopBarFontExperienceMotion();
+
         if (null != barFontRectTransform)
         {
             barFontRectTransform.DOKill(false);
@@ -809,7 +827,50 @@ public class AbilityHUD : MonoBehaviour
         if (null == barFontMotionPlayer || string.IsNullOrEmpty(barFontExperienceMotionTag))
             return;
 
+        if (IsResetExperienceEffectPlaying())
+        {
+            playExperienceMotionAfterReset = true;
+            return;
+        }
+
         barFontMotionPlayer.Play(barFontExperienceMotionTag, bReset: resetBarFontMotionBeforePlay);
+    }
+
+    private void StopBarFontExperienceMotion()
+    {
+        if (null == barFontMotionPlayer || string.IsNullOrEmpty(barFontExperienceMotionTag))
+            return;
+
+        barFontMotionPlayer.Stop(barFontExperienceMotionTag);
+    }
+
+    private void PlayDeferredExperienceMotion()
+    {
+        if (playExperienceMotionAfterReset)
+        {
+            playExperienceMotionAfterReset = false;
+            PlayBarFontExperienceMotion();
+        }
+
+        if (playFlowerDangleAfterReset)
+        {
+            playFlowerDangleAfterReset = false;
+            PlayFlowerDangleEffect();
+        }
+    }
+
+    private void ScheduleDeferredExperienceMotion()
+    {
+        if (playExperienceMotionAfterReset == false && playFlowerDangleAfterReset == false)
+            return;
+
+        DOVirtual.DelayedCall(0.0f, PlayDeferredExperienceMotion).SetUpdate(true);
+    }
+
+    private void ClearDeferredExperienceMotion()
+    {
+        playExperienceMotionAfterReset = false;
+        playFlowerDangleAfterReset = false;
     }
 
     private T FindChildComponent<T>(string _name) where T : Component

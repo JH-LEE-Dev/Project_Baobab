@@ -1,18 +1,8 @@
-using System;
 using PresentationLayer.UISystem.CustomNumber;
 using UnityEngine;
 
 public class UIView_Tent : UIView
 {
-    private static readonly MoneyType[] MoneyDisplayOrder =
-    {
-        MoneyType.Coin,
-        MoneyType.Carrot,
-        MoneyType.SunEssence,
-        MoneyType.MoonEssence,
-        MoneyType.LightningEssnece,
-    };
-
     private ISkillSystemProvider skillSystemProvider;
     private IMoneyData moneyData;
 
@@ -21,10 +11,8 @@ public class UIView_Tent : UIView
     [SerializeField] private UI_TentAbilityComponent abilityUIComponent;
     [SerializeField] private RectTransform moneyPivot;
     [SerializeField] private GameObject currencyCounterHUDPrefab;
-    [SerializeField] private float moneyCounterSpacing = 20.0f;
 
-    private CurrencyCounterHUD[] moneyCounters;
-    private bool[] moneyVisibleOnce;
+    private CurrencyCounterHUD coinCounter;
 
     #region Default Logic
 
@@ -92,10 +80,8 @@ public class UIView_Tent : UIView
     // 캐릭터가 특정 재화를 획득했을 때 현재 재화 텍스트를 갱신한다.
     public void CharacterEarnMoney(MoneyType _moneyType)
     {
-        InitializeMoneyCounters();
-
-        if (moneyVisibleOnce != null && (int)MoneyType.None < (int)_moneyType && (int)_moneyType < (int)MoneyType.Max)
-            moneyVisibleOnce[(int)_moneyType] = true;
+        if (_moneyType != MoneyType.Coin)
+            return;
 
         RefreshMoneyTexts(true);
     }
@@ -111,40 +97,22 @@ public class UIView_Tent : UIView
     {
         InitializeMoneyCounters();
 
-        if (moneyCounters == null)
+        if (coinCounter == null)
             return;
 
-        for (int i = 0; i < MoneyDisplayOrder.Length; i++)
-        {
-            MoneyType _moneyType = MoneyDisplayOrder[i];
-            long _value = GetMoneyValue(_moneyType);
+        long _coinValue = moneyData?.money ?? 0L;
+        coinCounter.gameObject.SetActive(true);
 
-            if (MoneyType.Coin == _moneyType || 0 < _value)
-                moneyVisibleOnce[(int)_moneyType] = true;
-
-            CurrencyCounterHUD _counter = moneyCounters[i];
-            if (null == _counter)
-                continue;
-
-            _counter.gameObject.SetActive(moneyVisibleOnce[(int)_moneyType]);
-
-            if (_withMotion)
-                _counter.SetNumberAnimated(_value);
-            else
-                _counter.SetNumber(_value);
-        }
-
-        RefreshMoneyCounterLayout();
+        if (_withMotion)
+            coinCounter.SetNumberAnimated(_coinValue);
+        else
+            coinCounter.SetNumber(_coinValue);
     }
 
     private void InitializeMoneyCounters()
     {
-        if (moneyCounters != null)
+        if (coinCounter != null)
             return;
-
-        moneyVisibleOnce = new bool[(int)MoneyType.Max];
-        moneyVisibleOnce[(int)MoneyType.Coin] = true;
-        moneyCounters = new CurrencyCounterHUD[MoneyDisplayOrder.Length];
 
         if (moneyPivot == null)
             moneyPivot = FindChildByName(transform, "MoneyPivot") as RectTransform;
@@ -152,75 +120,26 @@ public class UIView_Tent : UIView
         if (moneyPivot == null || currencyCounterHUDPrefab == null)
             return;
 
-        for (int i = 0; i < MoneyDisplayOrder.Length; i++)
+        GameObject _counterObject = Instantiate(currencyCounterHUDPrefab, moneyPivot);
+        _counterObject.name = "CurrencyCounterHUD_Coin";
+
+        RectTransform _counterRect = _counterObject.GetComponent<RectTransform>();
+        if (null != _counterRect)
         {
-            GameObject _counterObject = Instantiate(currencyCounterHUDPrefab, moneyPivot);
-            _counterObject.name = $"CurrencyCounterHUD_{MoneyDisplayOrder[i]}";
-
-            RectTransform _counterRect = _counterObject.GetComponent<RectTransform>();
-            if (null != _counterRect)
-            {
-                _counterRect.anchorMin = new Vector2(0.0f, 1.0f);
-                _counterRect.anchorMax = new Vector2(0.0f, 1.0f);
-                _counterRect.pivot = new Vector2(0.0f, 0.5f);
-                _counterRect.anchoredPosition = Vector2.zero;
-            }
-
-            CurrencyCounterHUD _counter = _counterObject.GetComponent<CurrencyCounterHUD>();
-            if (null == _counter)
-                continue;
-
-            _counter.Initialize();
-            _counter.SetMoneyType(MoneyDisplayOrder[i]);
-            _counter.SetNumber(0);
-            _counter.gameObject.SetActive(MoneyType.Coin == MoneyDisplayOrder[i]);
-
-            moneyCounters[i] = _counter;
+            _counterRect.anchorMin = new Vector2(0.0f, 1.0f);
+            _counterRect.anchorMax = new Vector2(0.0f, 1.0f);
+            _counterRect.pivot = new Vector2(0.0f, 0.5f);
+            _counterRect.anchoredPosition = Vector2.zero;
         }
 
-        RefreshMoneyCounterLayout();
-    }
-
-    private void RefreshMoneyCounterLayout()
-    {
-        if (moneyCounters == null)
+        coinCounter = _counterObject.GetComponent<CurrencyCounterHUD>();
+        if (coinCounter == null)
             return;
 
-        int _visibleIndex = 0;
-        for (int i = 0; i < moneyCounters.Length; i++)
-        {
-            CurrencyCounterHUD _counter = moneyCounters[i];
-            if (null == _counter || false == _counter.gameObject.activeSelf)
-                continue;
-
-            RectTransform _counterRect = _counter.GetComponent<RectTransform>();
-            if (null != _counterRect)
-                _counterRect.anchoredPosition = new Vector2(0.0f, -moneyCounterSpacing * _visibleIndex);
-
-            _visibleIndex++;
-        }
-    }
-
-    private long GetMoneyValue(MoneyType _moneyType)
-    {
-        if (moneyData == null)
-            return 0;
-
-        switch (_moneyType)
-        {
-            case MoneyType.Coin:
-                return moneyData.money;
-            case MoneyType.Carrot:
-                return moneyData.carrot;
-            case MoneyType.SunEssence:
-                return moneyData.sunEssence;
-            case MoneyType.MoonEssence:
-                return moneyData.moonEssence;
-            case MoneyType.LightningEssnece:
-                return moneyData.lightningEssence;
-            default:
-                return 0;
-        }
+        coinCounter.Initialize();
+        coinCounter.SetMoneyType(MoneyType.Coin);
+        coinCounter.SetNumber(0);
+        coinCounter.gameObject.SetActive(true);
     }
 
     private Transform FindChildByName(Transform _root, string _name)

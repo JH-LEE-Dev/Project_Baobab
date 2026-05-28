@@ -134,7 +134,6 @@ MonoBehaviour:
   abilityUIComponent: {fileID: 3966334113652107173}
   moneyPivot: {fileID: 1186389941642898093}
   currencyCounterHUDPrefab: {fileID: 2718141575618077796, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
-  moneyCounterSpacing: 20
 --- !u!114 &3966334113652107173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -267,7 +266,7 @@ MonoBehaviour:
   selectionCursorParent: {fileID: 0}
   selectionCursorSize: {x: 38, y: 38}
   viewShakeDuration: 0.2
-  viewShakeStrength: 4
+  viewShakeStrength: 2.8
   viewShakeFrequency: 50
   viewShakeVerticalRatio: 0.45
   circleMaskImage: {fileID: 5797742601171897013}

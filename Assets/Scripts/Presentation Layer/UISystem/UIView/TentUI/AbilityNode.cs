@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using PresentationLayer.DOTweenAnimationSystem;
 
-public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerClickHandler
 {
     private const float AbilityBarMaxHeight = 26f;
 
@@ -41,6 +41,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool completedVisual;
     private bool visualHidden;
     private bool isPointerHovering;
+    private bool consumedRapidClick;
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
     private MotionEntry clickMotionEntry;
@@ -256,16 +257,52 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     }
 
     // 노드 클릭 시 상위 컴포넌트에 레벨업 요청을 전달한다.
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
+            return;
+
+        if (IsShiftPressed())
+        {
+            consumedRapidClick = true;
+            owner?.StartAutoNodeLevelUp(this);
+            return;
+        }
+    }
+
     public void OnPointerClick(PointerEventData eventData)
     {
         if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
             return;
 
+        if (consumedRapidClick)
+        {
+            consumedRapidClick = false;
+            return;
+        }
+
         bool isApproved = owner != null && owner.TryRequestNodeLevelUp(this);
         if (true == isApproved)
-            PlayClickMotion();
+            PlayClickRequestMotion();
         else
-            PlayNonPassClickMotion();
+            PlayRejectedRequestMotion();
+    }
+
+    private bool IsShiftPressed()
+    {
+        Keyboard keyboard = Keyboard.current;
+        return keyboard != null &&
+               (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+    }
+
+    public void PlayClickRequestMotion()
+    {
+        PlayClickMotion();
+    }
+
+    public void PlayRejectedRequestMotion()
+    {
+        PlayNonPassClickMotion();
     }
 
     private void PlayHoverMotion()
