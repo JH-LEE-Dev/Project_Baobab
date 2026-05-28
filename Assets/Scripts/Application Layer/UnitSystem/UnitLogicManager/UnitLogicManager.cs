@@ -81,7 +81,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     {
         character.SetWhereIsCharacter(_bInDungeon);
     }
-
+    
     public void WeaponModeChanged(WeaponMode _currentMode)
     {
         WeaponModeChangedEvent?.Invoke(_currentMode);

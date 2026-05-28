@@ -23,6 +23,8 @@ public class InputReader
 
     private bool bPauseMove = false;
 
+    private Vector2 keyboardMoveInput;
+
     public void Initialize()
     {
         if (actions == null)
@@ -64,22 +66,30 @@ public class InputReader
 
     public void PauseMove(bool _bPause)
     {
-        MoveEvent?.Invoke(Vector2.zero);
         bPauseMove = _bPause;
+
+        if (_bPause == true)
+        {
+            MoveEvent?.Invoke(Vector2.zero);
+        }
+        else
+        {
+            MoveEvent?.Invoke(keyboardMoveInput);
+        }
     }
 
     public void OnMove(InputAction.CallbackContext context)
     {
+        keyboardMoveInput = context.ReadValue<Vector2>();
+
         if (bPauseMove)
         {
             MoveEvent?.Invoke(Vector2.zero);
             return;
         }
 
-        Vector2 move = context.ReadValue<Vector2>();
-
         MoveTriggerEvent?.Invoke();
-        MoveEvent?.Invoke(move);
+        MoveEvent?.Invoke(keyboardMoveInput);
     }
 
     private void OnESCButtonPressed(InputAction.CallbackContext context)
