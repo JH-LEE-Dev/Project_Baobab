@@ -11,7 +11,7 @@
         {
             "skillType": "AxeDurability1",
             "displayName": "도끼 내구도 I",
-            "description": "도끼 내구도가 4 증가합니다.",
+            "description": "도끼 내구도가 5 증가합니다.",
             "gridX": 0,
             "gridY": 3,
             "parents": [
@@ -41,7 +41,7 @@
         {
             "skillType": "LogValue1",
             "displayName": "원목 가치 I",
-            "description": "원목 판매 가치가 20% 증가합니다.",
+            "description": "원목 판매 가치가 30% 증가합니다.",
             "gridX": 3,
             "gridY": 0,
             "parents": [
@@ -326,7 +326,7 @@
         {
             "skillType": "BountifulTree1",
             "displayName": "아낌없이 주는 나무 I",
-            "description": "원목 판매 가치가 200% 증가합니다.",
+            "description": "원목 판매 가치가 400% 증가합니다.",
             "gridX": 7,
             "gridY": 2,
             "parents": [
@@ -371,7 +371,7 @@
         {
             "skillType": "LogValue2",
             "displayName": "원목 가치 II",
-            "description": "원목 판매 가치가 50% 증가합니다.",
+            "description": "원목 판매 가치가 70% 증가합니다.",
             "gridX": 9,
             "gridY": 2,
             "parents": [
@@ -386,7 +386,7 @@
         {
             "skillType": "BountifulTree2",
             "displayName": "아낌없이 주는 나무 II",
-            "description": "원목 판매 가치가 800% 증가합니다.",
+            "description": "원목 판매 가치가 1000% 증가합니다.",
             "gridX": 11,
             "gridY": 2,
             "parents": [
