@@ -1,16 +1,25 @@
 fileFormatVersion: 2
-guid: d49fff8c477e04f42a1c1e17d6d94e68
+guid: 9913c442b181e8945be7cd55feed4ed0
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5625916280480990872
-    second: HouseDeco_01_0
+      213: -5826049863621190102
+    second: HouseDeco_Water04_0
   - first:
-      213: 892590637745271273
-    second: HouseDeco_01_1
+      213: 1138588172154690852
+    second: HouseDeco_Water04_1
   - first:
-      213: -8018944263093240619
-    second: HouseDeco_01_2
+      213: 387602736785551244
+    second: HouseDeco_Water04_2
+  - first:
+      213: 3842946230230790988
+    second: HouseDeco_Water04_3
+  - first:
+      213: 7073883079012633680
+    second: HouseDeco_Water04_4
+  - first:
+      213: 2033706249831481891
+    second: HouseDeco_Water04_5
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -106,14 +115,14 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: HouseDeco_01_0
+      name: HouseDeco_Water04_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 32
-      alignment: 9
+        width: 48
+        height: 48
+      alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
@@ -121,21 +130,21 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 896082abc05431e40800000000000000
-      internalID: 5625916280480990872
+      spriteID: a2e552b4486b52fa0800000000000000
+      internalID: -5826049863621190102
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: HouseDeco_01_1
+      name: HouseDeco_Water04_1
       rect:
         serializedVersion: 2
-        x: 32
+        x: 48
         y: 0
-        width: 32
-        height: 32
-      alignment: 9
+        width: 48
+        height: 48
+      alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
@@ -143,21 +152,21 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9e175a4b47e136c00800000000000000
-      internalID: 892590637745271273
+      spriteID: 42dddbaf8e31dcf00800000000000000
+      internalID: 1138588172154690852
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: HouseDeco_01_2
+      name: HouseDeco_Water04_2
       rect:
         serializedVersion: 2
-        x: 64
+        x: 96
         y: 0
-        width: 32
-        height: 32
-      alignment: 9
+        width: 48
+        height: 48
+      alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
@@ -165,8 +174,30 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 5dcbbaccdacf6b090800000000000000
-      internalID: -8018944263093240619
+      spriteID: c8f6210b2aa016500800000000000000
+      internalID: 387602736785551244
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseDeco_Water04_3
+      rect:
+        serializedVersion: 2
+        x: 144
+        y: 0
+        width: 48
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4335df4c33e45530800000000000000
+      internalID: 3842946230230790988
       vertices: []
       indices: 
       edges: []
@@ -175,7 +206,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 6f5b167f70d1eba478276f283cf0a179
+    spriteID: 863648745394d724d8492c5dea7526b4
     internalID: 0
     vertices: []
     indices: 
@@ -185,11 +216,12 @@ TextureImporter:
     spriteCustomMetadata:
       entries:
       - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":32.0,"y":32.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":48.0,"y":48.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      HouseDeco_01_0: 5625916280480990872
-      HouseDeco_01_1: 892590637745271273
-      HouseDeco_01_2: -8018944263093240619
+      HouseDeco_Water04_0: -5826049863621190102
+      HouseDeco_Water04_1: 1138588172154690852
+      HouseDeco_Water04_2: 387602736785551244
+      HouseDeco_Water04_3: 3842946230230790988
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

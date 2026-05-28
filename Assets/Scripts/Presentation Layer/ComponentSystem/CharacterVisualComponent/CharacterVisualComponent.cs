@@ -128,6 +128,15 @@ public class CharacterVisualComponent : MonoBehaviour
         {
             customSortable.SetSortingGroup(characterVisualComponent.GetComponent<SortingGroup>());
         }
+
+        // 모든 애니메이터의 초기 파라미터 동기화 설정
+        SetupInitialAnimatorParameters(anim);
+        SetupInitialAnimatorParameters(faceAnim);
+        SetupInitialAnimatorParameters(faceBlinkAnim);
+        SetupInitialAnimatorParameters(onWaterAnim);
+        SetupInitialAnimatorParameters(onWaterFaceAnim);
+        SetupInitialAnimatorParameters(onWaterFaceBlinkAnim);
+        SetupInitialAnimatorParameters(shadowAnim);
     }
 
     public void UpdateVisuals(bool _isMoving, bool _bInHub)
@@ -184,6 +193,15 @@ public class CharacterVisualComponent : MonoBehaviour
     #endregion
 
     #region Private Methods
+
+    private void SetupInitialAnimatorParameters(Animator _targetAnim)
+    {
+        if (_targetAnim == null) return;
+
+        _targetAnim.SetFloat(facingDirHash, 3f); // 3f: 아래 방향 (Vector2.down)
+        _targetAnim.SetBool(isMovingHash, false);
+        _targetAnim.SetBool(bInHubHash, true);
+    }
 
     private void UpdateCharacterColor()
     {
