@@ -121,7 +121,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         // 2. Animator 트리거 + 뒤뚱거림
         anim.SetBool(bOpenHash, true);
         parentTransform.DOPunchRotation(new Vector3(0f, 0f, 15f), 0.2f, 8, 1f);
-
+        ContainerOpenedEvent?.Invoke();
         // 3. 위로 뽀잉 솟구침 (0.15초)
         elapsed = 0f;
         duration = 0.15f;
@@ -147,8 +147,6 @@ public class OffroadContainerVComponent : MonoBehaviour
             yield return null;
         }
         parentTransform.localScale = bounceScale;
-
-        ContainerOpenedEvent?.Invoke();
 
         // 5. 원래 크기로 복귀 (0.15초)
         elapsed = 0f;

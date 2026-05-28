@@ -68,6 +68,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private float closeTimer = -1f;
 
     private bool bContainerVisualOpened = false;
+    private bool bIsInteracting = false;
 
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
@@ -209,7 +210,25 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 yield return null;
             }
 
+            // 현재 전송 중인 슬롯이 있다면 완료될 때까지 대기
+            while (transferringSlots.Count > 0)
+            {
+                yield return null;
+            }
+
             if (!TryTransferOneSlot())
+            {
+                break;
+            }
+
+            // 방금 시작한 슬롯의 전송이 끝날 때까지 대기
+            while (transferringSlots.Count > 0)
+            {
+                yield return null;
+            }
+
+            // 한 슬롯이 비워진 시점에 키 입력을 뗀 상태라면 중단
+            if (!bIsInteracting)
             {
                 break;
             }
@@ -295,11 +314,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 };
 
                 LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+                flyingItem.SetFlyingItemSortingLayer();
                 flyingItem.IsDropItem(false);
                 flyingItem.spriteRenderer.sortingOrder = 100;
 
-                Vector3 start = _toCharacter ? transform.position : (charTransform != null ? charTransform.position : transform.position);
-                Vector3 end = _toCharacter ? (charTransform != null ? charTransform.position : transform.position) : transform.position;
+                Vector3 containerPos = transform.position + new Vector3(0f, 0.2f, 0f);
+                Vector3 charPos = charTransform != null ? charTransform.position : transform.position;
+
+                Vector3 start = _toCharacter ? containerPos : charPos;
+                Vector3 end = _toCharacter ? charPos : containerPos;
 
                 Vector3 dir = (end - start).normalized;
                 if (dir == Vector3.zero) dir = Vector3.up;
@@ -543,23 +566,31 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         if (!bCanInteract || characterInventory == null) return;
 
+        bIsInteracting = true;
+
         if (transferCoroutine == null)
         {
             if (HasAnyItemToTransfer())
             {
-                OpenContainerImmediately();
+                if (bInTown)
+                {
+                    OpenContainerImmediately();
+                    if (bContainerVisualOpened)
+                    {
+                        transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+                    }
+                }
+                else
+                {
+                    transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+                }
             }
-            transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
         }
     }
 
     private void InteractionKeyCanceled()
     {
-        if (transferCoroutine != null)
-        {
-            StopCoroutine(transferCoroutine);
-            transferCoroutine = null;
-        }
+        bIsInteracting = false;
     }
 
     private void BindEvents()
@@ -625,6 +656,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (_other.CompareTag(PLAYER_TAG))
         {
             bCanInteract = false;
+            bIsInteracting = false;
             InteractStateEvent?.Invoke(false);
 
             if (transferCoroutine != null)
@@ -744,6 +776,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         InteractStateEvent?.Invoke(false);
         bCollisionEnabled = false;
+        bIsInteracting = false;
 
         if (transferCoroutine != null)
             StopCoroutine(transferCoroutine);
@@ -943,5 +976,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void SetContainerVisualOpened(bool _boolean)
     {
         bContainerVisualOpened = _boolean;
+        if (bInTown && bContainerVisualOpened && transferCoroutine == null)
+        {
+            if (HasAnyItemToTransfer())
+            {
+                transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
+            }
+        }
     }
 }

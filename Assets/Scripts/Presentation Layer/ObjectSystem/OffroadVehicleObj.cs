@@ -528,11 +528,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private void ContainerVisualOpened()
     {
-
+        offroadContainer.SetContainerVisualOpened(true);
     }
 
     private void ContainerVisualClosed()
     {
-
+        offroadContainer.SetContainerVisualOpened(false);
     }
 }
