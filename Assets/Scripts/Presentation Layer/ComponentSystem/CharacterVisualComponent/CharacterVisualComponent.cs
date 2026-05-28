@@ -39,6 +39,13 @@ public class CharacterVisualComponent : MonoBehaviour
     private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
     private float currentFacingAngle = 0f;
 
+    // Sorting Layer 관련 데이터
+    private int originalFaceSortingLayer;
+    private int originalFaceBlinkSortingLayer;
+    private int originalOnWaterFaceSortingLayer;
+    private int originalOnWaterFaceBlinkSortingLayer;
+    private int defaultSortingLayerId;
+
     // 눈 깜빡임 타이머 데이터
     private float blinkTimer = 0f;
     private float nextBlinkInterval = 3f;
@@ -65,6 +72,7 @@ public class CharacterVisualComponent : MonoBehaviour
         environmentProvider = _environmentProvider;
         shadowObject = _shadowObject;
         customSortable = _customSortable;
+        defaultSortingLayerId = SortingLayer.NameToID("Default");
 
         anim = GetComponent<Animator>();
         sr = GetComponent<SpriteRenderer>();
@@ -73,13 +81,21 @@ public class CharacterVisualComponent : MonoBehaviour
         {
             faceAnim = faceObject.GetComponent<Animator>();
             faceSR = faceObject.GetComponent<SpriteRenderer>();
+            if (faceSR != null)
+            {
+                originalFaceSortingLayer = faceSR.sortingLayerID;
+            }
         }
 
         if (faceObjectBlink != null)
         {
             faceBlinkAnim = faceObjectBlink.GetComponent<Animator>();
             faceBlinkSR = faceObjectBlink.GetComponent<SpriteRenderer>();
-            if (faceBlinkSR != null) faceBlinkSR.enabled = false;
+            if (faceBlinkSR != null)
+            {
+                faceBlinkSR.enabled = false;
+                originalFaceBlinkSortingLayer = faceBlinkSR.sortingLayerID;
+            }
         }
 
         if (onWaterFaceObject != null)
@@ -90,6 +106,7 @@ public class CharacterVisualComponent : MonoBehaviour
             if (onWaterFaceSR != null)
             {
                 onWaterFaceSR.material.SetFloat("_DistortionAmount", 0.5f);
+                originalOnWaterFaceSortingLayer = onWaterFaceSR.sortingLayerID;
             }
         }
 
@@ -102,6 +119,7 @@ public class CharacterVisualComponent : MonoBehaviour
             {
                 onWaterFaceBlinkSR.enabled = false;
                 onWaterFaceBlinkSR.material.SetFloat("_DistortionAmount", 0.5f);
+                originalOnWaterFaceBlinkSortingLayer = onWaterFaceBlinkSR.sortingLayerID;
             }
         }
 
@@ -241,13 +259,29 @@ public class CharacterVisualComponent : MonoBehaviour
         int dirIndex = Mathf.RoundToInt(currentFacingAngle / 45f) % 8;
         bool isFaceActive = (dirIndex == 0 || dirIndex == 4 || dirIndex == 5 || dirIndex == 6 || dirIndex == 7);
 
-        // 현재 깜빡임 상태와 방향 가시성을 조합하여 최종 enabled 결정
-        if (faceSR != null) faceSR.enabled = isFaceActive && !isBlinking;
-        if (faceBlinkSR != null) faceBlinkSR.enabled = isFaceActive && isBlinking;
+        // 현재 깜빡임 상태와 방향 가시성을 조합하여 최종 enabled 및 sortingLayerID 결정
+        if (faceSR != null)
+        {
+            faceSR.sortingLayerID = isFaceActive ? originalFaceSortingLayer : defaultSortingLayerId;
+            faceSR.enabled = !isBlinking;
+        }
+        if (faceBlinkSR != null)
+        {
+            faceBlinkSR.sortingLayerID = isFaceActive ? originalFaceBlinkSortingLayer : defaultSortingLayerId;
+            faceBlinkSR.enabled = isBlinking;
+        }
 
         // 수면 반사 얼굴도 동일 로직 적용
-        if (onWaterFaceSR != null) onWaterFaceSR.enabled = isFaceActive && !isBlinking;
-        if (onWaterFaceBlinkSR != null) onWaterFaceBlinkSR.enabled = isFaceActive && isBlinking;
+        if (onWaterFaceSR != null)
+        {
+            onWaterFaceSR.sortingLayerID = isFaceActive ? originalOnWaterFaceSortingLayer : defaultSortingLayerId;
+            onWaterFaceSR.enabled = !isBlinking;
+        }
+        if (onWaterFaceBlinkSR != null)
+        {
+            onWaterFaceBlinkSR.sortingLayerID = isFaceActive ? originalOnWaterFaceBlinkSortingLayer : defaultSortingLayerId;
+            onWaterFaceBlinkSR.enabled = isBlinking;
+        }
     }
 
     private void UpdateBlink()
