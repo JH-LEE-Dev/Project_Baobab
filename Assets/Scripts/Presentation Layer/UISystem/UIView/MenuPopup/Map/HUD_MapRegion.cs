@@ -443,7 +443,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             for (int _i = 0; _i < _visualCount; _i++)
             {
                 int _themeIdx = shufflePool[_i % _themeTreeCount];
-                int _targetTileIdx = shufflePool[_groundOffset + (_i % _groundTileCount)];
 
                 // 잎과 기둥 이미지 교체
                 if (null != treeVisuals[_i].leafImage && null != _subConfig.treeSets[_themeIdx].leafSprite)
@@ -452,12 +451,17 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
                 if (null != treeVisuals[_i].trunkImage && null != _subConfig.treeSets[_themeIdx].trunkSprite)
                     treeVisuals[_i].trunkImage.sprite = _subConfig.treeSets[_themeIdx].trunkSprite;
 
-                // 나무의 부모 컨테이너(앵커)를 선택한 땅 타일의 한가운데로 자동 매핑(Snap)
-                Transform _treeRoot = treeVisuals[_i].leafImage.transform.parent;
-                RectTransform _treeRect = _treeRoot.GetComponent<RectTransform>();
-                RectTransform _tileRect = groundImages[_targetTileIdx].GetComponent<RectTransform>();
-                if (null != _treeRect && null != _tileRect)
-                    _treeRect.anchoredPosition = _tileRect.anchoredPosition;
+                // 땅 타일이 존재할 때만 나무의 부모 컨테이너(앵커)를 선택한 땅 타일로 스냅
+                if (0 < _groundTileCount)
+                {
+                    int _targetTileIdx = shufflePool[_groundOffset + (_i % _groundTileCount)];
+                    Transform _treeRoot = treeVisuals[_i].leafImage.transform.parent;
+                    RectTransform _treeRect = _treeRoot.GetComponent<RectTransform>();
+                    RectTransform _tileRect = groundImages[_targetTileIdx].GetComponent<RectTransform>();
+
+                    if (null != _treeRect && null != _tileRect)
+                        _treeRect.anchoredPosition = _tileRect.anchoredPosition;
+                }
             }
 
             // 4. 데코(Deco) 오브젝트들도 겹치지 않게 땅(Ground) 위에 스냅 배치

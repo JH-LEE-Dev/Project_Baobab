@@ -6,7 +6,7 @@ using PresentationLayer.DOTweenAnimationSystem;
 public class UI_Storage : MonoBehaviour
 {
     [SerializeField] private GameObject uiSlotPrefab;
-    [SerializeField] private GameObject mainVisual;
+    [SerializeField] private GameObject slotBackground;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private Vector2 offset;
 
@@ -51,7 +51,7 @@ public class UI_Storage : MonoBehaviour
 
         while (0 < needCount--)
         {
-            UI_InventorySlot slot = Instantiate(uiSlotPrefab, mainVisual.transform).GetComponent<UI_InventorySlot>();
+            UI_InventorySlot slot = Instantiate(uiSlotPrefab, slotBackground.transform).GetComponent<UI_InventorySlot>();
 
             if (null == slot)
                 return;
