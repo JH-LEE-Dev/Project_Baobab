@@ -81,7 +81,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 3435880177621137808, guid: 363d3abf2f9e811489bce5e0f0e52809, type: 3}
@@ -266,7 +266,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 2836f1455b906dc4993dadb154df55d6, type: 3}
@@ -344,6 +344,7 @@ GameObject:
   - component: {fileID: 195406966449770086}
   - component: {fileID: 8797594946142107090}
   - component: {fileID: 7041550354457851156}
+  - component: {fileID: 8548148983398768872}
   m_Layer: 16
   m_Name: ShopBuilding
   m_TagString: Untagged
@@ -369,6 +370,7 @@ Transform:
   - {fileID: 6128050658495893551}
   - {fileID: 6496686173505011792}
   - {fileID: 3764026549808418124}
+  - {fileID: 1904647356624635549}
   m_Father: {fileID: 2836783319341806251}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!58 &5267750518539850722
@@ -422,6 +424,7 @@ MonoBehaviour:
   npcTransform: {fileID: 6496686173505011792}
   outLineObject: {fileID: 3416637282618647158}
   frontObject: {fileID: 3193877465534355399}
+  coinThrowTransform: {fileID: 1904647356624635549}
 --- !u!114 &8797594946142107090
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -447,10 +450,25 @@ SortingGroup:
   m_GameObject: {fileID: 1809935540830063881}
   m_Enabled: 1
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0
+--- !u!114 &8548148983398768872
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1809935540830063881}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 625f4251cd8874d48a005e6b35ecfb4c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinItemPoolingManager
+  bronzeCoinPrefab: {fileID: 171801289731363754, guid: e3839488250700b438ada6d7494d747a, type: 3}
+  silverCoinPrefab: {fileID: 7880050280323148369, guid: c1a19869ef671324386bba199043a939, type: 3}
+  goldCoinPrefab: {fileID: 3348857310563699513, guid: 7e1dea21e26299640a33e790ba23d910, type: 3}
 --- !u!1 &1818138925219048583
 GameObject:
   m_ObjectHideFlags: 0
@@ -615,7 +633,7 @@ TilemapRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
@@ -703,7 +721,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 82648d4ffbfb43241bf363490edf0164, type: 3}
@@ -856,7 +874,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: f813b0c7eb027d24191316ddf645a64b, type: 3}
@@ -947,7 +965,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: f813b0c7eb027d24191316ddf645a64b, type: 3}
@@ -1066,7 +1084,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 8709729213908056259, guid: 761954b026aa16849bef02e803e0c7f6, type: 3}
@@ -1379,7 +1397,7 @@ TilemapRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_ChunkSize: {x: 32, y: 32, z: 32}
@@ -1467,7 +1485,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 7371839111093928353, guid: d215ed28e9b430647ac02a441230a286, type: 3}
@@ -1888,6 +1906,37 @@ Transform:
   - {fileID: 8080785384884493837}
   m_Father: {fileID: 968483524184913630}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &8855458439563727245
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1904647356624635549}
+  m_Layer: 16
+  m_Name: CoinThrowPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1904647356624635549
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8855458439563727245}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.12, y: 0.49, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1218102019296090519}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &9007062220981076130
 GameObject:
   m_ObjectHideFlags: 0
@@ -1966,7 +2015,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: 83cb4634b313789428c847cddeb5f04e, type: 3}
@@ -2033,7 +2082,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2126,7 +2175,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2219,7 +2268,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2316,7 +2365,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2409,7 +2458,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2506,7 +2555,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2599,7 +2648,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2692,7 +2741,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayer
-      value: 8
+      value: 9
       objectReference: {fileID: 0}
     - target: {fileID: 4803681416765482191, guid: a611fb9bb0ce2fe47850ddecef1f8189, type: 3}
       propertyPath: m_SortingLayerID
@@ -2864,7 +2913,7 @@ SortingGroup:
   m_GameObject: {fileID: 620349941032075706}
   m_Enabled: 1
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0

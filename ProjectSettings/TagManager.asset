@@ -53,8 +53,14 @@ TagManager:
   - name: CharacterShadow
     uniqueID: 2550407815
     locked: 0
+  - name: OnWaterGround
+    uniqueID: 3609783183
+    locked: 0
   - name: TreeShadow
     uniqueID: 2456909477
+    locked: 0
+  - name: ItemShadow
+    uniqueID: 1330461129
     locked: 0
   - name: Character
     uniqueID: 1559392995
@@ -67,6 +73,9 @@ TagManager:
     locked: 0
   - name: Objects
     uniqueID: 3028180869
+    locked: 0
+  - name: FlyingItem
+    uniqueID: 1613316897
     locked: 0
   - name: Portal
     uniqueID: 3143900641

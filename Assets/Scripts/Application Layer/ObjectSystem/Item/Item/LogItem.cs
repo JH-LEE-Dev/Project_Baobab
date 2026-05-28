@@ -75,6 +75,9 @@ public class LogItem : Item, IStaticCollidable
 
     private Color originalColor;
 
+    private string flyingItemSortingLayerName = "FlyingItem";
+    private string objectsSortingLayerName = "Objects";
+
     public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -212,7 +215,8 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.DynamicTransferring;
-
+        transform.localScale = Vector3.zero;
+        
         if (gameObject.activeInHierarchy)
         {
             CollisionSystem.Instance?.Register(this, false);
@@ -273,6 +277,7 @@ public class LogItem : Item, IStaticCollidable
             spriteRenderer.material = originalMaterial;
             spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
+            spriteRenderer.sortingLayerID = SortingLayer.NameToID(objectsSortingLayerName);
         }
 
         if (sprite != null && spriteRenderer != null)
@@ -813,5 +818,10 @@ public class LogItem : Item, IStaticCollidable
     public void SetHeight(float _height)
     {
         customSortable.SetHeight(_height);
+    }
+
+    public void SetFlyingItemSortingLayer()
+    {
+        spriteRenderer.sortingLayerID = SortingLayer.NameToID(flyingItemSortingLayerName);
     }
 }

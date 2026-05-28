@@ -180,7 +180,7 @@ public class TownSystem : MonoBehaviour
     private void CharacterSpawned(CharacterSpawnedSignal _signal)
     {
         character = _signal.character;
-        logProcessingManager.SetCharTransform(character.centerTransform);
+        logProcessingManager.SetCharacter(character);
         townProductionManager.Character_DI(character);
         townObjectManager.SetCharacter(character);
     }

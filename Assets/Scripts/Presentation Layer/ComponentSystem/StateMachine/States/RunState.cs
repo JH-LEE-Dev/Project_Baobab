@@ -29,6 +29,7 @@ public class RunState : CharacterState
 
         directionUpdateTimer = 0f;
         pendingDirection = Vector2.zero;
+        lastVisualInput = Vector2.zero;
 
         bActivated = false;
     }

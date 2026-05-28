@@ -1,9 +1,13 @@
 using System.Collections;
 using UnityEngine;
 using DG.Tweening;
+using System;
 
 public class OffroadContainerVComponent : MonoBehaviour
 {
+    public event Action ContainerOpenedEvent;
+    public event Action ContainerClosedEvent;
+
     // 외부 의존성
     [SerializeField] private float roofHeight = 1.0f;
 
@@ -117,7 +121,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         // 2. Animator 트리거 + 뒤뚱거림
         anim.SetBool(bOpenHash, true);
         parentTransform.DOPunchRotation(new Vector3(0f, 0f, 15f), 0.2f, 8, 1f);
-
+        ContainerOpenedEvent?.Invoke();
         // 3. 위로 뽀잉 솟구침 (0.15초)
         elapsed = 0f;
         duration = 0.15f;
@@ -207,6 +211,8 @@ public class OffroadContainerVComponent : MonoBehaviour
         // 2. 쾅! 닫히며 강하게 찌그러짐 + 뒤뚱거림 (0.05초)
         parentTransform.DOPunchRotation(new Vector3(0f, 0f, 20f), 0.5f, 10, 1f);
 
+        ContainerClosedEvent?.Invoke();
+        
         elapsed = 0f;
         duration = 0.05f;
         while (elapsed < duration)
