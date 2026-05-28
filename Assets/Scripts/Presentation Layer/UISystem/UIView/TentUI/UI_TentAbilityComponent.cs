@@ -14,6 +14,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float ToolTipSpacing = 32f;
     private const float UnlockRevealDuration = 0.1f;
     private const float UnlockRevealStaggerDelay = 0.025f;
+    private const float AutoLevelUpInterval = 0.1f;
     private static readonly Color CanApplyNodeColor = new Color32(88, 215, 242, 255);
     private static readonly Color CompletedColor = new Color32(84, 216, 106, 255);
     private static readonly Color CannotApplyNodeColor = new Color32(185, 74, 66, 255);
@@ -53,6 +54,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private readonly Dictionary<SkillType, AbilityNode> spawnedNodeMap = new Dictionary<SkillType, AbilityNode>();
     private readonly Queue<AbilityNode> nodePool = new Queue<AbilityNode>();
     private readonly List<AbilityNodeUnlockReveal> activeUnlockReveals = new List<AbilityNodeUnlockReveal>(4);
+    private readonly List<AutoLevelUpRequest> activeAutoLevelUps = new List<AutoLevelUpRequest>(4);
     private readonly AbilityLineRenderer lineRenderer = new AbilityLineRenderer();
 
     private bool hasBuiltNodes;
@@ -115,7 +117,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     [Header("View Shake Settings")]
     [SerializeField] private float viewShakeDuration = 0.16f;
-    [SerializeField] private float viewShakeStrength = 8f;
+    [SerializeField] private float viewShakeStrength = 5.6f;
     [SerializeField] private float viewShakeFrequency = 72f;
     [SerializeField, Range(0f, 1f)] private float viewShakeVerticalRatio = 0.45f;
 
@@ -716,6 +718,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
         openingZoomFocusNode = null;
+        StopAllAutoLevelUps();
         EndCircleRevealImmediately();
         StopViewShake();
         currentToolTipNode = null;
@@ -963,6 +966,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         // 드래그 이동
         bool viewChanged = false;
 
+        UpdateAutoLevelUps();
         viewChanged |= HandlePan();
         // 줌 기능
         bool zoomChanged = HandleZoom();
@@ -1288,6 +1292,84 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SkillType requestedSkillType = _node.SkillType;
 
         return OnAbilityLevelUpRequested(requestedSkillType);
+    }
+
+    private class AutoLevelUpRequest
+    {
+        public AbilityNode Node { get; }
+        public float Elapsed { get; set; }
+
+        public AutoLevelUpRequest(AbilityNode _node)
+        {
+            Node = _node;
+            Elapsed = AutoLevelUpInterval;
+        }
+    }
+
+    public void StartAutoNodeLevelUp(AbilityNode _node)
+    {
+        if (isOpeningZoomReveal || isCloseFading || _node == null || skillSystemProvider == null)
+            return;
+
+        if (CanRequestNodeLevelUp(_node) == false)
+            return;
+
+        for (int i = 0; i < activeAutoLevelUps.Count; i++)
+        {
+            AutoLevelUpRequest request = activeAutoLevelUps[i];
+            if (request != null && request.Node == _node)
+            {
+                request.Elapsed = AutoLevelUpInterval;
+                return;
+            }
+        }
+
+        activeAutoLevelUps.Add(new AutoLevelUpRequest(_node));
+    }
+
+    private void UpdateAutoLevelUps()
+    {
+        if (activeAutoLevelUps.Count == 0)
+            return;
+
+        float deltaTime = Time.unscaledDeltaTime;
+        for (int i = activeAutoLevelUps.Count - 1; i >= 0; i--)
+        {
+            AutoLevelUpRequest request = activeAutoLevelUps[i];
+            AbilityNode node = request?.Node;
+            if (node == null || node.gameObject.activeInHierarchy == false || CanRequestNodeLevelUp(node) == false)
+            {
+                activeAutoLevelUps.RemoveAt(i);
+                continue;
+            }
+
+            request.Elapsed += deltaTime;
+            if (request.Elapsed < AutoLevelUpInterval)
+                continue;
+
+            request.Elapsed = 0f;
+            if (TryRequestNodeLevelUp(node))
+            {
+                node.PlayClickRequestMotion();
+                continue;
+            }
+
+            node.PlayRejectedRequestMotion();
+            activeAutoLevelUps.RemoveAt(i);
+        }
+    }
+
+    private bool CanRequestNodeLevelUp(AbilityNode _node)
+    {
+        if (_node == null || skillSystemProvider == null)
+            return false;
+
+        return skillSystemProvider.CanApplySkill(_node.SkillType) == AbilityLevelUpRejectReason.Pass;
+    }
+
+    private void StopAllAutoLevelUps()
+    {
+        activeAutoLevelUps.Clear();
     }
 
 
