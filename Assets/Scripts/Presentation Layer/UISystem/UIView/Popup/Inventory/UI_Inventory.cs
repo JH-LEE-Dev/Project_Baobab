@@ -151,8 +151,8 @@ public class UI_Inventory : MonoBehaviour
             if (null == _slot)
                 continue;
 
-            _slot.UpdateBindSlotData(_item);
             _slot.gameObject.SetActive(_i < _itemCount);
+            _slot.UpdateBindSlotData(_item);
         }
     }
 
@@ -171,38 +171,8 @@ public class UI_Inventory : MonoBehaviour
         }
     }
 
-    // private void InitSelectionCursor()
-    // {
-    //     if (null != selectionCursor)
-    //         selectionCursor.Initialize(selectionCursor.CursorSize);
-    // }
-
-    private void HandleEnterPopup(UI_InventorySlot _slot, IItemData _itemData, Vector2 _position)
-    {
-        if (false == isOpening)
-            return;
-
-        ILogItemData _logItemData = _itemData as ILogItemData;
-        
-        // if (null != selectionCursor)
-        //     selectionCursor.Show(_slot.GetComponent<RectTransform>());
-
-        inventoryHoverEvent?.Invoke();
-
-        if (null == invPopup || null == _logItemData)
-            return;
-
-        _position.y += popupYOffset;
-
-        invPopup.SetupItem(_logItemData, _position);
-        invPopup.OnShow();
-    }
-
     private void HandleExitPopup()
     {
-        // if (null != selectionCursor)
-        //     selectionCursor.Hide();
-
         if (null != invPopup)
             invPopup.OnHide();
     }
@@ -218,8 +188,10 @@ public class UI_Inventory : MonoBehaviour
 
     private void InitCoins()
     {
-        if (null != uiCoin) uiCoin.Initialize();
-        if (null != uiSubCoin) uiSubCoin.Initialize();
+        if (null != uiCoin) 
+            uiCoin.Initialize();
+        if (null != uiSubCoin) 
+            uiSubCoin.Initialize();
     }
 
     private void InitBackpack()
@@ -351,9 +323,6 @@ public class UI_Inventory : MonoBehaviour
             if (null == _slot)
                 continue;
 
-            // _slot.deleteItem -= SendDeleteItem;
-            // _slot.enterSlot -= HandleEnterPopup;
-            // _slot.exitSlot -= HandleExitPopup;
             _slot.exitSlot -= inventoryUnHoverEvent;
         }
         

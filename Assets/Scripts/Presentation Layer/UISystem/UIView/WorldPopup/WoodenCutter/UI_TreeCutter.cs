@@ -40,6 +40,7 @@ public class UI_TreeCutter : MonoBehaviour
 
         omp?.Initialize();
         progressBar?.Initialize();
+        progressBar?.SetActivate(false);
 
         OnHide();
     }
@@ -51,13 +52,12 @@ public class UI_TreeCutter : MonoBehaviour
         if (null != slot)
         {
             if (null != _itemData)
-                slot.UpdateImage(_itemData.sprite, Color.white);
+                slot.UpdateImage(_itemData.sprite, _itemData.color);
             else
                 slot.ResetData();
         }
 
-        if (null != _itemData)
-            OnShow();
+        progressBar?.SetActivate(null != _itemData);
     }
 
     public void Refresh()
@@ -89,17 +89,11 @@ public class UI_TreeCutter : MonoBehaviour
 
         slot?.ResetData();
 
-        OnHide();
+        progressBar?.SetActivate(false);
     }
 
     public void OnShow()
     {
-        if (null == cachedItemData)
-        {
-            gameObject.SetActive(false);
-            return;
-        }
-
         gameObject.SetActive(true);
 
         if (null == omp)
