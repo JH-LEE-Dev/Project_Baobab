@@ -32,16 +32,29 @@ public class DecoSpritePatternAnimator : MonoBehaviour
     private Coroutine routine;
     private readonly FramePattern fallbackFramePattern = new FramePattern();
 
+    private CustomSortable customSortable;
+
     private void Reset()
     {
         targetRenderer = GetComponent<SpriteRenderer>();
+        customSortable = GetComponent<CustomSortable>();
     }
 
     private void Awake()
     {
+        if (customSortable == null)
+            customSortable = GetComponent<CustomSortable>();
+
         if (targetRenderer == null)
         {
             targetRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+            customSortable.AddSpriteRenderer(targetRenderer);
+            customSortable.ManualLateUpdate();
         }
     }
 

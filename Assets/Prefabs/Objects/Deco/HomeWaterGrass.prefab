@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 5941144648308262907}
   - component: {fileID: 7093920365816688465}
   - component: {fileID: 1819446375200418302}
+  - component: {fileID: 8209777369459112386}
   m_Layer: 0
   m_Name: HomeWaterGrass
   m_TagString: Untagged
@@ -79,7 +80,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 9
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 5625916280480990872, guid: d49fff8c477e04f42a1c1e17d6d94e68, type: 3}
@@ -113,3 +114,19 @@ MonoBehaviour:
   waitMin: 0.5
   waitMax: 1
   randomizeInitialWait: 1
+--- !u!114 &8209777369459112386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7246560353434094942}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100

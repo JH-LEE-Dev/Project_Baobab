@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 6845665243231408995}
   - component: {fileID: 202935199834639852}
   - component: {fileID: 7550594195012280283}
+  - component: {fileID: -4427268113125462367}
   m_Layer: 0
   m_Name: PatternAnimator
   m_TagString: Untagged
@@ -107,9 +108,26 @@ MonoBehaviour:
   targetRenderer: {fileID: 202935199834639852}
   frames: []
   patterns: []
+  fallbackPattern: 0,1,2,1,0
   playbackMode: 0
   frameDuration: 0.333
   waitMin: 0.5
   waitMax: 1
   randomizeInitialWait: 1
   hideBetweenPatterns: 0
+--- !u!114 &-4427268113125462367
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1195725929013574735}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100

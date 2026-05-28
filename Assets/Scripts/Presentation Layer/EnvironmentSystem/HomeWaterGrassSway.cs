@@ -11,6 +11,8 @@ public class HomeWaterGrassSway : MonoBehaviour
     [SerializeField, Min(0f)] private float waitMax = 1f;
     [SerializeField] private bool randomizeInitialWait = true;
 
+    private CustomSortable customSortable;
+
     private static readonly int[][] Patterns =
     {
         new[] { 0, 1, 2, 1, 0 },
@@ -24,13 +26,24 @@ public class HomeWaterGrassSway : MonoBehaviour
     private void Reset()
     {
         targetRenderer = GetComponent<SpriteRenderer>();
+        customSortable = GetComponent<CustomSortable>();
     }
 
     private void Awake()
     {
+        if (customSortable == null)
+            customSortable = GetComponent<CustomSortable>();
+
         if (targetRenderer == null)
         {
             targetRenderer = GetComponent<SpriteRenderer>();
+        }
+
+        if (customSortable != null)
+        {
+            customSortable.Initialize(transform);
+            customSortable.AddSpriteRenderer(targetRenderer);
+            customSortable.ManualLateUpdate();
         }
     }
 
