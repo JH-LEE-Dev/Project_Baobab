@@ -66,3 +66,6 @@ public struct LoosAllInventoryItemSignal { }
 public struct OffroadContainerUpdatedSignal { }
 
 public struct InventoryIsFullSignal { }
+
+public struct ItemAddedToInventorySignal { }
+public struct ItemRemovedFromInventorySignal { }

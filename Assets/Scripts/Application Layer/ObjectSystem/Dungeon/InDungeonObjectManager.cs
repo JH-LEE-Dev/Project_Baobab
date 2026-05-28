@@ -173,7 +173,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void ClearObjManager()
     {
         if (portal != null)
+        {
+            portal.SetVisualActive(false);
             portal.gameObject.SetActive(false);
+        }
 
         if (itemManager != null)
             itemManager.ReleaseAllItems();

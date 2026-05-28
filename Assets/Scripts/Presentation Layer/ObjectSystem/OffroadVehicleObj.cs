@@ -155,6 +155,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         containerShadowObj.SetActive(true);
     }
 
+    public void SetVisualActive(bool _boolean)
+    {
+        offroadContainerVComponent.bActive = _boolean;
+    }
+
     //유니티 이벤트 함수
     private void OnTriggerEnter2D(Collider2D _other)
     {

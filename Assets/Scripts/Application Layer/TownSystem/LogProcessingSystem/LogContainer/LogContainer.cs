@@ -16,7 +16,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     public event Action InventoryIsFullEvent { add { } remove { } }
 
     private InputManager inputManager;
-    private IInventory interactingContainer;
+    private IInventory characterInventory;
+    private InventoryManager characterInventoryManager;
     private Transform charTransform;
     private LogItemPoolingManager logItemPoolManager;
     [SerializeField] private Transform inputTransform;
@@ -132,7 +133,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     public void DI_Inventory(IInventory _inventory)
     {
-        interactingContainer = _inventory;
+        characterInventory = _inventory;
+        characterInventoryManager = _inventory as InventoryManager;
     }
 
     private void Update()
@@ -287,7 +289,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private void InteractionKeyPressed()
     {
-        if (!bCanInteract || interactingContainer == null) return;
+        if (!bCanInteract || characterInventory == null) return;
 
         if (transferCoroutine == null)
         {
@@ -316,10 +318,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private bool TryTransferOneItem()
     {
-        if (!bCanInteract || interactingContainer == null) return false;
+        if (!bCanInteract || characterInventory == null) return false;
 
-        var charSlots = interactingContainer.inventorySlots;
-        for (int i = 0; i < interactingContainer.currentSlotCnt; i++)
+        var charSlots = characterInventory.inventorySlots;
+        for (int i = 0; i < characterInventory.currentSlotCnt; i++)
         {
             if (charSlots[i] is InventorySlot charSlot && charSlot.itemData != null && charSlot.count > 0)
             {
@@ -352,6 +354,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 if (!CanAddItemByData(sourceData)) break;
 
                 LogState takenState = _charSlot.TakeOneItem();
+
+                if (characterInventoryManager != null)
+                {
+                    characterInventoryManager.ItemRemoved();
+                }
                 // AddItemByData(sourceData, takenState); // [제거] 도착 시점으로 연기
 
                 // 시각적 비행 아이템 생성
@@ -388,11 +395,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             // 슬롯이 비었다면 정리
             if (_charSlot.count == 0)
             {
-                if (interactingContainer is InventoryManager invManager)
+                if (characterInventoryManager != null)
                 {
-                    invManager.ItemDeleted(_charSlot);
+                    characterInventoryManager.ItemDeleted(_charSlot);
                 }
-                else if (interactingContainer is LogContainer container)
+                else if (characterInventory is LogContainer container)
                 {
                     container.ItemDeleted(_charSlot);
                 }
@@ -504,12 +511,12 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private void DebugLogCharacterInventory()
     {
-        if (interactingContainer == null || bDebug == false) return;
+        if (characterInventory == null || bDebug == false) return;
 
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("<color=cyan>--- Character Inventory Status ---</color>");
-        var slots = interactingContainer.inventorySlots;
-        for (int i = 0; i < interactingContainer.currentSlotCnt; i++)
+        var slots = characterInventory.inventorySlots;
+        for (int i = 0; i < characterInventory.currentSlotCnt; i++)
         {
             var slot = slots[i];
             if (slot.itemData != null && slot.count > 0)

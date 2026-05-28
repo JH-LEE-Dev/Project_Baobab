@@ -5,6 +5,8 @@ using UnityEngine.Pool;
 
 public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker, IInventoryCH, IMoneyData
 {
+    public event Action ItemAddedEvent;
+    public event Action ItemRemovedEvent;
     public event Action SpendMoneyEvent;
     public event Action InventorySpecChangedEvent;
     public event Action LoosAllInventoryItemEvent;
@@ -152,6 +154,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         if (itemAdded)
         {
             CheckInventoryFull();
+            ItemAdded();
         }
         else
         {
@@ -294,6 +297,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 ReleaseToPool(slot.itemData);
             }
             slot.Setup(null, 0);
+            ItemRemoved();
         }
     }
 
@@ -485,10 +489,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             InventorySlot slot = inventorySlots[i];
             if (slot.itemData == null || slot.totalCount <= 0) continue;
 
+            int count = slot.totalCount;
+
             // Log 아이템인 경우 처리
             if (slot.itemData is LogItemData logData)
             {
-                int count = slot.totalCount;
                 for (int j = 0; j < count; j++)
                 {
                     LogItem logItem = logItemPoolingManager.GetLogItem(logData);
@@ -513,9 +518,17 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
                         logItem.Launch(startPos, endPos, height, duration);
                     }
+
+                    ItemRemoved();
                 }
             }
-            // TODO: Loot 아이템 등 다른 타입의 아이템 배출 로직 추가 필요 시 여기에 작성
+            else
+            {
+                for (int j = 0; j < count; j++)
+                {
+                    ItemRemoved();
+                }
+            }
 
             // 슬롯 비우기 및 데이터 반환
             ReleaseToPool((ItemData)slot.itemData);
@@ -536,5 +549,15 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             logItemPoolingManager.ReturnLogItem(activeDroppedItems[i]);
         }
         activeDroppedItems.Clear();
+    }
+
+    public void ItemAdded()
+    {
+        
+    }
+
+    public void ItemRemoved()
+    {
+        
     }
 }

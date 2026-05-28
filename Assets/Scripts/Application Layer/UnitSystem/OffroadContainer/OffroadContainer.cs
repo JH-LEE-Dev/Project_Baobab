@@ -15,6 +15,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     // 외부 의존성
     private IInventory characterInventory;
+    private InventoryManager characterInventoryManager;
     private Transform charTransform;
     private LogItemPoolingManager logItemPoolManager;
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
@@ -69,6 +70,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
         characterInventory = _characterInventory;
+        characterInventoryManager = _characterInventory as InventoryManager;
         inputManager = _inputManager;
 
         logItemPoolManager = GetComponent<LogItemPoolingManager>();
@@ -278,6 +280,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 LogState takenState = _sourceSlot.TakeOneItem();
 
+                if (!_toCharacter && characterInventoryManager != null)
+                {
+                    characterInventoryManager.ItemRemoved();
+                }
+
                 LogItemData visualData = new LogItemData
                 {
                     treeType = sourceData.treeType,
@@ -325,9 +332,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 }
                 else
                 {
-                    if (characterInventory is InventoryManager invManager)
+                    if (characterInventoryManager != null)
                     {
-                        invManager.ItemDeleted(_sourceSlot);
+                        characterInventoryManager.ItemDeleted(_sourceSlot);
                     }
                 }
             }
@@ -344,7 +351,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private bool CanAddToCharacterInventory(ItemData _sourceData)
     {
-        if (_sourceData == null || !(characterInventory is InventoryManager invManager)) return false;
+        if (_sourceData == null || characterInventoryManager == null) return false;
 
         int pendingCount = 0;
         if (_sourceData is LogItemData logSource)
@@ -360,10 +367,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
 
         int availableSpace = 0;
-        var slots = invManager.GetInventorySlots();
-        int maxItems = invManager.GetMaxItemsPerSlot();
+        var slots = characterInventoryManager.GetInventorySlots();
+        int maxItems = characterInventoryManager.GetMaxItemsPerSlot();
 
-        for (int i = 0; i < invManager.currentSlotCnt; i++)
+        for (int i = 0; i < characterInventoryManager.currentSlotCnt; i++)
         {
             if (slots[i].itemData != null && IsSameItemByData(_sourceData, slots[i].itemData))
             {
@@ -380,23 +387,24 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void AddToCharacterInventory(ItemData _sourceData, LogState _state)
     {
-        if (_sourceData == null || !(characterInventory is InventoryManager invManager)) return;
+        if (_sourceData == null || characterInventoryManager == null) return;
 
-        var slots = invManager.GetInventorySlots();
-        int maxItems = invManager.GetMaxItemsPerSlot();
+        var slots = characterInventoryManager.GetInventorySlots();
+        int maxItems = characterInventoryManager.GetMaxItemsPerSlot();
 
-        for (int i = 0; i < invManager.currentSlotCnt; i++)
+        for (int i = 0; i < characterInventoryManager.currentSlotCnt; i++)
         {
             if (slots[i].itemData != null &&
                 slots[i].totalCount < maxItems &&
                 IsSameItemByData(_sourceData, slots[i].itemData))
             {
                 slots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                characterInventoryManager.ItemAdded();
                 return;
             }
         }
 
-        for (int i = 0; i < invManager.currentSlotCnt; i++)
+        for (int i = 0; i < characterInventoryManager.currentSlotCnt; i++)
         {
             if (slots[i].itemData == null)
             {
@@ -415,6 +423,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                     slots[i].Setup(newData, 0);
                     slots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                    characterInventoryManager.ItemAdded();
                 }
 
                 return;

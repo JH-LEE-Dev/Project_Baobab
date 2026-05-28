@@ -140,7 +140,6 @@ public class TownSystem : MonoBehaviour
 
     private void ContainerUpdated()
     {
-        signalHub.Publish(new InventoryUpdatedSignal());
         signalHub.Publish(new ContainerUpdatedSignal());
     }
 

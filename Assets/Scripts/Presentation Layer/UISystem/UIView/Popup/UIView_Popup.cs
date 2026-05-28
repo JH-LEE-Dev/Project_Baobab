@@ -199,4 +199,14 @@ public class UIView_Popup : UIView
     {
         uiInventory?.ClearNotification();
     }
+
+    public void ItemAddedToInventory()
+    {
+        
+    }
+
+    public void ItemRemovedFromInventory()
+    {
+        
+    }
 }
