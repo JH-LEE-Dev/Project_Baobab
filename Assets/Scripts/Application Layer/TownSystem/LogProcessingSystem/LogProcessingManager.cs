@@ -29,6 +29,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
     public ShopNPC shopNPC { get; private set; }
 
+    private Character character;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
@@ -84,9 +86,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logContainer.DI_Inventory(inventory);
     }
 
-    public void SetCharTransform(Transform _transform)
+    public void SetCharacter(Character _character)
     {
-        logContainer.SetCharTransform(_transform);
+        character = _character;
+        logContainer.SetCharTransform(character.centerTransform);
+        shopNPC.SetCharacterTransform(character.centerTransform);
     }
 
     private void BindEvents()
