@@ -203,11 +203,13 @@ public class UIView_Popup : UIView
 
     public void ItemAddedToInventory()
     {
-        
+        InventoryShowEvent();
+        uiInventory?.UpdateNotification();
     }
 
     public void ItemRemovedFromInventory()
     {
-        
+        InventoryShowEvent();
+        uiInventory?.ClearNotification();
     }
 }
