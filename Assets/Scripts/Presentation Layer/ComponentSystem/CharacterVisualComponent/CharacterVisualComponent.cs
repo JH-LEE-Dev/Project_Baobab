@@ -185,6 +185,19 @@ public class CharacterVisualComponent : MonoBehaviour
 
     #region Private Methods
 
+    private void SyncAnimator(Animator _source, Animator _target)
+    {
+        if (_source == null || _target == null) return;
+
+        AnimatorStateInfo sourceInfo = _source.GetCurrentAnimatorStateInfo(0);
+        AnimatorStateInfo targetInfo = _target.GetCurrentAnimatorStateInfo(0);
+
+        if (sourceInfo.fullPathHash != targetInfo.fullPathHash || Mathf.Abs(sourceInfo.normalizedTime - targetInfo.normalizedTime) > 0.01f)
+        {
+            _target.Play(sourceInfo.fullPathHash, 0, sourceInfo.normalizedTime);
+        }
+    }
+
     private void UpdateCharacterColor()
     {
         float target = bIsUnderShadow ? 1f : 0f;
@@ -207,6 +220,7 @@ public class CharacterVisualComponent : MonoBehaviour
             faceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             faceAnim.SetBool(isMovingHash, _isMoving);
             faceAnim.SetBool(bInHubHash, _bInHub);
+            SyncAnimator(anim, faceAnim);
         }
 
         if (faceBlinkAnim != null)
@@ -214,6 +228,7 @@ public class CharacterVisualComponent : MonoBehaviour
             faceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             faceBlinkAnim.SetBool(isMovingHash, _isMoving);
             faceBlinkAnim.SetBool(bInHubHash, _bInHub);
+            SyncAnimator(anim, faceBlinkAnim);
         }
 
         // 2. 눈 깜빡임 로직 업데이트
@@ -279,6 +294,7 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterAnim.SetBool(isMovingHash, _isMoving);
             onWaterAnim.SetBool(bInHubHash, _bInHub);
+            SyncAnimator(anim, onWaterAnim);
 
             Vector3 reversedScale = sr.transform.localScale;
             reversedScale.x *= -1f;
@@ -290,6 +306,7 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterFaceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterFaceAnim.SetBool(isMovingHash, _isMoving);
             onWaterFaceAnim.SetBool(bInHubHash, _bInHub);
+            SyncAnimator(anim, onWaterFaceAnim);
 
             Vector3 faceReversedScale = faceSR != null ? faceSR.transform.localScale : sr.transform.localScale;
             faceReversedScale.x *= -1f;
@@ -301,6 +318,7 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterFaceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterFaceBlinkAnim.SetBool(isMovingHash, _isMoving);
             onWaterFaceBlinkAnim.SetBool(bInHubHash, _bInHub);
+            SyncAnimator(anim, onWaterFaceBlinkAnim);
 
             Vector3 faceReversedScale = faceBlinkSR != null ? faceBlinkSR.transform.localScale : sr.transform.localScale;
             faceReversedScale.x *= -1f;
