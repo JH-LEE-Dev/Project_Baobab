@@ -553,11 +553,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void ItemAdded()
     {
-        
+        ItemAddedEvent?.Invoke();
     }
 
     public void ItemRemoved()
     {
-        
+        ItemRemovedEvent?.Invoke();
     }
 }

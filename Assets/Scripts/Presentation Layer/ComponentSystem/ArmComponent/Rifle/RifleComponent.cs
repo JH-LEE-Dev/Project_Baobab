@@ -80,20 +80,20 @@ public class RifleComponent : WeaponComponent, IRifleComponent
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360f;
 
-        int dirIndex;
-        if (angle >= 65f && angle <= 115f) // 상: 90도 기준 +-25도 (총 50도)
-        {
-            dirIndex = 1;
-        }
-        else if (angle >= 245f && angle <= 295f) // 하: 270도 기준 +-25도 (총 50도)
-        {
-            dirIndex = 3;
-        }
-        else
-        {
-            // 그 외 범위(좌/우)는 0으로 설정
-            dirIndex = 0;
-        }
+        //int dirIndex;
+        // if (angle >= 65f && angle <= 115f) // 상: 90도 기준 +-25도 (총 50도)
+        // {
+        //     dirIndex = 1;
+        // }
+        // else if (angle >= 245f && angle <= 295f) // 하: 270도 기준 +-25도 (총 50도)
+        // {
+        //     dirIndex = 3;
+        // }
+        // else
+        // {
+        //     // 그 외 범위(좌/우)는 0으로 설정
+        //     dirIndex = 0;
+        // }
 
         //anim.SetFloat(facingDirHash, dirIndex);
 
