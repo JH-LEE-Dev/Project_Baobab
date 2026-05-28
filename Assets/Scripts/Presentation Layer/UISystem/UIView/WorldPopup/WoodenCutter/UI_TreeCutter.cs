@@ -3,25 +3,31 @@ using PresentationLayer.DOTweenAnimationSystem;
 
 public class UI_TreeCutter : MonoBehaviour
 {
+    // //외부 의존성
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject mainVisual;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private HUD_ProgressBar progressBar;
     [SerializeField] private Vector3 offset;
 
+    // //내부 의존성
     private ILogItemData cachedItemData;
     private float remaining = 0f;
     private ILogCutter logCutter;
 
     private UI_InventorySlot slot;
-    public UI_InventorySlot Slot { get { return slot;  } set { slot = value; } }
+    public UI_InventorySlot Slot { get { return slot; } set { slot = value; } }
 
     [SerializeField] private string popupTag = "Popup";
     [SerializeField] private string popdownTag = "Popdown";
 
     private MotionEntry popup;
     private MotionEntry popdown;
+    private RectTransform rect;
     private bool bOpen = false;
+
+
+    // //퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(Vector2 _offset)
     {
@@ -38,9 +44,18 @@ public class UI_TreeCutter : MonoBehaviour
 
         offset = _offset;
 
-        omp?.Initialize();
-        progressBar?.Initialize();
-        progressBar?.SetActivate(false);
+        rect = GetComponent<RectTransform>();
+
+        if (null != omp)
+            omp.Initialize();
+
+        if (null != progressBar)
+        {
+            progressBar.Initialize();
+            progressBar.SetActivate(false);
+        }
+
+        SnapToPerfectPixel();
 
         OnHide();
     }
@@ -57,18 +72,24 @@ public class UI_TreeCutter : MonoBehaviour
                 slot.ResetData();
         }
 
-        progressBar?.SetActivate(null != _itemData);
+        if (null != progressBar)
+            progressBar.SetActivate(null != _itemData);
+
+        SnapToPerfectPixel();
     }
 
     public void Refresh()
     {
         if (null != slot && null != cachedItemData)
-        {
             slot.UpdateImage(cachedItemData.sprite, Color.white);
-        }
+
+        SnapToPerfectPixel();
     }
 
-    public void BindRemaining(float _remaining) => remaining = _remaining;
+    public void BindRemaining(float _remaining)
+    {
+        remaining = _remaining;
+    }
 
     public void BindLogCutter(ILogCutter _logCutter)
     {
@@ -77,9 +98,8 @@ public class UI_TreeCutter : MonoBehaviour
 
     public void BindPosition(Vector3 _newPos)
     {
-        RectTransform rt = GetComponent<RectTransform>();
-        if (null != rt)
-            rt.position = _newPos + offset;
+        if (null != rect)
+            rect.position = _newPos + offset;
     }
 
     public void ResetCutter()
@@ -87,9 +107,11 @@ public class UI_TreeCutter : MonoBehaviour
         cachedItemData = null;
         remaining = 0f;
 
-        slot?.ResetData();
+        if (null != slot)
+            slot.ResetData();
 
-        progressBar?.SetActivate(false);
+        if (null != progressBar)
+            progressBar.SetActivate(false);
     }
 
     public void OnShow()
@@ -101,9 +123,10 @@ public class UI_TreeCutter : MonoBehaviour
 
         bOpen = true;
 
-
         omp.SettingEntryMotion(popdown, true, true);
         popup = omp.Play(popupTag, bReset: true);
+
+        SnapToPerfectPixel();
     }
 
     public void OnHide()
@@ -114,6 +137,8 @@ public class UI_TreeCutter : MonoBehaviour
         omp.SettingEntryMotion(popup, true, true);
         popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompletedAnimation);
     }
+
+    // //내부 로직
 
     private void OnCompletedAnimation()
     {
@@ -133,7 +158,73 @@ public class UI_TreeCutter : MonoBehaviour
                     _ratio = Mathf.Clamp01(logCutter.elapsedProcessingTime / _total);
             }
 
-            progressBar?.UpdateValue(_ratio);
+            if (null != progressBar)
+                progressBar.UpdateValue(_ratio);
         }
+    }
+
+    /// <summary>
+    /// mainVisual RectTransform의 가로/세로 크기(홀수/짝수)와 피봇(0.5, 0, 1) 설정에 맞추어
+    /// UI 렌더링 시 픽셀 경계가 뭉개지지 않고 선명하게 출력(Pixel-perfect)되도록 anchoredPosition을 스냅 정렬합니다.
+    /// </summary>
+    private void SnapToPerfectPixel()
+    {
+        if (null == mainVisual)
+            return;
+
+        // 캔버스를 즉각 강제 갱신하여 비활성화 ➡️ 활성화 전환 직후 프레임 지연으로 크기(Width/Height)가 0으로 잡히는 버그를 완벽히 해결합니다.
+        Canvas.ForceUpdateCanvases();
+
+        RectTransform _bgRect = mainVisual.GetComponent<RectTransform>();
+        if (null == _bgRect)
+            return;
+
+        if (null == rect)
+            rect = GetComponent<RectTransform>();
+
+        if (null == rect)
+            return;
+
+        Vector2 _pos = rect.anchoredPosition;
+        float _width = _bgRect.rect.width;
+        float _height = _bgRect.rect.height;
+        float _pivotX = _bgRect.pivot.x;
+        float _pivotY = _bgRect.pivot.y;
+
+        // 1. X축 스냅 (가로 크기 홀짝 분석 및 피봇 0.5 / 0 / 1 정밀 매칭)
+        int _roundedWidth = Mathf.RoundToInt(_width);
+        bool _isWidthOdd = (0 != _roundedWidth % 2);
+
+        if (true == _isWidthOdd)
+        {
+            if (0.01f > Mathf.Abs(_pivotX - 0.5f))
+                _pos.x = Mathf.Round(_pos.x - 0.5f) + 0.5f;
+            else if (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f))
+                _pos.x = Mathf.Round(_pos.x);
+        }
+        else
+        {
+            if (0.01f > Mathf.Abs(_pivotX - 0.5f) || 0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f))
+                _pos.x = Mathf.Round(_pos.x);
+        }
+
+        // 2. Y축 스냅 (세로 크기 홀짝 분석 및 피봇 0.5 / 0 / 1 정밀 매칭)
+        int _roundedHeight = Mathf.RoundToInt(_height);
+        bool _isHeightOdd = (0 != _roundedHeight % 2);
+
+        if (true == _isHeightOdd)
+        {
+            if (0.01f > Mathf.Abs(_pivotY - 0.5f))
+                _pos.y = Mathf.Round(_pos.y - 0.5f) + 0.5f;
+            else if (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f))
+                _pos.y = Mathf.Round(_pos.y);
+        }
+        else
+        {
+            if (0.01f > Mathf.Abs(_pivotY - 0.5f) || 0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f))
+                _pos.y = Mathf.Round(_pos.y);
+        }
+
+        rect.anchoredPosition = _pos;
     }
 }

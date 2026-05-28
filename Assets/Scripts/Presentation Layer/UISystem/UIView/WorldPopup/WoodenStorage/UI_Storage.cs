@@ -5,11 +5,13 @@ using PresentationLayer.DOTweenAnimationSystem;
 
 public class UI_Storage : MonoBehaviour
 {
+    // //외부 의존성
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject slotBackground;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private Vector2 offset;
 
+    // //내부 의존성
     private const int defaultCap = 2;
 
     private IInventory storage;
@@ -21,24 +23,30 @@ public class UI_Storage : MonoBehaviour
 
     private MotionEntry popup;
     private MotionEntry popdown;
-    RectTransform rect;
+    private RectTransform rect;
 
+
+    // //퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(Vector2 _offset)
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
-        gameObject.SetActive(false);
         offset = _offset;
 
-        omp?.Initialize();
+        if (null != omp)
+            omp.Initialize();
 
         rect = GetComponent<RectTransform>();
+
+        SnapToPerfectPixel();
+        
+        gameObject.SetActive(false);
     }
 
     public void BindStorage(IInventory _storage)
     {
         storage = _storage;
-        if (storage != null)
+        if (null != storage)
             UpdateMaxSlotCount(storage.inventorySlots.Count);
     }
 
@@ -61,6 +69,8 @@ public class UI_Storage : MonoBehaviour
 
             storageSlots.Add(slot);
         }
+
+        SnapToPerfectPixel();
     }
 
     public void Refresh()
@@ -70,6 +80,8 @@ public class UI_Storage : MonoBehaviour
 
         UpdateMaxSlotCount(storage.inventorySlots.Count);
         UpdateSlots(storage.inventorySlots);
+
+        SnapToPerfectPixel();
     }
 
     public void UpdateSlots(IReadOnlyList<IInventorySlot> _items = null)
@@ -104,6 +116,8 @@ public class UI_Storage : MonoBehaviour
             rect.position = newPos;
         }
 
+        SnapToPerfectPixel();
+
         if (null == omp)
             return;
 
@@ -120,5 +134,75 @@ public class UI_Storage : MonoBehaviour
         popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompleteAnim);
     }
 
-    private void OnCompleteAnim () => gameObject.SetActive(isOpening = false);
+    // //내부 로직
+
+    private void OnCompleteAnim()
+    {
+        gameObject.SetActive(isOpening = false);
+    }
+
+    /// <summary>
+    /// slotBackground RectTransform의 가로/세로 크기(홀수/짝수)와 피봇(0.5, 0, 1) 설정에 맞추어
+    /// UI 렌더링 시 픽셀 경계가 뭉개지지 않고 선명하게 출력(Pixel-perfect)되도록 anchoredPosition을 스냅 정렬합니다.
+    /// </summary>
+    private void SnapToPerfectPixel()
+    {
+        if (null == slotBackground)
+            return;
+
+        // 캔버스를 즉각 강제 갱신하여 비활성화 ➡️ 활성화 전환 직후 프레임 지연으로 크기(Width/Height)가 0으로 잡히는 버그를 완벽히 해결합니다.
+        Canvas.ForceUpdateCanvases();
+
+        RectTransform _bgRect = slotBackground.GetComponent<RectTransform>();
+        if (null == _bgRect)
+            return;
+
+        if (null == rect)
+            rect = GetComponent<RectTransform>();
+
+        if (null == rect)
+            return;
+
+        Vector2 _pos = rect.anchoredPosition;
+        float _width = _bgRect.rect.width;
+        float _height = _bgRect.rect.height;
+        float _pivotX = _bgRect.pivot.x;
+        float _pivotY = _bgRect.pivot.y;
+
+        // 1. X축 스냅 (가로 크기 홀짝 분석 및 피봇 0.5 / 0 / 1 정밀 매칭)
+        int _roundedWidth = Mathf.RoundToInt(_width);
+        bool _isWidthOdd = (0 != _roundedWidth % 2);
+
+        if (true == _isWidthOdd)
+        {
+            if (0.01f > Mathf.Abs(_pivotX - 0.5f))
+                _pos.x = Mathf.Round(_pos.x - 0.5f) + 0.5f;
+            else if (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f))
+                _pos.x = Mathf.Round(_pos.x);
+        }
+        else
+        {
+            if (0.01f > Mathf.Abs(_pivotX - 0.5f) || 0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f))
+                _pos.x = Mathf.Round(_pos.x);
+        }
+
+        // 2. Y축 스냅 (세로 크기 홀짝 분석 및 피봇 0.5 / 0 / 1 정밀 매칭)
+        int _roundedHeight = Mathf.RoundToInt(_height);
+        bool _isHeightOdd = (0 != _roundedHeight % 2);
+
+        if (true == _isHeightOdd)
+        {
+            if (0.01f > Mathf.Abs(_pivotY - 0.5f))
+                _pos.y = Mathf.Round(_pos.y - 0.5f) + 0.5f;
+            else if (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f))
+                _pos.y = Mathf.Round(_pos.y);
+        }
+        else
+        {
+            if (0.01f > Mathf.Abs(_pivotY - 0.5f) || 0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f))
+                _pos.y = Mathf.Round(_pos.y);
+        }
+
+        rect.anchoredPosition = _pos;
+    }
 }

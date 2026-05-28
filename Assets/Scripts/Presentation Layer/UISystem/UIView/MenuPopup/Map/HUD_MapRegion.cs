@@ -6,12 +6,6 @@ using System;
 
 namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 {
-    public enum TileType
-    {
-        Ground,
-        Water
-    }
-
     [Serializable]
     public struct MapTreeVisual
     {
@@ -33,7 +27,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
     {
         // //외부 의존성
         [Header("Ground Visuals")]
-        [SerializeField] private Image[] groundImages;      // 지형 이미지 4개
+        [SerializeField] private Image[] groundImages;      // 지형 이미지들 (에디터 사전 배치)
 
         [Header("Object Visuals")]
         [SerializeField] private MapTreeVisual[] treeVisuals; // 나무 비주얼 (잎, 기둥)
@@ -54,15 +48,10 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         [Range(0f, 1f)]
         [SerializeField] private float dimFactor = 0.5f;     // 비포커스 시 명암 계수
 
-        [Header("Theme Configuration")]
-        [SerializeField] private HUD_MapThemeConfig themeConfig;
-
         // //내부 의존성
         private Color[] groundOriginalColors;
         private MapTreeColor[] treeOriginalColors;
         private Color[] decoOriginalColors;
-        private int[] shufflePool;                           // 가비지 프리 셔플 풀
-        private int[] groundTileIndices;                     // 땅 타일 위치 추적용 풀
 
         private MapEnvironmentDataInfo mapEnvironmentInfo;
         private string currentMapName = string.Empty;
@@ -96,9 +85,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             CaptureOriginalColors();
 
-            shufflePool = new int[16];
-            groundTileIndices = new int[16];
-
             currentVisibleCount = 1;
             isInitialized = true;
         }
@@ -113,8 +99,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
             if (null != mapNameText)
                 mapNameText.text = currentMapName;
-
-            ApplyTheme(_info.mapType);
 
             // 초기 리전 셋업 시 모든 나무는 100% 항상 활성화 상태 유지
             currentVisibleCount = 1;
@@ -139,7 +123,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         }
 
         /// <summary>
-        /// 서브 지역 등급에 따라 데코 노출을 제어하고, 해당 서브 지역용 식생 테마(나무 종류들)를 겹침 없이 실시간 스왑 배정합니다.
+        /// 서브 지역 등급에 따라 데코 노출을 제어합니다.
         /// </summary>
         public void UpdateObjectCount(int _count)
         {
@@ -152,9 +136,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (currentVisibleCount == _count)
                 return;
 
-            // 서브지역 선택에 맞춘 나무 식생 실시간 스왑 및 모든 종류 강제 노출
-            SwapTreesForSubRegion(_count);
-
             // 데코 연출 조절
             if (null != decoImages)
             {
@@ -165,7 +146,8 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
 
                     if (_shouldBeVisible && !_wasVisible)
                     {
-                        if (null != decoImages[_i]) decoImages[_i].gameObject.SetActive(true);
+                        if (null != decoImages[_i])
+                            decoImages[_i].gameObject.SetActive(true);
 
                         if (_i < decoTags.Length)
                             motionPlayer.Play(decoTags[_i], bReset: true);
@@ -229,8 +211,7 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
             if (null == treeVisuals || null == treeTags)
                 return;
 
-            int _targetCount = Mathf.Min(currentVisibleCount, treeVisuals.Length);
-            _targetCount = Mathf.Min(_targetCount, treeTags.Length);
+            int _targetCount = Mathf.Min(treeVisuals.Length, treeTags.Length);
 
             int _finalIdx = _targetCount - 1;
             const float _delay = 0.05f;
@@ -285,237 +266,6 @@ namespace PresentationLayer.UISystem.UIView.MenuPopup.Map
         public MapType GetMapType() => mapEnvironmentInfo.mapType;
 
         // //내부 로직
-
-        /// <summary>
-        /// 맵 타입에 맞게 오토타일링(물 연결 & 물가 감지) 및 나무/데코의 땅(Ground) 위 동적 앵커 스냅 배치를 처리합니다.
-        /// </summary>
-        private void ApplyTheme(MapType _mapType)
-        {
-            if (null == themeConfig || null == themeConfig.MapThemes)
-                return;
-
-            MapThemeData _targetTheme = default;
-            bool _found = false;
-
-            for (int _i = 0; _i < themeConfig.MapThemes.Length; _i++)
-            {
-                if (themeConfig.MapThemes[_i].mapType == _mapType)
-                {
-                    _targetTheme = themeConfig.MapThemes[_i];
-                    _found = true;
-                    break;
-                }
-            }
-
-            if (false == _found)
-                return;
-
-            // 1. 지형 단순 대입 및 랜덤 적용 (Shore 관련 로직 완전 제거)
-            if (null != groundImages && null != _targetTheme.tileLayout)
-            {
-                int _len = Mathf.Min(groundImages.Length, _targetTheme.tileLayout.Length);
-                for (int _i = 0; _i < _len; _i++)
-                {
-                    if (null == groundImages[_i])
-                        continue;
-
-                    TileType _currentType = _targetTheme.tileLayout[_i];
-
-                    if (TileType.Water == _currentType)
-                    {
-                        if (null != _targetTheme.waterSprite)
-                            groundImages[_i].sprite = _targetTheme.waterSprite;
-                    }
-                    else
-                    {
-                        if (null != _targetTheme.plainGroundSprites && 0 < _targetTheme.plainGroundSprites.Length)
-                        {
-                            int _rndIdx = UnityEngine.Random.Range(0, _targetTheme.plainGroundSprites.Length);
-                            groundImages[_i].sprite = _targetTheme.plainGroundSprites[_rndIdx];
-                        }
-                    }
-                }
-            }
-
-            // 2. 땅(Ground) 타일 위치들 추적 수집
-            int _groundTileCount = 0;
-            if (null != groundImages && null != _targetTheme.tileLayout)
-            {
-                int _len = Mathf.Min(groundImages.Length, _targetTheme.tileLayout.Length);
-                
-                if (null == groundTileIndices || groundTileIndices.Length < _len)
-                    groundTileIndices = new int[_len * 2];
-
-                for (int _i = 0; _i < _len; _i++)
-                {
-                    if (null != groundImages[_i] && TileType.Ground == _targetTheme.tileLayout[_i])
-                    {
-                        groundTileIndices[_groundTileCount] = _i;
-                        _groundTileCount++;
-                    }
-                }
-            }
-
-            // 3. 나무 중복 없이 모든 종류 골고루 섞어 땅(Ground) 위에만 스냅 배치
-            // 초기 셋업 시에는 기본 1레벨(SubRegion 1) 기준으로 임시 셔플 배치
-            SwapTreesForSubRegion(1);
-        }
-
-        /// <summary>
-        /// 서브지역 레벨에 맞춘 나무 식생 구성으로 스프라이트들을 실시간 강제 셔플 재배정합니다.
-        /// </summary>
-        private void SwapTreesForSubRegion(int _subRegionLevel)
-        {
-            if (null == themeConfig || null == themeConfig.MapThemes || null == treeVisuals)
-                return;
-
-            MapThemeData _targetTheme = default;
-            bool _found = false;
-            int _targetTypeIndex = (int)mapEnvironmentInfo.mapType;
-
-            for (int _i = 0; _i < themeConfig.MapThemes.Length; _i++)
-            {
-                if ((int)themeConfig.MapThemes[_i].mapType == _targetTypeIndex)
-                {
-                    _targetTheme = themeConfig.MapThemes[_i];
-                    _found = true;
-                    break;
-                }
-            }
-
-            if (false == _found || null == _targetTheme.subRegionTreePools)
-                return;
-
-            SubRegionTreeConfig _subConfig = default;
-            bool _configFound = false;
-            int _targetSubIndex = _subRegionLevel - 1;
-
-            for (int _i = 0; _i < _targetTheme.subRegionTreePools.Length; _i++)
-            {
-                if (_targetTheme.subRegionTreePools[_i].subRegionIndex == _targetSubIndex)
-                {
-                    _subConfig = _targetTheme.subRegionTreePools[_i];
-                    _configFound = true;
-                    break;
-                }
-            }
-
-            if (false == _configFound || null == _subConfig.treeSets || 0 == _subConfig.treeSets.Length)
-                return;
-
-            int _themeTreeCount = _subConfig.treeSets.Length;
-            int _visualCount = treeVisuals.Length;
-
-            // 3-1. 나무 종류 셔플 (shufflePool 앞 영역 사용: 0 ~ _themeTreeCount - 1)
-            // 겹치지 않는 스폰 타일 선정을 위해 땅 타일 인덱스 개수도 함께 셔플하므로 셔플풀 크기 넉넉히 확보
-            int _groundTileCount = 0;
-            for (int _i = 0; _i < groundTileIndices.Length; _i++)
-                if (0 != groundTileIndices[_i])
-                    _groundTileCount++;
-
-            if (null == shufflePool || shufflePool.Length < _themeTreeCount + _groundTileCount)
-                shufflePool = new int[(_themeTreeCount + _groundTileCount) * 2];
-
-            for (int _i = 0; _i < _themeTreeCount; _i++)
-                shufflePool[_i] = _i;
-
-            for (int _i = _themeTreeCount - 1; _i > 0; _i--)
-            {
-                int _j = UnityEngine.Random.Range(0, _i + 1);
-                int _temp = shufflePool[_i];
-                shufflePool[_i] = shufflePool[_j];
-                shufflePool[_j] = _temp;
-            }
-
-            // 3-2. 땅 타일 위치 셔플 (shufflePool 뒷 영역 사용: _themeTreeCount ~ _themeTreeCount + _groundTileCount - 1)
-            int _groundOffset = _themeTreeCount;
-            for (int _i = 0; _i < _groundTileCount; _i++)
-                shufflePool[_groundOffset + _i] = groundTileIndices[_i];
-
-            for (int _i = _groundTileCount - 1; _i > 0; _i--)
-            {
-                int _j = UnityEngine.Random.Range(0, _i + 1);
-                int _temp = shufflePool[_groundOffset + _i];
-                shufflePool[_groundOffset + _i] = shufflePool[_groundOffset + _j];
-                shufflePool[_groundOffset + _j] = _temp;
-            }
-
-            for (int _i = 0; _i < _visualCount; _i++)
-            {
-                int _themeIdx = shufflePool[_i % _themeTreeCount];
-
-                // 잎과 기둥 이미지 교체
-                if (null != treeVisuals[_i].leafImage && null != _subConfig.treeSets[_themeIdx].leafSprite)
-                    treeVisuals[_i].leafImage.sprite = _subConfig.treeSets[_themeIdx].leafSprite;
-
-                if (null != treeVisuals[_i].trunkImage && null != _subConfig.treeSets[_themeIdx].trunkSprite)
-                    treeVisuals[_i].trunkImage.sprite = _subConfig.treeSets[_themeIdx].trunkSprite;
-
-                // 땅 타일이 존재할 때만 나무의 부모 컨테이너(앵커)를 선택한 땅 타일로 스냅
-                if (0 < _groundTileCount)
-                {
-                    int _targetTileIdx = shufflePool[_groundOffset + (_i % _groundTileCount)];
-                    Transform _treeRoot = treeVisuals[_i].leafImage.transform.parent;
-                    RectTransform _treeRect = _treeRoot.GetComponent<RectTransform>();
-                    RectTransform _tileRect = groundImages[_targetTileIdx].GetComponent<RectTransform>();
-
-                    if (null != _treeRect && null != _tileRect)
-                        _treeRect.anchoredPosition = _tileRect.anchoredPosition;
-                }
-            }
-
-            // 4. 데코(Deco) 오브젝트들도 겹치지 않게 땅(Ground) 위에 스냅 배치
-            if (null != decoImages && null != themeConfig && null != themeConfig.MapThemes && 0 < _groundTileCount)
-            {
-                MapThemeData _activeTheme = default;
-                bool _themeOk = false;
-                for (int _i = 0; _i < themeConfig.MapThemes.Length; _i++)
-                {
-                    if ((int)themeConfig.MapThemes[_i].mapType == _targetTypeIndex)
-                    {
-                        _activeTheme = themeConfig.MapThemes[_i];
-                        _themeOk = true;
-                        break;
-                    }
-                }
-
-                if (true == _themeOk && null != _activeTheme.decoSprites && 0 < _activeTheme.decoSprites.Length)
-                {
-                    int _themeDecoCount = _activeTheme.decoSprites.Length;
-                    int _visualDecoCount = decoImages.Length;
-
-                    // 데코가 겹치지 않고 무작위로 땅 위에 흩어지도록 셔플풀 재활용
-                    if (null == shufflePool || shufflePool.Length < _groundTileCount)
-                        shufflePool = new int[_groundTileCount * 2];
-
-                    for (int _i = 0; _i < _groundTileCount; _i++)
-                        shufflePool[_i] = groundTileIndices[_i];
-
-                    for (int _i = _groundTileCount - 1; _i > 0; _i--)
-                    {
-                        int _j = UnityEngine.Random.Range(0, _i + 1);
-                        int _temp = shufflePool[_i];
-                        shufflePool[_i] = shufflePool[_j];
-                        shufflePool[_j] = _temp;
-                    }
-
-                    for (int _i = 0; _i < _visualDecoCount; _i++)
-                    {
-                        int _rndDecoIdx = UnityEngine.Random.Range(0, _themeDecoCount);
-                        int _targetTileIdx = shufflePool[_i % _groundTileCount];
-
-                        if (null != decoImages[_i] && null != _activeTheme.decoSprites[_rndDecoIdx])
-                            decoImages[_i].sprite = _activeTheme.decoSprites[_rndDecoIdx];
-
-                        // 데코의 중심 좌표를 선택된 땅 타일의 한가운데로 자동 스냅
-                        RectTransform _decoRect = decoImages[_i].GetComponent<RectTransform>();
-                        RectTransform _tileRect = groundImages[_targetTileIdx].GetComponent<RectTransform>();
-                        if (null != _decoRect && null != _tileRect)
-                            _decoRect.anchoredPosition = _tileRect.anchoredPosition;
-                    }
-                }
-            }
-        }
 
         private void CaptureOriginalColors()
         {
