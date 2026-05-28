@@ -252,7 +252,7 @@ MonoBehaviour:
   shakeTag: DangerShake
   colorTag: DangerColor
   bloodTag: BloodScreen
-  startPoint: 70
+  startPoint: 20
 --- !u!1 &682020998110844698
 GameObject:
   m_ObjectHideFlags: 0
