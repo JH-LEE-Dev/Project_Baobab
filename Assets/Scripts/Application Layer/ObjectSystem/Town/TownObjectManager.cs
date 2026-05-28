@@ -93,7 +93,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             portal.ResetPortal();
             portal.SetCanTravel(bCanTravel);
         }
-       
+
+        portal.SetVisualActive(true);
+
         trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
 
         if (trees != null && trees.Length > 0)
@@ -275,6 +277,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public void ClearObjManager()
     {
+        portal.SetVisualActive(false);
+        portal.gameObject.SetActive(false);
         // 참조를 해제하지 않고 개수만 0으로 설정하여 재할당 방지
         if (cullingGroup != null)
         {
@@ -285,7 +289,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             activeTreesForUpdate[i].UpdateIndex = -1;
         }
+
         activeTreesForUpdate.Clear();
+
         trees = null;
     }
 

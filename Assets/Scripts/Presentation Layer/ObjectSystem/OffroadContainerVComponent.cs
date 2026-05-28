@@ -18,6 +18,8 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     public readonly int bOpenHash = Animator.StringToHash("bOpen");
 
+    public bool bActive = true;
+
     public void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -80,7 +82,7 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     public void Open()
     {
-        if (anim.GetBool(bOpenHash)) return;
+        if (bActive == false || anim.GetBool(bOpenHash)) return;
 
         parentTransform.DOKill();
 

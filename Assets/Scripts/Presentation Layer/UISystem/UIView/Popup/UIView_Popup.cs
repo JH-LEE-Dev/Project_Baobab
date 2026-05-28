@@ -48,13 +48,13 @@ public class UIView_Popup : UIView
     public void InventoryShowEvent()
     {
         if (null != uiInventory)
-            uiInventory.InventoryShowEvent();
+            uiInventory.Refresh();
     }
 
     public void InventorySpecChanged()
     {
-        if (null != uiInventory && true == uiInventory.isOpening)
-            uiInventory.InventoryShowEvent();
+        if (null != uiInventory)
+            uiInventory.Refresh();
     }
 
     public void CharacterEarnMoney(MoneyType _moneyType)
@@ -100,6 +100,7 @@ public class UIView_Popup : UIView
             {
                 if (null != uiInventory)
                     uiInventory.OnHide();
+                    
                 isAutoOpenedByInteraction = false;
             }
         }
@@ -198,5 +199,15 @@ public class UIView_Popup : UIView
     public void LoosAllInventoryItems()
     {
         uiInventory?.ClearNotification();
+    }
+
+    public void ItemAddedToInventory()
+    {
+        
+    }
+
+    public void ItemRemovedFromInventory()
+    {
+        
     }
 }

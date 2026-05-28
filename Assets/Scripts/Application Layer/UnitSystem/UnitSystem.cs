@@ -94,6 +94,9 @@ public class UnitSystem
 
         inventoryManager.InventoryIsFullEvent -= InventoryIsFull;
         inventoryManager.InventoryIsFullEvent += InventoryIsFull;
+
+        inventoryManager.ItemAddedEvent -= ItemAdded;
+        inventoryManager.ItemAddedEvent += ItemAdded;
     }
 
     private void ReleaseEvents()
@@ -107,6 +110,7 @@ public class UnitSystem
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
         offroadContainer.ContainerUpdatedEvent -= OffroadContainerUpdated;
         inventoryManager.InventoryIsFullEvent -= InventoryIsFull;
+        inventoryManager.ItemAddedEvent -= ItemAdded;        
     }
 
     private void CharacterSpawned(Character _character)
@@ -137,7 +141,6 @@ public class UnitSystem
     private void ItemAcquired(ItemAcquiredSignal itemAcquiredSignal)
     {
         inventoryManager.ItemAcquired(itemAcquiredSignal.item);
-        signalHub.Publish(new InventoryUpdatedSignal());
     }
 
     private void ItemDeleted(DeleteItemSignal deleteItemSignal)
@@ -221,5 +224,15 @@ public class UnitSystem
     private void InventoryIsFull()
     {
         signalHub.Publish(new InventoryIsFullSignal());
+    }
+
+    private void ItemAdded()
+    {
+        signalHub.Publish(new ItemAddedToInventorySignal());
+    }
+
+    private void ItemRemoved()
+    {
+        signalHub.Publish(new ItemRemovedFromInventorySignal());
     }
 }
