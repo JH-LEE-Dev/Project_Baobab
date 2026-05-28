@@ -6,7 +6,7 @@ using UnityEngine.Pool;
 
 public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 {
-    public event Action ContainerOpendEvent;
+    public event Action ContainerOpenedEvent;
     public event Action ContainerClosedEvent;
     public event Action<bool> InteractStateEvent;
     public event Action ContainerUpdatedEvent;
@@ -66,6 +66,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 컨테이너 연출 이벤트 제어 변수
     private bool bContainerOpen = false;
     private float closeTimer = -1f;
+
+    private bool bContainerVisualOpened = false;
 
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
@@ -862,7 +864,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             if (!bContainerOpen)
             {
                 bContainerOpen = true;
-                ContainerOpendEvent?.Invoke(); 
+                ContainerOpenedEvent?.Invoke(); 
             }
         }
         else
@@ -893,7 +895,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (!bContainerOpen)
         {
             bContainerOpen = true;
-            ContainerOpendEvent?.Invoke();
+            ContainerOpenedEvent?.Invoke();
         }
     }
 
@@ -936,5 +938,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
 
         return false;
+    }
+
+    public void SetContainerVisualOpened(bool _boolean)
+    {
+        bContainerVisualOpened = _boolean;
     }
 }

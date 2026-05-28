@@ -222,18 +222,33 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
 
-        offroadContainer.ContainerOpendEvent -= ContainerOpend;
-        offroadContainer.ContainerOpendEvent += ContainerOpend;
+        offroadContainer.ContainerOpenedEvent -= ContainerOpend;
+        offroadContainer.ContainerOpenedEvent += ContainerOpend;
         offroadContainer.ContainerClosedEvent -= ContainerClosed;
         offroadContainer.ContainerClosedEvent += ContainerClosed;
+
+        if (type == PortalType.ToDungeonPortal)
+        {
+            offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
+            offroadContainerVComponent.ContainerOpenedEvent += ContainerVisualOpened;
+
+            offroadContainerVComponent.ContainerClosedEvent -= ContainerVisualClosed;
+            offroadContainerVComponent.ContainerClosedEvent += ContainerVisualClosed;
+        }
     }
 
     public void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
-        offroadContainer.ContainerOpendEvent -= ContainerOpend;
+        offroadContainer.ContainerOpenedEvent -= ContainerOpend;
         offroadContainer.ContainerClosedEvent -= ContainerClosed;
+
+        if (type == PortalType.ToDungeonPortal)
+        {
+            offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
+            offroadContainerVComponent.ContainerClosedEvent -= ContainerVisualClosed;
+        }
     }
 
     public void OnDestroy()
@@ -509,5 +524,15 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private void ContainerClosed()
     {
         offroadContainerVComponent.Close();
+    }
+
+    private void ContainerVisualOpened()
+    {
+
+    }
+
+    private void ContainerVisualClosed()
+    {
+
     }
 }

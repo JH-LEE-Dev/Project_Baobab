@@ -69,7 +69,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         flyingCoins = new List<FlyingCoin>(32);
 
-        money = 123456;
+        money = 0;
 
         BindEvents();
     }
@@ -199,7 +199,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
     private IEnumerator CoThrowCoins(List<CoinSpawnInfo> _coins)
     {
-        for (int i = 0; i < _coins.Count; i++)
+        int coinCount = _coins.Count;
+        float maxInterval = 0.05f;
+        float minInterval = 0.005f;
+        int threshold = 50;
+
+        float t = coinCount <= 1 ? 0f : Mathf.Clamp01((float)(coinCount - 1) / (threshold - 1));
+        float currentInterval = Mathf.Lerp(maxInterval, minInterval, t);
+
+        for (int i = 0; i < coinCount; i++)
         {
             CoinSpawnInfo info = _coins[i];
             Coin coin = coinItemPoolingManager.GetCoin(info.type);
@@ -229,7 +237,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
             flyingCoins.Add(new FlyingCoin(coin, info.value));
 
-            yield return new WaitForSeconds(0.025f);
+            yield return new WaitForSeconds(currentInterval);
         }
     }
 
