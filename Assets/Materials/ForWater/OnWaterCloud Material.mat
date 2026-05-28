@@ -46,7 +46,7 @@ Material:
     m_Ints: []
     m_Floats:
     - PixelSnap: 0
-    - _Alpha: 0.3
+    - _Alpha: 0.1
     - _DistortionAmount: 1
     - _EnableExternalAlpha: 0
     - _WaveFreq: 5
