@@ -51,9 +51,9 @@ MonoBehaviour:
   layer: 2
   startHidden: 1
   bWorld: 1
-  storageOffset: {x: -1.5, y: 1.5}
-  carStorageOffset: {x: 0, y: 0.75}
-  cutterOffset: {x: -1.25, y: 0}
+  storageOffset: {x: -1.5, y: 1.65}
+  carStorageOffset: {x: 0, y: 1.05}
+  cutterOffset: {x: -1.35, y: 0}
   bTraderCoinAnim: 1
   traderCoinOffset: {x: 0.5, y: 0.5}
   uiRoot: {fileID: 5973435824668062020}
