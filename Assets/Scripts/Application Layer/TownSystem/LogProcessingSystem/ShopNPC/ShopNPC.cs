@@ -69,7 +69,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         flyingCoins = new List<FlyingCoin>(32);
 
-        money = 12345;
+        money = 0;
 
         BindEvents();
     }
