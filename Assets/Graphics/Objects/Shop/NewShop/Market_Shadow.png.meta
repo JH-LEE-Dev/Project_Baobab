@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: b6bb7181b4d54c041863323dd22b1c61
+guid: 0b56a71861bbb2c4db2a1a966e65cb84
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6738823936223703069
-    second: Market1_0
+      213: 8016685927900663851
+    second: Market_Shadow_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Market1_0
+      name: Market_Shadow_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 0
-        width: 51
-        height: 58
+        x: 2
+        y: 11
+        width: 61
+        height: 38
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d10738a8aac158d50800000000000000
-      internalID: 6738823936223703069
+      spriteID: b205460906df04f60800000000000000
+      internalID: 8016685927900663851
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Market1_0: 6738823936223703069
+      Market_Shadow_0: 8016685927900663851
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
