@@ -237,12 +237,22 @@ public class CharacterVisualComponent : MonoBehaviour
 
     private void UpdateFaceVisual(bool _isMoving, bool _bInHub)
     {
+        AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
+
         // 1. 애니메이터 동기화
         if (faceAnim != null)
         {
             faceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             faceAnim.SetBool(isMovingHash, _isMoving);
             faceAnim.SetBool(bInHubHash, _bInHub);
+            AnimatorStateInfo childState = faceAnim.GetCurrentAnimatorStateInfo(0);
+            if (childState.fullPathHash != 0)
+            {
+                if (Mathf.Abs(childState.normalizedTime - stateInfo.normalizedTime) > 0.02f)
+                {
+                    faceAnim.Play(childState.fullPathHash, 0, stateInfo.normalizedTime);
+                }
+            }
         }
 
         if (faceBlinkAnim != null)
@@ -250,6 +260,14 @@ public class CharacterVisualComponent : MonoBehaviour
             faceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             faceBlinkAnim.SetBool(isMovingHash, _isMoving);
             faceBlinkAnim.SetBool(bInHubHash, _bInHub);
+            AnimatorStateInfo childState = faceBlinkAnim.GetCurrentAnimatorStateInfo(0);
+            if (childState.fullPathHash != 0)
+            {
+                if (Mathf.Abs(childState.normalizedTime - stateInfo.normalizedTime) > 0.02f)
+                {
+                    faceBlinkAnim.Play(childState.fullPathHash, 0, stateInfo.normalizedTime);
+                }
+            }
         }
 
         // 2. 눈 깜빡임 로직 업데이트
@@ -326,11 +344,21 @@ public class CharacterVisualComponent : MonoBehaviour
 
     private void UpdateOnWaterVisual(bool _isMoving, bool _bInHub)
     {
+        AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
+
         if (onWaterAnim != null && onWaterSR != null)
         {
             onWaterAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterAnim.SetBool(isMovingHash, _isMoving);
             onWaterAnim.SetBool(bInHubHash, _bInHub);
+            AnimatorStateInfo childState = onWaterAnim.GetCurrentAnimatorStateInfo(0);
+            if (childState.fullPathHash != 0)
+            {
+                if (Mathf.Abs(childState.normalizedTime - stateInfo.normalizedTime) > 0.02f)
+                {
+                    onWaterAnim.Play(childState.fullPathHash, 0, stateInfo.normalizedTime);
+                }
+            }
 
             Vector3 reversedScale = sr.transform.localScale;
             reversedScale.x *= -1f;
@@ -342,6 +370,14 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterFaceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterFaceAnim.SetBool(isMovingHash, _isMoving);
             onWaterFaceAnim.SetBool(bInHubHash, _bInHub);
+            AnimatorStateInfo childState = onWaterFaceAnim.GetCurrentAnimatorStateInfo(0);
+            if (childState.fullPathHash != 0)
+            {
+                if (Mathf.Abs(childState.normalizedTime - stateInfo.normalizedTime) > 0.02f)
+                {
+                    onWaterFaceAnim.Play(childState.fullPathHash, 0, stateInfo.normalizedTime);
+                }
+            }
 
             Vector3 faceReversedScale = faceSR != null ? faceSR.transform.localScale : sr.transform.localScale;
             faceReversedScale.x *= -1f;
@@ -353,6 +389,14 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterFaceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterFaceBlinkAnim.SetBool(isMovingHash, _isMoving);
             onWaterFaceBlinkAnim.SetBool(bInHubHash, _bInHub);
+            AnimatorStateInfo childState = onWaterFaceBlinkAnim.GetCurrentAnimatorStateInfo(0);
+            if (childState.fullPathHash != 0)
+            {
+                if (Mathf.Abs(childState.normalizedTime - stateInfo.normalizedTime) > 0.02f)
+                {
+                    onWaterFaceBlinkAnim.Play(childState.fullPathHash, 0, stateInfo.normalizedTime);
+                }
+            }
 
             Vector3 faceReversedScale = faceBlinkSR != null ? faceBlinkSR.transform.localScale : sr.transform.localScale;
             faceReversedScale.x *= -1f;

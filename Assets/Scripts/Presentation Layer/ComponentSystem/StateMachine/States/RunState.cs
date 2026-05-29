@@ -6,7 +6,7 @@ public class RunState : CharacterState
 
     private Vector2 pendingDirection;
     private float directionUpdateTimer;
-    private const float graceDuration = 0.05f;
+    private const float graceDuration = 0.025f;
 
     private Vector3Int currentReservedPos;
 
@@ -82,15 +82,14 @@ public class RunState : CharacterState
             return;
         }
 
-        int lastAxisCount = GetActiveAxisCount(lastVisualInput);
         int currentAxisCount = GetActiveAxisCount(_input);
-
-        // 축이 늘어나거나 동일한 경우 (이동 시작, 대각선 진입, 방향 전환 등): 즉시 업데이트
-        if (currentAxisCount >= lastAxisCount)
+ 
+        // 대각선 입력 (축이 2개)인 경우에는 즉시 방향 변경 적용
+        if (currentAxisCount >= 2)
         {
             UpdateFacingDirection(_input);
         }
-        // 축이 줄어드는 경우 (대각선 -> 단일축): 키를 떼는 과정으로 판단하여 유예 시간 부여
+        // 단일축 입력 (축이 1개)인 경우에는 대각선 입력 대기 및 떼기 보정을 위해 유예 시간 적용
         else
         {
             pendingDirection = _input;
