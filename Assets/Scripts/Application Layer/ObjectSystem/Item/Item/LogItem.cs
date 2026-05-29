@@ -180,6 +180,7 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.Transferring;
+        transform.localScale = Vector3.zero;
 
         if (gameObject.activeInHierarchy)
         {
@@ -197,6 +198,7 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.ContainerTransferring;
+        transform.localScale = Vector3.zero;
 
         if (gameObject.activeInHierarchy)
         {
@@ -216,7 +218,7 @@ public class LogItem : Item, IStaticCollidable
         elapsed = 0f;
         state = ItemMoveState.DynamicTransferring;
         transform.localScale = Vector3.zero;
-        
+
         if (gameObject.activeInHierarchy)
         {
             CollisionSystem.Instance?.Register(this, false);
@@ -232,7 +234,8 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.CurveTransferring;
-
+        transform.localScale = Vector3.zero;
+        
         // 시점과 종점을 잇는 방향에 수직인 벡터 계산 (2D 법선)
         Vector3 dir = (endPos - startPos).normalized;
         sideDir = new Vector3(-dir.y, dir.x, 0f);

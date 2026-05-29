@@ -25,6 +25,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private GameObject outLineObject;
 
     private SpriteRenderer sr;
+    private SpriteRenderer outlineSr;
 
     //외부 의존성
 
@@ -72,6 +73,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private CustomSortable customSortable;
 
+    [SerializeField] private Sprite noLogSprite;
+    [SerializeField] private Sprite fewLogSprite;
+    [SerializeField] private Sprite MiddleLogSprite;
+    [SerializeField] private Sprite ManyLogSprite;
+ 
     public void Initialize(InputManager _inputManager, LogItemPoolingManager logItemPoolingManager)
     {
         inputManager = _inputManager;
@@ -83,6 +89,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         // 시각적 효과를 위한 트랜스폼 캐싱
         sr = GetComponent<SpriteRenderer>();
+        if (outLineObject != null)
+        {
+            outlineSr = outLineObject.GetComponent<SpriteRenderer>();
+            if (outlineSr == null)
+            {
+                outlineSr = outLineObject.GetComponentInChildren<SpriteRenderer>();
+            }
+        }
 
         transferWait = new WaitForSeconds(transferInterval);
         lastTransferTime = -transferInterval;
@@ -119,6 +133,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
 
         BindEvents();
+        UpdateSprite();
     }
 
     public void SetCharTransform(Transform _transform)
@@ -212,7 +227,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         float t = bounceTime / BOUNCE_DURATION;
 
         // 진폭을 0.4로 키우고 감쇠를 3f로 늦춰 더 찰진 느낌 부여
-        float curve = Mathf.Sin(t * Mathf.PI * 5f) * Mathf.Exp(-t * 3f) * 0.4f;
+        float curve = Mathf.Sin(t * Mathf.PI * 3f) * Mathf.Exp(-t * 4f) * 0.4f;
 
         if (visualTransform != null)
         {
@@ -370,6 +385,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 };
 
                 LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+                flyingItem.SetFlyingItemSortingLayer();
                 flyingItem.IsDropItem(false);
 
                 Vector3 start = charTransform != null ? charTransform.position : transform.position;
@@ -560,12 +576,54 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         inputManager.inputReader.InteractionKeyCanceledEvent += InteractionKeyCanceled;
+
+        ContainerUpdatedEvent -= UpdateSprite;
+        ContainerUpdatedEvent += UpdateSprite;
     }
 
     private void ReleaseEvents()
     {
         inputManager.inputReader.InteractionKeyCanceledEvent -= InteractionKeyCanceled;
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractionKeyPressed;
+        ContainerUpdatedEvent -= UpdateSprite;
+    }
+
+    private void UpdateSprite()
+    {
+        if (sr == null) return;
+
+        int totalLogCount = 0;
+        for (int i = 0; i < containerSlots.Count; i++)
+        {
+            if (containerSlots[i] != null)
+            {
+                totalLogCount += containerSlots[i].count;
+            }
+        }
+
+        Sprite targetSprite = null;
+        if (totalLogCount >= 16)
+        {
+            targetSprite = ManyLogSprite;
+        }
+        else if (totalLogCount >= 6)
+        {
+            targetSprite = MiddleLogSprite;
+        }
+        else if (totalLogCount >= 1)
+        {
+            targetSprite = fewLogSprite;
+        }
+        else
+        {
+            targetSprite = noLogSprite;
+        }
+
+        sr.sprite = targetSprite;
+        if (outlineSr != null)
+        {
+            outlineSr.sprite = targetSprite;
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D _other)
@@ -758,6 +816,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         ContainerUpdatedEvent?.Invoke();
         ContainerSpecChangedEvent?.Invoke();
+        UpdateSprite();
         Debug.Log("[LogContainer] Container Save Data Loaded.");
     }
 

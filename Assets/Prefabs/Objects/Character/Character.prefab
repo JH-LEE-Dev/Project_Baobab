@@ -1392,7 +1392,7 @@ MonoBehaviour:
   bCanHunting: 0
   axeDamage: 1
   speedDecreaseWhileAction: 0.5
-  axeDurability: 30
+  axeDurability: 50
   axeDurabilityDecAmount: 1
   axeAttackCoolTime: 0.6
   axeAttackRangeMultiplier: 1

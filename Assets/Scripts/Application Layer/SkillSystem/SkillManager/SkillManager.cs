@@ -70,7 +70,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     private Dictionary<SkillType, SkillNode> skillNodeMap;
     [SerializeField] private int prestigeLevel = 0;
     [SerializeField] private int skillExperience = 0;
-    private const int experienceToLevelUp = 50;
+    private const int experienceToLevelUp = 30;
 
     /// <summary>
     /// 스킬 매니저 초기화 및 스킬 트리 구축

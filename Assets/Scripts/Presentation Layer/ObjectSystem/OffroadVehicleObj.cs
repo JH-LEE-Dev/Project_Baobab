@@ -489,6 +489,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         float distToVehicleSq = (col.bounds.center - charTransform.position).sqrMagnitude;
         float distToContainerSq = (offroadContainer.transform.position - charTransform.position).sqrMagnitude;
 
+        if (offroadContainer.bCanInteract == false)
+            offroadContainerVComponent.ResetMaterial();
+
         if (distToVehicleSq <= distToContainerSq)
         {
             SetbCanReach(true);
@@ -498,6 +501,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             SetbCanReach(false);
             offroadContainer.SetCanReach(true);
+
+            if (offroadContainer.bCanInteract == true)
+                offroadContainerVComponent.SetOutlineMaterial();
         }
     }
 

@@ -75,6 +75,8 @@ public class LogInBelt : MonoBehaviour
 
     public void IncreaseSpeed(float _percentage)
     {
+        _percentage *= 0.01f;  
+        Debug.Log(_percentage);
         // 0.1(10%) 증가 시 기존 속도에 1.1을 곱함
         beltSpeed *= (1f + _percentage);
     }
@@ -82,7 +84,7 @@ public class LogInBelt : MonoBehaviour
     public void LogIn(LogItem _item)
     {
         if (_item == null || checkPoints.Count == 0) return;
-        
+
         _item.SetHeight(0.385f);
         // 아이템을 첫 번째 체크포인트 위치로 즉시 이동
         _item.transform.position = checkPoints[0].position;

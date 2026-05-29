@@ -37,7 +37,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     // 외부 의존성
     [SerializeField] private Transform npcTransform;
     [SerializeField] private GameObject outLineObject;
-    [SerializeField] private GameObject frontObject;
+    [SerializeField] private GameObject animatorObject;
     [SerializeField] private Transform coinThrowTransform;
 
     // 내부 의존성
@@ -50,12 +50,20 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private CoinItemPoolingManager coinItemPoolingManager;
     private List<FlyingCoin> flyingCoins;
     private Coroutine coinThrowCoroutine;
+    private Coroutine animationCoroutine;
+    private SpriteRenderer sr;
+    private SpriteRenderer outlineSr;
+    private int currentFrameIndex = 0;
+    private WaitForSeconds frameWait;
+    [SerializeField] private float frameTime = 0.05f;
 
     private const string playerTag = "Player";
 
     Transform IShopNPC.npcTransform => npcTransform;
 
     public int currentMoney => money;
+
+    [SerializeField] private List<Sprite> animationSprite;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -71,6 +79,18 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         money = 0;
 
+        sr = GetComponent<SpriteRenderer>();
+        if (sr == null)
+            sr = GetComponentInChildren<SpriteRenderer>();
+
+        if (outLineObject != null)
+        {
+            outlineSr = outLineObject.GetComponent<SpriteRenderer>();
+            if (outlineSr == null)
+                outlineSr = outLineObject.GetComponentInChildren<SpriteRenderer>();
+        }
+        frameWait = new WaitForSeconds(frameTime);
+
         BindEvents();
     }
 
@@ -81,6 +101,11 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         {
             StopCoroutine(coinThrowCoroutine);
             coinThrowCoroutine = null;
+        }
+        if (animationCoroutine != null)
+        {
+            StopCoroutine(animationCoroutine);
+            animationCoroutine = null;
         }
     }
 
@@ -123,10 +148,12 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         if (_other.CompareTag(playerTag))
         {
             bCanInteract = true;
-            frontObject.SetActive(false);
+            animatorObject.SetActive(false);
             outLineObject.SetActive(true);
 
             InteractStateEvent?.Invoke(true);
+
+            PlayAnimation(true);
         }
     }
 
@@ -134,10 +161,12 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     {
         if (_other.CompareTag(playerTag))
         {
-            frontObject.SetActive(true);
+            animatorObject.SetActive(true);
             outLineObject.SetActive(false);
             bCanInteract = false;
             InteractStateEvent?.Invoke(false);
+
+            PlayAnimation(false);
         }
     }
 
@@ -286,5 +315,34 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     public void SetCharacterTransform(Transform _transform)
     {
         characterTransform = _transform;
+    }
+
+    private void PlayAnimation(bool _bOpen)
+    {
+        if (animationCoroutine != null)
+        {
+            StopCoroutine(animationCoroutine);
+        }
+        animationCoroutine = StartCoroutine(CoPlayAnimation(_bOpen));
+    }
+
+    private IEnumerator CoPlayAnimation(bool _bOpen)
+    {
+        if (animationSprite == null || animationSprite.Count == 0) yield break;
+
+        int targetFrame = _bOpen ? animationSprite.Count - 1 : 0;
+        int step = _bOpen ? 1 : -1;
+
+        while (currentFrameIndex != targetFrame)
+        {
+            currentFrameIndex = Mathf.Clamp(currentFrameIndex + step, 0, animationSprite.Count - 1);
+            Sprite currentSprite = animationSprite[currentFrameIndex];
+            if (sr != null) sr.sprite = currentSprite;
+            if (outlineSr != null) outlineSr.sprite = currentSprite;
+
+            yield return frameWait;
+        }
+
+        animationCoroutine = null;
     }
 }

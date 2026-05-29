@@ -24,6 +24,10 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     public bool bActive = true;
 
+
+    [SerializeField] private Material outlineMaterial;
+    private Material originalMaterial;
+
     public void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -37,6 +41,8 @@ public class OffroadContainerVComponent : MonoBehaviour
 
         originalScale = parentTransform.localScale;
         originalRot = parentTransform.localRotation;
+
+        originalMaterial = spriteRenderer.material;
     }
 
     public void LateUpdate()
@@ -253,5 +259,15 @@ public class OffroadContainerVComponent : MonoBehaviour
         parentTransform.localScale = originalScale;
         parentTransform.localRotation = originalRot;
         closeCoroutine = null;
+    }
+
+    public void SetOutlineMaterial()
+    {
+        spriteRenderer.material = outlineMaterial;
+    }
+
+    public void ResetMaterial()
+    {
+        spriteRenderer.material = originalMaterial;
     }
 }
