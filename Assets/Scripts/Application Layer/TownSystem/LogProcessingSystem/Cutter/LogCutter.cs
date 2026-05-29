@@ -294,7 +294,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         {
             if (!isReversing)
             {
-                animProgress += _deltaTime; // 1초 동안 0 -> 1로 정방향 진행
+                animProgress += _deltaTime * 0.5f; // 2초 동안 0 -> 1로 정방향 진행
                 if (animProgress >= 1f)
                 {
                     animProgress = 1f;
