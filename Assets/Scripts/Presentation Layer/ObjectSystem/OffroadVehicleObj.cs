@@ -60,7 +60,6 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private CustomSortable customSortable_wheel;
 
     private Coroutine driveCoroutine;
-    private Coroutine interactionHoldCoroutine;
 
     [SerializeField] private Transform containerCarryPoint;
     [SerializeField] private Transform containerDropPoint;
@@ -260,29 +259,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         if (gameObject.activeSelf == false) return;
 
-        if (interactionHoldCoroutine != null) StopCoroutine(interactionHoldCoroutine);
-        interactionHoldCoroutine = StartCoroutine(InteractionHoldRoutine());
-    }
-
-    private void InteractionKeyCanceled()
-    {
-        if (gameObject.activeSelf == false) return;
-
-        if (interactionHoldCoroutine != null)
-        {
-            StopCoroutine(interactionHoldCoroutine);
-            interactionHoldCoroutine = null;
-        }
-    }
-
-    private IEnumerator InteractionHoldRoutine()
-    {
-        yield return new WaitForSeconds(1.0f);
-
         if (bCanJump == false)
         {
-            interactionHoldCoroutine = null;
-            yield break;
+            return;
         }
 
         if (bUIActivated)
@@ -301,10 +280,14 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
                 PortalActivated?.Invoke();
             }
             else
+            {
                 GoToTownEvent?.Invoke();
+            }
         }
+    }
 
-        interactionHoldCoroutine = null;
+    private void InteractionKeyCanceled()
+    {
     }
 
     public void SetUIActivated(bool _boolean)
