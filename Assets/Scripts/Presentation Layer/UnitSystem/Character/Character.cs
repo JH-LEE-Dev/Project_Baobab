@@ -81,8 +81,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     #region Public Methods (Initialization & Control)
 
-    private bool bPauseForAnimationSync = false;
-
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
     {
         inputManager = _inputManager;
@@ -178,30 +176,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         bDead = false;
 
-        if (bPauseForAnimationSync == false)
-        {
-            inputManager.PauseMove(true);
-            StartCoroutine(PauseForAnimSyncCoroutine());
-        }
-        else
-        {
-            inputManager.PauseMove(false);
-        }
+        inputManager.PauseMove(false);
 
         bInDungeon = _bInDungeon;
         characterVisualComponent.SetHubState(!bInDungeon);
         characterVisualComponent.CharacterIsDead(false);
         armComponent.SetActivate(bInDungeon);
     }
-
-    private System.Collections.IEnumerator PauseForAnimSyncCoroutine()
-    {
-        yield return new WaitForSeconds(0.5f);
-        inputManager.PauseMove(false);
-
-        bPauseForAnimationSync = true;
-    }
-
+    
     public Transform GetTransform() => transform;
 
     public void SetInShadow(bool _isInShadow, float _duration)

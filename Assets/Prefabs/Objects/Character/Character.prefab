@@ -1397,7 +1397,7 @@ MonoBehaviour:
   axeAttackCoolTime: 0.6
   axeAttackRangeMultiplier: 1
   axeDurabilityDecIgnoreChance: 0
-  shockWaveChance: 0
+  shockWaveChance: 100
   shockWaveDamage: 1
   shockWaveSpeed: 2
   shockWaveDuration: 0.25
@@ -1862,7 +1862,7 @@ MonoBehaviour:
   targetLayer:
     serializedVersion: 2
     m_Bits: 1024
-  shockWaveSpawnOffset: -0.2
+  shockWaveSpawnOffset: 0
   aimCorrectionRadius: 1
   aimCorrectionLayer:
     serializedVersion: 2
