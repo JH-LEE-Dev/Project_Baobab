@@ -75,7 +75,7 @@ public class LogInBelt : MonoBehaviour
 
     public void IncreaseSpeed(float _percentage)
     {
-        _percentage *= 0.01f;  
+        _percentage *= 0.01f;
         Debug.Log(_percentage);
         // 0.1(10%) 증가 시 기존 속도에 1.1을 곱함
         beltSpeed *= (1f + _percentage);
@@ -182,6 +182,7 @@ public class LogInBelt : MonoBehaviour
                     logItemData.logState = dItem.item.logState;
                     logItemData.treeType = dItem.item.treeType;
 
+                    isMoving = false;
                     LogOutEvent?.Invoke(dItem.item, logItemData);
 
                     dItem.item.gameObject.SetActive(false);
@@ -198,8 +199,6 @@ public class LogInBelt : MonoBehaviour
     private void LogOut(LogItem _item)
     {
         // _item.gameObject.SetActive(false); // 지연 비활성화를 위해 제거
-
-        isMoving = false;
 
         // 퇴출 연출: 스케일이 작아지는 동안 마지막 이동 방향으로 계속 전진
         _item.transform.DOKill();
