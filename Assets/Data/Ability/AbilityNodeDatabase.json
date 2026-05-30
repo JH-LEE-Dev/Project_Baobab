@@ -11,7 +11,7 @@
         {
             "skillType": "AxeDurability1",
             "displayName": "도끼 내구도 I",
-            "description": "도끼 내구도가 5 증가합니다.",
+            "description": "도끼 내구도가 7 증가합니다.",
             "gridX": 0,
             "gridY": 3,
             "parents": [
@@ -177,11 +177,11 @@
             "skillType": "InventoryExpansion1",
             "displayName": "인벤토리 확장 I",
             "description": "인벤토리 공간을 2칸 늘립니다.",
-            "gridX": 7,
-            "gridY": -2,
+            "gridX": 11,
+            "gridY": -4,
             "parents": [
                 {
-                    "skillType": "WoodenTransportBoxExpansion1",
+                    "skillType": "WoodenTransportBoxExpansion2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -196,7 +196,7 @@
             "gridY": -2,
             "parents": [
                 {
-                    "skillType": "InventoryExpansion1",
+                    "skillType": "WoodenTransportBoxExpansion1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -249,25 +249,10 @@
             ]
         },
         {
-            "skillType": "ConveyorSpeed1",
-            "displayName": "레일 속도 I",
-            "description": "제재소 레일 속도가 10% 증가합니다.",
-            "gridX": 7,
-            "gridY": -6,
-            "parents": [
-                {
-                    "skillType": "SawmillLogStorageExpansion1",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
             "skillType": "LogProcessingSpeed1",
             "displayName": "원목 가공 속도 I",
             "description": "제재소의 원목 가공 속도가 100% 증가합니다.",
-            "gridX": 9,
+            "gridX": 7,
             "gridY": -6,
             "parents": [
                 {
@@ -282,8 +267,8 @@
             "skillType": "SawmillLogStorageExpansion2",
             "displayName": "제재소 원목 보관함 확장 II",
             "description": "제재소 원목 보관함의 공간을 2칸 늘립니다.",
-            "gridX": 11,
-            "gridY": -4,
+            "gridX": 9,
+            "gridY": -6,
             "parents": [
                 {
                     "skillType": "SawmillLogStorageExpansion1",
@@ -297,11 +282,11 @@
             "skillType": "PowerSupply",
             "displayName": "전력 공급",
             "description": "원정을 떠나고 있을 때\n원목 가공속도가 5배 빨라집니다.",
-            "gridX": 11,
-            "gridY": -6,
+            "gridX": 7,
+            "gridY": -8,
             "parents": [
                 {
-                    "skillType": "SawmillLogStorageExpansion2",
+                    "skillType": "LogProcessingSpeed1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -312,11 +297,11 @@
             "skillType": "LogProcessingSpeed2",
             "displayName": "원목 가공 속도 II",
             "description": "제재소의 원목 가공 속도가 200% 증가합니다.",
-            "gridX": 13,
-            "gridY": -6,
+            "gridX": 9,
+            "gridY": -8,
             "parents": [
                 {
-                    "skillType": "SawmillLogStorageExpansion2",
+                    "skillType": "LogProcessingSpeed1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -401,12 +386,12 @@
         {
             "skillType": "Shockwave1",
             "displayName": "충격파 I",
-            "description": "도끼로 타격할 때\n충격파를 발생시킬 확률이 5% 증가합니다.",
+            "description": "도끼를 휘두를 때\n충격파를 발생시킬 확률이 20% 증가합니다.",
             "gridX": -2,
-            "gridY": 5,
+            "gridY": 7,
             "parents": [
                 {
-                    "skillType": "AxeDurability1",
+                    "skillType": "AxeDamage2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -462,8 +447,8 @@
             "skillType": "AxeCriticalChance1",
             "displayName": "도끼 치명타 확률 I",
             "description": "도끼 치명타 확률이 10% 증가합니다.",
-            "gridX": 4,
-            "gridY": 9,
+            "gridX": 2,
+            "gridY": 7,
             "parents": [
                 {
                     "skillType": "AxeDamage2",
@@ -476,9 +461,9 @@
         {
             "skillType": "ShockwaveDamage1",
             "displayName": "충격파 데미지 I",
-            "description": "충격파 데미지가 50% 증가합니다.",
+            "description": "충격파 데미지가 30% 증가합니다.",
             "gridX": -4,
-            "gridY": 7,
+            "gridY": 9,
             "parents": [
                 {
                     "skillType": "Shockwave1",
@@ -507,8 +492,8 @@
             "skillType": "AxeCriticalDamage1",
             "displayName": "도끼 치명타 데미지 I",
             "description": "도끼 치명타 데미지가 10% 증가합니다.",
-            "gridX": 6,
-            "gridY": 9,
+            "gridX": 4,
+            "gridY": 7,
             "parents": [
                 {
                     "skillType": "AxeCriticalChance1",
@@ -521,12 +506,12 @@
         {
             "skillType": "Shockwave2",
             "displayName": "충격파 II",
-            "description": "도끼로 타격할 때\n충격파를 발생시킬 확률이 10% 증가합니다.",
-            "gridX": -4,
-            "gridY": 9,
+            "description": "도끼를 휘두를 때\n충격파를 발생시킬 확률이 30% 증가합니다.",
+            "gridX": -6,
+            "gridY": 7,
             "parents": [
                 {
-                    "skillType": "AxeDamage2",
+                    "skillType": "Shockwave1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -536,12 +521,12 @@
         {
             "skillType": "ShockwaveDamage2",
             "displayName": "충격파 데미지 II",
-            "description": "충격파 데미지가 100% 증가합니다.",
+            "description": "충격파 데미지가 80% 증가합니다.",
             "gridX": -6,
-            "gridY": 11,
+            "gridY": 9,
             "parents": [
                 {
-                    "skillType": "Shockwave2",
+                    "skillType": "ShockwaveDamage1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -553,10 +538,10 @@
             "displayName": "충격파 범위 II",
             "description": "충격파 범위가 30% 증가합니다.",
             "gridX": -6,
-            "gridY": 9,
+            "gridY": 5,
             "parents": [
                 {
-                    "skillType": "Shockwave2",
+                    "skillType": "ShockwaveRange1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
