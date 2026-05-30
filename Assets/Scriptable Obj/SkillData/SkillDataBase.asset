@@ -191,7 +191,7 @@ MonoBehaviour:
         manualValues: []
     prerequisiteSkills: 22000000
   - skillType: 36
-    maxLevel: 4
+    maxLevel: 5
     cost:
       moneyCurve:
         type: 3
@@ -718,3 +718,21 @@ MonoBehaviour:
         manualValues: []
     skillTypes: []
     prerequisiteSkills: 1b000000
+  - skillType: 19
+    maxLevel: 1
+    cost:
+      moneyCurve:
+        type: 3
+        baseValue: 200
+        manualValues: []
+      carrotCurve:
+        type: 0
+        baseValue: 0
+        manualValues: []
+    skillTypes:
+    - skillCommandType: 26
+      amountCurve:
+        type: 0
+        baseValue: 5
+        manualValues: []
+    prerequisiteSkills: 12000000
