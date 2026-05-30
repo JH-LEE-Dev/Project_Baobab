@@ -34,7 +34,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
-        
+
         logItemPoolingManager = GetComponentInChildren<LogItemPoolingManager>();
         logItemPoolingManager.Initialize(false);
 
@@ -121,6 +121,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
         logContainer.ContainerSpecChangedEvent += LogContainerSpecChanged;
+
+        logInBelt.BeltStopEvent -= InBeltStop;
+        logInBelt.BeltStopEvent += InBeltStop;
     }
 
     private void ReleaseEvents()
@@ -134,6 +137,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logEvaluator.logEvaluatedEvent -= LogEvaluated;
         shopNPC.EarnMoneyEvent -= EarnMoney;
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
+        logInBelt.BeltStopEvent -= InBeltStop;
     }
 
     public void PopulateSaveData(ref LogProcessingSaveData _saveData)
@@ -203,7 +207,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     private void LogToCutter(LogItem _item, ILogItemData _itemData)
     {
         logCutter.StartCutting(_item, _itemData);
-        logContainer.SetbStop(true);
     }
 
     private void CuttingDone()
@@ -243,5 +246,10 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     public void SetMapType(MapType _mapType)
     {
         logCutter.SetMapType(_mapType);
+    }
+
+    private void InBeltStop()
+    {
+        logContainer.SetbStop(true);
     }
 }
