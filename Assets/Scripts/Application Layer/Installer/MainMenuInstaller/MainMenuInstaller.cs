@@ -24,7 +24,7 @@ public class MainMenuInstaller : MonoBehaviour
 
     public void StartMainMenuScene()
     {
-        inputManager.inputReader.PauseMove(false);
+        inputManager.PauseMove(false);
         uiInstaller.MainMenuLevelStarted();
     }
 }

@@ -115,6 +115,5 @@ public class TownProductionManager : MonoBehaviour
         character.col.enabled = true;
 
         OffroadDriveEndEvent?.Invoke();
-        inputManager.PauseMove(false);
     }
 }
