@@ -1,4 +1,4 @@
-Shader "Custom/OutlineShader"
+Shader "Custom/OutlineWriter"
 {
     Properties
     {
@@ -17,20 +17,21 @@ Shader "Custom/OutlineShader"
             "RenderPipeline" = "UniversalPipeline" 
         }
 
-        
-        Stencil
-        {
-            Ref 32
-            Comp Equal
-            Pass Keep
-        }
-
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
         Cull Off
 
+        Stencil
+        {
+            Ref 32
+            Comp Always
+            Pass Replace
+        }
+
         Pass
         {
+            ColorMask 0
+
             HLSLPROGRAM
 
             #pragma vertex vert
@@ -83,7 +84,7 @@ Shader "Custom/OutlineShader"
                 float2 dx_uv = ddx(IN.uv);
                 float2 dy_uv = ddy(IN.uv);
 
-                float det = dx_wp.x * dy_wp.y - dx_wp.y * dy_wp.x;
+                float det = dx_wp.x * dy_wp.y - dx_wp.y * dx_wp.x;
                 float2 snappedUV = IN.uv;
 
                 // 2. 결정자(det)를 이용한 UV 보정
@@ -129,9 +130,8 @@ Shader "Custom/OutlineShader"
                     return _OutlineColor;
                 }
 
-                if (mainColor.a < 0.1) discard;
-
-                return mainColor;
+                discard;
+                return half4(0, 0, 0, 0);
             }
             ENDHLSL
         }

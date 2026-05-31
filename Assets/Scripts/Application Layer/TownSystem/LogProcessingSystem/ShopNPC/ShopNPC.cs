@@ -148,7 +148,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         if (_other.CompareTag(playerTag))
         {
             bCanInteract = true;
-            animatorObject.SetActive(false);
+            //animatorObject.SetActive(false);
             outLineObject.SetActive(true);
 
             InteractStateEvent?.Invoke(true);
@@ -161,7 +161,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     {
         if (_other.CompareTag(playerTag))
         {
-            animatorObject.SetActive(true);
+            //animatorObject.SetActive(true);
             outLineObject.SetActive(false);
             bCanInteract = false;
             InteractStateEvent?.Invoke(false);
