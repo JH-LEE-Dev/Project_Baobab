@@ -131,7 +131,7 @@
         {
             "skillType": "SourceOfSpeed1",
             "displayName": "속도의 원천 I",
-            "description": "나무를 벌목하면 \n3초간 이동속도가 5% 증가합니다.",
+            "description": "나무를 벌목하면 \n3초간 이동속도가 2% 증가합니다.",
             "gridX": -9,
             "gridY": -4,
             "parents": [
@@ -386,7 +386,7 @@
         {
             "skillType": "Shockwave1",
             "displayName": "충격파 I",
-            "description": "도끼를 휘두를 때\n충격파를 발생시킬 확률이 20% 증가합니다.",
+            "description": "도끼로 타격할 때,\n충격파를 발생시킬 확률이 20% 증가합니다.",
             "gridX": -2,
             "gridY": 7,
             "parents": [
@@ -506,7 +506,7 @@
         {
             "skillType": "Shockwave2",
             "displayName": "충격파 II",
-            "description": "도끼를 휘두를 때\n충격파를 발생시킬 확률이 30% 증가합니다.",
+            "description": "도끼로 타격할 때,\n충격파를 발생시킬 확률이 30% 증가합니다.",
             "gridX": -6,
             "gridY": 7,
             "parents": [
@@ -572,6 +572,21 @@
             "parents": [
                 {
                     "skillType": "EfficientMovement1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SteelAxe1",
+            "displayName": "강철도끼 I",
+            "description": "도끼 내구도가 5% 확률로 닳지 않습니다.",
+            "gridX": -2,
+            "gridY": 5,
+            "parents": [
+                {
+                    "skillType": "AxeDurability1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0

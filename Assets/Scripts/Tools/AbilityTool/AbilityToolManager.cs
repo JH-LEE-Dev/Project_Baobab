@@ -43,6 +43,7 @@ public class AbilityToolManager : MonoBehaviour
     private AbilityToolNode selectedMoveNode;
     private AbilityToolNode currentToolTipNode;
     private AbilityToolTip toolTipInstance;
+    private bool allowEmptyExport;
 
     [Header("UI References")]
     [SerializeField] private RectTransform abilityBackground;
@@ -102,6 +103,7 @@ public class AbilityToolManager : MonoBehaviour
         UpdateGridCursor();
         UpdatePivotMarker();
         UpdateGridCoordinateText();
+        ImportAbilityJson();
     }
 
     private void Update()
@@ -685,6 +687,7 @@ public class AbilityToolManager : MonoBehaviour
         node.SetPicture(ResolvePicture(node.SkillType));
         nodeMap[_gridPosition] = node;
         nodeList.Add(node);
+        allowEmptyExport = false;
         RebuildLines();
         SelectNodeInEditor(node);
     }
@@ -855,6 +858,12 @@ public class AbilityToolManager : MonoBehaviour
     [ContextMenu("Export Ability Data")]
     public void ExportAbilityJson()
     {
+        if (nodeList.Count == 0 && allowEmptyExport == false)
+        {
+            Debug.LogWarning("Ability tool blocked an empty export. Use Clear Ability Nodes first if you intend to erase the saved data.");
+            return;
+        }
+
         AbilityToolExportDatabaseJson databaseJson = new AbilityToolExportDatabaseJson
         {
             nodes = BuildExportNodes()
@@ -865,8 +874,10 @@ public class AbilityToolManager : MonoBehaviour
 
         WriteJsonFile(uiAbsolutePath, uiJson);
         ExportSkillDataBaseAsset();
+        allowEmptyExport = false;
 
         Debug.Log($"Ability tool exported UI json: {uiAbsolutePath}");
+        ShowExportCompletedDialog();
     }
 
     [ContextMenu("Import Ability Json")]
@@ -920,6 +931,16 @@ public class AbilityToolManager : MonoBehaviour
         ApplyImportedSkillLogic(skillNodeMap);
         RefreshNodePictures();
         RebuildLines();
+        allowEmptyExport = false;
+    }
+
+    [ContextMenu("Clear Ability Nodes")]
+    public void ClearAbilityNodes()
+    {
+        HideToolTip(currentToolTipNode);
+        RemoveAllNodes();
+        allowEmptyExport = true;
+        Debug.Log("Ability tool cleared nodes. Export Ability Data to save the empty state.");
     }
 
     private AbilityToolExportNodeJson[] BuildExportNodes()
@@ -1221,6 +1242,16 @@ public class AbilityToolManager : MonoBehaviour
 
 #if UNITY_EDITOR
         AssetDatabase.Refresh();
+#endif
+    }
+
+    private void ShowExportCompletedDialog()
+    {
+#if UNITY_EDITOR
+        EditorUtility.DisplayDialog(
+            "Ability Tool Export",
+            "Ability data export completed.",
+            "OK");
 #endif
     }
 
