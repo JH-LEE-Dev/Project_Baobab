@@ -322,8 +322,23 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         if (animationCoroutine != null)
         {
             StopCoroutine(animationCoroutine);
+            animationCoroutine = null;
         }
-        animationCoroutine = StartCoroutine(CoPlayAnimation(_bOpen));
+
+        if (gameObject.activeInHierarchy)
+        {
+            animationCoroutine = StartCoroutine(CoPlayAnimation(_bOpen));
+        }
+        else
+        {
+            if (animationSprite != null && animationSprite.Count > 0)
+            {
+                currentFrameIndex = _bOpen ? animationSprite.Count - 1 : 0;
+                Sprite currentSprite = animationSprite[currentFrameIndex];
+                if (sr != null) sr.sprite = currentSprite;
+                if (outlineSr != null) outlineSr.sprite = currentSprite;
+            }
+        }
     }
 
     private IEnumerator CoPlayAnimation(bool _bOpen)
