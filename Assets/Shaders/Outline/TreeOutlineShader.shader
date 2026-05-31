@@ -23,8 +23,8 @@ Shader "Custom/TreeOutlineShader"
 
         Stencil
         {
-            Ref 16
-            Comp NotEqual
+            Ref 32
+            Comp Equal
             Pass Keep
         }
 

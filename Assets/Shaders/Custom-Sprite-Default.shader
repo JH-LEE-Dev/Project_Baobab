@@ -22,6 +22,14 @@ Shader "Custom/2D/Custom-Sprite-Default"
         Cull Off
         ZWrite [_ZWrite]
 
+        Stencil
+        {
+            Ref 0
+            WriteMask 32
+            Comp Always
+            Pass Replace
+        }
+
         Pass
         {
             Tags { "LightMode" = "Universal2D" }

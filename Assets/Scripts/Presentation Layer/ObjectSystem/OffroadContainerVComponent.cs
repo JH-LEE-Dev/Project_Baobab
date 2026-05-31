@@ -24,9 +24,13 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     public bool bActive = true;
 
-
-    [SerializeField] private Material outlineMaterial;
+    [SerializeField] private GameObject outlineStencilObj;
+    [SerializeField] private GameObject outlineObj;
     private Material originalMaterial;
+
+    private SpriteRenderer outlineStencilSR;
+    private SpriteRenderer outlineSR;
+    private Sprite currentSprite;
 
     public void Awake()
     {
@@ -43,6 +47,9 @@ public class OffroadContainerVComponent : MonoBehaviour
         originalRot = parentTransform.localRotation;
 
         originalMaterial = spriteRenderer.material;
+
+        outlineStencilSR = outlineStencilObj.GetComponent<SpriteRenderer>();
+        outlineSR = outlineObj.GetComponentInChildren<SpriteRenderer>();
     }
 
     public void LateUpdate()
@@ -50,6 +57,10 @@ public class OffroadContainerVComponent : MonoBehaviour
         // CustomSortable에게 현재 공중에 떠 있는 높이(arc + 지붕높이)를 전달하여 정렬 보정
         customSortable.SetHeight(currentHeight);
         customSortable.ManualLateUpdate();
+
+        currentSprite = spriteRenderer.sprite;
+        outlineStencilSR.sprite = currentSprite;
+        outlineSR.sprite = currentSprite;
     }
 
     public IEnumerator JumpSequence(Vector3 _targetPos, float _jumpHeight, float _duration, float _springFreq, float _springDamping)
@@ -218,7 +229,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         parentTransform.DOPunchRotation(new Vector3(0f, 0f, 20f), 0.5f, 10, 1f);
 
         ContainerClosedEvent?.Invoke();
-        
+
         elapsed = 0f;
         duration = 0.05f;
         while (elapsed < duration)
@@ -263,11 +274,11 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     public void SetOutlineMaterial()
     {
-        spriteRenderer.material = outlineMaterial;
+        outlineStencilObj.SetActive(true);
     }
 
     public void ResetMaterial()
     {
-        spriteRenderer.material = originalMaterial;
+        outlineStencilObj.SetActive(false);
     }
 }

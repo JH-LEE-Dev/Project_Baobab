@@ -4,7 +4,6 @@ using UnityEngine.Pool;
 using System;
 using System.Text;
 using System.Collections;
-using UnityEngine.UI;
 using UnityEngine.Rendering;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
@@ -632,8 +631,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             bCanInteract = true;
             InteractStateEvent?.Invoke(true);
-
-            sr.enabled = false;
             outLineObject.SetActive(true);
         }
     }
@@ -646,7 +643,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             InteractStateEvent?.Invoke(false);
 
             outLineObject.SetActive(false);
-            sr.enabled = true;
 
             if (transferCoroutine != null)
             {

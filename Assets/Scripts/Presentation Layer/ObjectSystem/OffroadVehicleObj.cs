@@ -74,11 +74,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private Transform charTransform;
 
-    public Material originalMaterial;
-    public Material stencilMaterial;
-
     public SpriteRenderer baseSR;
     public SpriteRenderer wheelStencilSR;
+
+    public SpriteRenderer baseOutlineStencilSR;
+    public SpriteRenderer wheelOutlineStencilSR;
 
     [SerializeField] private GameObject containerShadowObj;
 
@@ -170,8 +170,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         outLineObject.SetActive(true);
 
-        baseSR.material = stencilMaterial;
-        wheelStencilSR.material = stencilMaterial;
+        //baseSR.material = stencilMaterial;
+        //wheelStencilSR.material = stencilMaterial;
 
         bOverlapped = true;
     }
@@ -186,8 +186,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         bCanInteract = true;
 
-        baseSR.material = stencilMaterial;
-        wheelStencilSR.material = stencilMaterial;
+        //baseSR.material = stencilMaterial;
+        //wheelStencilSR.material = stencilMaterial;
         outLineObject.SetActive(true);
 
         bOverlapped = true;
@@ -200,8 +200,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         outLineObject.SetActive(false);
 
-        baseSR.material = originalMaterial;
-        wheelStencilSR.material = originalMaterial;
+        //baseSR.material = originalMaterial;
+        //wheelStencilSR.material = originalMaterial;
 
         bCanInteract = false;
 
@@ -306,9 +306,6 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.DisableCollision();
         outLineObject.SetActive(false);
         wheelObjectForStencil.SetActive(false);
-
-        baseSR.material = originalMaterial;
-        wheelStencilSR.material = originalMaterial;
 
         if (driveCoroutine != null)
         {

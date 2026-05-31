@@ -61,7 +61,6 @@ public class LogItem : Item, IStaticCollidable
 
     bool bCanAcquired = true;
 
-    public Material outlineMaterial;
     private Material originalMaterial;
 
     private MaterialPropertyBlock mpb;
@@ -77,6 +76,10 @@ public class LogItem : Item, IStaticCollidable
 
     private string flyingItemSortingLayerName = "FlyingItem";
     private string objectsSortingLayerName = "Objects";
+
+    [SerializeField] private GameObject outlineObj;
+    [SerializeField] private SpriteRenderer outlineStencilSR;
+    [SerializeField] private SpriteRenderer outlineSR;
 
     public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, bool _bDisableCustomSortable = false)
     {
@@ -109,6 +112,8 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
+            outlineStencilSR.sprite = sprite;
+            outlineSR.sprite = sprite;
         }
 
         transform.localScale = Vector3.one;
@@ -121,6 +126,8 @@ public class LogItem : Item, IStaticCollidable
             // 정렬 기준(Anchor)을 상하 이동하는 visualTransform으로 설정
             customSortable.Initialize(visualTransform != null ? visualTransform : transform);
             customSortable.AddSpriteRenderer(spriteRenderer);
+            customSortable.AddSpriteRenderer(outlineStencilSR);
+            customSortable.AddSpriteRenderer(outlineSR);
         }
 
         originalColor = spriteRenderer.color;
@@ -157,7 +164,14 @@ public class LogItem : Item, IStaticCollidable
         state = ItemMoveState.Launching;
         transform.localScale = Vector3.zero;
 
-        spriteRenderer.material = outlineMaterial;
+        outlineObj.SetActive(true);
+
+        if (outlineObj != null && visualTransform != null)
+        {
+            outlineObj.transform.localPosition = visualTransform.localPosition;
+            outlineObj.transform.localRotation = visualTransform.localRotation;
+            outlineObj.transform.localScale = visualTransform.localScale;
+        }
 
         if (mpb == null) mpb = new MaterialPropertyBlock();
         spriteRenderer.GetPropertyBlock(mpb);
@@ -275,9 +289,10 @@ public class LogItem : Item, IStaticCollidable
         landingDampTime = landingDampDuration;
         durability = originalDurability;
 
+        outlineObj.SetActive(false);
+
         if (spriteRenderer != null)
         {
-            spriteRenderer.material = originalMaterial;
             spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
             spriteRenderer.sortingLayerID = SortingLayer.NameToID(objectsSortingLayerName);
@@ -366,6 +381,13 @@ public class LogItem : Item, IStaticCollidable
             pulse = Mathf.Min(pulse, 0.2f); // 최대 변형치 제한
 
             visualTransform.localScale = Vector3.one * (1f + pulse);
+
+            if (outlineObj != null)
+            {
+                outlineObj.transform.localPosition = visualTransform.localPosition;
+                outlineObj.transform.localRotation = visualTransform.localRotation;
+                outlineObj.transform.localScale = visualTransform.localScale;
+            }
         }
         else
         {
@@ -394,6 +416,13 @@ public class LogItem : Item, IStaticCollidable
             {
                 visualTransform.localPosition = Vector3.zero;
                 visualTransform.localRotation = Quaternion.identity;
+
+                if (outlineObj != null)
+                {
+                    outlineObj.transform.localPosition = Vector3.zero;
+                    outlineObj.transform.localRotation = Quaternion.identity;
+                    outlineObj.transform.localScale = Vector3.one;
+                }
             }
             transform.localScale = Vector3.one;
 
@@ -711,6 +740,13 @@ public class LogItem : Item, IStaticCollidable
             }
 
             UpdateShadowScale(visualTransform.localPosition.y);
+
+            if (outlineObj != null)
+            {
+                outlineObj.transform.localPosition = visualTransform.localPosition;
+                outlineObj.transform.localScale = visualTransform.localScale;
+                outlineObj.transform.localRotation = visualTransform.localRotation;
+            }
         }
 
         // 타겟에 매우 가까워지면 전체 스케일 축소 (최소 0.25 유지)
@@ -759,6 +795,13 @@ public class LogItem : Item, IStaticCollidable
             else
             {
                 visualTransform.localScale = Vector3.one;
+            }
+
+            if (outlineObj != null)
+            {
+                outlineObj.transform.localPosition = visualTransform.localPosition;
+                outlineObj.transform.localScale = visualTransform.localScale;
+                outlineObj.transform.localRotation = visualTransform.localRotation;
             }
         }
 
