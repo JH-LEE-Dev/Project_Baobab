@@ -57,7 +57,7 @@ public class GameInstaller : MonoBehaviour
         environmentSystem.Initialize(signalHub, unitLogicManager);
         cameraManager.Initialize(signalHub, inputManager);
         unitSpawner.Initialize(inputManager, environmentSystem);
-        teleportManager.Initialize(signalHub, bootStrapProvider);
+        teleportManager.Initialize(signalHub, bootStrapProvider, inputManager);
         inventoryManager.Initialize();
         offroadContainer.Initialize(inventoryManager, inputManager);
         townSystem.Initialize(signalHub, environmentSystem, inputManager, inventoryManager, offroadContainer);

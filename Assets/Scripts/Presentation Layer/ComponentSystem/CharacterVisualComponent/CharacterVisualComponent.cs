@@ -237,12 +237,15 @@ public class CharacterVisualComponent : MonoBehaviour
 
     private void UpdateFaceVisual(bool _isMoving, bool _bInHub)
     {
+        AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
+
         // 1. 애니메이터 동기화
         if (faceAnim != null)
         {
             faceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             faceAnim.SetBool(isMovingHash, _isMoving);
             faceAnim.SetBool(bInHubHash, _bInHub);
+            SynchronizeAnimator(faceAnim, stateInfo);
         }
 
         if (faceBlinkAnim != null)
@@ -250,6 +253,7 @@ public class CharacterVisualComponent : MonoBehaviour
             faceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             faceBlinkAnim.SetBool(isMovingHash, _isMoving);
             faceBlinkAnim.SetBool(bInHubHash, _bInHub);
+            SynchronizeAnimator(faceBlinkAnim, stateInfo);
         }
 
         // 2. 눈 깜빡임 로직 업데이트
@@ -324,6 +328,20 @@ public class CharacterVisualComponent : MonoBehaviour
         // 실제 enabled 제어는 UpdateFaceVisual에서 통합 관리
     }
 
+    private void SynchronizeAnimator(Animator _targetAnim, AnimatorStateInfo _sourceState)
+    {
+        if (_targetAnim == null) return;
+
+        AnimatorStateInfo targetState = _targetAnim.GetCurrentAnimatorStateInfo(0);
+        if (targetState.fullPathHash != 0)
+        {
+            if (Mathf.Abs(targetState.normalizedTime - _sourceState.normalizedTime) > 0.02f)
+            {
+                _targetAnim.Play(targetState.fullPathHash, 0, _sourceState.normalizedTime);
+            }
+        }
+    }
+
     private void UpdateOnWaterVisual(bool _isMoving, bool _bInHub)
     {
         AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
@@ -333,14 +351,7 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterAnim.SetBool(isMovingHash, _isMoving);
             onWaterAnim.SetBool(bInHubHash, _bInHub);
-            AnimatorStateInfo childState = onWaterAnim.GetCurrentAnimatorStateInfo(0);
-            if (childState.fullPathHash != 0)
-            {
-                if (Mathf.Abs(childState.normalizedTime - stateInfo.normalizedTime) > 0.02f)
-                {
-                    onWaterAnim.Play(childState.fullPathHash, 0, stateInfo.normalizedTime);
-                }
-            }
+            SynchronizeAnimator(onWaterAnim, stateInfo);
 
             Vector3 reversedScale = sr.transform.localScale;
             reversedScale.x *= -1f;
@@ -352,6 +363,7 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterFaceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterFaceAnim.SetBool(isMovingHash, _isMoving);
             onWaterFaceAnim.SetBool(bInHubHash, _bInHub);
+            SynchronizeAnimator(onWaterFaceAnim, stateInfo);
 
             Vector3 faceReversedScale = faceSR != null ? faceSR.transform.localScale : sr.transform.localScale;
             faceReversedScale.x *= -1f;
@@ -363,6 +375,7 @@ public class CharacterVisualComponent : MonoBehaviour
             onWaterFaceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
             onWaterFaceBlinkAnim.SetBool(isMovingHash, _isMoving);
             onWaterFaceBlinkAnim.SetBool(bInHubHash, _bInHub);
+            SynchronizeAnimator(onWaterFaceBlinkAnim, stateInfo);
 
             Vector3 faceReversedScale = faceBlinkSR != null ? faceBlinkSR.transform.localScale : sr.transform.localScale;
             faceReversedScale.x *= -1f;

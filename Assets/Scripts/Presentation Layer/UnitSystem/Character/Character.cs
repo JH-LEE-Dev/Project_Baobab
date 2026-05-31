@@ -79,6 +79,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private float visualHeight = 0f;
 
+    //private bool bVisualSync = false;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -176,14 +178,29 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         bDead = false;
 
-        inputManager.PauseMove(false);
+        // if (bVisualSync == true)
+        //     inputManager.PauseMove(false);
+        // else
+        // {
+        //     inputManager.PauseMove(true);
+        //     bVisualSync = true;
+        //     StartCoroutine(DelayForSyncVisualComponent());
+        // }
+
+        StartCoroutine(DelayForSyncVisualComponent());
 
         bInDungeon = _bInDungeon;
         characterVisualComponent.SetHubState(!bInDungeon);
         characterVisualComponent.CharacterIsDead(false);
         armComponent.SetActivate(bInDungeon);
     }
-    
+
+    private System.Collections.IEnumerator DelayForSyncVisualComponent()
+    {
+        yield return new WaitForSeconds(0.5f);
+        inputManager.PauseMove(false);
+    }
+
     public Transform GetTransform() => transform;
 
     public void SetInShadow(bool _isInShadow, float _duration)

@@ -5,11 +5,13 @@ public class TeleportManager : MonoBehaviour
     //외부 의존성
     private SignalHub signalHub;
     private IBootStrapProvider bootStrapProvider;
+    private InputManager inputManager;
 
-    public void Initialize(SignalHub _signalHub, IBootStrapProvider _bootstrapProvider)
+    public void Initialize(SignalHub _signalHub, IBootStrapProvider _bootstrapProvider, InputManager _inputManager)
     {
         signalHub = _signalHub;
         bootStrapProvider = _bootstrapProvider;
+        inputManager = _inputManager;
 
         SubscribeSignals();
     }
@@ -33,6 +35,7 @@ public class TeleportManager : MonoBehaviour
 
     private void GoToDungeon(GoToDungeonSignal goToDungeonSignal)
     {
+        inputManager.PauseMove(true);
         switch (goToDungeonSignal.type)
         {
             case MapType.Vegetatedplains:
@@ -54,6 +57,7 @@ public class TeleportManager : MonoBehaviour
 
     private void GoToHome(GoToHomeSignal goToHomeSignal)
     {
+        inputManager.PauseMove(true);
         bootStrapProvider.GoToTownScene(true);
     }
 }
