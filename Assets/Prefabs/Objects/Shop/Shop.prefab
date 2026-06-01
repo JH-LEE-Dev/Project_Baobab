@@ -432,6 +432,8 @@ MonoBehaviour:
   outLineObject: {fileID: 6337596359919010286}
   animatorObject: {fileID: 5430248174325705416}
   coinThrowTransform: {fileID: 1904647356624635549}
+  sr: {fileID: 3531435560046198048}
+  outlineSr: {fileID: 9082406534967800036}
   frameTime: 0.05
   animationSprite:
   - {fileID: 21300000, guid: b6bb7181b4d54c041863323dd22b1c61, type: 3}
@@ -1398,7 +1400,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5077517896257965473}
   - component: {fileID: 3531435560046198048}
-  - component: {fileID: 142506698676587550}
   m_Layer: 16
   m_Name: Animator
   m_TagString: Untagged
@@ -1480,28 +1481,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!95 &142506698676587550
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5430248174325705416}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 4d732c3143047b946a3605b415cf2c20, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &5572648181542271625
 GameObject:
   m_ObjectHideFlags: 0

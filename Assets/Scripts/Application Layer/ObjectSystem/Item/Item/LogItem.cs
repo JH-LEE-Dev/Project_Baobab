@@ -112,8 +112,10 @@ public class LogItem : Item, IStaticCollidable
         if (spriteRenderer != null)
         {
             spriteRenderer.sprite = sprite;
-            outlineStencilSR.sprite = sprite;
-            outlineSR.sprite = sprite;
+            if (outlineStencilSR != null)
+                outlineStencilSR.sprite = sprite;
+            if (outlineSR != null)
+                outlineSR.sprite = sprite;
         }
 
         transform.localScale = Vector3.one;
@@ -249,7 +251,7 @@ public class LogItem : Item, IStaticCollidable
         elapsed = 0f;
         state = ItemMoveState.CurveTransferring;
         transform.localScale = Vector3.zero;
-        
+
         // 시점과 종점을 잇는 방향에 수직인 벡터 계산 (2D 법선)
         Vector3 dir = (endPos - startPos).normalized;
         sideDir = new Vector3(-dir.y, dir.x, 0f);
@@ -289,7 +291,8 @@ public class LogItem : Item, IStaticCollidable
         landingDampTime = landingDampDuration;
         durability = originalDurability;
 
-        outlineObj.SetActive(false);
+        if (outlineObj != null)
+            outlineObj.SetActive(false);
 
         if (spriteRenderer != null)
         {
