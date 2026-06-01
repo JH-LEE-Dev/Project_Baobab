@@ -54,6 +54,7 @@ public class GameInstaller : MonoBehaviour
         skillDispatcher = GetComponentInChildren<SkillDispatcher>();
         offroadContainer = GetComponentInChildren<OffroadContainer>();
 
+        unitLogicManager.Initialize(inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
         cameraManager.Initialize(signalHub, inputManager);
         unitSpawner.Initialize(inputManager, environmentSystem);

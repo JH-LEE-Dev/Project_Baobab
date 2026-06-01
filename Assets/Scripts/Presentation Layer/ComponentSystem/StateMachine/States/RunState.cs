@@ -20,6 +20,8 @@ public class RunState : CharacterState
         // 현재 위치 타일 점유
         currentReservedPos = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
         ctx.pathfindGridProvider.Occupy(currentReservedPos);
+
+        character.bMoving = true;
     }
 
     public override void Exit()
@@ -31,6 +33,7 @@ public class RunState : CharacterState
         pendingDirection = Vector2.zero;
         lastVisualInput = Vector2.zero;
 
+        character.bMoving = false;
         bActivated = false;
     }
 
@@ -83,7 +86,7 @@ public class RunState : CharacterState
         }
 
         int currentAxisCount = GetActiveAxisCount(_input);
- 
+
         // 대각선 입력 (축이 2개)인 경우에는 즉시 방향 변경 적용
         if (currentAxisCount >= 2)
         {

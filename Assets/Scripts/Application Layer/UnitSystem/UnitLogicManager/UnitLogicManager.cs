@@ -8,12 +8,13 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action<WeaponMode> WeaponModeChangedEvent;
 
     private Character character;
+    private InputManager inputManager;
 
     [SerializeField] private List<StaminaAmountData> staminaData;
 
-    public void Initialize()
+    public void Initialize(InputManager _inputManager)
     {
-
+        inputManager = _inputManager;
     }
 
     public void Release()
@@ -79,6 +80,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
+        //inputManager.PauseMouse(false);
         character.SetWhereIsCharacter(_bInDungeon);
     }
     

@@ -246,6 +246,13 @@ public class CharacterVisualComponent : MonoBehaviour
             faceAnim.SetBool(isMovingHash, _isMoving);
             faceAnim.SetBool(bInHubHash, _bInHub);
             SynchronizeAnimator(faceAnim, stateInfo);
+
+            if (faceSR != null)
+            {
+                Vector3 scale = faceSR.transform.localScale;
+                scale.x = sr.transform.localScale.x;
+                faceSR.transform.localScale = scale;
+            }
         }
 
         if (faceBlinkAnim != null)
@@ -254,6 +261,13 @@ public class CharacterVisualComponent : MonoBehaviour
             faceBlinkAnim.SetBool(isMovingHash, _isMoving);
             faceBlinkAnim.SetBool(bInHubHash, _bInHub);
             SynchronizeAnimator(faceBlinkAnim, stateInfo);
+
+            if (faceBlinkSR != null)
+            {
+                Vector3 scale = faceBlinkSR.transform.localScale;
+                scale.x = sr.transform.localScale.x;
+                faceBlinkSR.transform.localScale = scale;
+            }
         }
 
         // 2. 눈 깜빡임 로직 업데이트

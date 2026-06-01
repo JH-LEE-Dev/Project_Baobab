@@ -668,6 +668,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void GoToTown()
     {
+        //inputManager.PauseMouse(true);
+        character.DisableAttackComponent();
         GoToTownEvent?.Invoke();
     }
 }

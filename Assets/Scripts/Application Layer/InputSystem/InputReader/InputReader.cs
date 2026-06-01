@@ -151,4 +151,24 @@ public class InputReader
     {
         AimCorrectionKeyCanceledEvent?.Invoke();
     }
+
+    public void PauseMouse(bool _boolean)
+    {
+        if (_boolean == true)
+        {
+            actions.Normal.Mouse.performed -= OnMouseMove;
+            actions.Normal.Click.performed -= OnMouseClick;
+            actions.Normal.Click.canceled -= OnMouseReleased;
+        }
+        else
+        {
+            actions.Normal.Mouse.performed -= OnMouseMove;
+            actions.Normal.Click.performed -= OnMouseClick;
+            actions.Normal.Click.canceled -= OnMouseReleased;
+
+            actions.Normal.Mouse.performed += OnMouseMove;
+            actions.Normal.Click.performed += OnMouseClick;
+            actions.Normal.Click.canceled += OnMouseReleased;
+        }
+    }
 }

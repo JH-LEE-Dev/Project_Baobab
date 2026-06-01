@@ -62,6 +62,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
     public readonly int bInHubHash = Animator.StringToHash("bInHub");
+    public bool bMoving = false;
     [SerializeField] private float itemSensorRadius = 0.35f;
     private readonly List<IStaticCollidable> itemDetectionResults = new List<IStaticCollidable>(16);
     private float itemDetectionInterval = 0.2f; // 최적화: 0.2초 간격 (5Hz)
@@ -113,6 +114,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
         statComponent.Initialize(ctx);
+
+        attackComponent.SetCursorEnable(false);
 
         SetupStateMachine();
         BindEvents();
@@ -358,7 +361,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         // 비주얼 업데이트
         if (bDead == false)
-            characterVisualComponent.UpdateVisuals(anim.GetBool(isMovingHash), !bInDungeon);
+            characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon);
 
         // 스태미나 로직
         UpdateStaminaAmounts(); // 실시간 소모량 갱신 반영
@@ -418,5 +421,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void EnableShadow()
     {
         shadowObject.gameObject.SetActive(true);
+    }
+
+    public void DisableAttackComponent()
+    {
+        attackComponent.SetCursorEnable(false);
     }
 }
