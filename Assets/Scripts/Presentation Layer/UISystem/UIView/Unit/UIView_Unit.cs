@@ -241,19 +241,15 @@ public class UIView_Unit : UIView
 
     public void LogContainerInteractStateChanged(bool _state)
     {
-        if (true == _state)
-        {
-            if (null != interactionUnit)
-                interactionUnit.ShowInteraction();
-        }
-        else
-        {
-            if (null != interactionUnit)
-                interactionUnit.HideInteraction();
-        }
+        InteractionStateChange(_state);
     }
 
     public void OffroadContainerInteractStateChanged(bool _state)
+    {
+        InteractionStateChange(_state);
+    }
+
+    private void InteractionStateChange(bool _state)
     {
         if (true == _state)
         {

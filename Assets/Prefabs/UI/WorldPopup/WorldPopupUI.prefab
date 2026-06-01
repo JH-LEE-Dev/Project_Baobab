@@ -51,7 +51,7 @@ MonoBehaviour:
   layer: 2
   startHidden: 1
   bWorld: 1
-  storageOffset: {x: -1.5, y: 2}
+  storageOffset: {x: -1.5, y: 2.5}
   carStorageOffset: {x: 1.5, y: 0.15}
   cutterOffset: {x: -1.5, y: 0}
   bTraderCoinAnim: 1
