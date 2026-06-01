@@ -17,7 +17,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> inventorySlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
 
-    private long money = 10000;
+    private long money = 0;
     private long carrot = 0;
     [SerializeField] private long sunEssence;
     [SerializeField] private long moonEssence;

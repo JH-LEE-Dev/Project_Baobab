@@ -17,7 +17,7 @@ public class AttackComponent : PComponent
     [SerializeField] private float attackRadius = 0.5f; // 충돌 탐지 판정 반경
     [SerializeField] private float ellipseAttackRadius = 1.5f; // 타원 공격 판정 반경
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (도끼용)
-    [SerializeField] private float shockWaveSpawnOffset = 0.2f; // 충격파 생성 시 공격 지점으로부터의 오프셋
+    [SerializeField] private float shockWaveSpawnOffset = 0.35f; // 충격파 생성 시 공격 지점으로부터의 오프셋
 
     [Header("Aim Correction")]
     [SerializeField] private float aimCorrectionRadius = 1.0f; // 조준 보정 탐색 반경
@@ -232,9 +232,8 @@ public class AttackComponent : PComponent
             {
                 if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
                 {
-                    Vector3 hitPos = nearestDamageable.Position + nearestDamageable.Offset;
-                    Vector3 direction = (hitPos - centerPos).normalized;
-                    StartCoroutine(CreateShockWaveRoutine(hitPos, direction));
+                    Vector3 direction = (mouseTransform - centerPos).normalized;
+                    StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
                 }
             }
         }

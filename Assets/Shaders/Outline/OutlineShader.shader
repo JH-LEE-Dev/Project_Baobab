@@ -17,6 +17,14 @@ Shader "Custom/OutlineShader"
             "RenderPipeline" = "UniversalPipeline" 
         }
 
+        
+        Stencil
+        {
+            Ref 32
+            Comp Equal
+            Pass Keep
+        }
+
         Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
         Cull Off

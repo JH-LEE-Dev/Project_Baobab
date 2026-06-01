@@ -127,7 +127,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             // TODO: UI 시스템을 통해 사용자에게 에러 팝업을 보여주는 로직을 여기에 추가할 수 있습니다.
             return;
         }
-
+        inputManager.PauseMove(true);
         bNewGame = _bNewGame;
         StartCoroutine(TransitionToScene(SceneType.Town));
     }

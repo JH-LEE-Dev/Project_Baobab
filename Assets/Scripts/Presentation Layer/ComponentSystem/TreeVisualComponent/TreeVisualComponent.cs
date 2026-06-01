@@ -21,6 +21,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomOnWaterSR;
     [SerializeField] private SpriteRenderer topOutlineSR;
     [SerializeField] private SpriteRenderer bottomOutlineSR;
+    [SerializeField] private SpriteRenderer topStencilOutlineSR;
+    [SerializeField] private SpriteRenderer bottomStencilOutlineSR;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites;
@@ -42,14 +44,13 @@ public class TreeVisualComponent : MonoBehaviour
 
     [Header("Outline")]
     [SerializeField] private GameObject outlineVisualObj;
+    [SerializeField] private Transform outlineStencilTopTransform;
     [SerializeField] private Transform outlineTopTransform;
 
     [Header("Other Settings")]
     public GameObject baseVisualObj;
-    public Material outlineStencilMaterial;
-    public Material originalMaterial;
 
-    
+
     [Header("Editor Custom Colors & Type")]
     public bool bUseCustomColor = false;
     public TreeType customTreeType = TreeType.OakTree;
@@ -72,6 +73,9 @@ public class TreeVisualComponent : MonoBehaviour
 
     private Vector3 outlineTopBaseLocalPosition;
     private Quaternion outlineTopBaseLocalRotation;
+
+    private Vector3 outlineStencilTopBaseLocalPosition;
+    private Quaternion outlineStencilTopBaseLocalRotation;
 
     private float swayPhase;
     private bool isOnWaterActive = false;
@@ -171,7 +175,7 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localScale = Vector3.one;
         ResetTopSway();
     }
-    
+
     // 상단/하단 스프라이트를 랜덤으로 고르고 색상과 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
     private void ApplyRandomVisual()
     {
@@ -380,6 +384,11 @@ public class TreeVisualComponent : MonoBehaviour
                 outlineColor.a = topRenderer.color.a;
                 topOutlineSR.color = outlineColor;
             }
+
+            if (topStencilOutlineSR != null)
+            {
+                topStencilOutlineSR.sprite = topRenderer.sprite;
+            }
         }
 
         if (bottomRenderer != null)
@@ -402,6 +411,11 @@ public class TreeVisualComponent : MonoBehaviour
                 Color outlineColor = bottomOutlineSR.color;
                 outlineColor.a = bottomRenderer.color.a;
                 bottomOutlineSR.color = outlineColor;
+            }
+
+            if (bottomStencilOutlineSR != null)
+            {
+                bottomStencilOutlineSR.sprite = bottomRenderer.sprite;
             }
         }
     }
@@ -484,6 +498,12 @@ public class TreeVisualComponent : MonoBehaviour
             outlineTopBaseLocalRotation = outlineTopTransform.localRotation;
         }
 
+        if (outlineStencilTopTransform != null)
+        {
+            outlineStencilTopBaseLocalPosition = outlineStencilTopTransform.localPosition;
+            outlineStencilTopBaseLocalRotation = outlineStencilTopTransform.localRotation;
+        }
+
         swayPhase = Random.Range(0f, Mathf.PI * 2f);
     }
 
@@ -517,6 +537,12 @@ public class TreeVisualComponent : MonoBehaviour
             outlineTopTransform.localPosition = outlineTopBaseLocalPosition + swayOffset;
             outlineTopTransform.localRotation = outlineTopBaseLocalRotation * swayRotation;
         }
+
+        if (isOutlineActive && outlineStencilTopTransform != null)
+        {
+            outlineStencilTopTransform.localPosition = outlineStencilTopBaseLocalPosition + swayOffset;
+            outlineStencilTopTransform.localRotation = outlineStencilTopBaseLocalRotation * swayRotation;
+        }
     }
 
     // 바람 흔들림을 제거하고 상단 스프라이트를 저장된 기본 포즈로 되돌린다.
@@ -538,6 +564,12 @@ public class TreeVisualComponent : MonoBehaviour
         {
             outlineTopTransform.localPosition = outlineTopBaseLocalPosition;
             outlineTopTransform.localRotation = outlineTopBaseLocalRotation;
+        }
+
+        if (outlineStencilTopTransform != null)
+        {
+            outlineStencilTopTransform.localPosition = outlineStencilTopBaseLocalPosition;
+            outlineStencilTopTransform.localRotation = outlineStencilTopBaseLocalRotation;
         }
     }
 
@@ -638,17 +670,6 @@ public class TreeVisualComponent : MonoBehaviour
         if (outlineVisualObj != null)
         {
             outlineVisualObj.SetActive(_boolean);
-        }
-
-        if (_boolean == true)
-        {
-            bottomRenderer.material = outlineStencilMaterial;
-            topRenderer.material = outlineStencilMaterial;
-        }
-        else
-        {
-            bottomRenderer.material = originalMaterial;
-            topRenderer.material = originalMaterial;
         }
     }
 

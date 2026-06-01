@@ -79,9 +79,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private float visualHeight = 0f;
 
-    #region Public Methods (Initialization & Control)
+    //private bool bVisualSync = false;
 
-    private bool bPauseForAnimationSync = false;
+    #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
     {
@@ -178,15 +178,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         bDead = false;
 
-        if (bPauseForAnimationSync == false)
-        {
-            inputManager.PauseMove(true);
-            StartCoroutine(PauseForAnimSyncCoroutine());
-        }
-        else
-        {
-            inputManager.PauseMove(false);
-        }
+        // if (bVisualSync == true)
+        //     inputManager.PauseMove(false);
+        // else
+        // {
+        //     inputManager.PauseMove(true);
+        //     bVisualSync = true;
+        //     StartCoroutine(DelayForSyncVisualComponent());
+        // }
+
+        StartCoroutine(DelayForSyncVisualComponent());
 
         bInDungeon = _bInDungeon;
         characterVisualComponent.SetHubState(!bInDungeon);
@@ -194,12 +195,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         armComponent.SetActivate(bInDungeon);
     }
 
-    private System.Collections.IEnumerator PauseForAnimSyncCoroutine()
+    private System.Collections.IEnumerator DelayForSyncVisualComponent()
     {
         yield return new WaitForSeconds(0.5f);
         inputManager.PauseMove(false);
-
-        bPauseForAnimationSync = true;
     }
 
     public Transform GetTransform() => transform;

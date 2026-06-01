@@ -853,7 +853,7 @@ CircleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.01, y: 0.02}
+  m_Offset: {x: 0, y: 0.075}
   m_Radius: 0.15
 --- !u!114 &9036442478881247126
 MonoBehaviour:
@@ -1068,7 +1068,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: e880c8cc906e30a49a8f8e63742acf0b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1392,7 +1392,7 @@ MonoBehaviour:
   bCanHunting: 0
   axeDamage: 1
   speedDecreaseWhileAction: 0.5
-  axeDurability: 50
+  axeDurability: 40
   axeDurabilityDecAmount: 1
   axeAttackCoolTime: 0.6
   axeAttackRangeMultiplier: 1
@@ -1862,7 +1862,7 @@ MonoBehaviour:
   targetLayer:
     serializedVersion: 2
     m_Bits: 1024
-  shockWaveSpawnOffset: -0.2
+  shockWaveSpawnOffset: 0
   aimCorrectionRadius: 1
   aimCorrectionLayer:
     serializedVersion: 2
@@ -2036,7 +2036,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: e880c8cc906e30a49a8f8e63742acf0b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

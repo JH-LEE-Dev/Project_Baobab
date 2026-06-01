@@ -14,12 +14,13 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
     // 내부 상태
-    private Animator anim;
-    private readonly int startHash = Animator.StringToHash("bStart");
     private bool bIsCutting = false;
     private bool bPowerSupply = false;
     private float bPowerSupplyValue = 5f; //500퍼센트를 의미.
     private float maxDurability = 0f;
+    private SpriteRenderer visualSpriteRenderer;
+    private float animProgress = 0f;
+    private bool isReversing = false;
 
     // 시각적 효과용 (Squash & Stretch)
     private Transform visualTransform;
@@ -69,32 +70,27 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     private MapType mapType;
 
+    [SerializeField] private List<Sprite> cuttingAnimationSprites;
+
     public void Initialize()
     {
-        anim = GetComponent<Animator>();
-
         // 자식 오브젝트의 SpriteRenderer Transform 캐싱
-        var sr = GetComponentInChildren<SpriteRenderer>();
-        if (sr != null) visualTransform = sr.transform;
+        visualSpriteRenderer = GetComponent<SpriteRenderer>();
+        if (visualSpriteRenderer != null) visualTransform = visualSpriteRenderer.transform;
 
         customSortable = GetComponent<CustomSortable>();
         customSortable.Initialize(transform);
-        customSortable.AddSpriteRenderer(sr);
+        customSortable.AddSpriteRenderer(visualSpriteRenderer);
     }
 
     private void Update()
     {
         UpdateBounce(Time.deltaTime);
+        UpdateAnimation(Time.deltaTime);
 
         if (!bIsCutting || cuttingItem == null) return;
 
         float currentSpeed = GetCurrentSpeed();
-
-        // 애니메이션 속도 동기화
-        if (anim != null)
-        {
-            anim.speed = currentSpeed;
-        }
 
         // 1초에 1 * currentSpeed 만큼 내구도 감소
         float decreaseAmount = Time.deltaTime * currentSpeed;
@@ -116,8 +112,6 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     public void CuttingDone()
     {
-        if (anim != null) anim.speed = 1.0f;
-        anim.SetBool(startHash, false);
         cuttingItem.gameObject.SetActive(true);
         CuttingDoneEvent?.Invoke();
     }
@@ -128,7 +122,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
         cuttingItem = _item;
         bIsCutting = true;
-        anim.SetBool(startHash, true);
+        isReversing = false; // 되돌아가는 도중에 나무가 들어오면 즉시 정방향으로 전환
 
         // 내구도 멀티플라이어 적용
         if (logItemDurabilityDatas != null)
@@ -230,7 +224,6 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
                 cuttingItem.transform.position = transform.position; // 커터 위치로 설정
                 cuttingItem.durability = _data.cuttingItemData.durability;
-                anim.SetBool(startHash, true);
 
                 logToCut = data;
             }
@@ -240,7 +233,6 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         else
         {
             cuttingItem = null;
-            anim.SetBool(startHash, false);
             logToCut = null;
             maxDurability = 0f;
         }
@@ -290,5 +282,51 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         float speed = totalSpeedMultiplier;
         if (bPowerSupply && mapType != MapType.Town) speed *= bPowerSupplyValue;
         return speed;
+    }
+
+    private void UpdateAnimation(float _deltaTime)
+    {
+        if (cuttingAnimationSprites == null || cuttingAnimationSprites.Count == 0 || visualSpriteRenderer == null) return;
+
+        int totalFrames = cuttingAnimationSprites.Count;
+
+        if (bIsCutting)
+        {
+            if (!isReversing)
+            {
+                animProgress += _deltaTime * 0.5f; // 2초 동안 0 -> 1로 정방향 진행
+                if (animProgress >= 1f)
+                {
+                    animProgress = 1f;
+                    isReversing = true;
+                }
+            }
+            else
+            {
+                animProgress -= _deltaTime; // 1초 동안 1 -> 0으로 역방향 진행
+                if (animProgress <= 0f)
+                {
+                    animProgress = 0f;
+                    isReversing = false;
+                }
+            }
+        }
+        else
+        {
+            // 컷팅이 끝났거나 나무가 없을 경우 0프레임으로 되돌아가기
+            if (animProgress > 0f)
+            {
+                isReversing = true;
+                animProgress -= _deltaTime;
+                if (animProgress <= 0f)
+                {
+                    animProgress = 0f;
+                    isReversing = false;
+                }
+            }
+        }
+
+        int frameIndex = Mathf.Clamp(Mathf.FloorToInt(animProgress * (totalFrames - 1)), 0, totalFrames - 1);
+        visualSpriteRenderer.sprite = cuttingAnimationSprites[frameIndex];
     }
 }

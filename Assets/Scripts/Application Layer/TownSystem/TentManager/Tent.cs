@@ -68,7 +68,6 @@ public class Tent : MonoBehaviour
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            sr.enabled = false;
             outLineObject.SetActive(true);
 
             bCanInteract = true;
@@ -79,7 +78,6 @@ public class Tent : MonoBehaviour
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            sr.enabled = true;
             outLineObject.SetActive(false);
 
             if (bInteract == false)
