@@ -304,7 +304,7 @@ MonoBehaviour:
   resetOnValidateInPlayMode: 1
   valueSettings:
     startOffset: {x: 0, y: 0}
-    endOffset: {x: 0, y: -5}
+    endOffset: {x: 5, y: 0}
     useFade: 1
     startAlpha: 1
     endAlpha: 0
@@ -437,7 +437,7 @@ MonoBehaviour:
   mainVisual: {fileID: 5778373976530834095}
   omp: {fileID: 754837705357842004}
   progressBar: {fileID: 7887833601390549019}
-  yOffset: 1.5
+  offset: {x: 0, y: 0, z: 0}
   popupTag: Popup
   popdownTag: Popdown
 --- !u!1 &5778373976530834095

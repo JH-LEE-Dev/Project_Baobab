@@ -19,6 +19,7 @@ public class UIView_WorldPopup : UIView
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiStoragePrefab;
+    [SerializeField] private GameObject uiCarStoragePrefab;
     [SerializeField] private GameObject uiCutterPrefab;
     [SerializeField] private GameObject uiTraderCoinPrefab;
 
@@ -82,10 +83,10 @@ public class UIView_WorldPopup : UIView
 
     private void Init_UICarStorage()
     {
-        if (null == uiStoragePrefab)
+        if (null == uiCarStoragePrefab)
             return;
 
-        ui_CarStorage = Instantiate(uiStoragePrefab, uiRoot).GetComponent<UI_Storage>();
+        ui_CarStorage = Instantiate(uiCarStoragePrefab, uiRoot).GetComponent<UI_Storage>();
         if (null == ui_CarStorage)
             return;
 
