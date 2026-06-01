@@ -51,8 +51,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private List<FlyingCoin> flyingCoins;
     private Coroutine coinThrowCoroutine;
     private Coroutine animationCoroutine;
-    private SpriteRenderer sr;
-    private SpriteRenderer outlineSr;
+    public SpriteRenderer sr;
+    public SpriteRenderer outlineSr;
     private int currentFrameIndex = 0;
     private WaitForSeconds frameWait;
     [SerializeField] private float frameTime = 0.05f;
@@ -79,16 +79,6 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         money = 0;
 
-        sr = GetComponent<SpriteRenderer>();
-        if (sr == null)
-            sr = GetComponentInChildren<SpriteRenderer>();
-
-        if (outLineObject != null)
-        {
-            outlineSr = outLineObject.GetComponent<SpriteRenderer>();
-            if (outlineSr == null)
-                outlineSr = outLineObject.GetComponentInChildren<SpriteRenderer>();
-        }
         frameWait = new WaitForSeconds(frameTime);
 
         BindEvents();

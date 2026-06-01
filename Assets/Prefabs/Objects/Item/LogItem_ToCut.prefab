@@ -58,7 +58,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  - {fileID: 2100000, guid: e880c8cc906e30a49a8f8e63742acf0b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -78,7 +78,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 8
+  m_SortingLayer: 10
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 21300000, guid: dd3c942c9fb71bc438fdf260419b5da5, type: 3}
@@ -141,8 +141,10 @@ MonoBehaviour:
   color: {r: 0, g: 0, b: 0, a: 0}
   spriteRenderer: {fileID: 0}
   durability: 0
-  outlineMaterial: {fileID: 0}
   shadow: {fileID: 0}
+  outlineObj: {fileID: 0}
+  outlineStencilSR: {fileID: 0}
+  outlineSR: {fileID: 0}
 --- !u!114 &6032299973884273101
 MonoBehaviour:
   m_ObjectHideFlags: 0
