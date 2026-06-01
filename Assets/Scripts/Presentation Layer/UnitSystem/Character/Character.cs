@@ -169,11 +169,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.ResetAttackComponent();
             stateMachine.ChangeState<IdleState>();
             attackComponent.SetEnable(false);
+            attackComponent.SetCursorEnable(false);
         }
         else
         {
             armComponent.ResetWeaponStatus();
             attackComponent.SetEnable(true);
+            attackComponent.SetCursorEnable(true);
         }
 
         bDead = false;

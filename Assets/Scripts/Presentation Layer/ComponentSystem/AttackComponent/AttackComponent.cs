@@ -54,6 +54,8 @@ public class AttackComponent : PComponent
     private static readonly int EllipseRadiusID = Shader.PropertyToID("_EllipseRadius");
     private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
 
+    private bool bCursorEnable = false;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -102,6 +104,9 @@ public class AttackComponent : PComponent
 
     private void UpdateAttackColliderPosition(Vector2 _mouseScreenPos)
     {
+        if(bCursorEnable == false)
+            return;
+        
         if (mainCamera == null)
             mainCamera = Camera.main;
 
@@ -564,5 +569,10 @@ public class AttackComponent : PComponent
     public void SetEnable(bool _boolean)
     {
         ellipseRadiusIndicator.gameObject.SetActive(_boolean);
+    }
+
+    public void SetCursorEnable(bool _boolean)
+    {
+        bCursorEnable = _boolean;
     }
 }

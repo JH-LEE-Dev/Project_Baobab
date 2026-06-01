@@ -491,14 +491,17 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         bCanReach = _bCanReach;
 
-        if (bCanReach == false && bCanInteract == true)
+        if (bCanReach == false)
         {
-            bCanInteract = false;
+            if (bCanInteract == true || bOverlapped == true)
+            {
+                bCanInteract = false;
+                bOverlapped = false;
 
-            outLineObject.SetActive(false);
+                outLineObject.SetActive(false);
 
-            bOverlapped = false;
-            PortalDeActivatedEvent?.Invoke();
+                PortalDeActivatedEvent?.Invoke();
+            }
         }
     }
 
