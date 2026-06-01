@@ -97,6 +97,6 @@ public class IdleState : CharacterState
     private void SnapToPixel()
     {
         // 전역 픽셀 스냅 유틸리티 사용
-        GlobalPixelSnapper.SnapRigidbody(character.rb, Time.fixedDeltaTime);
+        //GlobalPixelSnapper.SnapRigidbody(character.rb, Time.fixedDeltaTime);
     }
 }
