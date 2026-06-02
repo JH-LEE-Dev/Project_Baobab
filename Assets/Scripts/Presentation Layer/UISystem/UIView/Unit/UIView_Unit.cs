@@ -116,10 +116,7 @@ public class UIView_Unit : UIView
         interactionUnit = Instantiate(interactionUnitPrefab, uiRoot.transform).GetComponent<UI_InteractionUnit>();
 
         if (null != interactionUnit)
-        {
             interactionUnit.Initialize();
-            interactionUnit.HideInteraction();
-        }
     }
 
     private void InitSpeechBubbleUnit()

@@ -116,7 +116,7 @@ public class UI_Storage : MonoBehaviour
             IInventorySlot item = _items[i];
 
             slot.gameObject.SetActive(i < itemCount);
-            slot.UpdateBindSlotData(item);
+            slot.UpdateBindSlotData(item, storage.maxItemCntPerSlot);
         }
     }
 
