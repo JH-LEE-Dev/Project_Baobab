@@ -89,6 +89,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadSpawnedEvent += OffroadSpawned;
+
+        inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        inDungeonObjectManager.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
     }
 
     private void ReleaseEvents()
@@ -103,6 +106,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
         inDungeonObjectManager.GoToTownEvent -= GoToTown;
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
+        inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
     }
 
     private void SubscribeSignals()
@@ -204,5 +208,10 @@ public class InDungeonSystem : MonoBehaviour
     private void OffroadSpawned(OffroadVehicleObj _offroadVehicleObj)
     {
         signalHub.Publish(new OffroadSpawnedSignal(_offroadVehicleObj));
+    }
+
+    private void OffroadInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new OffroadInteractStateChangedSignal(_boolean));
     }
 }

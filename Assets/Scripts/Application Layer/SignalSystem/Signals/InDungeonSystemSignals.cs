@@ -107,3 +107,21 @@ public struct OffroadSpawnedSignal
         offroadVehicleObj = _offroadVehicleObj;
     }
 }
+
+public struct OffroadInteractStateChangedSignal
+{
+    public bool state;
+    public OffroadInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
+
+public struct ShopInteractStateChangedSignal
+{
+    public bool state;
+    public ShopInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}

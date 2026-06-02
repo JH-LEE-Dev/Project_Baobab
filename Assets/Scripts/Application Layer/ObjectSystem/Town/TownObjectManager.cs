@@ -5,6 +5,7 @@ using UnityEngine;
 public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 {
     //이벤트
+    public event Action<bool> OffroadInteractStateChangedEvent;
     public event Action PortalActivatedEvent;
     public event Action PortalDeActivatedEvent;
 
@@ -259,6 +260,9 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
         portal.PortalDeActivatedEvent -= PortalDeActivated;
         portal.PortalDeActivatedEvent += PortalDeActivated;
+
+        portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        portal.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
     }
 
     private void ReleaseEvents()
@@ -267,6 +271,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         {
             portal.PortalActivated -= PortalActivated;
             portal.PortalDeActivatedEvent -= PortalDeActivated;
+            portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         }
     }
 
@@ -328,5 +333,10 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private void PortalDeActivated()
     {
         PortalDeActivatedEvent?.Invoke();
+    }
+
+    private void OffroadInteractStateChanged(bool _boolean)
+    {
+        OffroadInteractStateChangedEvent?.Invoke(_boolean);
     }
 }

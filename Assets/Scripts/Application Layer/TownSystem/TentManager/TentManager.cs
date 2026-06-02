@@ -4,6 +4,7 @@ using System;
 public class TentManager : MonoBehaviour
 {
     public event Action<bool> TentInteractEvent;
+    public event Action<bool> TentInteractStateChangedEvent;
 
     private InputManager inputManager;
 
@@ -31,6 +32,9 @@ public class TentManager : MonoBehaviour
     {
         tent.TentInteractEvent -= TentInteract;
         tent.TentInteractEvent += TentInteract;
+
+        tent.TentInteractStateChangedEvent -= TentInteractStateChanged;
+        tent.TentInteractStateChangedEvent += TentInteractStateChanged;
     }
 
     private void ReleaseEvents()
@@ -41,5 +45,10 @@ public class TentManager : MonoBehaviour
     private void TentInteract(bool _bInteract)
     {
         TentInteractEvent?.Invoke(_bInteract);
+    }
+
+    private void TentInteractStateChanged(bool _boolean)
+    {
+        TentInteractStateChangedEvent?.Invoke(_boolean);
     }
 }

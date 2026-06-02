@@ -96,6 +96,15 @@ public class TownSystem : MonoBehaviour
 
         townProductionManager.OffroadDriveEndEvent -= OffroadDriveEnd;
         townProductionManager.OffroadDriveEndEvent += OffroadDriveEnd;
+
+        tentManager.TentInteractStateChangedEvent -= TentInteractStateChanged;
+        tentManager.TentInteractStateChangedEvent += TentInteractStateChanged;
+
+        townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        townObjectManager.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
+
+        logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
+        logProcessingManager.ShopInteracteStateChangedEvent += ShopInteractStateChanged;
     }
 
     private void ReleaseEvents()
@@ -108,6 +117,9 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.LogContainerSpecChangedEvent -= logContainerSpecChanged;
         townObjectManager.PortalDeActivatedEvent -= PortalDeActivated;
         townProductionManager.OffroadDriveEndEvent -= OffroadDriveEnd;
+        tentManager.TentInteractStateChangedEvent -= TentInteractStateChanged;
+        townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
     }
 
     private void SubscribeSignals()
@@ -199,5 +211,20 @@ public class TownSystem : MonoBehaviour
     {
         townObjectManager.ClearObjManager();
         signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
+    }
+
+    private void TentInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new TentInteractStateChangedSignal(_boolean));
+    }
+
+    private void OffroadInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new OffroadInteractStateChangedSignal(_boolean));
+    }
+
+    private void ShopInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new ShopInteractStateChangedSignal(_boolean));
     }
 }

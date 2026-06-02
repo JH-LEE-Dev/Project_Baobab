@@ -64,6 +64,9 @@ public class GameplayUICoordinator
         signalHub.Subscribe<OffroadSpawnedSignal>(OffroadSpawned);
         signalHub.Subscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.Subscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
+        signalHub.Subscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
+        signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);        
     }
 
     private void UnSubscribeSignals()
@@ -93,6 +96,9 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<OffroadSpawnedSignal>(OffroadSpawned);
         signalHub.UnSubscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.UnSubscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
+        signalHub.UnSubscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
+        signalHub.UnSubscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
     }
 
     private void BindEvents()
@@ -368,5 +374,20 @@ public class GameplayUICoordinator
     private void ItemRemovedFromInventory(ItemRemovedFromInventorySignal itemRemovedFromInventorySignal)
     {
         popUpUI.ItemRemovedFromInventory();
+    }
+
+    private void TentInteractStateChanged(TentInteractStateChangedSignal _tentInteractStateChangedSignal)
+    {
+        unitUI.TentInteractStateChanged(_tentInteractStateChangedSignal.state);
+    }
+
+    private void OffroadInteractStateChanged(OffroadInteractStateChangedSignal _offroadInteractStateChangedSignal)
+    {
+        unitUI.OffroadInteractStateChanged(_offroadInteractStateChangedSignal.state);
+    }
+
+    private void ShopInteractStateChanged(ShopInteractStateChangedSignal _shopInteractStateChangedSignal)
+    {
+        unitUI.ShopInteractStateChanged(_shopInteractStateChangedSignal.state);
     }
 }

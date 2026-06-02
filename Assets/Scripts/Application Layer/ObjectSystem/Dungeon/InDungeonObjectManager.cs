@@ -7,6 +7,7 @@ using System;
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
+    public event Action<bool> OffroadInteractStateChangedEvent;
     public event Action<OffroadVehicleObj> OffroadSpawnedEvent;
     public event Action GoToTownEvent;
     public event Action<TreeType> TreeDeadEvent;
@@ -434,6 +435,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         portal.GoToTownEvent -= GoToTown;
         portal.GoToTownEvent += GoToTown;
+
+        portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        portal.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
     }
 
     private void OnPortalActivated()
@@ -623,6 +627,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         {
             portal.PortalActivated -= OnPortalActivated;
             portal.GoToTownEvent -= GoToTown;
+            portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         }
 
         if (cullingGroup != null)
@@ -671,5 +676,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         //inputManager.PauseMouse(true);
         character.DisableAttackComponent();
         GoToTownEvent?.Invoke();
+    }
+
+    private void OffroadInteractStateChanged(bool _boolean)
+    {
+        OffroadInteractStateChangedEvent?.Invoke(_boolean);
     }
 }
