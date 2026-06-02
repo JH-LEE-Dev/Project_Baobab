@@ -55,7 +55,7 @@ MonoBehaviour:
   carStorageOffset: {x: 1.5, y: 0.15}
   cutterOffset: {x: -1.5, y: 0}
   bTraderCoinAnim: 1
-  traderCoinOffset: {x: 0.5, y: 0.5}
+  traderCoinOffset: {x: 0, y: 0}
   uiRoot: {fileID: 5973435824668062020}
   uiStoragePrefab: {fileID: 3579267283983008013, guid: 9b47e8063b3458a459bf2b3e687f2c54, type: 3}
   uiCarStoragePrefab: {fileID: 3579267283983008013, guid: 62d003f331ce92949ac569b751d18b1e, type: 3}
