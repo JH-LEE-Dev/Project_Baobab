@@ -11,6 +11,10 @@ public class UI_Storage : MonoBehaviour
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private Vector2 offset;
 
+    [Header("Dynamic Positioning")]
+    [SerializeField] private bool useDynamicPositioning = true;
+    [SerializeField] private float positionLerpSpeed = 8.0f;
+
     // //내부 의존성
     private const int defaultCap = 2;
 
@@ -24,6 +28,7 @@ public class UI_Storage : MonoBehaviour
     private MotionEntry popup;
     private MotionEntry popdown;
     private RectTransform rect;
+    private Transform playerTransform;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -31,6 +36,7 @@ public class UI_Storage : MonoBehaviour
     public void Initialize(Vector2 _offset)
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
+        gameObject.SetActive(false);
         offset = _offset;
 
         if (null != omp)
@@ -39,8 +45,6 @@ public class UI_Storage : MonoBehaviour
         rect = GetComponent<RectTransform>();
 
         SnapToPerfectPixel();
-        
-        gameObject.SetActive(false);
     }
 
     public void BindStorage(IInventory _storage)
@@ -48,6 +52,11 @@ public class UI_Storage : MonoBehaviour
         storage = _storage;
         if (null != storage)
             UpdateMaxSlotCount(storage.inventorySlots.Count);
+    }
+
+    public void BindPlayer(Transform _playerTrans)
+    {
+        playerTransform = _playerTrans;
     }
 
     public void UpdateMaxSlotCount(int _cnt)
@@ -108,13 +117,8 @@ public class UI_Storage : MonoBehaviour
     {
         gameObject.SetActive(isOpening = true);
 
-        if (null != rect)
-        {
-            Vector2 newPos = storage.GetTransform().position;
-            newPos += offset;
-
-            rect.position = newPos;
-        }
+        if (null != rect && null != storage)
+            rect.position = GetTargetWorldPosition();
 
         SnapToPerfectPixel();
 
@@ -139,6 +143,30 @@ public class UI_Storage : MonoBehaviour
     private void OnCompleteAnim()
     {
         gameObject.SetActive(isOpening = false);
+    }
+
+    /// <summary>
+    /// 캐릭터의 실시간 X축 위치를 분석하여, 보관함의 좌우 반대편에 대응하는 UI 타겟 월드 좌표를 산출합니다.
+    /// </summary>
+    private Vector3 GetTargetWorldPosition()
+    {
+        if (null == storage)
+            return Vector3.zero;
+
+        Vector3 _storagePos = storage.GetTransform().position;
+        float _targetOffsetX = offset.x;
+
+        if (true == useDynamicPositioning && null != playerTransform)
+        {
+            float _absX = Mathf.Abs(offset.x);
+            _targetOffsetX = (playerTransform.position.x < _storagePos.x) ? _absX : -_absX;
+        }
+
+        Vector3 _targetPos = _storagePos;
+        _targetPos.x += _targetOffsetX;
+        _targetPos.y += offset.y;
+
+        return _targetPos;
     }
 
     /// <summary>
@@ -177,7 +205,7 @@ public class UI_Storage : MonoBehaviour
         {
             if (0.01f > Mathf.Abs(_pivotX - 0.5f))
                 _pos.x = Mathf.Round(_pos.x - 0.5f) + 0.5f;
-            else if (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f))
+            else if (0.01f > Mathf.Abs(_pivotX - 0.5f) == false && (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f)))
                 _pos.x = Mathf.Round(_pos.x);
         }
         else
@@ -194,7 +222,7 @@ public class UI_Storage : MonoBehaviour
         {
             if (0.01f > Mathf.Abs(_pivotY - 0.5f))
                 _pos.y = Mathf.Round(_pos.y - 0.5f) + 0.5f;
-            else if (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f))
+            else if (0.01f > Mathf.Abs(_pivotY - 0.5f) == false && (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f)))
                 _pos.y = Mathf.Round(_pos.y);
         }
         else
@@ -204,5 +232,27 @@ public class UI_Storage : MonoBehaviour
         }
 
         rect.anchoredPosition = _pos;
+    }
+
+    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void Update()
+    {
+        if (true == isOpening && null != rect && null != storage)
+        {
+            Vector3 _targetPos = GetTargetWorldPosition();
+            float _distance = Vector3.Distance(rect.position, _targetPos);
+
+            if (0.01f > _distance)
+            {
+                rect.position = _targetPos;
+            }
+            else
+            {
+                rect.position = Vector3.Lerp(rect.position, _targetPos, Time.deltaTime * positionLerpSpeed);
+            }
+
+            SnapToPerfectPixel();
+        }
     }
 }
