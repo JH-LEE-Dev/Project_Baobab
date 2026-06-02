@@ -482,6 +482,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 IsSameItemByData(_sourceData, containerSlots[i].itemData))
             {
                 containerSlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                ItemAddedEvent?.Invoke();
                 return;
             }
         }
@@ -507,6 +508,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                     containerSlots[i].Setup(newData, 0);
                     containerSlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                    ItemAddedEvent?.Invoke();
                 }
 
                 return;

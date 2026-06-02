@@ -131,6 +131,9 @@ public class GameplayUICoordinator
 
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
         menuPopupUI.TeleportUIClosedEvent += TeleportUIClosed;
+
+        popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
+        popUpUI.InventoryUIOpendEvent += InventoryUIOpened;
     }
 
     private void ReleaseEvents()
@@ -144,6 +147,7 @@ public class GameplayUICoordinator
         escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
         escUI.SaveGameButtonClickedEvent -= SaveGame;
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
+        popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
     }
 
     public void Release()
@@ -397,5 +401,11 @@ public class GameplayUICoordinator
     private void LogItemProcessorIsActive(LogItemProcessorActiveStateSignal _logItemProcessorActiveStateSignal)
     {
         worldPopupUI.LogItemProcessorActiveStateChange(_logItemProcessorActiveStateSignal.state);
+    }
+
+    private void InventoryUIOpened(bool _boolean)
+    {
+        bInventoryOpened = true;
+        popUpUI.Show();
     }
 }
