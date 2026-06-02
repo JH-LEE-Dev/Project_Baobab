@@ -43,6 +43,11 @@ public class CharacterAnimator : MonoBehaviour
     [SerializeField] private List<Sprite> InDungeon_base_RunU;
 
     [Space]
+    [Header("Dead Sprites")]
+    [SerializeField] private List<Sprite> deadStartSprites;
+    [SerializeField] private List<Sprite> deadLoopSprites;
+
+    [Space]
     [Header("InTown Face Animation Sprites")]
     [SerializeField] private List<Sprite> face_IdleR;
     [SerializeField] private List<Sprite> face_IdleD;
@@ -86,6 +91,7 @@ public class CharacterAnimator : MonoBehaviour
     // 상태 데이터
     private float frameTimer = 0f;
     private int currentFrameIndex = 0;
+    private bool isDeadStartFinished = false;
     
     private bool prevIsMoving = false;
     private bool prevBInHub = true;
@@ -100,6 +106,7 @@ public class CharacterAnimator : MonoBehaviour
     {
         frameTimer = 0f;
         currentFrameIndex = 0;
+        isDeadStartFinished = false;
     }
 
     public void UpdateAnimation(float _deltaTime, bool _isMoving, bool _bInHub, float _facingAngle, float _shadowAngle, bool _isBlinking, bool _isDead)
@@ -137,6 +144,7 @@ public class CharacterAnimator : MonoBehaviour
         {
             currentFrameIndex = 0;
             frameTimer = 0f;
+            isDeadStartFinished = false;
 
             prevIsMoving = _isMoving;
             prevBInHub = _bInHub;
@@ -147,51 +155,111 @@ public class CharacterAnimator : MonoBehaviour
         }
 
         // 3. 스프라이트 리스트 가져오기
-        List<Sprite> baseSprites = GetBaseSprites(_isMoving, _bInHub, dirIndex, out bool baseFlipX);
-        List<Sprite> faceSprites = GetFaceSprites(_isMoving, _bInHub, dirIndex, out bool faceFlipX, out bool isFaceActive);
-        List<Sprite> blinkSprites = GetBlinkSprites(_isMoving, _bInHub, dirIndex, out bool blinkFlipX, out _);
+        List<Sprite> baseSprites = null;
+        bool baseFlipX = false;
+        List<Sprite> faceSprites = null;
+        bool faceFlipX = false;
+        bool isFaceActive = false;
+        List<Sprite> blinkSprites = null;
+        bool blinkFlipX = false;
+
+        if (_isDead)
+        {
+            if (!isDeadStartFinished && deadStartSprites != null && deadStartSprites.Count > 0)
+            {
+                baseSprites = deadStartSprites;
+            }
+            else
+            {
+                baseSprites = deadLoopSprites;
+            }
+            baseFlipX = false;
+        }
+        else
+        {
+            baseSprites = GetBaseSprites(_isMoving, _bInHub, dirIndex, out baseFlipX);
+            faceSprites = GetFaceSprites(_isMoving, _bInHub, dirIndex, out faceFlipX, out isFaceActive);
+            blinkSprites = GetBlinkSprites(_isMoving, _bInHub, dirIndex, out blinkFlipX, out _);
+        }
 
         // 4. 애니메이션 프레임 계산
         if (baseSprites != null && baseSprites.Count > 0)
         {
-            float sampleRate = _isMoving ? runSample : idleSample;
+            float sampleRate = 5f;
+            if (_isDead)
+            {
+                sampleRate = !isDeadStartFinished ? 10f : 5f;
+            }
+            else
+            {
+                sampleRate = _isMoving ? runSample : idleSample;
+            }
             float frameTime = sampleRate > 0f ? 1f / sampleRate : 0.2f;
 
             frameTimer += _deltaTime;
             if (frameTimer >= frameTime)
             {
                 frameTimer -= frameTime;
-                currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
+                if (_isDead)
+                {
+                    if (!isDeadStartFinished && deadStartSprites != null && deadStartSprites.Count > 0)
+                    {
+                        if (currentFrameIndex < baseSprites.Count - 1)
+                        {
+                            currentFrameIndex++;
+                        }
+                        else
+                        {
+                            isDeadStartFinished = true;
+                            currentFrameIndex = 0;
+                            baseSprites = deadLoopSprites;
+                        }
+                    }
+                    else
+                    {
+                        if (baseSprites != null && baseSprites.Count > 0)
+                        {
+                            currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
+                        }
+                    }
+                }
+                else
+                {
+                    currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
+                }
             }
 
             // 인덱스 초과 방지 안전망
-            if (currentFrameIndex >= baseSprites.Count)
+            if (baseSprites != null && currentFrameIndex >= baseSprites.Count)
             {
-                currentFrameIndex = 0;
+                currentFrameIndex = Mathf.Max(0, baseSprites.Count - 1);
             }
 
             // 5. 스프라이트 설정
-            Sprite currentBaseSprite = baseSprites[currentFrameIndex];
-            
-            if (baseSR != null)
+            if (baseSprites != null && baseSprites.Count > 0)
             {
-                baseSR.sprite = currentBaseSprite;
-                Vector3 scale = baseSR.transform.localScale;
-                scale.x = baseFlipX ? -1f : 1f;
-                baseSR.transform.localScale = scale;
-            }
+                Sprite currentBaseSprite = baseSprites[currentFrameIndex];
+                
+                if (baseSR != null)
+                {
+                    baseSR.sprite = currentBaseSprite;
+                    Vector3 scale = baseSR.transform.localScale;
+                    scale.x = baseFlipX ? -1f : 1f;
+                    baseSR.transform.localScale = scale;
+                }
 
-            if (onWaterBaseSR != null)
-            {
-                onWaterBaseSR.sprite = currentBaseSprite;
-                Vector3 scale = onWaterBaseSR.transform.localScale;
-                scale.x = baseFlipX ? 1f : -1f;
-                onWaterBaseSR.transform.localScale = scale;
+                if (onWaterBaseSR != null)
+                {
+                    onWaterBaseSR.sprite = currentBaseSprite;
+                    Vector3 scale = onWaterBaseSR.transform.localScale;
+                    scale.x = baseFlipX ? 1f : -1f;
+                    onWaterBaseSR.transform.localScale = scale;
+                }
             }
         }
 
         // 얼굴 스프라이트 처리
-        if (isFaceActive)
+        if (!_isDead && isFaceActive)
         {
             if (!_isBlinking)
             {
@@ -251,18 +319,21 @@ public class CharacterAnimator : MonoBehaviour
         }
 
         // 그림자 스프라이트 처리
-        List<Sprite> shadowSprites = GetBaseSprites(_isMoving, _bInHub, shadowDirIndex, out bool shadowFlipX);
-        if (shadowSprites != null && shadowSprites.Count > 0)
+        if (!_isDead)
         {
-            int shadowFrameIndex = currentFrameIndex % shadowSprites.Count;
-            Sprite currentShadowSprite = shadowSprites[shadowFrameIndex];
-
-            if (shadowSR != null)
+            List<Sprite> shadowSprites = GetBaseSprites(_isMoving, _bInHub, shadowDirIndex, out bool shadowFlipX);
+            if (shadowSprites != null && shadowSprites.Count > 0)
             {
-                shadowSR.sprite = currentShadowSprite;
-                Vector3 scale = shadowSR.transform.localScale;
-                scale.x = shadowFlipX ? -1f : 1f;
-                shadowSR.transform.localScale = scale;
+                int shadowFrameIndex = currentFrameIndex % shadowSprites.Count;
+                Sprite currentShadowSprite = shadowSprites[shadowFrameIndex];
+
+                if (shadowSR != null)
+                {
+                    shadowSR.sprite = currentShadowSprite;
+                    Vector3 scale = shadowSR.transform.localScale;
+                    scale.x = shadowFlipX ? -1f : 1f;
+                    shadowSR.transform.localScale = scale;
+                }
             }
         }
     }

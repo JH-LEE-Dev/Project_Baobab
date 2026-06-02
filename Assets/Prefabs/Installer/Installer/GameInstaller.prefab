@@ -1607,6 +1607,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3235015552567438449}
   - component: {fileID: 7144509803247603499}
+  - component: {fileID: 5405137478683244198}
   m_Layer: 0
   m_Name: TileMapGenerator
   m_TagString: Untagged
@@ -1703,6 +1704,19 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0d558cdb55ad84c43903e762812d0e57, type: 2}
   stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
+--- !u!114 &5405137478683244198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7291486191322297758}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50fe2d9a8536e5b478d93d3c195df74a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AnimatedObjGenerator
+  animatedObjPrefab: {fileID: 638856153476849655, guid: bb9393c5a73b11e43a479f9bd10cde48, type: 3}
 --- !u!1 &7432536287932878892
 GameObject:
   m_ObjectHideFlags: 0

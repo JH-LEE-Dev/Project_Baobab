@@ -717,25 +717,7 @@ public class LogItem : Item, IStaticCollidable
         {
             visualTransform.localPosition = Vector3.Lerp(visualTransform.localPosition, Vector3.zero, _deltaTime * 10f);
 
-            // 스프링 댐퍼 연출 (진동 주기와 감쇠를 더 쫀득하게 튜닝)
-            float freq = 18f;
-            float decay = 4f;
-            float springEffect = Mathf.Sin(elapsed * freq) * Mathf.Exp(-elapsed * decay) * 0.5f;
-
-            if (suckSpeed > 0f)
-            {
-                // 빨려 들어가는 속도에 비례해 타겟 방향으로 길어지는 Stretch 효과 추가
-                float speedStretch = Mathf.Min(suckSpeed * 0.04f, 0.25f);
-                visualTransform.localScale = new Vector3(
-                    (1f + springEffect) * (1f - speedStretch), // 가로축 축소
-                    (1f - springEffect) * (1f + speedStretch), // 세로축 확대 (타겟 방향)
-                    1f
-                );
-            }
-            else
-            {
-                visualTransform.localScale = Vector3.one * (1f + springEffect);
-            }
+            visualTransform.localScale = Vector3.one;
 
             if (customSortable != null)
             {

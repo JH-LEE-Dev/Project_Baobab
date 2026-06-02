@@ -70,6 +70,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private TileBase stencilTile;
     [SerializeField] private TileBase groundStencilTile;
 
+    private AnimatedObjGenerator animatedObjGenerator;
 
     // // 외부 의존성
     private Tilemap groundTilemap;
@@ -117,6 +118,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     public void InitializeMapData()
     {
+        animatedObjGenerator = GetComponent<AnimatedObjGenerator>();
+        if (animatedObjGenerator != null)
+        {
+            animatedObjGenerator.Initialize();
+        }
+
         if (grid == null)
         {
             grid = Instantiate(gridPrefab, transform.position, Quaternion.identity).GetComponent<Grid>();
@@ -174,6 +181,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     public void GenerateMap()
     {
         if (groundTilemap == null || collisionTilemap == null || decoTilemap == null) return;
+
+        if (animatedObjGenerator != null)
+        {
+            animatedObjGenerator.ReleaseAllActive();
+        }
 
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
@@ -504,18 +516,18 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     rockCollisionTiles[i] = treeCollisionTile;
                 }
 
-                bool _hasInsectDeco = false;
+                bool _hasAnimatedObj = false;
                 if (false == _hasRockDeco && false == _isSand)
                 {
-                    if (insectDecoTiles != null && insectDecoTiles.Count > 0 && UnityEngine.Random.value < 0.0025f)
+                    if (animatedObjGenerator != null && UnityEngine.Random.value < 0.0025f)
                     {
-                        decoTilesToApply[i] = insectDecoTiles[UnityEngine.Random.Range(0, insectDecoTiles.Count)];
-                        _hasInsectDeco = true;
+                        animatedObjGenerator.SpawnAnimatedObj(pos);
+                        _hasAnimatedObj = true;
                     }
                 }
 
                 bool _hasGroundDeco = false;
-                if (false == _hasRockDeco && false == _hasInsectDeco)
+                if (false == _hasRockDeco && false == _hasAnimatedObj)
                 {
                     float _groundDecoProb = _isSand ? 0.05f : 0.01f;
                     if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
@@ -525,7 +537,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     }
                 }
 
-                if (false == _isSand && false == _hasRockDeco && false == _hasInsectDeco && false == _hasGroundDeco)
+                if (false == _isSand && false == _hasRockDeco && false == _hasAnimatedObj && false == _hasGroundDeco)
                 {
                     if (grassDecoTiles != null && grassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.35f)
                     {

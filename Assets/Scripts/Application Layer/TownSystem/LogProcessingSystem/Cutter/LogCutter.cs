@@ -292,22 +292,44 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
         if (bIsCutting)
         {
-            if (!isReversing)
+            float currentSpeed = GetCurrentSpeed();
+            float totalDuration = currentSpeed > 0f ? (maxDurability / currentSpeed) : 0f;
+
+            if (totalDuration > 0f && totalDuration < 3f)
             {
-                animProgress += _deltaTime * 0.5f; // 2초 동안 0 -> 1로 정방향 진행
-                if (animProgress >= 1f)
+                // 3초 미만일 때는 가공 진행률에 맞춰 2:1 비율로 정/역방향 딱 맞춰 재생
+                float progress = 1f - (cuttingItem.durability / maxDurability);
+                if (progress < (2f / 3f))
                 {
-                    animProgress = 1f;
+                    animProgress = progress * 1.5f;
+                    isReversing = false;
+                }
+                else
+                {
+                    animProgress = (1f - progress) * 3f;
                     isReversing = true;
                 }
             }
             else
             {
-                animProgress -= _deltaTime; // 1초 동안 1 -> 0으로 역방향 진행
-                if (animProgress <= 0f)
+                // 3초 이상일 때는 기존의 정방향 2초, 역방향 1초 로직 유지
+                if (!isReversing)
                 {
-                    animProgress = 0f;
-                    isReversing = false;
+                    animProgress += _deltaTime * 0.5f; // 2초 동안 0 -> 1로 정방향 진행
+                    if (animProgress >= 1f)
+                    {
+                        animProgress = 1f;
+                        isReversing = true;
+                    }
+                }
+                else
+                {
+                    animProgress -= _deltaTime; // 1초 동안 1 -> 0으로 역방향 진행
+                    if (animProgress <= 0f)
+                    {
+                        animProgress = 0f;
+                        isReversing = false;
+                    }
                 }
             }
         }

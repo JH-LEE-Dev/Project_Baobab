@@ -133,12 +133,16 @@ public class CharacterVisualComponent : MonoBehaviour
         }
     }
 
-    public void UpdateVisuals(bool _isMoving, bool _bInHub)
+    public void UpdateVisuals(bool _isMoving, bool _bInHub, bool _isDead = false)
     {
         bInHub = _bInHub;
 
         UpdateCharacterColor();
-        UpdateBlink();
+        
+        if (!_isDead)
+        {
+            UpdateBlink();
+        }
 
         // 방향 정보 추출을 위해 정밀 계산
         float shadowAngle = 0f;
@@ -157,13 +161,13 @@ public class CharacterVisualComponent : MonoBehaviour
                 currentFacingAngle,
                 shadowAngle,
                 isBlinking,
-                false
+                _isDead
             );
         }
 
         // 수면 반사/얼굴 정렬 제어
         int dirIndex = Mathf.RoundToInt(currentFacingAngle / 45f) % 8;
-        bool isFaceActive = (dirIndex == 0 || dirIndex == 4 || dirIndex == 5 || dirIndex == 6 || dirIndex == 7);
+        bool isFaceActive = !_isDead && (dirIndex == 0 || dirIndex == 4 || dirIndex == 5 || dirIndex == 6 || dirIndex == 7);
         if (faceSR != null)
         {
             faceSR.sortingLayerID = isFaceActive ? originalFaceSortingLayer : defaultSortingLayerId;
@@ -202,7 +206,7 @@ public class CharacterVisualComponent : MonoBehaviour
             shadowObject.ManualUpdate(
                 environmentProvider.shadowDataProvider.CurrentShadowAngle,
                 environmentProvider.shadowDataProvider.CurrentShadowScaleY,
-                environmentProvider.shadowDataProvider.IsShadowActive);
+                environmentProvider.shadowDataProvider.IsShadowActive && !_isDead);
         }
     }
 

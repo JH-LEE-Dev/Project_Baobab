@@ -360,8 +360,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine?.Update();
 
         // 비주얼 업데이트
-        if (bDead == false)
-            characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon);
+        characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon, bDead);
 
         // 스태미나 로직
         UpdateStaminaAmounts(); // 실시간 소모량 갱신 반영
