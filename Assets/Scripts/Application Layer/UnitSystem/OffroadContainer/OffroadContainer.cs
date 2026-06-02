@@ -34,6 +34,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     long IInventory.carrot => 0;
     public int currentSlotCnt => currentSlotCount;
 
+    public int maxItemCntPerSlot => maxItemsPerSlot;
+
     private const string PLAYER_TAG = "Player";
 
     // 시각적 연출을 위한 변수

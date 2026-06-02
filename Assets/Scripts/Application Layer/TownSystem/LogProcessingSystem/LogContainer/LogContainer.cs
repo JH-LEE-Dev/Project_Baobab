@@ -48,6 +48,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     public int currentSlotCnt => currentSlotCount;
 
+    public int maxItemCntPerSlot => maxItemsPerSlot;
+
     private bool bCanInteract = false;
     private Coroutine transferCoroutine;
     private WaitForSeconds transferWait;
