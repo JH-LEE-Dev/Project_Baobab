@@ -91,19 +91,14 @@ public class UIView_Popup : UIView
         {
             if (null != uiInventory && false == uiInventory.isOpening)
             {
-                uiInventory.OnShow();
+                InventoryUIOpendEvent.Invoke(true);
                 isAutoOpenedByInteraction = true;
             }
         }
         else
         {
             if (true == isAutoOpenedByInteraction)
-            {
-                if (null != uiInventory)
-                    uiInventory.OnHide();
-                    
-                isAutoOpenedByInteraction = false;
-            }
+                InventoryUIOpendEvent.Invoke(isAutoOpenedByInteraction = false);
         }
     }
 
@@ -216,8 +211,9 @@ public class UIView_Popup : UIView
 
     public void InventoryIsFull()
     {
-        InventoryUIOpendEvent?.Invoke(true);
+        if (true == uiInventory?.isOpening)
+            return;
 
-        OnShow();
+        InventoryUIOpendEvent?.Invoke(true);
     }
 }
