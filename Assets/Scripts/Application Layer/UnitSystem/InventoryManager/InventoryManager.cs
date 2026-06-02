@@ -49,6 +49,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     long IMoneyData.lightningEssence => lightningEssence;
 
+    public int maxItemCntPerSlot => maxItemsPerSlot;
+
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
     private LogItemPoolingManager logItemPoolingManager;

@@ -6,6 +6,7 @@ public class UIView_WorldPopup : UIView
     private ILogCutter logCutter;
     private IShopNPC shopNPC;
     private IInventory offroadContainer;
+    private ICharacter character;
 
     [SerializeField] private Vector2 storageOffset = new Vector2(-2f, 0.5f);
     [SerializeField] private Vector2 carStorageOffset = new Vector2(0f, 0.5f);
@@ -297,5 +298,10 @@ public class UIView_WorldPopup : UIView
             return;
 
         ui_CarStorage?.UpdateSlots();
+    }
+
+    public void SetCharacter(ICharacter _character)
+    {
+        character = _character;
     }
 }

@@ -1,7 +1,5 @@
 using System;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class GameplayUICoordinator
 {
@@ -185,6 +183,7 @@ public class GameplayUICoordinator
     {
         hudUI.SetCharacter(characterSpawendSignal.character);
         unitUI.SetCharacter(characterSpawendSignal.character);
+        worldPopupUI.SetCharacter(characterSpawendSignal.character);
     }
 
     private void GoHomeButtonClicked()
