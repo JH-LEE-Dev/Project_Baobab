@@ -105,6 +105,9 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent += ShopInteractStateChanged;
+
+        logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
+        logProcessingManager.LogProcessorIsActiveEvent += LogItemProcessorActiveState;
     }
 
     private void ReleaseEvents()
@@ -120,6 +123,7 @@ public class TownSystem : MonoBehaviour
         tentManager.TentInteractStateChangedEvent -= TentInteractStateChanged;
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
+        logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;        
     }
 
     private void SubscribeSignals()
@@ -226,5 +230,10 @@ public class TownSystem : MonoBehaviour
     private void ShopInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new ShopInteractStateChangedSignal(_boolean));
+    }
+
+    private void LogItemProcessorActiveState(bool _boolean)
+    {
+        signalHub.Publish(new LogItemProcessorActiveStateSignal(_boolean));
     }
 }

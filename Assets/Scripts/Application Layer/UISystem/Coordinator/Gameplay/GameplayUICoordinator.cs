@@ -66,7 +66,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
         signalHub.Subscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
-        signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);        
+        signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
+        signalHub.Subscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
     }
 
     private void UnSubscribeSignals()
@@ -99,6 +100,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<TentInteractStateChangedSignal>(TentInteractStateChanged);
         signalHub.UnSubscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
         signalHub.UnSubscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
+        signalHub.UnSubscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
     }
 
     private void BindEvents()
@@ -389,5 +391,10 @@ public class GameplayUICoordinator
     private void ShopInteractStateChanged(ShopInteractStateChangedSignal _shopInteractStateChangedSignal)
     {
         unitUI.ShopInteractStateChanged(_shopInteractStateChangedSignal.state);
+    }
+
+    private void LogItemProcessorIsActive(LogItemProcessorActiveStateSignal _logItemProcessorActiveStateSignal)
+    {
+        worldPopupUI.LogItemProcessorActiveStateChange(_logItemProcessorActiveStateSignal.state);
     }
 }

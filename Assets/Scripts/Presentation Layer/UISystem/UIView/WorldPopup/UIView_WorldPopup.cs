@@ -304,4 +304,10 @@ public class UIView_WorldPopup : UIView
     {
         character = _character;
     }
+
+    //true -> 제재소 동작중 , false -> 제재소 동작 끝
+    public void LogItemProcessorActiveStateChange(bool _boolean)
+    {
+        
+    }
 }

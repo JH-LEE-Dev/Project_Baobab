@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
+    public event Action ItemAddedEvent;
     public event Action ContainerSpecChangedEvent;
     public event Action<LogItemData> LogOutEvent;
     public event Action<bool> InteractStateEvent;

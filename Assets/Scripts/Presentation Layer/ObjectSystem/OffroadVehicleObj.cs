@@ -72,6 +72,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private float colRadius;
     private bool bCanReach = true;
     private bool bCanInteract = false;
+    private bool bPhysicalOverlapped = false;
+    private bool bLastInteractState = false;
 
     private Transform charTransform;
 
@@ -144,7 +146,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public void ResetPortal()
     {
         lastActivatedTime = Time.time;
-        bOverlapped = false;
+        bPhysicalOverlapped = false;
+        UpdateInteractState();
         var conPos = containerObject.transform.position;
         conPos.y += 0.25f;
         offroadContainer.transform.position = conPos;
@@ -160,55 +163,60 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainerVComponent.bActive = _boolean;
     }
 
+    private void UpdateInteractState()
+    {
+        bool currentState = bCanJump && bCanReach && bPhysicalOverlapped;
+        if (currentState != bLastInteractState)
+        {
+            bLastInteractState = currentState;
+            bCanInteract = currentState;
+            bOverlapped = currentState;
+
+            OffroadInteractStateChangedEvent?.Invoke(currentState);
+            outLineObject.SetActive(currentState);
+
+            if (!currentState)
+            {
+                PortalDeActivatedEvent?.Invoke();
+            }
+        }
+    }
+
     //유니티 이벤트 함수
     private void OnTriggerEnter2D(Collider2D _other)
     {
-        if (bCanJump == false)
-            return;
-
-        if (bCanReach == false)
-            return;
-
-        outLineObject.SetActive(true);
-
-        OffroadInteractStateChangedEvent?.Invoke(true);
-
-        bOverlapped = true;
+        if (_other.gameObject.layer == characterLayer)
+        {
+            bPhysicalOverlapped = true;
+            UpdateInteractState();
+        }
     }
 
     private void OnTriggerStay2D(Collider2D _other)
     {
-        if (bCanJump == false)
-            return;
-
-        if (bCanReach == false)
-            return;
-
-        bCanInteract = true;
-
-        outLineObject.SetActive(true);
-
-        bOverlapped = true;
+        if (_other.gameObject.layer == characterLayer)
+        {
+            if (bPhysicalOverlapped == false)
+            {
+                bPhysicalOverlapped = true;
+                UpdateInteractState();
+            }
+        }
     }
 
     private void OnTriggerExit2D(Collider2D _other)
     {
-        if (bCanJump == false || bCanInteract == false)
-            return;
-
-        outLineObject.SetActive(false);
-
-        OffroadInteractStateChangedEvent?.Invoke(false);
-
-        bCanInteract = false;
-
-        bOverlapped = false;
-        PortalDeActivatedEvent?.Invoke();
+        if (_other.gameObject.layer == characterLayer)
+        {
+            bPhysicalOverlapped = false;
+            UpdateInteractState();
+        }
     }
 
     public void SetCanTravel(bool _canJump)
     {
         bCanJump = _canJump;
+        UpdateInteractState();
     }
 
     public void BindEvents()
@@ -477,6 +485,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         else
         {
             SetbCanReach(false);
+
             offroadContainer.SetCanReach(true);
 
             if (offroadContainer.bCanInteract == true)
@@ -487,19 +496,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public void SetbCanReach(bool _bCanReach)
     {
         bCanReach = _bCanReach;
-
-        if (bCanReach == false)
-        {
-            if (bCanInteract == true || bOverlapped == true)
-            {
-                bCanInteract = false;
-                bOverlapped = false;
-
-                outLineObject.SetActive(false);
-
-                PortalDeActivatedEvent?.Invoke();
-            }
-        }
+        UpdateInteractState();
     }
 
     private void ContainerOpend()
