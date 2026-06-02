@@ -179,6 +179,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.ResetWeaponStatus();
             attackComponent.SetEnable(true);
             attackComponent.SetCursorEnable(true);
+            healthComponent.SetStaminaDecrease(true);
+            attackComponent.SetbCanAttack(true);
+            armComponent.SetbCanAttack(true);
         }
 
         bDead = false;
@@ -426,5 +429,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void DisableAttackComponent()
     {
         attackComponent.SetCursorEnable(false);
+        attackComponent.SetbCanAttack(false);
+        armComponent.SetbCanAttack(false);
+    }
+
+    public void SetStaminaDecrease(bool _boolean)
+    {
+        healthComponent.SetStaminaDecrease(_boolean);
     }
 }

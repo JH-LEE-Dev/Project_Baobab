@@ -248,8 +248,8 @@ public class TreeVisualComponent : MonoBehaviour
         ApplyColorSet(visualData);
         ApplyDefaultScale();
         SyncShadowSprite();
-        CacheSwayBasePose();
         ResetTopSway();
+        CacheSwayBasePose();
     }
 
     // 묘목(Sapling) 비주얼을 적용한다.
@@ -279,8 +279,8 @@ public class TreeVisualComponent : MonoBehaviour
         ApplyColorSet(visualData);
         ApplyDefaultScale();
         SyncShadowSprite();
-        CacheSwayBasePose();
         ResetTopSway();
+        CacheSwayBasePose();
     }
 
     public void DeActivateOnWaterObject()

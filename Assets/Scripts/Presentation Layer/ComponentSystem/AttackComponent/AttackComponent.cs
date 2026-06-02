@@ -55,6 +55,7 @@ public class AttackComponent : PComponent
     private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
 
     private bool bCursorEnable = false;
+    private bool bCanAttack = false;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -173,7 +174,7 @@ public class AttackComponent : PComponent
 
     public void Attack()
     {
-        if (CollisionSystem.Instance == null) return;
+        if (CollisionSystem.Instance == null || bCanAttack == false) return;
 
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
@@ -574,5 +575,10 @@ public class AttackComponent : PComponent
     public void SetCursorEnable(bool _boolean)
     {
         bCursorEnable = _boolean;
+    }
+
+    public void SetbCanAttack(bool _boolean)
+    {
+        bCanAttack = _boolean;
     }
 }

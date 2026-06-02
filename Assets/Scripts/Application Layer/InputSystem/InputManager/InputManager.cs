@@ -48,4 +48,9 @@ public class InputManager : MonoBehaviour
     {
         inputReader.PauseMouse(_boolean);
     }
+
+    public void PauseInteractKey(bool _boolean)
+    {
+        inputReader.PauseInteractKey(_boolean);
+    }
 }

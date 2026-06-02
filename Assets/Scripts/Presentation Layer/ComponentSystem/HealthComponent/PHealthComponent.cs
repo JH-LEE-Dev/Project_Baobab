@@ -19,6 +19,8 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
 
+    private bool bStaminaDecrease = false;
+
     /// <summary>
     /// 컴포넌트 초기화
     /// </summary>
@@ -45,7 +47,7 @@ public class PHealthComponent : PComponent, IPHealthComponent
     /// </summary>
     public void DecreaseStamina()
     {
-        if (currentStamina <= 0)
+        if (currentStamina <= 0 || bStaminaDecrease == false)
             return;
 
         // staminaDecAmount는 초당 변화량이므로 Time.deltaTime을 곱함
@@ -120,5 +122,10 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void StaminaReset()
     {
         currentStamina = maxStamina;
+    }
+
+    public void SetStaminaDecrease(bool _boolean)
+    {
+        bStaminaDecrease = _boolean;
     }
 }
