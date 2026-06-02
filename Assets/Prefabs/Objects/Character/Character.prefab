@@ -1147,8 +1147,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterAnimator
   baseSR: {fileID: 8627127040924059846}
   faceSR: {fileID: 2738683125399244482}
+  faceBlinkSR: {fileID: 2012972277570134717}
   onWaterBaseSR: {fileID: 8202687316918872623}
   onWaterFaceSR: {fileID: 7735109694555198753}
+  onWaterFaceBlinkSR: {fileID: 369918846693311339}
   shadowSR: {fileID: 8061037964155472829}
   base_IdleR:
   - {fileID: -1466136959457692454, guid: c02352bffbbe06d4694d6a556132a03a, type: 3}
@@ -1349,7 +1351,7 @@ MonoBehaviour:
   - {fileID: -1279487765, guid: 7c4938da6318ed94c90496cc7d4ad608, type: 3}
   - {fileID: 1216872758, guid: 7c4938da6318ed94c90496cc7d4ad608, type: 3}
   idleSample: 5
-  runSample: 5
+  runSample: 10
 --- !u!1 &4035353486790179823
 GameObject:
   m_ObjectHideFlags: 0

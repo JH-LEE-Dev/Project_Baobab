@@ -7,11 +7,8 @@ public class CharacterVisualComponent : MonoBehaviour
     private IEnvironmentProvider environmentProvider;
 
     // 내부 의존성 (컴포넌트 및 오브젝트)
-    private Animator anim;
     private SpriteRenderer sr;
-    private Animator onWaterAnim;
     private SpriteRenderer onWaterSR;
-    private Animator shadowAnim;
     private SpriteRenderer shadowSR;
     private Shadow shadowObject;
 
@@ -21,14 +18,9 @@ public class CharacterVisualComponent : MonoBehaviour
     [SerializeField] private GameObject onWaterFaceObjectBlink;
 
     // 내부 의존성 (Face)
-    private Animator faceAnim;
     private SpriteRenderer faceSR;
-    private Animator faceBlinkAnim;
     private SpriteRenderer faceBlinkSR;
-
-    private Animator onWaterFaceAnim;
     private SpriteRenderer onWaterFaceSR;
-    private Animator onWaterFaceBlinkAnim;
     private SpriteRenderer onWaterFaceBlinkSR;
 
     // 상태 및 데이터
@@ -38,6 +30,7 @@ public class CharacterVisualComponent : MonoBehaviour
     private Color normalColor = Color.white;
     private Color shadowTint = new Color(0.6f, 0.6f, 0.7f, 1f);
     private float currentFacingAngle = 0f;
+    private bool bInHub = true;
 
     // Sorting Layer 관련 데이터
     private int originalFaceSortingLayer;
@@ -54,17 +47,14 @@ public class CharacterVisualComponent : MonoBehaviour
     private int currentBlinkCountInSequence = 1;
     private const float blinkGapDuration = 0.05f;
 
-    private readonly int facingDirHash = Animator.StringToHash("facingDir");
-    private readonly int isMovingHash = Animator.StringToHash("IsMoving");
-    private readonly int bInHubHash = Animator.StringToHash("bInHub");
-
-    public Animator Anim => anim;
-
     private CustomSortable customSortable;
 
-    public GameObject characterVisualComponent;
+    [SerializeField] private GameObject characterVisualComponent;
 
     private CharacterAnimator characterAnimator;
+
+    // Character.cs 컴파일 호환성 유지용 (혹시 외부에서 사용되는 경우 대비)
+    public Animator Anim => null;
 
     #region Public Methods (Initialization & Control)
 
@@ -72,18 +62,20 @@ public class CharacterVisualComponent : MonoBehaviour
         CustomSortable _customSortable)
     {
         characterAnimator = GetComponent<CharacterAnimator>();
+        if (characterAnimator != null)
+        {
+            characterAnimator.Initialize();
+        }
         
         environmentProvider = _environmentProvider;
         shadowObject = _shadowObject;
         customSortable = _customSortable;
         defaultSortingLayerId = SortingLayer.NameToID("Default");
 
-        anim = GetComponent<Animator>();
         sr = GetComponent<SpriteRenderer>();
 
         if (faceObject != null)
         {
-            faceAnim = faceObject.GetComponent<Animator>();
             faceSR = faceObject.GetComponent<SpriteRenderer>();
             if (faceSR != null)
             {
@@ -93,20 +85,16 @@ public class CharacterVisualComponent : MonoBehaviour
 
         if (faceObjectBlink != null)
         {
-            faceBlinkAnim = faceObjectBlink.GetComponent<Animator>();
             faceBlinkSR = faceObjectBlink.GetComponent<SpriteRenderer>();
             if (faceBlinkSR != null)
             {
-                faceBlinkSR.enabled = false;
                 originalFaceBlinkSortingLayer = faceBlinkSR.sortingLayerID;
             }
         }
 
         if (onWaterFaceObject != null)
         {
-            onWaterFaceAnim = onWaterFaceObject.GetComponent<Animator>();
             onWaterFaceSR = onWaterFaceObject.GetComponent<SpriteRenderer>();
-
             if (onWaterFaceSR != null)
             {
                 onWaterFaceSR.material.SetFloat("_DistortionAmount", 0.5f);
@@ -116,12 +104,9 @@ public class CharacterVisualComponent : MonoBehaviour
 
         if (onWaterFaceObjectBlink != null)
         {
-            onWaterFaceBlinkAnim = onWaterFaceObjectBlink.GetComponent<Animator>();
             onWaterFaceBlinkSR = onWaterFaceObjectBlink.GetComponent<SpriteRenderer>();
-
             if (onWaterFaceBlinkSR != null)
             {
-                onWaterFaceBlinkSR.enabled = false;
                 onWaterFaceBlinkSR.material.SetFloat("_DistortionAmount", 0.5f);
                 originalOnWaterFaceBlinkSortingLayer = onWaterFaceBlinkSR.sortingLayerID;
             }
@@ -130,9 +115,6 @@ public class CharacterVisualComponent : MonoBehaviour
         if (_onWaterAnimatorObject != null)
         {
             onWaterSR = _onWaterAnimatorObject.GetComponent<SpriteRenderer>();
-            onWaterAnim = _onWaterAnimatorObject.GetComponent<Animator>();
-
-            // 수면 위 일렁임 강도 캐릭터에 맞춰 감소 (기본 1.0 -> 0.5)
             if (onWaterSR != null)
             {
                 onWaterSR.material.SetFloat("_DistortionAmount", 0.5f);
@@ -142,31 +124,78 @@ public class CharacterVisualComponent : MonoBehaviour
         if (shadowObject != null)
         {
             shadowSR = shadowObject.GetComponent<SpriteRenderer>();
-            shadowAnim = shadowObject.GetComponent<Animator>();
             shadowObject.Initialize();
         }
 
-        if(customSortable != null)
+        if (customSortable != null)
         {
             customSortable.SetSortingGroup(characterVisualComponent.GetComponent<SortingGroup>());
         }
-
-        // 모든 애니메이터의 초기 파라미터 동기화 설정
-        SetupInitialAnimatorParameters(anim);
-        SetupInitialAnimatorParameters(faceAnim);
-        SetupInitialAnimatorParameters(faceBlinkAnim);
-        SetupInitialAnimatorParameters(onWaterAnim);
-        SetupInitialAnimatorParameters(onWaterFaceAnim);
-        SetupInitialAnimatorParameters(onWaterFaceBlinkAnim);
-        SetupInitialAnimatorParameters(shadowAnim);
     }
 
     public void UpdateVisuals(bool _isMoving, bool _bInHub)
     {
+        bInHub = _bInHub;
+
         UpdateCharacterColor();
-        UpdateFaceVisual(_isMoving, _bInHub);
-        UpdateShadowVisual(_isMoving, _bInHub);
-        UpdateOnWaterVisual(_isMoving, _bInHub);
+        UpdateBlink();
+
+        // 방향 정보 추출을 위해 정밀 계산
+        float shadowAngle = 0f;
+        if (environmentProvider != null && environmentProvider.shadowDataProvider != null)
+        {
+            shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
+        }
+
+        // Animator를 쓰지 않고 CharacterAnimator로 애니메이션 업데이트 수행
+        if (characterAnimator != null)
+        {
+            characterAnimator.UpdateAnimation(
+                Time.deltaTime,
+                _isMoving,
+                _bInHub,
+                currentFacingAngle,
+                shadowAngle,
+                isBlinking,
+                false
+            );
+        }
+
+        // 수면 반사/얼굴 정렬 제어
+        int dirIndex = Mathf.RoundToInt(currentFacingAngle / 45f) % 8;
+        bool isFaceActive = (dirIndex == 0 || dirIndex == 4 || dirIndex == 5 || dirIndex == 6 || dirIndex == 7);
+        if (faceSR != null)
+        {
+            faceSR.sortingLayerID = isFaceActive ? originalFaceSortingLayer : defaultSortingLayerId;
+            if (!isFaceActive)
+            {
+                faceSR.enabled = false;
+            }
+        }
+        if (faceBlinkSR != null)
+        {
+            faceBlinkSR.sortingLayerID = isFaceActive ? originalFaceBlinkSortingLayer : defaultSortingLayerId;
+            if (!isFaceActive)
+            {
+                faceBlinkSR.enabled = false;
+            }
+        }
+        if (onWaterFaceSR != null)
+        {
+            onWaterFaceSR.sortingLayerID = isFaceActive ? originalOnWaterFaceSortingLayer : defaultSortingLayerId;
+            if (!isFaceActive)
+            {
+                onWaterFaceSR.enabled = false;
+            }
+        }
+        if (onWaterFaceBlinkSR != null)
+        {
+            onWaterFaceBlinkSR.sortingLayerID = isFaceActive ? originalOnWaterFaceBlinkSortingLayer : defaultSortingLayerId;
+            if (!isFaceActive)
+            {
+                onWaterFaceBlinkSR.enabled = false;
+            }
+        }
 
         if (shadowObject != null)
         {
@@ -184,11 +213,7 @@ public class CharacterVisualComponent : MonoBehaviour
         float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360;
 
-        currentFacingAngle = angle; // 각도 저장
-        SetAnimatorDirection(anim, sr, _input);
-
-        if (faceAnim != null) SetAnimatorDirection(faceAnim, faceSR, _input);
-        if (faceBlinkAnim != null) SetAnimatorDirection(faceBlinkAnim, faceBlinkSR, _input);
+        currentFacingAngle = angle;
     }
 
     public void SetInShadow(bool _isInShadow, float _duration)
@@ -207,23 +232,12 @@ public class CharacterVisualComponent : MonoBehaviour
 
     public void SetHubState(bool _bInHub)
     {
-        anim.SetBool(bInHubHash, _bInHub);
-        if (faceAnim != null) faceAnim.SetBool(bInHubHash, _bInHub);
-        if (faceBlinkAnim != null) faceBlinkAnim.SetBool(bInHubHash, _bInHub);
+        bInHub = _bInHub;
     }
 
     #endregion
 
     #region Private Methods
-
-    private void SetupInitialAnimatorParameters(Animator _targetAnim)
-    {
-        if (_targetAnim == null) return;
-
-        _targetAnim.SetFloat(facingDirHash, 3f); // 3f: 아래 방향 (Vector2.down)
-        _targetAnim.SetBool(isMovingHash, false);
-        _targetAnim.SetBool(bInHubHash, true);
-    }
 
     private void UpdateCharacterColor()
     {
@@ -231,79 +245,13 @@ public class CharacterVisualComponent : MonoBehaviour
         float speed = currentFadeDuration > 0 ? 1.0f / currentFadeDuration : 100f;
         shadowLerp = Mathf.MoveTowards(shadowLerp, target, Time.deltaTime * speed);
         Color finalColor = Color.Lerp(normalColor, shadowTint, shadowLerp);
-        sr.color = finalColor;
+        
+        if (sr != null) sr.color = finalColor;
         if (onWaterSR != null) onWaterSR.color = finalColor;
         if (faceSR != null) faceSR.color = finalColor;
         if (faceBlinkSR != null) faceBlinkSR.color = finalColor;
         if (onWaterFaceSR != null) onWaterFaceSR.color = finalColor;
         if (onWaterFaceBlinkSR != null) onWaterFaceBlinkSR.color = finalColor;
-    }
-
-    private void UpdateFaceVisual(bool _isMoving, bool _bInHub)
-    {
-        AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
-
-        // 1. 애니메이터 동기화
-        if (faceAnim != null)
-        {
-            faceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
-            faceAnim.SetBool(isMovingHash, _isMoving);
-            faceAnim.SetBool(bInHubHash, _bInHub);
-            SynchronizeAnimator(faceAnim, stateInfo);
-
-            if (faceSR != null)
-            {
-                Vector3 scale = faceSR.transform.localScale;
-                scale.x = sr.transform.localScale.x;
-                faceSR.transform.localScale = scale;
-            }
-        }
-
-        if (faceBlinkAnim != null)
-        {
-            faceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
-            faceBlinkAnim.SetBool(isMovingHash, _isMoving);
-            faceBlinkAnim.SetBool(bInHubHash, _bInHub);
-            SynchronizeAnimator(faceBlinkAnim, stateInfo);
-
-            if (faceBlinkSR != null)
-            {
-                Vector3 scale = faceBlinkSR.transform.localScale;
-                scale.x = sr.transform.localScale.x;
-                faceBlinkSR.transform.localScale = scale;
-            }
-        }
-
-        // 2. 눈 깜빡임 로직 업데이트
-        UpdateBlink();
-
-        // 3. 방향에 따른 활성화/비활성화 제어
-        int dirIndex = Mathf.RoundToInt(currentFacingAngle / 45f) % 8;
-        bool isFaceActive = (dirIndex == 0 || dirIndex == 4 || dirIndex == 5 || dirIndex == 6 || dirIndex == 7);
-
-        // 현재 깜빡임 상태와 방향 가시성을 조합하여 최종 enabled 및 sortingLayerID 결정
-        if (faceSR != null)
-        {
-            faceSR.sortingLayerID = isFaceActive ? originalFaceSortingLayer : defaultSortingLayerId;
-            faceSR.enabled = !isBlinking;
-        }
-        if (faceBlinkSR != null)
-        {
-            faceBlinkSR.sortingLayerID = isFaceActive ? originalFaceBlinkSortingLayer : defaultSortingLayerId;
-            faceBlinkSR.enabled = isBlinking;
-        }
-
-        // 수면 반사 얼굴도 동일 로직 적용
-        if (onWaterFaceSR != null)
-        {
-            onWaterFaceSR.sortingLayerID = isFaceActive ? originalOnWaterFaceSortingLayer : defaultSortingLayerId;
-            onWaterFaceSR.enabled = !isBlinking;
-        }
-        if (onWaterFaceBlinkSR != null)
-        {
-            onWaterFaceBlinkSR.sortingLayerID = isFaceActive ? originalOnWaterFaceBlinkSortingLayer : defaultSortingLayerId;
-            onWaterFaceBlinkSR.enabled = isBlinking;
-        }
     }
 
     private void UpdateBlink()
@@ -343,136 +291,17 @@ public class CharacterVisualComponent : MonoBehaviour
     private void SetBlinkState(bool _isBlinking)
     {
         isBlinking = _isBlinking;
-        // 실제 enabled 제어는 UpdateFaceVisual에서 통합 관리
-    }
-
-    private void SynchronizeAnimator(Animator _targetAnim, AnimatorStateInfo _sourceState)
-    {
-        if (_targetAnim == null) return;
-
-        AnimatorStateInfo targetState = _targetAnim.GetCurrentAnimatorStateInfo(0);
-        if (targetState.fullPathHash != 0)
-        {
-            if (Mathf.Abs(targetState.normalizedTime - _sourceState.normalizedTime) > 0.02f)
-            {
-                _targetAnim.Play(targetState.fullPathHash, 0, _sourceState.normalizedTime);
-            }
-        }
-    }
-
-    private void UpdateOnWaterVisual(bool _isMoving, bool _bInHub)
-    {
-        AnimatorStateInfo stateInfo = anim.GetCurrentAnimatorStateInfo(0);
-
-        if (onWaterAnim != null && onWaterSR != null)
-        {
-            onWaterAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
-            onWaterAnim.SetBool(isMovingHash, _isMoving);
-            onWaterAnim.SetBool(bInHubHash, _bInHub);
-            SynchronizeAnimator(onWaterAnim, stateInfo);
-
-            Vector3 reversedScale = sr.transform.localScale;
-            reversedScale.x *= -1f;
-            onWaterSR.transform.localScale = reversedScale;
-        }
-
-        if (onWaterFaceAnim != null && onWaterFaceSR != null)
-        {
-            onWaterFaceAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
-            onWaterFaceAnim.SetBool(isMovingHash, _isMoving);
-            onWaterFaceAnim.SetBool(bInHubHash, _bInHub);
-            SynchronizeAnimator(onWaterFaceAnim, stateInfo);
-
-            Vector3 faceReversedScale = faceSR != null ? faceSR.transform.localScale : sr.transform.localScale;
-            faceReversedScale.x *= -1f;
-            onWaterFaceSR.transform.localScale = faceReversedScale;
-        }
-
-        if (onWaterFaceBlinkAnim != null && onWaterFaceBlinkSR != null)
-        {
-            onWaterFaceBlinkAnim.SetFloat(facingDirHash, anim.GetFloat(facingDirHash));
-            onWaterFaceBlinkAnim.SetBool(isMovingHash, _isMoving);
-            onWaterFaceBlinkAnim.SetBool(bInHubHash, _bInHub);
-            SynchronizeAnimator(onWaterFaceBlinkAnim, stateInfo);
-
-            Vector3 faceReversedScale = faceBlinkSR != null ? faceBlinkSR.transform.localScale : sr.transform.localScale;
-            faceReversedScale.x *= -1f;
-            onWaterFaceBlinkSR.transform.localScale = faceReversedScale;
-        }
-    }
-
-    private void UpdateShadowVisual(bool _isMoving, bool _bInHub)
-    {
-        if (shadowAnim == null) return;
-
-        shadowAnim.SetBool(isMovingHash, _isMoving);
-        shadowAnim.SetBool(bInHubHash, _bInHub);
-
-        float shadowAngle = environmentProvider.shadowDataProvider.CurrentShadowAngle;
-        float normalizedAngle = shadowAngle % 360;
-        if (normalizedAngle < 0) normalizedAngle += 360;
-
-        if (normalizedAngle <= 22.5f || normalizedAngle >= 337.5f)
-        {
-            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.right);
-        }
-        else if (normalizedAngle >= 157.5f && normalizedAngle <= 202.5f)
-        {
-            SetAnimatorDirection(shadowAnim, shadowSR, Vector2.left);
-        }
-        else
-        {
-            float lightPerspectiveAngle = currentFacingAngle - shadowAngle + 90f;
-            Vector2 lightViewDir = new Vector2(
-                Mathf.Cos(lightPerspectiveAngle * Mathf.Deg2Rad),
-                Mathf.Sin(lightPerspectiveAngle * Mathf.Deg2Rad)
-            );
-            SetAnimatorDirection(shadowAnim, shadowSR, lightViewDir);
-        }
-    }
-
-    private void SetAnimatorDirection(Animator _targetAnim, SpriteRenderer _targetSR, Vector2 _input)
-    {
-        if (_input.sqrMagnitude < 0.01f) return;
-
-        float angle = Mathf.Atan2(_input.y, _input.x) * Mathf.Rad2Deg;
-        if (angle < 0) angle += 360;
-
-        int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
-        bool flipX = false;
-        int animIndex = -1;
-
-        switch (dirIndex)
-        {
-            case 0: animIndex = 0; break;
-            case 1: animIndex = 1; break;
-            case 2: animIndex = 2; break;
-            case 3: animIndex = 1; flipX = true; break;
-            case 4: animIndex = 0; flipX = true; break;
-            case 5: animIndex = 4; flipX = true; break;
-            case 6: animIndex = 3; break;
-            case 7: animIndex = 4; break;
-        }
-
-        if (animIndex != -1)
-        {
-            Vector3 scale = _targetSR.transform.localScale;
-            scale.x = flipX ? -1f : 1f;
-            _targetSR.transform.localScale = scale;
-
-            _targetAnim.SetFloat(facingDirHash, animIndex);
-        }
     }
 
     #endregion
 
     public void CharacterIsDead(bool _boolean)
     {
-        onWaterSR.enabled = !_boolean;
-        onWaterFaceSR.enabled = !_boolean;
-        onWaterFaceBlinkSR.enabled = !_boolean;
-        shadowSR.enabled = !_boolean;
-        faceSR.enabled = !_boolean;
-        faceBlinkSR.enabled = !_boolean;
+        if (onWaterSR != null) onWaterSR.enabled = !_boolean;
+        if (onWaterFaceSR != null) onWaterFaceSR.enabled = !_boolean;
+        if (onWaterFaceBlinkSR != null) onWaterFaceBlinkSR.enabled = !_boolean;
+        if (shadowSR != null) shadowSR.enabled = !_boolean;
+        if (faceSR != null) faceSR.enabled = !_boolean;
+        if (faceBlinkSR != null) faceBlinkSR.enabled = !_boolean;
     }
 }

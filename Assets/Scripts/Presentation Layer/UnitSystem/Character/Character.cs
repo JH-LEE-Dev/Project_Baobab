@@ -28,7 +28,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public StatComponent statComponent { get; private set; }
 
     public StateMachine stateMachine { get; private set; }
-    public Animator anim => characterVisualComponent.Anim;
     public Rigidbody2D rb { get; private set; }
     public CircleCollider2D col { get; private set; }
 
@@ -60,8 +59,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public bool bCanApplyDamage => true;
 
-    public readonly int isMovingHash = Animator.StringToHash("IsMoving");
-    public readonly int bInHubHash = Animator.StringToHash("bInHub");
     public bool bMoving = false;
     [SerializeField] private float itemSensorRadius = 0.35f;
     private readonly List<IStaticCollidable> itemDetectionResults = new List<IStaticCollidable>(16);
@@ -76,7 +73,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private CustomSortable customSortable;
 
-    private bool bDead = false;
+    public bool bDead { get; private set; } = false;
 
     private float visualHeight = 0f;
 

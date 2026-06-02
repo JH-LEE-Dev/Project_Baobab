@@ -7,7 +7,6 @@ public class IdleState : CharacterState
     public override void Enter()
     {
         bActivated = true;
-        character.anim.SetBool(character.isMovingHash, false);
 
         // 현재 위치 타일 점유
         currentReservedPos = ctx.tilemapDataProvider.WorldToCell(character.transform.position);
