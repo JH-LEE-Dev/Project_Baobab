@@ -18,9 +18,7 @@ MonoBehaviour:
     - forestType: 2
       spawnTreeTypes:
       - treeType: 1
-        regenProb: 90
-      - treeType: 2
-        regenProb: 10
+        regenProb: 100
       spawnAnimalTypes:
       - animalType: 1
         regenProb: 100
