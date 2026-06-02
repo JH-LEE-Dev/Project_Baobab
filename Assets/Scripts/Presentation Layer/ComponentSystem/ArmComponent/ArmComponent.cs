@@ -194,4 +194,9 @@ public class ArmComponent : PComponent, IArmComponent
     {
         axeComponent.SortingOrder();
     }
+
+    public void SetbCanAttack(bool _boolean)
+    {
+        axeComponent.SetbCanAttack(_boolean);
+    }
 }

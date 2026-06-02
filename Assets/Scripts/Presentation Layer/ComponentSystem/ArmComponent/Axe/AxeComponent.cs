@@ -25,6 +25,8 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     float IAxeComponent.durability => durability;
 
+    private bool bCanAttack = false;
+
     public override void Initialize(ComponentCtx _ctx)
     {
         base.Initialize(_ctx);
@@ -65,7 +67,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     public override void LeftButtonClicked()
     {
-        if (ctx.inputManager.IsCursorHoveredOnUI()) return;
+        if (ctx.inputManager.IsCursorHoveredOnUI() || bCanAttack == false) return;
 
         bLeftButtonClicked = true;
 
@@ -111,7 +113,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         ctx.characterStat.speed = originalSpeed;
         DeclareAttackStateEvent?.Invoke(false);
 
-        if (bLeftButtonClicked && durability > 0f)
+        if (bLeftButtonClicked && durability > 0f && bCanAttack == true)
         {
             OnAttackStart();
         }
@@ -185,5 +187,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         {
             spriteRenderer.sprite = targetSprite;
         }
+    }
+
+    public void SetbCanAttack(bool _boolean)
+    {
+        bCanAttack = _boolean;
     }
 }

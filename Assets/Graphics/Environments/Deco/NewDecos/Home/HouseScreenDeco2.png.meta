@@ -1,0 +1,637 @@
+fileFormatVersion: 2
+guid: aa31636032cccf94f852ac375944854e
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 5662612327951129464
+    second: HouseScreenDeco2_0
+  - first:
+      213: 6249164387033798670
+    second: HouseScreenDeco2_1
+  - first:
+      213: -5462153132758754802
+    second: HouseScreenDeco2_2
+  - first:
+      213: 7380300457477049796
+    second: HouseScreenDeco2_3
+  - first:
+      213: -1696140750892784452
+    second: HouseScreenDeco2_4
+  - first:
+      213: -7875168934239397859
+    second: HouseScreenDeco2_5
+  - first:
+      213: 5121336978669189664
+    second: HouseScreenDeco2_6
+  - first:
+      213: -5971307796264404415
+    second: HouseScreenDeco2_7
+  - first:
+      213: 8117501357424404839
+    second: HouseScreenDeco2_8
+  - first:
+      213: 7602274198579985513
+    second: HouseScreenDeco2_9
+  - first:
+      213: 283537568485771822
+    second: HouseScreenDeco2_10
+  - first:
+      213: 8632136280014984853
+    second: HouseScreenDeco2_11
+  - first:
+      213: -1416251335186581640
+    second: HouseScreenDeco2_12
+  - first:
+      213: 5686080555154044701
+    second: HouseScreenDeco2_13
+  - first:
+      213: -3432349743097796936
+    second: HouseScreenDeco2_14
+  - first:
+      213: -4538287874168038116
+    second: HouseScreenDeco2_15
+  - first:
+      213: -5931880133120491798
+    second: HouseScreenDeco2_16
+  - first:
+      213: -7009767174066303313
+    second: HouseScreenDeco2_17
+  - first:
+      213: 5510135994383271756
+    second: HouseScreenDeco2_18
+  - first:
+      213: 6272074107284202898
+    second: HouseScreenDeco2_19
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: HouseScreenDeco2_0
+      rect:
+        serializedVersion: 2
+        x: 433
+        y: 259
+        width: 20
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 87b564419e3a59e40800000000000000
+      internalID: 5662612327951129464
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_1
+      rect:
+        serializedVersion: 2
+        x: 459
+        y: 258
+        width: 24
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e08db2886ed79b650800000000000000
+      internalID: 6249164387033798670
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_2
+      rect:
+        serializedVersion: 2
+        x: 460
+        y: 267
+        width: 67
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e0a902d5aa88234b0800000000000000
+      internalID: -5462153132758754802
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_3
+      rect:
+        serializedVersion: 2
+        x: 398
+        y: 94
+        width: 242
+        height: 156
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4cd829fd9281c6660800000000000000
+      internalID: 7380300457477049796
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_4
+      rect:
+        serializedVersion: 2
+        x: 445
+        y: 249
+        width: 21
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb4a8fd39f81678e0800000000000000
+      internalID: -1696140750892784452
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_5
+      rect:
+        serializedVersion: 2
+        x: 5
+        y: 52
+        width: 213
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d1818782497c5b290800000000000000
+      internalID: -7875168934239397859
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_6
+      rect:
+        serializedVersion: 2
+        x: 228
+        y: 116
+        width: 29
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 02a36ac19d4a21740800000000000000
+      internalID: 5121336978669189664
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_7
+      rect:
+        serializedVersion: 2
+        x: 259
+        y: 99
+        width: 67
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 14ab3275237a12da0800000000000000
+      internalID: -5971307796264404415
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_8
+      rect:
+        serializedVersion: 2
+        x: 324
+        y: 8
+        width: 316
+        height: 137
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7696809e97827a070800000000000000
+      internalID: 8117501357424404839
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_9
+      rect:
+        serializedVersion: 2
+        x: 203
+        y: 102
+        width: 16
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96c3a73ea14b08960800000000000000
+      internalID: 7602274198579985513
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_10
+      rect:
+        serializedVersion: 2
+        x: 258
+        y: 90
+        width: 24
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e2a82129ae35fe300800000000000000
+      internalID: 283537568485771822
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_11
+      rect:
+        serializedVersion: 2
+        x: 232
+        y: 91
+        width: 20
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5961e0f26328bc770800000000000000
+      internalID: 8632136280014984853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_12
+      rect:
+        serializedVersion: 2
+        x: 244
+        y: 81
+        width: 21
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 877f78d0ae6785ce0800000000000000
+      internalID: -1416251335186581640
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_13
+      rect:
+        serializedVersion: 2
+        x: 302
+        y: 78
+        width: 25
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d177636832409ee40800000000000000
+      internalID: 5686080555154044701
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_14
+      rect:
+        serializedVersion: 2
+        x: 152
+        y: 35
+        width: 67
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b6a0c11818dd50d0800000000000000
+      internalID: -3432349743097796936
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_15
+      rect:
+        serializedVersion: 2
+        x: 221
+        y: 52
+        width: 29
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1d50cb2933c401c0800000000000000
+      internalID: -4538287874168038116
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_16
+      rect:
+        serializedVersion: 2
+        x: 151
+        y: 14
+        width: 25
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aeef727827abdada0800000000000000
+      internalID: -5931880133120491798
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_17
+      rect:
+        serializedVersion: 2
+        x: 196
+        y: 26
+        width: 24
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fae859ff4ed48be90800000000000000
+      internalID: -7009767174066303313
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_18
+      rect:
+        serializedVersion: 2
+        x: 213
+        y: 17
+        width: 21
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c470f413e7fe77c40800000000000000
+      internalID: 5510135994383271756
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: HouseScreenDeco2_19
+      rect:
+        serializedVersion: 2
+        x: 226
+        y: 27
+        width: 20
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 295a9917b22ea0750800000000000000
+      internalID: 6272074107284202898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      HouseScreenDeco2_0: 5662612327951129464
+      HouseScreenDeco2_1: 6249164387033798670
+      HouseScreenDeco2_10: 283537568485771822
+      HouseScreenDeco2_11: 8632136280014984853
+      HouseScreenDeco2_12: -1416251335186581640
+      HouseScreenDeco2_13: 5686080555154044701
+      HouseScreenDeco2_14: -3432349743097796936
+      HouseScreenDeco2_15: -4538287874168038116
+      HouseScreenDeco2_16: -5931880133120491798
+      HouseScreenDeco2_17: -7009767174066303313
+      HouseScreenDeco2_18: 5510135994383271756
+      HouseScreenDeco2_19: 6272074107284202898
+      HouseScreenDeco2_2: -5462153132758754802
+      HouseScreenDeco2_3: 7380300457477049796
+      HouseScreenDeco2_4: -1696140750892784452
+      HouseScreenDeco2_5: -7875168934239397859
+      HouseScreenDeco2_6: 5121336978669189664
+      HouseScreenDeco2_7: -5971307796264404415
+      HouseScreenDeco2_8: 8117501357424404839
+      HouseScreenDeco2_9: 7602274198579985513
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

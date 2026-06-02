@@ -25,6 +25,8 @@ public class InputReader
 
     private Vector2 keyboardMoveInput;
 
+    private bool bPauseInteract = false;
+
     public void Initialize()
     {
         if (actions == null)
@@ -129,7 +131,8 @@ public class InputReader
 
     private void InteractionKeyPressed(InputAction.CallbackContext context)
     {
-        InteractionKeyPressedEvent?.Invoke();
+        if (bPauseInteract == false)
+            InteractionKeyPressedEvent?.Invoke();
     }
 
     private void InteractionKeyCanceled(InputAction.CallbackContext context)
@@ -170,5 +173,10 @@ public class InputReader
             actions.Normal.Click.performed += OnMouseClick;
             actions.Normal.Click.canceled += OnMouseReleased;
         }
+    }
+
+    public void PauseInteractKey(bool _boolean)
+    {
+        bPauseInteract = _boolean;
     }
 }

@@ -675,6 +675,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         //inputManager.PauseMouse(true);
         character.DisableAttackComponent();
+        character.SetStaminaDecrease(false);
         GoToTownEvent?.Invoke();
     }
 

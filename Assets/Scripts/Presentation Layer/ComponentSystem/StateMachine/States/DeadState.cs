@@ -6,13 +6,11 @@ public class DeadState : CharacterState
 
     public override void Enter()
     {
-        character.anim.SetBool(bDeadHash,true);
         character.rb.linearVelocity = Vector2.zero;
     }
 
     public override void Exit()
     {
-        character.anim.SetBool(bDeadHash,false);
     }
 
     public override void Update()

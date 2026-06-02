@@ -33,6 +33,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private MapType currentMapType = MapType.Town;
     private ForestType currentForestType = ForestType.InTown;
 
+    private System.Action onFadeInCompleteAction;
+
     // 유니티 이벤트 함수
     private void Awake()
     {
@@ -65,6 +67,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         {
             inputManager.Initialize();
         }
+
+        onFadeInCompleteAction = OnFadeInComplete;
 
         BindEvent();
         InitializeDoTweenPool();
@@ -137,8 +141,21 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         bFadeComplete = true;
     }
 
+    private void OnFadeInComplete()
+    {
+        if (inputManager != null)
+        {
+            inputManager.PauseInteractKey(false);
+        }
+    }
+
     private System.Collections.IEnumerator TransitionToScene(SceneType _sceneType)
     {
+        if (inputManager != null)
+        {
+            inputManager.PauseInteractKey(true);
+        }
+
         // 1. 로딩창 나타나기 시작 (화면 가리기)
         bFadeComplete = false;
         if (LoadingManager.Instance != null)
@@ -183,7 +200,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         // 5. 모든 준비가 되면 로딩창 걷어내기 (화면 밝게)
         if (LoadingManager.Instance != null)
         {
-            LoadingManager.Instance.FadeIn();
+            LoadingManager.Instance.FadeIn(onFadeInCompleteAction);
+        }
+        else
+        {
+            OnFadeInComplete();
         }
     }
 
