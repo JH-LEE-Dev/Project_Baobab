@@ -37,6 +37,9 @@ public class UI_Storage : MonoBehaviour
     private bool isPlayerOnLeft = true;
     private bool isPendingHide = false;
 
+    private bool isOnShow = false;
+    public bool isCollShow { get; set; } = false;
+
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -122,8 +125,12 @@ public class UI_Storage : MonoBehaviour
 
     public void OnShow()
     {
+        if (true == isOnShow)
+            return;
+
         gameObject.SetActive(isOpening = true);
         isPendingHide = false;
+        isOnShow = true;
 
         if (null != positioningTween && true == positioningTween.IsActive())
             positioningTween.Kill();
@@ -148,13 +155,16 @@ public class UI_Storage : MonoBehaviour
 
     public void OnHide()
     {
+        isOnShow = false;
+
         if (true == useDynamicPositioning && null != positioningTween && true == positioningTween.IsActive() && true == positioningTween.IsPlaying())
         {
             isPendingHide = true;
             return;
         }
 
-        StartHideMotion();
+        if (false == isCollShow)
+            StartHideMotion();
     }
 
     // //내부 로직

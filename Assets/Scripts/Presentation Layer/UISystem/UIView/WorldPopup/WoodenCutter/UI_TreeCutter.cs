@@ -25,6 +25,7 @@ public class UI_TreeCutter : MonoBehaviour
     private MotionEntry popdown;
     private RectTransform rect;
     private bool bOpen = false;
+    public bool isCollShow { get; set; } = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -116,6 +117,9 @@ public class UI_TreeCutter : MonoBehaviour
 
     public void OnShow()
     {
+        if (true == bOpen)
+            return;
+
         gameObject.SetActive(true);
 
         if (null == omp)
@@ -131,9 +135,11 @@ public class UI_TreeCutter : MonoBehaviour
 
     public void OnHide()
     {
-        if (null == omp)
+        if (null == omp || true == isCollShow)
             return;
         
+        bOpen = false;
+
         omp.SettingEntryMotion(popup, true, true);
         popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompletedAnimation);
     }
@@ -142,7 +148,6 @@ public class UI_TreeCutter : MonoBehaviour
 
     private void OnCompletedAnimation()
     {
-        bOpen = false;
         gameObject.SetActive(false);
     }
 
