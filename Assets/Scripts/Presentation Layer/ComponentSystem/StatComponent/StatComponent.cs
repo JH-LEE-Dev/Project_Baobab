@@ -4,6 +4,9 @@ using UnityEngine;
 public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 {
     public event Action CanHuntEvent;
+    
+    [Header("For Debugging")]
+    public int money = 0;
 
     [Header("Character Stat")]
     public float pickupRangeMultiplier = 1f;
