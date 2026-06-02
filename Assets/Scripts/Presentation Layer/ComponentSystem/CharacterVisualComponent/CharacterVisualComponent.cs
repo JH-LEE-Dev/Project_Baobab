@@ -64,11 +64,15 @@ public class CharacterVisualComponent : MonoBehaviour
 
     public GameObject characterVisualComponent;
 
+    private CharacterAnimator characterAnimator;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(IEnvironmentProvider _environmentProvider, GameObject _onWaterAnimatorObject, Shadow _shadowObject,
         CustomSortable _customSortable)
     {
+        characterAnimator = GetComponent<CharacterAnimator>();
+        
         environmentProvider = _environmentProvider;
         shadowObject = _shadowObject;
         customSortable = _customSortable;
