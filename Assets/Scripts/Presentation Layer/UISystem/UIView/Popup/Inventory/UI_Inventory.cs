@@ -33,6 +33,10 @@ public class UI_Inventory : MonoBehaviour
 
     // //내부 의존성
     private const int defaultPopupCap = 12;
+    private const string backpackTag = "Backpack";
+    private const string coinsTag = "Coins";
+    private const string popupTag = "Popup";
+    private const string homingTag = "Homing";
 
     private IInventory inventory;
     private IMoneyData moneyData;
@@ -47,6 +51,8 @@ public class UI_Inventory : MonoBehaviour
     public Action inventoryHoverEvent;
     public Action inventoryUnHoverEvent;
 
+    private bool isOpenAnimated = false;
+
     // //퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(Transform _uiRoot, Action _clickedHomingEvent, Action _hoverEvent, Action _unHoverEvent)
@@ -56,7 +62,6 @@ public class UI_Inventory : MonoBehaviour
 
         InitHoning(_clickedHomingEvent);
         InitInventoryPopup();
-        // InitSelectionCursor();
         InitCoins();
         InitBackpack();
         InitNotificationBadge();
@@ -104,14 +109,6 @@ public class UI_Inventory : MonoBehaviour
 
             _slot.Initialize();
 
-            // _slot.deleteItem -= SendDeleteItem;
-            // _slot.deleteItem += SendDeleteItem;
-
-            // _slot.enterSlot -= HandleEnterPopup;
-            // _slot.enterSlot += HandleEnterPopup;
-
-            // _slot.exitSlot -= HandleExitPopup;
-            // _slot.exitSlot += HandleExitPopup;
             _slot.exitSlot -= inventoryUnHoverEvent;
             _slot.exitSlot += inventoryUnHoverEvent;
 
@@ -252,10 +249,10 @@ public class UI_Inventory : MonoBehaviour
         HandleExitPopup();
         isOpening = false;
 
-        omp.PlayBackward("Backpack", bReset: true, _skip: true);
-        omp.PlayBackward("Coins", bReset: true, _skip: true);
-        omp.PlayBackward("Popup", bReset: true, _skip: true);
-        omp.PlayBackward("Homing", bReset: true, _skip: true);
+        omp.PlayBackward(backpackTag, bReset: true, _skip: true);
+        omp.PlayBackward(coinsTag, bReset: true, _skip: true);
+        omp.PlayBackward(popupTag, bReset: true, _skip: true);
+        omp.PlayBackward(homingTag, bReset: true, _skip: true);
     }
 
     public void UpdateNotification()
@@ -268,12 +265,12 @@ public class UI_Inventory : MonoBehaviour
 
     public void OnHide()
     {
-        isOpening = false;
+        isOpening = isOpenAnimated = false;
 
         if (null != omp)
         {
-            omp.PlayBackward("Backpack", bReset: true);
-            omp.PlayBackward("Popup", bReset: true);
+            omp.PlayBackward(backpackTag, bReset: true);
+            omp.PlayBackward(popupTag, bReset: true);
         }
 
         uiBackpack?.CloseInventory();
@@ -284,20 +281,23 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != omp)
         {
-            omp.PlayBackward("Homing", bReset: true);
-            omp.PlayBackward("Coins", bReset: true);
+            omp.PlayBackward(homingTag, bReset: true);
+            omp.PlayBackward(coinsTag, bReset: true);
         }
     }
 
     public void OnShow()
     {
-        isOpening = true;
+        if (true == isOpenAnimated)
+            return;
+
+        isOpening = isOpenAnimated = true;
         hideAccCount = 0;
 
         if (null != omp)
         {
-            omp.Play("Backpack", bReset: true);
-            omp.Play("Popup", bReset: true);
+            omp.Play(backpackTag, bReset: true, _onComplete: OnShowCompletedAnimation);
+            omp.Play(popupTag, bReset: true);
         }
 
         uiBackpack?.OpenInventory();
@@ -308,9 +308,14 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != omp)
         {
-            omp.Play("Homing", bReset: true);
-            omp.Play("Coins", bReset: true);
+            omp.Play(homingTag, bReset: true);
+            omp.Play(coinsTag, bReset: true);
         }
+    }
+
+    private void OnShowCompletedAnimation()
+    {
+        isOpenAnimated = false;
     }
 
     public void Release()

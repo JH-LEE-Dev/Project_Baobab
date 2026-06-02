@@ -405,7 +405,11 @@ public class GameplayUICoordinator
 
     private void InventoryUIOpened(bool _boolean)
     {
-        bInventoryOpened = true;
-        popUpUI.Show();
+        bInventoryOpened = _boolean;
+        
+        if (true == _boolean)
+            popUpUI.Show();
+        else 
+            popUpUI.Hide();
     }
 }

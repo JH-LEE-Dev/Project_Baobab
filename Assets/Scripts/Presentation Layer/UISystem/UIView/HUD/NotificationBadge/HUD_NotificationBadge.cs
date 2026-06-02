@@ -26,33 +26,34 @@ public class HUD_NotificationBadge : MonoBehaviour
 
     public void UpdateAndInteraction(int _newCnt)
     {
-        SetCount(_newCnt);
-        
         if (0 >= _newCnt)
             OnHide_Animated();
         else if (1 >= _newCnt)
-            OnShow_Animated();
+            OnShow_Animated(_newCnt);
         else
-            PopAnimated();
+            PopAnimated(_newCnt);
     }
 
-    public void OnShow_Animated()
+    public void OnShow_Animated(int _newCnt)
     {
         OnShow();
+        SetCount(_newCnt);
 
         if (null == omp)
             return;
-
+        
         omp.SettingEntryMotion(hideMotion, true, true);
         omp.SettingEntryMotion(popMotion, true, true);
         showMotion = omp.Play(onOffTag, bReset: true);
     }
 
     
-    public void PopAnimated()
+    public void PopAnimated(int _newCnt)
     {
         if (null == omp)
             return;
+
+        SetCount(_newCnt);
 
         omp.SettingEntryMotion(hideMotion, true, true);
         omp.SettingEntryMotion(showMotion, true, true);
@@ -80,5 +81,9 @@ public class HUD_NotificationBadge : MonoBehaviour
     }
 
     public void OnShow() => gameObject.SetActive(true);
-    public void OnHide() => gameObject.SetActive(false);
+    public void OnHide()
+    {
+        SetCount(0);
+        gameObject.SetActive(false);
+    }
 }
