@@ -29,6 +29,8 @@ public class UIView_WorldPopup : UIView
     private UI_TreeCutter ui_Cutter;
     private UI_TraderCoin ui_TraderCoin;
 
+    private bool isLogProcesserActive = false;
+
     //퍼블릭 초기화 및 제어 메서드
 
     public override void Initialize(UIViewContext _ctx)
@@ -204,22 +206,14 @@ public class UIView_WorldPopup : UIView
     // false : 상호작용 거리에서 나감
     public void LogContainerInteractStateChanged(bool _state)
     {
-        if (true == _state)
-        {
-            if (null != ui_Storage)
-            {
-                ui_Storage.OnShow();
-                ui_Storage.Refresh();
-            }
+        if (null != ui_Storage)
+            ui_Storage.isCollShow = _state;
 
-            ui_Cutter?.OnShow();
-            ResetLogCutterUI();
-        }
-        else
-        {
-            ui_Storage?.OnHide();
-            ui_Cutter?.OnHide();
-        }
+        if (null != ui_Cutter)
+            ui_Cutter.isCollShow = _state;
+
+        if(false == isLogProcesserActive)
+            ShowLogProcessor(_state);
     }
 
     //원목이 절단기로 들어감.
@@ -310,6 +304,27 @@ public class UIView_WorldPopup : UIView
     //true -> 제재소 동작중 , false -> 제재소 동작 끝
     public void LogItemProcessorActiveStateChange(bool _boolean)
     {
-        
+        ShowLogProcessor(_boolean);
+        isLogProcesserActive = _boolean;
+    }
+
+    public void ShowLogProcessor(bool _state)
+    {
+        if (true == _state)
+        {
+            if (null != ui_Storage)
+            {
+                ui_Storage.OnShow();
+                ui_Storage.Refresh();
+            }
+
+            ui_Cutter?.OnShow();
+            ResetLogCutterUI();
+        }
+        else
+        {
+            ui_Storage?.OnHide();
+            ui_Cutter?.OnHide();
+        }
     }
 }
