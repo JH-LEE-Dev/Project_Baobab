@@ -30,7 +30,6 @@ public class UI_Inventory : MonoBehaviour
 
     [Header("Inventory Settings")]
     [SerializeField] private List<UI_InventorySlot> inventorySlots = new List<UI_InventorySlot>(32);
-    [SerializeField] private float popupYOffset = 30.0f;
 
     // //내부 의존성
     private const int defaultPopupCap = 12;

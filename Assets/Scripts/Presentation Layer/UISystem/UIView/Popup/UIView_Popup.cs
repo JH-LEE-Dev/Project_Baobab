@@ -212,4 +212,9 @@ public class UIView_Popup : UIView
         InventoryShowEvent();
         uiInventory?.ClearNotification();
     }
+
+    public void InventoryIsFull()
+    {
+        OnShow();
+    }
 }
