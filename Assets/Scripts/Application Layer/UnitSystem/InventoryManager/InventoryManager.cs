@@ -5,6 +5,7 @@ using UnityEngine.Pool;
 
 public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker, IInventoryCH, IMoneyData
 {
+    public event Action ItemCantAcquiedEvent;
     public event Action ItemAddedEvent;
     public event Action ItemRemovedEvent;
     public event Action SpendMoneyEvent;
@@ -400,6 +401,55 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             return true;
         }
 
+        // 5. 들어올 수 없을 때 인벤토리 공간 상태 분석 및 이벤트 호출
+        bool isFull = true;
+        bool hasSpaceRemaining = false;
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (i >= inventorySlots.Count) break;
+
+            if (inventorySlots[i].itemData == null)
+            {
+                isFull = false;
+            }
+            else
+            {
+                // 해당 슬롯에 예약된 아이템 개수 계산
+                int slotReservedCount = 0;
+                var slotItemData = (ItemData)inventorySlots[i].itemData;
+                for (int j = 0; j < reservedItems.Count; j++)
+                {
+                    var reserved = reservedItems[j];
+                    if (reserved.itemType == slotItemData.itemType)
+                    {
+                        if (reserved is LogItem reservedLog && slotItemData is LogItemData logData)
+                        {
+                            if (reservedLog.logState == logData.logState && reservedLog.treeType == logData.treeType)
+                            {
+                                slotReservedCount++;
+                            }
+                        }
+                    }
+                }
+
+                if (inventorySlots[i].totalCount + slotReservedCount < maxItemsPerSlot)
+                {
+                    isFull = false;
+                    hasSpaceRemaining = true;
+                }
+            }
+        }
+
+        if (isFull)
+        {
+            InventoryIsFullEvent?.Invoke();
+        }
+        else if (hasSpaceRemaining)
+        {
+            ItemCantAcquiedEvent?.Invoke();
+        }
+
         return false;
     }
 
@@ -561,5 +611,15 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void ItemRemoved()
     {
         ItemRemovedEvent?.Invoke();
+    }
+
+    public void TriggerItemCantAcquied()
+    {
+        ItemCantAcquiedEvent?.Invoke();
+    }
+
+    public void TriggerInventoryIsFull()
+    {
+        InventoryIsFullEvent?.Invoke();
     }
 }

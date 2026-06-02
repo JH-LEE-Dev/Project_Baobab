@@ -284,4 +284,9 @@ public class UIView_Unit : UIView
     {
         speechBubble?.Play(2, "도끼가 파손됐어!!!.\n<로컬라이징 해야 돼>", 3.5f);
     }
+
+    public void ItemCantAcquired_Inventory()
+    {
+        Debug.Log("AAA");
+    }
 }

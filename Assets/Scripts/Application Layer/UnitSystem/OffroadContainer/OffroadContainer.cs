@@ -411,7 +411,48 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             }
         }
 
-        return pendingCount < availableSpace;
+        bool isSuccess = pendingCount < availableSpace;
+        if (!isSuccess)
+        {
+            bool isFull = true;
+            bool hasSpaceRemaining = false;
+
+            for (int i = 0; i < characterInventoryManager.currentSlotCnt; i++)
+            {
+                if (slots[i].itemData == null)
+                {
+                    isFull = false;
+                }
+                else
+                {
+                    int slotPendingCount = 0;
+                    for (int j = 0; j < flyingItems.Count; j++)
+                    {
+                        if (flyingItems[j].toCharacter && IsSameItem(flyingItems[j].item, slots[i].itemData))
+                        {
+                            slotPendingCount++;
+                        }
+                    }
+
+                    if (slots[i].totalCount + slotPendingCount < maxItems)
+                    {
+                        isFull = false;
+                        hasSpaceRemaining = true;
+                    }
+                }
+            }
+
+            if (isFull)
+            {
+                characterInventoryManager.TriggerInventoryIsFull();
+            }
+            else if (hasSpaceRemaining)
+            {
+                characterInventoryManager.TriggerItemCantAcquied();
+            }
+        }
+
+        return isSuccess;
     }
 
     private void AddToCharacterInventory(ItemData _sourceData, LogState _state)

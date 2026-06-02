@@ -57,6 +57,7 @@ public class TownSystem : MonoBehaviour
     {
         CollisionSystem.Instance?.ClearAll();
         townObjectManager.ReadyObj();
+        logProcessingManager.EnableShopObj();
 
         if (townProductionManager.offroadVehicleObj == null)
         {
@@ -133,6 +134,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
     }
 
     private void UnSubscribeSignals()
@@ -142,6 +144,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(CurrentlyInDungeon);
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
     }
 
     private void PortalActivated()
@@ -235,5 +238,10 @@ public class TownSystem : MonoBehaviour
     private void LogItemProcessorActiveState(bool _boolean)
     {
         signalHub.Publish(new LogItemProcessorActiveStateSignal(_boolean));
+    }
+
+    private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
+    {
+        logProcessingManager.DisableShopObj();
     }
 }

@@ -10289,7 +10289,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: orthographic size
-      value: 5.625
+      value: 4.4609375
       objectReference: {fileID: 0}
     - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_projectionMatrixMode
@@ -10297,15 +10297,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
-      value: 0
+      value: -0.081250004
       objectReference: {fileID: 0}
     - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.width
-      value: 1
+      value: 0.33333334
       objectReference: {fileID: 0}
     - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.height
-      value: 1
+      value: 0.5287037
       objectReference: {fileID: 0}
     - target: {fileID: 2132736546778820798, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_LocalPosition.x
@@ -10361,19 +10361,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9076175432428910233, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: orthographic size
-      value: 5.625
+      value: 4.4609375
       objectReference: {fileID: 0}
     - target: {fileID: 9076175432428910233, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
-      value: 0
+      value: -0.081250004
       objectReference: {fileID: 0}
     - target: {fileID: 9076175432428910233, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.width
-      value: 1
+      value: 0.33333334
       objectReference: {fileID: 0}
     - target: {fileID: 9076175432428910233, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.height
-      value: 1
+      value: 0.5287037
       objectReference: {fileID: 0}
     - target: {fileID: 9220908768305109253, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
@@ -245156,6 +245156,46 @@ Tilemap:
       m_TileObjectToInstantiateIndex: 65535
       dummyAlignment: 0
       m_AllTileFlags: 1073741825
+  - first: {x: -2, y: -13, z: 0}
+    second:
+      serializedVersion: 2
+      m_TileIndex: 0
+      m_TileSpriteIndex: 0
+      m_TileMatrixIndex: 0
+      m_TileColorIndex: 0
+      m_TileObjectToInstantiateIndex: 65535
+      dummyAlignment: 0
+      m_AllTileFlags: 1073741825
+  - first: {x: -1, y: -13, z: 0}
+    second:
+      serializedVersion: 2
+      m_TileIndex: 0
+      m_TileSpriteIndex: 0
+      m_TileMatrixIndex: 0
+      m_TileColorIndex: 0
+      m_TileObjectToInstantiateIndex: 65535
+      dummyAlignment: 0
+      m_AllTileFlags: 1073741825
+  - first: {x: 0, y: -13, z: 0}
+    second:
+      serializedVersion: 2
+      m_TileIndex: 0
+      m_TileSpriteIndex: 0
+      m_TileMatrixIndex: 0
+      m_TileColorIndex: 0
+      m_TileObjectToInstantiateIndex: 65535
+      dummyAlignment: 0
+      m_AllTileFlags: 1073741825
+  - first: {x: 1, y: -13, z: 0}
+    second:
+      serializedVersion: 2
+      m_TileIndex: 0
+      m_TileSpriteIndex: 0
+      m_TileMatrixIndex: 0
+      m_TileColorIndex: 0
+      m_TileObjectToInstantiateIndex: 65535
+      dummyAlignment: 0
+      m_AllTileFlags: 1073741825
   - first: {x: 5, y: -7, z: 0}
     second:
       serializedVersion: 2
@@ -245789,15 +245829,15 @@ Tilemap:
   m_AnimatedTiles: {}
   m_TileAssetArray:
   - serializedVersion: 2
-    m_RefCount: 64
+    m_RefCount: 68
     m_Data: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
   m_TileSpriteArray:
   - serializedVersion: 2
-    m_RefCount: 64
+    m_RefCount: 68
     m_Data: {fileID: 21300000, guid: c1f48257906f80141af209d8b8550461, type: 3}
   m_TileMatrixArray:
   - serializedVersion: 2
-    m_RefCount: 64
+    m_RefCount: 68
     m_Data:
       e00: 1
       e01: 0
@@ -245817,7 +245857,7 @@ Tilemap:
       e33: 1
   m_TileColorArray:
   - serializedVersion: 2
-    m_RefCount: 64
+    m_RefCount: 68
     m_Data: {r: 1, g: 1, b: 1, a: 1}
   m_TileObjectToInstantiateArray: []
   m_AnimationFrameRate: 1

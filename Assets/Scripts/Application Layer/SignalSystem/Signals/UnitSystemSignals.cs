@@ -69,3 +69,4 @@ public struct InventoryIsFullSignal { }
 
 public struct ItemAddedToInventorySignal { }
 public struct ItemRemovedFromInventorySignal { }
+public struct ItemCantAcquiedSignal { }

@@ -86,6 +86,8 @@ public class TreeVisualComponent : MonoBehaviour
 
 
     private bool isOutlineActive = false;
+    private bool bDisableOutline = false;
+    private float currentAlpha;
 
     #endregion
 
@@ -642,6 +644,17 @@ public class TreeVisualComponent : MonoBehaviour
         ApplyAlpha(_alpha);
     }
 
+    private float GetCurrentAlpha()
+    {
+        return currentAlpha;
+    }
+
+    private void SetCurrentAlpha(float _alpha)
+    {
+        currentAlpha = _alpha;
+        ApplyAlpha(_alpha);
+    }
+
     public void FadeAlpha(float _targetAlpha, float _duration)
     {
         this.DOKill(this); // 기존 트윈 취소
@@ -655,22 +668,27 @@ public class TreeVisualComponent : MonoBehaviour
         if (topOutlineSR != null) topOutlineSR.DOKill();
         if (bottomOutlineSR != null) bottomOutlineSR.DOKill();
 
-        float startAlpha = topRenderer.color.a;
+        currentAlpha = topRenderer != null ? topRenderer.color.a : 1f;
 
-        DOTween.To(() => startAlpha, x =>
-        {
-            ApplyAlpha(x);
-        }, _targetAlpha, _duration).SetTarget(this);
+        DOTween.To(GetCurrentAlpha, SetCurrentAlpha, _targetAlpha, _duration).SetTarget(this);
     }
 
     public void SetOutline(bool _boolean)
     {
+        if (bDisableOutline == true)
+            return;
+
         isOutlineActive = _boolean;
 
         if (outlineVisualObj != null)
         {
             outlineVisualObj.SetActive(_boolean);
         }
+    }
+
+    public void DisableOutline()
+    {
+        bDisableOutline = true;
     }
 
     #endregion

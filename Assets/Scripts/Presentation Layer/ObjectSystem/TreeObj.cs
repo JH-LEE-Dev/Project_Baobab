@@ -353,4 +353,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         get => bTreeShadowSet;
         set => bTreeShadowSet = value;
     }
+
+    public void DisableOutline()
+    {
+        treeVisualComponent.DisableOutline();
+    }
 }

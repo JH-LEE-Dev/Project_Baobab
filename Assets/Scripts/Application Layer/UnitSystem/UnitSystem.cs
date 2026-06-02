@@ -97,6 +97,9 @@ public class UnitSystem
 
         inventoryManager.ItemAddedEvent -= ItemAdded;
         inventoryManager.ItemAddedEvent += ItemAdded;
+
+        inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
+        inventoryManager.ItemCantAcquiedEvent += ItemCantAcquied;
     }
 
     private void ReleaseEvents()
@@ -110,7 +113,8 @@ public class UnitSystem
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
         offroadContainer.ContainerUpdatedEvent -= OffroadContainerUpdated;
         inventoryManager.InventoryIsFullEvent -= InventoryIsFull;
-        inventoryManager.ItemAddedEvent -= ItemAdded;        
+        inventoryManager.ItemAddedEvent -= ItemAdded;
+        inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
     }
 
     private void CharacterSpawned(Character _character)
@@ -234,5 +238,10 @@ public class UnitSystem
     private void ItemRemoved()
     {
         signalHub.Publish(new ItemRemovedFromInventorySignal());
+    }
+
+    private void ItemCantAcquied()
+    {
+        signalHub.Publish(new ItemCantAcquiedSignal());
     }
 }

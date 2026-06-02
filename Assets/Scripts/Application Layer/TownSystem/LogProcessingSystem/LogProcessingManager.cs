@@ -288,4 +288,14 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         ++preCutItemCnt;
         UpdateProcessorActiveState();
     }
+
+    public void DisableShopObj()
+    {
+        shopObj.transform.position = new Vector3(-99f, -99f, 0f);
+    }
+
+    public void EnableShopObj()
+    {
+        shopObj.transform.position = shopSpawnPoint.transform.position;
+    }
 }

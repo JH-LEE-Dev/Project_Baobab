@@ -68,6 +68,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
         signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.Subscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
+        signalHub.Subscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
     }
 
     private void UnSubscribeSignals()
@@ -101,6 +102,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<OffroadInteractStateChangedSignal>(OffroadInteractStateChanged);
         signalHub.UnSubscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.UnSubscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
+        signalHub.UnSubscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
     }
 
     private void BindEvents()
@@ -415,5 +417,10 @@ public class GameplayUICoordinator
         {
             popUpUI.Hide();
         }
+    }
+
+    private void ItemCantAcquired_Inventory(ItemCantAcquiedSignal _itemCantAcquiedSignal)
+    {
+        unitUI.ItemCantAcquired_Inventory();
     }
 }

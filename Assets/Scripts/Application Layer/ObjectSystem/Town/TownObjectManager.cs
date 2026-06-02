@@ -121,6 +121,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
                     trees[i].ApplyData(new TreeData(type, grade, treeVisualDataBase.Get(type), default));
                     trees[i].SetSortOrder();
+                    trees[i].DisableOutline();
                 }
             }
         }
