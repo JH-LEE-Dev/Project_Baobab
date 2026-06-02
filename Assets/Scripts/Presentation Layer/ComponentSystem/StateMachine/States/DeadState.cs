@@ -2,8 +2,6 @@ using UnityEngine;
 
 public class DeadState : CharacterState
 {
-    public readonly int bDeadHash = Animator.StringToHash("bDead");
-
     public override void Enter()
     {
         character.rb.linearVelocity = Vector2.zero;
