@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using PresentationLayer.DOTweenAnimationSystem;
+using DG.Tweening;
 
 public class UI_Storage : MonoBehaviour
 {
@@ -13,7 +14,8 @@ public class UI_Storage : MonoBehaviour
 
     [Header("Dynamic Positioning")]
     [SerializeField] private bool useDynamicPositioning = true;
-    [SerializeField] private float positionLerpSpeed = 8.0f;
+    [SerializeField] private float tweenDuration = 0.3f;
+    [SerializeField] private Ease easeType = Ease.OutQuad;
 
     // //내부 의존성
     private const int defaultCap = 2;
@@ -24,11 +26,16 @@ public class UI_Storage : MonoBehaviour
 
     [SerializeField] private string popupTag = "Popup";
     [SerializeField] private string popdownTag = "Popdown";
+    [SerializeField] private string popdownLeftTag = "PopdownLeft";
+    [SerializeField] private string popdownRightTag = "PopdownRight";
 
     private MotionEntry popup;
     private MotionEntry popdown;
     private RectTransform rect;
     private Transform playerTransform;
+    private Tween positioningTween;
+    private bool isPlayerOnLeft = true;
+    private bool isPendingHide = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -116,9 +123,19 @@ public class UI_Storage : MonoBehaviour
     public void OnShow()
     {
         gameObject.SetActive(isOpening = true);
+        isPendingHide = false;
+
+        if (null != positioningTween && true == positioningTween.IsActive())
+            positioningTween.Kill();
 
         if (null != rect && null != storage)
+        {
+            Vector3 _storagePos = storage.GetTransform().position;
+            if (null != playerTransform)
+                isPlayerOnLeft = (playerTransform.position.x < _storagePos.x);
+
             rect.position = GetTargetWorldPosition();
+        }
 
         SnapToPerfectPixel();
 
@@ -131,11 +148,13 @@ public class UI_Storage : MonoBehaviour
 
     public void OnHide()
     {
-        if (null == omp)
+        if (true == useDynamicPositioning && null != positioningTween && true == positioningTween.IsActive() && true == positioningTween.IsPlaying())
+        {
+            isPendingHide = true;
             return;
+        }
 
-        omp.SettingEntryMotion(popup, true, true);
-        popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompleteAnim);
+        StartHideMotion();
     }
 
     // //내부 로직
@@ -143,6 +162,36 @@ public class UI_Storage : MonoBehaviour
     private void OnCompleteAnim()
     {
         gameObject.SetActive(isOpening = false);
+    }
+
+    private void OnPositioningTweenComplete()
+    {
+        SnapToPerfectPixel();
+
+        if (true == isPendingHide)
+            StartHideMotion();
+    }
+
+    private void StartHideMotion()
+    {
+        isPendingHide = false;
+
+        if (null != positioningTween && true == positioningTween.IsActive())
+            positioningTween.Kill();
+
+        if (null == omp)
+        {
+            gameObject.SetActive(isOpening = false);
+            return;
+        }
+
+        string _targetPopdownTag = popdownTag;
+
+        if (true == useDynamicPositioning)
+            _targetPopdownTag = (true == isPlayerOnLeft) ? popdownLeftTag : popdownRightTag;
+
+        omp.SettingEntryMotion(popup, true, true);
+        popdown = omp.Play(_targetPopdownTag, bReset: true, _onComplete: OnCompleteAnim);
     }
 
     /// <summary>
@@ -167,6 +216,26 @@ public class UI_Storage : MonoBehaviour
         _targetPos.y += offset.y;
 
         return _targetPos;
+    }
+
+    /// <summary>
+    /// 캐릭터의 좌우 상태 변경이 일어난 정확한 트리거 프레임 시점에 Ease 곡선 트윈을 기동합니다.
+    /// </summary>
+    private void TriggerPositioningTween()
+    {
+        if (null == rect)
+            return;
+
+        if (null != positioningTween && true == positioningTween.IsActive())
+            positioningTween.Kill();
+
+        Vector3 _targetPos = GetTargetWorldPosition();
+
+        positioningTween = rect.DOMove(_targetPos, tweenDuration)
+            .SetEase(easeType)
+            .SetAutoKill(true)
+            .OnUpdate(SnapToPerfectPixel)
+            .OnComplete(OnPositioningTweenComplete);
     }
 
     /// <summary>
@@ -234,25 +303,21 @@ public class UI_Storage : MonoBehaviour
         rect.anchoredPosition = _pos;
     }
 
+
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
     private void Update()
     {
-        if (true == isOpening && null != rect && null != storage)
+        if (true == isOpening && null != rect && null != storage && null != playerTransform && true == useDynamicPositioning)
         {
-            Vector3 _targetPos = GetTargetWorldPosition();
-            float _distance = Vector3.Distance(rect.position, _targetPos);
+            Vector3 _storagePos = storage.GetTransform().position;
+            bool _currentLeft = (playerTransform.position.x < _storagePos.x);
 
-            if (0.01f > _distance)
+            if (_currentLeft != isPlayerOnLeft)
             {
-                rect.position = _targetPos;
+                isPlayerOnLeft = _currentLeft;
+                TriggerPositioningTween();
             }
-            else
-            {
-                rect.position = Vector3.Lerp(rect.position, _targetPos, Time.deltaTime * positionLerpSpeed);
-            }
-
-            SnapToPerfectPixel();
         }
     }
 }

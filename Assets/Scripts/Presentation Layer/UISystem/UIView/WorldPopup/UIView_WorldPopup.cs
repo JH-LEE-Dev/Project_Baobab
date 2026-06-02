@@ -303,5 +303,7 @@ public class UIView_WorldPopup : UIView
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+
+        ui_CarStorage?.BindPlayer(character.GetTransform());
     }
 }

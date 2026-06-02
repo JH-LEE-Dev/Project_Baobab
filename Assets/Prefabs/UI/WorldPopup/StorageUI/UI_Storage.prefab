@@ -372,6 +372,8 @@ MonoBehaviour:
   slotBackground: {fileID: 1415042115427916999}
   omp: {fileID: 7013793298929853146}
   offset: {x: 0, y: 0}
+  useDynamicPositioning: 0
+  positionLerpSpeed: 8
   popupTag: Popup
   popdownTag: Popdown
 --- !u!114 &9191682070102431544
