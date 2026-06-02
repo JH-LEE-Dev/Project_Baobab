@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using PresentationLayer.DOTweenAnimationSystem;
+using DG.Tweening;
 
 public class UI_Storage : MonoBehaviour
 {
@@ -10,6 +11,11 @@ public class UI_Storage : MonoBehaviour
     [SerializeField] private GameObject slotBackground;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private Vector2 offset;
+
+    [Header("Dynamic Positioning")]
+    [SerializeField] private bool useDynamicPositioning = true;
+    [SerializeField] private float tweenDuration = 0.3f;
+    [SerializeField] private Ease easeType = Ease.OutQuad;
 
     // //내부 의존성
     private const int defaultCap = 2;
@@ -20,10 +26,16 @@ public class UI_Storage : MonoBehaviour
 
     [SerializeField] private string popupTag = "Popup";
     [SerializeField] private string popdownTag = "Popdown";
+    [SerializeField] private string popdownLeftTag = "PopdownLeft";
+    [SerializeField] private string popdownRightTag = "PopdownRight";
 
     private MotionEntry popup;
     private MotionEntry popdown;
     private RectTransform rect;
+    private Transform playerTransform;
+    private Tween positioningTween;
+    private bool isPlayerOnLeft = true;
+    private bool isPendingHide = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -31,6 +43,7 @@ public class UI_Storage : MonoBehaviour
     public void Initialize(Vector2 _offset)
     {
         storageSlots = new List<UI_InventorySlot>(SYSTEM_VAR.MAX_STORAGE_CNT);
+        gameObject.SetActive(false);
         offset = _offset;
 
         if (null != omp)
@@ -39,8 +52,6 @@ public class UI_Storage : MonoBehaviour
         rect = GetComponent<RectTransform>();
 
         SnapToPerfectPixel();
-        
-        gameObject.SetActive(false);
     }
 
     public void BindStorage(IInventory _storage)
@@ -48,6 +59,11 @@ public class UI_Storage : MonoBehaviour
         storage = _storage;
         if (null != storage)
             UpdateMaxSlotCount(storage.inventorySlots.Count);
+    }
+
+    public void BindPlayer(Transform _playerTrans)
+    {
+        playerTransform = _playerTrans;
     }
 
     public void UpdateMaxSlotCount(int _cnt)
@@ -100,20 +116,25 @@ public class UI_Storage : MonoBehaviour
             IInventorySlot item = _items[i];
 
             slot.gameObject.SetActive(i < itemCount);
-            slot.UpdateBindSlotData(item);
+            slot.UpdateBindSlotData(item, storage.maxItemCntPerSlot);
         }
     }
 
     public void OnShow()
     {
         gameObject.SetActive(isOpening = true);
+        isPendingHide = false;
 
-        if (null != rect)
+        if (null != positioningTween && true == positioningTween.IsActive())
+            positioningTween.Kill();
+
+        if (null != rect && null != storage)
         {
-            Vector2 newPos = storage.GetTransform().position;
-            newPos += offset;
+            Vector3 _storagePos = storage.GetTransform().position;
+            if (null != playerTransform)
+                isPlayerOnLeft = (playerTransform.position.x < _storagePos.x);
 
-            rect.position = newPos;
+            rect.position = GetTargetWorldPosition();
         }
 
         SnapToPerfectPixel();
@@ -127,11 +148,13 @@ public class UI_Storage : MonoBehaviour
 
     public void OnHide()
     {
-        if (null == omp)
+        if (true == useDynamicPositioning && null != positioningTween && true == positioningTween.IsActive() && true == positioningTween.IsPlaying())
+        {
+            isPendingHide = true;
             return;
+        }
 
-        omp.SettingEntryMotion(popup, true, true);
-        popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompleteAnim);
+        StartHideMotion();
     }
 
     // //내부 로직
@@ -139,6 +162,80 @@ public class UI_Storage : MonoBehaviour
     private void OnCompleteAnim()
     {
         gameObject.SetActive(isOpening = false);
+    }
+
+    private void OnPositioningTweenComplete()
+    {
+        SnapToPerfectPixel();
+
+        if (true == isPendingHide)
+            StartHideMotion();
+    }
+
+    private void StartHideMotion()
+    {
+        isPendingHide = false;
+
+        if (null != positioningTween && true == positioningTween.IsActive())
+            positioningTween.Kill();
+
+        if (null == omp)
+        {
+            gameObject.SetActive(isOpening = false);
+            return;
+        }
+
+        string _targetPopdownTag = popdownTag;
+
+        if (true == useDynamicPositioning)
+            _targetPopdownTag = (true == isPlayerOnLeft) ? popdownLeftTag : popdownRightTag;
+
+        omp.SettingEntryMotion(popup, true, true);
+        popdown = omp.Play(_targetPopdownTag, bReset: true, _onComplete: OnCompleteAnim);
+    }
+
+    /// <summary>
+    /// 캐릭터의 실시간 X축 위치를 분석하여, 보관함의 좌우 반대편에 대응하는 UI 타겟 월드 좌표를 산출합니다.
+    /// </summary>
+    private Vector3 GetTargetWorldPosition()
+    {
+        if (null == storage)
+            return Vector3.zero;
+
+        Vector3 _storagePos = storage.GetTransform().position;
+        float _targetOffsetX = offset.x;
+
+        if (true == useDynamicPositioning && null != playerTransform)
+        {
+            float _absX = Mathf.Abs(offset.x);
+            _targetOffsetX = (playerTransform.position.x < _storagePos.x) ? _absX : -_absX;
+        }
+
+        Vector3 _targetPos = _storagePos;
+        _targetPos.x += _targetOffsetX;
+        _targetPos.y += offset.y;
+
+        return _targetPos;
+    }
+
+    /// <summary>
+    /// 캐릭터의 좌우 상태 변경이 일어난 정확한 트리거 프레임 시점에 Ease 곡선 트윈을 기동합니다.
+    /// </summary>
+    private void TriggerPositioningTween()
+    {
+        if (null == rect)
+            return;
+
+        if (null != positioningTween && true == positioningTween.IsActive())
+            positioningTween.Kill();
+
+        Vector3 _targetPos = GetTargetWorldPosition();
+
+        positioningTween = rect.DOMove(_targetPos, tweenDuration)
+            .SetEase(easeType)
+            .SetAutoKill(true)
+            .OnUpdate(SnapToPerfectPixel)
+            .OnComplete(OnPositioningTweenComplete);
     }
 
     /// <summary>
@@ -177,7 +274,7 @@ public class UI_Storage : MonoBehaviour
         {
             if (0.01f > Mathf.Abs(_pivotX - 0.5f))
                 _pos.x = Mathf.Round(_pos.x - 0.5f) + 0.5f;
-            else if (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f))
+            else if (0.01f > Mathf.Abs(_pivotX - 0.5f) == false && (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f)))
                 _pos.x = Mathf.Round(_pos.x);
         }
         else
@@ -194,7 +291,7 @@ public class UI_Storage : MonoBehaviour
         {
             if (0.01f > Mathf.Abs(_pivotY - 0.5f))
                 _pos.y = Mathf.Round(_pos.y - 0.5f) + 0.5f;
-            else if (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f))
+            else if (0.01f > Mathf.Abs(_pivotY - 0.5f) == false && (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f)))
                 _pos.y = Mathf.Round(_pos.y);
         }
         else
@@ -204,5 +301,23 @@ public class UI_Storage : MonoBehaviour
         }
 
         rect.anchoredPosition = _pos;
+    }
+
+
+    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void Update()
+    {
+        if (true == isOpening && null != rect && null != storage && null != playerTransform && true == useDynamicPositioning)
+        {
+            Vector3 _storagePos = storage.GetTransform().position;
+            bool _currentLeft = (playerTransform.position.x < _storagePos.x);
+
+            if (_currentLeft != isPlayerOnLeft)
+            {
+                isPlayerOnLeft = _currentLeft;
+                TriggerPositioningTween();
+            }
+        }
     }
 }

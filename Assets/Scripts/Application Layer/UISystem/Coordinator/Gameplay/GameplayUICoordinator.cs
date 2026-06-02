@@ -361,6 +361,7 @@ public class GameplayUICoordinator
     private void InventoryIsFull(InventoryIsFullSignal _inventoryIsFullSignal)
     {
         unitUI.InventoryIsFull();
+        popUpUI.InventoryIsFull();
     }
 
     private void OffroadSpawned(OffroadSpawnedSignal _offroadSpawnedSignal)

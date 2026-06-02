@@ -303,6 +303,8 @@ public class UIView_WorldPopup : UIView
     public void SetCharacter(ICharacter _character)
     {
         character = _character;
+
+        ui_CarStorage?.BindPlayer(character.GetTransform());
     }
 
     //true -> 제재소 동작중 , false -> 제재소 동작 끝

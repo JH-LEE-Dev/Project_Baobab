@@ -10,21 +10,24 @@ public class UI_InteractionUnit : MonoBehaviour
     // //내부 의존성
     [SerializeField] private Image iconImage;
     [SerializeField] private Sprite[] interactionIcons;
-    [SerializeField] private string motionTag = "Default";
+    [SerializeField] private string motionTag = "Absol";
 
     private RectTransform rectTransform;
     private Transform targetTransform;
     private Vector2 positionOffset;
-    private int showCount = 0;
     private bool bHide = false;
+    private bool isShown = false;
 
     public void Initialize()
     {
         rectTransform = GetComponent<RectTransform>();
-        showCount = 0;
+        isShown = false;
+        bHide = true;
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
+
+        HideInteraction(true);
     }
 
     /// <summary>
@@ -37,16 +40,12 @@ public class UI_InteractionUnit : MonoBehaviour
     }
 
     /// <summary>
-    /// 상호작용 UI를 노출합니다. (카운트 증가)
+    /// 상호작용 UI를 노출합니다.
     /// </summary>
     public void ShowInteraction(int _iconIndex = 0)
     {
-        showCount++;
         bHide = false;
 
-        if (null == motionPlayer)
-            return;
-            
         if (null == interactionIcons || 0 == interactionIcons.Length)
             return;
             
@@ -55,23 +54,23 @@ public class UI_InteractionUnit : MonoBehaviour
             
         if (null != iconImage)
             iconImage.sprite = interactionIcons[_iconIndex];
-            
-        motionPlayer.Play(motionTag, bReset: true);
+
+        if (null == motionPlayer)
+            return;
+
+        if (false == isShown)
+        {
+            isShown = true;
+            motionPlayer.Play(motionTag, bReset: true);
+        }
     }
 
     /// <summary>
-    /// 상호작용 UI를 숨깁니다. (카운트 감소, 0일 때만 실제 은닉)
+    /// 상호작용 UI를 숨깁니다.
     /// </summary>
     public void HideInteraction(bool _bSkip = false)
     {
-        showCount--;
-
-        // 안전 장치: 카운트가 음수가 되지 않도록 함
-        if (0 > showCount)
-            showCount = 0;
-
-        if (0 < showCount)
-            return;
+        isShown = false;
 
         if (null == motionPlayer)
             return;
@@ -79,7 +78,11 @@ public class UI_InteractionUnit : MonoBehaviour
         motionPlayer.PlayBackward(motionTag, bReset: true, _skip: _bSkip, _onComplete: Hide);
     }
 
-    private void Hide() => bHide = true;
+    private void Hide()
+    {
+        if (false == isShown)
+            bHide = true;
+    }
 
     private void LateUpdate()
     {

@@ -26,6 +26,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private IInventorySlot invSlotRef;
     private int showCnt = 0;
     private CurrencyFontHUD currencyFont;
+    private int maxItemCntPerSlot = 99;
 
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
@@ -64,6 +65,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         invSlotRef = null;
         showItemData = null;
+        maxItemCntPerSlot = 99;
     }
 
     public void UpdateItemCount(int _newCnt)
@@ -73,11 +75,24 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         currencyFont.gameObject.SetActive(0 < _newCnt);
 
-        if (showCnt == _newCnt)
+        if (showCnt != _newCnt)
+        {
+            showCnt = _newCnt;
+            currencyFont.SetNumber(_newCnt);
+        }
+
+        UpdateFontColor();
+    }
+
+    private void UpdateFontColor()
+    {
+        if (null == currencyFont)
             return;
 
-        showCnt = _newCnt;
-        currencyFont.SetNumber(_newCnt);
+        if (showCnt >= maxItemCntPerSlot)
+            currencyFont.SetGlyphColor(Color.red);
+        else
+            currencyFont.SetGlyphColor(Color.white);
     }
 
     public void UpdateImage(Sprite _sprite, Color _color)
@@ -96,8 +111,10 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    public void UpdateBindSlotData(IInventorySlot _newSlot)
+    public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99)
     {
+        maxItemCntPerSlot = _maxCount;
+
         if (null == _newSlot.itemData)
         {
             ResetData();
