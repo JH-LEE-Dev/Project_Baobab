@@ -7,6 +7,7 @@ using UnityEngine;
 public class UIView_Popup : UIView
 {
     // //이벤트
+    public event Action<bool> InventoryUIOpendEvent;
     public event Action goHomeButtonClickedEvent;
     public event Action<IInventorySlot> sendDeleteItemEvent;
 
@@ -215,6 +216,8 @@ public class UIView_Popup : UIView
 
     public void InventoryIsFull()
     {
+        InventoryUIOpendEvent?.Invoke(true);
+
         OnShow();
     }
 }

@@ -1,9 +1,9 @@
 using System;
-using NUnit.Framework.Constraints;
 using UnityEngine;
 
 public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 {
+    public event Action<bool> LogProcessorIsActiveEvent;
     public event Action<bool> ShopInteracteStateChangedEvent;
     public event Action LogContainerSpecChangedEvent;
     public event Action<int> EarnMoneyEvent;
@@ -31,6 +31,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     public ShopNPC shopNPC { get; private set; }
 
     private Character character;
+
+    private int preCutItemCnt = 0;
+    private bool bLogProcessorActive = false;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -128,6 +131,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
         shopNPC.InteractStateEvent -= ShopInteractStateChanged;
         shopNPC.InteractStateEvent += ShopInteractStateChanged;
+
+        logContainer.ItemAddedEvent -= ItemAddedInContainer;
+        logContainer.ItemAddedEvent += ItemAddedInContainer;
     }
 
     private void ReleaseEvents()
@@ -143,6 +149,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
         logInBelt.BeltStopEvent -= InBeltStop;
         shopNPC.InteractStateEvent -= ShopInteractStateChanged;
+        logContainer.ItemAddedEvent -= ItemAddedInContainer;
     }
 
     public void PopulateSaveData(ref LogProcessingSaveData _saveData)
@@ -219,6 +226,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logContainer.SetbStop(false);
         logInBelt.StartBelt();
         logOutBelt.LogIn(logCutter.GetCuttingLogItem());
+
+        --preCutItemCnt;
+        UpdateProcessorActiveState();
     }
 
     private void LogToEvaluator(LogItem _item, ILogItemData _itemData)
@@ -261,5 +271,21 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     private void ShopInteractStateChanged(bool _boolean)
     {
         ShopInteracteStateChangedEvent.Invoke(_boolean);
+    }
+
+    private void UpdateProcessorActiveState()
+    {
+        bool currentActive = preCutItemCnt > 0;
+        if (currentActive != bLogProcessorActive)
+        {
+            bLogProcessorActive = currentActive;
+            LogProcessorIsActiveEvent?.Invoke(currentActive);
+        }
+    }
+
+    private void ItemAddedInContainer()
+    {
+        ++preCutItemCnt;
+        UpdateProcessorActiveState();
     }
 }

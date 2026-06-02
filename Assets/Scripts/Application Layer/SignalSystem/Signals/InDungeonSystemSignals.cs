@@ -125,3 +125,12 @@ public struct ShopInteractStateChangedSignal
         state = _state;
     }
 }
+
+public struct LogItemProcessorActiveStateSignal
+{
+    public bool state;
+    public LogItemProcessorActiveStateSignal(bool _state)
+    {
+        state = _state;
+    }
+}

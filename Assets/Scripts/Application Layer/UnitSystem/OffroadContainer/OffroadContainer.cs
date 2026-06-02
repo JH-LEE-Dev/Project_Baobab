@@ -62,6 +62,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private InputManager inputManager;
     public bool bCanInteract = false;
+    private bool bPhysicalOverlapped = false;
+    private bool bLastInteractState = false;
     private float lastTransferTime = -1.0f;
     private bool bCanReach = true;
 
@@ -617,49 +619,45 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         ReleaseEvents();
     }
 
+    private void UpdateInteractState()
+    {
+        bool currentState = bCollisionEnabled && bCanReach && bPhysicalOverlapped;
+        if (currentState != bLastInteractState)
+        {
+            bLastInteractState = currentState;
+            bCanInteract = currentState;
+            InteractStateEvent?.Invoke(currentState);
+        }
+    }
+
     private void OnTriggerEnter2D(Collider2D _other)
     {
-        if (bCollisionEnabled == false)
-            return;
-
-        if (bCanReach == false)
-            return;
-
         if (_other.CompareTag(PLAYER_TAG))
         {
-            bCanInteract = true;
-            InteractStateEvent?.Invoke(true);
+            bPhysicalOverlapped = true;
+            UpdateInteractState();
         }
     }
 
     private void OnTriggerStay2D(Collider2D _other)
     {
-        if (bCollisionEnabled == false)
-            return;
-
-        if (bCanReach == false)
-            return;
-
         if (_other.CompareTag(PLAYER_TAG))
         {
-            if (bCanInteract == false)
+            if (bPhysicalOverlapped == false)
             {
-                bCanInteract = true;
-                InteractStateEvent?.Invoke(true);
+                bPhysicalOverlapped = true;
+                UpdateInteractState();
             }
         }
     }
 
     private void OnTriggerExit2D(Collider2D _other)
     {
-        if (bCollisionEnabled == false || bCanInteract == false)
-            return;
-
         if (_other.CompareTag(PLAYER_TAG))
         {
-            bCanInteract = false;
+            bPhysicalOverlapped = false;
             bIsInteracting = false;
-            InteractStateEvent?.Invoke(false);
+            UpdateInteractState();
 
             if (transferCoroutine != null)
             {
@@ -776,9 +774,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     public void DisableCollision()
     {
-        InteractStateEvent?.Invoke(false);
         bCollisionEnabled = false;
         bIsInteracting = false;
+        UpdateInteractState();
 
         if (transferCoroutine != null)
             StopCoroutine(transferCoroutine);
@@ -789,6 +787,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void EnableCollision()
     {
         bCollisionEnabled = true;
+        UpdateInteractState();
     }
 
     public void SetInTown(bool _boolean)
@@ -880,12 +879,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void SetCanReach(bool _bCanReach)
     {
         bCanReach = _bCanReach;
-
-        if (bCanReach == false && bCanInteract == true)
-        {
-            bCanInteract = false;
-            InteractStateEvent?.Invoke(false);
-        }
+        UpdateInteractState();
     }
 
     private void UpdateContainerState(float _deltaTime)
@@ -899,7 +893,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             if (!bContainerOpen)
             {
                 bContainerOpen = true;
-                ContainerOpenedEvent?.Invoke(); 
+                ContainerOpenedEvent?.Invoke();
             }
         }
         else
