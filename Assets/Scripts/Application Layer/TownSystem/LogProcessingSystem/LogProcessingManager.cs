@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 {
+    public event Action<bool> ShopInteracteStateChangedEvent;
     public event Action LogContainerSpecChangedEvent;
     public event Action<int> EarnMoneyEvent;
     public event Action ContainerUpdatedEvent;
@@ -124,6 +125,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
         logInBelt.BeltStopEvent -= InBeltStop;
         logInBelt.BeltStopEvent += InBeltStop;
+
+        shopNPC.InteractStateEvent -= ShopInteractStateChanged;
+        shopNPC.InteractStateEvent += ShopInteractStateChanged;
     }
 
     private void ReleaseEvents()
@@ -138,6 +142,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         shopNPC.EarnMoneyEvent -= EarnMoney;
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
         logInBelt.BeltStopEvent -= InBeltStop;
+        shopNPC.InteractStateEvent -= ShopInteractStateChanged;
     }
 
     public void PopulateSaveData(ref LogProcessingSaveData _saveData)
@@ -251,5 +256,10 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     private void InBeltStop()
     {
         logContainer.SetbStop(true);
+    }
+
+    private void ShopInteractStateChanged(bool _boolean)
+    {
+        ShopInteracteStateChangedEvent.Invoke(_boolean);
     }
 }

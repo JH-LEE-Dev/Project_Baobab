@@ -249,6 +249,21 @@ public class UIView_Unit : UIView
         InteractionStateChange(_state);
     }
 
+    public void TentInteractStateChanged(bool _state)
+    {
+        InteractionStateChange(_state);
+    }
+
+    public void OffroadInteractStateChanged(bool _state)
+    {
+        InteractionStateChange(_state);
+    }
+
+    public void ShopInteractStateChanged(bool _state)
+    {
+        InteractionStateChange(_state);
+    }
+
     private void InteractionStateChange(bool _state)
     {
         if (true == _state)

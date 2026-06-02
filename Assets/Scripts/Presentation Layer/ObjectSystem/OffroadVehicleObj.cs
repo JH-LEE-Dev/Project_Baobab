@@ -10,6 +10,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public event Action OffroadDriveEndEvent;
     public event Action PortalActivated;
     public event Action PortalDeActivatedEvent;
+    public event Action<bool> OffroadInteractStateChangedEvent;
 
     private IEnvironmentProvider environmentProvider;
 
@@ -170,8 +171,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         outLineObject.SetActive(true);
 
-        //baseSR.material = stencilMaterial;
-        //wheelStencilSR.material = stencilMaterial;
+        OffroadInteractStateChangedEvent?.Invoke(true);
 
         bOverlapped = true;
     }
@@ -186,8 +186,6 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         bCanInteract = true;
 
-        //baseSR.material = stencilMaterial;
-        //wheelStencilSR.material = stencilMaterial;
         outLineObject.SetActive(true);
 
         bOverlapped = true;
@@ -200,8 +198,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         outLineObject.SetActive(false);
 
-        //baseSR.material = originalMaterial;
-        //wheelStencilSR.material = originalMaterial;
+        OffroadInteractStateChangedEvent?.Invoke(false);
 
         bCanInteract = false;
 

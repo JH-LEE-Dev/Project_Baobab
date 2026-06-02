@@ -39,3 +39,14 @@ public struct GoToDungeonSignal
         forestType = _forestType;
     }
 }
+
+public struct TentInteractStateChangedSignal
+{
+    public bool state;
+    public TentInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
+
+

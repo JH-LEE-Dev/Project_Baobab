@@ -5,6 +5,7 @@ using UnityEngine.Rendering;
 public class Tent : MonoBehaviour
 {
     public event Action<bool> TentInteractEvent;
+    public event Action<bool> TentInteractStateChangedEvent;
 
     private const string PLAYER_TAG = "Player";
 
@@ -71,6 +72,7 @@ public class Tent : MonoBehaviour
             outLineObject.SetActive(true);
 
             bCanInteract = true;
+            TentInteractStateChangedEvent?.Invoke(true);
         }
     }
 
@@ -82,6 +84,8 @@ public class Tent : MonoBehaviour
 
             if (bInteract == false)
                 bCanInteract = false;
+            
+            TentInteractStateChangedEvent?.Invoke(false);
         }
     }
 
