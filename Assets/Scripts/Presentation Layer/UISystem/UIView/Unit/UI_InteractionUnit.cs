@@ -15,13 +15,13 @@ public class UI_InteractionUnit : MonoBehaviour
     private RectTransform rectTransform;
     private Transform targetTransform;
     private Vector2 positionOffset;
+    private int showCount = 0;
     private bool bHide = false;
-    private bool isShown = false;
 
     public void Initialize()
     {
         rectTransform = GetComponent<RectTransform>();
-        isShown = false;
+        showCount = 0;
         bHide = true;
 
         if (null != motionPlayer)
@@ -40,7 +40,7 @@ public class UI_InteractionUnit : MonoBehaviour
     }
 
     /// <summary>
-    /// 상호작용 UI를 노출합니다.
+    /// 상호작용 UI를 노출합니다. (카운트 증가)
     /// </summary>
     public void ShowInteraction(int _iconIndex = 0)
     {
@@ -57,20 +57,22 @@ public class UI_InteractionUnit : MonoBehaviour
 
         if (null == motionPlayer)
             return;
-
-        if (false == isShown)
-        {
-            isShown = true;
+            
+        if (1 == ++showCount)
             motionPlayer.Play(motionTag, bReset: true);
-        }
     }
 
     /// <summary>
-    /// 상호작용 UI를 숨깁니다.
+    /// 상호작용 UI를 숨깁니다. (카운트 감소, 0일 때만 실제 은닉)
     /// </summary>
     public void HideInteraction(bool _bSkip = false)
     {
-        isShown = false;
+        // 안전 장치: 카운트가 음수가 되지 않도록 함
+        if (0 > --showCount)
+            showCount = 0;
+
+        if (0 < showCount)
+            return;
 
         if (null == motionPlayer)
             return;
@@ -80,7 +82,7 @@ public class UI_InteractionUnit : MonoBehaviour
 
     private void Hide()
     {
-        if (false == isShown)
+        if (0 == showCount)
             bHide = true;
     }
 
