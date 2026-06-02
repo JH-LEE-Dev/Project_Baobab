@@ -121,6 +121,7 @@ public class UnitSystem
     {
         signalHub.Publish(new CharacterSpawnedSignal(_character));
         unitLogicManager.SetCharacter(_character);
+        inventoryManager.SetMoney(_character.statComponent.money);
     }
 
     private void DungeonReady(DungeonReadySignal dungeonReadySignal)

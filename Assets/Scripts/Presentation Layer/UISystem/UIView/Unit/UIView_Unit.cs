@@ -287,6 +287,6 @@ public class UIView_Unit : UIView
 
     public void ItemCantAcquired_Inventory()
     {
-        Debug.Log("AAA");
+
     }
 }

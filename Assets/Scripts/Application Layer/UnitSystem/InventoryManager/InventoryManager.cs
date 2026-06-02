@@ -622,4 +622,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     {
         InventoryIsFullEvent?.Invoke();
     }
+
+    public void SetMoney(int _money)
+    {
+        money = _money;
+    }
 }
