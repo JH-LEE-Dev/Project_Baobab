@@ -177,4 +177,10 @@ public class UIView_Tent : UIView
         RefreshMoneyTexts(false);
         abilityUIComponent?.Refresh();
     }
+
+    //특성 찍기 성공했을 때 누적 값 제공 함수.
+    public void DeclareSkillAccumulativeValue(SkillAccumulatedValueData _declareSkillAccumulativeValueSignal)
+    {
+        
+    }
 }

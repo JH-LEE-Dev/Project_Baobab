@@ -71,6 +71,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.Subscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.Subscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
+        signalHub.Subscribe<SkillAccumulatedValueData>(DeclareSkillAccumulativeValue);
     }
 
     private void UnSubscribeSignals()
@@ -105,6 +106,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.UnSubscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.UnSubscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
+        signalHub.Subscribe<SkillAccumulatedValueData>(DeclareSkillAccumulativeValue);        
     }
 
     private void BindEvents()
@@ -434,5 +436,10 @@ public class GameplayUICoordinator
     private void ItemCantAcquired_Inventory(ItemCantAcquiedSignal _itemCantAcquiedSignal)
     {
         unitUI.ItemCantAcquired_Inventory();
+    }
+
+    private void DeclareSkillAccumulativeValue(SkillAccumulatedValueData _declareSkillAccumulativeValueSignal)
+    {
+        
     }
 }
