@@ -234,7 +234,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         float t = bounceTime / BOUNCE_DURATION;
 
         // 진폭을 0.4로 키우고 감쇠를 3f로 늦춰 더 찰진 느낌 부여
-        float curve = Mathf.Sin(t * Mathf.PI * 3f) * Mathf.Exp(-t * 4f) * 0.4f;
+        float curve = Mathf.Sin(t * Mathf.PI * 3f) * Mathf.Exp(-t * 4f) * 0.25f;
 
         if (visualTransform != null)
         {
