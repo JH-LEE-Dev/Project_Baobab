@@ -30,12 +30,14 @@ public class LocKeyGenerator
         foreach (string filePath in jsonFiles)
         {
             string fileName = Path.GetFileNameWithoutExtension(filePath);
+            string className = SanitizeName(fileName);
             string jsonText = File.ReadAllText(filePath);
             var data = JsonUtility.FromJson<LocalizationDataJson>(jsonText);
 
             if (data == null || data.entries == null) continue;
 
-            sb.AppendLine($"    // {fileName}");
+            sb.AppendLine($"    public static class {className}");
+            sb.AppendLine("    {");
             foreach (var entry in data.entries)
             {
                 if (entry.id == 0) continue;
@@ -43,10 +45,13 @@ public class LocKeyGenerator
                 int key = manager.GenerateKey(data.jsonId, entry.id);
                 string identifier = !string.IsNullOrEmpty(entry.key) ? entry.key : entry.en;
                 string safeName = SanitizeName(identifier);
-                if (string.IsNullOrEmpty(safeName)) safeName = $"ID_{entry.id}";
+                if (string.IsNullOrEmpty(safeName)) safeName = $"Id{entry.id}";
                 
-                sb.AppendLine($"    public const int {fileName}_{safeName} = {key};");
+                string camelCaseName = ToCamelCase(safeName);
+                
+                sb.AppendLine($"        public const int {camelCaseName} = {key};");
             }
+            sb.AppendLine("    }");
             sb.AppendLine();
         }
 
@@ -82,5 +87,12 @@ public class LocKeyGenerator
         }
 
         return sb.ToString();
+    }
+
+    private static string ToCamelCase(string _input)
+    {
+        if (string.IsNullOrEmpty(_input)) return string.Empty;
+        if (_input.Length == 1) return _input.ToLower();
+        return char.ToLower(_input[0]) + _input.Substring(1);
     }
 }
