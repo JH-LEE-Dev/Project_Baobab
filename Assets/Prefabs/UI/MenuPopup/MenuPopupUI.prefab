@@ -51,4 +51,4 @@ MonoBehaviour:
   layer: 2
   startHidden: 1
   bWorld: 0
-  mapSelectorPrefab: {fileID: 2420857969200121288, guid: 2f6a82479ef7f9045a4d2ff694565279, type: 3}
+  vehiclePrefab: {fileID: 6760078267873237850, guid: 7cd29aa4a8b6bb04191a53cbf4d6aa7b, type: 3}

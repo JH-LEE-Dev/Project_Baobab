@@ -7,7 +7,7 @@ public class HUD_NavigationSubField : MonoBehaviour
     // //외부 의존성
     [Header("UI Elements")]
     [SerializeField] private GameObject subRegionPrefab;
-    [SerializeField] private Transform subRegionContainer;
+    [SerializeField] private RectTransform subRegionContainer;
 
     // //내부 의존성
     private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(3);
@@ -66,6 +66,116 @@ public class HUD_NavigationSubField : MonoBehaviour
             }
             else
                 spawnedSubRegions[i].PlayCloseAnimation();
+        }
+
+        RepositionSubRegions(dataCount);
+    }
+
+    private void RepositionSubRegions(int _activeCount)
+    {
+        if (null == subRegionContainer || 0 >= _activeCount)
+            return;
+
+        int count = _activeCount;
+        if (3 < count)
+            count = 3;
+
+        float containerWidth = subRegionContainer.rect.width;
+        float containerHeight = subRegionContainer.rect.height;
+
+        float subWidth = 100f;
+        float subHeight = 100f;
+
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null != spawnedSubRegions[i])
+            {
+                RectTransform subRect = spawnedSubRegions[i].GetRectTransform();
+                if (null != subRect)
+                {
+                    subWidth = subRect.rect.width;
+                    subHeight = subRect.rect.height;
+                    break;
+                }
+            }
+        }
+
+        float minX = -containerWidth / 2f + subWidth / 2f;
+        float maxX = containerWidth / 2f - subWidth / 2f;
+        float minY = -containerHeight / 2f + subHeight / 2f;
+        float maxY = containerHeight / 2f - subHeight / 2f;
+
+        if (minX > maxX)
+        {
+            float temp = minX;
+            minX = maxX;
+            maxX = temp;
+        }
+        if (minY > maxY)
+        {
+            float temp = minY;
+            minY = maxY;
+            maxY = temp;
+        }
+
+        float baseMinDistance = Mathf.Max(subWidth, subHeight) * 1.1f;
+
+        Span<Vector2> positions = stackalloc Vector2[3];
+        int posIndex = 0;
+
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null == spawnedSubRegions[i] || false == spawnedSubRegions[i].gameObject.activeSelf)
+                continue;
+
+            if (count <= posIndex)
+                break;
+
+            RectTransform subRect = spawnedSubRegions[i].GetRectTransform();
+            if (null == subRect)
+                continue;
+
+            subRect.anchorMin = new Vector2(0.5f, 0.5f);
+            subRect.anchorMax = new Vector2(0.5f, 0.5f);
+            subRect.pivot = new Vector2(0.5f, 0.5f);
+
+            Vector2 targetPos = Vector2.zero;
+            bool found = false;
+            float currentMinDistance = baseMinDistance;
+
+            for (int attempt = 0; 50 > attempt; attempt++)
+            {
+                float randX = UnityEngine.Random.Range(minX, maxX);
+                float randY = UnityEngine.Random.Range(minY, maxY);
+                Vector2 candidate = new Vector2(randX, randY);
+
+                bool isOverlap = false;
+                for (int j = 0; j < posIndex; j++)
+                {
+                    if (Vector2.Distance(candidate, positions[j]) < currentMinDistance)
+                    {
+                        isOverlap = true;
+                        break;
+                    }
+                }
+
+                if (false == isOverlap)
+                {
+                    targetPos = candidate;
+                    found = true;
+                    break;
+                }
+
+                if (0 < attempt && 0 == attempt % 10)
+                    currentMinDistance *= 0.8f;
+            }
+
+            if (false == found)
+                targetPos = new Vector2(UnityEngine.Random.Range(minX, maxX), UnityEngine.Random.Range(minY, maxY));
+
+            positions[posIndex] = targetPos;
+            subRect.anchoredPosition = targetPos;
+            posIndex++;
         }
     }
 

@@ -41,6 +41,16 @@ public class HUD_Vehicle : MonoBehaviour
             omp.Initialize();
     }
 
+    public void Open()
+    {
+        gameObject.SetActive(true);
+    }
+
+    public void Close()
+    {
+        gameObject.SetActive(false);
+    }
+
 
     // //내부 로직
 
