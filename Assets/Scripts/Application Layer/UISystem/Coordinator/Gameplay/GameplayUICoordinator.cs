@@ -71,7 +71,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.Subscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.Subscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
-        signalHub.Subscribe<SkillAccumulatedValueData>(DeclareSkillAccumulativeValue);
+        signalHub.Subscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
     }
 
     private void UnSubscribeSignals()
@@ -106,7 +106,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.UnSubscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.UnSubscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
-        signalHub.Subscribe<SkillAccumulatedValueData>(DeclareSkillAccumulativeValue);        
+        signalHub.UnSubscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
     }
 
     private void BindEvents()
@@ -438,8 +438,8 @@ public class GameplayUICoordinator
         unitUI.ItemCantAcquired_Inventory();
     }
 
-    private void DeclareSkillAccumulativeValue(SkillAccumulatedValueData _declareSkillAccumulativeValueSignal)
+    private void DeclareSkillAccumulativeValue(DeclareSkillAccumulatedValueSignal _declareSkillAccumulativeValueSignal)
     {
-        
+        tentUI.DeclareSkillAccumulativeValue(_declareSkillAccumulativeValueSignal.data);
     }
 }

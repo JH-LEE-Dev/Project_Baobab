@@ -9,6 +9,7 @@ public class UIView_Tent : UIView
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private UI_TentAbilityComponent abilityUIComponent;
+    [SerializeField] private AbilityNoticeStackPresenter abilityNoticePresenter;
     [SerializeField] private RectTransform moneyPivot;
     [SerializeField] private GameObject currencyCounterHUDPrefab;
 
@@ -47,6 +48,9 @@ public class UIView_Tent : UIView
 
         if (uiRoot == null)
             uiRoot = transform;
+
+        if (abilityNoticePresenter == null)
+            abilityNoticePresenter = GetComponent<AbilityNoticeStackPresenter>();
 
         if (moneyPivot == null)
             moneyPivot = FindChildByName(transform, "MoneyPivot") as RectTransform;
@@ -181,6 +185,25 @@ public class UIView_Tent : UIView
     //특성 찍기 성공했을 때 누적 값 제공 함수.
     public void DeclareSkillAccumulativeValue(SkillAccumulatedValueData _declareSkillAccumulativeValueSignal)
     {
-        
+        if (abilityNoticePresenter == null)
+            abilityNoticePresenter = GetComponent<AbilityNoticeStackPresenter>();
+
+        if (abilityNoticePresenter == null)
+            return;
+
+        abilityNoticePresenter.ShowNotice(FormatSkillAccumulatedValue(_declareSkillAccumulativeValueSignal));
+    }
+
+    private string FormatSkillAccumulatedValue(SkillAccumulatedValueData _data)
+    {
+        return _data.type + " " + FormatAccumulatedAmount(_data.amount);
+    }
+
+    private string FormatAccumulatedAmount(float _amount)
+    {
+        if (Mathf.Approximately(_amount, Mathf.Round(_amount)))
+            return Mathf.RoundToInt(_amount).ToString();
+
+        return _amount.ToString("0.##");
     }
 }
