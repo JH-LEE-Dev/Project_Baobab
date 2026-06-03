@@ -2102,9 +2102,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AttackComponent
   componentCenterPoint: {fileID: 6653437826344104507}
-  maxAttackDistance: 1
-  attackRadius: 1
-  ellipseAttackRadius: 1
+  maxAttackDistance: 1.25
+  attackRadius: 1.25
+  ellipseAttackRadius: 1.25
+  attackAngle: 55
   targetLayer:
     serializedVersion: 2
     m_Bits: 1024
