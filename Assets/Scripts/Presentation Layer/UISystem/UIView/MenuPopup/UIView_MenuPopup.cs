@@ -28,7 +28,7 @@ public class UIView_MenuPopup : UIView
         if (null == mapSelector && null != mapSelectorPrefab)
             mapSelector = Instantiate(mapSelectorPrefab, this.transform).GetComponent<HUD_MapSelector>();
 
-        CloseTeleportUI();
+        OnHide();
     }
 
     public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
@@ -38,7 +38,7 @@ public class UIView_MenuPopup : UIView
         mapDataProvider = _mapDataProvider;
 
         if (null != mapSelector)
-            mapSelector.Initialize(mapDataProvider, weatherProvider, timeDataProvider, HandleEnterDungeon, CloseTeleportUI);
+            mapSelector.Initialize(mapDataProvider, weatherProvider, timeDataProvider, HandleEnterDungeon, OnHide);
     }
 
     private void HandleEnterDungeon(MapType _type, ForestType _forestType)
@@ -48,27 +48,21 @@ public class UIView_MenuPopup : UIView
 
         // 통신 및 던전 진입 로직 배치
         DungeonSelectedEvent?.Invoke(_type, _forestType);
-        CloseTeleportUI();
+        OnHide();
     }
 
     protected override void OnShow()
     {
         base.OnShow();
+
+        if (null != mapSelector)
+            mapSelector.MapSelectorOpen();
     }
 
     protected override void OnHide()
     {
         base.OnHide();
-    }
 
-    public void TeleportUIOpen()
-    {
-        if (null != mapSelector)
-            mapSelector.MapSelectorOpen();
-    }
-
-    public void CloseTeleportUI()
-    {
         if (null != mapSelector)
         {
             mapSelector.MapSelectorClose();

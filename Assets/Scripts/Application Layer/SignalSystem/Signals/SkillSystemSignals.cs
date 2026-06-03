@@ -9,3 +9,14 @@ public struct PrestigeLevelIncreasedSignal
         level = _level;
     }
 }
+
+public struct DeclareSkillAccumulatedValueSignal
+{
+    public SkillAccumulatedValueData data;
+    public DeclareSkillAccumulatedValueSignal(SkillAccumulatedValueData _data)
+    {
+        data = _data;
+    }
+}
+
+

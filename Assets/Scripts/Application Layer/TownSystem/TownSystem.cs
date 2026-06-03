@@ -174,7 +174,6 @@ public class TownSystem : MonoBehaviour
 
     private void TentInteract(bool _bInteract)
     {
-        inputManager.PauseMove(_bInteract);
         signalHub.Publish(new TentInteractSignal(_bInteract));
     }
 

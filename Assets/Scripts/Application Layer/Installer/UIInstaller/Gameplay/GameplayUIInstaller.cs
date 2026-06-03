@@ -21,6 +21,7 @@ public class GameplayUIInstaller : MonoBehaviour
     private IWeatherProvider weatherProvider;
     private ITimeDataProvider timeDataProvider;
     private IInventory offroadContainer;
+    private UIDepthController depthController;
 
     //Canvas
 
@@ -58,10 +59,15 @@ public class GameplayUIInstaller : MonoBehaviour
         timeDataProvider = _timeDataProvider;
 
         uiManager = GetComponent<GameplayUIManager>();
+        depthController = GetComponent<UIDepthController>();
+        if (depthController != null)
+        {
+            depthController.Initialize();
+        }
         uICoordinator = new GameplayUICoordinator();
 
         uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider,
-         shopNPC, moneyData, localizationManager, mapDataProvider, weatherProvider, timeDataProvider, offroadContainer);
+         shopNPC, moneyData, localizationManager, mapDataProvider, weatherProvider, timeDataProvider, offroadContainer, depthController);
 
         SetupUIElement();
 
@@ -137,14 +143,16 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_WorldPopup worldPopupUI = uiManager.Open<UIView_WorldPopup>();
 
         UIView_MenuPopup menuPopupUI = uiManager.Open<UIView_MenuPopup>();
+        menuPopupUI.Hide();
 
         UIView_Tent tentUI = uiManager.Open<UIView_Tent>();
+        tentUI.Hide();
 
         UIView_ESC escUI = uiManager.Open<UIView_ESC>();
         escUI.Hide();
 
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI, tentUI, escUI);
+        menuPopupUI, tentUI, escUI, depthController);
 
         BindEvent();
     }

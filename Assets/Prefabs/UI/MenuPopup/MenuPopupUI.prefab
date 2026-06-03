@@ -50,5 +50,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIView_MenuPopup
   layer: 2
   startHidden: 1
+  bCloseableByESC: 1
   bWorld: 0
   mapSelectorPrefab: {fileID: 2420857969200121288, guid: 2f6a82479ef7f9045a4d2ff694565279, type: 3}

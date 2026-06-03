@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 {
+    public event Action<SkillAccumulatedValueData> DeclareAccumulatedValueEvent;
     private SignalHub signalHub;
     private IInventoryCH inventoryCH;
     private IContainerCH containerCH;
@@ -19,6 +21,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     [SerializeField] private List<SkillCommand> skillCommands;
     private Dictionary<SkillCommandType, SkillCommand> skillDic;
+    private Dictionary<SkillCommandType, float> accumulatedAmounts;
 
     IInventoryCH ICommandHandleSystem.inventoryCH => inventoryCH;
 
@@ -61,6 +64,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         if (skillCommands == null) return;
 
         skillDic = new Dictionary<SkillCommandType, SkillCommand>(skillCommands.Count);
+        accumulatedAmounts = new Dictionary<SkillCommandType, float>(skillCommands.Count);
 
         for (int i = 0; i < skillCommands.Count; i++)
         {
@@ -70,6 +74,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
             if (!skillDic.ContainsKey(command.skillCommandType))
             {
                 skillDic.Add(command.skillCommandType, command);
+                accumulatedAmounts.Add(command.skillCommandType, 0f);
             }
             else
             {
@@ -103,13 +108,34 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         {
             command.level = _skillDispatchInfo.level;
             // 커브 공식을 사용하여 레벨에 따른 최종 수치 계산
-            command.amount = _skillDispatchInfo.commandInfo.amountCurve.Evaluate(_skillDispatchInfo.level);
+            float currentAmount = _skillDispatchInfo.commandInfo.amountCurve.Evaluate(_skillDispatchInfo.level);
+            command.amount = currentAmount;
+
+            if (accumulatedAmounts.ContainsKey(commandType))
+            {
+                accumulatedAmounts[commandType] += currentAmount;
+            }
+            else
+            {
+                accumulatedAmounts[commandType] = currentAmount;
+            }
+
             command.Execute(this);
+            DeclareAccumulatedValueEvent?.Invoke(new SkillAccumulatedValueData { type = commandType, amount = currentAmount });
         }
         else
         {
             Debug.LogWarning($"[SkillDispatcher] SkillCommand not found for type: {commandType}");
         }
+    }
+
+    public float GetAccumulatedAmount(SkillCommandType _commandType)
+    {
+        if (accumulatedAmounts != null && accumulatedAmounts.TryGetValue(_commandType, out float amount))
+        {
+            return amount;
+        }
+        return 0f;
     }
 
     private void CharacterSpawned(CharacterSpawnedSignal characterSpawendSignal)

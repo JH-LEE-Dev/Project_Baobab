@@ -22,7 +22,7 @@ public class MainMenuUIInstaller : MonoBehaviour
         inputManager = _inputManager;
         uiManager = GetComponent<MainMenuUIManager>();
 
-        uiManager.Initialize(inputManager, localizationManager);
+        uiManager.Initialize(inputManager, localizationManager, null);
     }
 
     public void Release()
@@ -45,7 +45,7 @@ public class MainMenuUIInstaller : MonoBehaviour
         CanvasRoot tempRoot = new CanvasRoot();
         tempRoot.overlayLayerRoot = overlayRoot;
         //tempRoot.popupLayerRoot = popupLayerRoot;
-        uiManager.SceneChanged(tempRoot,default);
+        uiManager.SceneChanged(tempRoot, default);
 
         OpenUIView();
         SetupCanvasChilds();
@@ -103,6 +103,8 @@ public class MainMenuUIInstaller : MonoBehaviour
         mainMenuUIView.NewGameButtonClickedEvent -= NewGameStart;
         mainMenuUIView.LoadGameButtonClickedEvent -= LoadGame;
         mainMenuUIView.ExitButtonClickedEvent -= ExitGame;
+
+        mainMenuUIView.Hide();
     }
 
     private void NewGameStart()

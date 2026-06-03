@@ -129,6 +129,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UIView_Tent
   layer: 2
   startHidden: 1
+  bCloseableByESC: 1
   bWorld: 0
   uiRoot: {fileID: 6246783744957109956}
   abilityUIComponent: {fileID: 3966334113652107173}
