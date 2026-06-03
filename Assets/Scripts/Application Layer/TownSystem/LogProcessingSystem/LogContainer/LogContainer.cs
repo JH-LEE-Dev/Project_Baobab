@@ -52,6 +52,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     public int maxItemCntPerSlot => maxItemsPerSlot;
 
     private bool bCanInteract = false;
+    private bool bPhysicalOverlapped = false;
+    private bool bCanReach = true;
+    private bool bLastInteractState = false;
+
+    public bool isPhysicalOverlapped => bPhysicalOverlapped;
     private Coroutine transferCoroutine;
     private WaitForSeconds transferWait;
     private float lastTransferTime = -1.0f;
@@ -630,13 +635,51 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
+    private void UpdateInteractState()
+    {
+        bool currentState = bCanReach && bPhysicalOverlapped;
+        if (currentState != bLastInteractState)
+        {
+            bLastInteractState = currentState;
+            bCanInteract = currentState;
+            InteractStateEvent?.Invoke(currentState);
+            outLineObject.SetActive(currentState);
+
+            if (!currentState)
+            {
+                if (transferCoroutine != null)
+                {
+                    StopCoroutine(transferCoroutine);
+                    transferCoroutine = null;
+                }
+            }
+        }
+    }
+
+    public void SetCanReach(bool _bCanReach)
+    {
+        bCanReach = _bCanReach;
+        UpdateInteractState();
+    }
+
     private void OnTriggerEnter2D(Collider2D _other)
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            bCanInteract = true;
-            InteractStateEvent?.Invoke(true);
-            outLineObject.SetActive(true);
+            bPhysicalOverlapped = true;
+            UpdateInteractState();
+        }
+    }
+
+    private void OnTriggerStay2D(Collider2D _other)
+    {
+        if (_other.CompareTag(PLAYER_TAG))
+        {
+            if (bPhysicalOverlapped == false)
+            {
+                bPhysicalOverlapped = true;
+                UpdateInteractState();
+            }
         }
     }
 
@@ -644,16 +687,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         if (_other.CompareTag(PLAYER_TAG))
         {
-            bCanInteract = false;
-            InteractStateEvent?.Invoke(false);
-
-            outLineObject.SetActive(false);
-
-            if (transferCoroutine != null)
-            {
-                StopCoroutine(transferCoroutine);
-                transferCoroutine = null;
-            }
+            bPhysicalOverlapped = false;
+            UpdateInteractState();
         }
     }
 

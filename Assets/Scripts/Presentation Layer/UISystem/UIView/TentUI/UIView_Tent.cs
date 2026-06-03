@@ -58,18 +58,22 @@ public class UIView_Tent : UIView
         abilityUIComponent?.Tick();
     }
 
-    // Tent와 상호작용하면 곧바로 능력창을 열고, 상호작용이 끝나면 닫는다.
-    public void TentInteract(bool _bInteract)
+    protected override void OnShow()
     {
-        if (_bInteract)
-        {
-            RefreshMoneyTexts(false);
-            abilityUIComponent?.Open();
-        }
-        else
-        {
-            abilityUIComponent?.Close();
-        }
+        base.OnShow();
+        viewCtx.inputManager.PauseMove(true);
+
+        RefreshMoneyTexts(false);
+        abilityUIComponent?.Open();
+    }
+
+
+    protected override void OnHide()
+    {
+        base.OnHide();
+        viewCtx.inputManager.PauseMove(false);
+
+        abilityUIComponent?.Close();
     }
 
     #endregion

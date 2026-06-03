@@ -7,23 +7,17 @@ public abstract class UIView : MonoBehaviour
     [Header("UIView Settings")]
     [SerializeField] private UILayer layer = UILayer.None;
     [SerializeField] private bool startHidden = true;
+    [SerializeField] private bool bCloseableByESC = false;
     public bool bWorld = false;
 
     public UILayer Layer => layer;
+    public bool IsCloseableByESC => bCloseableByESC;
+    public bool IsVisible => bVisible;
 
     private bool bVisible;
 
     protected virtual void Awake()
     {
-        if (startHidden)
-        {
-            gameObject.SetActive(false);
-            bVisible = false;
-        }
-        else
-        {
-            bVisible = gameObject.activeSelf;
-        }
     }
 
     public virtual void OnDestroy()
@@ -33,7 +27,7 @@ public abstract class UIView : MonoBehaviour
 
     public virtual void Update()
     {
-        
+
     }
 
     public virtual void Initialize(UIViewContext ctx)
@@ -54,7 +48,12 @@ public abstract class UIView : MonoBehaviour
             return;
 
         bVisible = true;
-        gameObject.SetActive(true);
+        
+        if (bCloseableByESC && viewCtx?.depthController != null)
+        {
+            viewCtx.depthController.RegisterView(this);
+        }
+
         OnShow();
     }
 
@@ -64,8 +63,13 @@ public abstract class UIView : MonoBehaviour
             return;
 
         bVisible = false;
+
+        if (bCloseableByESC && viewCtx?.depthController != null)
+        {
+            viewCtx.depthController.UnregisterView(this);
+        }
+
         OnHide();
-        gameObject.SetActive(false);
     }
 
     protected virtual void OnShow() { }
@@ -85,11 +89,11 @@ public abstract class UIView : MonoBehaviour
 
     public virtual void Release()
     {
-        
+
     }
 
     public virtual void Refresh()
     {
-        
+
     }
 }

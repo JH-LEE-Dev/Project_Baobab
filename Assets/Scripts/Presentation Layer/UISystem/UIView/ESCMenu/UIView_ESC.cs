@@ -42,11 +42,13 @@ public class UIView_ESC : UIView
     protected override void OnShow()
     {
         base.OnShow();
+        gameObject.SetActive(true);
     }
 
     protected override void OnHide()
     {
         base.OnHide();
+        gameObject.SetActive(false);
     }
 
     public void OnSaveGameButton()

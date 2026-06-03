@@ -16,11 +16,13 @@ public class GameplayUICoordinator
     private UIView_Tent tentUI;
     private UIView_ESC escUI;
 
+    private UIDepthController uiDepthController;
+
 
     private bool bInventoryOpened = false;
-    private bool bESCMenuOpended = false;
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
-     UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI)
+     UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
+     UIDepthController _uiDepthController)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -31,7 +33,7 @@ public class GameplayUICoordinator
         menuPopupUI = _menuPopupUI;
         tentUI = _tentUI;
         escUI = _escUI;
-
+        uiDepthController = _uiDepthController;
 
         SubscribeSignals();
         BindEvents();
@@ -236,17 +238,24 @@ public class GameplayUICoordinator
 
     private void TentInteract(TentInteractSignal tentInteractSignal)
     {
-        tentUI.TentInteract(tentInteractSignal.bInteract);
+        if (tentInteractSignal.bInteract == true)
+        {
+            tentUI.Show();
+        }
+        else
+        {
+            tentUI.Hide();
+        }
     }
 
     private void PortalActivated(PortalActivatedSignal _portalActivatedSignal)
     {
-        menuPopupUI.TeleportUIOpen();
+        menuPopupUI.Show();
     }
 
     private void PortalDeActivated(PortalDeActivatedSignal _portalDeActivatedSignal)
     {
-        menuPopupUI.CloseTeleportUI();
+        menuPopupUI.Hide();
     }
 
     private void DungeonSelected(MapType _type, ForestType _forestType)
@@ -297,15 +306,18 @@ public class GameplayUICoordinator
 
     private void EscButtonPressed()
     {
-        if (bESCMenuOpended == false)
+        if (uiDepthController != null && uiDepthController.TryCloseTopView())
         {
-            bESCMenuOpended = true;
+            return;
+        }
+
+        if (!escUI.IsVisible)
+        {
             escUI.Show();
             Time.timeScale = 0f;
         }
         else
         {
-            bESCMenuOpended = false;
             escUI.Hide();
             Time.timeScale = 1f;
         }
