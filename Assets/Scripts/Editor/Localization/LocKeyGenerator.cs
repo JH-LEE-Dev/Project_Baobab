@@ -41,7 +41,8 @@ public class LocKeyGenerator
                 if (entry.id == 0) continue;
 
                 int key = manager.GenerateKey(data.jsonId, entry.id);
-                string safeName = SanitizeName(entry.en);
+                string identifier = !string.IsNullOrEmpty(entry.key) ? entry.key : entry.en;
+                string safeName = SanitizeName(identifier);
                 if (string.IsNullOrEmpty(safeName)) safeName = $"ID_{entry.id}";
                 
                 sb.AppendLine($"    public const int {fileName}_{safeName} = {key};");

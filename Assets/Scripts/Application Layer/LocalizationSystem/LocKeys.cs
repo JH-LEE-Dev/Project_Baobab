@@ -2,6 +2,6 @@
 public static class LocKeys
 {
     // MenuPopupUI
-    public const int MenuPopupUI_VegetatedPlains = 2097153;
+    public const int MenuPopupUI_MapName1 = 2097153;
 
 }
