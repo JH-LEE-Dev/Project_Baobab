@@ -1158,7 +1158,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 36a78da162d848cab260c2a5ca402cec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIToolTipShow
-  forwardDuration: 0.55
+  forwardDuration: 0.45
   forwardDelay: 0
   forwardEase: 0
   backwardDuration: 0.5
@@ -1167,8 +1167,8 @@ MonoBehaviour:
   resetOnValidateInPlayMode: 1
   valueSettings:
     startOffsetY: -12
-    startAngle: 8
-    angleDamping: 0.25
+    startAngle: 5.5
+    angleDamping: 0.3
     swingCount: 3
     moveEase: 6
     rotationEase: 3
@@ -1220,16 +1220,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5635ce837ed4e79884aa3921384b6b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIToolTipHide
-  forwardDuration: 0.18
+  forwardDuration: 0.1
   forwardDelay: 0
-  forwardEase: 0
+  forwardEase: 1
   backwardDuration: 0.5
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
   valueSettings:
-    endOffsetY: -10
-    hideEase: 4
+    endOffsetY: -6
+    hideEase: 1
 --- !u!1 &7118067883298631831
 GameObject:
   m_ObjectHideFlags: 0

@@ -191,7 +191,7 @@ public class UIView_Tent : UIView
         if (abilityNoticePresenter == null)
             return;
 
-        abilityNoticePresenter.ShowNotice(FormatSkillAccumulatedValue(_declareSkillAccumulativeValueSignal));
+        abilityNoticePresenter.ShowNotice(_declareSkillAccumulativeValueSignal.type.ToString(), FormatSkillAccumulatedValue(_declareSkillAccumulativeValueSignal));
     }
 
     private string FormatSkillAccumulatedValue(SkillAccumulatedValueData _data)

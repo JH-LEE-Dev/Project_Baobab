@@ -373,15 +373,22 @@ MonoBehaviour:
   - {fileID: 4108889625656559450}
   - {fileID: 8383832905565977680}
   prewarmCount: 9
-  lifeTime: 2
+  lifeTime: 1.5
   showDuration: 0.18
   hideDuration: 0.18
   moveDuration: 0.18
   entryOffsetX: 26
   exitOffsetY: 14
+  refreshDuration: 0.45
+  refreshSquashScale: {x: 1.4, y: 0.7}
+  refreshRecoilScale: {x: 0.8, y: 1.3}
+  refreshBounceCount: 2
+  refreshBounceDamping: 0.25
   showEase: 9
   hideEase: 9
   moveEase: 9
+  refreshSquashEase: 6
+  refreshRestoreEase: 27
   debugNoticeFormat: "\uACF5\uACA9\uB825 {0}%"
   debugNoticeStep: 20
 --- !u!1 &1970689072727835323
@@ -1231,7 +1238,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5100673485970373582, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -25
+      value: -30
       objectReference: {fileID: 0}
     - target: {fileID: 5100673485970373582, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

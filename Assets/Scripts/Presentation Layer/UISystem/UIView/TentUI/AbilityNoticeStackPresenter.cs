@@ -15,9 +15,16 @@ public class AbilityNoticeStackPresenter : MonoBehaviour
     [SerializeField] private float moveDuration = 0.32f;
     [SerializeField] private float entryOffsetX = 26.0f;
     [SerializeField] private float exitOffsetY = 14.0f;
+    [SerializeField] private float refreshDuration = 0.45f;
+    [SerializeField] private Vector2 refreshSquashScale = new Vector2(1.4f, 0.7f);
+    [SerializeField] private Vector2 refreshRecoilScale = new Vector2(0.8f, 1.3f);
+    [SerializeField, Range(1, 5)] private int refreshBounceCount = 2;
+    [SerializeField, Range(0.0f, 1.0f)] private float refreshBounceDamping = 0.25f;
     [SerializeField] private Ease showEase = Ease.OutCubic;
     [SerializeField] private Ease hideEase = Ease.OutCubic;
     [SerializeField] private Ease moveEase = Ease.OutCubic;
+    [SerializeField] private Ease refreshSquashEase = Ease.OutQuad;
+    [SerializeField] private Ease refreshRestoreEase = Ease.OutBack;
     [SerializeField] private string debugNoticeFormat = "공격력 {0}%";
     [SerializeField] private int debugNoticeStep = 20;
 
@@ -48,10 +55,18 @@ public class AbilityNoticeStackPresenter : MonoBehaviour
 
     public void ShowNotice(string _message)
     {
+        ShowNotice(null, _message);
+    }
+
+    public void ShowNotice(string _key, string _message)
+    {
         BindReferencesIfNeeded();
         PrewarmPool();
 
         if (noticePrefab == null || MaxVisibleCount <= 0)
+            return;
+
+        if (string.IsNullOrEmpty(_key) == false && TryRefreshActiveNotice(_key, _message))
             return;
 
         if (activeNotices.Count >= MaxVisibleCount)
@@ -62,7 +77,7 @@ public class AbilityNoticeStackPresenter : MonoBehaviour
             return;
 
         activeNotices.Add(noticeItem);
-        noticeItem.Show(_message, noticePivots[activeNotices.Count - 1], entryOffsetX, showDuration, lifeTime, showEase);
+        noticeItem.Show(_key, _message, noticePivots[activeNotices.Count - 1], entryOffsetX, showDuration, lifeTime, showEase);
     }
 
     public void OnNoticeReturned(AbilityNoticeItem _noticeItem)
@@ -119,6 +134,27 @@ public class AbilityNoticeStackPresenter : MonoBehaviour
             noticeItem.Hide(exitOffsetY, hideDuration, hideEase);
 
         ReflowActiveNotices(_index);
+    }
+
+    private bool TryRefreshActiveNotice(string _key, string _message)
+    {
+        for (int i = 0; i < activeNotices.Count; i++)
+        {
+            AbilityNoticeItem noticeItem = activeNotices[i];
+            if (noticeItem == null || noticeItem.IsVisible == false || noticeItem.IsHiding)
+                continue;
+
+            if (noticeItem.NoticeKey != _key)
+                continue;
+
+            activeNotices.RemoveAt(i);
+            activeNotices.Add(noticeItem);
+            noticeItem.Refresh(_message, lifeTime, refreshDuration, refreshSquashScale, refreshRecoilScale, refreshBounceCount, refreshBounceDamping, refreshSquashEase, refreshRestoreEase);
+            ReflowActiveNotices(i);
+            return true;
+        }
+
+        return false;
     }
 
     private void ReflowActiveNotices(int _startIndex)
