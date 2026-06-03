@@ -17,6 +17,10 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     [SerializeField] private Sprite emptySprite;
 
+    [Header("Slot Count Settings")]
+    [SerializeField] private Color defaultColor = Color.white;
+    [SerializeField] private Color maxColor = Color.red;
+
     public Action<UI_InventorySlot, IItemData, Vector2> enterSlot;
     public Action exitSlot;
     public Action<IInventorySlot> deleteItem;
@@ -90,9 +94,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
 
         if (showCnt >= maxItemCntPerSlot)
-            currencyFont.SetGlyphColor(Color.red);
+            currencyFont.SetGlyphColor(maxColor);
         else
-            currencyFont.SetGlyphColor(Color.white);
+            currencyFont.SetGlyphColor(defaultColor);
     }
 
     public void UpdateImage(Sprite _sprite, Color _color)
