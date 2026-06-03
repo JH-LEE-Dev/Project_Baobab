@@ -15,8 +15,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float UnlockRevealDuration = 0.1f;
     private const float UnlockRevealStaggerDelay = 0.025f;
     private const float AutoLevelUpInterval = 0.1f;
-    private static readonly Color CanApplyNodeColor = new Color32(88, 215, 242, 255);
-    private static readonly Color CompletedColor = new Color32(84, 216, 106, 255);
+    private const string ToolTipCostAvailableColor = "54D86A";
+    private const string ToolTipCostUnavailableColor = "B94A42";
+    private const string ToolTipCostMaxLevelColor = "58D7F2";
+    private const string ToolTipMaxLevelText = "최대 레벨";
+    private static readonly Color CanApplyNodeColor = new Color32(84, 216, 106, 255);
+    private static readonly Color CompletedColor = new Color32(88, 215, 242, 255);
     private static readonly Color CannotApplyNodeColor = new Color32(185, 74, 66, 255);
     private static readonly Color DefaultLineColor = new Color32(255, 255, 255, 255);
 
@@ -145,7 +149,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         EnsureCircleRevealMask();
         EnsureCircleRevealDim();
         BindAbilityHUDIfNeeded();
-        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor, ShouldDrawLineAboveDefault);
+        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor);
         CachePictureBindings();
         CacheLineSpriteBindings();
         LoadNodeDefinitions();
@@ -818,7 +822,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         SkillInfo skillInfo = GetSkillInfo(_node.SkillType);
-        string costText = BuildToolTipCostText(skillInfo, out MoneyType costMoneyType);
+        AbilityLevelUpRejectReason applyReason = GetToolTipApplyReason(_node.SkillType);
+        string costText = BuildToolTipCostText(skillInfo, applyReason, out MoneyType costMoneyType);
         toolTipInstance.SetContent(
             BuildToolTipTitleAndLevelText(_node, skillInfo),
             _node.GetToolTipDescriptionText(),
@@ -892,18 +897,46 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return $"{AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost)} {_skillInfo.moneyType}";
     }
 
-    private string BuildToolTipCostText(SkillInfo _skillInfo, out MoneyType _costMoneyType)
+    private string BuildToolTipCostText(SkillInfo _skillInfo, AbilityLevelUpRejectReason _applyReason, out MoneyType _costMoneyType)
     {
         _costMoneyType = MoneyType.None;
 
-        if (_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel)
-            return BuildToolTipCostText(_skillInfo);
+        if ((_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel) || _applyReason == AbilityLevelUpRejectReason.MaxLevel)
+            return BuildToolTipColorText($"<WAVE>{ToolTipMaxLevelText}</WAVE>", ToolTipCostMaxLevelColor);
 
         if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
             return BuildToolTipCostText(_skillInfo);
 
         _costMoneyType = _skillInfo.moneyType;
-        return AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost);
+        string costText = AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost);
+        string color = GetToolTipCostColor(_applyReason);
+        return string.IsNullOrEmpty(color) ? costText : BuildToolTipColorText(costText, color);
+    }
+
+    private AbilityLevelUpRejectReason GetToolTipApplyReason(SkillType _skillType)
+    {
+        if (skillSystemProvider == null)
+            return AbilityLevelUpRejectReason.Pass;
+
+        return NormalizeRejectReason(skillSystemProvider.CanApplySkill(_skillType));
+    }
+
+    private string GetToolTipCostColor(AbilityLevelUpRejectReason _applyReason)
+    {
+        switch (_applyReason)
+        {
+            case AbilityLevelUpRejectReason.Pass:
+                return ToolTipCostAvailableColor;
+            case AbilityLevelUpRejectReason.NotEnoughMoney:
+                return ToolTipCostUnavailableColor;
+            default:
+                return string.Empty;
+        }
+    }
+
+    private string BuildToolTipColorText(string _text, string _color)
+    {
+        return $"<COLOR={_color}>{_text}</COLOR>";
     }
 
     // 현재 노드에 대한 툴팁을 숨긴다.
@@ -1252,16 +1285,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (spawnedNodeMap.TryGetValue(_childSkillType, out AbilityNode childNode) == false)
             return DefaultLineColor;
 
-        return childNode.CompletedVisual ? CompletedColor : DefaultLineColor;
+        return GetNodeStateColor(childNode);
     }
 
     // MaxLevel까지 찍힌 노드로 들어오는 라인만 일반 라인보다 위에 그린다.
-    private bool ShouldDrawLineAboveDefault(SkillType _childSkillType)
-    {
-        return spawnedNodeMap.TryGetValue(_childSkillType, out AbilityNode childNode) &&
-               childNode.CompletedVisual;
-    }
-
     // 현재 줌 비율에 따라 사용할 라인 세그먼트 크기를 선택한다.
     // 방향과 세그먼트 크기에 맞는 라인 스프라이트 타입을 반환한다.
     // 노드 중심점을 대상 RectTransform의 로컬 좌표로 변환한다.
@@ -1669,6 +1696,20 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 부모가 모두 1레벨 이상이면 자식 노드를 표시한다. 부모가 없으면 시작 노드로 본다.
+    private Color GetNodeStateColor(AbilityNode _node)
+    {
+        if (_node == null)
+            return DefaultLineColor;
+
+        if (_node.CompletedVisual)
+            return CompletedColor;
+
+        if (_node.CanApplyVisual)
+            return CanApplyNodeColor;
+
+        return CannotApplyNodeColor;
+    }
+
     private bool ShouldShowNode(AbilityNode _node)
     {
         if (_node == null)

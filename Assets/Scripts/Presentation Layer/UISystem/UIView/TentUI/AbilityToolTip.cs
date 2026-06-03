@@ -1,4 +1,5 @@
 using TMPro;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
@@ -21,15 +22,26 @@ public class AbilityToolTip : MonoBehaviour
     [SerializeField] private string showMotionTag = "ToolTipShow";
     [SerializeField] private string hideMotionTag = "ToolTipHide";
     [SerializeField] private string clickMotionTag = "ToolTipClick";
+    [SerializeField] private string idleMotionTag = "ToolTipIdle";
+
+    [Header("Idle Motion")]
+    [SerializeField] private float idleStepDuration = 0.2f;
+    [SerializeField] private float idleOffsetY = 1f;
 
     private MotionEntry showMotionEntry;
     private MotionEntry hideMotionEntry;
     private MotionEntry clickMotionEntry;
+    private MotionEntry idleMotionEntry;
+    private Sequence idleFallbackSequence;
     private Vector2 baseAnchoredPosition;
     private Vector2 baseMotionAnchoredPosition;
     private Vector3 baseLocalScale = Vector3.one;
     private bool hasCachedBaseLocalScale;
     private bool hasCachedMotionAnchoredPosition;
+    private int motionVersion;
+    private int showMotionVersion;
+    private int clickMotionVersion;
+    private int hideMotionVersion;
 
     public RectTransform RootRectTransform => rootRectTransform;
     public TMP_Text TitleAndLevelText => titleAndLevelText;
@@ -135,7 +147,9 @@ public class AbilityToolTip : MonoBehaviour
     public void PlayShowMotion()
     {
         Show();
-        PlayShowObjectMotion();
+
+        if (PlayShowObjectMotion() == false)
+            PlayIdleFromVisibleState();
     }
 
     public void PlayHideMotion()
@@ -143,6 +157,7 @@ public class AbilityToolTip : MonoBehaviour
         if (gameObject.activeSelf == false)
             return;
 
+        ++motionVersion;
         if (PlayHideObjectMotion())
             return;
 
@@ -152,11 +167,14 @@ public class AbilityToolTip : MonoBehaviour
     public void PlayClickMotion()
     {
         Show();
-        PlayClickObjectMotion();
+
+        if (PlayClickObjectMotion() == false)
+            PlayIdleFromVisibleState();
     }
 
     public void HideImmediately()
     {
+        ++motionVersion;
         StopObjectMotions();
         CacheBaseMotionState();
 
@@ -207,7 +225,15 @@ public class AbilityToolTip : MonoBehaviour
 
     private void RestoreVisibleState()
     {
+        RestoreVisibleState(motionVersion);
+    }
+
+    private void RestoreVisibleState(int _version)
+    {
         if (gameObject.activeSelf == false)
+            return;
+
+        if (_version != motionVersion)
             return;
 
         CacheBaseMotionState();
@@ -224,9 +250,39 @@ public class AbilityToolTip : MonoBehaviour
         }
     }
 
+    private void CompleteShowMotion()
+    {
+        CompleteShowMotion(showMotionVersion);
+    }
+
+    private void CompleteShowMotion(int _version)
+    {
+        RestoreVisibleState(_version);
+        PlayIdleMotion(_version);
+    }
+
+    private void CompleteClickMotion()
+    {
+        CompleteClickMotion(clickMotionVersion);
+    }
+
+    private void CompleteClickMotion(int _version)
+    {
+        RestoreVisibleState(_version);
+        PlayIdleMotion(_version);
+    }
+
     private void CompleteHideMotion()
     {
+        CompleteHideMotion(hideMotionVersion);
+    }
+
+    private void CompleteHideMotion(int _version)
+    {
         CacheBaseMotionState();
+
+        if (_version != motionVersion)
+            return;
 
         if (canvasGroup != null)
             canvasGroup.alpha = 0f;
@@ -253,13 +309,20 @@ public class AbilityToolTip : MonoBehaviour
         EnsureCanvasGroup();
         CacheBaseMotionState();
 
+        int currentVersion = ++motionVersion;
         StopEntryMotion(hideMotionEntry);
         StopEntryMotion(clickMotionEntry);
+        StopIdleMotion();
         StopEntryMotion(showMotionEntry);
         motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
         motionRectTransform.localEulerAngles = Vector3.zero;
         motionRectTransform.localScale = baseLocalScale;
-        showMotionEntry = motionPlayer.Play(showMotionTag, _onComplete: RestoreVisibleState, bReset: false);
+        showMotionVersion = currentVersion;
+        showMotionEntry = motionPlayer.Play(showMotionTag, _onComplete: CompleteShowMotion, bReset: false);
+
+        if (showMotionEntry == null || showMotionEntry.motionInstance == null)
+            PlayIdleMotion(currentVersion);
+
         return showMotionEntry != null && showMotionEntry.motionInstance != null;
     }
 
@@ -277,10 +340,12 @@ public class AbilityToolTip : MonoBehaviour
 
         StopEntryMotion(showMotionEntry);
         StopEntryMotion(clickMotionEntry);
+        StopIdleMotion();
         StopEntryMotion(hideMotionEntry);
         motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
         motionRectTransform.localEulerAngles = Vector3.zero;
         motionRectTransform.localScale = baseLocalScale;
+        hideMotionVersion = motionVersion;
         hideMotionEntry = motionPlayer.Play(hideMotionTag, _onComplete: CompleteHideMotion, bReset: false);
         return hideMotionEntry != null && hideMotionEntry.motionInstance != null;
     }
@@ -297,14 +362,111 @@ public class AbilityToolTip : MonoBehaviour
         CacheBaseMotionState();
         canvasGroup.alpha = 1f;
 
+        int currentVersion = ++motionVersion;
         StopEntryMotion(showMotionEntry);
         StopEntryMotion(hideMotionEntry);
+        StopIdleMotion();
         StopEntryMotion(clickMotionEntry);
         motionRectTransform.anchoredPosition = baseMotionAnchoredPosition;
         motionRectTransform.localEulerAngles = Vector3.zero;
         motionRectTransform.localScale = baseLocalScale;
-        clickMotionEntry = motionPlayer.Play(clickMotionTag, _onComplete: RestoreVisibleState, bReset: false);
+        clickMotionVersion = currentVersion;
+        clickMotionEntry = motionPlayer.Play(clickMotionTag, _onComplete: CompleteClickMotion, bReset: false);
+
+        if (clickMotionEntry == null || clickMotionEntry.motionInstance == null)
+            PlayIdleMotion(currentVersion);
+
         return clickMotionEntry != null && clickMotionEntry.motionInstance != null;
+    }
+
+    private void PlayIdleFromVisibleState()
+    {
+        int currentVersion = ++motionVersion;
+        StopObjectMotions();
+        CacheBaseMotionState();
+        RestoreVisibleState(currentVersion);
+        PlayIdleMotion(currentVersion);
+    }
+
+    private void PlayIdleMotion(int _version)
+    {
+        if (_version != motionVersion || gameObject.activeSelf == false)
+            return;
+
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionRectTransform == null)
+            return;
+
+        StopEntryMotion(showMotionEntry);
+        StopEntryMotion(clickMotionEntry);
+        StopIdleMotion();
+        motionRectTransform.anchoredPosition = SnapPixel(baseMotionAnchoredPosition);
+        motionRectTransform.localEulerAngles = Vector3.zero;
+        motionRectTransform.localScale = baseLocalScale;
+
+        if (motionPlayer != null && string.IsNullOrEmpty(idleMotionTag) == false)
+        {
+            idleMotionEntry = motionPlayer.Play(idleMotionTag, bReset: false);
+            if (idleMotionEntry != null && idleMotionEntry.motionInstance != null)
+                return;
+        }
+
+        PlayFallbackIdleMotion();
+    }
+
+    private void PlayFallbackIdleMotion()
+    {
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionRectTransform == null)
+            return;
+
+        idleFallbackSequence = DOTween.Sequence();
+        idleFallbackSequence.AppendCallback(SetIdlePlusOffset);
+        idleFallbackSequence.AppendInterval(GetIdleStepDuration());
+        idleFallbackSequence.AppendCallback(SetIdleBaseOffset);
+        idleFallbackSequence.AppendInterval(GetIdleStepDuration());
+        idleFallbackSequence.AppendCallback(SetIdleMinusOffset);
+        idleFallbackSequence.AppendInterval(GetIdleStepDuration());
+        idleFallbackSequence.AppendCallback(SetIdleBaseOffset);
+        idleFallbackSequence.AppendInterval(GetIdleStepDuration());
+        idleFallbackSequence.SetLoops(-1, LoopType.Restart);
+    }
+
+    private void StopIdleMotion()
+    {
+        StopEntryMotion(idleMotionEntry);
+        idleMotionEntry = null;
+
+        if (idleFallbackSequence != null)
+        {
+            idleFallbackSequence.Kill(false);
+            idleFallbackSequence = null;
+        }
+    }
+
+    private void SetIdlePlusOffset()
+    {
+        SetIdleOffset(idleOffsetY);
+    }
+
+    private void SetIdleBaseOffset()
+    {
+        SetIdleOffset(0f);
+    }
+
+    private void SetIdleMinusOffset()
+    {
+        SetIdleOffset(-idleOffsetY);
+    }
+
+    private void SetIdleOffset(float _offsetY)
+    {
+        RectTransform motionRectTransform = GetMotionRectTransform();
+        if (motionRectTransform == null || gameObject.activeSelf == false)
+            return;
+
+        Vector2 targetPosition = baseMotionAnchoredPosition + Vector2.up * _offsetY;
+        motionRectTransform.anchoredPosition = SnapPixel(targetPosition);
     }
 
     private void StopEntryMotion(MotionEntry _entry)
@@ -320,6 +482,7 @@ public class AbilityToolTip : MonoBehaviour
         StopEntryMotion(showMotionEntry);
         StopEntryMotion(hideMotionEntry);
         StopEntryMotion(clickMotionEntry);
+        StopIdleMotion();
     }
 
     private void CacheBaseMotionState()
@@ -344,5 +507,15 @@ public class AbilityToolTip : MonoBehaviour
     private void OnDestroy()
     {
         StopObjectMotions();
+    }
+
+    private float GetIdleStepDuration()
+    {
+        return Mathf.Max(idleStepDuration, 0.0001f);
+    }
+
+    private Vector2 SnapPixel(Vector2 _position)
+    {
+        return new Vector2(Mathf.Round(_position.x), Mathf.Round(_position.y));
     }
 }

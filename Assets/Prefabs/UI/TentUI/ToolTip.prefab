@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4616677782226384739}
   - component: {fileID: 2208051718288801030}
   - component: {fileID: 560920080049293282}
+  - component: {fileID: 7825487506628463291}
   m_Layer: 5
   m_Name: Cost
   m_TagString: Untagged
@@ -137,6 +138,26 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &7825487506628463291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 230003154983929426}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a1912f891f40f6aacd9ee2c51ce1d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.TMPInlineStyleAnimator
+  tmpText: {fileID: 560920080049293282}
+  animateInEditMode: 1
+  colorCycleDuration: 0.75
+  shakeAmplitude: 1.2
+  shakeFrequency: 34
+  waveAmplitude: 1
+  waveFrequency: 5
+  waveCharacterOffset: 0.45
 --- !u!1 &431482730534299340
 GameObject:
   m_ObjectHideFlags: 0
@@ -213,6 +234,9 @@ MonoBehaviour:
   showMotionTag: ToolTipShow
   hideMotionTag: ToolTipHide
   clickMotionTag: ToolTipClick
+  idleMotionTag: ToolTipIdle
+  idleStepDuration: 0.55
+  idleOffsetY: 1
 --- !u!1 &490129072912486613
 GameObject:
   m_ObjectHideFlags: 0
@@ -516,6 +540,7 @@ GameObject:
   - component: {fileID: 6993225714420712528}
   - component: {fileID: 1070231656964777407}
   - component: {fileID: 730736072601899910}
+  - component: {fileID: 9208680147082627426}
   m_Layer: 5
   m_Name: Description
   m_TagString: Untagged
@@ -642,6 +667,26 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &9208680147082627426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3494240332016710964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a1912f891f40f6aacd9ee2c51ce1d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.TMPInlineStyleAnimator
+  tmpText: {fileID: 730736072601899910}
+  animateInEditMode: 1
+  colorCycleDuration: 0.75
+  shakeAmplitude: 1.2
+  shakeFrequency: 34
+  waveAmplitude: 1
+  waveFrequency: 5
+  waveCharacterOffset: 0.45
 --- !u!1 &4022066220185580017
 GameObject:
   m_ObjectHideFlags: 0
@@ -809,6 +854,7 @@ GameObject:
   - component: {fileID: 6321346688395127193}
   - component: {fileID: 8667454851661495019}
   - component: {fileID: 7845086136968350373}
+  - component: {fileID: 9105804701540401014}
   m_Layer: 5
   m_Name: TitleAndLevelText
   m_TagString: Untagged
@@ -935,6 +981,26 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &9105804701540401014
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5102919846779132408}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a1912f891f40f6aacd9ee2c51ce1d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.TMPInlineStyleAnimator
+  tmpText: {fileID: 7845086136968350373}
+  animateInEditMode: 1
+  colorCycleDuration: 0.75
+  shakeAmplitude: 1.2
+  shakeFrequency: 34
+  waveAmplitude: 1
+  waveFrequency: 5
+  waveCharacterOffset: 0.45
 --- !u!1 &6203652978143033003
 GameObject:
   m_ObjectHideFlags: 0
