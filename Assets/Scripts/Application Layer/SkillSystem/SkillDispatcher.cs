@@ -121,7 +121,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
             }
 
             command.Execute(this);
-            DeclareAccumulatedValueEvent?.Invoke(new SkillAccumulatedValueData { type = commandType, amount = currentAmount });
+            DeclareAccumulatedValueEvent?.Invoke(new SkillAccumulatedValueData { type = commandType, amount = accumulatedAmounts[commandType] });
         }
         else
         {
