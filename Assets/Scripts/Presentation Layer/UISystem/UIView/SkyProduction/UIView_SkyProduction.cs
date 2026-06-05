@@ -177,7 +177,7 @@ public class UIView_SkyProduction : UIView
         if (null != skyImage2)
         {
             Vector2 currentPos = skyImage2.anchoredPosition;
-            skyTween2 = skyImage2.DOAnchorPosY(currentPos.y - (floatingAmplitude * 0.7f), floatingDuration)
+            skyTween2 = skyImage2.DOAnchorPosY(currentPos.y - (floatingAmplitude * 0.4f), floatingDuration)
                 .SetOptions(true)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
