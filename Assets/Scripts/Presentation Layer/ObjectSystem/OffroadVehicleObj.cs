@@ -85,6 +85,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     [SerializeField] private GameObject containerShadowObj;
 
+    
+    [Space]
+    [Header("Character Ride Settings")]
+    public Transform getOffTransform;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, Transform _characterTransform)
@@ -156,6 +161,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.EnableCollision();
 
         containerShadowObj.SetActive(true);
+
+        offroadContainerVComponent.Reset();
     }
 
     public void SetVisualActive(bool _boolean)
@@ -329,7 +336,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         yield return ContainerJumpSequence();
 
         // 1.5초 대기 후 시동
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(0.25f);
 
         // 1. 시동 임팩트 시퀀스 (스프링 댐퍼)
         yield return IgnitionImpactSequence(jitterVisualObjectInitialLocalPos, visualObjectInitialScale);
@@ -374,6 +381,35 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         while (elapsed < duration)
         {
             float t = elapsed / duration;
+            float spring = Mathf.Exp(-containerSpringDamping * t) * Mathf.Sin(containerSpringFrequency * t);
+
+            // 아래로 눌리면서 양옆으로 퍼지는 쫀득한 연출
+            visualObject.transform.localScale = initialScale + new Vector3(spring * 0.15f, -spring * 0.15f, 0);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        visualObject.transform.localScale = initialScale;
+    }
+
+    public IEnumerator CharacterRideLandingImpactSequence(Action _onHalfway = null)
+    {
+        if (visualObject == null) yield break;
+        
+        if (_onHalfway != null)
+        {
+            _onHalfway.Invoke();
+        }
+
+        Vector3 initialScale = visualObject.transform.localScale;
+        float elapsed = 0f;
+        float duration = 0.5f;
+
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+
             float spring = Mathf.Exp(-containerSpringDamping * t) * Mathf.Sin(containerSpringFrequency * t);
 
             // 아래로 눌리면서 양옆으로 퍼지는 쫀득한 연출

@@ -1793,6 +1793,7 @@ MonoBehaviour:
   - {fileID: 1457280794132971112, guid: 341f66c902092e5458a826b17a99e48e, type: 3}
   - {fileID: 5251908933251639706, guid: 1896f9058a0bdab42ae4341930bfa21c, type: 3}
   - {fileID: 7524718967522486410, guid: 0bd5670bcae6da44e879475ac190ee2c, type: 3}
+  - {fileID: 1648287473275215075, guid: 3b6c7873bd3ae9541a72dbde19a90dfb, type: 3}
 --- !u!114 &6498721921695947709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1864,6 +1865,7 @@ GameObject:
   m_Component:
   - component: {fileID: 413762451555364679}
   - component: {fileID: 3679721381071029592}
+  - component: {fileID: 3943110840122909411}
   m_Layer: 0
   m_Name: ProductionManager
   m_TagString: Untagged
@@ -1899,6 +1901,49 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownProductionManager
   offroadDriveEndPoint: {fileID: 7909126257907575581, guid: 7b37f70e1b67e4040843e9414c6e3527, type: 3}
+  rideDuration: 0.1
+  initialSpeedRatio: 0
+--- !u!114 &3943110840122909411
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7701891653102288141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 142aa6f7cfa012542bb368964493ee9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkyCameraProductionComponent
+  virtualCamera: {fileID: 0}
+  moveDuration: 1
+  yOffset: 5
+  useCustomCurve: 0
+  moveCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  moveEase: 9
 --- !u!1 &7829982200698710532
 GameObject:
   m_ObjectHideFlags: 0

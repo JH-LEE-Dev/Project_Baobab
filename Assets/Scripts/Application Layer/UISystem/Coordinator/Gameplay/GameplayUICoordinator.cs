@@ -262,6 +262,7 @@ public class GameplayUICoordinator
 
     private void DungeonSelected(MapType _type, ForestType _forestType)
     {
+        signalHub.Publish(new TeleportUIClosedWhileTeleport());
         signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
     }
 
@@ -358,6 +359,7 @@ public class GameplayUICoordinator
 
     private void TeleportUIClosed()
     {
+        menuPopupUI.Hide();
         signalHub.Publish(new TeleportUIClosedSignal());
     }
 

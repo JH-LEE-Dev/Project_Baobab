@@ -109,6 +109,9 @@ public class TownSystem : MonoBehaviour
 
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
         logProcessingManager.LogProcessorIsActiveEvent += LogItemProcessorActiveState;
+
+        townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
+        townProductionManager.CharacterRideEndEvent += CharacterRideEnd;
     }
 
     private void ReleaseEvents()
@@ -124,7 +127,8 @@ public class TownSystem : MonoBehaviour
         tentManager.TentInteractStateChangedEvent -= TentInteractStateChanged;
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
-        logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;        
+        logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
+        townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;        
     }
 
     private void SubscribeSignals()
@@ -135,6 +139,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
         signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
+        signalHub.Subscribe<TeleportUIClosedWhileTeleport>(TeleportUIClosedWhileTeleport);
     }
 
     private void UnSubscribeSignals()
@@ -145,11 +150,12 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
+        signalHub.UnSubscribe<TeleportUIClosedWhileTeleport>(TeleportUIClosedWhileTeleport);        
     }
 
     private void PortalActivated()
     {
-        signalHub.Publish(new PortalActivatedSignal());
+        townProductionManager.StartCharacterRide();
     }
 
     private void InventoryInitialized(InventoryInitializedSignal inventoryInitializedSignal)
@@ -205,6 +211,7 @@ public class TownSystem : MonoBehaviour
 
     private void TeleportUIClosed(TeleportUIClosedSignal _teleportUIClosedSignal)
     {
+        townProductionManager.GetOffFromTheVehicle();
         townObjectManager.TeleportUIClosed();
     }
 
@@ -242,5 +249,15 @@ public class TownSystem : MonoBehaviour
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
     {
         logProcessingManager.DisableShopObj();
+    }
+
+    private void CharacterRideEnd()
+    {
+        signalHub.Publish(new PortalActivatedSignal());
+    }
+
+    private void TeleportUIClosedWhileTeleport(TeleportUIClosedWhileTeleport _teleportUIClosedWhileTeleport)
+    {
+        townProductionManager.SetbCanGetOff(false);
     }
 }

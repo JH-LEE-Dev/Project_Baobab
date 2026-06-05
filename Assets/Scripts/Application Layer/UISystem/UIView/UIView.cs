@@ -6,7 +6,7 @@ public abstract class UIView : MonoBehaviour
 
     [Header("UIView Settings")]
     [SerializeField] private UILayer layer = UILayer.None;
-    [SerializeField] private bool startHidden = true;
+    //[SerializeField] private bool startHidden = true;
     [SerializeField] private bool bCloseableByESC = false;
     public bool bWorld = false;
 

@@ -19,6 +19,10 @@ public class OffroadContainerVComponent : MonoBehaviour
     private float currentHeight = 0f;
     private Vector3 originalScale;
     private Quaternion originalRot;
+    private Vector3 originalSelfScale;
+    private Quaternion originalSelfRot;
+    private Vector3 originalJumpContainerScale;
+    private Quaternion originalJumpContainerRot;
 
     public readonly int bOpenHash = Animator.StringToHash("bOpen");
 
@@ -26,6 +30,8 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     [SerializeField] private GameObject outlineStencilObj;
     [SerializeField] private GameObject outlineObj;
+    [SerializeField] private GameObject containerForJump;
+    [SerializeField] private GameObject carriedContainer;
     private Material originalMaterial;
 
     private SpriteRenderer outlineStencilSR;
@@ -37,7 +43,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         customSortable = GetComponent<CustomSortable>();
 
-        parentTransform = transform.parent != null ? transform.parent : transform;
+        parentTransform = containerForJump.transform.parent != null ? containerForJump.transform.parent : transform;
 
         customSortable.Initialize(transform);
         customSortable.AddSpriteRenderer(spriteRenderer);
@@ -45,6 +51,13 @@ public class OffroadContainerVComponent : MonoBehaviour
 
         originalScale = parentTransform.localScale;
         originalRot = parentTransform.localRotation;
+        originalSelfScale = transform.localScale;
+        originalSelfRot = transform.localRotation;
+        if (containerForJump != null)
+        {
+            originalJumpContainerScale = containerForJump.transform.localScale;
+            originalJumpContainerRot = containerForJump.transform.localRotation;
+        }
 
         originalMaterial = spriteRenderer.material;
 
@@ -65,38 +78,85 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     public IEnumerator JumpSequence(Vector3 _targetPos, float _jumpHeight, float _duration, float _springFreq, float _springDamping)
     {
-        Vector3 startPos = parentTransform.position;
-        Vector3 initialScale = parentTransform.localScale;
+        // 점프 시작 시 활성화/비활성화 처리
+        if (containerForJump != null)
+        {
+            containerForJump.SetActive(true);
+        }
+        spriteRenderer.enabled = false;
 
-        // 1. 포물선 점프 단계
+        Vector3 startPos = parentTransform.position;
+
+        // 1. [부모 스케일 조절] 점프 전 납작해지는 준비 단계 (Anticipation - 0.15초)
+        float prepDuration = 0.15f;
+        float prepElapsed = 0f;
+        Vector3 squashedScale = new Vector3(originalScale.x * 1.3f, originalScale.y * 0.5f, originalScale.z);
+
+        while (prepElapsed < prepDuration)
+        {
+            float t = prepElapsed / prepDuration;
+            float ease = t * (2f - t); // OutQuad
+            parentTransform.localScale = Vector3.Lerp(originalScale, squashedScale, ease);
+            prepElapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = squashedScale;
+
+        // 2. [부모 스케일 조절] 뽀잉 솟구치며 원래 크기로 원복 (0.08초 동안 살짝 늘어났다가 원래 크기로 복구)
+        float bounceDuration = 0.02f;
+        float bounceElapsed = 0f;
+        Vector3 parentStretchedScale = new Vector3(originalScale.x * 0.85f, originalScale.y * 1.25f, originalScale.z);
+
+        while (bounceElapsed < bounceDuration)
+        {
+            float t = bounceElapsed / bounceDuration;
+            parentTransform.localScale = Vector3.Lerp(squashedScale, parentStretchedScale, t);
+            bounceElapsed += Time.deltaTime;
+            yield return null;
+        }
+        parentTransform.localScale = originalScale;
+
+        // 3. 포물선 점프 단계
         float jumpElapsed = 0f;
+        Vector3 targetLandScaleForJump = originalJumpContainerScale * 0.5f; // 공중 이동 중 0.5배까지 스케일 축소
+
         while (jumpElapsed < _duration)
         {
             float t = jumpElapsed / _duration;
 
             // 수평 및 수직(포물선) 이동을 Transform이 직접 수행
-            // Lerp를 통해 시작 지점(바닥)에서 목표 지점(지붕)으로 이동
             Vector3 groundLerpPos = Vector3.Lerp(startPos, _targetPos, t);
             float arc = Mathf.Sin(t * Mathf.PI) * _jumpHeight;
             parentTransform.position = groundLerpPos + new Vector3(0, arc, 0);
 
             // CustomSortable을 위한 Height 계산: 
-            // 현재 지면으로부터 떠 있는 총 높이 = (지붕으로 올라가는 높이) + (점프 곡선 높이)
             float ascendingHeight = t * roofHeight;
             currentHeight = ascendingHeight + arc;
 
-            // 공중에서의 쫀득한 스케일
-            float stretch = Mathf.Sin(t * Mathf.PI) * 0.2f;
-            parentTransform.localScale = initialScale + new Vector3(-stretch, stretch, 0);
+            if (containerForJump != null)
+            {
+                // containerForJump 회전 연출 (720도 회전 적용)
+                containerForJump.transform.localRotation = Quaternion.Euler(0f, 0f, t * -720f) * originalJumpContainerRot;
+
+                // containerForJump 스케일 연출 (원래 크기에서 0.5배까지 선형적으로 감소)
+                containerForJump.transform.localScale = Vector3.Lerp(originalJumpContainerScale, targetLandScaleForJump, t);
+            }
 
             jumpElapsed += Time.deltaTime;
             yield return null;
         }
 
-        // 2. 안착 단계 (연출 제거)
+        // 4. 안착 단계
         parentTransform.position = _targetPos;
         currentHeight = roofHeight;
-        parentTransform.localScale = initialScale;
+        parentTransform.localScale = originalScale * 0.25f; // 착지 시 부모 스케일 0.25배 안착
+        transform.localScale = originalSelfScale;
+        transform.localRotation = originalSelfRot;
+
+        {
+            containerForJump.SetActive(false);
+            carriedContainer.SetActive(true);
+        }
     }
 
     private Coroutine openCoroutine;
@@ -280,5 +340,12 @@ public class OffroadContainerVComponent : MonoBehaviour
     public void ResetMaterial()
     {
         outlineStencilObj.SetActive(false);
+    }
+
+    public void Reset()
+    {
+        spriteRenderer.enabled = true;
+        containerForJump.SetActive(false);
+        carriedContainer.SetActive(false);
     }
 }
