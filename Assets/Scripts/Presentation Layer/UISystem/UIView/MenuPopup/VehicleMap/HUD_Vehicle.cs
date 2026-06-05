@@ -27,7 +27,7 @@ public class HUD_Vehicle : MonoBehaviour
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IMapDataProvider _mapDataProvider)
+    public void Initialize(IMapDataProvider _mapDataProvider, Action _onClose)
     {
         isBlinking = false;
         mapDataProvider = _mapDataProvider;
@@ -53,7 +53,7 @@ public class HUD_Vehicle : MonoBehaviour
         }
 
         if (null != cancelButton)
-            cancelButton.Initialize(Close);
+            cancelButton.Initialize(_onClose);
 
         if (null != omp)
             omp.Initialize();
@@ -66,14 +66,6 @@ public class HUD_Vehicle : MonoBehaviour
 
     public void Close()
     {
-        isBlinking = false;
-
-        if (null != omp)
-        {
-            omp.Stop(blinkMotionTag);
-            omp.ResetAllMotions();
-        }
-
         if (null != navigation)
             navigation.ResetSelection();
 

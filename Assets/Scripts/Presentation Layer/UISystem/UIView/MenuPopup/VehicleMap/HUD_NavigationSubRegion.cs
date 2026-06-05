@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
 
 public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
@@ -16,10 +17,16 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     [SerializeField] private Color selectColor = Color.green;
     [SerializeField] private Color lockColor = Color.gray;
 
+    [Header("Hover Color Settings")]
+    [SerializeField] private Color normalHoverColor = Color.white;
+    [SerializeField] private Color lockHoverColor = Color.red;
+    [SerializeField] private float hoverColorDuration = 0.2f;
+
     [Header("Motion Tags")]
     [SerializeField] private string hoverTag = "Hover";
     [SerializeField] private string hoverOffTag = "HoverOff";
     [SerializeField] private string clickTag = "Click";
+    [SerializeField] private string lockClickTag = "LockClick";
 
     // //내부 의존성
     private RectTransform rect;
@@ -37,6 +44,12 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private bool isLocked = false;
     private bool isInitialized = false;
     private bool isClicked = false;
+    private bool isHovered = false;
+    private bool isPendingExit = false;
+    private float hoverEnterTime = 0f;
+    private float pendingExitTime = 0f;
+    private PointerEventData pendingExitData;
+    private Tweener colorTween;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -135,12 +148,30 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (null == iconImage)
             return;
 
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
         if (true == isLocked)
             iconImage.color = lockColor;
         else if (true == isSelected)
             iconImage.color = selectColor;
         else
             iconImage.color = normalColor;
+    }
+
+    private Color GetOriginalColor()
+    {
+        if (true == isLocked)
+            return lockColor;
+        if (true == isSelected)
+            return selectColor;
+
+        return normalColor;
+    }
+
+    private Color GetHoverColor()
+    {
+        return true == isLocked ? lockHoverColor : normalHoverColor;
     }
 
     private void OnClickAnimationComplete()
@@ -153,11 +184,15 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (true == isLocked)
-            return;
+        if (false == isLocked)
+        {
+            RectTransform _targetRect = GetRectTransform();
+            onHoverEnterEvent?.Invoke(_targetRect, _targetRect.rect.size);
+        }
 
-        RectTransform _targetRect = GetRectTransform();
-        onHoverEnterEvent?.Invoke(_targetRect, _targetRect.rect.size);
+        isHovered = true;
+        isPendingExit = false;
+        hoverEnterTime = Time.unscaledTime;
 
         if (null != motionPlayer && false == isClicked)
         {
@@ -171,37 +206,39 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
             enterMotion = motionPlayer.Play(hoverTag, bReset: true);
         }
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        if (false == isSelected)
+        {
+            if (null != iconImage)
+                colorTween = iconImage.DOColor(GetHoverColor(), hoverColorDuration).SetEase(Ease.Linear);
+        }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (true == isLocked)
+        if (false == isHovered)
             return;
 
-        onHoverExitEvent?.Invoke();
-
-        if (null != motionPlayer && false == isClicked)
-        {
-            if (null != enterMotion)
-                motionPlayer.SettingEntryMotion(enterMotion, true, true);
-
-            if (null != clickMotion)
-                motionPlayer.SettingEntryMotion(clickMotion, true, true);
-
-            UpdateColor();
-
-            exitMotion = motionPlayer.Play(hoverOffTag, bReset: true);
-        }
+        isPendingExit = true;
+        pendingExitTime = Time.unscaledTime + 0.15f;
+        pendingExitData = _eventData;
     }
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (true == isLocked)
-            return;
-
-        onSelectEvent?.Invoke(fieldNumber);
+        if (false == isLocked)
+            onSelectEvent?.Invoke(fieldNumber);
 
         isClicked = true;
+        isHovered = false;
+        isPendingExit = false;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
         if (null != motionPlayer)
         {
             if (null != enterMotion)
@@ -212,7 +249,40 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
             UpdateColor();
 
-            clickMotion = motionPlayer.Play(clickTag, bReset: true, _onComplete: OnClickAnimationComplete);
+            string _targetTag = true == isLocked ? lockClickTag : clickTag;
+            clickMotion = motionPlayer.Play(_targetTag, bReset: true, _onComplete: OnClickAnimationComplete);
+        }
+    }
+
+    private void ExecuteExit()
+    {
+        if (false == isLocked)
+            onHoverExitEvent?.Invoke();
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != motionPlayer && false == isClicked)
+        {
+            if (null != enterMotion)
+                motionPlayer.SettingEntryMotion(enterMotion, true, true);
+
+            if (null != clickMotion)
+                motionPlayer.SettingEntryMotion(clickMotion, true, true);
+
+            if (false == isSelected)
+            {
+                if (null != iconImage)
+                    iconImage.color = GetHoverColor();
+            }
+
+            exitMotion = motionPlayer.Play(hoverOffTag, bReset: true);
+        }
+
+        if (false == isSelected)
+        {
+            if (null != iconImage)
+                colorTween = iconImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
         }
     }
 
@@ -223,5 +293,22 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     {
         if (false == isInitialized)
             Initialize(fieldNumber);
+    }
+
+    private void Update()
+    {
+        if (true == isPendingExit && Time.unscaledTime >= pendingExitTime)
+        {
+            isPendingExit = false;
+
+            if (null != pendingExitData)
+            {
+                if (false == RectTransformUtility.RectangleContainsScreenPoint(GetRectTransform(), pendingExitData.position, pendingExitData.enterEventCamera))
+                {
+                    isHovered = false;
+                    ExecuteExit();
+                }
+            }
+        }
     }
 }

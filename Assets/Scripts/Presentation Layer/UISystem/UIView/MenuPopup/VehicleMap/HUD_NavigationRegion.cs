@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
 
 public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
@@ -19,10 +20,16 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private Color selectColor = Color.green;
     [SerializeField] private Color lockColor = Color.gray;
 
+    [Header("Hover Color Settings")]
+    [SerializeField] private Color normalHoverColor = Color.white;
+    [SerializeField] private Color lockHoverColor = Color.red;
+    [SerializeField] private float hoverColorDuration = 0.2f;
+
     [Header("Motion Tags")]
     [SerializeField] private string hoverTag = "Hover";
     [SerializeField] private string clickTag = "Click";
     [SerializeField] private string unHoverTag = "unHover";
+    [SerializeField] private string lockClickTag = "LockClick";
 
     // //내부 의존성
     private MapType mapType = MapType.None;
@@ -35,6 +42,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private bool isLocked = false;
     private bool isSelected = false;
     private bool isInitialized = false;
+    private Tweener colorTween;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -101,12 +109,30 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null == buttonImage)
             return;
 
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
         if (true == isLocked)
             buttonImage.color = lockColor;
         else if (true == isSelected)
             buttonImage.color = selectColor;
         else
             buttonImage.color = normalColor;
+    }
+
+    private Color GetOriginalColor()
+    {
+        if (true == isLocked)
+            return lockColor;
+        if (true == isSelected)
+            return selectColor;
+
+        return normalColor;
+    }
+
+    private Color GetHoverColor()
+    {
+        return true == isLocked ? lockHoverColor : normalHoverColor;
     }
 
     private void OnClickAnimationComplete()
@@ -119,11 +145,13 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (true == isLocked)
-            return;
+        if (false == isLocked)
+            onSelectEvent?.Invoke(mapType);
 
         isClicked = true;
-        onSelectEvent?.Invoke(mapType);
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
 
         if (null != omp)
         {
@@ -131,15 +159,14 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                 omp.SettingEntryMotion(hoverEntry, true, true);
             if (null != unHoverEntry)
                 omp.SettingEntryMotion(unHoverEntry, true, true);
-            clickEntry = omp.Play(clickTag, bReset: true, _onComplete: OnClickAnimationComplete);
+
+            string _targetTag = true == isLocked ? lockClickTag : clickTag;
+            clickEntry = omp.Play(_targetTag, bReset: true, _onComplete: OnClickAnimationComplete);
         }
     }
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (true == isLocked)
-            return;
-
         if (true == isClicked)
             return;
 
@@ -151,15 +178,24 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                 omp.SettingEntryMotion(clickEntry, true, true);
             hoverEntry = omp.Play(hoverTag, bReset: true);
         }
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        if (false == isSelected)
+        {
+            if (null != buttonImage)
+                colorTween = buttonImage.DOColor(GetHoverColor(), hoverColorDuration).SetEase(Ease.Linear);
+        }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (true == isLocked)
-            return;
-
         if (true == isClicked)
             return;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
 
         if (null != omp)
         {
@@ -167,7 +203,20 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                 omp.SettingEntryMotion(hoverEntry, true, true);
             if (null != clickEntry)
                 omp.SettingEntryMotion(clickEntry, true, true);
+
+            if (false == isSelected)
+            {
+                if (null != buttonImage)
+                    buttonImage.color = GetHoverColor();
+            }
+
             unHoverEntry = omp.Play(unHoverTag, bReset: true);
+        }
+
+        if (false == isSelected)
+        {
+            if (null != buttonImage)
+                colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
         }
     }
 

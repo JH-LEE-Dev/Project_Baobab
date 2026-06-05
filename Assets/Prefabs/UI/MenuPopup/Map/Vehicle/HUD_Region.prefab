@@ -325,9 +325,12 @@ MonoBehaviour:
   buttonImage: {fileID: 5360641646803181534}
   lockObject: {fileID: 1151978907746785342}
   regionNameText: {fileID: 3845837017079714511}
-  normalColor: {r: 0.20392157, g: 0.23529412, b: 0.29411766, a: 1}
+  normalColor: {r: 0.2, g: 0.29803923, b: 0.5019608, a: 1}
   selectColor: {r: 1, g: 1, b: 1, a: 1}
-  lockColor: {r: 0.2, g: 0.29803923, b: 0.5019608, a: 1}
+  lockColor: {r: 0.5019608, g: 0.2, b: 0.2, a: 1}
+  normalHoverColor: {r: 0.37254903, g: 0.46666667, b: 0.65882355, a: 1}
+  lockHoverColor: {r: 0.7529412, g: 0.16862746, b: 0.16862746, a: 1}
+  hoverColorDuration: 0.4
   hoverTag: Hover
   clickTag: Click
   unHoverTag: unHover
