@@ -4,11 +4,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class LocKeyGenerator
 {
     private const string JsonPath = "Assets/Resources/Localization";
     private const string ExportPath = "Assets/Scripts/Application Layer/LocalizationSystem/LocKeys.cs";
+    private const string MappingSOPath = "Assets/Scriptable Obj/Localization/LocalizationMapping.asset";
+    private const string OldMappingSOPath1 = "Assets/Resources/Localization/LocalizationMapping.asset";
+    private const string OldMappingSOPath2 = "Assets/Resources/ScriptableObject/Localization/LocalizationMapping.asset";
 
     [MenuItem("Tools/Localization/Generate Keys")]
     public static void Generate()
@@ -26,6 +30,8 @@ public class LocKeyGenerator
 
         var manager = new LocalizationManager();
         string[] jsonFiles = Directory.GetFiles(JsonPath, "*.json");
+
+        List<LocalizationMapping.MappingEntry> mappingEntries = new List<LocalizationMapping.MappingEntry>();
 
         foreach (string filePath in jsonFiles)
         {
@@ -50,6 +56,37 @@ public class LocKeyGenerator
                 string camelCaseName = ToCamelCase(safeName);
                 
                 sb.AppendLine($"        public const int {camelCaseName} = {key};");
+
+                // 자동 매핑 등록 로직
+                if (!string.IsNullOrEmpty(entry.enumType) && !string.IsNullOrEmpty(entry.enumValue))
+                {
+                    Type type = FindTypeInAssemblies(entry.enumType);
+                    if (type != null && type.IsEnum)
+                    {
+                        try
+                        {
+                            object enumObj = Enum.Parse(type, entry.enumValue, true);
+                            int enumIntVal = Convert.ToInt32(enumObj);
+
+                            var newMapping = new LocalizationMapping.MappingEntry
+                            {
+                                enumTypeName = entry.enumType,
+                                enumValueName = entry.enumValue,
+                                enumIntValue = enumIntVal,
+                                compositeKey = key
+                            };
+                            mappingEntries.Add(newMapping);
+                        }
+                        catch (Exception)
+                        {
+                            Debug.LogError($"[LocKeyGenerator] Enum value '{entry.enumValue}' not found in Enum Type '{entry.enumType}' for entry ID {entry.id}");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogError($"[LocKeyGenerator] Enum Type '{entry.enumType}' not found in Assemblies for entry ID {entry.id}");
+                    }
+                }
             }
             sb.AppendLine("    }");
             sb.AppendLine();
@@ -62,8 +99,64 @@ public class LocKeyGenerator
         if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
 
         File.WriteAllText(ExportPath, sb.ToString(), Encoding.UTF8);
+
+        // ScriptableObject 매핑 파일 갱신/생성
+        SaveMappingScriptableObject(mappingEntries);
+
         AssetDatabase.Refresh();
-        Debug.Log($"[LocKeyGenerator] Keys generated successfully at: {ExportPath}");
+        Debug.Log($"[LocKeyGenerator] Keys and Mappings generated successfully!");
+    }
+
+    private static Type FindTypeInAssemblies(string _typeName)
+    {
+        var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+        for (int i = 0; i < assemblies.Length; i++)
+        {
+            Type type = assemblies[i].GetType(_typeName);
+            if (type != null) return type;
+        }
+        return null;
+    }
+
+    private static void SaveMappingScriptableObject(List<LocalizationMapping.MappingEntry> _mappings)
+    {
+        // 구 버전 에셋 파일이 남아 있으면 정리
+        if (AssetDatabase.LoadAssetAtPath<LocalizationMapping>(OldMappingSOPath1) != null)
+        {
+            AssetDatabase.DeleteAsset(OldMappingSOPath1);
+        }
+        if (AssetDatabase.LoadAssetAtPath<LocalizationMapping>(OldMappingSOPath2) != null)
+        {
+            AssetDatabase.DeleteAsset(OldMappingSOPath2);
+        }
+
+        string dir = Path.GetDirectoryName(MappingSOPath);
+        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+
+        LocalizationMapping mappingAsset = AssetDatabase.LoadAssetAtPath<LocalizationMapping>(MappingSOPath);
+        bool isNew = false;
+
+        if (mappingAsset == null)
+        {
+            mappingAsset = ScriptableObject.CreateInstance<LocalizationMapping>();
+            isNew = true;
+        }
+
+        mappingAsset.mappings.Clear();
+        for (int i = 0; i < _mappings.Count; i++)
+        {
+            mappingAsset.mappings.Add(_mappings[i]);
+        }
+
+        if (isNew)
+        {
+            AssetDatabase.CreateAsset(mappingAsset, MappingSOPath);
+        }
+        else
+        {
+            EditorUtility.SetDirty(mappingAsset);
+        }
+        AssetDatabase.SaveAssets();
     }
 
     private static string SanitizeName(string _input)

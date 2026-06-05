@@ -7,6 +7,7 @@ public class LocalizationManager
 {
     // //내부 의존성
     private Dictionary<int, string> masterTable;
+    private Dictionary<int, int> enumToKeyMap;
     private List<string> loadedJsons;
     private StringBuilder stringBuilder;
     private Language currentLanguage = Language.KR;
@@ -17,8 +18,32 @@ public class LocalizationManager
     public void Initialize(int _initialCapacity = 512)
     {
         masterTable = new Dictionary<int, string>(_initialCapacity);
+        enumToKeyMap = new Dictionary<int, int>(128);
         loadedJsons = new List<string>(4);
         stringBuilder = new StringBuilder(128);
+    }
+
+    public void LoadMappingData(LocalizationMapping _mappingData)
+    {
+        if (_mappingData == null) return;
+
+        enumToKeyMap.Clear();
+        for (int i = 0; i < _mappingData.mappings.Count; i++)
+        {
+            var entry = _mappingData.mappings[i];
+            enumToKeyMap[entry.enumIntValue] = entry.compositeKey;
+        }
+    }
+
+    public string GetText<T>(T _enumValue) where T : struct, Enum
+    {
+        int enumInt = System.Runtime.CompilerServices.Unsafe.As<T, int>(ref _enumValue);
+
+        if (enumToKeyMap.TryGetValue(enumInt, out int compositeKey))
+        {
+            return GetText(compositeKey);
+        }
+        return string.Empty;
     }
 
     public void LoadLocalizationJson(string _jsonText)
