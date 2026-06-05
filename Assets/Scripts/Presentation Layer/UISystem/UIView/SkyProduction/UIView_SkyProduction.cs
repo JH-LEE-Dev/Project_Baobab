@@ -129,7 +129,7 @@ public class UIView_SkyProduction : UIView
 
         if (null != cloudImage)
         {
-            var tween = cloudImage.DOAnchorPos(cloudDest, moveDuration);
+            var tween = cloudImage.DOAnchorPos(cloudDest, moveDuration, true);
             if (useCustomCurve)
                 tween.SetEase(moveCurve);
             else
@@ -139,7 +139,7 @@ public class UIView_SkyProduction : UIView
 
         if (null != skyImage)
         {
-            var tween = skyImage.DOAnchorPos(skyDest, moveDuration);
+            var tween = skyImage.DOAnchorPos(skyDest, moveDuration, true);
             if (useCustomCurve)
                 tween.SetEase(moveCurve);
             else
@@ -149,7 +149,7 @@ public class UIView_SkyProduction : UIView
 
         if (null != skyImage2)
         {
-            var tween = skyImage2.DOAnchorPos(skyDest2, moveDuration);
+            var tween = skyImage2.DOAnchorPos(skyDest2, moveDuration, true);
             if (useCustomCurve)
                 tween.SetEase(moveCurve);
             else
@@ -169,6 +169,7 @@ public class UIView_SkyProduction : UIView
         {
             Vector2 currentPos = skyImage.anchoredPosition;
             skyTween1 = skyImage.DOAnchorPosY(currentPos.y + (floatingAmplitude * 0.4f), floatingDuration)
+                .SetOptions(true)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
         }
@@ -177,6 +178,7 @@ public class UIView_SkyProduction : UIView
         {
             Vector2 currentPos = skyImage2.anchoredPosition;
             skyTween2 = skyImage2.DOAnchorPosY(currentPos.y - (floatingAmplitude * 0.7f), floatingDuration)
+                .SetOptions(true)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
         }
@@ -185,6 +187,7 @@ public class UIView_SkyProduction : UIView
         {
             Vector2 currentPos = cloudImage.anchoredPosition;
             cloudTween = cloudImage.DOAnchorPosY(currentPos.y + floatingAmplitude, floatingDuration * 0.85f)
+                .SetOptions(true)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
         }

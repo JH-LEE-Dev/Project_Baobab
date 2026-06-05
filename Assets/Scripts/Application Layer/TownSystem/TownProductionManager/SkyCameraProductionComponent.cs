@@ -20,7 +20,6 @@ public class SkyCameraProductionComponent : MonoBehaviour
     private Transform cachedLookAtTarget;
     private Vector3 cameraStartPos;
     private bool isMoved = false;
-    private bool hasStartPos = false;
 
     public void Initialize()
     {
