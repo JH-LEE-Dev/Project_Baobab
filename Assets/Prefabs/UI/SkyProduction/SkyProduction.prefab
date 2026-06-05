@@ -32,7 +32,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 320, y: 225}
+  m_AnchoredPosition: {x: 320, y: 135}
   m_SizeDelta: {x: 640, y: 450}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &951752644814405038
@@ -245,6 +245,7 @@ MonoBehaviour:
   cloudTargetTransform: {fileID: 2223744958440074505}
   skyTargetTransform: {fileID: 6837710031492252193}
   moveDuration: 1
+  useCustomCurve: 0
   moveCurve:
     serializedVersion: 2
     m_Curve:
@@ -269,6 +270,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  moveEase: 9
 --- !u!1 &5186112809392534533
 GameObject:
   m_ObjectHideFlags: 0

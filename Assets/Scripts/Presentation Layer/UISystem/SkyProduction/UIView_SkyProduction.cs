@@ -17,12 +17,17 @@ public class UIView_SkyProduction : UIView
     [SerializeField] private Ease moveEase = Ease.OutCubic;
 
     private Sequence moveSequence;
+    private Vector2 cloudStartPos;
+    private Vector2 skyStartPos;
+    private bool isMoved = false;
+    private bool hasStartPos = false;
 
     #region Public Methods
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
+        CacheStartPositions();
     }
 
     public override void SetupUI()
@@ -62,6 +67,7 @@ public class UIView_SkyProduction : UIView
     protected override void Awake()
     {
         base.Awake();
+        CacheStartPositions();
     }
 
     public override void OnDestroy()
@@ -85,15 +91,32 @@ public class UIView_SkyProduction : UIView
 
     #region Private Methods
 
+    private void CacheStartPositions()
+    {
+        if (hasStartPos) return;
+
+        if (cloudImage != null)
+            cloudStartPos = cloudImage.anchoredPosition;
+        if (skyImage != null)
+            skyStartPos = skyImage.anchoredPosition;
+
+        hasStartPos = true;
+    }
+
     private void PlayMoveSequence()
     {
+        CacheStartPositions();
         KillMoveSequence();
 
         moveSequence = DOTween.Sequence();
+        isMoved = !isMoved;
 
-        if (null != cloudImage && null != cloudTargetTransform)
+        Vector2 cloudDest = isMoved ? (cloudTargetTransform != null ? cloudTargetTransform.anchoredPosition : cloudStartPos) : cloudStartPos;
+        Vector2 skyDest = isMoved ? (skyTargetTransform != null ? skyTargetTransform.anchoredPosition : skyStartPos) : skyStartPos;
+
+        if (null != cloudImage)
         {
-            var tween = cloudImage.DOAnchorPos(cloudTargetTransform.anchoredPosition, moveDuration);
+            var tween = cloudImage.DOAnchorPos(cloudDest, moveDuration);
             if (useCustomCurve)
                 tween.SetEase(moveCurve);
             else
@@ -101,9 +124,9 @@ public class UIView_SkyProduction : UIView
             moveSequence.Join(tween);
         }
 
-        if (null != skyImage && null != skyTargetTransform)
+        if (null != skyImage)
         {
-            var tween = skyImage.DOAnchorPos(skyTargetTransform.anchoredPosition, moveDuration);
+            var tween = skyImage.DOAnchorPos(skyDest, moveDuration);
             if (useCustomCurve)
                 tween.SetEase(moveCurve);
             else

@@ -18,6 +18,9 @@ public class SkyCameraProductionComponent : MonoBehaviour
     private Tween cameraMoveTween;
     private Transform cachedFollowTarget;
     private Transform cachedLookAtTarget;
+    private Vector3 cameraStartPos;
+    private bool isMoved = false;
+    private bool hasStartPos = false;
 
     public void Initialize()
     {
@@ -55,18 +58,37 @@ public class SkyCameraProductionComponent : MonoBehaviour
 
         KillCameraMoveTween();
 
-        // 1. 연출 시작 전 현재 타겟팅 객체를 백업하고 해제
-        cachedFollowTarget = virtualCamera.Follow;
-        cachedLookAtTarget = virtualCamera.LookAt;
-        virtualCamera.Follow = null;
-        virtualCamera.LookAt = null;
+        isMoved = !isMoved;
 
-        // 2. 가상 카메라의 Transform 위치 기준으로 이동
-        Transform camTrans = virtualCamera.transform;
-        Vector3 targetPosition = camTrans.position;
-        targetPosition.y += yOffset;
+        if (isMoved)
+        {
+            // 1. 첫 연출 시작 시점의 위치와 타겟팅 백업
+            cameraStartPos = virtualCamera.transform.position;
+            cachedFollowTarget = virtualCamera.Follow;
+            cachedLookAtTarget = virtualCamera.LookAt;
 
-        cameraMoveTween = camTrans.DOMove(targetPosition, moveDuration);
+            virtualCamera.Follow = null;
+            virtualCamera.LookAt = null;
+
+            Vector3 targetPosition = cameraStartPos;
+            targetPosition.y += yOffset;
+
+            cameraMoveTween = virtualCamera.transform.DOMove(targetPosition, moveDuration);
+        }
+        else
+        {
+            // 2. 원래 위치로 복원 및 복원 완료 시 타겟팅 재연결
+            cameraMoveTween = virtualCamera.transform.DOMove(cameraStartPos, moveDuration)
+                .OnComplete(() =>
+                {
+                    if (virtualCamera != null)
+                    {
+                        virtualCamera.Follow = cachedFollowTarget;
+                        virtualCamera.LookAt = cachedLookAtTarget;
+                    }
+                });
+        }
+
         if (useCustomCurve)
         {
             cameraMoveTween.SetEase(moveCurve);
