@@ -16,11 +16,13 @@ public class UIView_SkyProduction : UIView
     [SerializeField] private bool useCustomCurve = false;
     [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
     [SerializeField] private Ease moveEase = Ease.OutCubic;
-    [SerializeField] private float floatingAmplitude = 5f;
+    [SerializeField] private float floatingAmplitude = 7.0f;
     [SerializeField] private float floatingDuration = 4.0f;
 
     private Sequence moveSequence;
-    private Sequence skyFloatingSequence;
+    private Tween skyTween1;
+    private Tween skyTween2;
+    private Tween cloudTween;
     private Vector2 cloudStartPos;
     private Vector2 skyStartPos;
     private Vector2 skyStartPos2;
@@ -162,34 +164,29 @@ public class UIView_SkyProduction : UIView
     {
         KillFloatingSequence();
 
-        skyFloatingSequence = DOTween.Sequence();
-
+        // Sequence를 쓰지 않고 개별 Tween으로 처리하여 경고를 방지합니다.
         if (null != skyImage)
         {
             Vector2 currentPos = skyImage.anchoredPosition;
-            var tween = skyImage.DOAnchorPosY(currentPos.y + floatingAmplitude, floatingDuration)
+            skyTween1 = skyImage.DOAnchorPosY(currentPos.y + (floatingAmplitude * 0.4f), floatingDuration)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
-            skyFloatingSequence.Join(tween);
         }
 
         if (null != skyImage2)
         {
             Vector2 currentPos = skyImage2.anchoredPosition;
-            var tween = skyImage2.DOAnchorPosY(currentPos.y - floatingAmplitude, floatingDuration)
+            skyTween2 = skyImage2.DOAnchorPosY(currentPos.y - (floatingAmplitude * 0.7f), floatingDuration)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
-            skyFloatingSequence.Join(tween);
         }
 
         if (null != cloudImage)
         {
             Vector2 currentPos = cloudImage.anchoredPosition;
-            // skyImage 및 skyImage2와 엇박자로 조화롭게 어우러지도록 floatingDuration의 0.85배 속도로 y축 움직임을 수행합니다.
-            var tween = cloudImage.DOAnchorPosY(currentPos.y + floatingAmplitude, floatingDuration * 0.85f)
+            cloudTween = cloudImage.DOAnchorPosY(currentPos.y + floatingAmplitude, floatingDuration * 0.85f)
                 .SetEase(Ease.InOutSine)
                 .SetLoops(-1, LoopType.Yoyo);
-            skyFloatingSequence.Join(tween);
         }
     }
 
@@ -203,10 +200,23 @@ public class UIView_SkyProduction : UIView
 
     private void KillFloatingSequence()
     {
-        if (null != skyFloatingSequence && true == skyFloatingSequence.IsActive())
+        if (null != skyTween1 && true == skyTween1.IsActive())
         {
-            skyFloatingSequence.Kill();
+            skyTween1.Kill();
         }
+        skyTween1 = null;
+
+        if (null != skyTween2 && true == skyTween2.IsActive())
+        {
+            skyTween2.Kill();
+        }
+        skyTween2 = null;
+
+        if (null != cloudTween && true == cloudTween.IsActive())
+        {
+            cloudTween.Kill();
+        }
+        cloudTween = null;
     }
 
     #endregion

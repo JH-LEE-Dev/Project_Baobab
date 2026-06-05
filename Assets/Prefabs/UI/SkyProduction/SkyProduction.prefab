@@ -349,7 +349,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   moveEase: 9
-  floatingAmplitude: 5
+  floatingAmplitude: 8
   floatingDuration: 4
 --- !u!210 &8034429127669148663
 SortingGroup:
