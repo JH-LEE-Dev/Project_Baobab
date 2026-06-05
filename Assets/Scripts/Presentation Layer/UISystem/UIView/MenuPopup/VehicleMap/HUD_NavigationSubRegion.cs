@@ -89,7 +89,14 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     public void SetSelect(bool _isSelect)
     {
         isSelected = _isSelect;
-        UpdateColor();
+
+        if (null == iconImage)
+            return;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        colorTween = iconImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
     }
 
     public void SetNumber(int _number)
@@ -177,6 +184,18 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private void OnClickAnimationComplete()
     {
         isClicked = false;
+
+        if (true == isSelected)
+            return;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != iconImage)
+        {
+            Color _targetColor = true == isHovered ? GetHoverColor() : GetOriginalColor();
+            colorTween = iconImage.DOColor(_targetColor, hoverColorDuration).SetEase(Ease.Linear);
+        }
     }
 
 
@@ -229,15 +248,11 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (false == isLocked)
+        if (false == isLocked && false == isSelected)
             onSelectEvent?.Invoke(fieldNumber);
 
         isClicked = true;
-        isHovered = false;
         isPendingExit = false;
-
-        if (null != colorTween && colorTween.IsActive())
-            colorTween.Kill();
 
         if (null != motionPlayer)
         {
@@ -247,8 +262,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             if (null != exitMotion)
                 motionPlayer.SettingEntryMotion(exitMotion, true, true);
 
-            UpdateColor();
-
             string _targetTag = true == isLocked ? lockClickTag : clickTag;
             clickMotion = motionPlayer.Play(_targetTag, bReset: true, _onComplete: OnClickAnimationComplete);
         }
@@ -256,13 +269,16 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private void ExecuteExit()
     {
+        if (true == isClicked)
+            return;
+
         if (false == isLocked)
             onHoverExitEvent?.Invoke();
 
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
 
-        if (null != motionPlayer && false == isClicked)
+        if (null != motionPlayer)
         {
             if (null != enterMotion)
                 motionPlayer.SettingEntryMotion(enterMotion, true, true);
@@ -288,12 +304,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
-
-    private void Awake()
-    {
-        if (false == isInitialized)
-            Initialize(fieldNumber);
-    }
 
     private void Update()
     {

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
 
 public class HUD_Vehicle : MonoBehaviour
@@ -17,11 +18,12 @@ public class HUD_Vehicle : MonoBehaviour
     [SerializeField] private HUD_VehicleMapSelectorButton cancelButton;
 
     [SerializeField] private string blinkMotionTag = "Blink";
-    [SerializeField] private string activeMotionTag = "Active";
-    [SerializeField] private string deactiveMotionTag = "Deactive";
+    [SerializeField] private string backgroundMotionTag = "Background";
+    [SerializeField] private string controlBoardMotionTag = "ControlBoard";
 
     // //내부 의존성
     private IMapDataProvider mapDataProvider;
+    private Tweener blinkTween;
     private bool isBlinking = false;
 
 
@@ -30,6 +32,13 @@ public class HUD_Vehicle : MonoBehaviour
     public void Initialize(IMapDataProvider _mapDataProvider, Action _onClose)
     {
         isBlinking = false;
+
+        if (null != blinkTween && blinkTween.IsActive())
+            blinkTween.Kill();
+
+        if (null != lightImage)
+            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+
         mapDataProvider = _mapDataProvider;
 
         if (null != navigation)
@@ -57,15 +66,28 @@ public class HUD_Vehicle : MonoBehaviour
 
         if (null != omp)
             omp.Initialize();
+
+        Close();
     }
 
     public void Open()
     {
         gameObject.SetActive(true);
+
+        omp.Play(backgroundMotionTag, bReset: true);
+        omp.Play(controlBoardMotionTag, bReset: true);
     }
 
     public void Close()
     {
+        isBlinking = false;
+
+        if (null != blinkTween && blinkTween.IsActive())
+            blinkTween.Kill();
+
+        if (null != lightImage)
+            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+
         if (null != navigation)
             navigation.ResetSelection();
 
@@ -75,9 +97,11 @@ public class HUD_Vehicle : MonoBehaviour
         if (null != okButton)
             okButton.SetButtonActive(false, false);
 
-        gameObject.SetActive(false);
+        omp.PlayBackward(backgroundMotionTag, bReset: true);
+        omp.PlayBackward(controlBoardMotionTag, bReset: true, _onComplete: HandleClose);
     }
 
+    private void HandleClose() => gameObject.SetActive(false);
 
     // //내부 로직
 
@@ -85,15 +109,21 @@ public class HUD_Vehicle : MonoBehaviour
     {
         isBlinking = !isBlinking;
 
-        if (null == omp)
-            return;
+        if (null != blinkTween && blinkTween.IsActive())
+            blinkTween.Kill();
 
         if (true == isBlinking)
-            omp.Play(blinkMotionTag, bReset: true);
+        {
+            if (null != lightImage)
+            {
+                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+                blinkTween = lightImage.DOFade(1f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+            }
+        }
         else
         {
-            omp.Stop(blinkMotionTag);
-            omp.ResetAllMotions();
+            if (null != lightImage)
+                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
         }
     }
 
@@ -173,11 +203,14 @@ public class HUD_Vehicle : MonoBehaviour
     {
         isBlinking = false;
 
+        if (null != blinkTween && blinkTween.IsActive())
+            blinkTween.Kill();
+
+        if (null != lightImage)
+            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+
         if (null != omp)
-        {
-            omp.Stop(blinkMotionTag);
             omp.ResetAllMotions();
-        }
 
         if (null != navigation)
             navigation.ResetSelection();

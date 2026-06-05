@@ -56,12 +56,12 @@ MonoBehaviour:
   backwardEase: 0
   resetOnValidateInPlayMode: 1
   valueSettings:
-    maxSkew: {x: 0.45, y: -0.25}
+    maxSkew: {x: 0.8, y: -0.25}
     skewTimeRatio: 0.2
     restoreTimeRatio: 0.8
     skewEase: 28
     restoreEase: 18
-    targetScale: {x: 1.2, y: 0.5}
+    targetScale: {x: 1.7, y: 0.5}
     scaleEase: 28
     targetColor: {r: 0.8349056, g: 0.9837854, b: 1, a: 1}
     colorEase: 6
@@ -215,7 +215,7 @@ MonoBehaviour:
   lockColor: {r: 0.5019608, g: 0.2, b: 0.2, a: 1}
   normalHoverColor: {r: 0.37068352, g: 0.46473995, b: 0.6603774, a: 1}
   lockHoverColor: {r: 0.754717, g: 0.16731933, b: 0.16731933, a: 1}
-  hoverColorDuration: 0.4
+  hoverColorDuration: 0.15
   hoverTag: Hover
   hoverOffTag: HoverOff
   clickTag: Click
@@ -280,7 +280,7 @@ MonoBehaviour:
       rectTransform: {fileID: 4396298861076199759}
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 8033886740915779442}
+      uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
   - motionTag: Hover
     motionPrefab: {fileID: 1925365532619537479}
@@ -289,7 +289,7 @@ MonoBehaviour:
       rectTransform: {fileID: 4396298861076199759}
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 8033886740915779442}
+      uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
   - motionTag: HoverOff
     motionPrefab: {fileID: 4387310713051750356}
@@ -298,7 +298,7 @@ MonoBehaviour:
       rectTransform: {fileID: 4396298861076199759}
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 8033886740915779442}
+      uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
   - motionTag: LockClick
     motionPrefab: {fileID: 1392922823718485570}
@@ -307,7 +307,7 @@ MonoBehaviour:
       rectTransform: {fileID: 4396298861076199759}
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 8033886740915779442}
+      uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
 --- !u!1 &8148430121089073189
 GameObject:
@@ -478,7 +478,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75f6094d4f8c4d34da9e2c3d9130c111, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIHoverOffWiggle
-  forwardDuration: 0.7
+  forwardDuration: 0.4
   forwardDelay: 0
   forwardEase: 0
   backwardDuration: 0.5
@@ -600,7 +600,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3bdec77a19650a545991ad23329b6d12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UIHoverWiggle
-  forwardDuration: 0.7
+  forwardDuration: 0.5
   forwardDelay: 0
   forwardEase: 0
   backwardDuration: 0.5

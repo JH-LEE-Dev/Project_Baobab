@@ -38,6 +38,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private MotionEntry hoverEntry;
     private MotionEntry clickEntry;
     private MotionEntry unHoverEntry;
+    private bool isHovered = false;
     private bool isClicked = false;
     private bool isLocked = false;
     private bool isSelected = false;
@@ -49,14 +50,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void Initialize(MapType _mapType, Action<MapType> _onSelect)
     {
-        if (true == isInitialized)
-            return;
-
         mapType = _mapType;
         onSelectEvent = _onSelect;
         isClicked = false;
         isLocked = false;
         isSelected = false;
+        isHovered = false;
 
         if (null != omp)
             omp.Initialize();
@@ -80,10 +79,31 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         UpdateColor();
     }
 
+    public void ClearEntry()
+    {
+        if (null != omp)
+        {
+            omp.SettingEntryMotion(hoverEntry, true, true);
+            omp.SettingEntryMotion(clickEntry, true, true);
+            omp.SettingEntryMotion(unHoverEntry, true, true);
+        }
+
+        hoverEntry = null;
+        clickEntry = null;
+        unHoverEntry = null;
+    }
+
     public void SetSelect(bool _isSelect)
     {
         isSelected = _isSelect;
-        UpdateColor();
+
+        if (null == buttonImage)
+            return;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
     }
 
     public MapType GetMapType()
@@ -138,6 +158,18 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private void OnClickAnimationComplete()
     {
         isClicked = false;
+
+        if (true == isSelected)
+            return;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != buttonImage)
+        {
+            Color _targetColor = true == isHovered ? GetHoverColor() : GetOriginalColor();
+            colorTween = buttonImage.DOColor(_targetColor, hoverColorDuration).SetEase(Ease.Linear);
+        }
     }
 
 
@@ -145,13 +177,13 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        if (true == isSelected)
+            return;
+
         if (false == isLocked)
             onSelectEvent?.Invoke(mapType);
 
         isClicked = true;
-
-        if (null != colorTween && colorTween.IsActive())
-            colorTween.Kill();
 
         if (null != omp)
         {
@@ -167,6 +199,8 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        isHovered = true;
+
         if (true == isClicked)
             return;
 
@@ -191,6 +225,8 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        isHovered = false;
+
         if (true == isClicked)
             return;
 
@@ -222,10 +258,4 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
-
-    private void Awake()
-    {
-        if (false == isInitialized)
-            Initialize(mapType, onSelectEvent);
-    }
 }

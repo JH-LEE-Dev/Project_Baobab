@@ -22,7 +22,6 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     [SerializeField] private string hoverOffMotionKey = "HoverOff";
     [SerializeField] private string clickMotionKey = "Click";
     [SerializeField] private string activeMotionKey = "Active";
-    [SerializeField] private string inactiveMotionKey = "Inactive";
 
     // //내부 의존성
     private Action onConfirmEvent;
@@ -76,7 +75,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
             if (true == _withAnimation)
                 motionPlayer.Play(activeMotionKey, bReset: true);
             else
-                motionPlayer.Play(activeMotionKey, bReset: true);
+                motionPlayer.PlayBackward(activeMotionKey, bReset: true);
         }
     }
 
@@ -136,4 +135,15 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     }
 
     private void UnClicked() => isClicked = false;
+
+
+    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void OnDisable()
+    {
+        isClicked = false;
+
+        if (null != motionPlayer)
+            motionPlayer.ResetAllMotions();
+    }
 }

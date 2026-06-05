@@ -44,9 +44,13 @@ public class HUD_NavigationSubField : MonoBehaviour
         if (null == subRegionPrefab || null == subRegionContainer || null == _forestDatas)
             return;
 
+        int dataCount = _forestDatas.Count;
+
         // 항상 최대 3개의 SubRegion 버튼을 보장하여 생성 및 풀링
-        while (spawnedSubRegions.Count < 3)
+        int safetyCounter = 0;
+        while (spawnedSubRegions.Count < 3 && safetyCounter < 10)
         {
+            safetyCounter++;
             GameObject obj = Instantiate(subRegionPrefab, subRegionContainer);
             if (null == obj)
                 break;
@@ -54,9 +58,13 @@ public class HUD_NavigationSubField : MonoBehaviour
             HUD_NavigationSubRegion sub = obj.GetComponent<HUD_NavigationSubRegion>();
             if (null != sub)
                 spawnedSubRegions.Add(sub);
+            else
+            {
+                Destroy(obj);
+                break;
+            }
         }
 
-        int dataCount = _forestDatas.Count;
         for (int i = 0; i < spawnedSubRegions.Count; i++)
         {
             if (null == spawnedSubRegions[i])
@@ -137,7 +145,7 @@ public class HUD_NavigationSubField : MonoBehaviour
 
         for (int i = 0; i < spawnedSubRegions.Count; i++)
         {
-            if (null == spawnedSubRegions[i] || false == spawnedSubRegions[i].gameObject.activeSelf)
+            if (null == spawnedSubRegions[i] || i >= count)
                 continue;
 
             if (count <= posIndex)

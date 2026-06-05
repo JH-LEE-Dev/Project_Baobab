@@ -160,7 +160,10 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
         for (int i = 0; i < spawnedRegions.Count; i++)
             if (null != spawnedRegions[i])
+            {
                 spawnedRegions[i].SetSelect(false);
+                spawnedRegions[i].ClearEntry();
+            }
 
         // 지연 캐싱이 성공적으로 완료되었을 때에만 Y축 정렬 위치 복구 수행
         if (true == isYPositionCached)
