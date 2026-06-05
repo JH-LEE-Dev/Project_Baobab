@@ -1728,6 +1728,7 @@ GameObject:
   - component: {fileID: 7453643367642077464}
   - component: {fileID: 7413030513366689950}
   - component: {fileID: 1519226333585974322}
+  - component: {fileID: 6498721921695947709}
   m_Layer: 0
   m_Name: UIInstaller
   m_TagString: Untagged
@@ -1792,6 +1793,18 @@ MonoBehaviour:
   - {fileID: 1457280794132971112, guid: 341f66c902092e5458a826b17a99e48e, type: 3}
   - {fileID: 5251908933251639706, guid: 1896f9058a0bdab42ae4341930bfa21c, type: 3}
   - {fileID: 7524718967522486410, guid: 0bd5670bcae6da44e879475ac190ee2c, type: 3}
+--- !u!114 &6498721921695947709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7432536287932878892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33288a4e791ef964e9d71282ed0c9949, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIDepthController
 --- !u!1 &7565708588615142684
 GameObject:
   m_ObjectHideFlags: 0

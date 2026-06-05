@@ -219,3 +219,9 @@ public enum AbilityLevelUpRejectReason
     NotEnoughCarrot,
     MaxLevel,
 }
+
+public struct SkillAccumulatedValueData
+{
+    public SkillCommandType type;
+    public float amount;
+}

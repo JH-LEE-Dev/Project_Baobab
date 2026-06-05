@@ -1,4 +1,5 @@
 using System;
+using PresentationLayer.UISystem.UIView.MenuPopup.Map;
 using UnityEngine;
 
 public class UIView_MenuPopup : UIView
@@ -6,28 +7,28 @@ public class UIView_MenuPopup : UIView
     public event Action<MapType, ForestType> DungeonSelectedEvent;
     public event Action TeleportUIClosedEvent;
 
-    // //외부 의존성
+    //외부 의존성
     private IMapDataProvider mapDataProvider;
     private IWeatherProvider weatherProvider;
     private ITimeDataProvider timeDataProvider;
 
+    //내부 의존성
+
+    // //외부 의존성
     [Header("Sub UI Prefabs")]
-    [SerializeField] private GameObject vehiclePrefab;
+    [SerializeField] private GameObject mapSelectorPrefab;
 
     // //내부 의존성
-    private HUD_Vehicle vehicle;
-
-
-    // //퍼블릭 초기화 및 제어 메서드
+    private HUD_MapSelector mapSelector;
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
 
-        if (null == vehicle && null != vehiclePrefab)
-            vehicle = Instantiate(vehiclePrefab, this.transform).GetComponent<HUD_Vehicle>();
+        if (null == mapSelector && null != mapSelectorPrefab)
+            mapSelector = Instantiate(mapSelectorPrefab, this.transform).GetComponent<HUD_MapSelector>();
 
-        CloseTeleportUI();
+        OnHide();
     }
 
     public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
@@ -36,31 +37,9 @@ public class UIView_MenuPopup : UIView
         timeDataProvider = _timeDataProvider;
         mapDataProvider = _mapDataProvider;
 
-        if (null != vehicle)
-        {
-            vehicle.Initialize(mapDataProvider);
-            vehicle.MapSelectedEvent -= HandleEnterDungeon;
-            vehicle.MapSelectedEvent += HandleEnterDungeon;
-        }
+        if (null != mapSelector)
+            mapSelector.Initialize(mapDataProvider, weatherProvider, timeDataProvider, HandleEnterDungeon, OnHide);
     }
-
-    public void TeleportUIOpen()
-    {
-        if (null != vehicle)
-            vehicle.Open();
-    }
-
-    public void CloseTeleportUI()
-    {
-        if (null != vehicle)
-        {
-            vehicle.Close();
-            TeleportUIClosedEvent?.Invoke();
-        }
-    }
-
-
-    // //내부 로직
 
     private void HandleEnterDungeon(MapType _type, ForestType _forestType)
     {
@@ -69,25 +48,25 @@ public class UIView_MenuPopup : UIView
 
         // 통신 및 던전 진입 로직 배치
         DungeonSelectedEvent?.Invoke(_type, _forestType);
-        CloseTeleportUI();
+        OnHide();
     }
-
-
-    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
     protected override void OnShow()
     {
         base.OnShow();
+
+        if (null != mapSelector)
+            mapSelector.MapSelectorOpen();
     }
 
     protected override void OnHide()
     {
         base.OnHide();
-    }
 
-    private void OnDestroy()
-    {
-        if (null != vehicle)
-            vehicle.MapSelectedEvent -= HandleEnterDungeon;
+        if (null != mapSelector)
+        {
+            mapSelector.MapSelectorClose();
+            TeleportUIClosedEvent?.Invoke();
+        }
     }
 }

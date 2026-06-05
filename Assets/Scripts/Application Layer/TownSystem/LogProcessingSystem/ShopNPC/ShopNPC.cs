@@ -42,6 +42,11 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
     // 내부 의존성
     private bool bCanInteract = false;
+    private bool bPhysicalOverlapped = false;
+    private bool bCanReach = true;
+    private bool bLastInteractState = false;
+
+    public bool isPhysicalOverlapped => bPhysicalOverlapped;
     private InputManager inputManager;
     private int money;
     private bool bFirstTimeEarnMoney = true;
@@ -133,17 +138,43 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         inputManager.inputReader.InteractionKeyPressedEvent -= InteractKeyPressed;
     }
 
+    private void UpdateInteractState()
+    {
+        bool currentState = bCanReach && bPhysicalOverlapped;
+        if (currentState != bLastInteractState)
+        {
+            bLastInteractState = currentState;
+            bCanInteract = currentState;
+            InteractStateEvent?.Invoke(currentState);
+            outLineObject.SetActive(currentState);
+            PlayAnimation(currentState);
+        }
+    }
+
+    public void SetCanReach(bool _bCanReach)
+    {
+        bCanReach = _bCanReach;
+        UpdateInteractState();
+    }
+
     private void OnTriggerEnter2D(Collider2D _other)
     {
         if (_other.CompareTag(playerTag))
         {
-            bCanInteract = true;
-            //animatorObject.SetActive(false);
-            outLineObject.SetActive(true);
+            bPhysicalOverlapped = true;
+            UpdateInteractState();
+        }
+    }
 
-            InteractStateEvent?.Invoke(true);
-
-            PlayAnimation(true);
+    private void OnTriggerStay2D(Collider2D _other)
+    {
+        if (_other.CompareTag(playerTag))
+        {
+            if (bPhysicalOverlapped == false)
+            {
+                bPhysicalOverlapped = true;
+                UpdateInteractState();
+            }
         }
     }
 
@@ -151,12 +182,8 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     {
         if (_other.CompareTag(playerTag))
         {
-            //animatorObject.SetActive(true);
-            outLineObject.SetActive(false);
-            bCanInteract = false;
-            InteractStateEvent?.Invoke(false);
-
-            PlayAnimation(false);
+            bPhysicalOverlapped = false;
+            UpdateInteractState();
         }
     }
 

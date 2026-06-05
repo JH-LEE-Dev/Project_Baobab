@@ -4,6 +4,7 @@ using System;
 public struct LocalizationEntry
 {
     public int id;      // String ID (JSON 내부 식별자, 파일 내 고유해야 함)
+    public string key;  // 개발 식별자 (C# 상수 생성용 키)
     public string kr;
     public string en;
 }

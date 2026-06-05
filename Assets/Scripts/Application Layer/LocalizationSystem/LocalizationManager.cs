@@ -56,6 +56,12 @@ public class LocalizationManager
         return string.Empty;
     }
 
+    public string GetText(int _jsonId, int _entryId)
+    {
+        int compositeKey = GenerateKey(_jsonId, _entryId);
+        return GetText(compositeKey);
+    }
+
     public string GetFormatText(int _compositeKey, params object[] _args)
     {
         string format = GetText(_compositeKey);
@@ -64,6 +70,12 @@ public class LocalizationManager
         stringBuilder.Clear();
         stringBuilder.AppendFormat(format, _args);
         return stringBuilder.ToString();
+    }
+
+    public string GetFormatText(int _jsonId, int _entryId, params object[] _args)
+    {
+        int compositeKey = GenerateKey(_jsonId, _entryId);
+        return GetFormatText(compositeKey, _args);
     }
 
     public void SetLanguage(Language _lang)

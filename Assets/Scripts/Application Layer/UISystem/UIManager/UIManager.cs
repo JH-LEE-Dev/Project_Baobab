@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 
 public class UIManager : MonoBehaviour
 {
@@ -35,10 +34,10 @@ public class UIManager : MonoBehaviour
         worldTooltipLayerRoot = worldCanvasRoot.tooltipLayerRoot;
     }
 
-    public void Initialize(InputManager _inputManager,LocalizationManager _localizeManager)
+    public void Initialize(InputManager _inputManager, LocalizationManager _localizeManager, UIDepthController _depthController)
     {
         viewCtx = new UIViewContext();
-        viewCtx.Initialize(_inputManager,_localizeManager);
+        viewCtx.Initialize(_inputManager, _localizeManager, _depthController);
     }
 
     protected void Awake()

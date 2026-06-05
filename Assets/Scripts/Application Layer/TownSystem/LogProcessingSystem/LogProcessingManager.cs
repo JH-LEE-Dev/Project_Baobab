@@ -298,4 +298,53 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     {
         shopObj.transform.position = shopSpawnPoint.transform.position;
     }
+
+    private void Update()
+    {
+        CalcDistForInteraction();
+    }
+
+    private void CalcDistForInteraction()
+    {
+        if (character == null || logContainer == null || shopNPC == null) return;
+
+        bool containerActive = logContainer.gameObject.activeInHierarchy;
+        bool shopNPCActive = shopNPC.gameObject.activeInHierarchy;
+
+        if (!containerActive && !shopNPCActive) return;
+
+        if (!containerActive)
+        {
+            shopNPC.SetCanReach(true);
+            return;
+        }
+
+        if (!shopNPCActive)
+        {
+            logContainer.SetCanReach(true);
+            return;
+        }
+
+        if (logContainer.isPhysicalOverlapped && shopNPC.isPhysicalOverlapped)
+        {
+            float distToContainerSq = (logContainer.transform.position - character.centerTransform.position).sqrMagnitude;
+            float distToShopNPCSq = (shopNPC.transform.position - character.centerTransform.position).sqrMagnitude;
+
+            if (distToContainerSq <= distToShopNPCSq)
+            {
+                logContainer.SetCanReach(true);
+                shopNPC.SetCanReach(false);
+            }
+            else
+            {
+                logContainer.SetCanReach(false);
+                shopNPC.SetCanReach(true);
+            }
+        }
+        else
+        {
+            logContainer.SetCanReach(true);
+            shopNPC.SetCanReach(true);
+        }
+    }
 }

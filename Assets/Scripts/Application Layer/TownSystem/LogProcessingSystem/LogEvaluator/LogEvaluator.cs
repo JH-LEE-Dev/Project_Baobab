@@ -13,10 +13,6 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     [SerializeField] private LogStorage logStorage;
     [SerializeField] private List<LogItemStateValueData> logItemStateValueDatas;
 
-    private Animator anim;
-    private Animator storageAnim;
-    private Coroutine stopAnimCoroutine;
-
     private readonly int startHash = Animator.StringToHash("bStart");
 
     private float logValueMultiplier = 1.0f;
@@ -26,21 +22,11 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
     public void Initialize()
     {
-        anim = GetComponent<Animator>();
-        storageAnim = storageObj.GetComponent<Animator>();
-
-        customSortable = GetComponent<CustomSortable>();
-        customSortable.Initialize(transform);
-        customSortable.AddSpriteRenderer(GetComponent<SpriteRenderer>());
-
         logStorage.Initialize();
     }
 
     public void EvaluateLog(ILogItemData _itemData)
     {
-        if (stopAnimCoroutine != null) StopCoroutine(stopAnimCoroutine);
-        anim.SetBool(startHash, true);
-
         LogItemValueData valueData = logItemValueDataBase.Get(_itemData.treeType);
         if (valueData == null)
         {
@@ -58,15 +44,11 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         logEvaluatedEvent?.Invoke(finalPrice);
 
         if (logStorage != null) logStorage.TriggerBounce();
-
-        stopAnimCoroutine = StartCoroutine(StopAnimationRoutine());
     }
 
     private IEnumerator StopAnimationRoutine()
     {
         yield return new WaitForSeconds(evaluationDelay);
-        anim.SetBool(startHash, false);
-        stopAnimCoroutine = null;
     }
 
     public void IncreaseLogValueMultiplier(float _amount)
@@ -84,11 +66,5 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     {
         logValueMultiplier = _data.logValueMultiplier;
         Debug.Log("[LogEvaluator] Evaluator Save Data Loaded.");
-    }
-
-    private void LateUpdate()
-    {
-        if (customSortable != null)
-            customSortable.ManualLateUpdate();
     }
 }

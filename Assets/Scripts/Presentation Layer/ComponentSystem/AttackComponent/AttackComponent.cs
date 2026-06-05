@@ -16,6 +16,7 @@ public class AttackComponent : PComponent
     [SerializeField] private float maxAttackDistance = 0.15f; // 캐릭터로부터 공격 포인트가 떨어질 수 있는 최대 거리
     [SerializeField] private float attackRadius = 0.5f; // 충돌 탐지 판정 반경
     [SerializeField] private float ellipseAttackRadius = 1.5f; // 타원 공격 판정 반경
+    [SerializeField] private float attackAngle = 45f; // 공격 범위 반각 (중심선으로부터 좌우 각도)
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (도끼용)
     [SerializeField] private float shockWaveSpawnOffset = 0.35f; // 충격파 생성 시 공격 지점으로부터의 오프셋
 
@@ -193,7 +194,7 @@ public class AttackComponent : PComponent
             isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
         }
 
-        float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
+        float cosThreshold = Mathf.Cos(attackAngle * Mathf.Deg2Rad);
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
         IStaticCollidable nearestDamageable = null;
@@ -347,7 +348,7 @@ public class AttackComponent : PComponent
             isoAttackDir = new Vector3(attackDirVec.x, attackDirVec.y * 2f, 0f).normalized;
         }
 
-        float cosThreshold = Mathf.Cos(45f * Mathf.Deg2Rad);
+        float cosThreshold = Mathf.Cos(attackAngle * Mathf.Deg2Rad);
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
 
         IStaticCollidable nearest = null;
@@ -416,9 +417,9 @@ public class AttackComponent : PComponent
             Gizmos.color = Color.red;
             DrawWireEllipse(centerPos, effectiveEllipseRadius, effectiveEllipseRadius * 0.5f);
 
-            // 45도 경계선 시각화 (아이소매트릭 비율 적용)
-            Vector3 leftDir = Quaternion.Euler(0, 0, 45f) * isoAttackDir;
-            Vector3 rightDir = Quaternion.Euler(0, 0, -45f) * isoAttackDir;
+            // 설정된 각도 경계선 시각화 (아이소매트릭 비율 적용)
+            Vector3 leftDir = Quaternion.Euler(0, 0, attackAngle) * isoAttackDir;
+            Vector3 rightDir = Quaternion.Euler(0, 0, -attackAngle) * isoAttackDir;
 
             Vector3 leftBoundary = new Vector3(leftDir.x * effectiveEllipseRadius, leftDir.y * 0.5f * effectiveEllipseRadius, 0);
             Vector3 rightBoundary = new Vector3(rightDir.x * effectiveEllipseRadius, rightDir.y * 0.5f * effectiveEllipseRadius, 0);
