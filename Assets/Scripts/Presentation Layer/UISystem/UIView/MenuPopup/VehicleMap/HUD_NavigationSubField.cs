@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class HUD_NavigationSubField : MonoBehaviour
 {
+    // //이벤트
+    public event Action subRegionSelectedEvent;
+
     // //외부 의존성
     [Header("UI Elements")]
     [SerializeField] private GameObject subRegionPrefab;
@@ -31,7 +34,7 @@ public class HUD_NavigationSubField : MonoBehaviour
         isInitialized = true;
     }
 
-    public void SetSubRegions(List<ForestEnvironmentInfo> _forestDatas)
+    public void SetSubRegions(MapType _mapType, List<ForestEnvironmentInfo> _forestDatas)
     {
         if (false == isInitialized)
             Initialize();
@@ -68,10 +71,10 @@ public class HUD_NavigationSubField : MonoBehaviour
                 spawnedSubRegions[i].PlayCloseAnimation();
         }
 
-        RepositionSubRegions(dataCount);
+        RepositionSubRegions(_mapType, dataCount);
     }
 
-    private void RepositionSubRegions(int _activeCount)
+    private void RepositionSubRegions(MapType _mapType, int _activeCount)
     {
         if (null == subRegionContainer || 0 >= _activeCount)
             return;
@@ -118,7 +121,16 @@ public class HUD_NavigationSubField : MonoBehaviour
             maxY = temp;
         }
 
-        float baseMinDistance = Mathf.Max(subWidth, subHeight) * 1.1f;
+        // 격리 최소 거리 기준을 대폭 강화 (2.5배)
+        float baseMinDistance = Mathf.Max(subWidth, subHeight) * 2.5f;
+
+        // 전역 난수 흐름 오염 방지 및 결정론적 배치 고정을 위한 시드 처리
+        UnityEngine.Random.State prevState = UnityEngine.Random.state;
+        UnityEngine.Random.InitState((int)_mapType);
+
+        // X축 3분할 영역 가로폭 계산
+        float totalWidth = maxX - minX;
+        float sectionWidth = totalWidth / 3f;
 
         Span<Vector2> positions = stackalloc Vector2[3];
         int posIndex = 0;
@@ -139,13 +151,18 @@ public class HUD_NavigationSubField : MonoBehaviour
             subRect.anchorMax = new Vector2(0.5f, 0.5f);
             subRect.pivot = new Vector2(0.5f, 0.5f);
 
+            // 해당 인덱스(posIndex)에 따른 X축 영역 슬라이싱
+            float minRangeX = minX + sectionWidth * posIndex;
+            float maxRangeX = minRangeX + sectionWidth;
+
             Vector2 targetPos = Vector2.zero;
             bool found = false;
             float currentMinDistance = baseMinDistance;
 
             for (int attempt = 0; 50 > attempt; attempt++)
             {
-                float randX = UnityEngine.Random.Range(minX, maxX);
+                // 분할 영역 내에서 난수 추첨
+                float randX = UnityEngine.Random.Range(minRangeX, maxRangeX);
                 float randY = UnityEngine.Random.Range(minY, maxY);
                 Vector2 candidate = new Vector2(randX, randY);
 
@@ -171,12 +188,15 @@ public class HUD_NavigationSubField : MonoBehaviour
             }
 
             if (false == found)
-                targetPos = new Vector2(UnityEngine.Random.Range(minX, maxX), UnityEngine.Random.Range(minY, maxY));
+                targetPos = new Vector2(UnityEngine.Random.Range(minRangeX, maxRangeX), UnityEngine.Random.Range(minY, maxY));
 
             positions[posIndex] = targetPos;
             subRect.anchoredPosition = targetPos;
             posIndex++;
         }
+
+        // 난수 상태 복구
+        UnityEngine.Random.state = prevState;
     }
 
     public ForestType GetSelectedForestType()
@@ -189,6 +209,22 @@ public class HUD_NavigationSubField : MonoBehaviour
             return ForestType.None;
 
         return spawnedSubRegions[index].GetForestType();
+    }
+
+    public void ResetSelection()
+    {
+        currentSelectedNumber = -1;
+
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null != spawnedSubRegions[i])
+            {
+                spawnedSubRegions[i].SetSelect(false);
+                spawnedSubRegions[i].PlayCloseAnimation();
+            }
+        }
+
+        subRegionSelectedEvent?.Invoke();
     }
 
 
@@ -209,8 +245,14 @@ public class HUD_NavigationSubField : MonoBehaviour
         currentSelectedNumber = _number;
 
         if (null != spawnedSubRegions)
+        {
             for (int i = 0; i < spawnedSubRegions.Count; i++)
+            {
                 if (null != spawnedSubRegions[i])
                     spawnedSubRegions[i].SetSelect(spawnedSubRegions[i].GetNumber() == _number);
+            }
+        }
+
+        subRegionSelectedEvent?.Invoke();
     }
 }

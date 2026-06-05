@@ -16,17 +16,17 @@ public class UIView_MenuPopup : UIView
 
     // //외부 의존성
     [Header("Sub UI Prefabs")]
-    [SerializeField] private GameObject mapSelectorPrefab;
+    [SerializeField] private GameObject vehiclePrefab;
 
     // //내부 의존성
-    private HUD_MapSelector mapSelector;
+    private HUD_Vehicle vehicle;
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
 
-        if (null == mapSelector && null != mapSelectorPrefab)
-            mapSelector = Instantiate(mapSelectorPrefab, this.transform).GetComponent<HUD_MapSelector>();
+        if (null == vehicle && null != vehiclePrefab)
+            vehicle = Instantiate(vehiclePrefab, this.transform).GetComponent<HUD_Vehicle>();
 
         OnHide();
     }
@@ -37,8 +37,12 @@ public class UIView_MenuPopup : UIView
         timeDataProvider = _timeDataProvider;
         mapDataProvider = _mapDataProvider;
 
-        if (null != mapSelector)
-            mapSelector.Initialize(mapDataProvider, weatherProvider, timeDataProvider, HandleEnterDungeon, OnHide);
+        if (null != vehicle)
+        {
+            vehicle.Initialize(mapDataProvider);
+            vehicle.MapSelectedEvent -= HandleEnterDungeon;
+            vehicle.MapSelectedEvent += HandleEnterDungeon;
+        }
     }
 
     private void HandleEnterDungeon(MapType _type, ForestType _forestType)
@@ -55,18 +59,24 @@ public class UIView_MenuPopup : UIView
     {
         base.OnShow();
 
-        if (null != mapSelector)
-            mapSelector.MapSelectorOpen();
+        if (null != vehicle)
+            vehicle.Open();
     }
 
     protected override void OnHide()
     {
         base.OnHide();
 
-        if (null != mapSelector)
+        if (null != vehicle)
         {
-            mapSelector.MapSelectorClose();
+            vehicle.Close();
             TeleportUIClosedEvent?.Invoke();
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (null != vehicle)
+            vehicle.MapSelectedEvent -= HandleEnterDungeon;
     }
 }

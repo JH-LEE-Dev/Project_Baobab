@@ -104,8 +104,13 @@ namespace WingmanInspector {
             EditorApplication.update -= Update;
             EditorApplication.update += Update;
             
+#if UNITY_6000_4_OR_NEWER
+            EditorApplication.hierarchyWindowItemByEntityIdOnGUI -= OnHierarchyGUI;
+            EditorApplication.hierarchyWindowItemByEntityIdOnGUI += OnHierarchyGUI;
+#else
             EditorApplication.hierarchyWindowItemOnGUI -= OnHierarchyGUI;
             EditorApplication.hierarchyWindowItemOnGUI += OnHierarchyGUI;
+#endif
             
             Selection.selectionChanged -= OnSelectionChanged;
             Selection.selectionChanged += OnSelectionChanged;
@@ -119,7 +124,13 @@ namespace WingmanInspector {
         private static void UnSubscribeToCallbacks() {
             EditorApplication.update -= RefreshInspectorWindows;
             EditorApplication.update -= Update;
+            
+#if UNITY_6000_4_OR_NEWER
+            EditorApplication.hierarchyWindowItemByEntityIdOnGUI -= OnHierarchyGUI;
+#else
             EditorApplication.hierarchyWindowItemOnGUI -= OnHierarchyGUI;
+#endif
+            
             Selection.selectionChanged -= OnSelectionChanged;
             EditorApplication.quitting -= OnQuit;
             Settings.OnSettingsChanged -= OnSettingsChanged;
@@ -150,7 +161,7 @@ namespace WingmanInspector {
 
         private static bool InspectorHasContainer(EditorWindow inspector) {
             foreach (WingmanContainer container in containers) {
-                if (container.InspectorWindow.GetInstanceID() == inspector.GetInstanceID()) {
+                if (container.InspectorWindow.GetId() == inspector.GetId()) {
                     return true;
                 }
             }
@@ -173,11 +184,19 @@ namespace WingmanInspector {
             }
         }
 
+#if UNITY_6000_4_OR_NEWER
+        private static void OnHierarchyGUI(EntityId entityId, Rect selectionRect) {
+            foreach (WingmanContainer container in containers) {
+                container.OnHierarchyGUI();
+            }
+        } 
+#else
         private static void OnHierarchyGUI(int instanceID, Rect selectionRect) {
             foreach (WingmanContainer container in containers) {
                 container.OnHierarchyGUI();
             }
         }
+#endif
         
         [Shortcut("Wingman/Toggle Component", KeyCode.A)]
         private static void ToggleComponentShortcut() {

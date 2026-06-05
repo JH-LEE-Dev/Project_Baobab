@@ -13,9 +13,14 @@ public class HUD_Vehicle : MonoBehaviour
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private HUD_VehicleNavigation navigation;
     [SerializeField] private HUD_NavigationSubField subField;
+    [SerializeField] private HUD_VehicleMapSelectorButton okButton;
+    [SerializeField] private HUD_VehicleMapSelectorButton cancelButton;
+
+    [SerializeField] private string blinkMotionTag = "Blink";
+    [SerializeField] private string activeMotionTag = "Active";
+    [SerializeField] private string deactiveMotionTag = "Deactive";
 
     // //내부 의존성
-    [SerializeField] private string blinkMotionTag = "Blink";
     private IMapDataProvider mapDataProvider;
     private bool isBlinking = false;
 
@@ -35,7 +40,20 @@ public class HUD_Vehicle : MonoBehaviour
         }
 
         if (null != subField)
+        {
             subField.Initialize();
+            subField.subRegionSelectedEvent -= HandleSubRegionSelected;
+            subField.subRegionSelectedEvent += HandleSubRegionSelected;
+        }
+
+        if (null != okButton)
+        {
+            okButton.Initialize(HandleConfirm);
+            okButton.SetButtonActive(false, false);
+        }
+
+        if (null != cancelButton)
+            cancelButton.Initialize(Close);
 
         if (null != omp)
             omp.Initialize();
@@ -48,6 +66,23 @@ public class HUD_Vehicle : MonoBehaviour
 
     public void Close()
     {
+        isBlinking = false;
+
+        if (null != omp)
+        {
+            omp.Stop(blinkMotionTag);
+            omp.ResetAllMotions();
+        }
+
+        if (null != navigation)
+            navigation.ResetSelection();
+
+        if (null != subField)
+            subField.ResetSelection();
+
+        if (null != okButton)
+            okButton.SetButtonActive(false, false);
+
         gameObject.SetActive(false);
     }
 
@@ -83,7 +118,7 @@ public class HUD_Vehicle : MonoBehaviour
         bool isFound = false;
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
-            if (db.mapDatas[i].mapType == _mapType)
+            if (_mapType == db.mapDatas[i].mapType)
             {
                 targetInfo = db.mapDatas[i];
                 isFound = true;
@@ -92,7 +127,25 @@ public class HUD_Vehicle : MonoBehaviour
         }
 
         if (true == isFound && null != targetInfo.forestDatas)
-            subField.SetSubRegions(targetInfo.forestDatas);
+            subField.SetSubRegions(_mapType, targetInfo.forestDatas);
+
+        UpdateOkButtonState();
+    }
+
+    private void HandleSubRegionSelected()
+    {
+        UpdateOkButtonState();
+    }
+
+    private void UpdateOkButtonState()
+    {
+        if (null == okButton || null == navigation || null == subField)
+            return;
+
+        bool isRegionSelected = (MapType.None != navigation.GetSelectedMapType());
+        bool isSubRegionSelected = (ForestType.None != subField.GetSelectedForestType());
+
+        okButton.SetButtonActive(isRegionSelected && isSubRegionSelected, true);
     }
 
     private void HandleConfirm()
@@ -119,5 +172,28 @@ public class HUD_Vehicle : MonoBehaviour
     {
         if (null != navigation)
             navigation.regionSelectedEvent -= HandleRegionSelected;
+
+        if (null != subField)
+            subField.subRegionSelectedEvent -= HandleSubRegionSelected;
+    }
+
+    private void OnDisable()
+    {
+        isBlinking = false;
+
+        if (null != omp)
+        {
+            omp.Stop(blinkMotionTag);
+            omp.ResetAllMotions();
+        }
+
+        if (null != navigation)
+            navigation.ResetSelection();
+
+        if (null != subField)
+            subField.ResetSelection();
+
+        if (null != okButton)
+            okButton.SetButtonActive(false, false);
     }
 }

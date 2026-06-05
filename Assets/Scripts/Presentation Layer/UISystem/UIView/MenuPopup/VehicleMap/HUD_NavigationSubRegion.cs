@@ -163,8 +163,12 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             if (null != exitMotion)
                 motionPlayer.SettingEntryMotion(exitMotion, true, true);
+
             if (null != clickMotion)
                 motionPlayer.SettingEntryMotion(clickMotion, true, true);
+
+            UpdateColor();
+
             enterMotion = motionPlayer.Play(hoverTag, bReset: true);
         }
     }
@@ -180,8 +184,12 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             if (null != enterMotion)
                 motionPlayer.SettingEntryMotion(enterMotion, true, true);
+
             if (null != clickMotion)
                 motionPlayer.SettingEntryMotion(clickMotion, true, true);
+
+            UpdateColor();
+
             exitMotion = motionPlayer.Play(hoverOffTag, bReset: true);
         }
     }
@@ -198,8 +206,12 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             if (null != enterMotion)
                 motionPlayer.SettingEntryMotion(enterMotion, true, true);
+
             if (null != exitMotion)
                 motionPlayer.SettingEntryMotion(exitMotion, true, true);
+
+            UpdateColor();
+
             clickMotion = motionPlayer.Play(clickTag, bReset: true, _onComplete: OnClickAnimationComplete);
         }
     }
