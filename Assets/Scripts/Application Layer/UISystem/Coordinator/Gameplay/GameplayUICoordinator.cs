@@ -358,6 +358,7 @@ public class GameplayUICoordinator
 
     private void TeleportUIClosed()
     {
+        menuPopupUI.Hide();
         signalHub.Publish(new TeleportUIClosedSignal());
     }
 

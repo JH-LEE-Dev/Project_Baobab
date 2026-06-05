@@ -14,10 +14,13 @@ public class TownProductionManager : MonoBehaviour
     [SerializeField] private Transform offroadDriveEndPoint;
     private Transform characterRidePoint;
     private Coroutine characterRideCoroutine;
+    private SkyCameraProductionComponent skyCameraProductionComponent;
 
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
+
+        skyCameraProductionComponent = GetComponent<SkyCameraProductionComponent>();
     }
 
     public void Release()
