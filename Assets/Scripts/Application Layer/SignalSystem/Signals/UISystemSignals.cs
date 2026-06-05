@@ -25,3 +25,4 @@ public struct SleepSignal { }
 public struct SpendMoneySignal { }
 
 public struct TeleportUIClosedSignal { }
+public struct TeleportUIClosedWhileTeleport { }

@@ -1901,6 +1901,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownProductionManager
   offroadDriveEndPoint: {fileID: 7909126257907575581, guid: 7b37f70e1b67e4040843e9414c6e3527, type: 3}
+  rideDuration: 0.1
+  initialSpeedRatio: 0
 --- !u!114 &3943110840122909411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1916,6 +1918,7 @@ MonoBehaviour:
   virtualCamera: {fileID: 0}
   moveDuration: 1
   yOffset: 5
+  useCustomCurve: 0
   moveCurve:
     serializedVersion: 2
     m_Curve:
@@ -1940,6 +1943,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  moveEase: 9
 --- !u!1 &7829982200698710532
 GameObject:
   m_ObjectHideFlags: 0
