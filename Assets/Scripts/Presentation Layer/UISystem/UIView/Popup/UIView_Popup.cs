@@ -225,8 +225,6 @@ public class UIView_Popup : UIView
 
     public void PopupGoDown()
     {
-        uiInventory?.OnHide();
-
         if (null != omp)
         {
             omp.Play(mapTransitionMotionTag, bReset: true);
