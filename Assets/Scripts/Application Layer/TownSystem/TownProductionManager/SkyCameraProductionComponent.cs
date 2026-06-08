@@ -8,9 +8,9 @@ public class SkyCameraProductionComponent : MonoBehaviour
 {
     public event Action SkyProductionEndEvent;
     public event Action SkyProductionRollbackEndEvent;
-    
+
     // //외부 의존성
-    [SerializeField] private CinemachineCamera virtualCamera;
+    [SerializeField] private CinemachineCamera virtualCamera = null;
 
     // //내부 의존성
     [SerializeField] private float moveDuration = 2.0f;
@@ -19,23 +19,31 @@ public class SkyCameraProductionComponent : MonoBehaviour
     [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
     [SerializeField] private Ease moveEase = Ease.OutCubic;
 
+    [SerializeField] private Transform dummyTarget;
     private Tween cameraMoveTween;
     private Transform cachedFollowTarget;
     private Transform cachedLookAtTarget;
     private Vector3 cameraStartPos;
     private bool isMoved = false;
+    private Transform characterTransform;
 
     public void Initialize()
     {
-        if (virtualCamera == null)
+        if (dummyTarget == null)
         {
-            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+            GameObject dummyGo = new GameObject("SkyCameraDummyTarget");
+            dummyTarget = dummyGo.transform;
+            dummyTarget.SetParent(transform);
         }
     }
 
     private void OnDestroy()
     {
         KillCameraMoveTween();
+        if (dummyTarget != null)
+        {
+            Destroy(dummyTarget.gameObject);
+        }
     }
 
     private void PlayCameraMove()
@@ -56,28 +64,35 @@ public class SkyCameraProductionComponent : MonoBehaviour
 
         if (isMoved)
         {
-            // 1. 첫 연출 시작 시점의 위치와 타겟팅 백업
+            // 1. 첫 연출 시작 시점의 위치와 타겟팅 백업 및 더미 타겟으로 대체
             cameraStartPos = virtualCamera.transform.position;
             cachedFollowTarget = virtualCamera.Follow;
             cachedLookAtTarget = virtualCamera.LookAt;
 
-            virtualCamera.Follow = null;
-            virtualCamera.LookAt = null;
+            if (dummyTarget != null)
+            {
+                dummyTarget.position = characterTransform != null ? characterTransform.position : virtualCamera.transform.position;
+                virtualCamera.Follow = dummyTarget;
+                virtualCamera.LookAt = dummyTarget;
+            }
 
-            Vector3 targetPosition = cameraStartPos;
+            Vector3 targetPosition = dummyTarget.position;
             targetPosition.y += yOffset;
 
+            // 더미 타겟을 위로 이동시키면 카메라도 이를 쫓아 위로 올라갑니다.
             Sequence seq = DOTween.Sequence();
-            seq.Append(virtualCamera.transform.DOMove(targetPosition, moveDuration));
+            seq.Append(dummyTarget.DOMove(targetPosition, moveDuration));
             seq.AppendInterval(0.5f);
             seq.AppendCallback(OnSkyProductionEnd);
             cameraMoveTween = seq;
         }
         else
         {
-            // 2. 원래 위치로 복원 및 복원 완료 시 타겟팅 재연결
+            ResetCameraPos();
+
+            // 2. 원래 위치(캐릭터 위치)로 더미 타겟 복원 및 복원 완료 시 원래 타겟팅 재연결
             Sequence seq = DOTween.Sequence();
-            seq.Append(virtualCamera.transform.DOMove(cameraStartPos, moveDuration));
+            seq.Append(dummyTarget.DOMove(cameraStartPos, moveDuration));
             seq.AppendCallback(OnRollbackCameraComplete);
             seq.AppendInterval(1.0f);
             seq.AppendCallback(OnSkyProductionRollbackEnd);
@@ -126,33 +141,35 @@ public class SkyCameraProductionComponent : MonoBehaviour
         PlayCameraMove();
     }
 
-    public void ResetCameraPos(Transform _characterTransform)
+    public void SetCharacterTransform(Transform _characterTransform)
     {
-        if (virtualCamera == null)
-        {
-            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
-        }
+        characterTransform = _characterTransform;
+    }
 
-        if (virtualCamera == null || _characterTransform == null)
-        {
-            return;
-        }
-
+    private void ResetCameraPos()
+    {
         KillCameraMoveTween();
 
-        if (isMoved)
-        {
-            Vector3 targetPosition = _characterTransform.position;
-            targetPosition.y += yOffset;
-            virtualCamera.transform.position = targetPosition;
+        cachedFollowTarget = characterTransform;
+        cachedLookAtTarget = characterTransform;
 
-            cameraStartPos = _characterTransform.position;
-        }
-        else
+        if (dummyTarget != null && characterTransform != null)
         {
-            virtualCamera.Follow = _characterTransform;
-            virtualCamera.LookAt = _characterTransform;
-            virtualCamera.transform.position = _characterTransform.position;
+            // 더미 타겟을 캐릭터 머리 위에 셋업
+            Vector3 dummyPos = characterTransform.position;
+            dummyPos.y += yOffset-15f;
+            dummyTarget.position = dummyPos;
+
+            // 카메라도 즉시 더미 타겟 위치를 비추도록 설정
+            virtualCamera.Follow = dummyTarget;
+            virtualCamera.LookAt = dummyTarget;
+            virtualCamera.transform.position = dummyPos;
+            virtualCamera.ForceCameraPosition(dummyPos, virtualCamera.transform.rotation);
+        }
+
+        if (characterTransform != null)
+        {
+            cameraStartPos = characterTransform.position;
         }
     }
 }

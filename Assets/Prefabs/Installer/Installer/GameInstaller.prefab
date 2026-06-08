@@ -225,6 +225,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46528433298c00a49a403f4c4f735e97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveManager
+--- !u!1 &2067093901612362607
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7011329280386824138}
+  m_Layer: 0
+  m_Name: DummyTarget
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7011329280386824138
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2067093901612362607}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 413762451555364679}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2145486368507981922
 GameObject:
   m_ObjectHideFlags: 0
@@ -1885,7 +1916,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 7011329280386824138}
   m_Father: {fileID: 7167910169251179437}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &3679721381071029592
@@ -1901,8 +1933,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownProductionManager
   offroadDriveEndPoint: {fileID: 7909126257907575581, guid: 7b37f70e1b67e4040843e9414c6e3527, type: 3}
-  rideDuration: 0.1
-  initialSpeedRatio: 0
 --- !u!114 &3943110840122909411
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1916,8 +1946,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SkyCameraProductionComponent
   virtualCamera: {fileID: 0}
-  moveDuration: 1
-  yOffset: 5
+  moveDuration: 1.8
+  yOffset: 50
   useCustomCurve: 0
   moveCurve:
     serializedVersion: 2
@@ -1943,7 +1973,8 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  moveEase: 9
+  moveEase: 10
+  dummyTarget: {fileID: 7011329280386824138}
 --- !u!1 &7829982200698710532
 GameObject:
   m_ObjectHideFlags: 0
