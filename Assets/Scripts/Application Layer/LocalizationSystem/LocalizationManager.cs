@@ -31,6 +31,8 @@ public class LocalizationManager : MonoBehaviour
         stringBuilder = new StringBuilder(128);
 
         LoadMappingData(localizationMapping);
+
+        //SetLanguage(Language.EN);
     }
 
     public void LoadMappingData(LocalizationMapping _mappingData)

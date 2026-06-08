@@ -97,27 +97,15 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         owner = _owner;
     }
 
-    // 현재 노드가 어떤 스킬 타입인지 반환한다.
-    public SkillType GetSkillType()
-    {
-        return skillType;
-    }
-
-    // 이 노드가 다음에 요청할 레벨을 반환한다.
-    public int GetNextLevel()
-    {
-        return currentLevel + 1;
-    }
-
     // JSON에서 읽은 노드 정의를 현재 프리팹 인스턴스에 반영한다.
-    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, Sprite _pictureSprite, float _gridCellSize)
+    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, string _displayName, string _description, Sprite _pictureSprite, float _gridCellSize)
     {
         if (_definition == null)
             return;
 
         skillType = _skillType;
-        displayName = _definition.displayName;
-        description = _definition.description;
+        displayName = _displayName;
+        description = _description;
         currentLevel = 0;
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());
@@ -125,6 +113,12 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         SetPicture(_pictureSprite);
         ApplyLevelProgressBar(0, 0);
         ApplyAnchoredPosition(_gridCellSize);
+    }
+
+    public void ApplyLocalizedText(string _displayName, string _description)
+    {
+        displayName = _displayName;
+        description = _description;
     }
 
     // 노드의 JSON 기반 그리드 좌표를 실제 UI 좌표로 변환해 적용한다.
@@ -215,24 +209,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void PlayUnlockAppearMotion()
     {
         PlayClickMotion();
-    }
-
-    // 툴팁 제목 줄에 표시할 이름과 현재 레벨 문자열을 만든다.
-    public string GetToolTipTitleAndLevelText()
-    {
-        return $"{displayName}\n레벨 : {currentLevel}";
-    }
-
-    // 툴팁 설명 문자열을 반환한다.
-    public string GetToolTipDescriptionText()
-    {
-        return description;
-    }
-
-    // 비용 정보는 상위 시스템이 소유하므로 UI 노드는 직접 표시하지 않는다.
-    public string GetToolTipCostText()
-    {
-        return string.Empty;
     }
 
     // 마우스가 노드 위에 올라오면 상위 컴포넌트에 툴팁 표시를 요청한다.

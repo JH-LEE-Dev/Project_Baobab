@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 public class UI_TentAbilityComponent : MonoBehaviour
 {
+    private const int AbilityLocalizationJsonId = 2;
     private const float DefaultZoom = 1f;
     private const float MinZoom = 0.2f;
     private const float MaxZoom = 1f;
@@ -18,13 +19,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const string ToolTipCostAvailableColor = "54D86A";
     private const string ToolTipCostUnavailableColor = "B94A42";
     private const string ToolTipCostMaxLevelColor = "58D7F2";
-    private const string ToolTipMaxLevelText = "최대 레벨";
     private static readonly Color CanApplyNodeColor = new Color32(84, 216, 106, 255);
     private static readonly Color CompletedColor = new Color32(88, 215, 242, 255);
     private static readonly Color CannotApplyNodeColor = new Color32(185, 74, 66, 255);
     private static readonly Color DefaultLineColor = new Color32(255, 255, 255, 255);
 
     private ISkillSystemProvider skillSystemProvider;
+    private LocalizationManager localizationManager;
     private Canvas rootCanvas;
     private bool isDragging;
     private bool hasZoomFocus;
@@ -141,9 +142,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
 #region Initializing
 
-    public void Initialize(ISkillSystemProvider _skillSystemProvider)
+    public void Initialize(ISkillSystemProvider _skillSystemProvider, LocalizationManager _localizationManager = null)
     {
         skillSystemProvider = _skillSystemProvider;
+        SetLocalizationManager(_localizationManager);
         rootCanvas = GetComponentInParent<Canvas>();
         EnsureAbilityCanvasGroup();
         EnsureCircleRevealMask();
@@ -156,8 +158,31 @@ public class UI_TentAbilityComponent : MonoBehaviour
         PrewarmNodePool();
         EnsureToolTipInstance();
         EnsureSelectionCursorInstance();
+        RefreshLocalizedNodeTexts();
         RefreshAbilityHUDImmediately();
         Close();
+    }
+
+    private void SetLocalizationManager(LocalizationManager _localizationManager)
+    {
+        if (localizationManager == _localizationManager)
+            return;
+
+        if (localizationManager != null)
+            localizationManager.OnLanguageChanged -= HandleLanguageChanged;
+
+        localizationManager = _localizationManager;
+
+        if (localizationManager != null)
+            localizationManager.OnLanguageChanged += HandleLanguageChanged;
+    }
+
+    private void HandleLanguageChanged()
+    {
+        RefreshLocalizedNodeTexts();
+
+        if (currentToolTipNode != null)
+            ShowToolTip(currentToolTipNode);
     }
 
 
@@ -299,11 +324,58 @@ public class UI_TentAbilityComponent : MonoBehaviour
         AbilityNode node = GetNodeFromPool();
         node.gameObject.name = $"AbilityNode_{_skillType}";
         node.BindOwner(this);
-        node.ApplyDefinition(nodeDefinition, _skillType, ResolvePicture(_skillType), gridCellSize);
+        node.ApplyDefinition(
+            nodeDefinition,
+            _skillType,
+            ResolveLocalizedEntryText(nodeDefinition.nameLocId),
+            ResolveLocalizedEntryText(nodeDefinition.descriptionLocId),
+            ResolvePicture(_skillType),
+            gridCellSize);
         spawnedNodes.Add(node);
         spawnedNodeMap[_skillType] = node;
 
         return node;
+    }
+
+    private void RefreshLocalizedNodeTexts()
+    {
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node == null)
+                continue;
+
+            if (nodeDefinitionMap.TryGetValue(node.SkillType, out AbilityNodeDefinitionJson nodeDefinition) == false)
+                continue;
+
+            node.ApplyLocalizedText(
+                ResolveLocalizedEntryText(nodeDefinition.nameLocId),
+                ResolveLocalizedEntryText(nodeDefinition.descriptionLocId));
+        }
+    }
+
+    private string ResolveLocalizedEntryText(int _entryId)
+    {
+        if (localizationManager != null && _entryId > 0)
+        {
+            string localizedText = localizationManager.GetText(AbilityLocalizationJsonId, _entryId);
+            if (string.IsNullOrEmpty(localizedText) == false)
+                return localizedText;
+        }
+
+        return string.Empty;
+    }
+
+    private string ResolveLocalizedText(int _compositeKey)
+    {
+        if (localizationManager != null)
+        {
+            string localizedText = localizationManager.GetText(_compositeKey);
+            if (string.IsNullOrEmpty(localizedText) == false)
+                return localizedText;
+        }
+
+        return string.Empty;
     }
 
     // 특성창 오픈 순간의 Instantiate 부하를 줄이기 위해 노드 프리팹을 미리 비활성 상태로 준비한다.
@@ -826,7 +898,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         string costText = BuildToolTipCostText(skillInfo, applyReason, out MoneyType costMoneyType);
         toolTipInstance.SetContent(
             BuildToolTipTitleAndLevelText(_node, skillInfo),
-            _node.GetToolTipDescriptionText(),
+            _node.Description,
             costText,
             costMoneyType);
 
@@ -882,19 +954,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private string BuildToolTipTitleAndLevelText(AbilityNode _node, SkillInfo _skillInfo)
     {
         int maxLevel = Mathf.Max(_skillInfo.maxLevel, 0);
-        return $"{_node.DisplayName}\n레벨 : {_skillInfo.currentLevel} / {maxLevel}";
-    }
-
-    // 상위 스킬 정보 기준으로 다음 강화 비용 문자열을 만든다.
-    private string BuildToolTipCostText(SkillInfo _skillInfo)
-    {
-        if (_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel)
-            return "최대 레벨";
-
-        if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
-            return "무료";
-
-        return $"{AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost)} {_skillInfo.moneyType}";
+        return $"{_node.DisplayName}\n{ResolveLocalizedText(LocKeys.AbilityUI.commonLevel)} : {_skillInfo.currentLevel} / {maxLevel}";
     }
 
     private string BuildToolTipCostText(SkillInfo _skillInfo, AbilityLevelUpRejectReason _applyReason, out MoneyType _costMoneyType)
@@ -902,10 +962,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
         _costMoneyType = MoneyType.None;
 
         if ((_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel) || _applyReason == AbilityLevelUpRejectReason.MaxLevel)
-            return BuildToolTipColorText($"<WAVE>{ToolTipMaxLevelText}</WAVE>", ToolTipCostMaxLevelColor);
+            return BuildToolTipColorText($"<WAVE>{ResolveLocalizedText(LocKeys.AbilityUI.commonMaxLevel)}</WAVE>", ToolTipCostMaxLevelColor);
 
         if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
-            return BuildToolTipCostText(_skillInfo);
+            return ResolveLocalizedText(LocKeys.AbilityUI.commonFree);
 
         _costMoneyType = _skillInfo.moneyType;
         string costText = AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost);
@@ -1516,6 +1576,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         PrestigeHUDState _state = GetPrestigeHUDState();
         abilityHUD.SetState(_state.Experience, _state.ExperienceLimit, _state.PrestigeLevel);
+    }
+
+    private void OnDestroy()
+    {
+        SetLocalizationManager(null);
     }
 
     private void PlayAbilityHUDEffect(PrestigeHUDState _previousState, PrestigeHUDState _currentState)
