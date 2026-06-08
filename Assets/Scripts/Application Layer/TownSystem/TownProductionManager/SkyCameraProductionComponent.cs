@@ -90,9 +90,17 @@ public class SkyCameraProductionComponent : MonoBehaviour
         {
             ResetCameraPos();
 
-            // 2. 원래 위치(캐릭터 위치)로 더미 타겟 복원 및 복원 완료 시 원래 타겟팅 재연결
+            // yOffset(50)에서 40을 뺀 만큼만 내려감 (최종 높이는 캐릭터 기준 +10)
+            // 즉, 내려가는 실제 거리는 40f
+            float rollbackDistance = 40.0f;
+            float rollbackDuration = moveDuration * (rollbackDistance / yOffset);
+
+            // 최종 도착지 = 캐릭터 위치 + (yOffset - 40)
+            Vector3 targetRollbackPos = cameraStartPos;
+
+            // 원래 위치(캐릭터 위치 + 오프셋 잔여분)로 더미 타겟 복원 및 복원 완료 시 원래 타겟팅 재연결
             Sequence seq = DOTween.Sequence();
-            seq.Append(dummyTarget.DOMove(cameraStartPos, moveDuration));
+            seq.Append(dummyTarget.DOMove(targetRollbackPos, rollbackDuration));
             seq.AppendCallback(OnRollbackCameraComplete);
             seq.AppendInterval(1.0f);
             seq.AppendCallback(OnSkyProductionRollbackEnd);
