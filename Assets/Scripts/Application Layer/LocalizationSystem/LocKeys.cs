@@ -4,6 +4,7 @@ public static class LocKeys
     public static class MenuPopupUI
     {
         public const int mapName1 = 2097153;
+        public const int mapName2 = 2097154;
     }
 
 }
