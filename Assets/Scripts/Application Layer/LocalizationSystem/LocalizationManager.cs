@@ -3,24 +3,34 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 
-public class LocalizationManager
+public class LocalizationManager : MonoBehaviour
 {
     // //내부 의존성
     private Dictionary<int, string> masterTable;
-    private Dictionary<int, int> enumToKeyMap;
+    private Dictionary<long, int> enumToKeyMap;
     private List<string> loadedJsons;
     private StringBuilder stringBuilder;
     private Language currentLanguage = Language.KR;
 
     public event Action OnLanguageChanged;
 
+    [SerializeField] private LocalizationMapping localizationMapping;
+
+    // //정적 내부 캐시 클래스
+    private static class EnumTypeCache<T> where T : struct, Enum
+    {
+        public static readonly int TypeHash = typeof(T).Name.GetHashCode();
+    }
+
     // //퍼블릭 초기화 및 제어 메서드
     public void Initialize(int _initialCapacity = 512)
     {
         masterTable = new Dictionary<int, string>(_initialCapacity);
-        enumToKeyMap = new Dictionary<int, int>(128);
+        enumToKeyMap = new Dictionary<long, int>(128);
         loadedJsons = new List<string>(4);
         stringBuilder = new StringBuilder(128);
+
+        LoadMappingData(localizationMapping);
     }
 
     public void LoadMappingData(LocalizationMapping _mappingData)
@@ -31,15 +41,41 @@ public class LocalizationManager
         for (int i = 0; i < _mappingData.mappings.Count; i++)
         {
             var entry = _mappingData.mappings[i];
-            enumToKeyMap[entry.enumIntValue] = entry.compositeKey;
+            if (string.IsNullOrEmpty(entry.enumTypeName)) continue;
+
+            int typeHash = entry.enumTypeName.GetHashCode();
+            long uniqueKey = ((long)typeHash << 32) | (uint)entry.enumIntValue;
+            enumToKeyMap[uniqueKey] = entry.compositeKey;
         }
     }
 
     public string GetText<T>(T _enumValue) where T : struct, Enum
     {
-        int enumInt = System.Runtime.CompilerServices.Unsafe.As<T, int>(ref _enumValue);
+        int enumInt = 0;
+        int size = System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
 
-        if (enumToKeyMap.TryGetValue(enumInt, out int compositeKey))
+        if (size == 4)
+        {
+            enumInt = System.Runtime.CompilerServices.Unsafe.As<T, int>(ref _enumValue);
+        }
+        else if (size == 1)
+        {
+            enumInt = System.Runtime.CompilerServices.Unsafe.As<T, byte>(ref _enumValue);
+        }
+        else if (size == 2)
+        {
+            enumInt = System.Runtime.CompilerServices.Unsafe.As<T, short>(ref _enumValue);
+        }
+        else
+        {
+            long longVal = System.Runtime.CompilerServices.Unsafe.As<T, long>(ref _enumValue);
+            enumInt = (int)longVal;
+        }
+
+        int typeHash = EnumTypeCache<T>.TypeHash;
+        long uniqueKey = ((long)typeHash << 32) | (uint)enumInt;
+
+        if (enumToKeyMap.TryGetValue(uniqueKey, out int compositeKey))
         {
             return GetText(compositeKey);
         }
@@ -49,7 +85,7 @@ public class LocalizationManager
     public void LoadLocalizationJson(string _jsonText)
     {
         if (string.IsNullOrEmpty(_jsonText)) return;
-        
+
         if (!loadedJsons.Contains(_jsonText))
         {
             loadedJsons.Add(_jsonText);
@@ -69,7 +105,7 @@ public class LocalizationManager
         {
             var entry = data.entries[i];
             if (entry.id == 0) continue;
-            
+
             int compositeKey = GenerateKey(jsonId, entry.id);
             masterTable[compositeKey] = (currentLanguage == Language.KR) ? entry.kr : entry.en;
         }

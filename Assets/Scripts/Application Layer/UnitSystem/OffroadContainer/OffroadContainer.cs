@@ -663,6 +663,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private void UpdateInteractState()
     {
         bool currentState = bCollisionEnabled && bCanReach && bPhysicalOverlapped;
+        
         if (currentState != bLastInteractState)
         {
             bLastInteractState = currentState;

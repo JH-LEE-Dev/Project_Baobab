@@ -52,7 +52,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         inputManager = GetComponent<InputManager>();
         saveManager = GetComponent<SaveManager>();
 
-        localizationManager = new LocalizationManager();
+        localizationManager = GetComponentInChildren<LocalizationManager>();
 
         if (localizationManager != null)
         {
