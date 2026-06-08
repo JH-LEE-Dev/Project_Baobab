@@ -85,16 +85,24 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         mapDataProvider = _mapDataProvider;
         localizationManager = _localizeManager;
 
+        if (null != localizationManager)
+        {
+            if (null != localizationMapping)
+            {
+                localizationManager.LoadMappingData(localizationMapping);
+            }
+        }
+
         isYPositionCached = false;
         onRegionDisappearCallback = OnRegionDisappearComplete;
         onUpButtonPressStateChangedCallback = OnUpButtonPressStateChanged;
         onDownButtonPressStateChangedCallback = OnDownButtonPressStateChanged;
         onRegionSelectedCallback = HandleRegionSelected;
 
-        UpdateMapNameText(MapType.None);
-
         if (null != mapNameText)
             defaultMapNameText = mapNameText.text;
+
+        UpdateMapNameText(MapType.None);
 
         SetupRegionsFromData();
 
@@ -545,7 +553,12 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         if (null != localizationManager)
         {
             string _localizedName = localizationManager.GetText(_mapType);
-            Debug.Log($"MapType: {_mapType}, Localized Name: {_localizedName}");
+            
+            // 디버깅을 위한 임시 로그 추가
+            int _enumInt = System.Runtime.CompilerServices.Unsafe.As<MapType, int>(ref _mapType);
+            string _directLookup = localizationManager.GetText(2097153);
+            Debug.Log($"[UpdateMapNameText Debug] MapType: {_mapType} (Int: {_enumInt}), Localized Name: '{_localizedName}', Direct(2097153): '{_directLookup}'");
+
             if (false == string.IsNullOrEmpty(_localizedName))
             {
                 mapNameText.text = _localizedName;

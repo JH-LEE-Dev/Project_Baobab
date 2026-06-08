@@ -45,12 +45,14 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private MotionEntry hoverEntry;
     private MotionEntry clickEntry;
     private MotionEntry unHoverEntry;
+    private MotionEntry appearEntry;
     private bool isHovered = false;
     private bool isClicked = false;
     private bool isLocked = false;
     private bool isSelected = false;
     private Tweener colorTween;
     private Tween appearDelayTween;
+    private Tweener scaleTween;
 
     // 캐싱된 상수 및 리터럴 값
     private const bool forceReset = true;
@@ -102,11 +104,13 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
             omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
             omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
+            omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
         }
 
         hoverEntry = null;
         clickEntry = null;
         unHoverEntry = null;
+        appearEntry = null;
     }
 
     public void SetSelect(bool _isSelect)
@@ -135,7 +139,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
             {
                 transform.localScale = Vector3.one;
-                omp.Play(appearTag, bReset: forceReset);
+                appearEntry = omp.Play(appearTag, bReset: forceReset);
             }).SetEase(Ease.Linear);
         }
     }
@@ -144,6 +148,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     {
         if (null != appearDelayTween && appearDelayTween.IsActive())
             appearDelayTween.Kill();
+
+        if (null != scaleTween && scaleTween.IsActive())
+            scaleTween.Kill();
 
         transform.localScale = Vector3.zero;
 
@@ -158,10 +165,19 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         if (null != omp)
         {
+            if (null != appearEntry)
+            {
+                omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
+                appearEntry = null;
+            }
+
             if (omp.IsPlaying(appearTag))
                 omp.Stop(appearTag);
 
-            transform.DOScale(Vector3.zero, disappearDuration)
+            if (null != scaleTween && scaleTween.IsActive())
+                scaleTween.Kill();
+
+            scaleTween = transform.DOScale(Vector3.zero, disappearDuration)
                      .SetDelay(_delay)
                      .SetEase(disappearEase)
                      .OnComplete(_onComplete);
@@ -280,6 +296,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         if (null != omp)
         {
+            if (null != appearEntry)
+            {
+                omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
+                appearEntry = null;
+            }
+
             if (null != hoverEntry)
                 omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
             if (null != unHoverEntry)
@@ -299,6 +321,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         if (null != omp)
         {
+            if (null != appearEntry)
+            {
+                omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
+                appearEntry = null;
+            }
+
             if (null != unHoverEntry)
                 omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
             if (null != clickEntry)
@@ -328,6 +356,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         if (null != omp)
         {
+            if (null != appearEntry)
+            {
+                omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
+                appearEntry = null;
+            }
+
             if (null != hoverEntry)
                 omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
             if (null != clickEntry)
@@ -351,4 +385,19 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void OnDisable()
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != scaleTween && scaleTween.IsActive())
+            scaleTween.Kill();
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        isClicked = false;
+        isHovered = false;
+    }
 }

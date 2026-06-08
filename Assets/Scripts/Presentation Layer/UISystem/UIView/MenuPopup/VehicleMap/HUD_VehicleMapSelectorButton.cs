@@ -39,6 +39,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     private MotionEntry enterAnim;
     private MotionEntry exitAnim;
     private MotionEntry clickedAnim;
+    private MotionEntry appearAnim;
     private Tween appearDelayTween;
     private Tweener colorTween;
     private UnityEngine.Events.UnityAction unClickedCallback;
@@ -124,7 +125,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
             appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
             {
                 transform.localScale = Vector3.one;
-                motionPlayer.Play(appearMotionKey, bReset: forceReset);
+                appearAnim = motionPlayer.Play(appearMotionKey, bReset: forceReset);
             }).SetEase(Ease.Linear);
         }
     }
@@ -146,7 +147,14 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         isClicked = false;
 
         if (null != motionPlayer)
+        {
+            if (null != appearAnim)
+            {
+                motionPlayer.SettingEntryMotion(appearAnim, forceReset, forceReset);
+                appearAnim = null;
+            }
             motionPlayer.ResetAllMotions();
+        }
     }
 
 
@@ -160,6 +168,12 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
             return;
 
         onHoverEnterEvent?.Invoke(rect, rect.rect.size);
+
+        if (null != appearAnim)
+        {
+            motionPlayer.SettingEntryMotion(appearAnim, forceReset, forceReset);
+            appearAnim = null;
+        }
 
         motionPlayer.SettingEntryMotion(clickedAnim, forceReset, forceReset);
         motionPlayer.SettingEntryMotion(exitAnim, forceReset, forceReset);
@@ -177,6 +191,12 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
         onHoverExitEvent?.Invoke();
 
+        if (null != appearAnim)
+        {
+            motionPlayer.SettingEntryMotion(appearAnim, forceReset, forceReset);
+            appearAnim = null;
+        }
+
         motionPlayer.SettingEntryMotion(enterAnim, forceReset, forceReset);
         motionPlayer.SettingEntryMotion(clickedAnim, forceReset, forceReset);
 
@@ -188,6 +208,12 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     {
         if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
             return;
+
+        if (null != appearAnim)
+        {
+            motionPlayer.SettingEntryMotion(appearAnim, forceReset, forceReset);
+            appearAnim = null;
+        }
 
         motionPlayer.SettingEntryMotion(enterAnim, forceReset, forceReset);
         motionPlayer.SettingEntryMotion(exitAnim, forceReset, forceReset);

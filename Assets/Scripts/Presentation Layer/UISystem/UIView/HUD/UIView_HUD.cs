@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using PresentationLayer.UISystem.UIView.HUD.Equipment;
 using  PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator;
+using PresentationLayer.DOTweenAnimationSystem;
 
 public class UIView_HUD : UIView
 {
@@ -10,6 +11,8 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
+    [SerializeField] private ObjectMotionPlayer omp;
+    [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudSteminaBar;
@@ -25,6 +28,9 @@ public class UIView_HUD : UIView
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
+
+        if (null != omp)
+            omp.Initialize();
 
         currentMapType = MapType.Town;
 
@@ -188,11 +194,24 @@ public class UIView_HUD : UIView
 
     public void HUDGoDown()
     {
-        
+        hudDirIndicator?.OnHide();
+
+        if (null != omp)
+        {
+            omp.Play(mapTransitionMotionTag, bReset: true);
+        }
     }
 
     public void HUDGoUp()
     {
-        
+        if (null != omp)
+        {
+            omp.PlayBackward(mapTransitionMotionTag, bReset: true);
+        }
+
+        if (MapType.Town != currentMapType)
+        {
+            hudDirIndicator?.OnShow();
+        }
     }
 }

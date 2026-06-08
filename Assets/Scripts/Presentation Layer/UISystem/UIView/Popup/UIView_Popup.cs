@@ -1,4 +1,5 @@
 using System;
+using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
 
 /// <summary>
@@ -15,6 +16,8 @@ public class UIView_Popup : UIView
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiInventoryPrefab;
+    [SerializeField] private ObjectMotionPlayer omp;
+    [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
     // //내부 의존성
     private IInventory inventory;
@@ -32,6 +35,9 @@ public class UIView_Popup : UIView
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
+
+        if (null != omp)
+            omp.Initialize();
 
         InitInventory();
         BindEvents();
@@ -109,7 +115,7 @@ public class UIView_Popup : UIView
         if (null == uiInventoryPrefab)
             return;
 
-        GameObject _invObj = Instantiate(uiInventoryPrefab, transform.parent);
+        GameObject _invObj = Instantiate(uiInventoryPrefab, uiRoot);
         uiInventory = _invObj.GetComponent<UI_Inventory>();
 
         if (null == uiInventory)
@@ -219,11 +225,19 @@ public class UIView_Popup : UIView
 
     public void PopupGoDown()
     {
-        
+        uiInventory?.OnHide();
+
+        if (null != omp)
+        {
+            omp.Play(mapTransitionMotionTag, bReset: true);
+        }
     }
 
     public void PopupGoUp()
     {
-        
+        if (null != omp)
+        {
+            omp.PlayBackward(mapTransitionMotionTag, bReset: true);
+        }
     }
 }
