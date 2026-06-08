@@ -1200,6 +1200,9 @@ MonoBehaviour:
   downButton: {fileID: 7927836566111108331}
   repeatDelay: 0.4
   repeatInterval: 0.1
+  localizationMapping: {fileID: 0}
+  mapNameOmp: {fileID: 0}
+  mapNameChangeMotionTag: Change
 --- !u!1 &7986957727270662319
 GameObject:
   m_ObjectHideFlags: 0

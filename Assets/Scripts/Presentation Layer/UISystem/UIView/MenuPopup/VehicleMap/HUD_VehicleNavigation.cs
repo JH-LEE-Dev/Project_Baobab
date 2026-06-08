@@ -5,6 +5,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
 using TMPro;
+using PresentationLayer.DOTweenAnimationSystem;
 
 public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IScrollHandler
 {
@@ -18,6 +19,8 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     [SerializeField] private RectTransform dragAreaRect;
     [SerializeField] private RectTransform containerRect;
     [SerializeField] private TMP_Text mapNameText;
+    [SerializeField] private ObjectMotionPlayer mapNameOmp;
+    [SerializeField] private string mapNameChangeMotionTag = "Change";
 
     [Header("Scroll & Drag Settings")]
     [SerializeField] private float scrollSensitivity = 1f;
@@ -35,7 +38,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     [SerializeField] private float repeatDelay = 0.4f;
     [SerializeField] private float repeatInterval = 0.1f;
     [Header("Localization")]
-    [SerializeField] private LocalizationMapping localizationMapping;
+    private LocalizationMapping localizationMapping;
 
     // 내부 의존성
     private readonly List<HUD_NavigationRegion> spawnedRegions = new List<HUD_NavigationRegion>(8);
@@ -92,6 +95,9 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
                 localizationManager.LoadMappingData(localizationMapping);
             }
         }
+
+        if (null != mapNameOmp)
+            mapNameOmp.Initialize();
 
         isYPositionCached = false;
         onRegionDisappearCallback = OnRegionDisappearComplete;
@@ -219,6 +225,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     public void SetSelectedMapTypeWithoutAnimation(MapType _mapType)
     {
+        Debug.Log($"[HUD_VehicleNavigation Debug] SetSelectedMapTypeWithoutAnimation called with mapType: {_mapType}, mapNameOmpIsNull: {mapNameOmp == null}");
         currentSelectedMapType = _mapType;
         UpdateMapNameText(_mapType);
 
@@ -227,11 +234,13 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
                 spawnedRegions[i].SetSelect(spawnedRegions[i].GetMapType() == _mapType);
     }
 
-    public void ResetSelection()
+    public void ResetSelection(bool _updateText = true)
     {
         isTransitioning = false;
         currentSelectedMapType = MapType.None;
-        UpdateMapNameText(MapType.None);
+
+        if (true == _updateText)
+            UpdateMapNameText(MapType.None);
 
         for (int i = 0; i < spawnedRegions.Count; i++)
             if (null != spawnedRegions[i])
@@ -547,29 +556,43 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     private void UpdateMapNameText(MapType _mapType)
     {
+        Debug.Log($"[HUD_VehicleNavigation Debug] UpdateMapNameText called with mapType: {_mapType}, currentText: '{mapNameText?.text}'");
         if (null == mapNameText)
             return;
+
+        string _newText = string.Empty;
 
         if (null != localizationManager)
         {
             string _localizedName = localizationManager.GetText(_mapType);
-            
-            // 디버깅을 위한 임시 로그 추가
-            int _enumInt = System.Runtime.CompilerServices.Unsafe.As<MapType, int>(ref _mapType);
-            string _directLookup = localizationManager.GetText(2097153);
-            Debug.Log($"[UpdateMapNameText Debug] MapType: {_mapType} (Int: {_enumInt}), Localized Name: '{_localizedName}', Direct(2097153): '{_directLookup}'");
-
             if (false == string.IsNullOrEmpty(_localizedName))
             {
-                mapNameText.text = _localizedName;
-                return;
+                _newText = _localizedName;
             }
         }
 
-        if (MapType.None == _mapType)
-            mapNameText.text = defaultMapNameText;
-        else
-            mapNameText.text = GetMapTypeString(_mapType);
+        if (true == string.IsNullOrEmpty(_newText))
+        {
+            if (MapType.None == _mapType)
+                _newText = defaultMapNameText;
+            else
+                _newText = GetMapTypeString(_mapType);
+        }
+
+        if (mapNameText.text != _newText)
+        {
+            mapNameText.text = _newText;
+
+            if (null != mapNameOmp)
+            {
+                mapNameOmp.ResetAllMotions();
+                DOVirtual.DelayedCall(0.05f, () =>
+                {
+                    if (null != mapNameOmp)
+                        mapNameOmp.Play(mapNameChangeMotionTag, bReset: true);
+                }).SetEase(Ease.Linear);
+            }
+        }
     }
 
     private string GetMapTypeString(MapType _type) => _type switch
