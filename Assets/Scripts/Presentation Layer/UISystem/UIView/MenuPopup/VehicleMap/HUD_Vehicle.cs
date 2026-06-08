@@ -6,39 +6,73 @@ using PresentationLayer.DOTweenAnimationSystem;
 
 public class HUD_Vehicle : MonoBehaviour
 {
-    // //이벤트
-    public event Action<MapType, ForestType> MapSelectedEvent;
+    // 이벤트
+    public event Action<MapType, ForestType> mapSelectedEvent;
 
-    // //외부 의존성
+    // 외부 의존성
     [SerializeField] private Image lightImage;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private HUD_VehicleNavigation navigation;
     [SerializeField] private HUD_NavigationSubField subField;
-    [SerializeField] private HUD_VehicleMapSelectorButton okButton;
+    [SerializeField] private HUD_VehicleMapSelectorButton prevButton;
+    [SerializeField] private HUD_VehicleMapSelectorButton homeButton;
     [SerializeField] private HUD_VehicleMapSelectorButton cancelButton;
 
-    [SerializeField] private string blinkMotionTag = "Blink";
     [SerializeField] private string backgroundMotionTag = "Background";
     [SerializeField] private string controlBoardMotionTag = "ControlBoard";
-    [SerializeField] private float cancelButtonAppearDelay = 0.4f;
+    [SerializeField] private string navTopMotionTag = "OnNavTop";
+    [SerializeField] private float selectorButtonAppearDelay = 0.2f;
 
-    // //내부 의존성
+    [Header("Blink Config")]
+    [SerializeField] private float blinkDuration = 0.5f;
+    [SerializeField] private Ease blinkEase = Ease.InOutSine;
+
+    [Header("Appear Delays")]
+    [SerializeField] private float prevButtonAppearDelay = 0.1f;
+    [SerializeField] private float homeButtonAppearDelay = 0.2f;
+
+    // 내부 의존성
     private IMapDataProvider mapDataProvider;
     private Tweener blinkTween;
+    private TweenCallback onDisappearCompleteCallback;
+    private UnityEngine.Events.UnityAction onNavTopCompleteCallback;
+    private UnityEngine.Events.UnityAction onControlPanelCompleteCallback;
+    private UnityEngine.Events.UnityAction handleCloseCallback;
+    private System.Collections.Generic.List<ForestEnvironmentInfo> pendingForestDatas;
+    private MapType pendingMapType = MapType.None;
     private bool isBlinking = false;
 
+    // 캐싱된 상수 및 리터럴 값
+    private const float transparentAlpha = 0f;
+    private const float blinkTargetAlpha = 1f;
+    private const bool forceReset = true;
 
-    // //퍼블릭 초기화 및 제어 메서드
+    private Action onPrevCallback;
+    private Action onHomeCallback;
+    private Action handlePrevClickedCallback;
+    private Action handleHomeClickedCallback;
+    private MapType lastSelectedMapType = MapType.None;
 
-    public void Initialize(IMapDataProvider _mapDataProvider, Action _onClose, LocalizationManager _localizeManager)
+
+    // 퍼블릭 초기화 및 제어 메서드
+
+    public void Initialize(IMapDataProvider _mapDataProvider, Action _onPrev, Action _onHome, Action _onClose, LocalizationManager _localizeManager)
     {
         isBlinking = false;
+        onDisappearCompleteCallback = OnDisappearComplete;
+        onNavTopCompleteCallback = OnNavTopComplete;
+        onControlPanelCompleteCallback = OnControlPanelComplete;
+        handleCloseCallback = HandleClose;
+        onPrevCallback = _onPrev;
+        onHomeCallback = _onHome;
+        handlePrevClickedCallback = HandlePrevClicked;
+        handleHomeClickedCallback = HandleHomeClicked;
 
         if (null != blinkTween && blinkTween.IsActive())
             blinkTween.Kill();
 
         if (null != lightImage)
-            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, transparentAlpha);
 
         mapDataProvider = _mapDataProvider;
 
@@ -56,11 +90,11 @@ public class HUD_Vehicle : MonoBehaviour
             subField.subRegionSelectedEvent += HandleSubRegionSelected;
         }
 
-        if (null != okButton)
-        {
-            okButton.Initialize(HandleConfirm);
-            okButton.SetButtonActive(false, false);
-        }
+        if (null != prevButton)
+            prevButton.Initialize(handlePrevClickedCallback);
+
+        if (null != homeButton)
+            homeButton.Initialize(handleHomeClickedCallback);
 
         if (null != cancelButton)
             cancelButton.Initialize(_onClose);
@@ -68,24 +102,43 @@ public class HUD_Vehicle : MonoBehaviour
         if (null != omp)
             omp.Initialize();
 
-        Close();
+        Close(true);
     }
 
     public void Open()
     {
         gameObject.SetActive(true);
 
-        omp.Play(backgroundMotionTag, bReset: true);
-        omp.Play(controlBoardMotionTag, bReset: true);
-
-        if (null != navigation)
-            navigation.PlayAppearAnimations();
-
-        if (null != cancelButton)
-            cancelButton.PlayAppearAnimation(cancelButtonAppearDelay);
+        omp.Play(navTopMotionTag, bReset: forceReset, _onComplete: onNavTopCompleteCallback);
+        omp.Play(backgroundMotionTag, bReset: forceReset);
+        omp.Play(controlBoardMotionTag, bReset: forceReset, _onComplete: onControlPanelCompleteCallback);
     }
 
-    public void Close()
+    private void OnNavTopComplete()
+    {
+        if (MapType.None != lastSelectedMapType)
+        {
+            RestoreToSelectedRegion(lastSelectedMapType);
+
+            if (null != cancelButton)
+                cancelButton.PlayAppearAnimation(homeButtonAppearDelay + 0.1f);
+        }
+        else
+        {
+            if (null != navigation)
+                navigation.PlayAppearAnimations();
+
+            if (null != cancelButton)
+                cancelButton.PlayAppearAnimation(selectorButtonAppearDelay);
+        }
+    }
+
+    private void OnControlPanelComplete()
+    {
+    }
+
+
+    public void Close(bool _isSkip = false)
     {
         isBlinking = false;
 
@@ -93,7 +146,7 @@ public class HUD_Vehicle : MonoBehaviour
             blinkTween.Kill();
 
         if (null != lightImage)
-            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, transparentAlpha);
 
         if (null != navigation)
             navigation.ResetSelection();
@@ -101,17 +154,17 @@ public class HUD_Vehicle : MonoBehaviour
         if (null != subField)
             subField.ResetSelection();
 
-        if (null != okButton)
-        {
-            okButton.SetButtonActive(false, false);
-            okButton.ResetAnimation();
-        }
+        if (null != prevButton)
+            prevButton.ResetAnimation();
+
+        if (null != homeButton)
+            homeButton.ResetAnimation();
 
         if (null != cancelButton)
             cancelButton.ResetAnimation();
 
-        omp.PlayBackward(backgroundMotionTag, bReset: true);
-        omp.PlayBackward(controlBoardMotionTag, bReset: true, _onComplete: HandleClose);
+        omp.PlayBackward(backgroundMotionTag, bReset: forceReset, _skip: _isSkip);
+        omp.PlayBackward(controlBoardMotionTag, bReset: forceReset, _skip: _isSkip, _onComplete: handleCloseCallback);
     }
 
     private void HandleClose()
@@ -122,8 +175,11 @@ public class HUD_Vehicle : MonoBehaviour
         if (null != subField)
             subField.ResetSelection();
 
-        if (null != okButton)
-            okButton.ResetAnimation();
+        if (null != prevButton)
+            prevButton.ResetAnimation();
+
+        if (null != homeButton)
+            homeButton.ResetAnimation();
 
         if (null != cancelButton)
             cancelButton.ResetAnimation();
@@ -134,7 +190,7 @@ public class HUD_Vehicle : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    // //내부 로직
+    // 내부 로직
 
     private void HandleInteractButtonClicked()
     {
@@ -147,20 +203,22 @@ public class HUD_Vehicle : MonoBehaviour
         {
             if (null != lightImage)
             {
-                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
-                blinkTween = lightImage.DOFade(1f, 0.5f).SetLoops(-1, LoopType.Yoyo).SetEase(Ease.InOutSine);
+                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, transparentAlpha);
+                blinkTween = lightImage.DOColor(new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, blinkTargetAlpha), blinkDuration)
+                                       .SetLoops(-1, LoopType.Yoyo)
+                                       .SetEase(blinkEase);
             }
         }
         else
         {
             if (null != lightImage)
-                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, transparentAlpha);
         }
     }
 
     private void HandleRegionSelected(MapType _mapType)
     {
-        if (null == mapDataProvider || null == subField)
+        if (null == mapDataProvider || null == subField || null == navigation)
             return;
 
         MapEnvironmentDatabase db = mapDataProvider.GetMapEnvironmentDatabase();
@@ -168,40 +226,103 @@ public class HUD_Vehicle : MonoBehaviour
             return;
 
         MapEnvironmentDataInfo targetInfo = default;
-        bool isFound = false;
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
             if (_mapType == db.mapDatas[i].mapType)
             {
                 targetInfo = db.mapDatas[i];
-                isFound = true;
                 break;
             }
         }
 
-        if (true == isFound && null != targetInfo.forestDatas)
+        if (null != targetInfo.forestDatas)
+        {
+            lastSelectedMapType = _mapType;
+            pendingMapType = _mapType;
+            pendingForestDatas = targetInfo.forestDatas;
+            navigation.PlayDisappearAnimations(onDisappearCompleteCallback);
+        }
+    }
+
+    private void OnDisappearComplete()
+    {
+        if (null == subField)
+            return;
+
+        subField.SetSubRegions(pendingMapType, pendingForestDatas);
+
+        if (null != prevButton)
+            prevButton.PlayAppearAnimation(prevButtonAppearDelay);
+
+        if (null != homeButton)
+            homeButton.PlayAppearAnimation(homeButtonAppearDelay);
+    }
+
+    private void RestoreToHome()
+    {
+        lastSelectedMapType = MapType.None;
+
+        if (null != subField)
+            subField.ResetSelection();
+
+        if (null != prevButton)
+            prevButton.ResetAnimation();
+
+        if (null != homeButton)
+            homeButton.ResetAnimation();
+
+        if (null != navigation)
+        {
+            navigation.ResetSelection();
+            navigation.PlayAppearAnimations();
+        }
+    }
+
+    private void RestoreToSelectedRegion(MapType _mapType)
+    {
+        if (null == mapDataProvider || null == subField || null == navigation)
+            return;
+
+        MapEnvironmentDatabase db = mapDataProvider.GetMapEnvironmentDatabase();
+        if (null == db.mapDatas)
+            return;
+
+        MapEnvironmentDataInfo targetInfo = default;
+        for (int i = 0; i < db.mapDatas.Count; i++)
+        {
+            if (_mapType == db.mapDatas[i].mapType)
+            {
+                targetInfo = db.mapDatas[i];
+                break;
+            }
+        }
+
+        navigation.ResetSelection();
+        navigation.SetSelectedMapTypeWithoutAnimation(_mapType);
+
+        if (null != targetInfo.forestDatas)
             subField.SetSubRegions(_mapType, targetInfo.forestDatas);
 
-        UpdateOkButtonState();
+        if (null != prevButton)
+            prevButton.PlayAppearAnimation(prevButtonAppearDelay);
+
+        if (null != homeButton)
+            homeButton.PlayAppearAnimation(homeButtonAppearDelay);
+    }
+
+    private void HandlePrevClicked()
+    {
+        RestoreToHome();
+        onPrevCallback?.Invoke();
+    }
+
+    private void HandleHomeClicked()
+    {
+        RestoreToHome();
+        onHomeCallback?.Invoke();
     }
 
     private void HandleSubRegionSelected()
-    {
-        UpdateOkButtonState();
-    }
-
-    private void UpdateOkButtonState()
-    {
-        if (null == okButton || null == navigation || null == subField)
-            return;
-
-        bool isRegionSelected = (MapType.None != navigation.GetSelectedMapType());
-        bool isSubRegionSelected = (ForestType.None != subField.GetSelectedForestType());
-
-        okButton.SetButtonActive(isRegionSelected && isSubRegionSelected, true);
-    }
-
-    private void HandleConfirm()
     {
         if (null == navigation || null == subField)
             return;
@@ -210,16 +331,11 @@ public class HUD_Vehicle : MonoBehaviour
         ForestType forestType = subField.GetSelectedForestType();
 
         if (MapType.None != mapType && ForestType.None != forestType)
-            MapSelectedEvent?.Invoke(mapType, forestType);
-    }
-
-    private void HandleMapSelected(MapType _mapType, ForestType _forestType)
-    {
-        MapSelectedEvent?.Invoke(_mapType, _forestType);
+            mapSelectedEvent?.Invoke(mapType, forestType);
     }
 
 
-    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+    // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
     private void OnDestroy()
     {
@@ -238,7 +354,7 @@ public class HUD_Vehicle : MonoBehaviour
             blinkTween.Kill();
 
         if (null != lightImage)
-            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, 0f);
+            lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, transparentAlpha);
 
         if (null != omp)
             omp.ResetAllMotions();
@@ -249,11 +365,11 @@ public class HUD_Vehicle : MonoBehaviour
         if (null != subField)
             subField.ResetSelection();
 
-        if (null != okButton)
-        {
-            okButton.SetButtonActive(false, false);
-            okButton.ResetAnimation();
-        }
+        if (null != prevButton)
+            prevButton.ResetAnimation();
+
+        if (null != homeButton)
+            homeButton.ResetAnimation();
 
         if (null != cancelButton)
             cancelButton.ResetAnimation();

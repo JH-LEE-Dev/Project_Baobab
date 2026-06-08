@@ -13,7 +13,11 @@ MonoBehaviour:
   m_Name: LocalizationMapping
   m_EditorClassIdentifier: Assembly-CSharp::LocalizationMapping
   mappings:
+  - enumTypeName: MapType
+    enumValueName: None
+    enumIntValue: 0
+    compositeKey: 2097153
   - enumTypeName: ForestType
     enumValueName: Vegetatedplains_1
     enumIntValue: 2
-    compositeKey: 2097153
+    compositeKey: 2097154

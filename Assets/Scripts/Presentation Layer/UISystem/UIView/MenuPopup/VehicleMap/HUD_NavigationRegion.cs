@@ -8,7 +8,7 @@ using PresentationLayer.DOTweenAnimationSystem;
 
 public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    // //외부 의존성
+    // 외부 의존성
     [Header("UI References")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private Image buttonImage;
@@ -32,11 +32,16 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private string lockClickTag = "LockClick";
     [SerializeField] private string appearTag = "Appear";
 
-    // //내부 의존성
+    [Header("Disappear Config")]
+    [SerializeField] private float disappearDuration = 0.25f;
+    [SerializeField] private Ease disappearEase = Ease.InBack;
+
+    // 내부 의존성
     private MapType mapType = MapType.None;
     private Action<MapType> onSelectEvent;
     private LocalizationManager localizationManager;
 
+    private UnityEngine.Events.UnityAction onClickAnimationCompleteCallback;
     private MotionEntry hoverEntry;
     private MotionEntry clickEntry;
     private MotionEntry unHoverEntry;
@@ -44,12 +49,18 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private bool isClicked = false;
     private bool isLocked = false;
     private bool isSelected = false;
-    private bool isInitialized = false;
     private Tweener colorTween;
     private Tween appearDelayTween;
 
+    // 캐싱된 상수 및 리터럴 값
+    private const bool forceReset = true;
+    private const string townString = "Town";
+    private const string plainsString = "Vegetatedplains";
+    private const string forestString = "Deepmossforest";
+    private const string noneString = "None";
 
-    // //퍼블릭 초기화 및 제어 메서드
+
+    // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(MapType _mapType, Action<MapType> _onSelect, LocalizationManager _localizeManager)
     {
@@ -60,6 +71,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         isLocked = false;
         isSelected = false;
         isHovered = false;
+        onClickAnimationCompleteCallback = OnClickAnimationComplete;
 
         if (null != omp)
             omp.Initialize();
@@ -68,8 +80,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         SetLock(false);
 
         UpdateRegionName();
-
-        isInitialized = true;
     }
 
     public void SetLock(bool _isLock)
@@ -89,9 +99,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     {
         if (null != omp)
         {
-            omp.SettingEntryMotion(hoverEntry, true, true);
-            omp.SettingEntryMotion(clickEntry, true, true);
-            omp.SettingEntryMotion(unHoverEntry, true, true);
+            omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
+            omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
+            omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
         }
 
         hoverEntry = null;
@@ -125,7 +135,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
             {
                 transform.localScale = Vector3.one;
-                omp.Play(appearTag, bReset: true);
+                omp.Play(appearTag, bReset: forceReset);
             }).SetEase(Ease.Linear);
         }
     }
@@ -135,10 +145,31 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != appearDelayTween && appearDelayTween.IsActive())
             appearDelayTween.Kill();
 
-        transform.localScale = Vector3.one;
+        transform.localScale = Vector3.zero;
 
         if (null != omp)
             omp.ResetAllMotions();
+    }
+
+    public void PlayDisappearAnimation(float _delay, TweenCallback _onComplete)
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != omp)
+        {
+            if (omp.IsPlaying(appearTag))
+                omp.Stop(appearTag);
+
+            transform.DOScale(Vector3.zero, disappearDuration)
+                     .SetDelay(_delay)
+                     .SetEase(disappearEase)
+                     .OnComplete(_onComplete);
+        }
+        else
+        {
+            _onComplete?.Invoke();
+        }
     }
 
     public MapType GetMapType()
@@ -157,7 +188,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     }
 
 
-    // //내부 로직
+    // 내부 로직
 
     private void UpdateColor()
     {
@@ -201,17 +232,28 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             if (false == string.IsNullOrEmpty(_localizedName))
                 regionNameText.text = _localizedName;
             else
-                regionNameText.text = mapType.ToString();
+                regionNameText.text = GetMapTypeString(mapType);
         }
         else
         {
-            regionNameText.text = mapType.ToString();
+            regionNameText.text = GetMapTypeString(mapType);
         }
     }
+
+    private string GetMapTypeString(MapType _type) => _type switch
+    {
+        MapType.Town => townString,
+        MapType.Vegetatedplains => plainsString,
+        MapType.Deepmossforest => forestString,
+        _ => noneString
+    };
 
     private void OnClickAnimationComplete()
     {
         isClicked = false;
+
+        if (false == isLocked)
+            onSelectEvent?.Invoke(mapType);
 
         if (true == isSelected)
             return;
@@ -227,27 +269,24 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     }
 
 
-    // //Event System 구현부
+    // Event System 구현부
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (true == isSelected)
+        if (true == isSelected || true == isClicked)
             return;
-
-        if (false == isLocked)
-            onSelectEvent?.Invoke(mapType);
 
         isClicked = true;
 
         if (null != omp)
         {
             if (null != hoverEntry)
-                omp.SettingEntryMotion(hoverEntry, true, true);
+                omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
             if (null != unHoverEntry)
-                omp.SettingEntryMotion(unHoverEntry, true, true);
+                omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
 
             string _targetTag = true == isLocked ? lockClickTag : clickTag;
-            clickEntry = omp.Play(_targetTag, bReset: true, _onComplete: OnClickAnimationComplete);
+            clickEntry = omp.Play(_targetTag, bReset: forceReset, _onComplete: onClickAnimationCompleteCallback);
         }
     }
 
@@ -261,10 +300,10 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != omp)
         {
             if (null != unHoverEntry)
-                omp.SettingEntryMotion(unHoverEntry, true, true);
+                omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
             if (null != clickEntry)
-                omp.SettingEntryMotion(clickEntry, true, true);
-            hoverEntry = omp.Play(hoverTag, bReset: true);
+                omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
+            hoverEntry = omp.Play(hoverTag, bReset: forceReset);
         }
 
         if (null != colorTween && colorTween.IsActive())
@@ -290,9 +329,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != omp)
         {
             if (null != hoverEntry)
-                omp.SettingEntryMotion(hoverEntry, true, true);
+                omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
             if (null != clickEntry)
-                omp.SettingEntryMotion(clickEntry, true, true);
+                omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
 
             if (false == isSelected)
             {
@@ -300,7 +339,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                     buttonImage.color = GetHoverColor();
             }
 
-            unHoverEntry = omp.Play(unHoverTag, bReset: true);
+            unHoverEntry = omp.Play(unHoverTag, bReset: forceReset);
         }
 
         if (false == isSelected)
@@ -311,5 +350,5 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     }
 
 
-    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+    // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 }

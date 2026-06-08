@@ -6,6 +6,8 @@ public class UIView_MenuPopup : UIView
 {
     public event Action<MapType, ForestType> DungeonSelectedEvent;
     public event Action TeleportUIClosedEvent;
+    public event Action PrevButtonClickedEvent;
+    public event Action HomeButtonClickedEvent;
 
     //외부 의존성
     private IMapDataProvider mapDataProvider;
@@ -13,12 +15,8 @@ public class UIView_MenuPopup : UIView
     private ITimeDataProvider timeDataProvider;
 
     //내부 의존성
-
-    // //외부 의존성
     [Header("Sub UI Prefabs")]
     [SerializeField] private GameObject vehiclePrefab;
-
-    // //내부 의존성
     private HUD_Vehicle vehicle;
 
     public override void Initialize(UIViewContext _ctx)
@@ -39,10 +37,20 @@ public class UIView_MenuPopup : UIView
 
         if (null != vehicle)
         {
-            vehicle.Initialize(mapDataProvider, OnHide, viewCtx.localizationManager);
-            vehicle.MapSelectedEvent -= HandleEnterDungeon;
-            vehicle.MapSelectedEvent += HandleEnterDungeon;
+            vehicle.Initialize(mapDataProvider, HandlePrev, HandleHome, OnHide, viewCtx.localizationManager);
+            vehicle.mapSelectedEvent -= HandleEnterDungeon;
+            vehicle.mapSelectedEvent += HandleEnterDungeon;
         }
+    }
+
+    private void HandlePrev()
+    {
+        PrevButtonClickedEvent?.Invoke();
+    }
+
+    private void HandleHome()
+    {
+        HomeButtonClickedEvent?.Invoke();
     }
 
     private void HandleEnterDungeon(MapType _type, ForestType _forestType)
@@ -74,9 +82,11 @@ public class UIView_MenuPopup : UIView
         }
     }
 
-    private void OnDestroy()
+    public override void OnDestroy()
     {
+        base.OnDestroy();
+
         if (null != vehicle)
-            vehicle.MapSelectedEvent -= HandleEnterDungeon;
+            vehicle.mapSelectedEvent -= HandleEnterDungeon;
     }
 }

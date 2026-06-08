@@ -7,7 +7,7 @@ using PresentationLayer.DOTweenAnimationSystem;
 
 public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    // //외부 의존성
+    // 외부 의존성
     [Header("UI References")]
     [SerializeField] private Image iconImage;
     [SerializeField] private ObjectMotionPlayer motionPlayer;
@@ -23,6 +23,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     [SerializeField] private float hoverColorDuration = 0.2f;
     [SerializeField] private Color selectPingPongColor = Color.yellow;
     [SerializeField] private float selectPingPongDuration = 0.8f;
+    [SerializeField] private float hoverExitDelay = 0.15f;
 
     [Header("Motion Tags")]
     [SerializeField] private string hoverTag = "Hover";
@@ -31,7 +32,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     [SerializeField] private string lockClickTag = "LockClick";
     [SerializeField] private string appearTag = "Appear";
 
-    // //내부 의존성
+    // 내부 의존성
     private RectTransform rect;
     private ForestEnvironmentInfo forestInfo;
     private Action<RectTransform, Vector2> onHoverEnterEvent;
@@ -52,12 +53,16 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private float hoverEnterTime = 0f;
     private float pendingExitTime = 0f;
     private PointerEventData pendingExitData;
+    private UnityEngine.Events.UnityAction onClickAnimationCompleteCallback;
     private Tweener colorTween;
     private Tween appearDelayTween;
     private Tweener pingPongTween;
 
+    // 캐싱된 상수 및 리터럴 값
+    private const bool forceReset = true;
 
-    // //퍼블릭 초기화 및 제어 메서드
+
+    // 퍼블릭 초기화 및 제어 메서드
 
     public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform, Vector2> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect)
     {
@@ -79,6 +84,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             return;
 
         rect = GetComponent<RectTransform>();
+        onClickAnimationCompleteCallback = OnClickAnimationComplete;
 
         SetSelect(false);
         SetLock(false);
@@ -130,7 +136,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
             {
                 transform.localScale = Vector3.one;
-                motionPlayer.Play(appearTag, bReset: true);
+                motionPlayer.Play(appearTag, bReset: forceReset);
             }).SetEase(Ease.Linear);
         }
     }
@@ -200,7 +206,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     }
 
 
-    // //내부 로직
+    // 내부 로직
 
     private void UpdateColor()
     {
@@ -251,7 +257,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     }
 
 
-    // //Event System 구현부
+    // Event System 구현부
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
@@ -268,14 +274,14 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (null != motionPlayer && false == isClicked)
         {
             if (null != exitMotion)
-                motionPlayer.SettingEntryMotion(exitMotion, true, true);
+                motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
 
             if (null != clickMotion)
-                motionPlayer.SettingEntryMotion(clickMotion, true, true);
+                motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
 
             UpdateColor();
 
-            enterMotion = motionPlayer.Play(hoverTag, bReset: true);
+            enterMotion = motionPlayer.Play(hoverTag, bReset: forceReset);
         }
 
         if (null != colorTween && colorTween.IsActive())
@@ -294,7 +300,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             return;
 
         isPendingExit = true;
-        pendingExitTime = Time.unscaledTime + 0.15f;
+        pendingExitTime = Time.unscaledTime + hoverExitDelay;
         pendingExitData = _eventData;
     }
 
@@ -309,13 +315,13 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (null != motionPlayer)
         {
             if (null != enterMotion)
-                motionPlayer.SettingEntryMotion(enterMotion, true, true);
+                motionPlayer.SettingEntryMotion(enterMotion, forceReset, forceReset);
 
             if (null != exitMotion)
-                motionPlayer.SettingEntryMotion(exitMotion, true, true);
+                motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
 
             string _targetTag = true == isLocked ? lockClickTag : clickTag;
-            clickMotion = motionPlayer.Play(_targetTag, bReset: true, _onComplete: OnClickAnimationComplete);
+            clickMotion = motionPlayer.Play(_targetTag, bReset: forceReset, _onComplete: onClickAnimationCompleteCallback);
         }
     }
 
@@ -333,10 +339,10 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (null != motionPlayer)
         {
             if (null != enterMotion)
-                motionPlayer.SettingEntryMotion(enterMotion, true, true);
+                motionPlayer.SettingEntryMotion(enterMotion, forceReset, forceReset);
 
             if (null != clickMotion)
-                motionPlayer.SettingEntryMotion(clickMotion, true, true);
+                motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
 
             if (false == isSelected)
             {
@@ -344,7 +350,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
                     iconImage.color = GetHoverColor();
             }
 
-            exitMotion = motionPlayer.Play(hoverOffTag, bReset: true);
+            exitMotion = motionPlayer.Play(hoverOffTag, bReset: forceReset);
         }
 
         if (false == isSelected)
@@ -355,7 +361,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     }
 
 
-    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+    // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
     private void Update()
     {

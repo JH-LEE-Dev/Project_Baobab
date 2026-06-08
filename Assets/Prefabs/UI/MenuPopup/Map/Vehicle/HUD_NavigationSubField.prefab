@@ -51,6 +51,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_NavigationSubField
   subRegionPrefab: {fileID: 5498542107624857049, guid: 5ed66aebb17f93443808bbdb0a52bf5b, type: 3}
   subRegionContainer: {fileID: 9180359437433018186}
+  subRegionAppearDelayGap: 0.1
 --- !u!1 &9007690949518654732
 GameObject:
   m_ObjectHideFlags: 0

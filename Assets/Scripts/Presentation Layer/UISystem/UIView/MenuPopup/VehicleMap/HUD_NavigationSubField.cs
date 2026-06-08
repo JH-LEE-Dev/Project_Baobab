@@ -4,22 +4,36 @@ using UnityEngine;
 
 public class HUD_NavigationSubField : MonoBehaviour
 {
-    // //이벤트
+    // 이벤트
     public event Action subRegionSelectedEvent;
 
-    // //외부 의존성
+    // 외부 의존성
     [Header("UI Elements")]
     [SerializeField] private GameObject subRegionPrefab;
     [SerializeField] private RectTransform subRegionContainer;
     [SerializeField] private float subRegionAppearDelayGap = 0.1f;
 
-    // //내부 의존성
-    private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(3);
+    [Header("Random Layout Config")]
+    [SerializeField] private float minDistanceMultiplier = 2.5f;
+
+    // 내부 의존성
+    private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(maxSubRegionCount);
+    private Action<RectTransform, Vector2> onSubRegionHoverEnteredCallback;
+    private Action onSubRegionHoverExitedCallback;
+    private Action<int> onSubRegionSelectedCallback;
     private int currentSelectedNumber = -1;
     private bool isInitialized = false;
 
+    // 캐싱된 상수 및 리터럴 값
+    private const int maxSubRegionCount = 3;
+    private const int maxSafetyAttempts = 10;
+    private const int maxOverlapAttempts = 50;
+    private const float defaultSubRegionSize = 100f;
+    private const float distanceDecayRate = 0.8f;
+    private static readonly Vector2 centerAnchorAndPivot = new Vector2(0.5f, 0.5f);
 
-    // //퍼블릭 초기화 및 제어 메서드
+
+    // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize()
     {
@@ -27,13 +41,18 @@ public class HUD_NavigationSubField : MonoBehaviour
             return;
 
         currentSelectedNumber = -1;
+        onSubRegionHoverEnteredCallback = OnSubRegionHoverEntered;
+        onSubRegionHoverExitedCallback = OnSubRegionHoverExited;
+        onSubRegionSelectedCallback = OnSubRegionSelected;
 
         for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
             if (null != spawnedSubRegions[i])
             {
                 spawnedSubRegions[i].ResetAnimation();
                 spawnedSubRegions[i].gameObject.SetActive(false);
             }
+        }
 
         isInitialized = true;
     }
@@ -52,7 +71,7 @@ public class HUD_NavigationSubField : MonoBehaviour
 
         // 항상 최대 3개의 SubRegion 버튼을 보장하여 생성 및 풀링
         int safetyCounter = 0;
-        while (spawnedSubRegions.Count < 3 && safetyCounter < 10)
+        while (maxSubRegionCount > spawnedSubRegions.Count && maxSafetyAttempts > safetyCounter)
         {
             safetyCounter++;
             GameObject obj = Instantiate(subRegionPrefab, subRegionContainer);
@@ -74,10 +93,10 @@ public class HUD_NavigationSubField : MonoBehaviour
             if (null == spawnedSubRegions[i])
                 continue;
 
-            if (i < 3 && i < dataCount)
+            if (maxSubRegionCount > i && dataCount > i)
             {
                 spawnedSubRegions[i].PlayOpenAnimation();
-                spawnedSubRegions[i].Setup(_forestDatas[i], i + 1, OnSubRegionHoverEntered, OnSubRegionHoverExited, OnSubRegionSelected);
+                spawnedSubRegions[i].Setup(_forestDatas[i], i + 1, onSubRegionHoverEnteredCallback, onSubRegionHoverExitedCallback, onSubRegionSelectedCallback);
                 spawnedSubRegions[i].PlayAppearAnimation(i * subRegionAppearDelayGap);
             }
             else
@@ -93,14 +112,14 @@ public class HUD_NavigationSubField : MonoBehaviour
             return;
 
         int count = _activeCount;
-        if (3 < count)
-            count = 3;
+        if (maxSubRegionCount < count)
+            count = maxSubRegionCount;
 
         float containerWidth = subRegionContainer.rect.width;
         float containerHeight = subRegionContainer.rect.height;
 
-        float subWidth = 100f;
-        float subHeight = 100f;
+        float subWidth = defaultSubRegionSize;
+        float subHeight = defaultSubRegionSize;
 
         for (int i = 0; i < spawnedSubRegions.Count; i++)
         {
@@ -134,8 +153,8 @@ public class HUD_NavigationSubField : MonoBehaviour
             maxY = temp;
         }
 
-        // 격리 최소 거리 기준을 대폭 강화 (2.5배)
-        float baseMinDistance = Mathf.Max(subWidth, subHeight) * 2.5f;
+        // 격리 최소 거리 기준을 대폭 강화
+        float baseMinDistance = Mathf.Max(subWidth, subHeight) * minDistanceMultiplier;
 
         // 전역 난수 흐름 오염 방지 및 결정론적 배치 고정을 위한 시드 처리
         UnityEngine.Random.State prevState = UnityEngine.Random.state;
@@ -145,7 +164,7 @@ public class HUD_NavigationSubField : MonoBehaviour
         float totalWidth = maxX - minX;
         float sectionWidth = totalWidth / 3f;
 
-        Span<Vector2> positions = stackalloc Vector2[3];
+        Span<Vector2> positions = stackalloc Vector2[maxSubRegionCount];
         int posIndex = 0;
 
         for (int i = 0; i < spawnedSubRegions.Count; i++)
@@ -160,9 +179,9 @@ public class HUD_NavigationSubField : MonoBehaviour
             if (null == subRect)
                 continue;
 
-            subRect.anchorMin = new Vector2(0.5f, 0.5f);
-            subRect.anchorMax = new Vector2(0.5f, 0.5f);
-            subRect.pivot = new Vector2(0.5f, 0.5f);
+            subRect.anchorMin = centerAnchorAndPivot;
+            subRect.anchorMax = centerAnchorAndPivot;
+            subRect.pivot = centerAnchorAndPivot;
 
             // 해당 인덱스(posIndex)에 따른 X축 영역 슬라이싱
             float minRangeX = minX + sectionWidth * posIndex;
@@ -172,7 +191,7 @@ public class HUD_NavigationSubField : MonoBehaviour
             bool found = false;
             float currentMinDistance = baseMinDistance;
 
-            for (int attempt = 0; 50 > attempt; attempt++)
+            for (int attempt = 0; maxOverlapAttempts > attempt; attempt++)
             {
                 // 분할 영역 내에서 난수 추첨
                 float randX = UnityEngine.Random.Range(minRangeX, maxRangeX);
@@ -182,7 +201,7 @@ public class HUD_NavigationSubField : MonoBehaviour
                 bool isOverlap = false;
                 for (int j = 0; j < posIndex; j++)
                 {
-                    if (Vector2.Distance(candidate, positions[j]) < currentMinDistance)
+                    if (currentMinDistance > Vector2.Distance(candidate, positions[j]))
                     {
                         isOverlap = true;
                         break;
@@ -197,7 +216,7 @@ public class HUD_NavigationSubField : MonoBehaviour
                 }
 
                 if (0 < attempt && 0 == attempt % 10)
-                    currentMinDistance *= 0.8f;
+                    currentMinDistance *= distanceDecayRate;
             }
 
             if (false == found)
@@ -215,7 +234,7 @@ public class HUD_NavigationSubField : MonoBehaviour
     public ForestType GetSelectedForestType()
     {
         int index = currentSelectedNumber - 1;
-        if (null == spawnedSubRegions || index < 0 || index >= spawnedSubRegions.Count)
+        if (null == spawnedSubRegions || 0 > index || spawnedSubRegions.Count <= index)
             return ForestType.None;
 
         if (null == spawnedSubRegions[index])
@@ -242,7 +261,7 @@ public class HUD_NavigationSubField : MonoBehaviour
     }
 
 
-    // //내부 로직 (콜백 메서드)
+    // 내부 로직 (콜백 메서드)
 
     private void OnSubRegionHoverEntered(RectTransform _targetRect, Vector2 _targetSize)
     {

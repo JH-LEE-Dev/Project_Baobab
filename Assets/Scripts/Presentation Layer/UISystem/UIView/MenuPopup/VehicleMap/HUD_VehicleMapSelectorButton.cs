@@ -10,7 +10,7 @@ using PresentationLayer.DOTweenAnimationSystem;
 /// </summary>
 public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
-    // //외부 의존성
+    // 외부 의존성
     [Header("Animation")]
     [SerializeField] private ObjectMotionPlayer motionPlayer;
     [SerializeField] private Image buttonImage;
@@ -25,7 +25,13 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     [SerializeField] private string activeMotionKey = "Active";
     [SerializeField] private string appearMotionKey = "Appear";
 
-    // //내부 의존성
+    [Header("Color Config")]
+    [SerializeField] private Color normalColor = Color.white;
+    [SerializeField] private Color hoverColor = Color.green;
+    [SerializeField] private Color clickColor = Color.yellow;
+    [SerializeField] private float colorDuration = 0.2f;
+
+    // 내부 의존성
     private Action onConfirmEvent;
     private Action<RectTransform, Vector2> onHoverEnterEvent;
     private Action onHoverExitEvent;
@@ -34,14 +40,21 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     private MotionEntry exitAnim;
     private MotionEntry clickedAnim;
     private Tween appearDelayTween;
+    private Tweener colorTween;
+    private UnityEngine.Events.UnityAction unClickedCallback;
 
-    private float currentAlpha = 1.0f;
+    private float currentAlpha = defaultAlpha;
     private bool isClicked = false;
     private bool isInitialized = false;
     private bool isButtonActive = true;
+    private bool isHovered = false;
+
+    // 캐싱된 상수 및 리터럴 값
+    private const float defaultAlpha = 1.0f;
+    private const bool forceReset = true;
 
 
-    // //퍼블릭 초기화 및 제어 메서드
+    // 퍼블릭 초기화 및 제어 메서드
 
     /// <summary>
     /// 버튼을 초기화하고 콜백을 등록합니다.
@@ -55,6 +68,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         onHoverEnterEvent = _onHoverEnter;
         onHoverExitEvent = _onHoverExit;
         rect = GetComponent<RectTransform>();
+        unClickedCallback = UnClicked;
         
         isInitialized = true;
     }
@@ -79,9 +93,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         if (true == _active && null != motionPlayer)
         {
             if (true == _withAnimation)
-                motionPlayer.Play(activeMotionKey, bReset: true);
+                motionPlayer.Play(activeMotionKey, bReset: forceReset);
             else
-                motionPlayer.PlayBackward(activeMotionKey, bReset: true);
+                motionPlayer.PlayBackward(activeMotionKey, bReset: forceReset);
         }
     }
 
@@ -110,7 +124,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
             appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
             {
                 transform.localScale = Vector3.one;
-                motionPlayer.Play(appearMotionKey, bReset: true);
+                motionPlayer.Play(appearMotionKey, bReset: forceReset);
             }).SetEase(Ease.Linear);
         }
     }
@@ -120,64 +134,101 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         if (null != appearDelayTween && appearDelayTween.IsActive())
             appearDelayTween.Kill();
 
-        transform.localScale = Vector3.one;
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != buttonImage)
+            buttonImage.color = normalColor;
+
+        transform.localScale = Vector3.zero;
+
+        isHovered = false;
+        isClicked = false;
 
         if (null != motionPlayer)
             motionPlayer.ResetAllMotions();
     }
 
 
-    // //Event System 구현부
+    // Event System 구현부
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (null == motionPlayer || isClicked || (isOkButton && false == isButtonActive))
+        isHovered = true;
+
+        if (null == motionPlayer || true == isClicked || (true == isOkButton && false == isButtonActive))
             return;
 
         onHoverEnterEvent?.Invoke(rect, rect.rect.size);
 
-        motionPlayer.SettingEntryMotion(clickedAnim, true, true);
-        motionPlayer.SettingEntryMotion(exitAnim, true, true);
+        motionPlayer.SettingEntryMotion(clickedAnim, forceReset, forceReset);
+        motionPlayer.SettingEntryMotion(exitAnim, forceReset, forceReset);
 
-        enterAnim = motionPlayer.Play(hoverMotionKey, bReset: true);
+        enterAnim = motionPlayer.Play(hoverMotionKey, bReset: forceReset);
+        PlayColorTween(hoverColor);
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (null == motionPlayer || isClicked || (isOkButton && false == isButtonActive))
+        isHovered = false;
+
+        if (null == motionPlayer || true == isClicked || (true == isOkButton && false == isButtonActive))
             return;
 
         onHoverExitEvent?.Invoke();
 
-        motionPlayer.SettingEntryMotion(enterAnim, true, true);
-        motionPlayer.SettingEntryMotion(clickedAnim, true, true);
+        motionPlayer.SettingEntryMotion(enterAnim, forceReset, forceReset);
+        motionPlayer.SettingEntryMotion(clickedAnim, forceReset, forceReset);
 
-        exitAnim = motionPlayer.Play(hoverOffMotionKey, bReset: true);
+        exitAnim = motionPlayer.Play(hoverOffMotionKey, bReset: forceReset);
+        PlayColorTween(normalColor);
     }
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (null == motionPlayer || (isOkButton && false == isButtonActive))
+        if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
             return;
 
-        motionPlayer.SettingEntryMotion(enterAnim, true, true);
-        motionPlayer.SettingEntryMotion(exitAnim, true, true);
+        motionPlayer.SettingEntryMotion(enterAnim, forceReset, forceReset);
+        motionPlayer.SettingEntryMotion(exitAnim, forceReset, forceReset);
         isClicked = true;
 
-        clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: UnClicked);
+        clickedAnim = motionPlayer.Play(clickMotionKey, bReset: forceReset, _onComplete: unClickedCallback);
+        PlayColorTween(clickColor);
+
+        onConfirmEvent?.Invoke();
     }
 
     private void UnClicked()
     {
-        onConfirmEvent?.Invoke();
         isClicked = false;
+        Color _targetColor = true == isHovered ? hoverColor : normalColor;
+        PlayColorTween(_targetColor);
     }
 
-    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+    private void PlayColorTween(Color _targetColor)
+    {
+        if (null == buttonImage)
+            return;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        colorTween = buttonImage.DOColor(_targetColor, colorDuration).SetEase(Ease.Linear);
+    }
+
+    // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
     private void OnDisable()
     {
         isClicked = false;
+        isHovered = false;
+
+        if (null != colorTween && colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != buttonImage)
+            buttonImage.color = normalColor;
 
         if (null != motionPlayer)
             motionPlayer.ResetAllMotions();
