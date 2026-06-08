@@ -157,7 +157,7 @@ public class SkyCameraProductionComponent : MonoBehaviour
         {
             // 더미 타겟을 캐릭터 머리 위에 셋업
             Vector3 dummyPos = characterTransform.position;
-            dummyPos.y += yOffset-15f;
+            dummyPos.y += yOffset-40f;
             dummyTarget.position = dummyPos;
 
             // 카메라도 즉시 더미 타겟 위치를 비추도록 설정
