@@ -102,7 +102,7 @@ public class SkyCameraProductionComponent : MonoBehaviour
             Sequence seq = DOTween.Sequence();
             seq.Append(dummyTarget.DOMove(targetRollbackPos, rollbackDuration));
             seq.AppendCallback(OnRollbackCameraComplete);
-            seq.AppendInterval(1.0f);
+            //seq.AppendInterval(1.0f);
             seq.AppendCallback(OnSkyProductionRollbackEnd);
             cameraMoveTween = seq;
         }

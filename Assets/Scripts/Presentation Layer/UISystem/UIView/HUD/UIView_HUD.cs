@@ -185,4 +185,14 @@ public class UIView_HUD : UIView
     {
         hudDirIndicator?.SetTarget(_offroadProvider.transform);
     }
+
+    public void HUDGoDown()
+    {
+        
+    }
+
+    public void HUDGoUp()
+    {
+        
+    }
 }

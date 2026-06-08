@@ -50,3 +50,6 @@ public struct TentInteractStateChangedSignal
 }
 
 public struct StartDecreaseStaminaSignal { }
+
+public struct PopupUIDownSignal { }
+public struct PopupUIUpSignal { }
