@@ -6,6 +6,10 @@ public class TownProductionManager : MonoBehaviour
 {
     public event Action OffroadDriveEndEvent;
     public event Action CharacterRideEndEvent;
+    public event Action StartSkyProductionEvent;
+    public event Action RollbackSkyProductionEvent;
+    public event Action CameraUpIsEndEvent;
+    public event Action CameraUpDownEndEvent;
 
     private InputManager inputManager;
 
@@ -24,10 +28,29 @@ public class TownProductionManager : MonoBehaviour
         inputManager = _inputManager;
 
         skyCameraProductionComponent = GetComponent<SkyCameraProductionComponent>();
+
+        BindEvents();
+    }
+
+    private void BindEvents()
+    {
+        skyCameraProductionComponent.SkyProductionEndEvent -= CameraUpIsEnd;
+        skyCameraProductionComponent.SkyProductionEndEvent += CameraUpIsEnd;
+
+        skyCameraProductionComponent.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
+        skyCameraProductionComponent.SkyProductionRollbackEndEvent += CameraDownIsEnd;
+    }
+
+    private void ReleaseEvents()
+    {
+        skyCameraProductionComponent.SkyProductionEndEvent -= CameraUpIsEnd;
+        skyCameraProductionComponent.SkyProductionRollbackEndEvent -= CameraDownIsEnd;    
     }
 
     public void Release()
     {
+        ReleaseEvents();
+
         if (offroadVehicleObj != null)
         {
             offroadVehicleObj.OffroadDriveEndEvent -= DriveEnd;
@@ -58,6 +81,8 @@ public class TownProductionManager : MonoBehaviour
     public void StartDrive()
     {
         offroadVehicleObj.StartDrive(offroadDriveEndPoint);
+        inputManager.PauseInteractKey(true);
+        StartCoroutine(StartSkyProductionRoutine());
     }
 
     public void StartCharacterRide()
@@ -139,5 +164,43 @@ public class TownProductionManager : MonoBehaviour
     public void SetbCanGetOff(bool _boolean)
     {
         bCanGetOff = _boolean;
+    }
+
+    private IEnumerator StartSkyProductionRoutine()
+    {
+        yield return new WaitForSeconds(3.75f);
+
+        skyCameraProductionComponent.StartCameraMove();
+        StartSkyProductionEvent?.Invoke();
+    }
+
+    public void ResetCameraPos()
+    {
+        skyCameraProductionComponent.ResetCameraPos(character.transform);
+    }
+
+    public void RollbackCameraMove()
+    {
+        StartCoroutine(RollbackCameraMoveRoutine());
+    }
+
+    private IEnumerator RollbackCameraMoveRoutine()
+    {
+        yield return new WaitForSeconds(1.5f);
+
+        RollbackSkyProductionEvent?.Invoke();
+        skyCameraProductionComponent.StartCameraMove();
+    }
+
+    private void CameraUpIsEnd()
+    {
+        CameraUpIsEndEvent?.Invoke();
+    }
+
+    private void CameraDownIsEnd()
+    {
+        inputManager.PauseInteractKey(false);
+        inputManager.PauseMove(false);
+        CameraUpDownEndEvent?.Invoke();
     }
 }

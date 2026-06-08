@@ -44,11 +44,6 @@ public class InputManager : MonoBehaviour
         return bCursorHoveredOnUI;
     }
 
-    public void PauseMouse(bool _boolean)
-    {
-        inputReader.PauseMouse(_boolean);
-    }
-
     public void PauseInteractKey(bool _boolean)
     {
         inputReader.PauseInteractKey(_boolean);

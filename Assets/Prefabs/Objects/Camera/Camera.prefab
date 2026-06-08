@@ -112,15 +112,15 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.05572917
+    x: -0.08020834
     y: 0
     width: 0.33333334
-    height: 0.5287037
+    height: 0.5277778
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.4609375
+  orthographic size: 4.453125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -307,19 +307,19 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.05572917
+    x: -0.08020834
     y: 0
     width: 0.33333334
-    height: 0.5287037
+    height: 0.5277778
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.4609375
+  orthographic size: 4.453125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
-    m_Bits: 90071
+    m_Bits: 352215
   m_RenderingPath: -1
   m_TargetTexture: {fileID: 0}
   m_TargetDisplay: 0
