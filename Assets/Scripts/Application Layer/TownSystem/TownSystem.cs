@@ -121,9 +121,12 @@ public class TownSystem : MonoBehaviour
 
         townProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
         townProductionManager.CameraUpIsEndEvent += CameraUpIsEnd;
-        
+
         townProductionManager.CameraUpDownEndEvent -= CameraDownIsEnd;
         townProductionManager.CameraUpDownEndEvent += CameraDownIsEnd;
+
+        townProductionManager.PopupUIDownEvent -= PopupUIDown;
+        townProductionManager.PopupUIDownEvent += PopupUIDown;
     }
 
     private void ReleaseEvents()
@@ -144,7 +147,8 @@ public class TownSystem : MonoBehaviour
         townProductionManager.StartSkyProductionEvent -= StartSkyProduction;
         townProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
         townProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
-        townProductionManager.CameraUpDownEndEvent -= CameraDownIsEnd;        
+        townProductionManager.CameraUpDownEndEvent -= CameraDownIsEnd;
+        townProductionManager.PopupUIDownEvent -= PopupUIDown;
     }
 
     private void SubscribeSignals()
@@ -238,7 +242,7 @@ public class TownSystem : MonoBehaviour
 
     private void OffroadDriveEnd()
     {
-
+        //townProductionManager.StartSkyProduction();
     }
 
     private void TentInteractStateChanged(bool _boolean)
@@ -264,7 +268,7 @@ public class TownSystem : MonoBehaviour
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
     {
         logProcessingManager.DisableShopObj();
-        townProductionManager.ResetCameraPos();
+        townProductionManager.SetCharacterTransform();
         townProductionManager.RollbackCameraMove();
     }
 
@@ -296,6 +300,12 @@ public class TownSystem : MonoBehaviour
 
     private void CameraDownIsEnd()
     {
-        signalHub.Publish(new StartDecreaseStaminaSignal());        
+        signalHub.Publish(new PopupUIUpSignal());
+        signalHub.Publish(new StartDecreaseStaminaSignal());
+    }
+
+    private void PopupUIDown()
+    {
+        signalHub.Publish(new PopupUIDownSignal());
     }
 }

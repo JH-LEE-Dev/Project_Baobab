@@ -10,6 +10,7 @@ public class TownProductionManager : MonoBehaviour
     public event Action RollbackSkyProductionEvent;
     public event Action CameraUpIsEndEvent;
     public event Action CameraUpDownEndEvent;
+    public event Action PopupUIDownEvent;
 
     private InputManager inputManager;
 
@@ -44,7 +45,7 @@ public class TownProductionManager : MonoBehaviour
     private void ReleaseEvents()
     {
         skyCameraProductionComponent.SkyProductionEndEvent -= CameraUpIsEnd;
-        skyCameraProductionComponent.SkyProductionRollbackEndEvent -= CameraDownIsEnd;    
+        skyCameraProductionComponent.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
     }
 
     public void Release()
@@ -80,9 +81,9 @@ public class TownProductionManager : MonoBehaviour
 
     public void StartDrive()
     {
+        StartSkyProduction();
         offroadVehicleObj.StartDrive(offroadDriveEndPoint);
-        inputManager.PauseInteractKey(true);
-        StartCoroutine(StartSkyProductionRoutine());
+        StartCoroutine(PopupUIDown());
     }
 
     public void StartCharacterRide()
@@ -174,9 +175,9 @@ public class TownProductionManager : MonoBehaviour
         StartSkyProductionEvent?.Invoke();
     }
 
-    public void ResetCameraPos()
+    public void SetCharacterTransform()
     {
-        skyCameraProductionComponent.ResetCameraPos(character.transform);
+        skyCameraProductionComponent.SetCharacterTransform(character.transform);
     }
 
     public void RollbackCameraMove()
@@ -202,5 +203,17 @@ public class TownProductionManager : MonoBehaviour
         inputManager.PauseInteractKey(false);
         inputManager.PauseMove(false);
         CameraUpDownEndEvent?.Invoke();
+    }
+
+    public void StartSkyProduction()
+    {
+        inputManager.PauseInteractKey(true);
+        StartCoroutine(StartSkyProductionRoutine());
+    }
+
+    private IEnumerator PopupUIDown()
+    {
+        yield return new WaitForSeconds(1f);
+        PopupUIDownEvent?.Invoke();
     }
 }

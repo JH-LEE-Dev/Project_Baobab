@@ -216,4 +216,14 @@ public class UIView_Popup : UIView
 
         InventoryUIOpendEvent?.Invoke(true);
     }
+
+    public void PopupGoDown()
+    {
+        
+    }
+
+    public void PopupGoUp()
+    {
+        
+    }
 }

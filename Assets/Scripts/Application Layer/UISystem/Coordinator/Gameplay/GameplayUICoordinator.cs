@@ -76,6 +76,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
         signalHub.Subscribe<StartSkyProductionSignal>(StartSkyProduction);
         signalHub.Subscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
+        signalHub.Subscribe<PopupUIDownSignal>(PopupUIDown);
+        signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
     }
 
     private void UnSubscribeSignals()
@@ -112,7 +114,9 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
         signalHub.UnSubscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
         signalHub.UnSubscribe<StartSkyProductionSignal>(StartSkyProduction);
-        signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);        
+        signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);  
+        signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);      
+        signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
     }
 
     private void BindEvents()
@@ -459,5 +463,17 @@ public class GameplayUICoordinator
     private void RollbackSkyProduction(RollbackSkyProductionSignal _rollbackSkyProductionSignal)
     {
         skyProduction.StartSkyProduction();
+    }
+
+    private void PopupUIDown(PopupUIDownSignal _popupUIDownSignal)
+    {
+        hudUI.HUDGoDown();
+        popUpUI.PopupGoDown();
+    }
+
+    private void PopupUIUp(PopupUIUpSignal _popupUIUpSignal)
+    {
+        hudUI.HUDGoUp();
+        popUpUI.PopupGoUp();
     }
 }

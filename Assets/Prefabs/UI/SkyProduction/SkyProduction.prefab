@@ -322,7 +322,7 @@ MonoBehaviour:
   skyImage2: {fileID: 4049458310564438251}
   cloudTargetTransform: {fileID: 2223744958440074505}
   skyTargetTransform: {fileID: 6837710031492252193}
-  moveDuration: 1
+  moveDuration: 1.8
   useCustomCurve: 0
   moveCurve:
     serializedVersion: 2
@@ -348,7 +348,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  moveEase: 9
+  moveEase: 10
   floatingAmplitude: 8
   floatingDuration: 4
 --- !u!210 &8034429127669148663

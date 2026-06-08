@@ -673,6 +673,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void OnTriggerEnter2D(Collider2D _other)
     {
+        if (bCollisionEnabled == false)
+            return;
+
         if (_other.CompareTag(PLAYER_TAG))
         {
             bPhysicalOverlapped = true;
@@ -682,6 +685,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void OnTriggerStay2D(Collider2D _other)
     {
+        if (bCollisionEnabled == false)
+            return;
+
         if (_other.CompareTag(PLAYER_TAG))
         {
             if (bPhysicalOverlapped == false)
