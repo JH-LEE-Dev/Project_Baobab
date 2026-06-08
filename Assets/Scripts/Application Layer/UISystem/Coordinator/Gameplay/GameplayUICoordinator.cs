@@ -17,12 +17,13 @@ public class GameplayUICoordinator
     private UIView_ESC escUI;
 
     private UIDepthController uiDepthController;
+    private UIView_SkyProduction skyProduction;
 
 
     private bool bInventoryOpened = false;
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
-     UIDepthController _uiDepthController)
+     UIDepthController _uiDepthController,UIView_SkyProduction _skyProduction)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -34,6 +35,7 @@ public class GameplayUICoordinator
         tentUI = _tentUI;
         escUI = _escUI;
         uiDepthController = _uiDepthController;
+        skyProduction = _skyProduction;
 
         SubscribeSignals();
         BindEvents();
@@ -72,6 +74,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.Subscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
         signalHub.Subscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
+        signalHub.Subscribe<StartSkyProductionSignal>(StartSkyProduction);
+        signalHub.Subscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
     }
 
     private void UnSubscribeSignals()
@@ -107,6 +111,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.UnSubscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
         signalHub.UnSubscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
+        signalHub.UnSubscribe<StartSkyProductionSignal>(StartSkyProduction);
+        signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);        
     }
 
     private void BindEvents()
@@ -443,5 +449,15 @@ public class GameplayUICoordinator
     private void DeclareSkillAccumulativeValue(DeclareSkillAccumulatedValueSignal _declareSkillAccumulativeValueSignal)
     {
         tentUI.DeclareSkillAccumulativeValue(_declareSkillAccumulativeValueSignal.data);
+    }
+
+    private void StartSkyProduction(StartSkyProductionSignal _startSkyProductionSignal)
+    {
+        skyProduction.StartSkyProduction();
+    }
+
+    private void RollbackSkyProduction(RollbackSkyProductionSignal _rollbackSkyProductionSignal)
+    {
+        skyProduction.StartSkyProduction();
     }
 }

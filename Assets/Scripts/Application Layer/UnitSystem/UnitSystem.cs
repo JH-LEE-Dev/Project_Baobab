@@ -51,6 +51,7 @@ public class UnitSystem
         signalHub.Subscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
         signalHub.Subscribe<SleepSignal>(CharacterSleep);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.Subscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
     }
 
     private void UnSubscribeSignals()
@@ -64,6 +65,7 @@ public class UnitSystem
         signalHub.UnSubscribe<CarrotItemAcquiredSignal>(CarrotItemAcquired);
         signalHub.UnSubscribe<SleepSignal>(CharacterSleep);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.UnSubscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
     }
 
     private void BindEvents()
@@ -244,5 +246,10 @@ public class UnitSystem
     private void ItemCantAcquied()
     {
         signalHub.Publish(new ItemCantAcquiedSignal());
+    }
+
+    private void StartDecreaseStamina(StartDecreaseStaminaSignal _startDecreaseStaminaSignal)
+    {
+        unitLogicManager.SetCharacterStaminaDecrease();
     }
 }

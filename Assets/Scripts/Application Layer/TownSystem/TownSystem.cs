@@ -112,6 +112,18 @@ public class TownSystem : MonoBehaviour
 
         townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         townProductionManager.CharacterRideEndEvent += CharacterRideEnd;
+
+        townProductionManager.StartSkyProductionEvent -= StartSkyProduction;
+        townProductionManager.StartSkyProductionEvent += StartSkyProduction;
+
+        townProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
+        townProductionManager.RollbackSkyProductionEvent += RollbackSkyProduction;
+
+        townProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
+        townProductionManager.CameraUpIsEndEvent += CameraUpIsEnd;
+        
+        townProductionManager.CameraUpDownEndEvent -= CameraDownIsEnd;
+        townProductionManager.CameraUpDownEndEvent += CameraDownIsEnd;
     }
 
     private void ReleaseEvents()
@@ -128,7 +140,11 @@ public class TownSystem : MonoBehaviour
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
-        townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;        
+        townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
+        townProductionManager.StartSkyProductionEvent -= StartSkyProduction;
+        townProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
+        townProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
+        townProductionManager.CameraUpDownEndEvent -= CameraDownIsEnd;        
     }
 
     private void SubscribeSignals()
@@ -150,7 +166,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
-        signalHub.UnSubscribe<TeleportUIClosedWhileTeleport>(TeleportUIClosedWhileTeleport);        
+        signalHub.UnSubscribe<TeleportUIClosedWhileTeleport>(TeleportUIClosedWhileTeleport);
     }
 
     private void PortalActivated()
@@ -222,8 +238,7 @@ public class TownSystem : MonoBehaviour
 
     private void OffroadDriveEnd()
     {
-        townObjectManager.ClearObjManager();
-        signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
+
     }
 
     private void TentInteractStateChanged(bool _boolean)
@@ -249,6 +264,8 @@ public class TownSystem : MonoBehaviour
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
     {
         logProcessingManager.DisableShopObj();
+        townProductionManager.ResetCameraPos();
+        townProductionManager.RollbackCameraMove();
     }
 
     private void CharacterRideEnd()
@@ -259,5 +276,26 @@ public class TownSystem : MonoBehaviour
     private void TeleportUIClosedWhileTeleport(TeleportUIClosedWhileTeleport _teleportUIClosedWhileTeleport)
     {
         townProductionManager.SetbCanGetOff(false);
+    }
+
+    private void StartSkyProduction()
+    {
+        signalHub.Publish(new StartSkyProductionSignal());
+    }
+
+    private void RollbackSkyProduction()
+    {
+        signalHub.Publish(new RollbackSkyProductionSignal());
+    }
+
+    private void CameraUpIsEnd()
+    {
+        townObjectManager.ClearObjManager();
+        signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
+    }
+
+    private void CameraDownIsEnd()
+    {
+        signalHub.Publish(new StartDecreaseStaminaSignal());        
     }
 }

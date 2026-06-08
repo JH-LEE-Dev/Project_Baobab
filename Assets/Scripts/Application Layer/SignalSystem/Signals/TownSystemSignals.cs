@@ -49,4 +49,4 @@ public struct TentInteractStateChangedSignal
     }
 }
 
-
+public struct StartDecreaseStaminaSignal { }

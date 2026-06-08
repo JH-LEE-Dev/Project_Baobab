@@ -80,7 +80,6 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
-        //inputManager.PauseMouse(false);
         character.SetWhereIsCharacter(_bInDungeon);
     }
     
@@ -102,5 +101,10 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public void RefreshCharacter()
     {
         character.RefreshCharacterStat();
+    }
+
+    public void SetCharacterStaminaDecrease()
+    {
+        character.StartDecraseStamina();
     }
 }

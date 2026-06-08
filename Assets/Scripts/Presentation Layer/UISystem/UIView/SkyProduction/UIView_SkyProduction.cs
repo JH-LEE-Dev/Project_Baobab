@@ -85,17 +85,6 @@ public class UIView_SkyProduction : UIView
         base.OnDestroy();
     }
 
-    public override void Update()
-    {
-        base.Update();
-
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
-        {
-            PlayMoveSequence();
-        }
-    }
-
     #endregion
 
     #region Private Methods
@@ -223,4 +212,9 @@ public class UIView_SkyProduction : UIView
     }
 
     #endregion
+
+    public void StartSkyProduction()
+    {
+        PlayMoveSequence();
+    }
 }

@@ -170,40 +170,21 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             stateMachine.ChangeState<IdleState>();
             attackComponent.SetEnable(false);
             attackComponent.SetCursorEnable(false);
+
+            inputManager.PauseMove(false);
         }
         else
         {
             armComponent.ResetWeaponStatus();
-            attackComponent.SetEnable(true);
-            attackComponent.SetCursorEnable(true);
-            healthComponent.SetStaminaDecrease(true);
-            attackComponent.SetbCanAttack(true);
-            armComponent.SetbCanAttack(true);
         }
 
         bDead = false;
-
-        // if (bVisualSync == true)
-        //     inputManager.PauseMove(false);
-        // else
-        // {
-        //     inputManager.PauseMove(true);
-        //     bVisualSync = true;
-        //     StartCoroutine(DelayForSyncVisualComponent());
-        // }
-
-        StartCoroutine(DelayForSyncVisualComponent());
 
         bInDungeon = _bInDungeon;
         characterVisualComponent.SetHubState(!bInDungeon);
         characterVisualComponent.CharacterIsDead(false);
         armComponent.SetActivate(bInDungeon);
-    }
-
-    private System.Collections.IEnumerator DelayForSyncVisualComponent()
-    {
-        yield return new WaitForSeconds(0.5f);
-        inputManager.PauseMove(false);
+        SetFacingDirection(Vector2.down);
     }
 
     public Transform GetTransform() => transform;
@@ -432,5 +413,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void SetStaminaDecrease(bool _boolean)
     {
         healthComponent.SetStaminaDecrease(_boolean);
+    }
+
+    public void StartDecraseStamina()
+    {
+        healthComponent.SetStaminaDecrease(true);
+        attackComponent.SetCursorEnable(true);
+        attackComponent.SetEnable(true);
+        attackComponent.SetbCanAttack(true);
+        armComponent.SetbCanAttack(true);
     }
 }

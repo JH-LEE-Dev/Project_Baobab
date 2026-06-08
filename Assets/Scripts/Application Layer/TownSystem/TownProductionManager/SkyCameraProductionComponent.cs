@@ -2,9 +2,13 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 using DG.Tweening;
+using System;
 
 public class SkyCameraProductionComponent : MonoBehaviour
 {
+    public event Action SkyProductionEndEvent;
+    public event Action SkyProductionRollbackEndEvent;
+    
     // //외부 의존성
     [SerializeField] private CinemachineCamera virtualCamera;
 
@@ -26,15 +30,6 @@ public class SkyCameraProductionComponent : MonoBehaviour
         if (virtualCamera == null)
         {
             virtualCamera = FindAnyObjectByType<CinemachineCamera>();
-        }
-    }
-
-    private void Update()
-    {
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))
-        {
-            PlayCameraMove();
         }
     }
 
@@ -72,20 +67,21 @@ public class SkyCameraProductionComponent : MonoBehaviour
             Vector3 targetPosition = cameraStartPos;
             targetPosition.y += yOffset;
 
-            cameraMoveTween = virtualCamera.transform.DOMove(targetPosition, moveDuration);
+            Sequence seq = DOTween.Sequence();
+            seq.Append(virtualCamera.transform.DOMove(targetPosition, moveDuration));
+            seq.AppendInterval(0.5f);
+            seq.AppendCallback(OnSkyProductionEnd);
+            cameraMoveTween = seq;
         }
         else
         {
             // 2. 원래 위치로 복원 및 복원 완료 시 타겟팅 재연결
-            cameraMoveTween = virtualCamera.transform.DOMove(cameraStartPos, moveDuration)
-                .OnComplete(() =>
-                {
-                    if (virtualCamera != null)
-                    {
-                        virtualCamera.Follow = cachedFollowTarget;
-                        virtualCamera.LookAt = cachedLookAtTarget;
-                    }
-                });
+            Sequence seq = DOTween.Sequence();
+            seq.Append(virtualCamera.transform.DOMove(cameraStartPos, moveDuration));
+            seq.AppendCallback(OnRollbackCameraComplete);
+            seq.AppendInterval(1.0f);
+            seq.AppendCallback(OnSkyProductionRollbackEnd);
+            cameraMoveTween = seq;
         }
 
         if (useCustomCurve)
@@ -98,11 +94,65 @@ public class SkyCameraProductionComponent : MonoBehaviour
         }
     }
 
+    private void OnSkyProductionEnd()
+    {
+        SkyProductionEndEvent?.Invoke();
+    }
+
+    private void OnRollbackCameraComplete()
+    {
+        if (virtualCamera != null)
+        {
+            virtualCamera.Follow = cachedFollowTarget;
+            virtualCamera.LookAt = cachedLookAtTarget;
+        }
+    }
+
+    private void OnSkyProductionRollbackEnd()
+    {
+        SkyProductionRollbackEndEvent?.Invoke();
+    }
+
     private void KillCameraMoveTween()
     {
         if (null != cameraMoveTween && true == cameraMoveTween.IsActive())
         {
             cameraMoveTween.Kill();
+        }
+    }
+
+    public void StartCameraMove()
+    {
+        PlayCameraMove();
+    }
+
+    public void ResetCameraPos(Transform _characterTransform)
+    {
+        if (virtualCamera == null)
+        {
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        }
+
+        if (virtualCamera == null || _characterTransform == null)
+        {
+            return;
+        }
+
+        KillCameraMoveTween();
+
+        if (isMoved)
+        {
+            Vector3 targetPosition = _characterTransform.position;
+            targetPosition.y += yOffset;
+            virtualCamera.transform.position = targetPosition;
+
+            cameraStartPos = _characterTransform.position;
+        }
+        else
+        {
+            virtualCamera.Follow = _characterTransform;
+            virtualCamera.LookAt = _characterTransform;
+            virtualCamera.transform.position = _characterTransform.position;
         }
     }
 }

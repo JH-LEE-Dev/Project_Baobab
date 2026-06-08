@@ -28,12 +28,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private SceneType currentSceneType = SceneType.None;
     private SceneType prevSceneType = SceneType.None;
 
-    private bool bFadeComplete = false;
     private bool bNewGame = false;
     private MapType currentMapType = MapType.Town;
     private ForestType currentForestType = ForestType.InTown;
-
-    private System.Action onFadeInCompleteAction;
 
     // 유니티 이벤트 함수
     private void Awake()
@@ -67,8 +64,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         {
             inputManager.Initialize();
         }
-
-        onFadeInCompleteAction = OnFadeInComplete;
 
         BindEvent();
         InitializeDoTweenPool();
@@ -131,41 +126,15 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             // TODO: UI 시스템을 통해 사용자에게 에러 팝업을 보여주는 로직을 여기에 추가할 수 있습니다.
             return;
         }
+        
         inputManager.PauseMove(true);
         bNewGame = _bNewGame;
         StartCoroutine(TransitionToScene(SceneType.Town));
     }
 
-    private void OnFadeComplete()
-    {
-        bFadeComplete = true;
-    }
-
-    private void OnFadeInComplete()
-    {
-        if (inputManager != null)
-        {
-            inputManager.PauseInteractKey(false);
-        }
-    }
-
     private System.Collections.IEnumerator TransitionToScene(SceneType _sceneType)
     {
-        if (inputManager != null)
-        {
-            inputManager.PauseInteractKey(true);
-        }
-
-        // 1. 로딩창 나타나기 시작 (화면 가리기)
-        bFadeComplete = false;
-        if (LoadingManager.Instance != null)
-        {
-            LoadingManager.Instance.FadeOut(OnFadeComplete);
-            // 로딩창이 완전히 가려질 때까지 대기
-            while (!bFadeComplete) yield return null;
-        }
-
-        // 2. 이제 화면이 완전히 가려졌으므로 전환 로직 시작
+        // 1. 전환 로직 시작
         prevSceneType = currentSceneType;
 
         // 기존 인스톨러 해제
@@ -186,26 +155,16 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             }
         }
 
-        // 3. 비동기 씬 로드
+        // 2. 비동기 씬 로드
         AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
         if (asyncLoad != null)
         {
             while (!asyncLoad.isDone) yield return null;
         }
 
-        // 4. 시스템 초기화 대기 (OnSceneLoaded 실행을 위해 1프레임 + 여유 시간)
+        // 3. 시스템 초기화 대기 (OnSceneLoaded 실행을 위해 1프레임 + 여유 시간)
         yield return null;
         yield return new WaitForSeconds(0.2f);
-
-        // 5. 모든 준비가 되면 로딩창 걷어내기 (화면 밝게)
-        if (LoadingManager.Instance != null)
-        {
-            LoadingManager.Instance.FadeIn(onFadeInCompleteAction);
-        }
-        else
-        {
-            OnFadeInComplete();
-        }
     }
 
     public void GoToOtherScene(MapType _mapType, ForestType _forestType)
