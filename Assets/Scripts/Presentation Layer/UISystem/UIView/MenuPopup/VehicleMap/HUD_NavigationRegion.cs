@@ -245,14 +245,22 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != localizationManager)
         {
             string _localizedName = localizationManager.GetText(mapType);
+            Debug.Log($"mapType: {mapType}");
             if (false == string.IsNullOrEmpty(_localizedName))
+            {
                 regionNameText.text = _localizedName;
+            }
             else
-                regionNameText.text = GetMapTypeString(mapType);
+            {
+                string _fallback = GetMapTypeString(mapType);
+                regionNameText.text = _fallback;
+            }
         }
         else
         {
-            regionNameText.text = GetMapTypeString(mapType);
+            string _fallback = GetMapTypeString(mapType);
+
+            regionNameText.text = _fallback;
         }
     }
 

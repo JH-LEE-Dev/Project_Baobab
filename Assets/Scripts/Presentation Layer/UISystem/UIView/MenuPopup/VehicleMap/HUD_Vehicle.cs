@@ -280,8 +280,6 @@ public class HUD_Vehicle : MonoBehaviour
 
     private void RestoreToSelectedRegion(MapType _mapType)
     {
-        Debug.Log($"[HUD_Vehicle Debug] RestoreToSelectedRegion called with mapType: {_mapType}");
-
         if (null == mapDataProvider || null == subField || null == navigation)
             return;
 
