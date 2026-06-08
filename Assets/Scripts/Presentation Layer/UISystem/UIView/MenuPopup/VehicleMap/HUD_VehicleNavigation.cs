@@ -24,10 +24,12 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     [SerializeField] private bool inertiaEnabled = true;
     [Range(0f, 1f)] [SerializeField] private float decelerationRate = 0.95f;
     [SerializeField] private float extraBottomPadding = 20f;
+    [SerializeField] private float appearDelayGap = 0.1f;
 
     // //내부 의존성
     private readonly List<HUD_NavigationRegion> spawnedRegions = new List<HUD_NavigationRegion>(8);
     private IMapDataProvider mapDataProvider;
+    private LocalizationManager localizationManager;
     private MapType currentSelectedMapType = MapType.None;
     private Vector2 startMousePos;
     private Vector2 startAnchoredPos;
@@ -41,10 +43,11 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IMapDataProvider _mapDataProvider)
+    public void Initialize(IMapDataProvider _mapDataProvider, LocalizationManager _localizeManager)
     {
         isDragging = false;
         mapDataProvider = _mapDataProvider;
+        localizationManager = _localizeManager;
         isYPositionCached = false;
 
         SetupRegionsFromData();
@@ -163,6 +166,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             {
                 spawnedRegions[i].SetSelect(false);
                 spawnedRegions[i].ClearEntry();
+                spawnedRegions[i].ResetAnimation();
             }
 
         // 지연 캐싱이 성공적으로 완료되었을 때에만 Y축 정렬 위치 복구 수행
@@ -172,6 +176,13 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             if (null != containerRect)
                 containerRect.anchoredPosition = new Vector2(containerRect.anchoredPosition.x, initialY);
         }
+    }
+
+    public void PlayAppearAnimations()
+    {
+        for (int i = 0; i < spawnedRegions.Count; i++)
+            if (null != spawnedRegions[i])
+                spawnedRegions[i].PlayAppearAnimation(i * appearDelayGap);
     }
 
 
@@ -205,7 +216,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             HUD_NavigationRegion region = obj.GetComponent<HUD_NavigationRegion>();
             if (null != region)
             {
-                region.Initialize(info.mapType, HandleRegionSelected);
+                region.Initialize(info.mapType, HandleRegionSelected, localizationManager);
 
                 // 각 맵의 서브 리전들 중 접근 가능한 지역(bCanAccess == true)이 단 하나라도 없다면 락 처리
                 bool isMapLocked = true;

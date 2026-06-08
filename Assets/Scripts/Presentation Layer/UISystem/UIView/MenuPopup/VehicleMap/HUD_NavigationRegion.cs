@@ -30,10 +30,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private string clickTag = "Click";
     [SerializeField] private string unHoverTag = "unHover";
     [SerializeField] private string lockClickTag = "LockClick";
+    [SerializeField] private string appearTag = "Appear";
 
     // //내부 의존성
     private MapType mapType = MapType.None;
     private Action<MapType> onSelectEvent;
+    private LocalizationManager localizationManager;
 
     private MotionEntry hoverEntry;
     private MotionEntry clickEntry;
@@ -44,14 +46,16 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private bool isSelected = false;
     private bool isInitialized = false;
     private Tweener colorTween;
+    private Tween appearDelayTween;
 
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(MapType _mapType, Action<MapType> _onSelect)
+    public void Initialize(MapType _mapType, Action<MapType> _onSelect, LocalizationManager _localizeManager)
     {
         mapType = _mapType;
         onSelectEvent = _onSelect;
+        localizationManager = _localizeManager;
         isClicked = false;
         isLocked = false;
         isSelected = false;
@@ -62,6 +66,8 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         SetSelect(false);
         SetLock(false);
+
+        UpdateRegionName();
 
         isInitialized = true;
     }
@@ -104,6 +110,35 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             colorTween.Kill();
 
         colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
+    }
+
+    public void PlayAppearAnimation(float _delay)
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != omp)
+        {
+            omp.ResetAllMotions();
+            transform.localScale = Vector3.zero;
+
+            appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
+            {
+                transform.localScale = Vector3.one;
+                omp.Play(appearTag, bReset: true);
+            }).SetEase(Ease.Linear);
+        }
+    }
+
+    public void ResetAnimation()
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        transform.localScale = Vector3.one;
+
+        if (null != omp)
+            omp.ResetAllMotions();
     }
 
     public MapType GetMapType()
@@ -153,6 +188,25 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private Color GetHoverColor()
     {
         return true == isLocked ? lockHoverColor : normalHoverColor;
+    }
+
+    private void UpdateRegionName()
+    {
+        if (null == regionNameText)
+            return;
+
+        if (null != localizationManager)
+        {
+            string _localizedName = localizationManager.GetText(mapType);
+            if (false == string.IsNullOrEmpty(_localizedName))
+                regionNameText.text = _localizedName;
+            else
+                regionNameText.text = mapType.ToString();
+        }
+        else
+        {
+            regionNameText.text = mapType.ToString();
+        }
     }
 
     private void OnClickAnimationComplete()

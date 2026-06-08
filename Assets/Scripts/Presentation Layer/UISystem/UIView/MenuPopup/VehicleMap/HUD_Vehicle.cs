@@ -20,6 +20,7 @@ public class HUD_Vehicle : MonoBehaviour
     [SerializeField] private string blinkMotionTag = "Blink";
     [SerializeField] private string backgroundMotionTag = "Background";
     [SerializeField] private string controlBoardMotionTag = "ControlBoard";
+    [SerializeField] private float cancelButtonAppearDelay = 0.4f;
 
     // //내부 의존성
     private IMapDataProvider mapDataProvider;
@@ -29,7 +30,7 @@ public class HUD_Vehicle : MonoBehaviour
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IMapDataProvider _mapDataProvider, Action _onClose)
+    public void Initialize(IMapDataProvider _mapDataProvider, Action _onClose, LocalizationManager _localizeManager)
     {
         isBlinking = false;
 
@@ -43,7 +44,7 @@ public class HUD_Vehicle : MonoBehaviour
 
         if (null != navigation)
         {
-            navigation.Initialize(mapDataProvider);
+            navigation.Initialize(mapDataProvider, _localizeManager);
             navigation.regionSelectedEvent -= HandleRegionSelected;
             navigation.regionSelectedEvent += HandleRegionSelected;
         }
@@ -76,6 +77,12 @@ public class HUD_Vehicle : MonoBehaviour
 
         omp.Play(backgroundMotionTag, bReset: true);
         omp.Play(controlBoardMotionTag, bReset: true);
+
+        if (null != navigation)
+            navigation.PlayAppearAnimations();
+
+        if (null != cancelButton)
+            cancelButton.PlayAppearAnimation(cancelButtonAppearDelay);
     }
 
     public void Close()
@@ -95,13 +102,37 @@ public class HUD_Vehicle : MonoBehaviour
             subField.ResetSelection();
 
         if (null != okButton)
+        {
             okButton.SetButtonActive(false, false);
+            okButton.ResetAnimation();
+        }
+
+        if (null != cancelButton)
+            cancelButton.ResetAnimation();
 
         omp.PlayBackward(backgroundMotionTag, bReset: true);
         omp.PlayBackward(controlBoardMotionTag, bReset: true, _onComplete: HandleClose);
     }
 
-    private void HandleClose() => gameObject.SetActive(false);
+    private void HandleClose()
+    {
+        if (null != navigation)
+            navigation.ResetSelection();
+
+        if (null != subField)
+            subField.ResetSelection();
+
+        if (null != okButton)
+            okButton.ResetAnimation();
+
+        if (null != cancelButton)
+            cancelButton.ResetAnimation();
+
+        if (null != omp)
+            omp.ResetAllMotions();
+
+        gameObject.SetActive(false);
+    }
 
     // //내부 로직
 
@@ -219,6 +250,12 @@ public class HUD_Vehicle : MonoBehaviour
             subField.ResetSelection();
 
         if (null != okButton)
+        {
             okButton.SetButtonActive(false, false);
+            okButton.ResetAnimation();
+        }
+
+        if (null != cancelButton)
+            cancelButton.ResetAnimation();
     }
 }

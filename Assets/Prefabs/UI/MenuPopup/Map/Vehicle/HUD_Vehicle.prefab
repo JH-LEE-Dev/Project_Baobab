@@ -198,6 +198,15 @@ MonoBehaviour:
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
+  - motionTag: CancelAppear
+    motionPrefab: {fileID: 1012625957613380575}
+    targets:
+    - transform: {fileID: 3404166201015778976}
+      rectTransform: {fileID: 3404166201015778976}
+      canvasGroup: {fileID: 5202272328835599404}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 0}
+    motionInstance: {fileID: 0}
 --- !u!1 &1806237097115823313
 GameObject:
   m_ObjectHideFlags: 0
@@ -356,6 +365,7 @@ MonoBehaviour:
   hoverOffMotionKey: OkHoverOff
   clickMotionKey: OkClick
   activeMotionKey: Active
+  appearMotionKey: OkAppear
 --- !u!225 &2636745429601040190
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -902,6 +912,7 @@ MonoBehaviour:
   hoverOffMotionKey: CancelHoverOff
   clickMotionKey: CancelClick
   activeMotionKey: 
+  appearMotionKey: CancelAppear
 --- !u!225 &5202272328835599404
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -1167,6 +1178,7 @@ MonoBehaviour:
   blinkMotionTag: Blink
   backgroundMotionTag: Background
   controlBoardMotionTag: ControlBoard
+  cancelButtonAppearDelay: 0.4
 --- !u!1 &6791670516459754279
 GameObject:
   m_ObjectHideFlags: 0

@@ -21,12 +21,15 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     [SerializeField] private Color normalHoverColor = Color.white;
     [SerializeField] private Color lockHoverColor = Color.red;
     [SerializeField] private float hoverColorDuration = 0.2f;
+    [SerializeField] private Color selectPingPongColor = Color.yellow;
+    [SerializeField] private float selectPingPongDuration = 0.8f;
 
     [Header("Motion Tags")]
     [SerializeField] private string hoverTag = "Hover";
     [SerializeField] private string hoverOffTag = "HoverOff";
     [SerializeField] private string clickTag = "Click";
     [SerializeField] private string lockClickTag = "LockClick";
+    [SerializeField] private string appearTag = "Appear";
 
     // //내부 의존성
     private RectTransform rect;
@@ -50,6 +53,8 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private float pendingExitTime = 0f;
     private PointerEventData pendingExitData;
     private Tweener colorTween;
+    private Tween appearDelayTween;
+    private Tweener pingPongTween;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -96,7 +101,54 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
 
-        colorTween = iconImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
+        if (null != pingPongTween && pingPongTween.IsActive())
+            pingPongTween.Kill();
+
+        if (true == isSelected)
+        {
+            iconImage.color = selectColor;
+            pingPongTween = iconImage.DOColor(selectPingPongColor, selectPingPongDuration)
+                                     .SetLoops(-1, LoopType.Yoyo)
+                                     .SetEase(Ease.InOutSine);
+        }
+        else
+        {
+            colorTween = iconImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
+        }
+    }
+
+    public void PlayAppearAnimation(float _delay)
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != motionPlayer)
+        {
+            motionPlayer.ResetAllMotions();
+            transform.localScale = Vector3.zero;
+
+            appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
+            {
+                transform.localScale = Vector3.one;
+                motionPlayer.Play(appearTag, bReset: true);
+            }).SetEase(Ease.Linear);
+        }
+    }
+
+    public void ResetAnimation()
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != pingPongTween && pingPongTween.IsActive())
+            pingPongTween.Kill();
+
+        transform.localScale = Vector3.one;
+
+        if (null != motionPlayer)
+            motionPlayer.ResetAllMotions();
+
+        UpdateColor();
     }
 
     public void SetNumber(int _number)

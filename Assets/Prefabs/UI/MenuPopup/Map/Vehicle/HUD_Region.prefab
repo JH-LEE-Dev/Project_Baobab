@@ -491,6 +491,15 @@ MonoBehaviour:
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
+  - motionTag: Appear
+    motionPrefab: {fileID: 8723458936380796341}
+    targets:
+    - transform: {fileID: 2445121431010259023}
+      rectTransform: {fileID: 2445121431010259023}
+      canvasGroup: {fileID: 0}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 0}
+    motionInstance: {fileID: 0}
 --- !u!1 &3691787617544517838
 GameObject:
   m_ObjectHideFlags: 0
@@ -564,6 +573,7 @@ MonoBehaviour:
   clickTag: Click
   unHoverTag: HoverOff
   lockClickTag: LockClick
+  appearTag: Appear
 --- !u!1 &4710241905108993867
 GameObject:
   m_ObjectHideFlags: 0

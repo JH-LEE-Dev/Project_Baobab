@@ -216,10 +216,13 @@ MonoBehaviour:
   normalHoverColor: {r: 0.37068352, g: 0.46473995, b: 0.6603774, a: 1}
   lockHoverColor: {r: 0.754717, g: 0.16731933, b: 0.16731933, a: 1}
   hoverColorDuration: 0.15
+  selectPingPongColor: {r: 0.740566, g: 0.99793273, b: 1, a: 1}
+  selectPingPongDuration: 0.8
   hoverTag: Hover
   hoverOffTag: HoverOff
   clickTag: Click
   lockClickTag: LockClick
+  appearTag: Appear
 --- !u!1 &6372244703501391218
 GameObject:
   m_ObjectHideFlags: 0
@@ -302,6 +305,15 @@ MonoBehaviour:
     motionInstance: {fileID: 0}
   - motionTag: LockClick
     motionPrefab: {fileID: 1392922823718485570}
+    targets:
+    - transform: {fileID: 4396298861076199759}
+      rectTransform: {fileID: 4396298861076199759}
+      canvasGroup: {fileID: 0}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 0}
+    motionInstance: {fileID: 0}
+  - motionTag: Appear
+    motionPrefab: {fileID: 5523797976590737294}
     targets:
     - transform: {fileID: 4396298861076199759}
       rectTransform: {fileID: 4396298861076199759}

@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
 
 /// <summary>
@@ -22,6 +23,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     [SerializeField] private string hoverOffMotionKey = "HoverOff";
     [SerializeField] private string clickMotionKey = "Click";
     [SerializeField] private string activeMotionKey = "Active";
+    [SerializeField] private string appearMotionKey = "Appear";
 
     // //내부 의존성
     private Action onConfirmEvent;
@@ -31,6 +33,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     private MotionEntry enterAnim;
     private MotionEntry exitAnim;
     private MotionEntry clickedAnim;
+    private Tween appearDelayTween;
 
     private float currentAlpha = 1.0f;
     private bool isClicked = false;
@@ -64,6 +67,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         if (false == isOkButton)
             return;
 
+        if (_active == isButtonActive)
+            return;
+
         isButtonActive = _active;
         gameObject.SetActive(_active);
 
@@ -89,6 +95,35 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         Color _color = buttonImage.color;
         _color.a = currentAlpha;
         buttonImage.color = _color;
+    }
+
+    public void PlayAppearAnimation(float _delay)
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != motionPlayer)
+        {
+            motionPlayer.ResetAllMotions();
+            transform.localScale = Vector3.zero;
+
+            appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
+            {
+                transform.localScale = Vector3.one;
+                motionPlayer.Play(appearMotionKey, bReset: true);
+            }).SetEase(Ease.Linear);
+        }
+    }
+
+    public void ResetAnimation()
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        transform.localScale = Vector3.one;
+
+        if (null != motionPlayer)
+            motionPlayer.ResetAllMotions();
     }
 
 
@@ -130,12 +165,13 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         isClicked = true;
 
         clickedAnim = motionPlayer.Play(clickMotionKey, bReset: true, _onComplete: UnClicked);
-
-        onConfirmEvent?.Invoke();
     }
 
-    private void UnClicked() => isClicked = false;
-
+    private void UnClicked()
+    {
+        onConfirmEvent?.Invoke();
+        isClicked = false;
+    }
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 

@@ -11,6 +11,7 @@ public class HUD_NavigationSubField : MonoBehaviour
     [Header("UI Elements")]
     [SerializeField] private GameObject subRegionPrefab;
     [SerializeField] private RectTransform subRegionContainer;
+    [SerializeField] private float subRegionAppearDelayGap = 0.1f;
 
     // //내부 의존성
     private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(3);
@@ -29,7 +30,10 @@ public class HUD_NavigationSubField : MonoBehaviour
 
         for (int i = 0; i < spawnedSubRegions.Count; i++)
             if (null != spawnedSubRegions[i])
+            {
+                spawnedSubRegions[i].ResetAnimation();
                 spawnedSubRegions[i].gameObject.SetActive(false);
+            }
 
         isInitialized = true;
     }
@@ -74,6 +78,7 @@ public class HUD_NavigationSubField : MonoBehaviour
             {
                 spawnedSubRegions[i].PlayOpenAnimation();
                 spawnedSubRegions[i].Setup(_forestDatas[i], i + 1, OnSubRegionHoverEntered, OnSubRegionHoverExited, OnSubRegionSelected);
+                spawnedSubRegions[i].PlayAppearAnimation(i * subRegionAppearDelayGap);
             }
             else
                 spawnedSubRegions[i].PlayCloseAnimation();
@@ -228,6 +233,7 @@ public class HUD_NavigationSubField : MonoBehaviour
             if (null != spawnedSubRegions[i])
             {
                 spawnedSubRegions[i].SetSelect(false);
+                spawnedSubRegions[i].ResetAnimation();
                 spawnedSubRegions[i].PlayCloseAnimation();
             }
         }

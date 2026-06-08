@@ -39,7 +39,7 @@ public class UIView_MenuPopup : UIView
 
         if (null != vehicle)
         {
-            vehicle.Initialize(mapDataProvider, OnHide);
+            vehicle.Initialize(mapDataProvider, OnHide, viewCtx.localizationManager);
             vehicle.MapSelectedEvent -= HandleEnterDungeon;
             vehicle.MapSelectedEvent += HandleEnterDungeon;
         }
