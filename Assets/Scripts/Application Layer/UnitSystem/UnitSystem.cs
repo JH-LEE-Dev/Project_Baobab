@@ -53,6 +53,7 @@ public class UnitSystem
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.Subscribe<DropAllItemSignal>(DropAllItem);
+        signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
     }
 
     private void UnSubscribeSignals()
@@ -68,6 +69,7 @@ public class UnitSystem
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.UnSubscribe<DropAllItemSignal>(DropAllItem);
+        signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
     }
 
     private void BindEvents()
@@ -268,5 +270,10 @@ public class UnitSystem
     {
         inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
         signalHub.Publish(new PopupUIDownSignal());
+    }
+
+    private void RetryGame(RetryButtonClickedSignal _retryButtonClickedSignal)
+    {
+        unitLogicManager.ResetCharacterStatus();
     }
 }

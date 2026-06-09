@@ -15,13 +15,17 @@ public class InDungeonSystem : MonoBehaviour
     private Character character;
     private SkyCameraProductionManager skyCameraProductionManager;
 
-
     [Header("Dungeon Data Base")]
     [SerializeField] private DungeonValueDataBase dungeonDataBase;
 
     private MapType currentMapType;
     private ForestType currentForestType;
 
+    private bool bCurrentlyDungeonScene = false;
+    private bool prevbCurrentlyDungeonScene = false;
+    private bool bRetryGame = false;
+    private MapType selectedMapType;
+    private ForestType selectedForestType;
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
     InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
     {
@@ -92,9 +96,6 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
         inDungeonUnitSpawner.AnimalIsDeadEvent += AnimalIsDead;
 
-        inDungeonObjectManager.GameEndEvent -= GameEnd;
-        inDungeonObjectManager.GameEndEvent += GameEnd;
-
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadSpawnedEvent += OffroadSpawned;
 
@@ -109,6 +110,15 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         inDungeonProductionManager.CharacterRideEndEvent += CharacterRideEnd;
+
+        inDungeonProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
+        inDungeonProductionManager.CameraUpIsEndEvent += CameraUpIsEnd;
+
+        inDungeonProductionManager.CameraDownEndEvent -= CameraDownIsEnd;
+        inDungeonProductionManager.CameraDownEndEvent += CameraDownIsEnd;
+
+        inDungeonProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
+        inDungeonProductionManager.RollbackSkyProductionEvent += RollbackSkyProduction;
     }
 
     private void ReleaseEvents()
@@ -121,12 +131,14 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
-        inDungeonObjectManager.GameEndEvent -= GameEnd;
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
+        inDungeonProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
+        inDungeonProductionManager.CameraDownEndEvent -= CameraDownIsEnd;
+        inDungeonProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
     }
 
     private void SubscribeSignals()
@@ -134,6 +146,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.Subscribe<GoHomeButtonClickedSignal>(GoHome);
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
+        signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
+        signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
     }
 
     private void UnSubscribeSignals()
@@ -141,6 +155,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<MapGeneratedSignal>(MapGenerated);
         signalHub.UnSubscribe<GoHomeButtonClickedSignal>(GoHome);
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
+        signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
     }
 
     private void PortalActivated()
@@ -162,6 +178,17 @@ public class InDungeonSystem : MonoBehaviour
         character.gameObject.SetActive(true);
 
         CameraMoveController.Instance.SetupCamera();
+
+        if (bRetryGame == false)
+        {
+            prevbCurrentlyDungeonScene = bCurrentlyDungeonScene;
+            bCurrentlyDungeonScene = true;
+            inDungeonProductionManager.bCurrentlyDungeonScene = true;
+        }
+        else
+        {
+            inDungeonProductionManager.RollbackCameraMove();
+        }
     }
 
     private void ItemAcquired(Item _item)
@@ -176,7 +203,8 @@ public class InDungeonSystem : MonoBehaviour
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
     {
-        signalHub.Publish(new GoToHomeSignal());
+        inDungeonProductionManager.StartSkyProduction();
+        signalHub.Publish(new StartSkyProductionSignal());
     }
 
     private void CarrotItemAcquired(CarrotItem _carrotItem)
@@ -186,8 +214,20 @@ public class InDungeonSystem : MonoBehaviour
 
     public void ClearInDungeonSystem()
     {
+        if (bRetryGame == false)
+        {
+            prevbCurrentlyDungeonScene = bCurrentlyDungeonScene;
+            bCurrentlyDungeonScene = false;
+            inDungeonProductionManager.bCurrentlyDungeonScene = false;
+        }
+
         inDungeonObjectManager.ClearObjManager();
         inDungeonUnitSpawner.ReleaseAllAnimals();
+
+        if ((prevbCurrentlyDungeonScene != bCurrentlyDungeonScene) && bRetryGame == false)
+        {
+            inDungeonProductionManager.RollbackCameraMove();
+        }
     }
 
     private void AnimalHit(Animal _animal)
@@ -250,5 +290,58 @@ public class InDungeonSystem : MonoBehaviour
     private void CharacterRideEnd()
     {
         GameEnd();
+    }
+
+    private void CameraUpIsEnd()
+    {
+        if (bCurrentlyDungeonScene == false)
+            return;
+
+        if (bRetryGame == false)
+            signalHub.Publish(new GoToHomeSignal());
+        else
+        {
+            inDungeonObjectManager.ClearObjManager();
+            inDungeonUnitSpawner.ReleaseAllAnimals();
+
+            signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
+        }
+    }
+
+    private void CameraDownIsEnd()
+    {
+        if (bCurrentlyDungeonScene == true && bRetryGame == false)
+            return;
+
+        inputManager.PauseInteractKey(false);
+        inputManager.PauseMove(false);
+
+        signalHub.Publish(new PopupUIUpSignal());
+
+        if (bRetryGame == true)
+        {
+            bRetryGame = false;
+            inDungeonProductionManager.bRetryGame = false;
+        }
+    }
+
+    private void RollbackSkyProduction()
+    {
+        signalHub.Publish(new RollbackSkyProductionSignal());
+    }
+
+    private void RetryButtonClicked(RetryButtonClickedSignal _retryButtonClickedSignal)
+    {
+        bRetryGame = true;
+        inDungeonProductionManager.bRetryGame = true;
+
+        inDungeonProductionManager.StartSkyProduction();
+        signalHub.Publish(new StartSkyProductionSignal());
+    }
+
+    private void DungeonSelected(DungeonSelectedSignal _dungeonSelectedSignal)
+    {
+        selectedMapType = _dungeonSelectedSignal.type;
+        selectedForestType = _dungeonSelectedSignal.forestType;
     }
 }

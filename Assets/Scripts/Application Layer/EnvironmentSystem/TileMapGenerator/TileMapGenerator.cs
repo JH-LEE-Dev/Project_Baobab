@@ -511,9 +511,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _hasRockDeco = false;
                 if (rockDecoTiles != null && rockDecoTiles.Count > 0 && UnityEngine.Random.value < 0.0005f)
                 {
-                    decoTilesToApply[i] = rockDecoTiles[UnityEngine.Random.Range(0, rockDecoTiles.Count)];
-                    _hasRockDeco = true;
-                    rockCollisionTiles[i] = treeCollisionTile;
+                    int randomIndex = UnityEngine.Random.Range(0, rockDecoTiles.Count);
+                    if (!inSafeZone)
+                    {
+                        decoTilesToApply[i] = rockDecoTiles[randomIndex];
+                        _hasRockDeco = true;
+                        rockCollisionTiles[i] = treeCollisionTile;
+                    }
                 }
 
                 bool _hasAnimatedObj = false;
