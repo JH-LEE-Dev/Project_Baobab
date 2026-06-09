@@ -478,4 +478,9 @@ public class GameplayUICoordinator
         hudUI.HUDGoUp();
         popUpUI.PopupGoUp();
     }
+
+    private void ProvideAccumulatedValueChangeEvent(SkillAccumulatedValueChangeData _data)
+    {
+        tentUI.SkillAccumulatedValuePreviewProvided(_data);
+    }
 }

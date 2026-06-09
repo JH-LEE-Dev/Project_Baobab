@@ -200,6 +200,7 @@ public class UnitSystem
     private void CharacterStaminaIsEmpty()
     {
         inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
+        signalHub.Publish(new PopupUIDownSignal());
         //signalHub.Publish(new GoHomeButtonClickedSignal());
     }
 
