@@ -52,27 +52,25 @@ public class AbilityToolTip : MonoBehaviour
 
     public void SetContent(string _titleAndLevel, string _description, string _cost)
     {
-        SetContent(_titleAndLevel, _description, string.Empty, _cost);
+        SetContent(_titleAndLevel, _description, string.Empty, _cost, MoneyType.None, false);
     }
 
     public void SetContent(string _titleAndLevel, string _description, string _value, string _cost)
     {
-        if (titleAndLevelText != null)
-            titleAndLevelText.text = _titleAndLevel;
-
-        if (descriptionText != null)
-            descriptionText.text = _description;
-
-        SetValue(_value);
-        SetPlainCost(_cost);
+        SetContent(_titleAndLevel, _description, _value, _cost, MoneyType.None, false);
     }
 
     public void SetContent(string _titleAndLevel, string _description, string _cost, MoneyType _moneyType)
     {
-        SetContent(_titleAndLevel, _description, string.Empty, _cost, _moneyType);
+        SetContent(_titleAndLevel, _description, string.Empty, _cost, _moneyType, true);
     }
 
     public void SetContent(string _titleAndLevel, string _description, string _value, string _cost, MoneyType _moneyType)
+    {
+        SetContent(_titleAndLevel, _description, _value, _cost, _moneyType, true);
+    }
+
+    private void SetContent(string _titleAndLevel, string _description, string _value, string _cost, MoneyType _moneyType, bool _useCurrencyIcon)
     {
         if (titleAndLevelText != null)
             titleAndLevelText.text = _titleAndLevel;
@@ -81,7 +79,10 @@ public class AbilityToolTip : MonoBehaviour
             descriptionText.text = _description;
 
         SetValue(_value);
-        SetCurrencyCost(_cost, _moneyType);
+        if (_useCurrencyIcon)
+            SetCurrencyCost(_cost, _moneyType);
+        else
+            SetPlainCost(_cost);
     }
 
     private void SetValue(string _value)
