@@ -1027,8 +1027,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\uBAA9\uC801\uC9C0\n"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e371f76b2db090243860b7a24ca36a9e, type: 2}
-  m_sharedMaterial: {fileID: -4245052357062469366, guid: e371f76b2db090243860b7a24ca36a9e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
+  m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1188,6 +1188,8 @@ MonoBehaviour:
   dragAreaRect: {fileID: 4513194586368945828}
   containerRect: {fileID: 2187332572160431775}
   mapNameText: {fileID: 2438839004797934513}
+  mapNameOmp: {fileID: 0}
+  mapNameChangeMotionTag: Change
   scrollSensitivity: 1
   wheelSensitivity: 5
   smoothTime: 0.15
@@ -1200,9 +1202,6 @@ MonoBehaviour:
   downButton: {fileID: 7927836566111108331}
   repeatDelay: 0.4
   repeatInterval: 0.1
-  localizationMapping: {fileID: 0}
-  mapNameOmp: {fileID: 0}
-  mapNameChangeMotionTag: Change
 --- !u!1 &7986957727270662319
 GameObject:
   m_ObjectHideFlags: 0
