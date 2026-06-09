@@ -42,10 +42,24 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private const float BOUNCE_DURATION = 0.4f;
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => containerSlots;
-
     public long money => 0;
-
     public long carrot => 0;
+    int IInventory.maxCapacity => currentSlotCount * maxItemsPerSlot;
+    int IInventory.currentItemCount
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < currentSlotCount; i++)
+            {
+                if (containerSlots[i].itemData != null)
+                {
+                    total += containerSlots[i].totalCount;
+                }
+            }
+            return total;
+        }
+    }
 
     public int currentSlotCnt => currentSlotCount;
 

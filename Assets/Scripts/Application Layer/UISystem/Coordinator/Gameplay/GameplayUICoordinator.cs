@@ -360,7 +360,8 @@ public class GameplayUICoordinator
     {
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
-
+        resultUI.DungeonStarted();
+        
         bInventoryOpened = false;
         popUpUI.Hide();
     }

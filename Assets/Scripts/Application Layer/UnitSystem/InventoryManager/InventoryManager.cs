@@ -30,10 +30,24 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public bool bInventoryIsEmpty { get; private set; }
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
-
     long IInventory.money => money;
-
     long IInventory.carrot => carrot;
+    int IInventory.maxCapacity => currentSlotCount * maxItemsPerSlot;
+    int IInventory.currentItemCount
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < currentSlotCount; i++)
+            {
+                if (inventorySlots[i].itemData != null)
+                {
+                    total += inventorySlots[i].totalCount;
+                }
+            }
+            return total;
+        }
+    }
 
     public int currentSlotCnt => currentSlotCount;
 
@@ -537,10 +551,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         Debug.Log("[InventoryManager] Inventory Save Data Loaded.");
     }
 
-    public void DropAllItem(Transform _charTransform)
+    public int DropAllItem(Transform _charTransform)
     {
-        if (_charTransform == null) return;
+        if (_charTransform == null) return 0;
 
+        int totalDroppedCount = 0;
         Vector3 startPos = _charTransform.position;
 
         for (int i = 0; i < currentSlotCount; i++)
@@ -549,6 +564,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             if (slot.itemData == null || slot.totalCount <= 0) continue;
 
             int count = slot.totalCount;
+            totalDroppedCount += count;
 
             // Log 아이템인 경우 처리
             if (slot.itemData is LogItemData logData)
@@ -596,6 +612,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         UpdateInventoryEmptyState();
         LoosAllInventoryItemEvent?.Invoke();
+
+        return totalDroppedCount;
     }
 
     public void ReleaseAllDroppedItem()

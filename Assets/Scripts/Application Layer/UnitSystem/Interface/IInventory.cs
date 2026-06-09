@@ -7,6 +7,8 @@ public interface IInventory
     IReadOnlyList<IInventorySlot> inventorySlots { get; }
     int currentSlotCnt { get; }
     int maxItemCntPerSlot { get; }
+    int maxCapacity { get; }
+    int currentItemCount { get; }
     Transform GetTransform();
     long money { get; }
     long carrot { get; }

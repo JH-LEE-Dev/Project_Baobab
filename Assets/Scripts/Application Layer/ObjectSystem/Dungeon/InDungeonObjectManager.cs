@@ -68,11 +68,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private Character character;
     private OffroadContainer offraodContainer;
     private IInventoryChecker inventoryChecker;
+    private InDungeonResultManager inDungeonResultManager;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager,
-    IInventory _characterInventory, OffroadContainer _offroadContainer)
+    IInventory _characterInventory, OffroadContainer _offroadContainer, InDungeonResultManager _inDungeonResultManager)
     {
         offraodContainer = _offroadContainer;
         characterInventory = _characterInventory;
@@ -80,6 +81,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         environmentProvider = _environmentProvider;
         mainCam = Camera.main;
         inventoryChecker = _inventoryChecker;
+        inDungeonResultManager = _inDungeonResultManager;
 
         itemManager = GetComponentInChildren<ItemManager>();
         itemManager.Initialize(_inventoryChecker);
@@ -483,6 +485,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         treePool.Release(_treeObj);
         TreeDeadEvent?.Invoke(_treeObj.treeData.type);
+
+        inDungeonResultManager.IncreaseTreeKillCnt();
     }
 
     // // 오브젝트 풀 콜백

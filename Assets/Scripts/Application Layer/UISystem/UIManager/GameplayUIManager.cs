@@ -13,11 +13,11 @@ public class GameplayUIManager : UIManager
     private IWeatherProvider weatherProvider;
     private ITimeDataProvider timeDataProvider;
     private IInventory offroadContainer;
-
-
+    private IDungeonResultProvider dungeonResultProvider;
     public void Initialize(InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
     ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC, IMoneyData _moneyData, LocalizationManager _localizeManager,
-    IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, IInventory _offroadContainer, UIDepthController _depthController)
+    IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, IInventory _offroadContainer,
+     UIDepthController _depthController, IDungeonResultProvider _dungeonResultProvider)
     {
         base.Initialize(_inputManager, _localizeManager, _depthController);
 
@@ -33,6 +33,7 @@ public class GameplayUIManager : UIManager
         skillSystemProvider = _skillSystemProvider;
         shopNPC = _shopNPC;
         moneyData = _moneyData;
+        dungeonResultProvider = _dungeonResultProvider;
     }
 
     protected override void DataInjection(UIView view)
@@ -54,5 +55,8 @@ public class GameplayUIManager : UIManager
 
         if (view is UIView_MenuPopup menuPopupUI)
             menuPopupUI.DependencyInjection(mapDataProvider, weatherProvider, timeDataProvider);
+
+        if(view is UIView_Result resultUI)
+            resultUI.DependencyInjection(offroadContainer, inventory, dungeonResultProvider);
     }
 }

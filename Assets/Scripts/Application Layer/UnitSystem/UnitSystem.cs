@@ -8,18 +8,19 @@ public class UnitSystem
     private UnitLogicManager unitLogicManager;
     private InventoryManager inventoryManager;
     private OffroadContainer offroadContainer;
-
+    private InDungeonResultManager inDungeonResultManager;
     //내부 의존성
 
 
     public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager, InventoryManager _inventoryManager,
-    OffroadContainer _offroadContainer)
+    OffroadContainer _offroadContainer, InDungeonResultManager _inDungeonResultManager)
     {
         signalHub = _signalHub;
         unitSpawner = _unitSpawner;
         unitLogicManager = _unitLogicManager;
         inventoryManager = _inventoryManager;
         offroadContainer = _offroadContainer;
+        inDungeonResultManager = _inDungeonResultManager;
 
         SubscribeSignals();
         BindEvents();
@@ -208,7 +209,7 @@ public class UnitSystem
 
     private void CharacterStaminaIsEmpty()
     {
-        inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
+        inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
         signalHub.Publish(new PopupUIDownSignal());
     }
 
@@ -269,7 +270,7 @@ public class UnitSystem
 
     private void DropAllItem(DropAllItemSignal _signal)
     {
-        inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
+        inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
         signalHub.Publish(new PopupUIDownSignal());
     }
 

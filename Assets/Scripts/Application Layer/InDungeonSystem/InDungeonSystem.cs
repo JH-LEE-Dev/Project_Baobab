@@ -14,6 +14,7 @@ public class InDungeonSystem : MonoBehaviour
     private InDungeonProductionManager inDungeonProductionManager;
     private Character character;
     private SkyCameraProductionManager skyCameraProductionManager;
+    public InDungeonResultManager inDungeonResultManager { get; private set; }
 
     [Header("Dungeon Data Base")]
     [SerializeField] private DungeonValueDataBase dungeonDataBase;
@@ -37,7 +38,8 @@ public class InDungeonSystem : MonoBehaviour
         skyCameraProductionManager = _skyCameraProductionManager;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
-        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory, offroadContainer);
+        inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory, offroadContainer,
+        inDungeonResultManager);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
         inDungeonUnitSpawner.Initialize(environmentProvider);
@@ -47,6 +49,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonProductionManager = GetComponentInChildren<InDungeonProductionManager>();
         inDungeonProductionManager.Initialize(inputManager, _skyCameraProductionManager);
+
+        inDungeonResultManager = GetComponentInChildren<InDungeonResultManager>();
+        inDungeonResultManager.Initialize();
 
         BindEvents();
         SubscribeSignals();
@@ -62,6 +67,8 @@ public class InDungeonSystem : MonoBehaviour
 
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
+        inDungeonResultManager.Reset();
+        
         currentMapType = _sceneChangeData.mapType;
         currentForestType = _sceneChangeData.forestType;
 
