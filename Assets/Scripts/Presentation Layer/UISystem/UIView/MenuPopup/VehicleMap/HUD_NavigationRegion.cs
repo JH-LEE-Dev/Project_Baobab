@@ -53,6 +53,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private Tweener colorTween;
     private Tween appearDelayTween;
     private Tweener scaleTween;
+    private TweenCallback onAppearDelayCompleteCallback;
 
     // 캐싱된 상수 및 리터럴 값
     private const bool forceReset = true;
@@ -74,6 +75,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         isSelected = false;
         isHovered = false;
         onClickAnimationCompleteCallback = OnClickAnimationComplete;
+        onAppearDelayCompleteCallback = OnAppearDelayComplete;
 
         if (null != omp)
             omp.Initialize();
@@ -136,12 +138,14 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             omp.ResetAllMotions();
             transform.localScale = Vector3.zero;
 
-            appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
-            {
-                transform.localScale = Vector3.one;
-                appearEntry = omp.Play(appearTag, bReset: forceReset);
-            }).SetEase(Ease.Linear);
+            appearDelayTween = DOVirtual.DelayedCall(_delay, onAppearDelayCompleteCallback).SetEase(Ease.Linear);
         }
+    }
+
+    private void OnAppearDelayComplete()
+    {
+        transform.localScale = Vector3.one;
+        appearEntry = omp.Play(appearTag, bReset: forceReset);
     }
 
     public void ResetAnimation()

@@ -18,18 +18,22 @@ MonoBehaviour:
     enumIntValue: 0
     compositeKey: 2097153
   - enumTypeName: MapType
+    enumValueName: None
+    enumIntValue: 0
+    compositeKey: 2097154
+  - enumTypeName: MapType
     enumValueName: VegetatedForest
     enumIntValue: 2
-    compositeKey: 2097154
+    compositeKey: 2097155
   - enumTypeName: MapType
     enumValueName: MongleSporeForest
     enumIntValue: 3
-    compositeKey: 2097155
+    compositeKey: 2097156
   - enumTypeName: MapType
     enumValueName: StarrootForest
     enumIntValue: 4
-    compositeKey: 2097156
+    compositeKey: 2097157
   - enumTypeName: MapType
     enumValueName: MagmaForest
     enumIntValue: 5
-    compositeKey: 2097157
+    compositeKey: 2097158

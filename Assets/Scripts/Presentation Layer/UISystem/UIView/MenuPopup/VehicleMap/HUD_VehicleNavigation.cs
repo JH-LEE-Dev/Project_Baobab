@@ -66,6 +66,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     private bool isDownButtonPressed = false;
     private float nextScrollTime = 0f;
     private float buttonPressDuration = 0f;
+    private TweenCallback playMapNameChangeMotionCallback;
 
     // 캐싱된 상수 및 리터럴 값
     private const float defaultScrollStepSize = 100f;
@@ -104,6 +105,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         onUpButtonPressStateChangedCallback = OnUpButtonPressStateChanged;
         onDownButtonPressStateChangedCallback = OnDownButtonPressStateChanged;
         onRegionSelectedCallback = HandleRegionSelected;
+        playMapNameChangeMotionCallback = PlayMapNameChangeMotion;
 
         if (null != mapNameText)
             defaultMapNameText = mapNameText.text;
@@ -321,7 +323,44 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             }
         }
     }
+ 
+    public void SetMapNameTextToInformation()
+    {
+        if (null == mapNameText)
+            return;
+ 
+        string _newText = string.Empty;
+ 
+        if (null != localizationManager)
+        {
+            _newText = localizationManager.GetText(1, 1);
+        }
+ 
+        if (true == string.IsNullOrEmpty(_newText))
+        {
+            _newText = "등장하는 나무 정보";
+        }
+ 
+        if (mapNameText.text != _newText)
+        {
+            mapNameText.text = _newText;
+ 
+            if (null != mapNameOmp)
+            {
+                mapNameOmp.ResetAllMotions();
+                DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
+            }
+        }
+    }
 
+    private void PlayMapNameChangeMotion()
+    {
+        if (null != mapNameOmp)
+            mapNameOmp.Play(mapNameChangeMotionTag, bReset: true);
+    }
+
+    // 내부 로직
+ 
     private void OnRegionDisappearComplete()
     {
         disappearCompletedCount++;
@@ -414,9 +453,6 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     {
         HandleButtonPressStateChanged(false, _isPressed);
     }
-
-
-    // 내부 로직
 
     private void SetupRegionsFromData()
     {
@@ -584,11 +620,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             if (null != mapNameOmp)
             {
                 mapNameOmp.ResetAllMotions();
-                DOVirtual.DelayedCall(0.05f, () =>
-                {
-                    if (null != mapNameOmp)
-                        mapNameOmp.Play(mapNameChangeMotionTag, bReset: true);
-                }).SetEase(Ease.Linear);
+                DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
             }
         }
     }

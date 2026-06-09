@@ -3,6 +3,15 @@
   "entries": [
     {
       "id": 1,
+      "key": "Information",
+      "kr": "등장하는 나무 정보",
+      "en": "Tree Information",
+      "enumType": "MapType",
+      "enumValue": "None"
+    },
+
+    {
+      "id": 2,
       "key": "mapName_1",
       "kr": "목적지 설정",
       "en": "Choose Destination",
@@ -10,7 +19,7 @@
       "enumValue": "None"
     },
     {
-      "id": 2,
+      "id": 3,
       "key": "mapName_2",
       "kr": "풀빛너른 숲",
       "en": "Vegetated Forest",
@@ -18,7 +27,7 @@
       "enumValue": "VegetatedForest"
     },
     {
-      "id": 3,
+      "id": 4,
       "key": "mapName_3",
       "kr": "몽글포자 숲",
       "en": "Mongle Spore Forest",
@@ -26,7 +35,7 @@
       "enumValue": "MongleSporeForest"
     },
     {
-      "id": 4,
+      "id": 5,
       "key": "mapName_4",
       "kr": "별뿌리 숲",
       "en": "Starroot Forest",
@@ -34,7 +43,7 @@
       "enumValue": "StarrootForest"
     },
     {
-      "id": 5,
+      "id": 6,
       "key": "mapName_5",
       "kr": "용암 숲",
       "en": "Magma Forest",
