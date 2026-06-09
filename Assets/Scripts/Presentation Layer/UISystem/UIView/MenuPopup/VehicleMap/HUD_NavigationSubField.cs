@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class HUD_NavigationSubField : MonoBehaviour
 {
@@ -23,6 +24,10 @@ public class HUD_NavigationSubField : MonoBehaviour
     private Action<int> onSubRegionSelectedCallback;
     private int currentSelectedNumber = -1;
     private bool isInitialized = false;
+    private TweenCallback onSubRegionDisappearCompleteCallback;
+    private int disappearCompletedCount = 0;
+    private int disappearActiveCount = 0;
+    private Action allDisappearCompleteCallback;
 
     // 캐싱된 상수 및 리터럴 값
     private const int maxSubRegionCount = 3;
@@ -44,6 +49,7 @@ public class HUD_NavigationSubField : MonoBehaviour
         onSubRegionHoverEnteredCallback = OnSubRegionHoverEntered;
         onSubRegionHoverExitedCallback = OnSubRegionHoverExited;
         onSubRegionSelectedCallback = OnSubRegionSelected;
+        onSubRegionDisappearCompleteCallback = OnSubRegionDisappearComplete;
 
         for (int i = 0; i < spawnedSubRegions.Count; i++)
         {
@@ -243,6 +249,18 @@ public class HUD_NavigationSubField : MonoBehaviour
         return spawnedSubRegions[index].GetForestType();
     }
 
+    public ForestEnvironmentInfo GetSelectedForestInfo()
+    {
+        int index = currentSelectedNumber - 1;
+        if (null == spawnedSubRegions || 0 > index || spawnedSubRegions.Count <= index)
+            return default;
+
+        if (null == spawnedSubRegions[index])
+            return default;
+
+        return spawnedSubRegions[index].GetForestInfo();
+    }
+
     public void ResetSelection()
     {
         currentSelectedNumber = -1;
@@ -258,6 +276,54 @@ public class HUD_NavigationSubField : MonoBehaviour
         }
 
         subRegionSelectedEvent?.Invoke();
+    }
+
+    public void PlayDisappearAnimations(Action _onComplete)
+    {
+        int activeCount = 0;
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null != spawnedSubRegions[i] && true == spawnedSubRegions[i].gameObject.activeSelf)
+                activeCount++;
+        }
+
+        if (0 == activeCount)
+        {
+            _onComplete?.Invoke();
+            return;
+        }
+
+        disappearCompletedCount = 0;
+        disappearActiveCount = activeCount;
+        allDisappearCompleteCallback = _onComplete;
+
+        int delayIndex = 0;
+
+        for (int i = spawnedSubRegions.Count - 1; i >= 0; i--)
+        {
+            HUD_NavigationSubRegion sub = spawnedSubRegions[i];
+            if (null == sub || false == sub.gameObject.activeSelf)
+                continue;
+
+            float delay = delayIndex * subRegionAppearDelayGap;
+            delayIndex++;
+
+            sub.PlayDisappearAnimation(delay, onSubRegionDisappearCompleteCallback);
+        }
+    }
+
+    private void OnSubRegionDisappearComplete()
+    {
+        disappearCompletedCount++;
+        if (disappearCompletedCount == disappearActiveCount)
+        {
+            for (int j = 0; j < spawnedSubRegions.Count; j++)
+                if (null != spawnedSubRegions[j])
+                    spawnedSubRegions[j].PlayCloseAnimation();
+
+            allDisappearCompleteCallback?.Invoke();
+            allDisappearCompleteCallback = null;
+        }
     }
 
 

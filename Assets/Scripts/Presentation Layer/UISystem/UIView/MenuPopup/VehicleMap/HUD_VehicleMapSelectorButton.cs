@@ -8,7 +8,7 @@ using PresentationLayer.DOTweenAnimationSystem;
 /// <summary>
 /// 차량 네비게이션 UI에서 최종 결정을 내리는 확인 및 취소 버튼 클래스입니다.
 /// </summary>
-public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, IPointerDownHandler, IPointerUpHandler
 {
     // 외부 의존성
     [Header("Animation")]
@@ -42,7 +42,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     private MotionEntry appearAnim;
     private Tween appearDelayTween;
     private Tweener colorTween;
-    private UnityEngine.Events.UnityAction unClickedCallback;
+    private TweenCallback onAppearDelayCompleteCallback;
 
     private float currentAlpha = defaultAlpha;
     private bool isClicked = false;
@@ -69,7 +69,6 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         onHoverEnterEvent = _onHoverEnter;
         onHoverExitEvent = _onHoverExit;
         rect = GetComponent<RectTransform>();
-        unClickedCallback = UnClicked;
         
         isInitialized = true;
     }
@@ -122,11 +121,10 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
             motionPlayer.ResetAllMotions();
             transform.localScale = Vector3.zero;
 
-            appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
-            {
-                transform.localScale = Vector3.one;
-                appearAnim = motionPlayer.Play(appearMotionKey, bReset: forceReset);
-            }).SetEase(Ease.Linear);
+            if (null == onAppearDelayCompleteCallback)
+                onAppearDelayCompleteCallback = OnAppearDelayComplete;
+
+            appearDelayTween = DOVirtual.DelayedCall(_delay, onAppearDelayCompleteCallback).SetEase(Ease.Linear);
         }
     }
 
@@ -164,10 +162,14 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     {
         isHovered = true;
 
-        if (null == motionPlayer || true == isClicked || (true == isOkButton && false == isButtonActive))
+        if (true == isOkButton && false == isButtonActive)
             return;
 
         onHoverEnterEvent?.Invoke(rect, rect.rect.size);
+        PlayColorTween(hoverColor);
+
+        if (null == motionPlayer || true == isClicked)
+            return;
 
         if (null != appearAnim)
         {
@@ -179,17 +181,20 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         motionPlayer.SettingEntryMotion(exitAnim, forceReset, forceReset);
 
         enterAnim = motionPlayer.Play(hoverMotionKey, bReset: forceReset);
-        PlayColorTween(hoverColor);
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
         isHovered = false;
 
-        if (null == motionPlayer || true == isClicked || (true == isOkButton && false == isButtonActive))
+        if (true == isOkButton && false == isButtonActive)
             return;
 
         onHoverExitEvent?.Invoke();
+        PlayColorTween(normalColor);
+
+        if (null == motionPlayer || true == isClicked)
+            return;
 
         if (null != appearAnim)
         {
@@ -201,10 +206,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         motionPlayer.SettingEntryMotion(clickedAnim, forceReset, forceReset);
 
         exitAnim = motionPlayer.Play(hoverOffMotionKey, bReset: forceReset);
-        PlayColorTween(normalColor);
     }
 
-    public void OnPointerClick(PointerEventData _eventData)
+    public void OnPointerDown(PointerEventData _eventData)
     {
         if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
             return;
@@ -219,17 +223,26 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         motionPlayer.SettingEntryMotion(exitAnim, forceReset, forceReset);
         isClicked = true;
 
-        clickedAnim = motionPlayer.Play(clickMotionKey, bReset: forceReset, _onComplete: unClickedCallback);
+        clickedAnim = motionPlayer.Play(clickMotionKey, bReset: forceReset);
         PlayColorTween(clickColor);
-
-        onConfirmEvent?.Invoke();
     }
 
-    private void UnClicked()
+    public void OnPointerUp(PointerEventData _eventData)
     {
+        if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
+            return;
+
         isClicked = false;
         Color _targetColor = true == isHovered ? hoverColor : normalColor;
         PlayColorTween(_targetColor);
+    }
+
+    public void OnPointerClick(PointerEventData _eventData)
+    {
+        if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
+            return;
+
+        onConfirmEvent?.Invoke();
     }
 
     private void PlayColorTween(Color _targetColor)
@@ -241,6 +254,16 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
             colorTween.Kill();
 
         colorTween = buttonImage.DOColor(_targetColor, colorDuration).SetEase(Ease.Linear);
+    }
+
+    private void OnAppearDelayComplete()
+    {
+        transform.localScale = Vector3.one;
+
+        if (null != motionPlayer)
+        {
+            appearAnim = motionPlayer.Play(appearMotionKey, bReset: forceReset);
+        }
     }
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)

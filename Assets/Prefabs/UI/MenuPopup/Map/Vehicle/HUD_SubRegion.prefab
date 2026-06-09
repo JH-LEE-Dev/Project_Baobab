@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0f0895ea366333b4f8f6f0b17dadeb55, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UISkewClick
-  forwardDuration: 0.3
+  forwardDuration: 0.35
   forwardDelay: 0
   forwardEase: 0
   backwardDuration: 0.35
@@ -213,11 +213,12 @@ MonoBehaviour:
   normalColor: {r: 0.2, g: 0.29803923, b: 0.5019608, a: 1}
   selectColor: {r: 1, g: 1, b: 1, a: 1}
   lockColor: {r: 0.5019608, g: 0.2, b: 0.2, a: 1}
-  normalHoverColor: {r: 0.37068352, g: 0.46473995, b: 0.6603774, a: 1}
-  lockHoverColor: {r: 0.754717, g: 0.16731933, b: 0.16731933, a: 1}
+  normalHoverColor: {r: 1, g: 1, b: 1, a: 1}
+  lockHoverColor: {r: 0.8962264, g: 0.097232126, b: 0.097232126, a: 1}
   hoverColorDuration: 0.15
   selectPingPongColor: {r: 0.740566, g: 0.99793273, b: 1, a: 1}
   selectPingPongDuration: 0.8
+  hoverExitDelay: 0.15
   hoverTag: Hover
   hoverOffTag: HoverOff
   clickTag: Click

@@ -57,6 +57,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private Tweener colorTween;
     private Tween appearDelayTween;
     private Tweener pingPongTween;
+    private TweenCallback onAppearDelayCompleteCallback;
 
     // 캐싱된 상수 및 리터럴 값
     private const bool forceReset = true;
@@ -85,6 +86,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
         rect = GetComponent<RectTransform>();
         onClickAnimationCompleteCallback = OnClickAnimationComplete;
+        onAppearDelayCompleteCallback = OnAppearDelayComplete;
 
         SetSelect(false);
         SetLock(false);
@@ -133,12 +135,14 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             motionPlayer.ResetAllMotions();
             transform.localScale = Vector3.zero;
 
-            appearDelayTween = DOVirtual.DelayedCall(_delay, () =>
-            {
-                transform.localScale = Vector3.one;
-                motionPlayer.Play(appearTag, bReset: forceReset);
-            }).SetEase(Ease.Linear);
+            appearDelayTween = DOVirtual.DelayedCall(_delay, onAppearDelayCompleteCallback).SetEase(Ease.Linear);
         }
+    }
+
+    private void OnAppearDelayComplete()
+    {
+        transform.localScale = Vector3.one;
+        motionPlayer.Play(appearTag, bReset: forceReset);
     }
 
     public void ResetAnimation()
@@ -155,6 +159,23 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             motionPlayer.ResetAllMotions();
 
         UpdateColor();
+    }
+
+    public void PlayDisappearAnimation(float _delay, TweenCallback _onComplete)
+    {
+        if (null != appearDelayTween && appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != pingPongTween && pingPongTween.IsActive())
+            pingPongTween.Kill();
+
+        if (null != motionPlayer)
+            motionPlayer.ResetAllMotions();
+
+        appearDelayTween = transform.DOScale(Vector3.zero, 0.2f)
+                                     .SetDelay(_delay)
+                                     .SetEase(Ease.InBack)
+                                     .OnComplete(_onComplete);
     }
 
     public void SetNumber(int _number)

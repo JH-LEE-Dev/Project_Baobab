@@ -52,6 +52,8 @@ public class UnitSystem
         signalHub.Subscribe<SleepSignal>(CharacterSleep);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
+        signalHub.Subscribe<DropAllItemSignal>(DropAllItem);
+        signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
     }
 
     private void UnSubscribeSignals()
@@ -66,6 +68,8 @@ public class UnitSystem
         signalHub.UnSubscribe<SleepSignal>(CharacterSleep);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
+        signalHub.UnSubscribe<DropAllItemSignal>(DropAllItem);
+        signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
     }
 
     private void BindEvents()
@@ -102,6 +106,9 @@ public class UnitSystem
 
         inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
         inventoryManager.ItemCantAcquiedEvent += ItemCantAcquied;
+
+        unitLogicManager.GameEndEvent -= GameEnd;
+        unitLogicManager.GameEndEvent += GameEnd;
     }
 
     private void ReleaseEvents()
@@ -117,6 +124,7 @@ public class UnitSystem
         inventoryManager.InventoryIsFullEvent -= InventoryIsFull;
         inventoryManager.ItemAddedEvent -= ItemAdded;
         inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
+        unitLogicManager.GameEndEvent -= GameEnd;
     }
 
     private void CharacterSpawned(Character _character)
@@ -201,7 +209,6 @@ public class UnitSystem
     {
         inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
         signalHub.Publish(new PopupUIDownSignal());
-        //signalHub.Publish(new GoHomeButtonClickedSignal());
     }
 
     private void SpendMoney()
@@ -252,5 +259,21 @@ public class UnitSystem
     private void StartDecreaseStamina(StartDecreaseStaminaSignal _startDecreaseStaminaSignal)
     {
         unitLogicManager.SetCharacterStaminaDecrease();
+    }
+
+    private void GameEnd()
+    {
+        signalHub.Publish(new GameEndSignal());
+    }
+
+    private void DropAllItem(DropAllItemSignal _signal)
+    {
+        inventoryManager.DropAllItem(unitSpawner.character.centerTransform);
+        signalHub.Publish(new PopupUIDownSignal());
+    }
+
+    private void RetryGame(RetryButtonClickedSignal _retryButtonClickedSignal)
+    {
+        unitLogicManager.ResetCharacterStatus();
     }
 }

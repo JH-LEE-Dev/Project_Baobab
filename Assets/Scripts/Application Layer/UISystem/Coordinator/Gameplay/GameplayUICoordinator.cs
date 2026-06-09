@@ -24,7 +24,7 @@ public class GameplayUICoordinator
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
-     UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction,UIView_Result _resultUI)
+     UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -81,6 +81,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
+        signalHub.Subscribe<GameEndSignal>(GameEnd);
     }
 
     private void UnSubscribeSignals()
@@ -120,16 +121,14 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
-        signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);        
+        signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
+        signalHub.UnSubscribe<GameEndSignal>(GameEnd);
     }
 
     private void BindEvents()
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         inputManager.inputReader.InventoryKeyEvent += OnInventoryKeyPressed;
-
-        popUpUI.goHomeButtonClickedEvent -= GoHomeButtonClicked;
-        popUpUI.goHomeButtonClickedEvent += GoHomeButtonClicked;
 
         popUpUI.sendDeleteItemEvent -= SendDeleteItem;
         popUpUI.sendDeleteItemEvent += SendDeleteItem;
@@ -154,12 +153,17 @@ public class GameplayUICoordinator
 
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
         popUpUI.InventoryUIOpendEvent += InventoryUIOpened;
+
+        resultUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
+        resultUI.GoHomeButtonClickedEvent += GoHomeButtonClicked;
+
+        resultUI.RetryButtonClickedEvent -= RetryGame;
+        resultUI.RetryButtonClickedEvent += RetryGame;
     }
 
     private void ReleaseEvents()
     {
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
-        popUpUI.goHomeButtonClickedEvent -= GoHomeButtonClicked;
         popUpUI.sendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
@@ -168,6 +172,8 @@ public class GameplayUICoordinator
         escUI.SaveGameButtonClickedEvent -= SaveGame;
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
+        resultUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
+        resultUI.RetryButtonClickedEvent -= RetryGame;
     }
 
     public void Release()
@@ -276,7 +282,7 @@ public class GameplayUICoordinator
 
     private void DungeonSelected(MapType _type, ForestType _forestType)
     {
-        signalHub.Publish(new TeleportUIClosedWhileTeleport());
+        signalHub.Publish(new TeleportUIClosedWhileTeleportSignal());
         signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
     }
 
@@ -484,5 +490,15 @@ public class GameplayUICoordinator
     private void ProvideAccumulatedValueChangeEvent(ProvideSkillAccumulatedValueChangeSignal _signal)
     {
         tentUI.SkillAccumulatedValuePreviewProvided(_signal.data);
+    }
+
+    private void GameEnd(GameEndSignal _gameEndSignal)
+    {
+        resultUI.OpenResultUI();
+    }
+
+    private void RetryGame()
+    {
+        signalHub.Publish(new RetryButtonClickedSignal());
     }
 }

@@ -77,7 +77,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private float visualHeight = 0f;
 
-    //private bool bVisualSync = false;
+    private bool bWhileReset = false;
 
     #region Public Methods (Initialization & Control)
 
@@ -251,7 +251,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateFacingByAttackPoint()
     {
-        if (attackComponent == null || bInDungeon == false) return;
+        if (attackComponent == null || bInDungeon == false || bWhileReset == true) return;
 
         Transform attackTarget = attackComponent.GetAttackPointTransform();
         if (attackTarget == null) return;
@@ -405,7 +405,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void DisableAttackComponent()
     {
+        healthComponent.SetStaminaDecrease(false);
         attackComponent.SetCursorEnable(false);
+        attackComponent.SetEnable(false);
         attackComponent.SetbCanAttack(false);
         armComponent.SetbCanAttack(false);
     }
@@ -417,10 +419,31 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void StartDecraseStamina()
     {
+        armComponent.ResetRotation();
+        attackComponent.ResetAttackTransform();
         healthComponent.SetStaminaDecrease(true);
         attackComponent.SetCursorEnable(true);
         attackComponent.SetEnable(true);
         attackComponent.SetbCanAttack(true);
         armComponent.SetbCanAttack(true);
+        bWhileReset = false;
+    }
+
+    public void ResetStatus()
+    {
+        attackComponent.ResetAttackTransform();
+        armComponent.ResetRotation();
+        bWhileReset = true;
+        armComponent.ResetWeaponStatus();
+        bWhileSwing = false;
+        healthComponent.StaminaReset();
+        statComponent.ResetSpeed();
+        bCanRotate = true;
+        attackComponent.ResetAttackComponent();
+        stateMachine.ChangeState<IdleState>();
+        attackComponent.SetEnable(false);
+        attackComponent.SetCursorEnable(false);
+
+        inputManager.PauseMove(false);
     }
 }

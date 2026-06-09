@@ -73,11 +73,12 @@ public static class LocKeys
 
     public static class MenuPopupUI
     {
-        public const int mapName1 = 2097153;
-        public const int mapName2 = 2097154;
-        public const int mapName3 = 2097155;
-        public const int mapName4 = 2097156;
-        public const int mapName5 = 2097157;
+        public const int information = 2097153;
+        public const int mapName1 = 2097154;
+        public const int mapName2 = 2097155;
+        public const int mapName3 = 2097156;
+        public const int mapName4 = 2097157;
+        public const int mapName5 = 2097158;
     }
 
 }

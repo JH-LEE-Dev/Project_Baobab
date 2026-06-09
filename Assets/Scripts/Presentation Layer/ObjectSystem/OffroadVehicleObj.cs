@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 {
     //이벤트
-    public event Action GoToTownEvent;
+    public event Action GameEndEvent;
     public event Action OffroadDriveEndEvent;
     public event Action PortalActivated;
     public event Action PortalDeActivatedEvent;
@@ -293,7 +293,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             }
             else
             {
-                GoToTownEvent?.Invoke();
+                GameEndEvent?.Invoke();
             }
         }
     }

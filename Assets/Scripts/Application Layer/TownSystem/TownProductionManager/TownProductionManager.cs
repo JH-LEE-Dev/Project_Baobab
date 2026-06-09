@@ -21,31 +21,33 @@ public class TownProductionManager : MonoBehaviour
 
     private Transform characterRidePoint;
     private Coroutine characterRideCoroutine;
-    private SkyCameraProductionComponent skyCameraProductionComponent;
+    private SkyCameraProductionManager skyCameraProductionManager;
     private bool bCanGetOff = true;
 
-    public void Initialize(InputManager _inputManager)
+    public bool bCurrentlyTownScene = true;
+    public bool bRetryGame = false;
+
+    public void Initialize(InputManager _inputManager, SkyCameraProductionManager _skyCameraProductionManager)
     {
         inputManager = _inputManager;
-
-        skyCameraProductionComponent = GetComponent<SkyCameraProductionComponent>();
+        skyCameraProductionManager = _skyCameraProductionManager;
 
         BindEvents();
     }
 
     private void BindEvents()
     {
-        skyCameraProductionComponent.SkyProductionEndEvent -= CameraUpIsEnd;
-        skyCameraProductionComponent.SkyProductionEndEvent += CameraUpIsEnd;
+        skyCameraProductionManager.SkyProductionEndEvent -= CameraUpIsEnd;
+        skyCameraProductionManager.SkyProductionEndEvent += CameraUpIsEnd;
 
-        skyCameraProductionComponent.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
-        skyCameraProductionComponent.SkyProductionRollbackEndEvent += CameraDownIsEnd;
+        skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
+        skyCameraProductionManager.SkyProductionRollbackEndEvent += CameraDownIsEnd;
     }
 
     private void ReleaseEvents()
     {
-        skyCameraProductionComponent.SkyProductionEndEvent -= CameraUpIsEnd;
-        skyCameraProductionComponent.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
+        skyCameraProductionManager.SkyProductionEndEvent -= CameraUpIsEnd;
+        skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
     }
 
     public void Release()
@@ -120,10 +122,15 @@ public class TownProductionManager : MonoBehaviour
         // 캐릭터 도착 시 차량 착륙 임팩트 연출 실행
         if (offroadVehicleObj != null)
         {
-            yield return offroadVehicleObj.CharacterRideLandingImpactSequence(() => CharacterRideEndEvent?.Invoke());
+            yield return offroadVehicleObj.CharacterRideLandingImpactSequence(InvokeCharacterRideEndEvent);
         }
 
         characterRideCoroutine = null;
+    }
+
+    private void InvokeCharacterRideEndEvent()
+    {
+        CharacterRideEndEvent?.Invoke();
     }
 
     private void DriveEnd()
@@ -171,13 +178,13 @@ public class TownProductionManager : MonoBehaviour
     {
         yield return new WaitForSeconds(3.75f);
 
-        skyCameraProductionComponent.StartCameraMove();
+        skyCameraProductionManager.StartCameraMove();
         StartSkyProductionEvent?.Invoke();
     }
 
     public void SetCharacterTransform()
     {
-        skyCameraProductionComponent.SetCharacterTransform(character.transform);
+        skyCameraProductionManager.SetCharacterTransform(character.transform);
     }
 
     public void RollbackCameraMove()
@@ -190,16 +197,22 @@ public class TownProductionManager : MonoBehaviour
         yield return new WaitForSeconds(1.5f);
 
         RollbackSkyProductionEvent?.Invoke();
-        skyCameraProductionComponent.StartCameraMove();
+        skyCameraProductionManager.StartCameraMove();
     }
 
     private void CameraUpIsEnd()
     {
+        if (bCurrentlyTownScene == false)
+            return;
+
         CameraUpIsEndEvent?.Invoke();
     }
 
     private void CameraDownIsEnd()
     {
+        if (bCurrentlyTownScene == true || bRetryGame == true)
+            return;
+
         inputManager.PauseInteractKey(false);
         inputManager.PauseMove(false);
         CameraUpDownEndEvent?.Invoke();

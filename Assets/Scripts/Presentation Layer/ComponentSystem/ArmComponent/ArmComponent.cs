@@ -199,4 +199,9 @@ public class ArmComponent : PComponent, IArmComponent
     {
         axeComponent.SetbCanAttack(_boolean);
     }
+
+    public void ResetRotation()
+    {
+        transform.localRotation = Quaternion.identity;
+    }
 }

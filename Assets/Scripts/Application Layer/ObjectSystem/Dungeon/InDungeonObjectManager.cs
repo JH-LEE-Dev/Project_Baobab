@@ -7,9 +7,10 @@ using System;
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
+    public event Action DropAllItemEvent;
+    public event Action RideOffroadEvent;
     public event Action<bool> OffroadInteractStateChangedEvent;
     public event Action<OffroadVehicleObj> OffroadSpawnedEvent;
-    public event Action GoToTownEvent;
     public event Action<TreeType> TreeDeadEvent;
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
@@ -35,7 +36,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     [SerializeField] private OffroadVehicleObj portalPrefab;
 
     // // 내부 상태 및 컬렉션
-    private OffroadVehicleObj portal;
+    public OffroadVehicleObj portal;
     private List<Vector3> grassTileWorldPositions;
     private List<Vector3> availablePositions = new List<Vector3>(2500);
     private List<TreeObj> activeTrees = new List<TreeObj>(2500);
@@ -66,6 +67,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private Character character;
     private OffroadContainer offraodContainer;
+    private IInventoryChecker inventoryChecker;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -77,6 +79,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         mainCam = Camera.main;
+        inventoryChecker = _inventoryChecker;
 
         itemManager = GetComponentInChildren<ItemManager>();
         itemManager.Initialize(_inventoryChecker);
@@ -433,8 +436,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         portal.PortalActivated -= OnPortalActivated;
         portal.PortalActivated += OnPortalActivated;
 
-        portal.GoToTownEvent -= GoToTown;
-        portal.GoToTownEvent += GoToTown;
+        portal.GameEndEvent -= GameEnd;
+        portal.GameEndEvent += GameEnd;
 
         portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         portal.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
@@ -626,7 +629,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal != null)
         {
             portal.PortalActivated -= OnPortalActivated;
-            portal.GoToTownEvent -= GoToTown;
+            portal.GameEndEvent -= GameEnd;
             portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         }
 
@@ -671,11 +674,27 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         character = _character;
     }
 
-    private void GoToTown()
+    private void GameEnd()
     {
         character.DisableAttackComponent();
         character.SetStaminaDecrease(false);
-        GoToTownEvent?.Invoke();
+
+        inputManager.PauseMove(true);
+        inputManager.PauseInteractKey(true);
+
+        DropAllItemEvent?.Invoke();
+
+        if (inventoryChecker.bInventoryIsEmpty == false)
+            StartCoroutine(GameEndRoutine());
+        else
+            RideOffroadEvent?.Invoke();
+    }
+
+    private IEnumerator GameEndRoutine()
+    {
+        yield return new WaitForSeconds(1.5f);
+
+        RideOffroadEvent?.Invoke();
     }
 
     private void OffroadInteractStateChanged(bool _boolean)
