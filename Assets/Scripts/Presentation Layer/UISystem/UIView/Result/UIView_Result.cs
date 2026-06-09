@@ -7,6 +7,11 @@ public class UIView_Result : UIView
     public event Action GoHomeButtonClickedEvent;
     public event Action RetryButtonClickedEvent;
 
+    //외부 의존성
+    private IInventory offroadContainer;
+    private IInventory characterInventory;
+    private IDungeonResultProvider dungeonResultProvider;
+
     [Header("UI References")]
     [SerializeField] private Button goHomeButton;
     [SerializeField] private Button retryButton;
@@ -25,6 +30,13 @@ public class UIView_Result : UIView
 
         // 비활성화
         SetResultContentsActive(false);
+    }
+
+    public void DependencyInjection(IInventory _offroadContainer, IInventory _characterInventory, IDungeonResultProvider _dungeonResultProvider)
+    {
+        offroadContainer = _offroadContainer;
+        characterInventory = _characterInventory;
+        dungeonResultProvider = _dungeonResultProvider;
     }
 
     public override void SetupUI()
@@ -91,4 +103,9 @@ public class UIView_Result : UIView
     }
 
     #endregion
+
+    public void DungeonStarted()
+    {
+        
+    }
 }

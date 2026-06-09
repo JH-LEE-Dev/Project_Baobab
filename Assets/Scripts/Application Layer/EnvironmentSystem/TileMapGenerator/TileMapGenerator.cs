@@ -175,7 +175,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         if (delayYield == null) delayYield = new WaitForSeconds(5f);
 
-        if (seed == 0) seed = UnityEngine.Random.Range(1, 100000);
+        seed = UnityEngine.Random.Range(1, 100000);
     }
 
     public void GenerateMap()

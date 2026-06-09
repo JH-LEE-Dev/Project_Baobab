@@ -71,7 +71,7 @@ public class GameInstaller : MonoBehaviour
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,
         inventoryManager, localizationManager, environmentSystem.densityManager, environmentSystem.weatherManager, environmentSystem.timeController,
-        offroadContainer);
+        offroadContainer, inDungeonSystem.inDungeonResultManager);
 
         skillDispatcher.Initialize(signalHub,
          inventoryManager,
@@ -85,7 +85,7 @@ public class GameInstaller : MonoBehaviour
              inDungeonSystem.inDungeonObjectManager.itemManager.logItemController,
              offroadContainer);
 
-        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager, offroadContainer);
+        unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager, offroadContainer,inDungeonSystem.inDungeonResultManager);
         skillSystem.Initialize(signalHub, skillManager, skillDispatcher);
 
         _saveManager.Initialize(signalHub, skillSystem, inventoryManager, townSystem.logProcessingManager,
@@ -108,11 +108,6 @@ public class GameInstaller : MonoBehaviour
 
         if (_sceneChangeData.currentScene == SceneType.DungeonScene)
         {
-            // if (environmentSystem.IsCurrentlyHiddenMap(_sceneChangeData.mapType, _sceneChangeData.forestType))
-            //     inDungeonSystem.SetHiddenMapGrade();
-            // else
-            //     inDungeonSystem.ResetHiddenMapGrade();
-
             environmentSystem.SetupForMapType(_sceneChangeData.forestType, _sceneChangeData.mapType);
             inDungeonSystem.StartDungeonSystem(_sceneChangeData);
             gameplayUIInstaller.SetupCanvas();
