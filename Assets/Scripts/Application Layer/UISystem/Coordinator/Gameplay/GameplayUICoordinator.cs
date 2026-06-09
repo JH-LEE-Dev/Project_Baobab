@@ -15,15 +15,16 @@ public class GameplayUICoordinator
     private UIView_MenuPopup menuPopupUI;
     private UIView_Tent tentUI;
     private UIView_ESC escUI;
-
-    private UIDepthController uiDepthController;
+    private UIView_Result resultUI;
     private UIView_SkyProduction skyProduction;
 
+    private UIDepthController uiDepthController;
 
     private bool bInventoryOpened = false;
+
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
-     UIDepthController _uiDepthController,UIView_SkyProduction _skyProduction)
+     UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction,UIView_Result _resultUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -36,6 +37,7 @@ public class GameplayUICoordinator
         escUI = _escUI;
         uiDepthController = _uiDepthController;
         skyProduction = _skyProduction;
+        resultUI = _resultUI;
 
         SubscribeSignals();
         BindEvents();
@@ -114,8 +116,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
         signalHub.UnSubscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
         signalHub.UnSubscribe<StartSkyProductionSignal>(StartSkyProduction);
-        signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);  
-        signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);      
+        signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
+        signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
     }
 

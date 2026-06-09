@@ -153,8 +153,10 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_SkyProduction skyProductionUI = uiManager.Open<UIView_SkyProduction>();
 
+        UIView_Result resultUI = uiManager.Open<UIView_Result>();
+
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI, tentUI, escUI, depthController, skyProductionUI);
+        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI);
 
         BindEvent();
     }
