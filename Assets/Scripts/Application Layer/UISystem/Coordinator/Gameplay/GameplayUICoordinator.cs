@@ -80,7 +80,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.Subscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
-        signalHub.Subscribe<SkillAccumulatedValueChangeData>(ProvideAccumulatedValueChangeEvent);
+        signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
     }
 
     private void UnSubscribeSignals()
@@ -120,7 +120,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
-        signalHub.UnSubscribe<SkillAccumulatedValueChangeData>(ProvideAccumulatedValueChangeEvent);        
+        signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);        
     }
 
     private void BindEvents()
@@ -481,7 +481,7 @@ public class GameplayUICoordinator
         popUpUI.PopupGoUp();
     }
 
-    private void ProvideAccumulatedValueChangeEvent(SkillAccumulatedValueChangeData _data)
+    private void ProvideAccumulatedValueChangeEvent(ProvideSkillAccumulatedValueChangeSignal _data)
     {
         tentUI.SkillAccumulatedValuePreviewProvided(_data);
     }
