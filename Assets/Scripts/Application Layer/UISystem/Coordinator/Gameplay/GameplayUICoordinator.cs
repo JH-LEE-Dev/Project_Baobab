@@ -75,7 +75,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.Subscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.Subscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
-        signalHub.Subscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
+        signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideSkillAccumulatedValueChange);
         signalHub.Subscribe<StartSkyProductionSignal>(StartSkyProduction);
         signalHub.Subscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.Subscribe<PopupUIDownSignal>(PopupUIDown);
@@ -114,7 +114,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ShopInteractStateChangedSignal>(ShopInteractStateChanged);
         signalHub.UnSubscribe<LogItemProcessorActiveStateSignal>(LogItemProcessorIsActive);
         signalHub.UnSubscribe<ItemCantAcquiedSignal>(ItemCantAcquired_Inventory);
-        signalHub.UnSubscribe<DeclareSkillAccumulatedValueSignal>(DeclareSkillAccumulativeValue);
+        signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideSkillAccumulatedValueChange);
         signalHub.UnSubscribe<StartSkyProductionSignal>(StartSkyProduction);
         signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);
@@ -452,11 +452,6 @@ public class GameplayUICoordinator
         unitUI.ItemCantAcquired_Inventory();
     }
 
-    private void DeclareSkillAccumulativeValue(DeclareSkillAccumulatedValueSignal _declareSkillAccumulativeValueSignal)
-    {
-        tentUI.DeclareSkillAccumulativeValue(_declareSkillAccumulativeValueSignal.data);
-    }
-
     private void StartSkyProduction(StartSkyProductionSignal _startSkyProductionSignal)
     {
         skyProduction.StartSkyProduction();
@@ -479,8 +474,8 @@ public class GameplayUICoordinator
         popUpUI.PopupGoUp();
     }
 
-    private void ProvideAccumulatedValueChangeEvent(SkillAccumulatedValueChangeData _data)
+    private void ProvideSkillAccumulatedValueChange(ProvideSkillAccumulatedValueChangeSignal _signal)
     {
-        tentUI.SkillAccumulatedValuePreviewProvided(_data);
+        tentUI.SkillAccumulatedValuePreviewProvided(_signal.data);
     }
 }

@@ -4,7 +4,6 @@ using System;
 
 public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 {
-    public event Action<SkillAccumulatedValueData> DeclareAccumulatedValueEvent;
     public event Action<SkillAccumulatedValueChangeData> ProvideAccumulatedValueChangeEvent;
     private SignalHub signalHub;
     private IInventoryCH inventoryCH;
@@ -122,7 +121,6 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
             }
 
             command.Execute(this);
-            DeclareAccumulatedValueEvent?.Invoke(new SkillAccumulatedValueData { type = commandType, amount = accumulatedAmounts[commandType] });
         }
         else
         {
