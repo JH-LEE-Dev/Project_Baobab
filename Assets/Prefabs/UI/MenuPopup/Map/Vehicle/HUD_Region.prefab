@@ -203,8 +203,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\uD480\uBE5B\uB108\uB978"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: e371f76b2db090243860b7a24ca36a9e, type: 2}
-  m_sharedMaterial: {fileID: -4245052357062469366, guid: e371f76b2db090243860b7a24ca36a9e, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
+  m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -228,8 +228,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 9
-  m_fontSizeBase: 9
+  m_fontSize: 12
+  m_fontSizeBase: 12
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

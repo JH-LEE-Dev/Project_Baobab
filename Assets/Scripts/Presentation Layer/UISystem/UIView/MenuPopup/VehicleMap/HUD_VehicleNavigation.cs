@@ -596,8 +596,8 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     private string GetMapTypeString(MapType _type) => _type switch
     {
         MapType.Town => townString,
-        MapType.Vegetatedplains => plainsString,
-        MapType.Deepmossforest => forestString,
+        MapType.VegetatedForest => plainsString,
+        MapType.MongleSporeForest => forestString,
         _ => noneString
     };
 }

@@ -38,17 +38,17 @@ public class TeleportManager : MonoBehaviour
         inputManager.PauseMove(true);
         switch (goToDungeonSignal.type)
         {
-            case MapType.Vegetatedplains:
+            case MapType.VegetatedForest:
                 switch (goToDungeonSignal.forestType)
                 {
-                    case ForestType.Vegetatedplains_1:
-                        bootStrapProvider.GoToOtherScene(MapType.Vegetatedplains, ForestType.Vegetatedplains_1);
+                    case ForestType.VegetatedForest_1:
+                        bootStrapProvider.GoToOtherScene(MapType.VegetatedForest, ForestType.VegetatedForest_1);
                         break;
-                    case ForestType.Vegetatedplains_2:
-                        bootStrapProvider.GoToOtherScene(MapType.Vegetatedplains, ForestType.Vegetatedplains_2);
+                    case ForestType.VegetatedForest_2:
+                        bootStrapProvider.GoToOtherScene(MapType.VegetatedForest, ForestType.VegetatedForest_2);
                         break;
-                    case ForestType.Vegetatedplains_3:
-                        bootStrapProvider.GoToOtherScene(MapType.Vegetatedplains, ForestType.Vegetatedplains_3);
+                    case ForestType.VegetatedForest_3:
+                        bootStrapProvider.GoToOtherScene(MapType.VegetatedForest, ForestType.VegetatedForest_3);
                         break;
                 }
                 break;
