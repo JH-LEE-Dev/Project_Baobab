@@ -53,7 +53,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityToolNode
   skillType: 0
   displayName: 
-  description: 
   maxLevel: 1
   gridPosition: {x: 0, y: 0}
   parentLinks: []

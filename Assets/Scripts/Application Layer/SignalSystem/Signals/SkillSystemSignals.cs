@@ -19,4 +19,11 @@ public struct DeclareSkillAccumulatedValueSignal
     }
 }
 
-
+public struct ProvideSkillAccumulatedValueChangeSignal
+{
+    public SkillAccumulatedValueChangeData data;
+    public ProvideSkillAccumulatedValueChangeSignal(SkillAccumulatedValueChangeData _data)
+    {
+        data = _data;
+    }
+}

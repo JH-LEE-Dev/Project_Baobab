@@ -82,8 +82,8 @@ public class Tent : MonoBehaviour
         {
             outLineObject.SetActive(false);
 
-            if (bInteract == false)
-                bCanInteract = false;
+            bInteract = false;
+            bCanInteract = false;
             
             TentInteractStateChangedEvent?.Invoke(false);
         }

@@ -15,7 +15,6 @@ public class AbilityToolManager : MonoBehaviour
     private const int AbilityLocalizationJsonId = 2;
     private const int LocalizationEntryIdMask = 0x1FFFFF;
     private const string AbilityNameKeySuffix = "_Name";
-    private const string AbilityDescriptionKeySuffix = "_Description";
     private const float DefaultZoom = 1f;
     private const float MinZoom = 0.2f;
     private const float MaxZoom = 1f;
@@ -27,6 +26,7 @@ public class AbilityToolManager : MonoBehaviour
     private readonly Dictionary<Vector2Int, AbilityToolNode> nodeMap = new Dictionary<Vector2Int, AbilityToolNode>();
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
     private readonly Dictionary<int, LocalizationEntry> localizationEntryMap = new Dictionary<int, LocalizationEntry>();
+    private readonly Dictionary<SkillCommandType, LocalizationEntry> localizationEntryBySkillCommandMap = new Dictionary<SkillCommandType, LocalizationEntry>();
     private readonly List<AbilityToolNode> nodeList = new List<AbilityToolNode>();
     private readonly AbilityToolLineRenderer lineRenderer = new AbilityToolLineRenderer();
 
@@ -240,7 +240,7 @@ public class AbilityToolManager : MonoBehaviour
         string costText = BuildToolTipCostText(_node, out MoneyType costMoneyType);
         toolTipInstance.SetContent(
             BuildToolTipTitleAndLevelText(_node),
-            _node.Description,
+            BuildToolTipDescriptionText(_node),
             costText,
             costMoneyType);
 
@@ -319,6 +319,36 @@ public class AbilityToolManager : MonoBehaviour
         }
 
         return ResolveToolLocalizationText(LocKeys.AbilityUI.commonFree);
+    }
+
+    private string BuildToolTipDescriptionText(AbilityToolNode _node)
+    {
+        SkillCommandType commandType = GetPrimarySkillCommandType(_node);
+        if (commandType == SkillCommandType.None)
+            return string.Empty;
+
+        if (localizationEntryBySkillCommandMap.TryGetValue(commandType, out LocalizationEntry entry) == false ||
+            string.IsNullOrEmpty(entry.kr))
+        {
+            return string.Empty;
+        }
+
+        return entry.kr;
+    }
+
+    private SkillCommandType GetPrimarySkillCommandType(AbilityToolNode _node)
+    {
+        if (_node == null || _node.SkillCommands == null)
+            return SkillCommandType.None;
+
+        for (int i = 0; i < _node.SkillCommands.Count; i++)
+        {
+            AbilityToolSkillCommandEntry command = _node.SkillCommands[i];
+            if (command != null && command.skillCommandType != SkillCommandType.None)
+                return command.skillCommandType;
+        }
+
+        return SkillCommandType.None;
     }
 
     private string ResolveToolLocalizationText(int _compositeKey)
@@ -950,11 +980,7 @@ public class AbilityToolManager : MonoBehaviour
                 nodeDefinition.nameLocId,
                 localizationEntryMap,
                 $"{parsedSkillType} name");
-            string description = ResolveImportedLocalizationText(
-                nodeDefinition.descriptionLocId,
-                localizationEntryMap,
-                $"{parsedSkillType} description");
-            AbilityToolNode node = CreateNodeFromDefinition(nodeDefinition, parsedSkillType, displayName, description);
+            AbilityToolNode node = CreateNodeFromDefinition(nodeDefinition, parsedSkillType, displayName);
             if (node == null)
                 continue;
 
@@ -991,17 +1017,13 @@ public class AbilityToolManager : MonoBehaviour
                 node.NameLocId,
                 BuildAbilityLocalizationKey(node.SkillType, AbilityNameKeySuffix),
                 node.DisplayName);
-            int descriptionLocId = _localizationContext.GetOrCreate(
-                node.DescriptionLocId,
-                BuildAbilityLocalizationKey(node.SkillType, AbilityDescriptionKeySuffix),
-                node.Description);
-            node.ApplyLocalizationIds(nameLocId, descriptionLocId);
+            node.ApplyLocalizationId(nameLocId);
+            EnsureCommandDescriptionEntries(_localizationContext, node.SkillCommands);
 
             exportNodes.Add(new AbilityToolExportNodeJson
             {
                 skillType = node.SkillType.ToString(),
                 nameLocId = nameLocId,
-                descriptionLocId = descriptionLocId,
                 gridX = node.GridPosition.x,
                 gridY = node.GridPosition.y,
                 parents = BuildExportParents(node.ParentLinks)
@@ -1182,9 +1204,20 @@ public class AbilityToolManager : MonoBehaviour
     private void RefreshLocalizationEntryMap()
     {
         localizationEntryMap.Clear();
+        localizationEntryBySkillCommandMap.Clear();
         Dictionary<int, LocalizationEntry> loadedEntryMap = LoadLocalizationEntryMap();
         foreach (KeyValuePair<int, LocalizationEntry> pair in loadedEntryMap)
+        {
             localizationEntryMap[pair.Key] = pair.Value;
+
+            LocalizationEntry entry = pair.Value;
+            if (entry.enumType == nameof(SkillCommandType) &&
+                string.IsNullOrWhiteSpace(entry.enumValue) == false &&
+                Enum.TryParse(entry.enumValue, true, out SkillCommandType commandType))
+            {
+                localizationEntryBySkillCommandMap[commandType] = entry;
+            }
+        }
     }
 
     private string ResolveImportedLocalizationText(int _locId, Dictionary<int, LocalizationEntry> _localizationEntryMap, string _label)
@@ -1220,7 +1253,30 @@ public class AbilityToolManager : MonoBehaviour
         return _skillType + _suffix;
     }
 
-    private AbilityToolNode CreateNodeFromDefinition(AbilityNodeDefinitionJson _nodeDefinition, SkillType _skillType, string _displayName, string _description)
+    private string BuildAbilityDescriptionLocalizationKey(SkillCommandType _commandType)
+    {
+        return "AbilityDescription_" + _commandType;
+    }
+
+    private void EnsureCommandDescriptionEntries(AbilityLocalizationExportContext _localizationContext, List<AbilityToolSkillCommandEntry> _skillCommands)
+    {
+        if (_localizationContext == null || _skillCommands == null)
+            return;
+
+        for (int i = 0; i < _skillCommands.Count; i++)
+        {
+            AbilityToolSkillCommandEntry command = _skillCommands[i];
+            if (command == null || command.skillCommandType == SkillCommandType.None)
+                continue;
+
+            _localizationContext.GetOrCreateEnum(
+                BuildAbilityDescriptionLocalizationKey(command.skillCommandType),
+                nameof(SkillCommandType),
+                command.skillCommandType.ToString());
+        }
+    }
+
+    private AbilityToolNode CreateNodeFromDefinition(AbilityNodeDefinitionJson _nodeDefinition, SkillType _skillType, string _displayName)
     {
         if (abilityToolNodePrefab == null || moveTarget == null)
             return null;
@@ -1234,7 +1290,7 @@ public class AbilityToolManager : MonoBehaviour
 
         AbilityToolNode node = Instantiate(abilityToolNodePrefab, moveTarget);
         node.BindOwner(this);
-        node.ApplyDefinition(_nodeDefinition, _skillType, _displayName, _description, gridCellSize);
+        node.ApplyDefinition(_nodeDefinition, _skillType, _displayName, gridCellSize);
         node.SetSelectedVisual(false);
         node.SetPicture(ResolvePicture(_skillType));
         nodeMap[gridPosition] = node;
@@ -1413,7 +1469,6 @@ public class AbilityToolManager : MonoBehaviour
     {
         public string skillType;
         public int nameLocId;
-        public int descriptionLocId;
         public int gridX;
         public int gridY;
         public AbilityParentJson[] parents;
@@ -1465,6 +1520,23 @@ public class AbilityToolManager : MonoBehaviour
             entry.en = entry.en ?? string.Empty;
             entry.enumType = entry.enumType ?? string.Empty;
             entry.enumValue = entry.enumValue ?? string.Empty;
+            AddOrUpdate(entry);
+            return id;
+        }
+
+        public int GetOrCreateEnum(string _key, string _enumType, string _enumValue)
+        {
+            int id = ResolveExistingId(0, _key);
+            if (id <= 0)
+                id = ResolveNewId(0);
+
+            LocalizationEntry entry = GetEntryOrDefault(id);
+            entry.id = id;
+            entry.key = _key;
+            entry.kr = entry.kr ?? string.Empty;
+            entry.en = entry.en ?? string.Empty;
+            entry.enumType = _enumType ?? string.Empty;
+            entry.enumValue = _enumValue ?? string.Empty;
             AddOrUpdate(entry);
             return id;
         }

@@ -19,6 +19,7 @@ public class GameInstaller : MonoBehaviour
     private SkillDispatcher skillDispatcher;
     private SkillManager skillManager;
     private OffroadContainer offroadContainer;
+    private SkyCameraProductionManager skyCameraProductionManager;
 
     //시스템 객체들
     private UnitSystem unitSystem;
@@ -53,7 +54,9 @@ public class GameInstaller : MonoBehaviour
         skillManager = GetComponentInChildren<SkillManager>();
         skillDispatcher = GetComponentInChildren<SkillDispatcher>();
         offroadContainer = GetComponentInChildren<OffroadContainer>();
+        skyCameraProductionManager = GetComponentInChildren<SkyCameraProductionManager>();
 
+        skyCameraProductionManager.Initialize();
         unitLogicManager.Initialize(inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
         cameraManager.Initialize(signalHub, inputManager);
@@ -61,8 +64,9 @@ public class GameInstaller : MonoBehaviour
         teleportManager.Initialize(signalHub, bootStrapProvider, inputManager);
         inventoryManager.Initialize();
         offroadContainer.Initialize(inventoryManager, inputManager);
-        townSystem.Initialize(signalHub, environmentSystem, inputManager, inventoryManager, offroadContainer);
-        inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager, inputManager, inventoryManager, offroadContainer);
+        townSystem.Initialize(signalHub, environmentSystem, inputManager, inventoryManager, offroadContainer, skyCameraProductionManager);
+        inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager, inputManager, inventoryManager, offroadContainer
+        , skyCameraProductionManager);
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,

@@ -1,9 +1,11 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 {
+    public event Action GameEndEvent;
     public event Action CharacterStaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
 
@@ -82,7 +84,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     {
         character.SetWhereIsCharacter(_bInDungeon);
     }
-    
+
     public void WeaponModeChanged(WeaponMode _currentMode)
     {
         WeaponModeChangedEvent?.Invoke(_currentMode);
@@ -96,6 +98,7 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     private void CharacterStaminaIsEmpty()
     {
         CharacterStaminaIsEmptyEvent?.Invoke();
+        StartCoroutine(GameEnd());
     }
 
     public void RefreshCharacter()
@@ -106,5 +109,16 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public void SetCharacterStaminaDecrease()
     {
         character.StartDecraseStamina();
+    }
+
+    private IEnumerator GameEnd()
+    {
+        yield return new WaitForSeconds(1.5f);
+        GameEndEvent?.Invoke();
+    }
+
+    private void CharacterRideOffroad()
+    {
+        
     }
 }

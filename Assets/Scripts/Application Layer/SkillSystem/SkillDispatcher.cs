@@ -5,6 +5,7 @@ using System;
 public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 {
     public event Action<SkillAccumulatedValueData> DeclareAccumulatedValueEvent;
+    public event Action<SkillAccumulatedValueChangeData> ProvideAccumulatedValueChangeEvent;
     private SignalHub signalHub;
     private IInventoryCH inventoryCH;
     private IContainerCH containerCH;
@@ -128,6 +129,42 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
             Debug.LogWarning($"[SkillDispatcher] SkillCommand not found for type: {commandType}");
         }
     }
+
+    public void DispatchCommandWithChange(SkillDispatchInfo _skillDispatchInfo)
+    {
+        SkillCommandType commandType = _skillDispatchInfo.commandInfo.skillCommandType;
+
+        if (skillDic.TryGetValue(commandType, out SkillCommand command))
+        {
+            // 커브 공식을 사용하여 레벨에 따른 최종 수치 계산 (Y)
+            float currentAmount = _skillDispatchInfo.commandInfo.amountCurve.Evaluate(_skillDispatchInfo.level);
+
+            // 기존 스킬 누적값 (X)
+            float previousAccumulated = 0f;
+            if (accumulatedAmounts.TryGetValue(commandType, out float val))
+            {
+                previousAccumulated = val;
+            }
+
+            // 총 누적값 (Z)
+            float totalAccumulated = previousAccumulated + currentAmount;
+
+            SkillAccumulatedValueChangeData changeData = new SkillAccumulatedValueChangeData
+            {
+                type = commandType,
+                currentValueX = previousAccumulated,
+                addedValueY = currentAmount,
+                totalValueZ = totalAccumulated
+            };
+
+            ProvideAccumulatedValueChangeEvent?.Invoke(changeData);
+        }
+        else
+        {
+            Debug.LogWarning($"[SkillDispatcher] SkillCommand not found for type: {commandType}");
+        }
+    }
+
 
     public float GetAccumulatedAmount(SkillCommandType _commandType)
     {

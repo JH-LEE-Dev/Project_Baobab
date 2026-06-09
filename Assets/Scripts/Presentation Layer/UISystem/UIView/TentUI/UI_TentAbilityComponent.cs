@@ -19,6 +19,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const string ToolTipCostAvailableColor = "54D86A";
     private const string ToolTipCostUnavailableColor = "B94A42";
     private const string ToolTipCostMaxLevelColor = "58D7F2";
+    private const string ToolTipValueColor = "54D86A";
     private static readonly Color CanApplyNodeColor = new Color32(84, 216, 106, 255);
     private static readonly Color CompletedColor = new Color32(88, 215, 242, 255);
     private static readonly Color CannotApplyNodeColor = new Color32(185, 74, 66, 255);
@@ -71,6 +72,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private AbilityToolTip toolTipInstance;
     private UISelectionCursor selectionCursorInstance;
     private Material circleRevealDimMaterialInstance;
+    private readonly Dictionary<SkillType, SkillAccumulatedValueChangeData> toolTipPreviewDataMap = new Dictionary<SkillType, SkillAccumulatedValueChangeData>();
 
     private struct PrestigeHUDState
     {
@@ -328,7 +330,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
             nodeDefinition,
             _skillType,
             ResolveLocalizedEntryText(nodeDefinition.nameLocId),
-            ResolveLocalizedEntryText(nodeDefinition.descriptionLocId),
             ResolvePicture(_skillType),
             gridCellSize);
         spawnedNodes.Add(node);
@@ -349,8 +350,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 continue;
 
             node.ApplyLocalizedText(
-                ResolveLocalizedEntryText(nodeDefinition.nameLocId),
-                ResolveLocalizedEntryText(nodeDefinition.descriptionLocId));
+                ResolveLocalizedEntryText(nodeDefinition.nameLocId));
         }
     }
 
@@ -895,12 +895,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         SkillInfo skillInfo = GetSkillInfo(_node.SkillType);
         AbilityLevelUpRejectReason applyReason = GetToolTipApplyReason(_node.SkillType);
-        string costText = BuildToolTipCostText(skillInfo, applyReason, out MoneyType costMoneyType);
-        toolTipInstance.SetContent(
-            BuildToolTipTitleAndLevelText(_node, skillInfo),
-            _node.Description,
-            costText,
-            costMoneyType);
+        RequestToolTipPreviewData(_node.SkillType);
+        toolTipPreviewDataMap.TryGetValue(_node.SkillType, out SkillAccumulatedValueChangeData previewData);
+        ApplyToolTipContent(_node, skillInfo, applyReason, previewData);
 
         toolTipInstance.Show();
         Vector2 toolTipSize = toolTipInstance.GetSize();
@@ -961,7 +958,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         _costMoneyType = MoneyType.None;
 
-        if ((_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel) || _applyReason == AbilityLevelUpRejectReason.MaxLevel)
+        if (IsMaxLevel(_skillInfo, _applyReason))
             return BuildToolTipColorText($"<WAVE>{ResolveLocalizedText(LocKeys.AbilityUI.commonMaxLevel)}</WAVE>", ToolTipCostMaxLevelColor);
 
         if (_skillInfo.nextCost <= 0 || _skillInfo.moneyType == MoneyType.None || _skillInfo.moneyType == MoneyType.Max)
@@ -971,6 +968,115 @@ public class UI_TentAbilityComponent : MonoBehaviour
         string costText = AbilityNumberFormatter.FormatCompact(_skillInfo.nextCost);
         string color = GetToolTipCostColor(_applyReason);
         return string.IsNullOrEmpty(color) ? costText : BuildToolTipColorText(costText, color);
+    }
+
+    private bool IsMaxLevel(SkillInfo _skillInfo, AbilityLevelUpRejectReason _applyReason)
+    {
+        return (_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel) ||
+               _applyReason == AbilityLevelUpRejectReason.MaxLevel;
+    }
+
+    private void RequestToolTipPreviewData(SkillType _skillType)
+    {
+        if (skillSystemProvider == null || _skillType == SkillType.None)
+            return;
+
+        toolTipPreviewDataMap.Remove(_skillType);
+        skillSystemProvider.RequestSkillValuePreviewData(_skillType);
+    }
+
+    public void SkillAccumulatedValuePreviewProvided(SkillAccumulatedValueChangeData _data)
+    {
+        if (currentToolTipNode == null)
+            return;
+
+        SkillType skillType = currentToolTipNode.SkillType;
+        toolTipPreviewDataMap[skillType] = _data;
+
+        if (toolTipInstance == null || toolTipInstance.gameObject.activeSelf == false)
+            return;
+
+        SkillInfo skillInfo = GetSkillInfo(skillType);
+        AbilityLevelUpRejectReason applyReason = GetToolTipApplyReason(skillType);
+        ApplyToolTipContent(currentToolTipNode, skillInfo, applyReason, _data);
+
+        toolTipLayoutDirty = true;
+    }
+
+    private void ApplyToolTipContent(AbilityNode _node, SkillInfo _skillInfo, AbilityLevelUpRejectReason _applyReason, SkillAccumulatedValueChangeData _previewData)
+    {
+        if (_node == null || toolTipInstance == null)
+            return;
+
+        string costText = BuildToolTipCostText(_skillInfo, _applyReason, out MoneyType costMoneyType);
+        string descriptionFormat = GetToolTipDescriptionFormat(_previewData.type);
+        toolTipInstance.SetContent(
+            BuildToolTipTitleAndLevelText(_node, _skillInfo),
+            BuildToolTipDescriptionText(descriptionFormat, _previewData),
+            BuildToolTipValueText(_previewData, IsMaxLevel(_skillInfo, _applyReason), ShouldAppendPercentUnit(descriptionFormat)),
+            costText,
+            costMoneyType);
+    }
+
+    private string GetToolTipDescriptionFormat(SkillCommandType _commandType)
+    {
+        if (_commandType == SkillCommandType.None || localizationManager == null)
+            return string.Empty;
+
+        return localizationManager.GetText(_commandType);
+    }
+
+    private string BuildToolTipDescriptionText(string _format, SkillAccumulatedValueChangeData _data)
+    {
+        if (string.IsNullOrEmpty(_format))
+            return string.Empty;
+
+        try
+        {
+            return string.Format(
+                _format,
+                FormatToolTipValue(_data.addedValueY),
+                FormatToolTipValue(_data.currentValueX),
+                FormatToolTipValue(_data.totalValueZ));
+        }
+        catch (FormatException)
+        {
+            return _format;
+        }
+    }
+
+    private string BuildToolTipValueText(SkillAccumulatedValueChangeData _data, bool _isMaxLevel, bool _appendPercentUnit)
+    {
+        if (_data.type == SkillCommandType.None)
+            return string.Empty;
+
+        string currentValue = FormatToolTipValue(_data.currentValueX, _appendPercentUnit);
+        if (_isMaxLevel)
+            return BuildToolTipColorText(currentValue, ToolTipCostMaxLevelColor);
+
+        string totalValue = BuildToolTipColorText(FormatToolTipValue(_data.totalValueZ, _appendPercentUnit), ToolTipValueColor);
+        return $"{currentValue} -> {totalValue}";
+    }
+
+    private string FormatToolTipValue(float _value, bool _appendPercentUnit = false)
+    {
+        string valueText;
+        if (Mathf.Approximately(_value, Mathf.Round(_value)))
+            valueText = Mathf.RoundToInt(_value).ToString();
+        else
+            valueText = _value.ToString("0.##");
+
+        return _appendPercentUnit ? valueText + "%" : valueText;
+    }
+
+    private bool ShouldAppendPercentUnit(string _descriptionFormat)
+    {
+        if (string.IsNullOrEmpty(_descriptionFormat))
+            return false;
+
+        return _descriptionFormat.Contains("{0}%") ||
+               _descriptionFormat.Contains("{1}%") ||
+               _descriptionFormat.Contains("{2}%");
     }
 
     private AbilityLevelUpRejectReason GetToolTipApplyReason(SkillType _skillType)
@@ -1487,8 +1593,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
     // 상위 시스템의 세부 실패 사유를 UI에서 사용할 공통 사유로 정리한다.
     private AbilityLevelUpRejectReason NormalizeRejectReason(AbilityLevelUpRejectReason _reason)
     {
-        Debug.Log("RejectReason : " + _reason);
-
         switch (_reason)
         {
             case AbilityLevelUpRejectReason.NotEnoughMoney:
@@ -1539,8 +1643,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         if (spawnedNodeMap.TryGetValue(_skillType, out AbilityNode node) == false)
             return;
-
-        Debug.Log($"Reject Ability Unlock: {_skillType}, Reason: {_rejectReason}");
 
         if (currentToolTipNode == node)
             ShowToolTip(node);

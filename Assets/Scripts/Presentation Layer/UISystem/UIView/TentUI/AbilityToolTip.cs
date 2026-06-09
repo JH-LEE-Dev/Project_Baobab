@@ -11,6 +11,7 @@ public class AbilityToolTip : MonoBehaviour
     [SerializeField] private RectTransform backgroundRectTransform;
     [SerializeField] private TMP_Text titleAndLevelText;
     [SerializeField] private TMP_Text descriptionText;
+    [SerializeField] private TMP_Text valueText;
     [SerializeField] private TMP_Text costText;
     [SerializeField] private Image costIcon;
     [SerializeField] private Sprite coinCostIcon;
@@ -46,20 +47,30 @@ public class AbilityToolTip : MonoBehaviour
     public RectTransform RootRectTransform => rootRectTransform;
     public TMP_Text TitleAndLevelText => titleAndLevelText;
     public TMP_Text DescriptionText => descriptionText;
+    public TMP_Text ValueText => valueText;
     public TMP_Text CostText => costText;
 
     public void SetContent(string _titleAndLevel, string _description, string _cost)
     {
-        if (titleAndLevelText != null)
-            titleAndLevelText.text = _titleAndLevel;
+        SetContent(_titleAndLevel, _description, string.Empty, _cost, MoneyType.None, false);
+    }
 
-        if (descriptionText != null)
-            descriptionText.text = _description;
-
-        SetPlainCost(_cost);
+    public void SetContent(string _titleAndLevel, string _description, string _value, string _cost)
+    {
+        SetContent(_titleAndLevel, _description, _value, _cost, MoneyType.None, false);
     }
 
     public void SetContent(string _titleAndLevel, string _description, string _cost, MoneyType _moneyType)
+    {
+        SetContent(_titleAndLevel, _description, string.Empty, _cost, _moneyType, true);
+    }
+
+    public void SetContent(string _titleAndLevel, string _description, string _value, string _cost, MoneyType _moneyType)
+    {
+        SetContent(_titleAndLevel, _description, _value, _cost, _moneyType, true);
+    }
+
+    private void SetContent(string _titleAndLevel, string _description, string _value, string _cost, MoneyType _moneyType, bool _useCurrencyIcon)
     {
         if (titleAndLevelText != null)
             titleAndLevelText.text = _titleAndLevel;
@@ -67,7 +78,20 @@ public class AbilityToolTip : MonoBehaviour
         if (descriptionText != null)
             descriptionText.text = _description;
 
-        SetCurrencyCost(_cost, _moneyType);
+        SetValue(_value);
+        if (_useCurrencyIcon)
+            SetCurrencyCost(_cost, _moneyType);
+        else
+            SetPlainCost(_cost);
+    }
+
+    private void SetValue(string _value)
+    {
+        if (valueText == null)
+            return;
+
+        valueText.text = _value ?? string.Empty;
+        valueText.gameObject.SetActive(string.IsNullOrEmpty(valueText.text) == false);
     }
 
     private void SetPlainCost(string _cost)

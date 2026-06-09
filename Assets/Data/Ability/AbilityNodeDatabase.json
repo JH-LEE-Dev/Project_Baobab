@@ -3,7 +3,6 @@
         {
             "skillType": "AxeDamage1",
             "nameLocId": 101,
-            "descriptionLocId": 102,
             "gridX": 0,
             "gridY": 0,
             "parents": []
@@ -11,7 +10,6 @@
         {
             "skillType": "AxeDurability1",
             "nameLocId": 103,
-            "descriptionLocId": 104,
             "gridX": 0,
             "gridY": 3,
             "parents": [
@@ -26,7 +24,6 @@
         {
             "skillType": "Stamina1",
             "nameLocId": 105,
-            "descriptionLocId": 106,
             "gridX": -3,
             "gridY": 0,
             "parents": [
@@ -41,7 +38,6 @@
         {
             "skillType": "LogValue1",
             "nameLocId": 107,
-            "descriptionLocId": 108,
             "gridX": 3,
             "gridY": 0,
             "parents": [
@@ -56,7 +52,6 @@
         {
             "skillType": "MovementSpeed",
             "nameLocId": 109,
-            "descriptionLocId": 110,
             "gridX": 0,
             "gridY": -3,
             "parents": [
@@ -71,7 +66,6 @@
         {
             "skillType": "Stamina2",
             "nameLocId": 111,
-            "descriptionLocId": 112,
             "gridX": -5,
             "gridY": 2,
             "parents": [
@@ -86,7 +80,6 @@
         {
             "skillType": "FatigueMaxIncrease1",
             "nameLocId": 113,
-            "descriptionLocId": 114,
             "gridX": -5,
             "gridY": -2,
             "parents": [
@@ -101,7 +94,6 @@
         {
             "skillType": "FatigueMaxIncrease2",
             "nameLocId": 115,
-            "descriptionLocId": 116,
             "gridX": -7,
             "gridY": -2,
             "parents": [
@@ -116,7 +108,6 @@
         {
             "skillType": "FatigueMaxIncrease3",
             "nameLocId": 117,
-            "descriptionLocId": 118,
             "gridX": -9,
             "gridY": -2,
             "parents": [
@@ -131,7 +122,6 @@
         {
             "skillType": "SourceOfSpeed1",
             "nameLocId": 119,
-            "descriptionLocId": 120,
             "gridX": -9,
             "gridY": -4,
             "parents": [
@@ -146,7 +136,6 @@
         {
             "skillType": "VerdantPlainsOvergrowth",
             "nameLocId": 121,
-            "descriptionLocId": 122,
             "gridX": 5,
             "gridY": 0,
             "parents": [
@@ -161,7 +150,6 @@
         {
             "skillType": "WoodenTransportBoxExpansion1",
             "nameLocId": 123,
-            "descriptionLocId": 124,
             "gridX": 5,
             "gridY": -2,
             "parents": [
@@ -176,7 +164,6 @@
         {
             "skillType": "InventoryExpansion1",
             "nameLocId": 125,
-            "descriptionLocId": 126,
             "gridX": 11,
             "gridY": -4,
             "parents": [
@@ -191,7 +178,6 @@
         {
             "skillType": "WoodenTransportBoxExpansion2",
             "nameLocId": 127,
-            "descriptionLocId": 128,
             "gridX": 9,
             "gridY": -2,
             "parents": [
@@ -206,7 +192,6 @@
         {
             "skillType": "LogCapacityIncrease1",
             "nameLocId": 129,
-            "descriptionLocId": 130,
             "gridX": 7,
             "gridY": 0,
             "parents": [
@@ -221,7 +206,6 @@
         {
             "skillType": "LogCapacityIncrease2",
             "nameLocId": 131,
-            "descriptionLocId": 132,
             "gridX": 9,
             "gridY": 0,
             "parents": [
@@ -236,7 +220,6 @@
         {
             "skillType": "SawmillLogStorageExpansion1",
             "nameLocId": 133,
-            "descriptionLocId": 134,
             "gridX": 7,
             "gridY": -4,
             "parents": [
@@ -251,7 +234,6 @@
         {
             "skillType": "LogProcessingSpeed1",
             "nameLocId": 135,
-            "descriptionLocId": 136,
             "gridX": 7,
             "gridY": -6,
             "parents": [
@@ -266,7 +248,6 @@
         {
             "skillType": "SawmillLogStorageExpansion2",
             "nameLocId": 137,
-            "descriptionLocId": 138,
             "gridX": 9,
             "gridY": -6,
             "parents": [
@@ -281,7 +262,6 @@
         {
             "skillType": "PowerSupply",
             "nameLocId": 139,
-            "descriptionLocId": 140,
             "gridX": 7,
             "gridY": -8,
             "parents": [
@@ -296,7 +276,6 @@
         {
             "skillType": "LogProcessingSpeed2",
             "nameLocId": 141,
-            "descriptionLocId": 142,
             "gridX": 9,
             "gridY": -8,
             "parents": [
@@ -311,7 +290,6 @@
         {
             "skillType": "BountifulTree1",
             "nameLocId": 143,
-            "descriptionLocId": 144,
             "gridX": 5,
             "gridY": 2,
             "parents": [
@@ -326,7 +304,6 @@
         {
             "skillType": "FascinatingLogChance1",
             "nameLocId": 145,
-            "descriptionLocId": 146,
             "gridX": 7,
             "gridY": 4,
             "parents": [
@@ -341,7 +318,6 @@
         {
             "skillType": "PickupRange1",
             "nameLocId": 147,
-            "descriptionLocId": 148,
             "gridX": 9,
             "gridY": 4,
             "parents": [
@@ -356,7 +332,6 @@
         {
             "skillType": "LogValue2",
             "nameLocId": 149,
-            "descriptionLocId": 150,
             "gridX": 7,
             "gridY": 2,
             "parents": [
@@ -371,7 +346,6 @@
         {
             "skillType": "BountifulTree2",
             "nameLocId": 151,
-            "descriptionLocId": 152,
             "gridX": 9,
             "gridY": 2,
             "parents": [
@@ -386,7 +360,6 @@
         {
             "skillType": "Shockwave1",
             "nameLocId": 153,
-            "descriptionLocId": 154,
             "gridX": -2,
             "gridY": 7,
             "parents": [
@@ -401,7 +374,6 @@
         {
             "skillType": "AxeDamage2",
             "nameLocId": 155,
-            "descriptionLocId": 156,
             "gridX": 0,
             "gridY": 5,
             "parents": [
@@ -416,7 +388,6 @@
         {
             "skillType": "AxeAttackSpeed1",
             "nameLocId": 157,
-            "descriptionLocId": 158,
             "gridX": 2,
             "gridY": 5,
             "parents": [
@@ -431,7 +402,6 @@
         {
             "skillType": "AxeDamage3",
             "nameLocId": 159,
-            "descriptionLocId": 160,
             "gridX": 0,
             "gridY": 9,
             "parents": [
@@ -446,7 +416,6 @@
         {
             "skillType": "AxeCriticalChance1",
             "nameLocId": 161,
-            "descriptionLocId": 162,
             "gridX": 2,
             "gridY": 7,
             "parents": [
@@ -461,7 +430,6 @@
         {
             "skillType": "ShockwaveDamage1",
             "nameLocId": 163,
-            "descriptionLocId": 164,
             "gridX": -4,
             "gridY": 9,
             "parents": [
@@ -476,7 +444,6 @@
         {
             "skillType": "ShockwaveRange1",
             "nameLocId": 165,
-            "descriptionLocId": 166,
             "gridX": -4,
             "gridY": 5,
             "parents": [
@@ -491,7 +458,6 @@
         {
             "skillType": "AxeCriticalDamage1",
             "nameLocId": 167,
-            "descriptionLocId": 168,
             "gridX": 4,
             "gridY": 7,
             "parents": [
@@ -506,7 +472,6 @@
         {
             "skillType": "Shockwave2",
             "nameLocId": 169,
-            "descriptionLocId": 170,
             "gridX": -6,
             "gridY": 7,
             "parents": [
@@ -521,7 +486,6 @@
         {
             "skillType": "ShockwaveDamage2",
             "nameLocId": 171,
-            "descriptionLocId": 172,
             "gridX": -6,
             "gridY": 9,
             "parents": [
@@ -536,7 +500,6 @@
         {
             "skillType": "ShockwaveRange2",
             "nameLocId": 173,
-            "descriptionLocId": 174,
             "gridX": -6,
             "gridY": 5,
             "parents": [
@@ -551,7 +514,6 @@
         {
             "skillType": "EfficientMovement1",
             "nameLocId": 175,
-            "descriptionLocId": 176,
             "gridX": 0,
             "gridY": -5,
             "parents": [
@@ -566,7 +528,6 @@
         {
             "skillType": "SporeShieldRegenBlock1",
             "nameLocId": 177,
-            "descriptionLocId": 178,
             "gridX": 0,
             "gridY": -8,
             "parents": [
@@ -581,7 +542,6 @@
         {
             "skillType": "SteelAxe1",
             "nameLocId": 179,
-            "descriptionLocId": 180,
             "gridX": -2,
             "gridY": 5,
             "parents": [

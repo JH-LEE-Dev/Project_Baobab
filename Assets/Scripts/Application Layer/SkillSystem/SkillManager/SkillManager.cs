@@ -58,6 +58,7 @@ public struct SkillDispatchInfo
 
 public class SkillManager : MonoBehaviour, ISkillSystemProvider
 {
+    public event Action<SkillDispatchInfo> SkillValuePreviewRequestEvent;
     public event Action<int> PrestigeLevelIncreasedEvent;
     public Action<SkillDispatchInfo> DispatchSkillsEvent;
 
@@ -368,5 +369,21 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     public int GetPrestigeExpLimit()
     {
         return experienceToLevelUp;
+    }
+
+    public void RequestSkillValuePreviewData(SkillType _type)
+    {
+        if (skillNodeMap.TryGetValue(_type, out SkillNode node))
+        {
+            if (node.commands != null)
+            {
+                int targetLevel = Mathf.Min(node.currentLevel + 1, node.maxLevel);
+                for (int i = 0; i < node.commands.Count; i++)
+                {
+                    SkillDispatchInfo info = new SkillDispatchInfo(targetLevel, node.commands[i]);
+                    SkillValuePreviewRequestEvent?.Invoke(info);
+                }
+            }
+        }
     }
 }

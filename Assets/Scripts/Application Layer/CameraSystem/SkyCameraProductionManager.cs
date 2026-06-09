@@ -4,7 +4,7 @@ using Unity.Cinemachine;
 using DG.Tweening;
 using System;
 
-public class SkyCameraProductionComponent : MonoBehaviour
+public class SkyCameraProductionManager : MonoBehaviour
 {
     public event Action SkyProductionEndEvent;
     public event Action SkyProductionRollbackEndEvent;
