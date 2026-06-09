@@ -141,6 +141,7 @@ public class UnitSystem
 
     private void DungeonStarted(DungeonStartSignal dungeonStartSignal)
     {
+        inventoryManager.ReleaseAllDroppedItem();
         unitLogicManager.SetCharacterPos(dungeonStartSignal.characterPos);
         offroadContainer.SetInTown(false);
     }
