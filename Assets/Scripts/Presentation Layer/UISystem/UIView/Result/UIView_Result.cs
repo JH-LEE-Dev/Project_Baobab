@@ -1,7 +1,11 @@
 using UnityEngine;
-
+using System;
 public class UIView_Result : UIView
 {
+    // // 이벤트
+    public event Action GoHomeButtonClickedEvent;
+    public event Action RetryButtonClickedEvent;
+     
     // //외부 의존성
 
     // //내부 의존성
