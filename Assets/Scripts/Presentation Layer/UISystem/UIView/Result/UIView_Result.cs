@@ -8,9 +8,9 @@ public class UIView_Result : UIView
     public event Action RetryButtonClickedEvent;
 
     //외부 의존성
-    private IInventory offroadContainer;
+    private IInventory offroadContainer; 
     private IInventory characterInventory;
-    private IDungeonResultProvider dungeonResultProvider;
+    private IDungeonResultProvider dungeonResultProvider; //던전 성과 제공 객체
 
     [Header("UI References")]
     [SerializeField] private Button goHomeButton;
@@ -104,7 +104,7 @@ public class UIView_Result : UIView
 
     #endregion
 
-    public void DungeonStarted()
+    public void DungeonStarted() //던전이 시작됐을 때 호출됨. 이때 원목 보관함, 인벤토리 상태 저장하면 됨
     {
         
     }
