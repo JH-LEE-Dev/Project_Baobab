@@ -182,7 +182,7 @@ public class UIView_Tent : UIView
     {
     }
 
-    public void SkillAccumulatedValuePreviewProvided(ProvideSkillAccumulatedValueChangeSignal _data)
+    public void SkillAccumulatedValuePreviewProvided(SkillAccumulatedValueChangeData _data)
     {
         abilityUIComponent?.SkillAccumulatedValuePreviewProvided(_data);
     }
