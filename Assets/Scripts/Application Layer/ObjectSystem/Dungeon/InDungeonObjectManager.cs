@@ -11,7 +11,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public event Action RideOffroadEvent;
     public event Action<bool> OffroadInteractStateChangedEvent;
     public event Action<OffroadVehicleObj> OffroadSpawnedEvent;
-    public event Action GameEndEvent;
     public event Action<TreeType> TreeDeadEvent;
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
@@ -68,6 +67,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private Character character;
     private OffroadContainer offraodContainer;
+    private IInventoryChecker inventoryChecker;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -79,6 +79,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         mainCam = Camera.main;
+        inventoryChecker = _inventoryChecker;
 
         itemManager = GetComponentInChildren<ItemManager>();
         itemManager.Initialize(_inventoryChecker);
@@ -682,7 +683,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         inputManager.PauseInteractKey(true);
 
         DropAllItemEvent?.Invoke();
-        StartCoroutine(GameEndRoutine());
+
+        if (inventoryChecker.bInventoryIsEmpty == false)
+            StartCoroutine(GameEndRoutine());
+        else
+            RideOffroadEvent?.Invoke();
     }
 
     private IEnumerator GameEndRoutine()

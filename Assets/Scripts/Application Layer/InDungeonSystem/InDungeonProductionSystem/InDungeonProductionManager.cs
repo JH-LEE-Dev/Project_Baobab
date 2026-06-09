@@ -4,6 +4,11 @@ using UnityEngine;
 
 public class InDungeonProductionManager : MonoBehaviour
 {
+    // 이벤트
+    public event Action CameraUpIsEndEvent;
+    public event Action CameraDownEndEvent;
+    public event Action RollbackSkyProductionEvent;
+
     //외부 의존성
     private InputManager inputManager;
     public OffroadVehicleObj offroadVehicleObj { get; private set; }
@@ -17,14 +22,36 @@ public class InDungeonProductionManager : MonoBehaviour
 
     private SkyCameraProductionManager skyCameraProductionManager;
 
+    public bool bCurrentlyDungeonScene = false;
+    public bool bRetryGame = false;
+
     public void Initialize(InputManager _inputManager, SkyCameraProductionManager _skyCameraProductionManager)
     {
         inputManager = _inputManager;
         skyCameraProductionManager = _skyCameraProductionManager;
+
+        BindEvents();
+    }
+
+    private void BindEvents()
+    {
+        skyCameraProductionManager.SkyProductionEndEvent -= CameraUpIsEnd;
+        skyCameraProductionManager.SkyProductionEndEvent += CameraUpIsEnd;
+
+        skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
+        skyCameraProductionManager.SkyProductionRollbackEndEvent += CameraDownIsEnd;
+    }
+
+    private void ReleaseEvents()
+    {
+        skyCameraProductionManager.SkyProductionEndEvent -= CameraUpIsEnd;
+        skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
     }
 
     public void Release()
     {
+        ReleaseEvents();
+
         if (characterRideCoroutine != null)
         {
             StopCoroutine(characterRideCoroutine);
@@ -67,12 +94,7 @@ public class InDungeonProductionManager : MonoBehaviour
         Vector3 startScale = character.transform.localScale;
 
         character.transform.position = characterRidePoint.position;
-        character.SetFacingDirection(characterRidePoint.position - startPos);
-        character.transform.localScale = startScale;
-        character.SetHeight(0f);
         character.gameObject.SetActive(false);
-
-        character.EnableShadow();
 
         if (offroadVehicleObj != null)
         {
@@ -86,4 +108,44 @@ public class InDungeonProductionManager : MonoBehaviour
     {
         CharacterRideEndEvent?.Invoke();
     }
+
+    private void CameraUpIsEnd()
+    {
+        if (bCurrentlyDungeonScene == false)
+            return;
+
+        character.gameObject.SetActive(true);
+        CameraUpIsEndEvent?.Invoke();
+    }
+
+    private void CameraDownIsEnd()
+    {
+        if (bCurrentlyDungeonScene == true && bRetryGame == false)
+            return;
+
+        character.col.enabled = true;
+
+        inputManager.PauseInteractKey(false);
+        inputManager.PauseMove(false);
+        CameraDownEndEvent?.Invoke();
+    }
+
+    public void StartSkyProduction()
+    {
+        skyCameraProductionManager.StartCameraMove();
+    }
+
+    private IEnumerator RollbackCameraMoveRoutine()
+    {
+        yield return new WaitForSeconds(1.5f);
+
+        RollbackSkyProductionEvent?.Invoke();
+        skyCameraProductionManager.StartCameraMove();
+    }
+
+    public void RollbackCameraMove()
+    {
+        StartCoroutine(RollbackCameraMoveRoutine());
+    }
+
 }

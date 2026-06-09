@@ -239,7 +239,8 @@ public class AbilityToolManager : MonoBehaviour
 
         string costText = BuildToolTipCostText(_node, out MoneyType costMoneyType);
         toolTipInstance.SetContent(
-            BuildToolTipTitleAndLevelText(_node),
+            BuildToolTipTitleText(_node),
+            BuildToolTipLevelText(_node),
             BuildToolTipDescriptionText(_node),
             costText,
             costMoneyType);
@@ -295,9 +296,14 @@ public class AbilityToolManager : MonoBehaviour
         ShowToolTip(currentToolTipNode);
     }
 
-    private string BuildToolTipTitleAndLevelText(AbilityToolNode _node)
+    private string BuildToolTipTitleText(AbilityToolNode _node)
     {
-        return $"{_node.DisplayName}\n{ResolveToolLocalizationText(LocKeys.AbilityUI.commonLevel)} : 0 / {Mathf.Max(_node.MaxLevel, 1)}";
+        return _node.DisplayName;
+    }
+
+    private string BuildToolTipLevelText(AbilityToolNode _node)
+    {
+        return $"{ResolveToolLocalizationText(LocKeys.AbilityUI.commonLevel)} : 0 / {Mathf.Max(_node.MaxLevel, 1)}";
     }
 
     private string BuildToolTipCostText(AbilityToolNode _node, out MoneyType _costMoneyType)

@@ -117,8 +117,8 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         GameEndEvent?.Invoke();
     }
 
-    private void CharacterRideOffroad()
+    public void ResetCharacterStatus()
     {
-        
+        character.ResetStatus();
     }
 }

@@ -27,6 +27,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
 
+    public bool bInventoryIsEmpty { get; private set; }
+
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
 
     long IInventory.money => money;
@@ -93,6 +95,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 itemDataPools[type] = CreatePoolForType(type);
             }
         }
+
+        UpdateInventoryEmptyState();
     }
 
     private void Update()
@@ -157,6 +161,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         if (itemAdded)
         {
             CheckInventoryFull();
+            UpdateInventoryEmptyState();
             ItemAdded();
         }
         else
@@ -300,6 +305,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 ReleaseToPool(slot.itemData);
             }
             slot.Setup(null, 0);
+            UpdateInventoryEmptyState();
             ItemRemoved();
         }
     }
@@ -527,6 +533,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
         SpendMoneyEvent?.Invoke();
         InventorySpecChangedEvent?.Invoke();
+        UpdateInventoryEmptyState();
         Debug.Log("[InventoryManager] Inventory Save Data Loaded.");
     }
 
@@ -587,6 +594,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             slot.Setup(null, 0);
         }
 
+        UpdateInventoryEmptyState();
         LoosAllInventoryItemEvent?.Invoke();
     }
 
@@ -626,5 +634,19 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     public void SetMoney(int _money)
     {
         money = _money;
+    }
+
+    private void UpdateInventoryEmptyState()
+    {
+        bool isEmpty = true;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData != null && inventorySlots[i].totalCount > 0)
+            {
+                isEmpty = false;
+                break;
+            }
+        }
+        bInventoryIsEmpty = isEmpty;
     }
 }

@@ -582,4 +582,14 @@ public class AttackComponent : PComponent
     {
         bCanAttack = _boolean;
     }
+
+    public void ResetAttackTransform()
+    {
+        if (componentCenterTransform != null && attackPointTransform != null)
+        {
+            Vector3 targetPos = componentCenterTransform.position;
+            targetPos.y -= 2f;
+            attackPointTransform.position = targetPos;
+        }
+    }
 }

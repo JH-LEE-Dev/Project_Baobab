@@ -20,6 +20,9 @@ public class TownSystem : MonoBehaviour
     private ForestType selectedForestType;
     private SkyCameraProductionManager skyCameraProductionManager;
 
+    private bool bCurrentlyTownScene = true;
+    private bool bRetryGame = false;
+
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
     {
@@ -71,6 +74,9 @@ public class TownSystem : MonoBehaviour
             signalHub.Publish(new TownStartedSignal(townStartPoint));
 
         logProcessingManager.SetMapType(MapType.Town);
+
+        bCurrentlyTownScene = true;
+        townProductionManager.bCurrentlyTownScene = true;
     }
 
     private void BindEvents()
@@ -160,7 +166,8 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
         signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
-        signalHub.Subscribe<TeleportUIClosedWhileTeleport>(TeleportUIClosedWhileTeleport);
+        signalHub.Subscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
+        signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
     }
 
     private void UnSubscribeSignals()
@@ -171,7 +178,8 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
-        signalHub.UnSubscribe<TeleportUIClosedWhileTeleport>(TeleportUIClosedWhileTeleport);
+        signalHub.UnSubscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
+        signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
     }
 
     private void PortalActivated()
@@ -206,6 +214,9 @@ public class TownSystem : MonoBehaviour
 
     private void DungeonSelected(DungeonSelectedSignal dungeonSelectedSignal)
     {
+        if (bRetryGame == true)
+            return;
+
         selectedMapType = dungeonSelectedSignal.type;
         selectedForestType = dungeonSelectedSignal.forestType;
 
@@ -270,7 +281,15 @@ public class TownSystem : MonoBehaviour
     {
         logProcessingManager.DisableShopObj();
         townProductionManager.SetCharacterTransform();
-        townProductionManager.RollbackCameraMove();
+
+        if (bRetryGame == false)
+            townProductionManager.RollbackCameraMove();
+
+        bCurrentlyTownScene = false;
+        townProductionManager.bCurrentlyTownScene = false;
+
+        bRetryGame = false;
+        townProductionManager.bRetryGame = false;
     }
 
     private void CharacterRideEnd()
@@ -278,7 +297,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Publish(new PortalActivatedSignal());
     }
 
-    private void TeleportUIClosedWhileTeleport(TeleportUIClosedWhileTeleport _teleportUIClosedWhileTeleport)
+    private void TeleportUIClosedWhileTeleport(TeleportUIClosedWhileTeleportSignal _teleportUIClosedWhileTeleport)
     {
         townProductionManager.SetbCanGetOff(false);
     }
@@ -295,12 +314,18 @@ public class TownSystem : MonoBehaviour
 
     private void CameraUpIsEnd()
     {
+        if (bCurrentlyTownScene == false)
+            return;
+
         townObjectManager.ClearObjManager();
         signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
     }
 
     private void CameraDownIsEnd()
     {
+        if (bCurrentlyTownScene == true)
+            return;
+
         signalHub.Publish(new PopupUIUpSignal());
         signalHub.Publish(new StartDecreaseStaminaSignal());
     }
@@ -308,5 +333,11 @@ public class TownSystem : MonoBehaviour
     private void PopupUIDown()
     {
         signalHub.Publish(new PopupUIDownSignal());
+    }
+
+    private void RetryButtonClicked(RetryButtonClickedSignal _retryButtonClickedSignal)
+    {
+        bRetryGame = true;
+        townProductionManager.bRetryGame = true;
     }
 }

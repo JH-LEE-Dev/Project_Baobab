@@ -24,6 +24,9 @@ public class TownProductionManager : MonoBehaviour
     private SkyCameraProductionManager skyCameraProductionManager;
     private bool bCanGetOff = true;
 
+    public bool bCurrentlyTownScene = true;
+    public bool bRetryGame = false;
+
     public void Initialize(InputManager _inputManager, SkyCameraProductionManager _skyCameraProductionManager)
     {
         inputManager = _inputManager;
@@ -199,11 +202,17 @@ public class TownProductionManager : MonoBehaviour
 
     private void CameraUpIsEnd()
     {
+        if (bCurrentlyTownScene == false)
+            return;
+
         CameraUpIsEndEvent?.Invoke();
     }
 
     private void CameraDownIsEnd()
     {
+        if (bCurrentlyTownScene == true || bRetryGame == true)
+            return;
+
         inputManager.PauseInteractKey(false);
         inputManager.PauseMove(false);
         CameraUpDownEndEvent?.Invoke();
