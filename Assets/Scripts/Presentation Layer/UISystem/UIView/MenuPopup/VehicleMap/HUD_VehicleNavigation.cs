@@ -225,7 +225,6 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     public void SetSelectedMapTypeWithoutAnimation(MapType _mapType)
     {
-        Debug.Log($"[HUD_VehicleNavigation Debug] SetSelectedMapTypeWithoutAnimation called with mapType: {_mapType}, mapNameOmpIsNull: {mapNameOmp == null}");
         currentSelectedMapType = _mapType;
         UpdateMapNameText(_mapType);
 
@@ -556,7 +555,6 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     private void UpdateMapNameText(MapType _mapType)
     {
-        Debug.Log($"[HUD_VehicleNavigation Debug] UpdateMapNameText called with mapType: {_mapType}, currentText: '{mapNameText?.text}'");
         if (null == mapNameText)
             return;
 

@@ -17,7 +17,7 @@ MonoBehaviour:
     enumValueName: None
     enumIntValue: 0
     compositeKey: 2097153
-  - enumTypeName: ForestType
-    enumValueName: Vegetatedplains_1
+  - enumTypeName: MapType
+    enumValueName: Vegetatedplains
     enumIntValue: 2
     compositeKey: 2097154
