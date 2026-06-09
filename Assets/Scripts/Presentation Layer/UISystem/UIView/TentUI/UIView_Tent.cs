@@ -206,4 +206,9 @@ public class UIView_Tent : UIView
 
         return _amount.ToString("0.##");
     }
+
+    public void SkillAccumulatedValuePreviewProvided(SkillAccumulatedValueChangeData _data)
+    {
+        
+    }
 }

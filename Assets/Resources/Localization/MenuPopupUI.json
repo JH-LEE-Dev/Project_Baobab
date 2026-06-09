@@ -12,10 +12,34 @@
     {
       "id": 2,
       "key": "mapName_2",
-      "kr": "초목 평원림",
-      "en": "Vegetated plains",
+      "kr": "풀빛너른 숲",
+      "en": "Vegetated Forest",
       "enumType": "MapType",
-      "enumValue": "Vegetatedplains"
+      "enumValue": "VegetatedForest"
+    },
+    {
+      "id": 3,
+      "key": "mapName_3",
+      "kr": "몽글포자 숲",
+      "en": "Mongle Spore Forest",
+      "enumType": "MapType",
+      "enumValue": "MongleSporeForest"
+    },
+    {
+      "id": 4,
+      "key": "mapName_4",
+      "kr": "별뿌리 숲",
+      "en": "Starroot Forest",
+      "enumType": "MapType",
+      "enumValue": "StarrootForest"
+    },
+    {
+      "id": 5,
+      "key": "mapName_5",
+      "kr": "용암 숲",
+      "en": "Magma Forest",
+      "enumType": "MapType",
+      "enumValue": "MagmaForest"
     }
   ]
 }

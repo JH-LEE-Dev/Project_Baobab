@@ -245,7 +245,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != localizationManager)
         {
             string _localizedName = localizationManager.GetText(mapType);
-            Debug.Log($"mapType: {mapType}");
+            Debug.Log($"mapType: {mapType}, localizedName: {_localizedName}");
             if (false == string.IsNullOrEmpty(_localizedName))
             {
                 regionNameText.text = _localizedName;
@@ -267,8 +267,8 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private string GetMapTypeString(MapType _type) => _type switch
     {
         MapType.Town => townString,
-        MapType.Vegetatedplains => plainsString,
-        MapType.Deepmossforest => forestString,
+        MapType.VegetatedForest => plainsString,
+        MapType.MongleSporeForest => forestString,
         _ => noneString
     };
 

@@ -4,20 +4,22 @@ public enum ForestType
 {
     None,
     InTown,
-    Vegetatedplains_1,
-    Vegetatedplains_2,
-    Vegetatedplains_3,
-    Deepmossforest_1,
-    Deepmossforest_2,
-    Deepmossforest_3,
+    VegetatedForest_1,
+    VegetatedForest_2,
+    VegetatedForest_3,
+    MongleSporeForest_1,
+    MongleSporeForest_2,
+    MongleSporeForest_3,
 }
 
 public enum MapType
 {
     None,
     Town,
-    Vegetatedplains,
-    Deepmossforest,
+    VegetatedForest,
+    MongleSporeForest,
+    StarrootForest,
+    MagmaForest,
 }
 
 public class SceneManager : MonoBehaviour
