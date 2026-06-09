@@ -1,0 +1,670 @@
+﻿{
+    "jsonId": 2,
+    "entries": [
+        {
+            "id": 101,
+            "key": "AxeDamage1_Name",
+            "kr": "도끼 데미지 I",
+            "en": "En Mode",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 102,
+            "key": "AxeDamage1_Description",
+            "kr": "<COLOR=fca311>도끼 데미지</COLOR>가 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "en": "En Mode OK Description",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 103,
+            "key": "AxeDurability1_Name",
+            "kr": "도끼 내구도 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 104,
+            "key": "AxeDurability1_Description",
+            "kr": "<COLOR=fca311>도끼 내구도</COLOR>가 <COLOR=54D86A>7</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 105,
+            "key": "Stamina1_Name",
+            "kr": "지구력 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 106,
+            "key": "Stamina1_Description",
+            "kr": "<COLOR=ff5d8f>피로도 소모량</COLOR>이 <COLOR=54D86A>2%</COLOR> 감소합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 107,
+            "key": "LogValue1_Name",
+            "kr": "원목 가치 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 108,
+            "key": "LogValue1_Description",
+            "kr": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 109,
+            "key": "MovementSpeed_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>이동속도 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 110,
+            "key": "MovementSpeed_Description",
+            "kr": "<COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 111,
+            "key": "Stamina2_Name",
+            "kr": "지구력 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 112,
+            "key": "Stamina2_Description",
+            "kr": "<COLOR=ff5d8f>피로도 소모량</COLOR>이 <COLOR=54D86A>3%</COLOR> 감소합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 113,
+            "key": "FatigueMaxIncrease1_Name",
+            "kr": "피로도 최대치 증가 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 114,
+            "key": "FatigueMaxIncrease1_Description",
+            "kr": "<COLOR=ff5d8f>피로도 최대치</COLOR>가 <COLOR=54D86A>10</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 115,
+            "key": "FatigueMaxIncrease2_Name",
+            "kr": "피로도 최대치 증가 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 116,
+            "key": "FatigueMaxIncrease2_Description",
+            "kr": "<COLOR=ff5d8f>피로도 최대치</COLOR>가 <COLOR=54D86A>50</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 117,
+            "key": "FatigueMaxIncrease3_Name",
+            "kr": "피로도 최대치 증가 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 118,
+            "key": "FatigueMaxIncrease3_Description",
+            "kr": "<COLOR=ff5d8f>피로도 최대치</COLOR>가 <COLOR=54D86A>100</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 119,
+            "key": "SourceOfSpeed1_Name",
+            "kr": "속도의 원천 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 120,
+            "key": "SourceOfSpeed1_Description",
+            "kr": "나무를 벌목하면 \n3초간 <COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>2%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 121,
+            "key": "VerdantPlainsOvergrowth_Name",
+            "kr": "풀빛너른숲 과성장",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 122,
+            "key": "VerdantPlainsOvergrowth_Description",
+            "kr": "풀빛너른숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>25%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 123,
+            "key": "WoodenTransportBoxExpansion1_Name",
+            "kr": "원목 운반 상자 확장 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 124,
+            "key": "WoodenTransportBoxExpansion1_Description",
+            "kr": "<COLOR=8bbeff>이동식 원목 운반 상자</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 125,
+            "key": "InventoryExpansion1_Name",
+            "kr": "인벤토리 확장 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 126,
+            "key": "InventoryExpansion1_Description",
+            "kr": "<COLOR=8bbeff>인벤토리</COLOR> 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 127,
+            "key": "WoodenTransportBoxExpansion2_Name",
+            "kr": "원목 운반 상자 확장 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 128,
+            "key": "WoodenTransportBoxExpansion2_Description",
+            "kr": "<COLOR=8bbeff>이동식 원목 운반 상자</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 129,
+            "key": "LogCapacityIncrease1_Name",
+            "kr": "원목 수납량 증가 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 130,
+            "key": "LogCapacityIncrease1_Description",
+            "kr": "원목의 <COLOR=8bbeff>한 칸당 수납량</COLOR>이 <COLOR=54D86A>1</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 131,
+            "key": "LogCapacityIncrease2_Name",
+            "kr": "원목 수납량 증가 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 132,
+            "key": "LogCapacityIncrease2_Description",
+            "kr": "원목의 <COLOR=8bbeff>한 칸당 수납량</COLOR>이 <COLOR=54D86A>3</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 133,
+            "key": "SawmillLogStorageExpansion1_Name",
+            "kr": "제재소 원목 보관함 확장 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 134,
+            "key": "SawmillLogStorageExpansion1_Description",
+            "kr": "<COLOR=8bbeff>제재소 원목 보관함</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 135,
+            "key": "LogProcessingSpeed1_Name",
+            "kr": "원목 가공 속도 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 136,
+            "key": "LogProcessingSpeed1_Description",
+            "kr": "<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>100%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 137,
+            "key": "SawmillLogStorageExpansion2_Name",
+            "kr": "제재소 원목 보관함 확장 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 138,
+            "key": "SawmillLogStorageExpansion2_Description",
+            "kr": "<COLOR=8bbeff>제재소 원목 보관함</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 139,
+            "key": "PowerSupply_Name",
+            "kr": "전력 공급",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 140,
+            "key": "PowerSupply_Description",
+            "kr": "원정을 떠나고 있을 때\n<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>5배</COLOR> 빨라집니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 141,
+            "key": "LogProcessingSpeed2_Name",
+            "kr": "원목 가공 속도 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 142,
+            "key": "LogProcessingSpeed2_Description",
+            "kr": "<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>200%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 143,
+            "key": "BountifulTree1_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 144,
+            "key": "BountifulTree1_Description",
+            "kr": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=7EEDBE,EDD87E><Wave>400%</Wave></COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 145,
+            "key": "FascinatingLogChance1_Name",
+            "kr": "희귀 원목 확률 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 146,
+            "key": "FascinatingLogChance1_Description",
+            "kr": "<COLOR=8bbeff>희귀 등급 원목</COLOR> 출현 비중이 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 147,
+            "key": "PickupRange1_Name",
+            "kr": "획득 범위 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 148,
+            "key": "PickupRange1_Description",
+            "kr": "<COLOR=8bbeff>아이템 획득 범위</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 149,
+            "key": "LogValue2_Name",
+            "kr": "원목 가치 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 150,
+            "key": "LogValue2_Description",
+            "kr": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=54D86A>70%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 151,
+            "key": "BountifulTree2_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 II</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 152,
+            "key": "BountifulTree2_Description",
+            "kr": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=7EEDBE,EDD87E><Wave>1000%</Wave></COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 153,
+            "key": "Shockwave1_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 154,
+            "key": "Shockwave1_Description",
+            "kr": "도끼로 타격할 때,\n<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>를 발생시킬 확률이 <COLOR=54D86A>20%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 155,
+            "key": "AxeDamage2_Name",
+            "kr": "도끼 데미지 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 156,
+            "key": "AxeDamage2_Description",
+            "kr": "<COLOR=fca311>도끼 데미지</COLOR>가 <COLOR=54D86A>40%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 157,
+            "key": "AxeAttackSpeed1_Name",
+            "kr": "도끼 공격 속도 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 158,
+            "key": "AxeAttackSpeed1_Description",
+            "kr": "<COLOR=fca311>도끼 공격 속도</COLOR>가 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 159,
+            "key": "AxeDamage3_Name",
+            "kr": "도끼 데미지 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 160,
+            "key": "AxeDamage3_Description",
+            "kr": "<COLOR=fca311>도끼 데미지</COLOR>가 <COLOR=54D86A>100%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 161,
+            "key": "AxeCriticalChance1_Name",
+            "kr": "도끼 치명타 확률 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 162,
+            "key": "AxeCriticalChance1_Description",
+            "kr": "<COLOR=fca311>도끼 치명타 확률</COLOR>이 <COLOR=54D86A>10%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 163,
+            "key": "ShockwaveDamage1_Name",
+            "kr": "충격파 데미지 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 164,
+            "key": "ShockwaveDamage1_Description",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>데미지</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 165,
+            "key": "ShockwaveRange1_Name",
+            "kr": "충격파 범위 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 166,
+            "key": "ShockwaveRange1_Description",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>범위</COLOR>가 <COLOR=54D86A>10%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 167,
+            "key": "AxeCriticalDamage1_Name",
+            "kr": "도끼 치명타 데미지 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 168,
+            "key": "AxeCriticalDamage1_Description",
+            "kr": "<COLOR=fca311>도끼 치명타 데미지</COLOR>가 <COLOR=54D86A>10%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 169,
+            "key": "Shockwave2_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 II</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 170,
+            "key": "Shockwave2_Description",
+            "kr": "도끼로 타격할 때,\n<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>를 발생시킬 확률이 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 171,
+            "key": "ShockwaveDamage2_Name",
+            "kr": "충격파 데미지 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 172,
+            "key": "ShockwaveDamage2_Description",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>데미지</COLOR>가 <COLOR=54D86A>80%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 173,
+            "key": "ShockwaveRange2_Name",
+            "kr": "충격파 범위 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 174,
+            "key": "ShockwaveRange2_Description",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>범위</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 175,
+            "key": "EfficientMovement1_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>효율적인 이동 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 176,
+            "key": "EfficientMovement1_Description",
+            "kr": "벌목 행동 중\n<COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>20%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 177,
+            "key": "SporeShieldRegenBlock1_Name",
+            "kr": "포자막 회복 억제 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 178,
+            "key": "SporeShieldRegenBlock1_Description",
+            "kr": "포자막을 가진 나무의 회복속도가 10% 감소합니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 179,
+            "key": "SteelAxe1_Name",
+            "kr": "강철도끼 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 180,
+            "key": "SteelAxe1_Description",
+            "kr": "<COLOR=fca311>도끼 내구도</COLOR>가 <COLOR=54D86A>5%</COLOR> 확률로 닳지 않습니다.",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 9000,
+            "key": "Common_Level",
+            "kr": "레벨",
+            "en": "Level",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 9001,
+            "key": "Common_Free",
+            "kr": "무료",
+            "en": "Free",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 9002,
+            "key": "Common_MaxLevel",
+            "kr": "최대 레벨",
+            "en": "Max Level",
+            "enumType": "",
+            "enumValue": ""
+        }
+
+    ]
+}

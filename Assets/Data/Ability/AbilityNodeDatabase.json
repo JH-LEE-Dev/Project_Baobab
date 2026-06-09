@@ -2,16 +2,16 @@
     "nodes": [
         {
             "skillType": "AxeDamage1",
-            "displayName": "도끼 데미지 I",
-            "description": "<COLOR=fca311>도끼 데미지</COLOR>가 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "nameLocId": 101,
+            "descriptionLocId": 102,
             "gridX": 0,
             "gridY": 0,
             "parents": []
         },
         {
             "skillType": "AxeDurability1",
-            "displayName": "도끼 내구도 I",
-            "description": "<COLOR=fca311>도끼 내구도</COLOR>가 <COLOR=54D86A>7</COLOR> 증가합니다.",
+            "nameLocId": 103,
+            "descriptionLocId": 104,
             "gridX": 0,
             "gridY": 3,
             "parents": [
@@ -25,8 +25,8 @@
         },
         {
             "skillType": "Stamina1",
-            "displayName": "지구력 I",
-            "description": "<COLOR=ff5d8f>피로도 소모량</COLOR>이 <COLOR=54D86A>2%</COLOR> 감소합니다.",
+            "nameLocId": 105,
+            "descriptionLocId": 106,
             "gridX": -3,
             "gridY": 0,
             "parents": [
@@ -40,8 +40,8 @@
         },
         {
             "skillType": "LogValue1",
-            "displayName": "원목 가치 I",
-            "description": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "nameLocId": 107,
+            "descriptionLocId": 108,
             "gridX": 3,
             "gridY": 0,
             "parents": [
@@ -55,8 +55,8 @@
         },
         {
             "skillType": "MovementSpeed",
-            "displayName": "<COLOR=7EEDBE,EDD87E><Wave>이동속도 I</Wave></COLOR>",
-            "description": "<COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "nameLocId": 109,
+            "descriptionLocId": 110,
             "gridX": 0,
             "gridY": -3,
             "parents": [
@@ -70,8 +70,8 @@
         },
         {
             "skillType": "Stamina2",
-            "displayName": "지구력 II",
-            "description": "<COLOR=ff5d8f>피로도 소모량</COLOR>이 <COLOR=54D86A>3%</COLOR> 감소합니다.",
+            "nameLocId": 111,
+            "descriptionLocId": 112,
             "gridX": -5,
             "gridY": 2,
             "parents": [
@@ -85,8 +85,8 @@
         },
         {
             "skillType": "FatigueMaxIncrease1",
-            "displayName": "피로도 최대치 증가 I",
-            "description": "<COLOR=ff5d8f>피로도 최대치</COLOR>가 <COLOR=54D86A>10</COLOR> 증가합니다.",
+            "nameLocId": 113,
+            "descriptionLocId": 114,
             "gridX": -5,
             "gridY": -2,
             "parents": [
@@ -100,8 +100,8 @@
         },
         {
             "skillType": "FatigueMaxIncrease2",
-            "displayName": "피로도 최대치 증가 II",
-            "description": "<COLOR=ff5d8f>피로도 최대치</COLOR>가 <COLOR=54D86A>50</COLOR> 증가합니다.",
+            "nameLocId": 115,
+            "descriptionLocId": 116,
             "gridX": -7,
             "gridY": -2,
             "parents": [
@@ -115,8 +115,8 @@
         },
         {
             "skillType": "FatigueMaxIncrease3",
-            "displayName": "피로도 최대치 증가 III",
-            "description": "<COLOR=ff5d8f>피로도 최대치</COLOR>가 <COLOR=54D86A>100</COLOR> 증가합니다.",
+            "nameLocId": 117,
+            "descriptionLocId": 118,
             "gridX": -9,
             "gridY": -2,
             "parents": [
@@ -130,8 +130,8 @@
         },
         {
             "skillType": "SourceOfSpeed1",
-            "displayName": "속도의 원천 I",
-            "description": "나무를 벌목하면 \n3초간 <COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>2%</COLOR> 증가합니다.",
+            "nameLocId": 119,
+            "descriptionLocId": 120,
             "gridX": -9,
             "gridY": -4,
             "parents": [
@@ -145,8 +145,8 @@
         },
         {
             "skillType": "VerdantPlainsOvergrowth",
-            "displayName": "풀빛너른숲 과성장",
-            "description": "풀빛너른숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>25%</COLOR> 증가합니다.",
+            "nameLocId": 121,
+            "descriptionLocId": 122,
             "gridX": 5,
             "gridY": 0,
             "parents": [
@@ -160,8 +160,8 @@
         },
         {
             "skillType": "WoodenTransportBoxExpansion1",
-            "displayName": "원목 운반 상자 확장 I",
-            "description": "<COLOR=8bbeff>이동식 원목 운반 상자</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "nameLocId": 123,
+            "descriptionLocId": 124,
             "gridX": 5,
             "gridY": -2,
             "parents": [
@@ -175,8 +175,8 @@
         },
         {
             "skillType": "InventoryExpansion1",
-            "displayName": "인벤토리 확장 I",
-            "description": "<COLOR=8bbeff>인벤토리</COLOR> 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "nameLocId": 125,
+            "descriptionLocId": 126,
             "gridX": 11,
             "gridY": -4,
             "parents": [
@@ -190,8 +190,8 @@
         },
         {
             "skillType": "WoodenTransportBoxExpansion2",
-            "displayName": "원목 운반 상자 확장 II",
-            "description": "<COLOR=8bbeff>이동식 원목 운반 상자</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "nameLocId": 127,
+            "descriptionLocId": 128,
             "gridX": 9,
             "gridY": -2,
             "parents": [
@@ -205,8 +205,8 @@
         },
         {
             "skillType": "LogCapacityIncrease1",
-            "displayName": "원목 수납량 증가 I",
-            "description": "원목의 <COLOR=8bbeff>한 칸당 수납량</COLOR>이 <COLOR=54D86A>1</COLOR> 증가합니다.",
+            "nameLocId": 129,
+            "descriptionLocId": 130,
             "gridX": 7,
             "gridY": 0,
             "parents": [
@@ -220,8 +220,8 @@
         },
         {
             "skillType": "LogCapacityIncrease2",
-            "displayName": "원목 수납량 증가 II",
-            "description": "원목의 <COLOR=8bbeff>한 칸당 수납량</COLOR>이 <COLOR=54D86A>3</COLOR> 증가합니다.",
+            "nameLocId": 131,
+            "descriptionLocId": 132,
             "gridX": 9,
             "gridY": 0,
             "parents": [
@@ -235,8 +235,8 @@
         },
         {
             "skillType": "SawmillLogStorageExpansion1",
-            "displayName": "제재소 원목 보관함 확장 I",
-            "description": "<COLOR=8bbeff>제재소 원목 보관함</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "nameLocId": 133,
+            "descriptionLocId": 134,
             "gridX": 7,
             "gridY": -4,
             "parents": [
@@ -250,8 +250,8 @@
         },
         {
             "skillType": "LogProcessingSpeed1",
-            "displayName": "원목 가공 속도 I",
-            "description": "<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>100%</COLOR> 증가합니다.",
+            "nameLocId": 135,
+            "descriptionLocId": 136,
             "gridX": 7,
             "gridY": -6,
             "parents": [
@@ -265,8 +265,8 @@
         },
         {
             "skillType": "SawmillLogStorageExpansion2",
-            "displayName": "제재소 원목 보관함 확장 II",
-            "description": "<COLOR=8bbeff>제재소 원목 보관함</COLOR>의 공간을 <COLOR=54D86A>2칸</COLOR> 늘립니다.",
+            "nameLocId": 137,
+            "descriptionLocId": 138,
             "gridX": 9,
             "gridY": -6,
             "parents": [
@@ -280,8 +280,8 @@
         },
         {
             "skillType": "PowerSupply",
-            "displayName": "전력 공급",
-            "description": "원정을 떠나고 있을 때\n<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>5배</COLOR> 빨라집니다.",
+            "nameLocId": 139,
+            "descriptionLocId": 140,
             "gridX": 7,
             "gridY": -8,
             "parents": [
@@ -295,8 +295,8 @@
         },
         {
             "skillType": "LogProcessingSpeed2",
-            "displayName": "원목 가공 속도 II",
-            "description": "<COLOR=8bbeff>원목 가공 속도</COLOR>가 <COLOR=54D86A>200%</COLOR> 증가합니다.",
+            "nameLocId": 141,
+            "descriptionLocId": 142,
             "gridX": 9,
             "gridY": -8,
             "parents": [
@@ -310,8 +310,8 @@
         },
         {
             "skillType": "BountifulTree1",
-            "displayName": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 I</Wave></COLOR>",
-            "description": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=7EEDBE,EDD87E><Wave>400%</Wave></COLOR> 증가합니다.",
+            "nameLocId": 143,
+            "descriptionLocId": 144,
             "gridX": 5,
             "gridY": 2,
             "parents": [
@@ -325,8 +325,8 @@
         },
         {
             "skillType": "FascinatingLogChance1",
-            "displayName": "희귀 원목 확률 I",
-            "description": "<COLOR=8bbeff>희귀 등급 원목</COLOR> 출현 비중이 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "nameLocId": 145,
+            "descriptionLocId": 146,
             "gridX": 7,
             "gridY": 4,
             "parents": [
@@ -340,8 +340,8 @@
         },
         {
             "skillType": "PickupRange1",
-            "displayName": "획득 범위 I",
-            "description": "<COLOR=8bbeff>아이템 획득 범위</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "nameLocId": 147,
+            "descriptionLocId": 148,
             "gridX": 9,
             "gridY": 4,
             "parents": [
@@ -355,8 +355,8 @@
         },
         {
             "skillType": "LogValue2",
-            "displayName": "원목 가치 II",
-            "description": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=54D86A>70%</COLOR> 증가합니다.",
+            "nameLocId": 149,
+            "descriptionLocId": 150,
             "gridX": 7,
             "gridY": 2,
             "parents": [
@@ -370,8 +370,8 @@
         },
         {
             "skillType": "BountifulTree2",
-            "displayName": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 II</Wave></COLOR>",
-            "description": "<COLOR=8bbeff>원목 판매 가치</COLOR>가 <COLOR=7EEDBE,EDD87E><Wave>1000%</Wave></COLOR> 증가합니다.",
+            "nameLocId": 151,
+            "descriptionLocId": 152,
             "gridX": 9,
             "gridY": 2,
             "parents": [
@@ -385,8 +385,8 @@
         },
         {
             "skillType": "Shockwave1",
-            "displayName": "<COLOR=7EEDBE,EDD87E><Wave>충격파 I</Wave></COLOR>",
-            "description": "도끼로 타격할 때,\n<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>를 발생시킬 확률이 <COLOR=54D86A>20%</COLOR> 증가합니다.",
+            "nameLocId": 153,
+            "descriptionLocId": 154,
             "gridX": -2,
             "gridY": 7,
             "parents": [
@@ -400,8 +400,8 @@
         },
         {
             "skillType": "AxeDamage2",
-            "displayName": "도끼 데미지 II",
-            "description": "<COLOR=fca311>도끼 데미지</COLOR>가 <COLOR=54D86A>40%</COLOR> 증가합니다.",
+            "nameLocId": 155,
+            "descriptionLocId": 156,
             "gridX": 0,
             "gridY": 5,
             "parents": [
@@ -415,8 +415,8 @@
         },
         {
             "skillType": "AxeAttackSpeed1",
-            "displayName": "도끼 공격 속도 I",
-            "description": "<COLOR=fca311>도끼 공격 속도</COLOR>가 <COLOR=54D86A>5%</COLOR> 증가합니다.",
+            "nameLocId": 157,
+            "descriptionLocId": 158,
             "gridX": 2,
             "gridY": 5,
             "parents": [
@@ -430,8 +430,8 @@
         },
         {
             "skillType": "AxeDamage3",
-            "displayName": "도끼 데미지 III",
-            "description": "<COLOR=fca311>도끼 데미지</COLOR>가 <COLOR=54D86A>100%</COLOR> 증가합니다.",
+            "nameLocId": 159,
+            "descriptionLocId": 160,
             "gridX": 0,
             "gridY": 9,
             "parents": [
@@ -445,8 +445,8 @@
         },
         {
             "skillType": "AxeCriticalChance1",
-            "displayName": "도끼 치명타 확률 I",
-            "description": "<COLOR=fca311>도끼 치명타 확률</COLOR>이 <COLOR=54D86A>10%</COLOR> 증가합니다.",
+            "nameLocId": 161,
+            "descriptionLocId": 162,
             "gridX": 2,
             "gridY": 7,
             "parents": [
@@ -460,8 +460,8 @@
         },
         {
             "skillType": "ShockwaveDamage1",
-            "displayName": "충격파 데미지 I",
-            "description": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>데미지</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "nameLocId": 163,
+            "descriptionLocId": 164,
             "gridX": -4,
             "gridY": 9,
             "parents": [
@@ -475,8 +475,8 @@
         },
         {
             "skillType": "ShockwaveRange1",
-            "displayName": "충격파 범위 I",
-            "description": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>범위</COLOR>가 <COLOR=54D86A>10%</COLOR> 증가합니다.",
+            "nameLocId": 165,
+            "descriptionLocId": 166,
             "gridX": -4,
             "gridY": 5,
             "parents": [
@@ -490,8 +490,8 @@
         },
         {
             "skillType": "AxeCriticalDamage1",
-            "displayName": "도끼 치명타 데미지 I",
-            "description": "<COLOR=fca311>도끼 치명타 데미지</COLOR>가 <COLOR=54D86A>10%</COLOR> 증가합니다.",
+            "nameLocId": 167,
+            "descriptionLocId": 168,
             "gridX": 4,
             "gridY": 7,
             "parents": [
@@ -505,8 +505,8 @@
         },
         {
             "skillType": "Shockwave2",
-            "displayName": "<COLOR=7EEDBE,EDD87E><Wave>충격파 II</Wave></COLOR>",
-            "description": "도끼로 타격할 때,\n<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>를 발생시킬 확률이 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "nameLocId": 169,
+            "descriptionLocId": 170,
             "gridX": -6,
             "gridY": 7,
             "parents": [
@@ -520,8 +520,8 @@
         },
         {
             "skillType": "ShockwaveDamage2",
-            "displayName": "충격파 데미지 II",
-            "description": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>데미지</COLOR>가 <COLOR=54D86A>80%</COLOR> 증가합니다.",
+            "nameLocId": 171,
+            "descriptionLocId": 172,
             "gridX": -6,
             "gridY": 9,
             "parents": [
@@ -535,8 +535,8 @@
         },
         {
             "skillType": "ShockwaveRange2",
-            "displayName": "충격파 범위 II",
-            "description": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> <COLOR=fca311>범위</COLOR>가 <COLOR=54D86A>30%</COLOR> 증가합니다.",
+            "nameLocId": 173,
+            "descriptionLocId": 174,
             "gridX": -6,
             "gridY": 5,
             "parents": [
@@ -550,8 +550,8 @@
         },
         {
             "skillType": "EfficientMovement1",
-            "displayName": "<COLOR=7EEDBE,EDD87E><Wave>효율적인 이동 I</Wave></COLOR>",
-            "description": "벌목 행동 중\n<COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>20%</COLOR> 증가합니다.",
+            "nameLocId": 175,
+            "descriptionLocId": 176,
             "gridX": 0,
             "gridY": -5,
             "parents": [
@@ -565,8 +565,8 @@
         },
         {
             "skillType": "SporeShieldRegenBlock1",
-            "displayName": "포자막 회복 억제 I",
-            "description": "포자막을 가진 나무의 회복속도가 10% 감소합니다.",
+            "nameLocId": 177,
+            "descriptionLocId": 178,
             "gridX": 0,
             "gridY": -8,
             "parents": [
@@ -580,8 +580,8 @@
         },
         {
             "skillType": "SteelAxe1",
-            "displayName": "강철도끼 I",
-            "description": "<COLOR=fca311>도끼 내구도</COLOR>가 <COLOR=54D86A>5%</COLOR> 확률로 닳지 않습니다.",
+            "nameLocId": 179,
+            "descriptionLocId": 180,
             "gridX": -2,
             "gridY": 5,
             "parents": [

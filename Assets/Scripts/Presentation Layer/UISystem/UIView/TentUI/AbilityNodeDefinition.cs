@@ -10,8 +10,8 @@ public class AbilityNodeDatabaseJson
 public class AbilityNodeDefinitionJson
 {
     public string skillType;
-    public string displayName;
-    public string description;
+    public int nameLocId;
+    public int descriptionLocId;
     public int gridX;
     public int gridY;
     public AbilityParentJson[] parents;

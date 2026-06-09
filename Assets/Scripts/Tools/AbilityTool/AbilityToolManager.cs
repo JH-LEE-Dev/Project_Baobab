@@ -12,6 +12,10 @@ using UnityEditor;
 
 public class AbilityToolManager : MonoBehaviour
 {
+    private const int AbilityLocalizationJsonId = 2;
+    private const int LocalizationEntryIdMask = 0x1FFFFF;
+    private const string AbilityNameKeySuffix = "_Name";
+    private const string AbilityDescriptionKeySuffix = "_Description";
     private const float DefaultZoom = 1f;
     private const float MinZoom = 0.2f;
     private const float MaxZoom = 1f;
@@ -22,6 +26,7 @@ public class AbilityToolManager : MonoBehaviour
 
     private readonly Dictionary<Vector2Int, AbilityToolNode> nodeMap = new Dictionary<Vector2Int, AbilityToolNode>();
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
+    private readonly Dictionary<int, LocalizationEntry> localizationEntryMap = new Dictionary<int, LocalizationEntry>();
     private readonly List<AbilityToolNode> nodeList = new List<AbilityToolNode>();
     private readonly AbilityToolLineRenderer lineRenderer = new AbilityToolLineRenderer();
 
@@ -75,8 +80,10 @@ public class AbilityToolManager : MonoBehaviour
 
     [Header("Json IO")]
     [SerializeField] private TextAsset importJson;
+    [SerializeField] private TextAsset importLocalizationJson;
     [SerializeField] private SkillDataBase skillDataBaseAsset;
     [SerializeField] private string uiExportAssetPath = "Assets/Data/Ability/AbilityNodeDatabase.json";
+    [SerializeField] private string localizationExportAssetPath = "Assets/Resources/Localization/AbilityUI.json";
 
 
 #region Default
@@ -290,7 +297,7 @@ public class AbilityToolManager : MonoBehaviour
 
     private string BuildToolTipTitleAndLevelText(AbilityToolNode _node)
     {
-        return $"{_node.DisplayName}\n레벨 : 0 / {Mathf.Max(_node.MaxLevel, 1)}";
+        return $"{_node.DisplayName}\n{ResolveToolLocalizationText(LocKeys.AbilityUI.commonLevel)} : 0 / {Mathf.Max(_node.MaxLevel, 1)}";
     }
 
     private string BuildToolTipCostText(AbilityToolNode _node, out MoneyType _costMoneyType)
@@ -311,7 +318,19 @@ public class AbilityToolManager : MonoBehaviour
             return AbilityNumberFormatter.FormatCompact(carrotCost);
         }
 
-        return "무료";
+        return ResolveToolLocalizationText(LocKeys.AbilityUI.commonFree);
+    }
+
+    private string ResolveToolLocalizationText(int _compositeKey)
+    {
+        int entryId = _compositeKey & LocalizationEntryIdMask;
+        if (localizationEntryMap.TryGetValue(entryId, out LocalizationEntry entry) &&
+            string.IsNullOrEmpty(entry.kr) == false)
+        {
+            return entry.kr;
+        }
+
+        return string.Empty;
     }
 
 #endregion
@@ -864,19 +883,25 @@ public class AbilityToolManager : MonoBehaviour
             return;
         }
 
+        AbilityLocalizationExportContext localizationContext = LoadLocalizationExportContext();
         AbilityToolExportDatabaseJson databaseJson = new AbilityToolExportDatabaseJson
         {
-            nodes = BuildExportNodes()
+            nodes = BuildExportNodes(localizationContext)
         };
 
         string uiJson = JsonUtility.ToJson(databaseJson, true);
         string uiAbsolutePath = GetAbsolutePath(uiExportAssetPath);
+        string localizationJson = JsonUtility.ToJson(BuildLocalizationDataJson(localizationContext), true);
+        string localizationAbsolutePath = GetAbsolutePath(localizationExportAssetPath);
 
         WriteJsonFile(uiAbsolutePath, uiJson);
+        WriteJsonFile(localizationAbsolutePath, localizationJson);
+        RefreshLocalizationEntryMap();
         ExportSkillDataBaseAsset();
         allowEmptyExport = false;
 
         Debug.Log($"Ability tool exported UI json: {uiAbsolutePath}");
+        Debug.Log($"Ability tool exported localization json: {localizationAbsolutePath}");
         ShowExportCompletedDialog();
     }
 
@@ -899,6 +924,7 @@ public class AbilityToolManager : MonoBehaviour
             return;
         }
 
+        RefreshLocalizationEntryMap();
         RemoveAllNodes();
 
         Dictionary<SkillType, AbilityToolNode> skillNodeMap = new Dictionary<SkillType, AbilityToolNode>();
@@ -920,7 +946,15 @@ public class AbilityToolManager : MonoBehaviour
                 continue;
             }
 
-            AbilityToolNode node = CreateNodeFromDefinition(nodeDefinition, parsedSkillType);
+            string displayName = ResolveImportedLocalizationText(
+                nodeDefinition.nameLocId,
+                localizationEntryMap,
+                $"{parsedSkillType} name");
+            string description = ResolveImportedLocalizationText(
+                nodeDefinition.descriptionLocId,
+                localizationEntryMap,
+                $"{parsedSkillType} description");
+            AbilityToolNode node = CreateNodeFromDefinition(nodeDefinition, parsedSkillType, displayName, description);
             if (node == null)
                 continue;
 
@@ -943,7 +977,7 @@ public class AbilityToolManager : MonoBehaviour
         Debug.Log("Ability tool cleared nodes. Export Ability Data to save the empty state.");
     }
 
-    private AbilityToolExportNodeJson[] BuildExportNodes()
+    private AbilityToolExportNodeJson[] BuildExportNodes(AbilityLocalizationExportContext _localizationContext)
     {
         List<AbilityToolExportNodeJson> exportNodes = new List<AbilityToolExportNodeJson>();
 
@@ -953,11 +987,21 @@ public class AbilityToolManager : MonoBehaviour
             if (node == null || node.SkillType == SkillType.None)
                 continue;
 
+            int nameLocId = _localizationContext.GetOrCreate(
+                node.NameLocId,
+                BuildAbilityLocalizationKey(node.SkillType, AbilityNameKeySuffix),
+                node.DisplayName);
+            int descriptionLocId = _localizationContext.GetOrCreate(
+                node.DescriptionLocId,
+                BuildAbilityLocalizationKey(node.SkillType, AbilityDescriptionKeySuffix),
+                node.Description);
+            node.ApplyLocalizationIds(nameLocId, descriptionLocId);
+
             exportNodes.Add(new AbilityToolExportNodeJson
             {
                 skillType = node.SkillType.ToString(),
-                displayName = node.DisplayName,
-                description = node.Description,
+                nameLocId = nameLocId,
+                descriptionLocId = descriptionLocId,
                 gridX = node.GridPosition.x,
                 gridY = node.GridPosition.y,
                 parents = BuildExportParents(node.ParentLinks)
@@ -1093,7 +1137,90 @@ public class AbilityToolManager : MonoBehaviour
         return exportParents.ToArray();
     }
 
-    private AbilityToolNode CreateNodeFromDefinition(AbilityNodeDefinitionJson _nodeDefinition, SkillType _skillType)
+    private AbilityLocalizationExportContext LoadLocalizationExportContext()
+    {
+        AbilityLocalizationExportContext context = new AbilityLocalizationExportContext();
+        string localizationJson = ResolveImportLocalizationJsonText();
+
+        if (string.IsNullOrWhiteSpace(localizationJson) == false)
+        {
+            LocalizationDataJson data = JsonUtility.FromJson<LocalizationDataJson>(localizationJson);
+            if (data != null && data.entries != null)
+            {
+                for (int i = 0; i < data.entries.Length; i++)
+                    context.AddOrUpdate(data.entries[i]);
+            }
+        }
+
+        context.EnsureNextId();
+        return context;
+    }
+
+    private Dictionary<int, LocalizationEntry> LoadLocalizationEntryMap()
+    {
+        Dictionary<int, LocalizationEntry> entryMap = new Dictionary<int, LocalizationEntry>();
+        string localizationJson = ResolveImportLocalizationJsonText();
+        if (string.IsNullOrWhiteSpace(localizationJson))
+            return entryMap;
+
+        LocalizationDataJson data = JsonUtility.FromJson<LocalizationDataJson>(localizationJson);
+        if (data == null || data.entries == null)
+            return entryMap;
+
+        for (int i = 0; i < data.entries.Length; i++)
+        {
+            LocalizationEntry entry = data.entries[i];
+            if (entry.id <= 0)
+                continue;
+
+            entryMap[entry.id] = entry;
+        }
+
+        return entryMap;
+    }
+
+    private void RefreshLocalizationEntryMap()
+    {
+        localizationEntryMap.Clear();
+        Dictionary<int, LocalizationEntry> loadedEntryMap = LoadLocalizationEntryMap();
+        foreach (KeyValuePair<int, LocalizationEntry> pair in loadedEntryMap)
+            localizationEntryMap[pair.Key] = pair.Value;
+    }
+
+    private string ResolveImportedLocalizationText(int _locId, Dictionary<int, LocalizationEntry> _localizationEntryMap, string _label)
+    {
+        if (_locId <= 0)
+        {
+            Debug.LogWarning($"Ability tool import missing localization id: {_label}");
+            return string.Empty;
+        }
+
+        if (_localizationEntryMap != null &&
+            _localizationEntryMap.TryGetValue(_locId, out LocalizationEntry entry) &&
+            string.IsNullOrEmpty(entry.kr) == false)
+        {
+            return entry.kr;
+        }
+
+        Debug.LogWarning($"Ability tool import missing localization entry: {_label} ({_locId})");
+        return string.Empty;
+    }
+
+    private LocalizationDataJson BuildLocalizationDataJson(AbilityLocalizationExportContext _context)
+    {
+        return new LocalizationDataJson
+        {
+            jsonId = AbilityLocalizationJsonId,
+            entries = _context != null ? _context.GetEntries() : Array.Empty<LocalizationEntry>()
+        };
+    }
+
+    private string BuildAbilityLocalizationKey(SkillType _skillType, string _suffix)
+    {
+        return _skillType + _suffix;
+    }
+
+    private AbilityToolNode CreateNodeFromDefinition(AbilityNodeDefinitionJson _nodeDefinition, SkillType _skillType, string _displayName, string _description)
     {
         if (abilityToolNodePrefab == null || moveTarget == null)
             return null;
@@ -1107,7 +1234,7 @@ public class AbilityToolManager : MonoBehaviour
 
         AbilityToolNode node = Instantiate(abilityToolNodePrefab, moveTarget);
         node.BindOwner(this);
-        node.ApplyDefinition(_nodeDefinition, _skillType, gridCellSize);
+        node.ApplyDefinition(_nodeDefinition, _skillType, _displayName, _description, gridCellSize);
         node.SetSelectedVisual(false);
         node.SetPicture(ResolvePicture(_skillType));
         nodeMap[gridPosition] = node;
@@ -1231,6 +1358,18 @@ public class AbilityToolManager : MonoBehaviour
         return string.Empty;
     }
 
+    private string ResolveImportLocalizationJsonText()
+    {
+        if (importLocalizationJson != null)
+            return importLocalizationJson.text;
+
+        string absolutePath = GetAbsolutePath(localizationExportAssetPath);
+        if (File.Exists(absolutePath))
+            return File.ReadAllText(absolutePath, Encoding.UTF8);
+
+        return string.Empty;
+    }
+
     private void WriteJsonFile(string _absolutePath, string _json)
     {
         string directoryPath = Path.GetDirectoryName(_absolutePath);
@@ -1273,11 +1412,101 @@ public class AbilityToolManager : MonoBehaviour
     private class AbilityToolExportNodeJson
     {
         public string skillType;
-        public string displayName;
-        public string description;
+        public int nameLocId;
+        public int descriptionLocId;
         public int gridX;
         public int gridY;
         public AbilityParentJson[] parents;
+    }
+
+    private class AbilityLocalizationExportContext
+    {
+        private readonly List<LocalizationEntry> entries = new List<LocalizationEntry>();
+        private readonly Dictionary<int, int> indexById = new Dictionary<int, int>();
+        private readonly Dictionary<string, int> idByKey = new Dictionary<string, int>();
+        private int nextId = 1;
+
+        public void AddOrUpdate(LocalizationEntry _entry)
+        {
+            if (_entry.id <= 0)
+                return;
+
+            if (indexById.TryGetValue(_entry.id, out int index))
+            {
+                entries[index] = _entry;
+            }
+            else
+            {
+                indexById[_entry.id] = entries.Count;
+                entries.Add(_entry);
+            }
+
+            if (string.IsNullOrEmpty(_entry.key) == false)
+                idByKey[_entry.key] = _entry.id;
+        }
+
+        public void EnsureNextId()
+        {
+            nextId = 1;
+            for (int i = 0; i < entries.Count; i++)
+                nextId = Mathf.Max(nextId, entries[i].id + 1);
+        }
+
+        public int GetOrCreate(int _preferredId, string _key, string _krText)
+        {
+            int id = ResolveExistingId(_preferredId, _key);
+            if (id <= 0)
+                id = ResolveNewId(_preferredId);
+
+            LocalizationEntry entry = GetEntryOrDefault(id);
+            entry.id = id;
+            entry.key = _key;
+            entry.kr = _krText ?? string.Empty;
+            entry.en = entry.en ?? string.Empty;
+            entry.enumType = entry.enumType ?? string.Empty;
+            entry.enumValue = entry.enumValue ?? string.Empty;
+            AddOrUpdate(entry);
+            return id;
+        }
+
+        public LocalizationEntry[] GetEntries()
+        {
+            entries.Sort((a, b) => a.id.CompareTo(b.id));
+            return entries.ToArray();
+        }
+
+        private int ResolveExistingId(int _preferredId, string _key)
+        {
+            if (_preferredId > 0 && indexById.ContainsKey(_preferredId))
+                return _preferredId;
+
+            if (string.IsNullOrEmpty(_key) == false && idByKey.TryGetValue(_key, out int idByExistingKey))
+                return idByExistingKey;
+
+            if (_preferredId > 0 && indexById.ContainsKey(_preferredId) == false)
+                return _preferredId;
+
+            return 0;
+        }
+
+        private int ResolveNewId(int _preferredId)
+        {
+            if (_preferredId > 0 && indexById.ContainsKey(_preferredId) == false)
+                return _preferredId;
+
+            while (indexById.ContainsKey(nextId))
+                nextId++;
+
+            return nextId++;
+        }
+
+        private LocalizationEntry GetEntryOrDefault(int _id)
+        {
+            if (indexById.TryGetValue(_id, out int index))
+                return entries[index];
+
+            return new LocalizationEntry();
+        }
     }
 
 #endregion

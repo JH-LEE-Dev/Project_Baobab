@@ -27,6 +27,8 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
+    [SerializeField] private int nameLocId;
+    [SerializeField] private int descriptionLocId;
     [SerializeField] private string displayName;
     [SerializeField] [TextArea(2, 5)] private string description;
     [SerializeField] private int maxLevel = 1;
@@ -50,6 +52,8 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     private AbilityToolManager owner;
 
     public SkillType SkillType => skillType;
+    public int NameLocId => nameLocId;
+    public int DescriptionLocId => descriptionLocId;
     public string DisplayName => displayName;
     public string Description => description;
     public int MaxLevel => maxLevel;
@@ -65,19 +69,27 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
         owner = _owner;
     }
 
-    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, float _gridCellSize)
+    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, string _displayName, string _description, float _gridCellSize)
     {
         if (_definition == null)
             return;
 
         skillType = _skillType;
-        displayName = _definition.displayName;
-        description = _definition.description;
+        nameLocId = _definition.nameLocId;
+        descriptionLocId = _definition.descriptionLocId;
+        displayName = _displayName;
+        description = _description;
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentLinks.Clear();
 
         ApplyAnchoredPosition(_gridCellSize);
         gameObject.name = $"AbilityToolNode_{skillType}_{gridPosition.x}_{gridPosition.y}";
+    }
+
+    public void ApplyLocalizationIds(int _nameLocId, int _descriptionLocId)
+    {
+        nameLocId = _nameLocId;
+        descriptionLocId = _descriptionLocId;
     }
 
     public void ApplyLogicData(int _maxLevel, ProgressionCurve _moneyCurve, ProgressionCurve _carrotCurve, List<AbilityToolSkillCommandEntry> _skillCommands)
