@@ -22,6 +22,9 @@ public class UIView_Result : UIView
 
         if (retryButton != null)
             retryButton.onClick.AddListener(OnRetryButtonClicked);
+
+        // 비활성화
+        SetResultContentsActive(false);
     }
 
     public override void SetupUI()
@@ -47,6 +50,18 @@ public class UIView_Result : UIView
     public void OnRetryButtonClicked()
     {
         RetryButtonClickedEvent?.Invoke();
+    }
+
+    public void OpenResultUI()
+    {
+        // 활성화
+        SetResultContentsActive(true);
+    }
+
+    private void SetResultContentsActive(bool active)
+    {
+        foreach (Transform child in transform)
+            child.gameObject.SetActive(active);
     }
 
     #endregion
