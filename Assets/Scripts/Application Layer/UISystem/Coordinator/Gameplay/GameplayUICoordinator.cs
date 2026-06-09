@@ -456,7 +456,7 @@ public class GameplayUICoordinator
 
     private void DeclareSkillAccumulativeValue(DeclareSkillAccumulatedValueSignal _declareSkillAccumulativeValueSignal)
     {
-        tentUI.DeclareSkillAccumulativeValue(_declareSkillAccumulativeValueSignal.data);
+
     }
 
     private void StartSkyProduction(StartSkyProductionSignal _startSkyProductionSignal)
