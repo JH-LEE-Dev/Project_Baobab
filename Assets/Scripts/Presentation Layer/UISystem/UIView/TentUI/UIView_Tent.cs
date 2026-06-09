@@ -178,6 +178,7 @@ public class UIView_Tent : UIView
         abilityUIComponent?.Refresh();
     }
 
+    // Legacy accumulated-value notice is intentionally ignored after AbilityNotice removal.
     public void DeclareSkillAccumulativeValue(SkillAccumulatedValueData _data)
     {
     }
