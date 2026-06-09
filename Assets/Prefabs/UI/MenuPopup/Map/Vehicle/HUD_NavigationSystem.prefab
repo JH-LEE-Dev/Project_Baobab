@@ -932,11 +932,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a05d17ac9bd5fd4a9ec71312c90bf27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_NavigationScrollButton
-  buttonImage: {fileID: 5208481062573294338}
+  buttonImage: {fileID: 3778086988249463785}
   disappearDuration: 0.2
   disappearEase: 26
   appearDuration: 0.25
   appearEase: 27
+  normalColor: {r: 0.29411766, g: 0.29411766, b: 0.29411766, a: 0.5019608}
+  hoverColor: {r: 1, g: 1, b: 1, a: 0.5019608}
+  clickColor: {r: 0, g: 0.34901962, b: 0.5294118, a: 0.5019608}
+  maxPressColor: {r: 0, g: 0.6592593, b: 1, a: 0.7490196}
+  colorDuration: 0.2
+  maxPressDuration: 1.5
 --- !u!1 &6595759153962658993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1403,8 +1409,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a05d17ac9bd5fd4a9ec71312c90bf27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_NavigationScrollButton
-  buttonImage: {fileID: 6497840935752527538}
+  buttonImage: {fileID: 3497360895407049237}
   disappearDuration: 0.2
   disappearEase: 26
   appearDuration: 0.25
   appearEase: 27
+  normalColor: {r: 0.29411766, g: 0.29411766, b: 0.29411766, a: 0.5019608}
+  hoverColor: {r: 1, g: 1, b: 1, a: 0.5019608}
+  clickColor: {r: 0, g: 0.34901962, b: 0.5294118, a: 0.5019608}
+  maxPressColor: {r: 0, g: 0.6592593, b: 1, a: 0.7490196}
+  colorDuration: 0.2
+  maxPressDuration: 1.5
