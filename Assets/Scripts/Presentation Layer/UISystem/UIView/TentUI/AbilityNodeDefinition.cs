@@ -11,7 +11,6 @@ public class AbilityNodeDefinitionJson
 {
     public string skillType;
     public int nameLocId;
-    public int descriptionLocId;
     public int gridX;
     public int gridY;
     public AbilityParentJson[] parents;

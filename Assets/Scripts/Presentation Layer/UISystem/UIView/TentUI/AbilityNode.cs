@@ -12,7 +12,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private string displayName;
-    [SerializeField] private string description;
     [SerializeField] private int currentLevel;
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private SkillType[] parentSkillTypes;
@@ -49,7 +48,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
-    public string Description => description;
     public int CurrentLevel => currentLevel;
     public Vector2Int GridPosition => gridPosition;
     public SkillType[] ParentSkillTypes => parentSkillTypes;
@@ -98,14 +96,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     }
 
     // JSON에서 읽은 노드 정의를 현재 프리팹 인스턴스에 반영한다.
-    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, string _displayName, string _description, Sprite _pictureSprite, float _gridCellSize)
+    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, string _displayName, Sprite _pictureSprite, float _gridCellSize)
     {
         if (_definition == null)
             return;
 
         skillType = _skillType;
         displayName = _displayName;
-        description = _description;
         currentLevel = 0;
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());
@@ -115,10 +112,9 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         ApplyAnchoredPosition(_gridCellSize);
     }
 
-    public void ApplyLocalizedText(string _displayName, string _description)
+    public void ApplyLocalizedText(string _displayName)
     {
         displayName = _displayName;
-        description = _description;
     }
 
     // 노드의 JSON 기반 그리드 좌표를 실제 UI 좌표로 변환해 적용한다.
