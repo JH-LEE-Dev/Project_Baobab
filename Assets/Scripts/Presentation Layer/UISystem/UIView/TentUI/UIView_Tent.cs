@@ -178,6 +178,10 @@ public class UIView_Tent : UIView
         abilityUIComponent?.Refresh();
     }
 
+    public void DeclareSkillAccumulativeValue(SkillAccumulatedValueData _data)
+    {
+    }
+
     public void SkillAccumulatedValuePreviewProvided(SkillAccumulatedValueChangeData _data)
     {
         abilityUIComponent?.SkillAccumulatedValuePreviewProvided(_data);
