@@ -948,10 +948,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 툴팁 제목과 현재/최대 레벨 문자열을 만든다.
-    private string BuildToolTipTitleAndLevelText(AbilityNode _node, SkillInfo _skillInfo)
+    private string BuildToolTipTitleText(AbilityNode _node)
+    {
+        return _node.DisplayName;
+    }
+
+    private string BuildToolTipLevelText(SkillInfo _skillInfo)
     {
         int maxLevel = Mathf.Max(_skillInfo.maxLevel, 0);
-        return $"{_node.DisplayName}\n{ResolveLocalizedText(LocKeys.AbilityUI.commonLevel)} : {_skillInfo.currentLevel} / {maxLevel}";
+        return $"{ResolveLocalizedText(LocKeys.AbilityUI.commonLevel)} : {_skillInfo.currentLevel} / {maxLevel}";
     }
 
     private string BuildToolTipCostText(SkillInfo _skillInfo, AbilityLevelUpRejectReason _applyReason, out MoneyType _costMoneyType)
@@ -1011,7 +1016,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         string costText = BuildToolTipCostText(_skillInfo, _applyReason, out MoneyType costMoneyType);
         string descriptionFormat = GetToolTipDescriptionFormat(_previewData.type);
         toolTipInstance.SetContent(
-            BuildToolTipTitleAndLevelText(_node, _skillInfo),
+            BuildToolTipTitleText(_node),
+            BuildToolTipLevelText(_skillInfo),
             BuildToolTipDescriptionText(descriptionFormat, _previewData),
             BuildToolTipValueText(_previewData, IsMaxLevel(_skillInfo, _applyReason), ShouldAppendPercentUnit(descriptionFormat)),
             costText,

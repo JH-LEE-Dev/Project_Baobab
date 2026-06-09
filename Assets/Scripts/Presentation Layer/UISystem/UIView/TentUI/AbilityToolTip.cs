@@ -1,6 +1,7 @@
 using TMPro;
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
 
@@ -9,7 +10,9 @@ public class AbilityToolTip : MonoBehaviour
     [Header("UI References")]
     [SerializeField] private RectTransform rootRectTransform;
     [SerializeField] private RectTransform backgroundRectTransform;
-    [SerializeField] private TMP_Text titleAndLevelText;
+    [FormerlySerializedAs("titleAndLevelText")]
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private TMP_Text levelText;
     [SerializeField] private TMP_Text descriptionText;
     [SerializeField] private TMP_Text valueText;
     [SerializeField] private TMP_Text costText;
@@ -45,35 +48,39 @@ public class AbilityToolTip : MonoBehaviour
     private int hideMotionVersion;
 
     public RectTransform RootRectTransform => rootRectTransform;
-    public TMP_Text TitleAndLevelText => titleAndLevelText;
+    public TMP_Text TitleText => titleText;
+    public TMP_Text LevelText => levelText;
     public TMP_Text DescriptionText => descriptionText;
     public TMP_Text ValueText => valueText;
     public TMP_Text CostText => costText;
 
-    public void SetContent(string _titleAndLevel, string _description, string _cost)
+    public void SetContent(string _title, string _level, string _description, string _cost)
     {
-        SetContent(_titleAndLevel, _description, string.Empty, _cost, MoneyType.None, false);
+        SetContent(_title, _level, _description, string.Empty, _cost, MoneyType.None, false);
     }
 
-    public void SetContent(string _titleAndLevel, string _description, string _value, string _cost)
+    public void SetContent(string _title, string _level, string _description, string _value, string _cost)
     {
-        SetContent(_titleAndLevel, _description, _value, _cost, MoneyType.None, false);
+        SetContent(_title, _level, _description, _value, _cost, MoneyType.None, false);
     }
 
-    public void SetContent(string _titleAndLevel, string _description, string _cost, MoneyType _moneyType)
+    public void SetContent(string _title, string _level, string _description, string _cost, MoneyType _moneyType)
     {
-        SetContent(_titleAndLevel, _description, string.Empty, _cost, _moneyType, true);
+        SetContent(_title, _level, _description, string.Empty, _cost, _moneyType, true);
     }
 
-    public void SetContent(string _titleAndLevel, string _description, string _value, string _cost, MoneyType _moneyType)
+    public void SetContent(string _title, string _level, string _description, string _value, string _cost, MoneyType _moneyType)
     {
-        SetContent(_titleAndLevel, _description, _value, _cost, _moneyType, true);
+        SetContent(_title, _level, _description, _value, _cost, _moneyType, true);
     }
 
-    private void SetContent(string _titleAndLevel, string _description, string _value, string _cost, MoneyType _moneyType, bool _useCurrencyIcon)
+    private void SetContent(string _title, string _level, string _description, string _value, string _cost, MoneyType _moneyType, bool _useCurrencyIcon)
     {
-        if (titleAndLevelText != null)
-            titleAndLevelText.text = _titleAndLevel;
+        if (titleText != null)
+            titleText.text = _title;
+
+        if (levelText != null)
+            levelText.text = _level;
 
         if (descriptionText != null)
             descriptionText.text = _description;
