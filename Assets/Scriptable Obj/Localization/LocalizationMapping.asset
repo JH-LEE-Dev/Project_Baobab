@@ -13,6 +13,98 @@ MonoBehaviour:
   m_Name: LocalizationMapping
   m_EditorClassIdentifier: Assembly-CSharp::LocalizationMapping
   mappings:
+  - enumTypeName: SkillCommandType
+    enumValueName: InventoryExpansion
+    enumIntValue: 1
+    compositeKey: 4203404
+  - enumTypeName: SkillCommandType
+    enumValueName: logCapacityIncrease
+    enumIntValue: 2
+    compositeKey: 4203405
+  - enumTypeName: SkillCommandType
+    enumValueName: SawmillLogStorageExpansion
+    enumIntValue: 3
+    compositeKey: 4203406
+  - enumTypeName: SkillCommandType
+    enumValueName: LogProcessingSpeed
+    enumIntValue: 4
+    compositeKey: 4203407
+  - enumTypeName: SkillCommandType
+    enumValueName: AxeDamage
+    enumIntValue: 5
+    compositeKey: 4203408
+  - enumTypeName: SkillCommandType
+    enumValueName: LogValue
+    enumIntValue: 9
+    compositeKey: 4203409
+  - enumTypeName: SkillCommandType
+    enumValueName: VerdantPlainsOvergrowth
+    enumIntValue: 10
+    compositeKey: 4203410
+  - enumTypeName: SkillCommandType
+    enumValueName: Stamina
+    enumIntValue: 13
+    compositeKey: 4203411
+  - enumTypeName: SkillCommandType
+    enumValueName: StaminaMaxIncrease
+    enumIntValue: 15
+    compositeKey: 4203412
+  - enumTypeName: SkillCommandType
+    enumValueName: ConveyorSpeed
+    enumIntValue: 17
+    compositeKey: 4203413
+  - enumTypeName: SkillCommandType
+    enumValueName: EfficientMovement
+    enumIntValue: 22
+    compositeKey: 4203414
+  - enumTypeName: SkillCommandType
+    enumValueName: Shockwave
+    enumIntValue: 23
+    compositeKey: 4203415
+  - enumTypeName: SkillCommandType
+    enumValueName: AxeRange
+    enumIntValue: 24
+    compositeKey: 4203416
+  - enumTypeName: SkillCommandType
+    enumValueName: AxeDurability
+    enumIntValue: 25
+    compositeKey: 4203417
+  - enumTypeName: SkillCommandType
+    enumValueName: SteelAxe
+    enumIntValue: 26
+    compositeKey: 4203418
+  - enumTypeName: SkillCommandType
+    enumValueName: PowerSupply
+    enumIntValue: 27
+    compositeKey: 4203419
+  - enumTypeName: SkillCommandType
+    enumValueName: PickupRange
+    enumIntValue: 28
+    compositeKey: 4203420
+  - enumTypeName: SkillCommandType
+    enumValueName: FascinatingLogChance
+    enumIntValue: 29
+    compositeKey: 4203421
+  - enumTypeName: SkillCommandType
+    enumValueName: MovementSpeed
+    enumIntValue: 34
+    compositeKey: 4203422
+  - enumTypeName: SkillCommandType
+    enumValueName: ShockwaveDamage
+    enumIntValue: 35
+    compositeKey: 4203423
+  - enumTypeName: SkillCommandType
+    enumValueName: ShockwaveRange
+    enumIntValue: 36
+    compositeKey: 4203424
+  - enumTypeName: SkillCommandType
+    enumValueName: AxeAttackSpeed
+    enumIntValue: 37
+    compositeKey: 4203425
+  - enumTypeName: SkillCommandType
+    enumValueName: WoodenTransportBox
+    enumIntValue: 38
+    compositeKey: 4203426
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0
