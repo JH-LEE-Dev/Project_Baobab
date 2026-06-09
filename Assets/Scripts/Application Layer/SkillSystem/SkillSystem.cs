@@ -22,6 +22,9 @@ public class SkillSystem
         skillManager.PrestigeLevelIncreasedEvent -= PrestigeLevelIncreased;
         skillManager.PrestigeLevelIncreasedEvent += PrestigeLevelIncreased;
 
+        skillDispatcher.DeclareAccumulatedValueEvent -= DeclareSkillAccumulatedValue;
+        skillDispatcher.DeclareAccumulatedValueEvent += DeclareSkillAccumulatedValue;
+
         skillManager.SkillValuePreviewRequestEvent -= RequestSkillValuePreviewData;
         skillManager.SkillValuePreviewRequestEvent += RequestSkillValuePreviewData;
 
@@ -33,8 +36,8 @@ public class SkillSystem
     {
         skillManager.DispatchSkillsEvent -= SkillDispatched;
         skillManager.PrestigeLevelIncreasedEvent -= PrestigeLevelIncreased;
+        skillDispatcher.DeclareAccumulatedValueEvent -= DeclareSkillAccumulatedValue;
         skillManager.SkillValuePreviewRequestEvent -= RequestSkillValuePreviewData;
-        skillDispatcher.ProvideAccumulatedValueChangeEvent -= ProvideSkillAccumulatedValueChange;
     }
 
     public void Release()
@@ -51,6 +54,11 @@ public class SkillSystem
     private void PrestigeLevelIncreased(int _level)
     {
         signalHub.Publish(new PrestigeLevelIncreasedSignal(_level));
+    }
+
+    private void DeclareSkillAccumulatedValue(SkillAccumulatedValueData _data)
+    {
+        signalHub.Publish(new DeclareSkillAccumulatedValueSignal(_data));
     }
 
     private void RequestSkillValuePreviewData(SkillDispatchInfo _skillDispatchInfo)

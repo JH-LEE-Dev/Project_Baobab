@@ -220,6 +220,12 @@ public enum AbilityLevelUpRejectReason
     MaxLevel,
 }
 
+public struct SkillAccumulatedValueData
+{
+    public SkillCommandType type;
+    public float amount;
+}
+
 public struct SkillAccumulatedValueChangeData
 {
     public SkillCommandType type;

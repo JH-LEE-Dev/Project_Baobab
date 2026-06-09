@@ -10,6 +10,15 @@ public struct PrestigeLevelIncreasedSignal
     }
 }
 
+public struct DeclareSkillAccumulatedValueSignal
+{
+    public SkillAccumulatedValueData data;
+    public DeclareSkillAccumulatedValueSignal(SkillAccumulatedValueData _data)
+    {
+        data = _data;
+    }
+}
+
 public struct ProvideSkillAccumulatedValueChangeSignal
 {
     public SkillAccumulatedValueChangeData data;
