@@ -80,6 +80,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.Subscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
+        signalHub.Subscribe<SkillAccumulatedValueChangeData>(ProvideAccumulatedValueChangeEvent);
     }
 
     private void UnSubscribeSignals()
@@ -119,6 +120,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<RollbackSkyProductionSignal>(RollbackSkyProduction);
         signalHub.UnSubscribe<PopupUIDownSignal>(PopupUIDown);
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
+        signalHub.UnSubscribe<SkillAccumulatedValueChangeData>(ProvideAccumulatedValueChangeEvent);        
     }
 
     private void BindEvents()
