@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 3002893298193293402}
   - component: {fileID: 1611706708768383509}
   - component: {fileID: 4864627670219993115}
+  - component: {fileID: 319386946243619174}
   m_Layer: 5
   m_Name: AbilityNoticeText
   m_TagString: Untagged
@@ -137,6 +138,26 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!114 &319386946243619174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1928327528041987849}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81a1912f891f40f6aacd9ee2c51ce1d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.TMPInlineStyleAnimator
+  tmpText: {fileID: 4864627670219993115}
+  animateInEditMode: 1
+  colorCycleDuration: 0.75
+  shakeAmplitude: 1.2
+  shakeFrequency: 34
+  waveAmplitude: 2
+  waveFrequency: 5
+  waveCharacterOffset: 0.45
 --- !u!1 &2784410973995942914
 GameObject:
   m_ObjectHideFlags: 0
