@@ -134,3 +134,7 @@ public struct LogItemProcessorActiveStateSignal
         state = _state;
     }
 }
+
+public struct GameEndSignal { }
+
+public struct DropAllItemSignal { }

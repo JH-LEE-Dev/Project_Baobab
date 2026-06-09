@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.LookDev;
 
 public class InDungeonSystem : MonoBehaviour
 {
@@ -10,8 +11,9 @@ public class InDungeonSystem : MonoBehaviour
     private InputManager inputManager;
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;
-
+    private InDungeonProductionManager inDungeonProductionManager;
     private Character character;
+    private SkyCameraProductionManager skyCameraProductionManager;
 
 
     [Header("Dungeon Data Base")]
@@ -21,13 +23,14 @@ public class InDungeonSystem : MonoBehaviour
     private ForestType currentForestType;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
-    InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer)
+    InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
         signalHub = _signalHub;
         characterInventory = _characterInventory;
         offroadContainer = _offroadContainer;
+        skyCameraProductionManager = _skyCameraProductionManager;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
         inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory, offroadContainer);
@@ -38,6 +41,9 @@ public class InDungeonSystem : MonoBehaviour
         hiddenmapManager = GetComponentInChildren<HiddenmapManager>();
         hiddenmapManager.Initialize();
 
+        inDungeonProductionManager = GetComponentInChildren<InDungeonProductionManager>();
+        inDungeonProductionManager.Initialize(inputManager, _skyCameraProductionManager);
+
         BindEvents();
         SubscribeSignals();
     }
@@ -46,6 +52,8 @@ public class InDungeonSystem : MonoBehaviour
     {
         ReleaseEvents();
         UnSubscribeSignals();
+        inDungeonProductionManager.Release();
+        inDungeonObjectManager.Release();
     }
 
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
@@ -84,14 +92,23 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
         inDungeonUnitSpawner.AnimalIsDeadEvent += AnimalIsDead;
 
-        inDungeonObjectManager.GoToTownEvent -= GoToTown;
-        inDungeonObjectManager.GoToTownEvent += GoToTown;
+        inDungeonObjectManager.GameEndEvent -= GameEnd;
+        inDungeonObjectManager.GameEndEvent += GameEnd;
 
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadSpawnedEvent += OffroadSpawned;
 
         inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         inDungeonObjectManager.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
+
+        inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
+        inDungeonObjectManager.RideOffroadEvent += RideOffroad;
+
+        inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
+        inDungeonObjectManager.DropAllItemEvent += DropAllItem;
+
+        inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
+        inDungeonProductionManager.CharacterRideEndEvent += CharacterRideEnd;
     }
 
     private void ReleaseEvents()
@@ -104,9 +121,12 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
-        inDungeonObjectManager.GoToTownEvent -= GoToTown;
+        inDungeonObjectManager.GameEndEvent -= GameEnd;
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
+        inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
+        inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
     }
 
     private void SubscribeSignals()
@@ -132,6 +152,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonObjectManager.ReadyTrees(mapGeneratedSignal.grassTilePositions);
         inDungeonObjectManager.ReadyPortal();
+        inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.portal);
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnAnimals();
@@ -198,11 +219,12 @@ public class InDungeonSystem : MonoBehaviour
     {
         character = _characterSpawnedSignal.character;
         inDungeonObjectManager.SetCharacter(_characterSpawnedSignal.character);
+        inDungeonProductionManager.Character_DI(character);
     }
 
-    private void GoToTown()
+    private void GameEnd()
     {
-        signalHub.Publish(new GoToHomeSignal());
+        signalHub.Publish(new GameEndSignal());
     }
 
     private void OffroadSpawned(OffroadVehicleObj _offroadVehicleObj)
@@ -213,5 +235,20 @@ public class InDungeonSystem : MonoBehaviour
     private void OffroadInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new OffroadInteractStateChangedSignal(_boolean));
+    }
+
+    private void RideOffroad()
+    {
+        inDungeonProductionManager.StartCharacterRide();
+    }
+
+    private void DropAllItem()
+    {
+        signalHub.Publish(new DropAllItemSignal());
+    }
+
+    private void CharacterRideEnd()
+    {
+        GameEnd();
     }
 }

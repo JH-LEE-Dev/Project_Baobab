@@ -18,9 +18,10 @@ public class TownSystem : MonoBehaviour
     private TownProductionManager townProductionManager;
     private MapType selectedMapType;
     private ForestType selectedForestType;
+    private SkyCameraProductionManager skyCameraProductionManager;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
-    IInventory _characterInventory, OffroadContainer _offroadContainer)
+    IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
     {
         inputManager = _inputManager;
         signalHub = _signalHub;
@@ -33,7 +34,7 @@ public class TownSystem : MonoBehaviour
         tentManager = GetComponentInChildren<TentManager>();
         townProductionManager = GetComponentInChildren<TownProductionManager>();
 
-        townProductionManager.Initialize(inputManager);
+        townProductionManager.Initialize(inputManager, _skyCameraProductionManager);
         townObjectManager.Initialize(environmentProvider, inputManager, characterInventory, offroadContainer);
         logProcessingManager.Initialize(inputManager);
         tentManager.Initialize(inputManager);

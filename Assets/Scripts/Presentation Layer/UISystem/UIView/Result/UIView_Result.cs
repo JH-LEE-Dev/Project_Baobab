@@ -56,5 +56,10 @@ public class UIView_Result : UIView
     }
 
     #endregion
+
+    public void OpenResultUI()
+    {
+        
+    }
 }
 

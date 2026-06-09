@@ -405,7 +405,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void DisableAttackComponent()
     {
+        healthComponent.SetStaminaDecrease(false);
         attackComponent.SetCursorEnable(false);
+        attackComponent.SetEnable(false);
         attackComponent.SetbCanAttack(false);
         armComponent.SetbCanAttack(false);
     }
