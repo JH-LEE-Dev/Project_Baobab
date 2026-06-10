@@ -2,45 +2,78 @@ using System.Collections.Generic;
 using UnityEngine;
 using NaughtyAttributes;
 
+[System.Serializable]
+public class VFXPoolData
+{
+    // 외부 의존성
+    [SerializeField] private string vfxTag;
+    [SerializeField] private ParticleSystem effectPrefab;
+    [SerializeField] private int initialPoolSize = 5;
+    [SerializeField] private bool allowDynamicExpansion = true;
+    [SerializeField] [ShowIf("allowDynamicExpansion")] private int maxPoolSize = 10;
+
+    // 퍼블릭 초기화 및 제어 메서드
+    public string VfxTag => vfxTag;
+    public ParticleSystem EffectPrefab => effectPrefab;
+    public int InitialPoolSize => initialPoolSize;
+    public bool AllowDynamicExpansion => allowDynamicExpansion;
+    public int MaxPoolSize => maxPoolSize;
+}
+
 /// <summary>
-/// 이펙트 프리팹을 바인딩하여 로컬 오브젝트 풀링을 수행하는 VFX 컴포넌트입니다.
+/// 여러 종류의 이펙트 프리팹을 태그별로 바인딩하여 각각 로컬 오브젝트 풀링을 수행하는 VFX 컴포넌트입니다.
 /// </summary>
 public class VFXComponent : MonoBehaviour
 {
     // 외부 의존성
-    [Header("Pool Settings")]
-    [SerializeField] private ParticleSystem effectPrefab;
-    [SerializeField] private int initialPoolSize = 5;
-
-    [Header("Expansion Settings")]
-    [SerializeField] private bool allowDynamicExpansion = true;
-    [SerializeField] [ShowIf("allowDynamicExpansion")] private int maxPoolSize = 10;
+    [Header("VFX Pool List")]
+    [SerializeField] private List<VFXPoolData> vfxPoolDataList;
 
     // 내부 의존성
-    private List<ParticleSystem> poolList;
+    private Dictionary<string, List<ParticleSystem>> poolDictionary;
+    private Dictionary<string, VFXPoolData> configDictionary;
+    private List<ParticleSystem> masterList;
     private bool isInitialized = false;
 
 
     // 퍼블릭 초기화 및 제어 메서드
 
     /// <summary>
-    /// 풀을 초기화하고 지정된 크기만큼 이펙트를 미리 생성합니다.
+    /// 풀 리스트의 설정 데이터를 기반으로 각 태그별 로컬 풀을 초기화합니다.
     /// </summary>
     public void Initialize()
     {
         if (true == isInitialized)
             return;
 
-        if (null == effectPrefab)
+        if (null == vfxPoolDataList)
             return;
 
-        poolList = new List<ParticleSystem>(initialPoolSize);
+        int _dataCount = vfxPoolDataList.Count;
+        poolDictionary = new Dictionary<string, List<ParticleSystem>>(_dataCount);
+        configDictionary = new Dictionary<string, VFXPoolData>(_dataCount);
+        masterList = new List<ParticleSystem>();
 
-        for (int i = 0; i < initialPoolSize; i++)
+        for (int i = 0; i < _dataCount; i++)
         {
-            ParticleSystem _newInstance = CreateNewInstance();
-            if (null != _newInstance)
-                poolList.Add(_newInstance);
+            VFXPoolData _data = vfxPoolDataList[i];
+            if (null == _data || string.IsNullOrEmpty(_data.VfxTag) || null == _data.EffectPrefab)
+                continue;
+
+            if (true == configDictionary.ContainsKey(_data.VfxTag))
+                continue;
+
+            configDictionary.Add(_data.VfxTag, _data);
+
+            List<ParticleSystem> _list = new List<ParticleSystem>(_data.InitialPoolSize);
+            for (int j = 0; j < _data.InitialPoolSize; j++)
+            {
+                ParticleSystem _newInstance = CreateNewInstance(_data.EffectPrefab);
+                if (null != _newInstance)
+                    _list.Add(_newInstance);
+            }
+
+            poolDictionary.Add(_data.VfxTag, _list);
         }
 
         isInitialized = true;
@@ -55,44 +88,50 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
-    /// 풀에서 사용 가능한(비활성화된) 이펙트 컴포넌트를 반환합니다.
-    /// 모든 이펙트가 사용 중일 경우, 동적으로 풀을 늘려 새 이펙트를 생성합니다.
+    /// 지정한 태그의 풀에서 사용 가능한(비활성화된) 이펙트 컴포넌트를 반환합니다.
+    /// 해당 태그의 모든 이펙트가 사용 중일 경우, 설정을 확인하여 동적으로 풀을 늘립니다.
     /// </summary>
-    public ParticleSystem Get()
+    public ParticleSystem Get(string _tag)
     {
         if (false == isInitialized)
             Initialize();
 
-        if (null == poolList)
+        if (null == poolDictionary || null == configDictionary)
             return null;
 
-        int _count = poolList.Count;
+        if (false == poolDictionary.TryGetValue(_tag, out List<ParticleSystem> _poolList))
+            return null;
+
+        if (false == configDictionary.TryGetValue(_tag, out VFXPoolData _config))
+            return null;
+
+        int _count = _poolList.Count;
         for (int i = 0; i < _count; i++)
         {
-            ParticleSystem _effect = poolList[i];
+            ParticleSystem _effect = _poolList[i];
             if (null != _effect && false == _effect.gameObject.activeSelf)
                 return _effect;
         }
 
-        if (false == allowDynamicExpansion)
+        if (false == _config.AllowDynamicExpansion)
             return null;
 
-        if (poolList.Count >= maxPoolSize)
+        if (_poolList.Count >= _config.MaxPoolSize)
             return null;
 
-        ParticleSystem _dynamicInstance = CreateNewInstance();
+        ParticleSystem _dynamicInstance = CreateNewInstance(_config.EffectPrefab);
         if (null != _dynamicInstance)
-            poolList.Add(_dynamicInstance);
+            _poolList.Add(_dynamicInstance);
 
         return _dynamicInstance;
     }
 
     /// <summary>
-    /// 사용하지 않는 이펙트를 바로 꺼내 지정된 위치와 회전값으로 재생합니다.
+    /// 지정한 태그의 사용하지 않는 이펙트를 바로 꺼내 지정된 위치와 회전값으로 재생합니다.
     /// </summary>
-    public ParticleSystem Play(Vector3 _position, Quaternion _rotation, Transform _parent = null)
+    public ParticleSystem Play(string _tag, Vector3 _position, Quaternion _rotation, Transform _parent = null)
     {
-        ParticleSystem _effect = Get();
+        ParticleSystem _effect = Get(_tag);
         if (null == _effect)
             return null;
 
@@ -114,7 +153,10 @@ public class VFXComponent : MonoBehaviour
         if (null == _effect)
             return;
 
-        if (true == poolList.Contains(_effect))
+        if (null == masterList)
+            return;
+
+        if (true == masterList.Contains(_effect))
         {
             _effect.Stop(true);
             _effect.Clear(true);
@@ -127,13 +169,13 @@ public class VFXComponent : MonoBehaviour
     /// </summary>
     public void StopAll()
     {
-        if (null == poolList)
+        if (null == masterList)
             return;
 
-        int _count = poolList.Count;
+        int _count = masterList.Count;
         for (int i = 0; i < _count; i++)
         {
-            ParticleSystem _effect = poolList[i];
+            ParticleSystem _effect = masterList[i];
             if (null != _effect && true == _effect.gameObject.activeSelf)
             {
                 _effect.Stop(true);
@@ -144,21 +186,30 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
-    /// 풀링된 모든 이펙트 오브젝트를 파괴하고 풀을 안전하게 정리합니다.
+    /// 풀링된 모든 이펙트 오브젝트를 파괴하고 풀 데이터를 안전하게 정리합니다.
     /// </summary>
     public void Clear()
     {
-        if (null == poolList)
+        if (null == masterList)
             return;
 
-        int _count = poolList.Count;
+        int _count = masterList.Count;
         for (int i = 0; i < _count; i++)
         {
-            ParticleSystem _effect = poolList[i];
+            ParticleSystem _effect = masterList[i];
             if (null != _effect)
                 Destroy(_effect.gameObject);
         }
-        poolList.Clear();
+
+        if (null != masterList)
+            masterList.Clear();
+
+        if (null != poolDictionary)
+            poolDictionary.Clear();
+
+        if (null != configDictionary)
+            configDictionary.Clear();
+
         isInitialized = false;
     }
 
@@ -168,12 +219,12 @@ public class VFXComponent : MonoBehaviour
     /// <summary>
     /// 프리팹을 기반으로 새로운 이펙트 인스턴스를 생성하고 초기 설정을 수행합니다.
     /// </summary>
-    private ParticleSystem CreateNewInstance()
+    private ParticleSystem CreateNewInstance(ParticleSystem _prefab)
     {
-        if (null == effectPrefab)
+        if (null == _prefab)
             return null;
 
-        ParticleSystem _newInstance = Instantiate(effectPrefab, transform);
+        ParticleSystem _newInstance = Instantiate(_prefab, transform);
         if (null == _newInstance)
             return null;
 
@@ -181,6 +232,9 @@ public class VFXComponent : MonoBehaviour
 
         var _main = _newInstance.main;
         _main.stopAction = ParticleSystemStopAction.Disable;
+
+        if (null != masterList)
+            masterList.Add(_newInstance);
 
         return _newInstance;
     }

@@ -23,6 +23,7 @@ public class UI_Storage : MonoBehaviour
     private IInventory storage;
     private List<UI_InventorySlot> storageSlots;
     public bool isOpening { get; private set; } = false;
+    public bool IsOpen => isOnShow;
 
     [SerializeField] private string popupTag = "Popup";
     [SerializeField] private string popdownTag = "Popdown";
