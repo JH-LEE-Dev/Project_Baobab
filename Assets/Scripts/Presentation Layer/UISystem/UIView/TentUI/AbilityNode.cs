@@ -45,6 +45,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool visualHidden;
     private bool isPointerHovering;
     private bool consumedRapidClick;
+    private Color currentNodeFrameColor = Color.white;
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
     private MotionEntry clickMotionEntry;
@@ -58,6 +59,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public RectTransform RectTransform => transform as RectTransform;
     public bool CanApplyVisual => canApplyVisual;
     public bool CompletedVisual => completedVisual;
+    public Color CurrentNodeFrameColor => currentNodeFrameColor;
 
     private void Awake()
     {
@@ -202,6 +204,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         canApplyVisual = _canApply;
         completedVisual = _completed;
+        currentNodeFrameColor = _baseColor;
 
         if (abilityBaseImage != null)
         {
@@ -286,11 +289,11 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void PlayClickRequestMotion()
     {
         PlayClickMotion();
-        PlayApprovedNodeEffect();
+        PlayApprovedNodeEffect(currentNodeFrameColor);
     }
 
     // 특성 찍기에 성공했을 때 노드 이펙트를 재생하는 자리.
-    private void PlayApprovedNodeEffect()
+    private void PlayApprovedNodeEffect(Color _nodeFrameColor)
     {
         if (vfxComponent == null)
             return;
