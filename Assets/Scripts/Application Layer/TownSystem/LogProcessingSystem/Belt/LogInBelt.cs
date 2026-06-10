@@ -86,7 +86,7 @@ public class LogInBelt : MonoBehaviour
     {
         if (_item == null || checkPoints.Count == 0) return;
 
-        _item.SetHeight(0.385f);
+        _item.SetHeight(0.425f);
         // 아이템을 첫 번째 체크포인트 위치로 즉시 이동
         _item.transform.position = checkPoints[0].position;
 
