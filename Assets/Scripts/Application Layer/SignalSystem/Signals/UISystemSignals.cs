@@ -28,3 +28,12 @@ public struct TeleportUIClosedSignal { }
 public struct TeleportUIClosedWhileTeleportSignal { }
 
 public struct RetryButtonClickedSignal { }
+
+public struct WarningUIClosedSignal
+{
+    public bool bResult;
+    public WarningUIClosedSignal(bool _bResult)
+    {
+        bResult = _bResult;
+    }
+}

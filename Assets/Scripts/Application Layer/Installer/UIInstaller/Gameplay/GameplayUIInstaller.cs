@@ -159,8 +159,11 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_Result resultUI = uiManager.Open<UIView_Result>();
 
+        UIView_Warning warningUI = uiManager.Open<UIView_Warning>();
+        warningUI.Hide();
+
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI);
+        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI);
 
         BindEvent();
     }
