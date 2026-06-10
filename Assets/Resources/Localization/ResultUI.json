@@ -12,7 +12,7 @@
     {
       "id": 2,
       "key": "treeKillCountZero",
-      "kr": "<COLOR=FF833D>나무</COLOR>들이 오늘은 무사했어!",
+      "kr": "<COLOR=FF833D>나무</COLOR>들이 오늘은 무사했습니다!",
       "en": "",
       "enumType": "",
       "enumValue": ""
@@ -20,7 +20,7 @@
     {
       "id": 3,
       "key": "treeKillCountLow",
-      "kr": "<COLOR=54D86A>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했어",
+      "kr": "<COLOR=54D86A>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다",
       "en": "",
       "enumType": "",
       "enumValue": ""
@@ -28,7 +28,7 @@
     {
       "id": 4,
       "key": "treeKillCountMiddle",
-      "kr": "<COLOR=58D7F2>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했어!",
+      "kr": "<COLOR=58D7F2>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다!",
       "en": "",
       "enumType": "",
       "enumValue": ""
@@ -36,7 +36,7 @@
     {
       "id": 5,
       "key": "treeKillCountHigh",
-      "kr": "<COLOR=7EEDBE,EDD87E>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했어!!",
+      "kr": "<COLOR=7EEDBE,EDD87E>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했습니다!!",
       "en": "",
       "enumType": "",
       "enumValue": ""
