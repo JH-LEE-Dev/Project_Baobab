@@ -112,7 +112,7 @@ namespace PresentationLayer.UISystem
             if (tmpText == null)
                 return;
 
-            previousTextPreprocessor = tmpText.textPreprocessor == this ? null : tmpText.textPreprocessor;
+            previousTextPreprocessor = ReferenceEquals(tmpText.textPreprocessor, this) ? null : tmpText.textPreprocessor;
             tmpText.textPreprocessor = this;
             tmpText.OnPreRenderText += HandlePreRenderText;
             tmpText.SetVerticesDirty();
@@ -124,7 +124,7 @@ namespace PresentationLayer.UISystem
             {
                 tmpText.OnPreRenderText -= HandlePreRenderText;
 
-                if (tmpText.textPreprocessor == this)
+                if (ReferenceEquals(tmpText.textPreprocessor, this))
                     tmpText.textPreprocessor = previousTextPreprocessor;
 
                 tmpText.SetVerticesDirty();
