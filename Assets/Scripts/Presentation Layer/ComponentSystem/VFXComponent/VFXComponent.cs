@@ -213,6 +213,51 @@ public class VFXComponent : MonoBehaviour
         isInitialized = false;
     }
 
+    /// <summary>
+    /// 특정 이펙트 인스턴스의 하위 렌더러를 포함한 소팅 레이어 이름과 순서를 설정합니다.
+    /// </summary>
+    public void SetSortingSettings(ParticleSystem _effect, string _layerName, int _order)
+    {
+        ApplySortingSettings(_effect, _layerName, _order);
+    }
+
+    /// <summary>
+    /// 지정한 태그의 풀에 존재하는 모든 이펙트 인스턴스의 소팅 레이어와 순서를 설정합니다.
+    /// </summary>
+    public void SetSortingSettingsOfTag(string _tag, string _layerName, int _order)
+    {
+        if (null == poolDictionary)
+            return;
+
+        if (false == poolDictionary.TryGetValue(_tag, out List<ParticleSystem> _poolList))
+            return;
+
+        int _count = _poolList.Count;
+        for (int i = 0; i < _count; i++)
+        {
+            ParticleSystem _effect = _poolList[i];
+            if (null != _effect)
+                ApplySortingSettings(_effect, _layerName, _order);
+        }
+    }
+
+    /// <summary>
+    /// 풀링되어 생성된 모든 이펙트 인스턴스의 소팅 레이어와 순서를 일괄 설정합니다.
+    /// </summary>
+    public void SetSortingSettingsAll(string _layerName, int _order)
+    {
+        if (null == masterList)
+            return;
+
+        int _count = masterList.Count;
+        for (int i = 0; i < _count; i++)
+        {
+            ParticleSystem _effect = masterList[i];
+            if (null != _effect)
+                ApplySortingSettings(_effect, _layerName, _order);
+        }
+    }
+
 
     // 내부 로직
 
@@ -237,6 +282,30 @@ public class VFXComponent : MonoBehaviour
             masterList.Add(_newInstance);
 
         return _newInstance;
+    }
+
+    /// <summary>
+    /// 이펙트 및 하위 자식들의 모든 렌더러 소팅 레이어 이름과 순서를 설정합니다.
+    /// </summary>
+    private void ApplySortingSettings(ParticleSystem _effect, string _layerName, int _order)
+    {
+        if (null == _effect)
+            return;
+
+        Renderer[] _renderers = _effect.GetComponentsInChildren<Renderer>(true);
+        if (null == _renderers)
+            return;
+
+        int _count = _renderers.Length;
+        for (int i = 0; i < _count; i++)
+        {
+            Renderer _renderer = _renderers[i];
+            if (null != _renderer)
+            {
+                _renderer.sortingLayerName = _layerName;
+                _renderer.sortingOrder = _order;
+            }
+        }
     }
 
 
