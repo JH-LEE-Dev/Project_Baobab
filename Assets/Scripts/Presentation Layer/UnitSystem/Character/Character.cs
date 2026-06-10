@@ -458,11 +458,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             attackComponent.SetCursorEnable(false);
             attackComponent.SetbCanAttack(false);
+            armComponent.SetbCanAttack(false);
         }
         else
         {
             attackComponent.SetCursorEnable(true);
             attackComponent.SetbCanAttack(true);
+            armComponent.SetbCanAttack(true);
         }
     }
 }
