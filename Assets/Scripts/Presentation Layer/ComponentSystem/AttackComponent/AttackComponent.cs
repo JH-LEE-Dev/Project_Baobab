@@ -63,7 +63,7 @@ public class AttackComponent : PComponent
         base.Initialize(_ctx);
 
         if (componentCenterPoint != null) componentCenterTransform = componentCenterPoint.transform;
-        mainCamera = Camera.main;
+        mainCamera = CameraFinder.Instance.PPMainCamera;
 
         axeExtraAttackCreator = GetComponent<AxeExtraAttackCreator>();
         if (axeExtraAttackCreator != null) axeExtraAttackCreator.Initialize(ctx);
@@ -110,7 +110,7 @@ public class AttackComponent : PComponent
             return;
         
         if (mainCamera == null)
-            mainCamera = Camera.main;
+            mainCamera = CameraFinder.Instance.PPMainCamera;
 
         // 1. 현재 모니터 화면 좌표를 0~1 비율(정규화)로 변환
         float _normalizedX = _mouseScreenPos.x / Screen.width;

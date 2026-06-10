@@ -516,7 +516,6 @@ public class GameplayUICoordinator
     private void ActivateWarningUI(ActivateWarningUISignal _activateWarningUISignal)
     {
         warningUI.Show();
-        Time.timeScale = 0f;
     }
 
     private void DeActivateWarningUI()
@@ -527,8 +526,6 @@ public class GameplayUICoordinator
             return;
         }
         
-        Time.timeScale = 1f;
-
         signalHub.Publish(new WarningUIClosedSignal(warningUI.bApproved));
     }
 }
