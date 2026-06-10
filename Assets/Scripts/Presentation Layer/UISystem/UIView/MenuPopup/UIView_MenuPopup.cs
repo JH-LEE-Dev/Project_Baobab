@@ -26,7 +26,7 @@ public class UIView_MenuPopup : UIView
         if (null == vehicle && null != vehiclePrefab)
            vehicle = Instantiate(vehiclePrefab, this.transform).GetComponent<HUD_Vehicle>();
         
-        vehicle?.transform.SetParent(_ctx.ppCanvas.transform);
+        //vehicle?.transform.SetParent(_ctx.ppCanvas.transform);
 
         OnHide();
     }
