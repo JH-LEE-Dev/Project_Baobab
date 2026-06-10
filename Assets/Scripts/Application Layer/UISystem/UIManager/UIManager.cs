@@ -14,6 +14,15 @@ public class UIManager : MonoBehaviour
     protected Transform worldOverlayLayerRoot;
     protected Transform worldTooltipLayerRoot;
 
+    protected Transform ppPopupLayerRoot;
+    protected Transform ppOverlayLayerRoot;
+    protected Transform ppTooltipLayerRoot;
+    protected Transform overlayPopupLayerRoot;
+    protected Transform overlayOverlayLayerRoot;
+    protected Transform overlayTooltipLayerRoot;
+    protected Canvas ppCanvas;
+
+
     [Header("UIView Prefab")]
     [SerializeField] private List<UIView> viewPrefabs = new List<UIView>();
 
@@ -21,7 +30,7 @@ public class UIManager : MonoBehaviour
 
     private Dictionary<Type, UIView> instanceByType = new Dictionary<Type, UIView>();
 
-    public void SceneChanged(CanvasRoot canvasRoot,CanvasRoot worldCanvasRoot)
+    public void SceneChanged(CanvasRoot canvasRoot, CanvasRoot worldCanvasRoot, CanvasRoot ppCanvasRoot, CanvasRoot overlayCanvasRoot)
     {
         CloseAll();
 
@@ -32,12 +41,26 @@ public class UIManager : MonoBehaviour
         worldPopupLayerRoot = worldCanvasRoot.popupLayerRoot;
         worldOverlayLayerRoot = worldCanvasRoot.overlayLayerRoot;
         worldTooltipLayerRoot = worldCanvasRoot.tooltipLayerRoot;
+
+        ppPopupLayerRoot = ppCanvasRoot.popupLayerRoot;
+        ppOverlayLayerRoot = ppCanvasRoot.overlayLayerRoot;
+        ppTooltipLayerRoot = ppCanvasRoot.tooltipLayerRoot;
+        
+        overlayPopupLayerRoot = overlayCanvasRoot.popupLayerRoot;
+        overlayOverlayLayerRoot = overlayCanvasRoot.overlayLayerRoot;
+        overlayTooltipLayerRoot = overlayCanvasRoot.tooltipLayerRoot;
     }
 
     public void Initialize(InputManager _inputManager, LocalizationManager _localizeManager, UIDepthController _depthController)
     {
         viewCtx = new UIViewContext();
         viewCtx.Initialize(_inputManager, _localizeManager, _depthController);
+    }
+
+    public void DI(Canvas _ppCanvas)
+    {
+        ppCanvas = _ppCanvas;
+        viewCtx.DI(ppCanvas);
     }
 
     protected void Awake()
@@ -112,7 +135,7 @@ public class UIManager : MonoBehaviour
             return null;
         }
 
-        Transform parent = GetLayerRoot(prefab.Layer,prefab.bWorld);
+        Transform parent = GetLayerRoot(prefab.Layer, prefab.bWorld, prefab.bPPUI, prefab.bOverlay);
 
         UIView instance = Instantiate(prefab, parent);
         instance.gameObject.name = $"{prefab.gameObject.name}_Instance";
@@ -123,24 +146,46 @@ public class UIManager : MonoBehaviour
         return (T)instance;
     }
 
-    private Transform GetLayerRoot(UILayer layer,bool bWorld)
+    private Transform GetLayerRoot(UILayer _layer, bool _bWorld, bool _bPPUI, bool _bOverlay)
     {
-        if(bWorld == false)
-        switch (layer)
+        if (_bOverlay)
         {
-            case UILayer.Popup: return popupLayerRoot;
-            case UILayer.Overlay: return overlayLayerRoot;
-            case UILayer.Tooltip: return tooltipLayerRoot;
-            default: return default;
+            switch (_layer)
+            {
+                case UILayer.Popup: return overlayPopupLayerRoot;
+                case UILayer.Overlay: return overlayOverlayLayerRoot;
+                case UILayer.Tooltip: return overlayTooltipLayerRoot;
+                default: return default;
+            }
         }
+
+        if (_bPPUI)
+        {
+            switch (_layer)
+            {
+                case UILayer.Popup: return ppPopupLayerRoot;
+                case UILayer.Overlay: return ppOverlayLayerRoot;
+                case UILayer.Tooltip: return ppTooltipLayerRoot;
+                default: return default;
+            }
+        }
+
+        if (_bWorld == false)
+            switch (_layer)
+            {
+                case UILayer.Popup: return popupLayerRoot;
+                case UILayer.Overlay: return overlayLayerRoot;
+                case UILayer.Tooltip: return tooltipLayerRoot;
+                default: return default;
+            }
         else
-        switch (layer)
-        {
-            case UILayer.Popup: return worldPopupLayerRoot;
-            case UILayer.Overlay: return worldOverlayLayerRoot;
-            case UILayer.Tooltip: return worldTooltipLayerRoot;
-            default: return default;
-        }
+            switch (_layer)
+            {
+                case UILayer.Popup: return worldPopupLayerRoot;
+                case UILayer.Overlay: return worldOverlayLayerRoot;
+                case UILayer.Tooltip: return worldTooltipLayerRoot;
+                default: return default;
+            }
     }
 
     public void ReleaseDependency()
@@ -150,7 +195,7 @@ public class UIManager : MonoBehaviour
 
     protected virtual void DataInjection(UIView view)
     {
-        
+
     }
 
     public void ReleaseAllUIView()

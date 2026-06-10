@@ -327,4 +327,17 @@ public class UIView_WorldPopup : UIView
             ui_Cutter?.OnHide();
         }
     }
+
+    public void WorldPopupGoDown()
+    {
+        if (true == ui_Storage.IsOpen)
+             ui_Storage.OnHide();
+        if (true == ui_CarStorage.IsOpen)
+            ui_CarStorage.OnHide();
+    }
+
+    public void WorldPopupGoUp()
+    {
+        
+    }
 }

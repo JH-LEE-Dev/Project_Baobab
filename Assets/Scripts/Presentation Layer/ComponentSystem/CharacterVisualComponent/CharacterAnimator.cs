@@ -102,8 +102,12 @@ public class CharacterAnimator : MonoBehaviour
 
     #region Public Methods
 
-    public void Initialize()
+    private VFXComponent vfxComponent;
+
+    public void Initialize(VFXComponent _vfxComponent)
     {
+        vfxComponent = _vfxComponent;
+
         frameTimer = 0f;
         currentFrameIndex = 0;
         isDeadStartFinished = false;
@@ -226,6 +230,14 @@ public class CharacterAnimator : MonoBehaviour
                 else
                 {
                     currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
+                    if (_isMoving && vfxComponent != null)
+                    {
+                        ParticleSystem effect = vfxComponent.Play("Dust", transform.position, Quaternion.identity);
+                        if (effect != null && baseSR != null)
+                        {
+                            vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerName, baseSR.sortingOrder);
+                        }
+                    }
                 }
             }
 

@@ -1500,6 +1500,7 @@ MonoBehaviour:
   outlineStencilObj: {fileID: 4060909942983721792}
   outlineObj: {fileID: 2312026613945028823}
   containerForJump: {fileID: 5112186850189715724}
+  containerForOpen: {fileID: 3726317326145381529}
   carriedContainer: {fileID: 1738384527356191891}
 --- !u!114 &7996946345681589065
 MonoBehaviour:

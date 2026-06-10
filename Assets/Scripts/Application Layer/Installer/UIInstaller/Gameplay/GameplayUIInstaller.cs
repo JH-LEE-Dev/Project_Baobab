@@ -28,20 +28,24 @@ public class GameplayUIInstaller : MonoBehaviour
 
     [Header("UI Canvas/CanvasRoot Objects")]
     [SerializeField] private CanvasRoot canvasRootPrefab;
+    [SerializeField] private CanvasRoot ppCanvasRootPrefab;
     [SerializeField] private CanvasRoot worldCanvasRootPrefab;
+    [SerializeField] private CanvasRoot overlayCanvasRootPrefab;
     [SerializeField] private Canvas canvasPrefab;
     [SerializeField] private Canvas worldCanvasPrefab;
+    [SerializeField] private Canvas ppCanvasPrefab;
+    [SerializeField] private Canvas overlayCanvasPrefab;
 
     //Gameplay Scene
-    private CanvasRoot canvasRoot;
-    private CanvasRoot worldCanvasRoot;
     private Canvas canvas;
+    private Canvas ppCanvas;
     private Canvas worldCanvas;
+    private Canvas overlayCanvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
         InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
         ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC,
-        IMoneyData _moneyData, LocalizationManager _localizeManager, IMapDataProvider _mapDataProvider, 
+        IMoneyData _moneyData, LocalizationManager _localizeManager, IMapDataProvider _mapDataProvider,
         IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, IInventory _offroadContainer,
         IDungeonResultProvider _dungeonResultProvider)
     {
@@ -97,12 +101,16 @@ public class GameplayUIInstaller : MonoBehaviour
         SetupCanvas();
 
         Transform overlayRoot = Instantiate(canvasRootPrefab.overlayLayerRoot, canvas.transform);
-        //Transform screenLayerRoot = Instantiate(gameplayLevelRoots_Prefab.screenLayerRoot, canvas_GamplayScene.transform);
-        //Transform tooltipLayerRoot = Instantiate(gameplayLevelRoots_Prefab.tooltipLayerRoot, canvas_GamplayScene.transform);
 
         Transform worldOverlayRoot = Instantiate(worldCanvasRootPrefab.overlayLayerRoot, worldCanvas.transform);
 
+        Transform ppOverlayRoot = Instantiate(ppCanvasRootPrefab.overlayLayerRoot, ppCanvas.transform);
+
+        Transform overlayCanvasRoot = Instantiate(overlayCanvasRootPrefab.overlayLayerRoot, overlayCanvas.transform);
+
+        SetAnchorToCanvas(ppOverlayRoot);
         SetAnchorToCanvas(overlayRoot);
+        SetAnchorToCanvas(overlayCanvasRoot);
 
         CanvasRoot tempRoot = new CanvasRoot();
         tempRoot.overlayLayerRoot = overlayRoot;
@@ -110,7 +118,13 @@ public class GameplayUIInstaller : MonoBehaviour
         CanvasRoot worldTempRoot = new CanvasRoot();
         worldTempRoot.overlayLayerRoot = worldOverlayRoot;
 
-        uiManager.SceneChanged(tempRoot, worldTempRoot);
+        CanvasRoot ppTempRoot = new CanvasRoot();
+        ppTempRoot.overlayLayerRoot = ppOverlayRoot;
+
+        CanvasRoot canvasRoot = new CanvasRoot();
+        canvasRoot.overlayLayerRoot = overlayCanvasRoot;
+
+        uiManager.SceneChanged(tempRoot, worldTempRoot, ppTempRoot, canvasRoot);
 
         OpenUIView();
     }
@@ -121,11 +135,23 @@ public class GameplayUIInstaller : MonoBehaviour
             canvas = Instantiate(canvasPrefab, transform);
         if (worldCanvas == null)
             worldCanvas = Instantiate(worldCanvasPrefab, transform);
+        if (ppCanvas == null)
+            ppCanvas = Instantiate(ppCanvasPrefab, transform);
+        if(overlayCanvas == null)
+            overlayCanvas = Instantiate(overlayCanvasPrefab, transform);
+            
+        uiManager.DI(ppCanvas);
 
-        var CanvasEnabler = canvas.GetComponent<CanvasEnabler>();
-        if (CanvasEnabler != null)
+        var ppCanvasEnabler = ppCanvas.GetComponent<CanvasEnabler>();
+        if (ppCanvasEnabler != null)
         {
-            //CanvasEnabler.Initialize();
+            ppCanvasEnabler.Initialize();
+        }
+
+        var canvasEnabler = canvas.GetComponent<CanvasEnabler>();
+        if (canvasEnabler != null)
+        {
+            canvasEnabler.Initialize();
         }
 
         var worldCanvasEnabler = worldCanvas.GetComponent<WorldCanvasEnabler>();
@@ -159,8 +185,11 @@ public class GameplayUIInstaller : MonoBehaviour
 
         UIView_Result resultUI = uiManager.Open<UIView_Result>();
 
+        UIView_Warning warningUI = uiManager.Open<UIView_Warning>();
+        warningUI.Hide();
+
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI);
+        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI);
 
         BindEvent();
     }

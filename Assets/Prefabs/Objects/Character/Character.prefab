@@ -1000,6 +1000,7 @@ GameObject:
   - component: {fileID: 4152767235055664915}
   - component: {fileID: 3719563173734112099}
   - component: {fileID: 5389695045737335736}
+  - component: {fileID: 1264849590636372518}
   m_Layer: 0
   m_Name: Animator
   m_TagString: Untagged
@@ -1376,6 +1377,24 @@ MonoBehaviour:
   - {fileID: 1216872758, guid: 7c4938da6318ed94c90496cc7d4ad608, type: 3}
   idleSample: 5
   runSample: 10
+--- !u!114 &1264849590636372518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3984376963687474699}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  vfxPoolDataList:
+  - vfxTag: Dust
+    effectPrefab: {fileID: 2164660391435094963, guid: f1dbff2c09d037a48b1cc41a85157b5c, type: 3}
+    initialPoolSize: 10
+    allowDynamicExpansion: 0
+    maxPoolSize: 20
 --- !u!1 &4035353486790179823
 GameObject:
   m_ObjectHideFlags: 0

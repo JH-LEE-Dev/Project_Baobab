@@ -16,6 +16,7 @@ public class OffroadContainerVComponent : MonoBehaviour
     private CustomSortable customSortable;
     private Animator anim;
     private Transform parentTransform;
+    private Transform parentTransformForOpen;
     private float currentHeight = 0f;
     private Vector3 originalScale;
     private Quaternion originalRot;
@@ -23,6 +24,8 @@ public class OffroadContainerVComponent : MonoBehaviour
     private Quaternion originalSelfRot;
     private Vector3 originalJumpContainerScale;
     private Quaternion originalJumpContainerRot;
+    private Vector3 originalOpenScale;
+    private Quaternion originalOpenRot;
 
     public readonly int bOpenHash = Animator.StringToHash("bOpen");
 
@@ -31,6 +34,7 @@ public class OffroadContainerVComponent : MonoBehaviour
     [SerializeField] private GameObject outlineStencilObj;
     [SerializeField] private GameObject outlineObj;
     [SerializeField] private GameObject containerForJump;
+    [SerializeField] private GameObject containerForOpen;
     [SerializeField] private GameObject carriedContainer;
     private Material originalMaterial;
 
@@ -44,6 +48,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         customSortable = GetComponent<CustomSortable>();
 
         parentTransform = containerForJump.transform.parent != null ? containerForJump.transform.parent : transform;
+        parentTransformForOpen = containerForOpen.transform.parent != null ? containerForOpen.transform.parent : transform;
 
         customSortable.Initialize(transform);
         customSortable.AddSpriteRenderer(spriteRenderer);
@@ -51,6 +56,8 @@ public class OffroadContainerVComponent : MonoBehaviour
 
         originalScale = parentTransform.localScale;
         originalRot = parentTransform.localRotation;
+        originalOpenScale = parentTransformForOpen.localScale;
+        originalOpenRot = parentTransformForOpen.localRotation;
         originalSelfScale = transform.localScale;
         originalSelfRot = transform.localRotation;
         if (containerForJump != null)
@@ -165,7 +172,7 @@ public class OffroadContainerVComponent : MonoBehaviour
     {
         if (bActive == false || anim.GetBool(bOpenHash)) return;
 
-        parentTransform.DOKill();
+        parentTransformForOpen.DOKill();
 
         if (openCoroutine != null)
         {
@@ -177,10 +184,10 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     private IEnumerator OpenSequence()
     {
-        Vector3 startScale = parentTransform.localScale;
-        Vector3 squashedScale = new Vector3(originalScale.x * 1.3f, originalScale.y * 0.5f, originalScale.z);
-        Vector3 stretchedScale = new Vector3(originalScale.x * 0.8f, originalScale.y * 1.25f, originalScale.z);
-        Vector3 bounceScale = new Vector3(originalScale.x * 1.1f, originalScale.y * 0.9f, originalScale.z);
+        Vector3 startScale = parentTransformForOpen.localScale;
+        Vector3 squashedScale = new Vector3(originalOpenScale.x * 1.3f, originalOpenScale.y * 0.5f, originalOpenScale.z);
+        Vector3 stretchedScale = new Vector3(originalOpenScale.x * 0.8f, originalOpenScale.y * 1.25f, originalOpenScale.z);
+        Vector3 bounceScale = new Vector3(originalOpenScale.x * 1.1f, originalOpenScale.y * 0.9f, originalOpenScale.z);
 
         // 1. 납작해짐 (Anticipation - 0.15초)
         float elapsed = 0f;
@@ -189,15 +196,15 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * (2f - t); // OutQuad
-            parentTransform.localScale = Vector3.LerpUnclamped(startScale, squashedScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(startScale, squashedScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        parentTransform.localScale = squashedScale;
+        parentTransformForOpen.localScale = squashedScale;
 
         // 2. Animator 트리거 + 뒤뚱거림
         anim.SetBool(bOpenHash, true);
-        parentTransform.DOPunchRotation(new Vector3(0f, 0f, 15f), 0.2f, 8, 1f);
+        parentTransformForOpen.DOPunchRotation(new Vector3(0f, 0f, 15f), 0.2f, 8, 1f);
         ContainerOpenedEvent?.Invoke();
         // 3. 위로 뽀잉 솟구침 (0.15초)
         elapsed = 0f;
@@ -206,11 +213,11 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * (2f - t); // OutQuad
-            parentTransform.localScale = Vector3.LerpUnclamped(squashedScale, stretchedScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(squashedScale, stretchedScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        parentTransform.localScale = stretchedScale;
+        parentTransformForOpen.localScale = stretchedScale;
 
         // 4. 아래로 살짝 찌그러짐 (0.12초)
         elapsed = 0f;
@@ -219,11 +226,11 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * t * (3f - 2f * t); // SmoothStep
-            parentTransform.localScale = Vector3.LerpUnclamped(stretchedScale, bounceScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(stretchedScale, bounceScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        parentTransform.localScale = bounceScale;
+        parentTransformForOpen.localScale = bounceScale;
 
         // 5. 원래 크기로 복귀 (0.15초)
         elapsed = 0f;
@@ -232,13 +239,13 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * (2f - t); // OutQuad
-            parentTransform.localScale = Vector3.LerpUnclamped(bounceScale, originalScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(bounceScale, originalOpenScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        parentTransform.localScale = originalScale;
-        parentTransform.localRotation = originalRot;
+        parentTransformForOpen.localScale = originalOpenScale;
+        parentTransformForOpen.localRotation = originalOpenRot;
         openCoroutine = null;
     }
 
@@ -248,7 +255,7 @@ public class OffroadContainerVComponent : MonoBehaviour
     {
         if (!anim.GetBool(bOpenHash)) return;
 
-        parentTransform.DOKill();
+        parentTransformForOpen.DOKill();
 
         if (openCoroutine != null)
         {
@@ -266,10 +273,10 @@ public class OffroadContainerVComponent : MonoBehaviour
 
     private IEnumerator CloseSequence()
     {
-        Vector3 startScale = parentTransform.localScale;
-        Vector3 stretchedScale = new Vector3(originalScale.x * 0.8f, originalScale.y * 1.2f, originalScale.z);
-        Vector3 squashedScale = new Vector3(originalScale.x * 1.35f, originalScale.y * 0.55f, originalScale.z);
-        Vector3 bounceScale = new Vector3(originalScale.x * 0.93f, originalScale.y * 1.07f, originalScale.z);
+        Vector3 startScale = parentTransformForOpen.localScale;
+        Vector3 stretchedScale = new Vector3(originalOpenScale.x * 0.8f, originalOpenScale.y * 1.2f, originalOpenScale.z);
+        Vector3 squashedScale = new Vector3(originalOpenScale.x * 1.35f, originalOpenScale.y * 0.55f, originalOpenScale.z);
+        Vector3 bounceScale = new Vector3(originalOpenScale.x * 0.93f, originalOpenScale.y * 1.07f, originalOpenScale.z);
 
         // 1. 살짝 위로 늘어남 (준비 동작 - 0.12초)
         anim.SetBool(bOpenHash, false);
@@ -279,14 +286,14 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * (2f - t); // OutQuad
-            parentTransform.localScale = Vector3.LerpUnclamped(startScale, stretchedScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(startScale, stretchedScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        parentTransform.localScale = stretchedScale;
+        parentTransformForOpen.localScale = stretchedScale;
 
         // 2. 쾅! 닫히며 강하게 찌그러짐 + 뒤뚱거림 (0.05초)
-        parentTransform.DOPunchRotation(new Vector3(0f, 0f, 20f), 0.5f, 10, 1f);
+        parentTransformForOpen.DOPunchRotation(new Vector3(0f, 0f, 20f), 0.5f, 10, 1f);
 
         ContainerClosedEvent?.Invoke();
 
@@ -296,11 +303,11 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * t * t; // InCubic (급격하게 쿵!)
-            parentTransform.localScale = Vector3.LerpUnclamped(stretchedScale, squashedScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(stretchedScale, squashedScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        parentTransform.localScale = squashedScale;
+        parentTransformForOpen.localScale = squashedScale;
 
         // 3. 반동으로 튕겨올라감 (0.07초)
         elapsed = 0f;
@@ -309,11 +316,11 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * (2f - t); // OutQuad
-            parentTransform.localScale = Vector3.LerpUnclamped(squashedScale, bounceScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(squashedScale, bounceScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        parentTransform.localScale = bounceScale;
+        parentTransformForOpen.localScale = bounceScale;
 
         // 4. 원래 크기로 안착 (0.08초)
         elapsed = 0f;
@@ -322,13 +329,13 @@ public class OffroadContainerVComponent : MonoBehaviour
         {
             float t = elapsed / duration;
             float ease = t * t * (3f - 2f * t); // SmoothStep
-            parentTransform.localScale = Vector3.LerpUnclamped(bounceScale, originalScale, ease);
+            parentTransformForOpen.localScale = Vector3.LerpUnclamped(bounceScale, originalOpenScale, ease);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        parentTransform.localScale = originalScale;
-        parentTransform.localRotation = originalRot;
+        parentTransformForOpen.localScale = originalOpenScale;
+        parentTransformForOpen.localRotation = originalOpenRot;
         closeCoroutine = null;
     }
 

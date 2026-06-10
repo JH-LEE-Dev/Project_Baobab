@@ -446,4 +446,23 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         inputManager.PauseMove(false);
     }
+
+    public bool IsAxeDurabilityZero()
+    {
+        return armComponent.axeComponent.IsDurabilityZero();
+    }
+
+    public void PauseCharacter(bool _boolean)
+    {
+        if (_boolean == true)
+        {
+            attackComponent.SetCursorEnable(false);
+            attackComponent.SetbCanAttack(false);
+        }
+        else
+        {
+            attackComponent.SetCursorEnable(true);
+            attackComponent.SetbCanAttack(true);
+        }
+    }
 }

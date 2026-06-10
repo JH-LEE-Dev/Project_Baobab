@@ -193,4 +193,9 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     {
         bCanAttack = _boolean;
     }
+
+    public bool IsDurabilityZero()
+    {
+        return durability == 0f;
+    }
 }

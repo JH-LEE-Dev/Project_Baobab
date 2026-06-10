@@ -17,6 +17,7 @@ public class GameplayUICoordinator
     private UIView_ESC escUI;
     private UIView_Result resultUI;
     private UIView_SkyProduction skyProduction;
+    private UIView_Warning warningUI;
 
     private UIDepthController uiDepthController;
 
@@ -24,7 +25,7 @@ public class GameplayUICoordinator
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
-     UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI)
+     UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI, UIView_Warning _warningUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -38,6 +39,7 @@ public class GameplayUICoordinator
         uiDepthController = _uiDepthController;
         skyProduction = _skyProduction;
         resultUI = _resultUI;
+        warningUI = _warningUI;
 
         SubscribeSignals();
         BindEvents();
@@ -82,6 +84,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.Subscribe<GameEndSignal>(GameEnd);
+        signalHub.Subscribe<ActivateWarningUISignal>(ActivateWarningUI);
     }
 
     private void UnSubscribeSignals()
@@ -123,6 +126,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<PopupUIUpSignal>(PopupUIUp);
         signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.UnSubscribe<GameEndSignal>(GameEnd);
+        signalHub.UnSubscribe<ActivateWarningUISignal>(ActivateWarningUI);
     }
 
     private void BindEvents()
@@ -159,6 +163,9 @@ public class GameplayUICoordinator
 
         resultUI.RetryButtonClickedEvent -= RetryGame;
         resultUI.RetryButtonClickedEvent += RetryGame;
+
+        warningUI.DeActivateWarningUIEvent -= DeActivateWarningUI;
+        warningUI.DeActivateWarningUIEvent += DeActivateWarningUI;
     }
 
     private void ReleaseEvents()
@@ -174,6 +181,7 @@ public class GameplayUICoordinator
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
         resultUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         resultUI.RetryButtonClickedEvent -= RetryGame;
+        warningUI.DeActivateWarningUIEvent -= DeActivateWarningUI;
     }
 
     public void Release()
@@ -361,7 +369,7 @@ public class GameplayUICoordinator
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         resultUI.DungeonStarted();
-        
+
         bInventoryOpened = false;
         popUpUI.Hide();
     }
@@ -480,12 +488,14 @@ public class GameplayUICoordinator
     {
         hudUI.HUDGoDown();
         popUpUI.PopupGoDown();
+        worldPopupUI.WorldPopupGoDown();
     }
 
     private void PopupUIUp(PopupUIUpSignal _popupUIUpSignal)
     {
         hudUI.HUDGoUp();
         popUpUI.PopupGoUp();
+        worldPopupUI.WorldPopupGoUp();
     }
 
     private void ProvideAccumulatedValueChangeEvent(ProvideSkillAccumulatedValueChangeSignal _signal)
@@ -501,5 +511,24 @@ public class GameplayUICoordinator
     private void RetryGame()
     {
         signalHub.Publish(new RetryButtonClickedSignal());
+    }
+
+    private void ActivateWarningUI(ActivateWarningUISignal _activateWarningUISignal)
+    {
+        warningUI.Show();
+        Time.timeScale = 0f;
+    }
+
+    private void DeActivateWarningUI()
+    {
+        if (warningUI.IsVisible == true)
+        {
+            warningUI.Hide();
+            return;
+        }
+        
+        Time.timeScale = 1f;
+
+        signalHub.Publish(new WarningUIClosedSignal(warningUI.bApproved));
     }
 }
