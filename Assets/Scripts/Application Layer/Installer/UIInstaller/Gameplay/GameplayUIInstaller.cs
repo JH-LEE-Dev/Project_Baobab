@@ -154,6 +154,18 @@ public class GameplayUIInstaller : MonoBehaviour
         {
             worldCanvasEnabler.Initialize();
         }
+
+        var overlayCanvasEnabler = overlayCanvas.GetComponent<CanvasEnabler>();
+        if (overlayCanvasEnabler != null)
+        {
+            overlayCanvasEnabler.Initialize();
+        }
+
+        var ppCanvasEnabler = ppCanvas.GetComponent<CanvasEnabler>();
+        if (ppCanvasEnabler != null)
+        {
+            ppCanvasEnabler.Initialize();
+        }
     }
 
     private void OpenUIView()

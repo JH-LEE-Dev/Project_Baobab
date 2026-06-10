@@ -32,7 +32,9 @@ public class CanvasEnabler : MonoBehaviour
             canvas.worldCamera = CameraFinder.Instance.OverlayCamera;
         }
         else
+        {
             canvas.worldCamera = CameraFinder.Instance.PPUiCamera;
+        }
 
         canvas.sortingLayerName = "HUD";
     }
