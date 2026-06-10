@@ -44,12 +44,16 @@ public class UIManager : MonoBehaviour
         ppTooltipLayerRoot = ppCanvasRoot.tooltipLayerRoot;
     }
 
-    public void Initialize(InputManager _inputManager, LocalizationManager _localizeManager, UIDepthController _depthController, Canvas _ppCanvas)
+    public void Initialize(InputManager _inputManager, LocalizationManager _localizeManager, UIDepthController _depthController)
+    {
+        viewCtx = new UIViewContext();
+        viewCtx.Initialize(_inputManager, _localizeManager, _depthController);
+    }
+
+    public void DI(Canvas _ppCanvas)
     {
         ppCanvas = _ppCanvas;
-
-        viewCtx = new UIViewContext();
-        viewCtx.Initialize(_inputManager, _localizeManager, _depthController, ppCanvas);
+        viewCtx.DI(ppCanvas);
     }
 
     protected void Awake()

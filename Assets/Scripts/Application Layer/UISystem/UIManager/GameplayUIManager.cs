@@ -18,9 +18,9 @@ public class GameplayUIManager : UIManager
     public void Initialize(InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
     ILogCutter _logCutter, ISkillSystemProvider _skillSystemProvider, IShopNPC _shopNPC, IMoneyData _moneyData, LocalizationManager _localizeManager,
     IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider, IInventory _offroadContainer,
-     UIDepthController _depthController, IDungeonResultProvider _dungeonResultProvider, Canvas _ppCanvas)
+     UIDepthController _depthController, IDungeonResultProvider _dungeonResultProvider)
     {
-        base.Initialize(_inputManager, _localizeManager, _depthController, _ppCanvas);
+        base.Initialize(_inputManager, _localizeManager, _depthController);
 
         offroadContainer = _offroadContainer;
         weatherProvider = _weatherProvider;

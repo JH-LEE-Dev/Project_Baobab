@@ -22,7 +22,7 @@ public class MainMenuUIInstaller : MonoBehaviour
         inputManager = _inputManager;
         uiManager = GetComponent<MainMenuUIManager>();
 
-        uiManager.Initialize(inputManager, localizationManager, null, null);
+        uiManager.Initialize(inputManager, localizationManager, null);
     }
 
     public void Release()
