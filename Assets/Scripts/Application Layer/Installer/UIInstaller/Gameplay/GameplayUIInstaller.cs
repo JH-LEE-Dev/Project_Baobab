@@ -30,14 +30,17 @@ public class GameplayUIInstaller : MonoBehaviour
     [SerializeField] private CanvasRoot canvasRootPrefab;
     [SerializeField] private CanvasRoot ppCanvasRootPrefab;
     [SerializeField] private CanvasRoot worldCanvasRootPrefab;
+    [SerializeField] private CanvasRoot overlayCanvasRootPrefab;
     [SerializeField] private Canvas canvasPrefab;
     [SerializeField] private Canvas worldCanvasPrefab;
     [SerializeField] private Canvas ppCanvasPrefab;
+    [SerializeField] private Canvas overlayCanvasPrefab;
 
     //Gameplay Scene
     private Canvas canvas;
     private Canvas ppCanvas;
     private Canvas worldCanvas;
+    private Canvas overlayCanvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, SignalHub _signalHub,
         InputManager _inputManager, IInventory _inventory, IInDungeonObjProvider _inDungeonObjProvider, IInventory _container,
@@ -103,8 +106,11 @@ public class GameplayUIInstaller : MonoBehaviour
 
         Transform ppOverlayRoot = Instantiate(ppCanvasRootPrefab.overlayLayerRoot, ppCanvas.transform);
 
+        Transform overlayCanvasRoot = Instantiate(overlayCanvasRootPrefab.overlayLayerRoot, overlayCanvas.transform);
+
         SetAnchorToCanvas(ppOverlayRoot);
         SetAnchorToCanvas(overlayRoot);
+        SetAnchorToCanvas(overlayCanvasRoot);
 
         CanvasRoot tempRoot = new CanvasRoot();
         tempRoot.overlayLayerRoot = overlayRoot;
@@ -115,7 +121,10 @@ public class GameplayUIInstaller : MonoBehaviour
         CanvasRoot ppTempRoot = new CanvasRoot();
         ppTempRoot.overlayLayerRoot = ppOverlayRoot;
 
-        uiManager.SceneChanged(tempRoot, worldTempRoot, ppTempRoot);
+        CanvasRoot canvasRoot = new CanvasRoot();
+        canvasRoot.overlayLayerRoot = overlayCanvasRoot;
+
+        uiManager.SceneChanged(tempRoot, worldTempRoot, ppTempRoot, canvasRoot);
 
         OpenUIView();
     }
@@ -128,6 +137,8 @@ public class GameplayUIInstaller : MonoBehaviour
             worldCanvas = Instantiate(worldCanvasPrefab, transform);
         if (ppCanvas == null)
             ppCanvas = Instantiate(ppCanvasPrefab, transform);
+        if(overlayCanvas == null)
+            overlayCanvas = Instantiate(overlayCanvasPrefab, transform);
             
         uiManager.DI(ppCanvas);
 

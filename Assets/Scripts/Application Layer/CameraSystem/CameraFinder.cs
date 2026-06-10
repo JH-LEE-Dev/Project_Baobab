@@ -1,7 +1,11 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System;
+
 public class CameraFinder : MonoBehaviour
 {
+    public event Action CameraFindEvent;
+
     public static CameraFinder Instance { get; private set; }
 
     [SerializeField] private Camera ppMainCamera;
@@ -10,7 +14,7 @@ public class CameraFinder : MonoBehaviour
 
     public Camera PPMainCamera => ppMainCamera;
     public Camera OverlayCamera => overlayCamera;
-    //public Camera PPUiCamera => ppUiCamera;
+    public Camera PPUiCamera => ppUiCamera;
 
     private void Awake()
     {
@@ -52,10 +56,12 @@ public class CameraFinder : MonoBehaviour
             {
                 overlayCamera = cam;
             }
-            // else if (objName == "PP UI Camera")
-            // {
-            //     ppUiCamera = cam;
-            // }
+            else if (objName == "PP UI Camera")
+            {
+                ppUiCamera = cam;
+            }
         }
+
+        CameraFindEvent?.Invoke();
     }
 }

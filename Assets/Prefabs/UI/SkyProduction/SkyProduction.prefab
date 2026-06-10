@@ -317,6 +317,8 @@ MonoBehaviour:
   layer: 2
   bCloseableByESC: 0
   bWorld: 0
+  bPPUI: 0
+  bOverlay: 1
   cloudImage: {fileID: 4920919108733751062}
   skyImage: {fileID: 6919825426003795177}
   skyImage2: {fileID: 4049458310564438251}
@@ -360,7 +362,7 @@ SortingGroup:
   m_GameObject: {fileID: 5046866699106108461}
   m_Enabled: 1
   m_SortingLayerID: 962808927
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 0
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0

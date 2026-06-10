@@ -6,11 +6,19 @@ public class WorldCanvasEnabler : MonoBehaviour
 
     public void Initialize()
     {
-        if(canvas != null)
+        if (canvas != null)
         {
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.worldCamera = CameraFinder.Instance.PPMainCamera;
             canvas.sortingLayerName = "WorldUI";
         }
+
+        CameraFinder.Instance.CameraFindEvent -= ResetCanvas;
+        CameraFinder.Instance.CameraFindEvent += ResetCanvas;
+    }
+
+    private void ResetCanvas()
+    {
+        canvas.worldCamera = CameraFinder.Instance.PPMainCamera;
     }
 }
