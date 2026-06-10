@@ -7,12 +7,15 @@ public class UIViewContext
     public UIDepthController depthController { get; private set; }
     public Canvas ppCanvas { get; private set; }
 
-    public void Initialize(InputManager _inputManager, LocalizationManager _localizationManager, UIDepthController _depthController,
-     Canvas _ppCanvas)
+    public void Initialize(InputManager _inputManager, LocalizationManager _localizationManager, UIDepthController _depthController)
     {
         inputManager = _inputManager;
         localizationManager = _localizationManager;
         depthController = _depthController;
+    }
+
+    public void DI(Canvas _ppCanvas)
+    {
         ppCanvas = _ppCanvas;
     }
 

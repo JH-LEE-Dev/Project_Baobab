@@ -72,7 +72,7 @@ public class GameplayUIInstaller : MonoBehaviour
 
         uiManager.Initialize(inputManager, inventory, inDungeonObjProvider, container, _logCutter, _skillSystemProvider,
          shopNPC, moneyData, localizationManager, mapDataProvider, weatherProvider, timeDataProvider, offroadContainer, depthController,
-         dungeonResultProvider, ppCanvas);
+         dungeonResultProvider);
 
         SetupUIElement();
 
@@ -128,6 +128,8 @@ public class GameplayUIInstaller : MonoBehaviour
             worldCanvas = Instantiate(worldCanvasPrefab, transform);
         if (ppCanvas == null)
             ppCanvas = Instantiate(ppCanvasPrefab, transform);
+            
+        uiManager.DI(ppCanvas);
 
         var CanvasEnabler = canvas.GetComponent<CanvasEnabler>();
         if (CanvasEnabler != null)
