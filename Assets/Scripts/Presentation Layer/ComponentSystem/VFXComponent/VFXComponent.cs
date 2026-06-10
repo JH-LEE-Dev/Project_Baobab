@@ -110,7 +110,10 @@ public class VFXComponent : MonoBehaviour
         {
             ParticleSystem _effect = _poolList[i];
             if (null != _effect && false == _effect.gameObject.activeSelf)
+            {
+                _effect.transform.SetParent(transform);
                 return _effect;
+            }
         }
 
         if (false == _config.AllowDynamicExpansion)
@@ -158,9 +161,16 @@ public class VFXComponent : MonoBehaviour
 
         if (true == masterList.Contains(_effect))
         {
-            _effect.Stop(true);
-            _effect.Clear(true);
-            _effect.gameObject.SetActive(false);
+            VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+            if (null != _helper)
+                _helper.ReturnToPool();
+            else
+            {
+                _effect.Stop(true);
+                _effect.Clear(true);
+                _effect.transform.SetParent(transform);
+                _effect.gameObject.SetActive(false);
+            }
         }
     }
 
@@ -178,9 +188,16 @@ public class VFXComponent : MonoBehaviour
             ParticleSystem _effect = masterList[i];
             if (null != _effect && true == _effect.gameObject.activeSelf)
             {
-                _effect.Stop(true);
-                _effect.Clear(true);
-                _effect.gameObject.SetActive(false);
+                VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+                if (null != _helper)
+                    _helper.ReturnToPool();
+                else
+                {
+                    _effect.Stop(true);
+                    _effect.Clear(true);
+                    _effect.transform.SetParent(transform);
+                    _effect.gameObject.SetActive(false);
+                }
             }
         }
     }
@@ -275,8 +292,12 @@ public class VFXComponent : MonoBehaviour
 
         _newInstance.gameObject.SetActive(false);
 
+        VFXPoolInstanceHelper _helper = _newInstance.gameObject.AddComponent<VFXPoolInstanceHelper>();
+        if (null != _helper)
+            _helper.Initialize(transform);
+
         var _main = _newInstance.main;
-        _main.stopAction = ParticleSystemStopAction.Disable;
+        _main.stopAction = ParticleSystemStopAction.Callback;
 
         if (null != masterList)
             masterList.Add(_newInstance);
@@ -319,5 +340,56 @@ public class VFXComponent : MonoBehaviour
     private void OnDestroy()
     {
         Clear();
+    }
+}
+
+public class VFXPoolInstanceHelper : MonoBehaviour
+{
+    // 내부 의존성
+    private Transform originalParent;
+    private ParticleSystem particleSys;
+    private bool isReturning;
+
+
+    // 퍼블릭 초기화 및 제어 메서드
+
+    public void Initialize(Transform _parent)
+    {
+        originalParent = _parent;
+        particleSys = GetComponent<ParticleSystem>();
+        isReturning = false;
+    }
+
+    public void ReturnToPool()
+    {
+        if (true == isReturning)
+            return;
+
+        isReturning = true;
+
+        if (null != particleSys)
+        {
+            if (true == particleSys.isPlaying)
+                particleSys.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        if (null != originalParent)
+        {
+            if (transform.parent != originalParent)
+                transform.SetParent(originalParent);
+        }
+
+        if (true == gameObject.activeSelf)
+            gameObject.SetActive(false);
+
+        isReturning = false;
+    }
+
+
+    // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void OnParticleSystemStopped()
+    {
+        ReturnToPool();
     }
 }
