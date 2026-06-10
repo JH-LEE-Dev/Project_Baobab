@@ -129,6 +129,9 @@ public class UIView_Result : UIView
     [Header("Production References")]
     [SerializeField] private Image blackBG;
     [SerializeField] private RectTransform sectionTitle;
+    [SerializeField] private RectTransform sectionKillCount;
+    [SerializeField] private RectTransform sectionAcquiredLogs;
+    [SerializeField] private RectTransform sectionContainer;
     [SerializeField] private RectTransform sectionButton;
     [SerializeField] private TMPInlineStyleAnimator treeKillCountTextAnimator;
     [SerializeField] private TMPInlineStyleAnimator acquiredLogsHeaderAnimator;
@@ -144,6 +147,8 @@ public class UIView_Result : UIView
     [SerializeField] private float resultLogRowOpenDelay = 0.1f;
     [SerializeField] private float resultLogRowInterval = 0.1f;
     [SerializeField] private float resultLogRowCountUpDuration = 0.8f;
+    [SerializeField] private float resultCloseDuration = 0.3f;
+    [SerializeField] private float resultCloseYOffset = -20f;
 
     private int[] startOffroadLogCounts;
     private DisplayInventorySlot[] startOffroadSlots;
@@ -151,9 +156,8 @@ public class UIView_Result : UIView
     private DisplayInventorySlot[] displayOffroadSlots;
     private float[] treeDisplayProgress;
     private readonly List<UI_InventorySlot> containerSlots = new List<UI_InventorySlot>();
-    private readonly List<CanvasGroup> pendingSectionGroups = new List<CanvasGroup>(3);
-
     private Sequence resultOpenSequence;
+    private Sequence resultCloseSequence;
     private CanvasGroup sectionTitleCanvasGroup;
     private CanvasGroup sectionButtonCanvasGroup;
     private CanvasGroup sectionKillCountCanvasGroup;
@@ -163,9 +167,14 @@ public class UIView_Result : UIView
     private CanvasGroup resultLogContentCanvasGroup;
     private Vector2 sectionTitleStartPosition;
     private Vector2 sectionButtonStartPosition;
+    private Vector2 sectionKillCountStartPosition;
+    private Vector2 sectionAcquiredLogsStartPosition;
+    private Vector2 sectionContainerStartPosition;
     private Vector2 slotBackgroundStartPosition;
     private float blackBGTargetAlpha;
     private bool hasCachedProductionStartState;
+    private bool isClosingProduction;
+    private Action pendingCloseCompletedEvent;
 
     #region Public Override Methods
 
@@ -200,16 +209,12 @@ public class UIView_Result : UIView
 
     public void OnGoHomeButtonClicked()
     {
-        GoHomeButtonClickedEvent?.Invoke();
-        KillResultOpenSequence();
-        SetResultContentsActive(false);
+        PlayResultCloseProduction(InvokeGoHomeButtonClickedEvent);
     }
 
     public void OnRetryButtonClicked()
     {
-        RetryButtonClickedEvent?.Invoke();
-        KillResultOpenSequence();
-        SetResultContentsActive(false);
+        PlayResultCloseProduction(InvokeRetryButtonClickedEvent);
     }
 
     public void OpenResultUI()
@@ -222,7 +227,7 @@ public class UIView_Result : UIView
     public void DungeonStarted()
     {
         SnapshotOffroadContainer();
-        KillResultOpenSequence();
+        KillResultProductionSequences();
         SetResultContentsActive(false);
     }
 
@@ -232,7 +237,7 @@ public class UIView_Result : UIView
 
     public override void OnDestroy()
     {
-        KillResultOpenSequence();
+        KillResultProductionSequences();
 
         if (localizationManager != null)
             localizationManager.OnLanguageChanged -= RefreshLocalizedResultTexts;
@@ -336,6 +341,15 @@ public class UIView_Result : UIView
         if (sectionTitle == null)
             sectionTitle = FindChildRecursive(transform, "Section_Title") as RectTransform;
 
+        if (sectionKillCount == null)
+            sectionKillCount = FindChildRecursive(transform, "Section_KillCount") as RectTransform;
+
+        if (sectionAcquiredLogs == null)
+            sectionAcquiredLogs = FindChildRecursive(transform, "Section_AcquiredLogs") as RectTransform;
+
+        if (sectionContainer == null)
+            sectionContainer = FindChildRecursive(transform, "Section_Container") as RectTransform;
+
         if (sectionButton == null)
         {
             sectionButton = FindChildRecursive(transform, "Section_Button") as RectTransform;
@@ -356,9 +370,9 @@ public class UIView_Result : UIView
         sectionTitleCanvasGroup = GetOrAddCanvasGroup(sectionTitle);
         sectionButtonCanvasGroup = GetOrAddCanvasGroup(sectionButton);
 
-        sectionKillCountCanvasGroup = AddPendingSectionGroup("Section_KillCount");
-        sectionAcquiredLogsCanvasGroup = AddPendingSectionGroup("Section_AcquiredLogs");
-        sectionContainerCanvasGroup = AddPendingSectionGroup("Section_Container");
+        sectionKillCountCanvasGroup = GetOrAddCanvasGroup(sectionKillCount);
+        sectionAcquiredLogsCanvasGroup = GetOrAddCanvasGroup(sectionAcquiredLogs);
+        sectionContainerCanvasGroup = GetOrAddCanvasGroup(sectionContainer);
         slotBackgroundCanvasGroup = GetOrAddCanvasGroup(containerSlotBackground as RectTransform);
         resultLogContentCanvasGroup = GetOrAddCanvasGroup(resultLogRowPivot as RectTransform);
     }
@@ -377,6 +391,15 @@ public class UIView_Result : UIView
         if (sectionButton != null)
             sectionButtonStartPosition = sectionButton.anchoredPosition;
 
+        if (sectionKillCount != null)
+            sectionKillCountStartPosition = sectionKillCount.anchoredPosition;
+
+        if (sectionAcquiredLogs != null)
+            sectionAcquiredLogsStartPosition = sectionAcquiredLogs.anchoredPosition;
+
+        if (sectionContainer != null)
+            sectionContainerStartPosition = sectionContainer.anchoredPosition;
+
         if (containerSlotBackground is RectTransform slotBackgroundRect)
             slotBackgroundStartPosition = slotBackgroundRect.anchoredPosition;
 
@@ -386,7 +409,9 @@ public class UIView_Result : UIView
     private void PlayResultOpenProduction()
     {
         CacheProductionStartState();
-        KillResultOpenSequence();
+        KillResultProductionSequences();
+        isClosingProduction = false;
+        SetButtonsInteractable(false);
         PrepareResultProductionHidden();
 
         resultOpenSequence = DOTween.Sequence();
@@ -402,6 +427,7 @@ public class UIView_Result : UIView
         {
             SetCanvasGroupRaycast(sectionTitleCanvasGroup, false);
             SetCanvasGroupRaycast(sectionButtonCanvasGroup, true);
+            SetButtonsInteractable(true);
         });
 
         resultOpenSequence.Insert(resultOpenDuration, CreateTreeKillCountProductionSequence());
@@ -421,16 +447,9 @@ public class UIView_Result : UIView
 
         SetSectionHidden(sectionTitle, sectionTitleCanvasGroup, sectionTitleStartPosition);
         SetSectionHidden(sectionButton, sectionButtonCanvasGroup, sectionButtonStartPosition);
-
-        for (int i = 0; i < pendingSectionGroups.Count; i++)
-        {
-            CanvasGroup canvasGroup = pendingSectionGroups[i];
-            if (canvasGroup == null)
-                continue;
-
-            canvasGroup.alpha = 0f;
-            SetCanvasGroupRaycast(canvasGroup, false);
-        }
+        SetSectionInvisibleAtStart(sectionKillCount, sectionKillCountCanvasGroup, sectionKillCountStartPosition);
+        SetSectionInvisibleAtStart(sectionAcquiredLogs, sectionAcquiredLogsCanvasGroup, sectionAcquiredLogsStartPosition);
+        SetSectionInvisibleAtStart(sectionContainer, sectionContainerCanvasGroup, sectionContainerStartPosition);
 
         SetCanvasGroupVisible(resultLogContentCanvasGroup, false);
         PrepareResultLogRowsHidden();
@@ -478,6 +497,18 @@ public class UIView_Result : UIView
         SetCanvasGroupRaycast(canvasGroup, false);
     }
 
+    private void SetSectionInvisibleAtStart(RectTransform rectTransform, CanvasGroup canvasGroup, Vector2 startPosition)
+    {
+        if (rectTransform != null)
+            rectTransform.anchoredPosition = startPosition;
+
+        if (canvasGroup == null)
+            return;
+
+        canvasGroup.alpha = 0f;
+        SetCanvasGroupRaycast(canvasGroup, false);
+    }
+
     private void JoinSectionOpenTween(RectTransform rectTransform, CanvasGroup canvasGroup, Vector2 startPosition)
     {
         if (rectTransform != null)
@@ -495,15 +526,81 @@ public class UIView_Result : UIView
         }
     }
 
-    private CanvasGroup AddPendingSectionGroup(string sectionName)
+    private void PlayResultCloseProduction(Action completedEvent)
     {
-        RectTransform section = FindChildRecursive(transform, sectionName) as RectTransform;
-        CanvasGroup canvasGroup = GetOrAddCanvasGroup(section);
+        if (isClosingProduction)
+            return;
 
-        if (canvasGroup != null && false == pendingSectionGroups.Contains(canvasGroup))
-            pendingSectionGroups.Add(canvasGroup);
+        CacheProductionStartState();
+        KillResultProductionSequences();
+        isClosingProduction = true;
+        SetButtonsInteractable(false);
 
-        return canvasGroup;
+        resultCloseSequence = DOTween.Sequence();
+
+        if (blackBG != null)
+        {
+            resultCloseSequence.Join(blackBG.DOFade(0f, resultCloseDuration)
+                .SetEase(resultOpenEase)
+                .SetUpdate(false));
+        }
+
+        JoinSectionCloseTween(sectionTitle, sectionTitleCanvasGroup, sectionTitleStartPosition);
+        JoinSectionCloseTween(sectionKillCount, sectionKillCountCanvasGroup, sectionKillCountStartPosition);
+        JoinSectionCloseTween(sectionAcquiredLogs, sectionAcquiredLogsCanvasGroup, sectionAcquiredLogsStartPosition);
+        JoinSectionCloseTween(sectionContainer, sectionContainerCanvasGroup, sectionContainerStartPosition);
+        JoinSectionCloseTween(sectionButton, sectionButtonCanvasGroup, sectionButtonStartPosition);
+
+        pendingCloseCompletedEvent = completedEvent;
+        resultCloseSequence.OnComplete(OnResultCloseProductionComplete);
+    }
+
+    private void JoinSectionCloseTween(RectTransform rectTransform, CanvasGroup canvasGroup, Vector2 startPosition)
+    {
+        if (rectTransform != null)
+        {
+            Vector2 targetPosition = startPosition + new Vector2(0f, resultCloseYOffset);
+            resultCloseSequence.Join(rectTransform.DOAnchorPos(targetPosition, resultCloseDuration)
+                .SetEase(resultOpenEase)
+                .SetUpdate(false));
+        }
+
+        if (canvasGroup != null)
+        {
+            resultCloseSequence.Join(canvasGroup.DOFade(0f, resultCloseDuration)
+                .SetEase(resultOpenEase)
+                .SetUpdate(false));
+        }
+    }
+
+    private void SetButtonsInteractable(bool enabled)
+    {
+        if (goHomeButton != null)
+            goHomeButton.interactable = enabled;
+
+        if (retryButton != null)
+            retryButton.interactable = enabled;
+    }
+
+    private void InvokeGoHomeButtonClickedEvent()
+    {
+        GoHomeButtonClickedEvent?.Invoke();
+    }
+
+    private void InvokeRetryButtonClickedEvent()
+    {
+        RetryButtonClickedEvent?.Invoke();
+    }
+
+    private void OnResultCloseProductionComplete()
+    {
+        Action completedEvent = pendingCloseCompletedEvent;
+        pendingCloseCompletedEvent = null;
+        resultCloseSequence = null;
+        isClosingProduction = false;
+
+        SetResultContentsActive(false);
+        completedEvent?.Invoke();
     }
 
     private TMPInlineStyleAnimator GetSectionHeaderAnimator(string sectionName)
@@ -798,14 +895,22 @@ public class UIView_Result : UIView
         return sequence;
     }
 
-    private void KillResultOpenSequence()
+    private void KillResultProductionSequences()
     {
-        if (resultOpenSequence == null)
-            return;
+        if (resultOpenSequence != null)
+        {
+            resultOpenSequence.Kill();
+            resultOpenSequence = null;
+        }
 
-        resultOpenSequence.Kill();
-        resultOpenSequence = null;
+        if (resultCloseSequence != null)
+        {
+            resultCloseSequence.Kill();
+            resultCloseSequence = null;
+        }
 
+        isClosingProduction = false;
+        pendingCloseCompletedEvent = null;
         treeKillCountTextAnimator?.StopRevealBounce();
         acquiredLogsHeaderAnimator?.StopRevealBounce();
         containerHeaderAnimator?.StopRevealBounce();

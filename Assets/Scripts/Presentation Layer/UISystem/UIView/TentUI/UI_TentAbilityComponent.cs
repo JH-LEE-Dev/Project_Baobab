@@ -51,7 +51,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private SkillType lastApprovedFocusSkillType = SkillType.None;
     private AbilityNode openingZoomFocusNode;
     private CanvasGroup abilityCanvasGroup;
-    private Mask circleRevealMask;
+    private TentUICircleRevealStencil circleRevealStencilMask;
 
     private readonly Dictionary<SkillType, AbilityNodeDefinitionJson> nodeDefinitionMap = new Dictionary<SkillType, AbilityNodeDefinitionJson>();
     private readonly List<SkillType> nodeBuildOrder = new List<SkillType>();
@@ -286,6 +286,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SetAbilityAlpha(1f);
         SetAbilityInputEnabled(false);
         BuildNodesIfNeeded();
+        EnsureCircleRevealStencilReaders();
         SyncNodeLevelsFromProvider();
         RefreshNodeVisibility(false);
         RefreshNodeAvailabilityVisuals();
@@ -528,22 +529,28 @@ public class UI_TentAbilityComponent : MonoBehaviour
         PrepareCircleMaskRect(circleRevealStartRadius);
         circleMaskImage.raycastTarget = false;
         circleMaskImage.rectTransform.SetAsLastSibling();
-        circleRevealMask = circleMaskImage.GetComponent<Mask>();
-        if (circleRevealMask == null)
-            circleRevealMask = circleMaskImage.gameObject.AddComponent<Mask>();
+        Mask legacyMask = circleMaskImage.GetComponent<Mask>();
+        if (legacyMask != null)
+            legacyMask.enabled = false;
 
-        circleRevealMask.showMaskGraphic = false;
+        circleRevealStencilMask = circleMaskImage.GetComponent<TentUICircleRevealStencil>();
+        if (circleRevealStencilMask == null)
+            circleRevealStencilMask = circleMaskImage.gameObject.AddComponent<TentUICircleRevealStencil>();
+
+        circleRevealStencilMask.ConfigureAsMaskWriter();
         circleMaskImage.material = null;
 
         if (abilityBackground != null && abilityBackground.parent != circleMaskImage.rectTransform)
         {
             abilityBackground.SetParent(circleMaskImage.rectTransform, false);
             PrepareAbilityBackgroundForCircleMask();
+            EnsureCircleRevealStencilReaders();
             abilityBackground.SetAsLastSibling();
         }
         else if (abilityBackground != null)
         {
             PrepareAbilityBackgroundForCircleMask();
+            EnsureCircleRevealStencilReaders();
         }
 
         circleMaskImage.gameObject.SetActive(false);
@@ -578,6 +585,26 @@ public class UI_TentAbilityComponent : MonoBehaviour
             circleRevealDimImage.material = circleRevealDimMaterialInstance;
 
         circleRevealDimImage.gameObject.SetActive(false);
+    }
+
+    private void EnsureCircleRevealStencilReaders()
+    {
+        if (abilityBackground == null)
+            return;
+
+        Graphic[] graphics = abilityBackground.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+        {
+            Graphic graphic = graphics[i];
+            if (graphic == null || graphic == circleMaskImage)
+                continue;
+
+            TentUICircleRevealStencil stencilReader = graphic.GetComponent<TentUICircleRevealStencil>();
+            if (stencilReader == null)
+                stencilReader = graphic.gameObject.AddComponent<TentUICircleRevealStencil>();
+
+            stencilReader.ConfigureAsMaskReader();
+        }
     }
 
     private void PrepareCircleMaskRect(float _radius)
@@ -830,6 +857,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     public void Refresh()
     {
         BuildNodesIfNeeded();
+        EnsureCircleRevealStencilReaders();
         SyncNodeLevelsFromProvider();
         RefreshNodeVisibility(false);
         RefreshNodeAvailabilityVisuals();
