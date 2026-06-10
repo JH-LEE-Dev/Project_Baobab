@@ -232,7 +232,11 @@ public class CharacterAnimator : MonoBehaviour
                     currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
                     if (_isMoving && vfxComponent != null)
                     {
-                        vfxComponent.Play("Dust", transform.position, Quaternion.identity);
+                        ParticleSystem effect = vfxComponent.Play("Dust", transform.position, Quaternion.identity);
+                        if (effect != null && baseSR != null)
+                        {
+                            vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerName, baseSR.sortingOrder);
+                        }
                     }
                 }
             }
