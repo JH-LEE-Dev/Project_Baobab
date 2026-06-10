@@ -239,6 +239,9 @@ public class AbilityToolTip : MonoBehaviour
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
+        canvasGroup.interactable = false;
+        canvasGroup.blocksRaycasts = false;
     }
 
     private void CacheMotionPlayer()

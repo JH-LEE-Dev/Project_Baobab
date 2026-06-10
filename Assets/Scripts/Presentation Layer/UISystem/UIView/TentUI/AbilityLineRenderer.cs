@@ -354,9 +354,7 @@ public class AbilityLineRenderer
         _nodeRect.GetWorldCorners(corners);
         Vector3 worldCenter = (corners[0] + corners[2]) * 0.5f;
 
-        Camera eventCamera = null;
-        if (rootCanvas != null && rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            eventCamera = rootCanvas.worldCamera;
+        Camera eventCamera = GetCanvasEventCamera();
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _targetRectangle,
@@ -375,9 +373,7 @@ public class AbilityLineRenderer
 
         Vector3 worldPoint = moveTarget.TransformPoint(new Vector3(_gridPoint.x * gridCellSize, _gridPoint.y * gridCellSize, 0f));
 
-        Camera eventCamera = null;
-        if (rootCanvas != null && rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            eventCamera = rootCanvas.worldCamera;
+        Camera eventCamera = GetCanvasEventCamera();
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             _targetRectangle,
@@ -392,6 +388,15 @@ public class AbilityLineRenderer
     private Vector2 SnapToPixel(Vector2 _position)
     {
         return new Vector2(Mathf.Round(_position.x), Mathf.Round(_position.y));
+    }
+
+    private Camera GetCanvasEventCamera()
+    {
+        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null ? rootCanvas.rootCanvas : rootCanvas;
+        if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            return null;
+
+        return targetCanvas.worldCamera;
     }
 
     // 화면 밖으로 충분히 벗어난 라인 연결은 이번 프레임 렌더링을 생략한다.

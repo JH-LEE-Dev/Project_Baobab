@@ -932,17 +932,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         Vector3[] worldCorners = new Vector3[4];
         nodeRect.GetWorldCorners(worldCorners);
+        Camera eventCamera = GetCanvasEventCamera();
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             abilityBackground,
-            RectTransformUtility.WorldToScreenPoint(null, worldCorners[0]),
-            null,
+            RectTransformUtility.WorldToScreenPoint(eventCamera, worldCorners[0]),
+            eventCamera,
             out Vector2 localBottomLeft);
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             abilityBackground,
-            RectTransformUtility.WorldToScreenPoint(null, worldCorners[2]),
-            null,
+            RectTransformUtility.WorldToScreenPoint(eventCamera, worldCorners[2]),
+            eventCamera,
             out Vector2 localTopRight);
 
         Vector2 nodeCenter = (localBottomLeft + localTopRight) * 0.5f;
@@ -1360,9 +1361,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (moveTarget == null || hasZoomFocus == false)
             return;
 
-        Camera eventCamera = null;
-        if (rootCanvas != null && rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
-            eventCamera = rootCanvas.worldCamera;
+        Camera eventCamera = GetCanvasEventCamera();
 
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
             moveTarget,
@@ -1372,6 +1371,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         moveTarget.anchoredPosition += localPointBeforeScale * (_previousZoom - _currentZoom);
+    }
+
+    private Camera GetCanvasEventCamera()
+    {
+        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null ? rootCanvas.rootCanvas : rootCanvas;
+        if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            return null;
+
+        return targetCanvas.worldCamera;
     }
 
     private void PlayViewShake()
