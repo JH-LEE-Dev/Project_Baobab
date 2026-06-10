@@ -45,7 +45,7 @@ public class MainMenuUIInstaller : MonoBehaviour
         CanvasRoot tempRoot = new CanvasRoot();
         tempRoot.overlayLayerRoot = overlayRoot;
         //tempRoot.popupLayerRoot = popupLayerRoot;
-        uiManager.SceneChanged(tempRoot, default, default);
+        uiManager.SceneChanged(tempRoot, default, default, default);
 
         OpenUIView();
         SetupCanvasChilds();

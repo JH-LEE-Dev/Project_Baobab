@@ -25,6 +25,11 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Header("Default Visual")]
     [SerializeField] private Sprite defaultPictureSprite;
 
+    [Header("VFX Settings")]
+    [SerializeField] private VFXComponent vfxComponent;
+    [SerializeField] private string effectLayerTag = "HUD";
+    [SerializeField] private string levelUpImpactTag = "LevelUpEffect";
+
     [Header("Motion Settings")]
     [SerializeField] private ObjectMotionPlayer motionPlayer;
     [SerializeField] private string hoverMotionTag = "UIHover";
@@ -65,6 +70,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
+        vfxComponent = GetComponentInChildren<VFXComponent>(true);
+
+        if (null != motionPlayer)
+            motionPlayer.Initialize();
+
+        if (null != vfxComponent)
+            vfxComponent.Initialize();
     }
 
     private void OnEnable()
@@ -284,8 +296,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     // 특성 찍기에 성공했을 때 노드 이펙트를 재생하는 자리.
     private void PlayApprovedNodeEffect(Color _nodeFrameColor)
     {
-        
-        
+        if (vfxComponent == null)
+            return;
+
+        ParticleSystem currVFX = vfxComponent.Get(levelUpImpactTag);
+        if (null != currVFX)
+        {
+            vfxComponent.SetStartColor(currVFX, _nodeFrameColor);
+            vfxComponent.SetSortingSettings(currVFX, effectLayerTag, 2);
+            vfxComponent.Play(currVFX, transform.position, Quaternion.identity, transform);
+        }
     }
 
     public void PlayRejectedRequestMotion()
