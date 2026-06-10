@@ -66,6 +66,8 @@ public class CharacterVisualComponent : MonoBehaviour
         vfxComponent = GetComponent<VFXComponent>();
         characterAnimator = GetComponent<CharacterAnimator>();
 
+        vfxComponent.Initialize();
+
         if (characterAnimator != null)
         {
             characterAnimator.Initialize(vfxComponent);
