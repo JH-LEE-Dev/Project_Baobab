@@ -81,4 +81,22 @@ public static class LocKeys
         public const int mapName5 = 2097158;
     }
 
+    public static class ResultUI
+    {
+        public const int resultTitle = 6291457;
+        public const int treeKillCountZero = 6291458;
+        public const int treeKillCountLow = 6291459;
+        public const int treeKillCountMiddle = 6291460;
+        public const int treeKillCountHigh = 6291461;
+        public const int acquiredLogsHeader = 6291462;
+        public const int emptyAcquiredLogs = 6291463;
+        public const int containerStateHeader = 6291464;
+    }
+
+    public static class WarningUI
+    {
+        public const int mainText = 8388609;
+        public const int subText = 8388610;
+    }
+
 }
