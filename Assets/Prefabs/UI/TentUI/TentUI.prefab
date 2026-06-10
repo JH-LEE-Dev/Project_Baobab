@@ -131,6 +131,7 @@ MonoBehaviour:
   bCloseableByESC: 1
   bWorld: 0
   bOverlay: 0
+  bPPUI: 0
   uiRoot: {fileID: 6246783744957109956}
   abilityUIComponent: {fileID: 3966334113652107173}
   moneyPivot: {fileID: 1186389941642898093}

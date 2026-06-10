@@ -28,17 +28,17 @@ public class GameplayUIInstaller : MonoBehaviour
 
     [Header("UI Canvas/CanvasRoot Objects")]
     [SerializeField] private CanvasRoot canvasRootPrefab;
-    //[SerializeField] private CanvasRoot ppCanvasRootPrefab;
+    [SerializeField] private CanvasRoot ppCanvasRootPrefab;
     [SerializeField] private CanvasRoot worldCanvasRootPrefab;
     [SerializeField] private CanvasRoot overlayCanvasRootPrefab;
     [SerializeField] private Canvas canvasPrefab;
     [SerializeField] private Canvas worldCanvasPrefab;
-    //[SerializeField] private Canvas ppCanvasPrefab;
+    [SerializeField] private Canvas ppCanvasPrefab;
     [SerializeField] private Canvas overlayCanvasPrefab;
 
     //Gameplay Scene
     private Canvas canvas;
-    //private Canvas ppCanvas;
+    private Canvas ppCanvas;
     private Canvas worldCanvas;
     private Canvas overlayCanvas;
 
@@ -106,8 +106,12 @@ public class GameplayUIInstaller : MonoBehaviour
 
         Transform overlayCanvasRoot = Instantiate(overlayCanvasRootPrefab.overlayLayerRoot, overlayCanvas.transform);
 
+        Transform ppCanvasOverlayRoot = Instantiate(ppCanvasRootPrefab.overlayLayerRoot, ppCanvas.transform);
+
         SetAnchorToCanvas(overlayRoot);
         SetAnchorToCanvas(overlayCanvasRoot);
+        SetAnchorToCanvas(ppCanvasOverlayRoot);
+
 
         CanvasRoot tempRoot = new CanvasRoot();
         tempRoot.overlayLayerRoot = overlayRoot;
@@ -118,7 +122,10 @@ public class GameplayUIInstaller : MonoBehaviour
         CanvasRoot canvasRoot = new CanvasRoot();
         canvasRoot.overlayLayerRoot = overlayCanvasRoot;
 
-        uiManager.SceneChanged(tempRoot, worldTempRoot, canvasRoot);
+        CanvasRoot ppCanvasRoot = new CanvasRoot();
+        ppCanvasRoot.overlayLayerRoot = ppCanvasOverlayRoot;
+
+        uiManager.SceneChanged(tempRoot, worldTempRoot, canvasRoot, ppCanvasRoot);
 
         OpenUIView();
     }
@@ -131,6 +138,8 @@ public class GameplayUIInstaller : MonoBehaviour
             worldCanvas = Instantiate(worldCanvasPrefab, transform);
         if(overlayCanvas == null)
             overlayCanvas = Instantiate(overlayCanvasPrefab, transform);
+        if (ppCanvas == null)
+            ppCanvas = Instantiate(ppCanvasPrefab, transform);
 
         var canvasEnabler = canvas.GetComponent<CanvasEnabler>();
         if (canvasEnabler != null)
