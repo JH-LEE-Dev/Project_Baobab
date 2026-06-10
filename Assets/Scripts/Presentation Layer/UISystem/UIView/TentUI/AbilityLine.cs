@@ -7,6 +7,16 @@ public class AbilityLine : MonoBehaviour
     [SerializeField] private RectTransform rootRectTransform;
     [SerializeField] private Image lineImage;
 
+    private void Awake()
+    {
+        DisableRaycastTarget();
+    }
+
+    private void OnEnable()
+    {
+        DisableRaycastTarget();
+    }
+
     // 라인 스프라이트와 배치 좌표를 적용한다.
     public void Setup(Sprite _sprite, Vector2 _anchoredPosition)
     {
@@ -20,6 +30,7 @@ public class AbilityLine : MonoBehaviour
 
         if (lineImage != null)
         {
+            lineImage.raycastTarget = false;
             lineImage.sprite = _sprite;
             lineImage.color = _color;
             lineImage.SetNativeSize();
@@ -49,6 +60,7 @@ public class AbilityLine : MonoBehaviour
 
         if (lineImage != null)
         {
+            lineImage.raycastTarget = false;
             lineImage.sprite = _sprite;
             lineImage.color = _color;
             lineImage.SetNativeSize();
@@ -90,6 +102,7 @@ public class AbilityLine : MonoBehaviour
 
         if (lineImage != null)
         {
+            lineImage.raycastTarget = false;
             lineImage.sprite = _sprite;
             lineImage.color = _color;
             lineImage.SetNativeSize();
@@ -132,6 +145,7 @@ public class AbilityLine : MonoBehaviour
         if (lineImage == null)
             return;
 
+        lineImage.raycastTarget = false;
         RectTransform lineRect = lineImage.rectTransform;
         lineRect.anchorMin = new Vector2(0.5f, 0.5f);
         lineRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -159,5 +173,11 @@ public class AbilityLine : MonoBehaviour
     {
         if (rootRectTransform != null)
             rootRectTransform.SetAsLastSibling();
+    }
+
+    private void DisableRaycastTarget()
+    {
+        if (lineImage != null)
+            lineImage.raycastTarget = false;
     }
 }
