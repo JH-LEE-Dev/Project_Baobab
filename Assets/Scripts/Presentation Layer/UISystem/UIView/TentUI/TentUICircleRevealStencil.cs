@@ -7,8 +7,8 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Graphic))]
 public sealed class TentUICircleRevealStencil : UIBehaviour, IMaterialModifier
 {
-    private const int StencilId = 8;
-    private const int StencilMask = 8;
+    private const int StencilId = 64;
+    private const int StencilMask = 64;
 
     private enum StencilRole
     {
