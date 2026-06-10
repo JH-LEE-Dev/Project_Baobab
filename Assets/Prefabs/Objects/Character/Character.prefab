@@ -1736,7 +1736,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   vfxPoolDataList:
   - vfxTag: Dust
-    effectPrefab: {fileID: 5748764238649717206, guid: 148ac2aa5876c3d43b0cd707d003b8c9, type: 3}
+    effectPrefab: {fileID: 2164660391435094963, guid: f1dbff2c09d037a48b1cc41a85157b5c, type: 3}
     initialPoolSize: 10
     allowDynamicExpansion: 0
     maxPoolSize: 20
