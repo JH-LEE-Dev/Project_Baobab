@@ -21,8 +21,12 @@ public class UIView_Result : UIView
     [SerializeField] private Transform resultLogRowPivot;
     [SerializeField] private TMP_Text emptyLogText;
     [SerializeField] private List<UI_ResultLogRow> resultLogRows = new List<UI_ResultLogRow>(2);
+    [SerializeField] private GameObject inventorySlotPrefab;
+    [SerializeField] private Transform containerSlotBackground;
+    [SerializeField] private float containerTopY = -15f;
 
     private int[] startOffroadLogCounts;
+    private readonly List<UI_InventorySlot> containerSlots = new List<UI_InventorySlot>();
 
     #region Public Override Methods
 
@@ -153,6 +157,9 @@ public class UIView_Result : UIView
             if (emptyText != null)
                 emptyLogText = emptyText.GetComponent<TMP_Text>();
         }
+
+        if (containerSlotBackground == null)
+            containerSlotBackground = FindChildRecursive(transform, "SlotBackground");
     }
 
     private void InitializeResultLogRows()
@@ -171,6 +178,7 @@ public class UIView_Result : UIView
     {
         RefreshTreeKillCount();
         RefreshAcquiredLogs();
+        RefreshContainerSlots();
     }
 
     private void RefreshTreeKillCount()
@@ -302,6 +310,68 @@ public class UIView_Result : UIView
             x = (index - ((count - 1) * 0.5f)) * 24f;
 
         rectTransform.anchoredPosition = new Vector2(x, rectTransform.anchoredPosition.y);
+    }
+
+    private void RefreshContainerSlots()
+    {
+        if (offroadContainer == null || offroadContainer.inventorySlots == null)
+            return;
+
+        EnsureContainerSlotCount(offroadContainer.inventorySlots.Count);
+
+        IReadOnlyList<IInventorySlot> slots = offroadContainer.inventorySlots;
+        int activeSlotCount = offroadContainer.currentSlotCnt;
+
+        for (int i = 0; i < containerSlots.Count; i++)
+        {
+            UI_InventorySlot slotUI = containerSlots[i];
+            if (slotUI == null)
+                continue;
+
+            bool isActive = i < activeSlotCount;
+            slotUI.gameObject.SetActive(isActive);
+
+            if (isActive && i < slots.Count)
+                slotUI.UpdateBindSlotData(slots[i], offroadContainer.maxItemCntPerSlot);
+        }
+
+        ApplyContainerSlotLayout(activeSlotCount);
+    }
+
+    private void EnsureContainerSlotCount(int count)
+    {
+        if (containerSlotBackground == null || inventorySlotPrefab == null)
+            return;
+
+        while (containerSlots.Count < count)
+        {
+            GameObject slotObject = Instantiate(inventorySlotPrefab, containerSlotBackground);
+            UI_InventorySlot slot = slotObject.GetComponent<UI_InventorySlot>();
+
+            if (slot == null)
+                return;
+
+            slot.Initialize();
+            slot.DisableRayCast();
+            containerSlots.Add(slot);
+        }
+    }
+
+    private void ApplyContainerSlotLayout(int activeSlotCount)
+    {
+        if (containerSlotBackground == null)
+            return;
+
+        GridLayoutGroup gridLayout = containerSlotBackground.GetComponent<GridLayoutGroup>();
+        RectTransform backgroundRect = containerSlotBackground as RectTransform;
+        RectTransform rootRect = containerSlotBackground.parent as RectTransform;
+
+        if (gridLayout == null || backgroundRect == null || rootRect == null)
+            return;
+
+        gridLayout.constraint = GridLayoutGroup.Constraint.Flexible;
+
+        rootRect.anchoredPosition = new Vector2(0f, Mathf.Round(containerTopY));
     }
 
     private Transform FindChildRecursive(Transform root, string childName)
