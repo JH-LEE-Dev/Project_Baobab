@@ -11,6 +11,7 @@ public class CharacterVisualComponent : MonoBehaviour
     private SpriteRenderer onWaterSR;
     private SpriteRenderer shadowSR;
     private Shadow shadowObject;
+    private VFXComponent vfxComponent;
 
     [SerializeField] private GameObject faceObject;
     [SerializeField] private GameObject faceObjectBlink;
@@ -61,10 +62,13 @@ public class CharacterVisualComponent : MonoBehaviour
     public void Initialize(IEnvironmentProvider _environmentProvider, GameObject _onWaterAnimatorObject, Shadow _shadowObject,
         CustomSortable _customSortable)
     {
+        
+        vfxComponent = GetComponent<VFXComponent>();
         characterAnimator = GetComponent<CharacterAnimator>();
+
         if (characterAnimator != null)
         {
-            characterAnimator.Initialize();
+            characterAnimator.Initialize(vfxComponent);
         }
         
         environmentProvider = _environmentProvider;

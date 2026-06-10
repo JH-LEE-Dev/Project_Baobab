@@ -102,8 +102,12 @@ public class CharacterAnimator : MonoBehaviour
 
     #region Public Methods
 
-    public void Initialize()
+    private VFXComponent vfxComponent;
+
+    public void Initialize(VFXComponent _vfxComponent)
     {
+        vfxComponent = _vfxComponent;
+
         frameTimer = 0f;
         currentFrameIndex = 0;
         isDeadStartFinished = false;
@@ -226,6 +230,10 @@ public class CharacterAnimator : MonoBehaviour
                 else
                 {
                     currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
+                    if (_isMoving && vfxComponent != null)
+                    {
+                        vfxComponent.Play("Dust", transform.position, Quaternion.identity);
+                    }
                 }
             }
 
