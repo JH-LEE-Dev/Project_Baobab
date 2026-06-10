@@ -178,14 +178,19 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         seed = UnityEngine.Random.Range(1, 100000);
     }
 
-    public void GenerateMap()
+    public void ReleaseAllAnimatedObj()
     {
-        if (groundTilemap == null || collisionTilemap == null || decoTilemap == null) return;
-
         if (animatedObjGenerator != null)
         {
             animatedObjGenerator.ReleaseAllActive();
         }
+    }
+
+    public void GenerateMap()
+    {
+        if (groundTilemap == null || collisionTilemap == null || decoTilemap == null) return;
+
+        ReleaseAllAnimatedObj();
 
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();

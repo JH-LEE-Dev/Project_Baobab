@@ -184,6 +184,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void TownStarted(TownStartedSignal _townStartedSignal)
     {
+        tileMapGenerator.ReleaseAllAnimatedObj();
         environmentObjManager.ReleaseAllObjs();
         environmentObjManager.SpawnTownEnvironmentObjs();
     }
