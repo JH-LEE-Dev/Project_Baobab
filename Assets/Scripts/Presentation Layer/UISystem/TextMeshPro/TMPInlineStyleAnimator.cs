@@ -43,6 +43,13 @@ namespace PresentationLayer.UISystem
         [SerializeField] private float waveFrequency = 5.0f;
         [SerializeField] private float waveCharacterOffset = 0.45f;
 
+        [Header("Reveal Bounce")]
+        [SerializeField] private float revealTotalDuration = 0.3f;
+        [SerializeField] private float revealCharacterDuration = 0.1f;
+        [SerializeField] private Vector2 revealStartScale = new Vector2(1.08f, 0.68f);
+        [SerializeField] private AnimationCurve revealScaleCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [SerializeField] private AnimationCurve revealAlphaCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+
         private readonly List<CharacterStyle> characterStyles = new List<CharacterStyle>(128);
         private readonly Stack<ColorStyle> colorStack = new Stack<ColorStyle>(4);
         private readonly StringBuilder cleanTextBuilder = new StringBuilder(128);
@@ -50,12 +57,47 @@ namespace PresentationLayer.UISystem
         private ITextPreprocessor previousTextPreprocessor;
         private bool hasAnyStyle;
         private bool hasAnimatedStyle;
+        private bool isRevealPlaying;
+        private float revealStartTime;
+        private int revealCharacterCount;
 
         public string PreprocessText(string _text)
         {
             string source = previousTextPreprocessor != null ? previousTextPreprocessor.PreprocessText(_text) : _text;
             ParseSourceText(source ?? string.Empty);
             return cleanTextBuilder.ToString();
+        }
+
+        public void PlayRevealBounce()
+        {
+            if (Application.isPlaying == false)
+                return;
+
+            BindReferencesIfNeeded();
+
+            if (tmpText == null)
+                return;
+
+            tmpText.ForceMeshUpdate(false, true);
+            revealCharacterCount = Mathf.Max(0, tmpText.textInfo.characterCount);
+
+            if (revealCharacterCount == 0)
+                return;
+
+            isRevealPlaying = true;
+            revealStartTime = Time.time;
+            tmpText.SetVerticesDirty();
+        }
+
+        public void StopRevealBounce(bool showImmediately = true)
+        {
+            isRevealPlaying = false;
+
+            if (tmpText == null)
+                return;
+
+            if (showImmediately)
+                tmpText.SetVerticesDirty();
         }
 
         private void Awake()
@@ -101,11 +143,14 @@ namespace PresentationLayer.UISystem
 
         private void Update()
         {
-            if (hasAnimatedStyle == false || tmpText == null)
+            if ((hasAnimatedStyle == false && isRevealPlaying == false) || tmpText == null)
                 return;
 
             if (Application.isPlaying == false && animateInEditMode == false)
                 return;
+
+            if (isRevealPlaying && IsRevealComplete())
+                isRevealPlaying = false;
 
             tmpText.ForceMeshUpdate(false, false);
 
@@ -276,15 +321,14 @@ namespace PresentationLayer.UISystem
 
         private void HandlePreRenderText(TMP_TextInfo _textInfo)
         {
-            if (hasAnyStyle == false || _textInfo == null)
+            if (hasAnyStyle == false && isRevealPlaying == false || _textInfo == null)
                 return;
 
             float time = Application.isPlaying ? Time.time : Time.realtimeSinceStartup;
 
             for (int i = 0; i < _textInfo.characterCount; i++)
             {
-                if (i >= characterStyles.Count)
-                    return;
+                bool hasStyle = i < characterStyles.Count;
 
                 TMP_CharacterInfo characterInfo = _textInfo.characterInfo[i];
                 if (characterInfo.isVisible == false)
@@ -299,18 +343,80 @@ namespace PresentationLayer.UISystem
                 if (meshInfo.vertices == null || meshInfo.colors32 == null || vertexIndex + 3 >= meshInfo.vertices.Length)
                     continue;
 
-                CharacterStyle style = characterStyles[i];
-                Vector3 offset = GetCharacterOffset(i, time, style);
-                Color32 color = GetCharacterColor(time, style);
+                CharacterStyle style = hasStyle ? characterStyles[i] : default;
+                Vector3 offset = hasStyle ? GetCharacterOffset(i, time, style) : Vector3.zero;
+                Color32 color = hasStyle ? GetCharacterColor(time, style) : Color.white;
 
                 for (int j = 0; j < 4; j++)
                 {
                     meshInfo.vertices[vertexIndex + j] += offset;
 
-                    if (style.colorStyle.enabled)
+                    if (hasStyle && style.colorStyle.enabled)
                         meshInfo.colors32[vertexIndex + j] = color;
                 }
+
+                if (isRevealPlaying)
+                    ApplyRevealBounce(_textInfo, characterInfo, meshInfo, vertexIndex, i, time);
             }
+        }
+
+        private void ApplyRevealBounce(TMP_TextInfo textInfo, TMP_CharacterInfo characterInfo, TMP_MeshInfo meshInfo, int vertexIndex, int characterIndex, float time)
+        {
+            float characterStartTime = revealStartTime + GetRevealInterval() * characterIndex;
+            float elapsed = time - characterStartTime;
+
+            if (elapsed < 0f)
+            {
+                SetCharacterAlpha(meshInfo, vertexIndex, 0f);
+                return;
+            }
+
+            float progress = revealCharacterDuration <= 0f ? 1f : Mathf.Clamp01(elapsed / revealCharacterDuration);
+            float scaleProgress = Mathf.Clamp01(revealScaleCurve.Evaluate(progress));
+            float alphaProgress = Mathf.Clamp01(revealAlphaCurve.Evaluate(progress));
+            Vector2 scale = Vector2.Lerp(revealStartScale, Vector2.one, scaleProgress);
+
+            Vector3 center = (characterInfo.bottomLeft + characterInfo.topRight) * 0.5f;
+            for (int i = 0; i < 4; i++)
+            {
+                int currentVertexIndex = vertexIndex + i;
+                Vector3 vertex = meshInfo.vertices[currentVertexIndex];
+                vertex -= center;
+                vertex.x *= scale.x;
+                vertex.y *= scale.y;
+                meshInfo.vertices[currentVertexIndex] = vertex + center;
+            }
+
+            SetCharacterAlpha(meshInfo, vertexIndex, alphaProgress);
+        }
+
+        private void SetCharacterAlpha(TMP_MeshInfo meshInfo, int vertexIndex, float alpha)
+        {
+            byte alphaByte = (byte)Mathf.RoundToInt(Mathf.Clamp01(alpha) * 255f);
+
+            for (int i = 0; i < 4; i++)
+            {
+                Color32 color = meshInfo.colors32[vertexIndex + i];
+                color.a = alphaByte;
+                meshInfo.colors32[vertexIndex + i] = color;
+            }
+        }
+
+        private bool IsRevealComplete()
+        {
+            if (revealCharacterCount <= 0)
+                return true;
+
+            float lastCharacterStartTime = revealStartTime + GetRevealInterval() * (revealCharacterCount - 1);
+            return Time.time >= lastCharacterStartTime + revealCharacterDuration;
+        }
+
+        private float GetRevealInterval()
+        {
+            if (revealCharacterCount <= 0 || revealTotalDuration <= 0f)
+                return 0f;
+
+            return revealTotalDuration / revealCharacterCount;
         }
 
         private Vector3 GetCharacterOffset(int _characterIndex, float _time, CharacterStyle _style)

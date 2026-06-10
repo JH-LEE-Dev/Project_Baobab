@@ -1,0 +1,69 @@
+{
+  "jsonId": 3,
+  "entries": [
+    {
+      "id": 1,
+      "key": "resultTitle",
+      "kr": "<COLOR=7EEDBE,EDD87E><Wave>원정 완료</Wave></COLOR>",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 2,
+      "key": "treeKillCountZero",
+      "kr": "<COLOR=FF833D>나무</COLOR>들이 오늘은 무사했어!",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 3,
+      "key": "treeKillCountLow",
+      "kr": "<COLOR=54D86A>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했어",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 4,
+      "key": "treeKillCountMiddle",
+      "kr": "<COLOR=58D7F2>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했어!",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 5,
+      "key": "treeKillCountHigh",
+      "kr": "<COLOR=7EEDBE,EDD87E>{0}</COLOR>그루의 <COLOR=FF833D>나무</COLOR>를 벌목했어!!",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 6,
+      "key": "acquiredLogsHeader",
+      "kr": "이번 원정에서 획득한 원목",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 7,
+      "key": "emptyAcquiredLogs",
+      "kr": "<COLOR=FF833D><Wave>없음</Wave></COLOR>",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 8,
+      "key": "containerStateHeader",
+      "kr": "운반 상자 상태",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    }
+  ]
+}
