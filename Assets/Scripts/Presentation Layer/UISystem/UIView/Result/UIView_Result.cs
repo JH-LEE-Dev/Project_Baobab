@@ -16,7 +16,11 @@ public class UIView_Result : UIView
         public TreeTypeCount[] treeTypeCounts { get; private set; }
         public bool HasChanged { get; private set; }
 
-        public event Action SlotUpdatedEvent;
+        event Action IInventorySlot.SlotUpdatedEvent
+        {
+            add { }
+            remove { }
+        }
 
         public DisplayInventorySlot()
         {
