@@ -20,6 +20,7 @@ public class GameInstaller : MonoBehaviour
     private SkillManager skillManager;
     private OffroadContainer offroadContainer;
     private SkyCameraProductionManager skyCameraProductionManager;
+    private InDungeonResultManager inDungeonResultManager;
 
     //시스템 객체들
     private UnitSystem unitSystem;
@@ -55,7 +56,9 @@ public class GameInstaller : MonoBehaviour
         skillDispatcher = GetComponentInChildren<SkillDispatcher>();
         offroadContainer = GetComponentInChildren<OffroadContainer>();
         skyCameraProductionManager = GetComponentInChildren<SkyCameraProductionManager>();
+        inDungeonResultManager = GetComponentInChildren<InDungeonResultManager>();
 
+        inDungeonResultManager.Initialize();
         skyCameraProductionManager.Initialize();
         unitLogicManager.Initialize(inputManager);
         environmentSystem.Initialize(signalHub, unitLogicManager);
@@ -66,7 +69,7 @@ public class GameInstaller : MonoBehaviour
         offroadContainer.Initialize(inventoryManager, inputManager);
         townSystem.Initialize(signalHub, environmentSystem, inputManager, inventoryManager, offroadContainer, skyCameraProductionManager);
         inDungeonSystem.Initialize(signalHub, environmentSystem, inventoryManager, inputManager, inventoryManager, offroadContainer
-        , skyCameraProductionManager);
+        , skyCameraProductionManager, inDungeonResultManager);
         skillManager.Initialize(inventoryManager);
         gameplayUIInstaller.Initialize(bootStrapProvider, signalHub, inputManager, inventoryManager, inDungeonSystem.inDungeonObjectManager,
         townSystem.logProcessingManager.logContainer, townSystem.logProcessingManager.logCutter, skillManager, townSystem.logProcessingManager.shopNPC,

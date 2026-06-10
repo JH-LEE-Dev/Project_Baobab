@@ -27,7 +27,8 @@ public class InDungeonSystem : MonoBehaviour
     private MapType selectedMapType;
     private ForestType selectedForestType;
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
-    InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
+    InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager,
+    InDungeonResultManager _inDungeonResultManager)
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
@@ -35,6 +36,7 @@ public class InDungeonSystem : MonoBehaviour
         characterInventory = _characterInventory;
         offroadContainer = _offroadContainer;
         skyCameraProductionManager = _skyCameraProductionManager;
+        inDungeonResultManager = _inDungeonResultManager;
 
         inDungeonObjectManager = GetComponentInChildren<InDungeonObjectManager>();
         inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory, offroadContainer,
@@ -48,9 +50,6 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonProductionManager = GetComponentInChildren<InDungeonProductionManager>();
         inDungeonProductionManager.Initialize(inputManager, _skyCameraProductionManager);
-
-        inDungeonResultManager = GetComponentInChildren<InDungeonResultManager>();
-        inDungeonResultManager.Initialize();
 
         BindEvents();
         SubscribeSignals();
@@ -67,7 +66,7 @@ public class InDungeonSystem : MonoBehaviour
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
         inDungeonResultManager.Reset();
-        
+
         currentMapType = _sceneChangeData.mapType;
         currentForestType = _sceneChangeData.forestType;
 

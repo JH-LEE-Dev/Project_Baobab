@@ -112,9 +112,6 @@ public class TownProductionManager : MonoBehaviour
         Vector3 startScale = character.transform.localScale;
 
         character.transform.position = characterRidePoint.position;
-        character.SetFacingDirection(characterRidePoint.position - startPos);
-        character.transform.localScale = startScale; // 다음 탑승 및 평소 상태를 위해 스케일 원상 복구
-        character.SetHeight(0f);
         character.gameObject.SetActive(false);
 
         character.EnableShadow();
@@ -135,6 +132,8 @@ public class TownProductionManager : MonoBehaviour
 
     private void DriveEnd()
     {
+        character.SetFacingDirection(Vector2.down);
+        character.ResetStatus();
         character.col.enabled = true;
         bCanGetOff = true;
         OffroadDriveEndEvent?.Invoke();
