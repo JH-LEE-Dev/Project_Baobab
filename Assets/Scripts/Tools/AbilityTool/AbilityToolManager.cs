@@ -1485,12 +1485,21 @@ public class AbilityToolManager : MonoBehaviour
         private readonly List<LocalizationEntry> entries = new List<LocalizationEntry>();
         private readonly Dictionary<int, int> indexById = new Dictionary<int, int>();
         private readonly Dictionary<string, int> idByKey = new Dictionary<string, int>();
+        private readonly Dictionary<string, int> idByEnum = new Dictionary<string, int>();
         private int nextId = 1;
 
         public void AddOrUpdate(LocalizationEntry _entry)
         {
             if (_entry.id <= 0)
                 return;
+
+            string enumLookupKey = BuildEnumLookupKey(_entry.enumType, _entry.enumValue);
+            if (string.IsNullOrEmpty(enumLookupKey) == false &&
+                idByEnum.TryGetValue(enumLookupKey, out int existingEnumId) &&
+                existingEnumId != _entry.id)
+            {
+                return;
+            }
 
             if (indexById.TryGetValue(_entry.id, out int index))
             {
@@ -1504,6 +1513,9 @@ public class AbilityToolManager : MonoBehaviour
 
             if (string.IsNullOrEmpty(_entry.key) == false)
                 idByKey[_entry.key] = _entry.id;
+
+            if (string.IsNullOrEmpty(enumLookupKey) == false)
+                idByEnum[enumLookupKey] = _entry.id;
         }
 
         public void EnsureNextId()
@@ -1532,13 +1544,16 @@ public class AbilityToolManager : MonoBehaviour
 
         public int GetOrCreateEnum(string _key, string _enumType, string _enumValue)
         {
-            int id = ResolveExistingId(0, _key);
+            int id = ResolveExistingEnumId(_enumType, _enumValue);
+            if (id <= 0)
+                id = ResolveExistingId(0, _key);
             if (id <= 0)
                 id = ResolveNewId(0);
 
             LocalizationEntry entry = GetEntryOrDefault(id);
             entry.id = id;
-            entry.key = _key;
+            if (string.IsNullOrEmpty(entry.key))
+                entry.key = _key;
             entry.kr = entry.kr ?? string.Empty;
             entry.en = entry.en ?? string.Empty;
             entry.enumType = _enumType ?? string.Empty;
@@ -1567,6 +1582,18 @@ public class AbilityToolManager : MonoBehaviour
             return 0;
         }
 
+        private int ResolveExistingEnumId(string _enumType, string _enumValue)
+        {
+            string enumLookupKey = BuildEnumLookupKey(_enumType, _enumValue);
+            if (string.IsNullOrEmpty(enumLookupKey) == false &&
+                idByEnum.TryGetValue(enumLookupKey, out int idByExistingEnum))
+            {
+                return idByExistingEnum;
+            }
+
+            return 0;
+        }
+
         private int ResolveNewId(int _preferredId)
         {
             if (_preferredId > 0 && indexById.ContainsKey(_preferredId) == false)
@@ -1576,6 +1603,14 @@ public class AbilityToolManager : MonoBehaviour
                 nextId++;
 
             return nextId++;
+        }
+
+        private string BuildEnumLookupKey(string _enumType, string _enumValue)
+        {
+            if (string.IsNullOrWhiteSpace(_enumType) || string.IsNullOrWhiteSpace(_enumValue))
+                return string.Empty;
+
+            return _enumType.Trim() + ":" + _enumValue.Trim().ToLowerInvariant();
         }
 
         private LocalizationEntry GetEntryOrDefault(int _id)

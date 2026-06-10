@@ -528,14 +528,6 @@
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "WoodenTransportBox"
-        },
-        {
-            "id": 9123,
-            "key": "AbilityDescription_logCapacityIncrease",
-            "kr": "",
-            "en": "",
-            "enumType": "SkillCommandType",
-            "enumValue": "logCapacityIncrease"
         }
     ]
 }
