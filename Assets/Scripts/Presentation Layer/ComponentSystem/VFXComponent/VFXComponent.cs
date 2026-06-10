@@ -138,14 +138,25 @@ public class VFXComponent : MonoBehaviour
         if (null == _effect)
             return null;
 
+        Play(_effect, _position, _rotation, _parent);
+
+        return _effect;
+    }
+
+    /// <summary>
+    /// 이미 가져온 특정 이펙트 인스턴스의 부모, 위치, 회전값을 설정하고 즉시 재생합니다.
+    /// </summary>
+    public void Play(ParticleSystem _effect, Vector3 _position, Quaternion _rotation, Transform _parent = null)
+    {
+        if (null == _effect)
+            return;
+
         _effect.transform.SetParent(_parent);
         _effect.transform.position = _position;
         _effect.transform.rotation = _rotation;
 
         _effect.gameObject.SetActive(true);
         _effect.Play(true);
-
-        return _effect;
     }
 
     /// <summary>
