@@ -686,10 +686,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         inputManager.PauseMove(true);
         inputManager.PauseInteractKey(true);
 
-        DropAllItemEvent?.Invoke();
-
         if (inventoryChecker.bInventoryIsEmpty == false)
+        {
+            DropAllItemEvent?.Invoke();
             StartCoroutine(GameEndRoutine());
+        }
         else
             RideOffroadEvent?.Invoke();
     }
