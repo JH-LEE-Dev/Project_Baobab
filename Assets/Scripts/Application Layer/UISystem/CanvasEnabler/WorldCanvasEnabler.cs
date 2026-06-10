@@ -9,8 +9,8 @@ public class WorldCanvasEnabler : MonoBehaviour
         if(canvas != null)
         {
             canvas.renderMode = RenderMode.WorldSpace;
-            canvas.worldCamera = Camera.main;
-            canvas.sortingLayerName = "HUD";
+            canvas.worldCamera = CameraFinder.Instance.PPMainCamera;
+            canvas.sortingLayerName = "WorldUI";
         }
     }
 }

@@ -3,13 +3,20 @@ using UnityEngine;
 public class CanvasEnabler : MonoBehaviour
 {
     [SerializeField] private Canvas canvas;
+    public bool bPPUI = false;
 
     public void Initialize()
     {
-        if(canvas != null)
+        if (canvas != null)
         {
             canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = Camera.main;
+
+            if (bPPUI == false)
+                canvas.worldCamera = CameraFinder.Instance.OverlayCamera;
+            // else
+            //     canvas.worldCamera = CameraFinder.Instance.PPUiCamera;
+
+            canvas.sortingLayerName = "HUD";
         }
     }
 }

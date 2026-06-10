@@ -80,6 +80,9 @@ TagManager:
   - name: Portal
     uniqueID: 3143900641
     locked: 0
+  - name: WorldUI
+    uniqueID: 1512379437
+    locked: 0
   - name: HUD
     uniqueID: 962808927
     locked: 0

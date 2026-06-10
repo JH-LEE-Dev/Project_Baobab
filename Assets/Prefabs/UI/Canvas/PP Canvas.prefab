@@ -116,3 +116,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CanvasEnabler
   canvas: {fileID: 5983813252923583599}
+  bPPUI: 1
