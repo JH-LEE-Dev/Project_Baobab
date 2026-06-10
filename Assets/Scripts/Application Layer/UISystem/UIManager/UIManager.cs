@@ -18,6 +18,11 @@ public class UIManager : MonoBehaviour
     protected Transform overlayOverlayLayerRoot;
     protected Transform overlayTooltipLayerRoot;
 
+    protected Transform ppPopupLayerRoot;
+    protected Transform ppOverlayLayerRoot;
+    protected Transform ppTooltipLayerRoot;
+
+    protected Canvas ppCanvas;
 
     [Header("UIView Prefab")]
     [SerializeField] private List<UIView> viewPrefabs = new List<UIView>();
@@ -26,7 +31,7 @@ public class UIManager : MonoBehaviour
 
     private Dictionary<Type, UIView> instanceByType = new Dictionary<Type, UIView>();
 
-    public void SceneChanged(CanvasRoot canvasRoot, CanvasRoot worldCanvasRoot, CanvasRoot overlayCanvasRoot)
+    public void SceneChanged(CanvasRoot canvasRoot, CanvasRoot worldCanvasRoot, CanvasRoot overlayCanvasRoot,CanvasRoot ppCanvasRoot)
     {
         CloseAll();
 
@@ -41,6 +46,16 @@ public class UIManager : MonoBehaviour
         overlayPopupLayerRoot = overlayCanvasRoot.popupLayerRoot;
         overlayOverlayLayerRoot = overlayCanvasRoot.overlayLayerRoot;
         overlayTooltipLayerRoot = overlayCanvasRoot.tooltipLayerRoot;
+
+        ppPopupLayerRoot = ppCanvasRoot.popupLayerRoot;
+        ppOverlayLayerRoot = ppCanvasRoot.overlayLayerRoot;
+        ppTooltipLayerRoot = ppCanvasRoot.tooltipLayerRoot;
+    }
+
+    public void DI(Canvas _ppCanvas)
+    {
+        ppCanvas = _ppCanvas;
+        viewCtx.DI(ppCanvas);
     }
 
     public void Initialize(InputManager _inputManager, LocalizationManager _localizeManager, UIDepthController _depthController)
@@ -121,7 +136,7 @@ public class UIManager : MonoBehaviour
             return null;
         }
 
-        Transform parent = GetLayerRoot(prefab.Layer, prefab.bWorld, prefab.bOverlay);
+        Transform parent = GetLayerRoot(prefab.Layer, prefab.bWorld, prefab.bOverlay, prefab.bPPUI);
 
         UIView instance = Instantiate(prefab, parent);
         instance.gameObject.name = $"{prefab.gameObject.name}_Instance";
@@ -132,8 +147,19 @@ public class UIManager : MonoBehaviour
         return (T)instance;
     }
 
-    private Transform GetLayerRoot(UILayer _layer, bool _bWorld, bool _bOverlay)
+    private Transform GetLayerRoot(UILayer _layer, bool _bWorld, bool _bOverlay, bool _bPPUI)
     {
+        if (_bPPUI)
+        {
+            switch (_layer)
+            {
+                case UILayer.Popup: return ppPopupLayerRoot;
+                case UILayer.Overlay: return ppOverlayLayerRoot;
+                case UILayer.Tooltip: return ppTooltipLayerRoot;
+                default: return default;
+            }
+        }
+
         if (_bOverlay)
         {
             switch (_layer)

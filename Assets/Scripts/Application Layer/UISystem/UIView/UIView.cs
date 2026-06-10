@@ -10,7 +10,8 @@ public abstract class UIView : MonoBehaviour
     [SerializeField] private bool bCloseableByESC = false;
     public bool bWorld = false;
     public bool bOverlay = false;
-
+    public bool bPPUI = false;
+    
     public UILayer Layer => layer;
     public bool IsCloseableByESC => bCloseableByESC;
     public bool IsVisible => bVisible;
