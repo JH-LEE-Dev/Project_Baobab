@@ -28,17 +28,17 @@ public class GameplayUIInstaller : MonoBehaviour
 
     [Header("UI Canvas/CanvasRoot Objects")]
     [SerializeField] private CanvasRoot canvasRootPrefab;
-    [SerializeField] private CanvasRoot ppCanvasRootPrefab;
+    //[SerializeField] private CanvasRoot ppCanvasRootPrefab;
     [SerializeField] private CanvasRoot worldCanvasRootPrefab;
     [SerializeField] private CanvasRoot overlayCanvasRootPrefab;
     [SerializeField] private Canvas canvasPrefab;
     [SerializeField] private Canvas worldCanvasPrefab;
-    [SerializeField] private Canvas ppCanvasPrefab;
+    //[SerializeField] private Canvas ppCanvasPrefab;
     [SerializeField] private Canvas overlayCanvasPrefab;
 
     //Gameplay Scene
     private Canvas canvas;
-    private Canvas ppCanvas;
+    //private Canvas ppCanvas;
     private Canvas worldCanvas;
     private Canvas overlayCanvas;
 
@@ -104,11 +104,8 @@ public class GameplayUIInstaller : MonoBehaviour
 
         Transform worldOverlayRoot = Instantiate(worldCanvasRootPrefab.overlayLayerRoot, worldCanvas.transform);
 
-        Transform ppOverlayRoot = Instantiate(ppCanvasRootPrefab.overlayLayerRoot, ppCanvas.transform);
-
         Transform overlayCanvasRoot = Instantiate(overlayCanvasRootPrefab.overlayLayerRoot, overlayCanvas.transform);
 
-        SetAnchorToCanvas(ppOverlayRoot);
         SetAnchorToCanvas(overlayRoot);
         SetAnchorToCanvas(overlayCanvasRoot);
 
@@ -118,13 +115,10 @@ public class GameplayUIInstaller : MonoBehaviour
         CanvasRoot worldTempRoot = new CanvasRoot();
         worldTempRoot.overlayLayerRoot = worldOverlayRoot;
 
-        CanvasRoot ppTempRoot = new CanvasRoot();
-        ppTempRoot.overlayLayerRoot = ppOverlayRoot;
-
         CanvasRoot canvasRoot = new CanvasRoot();
         canvasRoot.overlayLayerRoot = overlayCanvasRoot;
 
-        uiManager.SceneChanged(tempRoot, worldTempRoot, ppTempRoot, canvasRoot);
+        uiManager.SceneChanged(tempRoot, worldTempRoot, canvasRoot);
 
         OpenUIView();
     }
@@ -135,18 +129,8 @@ public class GameplayUIInstaller : MonoBehaviour
             canvas = Instantiate(canvasPrefab, transform);
         if (worldCanvas == null)
             worldCanvas = Instantiate(worldCanvasPrefab, transform);
-        if (ppCanvas == null)
-            ppCanvas = Instantiate(ppCanvasPrefab, transform);
         if(overlayCanvas == null)
             overlayCanvas = Instantiate(overlayCanvasPrefab, transform);
-            
-        uiManager.DI(ppCanvas);
-
-        var ppCanvasEnabler = ppCanvas.GetComponent<CanvasEnabler>();
-        if (ppCanvasEnabler != null)
-        {
-            ppCanvasEnabler.Initialize();
-        }
 
         var canvasEnabler = canvas.GetComponent<CanvasEnabler>();
         if (canvasEnabler != null)

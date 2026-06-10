@@ -40,7 +40,17 @@ public class UI_ResultLogRow : MonoBehaviour
     public void SetData(TreeType treeType, int count)
     {
         gameObject.SetActive(0 < count);
+        SetDataInternal(treeType, count);
+    }
 
+    public void SetDataVisible(TreeType treeType, int count)
+    {
+        gameObject.SetActive(true);
+        SetDataInternal(treeType, count);
+    }
+
+    private void SetDataInternal(TreeType treeType, int count)
+    {
         if (logImage != null)
             logImage.sprite = GetSprite(treeType);
 

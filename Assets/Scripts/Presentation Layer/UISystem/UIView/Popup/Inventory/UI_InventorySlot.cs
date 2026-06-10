@@ -115,7 +115,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         }
     }
 
-    public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99)
+    public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99, bool _playInteraction = false)
     {
         maxItemCntPerSlot = _maxCount;
 
@@ -139,6 +139,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         UpdateImage(showItemData.sprite, Color.white);
         UpdateItemCount(invSlotRef.count);
+
+        if (_playInteraction)
+            PlayItemInteraction();
     }
 
     public void DisableRayCast()
