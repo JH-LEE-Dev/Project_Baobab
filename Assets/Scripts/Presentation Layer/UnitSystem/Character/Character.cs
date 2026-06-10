@@ -24,7 +24,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private AttackComponent attackComponent;
     private PHealthComponent healthComponent;
-    private VFXComponent vfxComponent;
     private ArmComponent armComponent;
     public StatComponent statComponent { get; private set; }
 
@@ -93,7 +92,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         col = GetComponent<CircleCollider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
         healthComponent = GetComponentInChildren<PHealthComponent>();
-        vfxComponent = GetComponentInChildren<VFXComponent>();
         armComponent = GetComponentInChildren<ArmComponent>();
         statComponent = GetComponentInChildren<StatComponent>();
         customSortable = GetComponent<CustomSortable>();
