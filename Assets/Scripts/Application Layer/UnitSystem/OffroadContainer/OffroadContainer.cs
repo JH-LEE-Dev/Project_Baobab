@@ -32,8 +32,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
     long IInventory.money => 0;
     long IInventory.carrot => 0;
-    int IInventory.maxCapacity => currentSlotCount * maxItemsPerSlot;
-    int IInventory.currentItemCount
+    public int maxCapacity => currentSlotCount * maxItemsPerSlot;
+    public int currentItemCount
     {
         get
         {

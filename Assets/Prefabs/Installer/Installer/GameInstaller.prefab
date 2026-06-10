@@ -1978,6 +1978,7 @@ MonoBehaviour:
   - {fileID: 7524718967522486410, guid: 0bd5670bcae6da44e879475ac190ee2c, type: 3}
   - {fileID: 1648287473275215075, guid: 3b6c7873bd3ae9541a72dbde19a90dfb, type: 3}
   - {fileID: 3227807807071390872, guid: 56ab1690e99457b42b9b057f319d65d9, type: 3}
+  - {fileID: -82623250303254125, guid: edc3b765b8e25be4a8ff664cf503693e, type: 3}
 --- !u!114 &6498721921695947709
 MonoBehaviour:
   m_ObjectHideFlags: 0

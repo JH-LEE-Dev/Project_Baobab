@@ -124,6 +124,9 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
         inDungeonProductionManager.RollbackSkyProductionEvent += RollbackSkyProduction;
+
+        inDungeonObjectManager.ActivateWarningUIEvent -= ActivateWarningUI;
+        inDungeonObjectManager.ActivateWarningUIEvent += ActivateWarningUI;
     }
 
     private void ReleaseEvents()
@@ -144,6 +147,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
         inDungeonProductionManager.CameraDownEndEvent -= CameraDownIsEnd;
         inDungeonProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
+        inDungeonObjectManager.ActivateWarningUIEvent -= ActivateWarningUI;
     }
 
     private void SubscribeSignals()
@@ -153,6 +157,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
+        signalHub.Subscribe<WarningUIClosedSignal>(WarningUIClosed);
     }
 
     private void UnSubscribeSignals()
@@ -162,6 +167,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
+        signalHub.UnSubscribe<WarningUIClosedSignal>(WarningUIClosed);
     }
 
     private void PortalActivated()
@@ -348,5 +354,22 @@ public class InDungeonSystem : MonoBehaviour
     {
         selectedMapType = _dungeonSelectedSignal.type;
         selectedForestType = _dungeonSelectedSignal.forestType;
+    }
+
+    private void ActivateWarningUI()
+    {
+        signalHub.Publish(new ActivateWarningUISignal());
+    }
+
+    private void WarningUIClosed(WarningUIClosedSignal _warningUIClosedSignal)
+    {
+        if(_warningUIClosedSignal.bResult == true)
+        {
+            inDungeonObjectManager.HandleGameEnd();
+        }
+        else
+        {
+            inDungeonObjectManager.AbortGameEnd();
+        }
     }
 }

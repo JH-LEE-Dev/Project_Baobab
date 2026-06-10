@@ -7,6 +7,7 @@ using System;
 public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 {
     // // 이벤트
+    public event Action ActivateWarningUIEvent;
     public event Action DropAllItemEvent;
     public event Action RideOffroadEvent;
     public event Action<bool> OffroadInteractStateChangedEvent;
@@ -66,7 +67,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     [SerializeField] private List<HiddenMapTreeGradeProbData> hiddenMapTreeGradeDatas;
 
     private Character character;
-    private OffroadContainer offraodContainer;
+    private OffroadContainer offroadContainer;
     private IInventoryChecker inventoryChecker;
     private InDungeonResultManager inDungeonResultManager;
 
@@ -75,7 +76,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, InDungeonResultManager _inDungeonResultManager)
     {
-        offraodContainer = _offroadContainer;
+        offroadContainer = _offroadContainer;
         characterInventory = _characterInventory;
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
@@ -156,7 +157,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         if (portal == null)
         {
             portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offraodContainer,
+            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
             character.centerTransform);
             OffroadSpawnedEvent?.Invoke(portal);
         }
@@ -680,6 +681,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void GameEnd()
     {
+        if (CheckWarningUIActivate() == false)
+        {
+            HandleGameEnd();
+            return;
+        }
+
+        character.SetStaminaDecrease(false);
+        character.PauseCharacter(true);
+        inputManager.PauseMove(true);
+        inputManager.PauseInteractKey(true);
+
+        ActivateWarningUIEvent?.Invoke();
+    }
+
+    public void AbortGameEnd()
+    {
+        character.SetStaminaDecrease(true);
+        character.PauseCharacter(false);
+        inputManager.PauseMove(false);
+        inputManager.PauseInteractKey(false);
+    }
+
+    public void HandleGameEnd()
+    {
+        AbortGameEnd();
+        
         character.DisableAttackComponent();
         character.SetStaminaDecrease(false);
 
@@ -705,5 +732,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private void OffroadInteractStateChanged(bool _boolean)
     {
         OffroadInteractStateChangedEvent?.Invoke(_boolean);
+    }
+
+    private bool CheckWarningUIActivate()
+    {
+        if (offroadContainer.currentItemCount == offroadContainer.maxCapacity)
+        {
+            return false;
+        }
+
+        if (character.IsAxeDurabilityZero() == true && inventoryChecker.bInventoryIsEmpty == true)
+        {
+            return false;
+        }
+
+        return true;
     }
 }
