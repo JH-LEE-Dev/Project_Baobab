@@ -20,5 +20,6 @@ public class WorldCanvasEnabler : MonoBehaviour
     private void ResetCanvas()
     {
         canvas.worldCamera = CameraFinder.Instance.PPMainCamera;
+        canvas.sortingLayerName = "WorldUI";
     }
 }
