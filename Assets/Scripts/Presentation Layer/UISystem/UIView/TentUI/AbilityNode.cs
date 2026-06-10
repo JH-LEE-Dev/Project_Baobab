@@ -27,6 +27,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     [Header("VFX Settings")]
     [SerializeField] private VFXComponent vfxComponent;
+    [SerializeField] private string effectLayerTag = "HUD";
     [SerializeField] private string levelUpImpactTag = "LevelUpEffect";
 
     [Header("Motion Settings")]
@@ -298,14 +299,12 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (vfxComponent == null)
             return;
 
-        Color effectColor = currentLevel == 0 ? levelUpEffectColor : LastLevelUpEffectColor;
-
         ParticleSystem currVFX = vfxComponent.Get(levelUpImpactTag);
         if (null != currVFX)
         {
-            vfxComponent.SetStartColor(currVFX, effectColor);
-
-            currVFX.Play();
+            vfxComponent.SetStartColor(currVFX, _nodeFrameColor);
+            vfxComponent.SetSortingSettings(currVFX, effectLayerTag, 2);
+            vfxComponent.Play(currVFX, transform.position, Quaternion.identity, transform);
         }
     }
 
