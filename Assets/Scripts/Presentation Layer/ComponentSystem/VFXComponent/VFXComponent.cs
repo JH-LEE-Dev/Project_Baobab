@@ -275,6 +275,51 @@ public class VFXComponent : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 특정 이펙트 인스턴스 및 하위 파티클 시스템들의 시작 색상을 설정합니다.
+    /// </summary>
+    public void SetStartColor(ParticleSystem _effect, Color _color)
+    {
+        ApplyStartColor(_effect, _color);
+    }
+
+    /// <summary>
+    /// 지정한 태그의 풀에 존재하는 모든 이펙트 인스턴스들의 시작 색상을 설정합니다.
+    /// </summary>
+    public void SetStartColorOfTag(string _tag, Color _color)
+    {
+        if (null == poolDictionary)
+            return;
+
+        if (false == poolDictionary.TryGetValue(_tag, out List<ParticleSystem> _poolList))
+            return;
+
+        int _count = _poolList.Count;
+        for (int i = 0; i < _count; i++)
+        {
+            ParticleSystem _effect = _poolList[i];
+            if (null != _effect)
+                ApplyStartColor(_effect, _color);
+        }
+    }
+
+    /// <summary>
+    /// 풀링되어 생성된 모든 이펙트 인스턴스들의 시작 색상을 일괄 설정합니다.
+    /// </summary>
+    public void SetStartColorAll(Color _color)
+    {
+        if (null == masterList)
+            return;
+
+        int _count = masterList.Count;
+        for (int i = 0; i < _count; i++)
+        {
+            ParticleSystem _effect = masterList[i];
+            if (null != _effect)
+                ApplyStartColor(_effect, _color);
+        }
+    }
+
 
     // 내부 로직
 
@@ -325,6 +370,30 @@ public class VFXComponent : MonoBehaviour
             {
                 _renderer.sortingLayerName = _layerName;
                 _renderer.sortingOrder = _order;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 이펙트 및 하위 자식들의 모든 파티클 시스템 시작 색상을 변경합니다.
+    /// </summary>
+    private void ApplyStartColor(ParticleSystem _effect, Color _color)
+    {
+        if (null == _effect)
+            return;
+
+        ParticleSystem[] _particles = _effect.GetComponentsInChildren<ParticleSystem>(true);
+        if (null == _particles)
+            return;
+
+        int _count = _particles.Length;
+        for (int i = 0; i < _count; i++)
+        {
+            ParticleSystem _particle = _particles[i];
+            if (null != _particle)
+            {
+                var _main = _particle.main;
+                _main.startColor = _color;
             }
         }
     }
