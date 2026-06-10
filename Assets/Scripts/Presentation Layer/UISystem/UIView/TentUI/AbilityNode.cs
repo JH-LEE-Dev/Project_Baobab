@@ -41,6 +41,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool visualHidden;
     private bool isPointerHovering;
     private bool consumedRapidClick;
+    private Color currentNodeFrameColor = Color.white;
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
     private MotionEntry clickMotionEntry;
@@ -54,15 +55,21 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public RectTransform RectTransform => transform as RectTransform;
     public bool CanApplyVisual => canApplyVisual;
     public bool CompletedVisual => completedVisual;
+    public Color CurrentNodeFrameColor => currentNodeFrameColor;
 
     private void Awake()
     {
-        rootCanvas = GetComponentInParent<Canvas>();
+        CacheRootCanvas();
 
         if (null != motionPlayer)
             return;
 
         motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
+    }
+
+    private void OnEnable()
+    {
+        CacheRootCanvas();
     }
 
     private void Update()
@@ -186,6 +193,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         canApplyVisual = _canApply;
         completedVisual = _completed;
+        currentNodeFrameColor = _baseColor;
 
         if (abilityBaseImage != null)
         {
@@ -270,6 +278,14 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void PlayClickRequestMotion()
     {
         PlayClickMotion();
+        PlayApprovedNodeEffect(currentNodeFrameColor);
+    }
+
+    // 특성 찍기에 성공했을 때 노드 이펙트를 재생하는 자리.
+    private void PlayApprovedNodeEffect(Color _nodeFrameColor)
+    {
+        
+        
     }
 
     public void PlayRejectedRequestMotion()
@@ -371,14 +387,20 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (nodeRectTransform == null || visualRectTransform == null)
             return false;
 
-        Vector2 center = RectTransformUtility.WorldToScreenPoint(GetEventCamera(), nodeRectTransform.TransformPoint(Vector3.zero));
         Vector2 size = visualRectTransform.rect.size;
-        Vector3 lossyScale = nodeRectTransform.lossyScale;
-        size.x *= Mathf.Abs(lossyScale.x);
-        size.y *= Mathf.Abs(lossyScale.y);
-        size += Vector2.one * hoverStablePadding * 2f;
+        Vector3 halfSize = new Vector3(size.x * 0.5f, size.y * 0.5f, 0f);
+        Camera eventCamera = GetEventCamera();
+        Vector2 cornerA = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(-halfSize.x, -halfSize.y, 0f)));
+        Vector2 cornerB = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(-halfSize.x, halfSize.y, 0f)));
+        Vector2 cornerC = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(halfSize.x, halfSize.y, 0f)));
+        Vector2 cornerD = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(halfSize.x, -halfSize.y, 0f)));
+        Vector2 min = Vector2.Min(Vector2.Min(cornerA, cornerB), Vector2.Min(cornerC, cornerD));
+        Vector2 max = Vector2.Max(Vector2.Max(cornerA, cornerB), Vector2.Max(cornerC, cornerD));
 
-        Rect stableRect = new Rect(center - size * 0.5f, size);
+        min -= Vector2.one * hoverStablePadding;
+        max += Vector2.one * hoverStablePadding;
+
+        Rect stableRect = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
         return stableRect.Contains(_screenPoint);
     }
 
@@ -409,9 +431,18 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private Camera GetEventCamera()
     {
-        if (rootCanvas == null || rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+        CacheRootCanvas();
+
+        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null ? rootCanvas.rootCanvas : rootCanvas;
+        if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
             return null;
 
-        return rootCanvas.worldCamera;
+        return targetCanvas.worldCamera;
+    }
+
+    private void CacheRootCanvas()
+    {
+        if (rootCanvas == null)
+            rootCanvas = GetComponentInParent<Canvas>();
     }
 }

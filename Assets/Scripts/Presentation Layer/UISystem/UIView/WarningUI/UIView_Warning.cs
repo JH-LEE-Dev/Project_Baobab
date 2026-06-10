@@ -1,21 +1,22 @@
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIView_Warning : UIView
 {
-    // 이벤트
     public event Action DeActivateWarningUIEvent;
 
-    // 외부 의존성
+    [Header("UI References")]
+    [SerializeField] private Button okButton;
+    [SerializeField] private Button cancelButton;
 
-    // 내부 의존성
-
-    // 속성
-    public bool bApproved = false; // 승인 버튼을 누르면 true로 바꿀것.
+    public bool bApproved = false;
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
+        CacheUIReferences();
+        BindButtonEvents();
     }
 
     public override void SetupUI()
@@ -36,6 +37,7 @@ public class UIView_Warning : UIView
     protected override void OnShow()
     {
         base.OnShow();
+        bApproved = false;
         gameObject.SetActive(true);
     }
 
@@ -49,10 +51,59 @@ public class UIView_Warning : UIView
 
     public override void OnDestroy()
     {
+        UnbindButtonEvents();
+        DeActivateWarningUIEvent = null;
         base.OnDestroy();
     }
 
-    private void DeActivateWarningUI() //WarningUI가 닫힐 때 호출할 것.
+    public void OnOKButtonClicked()
+    {
+        bApproved = true;
+        Hide();
+    }
+
+    public void OnCancelButtonClicked()
+    {
+        bApproved = false;
+        Hide();
+    }
+
+    private void CacheUIReferences()
+    {
+        if (okButton == null)
+        {
+            Transform okButtonTransform = transform.Find("WarningBG/ButtonRoot/Button_OK");
+            if (okButtonTransform != null)
+                okButton = okButtonTransform.GetComponent<Button>();
+        }
+
+        if (cancelButton == null)
+        {
+            Transform cancelButtonTransform = transform.Find("WarningBG/ButtonRoot/Button_Cancel");
+            if (cancelButtonTransform != null)
+                cancelButton = cancelButtonTransform.GetComponent<Button>();
+        }
+    }
+
+    private void BindButtonEvents()
+    {
+        if (okButton != null)
+            okButton.onClick.AddListener(OnOKButtonClicked);
+
+        if (cancelButton != null)
+            cancelButton.onClick.AddListener(OnCancelButtonClicked);
+    }
+
+    private void UnbindButtonEvents()
+    {
+        if (okButton != null)
+            okButton.onClick.RemoveListener(OnOKButtonClicked);
+
+        if (cancelButton != null)
+            cancelButton.onClick.RemoveListener(OnCancelButtonClicked);
+    }
+
+    private void DeActivateWarningUI()
     {
         DeActivateWarningUIEvent?.Invoke();
     }
