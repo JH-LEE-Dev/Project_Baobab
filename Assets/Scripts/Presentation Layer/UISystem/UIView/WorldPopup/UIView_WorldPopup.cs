@@ -327,4 +327,14 @@ public class UIView_WorldPopup : UIView
             ui_Cutter?.OnHide();
         }
     }
+
+    public void WorldPopupGoDown()
+    {
+        
+    }
+
+    public void WorldPopupGoUp()
+    {
+        
+    }
 }
