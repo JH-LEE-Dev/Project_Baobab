@@ -480,12 +480,14 @@ public class GameplayUICoordinator
     {
         hudUI.HUDGoDown();
         popUpUI.PopupGoDown();
+        worldPopupUI.WorldPopupGoDown();
     }
 
     private void PopupUIUp(PopupUIUpSignal _popupUIUpSignal)
     {
         hudUI.HUDGoUp();
         popUpUI.PopupGoUp();
+        worldPopupUI.WorldPopupGoUp();
     }
 
     private void ProvideAccumulatedValueChangeEvent(ProvideSkillAccumulatedValueChangeSignal _signal)
