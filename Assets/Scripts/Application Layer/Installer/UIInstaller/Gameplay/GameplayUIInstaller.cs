@@ -141,6 +141,8 @@ public class GameplayUIInstaller : MonoBehaviour
         if (ppCanvas == null)
             ppCanvas = Instantiate(ppCanvasPrefab, transform);
 
+        uiManager.DI(ppCanvas);
+
         var canvasEnabler = canvas.GetComponent<CanvasEnabler>();
         if (canvasEnabler != null)
         {
