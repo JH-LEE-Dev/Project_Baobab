@@ -358,4 +358,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         treeVisualComponent.DisableOutline();
     }
+
+    public void EnableOutline()
+    {
+        treeVisualComponent.EnableOutline();
+    }
 }

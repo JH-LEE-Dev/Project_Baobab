@@ -691,6 +691,11 @@ public class TreeVisualComponent : MonoBehaviour
         bDisableOutline = true;
     }
 
+    public void EnableOutline()
+    {
+        bDisableOutline = false;
+    }
+
     #endregion
 }
 

@@ -289,6 +289,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                 }
 
                 tree.SetSortOrder();
+                tree.EnableOutline();
 
                 return true;
             }
