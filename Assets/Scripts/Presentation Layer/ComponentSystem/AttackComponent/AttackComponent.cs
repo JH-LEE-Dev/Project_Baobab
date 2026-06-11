@@ -106,11 +106,14 @@ public class AttackComponent : PComponent
 
     private void UpdateAttackColliderPosition(Vector2 _mouseScreenPos)
     {
-        if(bCursorEnable == false)
+        if (bCursorEnable == false)
             return;
-        
+
         if (mainCamera == null)
             mainCamera = CameraFinder.Instance.PPMainCamera;
+
+        if (mainCamera == null)
+            return;
 
         // 1. 현재 모니터 화면 좌표를 0~1 비율(정규화)로 변환
         float _normalizedX = _mouseScreenPos.x / Screen.width;
@@ -186,7 +189,7 @@ public class AttackComponent : PComponent
         if (hitCount <= 0) return;
 
         Vector3 centerPos = transform.position;
-        
+
         Vector3 attackDirVec = attackPointTransform.position - centerPos;
         Vector3 isoAttackDir = Vector3.right;
         if (attackDirVec.sqrMagnitude > 0.0001f)
@@ -271,7 +274,7 @@ public class AttackComponent : PComponent
         if (bShow)
         {
             Vector3 centerPos = transform.position;
-            
+
             Vector3 attackDirVec = attackPointTransform.position - centerPos;
             Vector3 isoAttackDir = Vector3.right;
             if (attackDirVec.sqrMagnitude > 0.0001f)
@@ -280,11 +283,11 @@ public class AttackComponent : PComponent
             }
 
             float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
-            
+
             // 셰이더 프로퍼티 업데이트
             ellipseIndicatorMat.SetFloat(EllipseRadiusID, effectiveEllipseRadius);
             ellipseIndicatorMat.SetVector(AttackDirID, (Vector2)isoAttackDir);
-            
+
             // 인디케이터 위치 및 스케일 업데이트
             ellipseRadiusIndicator.transform.position = centerPos;
             ellipseRadiusIndicator.transform.localScale = new Vector3((effectiveEllipseRadius + 0.5f) * 2f, effectiveEllipseRadius + 0.5f, 1f);
@@ -340,7 +343,7 @@ public class AttackComponent : PComponent
         }
 
         Vector3 centerPos = transform.position;
-        
+
         Vector3 attackDirVec = attackPointTransform.position - centerPos;
         Vector3 isoAttackDir = Vector3.right;
         if (attackDirVec.sqrMagnitude > 0.0001f)
@@ -361,7 +364,7 @@ public class AttackComponent : PComponent
 
             // 2단계: 타원형 반지름(ellipseAttackRadius)으로 2차 필터링
             float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
-    
+
             if (isoDistSq > radiusSq) continue;
 
             Vector3 targetOffset = targetPos - centerPos;
