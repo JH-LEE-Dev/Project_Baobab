@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using DG.Tweening;
+using PresentationLayer.DOTweenAnimationSystem;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,6 +23,11 @@ public class UIView_Warning : UIView
     [SerializeField] private RectTransform buttonRoot;
     [SerializeField] private Button okButton;
     [SerializeField] private Button cancelButton;
+    [SerializeField] private RectTransform okButtonTouchArea;
+    [SerializeField] private RectTransform cancelButtonTouchArea;
+    [SerializeField] private UISelectionCursor selectionCursorPrefab;
+    [SerializeField] private RectTransform selectionCursorParent;
+    [SerializeField] private Vector2 selectionCursorSize = new Vector2(40f, 40f);
 
     [Header("Position Pivots")]
     [SerializeField] private RectTransform mainTextPivot;
@@ -47,6 +54,13 @@ public class UIView_Warning : UIView
     private CanvasGroup buttonRootCanvasGroup;
     private TMP_Text mainTMPText;
     private TMP_Text subTMPText;
+    private UISelectionCursor selectionCursorInstance;
+    private UIHoverSelectionTarget okHoverTarget;
+    private UIHoverSelectionTarget cancelHoverTarget;
+    private Button okTouchAreaButton;
+    private Button cancelTouchAreaButton;
+    private RectTransform okButtonVisual;
+    private RectTransform cancelButtonVisual;
     private LocalizationManager localizationManager;
     private bool isClosing;
 
@@ -59,7 +73,9 @@ public class UIView_Warning : UIView
 
         CacheCanvasGroups();
         CacheTextReferences();
+        CacheButtonTouchAreas();
         RefreshLocalizedTexts();
+        InitializeButtonHoverTargets();
         BindButtonEvents();
     }
 
@@ -106,12 +122,14 @@ public class UIView_Warning : UIView
 
     public void OnOKButtonClicked()
     {
+        HideSelectionCursorImmediately();
         bApproved = true;
         Hide();
     }
 
     public void OnCancelButtonClicked()
     {
+        HideSelectionCursorImmediately();
         bApproved = false;
         Hide();
     }
@@ -155,7 +173,13 @@ public class UIView_Warning : UIView
     {
         KillProductionSequences();
         CacheTargetSize();
-        PrepareOpenState();
+        bool hasLogInInventory = HasLogInCharacterInventory();
+        RectTransform mainTargetPivot = hasLogInInventory || soloTextPivot == null ? mainTextPivot : soloTextPivot;
+        float buttonStartTime = hasLogInInventory
+            ? bgOpenDuration + (contentOpenInterval * 2f)
+            : bgOpenDuration + contentOpenInterval;
+
+        PrepareOpenState(hasLogInInventory, mainTargetPivot);
         SetButtonsInteractable(false);
 
         openSequence = DOTween.Sequence().SetUpdate(true);
@@ -166,11 +190,14 @@ public class UIView_Warning : UIView
         if (warningBGCanvasGroup != null)
             openSequence.Join(warningBGCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(productionEase));
 
-        InsertContentOpenTween(mainText, mainTextCanvasGroup, mainTextPivot, bgOpenDuration);
-        InsertContentOpenTween(subText, subTextCanvasGroup, subTextPivot, bgOpenDuration + contentOpenInterval);
-        InsertContentOpenTween(buttonRoot, buttonRootCanvasGroup, buttonPivot, bgOpenDuration + (contentOpenInterval * 2f));
+        InsertContentOpenTween(mainText, mainTextCanvasGroup, mainTargetPivot, bgOpenDuration);
 
-        float inputEnableTime = bgOpenDuration + (contentOpenInterval * 2f) + contentOpenDuration;
+        if (hasLogInInventory)
+            InsertContentOpenTween(subText, subTextCanvasGroup, subTextPivot, bgOpenDuration + contentOpenInterval);
+
+        InsertContentOpenTween(buttonRoot, buttonRootCanvasGroup, buttonPivot, buttonStartTime);
+
+        float inputEnableTime = buttonStartTime + contentOpenDuration;
         openSequence.InsertCallback(inputEnableTime, EnableButtons);
     }
 
@@ -180,18 +207,22 @@ public class UIView_Warning : UIView
             bgTargetWidth = warningBG.rect.width;
     }
 
-    private void PrepareOpenState()
+    private void PrepareOpenState(bool showSubText, RectTransform mainTargetPivot)
     {
         if (warningBG != null)
             SetWarningBGWidth(1f);
 
+        SetSubTextActive(showSubText);
         SetCanvasGroupAlpha(warningBGCanvasGroup, 0f);
         SetCanvasGroupAlpha(mainTextCanvasGroup, 0f);
         SetCanvasGroupAlpha(subTextCanvasGroup, 0f);
         SetCanvasGroupAlpha(buttonRootCanvasGroup, 0f);
 
-        SetContentToHiddenPosition(mainText, mainTextPivot);
-        SetContentToHiddenPosition(subText, subTextPivot);
+        SetContentToHiddenPosition(mainText, mainTargetPivot);
+
+        if (showSubText)
+            SetContentToHiddenPosition(subText, subTextPivot);
+
         SetContentToHiddenPosition(buttonRoot, buttonPivot);
 
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
@@ -206,6 +237,12 @@ public class UIView_Warning : UIView
             return;
 
         target.localPosition = GetHiddenPosition(pivot);
+    }
+
+    private void SetSubTextActive(bool active)
+    {
+        if (subText != null && subText.gameObject.activeSelf != active)
+            subText.gameObject.SetActive(active);
     }
 
     private void InsertContentOpenTween(RectTransform target, CanvasGroup canvasGroup, RectTransform pivot, float startTime)
@@ -229,6 +266,44 @@ public class UIView_Warning : UIView
         return pivot.localPosition + new Vector3(0f, contentOpenYOffset, 0f);
     }
 
+    private bool HasLogInCharacterInventory()
+    {
+        if (characterInventory == null || characterInventory.inventorySlots == null)
+            return false;
+
+        IReadOnlyList<IInventorySlot> slots = characterInventory.inventorySlots;
+        int slotCount = Mathf.Min(characterInventory.currentSlotCnt, slots.Count);
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            IInventorySlot slot = slots[i];
+            if (slot == null || slot.count <= 0)
+                continue;
+
+            if (slot.itemData is ILogItemData)
+                return true;
+
+            if (HasTreeTypeCount(slot.treeTypeCounts))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool HasTreeTypeCount(TreeTypeCount[] treeTypeCounts)
+    {
+        if (treeTypeCounts == null)
+            return false;
+
+        for (int i = 0; i < treeTypeCounts.Length; i++)
+        {
+            if (treeTypeCounts[i].treeType != TreeType.None && treeTypeCounts[i].count > 0)
+                return true;
+        }
+
+        return false;
+    }
+
     private float GetWarningBGWidth()
     {
         return warningBG != null ? warningBG.rect.width : 0f;
@@ -246,6 +321,7 @@ public class UIView_Warning : UIView
     {
         KillProductionSequences();
         isClosing = true;
+        HideSelectionCursorImmediately();
         SetButtonsInteractable(false);
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
         SetCanvasGroupRaycast(buttonRootCanvasGroup, false);
@@ -322,6 +398,12 @@ public class UIView_Warning : UIView
 
     private void SetButtonsInteractable(bool enabled)
     {
+        if (okTouchAreaButton != null)
+            okTouchAreaButton.interactable = enabled;
+
+        if (cancelTouchAreaButton != null)
+            cancelTouchAreaButton.interactable = enabled;
+
         if (okButton != null)
             okButton.interactable = enabled;
 
@@ -329,26 +411,154 @@ public class UIView_Warning : UIView
             cancelButton.interactable = enabled;
     }
 
+    private void CacheButtonTouchAreas()
+    {
+        if (okButtonTouchArea == null)
+            okButtonTouchArea = FindChildRecursive(transform, "Button_OK_TouchArea") as RectTransform;
+
+        if (cancelButtonTouchArea == null)
+            cancelButtonTouchArea = FindChildRecursive(transform, "Button_Cancel_TouchArea") as RectTransform;
+
+        okButtonVisual = GetButtonVisual(okButton, "Button_OK");
+        cancelButtonVisual = GetButtonVisual(cancelButton, "Button_Cancel");
+        okTouchAreaButton = EnsureTouchAreaButton(okButtonTouchArea);
+        cancelTouchAreaButton = EnsureTouchAreaButton(cancelButtonTouchArea);
+
+        SetButtonVisualRaycastTarget(okButtonVisual, false);
+        SetButtonVisualRaycastTarget(cancelButtonVisual, false);
+    }
+
+    private RectTransform GetButtonVisual(Button button, string visualName)
+    {
+        if (button != null)
+            return button.transform as RectTransform;
+
+        RectTransform visual = FindChildRecursive(transform, visualName) as RectTransform;
+        Button visualButton = visual != null ? visual.GetComponent<Button>() : null;
+
+        if (visualName == "Button_OK")
+            okButton = visualButton;
+        else if (visualName == "Button_Cancel")
+            cancelButton = visualButton;
+
+        return visual;
+    }
+
+    private Button EnsureTouchAreaButton(RectTransform touchArea)
+    {
+        if (touchArea == null)
+            return null;
+
+        Image touchImage = touchArea.GetComponent<Image>();
+        if (touchImage != null)
+            touchImage.raycastTarget = true;
+
+        Button button = touchArea.GetComponent<Button>();
+        if (button == null)
+            button = touchArea.gameObject.AddComponent<Button>();
+
+        button.targetGraphic = touchImage;
+        button.transition = Selectable.Transition.None;
+        return button;
+    }
+
+    private void SetButtonVisualRaycastTarget(RectTransform visual, bool enabled)
+    {
+        if (visual == null)
+            return;
+
+        Graphic[] graphics = visual.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+            graphics[i].raycastTarget = enabled;
+    }
+
+    private void InitializeButtonHoverTargets()
+    {
+        EnsureSelectionCursorInstance();
+
+        okHoverTarget = InitializeHoverTarget(okButtonTouchArea, okButtonVisual);
+        cancelHoverTarget = InitializeHoverTarget(cancelButtonTouchArea, cancelButtonVisual);
+    }
+
+    private UIHoverSelectionTarget InitializeHoverTarget(RectTransform touchArea, RectTransform visual)
+    {
+        if (touchArea == null)
+            return null;
+
+        UIHoverSelectionTarget hoverTarget = touchArea.GetComponent<UIHoverSelectionTarget>();
+        if (hoverTarget == null)
+            hoverTarget = touchArea.gameObject.AddComponent<UIHoverSelectionTarget>();
+
+        RectTransform visualRectTransform = visual != null ? visual : touchArea;
+        ObjectMotionPlayer motionPlayer = visual != null ? visual.GetComponentInChildren<ObjectMotionPlayer>(true) : null;
+        hoverTarget.Initialize(selectionCursorInstance, visualRectTransform, motionPlayer);
+        return hoverTarget;
+    }
+
+    private void EnsureSelectionCursorInstance()
+    {
+        if (selectionCursorInstance != null || selectionCursorPrefab == null)
+            return;
+
+        RectTransform parent = selectionCursorParent != null ? selectionCursorParent : transform as RectTransform;
+        if (parent == null)
+            return;
+
+        selectionCursorInstance = Instantiate(selectionCursorPrefab, parent);
+        selectionCursorInstance.Initialize(selectionCursorSize);
+    }
+
+    private void HideSelectionCursorImmediately()
+    {
+        if (selectionCursorInstance != null)
+            selectionCursorInstance.HideImmediately();
+
+        if (okHoverTarget != null)
+            okHoverTarget.HideCursorImmediately();
+
+        if (cancelHoverTarget != null)
+            cancelHoverTarget.HideCursorImmediately();
+    }
+
     private void BindButtonEvents()
     {
-        if (okButton != null)
-            okButton.onClick.AddListener(OnOKButtonClicked);
+        if (okTouchAreaButton != null)
+            okTouchAreaButton.onClick.AddListener(OnOKButtonClicked);
 
-        if (cancelButton != null)
-            cancelButton.onClick.AddListener(OnCancelButtonClicked);
+        if (cancelTouchAreaButton != null)
+            cancelTouchAreaButton.onClick.AddListener(OnCancelButtonClicked);
     }
 
     private void UnbindButtonEvents()
     {
-        if (okButton != null)
-            okButton.onClick.RemoveListener(OnOKButtonClicked);
+        if (okTouchAreaButton != null)
+            okTouchAreaButton.onClick.RemoveListener(OnOKButtonClicked);
 
-        if (cancelButton != null)
-            cancelButton.onClick.RemoveListener(OnCancelButtonClicked);
+        if (cancelTouchAreaButton != null)
+            cancelTouchAreaButton.onClick.RemoveListener(OnCancelButtonClicked);
     }
 
     private void DeActivateWarningUI()
     {
         DeActivateWarningUIEvent?.Invoke();
+    }
+
+    private Transform FindChildRecursive(Transform root, string childName)
+    {
+        if (root == null)
+            return null;
+
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform result = FindChildRecursive(child, childName);
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 }

@@ -38,6 +38,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private string nonPassClickMotionTag = "UIClick_Nonpass";
     [SerializeField] private bool resetCurrentMotionBeforePlay = false;
     [SerializeField] private float hoverStablePadding = 8f;
+    [SerializeField] private float clickCancelDragThreshold = 8f;
 
     private UI_TentAbilityComponent owner;
     private Canvas rootCanvas;
@@ -273,6 +274,9 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
         }
 
+        if (IsDraggedClick(eventData))
+            return;
+
         bool isApproved = owner != null && owner.TryRequestNodeLevelUp(this);
         if (true == isApproved)
             PlayClickRequestMotion();
@@ -285,6 +289,19 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         Keyboard keyboard = Keyboard.current;
         return keyboard != null &&
                (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+    }
+
+    private bool IsDraggedClick(PointerEventData _eventData)
+    {
+        if (_eventData == null)
+            return false;
+
+        float threshold = Mathf.Max(0f, clickCancelDragThreshold);
+        if (threshold <= 0f)
+            return false;
+
+        Vector2 dragDelta = _eventData.position - _eventData.pressPosition;
+        return dragDelta.sqrMagnitude > threshold * threshold;
     }
 
     public void PlayClickRequestMotion()
