@@ -688,6 +688,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             return;
         }
 
+        StopGrowth();
+
         character.SetStaminaDecrease(false);
         character.PauseCharacter(true);
         inputManager.PauseMove(true);
@@ -702,6 +704,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         character.PauseCharacter(false);
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);
+
+        if (growthCoroutine == null)
+        {
+            growthCoroutine = StartCoroutine(GrowthRoutine());
+        }
     }
 
     public void HandleGameEnd()
