@@ -30,6 +30,7 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
     private TweenCallback onDisappearTweenCompleteCallback;
     private TweenCallback externalOnCompleteCallback;
     private Tweener colorTween;
+    private Tween transitionTween;
     private float pressTime = 0.0f;
     private bool isPressed = false;
     private bool isHovered = false;
@@ -48,21 +49,30 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void PlayDisappearAnimation(TweenCallback _onComplete)
     {
+        if (null != transitionTween && transitionTween.IsActive())
+            transitionTween.Kill();
+
         externalOnCompleteCallback = _onComplete;
-        transform.DOScale(Vector3.zero, disappearDuration)
-                 .SetEase(disappearEase)
-                 .OnComplete(onDisappearTweenCompleteCallback);
+        transitionTween = transform.DOScale(Vector3.zero, disappearDuration)
+                                   .SetEase(disappearEase)
+                                   .OnComplete(onDisappearTweenCompleteCallback);
     }
 
     public void PlayAppearAnimation()
     {
+        if (null != transitionTween && transitionTween.IsActive())
+            transitionTween.Kill();
+
         gameObject.SetActive(true);
         transform.localScale = Vector3.zero;
-        transform.DOScale(Vector3.one, appearDuration).SetEase(appearEase);
+        transitionTween = transform.DOScale(Vector3.one, appearDuration).SetEase(appearEase);
     }
 
     public void ResetAnimation()
     {
+        if (null != transitionTween && transitionTween.IsActive())
+            transitionTween.Kill();
+
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
 
@@ -82,6 +92,9 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         isHovered = true;
 
         if (false == isPressed)
@@ -92,6 +105,9 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         isHovered = false;
 
         if (true == isPressed)
@@ -105,6 +121,9 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerDown(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         isPressed = true;
         pressTime = 0.0f;
 
@@ -119,6 +138,9 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerUp(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (true == isPressed)
         {
             isPressed = false;
@@ -131,6 +153,14 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
 
     // 내부 로직
+
+    private bool IsTransitioning()
+    {
+        if (null != transitionTween && true == transitionTween.IsActive())
+            return true;
+
+        return false;
+    }
 
     private void OnDisappearTweenComplete()
     {
@@ -155,6 +185,9 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     private void Update()
     {
+        if (true == IsTransitioning())
+            return;
+
         if (true == isPressed)
         {
             pressTime += Time.deltaTime;

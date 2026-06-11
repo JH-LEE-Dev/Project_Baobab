@@ -142,6 +142,11 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private void OnAppearDelayComplete()
     {
         transform.localScale = Vector3.one;
+
+        motionPlayer.SettingEntryMotion(enterMotion, true, true);
+        motionPlayer.SettingEntryMotion(exitMotion, true, true);
+        motionPlayer.SettingEntryMotion(enterMotion, true, true);
+
         motionPlayer.Play(appearTag, bReset: forceReset);
     }
 
@@ -282,6 +287,9 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (false == isLocked)
         {
             RectTransform _targetRect = GetRectTransform();
@@ -317,6 +325,9 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (false == isHovered)
             return;
 
@@ -327,6 +338,9 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (false == isLocked && false == isSelected)
             onSelectEvent?.Invoke(fieldNumber);
 
@@ -344,6 +358,17 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             string _targetTag = true == isLocked ? lockClickTag : clickTag;
             clickMotion = motionPlayer.Play(_targetTag, bReset: forceReset, _onComplete: onClickAnimationCompleteCallback);
         }
+    }
+
+    private bool IsTransitioning()
+    {
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            return true;
+
+        if (null != motionPlayer && true == motionPlayer.IsPlaying(appearTag))
+            return true;
+
+        return false;
     }
 
     private void ExecuteExit()
@@ -386,6 +411,9 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private void Update()
     {
+        if (true == IsTransitioning())
+            return;
+
         if (true == isPendingExit && Time.unscaledTime >= pendingExitTime)
         {
             isPendingExit = false;

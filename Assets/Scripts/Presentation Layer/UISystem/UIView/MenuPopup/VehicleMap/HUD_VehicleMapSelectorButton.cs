@@ -160,6 +160,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         isHovered = true;
 
         if (true == isOkButton && false == isButtonActive)
@@ -185,6 +188,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         isHovered = false;
 
         if (true == isOkButton && false == isButtonActive)
@@ -210,6 +216,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerDown(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
             return;
 
@@ -229,6 +238,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerUp(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
             return;
 
@@ -239,10 +251,24 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
             return;
 
         onConfirmEvent?.Invoke();
+    }
+
+    private bool IsTransitioning()
+    {
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            return true;
+
+        if (null != motionPlayer && true == motionPlayer.IsPlaying(appearMotionKey))
+            return true;
+
+        return false;
     }
 
     private void PlayColorTween(Color _targetColor)

@@ -301,6 +301,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         if (true == isSelected || true == isClicked)
             return;
 
@@ -326,6 +329,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         isHovered = true;
 
         if (true == isClicked)
@@ -358,6 +364,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (true == IsTransitioning())
+            return;
+
         isHovered = false;
 
         if (true == isClicked)
@@ -393,6 +402,20 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             if (null != buttonImage)
                 colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
         }
+    }
+
+    private bool IsTransitioning()
+    {
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            return true;
+
+        if (null != scaleTween && true == scaleTween.IsActive())
+            return true;
+
+        if (null != omp && true == omp.IsPlaying(appearTag))
+            return true;
+
+        return false;
     }
 
 
