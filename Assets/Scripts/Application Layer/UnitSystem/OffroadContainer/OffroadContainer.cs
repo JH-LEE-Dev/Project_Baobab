@@ -6,6 +6,7 @@ using UnityEngine.Pool;
 
 public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 {
+    public event Action ItemTransferToContainerEvent;
     public event Action ContainerOpenedEvent;
     public event Action ContainerClosedEvent;
     public event Action<bool> InteractStateEvent;
@@ -307,6 +308,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             LogItemData sourceData = _sourceSlot.itemData as LogItemData;
             int countToTransfer = _sourceSlot.count;
+
+            if (!_toCharacter && countToTransfer > 0)
+            {
+                ItemTransferToContainerEvent?.Invoke();
+            }
 
             for (int i = 0; i < countToTransfer; i++)
             {

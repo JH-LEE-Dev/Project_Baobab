@@ -110,6 +110,9 @@ public class UnitSystem
 
         unitLogicManager.GameEndEvent -= GameEnd;
         unitLogicManager.GameEndEvent += GameEnd;
+
+        offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;
+        offroadContainer.ItemTransferToContainerEvent += InventoryItemTransferToOffroadContainer;
     }
 
     private void ReleaseEvents()
@@ -126,6 +129,7 @@ public class UnitSystem
         inventoryManager.ItemAddedEvent -= ItemAdded;
         inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
         unitLogicManager.GameEndEvent -= GameEnd;
+        offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;        
     }
 
     private void CharacterSpawned(Character _character)
@@ -277,5 +281,10 @@ public class UnitSystem
     private void RetryGame(RetryButtonClickedSignal _retryButtonClickedSignal)
     {
         unitLogicManager.ResetCharacterStatus();
+    }
+
+    private void InventoryItemTransferToOffroadContainer()
+    {
+        signalHub.Publish(new OffroadContainerUpdatedSignal());
     }
 }

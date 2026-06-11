@@ -304,4 +304,14 @@ public class UIView_Unit : UIView
         if (null != speechBubble)
             speechBubble.Play(_id, _text, speechBubbleDuration);
     }
+
+    public void TownStarted()
+    {
+        
+    }
+
+    public void InventoryItemToOffroadContainer()
+    {
+        
+    }
 }
