@@ -55,6 +55,7 @@ public class UnitSystem
         signalHub.Subscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.Subscribe<DropAllItemSignal>(DropAllItem);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
+        signalHub.Subscribe<ActivateCharacterSignal>(ActivateCharacter);
     }
 
     private void UnSubscribeSignals()
@@ -71,6 +72,7 @@ public class UnitSystem
         signalHub.UnSubscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.UnSubscribe<DropAllItemSignal>(DropAllItem);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
+        signalHub.UnSubscribe<ActivateCharacterSignal>(ActivateCharacter);
     }
 
     private void BindEvents()
@@ -129,7 +131,7 @@ public class UnitSystem
         inventoryManager.ItemAddedEvent -= ItemAdded;
         inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
         unitLogicManager.GameEndEvent -= GameEnd;
-        offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;        
+        offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;
     }
 
     private void CharacterSpawned(Character _character)
@@ -264,7 +266,7 @@ public class UnitSystem
 
     private void StartDecreaseStamina(StartDecreaseStaminaSignal _startDecreaseStaminaSignal)
     {
-        unitLogicManager.SetCharacterStaminaDecrease();
+        unitLogicManager.StartDecreaseStamina();
     }
 
     private void GameEnd()
@@ -286,5 +288,10 @@ public class UnitSystem
     private void InventoryItemTransferToOffroadContainer()
     {
         signalHub.Publish(new InventoryItemTransferToOffroadContainerSignal());
+    }
+
+    private void ActivateCharacter(ActivateCharacterSignal _activateCharacterSignal)
+    {
+        unitLogicManager.ActivateCharacter();
     }
 }

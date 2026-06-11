@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class InDungeonSystem : MonoBehaviour
@@ -332,13 +333,29 @@ public class InDungeonSystem : MonoBehaviour
         inputManager.PauseInteractKey(false);
         inputManager.PauseMove(false);
 
-        signalHub.Publish(new PopupUIUpSignal());
+        signalHub.Publish(new ActivateCharacterSignal());
+        StartCoroutine(PopupUIGoUPCoroutine());
 
         if (bRetryGame == true)
         {
             bRetryGame = false;
             inDungeonProductionManager.bRetryGame = false;
         }
+    }
+
+    private IEnumerator PopupUIGoUPCoroutine()
+    {
+        yield return new WaitForSeconds(0.7f);
+
+        signalHub.Publish(new PopupUIUpSignal());
+
+        StartCoroutine(StaminaDecreaseCoroutine());
+    }
+
+    private IEnumerator StaminaDecreaseCoroutine()
+    {
+        yield return new WaitForSeconds(0.7f);
+        signalHub.Publish(new StartDecreaseStaminaSignal());
     }
 
     private void RollbackSkyProduction()

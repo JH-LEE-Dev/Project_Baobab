@@ -53,3 +53,5 @@ public struct StartDecreaseStaminaSignal { }
 
 public struct PopupUIDownSignal { }
 public struct PopupUIUpSignal { }
+
+public struct ActivateCharacterSignal { }

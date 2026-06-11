@@ -416,16 +416,20 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.SetStaminaDecrease(_boolean);
     }
 
-    public void StartDecraseStamina()
+    public void ActivateCharacter()
     {
         armComponent.ResetRotation();
         attackComponent.ResetAttackTransform();
-        healthComponent.SetStaminaDecrease(true);
         attackComponent.SetCursorEnable(true);
         attackComponent.SetEnable(true);
         attackComponent.SetbCanAttack(true);
         armComponent.SetbCanAttack(true);
         bWhileReset = false;
+    }
+
+    public void StartDecreaseStamina()
+    {
+        healthComponent.SetStaminaDecrease(true);
     }
 
     public void ResetStatus()
