@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 using PresentationLayer.UISystem.UIView.HUD.Equipment;
-using  PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator;
+using PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator;
 using PresentationLayer.DOTweenAnimationSystem;
 
 public class UIView_HUD : UIView
@@ -147,7 +147,7 @@ public class UIView_HUD : UIView
     //무기 모드 변환 시 호출. 기본값은 Axe
     public void WeaponModeChanged(WeaponMode _currentWeaponMode, bool _isMapChanged = false)
     {
-      
+
     }
 
     public override void Refresh()
@@ -182,7 +182,7 @@ public class UIView_HUD : UIView
     {
         if (null == hudEquipment)
             return;
-        
+
         //WeaponModeChanged(WeaponMode.Axe, !_isTwon);
         hudEquipment.gameObject.SetActive(!_isTwon);
 
@@ -230,7 +230,7 @@ public class UIView_HUD : UIView
     }
 
     //Dungeon State가 선언됨. 
-    public void DungeonStateDeclared(DungeonState _dungeonState)
+    public void DungeonStateDeclared(MapType _mapType, ForestType _forestType, DungeonState _dungeonState)
     {
         Debug.Log(_dungeonState);
     }

@@ -23,7 +23,7 @@ public class GameplayUICoordinator
 
     private bool bInventoryOpened = false;
 
-    private MapType type;
+    private MapType mapType;
     private ForestType forestType;
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
@@ -300,7 +300,7 @@ public class GameplayUICoordinator
         signalHub.Publish(new TeleportUIClosedWhileTeleportSignal());
         signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
 
-        type = _type;
+        mapType = _type;
         forestType = _forestType;
     }
 
@@ -547,6 +547,6 @@ public class GameplayUICoordinator
 
     private void DeclareDungeonState(DeclareDungeonStateSignal _declareDungeonStateSignal)
     {
-        hudUI.DungeonStateDeclared(_declareDungeonStateSignal.dungeonState);
+        hudUI.DungeonStateDeclared(mapType, forestType, _declareDungeonStateSignal.dungeonState);
     }
 }

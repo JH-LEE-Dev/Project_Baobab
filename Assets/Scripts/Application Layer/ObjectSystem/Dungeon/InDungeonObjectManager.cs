@@ -698,9 +698,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         ActivateWarningUIEvent?.Invoke();
     }
 
-    public void AbortGameEnd()
+    public void AbortGameEnd(bool _bAbort)
     {
-        character.SetStaminaDecrease(true);
+        if (_bAbort == true)
+            character.SetStaminaDecrease(true);
         character.PauseCharacter(false);
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);
@@ -713,8 +714,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     public void HandleGameEnd()
     {
-        AbortGameEnd();
-        
+        AbortGameEnd(false);
+
         character.DisableAttackComponent();
         character.SetStaminaDecrease(false);
 

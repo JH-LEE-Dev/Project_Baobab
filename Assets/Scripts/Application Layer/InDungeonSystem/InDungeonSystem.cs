@@ -368,14 +368,17 @@ public class InDungeonSystem : MonoBehaviour
 
     private void WarningUIClosed(WarningUIClosedSignal _warningUIClosedSignal)
     {
-        if(_warningUIClosedSignal.bResult == true)
+        if (bCurrentlyDungeonScene == false)
+            return;
+
+        if (_warningUIClosedSignal.bResult == true)
         {
             signalHub.Publish(new PopupUIDownSignal());
             inDungeonObjectManager.HandleGameEnd();
         }
         else
         {
-            inDungeonObjectManager.AbortGameEnd();
+            inDungeonObjectManager.AbortGameEnd(true);
         }
     }
 }
