@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
 {
@@ -29,6 +30,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
         private bool isInitialized = false;
 
         private bool isActivated = false;
+        private TweenCallback showCallback;
+        private Tween delayShowTween;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -44,13 +47,29 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                 rectTransform = GetComponent<RectTransform>();
 
             isInitialized = true;
+            showCallback = OnShow;
 
-            // 부모 게임 오브젝트는 항상 활성화하여 Update()를 돌립니다.
-            gameObject.SetActive(true);
+            // 처음 초기화 함수에서 비활성화
+            isActivated = false;
+            gameObject.SetActive(false);
 
             // 초기 상태에서는 인디케이터 이미지를 숨깁니다.
             if (null != indicatorImage)
                 indicatorImage.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// N초 후에 비활성화를 풀고 활성화합니다.
+        /// </summary>
+        public void ShowAfterDelay(float _delay)
+        {
+            if (null != delayShowTween && true == delayShowTween.IsActive())
+                delayShowTween.Kill();
+
+            if (0f < _delay)
+                delayShowTween = DOVirtual.DelayedCall(_delay, showCallback).SetEase(Ease.Linear);
+            else
+                OnShow();
         }
 
         /// <summary>
@@ -193,6 +212,21 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
         {
             isActivated = true;
             gameObject.SetActive(true);
+        }
+
+
+        // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+        private void OnDisable()
+        {
+            if (null != delayShowTween && true == delayShowTween.IsActive())
+                delayShowTween.Kill();
+        }
+
+        private void OnDestroy()
+        {
+            if (null != delayShowTween && true == delayShowTween.IsActive())
+                delayShowTween.Kill();
         }
     }
 }

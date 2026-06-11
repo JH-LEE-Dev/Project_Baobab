@@ -8,6 +8,7 @@ public class UIView_HUD : UIView
 {
     [Header("UI References")]
     [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
+    [SerializeField] private GameObject moveHUD;
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
@@ -25,6 +26,9 @@ public class UIView_HUD : UIView
     private MapType currentMapType;
     private ForestType currentForestType;
 
+    [Header("Indicator Settings")]
+    [SerializeField] private float dirIndicatorShowDelay = 1f;
+
     #region Default Logic
 
     public override void Initialize(UIViewContext _ctx)
@@ -37,9 +41,9 @@ public class UIView_HUD : UIView
         currentMapType = MapType.Town;
 
         Init_HUDScreenBlood();
-        Init_HUDDirIndicator();
         Init_HUDSteminaBar();
         Init_HUDEquipment();
+        Init_HUDDirIndicator();
 
         bool isTown = MapType.Town == currentMapType;
 
@@ -88,7 +92,7 @@ public class UIView_HUD : UIView
 
     private void Init_HUDEquipment()
     {
-        hudEquipment = Instantiate(hudEquipmentPrefab, uiRoot.transform).GetComponent<HUD_Equipment>();
+        hudEquipment = Instantiate(hudEquipmentPrefab, moveHUD.transform).GetComponent<HUD_Equipment>();
 
         if (null != hudEquipment)
         {
@@ -102,10 +106,7 @@ public class UIView_HUD : UIView
 
     private void Init_HUDScreenBlood()
     {
-        Canvas _rootCanvas = GetComponentInParent<Canvas>();
-        Transform _parent = (null != _rootCanvas) ? _rootCanvas.transform : transform;
-
-        hudScreenBlood = Instantiate(hudScreenBloodPrefab, _parent).GetComponent<HUD_ScreenBlood>();
+        hudScreenBlood = Instantiate(hudScreenBloodPrefab, uiRoot.transform).GetComponent<HUD_ScreenBlood>();
 
         if (null != hudScreenBlood)
         {
@@ -116,7 +117,7 @@ public class UIView_HUD : UIView
 
     private void Init_HUDSteminaBar()
     {
-        hudSteminaBar = Instantiate(hudSteminaBarPrefab, uiRoot.transform).GetComponent<HUD_Stemina>();
+        hudSteminaBar = Instantiate(hudSteminaBarPrefab, moveHUD.transform).GetComponent<HUD_Stemina>();
 
         if (null != hudSteminaBar)
         {
@@ -173,7 +174,6 @@ public class UIView_HUD : UIView
         if (false == bTown)
         {
             hudEquipment?.ResetAllMotions();
-            hudDirIndicator?.OnShow();
         }
         else
         {
@@ -231,7 +231,7 @@ public class UIView_HUD : UIView
 
         if (MapType.Town != currentMapType)
         {
-            hudDirIndicator?.OnShow();
+            hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
     }
 }
