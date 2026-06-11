@@ -129,3 +129,51 @@ MonoBehaviour:
     enumValueName: MagmaForest
     enumIntValue: 5
     compositeKey: 2097158
+  - enumTypeName: TreeType
+    enumValueName: OakTree
+    enumIntValue: 1
+    compositeKey: 14680065
+  - enumTypeName: TreeType
+    enumValueName: PineTree
+    enumIntValue: 2
+    compositeKey: 14680066
+  - enumTypeName: TreeType
+    enumValueName: BirchTree
+    enumIntValue: 3
+    compositeKey: 14680067
+  - enumTypeName: TreeType
+    enumValueName: SporepuffTree
+    enumIntValue: 4
+    compositeKey: 14680068
+  - enumTypeName: TreeType
+    enumValueName: FluffyMyceliumTree
+    enumIntValue: 5
+    compositeKey: 14680069
+  - enumTypeName: TreeType
+    enumValueName: BellpineTree
+    enumIntValue: 6
+    compositeKey: 14680070
+  - enumTypeName: TreeType
+    enumValueName: StarrootTree
+    enumIntValue: 7
+    compositeKey: 14680071
+  - enumTypeName: TreeType
+    enumValueName: MoonhaloTree
+    enumIntValue: 8
+    compositeKey: 14680072
+  - enumTypeName: TreeType
+    enumValueName: GalaxygrainTree
+    enumIntValue: 9
+    compositeKey: 14680073
+  - enumTypeName: TreeType
+    enumValueName: CinderTree
+    enumIntValue: 10
+    compositeKey: 14680074
+  - enumTypeName: TreeType
+    enumValueName: LavasapTree
+    enumIntValue: 11
+    compositeKey: 14680075
+  - enumTypeName: TreeType
+    enumValueName: ObsidianTree
+    enumIntValue: 12
+    compositeKey: 14680076

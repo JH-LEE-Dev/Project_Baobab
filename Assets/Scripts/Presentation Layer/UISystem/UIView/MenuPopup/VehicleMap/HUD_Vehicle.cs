@@ -111,7 +111,7 @@ public class HUD_Vehicle : MonoBehaviour
 
         if (null != treeField)
         {
-            treeField.Initialize();
+            treeField.Initialize(_localizeManager);
             treeField.treeSelectedEvent -= HandleTreeSelected;
             treeField.treeSelectedEvent += HandleTreeSelected;
         }
