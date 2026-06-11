@@ -140,3 +140,12 @@ public struct GameEndSignal { }
 public struct DropAllItemSignal { }
 
 public struct InventoryItemTransferToOffroadContainerSignal { }
+
+public struct DeclareDungeonStateSignal
+{
+    public DungeonState dungeonState;
+    public DeclareDungeonStateSignal(DungeonState _dungeonState)
+    {
+        dungeonState = _dungeonState;
+    }
+}

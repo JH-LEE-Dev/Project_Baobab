@@ -234,4 +234,10 @@ public class UIView_HUD : UIView
             hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
     }
+
+    //Dungeon State가 선언됨. 
+    public void DungeonStateDeclared(DungeonState _dungeonState)
+    {
+        Debug.Log(_dungeonState);
+    }
 }

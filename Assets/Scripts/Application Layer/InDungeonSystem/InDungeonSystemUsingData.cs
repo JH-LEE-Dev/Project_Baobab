@@ -43,3 +43,12 @@ public struct HiddenMapGradeProbData
         probability = _probability;
     }
 }
+
+public enum DungeonState
+{
+    None,
+    Stage1_Idle0,
+    Stage1_Idle1,
+    Stage1_Idle2,
+    Stage1_Idle3,
+}
