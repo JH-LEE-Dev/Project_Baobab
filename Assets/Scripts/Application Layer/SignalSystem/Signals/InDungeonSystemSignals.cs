@@ -138,3 +138,5 @@ public struct LogItemProcessorActiveStateSignal
 public struct GameEndSignal { }
 
 public struct DropAllItemSignal { }
+
+public struct InventoryItemTransferToOffroadContainerSignal { }

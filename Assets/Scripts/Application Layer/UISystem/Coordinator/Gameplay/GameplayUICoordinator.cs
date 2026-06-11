@@ -85,6 +85,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.Subscribe<GameEndSignal>(GameEnd);
         signalHub.Subscribe<ActivateWarningUISignal>(ActivateWarningUI);
+        signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
     }
 
     private void UnSubscribeSignals()
@@ -127,6 +128,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ProvideSkillAccumulatedValueChangeSignal>(ProvideAccumulatedValueChangeEvent);
         signalHub.UnSubscribe<GameEndSignal>(GameEnd);
         signalHub.UnSubscribe<ActivateWarningUISignal>(ActivateWarningUI);
+        signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
     }
 
     private void BindEvents()
@@ -357,6 +359,7 @@ public class GameplayUICoordinator
     private void TownStarted(TownStartedSignal townStartedSignal)
     {
         unitUI.Refresh();
+        unitUI.TownStarted();
         hudUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         popUpUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
 
@@ -525,7 +528,12 @@ public class GameplayUICoordinator
             warningUI.Hide();
             return;
         }
-        
+
         signalHub.Publish(new WarningUIClosedSignal(warningUI.bApproved));
+    }
+
+    private void InventoryItemToOffroadContainer(InventoryItemTransferToOffroadContainerSignal _inventoryItemToOffroadContainerSignal)
+    {
+        unitUI.InventoryItemToOffroadContainer();
     }
 }
