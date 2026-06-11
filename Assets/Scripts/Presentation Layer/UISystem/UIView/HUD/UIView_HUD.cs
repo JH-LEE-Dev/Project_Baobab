@@ -11,12 +11,15 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
+    [SerializeField] private GameObject hudMessagePrefab;
+
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudSteminaBar;
     private HUD_DirIndicator hudDirIndicator;
+    private HUD_Message hudMessage;
 
     private ICharacter character;
 
@@ -37,13 +40,13 @@ public class UIView_HUD : UIView
         Init_HUDDirIndicator();
         Init_HUDSteminaBar();
         Init_HUDEquipment();
+        Init_HUDMessage();
 
         bool isTown = MapType.Town == currentMapType;
 
         ChangedActiveStateEquipment(isTown);
         ChangedActiveStateStemina(isTown);
     }
-
     public override void OnDestroy()
     {
         hudEquipment?.OnDestroy();
@@ -117,6 +120,17 @@ public class UIView_HUD : UIView
             hudDirIndicator.Initialize();
         }
     }
+
+    private void Init_HUDMessage()
+    {
+        if (null == hudMessage)
+            hudMessage = Instantiate(hudMessagePrefab, uiRoot.transform).GetComponent<HUD_Message>();
+
+        if (null != hudMessage)
+            hudMessage.Initialize();
+    }
+
+
 
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
     {
