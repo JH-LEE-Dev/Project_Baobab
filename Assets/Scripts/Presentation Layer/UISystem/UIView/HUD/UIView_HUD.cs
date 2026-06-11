@@ -17,7 +17,7 @@ public class UIView_HUD : UIView
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
     private HUD_Equipment hudEquipment;
-    private HUD_Stemina hudSteminaBar;
+    private HUD_Stemina hudStaminaBar;
     private HUD_DirIndicator hudDirIndicator;
     private HUD_ScreenBlood hudScreenBlood;
 
@@ -41,7 +41,7 @@ public class UIView_HUD : UIView
         currentMapType = MapType.Town;
 
         Init_HUDScreenBlood();
-        Init_HUDSteminaBar();
+        Init_HUDStaminaBar();
         Init_HUDEquipment();
         Init_HUDDirIndicator();
 
@@ -115,13 +115,13 @@ public class UIView_HUD : UIView
         }
     }
 
-    private void Init_HUDSteminaBar()
+    private void Init_HUDStaminaBar()
     {
-        hudSteminaBar = Instantiate(hudSteminaBarPrefab, moveHUD.transform).GetComponent<HUD_Stemina>();
+        hudStaminaBar = Instantiate(hudSteminaBarPrefab, moveHUD.transform).GetComponent<HUD_Stemina>();
 
-        if (null != hudSteminaBar)
+        if (null != hudStaminaBar)
         {
-            hudSteminaBar.Initialize(hudScreenBlood);
+            hudStaminaBar.Initialize(hudScreenBlood);
         }
     }
 
@@ -139,7 +139,7 @@ public class UIView_HUD : UIView
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
     {
         float newRatio = _currentStemina / _maxStemina;
-        hudSteminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
+        hudStaminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
     }
 
     #endregion
@@ -148,12 +148,6 @@ public class UIView_HUD : UIView
     public void WeaponModeChanged(WeaponMode _currentWeaponMode, bool _isMapChanged = false)
     {
       
-    }
-
-
-    public void InventorySpecChanged() //인벤토리 스펙 변동 시 호출
-    {
-        
     }
 
     public override void Refresh()
@@ -198,10 +192,10 @@ public class UIView_HUD : UIView
 
     private void ChangedActiveStateStemina(bool _isTwon)
     {
-        if (null == hudSteminaBar)
+        if (null == hudStaminaBar)
             return;
 
-        hudSteminaBar.SetActivate(!_isTwon);
+        hudStaminaBar.SetActivate(!_isTwon);
     }
 
     public void OffroadSpawned(IOffroadProvider _offroadProvider)

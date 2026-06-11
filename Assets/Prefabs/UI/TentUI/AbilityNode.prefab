@@ -397,7 +397,7 @@ MonoBehaviour:
     initialPoolSize: 10
     allowDynamicExpansion: 1
     maxPoolSize: 20
-    uiParticleScale: 20
+    uiParticleScale: 15
 --- !u!1 &3681080422180222388
 GameObject:
   m_ObjectHideFlags: 0
@@ -765,6 +765,8 @@ MonoBehaviour:
   currentLevel: 0
   gridPosition: {x: 0, y: 0}
   parentSkillTypes: 
+  abilityNodeTouchArea: {fileID: 0}
+  abilityVisualRoot: {fileID: 0}
   abilityBaseImage: {fileID: 3304097743168148013}
   abilityBackgroundImage: {fileID: 1363425424598749706}
   abilityPictureImage: {fileID: 6666146036124203983}
@@ -779,7 +781,6 @@ MonoBehaviour:
   clickMotionTag: UIClick
   nonPassClickMotionTag: UIClick_Nonpass
   resetCurrentMotionBeforePlay: 0
-  hoverStablePadding: 8
   clickCancelDragThreshold: 8
 --- !u!1 &6942825010293521783
 GameObject:
