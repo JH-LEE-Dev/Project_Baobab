@@ -542,4 +542,12 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     {
         ReturnToPool();
     }
+
+    private void OnDestroy()
+    {
+        if (null != targetTransform && transform != targetTransform)
+        {
+            Destroy(targetTransform.gameObject);
+        }
+    }
 }

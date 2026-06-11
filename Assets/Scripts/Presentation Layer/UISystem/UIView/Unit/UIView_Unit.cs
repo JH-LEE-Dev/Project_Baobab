@@ -307,11 +307,16 @@ public class UIView_Unit : UIView
 
     public void TownStarted()
     {
-        
+        if (null != speechBubble)
+            speechBubble.RemoveAllShownIds();
     }
 
     public void InventoryItemToOffroadContainer()
     {
-        
+        if (null != speechBubble)
+        {
+            speechBubble.RemoveShownId(1);
+            speechBubble.RemoveShownId(2);
+        }
     }
 }

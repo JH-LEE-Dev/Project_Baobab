@@ -38,7 +38,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     [SerializeField] private float repeatDelay = 0.4f;
     [SerializeField] private float repeatInterval = 0.1f;
     [Header("Localization")]
-    private LocalizationMapping localizationMapping;
+    [SerializeField] private LocalizationMapping localizationMapping;
 
     // 내부 의존성
     private readonly List<HUD_NavigationRegion> spawnedRegions = new List<HUD_NavigationRegion>(8);
@@ -67,6 +67,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     private float nextScrollTime = 0f;
     private float buttonPressDuration = 0f;
     private TweenCallback playMapNameChangeMotionCallback;
+    private Tween mapNameChangeTween;
 
     // 캐싱된 상수 및 리터럴 값
     private const float defaultScrollStepSize = 100f;
@@ -220,11 +221,6 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         targetY = Mathf.Clamp(targetY + scrollAmount, minScrollY, maxScrollY);
     }
 
-    public MapType GetSelectedMapType()
-    {
-        return currentSelectedMapType;
-    }
-
     public void SetSelectedMapTypeWithoutAnimation(MapType _mapType)
     {
         currentSelectedMapType = _mapType;
@@ -232,7 +228,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
         for (int i = 0; i < spawnedRegions.Count; i++)
             if (null != spawnedRegions[i])
-                spawnedRegions[i].SetSelect(spawnedRegions[i].GetMapType() == _mapType);
+                spawnedRegions[i].SetSelect(_mapType == spawnedRegions[i].GetMapType());
     }
 
     public void ResetSelection(bool _updateText = true)
@@ -341,14 +337,16 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             _newText = "등장하는 나무 정보";
         }
  
-        if (mapNameText.text != _newText)
+        if (_newText != mapNameText.text)
         {
             mapNameText.text = _newText;
  
             if (null != mapNameOmp)
             {
                 mapNameOmp.ResetAllMotions();
-                DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
+                if (null != mapNameChangeTween && true == mapNameChangeTween.IsActive())
+                    mapNameChangeTween.Kill();
+                mapNameChangeTween = DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
             }
         }
     }
@@ -364,7 +362,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     private void OnRegionDisappearComplete()
     {
         disappearCompletedCount++;
-        if (disappearCompletedCount == disappearActiveCount)
+        if (disappearActiveCount == disappearCompletedCount)
         {
             for (int j = 0; j < spawnedRegions.Count; j++)
                 if (null != spawnedRegions[j])
@@ -508,6 +506,11 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
     }
 
+    public MapType GetSelectedMapType()
+    {
+        return currentSelectedMapType;
+    }
+
     private void HandleRegionSelected(MapType _mapType)
     {
         currentSelectedMapType = _mapType;
@@ -517,8 +520,54 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         // 생성된 모든 리전 버튼을 순회하며 포커스 상태(SetSelect)를 동적으로 업데이트
         for (int i = 0; i < spawnedRegions.Count; i++)
             if (null != spawnedRegions[i])
-                spawnedRegions[i].SetSelect(spawnedRegions[i].GetMapType() == _mapType);
+                spawnedRegions[i].SetSelect(_mapType == spawnedRegions[i].GetMapType());
     }
+
+    private void UpdateMapNameText(MapType _mapType)
+    {
+        if (null == mapNameText)
+            return;
+
+        string _newText = string.Empty;
+
+        if (null != localizationManager)
+        {
+            string _localizedName = localizationManager.GetText(_mapType);
+            if (false == string.IsNullOrEmpty(_localizedName))
+            {
+                _newText = _localizedName;
+            }
+        }
+
+        if (true == string.IsNullOrEmpty(_newText))
+        {
+            if (MapType.None == _mapType)
+                _newText = defaultMapNameText;
+            else
+                _newText = GetMapTypeString(_mapType);
+        }
+
+        if (_newText != mapNameText.text)
+        {
+            mapNameText.text = _newText;
+
+            if (null != mapNameOmp)
+            {
+                mapNameOmp.ResetAllMotions();
+                if (null != mapNameChangeTween && true == mapNameChangeTween.IsActive())
+                    mapNameChangeTween.Kill();
+                mapNameChangeTween = DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
+            }
+        }
+    }
+
+    private string GetMapTypeString(MapType _type) => _type switch
+    {
+        MapType.Town => townString,
+        MapType.VegetatedForest => plainsString,
+        MapType.MongleSporeForest => forestString,
+        _ => noneString
+    };
 
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
@@ -589,47 +638,9 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         }
     }
 
-    private void UpdateMapNameText(MapType _mapType)
+    private void OnDestroy()
     {
-        if (null == mapNameText)
-            return;
-
-        string _newText = string.Empty;
-
-        if (null != localizationManager)
-        {
-            string _localizedName = localizationManager.GetText(_mapType);
-            if (false == string.IsNullOrEmpty(_localizedName))
-            {
-                _newText = _localizedName;
-            }
-        }
-
-        if (true == string.IsNullOrEmpty(_newText))
-        {
-            if (MapType.None == _mapType)
-                _newText = defaultMapNameText;
-            else
-                _newText = GetMapTypeString(_mapType);
-        }
-
-        if (mapNameText.text != _newText)
-        {
-            mapNameText.text = _newText;
-
-            if (null != mapNameOmp)
-            {
-                mapNameOmp.ResetAllMotions();
-                DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
-            }
-        }
+        if (null != mapNameChangeTween && true == mapNameChangeTween.IsActive())
+            mapNameChangeTween.Kill();
     }
-
-    private string GetMapTypeString(MapType _type) => _type switch
-    {
-        MapType.Town => townString,
-        MapType.VegetatedForest => plainsString,
-        MapType.MongleSporeForest => forestString,
-        _ => noneString
-    };
 }

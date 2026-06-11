@@ -41,12 +41,11 @@ public class UI_Inventory : MonoBehaviour
     private IInventory inventory;
     private IMoneyData moneyData;
     private UI_InventoryPopup invPopup;
-    private MapType prevMapType = MapType.Town;
 
     private int hideAccCount = 0;
 
-    public MapType currentMapType { get; set; } = MapType.Town;
-    public bool isOpening { get; private set; } = false;
+    public MapType CurrentMapType { get; set; } = MapType.Town;
+    public bool IsOpening { get; private set; } = false;
 
     public Action inventoryHoverEvent;
     public Action inventoryUnHoverEvent;
@@ -162,7 +161,7 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != invPopup)
         {
-            invPopup.Initialize(defaultPopupCap);
+            invPopup.Initialize();
             invPopup.gameObject.SetActive(false);
         }
     }
@@ -232,8 +231,7 @@ public class UI_Inventory : MonoBehaviour
 
     public void MapChanged(MapType _currentMap)
     {
-        prevMapType = currentMapType;
-        currentMapType = _currentMap;
+        CurrentMapType = _currentMap;
 
         if (null != uiHoming)
             uiHoming.currentMapType = _currentMap;
@@ -247,7 +245,7 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         HandleExitPopup();
-        isOpening = false;
+        IsOpening = false;
 
         omp.PlayBackward(backpackTag, bReset: true, _skip: true);
         omp.PlayBackward(coinsTag, bReset: true, _skip: true);
@@ -260,12 +258,12 @@ public class UI_Inventory : MonoBehaviour
         if (null == notificationBadge)
             return;
 
-        notificationBadge.UpdateAndInteraction(!isOpening ? ++hideAccCount : 0); 
+        notificationBadge.UpdateAndInteraction(!IsOpening ? ++hideAccCount : 0); 
     }
 
     public void OnHide()
     {
-        isOpening = isOpenAnimated = false;
+        IsOpening = isOpenAnimated = false;
 
         if (null != omp)
         {
@@ -276,7 +274,7 @@ public class UI_Inventory : MonoBehaviour
         uiBackpack?.CloseInventory();
         HandleExitPopup();
 
-        if (MapType.Town == currentMapType)
+        if (MapType.Town == CurrentMapType)
             return;
 
         if (null != omp)
@@ -291,7 +289,7 @@ public class UI_Inventory : MonoBehaviour
         if (true == isOpenAnimated)
             return;
 
-        isOpening = isOpenAnimated = true;
+        IsOpening = isOpenAnimated = true;
         hideAccCount = 0;
 
         if (null != omp)
@@ -303,7 +301,7 @@ public class UI_Inventory : MonoBehaviour
         uiBackpack?.OpenInventory();
         InventoryShowEvent();
 
-        if (MapType.Town == currentMapType)
+        if (MapType.Town == CurrentMapType)
             return;
 
         if (null != omp)
@@ -334,4 +332,12 @@ public class UI_Inventory : MonoBehaviour
     }
 
     public void ClearNotification() => notificationBadge?.UpdateAndInteraction(0);
+
+
+    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void OnDestroy()
+    {
+        Release();
+    }
 }

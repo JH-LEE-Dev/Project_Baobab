@@ -207,10 +207,10 @@ public class UIView_WorldPopup : UIView
     public void LogContainerInteractStateChanged(bool _state)
     {
         if (null != ui_Storage)
-            ui_Storage.isCollShow = _state;
+            ui_Storage.IsCollShow = _state;
 
         if (null != ui_Cutter)
-            ui_Cutter.isCollShow = _state;
+            ui_Cutter.IsCollShow = _state;
 
         if(false == isLogProcesserActive)
             ShowLogProcessor(_state);
@@ -226,7 +226,6 @@ public class UIView_WorldPopup : UIView
         if (null != ui_Cutter)
         {
             ui_Cutter.BindItemData(logCutter.logToCut);
-            ui_Cutter.BindRemaining(logCutter.timeRemaining);
         }
     }
 
@@ -256,7 +255,6 @@ public class UIView_WorldPopup : UIView
         if (null != ui_Cutter && null != logCutter.logToCut && logCutter.bIsCutting == true)
         {
             ui_Cutter.BindItemData(logCutter.logToCut);
-            ui_Cutter.BindRemaining(logCutter.timeRemaining);
         }
         else
         {

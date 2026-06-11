@@ -174,4 +174,13 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
     {
         ResetAnimation();
     }
+
+    private void OnDestroy()
+    {
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != shakeTween && true == shakeTween.IsActive())
+            shakeTween.Kill();
+    }
 }

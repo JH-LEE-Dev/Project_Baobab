@@ -196,10 +196,22 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         isHovered = false;
         pressTime = 0.0f;
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != transitionTween && true == transitionTween.IsActive())
+            transitionTween.Kill();
+
+        if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
 
         if (null != buttonImage)
             buttonImage.color = normalColor;
+    }
+
+    private void OnDestroy()
+    {
+        if (null != transitionTween && true == transitionTween.IsActive())
+            transitionTween.Kill();
+
+        if (null != colorTween && true == colorTween.IsActive())
+            colorTween.Kill();
     }
 }

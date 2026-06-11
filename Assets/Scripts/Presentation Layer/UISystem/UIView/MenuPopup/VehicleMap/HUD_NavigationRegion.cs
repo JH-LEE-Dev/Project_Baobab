@@ -423,16 +423,28 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     private void OnDisable()
     {
-        if (null != appearDelayTween && appearDelayTween.IsActive())
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
             appearDelayTween.Kill();
 
-        if (null != scaleTween && scaleTween.IsActive())
+        if (null != scaleTween && true == scaleTween.IsActive())
             scaleTween.Kill();
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
 
         isClicked = false;
         isHovered = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != scaleTween && true == scaleTween.IsActive())
+            scaleTween.Kill();
+
+        if (null != colorTween && true == colorTween.IsActive())
+            colorTween.Kill();
     }
 }

@@ -305,7 +305,10 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         isClicked = false;
         isHovered = false;
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
 
         if (null != buttonImage)
@@ -313,5 +316,14 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
         if (null != motionPlayer)
             motionPlayer.ResetAllMotions();
+    }
+
+    private void OnDestroy()
+    {
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != colorTween && true == colorTween.IsActive())
+            colorTween.Kill();
     }
 }

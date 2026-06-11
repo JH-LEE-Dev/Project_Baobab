@@ -19,8 +19,6 @@ public class HUD_NavigationSubField : MonoBehaviour
 
     // 내부 의존성
     private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(maxSubRegionCount);
-    private Action<RectTransform, Vector2> onSubRegionHoverEnteredCallback;
-    private Action onSubRegionHoverExitedCallback;
     private Action<int> onSubRegionSelectedCallback;
     private int currentSelectedNumber = -1;
     private bool isInitialized = false;
@@ -46,8 +44,6 @@ public class HUD_NavigationSubField : MonoBehaviour
             return;
 
         currentSelectedNumber = -1;
-        onSubRegionHoverEnteredCallback = OnSubRegionHoverEntered;
-        onSubRegionHoverExitedCallback = OnSubRegionHoverExited;
         onSubRegionSelectedCallback = OnSubRegionSelected;
         onSubRegionDisappearCompleteCallback = OnSubRegionDisappearComplete;
 
@@ -102,7 +98,7 @@ public class HUD_NavigationSubField : MonoBehaviour
             if (maxSubRegionCount > i && dataCount > i)
             {
                 spawnedSubRegions[i].PlayOpenAnimation();
-                spawnedSubRegions[i].Setup(_forestDatas[i], i + 1, onSubRegionHoverEnteredCallback, onSubRegionHoverExitedCallback, onSubRegionSelectedCallback);
+                spawnedSubRegions[i].Setup(_forestDatas[i], i + 1, null, null, onSubRegionSelectedCallback);
                 spawnedSubRegions[i].PlayAppearAnimation(i * subRegionAppearDelayGap);
             }
             else
@@ -315,7 +311,7 @@ public class HUD_NavigationSubField : MonoBehaviour
     private void OnSubRegionDisappearComplete()
     {
         disappearCompletedCount++;
-        if (disappearCompletedCount == disappearActiveCount)
+        if (disappearActiveCount == disappearCompletedCount)
         {
             for (int j = 0; j < spawnedSubRegions.Count; j++)
                 if (null != spawnedSubRegions[j])
@@ -326,18 +322,6 @@ public class HUD_NavigationSubField : MonoBehaviour
         }
     }
 
-
-    // 내부 로직 (콜백 메서드)
-
-    private void OnSubRegionHoverEntered(RectTransform _targetRect, Vector2 _targetSize)
-    {
-        // 호버 시 부가 연출이 필요하다면 구현 가능
-    }
-
-    private void OnSubRegionHoverExited()
-    {
-        // 호버 해제 시 부가 연출
-    }
 
     private void OnSubRegionSelected(int _number)
     {
@@ -353,5 +337,17 @@ public class HUD_NavigationSubField : MonoBehaviour
         }
 
         subRegionSelectedEvent?.Invoke();
+    }
+
+
+    // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void OnDisable()
+    {
+        ResetSelection();
+    }
+
+    private void OnDestroy()
+    {
     }
 }

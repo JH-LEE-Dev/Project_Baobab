@@ -425,4 +425,38 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             }
         }
     }
+
+    private void OnDisable()
+    {
+        isHovered = false;
+        isClicked = false;
+        isPendingExit = false;
+
+        if (null != colorTween && true == colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != pingPongTween && true == pingPongTween.IsActive())
+            pingPongTween.Kill();
+
+        if (null != iconImage)
+            iconImage.color = normalColor;
+
+        if (null != motionPlayer)
+            motionPlayer.ResetAllMotions();
+    }
+
+    private void OnDestroy()
+    {
+        if (null != colorTween && true == colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != pingPongTween && true == pingPongTween.IsActive())
+            pingPongTween.Kill();
+    }
 }

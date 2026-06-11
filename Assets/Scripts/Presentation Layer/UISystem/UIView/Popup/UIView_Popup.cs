@@ -95,7 +95,7 @@ public class UIView_Popup : UIView
     {
         if (true == _bCanInteract)
         {
-            if (null != uiInventory && false == uiInventory.isOpening)
+            if (null != uiInventory && false == uiInventory.IsOpening)
             {
                 InventoryUIOpendEvent.Invoke(true);
                 isAutoOpenedByInteraction = true;
@@ -217,7 +217,7 @@ public class UIView_Popup : UIView
 
     public void InventoryIsFull()
     {
-        if (true == uiInventory?.isOpening)
+        if (null != uiInventory && true == uiInventory.IsOpening)
             return;
 
         InventoryUIOpendEvent?.Invoke(true);
@@ -230,7 +230,7 @@ public class UIView_Popup : UIView
             omp.Play(mapTransitionMotionTag, bReset: true);
         }
 
-        if (null != uiInventory && true == uiInventory.isOpening)
+        if (null != uiInventory && true == uiInventory.IsOpening)
             InventoryUIOpendEvent?.Invoke(false);
     }
 

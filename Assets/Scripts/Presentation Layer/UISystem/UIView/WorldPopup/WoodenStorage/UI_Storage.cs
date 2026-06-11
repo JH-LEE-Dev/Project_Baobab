@@ -22,7 +22,7 @@ public class UI_Storage : MonoBehaviour
 
     private IInventory storage;
     private List<UI_InventorySlot> storageSlots;
-    public bool isOpening { get; private set; } = false;
+    public bool IsOpening { get; private set; } = false;
     public bool IsOpen => isOnShow;
 
     [SerializeField] private string popupTag = "Popup";
@@ -39,7 +39,7 @@ public class UI_Storage : MonoBehaviour
     private bool isPendingHide = false;
 
     private bool isOnShow = false;
-    public bool isCollShow { get; set; } = false;
+    public bool IsCollShow { get; set; } = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -129,7 +129,7 @@ public class UI_Storage : MonoBehaviour
         if (true == isOnShow)
             return;
 
-        gameObject.SetActive(isOpening = true);
+        gameObject.SetActive(IsOpening = true);
         isPendingHide = false;
         isOnShow = true;
 
@@ -164,7 +164,7 @@ public class UI_Storage : MonoBehaviour
             return;
         }
 
-        if (false == isCollShow)
+        if (false == IsCollShow)
             StartHideMotion();
     }
 
@@ -172,7 +172,7 @@ public class UI_Storage : MonoBehaviour
 
     private void OnCompleteAnim()
     {
-        gameObject.SetActive(isOpening = false);
+        gameObject.SetActive(IsOpening = false);
     }
 
     private void OnPositioningTweenComplete()
@@ -192,7 +192,7 @@ public class UI_Storage : MonoBehaviour
 
         if (null == omp)
         {
-            gameObject.SetActive(isOpening = false);
+            gameObject.SetActive(IsOpening = false);
             return;
         }
 
@@ -285,7 +285,7 @@ public class UI_Storage : MonoBehaviour
         {
             if (0.01f > Mathf.Abs(_pivotX - 0.5f))
                 _pos.x = Mathf.Round(_pos.x - 0.5f) + 0.5f;
-            else if (0.01f > Mathf.Abs(_pivotX - 0.5f) == false && (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f)))
+            else if (false == (0.01f > Mathf.Abs(_pivotX - 0.5f)) && (0.01f > Mathf.Abs(_pivotX - 0f) || 0.01f > Mathf.Abs(_pivotX - 1f)))
                 _pos.x = Mathf.Round(_pos.x);
         }
         else
@@ -302,7 +302,7 @@ public class UI_Storage : MonoBehaviour
         {
             if (0.01f > Mathf.Abs(_pivotY - 0.5f))
                 _pos.y = Mathf.Round(_pos.y - 0.5f) + 0.5f;
-            else if (0.01f > Mathf.Abs(_pivotY - 0.5f) == false && (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f)))
+            else if (false == (0.01f > Mathf.Abs(_pivotY - 0.5f)) && (0.01f > Mathf.Abs(_pivotY - 0f) || 0.01f > Mathf.Abs(_pivotY - 1f)))
                 _pos.y = Mathf.Round(_pos.y);
         }
         else
@@ -319,7 +319,7 @@ public class UI_Storage : MonoBehaviour
 
     private void Update()
     {
-        if (true == isOpening && null != rect && null != storage && null != playerTransform && true == useDynamicPositioning)
+        if (true == IsOpening && null != rect && null != storage && null != playerTransform && true == useDynamicPositioning)
         {
             Vector3 _storagePos = storage.GetTransform().position;
             bool _currentLeft = (playerTransform.position.x < _storagePos.x);
@@ -330,5 +330,11 @@ public class UI_Storage : MonoBehaviour
                 TriggerPositioningTween();
             }
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (null != positioningTween && true == positioningTween.IsActive())
+            positioningTween.Kill();
     }
 }

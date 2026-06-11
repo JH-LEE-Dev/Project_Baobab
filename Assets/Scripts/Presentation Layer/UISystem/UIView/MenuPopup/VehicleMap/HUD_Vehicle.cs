@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
@@ -40,7 +41,7 @@ public class HUD_Vehicle : MonoBehaviour
     private UnityEngine.Events.UnityAction onNavTopCompleteCallback;
     private UnityEngine.Events.UnityAction onControlPanelCompleteCallback;
     private UnityEngine.Events.UnityAction handleCloseCallback;
-    private System.Collections.Generic.List<ForestEnvironmentInfo> pendingForestDatas;
+    private List<ForestEnvironmentInfo> pendingForestDatas;
     private MapType pendingMapType = MapType.None;
     private bool isBlinking = false;
 
@@ -268,30 +269,6 @@ public class HUD_Vehicle : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private void HandleInteractButtonClicked()
-    {
-        isBlinking = !isBlinking;
-
-        if (null != blinkTween && blinkTween.IsActive())
-            blinkTween.Kill();
-
-        if (true == isBlinking)
-        {
-            if (null != lightImage)
-            {
-                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, transparentAlpha);
-                blinkTween = lightImage.DOColor(new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, blinkTargetAlpha), blinkDuration)
-                                       .SetLoops(-1, LoopType.Yoyo)
-                                       .SetEase(blinkEase);
-            }
-        }
-        else
-        {
-            if (null != lightImage)
-                lightImage.color = new Color(lightImage.color.r, lightImage.color.g, lightImage.color.b, transparentAlpha);
-        }
-    }
-
     private void HandleRegionSelected(MapType _mapType)
     {
         if (null == mapDataProvider || null == subField || null == navigation)
@@ -304,7 +281,7 @@ public class HUD_Vehicle : MonoBehaviour
         MapEnvironmentDataInfo targetInfo = default;
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
-            if (_mapType == db.mapDatas[i].mapType)
+            if (db.mapDatas[i].mapType == _mapType)
             {
                 targetInfo = db.mapDatas[i];
                 break;
@@ -377,7 +354,7 @@ public class HUD_Vehicle : MonoBehaviour
         MapEnvironmentDataInfo targetInfo = default;
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
-            if (_mapType == db.mapDatas[i].mapType)
+            if (db.mapDatas[i].mapType == _mapType)
             {
                 targetInfo = db.mapDatas[i];
                 break;
@@ -475,6 +452,9 @@ public class HUD_Vehicle : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (null != blinkTween && true == blinkTween.IsActive())
+            blinkTween.Kill();
+
         if (null != navigation)
             navigation.regionSelectedEvent -= HandleRegionSelected;
 
@@ -489,7 +469,7 @@ public class HUD_Vehicle : MonoBehaviour
     {
         isBlinking = false;
 
-        if (null != blinkTween && blinkTween.IsActive())
+        if (null != blinkTween && true == blinkTween.IsActive())
             blinkTween.Kill();
 
         if (null != lightImage)

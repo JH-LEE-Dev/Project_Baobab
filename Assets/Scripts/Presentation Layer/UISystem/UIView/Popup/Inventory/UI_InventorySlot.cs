@@ -186,4 +186,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null != exitSlot)
             exitSlot.Invoke();
     }
+
+    private void OnDestroy()
+    {
+        ResetData();
+    }
 }

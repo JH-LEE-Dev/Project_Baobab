@@ -47,13 +47,27 @@ public class UI_SpeechBubble : MonoBehaviour
     }
 
     /// <summary>
-    /// 모든 노출 기록을 초기화하여 모든 ID를 다시 띄울 수 있도록 합니다.
+    /// 여러 ID의 노출 기록을 삭제하여 다시 띄울 수 있도록 합니다.
     /// </summary>
-    public void ClearShownIds()
+    public void RemoveShownIds(IReadOnlyList<int> _ids)
+    {
+        if (null == shownIds || null == _ids)
+            return;
+
+        for (int _i = 0; _i < _ids.Count; _i++)
+            shownIds.Remove(_ids[_i]);
+    }
+
+    /// <summary>
+    /// 모든 노출 기록을 삭제하여 모든 ID를 다시 띄울 수 있도록 합니다.
+    /// </summary>
+    public void RemoveAllShownIds()
     {
         if (null != shownIds)
             shownIds.Clear();
     }
+
+
 
     /// <summary>
     /// 특정 ID를 노출 완료 상태로 인위적으로 등록하여 이후 말풍선이 띄워지지 않도록 차단합니다.
