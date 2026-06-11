@@ -330,13 +330,9 @@ public class InDungeonSystem : MonoBehaviour
         if (bCurrentlyDungeonScene == true && bRetryGame == false)
             return;
 
-        inputManager.PauseInteractKey(false);
-        inputManager.PauseMove(false);
-
-
         if (bCurrentlyDungeonScene == true)
             signalHub.Publish(new ActivateCharacterSignal());
-            
+
         StartCoroutine(PopupUIGoUPCoroutine());
 
         if (bRetryGame == true)
@@ -353,13 +349,23 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new PopupUIUpSignal());
 
         if (bCurrentlyDungeonScene == true)
+        {
             StartCoroutine(StaminaDecreaseCoroutine());
+        }
+        else
+        {
+            character.col.enabled = true;
+            inputManager.PauseInteractKey(false);
+        }
     }
 
     private IEnumerator StaminaDecreaseCoroutine()
     {
         yield return new WaitForSeconds(0.7f);
         signalHub.Publish(new StartDecreaseStaminaSignal());
+        
+        character.col.enabled = true;
+        inputManager.PauseInteractKey(false);
     }
 
     private void RollbackSkyProduction()
