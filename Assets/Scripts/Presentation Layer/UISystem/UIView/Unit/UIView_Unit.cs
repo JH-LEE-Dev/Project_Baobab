@@ -289,4 +289,14 @@ public class UIView_Unit : UIView
     {
         speechBubble?.Play(3, "가방이 가득 차 있어서\n더 이상 다른 아이템을 획득 할 수 없어.\n<로컬라이징 해야 돼>", 3.5f);
     }
+
+    public void TownStarted()
+    {
+        
+    }
+
+    public void InventoryItemToOffroadContainer()
+    {
+        
+    }
 }
