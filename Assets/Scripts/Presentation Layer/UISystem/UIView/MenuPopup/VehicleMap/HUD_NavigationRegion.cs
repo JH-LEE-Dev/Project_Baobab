@@ -329,27 +329,27 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         isHovered = true;
 
         if (true == isClicked)
             return;
 
-        if (null != omp)
+        if (false == IsTransitioning())
         {
-            if (null != appearEntry)
+            if (null != omp)
             {
-                omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
-                appearEntry = null;
-            }
+                if (null != appearEntry)
+                {
+                    omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
+                    appearEntry = null;
+                }
 
-            if (null != unHoverEntry)
-                omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
-            if (null != clickEntry)
-                omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
-            hoverEntry = omp.Play(hoverTag, bReset: forceReset);
+                if (null != unHoverEntry)
+                    omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
+                if (null != clickEntry)
+                    omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
+                hoverEntry = omp.Play(hoverTag, bReset: forceReset);
+            }
         }
 
         if (null != colorTween && colorTween.IsActive())
@@ -364,38 +364,38 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         isHovered = false;
 
         if (true == isClicked)
             return;
 
+        if (false == IsTransitioning())
+        {
+            if (null != omp)
+            {
+                if (null != appearEntry)
+                {
+                    omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
+                    appearEntry = null;
+                }
+
+                if (null != hoverEntry)
+                    omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
+                if (null != clickEntry)
+                    omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
+
+                if (false == isSelected)
+                {
+                    if (null != buttonImage)
+                        buttonImage.color = GetHoverColor();
+                }
+
+                unHoverEntry = omp.Play(unHoverTag, bReset: forceReset);
+            }
+        }
+
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
-
-        if (null != omp)
-        {
-            if (null != appearEntry)
-            {
-                omp.SettingEntryMotion(appearEntry, forceReset, forceReset);
-                appearEntry = null;
-            }
-
-            if (null != hoverEntry)
-                omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
-            if (null != clickEntry)
-                omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
-
-            if (false == isSelected)
-            {
-                if (null != buttonImage)
-                    buttonImage.color = GetHoverColor();
-            }
-
-            unHoverEntry = omp.Play(unHoverTag, bReset: forceReset);
-        }
 
         if (false == isSelected)
         {

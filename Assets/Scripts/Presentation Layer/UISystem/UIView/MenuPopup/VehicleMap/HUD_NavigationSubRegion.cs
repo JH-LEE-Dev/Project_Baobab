@@ -287,30 +287,30 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
-        if (false == isLocked)
-        {
-            RectTransform _targetRect = GetRectTransform();
-            onHoverEnterEvent?.Invoke(_targetRect, _targetRect.rect.size);
-        }
-
         isHovered = true;
         isPendingExit = false;
         hoverEnterTime = Time.unscaledTime;
 
-        if (null != motionPlayer && false == isClicked)
+        if (false == IsTransitioning())
         {
-            if (null != exitMotion)
-                motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
+            if (false == isLocked)
+            {
+                RectTransform _targetRect = GetRectTransform();
+                onHoverEnterEvent?.Invoke(_targetRect, _targetRect.rect.size);
+            }
 
-            if (null != clickMotion)
-                motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
+            if (null != motionPlayer && false == isClicked)
+            {
+                if (null != exitMotion)
+                    motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
 
-            UpdateColor();
+                if (null != clickMotion)
+                    motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
 
-            enterMotion = motionPlayer.Play(hoverTag, bReset: forceReset);
+                UpdateColor();
+
+                enterMotion = motionPlayer.Play(hoverTag, bReset: forceReset);
+            }
         }
 
         if (null != colorTween && colorTween.IsActive())
@@ -325,9 +325,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         if (false == isHovered)
             return;
 
@@ -376,28 +373,31 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (true == isClicked)
             return;
 
-        if (false == isLocked)
-            onHoverExitEvent?.Invoke();
+        if (false == IsTransitioning())
+        {
+            if (false == isLocked)
+                onHoverExitEvent?.Invoke();
+
+            if (null != motionPlayer)
+            {
+                if (null != enterMotion)
+                    motionPlayer.SettingEntryMotion(enterMotion, forceReset, forceReset);
+
+                if (null != clickMotion)
+                    motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
+
+                if (false == isSelected)
+                {
+                    if (null != iconImage)
+                        iconImage.color = GetHoverColor();
+                }
+
+                exitMotion = motionPlayer.Play(hoverOffTag, bReset: forceReset);
+            }
+        }
 
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
-
-        if (null != motionPlayer)
-        {
-            if (null != enterMotion)
-                motionPlayer.SettingEntryMotion(enterMotion, forceReset, forceReset);
-
-            if (null != clickMotion)
-                motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
-
-            if (false == isSelected)
-            {
-                if (null != iconImage)
-                    iconImage.color = GetHoverColor();
-            }
-
-            exitMotion = motionPlayer.Play(hoverOffTag, bReset: forceReset);
-        }
 
         if (false == isSelected)
         {
@@ -411,9 +411,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private void Update()
     {
-        if (true == IsTransitioning())
-            return;
-
         if (true == isPendingExit && Time.unscaledTime >= pendingExitTime)
         {
             isPendingExit = false;

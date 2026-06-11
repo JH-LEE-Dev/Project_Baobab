@@ -229,6 +229,9 @@ public class UIView_Popup : UIView
         {
             omp.Play(mapTransitionMotionTag, bReset: true);
         }
+
+        if (null != uiInventory && true == uiInventory.isOpening)
+            InventoryUIOpendEvent?.Invoke(false);
     }
 
     public void PopupGoUp()

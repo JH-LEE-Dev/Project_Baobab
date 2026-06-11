@@ -35,7 +35,7 @@ Material:
     m_Floats:
     - _OutlineWidth: 1
     m_Colors:
-    - _MaskRect: {r: 0.027604166, g: 0.046296295, b: 0.033333335, a: 0.074074075}
+    - _MaskRect: {r: 0.0828125, g: -0.1388889, b: 0.1, a: 0.22222222}
     - _OutlineColor: {r: 1, g: 1, b: 1, a: 1}
     - _ShadowColor: {r: 0, g: 0, b: 0, a: 0.7490196}
     - _ShadowOffset: {r: -0.06, g: -0.06, b: 0, a: 0}

@@ -11,12 +11,14 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
+    [SerializeField] private GameObject hudScreenBloodPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudSteminaBar;
     private HUD_DirIndicator hudDirIndicator;
+    private HUD_ScreenBlood hudScreenBlood;
 
     private ICharacter character;
 
@@ -34,6 +36,7 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
+        Init_HUDScreenBlood();
         Init_HUDDirIndicator();
         Init_HUDSteminaBar();
         Init_HUDEquipment();
@@ -97,13 +100,27 @@ public class UIView_HUD : UIView
 
     #region HUD_Stemina Logic
 
+    private void Init_HUDScreenBlood()
+    {
+        Canvas _rootCanvas = GetComponentInParent<Canvas>();
+        Transform _parent = (null != _rootCanvas) ? _rootCanvas.transform : transform;
+
+        hudScreenBlood = Instantiate(hudScreenBloodPrefab, _parent).GetComponent<HUD_ScreenBlood>();
+
+        if (null != hudScreenBlood)
+        {
+            hudScreenBlood.Initialize();
+            hudScreenBlood.transform.SetAsLastSibling();
+        }
+    }
+
     private void Init_HUDSteminaBar()
     {
         hudSteminaBar = Instantiate(hudSteminaBarPrefab, uiRoot.transform).GetComponent<HUD_Stemina>();
 
         if (null != hudSteminaBar)
         {
-            hudSteminaBar.Initialize();
+            hudSteminaBar.Initialize(hudScreenBlood);
         }
     }
 
@@ -195,6 +212,9 @@ public class UIView_HUD : UIView
     public void HUDGoDown()
     {
         hudDirIndicator?.OnHide();
+
+        if (null != hudScreenBlood)
+            hudScreenBlood.ResetAnimation(false);
 
         if (null != omp)
         {

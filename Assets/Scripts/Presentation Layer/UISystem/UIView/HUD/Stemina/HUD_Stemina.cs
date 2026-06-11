@@ -4,30 +4,31 @@ using UnityEngine.UI;
 
 public class HUD_Stemina : MonoBehaviour
 {
+    // 외부 의존성
     [Header("UI Ref")]
     [SerializeField] private HUD_ProgressBar progressBar;
     [SerializeField] private ObjectMotionPlayer motionPlayer;
-    [SerializeField] private Image screenBlood;
 
     [Header("Motions")]
     [SerializeField] private string shakeTag = "DangerShake";
     [SerializeField] private string colorTag = "DangerColor";
-    [SerializeField] private string bloodTag = "ScreenBlood";
     [Range(0f, 100f)][SerializeField] private float startPoint = 100f;
 
+    // 내부 의존성
+    private HUD_ScreenBlood screenBloodComponent;
     private bool bWarningGauge = false;
     private MotionEntry shakeMotion;
     private MotionEntry colorMotion;
-    private MotionEntry bloodMotion;
 
-    public void Initialize()
+
+    // 퍼블릭 초기화 및 제어 메서드
+
+    public void Initialize(HUD_ScreenBlood _screenBlood)
     {
         progressBar?.Initialize();
         motionPlayer?.Initialize();
 
-        Color newColor = Color.white;   
-        newColor.a = 0f;
-        screenBlood.color = newColor;
+        screenBloodComponent = _screenBlood;
     }
 
     public void UpdateValue(float _ratio)
@@ -37,7 +38,9 @@ public class HUD_Stemina : MonoBehaviour
             bWarningGauge = true;
             shakeMotion = motionPlayer.Play(shakeTag, bReset: true);
             colorMotion = motionPlayer.Play(colorTag, bReset: true);
-            bloodMotion = motionPlayer.Play(bloodTag, bReset: true);
+
+            if (null != screenBloodComponent)
+                screenBloodComponent.PlayBloodEffect(true);
         }
 
         progressBar?.UpdateValue(_ratio);
@@ -46,7 +49,6 @@ public class HUD_Stemina : MonoBehaviour
     public void SetActivate(bool _townTrigger)
     {
         progressBar?.SetActivate(_townTrigger);
-        screenBlood?.gameObject.SetActive(_townTrigger);
          
         if (true == _townTrigger)
         {
@@ -56,8 +58,10 @@ public class HUD_Stemina : MonoBehaviour
             {
                 motionPlayer.SettingEntryMotion(shakeMotion, true, true);
                 motionPlayer.SettingEntryMotion(colorMotion, true, true);
-                motionPlayer.SettingEntryMotion(bloodMotion, true, true);
             }
+
+            if (null != screenBloodComponent)
+                screenBloodComponent.PlayBloodEffect(false);
         }
     }
 }

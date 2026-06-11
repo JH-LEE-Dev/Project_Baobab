@@ -92,9 +92,6 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         isHovered = true;
 
         if (false == isPressed)
@@ -105,15 +102,13 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         isHovered = false;
 
         if (true == isPressed)
         {
             isPressed = false;
-            onPressStateChangedCallback?.Invoke(false);
+            if (false == IsTransitioning())
+                onPressStateChangedCallback?.Invoke(false);
         }
 
         PlayColorTween(normalColor);
@@ -121,34 +116,32 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerDown(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
-        isPressed = true;
-        pressTime = 0.0f;
-
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
 
         if (null != buttonImage)
             buttonImage.color = clickColor;
 
+        if (true == IsTransitioning())
+            return;
+
+        isPressed = true;
+        pressTime = 0.0f;
+
         onPressStateChangedCallback?.Invoke(true);
     }
 
     public void OnPointerUp(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         if (true == isPressed)
         {
             isPressed = false;
-            onPressStateChangedCallback?.Invoke(false);
-
-            Color _targetColor = true == isHovered ? hoverColor : normalColor;
-            PlayColorTween(_targetColor);
+            if (false == IsTransitioning())
+                onPressStateChangedCallback?.Invoke(false);
         }
+
+        Color _targetColor = true == isHovered ? hoverColor : normalColor;
+        PlayColorTween(_targetColor);
     }
 
 
@@ -185,9 +178,6 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     private void Update()
     {
-        if (true == IsTransitioning())
-            return;
-
         if (true == isPressed)
         {
             pressTime += Time.deltaTime;

@@ -174,7 +174,9 @@ public class HUD_Vehicle : MonoBehaviour
             selectButton.ResetAnimation();
 
         omp.PlayBackward(backgroundMotionTag, bReset: forceReset, _skip: _isSkip);
-        omp.PlayBackward(controlBoardMotionTag, bReset: forceReset, _skip: _isSkip, _onComplete: handleCloseCallback);
+        
+        omp.PlayBackward(controlBoardMotionTag, bReset: forceReset, 
+            _skip: _isSkip, _isSkipCallback: true, _onComplete: handleCloseCallback);
     }
 
     private void OnSubRegionDisappearComplete()

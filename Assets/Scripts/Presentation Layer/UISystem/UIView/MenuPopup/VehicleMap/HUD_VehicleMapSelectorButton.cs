@@ -160,16 +160,17 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         isHovered = true;
 
         if (true == isOkButton && false == isButtonActive)
             return;
 
-        onHoverEnterEvent?.Invoke(rect, rect.rect.size);
         PlayColorTween(hoverColor);
+
+        if (true == IsTransitioning())
+            return;
+
+        onHoverEnterEvent?.Invoke(rect, rect.rect.size);
 
         if (null == motionPlayer || true == isClicked)
             return;
@@ -188,16 +189,17 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
         isHovered = false;
 
         if (true == isOkButton && false == isButtonActive)
             return;
 
-        onHoverExitEvent?.Invoke();
         PlayColorTween(normalColor);
+
+        if (true == IsTransitioning())
+            return;
+
+        onHoverExitEvent?.Invoke();
 
         if (null == motionPlayer || true == isClicked)
             return;
@@ -216,10 +218,15 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     public void OnPointerDown(PointerEventData _eventData)
     {
+        if (true == isOkButton && false == isButtonActive)
+            return;
+
+        PlayColorTween(clickColor);
+
         if (true == IsTransitioning())
             return;
 
-        if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
+        if (null == motionPlayer)
             return;
 
         if (null != appearAnim)
@@ -233,20 +240,19 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         isClicked = true;
 
         clickedAnim = motionPlayer.Play(clickMotionKey, bReset: forceReset);
-        PlayColorTween(clickColor);
     }
 
     public void OnPointerUp(PointerEventData _eventData)
     {
-        if (true == IsTransitioning())
-            return;
-
-        if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
+        if (true == isOkButton && false == isButtonActive)
             return;
 
         isClicked = false;
         Color _targetColor = true == isHovered ? hoverColor : normalColor;
         PlayColorTween(_targetColor);
+
+        if (true == IsTransitioning())
+            return;
     }
 
     public void OnPointerClick(PointerEventData _eventData)

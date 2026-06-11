@@ -58,7 +58,7 @@ public class UI_TreeCutter : MonoBehaviour
 
         SnapToPerfectPixel();
 
-        OnHide();
+        OnHide(true);
     }
 
     public void BindItemData(ILogItemData _itemData)
@@ -133,7 +133,7 @@ public class UI_TreeCutter : MonoBehaviour
         SnapToPerfectPixel();
     }
 
-    public void OnHide()
+    public void OnHide(bool _bSkip = false)
     {
         if (null == omp || true == isCollShow)
             return;
@@ -141,7 +141,7 @@ public class UI_TreeCutter : MonoBehaviour
         bOpen = false;
 
         omp.SettingEntryMotion(popup, true, true);
-        popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompletedAnimation);
+        popdown = omp.Play(popdownTag, bReset: true, _skip: _bSkip, _onComplete: OnCompletedAnimation);
     }
 
     // //내부 로직
