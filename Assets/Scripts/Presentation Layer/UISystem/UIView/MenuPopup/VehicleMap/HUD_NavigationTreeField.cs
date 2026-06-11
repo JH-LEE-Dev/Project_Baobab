@@ -22,6 +22,7 @@ public class HUD_NavigationTreeField : MonoBehaviour
     private int disappearCompletedCount = 0;
     private int disappearActiveCount = 0;
     private Action allDisappearCompleteCallback;
+    private LocalizationManager localizationManager;
 
     // 캐싱된 상수 및 리터럴 값
     private const int maxTreePropCount = 3;
@@ -29,11 +30,12 @@ public class HUD_NavigationTreeField : MonoBehaviour
 
     // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize()
+    public void Initialize(LocalizationManager _localizeManager = null)
     {
         if (true == isInitialized)
             return;
 
+        localizationManager = _localizeManager;
         onTreeSelectedCallback = OnTreeSelected;
         onTreeDisappearCompleteCallback = OnTreeDisappearComplete;
 
@@ -86,7 +88,7 @@ public class HUD_NavigationTreeField : MonoBehaviour
             if (dataCount > i)
             {
                 prop.gameObject.SetActive(true);
-                prop.Setup(_info.spawnTreeTypes[i].treeType, onTreeSelectedCallback);
+                prop.Setup(_info.spawnTreeTypes[i].treeType, onTreeSelectedCallback, localizationManager);
                 prop.PlayAppearAnimation(i * treeAppearDelayGap);
             }
             else
@@ -140,7 +142,7 @@ public class HUD_NavigationTreeField : MonoBehaviour
     private void OnTreeDisappearComplete()
     {
         disappearCompletedCount++;
-        if (disappearCompletedCount == disappearActiveCount)
+        if (disappearActiveCount == disappearCompletedCount)
         {
             ResetSelection();
             allDisappearCompleteCallback?.Invoke();
@@ -177,5 +179,9 @@ public class HUD_NavigationTreeField : MonoBehaviour
     private void OnDisable()
     {
         ResetSelection();
+    }
+
+    private void OnDestroy()
+    {
     }
 }

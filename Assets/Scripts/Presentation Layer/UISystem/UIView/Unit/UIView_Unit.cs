@@ -17,6 +17,7 @@ public class UIView_Unit : UIView
     [SerializeField] private GameObject hpBarPrefab;
     [SerializeField] private GameObject interactionUnitPrefab;
     [SerializeField] private GameObject speechBubbleUnitPrefab;
+    [SerializeField] private float speechBubbleDuration = 3.5f;
 
     [Header("Offset Settings")]
     [SerializeField] private Vector2 interactionYOffset = new Vector2(0.0f, 0.75f);
@@ -27,6 +28,9 @@ public class UIView_Unit : UIView
     [Header("Display Settings")]
     [SerializeField] private float hpBarShowDuration = 2.0f;
     [SerializeField] private float hpBarDeadShowDelay = 0.2f;
+
+    [Header("Localization Settings")]
+    [SerializeField] private int speechBubbleJsonId = 5;
 
     private Dictionary<object, HUD_HPBar> activeHpBars = new Dictionary<object, HUD_HPBar>(64);
     private List<HUD_HPBar> hpBarPool = new List<HUD_HPBar>(32);
@@ -277,26 +281,42 @@ public class UIView_Unit : UIView
 
     public void InventoryIsFull()
     {
-        speechBubble?.Play(1, "가방이 가득 차 있어서\n더 이상 아이템을 획득 할 수 없어.\n<로컬라이징 해야 돼>", 3.5f);
-    }
-
-    private void AxeDurabilityEmpty()
-    {
-        speechBubble?.Play(2, "도끼가 파손됐어!!!.\n<로컬라이징 해야 돼>", 3.5f);
+        int id = 1;
+        SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
+        speechBubble.AddShownId(2);
     }
 
     public void ItemCantAcquired_Inventory()
     {
-        speechBubble?.Play(3, "가방이 가득 차 있어서\n더 이상 다른 아이템을 획득 할 수 없어.\n<로컬라이징 해야 돼>", 3.5f);
+        int id = 2;
+        SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
+        speechBubble.AddShownId(1);
+    }
+
+    private void AxeDurabilityEmpty()
+    {
+        int id = 3;
+        SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
+    }
+
+    private void SpeechBubblePlay(int _id, string _text)
+    {
+        if (null != speechBubble)
+            speechBubble.Play(_id, _text, speechBubbleDuration);
     }
 
     public void TownStarted()
     {
-        
+        if (null != speechBubble)
+            speechBubble.RemoveAllShownIds();
     }
 
     public void InventoryItemToOffroadContainer()
     {
-        
+        if (null != speechBubble)
+        {
+            speechBubble.RemoveShownId(1);
+            speechBubble.RemoveShownId(2);
+        }
     }
 }

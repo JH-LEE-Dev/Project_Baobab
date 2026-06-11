@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections.Generic;
 using PresentationLayer.DOTweenAnimationSystem;
 
 public class UI_SpeechBubble : MonoBehaviour
@@ -18,6 +19,7 @@ public class UI_SpeechBubble : MonoBehaviour
     private Transform targetTransform;
     private RectTransform rootRect;
     private Vector2 offset;
+    private HashSet<int> shownIds;
 
     private int currentId = -1;
     private float playDuration;
@@ -28,6 +30,64 @@ public class UI_SpeechBubble : MonoBehaviour
     public void Initialize()
     {
         rootRect = GetComponent<RectTransform>();
+
+        if (null == shownIds)
+            shownIds = new HashSet<int>(32);
+        else
+            shownIds.Clear();
+    }
+
+    /// <summary>
+    /// 특정 ID의 노출 기록을 삭제하여 다시 띄울 수 있도록 합니다.
+    /// </summary>
+    public void RemoveShownId(int _id)
+    {
+        if (null != shownIds)
+            shownIds.Remove(_id);
+    }
+
+    /// <summary>
+    /// 여러 ID의 노출 기록을 삭제하여 다시 띄울 수 있도록 합니다.
+    /// </summary>
+    public void RemoveShownIds(IReadOnlyList<int> _ids)
+    {
+        if (null == shownIds || null == _ids)
+            return;
+
+        for (int _i = 0; _i < _ids.Count; _i++)
+            shownIds.Remove(_ids[_i]);
+    }
+
+    /// <summary>
+    /// 모든 노출 기록을 삭제하여 모든 ID를 다시 띄울 수 있도록 합니다.
+    /// </summary>
+    public void RemoveAllShownIds()
+    {
+        if (null != shownIds)
+            shownIds.Clear();
+    }
+
+
+
+    /// <summary>
+    /// 특정 ID를 노출 완료 상태로 인위적으로 등록하여 이후 말풍선이 띄워지지 않도록 차단합니다.
+    /// </summary>
+    public void AddShownId(int _id)
+    {
+        if (null != shownIds)
+            shownIds.Add(_id);
+    }
+
+    /// <summary>
+    /// 여러 ID를 노출 완료 상태로 인위적으로 등록하여 이후 말풍선들이 띄워지지 않도록 차단합니다.
+    /// </summary>
+    public void AddShownIds(IReadOnlyList<int> _ids)
+    {
+        if (null == shownIds || null == _ids)
+            return;
+
+        for (int _i = 0; _i < _ids.Count; _i++)
+            shownIds.Add(_ids[_i]);
     }
 
     public void SetTarget(Transform _target, Vector2 _offset)
@@ -63,7 +123,7 @@ public class UI_SpeechBubble : MonoBehaviour
 
     public void Play(int _id, string _text, float _duration = 3f)
     {
-        if (isPlaying && currentId == _id)
+        if (false == shownIds.Add(_id))
             return;
 
         currentId = _id;

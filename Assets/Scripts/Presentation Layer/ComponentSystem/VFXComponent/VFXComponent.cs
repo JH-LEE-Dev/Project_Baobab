@@ -11,6 +11,7 @@ public class VFXPoolData
     [SerializeField] private int initialPoolSize = 5;
     [SerializeField] private bool allowDynamicExpansion = true;
     [SerializeField] [ShowIf("allowDynamicExpansion")] private int maxPoolSize = 10;
+    [SerializeField] private float uiParticleScale = 1.0f;
 
     // 퍼블릭 초기화 및 제어 메서드
     public string VfxTag => vfxTag;
@@ -18,6 +19,7 @@ public class VFXPoolData
     public int InitialPoolSize => initialPoolSize;
     public bool AllowDynamicExpansion => allowDynamicExpansion;
     public int MaxPoolSize => maxPoolSize;
+    public float UiParticleScale => uiParticleScale;
 }
 
 /// <summary>
@@ -25,6 +27,9 @@ public class VFXPoolData
 /// </summary>
 public class VFXComponent : MonoBehaviour
 {
+    [Header("UI Canvas Settings")]
+    [SerializeField] private bool isUIComponent = false;
+
     // 외부 의존성
     [Header("VFX Pool List")]
     [SerializeField] private List<VFXPoolData> vfxPoolDataList;
@@ -68,7 +73,7 @@ public class VFXComponent : MonoBehaviour
             List<ParticleSystem> _list = new List<ParticleSystem>(_data.InitialPoolSize);
             for (int j = 0; j < _data.InitialPoolSize; j++)
             {
-                ParticleSystem _newInstance = CreateNewInstance(_data.EffectPrefab);
+                ParticleSystem _newInstance = CreateNewInstance(_data);
                 if (null != _newInstance)
                     _list.Add(_newInstance);
             }
@@ -111,7 +116,12 @@ public class VFXComponent : MonoBehaviour
             ParticleSystem _effect = _poolList[i];
             if (null != _effect && false == _effect.gameObject.activeSelf)
             {
-                _effect.transform.SetParent(transform);
+                VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+                if (null != _helper && null != _helper.TargetTransform)
+                    _helper.TargetTransform.SetParent(transform);
+                else
+                    _effect.transform.SetParent(transform);
+
                 return _effect;
             }
         }
@@ -122,7 +132,7 @@ public class VFXComponent : MonoBehaviour
         if (_poolList.Count >= _config.MaxPoolSize)
             return null;
 
-        ParticleSystem _dynamicInstance = CreateNewInstance(_config.EffectPrefab);
+        ParticleSystem _dynamicInstance = CreateNewInstance(_config);
         if (null != _dynamicInstance)
             _poolList.Add(_dynamicInstance);
 
@@ -151,11 +161,17 @@ public class VFXComponent : MonoBehaviour
         if (null == _effect)
             return;
 
-        _effect.transform.SetParent(_parent);
-        _effect.transform.position = _position;
-        _effect.transform.rotation = _rotation;
+        VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+        Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
 
-        _effect.gameObject.SetActive(true);
+        _target.SetParent(_parent);
+        _target.position = _position;
+        _target.rotation = _rotation;
+
+        _target.gameObject.SetActive(true);
+        if (_target != _effect.transform)
+            _effect.gameObject.SetActive(true);
+
         _effect.Play(true);
     }
 
@@ -226,7 +242,13 @@ public class VFXComponent : MonoBehaviour
         {
             ParticleSystem _effect = masterList[i];
             if (null != _effect)
-                Destroy(_effect.gameObject);
+            {
+                VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+                if (null != _helper && null != _helper.TargetTransform && _helper.TargetTransform != _effect.transform)
+                    Destroy(_helper.TargetTransform.gameObject);
+                else
+                    Destroy(_effect.gameObject);
+            }
         }
 
         if (null != masterList)
@@ -335,30 +357,70 @@ public class VFXComponent : MonoBehaviour
     // 내부 로직
 
     /// <summary>
-    /// 프리팹을 기반으로 새로운 이펙트 인스턴스를 생성하고 초기 설정을 수행합니다.
+    /// 풀 설정을 기반으로 새로운 이펙트 인스턴스를 생성하고 초기 설정을 수행합니다.
     /// </summary>
-    private ParticleSystem CreateNewInstance(ParticleSystem _prefab)
+    private ParticleSystem CreateNewInstance(VFXPoolData _config)
     {
-        if (null == _prefab)
+        if (null == _config || null == _config.EffectPrefab)
             return null;
 
-        ParticleSystem _newInstance = Instantiate(_prefab, transform);
-        if (null == _newInstance)
-            return null;
+        ParticleSystem _prefab = _config.EffectPrefab;
 
-        _newInstance.gameObject.SetActive(false);
+        if (true == isUIComponent)
+        {
+            GameObject _uiParentGo = new GameObject(_prefab.name + "_UIParent", typeof(RectTransform), typeof(CanvasRenderer));
+            if (null == _uiParentGo)
+                return null;
 
-        VFXPoolInstanceHelper _helper = _newInstance.gameObject.AddComponent<VFXPoolInstanceHelper>();
-        if (null != _helper)
-            _helper.Initialize(transform);
+            _uiParentGo.transform.SetParent(transform, false);
+            _uiParentGo.SetActive(false);
 
-        var _main = _newInstance.main;
-        _main.stopAction = ParticleSystemStopAction.Callback;
+            Coffee.UIExtensions.UIParticle _uiParticle = _uiParentGo.AddComponent<Coffee.UIExtensions.UIParticle>();
+            if (null != _uiParticle)
+                _uiParticle.scale = _config.UiParticleScale;
 
-        if (null != masterList)
-            masterList.Add(_newInstance);
+            ParticleSystem _newInstance = Instantiate(_prefab, _uiParentGo.transform, false);
+            if (null == _newInstance)
+            {
+                Destroy(_uiParentGo);
+                return null;
+            }
 
-        return _newInstance;
+            if (null != _uiParticle)
+                _uiParticle.RefreshParticles();
+
+            VFXPoolInstanceHelper _helper = _newInstance.gameObject.AddComponent<VFXPoolInstanceHelper>();
+            if (null != _helper)
+                _helper.Initialize(transform, _uiParentGo.transform);
+
+            var _main = _newInstance.main;
+            _main.stopAction = ParticleSystemStopAction.Callback;
+
+            if (null != masterList)
+                masterList.Add(_newInstance);
+
+            return _newInstance;
+        }
+        else
+        {
+            ParticleSystem _newInstance = Instantiate(_prefab, transform, false);
+            if (null == _newInstance)
+                return null;
+
+            _newInstance.gameObject.SetActive(false);
+
+            VFXPoolInstanceHelper _helper = _newInstance.gameObject.AddComponent<VFXPoolInstanceHelper>();
+            if (null != _helper)
+                _helper.Initialize(transform);
+
+            var _main = _newInstance.main;
+            _main.stopAction = ParticleSystemStopAction.Callback;
+
+            if (null != masterList)
+                masterList.Add(_newInstance);
+
+            return _newInstance;
+        }
     }
 
     /// <summary>
@@ -427,15 +489,17 @@ public class VFXPoolInstanceHelper : MonoBehaviour
 {
     // 내부 의존성
     private Transform originalParent;
+    private Transform targetTransform;
     private ParticleSystem particleSys;
     private bool isReturning;
 
 
     // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(Transform _parent)
+    public void Initialize(Transform _parent, Transform _target = null)
     {
         originalParent = _parent;
+        targetTransform = (null != _target) ? _target : transform;
         particleSys = GetComponent<ParticleSystem>();
         isReturning = false;
     }
@@ -453,17 +517,23 @@ public class VFXPoolInstanceHelper : MonoBehaviour
                 particleSys.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
 
-        if (null != originalParent)
+        if (null != originalParent && null != targetTransform)
         {
-            if (transform.parent != originalParent)
-                transform.SetParent(originalParent);
+            if (targetTransform.parent != originalParent)
+                targetTransform.SetParent(originalParent);
         }
 
-        if (true == gameObject.activeSelf)
-            gameObject.SetActive(false);
+        if (null != targetTransform && true == targetTransform.gameObject.activeSelf)
+        {
+            targetTransform.gameObject.SetActive(false);
+            if (targetTransform != transform)
+                gameObject.SetActive(false);
+        }
 
         isReturning = false;
     }
+
+    public Transform TargetTransform => targetTransform;
 
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
@@ -471,5 +541,13 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private void OnParticleSystemStopped()
     {
         ReturnToPool();
+    }
+
+    private void OnDestroy()
+    {
+        if (null != targetTransform && transform != targetTransform)
+        {
+            Destroy(targetTransform.gameObject);
+        }
     }
 }

@@ -29,6 +29,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
+  - {fileID: 4201586872132561696}
   - {fileID: 8870599352626531545}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -55,12 +56,49 @@ MonoBehaviour:
   bOverlay: 0
   bPPUI: 0
   uiRoot: {fileID: 1772526790917447411}
+  moveHUD: {fileID: 5488935301192403642}
   hudEquipmentPrefab: {fileID: 3602922423060339287, guid: cd342e10fd24dc842b88530280f46250, type: 3}
   hudSteminaBarPrefab: {fileID: 673595831507678109, guid: 73a29f979ba233c4d9eb3cd34431268f, type: 3}
   hudDirectionalIndicatorPrefab: {fileID: 1916422466606343881, guid: 525fc2db4a3590d439ab8eb2c8f7fa09, type: 3}
-  hudMessagePrefab: {fileID: 3896767652643787913, guid: 7842cf31a45cee54ba7e7564a83bc5cb, type: 3}
+  hudScreenBloodPrefab: {fileID: 1244665093748110384, guid: ffb38f872f5eefe4f8e2729e2b6c405a, type: 3}
   omp: {fileID: 3133789044350283666}
   mapTransitionMotionTag: GoDown
+  dirIndicatorShowDelay: 1
+--- !u!1 &5488935301192403642
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4201586872132561696}
+  m_Layer: 5
+  m_Name: MoveHUD
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4201586872132561696
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5488935301192403642}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1772526790917447411}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &7723310991854879829
 GameObject:
   m_ObjectHideFlags: 0
@@ -95,7 +133,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &6328659247282605901
 MonoBehaviour:
@@ -158,7 +196,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3133789044350283666
 MonoBehaviour:
@@ -177,7 +215,7 @@ MonoBehaviour:
     motionPrefab: {fileID: 6328659247282605901}
     targets:
     - transform: {fileID: 0}
-      rectTransform: {fileID: 1772526790917447411}
+      rectTransform: {fileID: 4201586872132561696}
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 0}

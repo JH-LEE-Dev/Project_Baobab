@@ -23,6 +23,9 @@ public class GameplayUICoordinator
 
     private bool bInventoryOpened = false;
 
+    private MapType type;
+    private ForestType forestType;
+
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
      UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI, UIView_Warning _warningUI)
@@ -86,6 +89,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<GameEndSignal>(GameEnd);
         signalHub.Subscribe<ActivateWarningUISignal>(ActivateWarningUI);
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
+        signalHub.Subscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
     }
 
     private void UnSubscribeSignals()
@@ -129,6 +133,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<GameEndSignal>(GameEnd);
         signalHub.UnSubscribe<ActivateWarningUISignal>(ActivateWarningUI);
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
+        signalHub.UnSubscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
     }
 
     private void BindEvents()
@@ -294,6 +299,9 @@ public class GameplayUICoordinator
     {
         signalHub.Publish(new TeleportUIClosedWhileTeleportSignal());
         signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
+
+        type = _type;
+        forestType = _forestType;
     }
 
     private void InventorySpecChanged(InventorySpecChangedSignal _inventorySpecChangedSignal)
@@ -535,5 +543,10 @@ public class GameplayUICoordinator
     private void InventoryItemToOffroadContainer(InventoryItemTransferToOffroadContainerSignal _inventoryItemToOffroadContainerSignal)
     {
         unitUI.InventoryItemToOffroadContainer();
+    }
+
+    private void DeclareDungeonState(DeclareDungeonStateSignal _declareDungeonStateSignal)
+    {
+        hudUI.DungeonStateDeclared(_declareDungeonStateSignal.dungeonState);
     }
 }

@@ -36,6 +36,7 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
     private bool isInitialized = false;
     private bool isDisappearing = false;
     private TweenCallback onAppearDelayCompleteCallback;
+    private LocalizationManager localizationManager;
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -50,7 +51,7 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
         isInitialized = true;
     }
 
-    public void Setup(TreeType _treeType, Action<TreeType> _onClick)
+    public void Setup(TreeType _treeType, Action<TreeType> _onClick, LocalizationManager _localizationManager = null)
     {
         if (false == isInitialized)
             Initialize();
@@ -58,9 +59,19 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
         treeType = _treeType;
         onClickCallback = _onClick;
         isDisappearing = false;
+        localizationManager = _localizationManager;
 
         if (null != nameText)
-            nameText.text = _treeType.ToString();
+        {
+            string _localizedName = string.Empty;
+            if (null != localizationManager)
+                _localizedName = localizationManager.GetText(_treeType);
+
+            if (true == string.IsNullOrEmpty(_localizedName))
+                nameText.text = _treeType.ToString();
+            else
+                nameText.text = _localizedName;
+        }
 
         if (null != treeVisualDataBase)
         {
@@ -173,5 +184,14 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
     private void OnDisable()
     {
         ResetAnimation();
+    }
+
+    private void OnDestroy()
+    {
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+            appearDelayTween.Kill();
+
+        if (null != shakeTween && true == shakeTween.IsActive())
+            shakeTween.Kill();
     }
 }

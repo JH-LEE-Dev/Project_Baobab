@@ -81,6 +81,22 @@ public static class LocKeys
         public const int mapName5 = 2097158;
     }
 
+    public static class NavigationTreePropUI
+    {
+        public const int oakTree = 14680065;
+        public const int pineTree = 14680066;
+        public const int birchTree = 14680067;
+        public const int sporepuffTree = 14680068;
+        public const int fluffyMyceliumTree = 14680069;
+        public const int bellpineTree = 14680070;
+        public const int starrootTree = 14680071;
+        public const int moonhaloTree = 14680072;
+        public const int galaxygrainTree = 14680073;
+        public const int cinderTree = 14680074;
+        public const int lavasapTree = 14680075;
+        public const int obsidianTree = 14680076;
+    }
+
     public static class ResultUI
     {
         public const int resultTitle = 6291457;
@@ -91,6 +107,13 @@ public static class LocKeys
         public const int acquiredLogsHeader = 6291462;
         public const int emptyAcquiredLogs = 6291463;
         public const int containerStateHeader = 6291464;
+    }
+
+    public static class SpeechBubbleUI
+    {
+        public const int inventoryFull = 10485761;
+        public const int itemCantAcquired = 10485762;
+        public const int axeDurabilityEmpty = 10485763;
     }
 
     public static class WarningUI

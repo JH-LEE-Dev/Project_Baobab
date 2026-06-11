@@ -657,6 +657,7 @@ Transform:
   - {fileID: 4224764067588888249}
   - {fileID: 2057691699847441429}
   - {fileID: 2225124705072599937}
+  - {fileID: 844731684170270846}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7398738596507401122
@@ -1727,6 +1728,50 @@ MonoBehaviour:
     probability: 30
   - grade: 4
     probability: 5
+--- !u!1 &7012989263381797915
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 844731684170270846}
+  - component: {fileID: 8216668766820914082}
+  m_Layer: 0
+  m_Name: DungeonStateManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &844731684170270846
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7012989263381797915}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6142116780314600098}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8216668766820914082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7012989263381797915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01ddda4be20954140b0c6e3e0d7e2fb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InDungeonStateManager
 --- !u!1 &7224331137657030612
 GameObject:
   m_ObjectHideFlags: 0

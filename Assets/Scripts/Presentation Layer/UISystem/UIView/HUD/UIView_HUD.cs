@@ -8,23 +8,28 @@ public class UIView_HUD : UIView
 {
     [Header("UI References")]
     [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
+    [SerializeField] private GameObject moveHUD;
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
     [SerializeField] private GameObject hudMessagePrefab;
-
+    [SerializeField] private GameObject hudScreenBloodPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
     private HUD_Equipment hudEquipment;
-    private HUD_Stemina hudSteminaBar;
+    private HUD_Stemina hudStaminaBar;
     private HUD_DirIndicator hudDirIndicator;
     private HUD_Message hudMessage;
+    private HUD_ScreenBlood hudScreenBlood;
 
     private ICharacter character;
 
     private MapType currentMapType;
     private ForestType currentForestType;
+
+    [Header("Indicator Settings")]
+    [SerializeField] private float dirIndicatorShowDelay = 1f;
 
     #region Default Logic
 
@@ -37,10 +42,11 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
-        Init_HUDDirIndicator();
-        Init_HUDSteminaBar();
+        Init_HUDScreenBlood();
+        Init_HUDStaminaBar();
         Init_HUDEquipment();
         Init_HUDMessage();
+        Init_HUDDirIndicator();
 
         bool isTown = MapType.Town == currentMapType;
 
@@ -88,7 +94,7 @@ public class UIView_HUD : UIView
 
     private void Init_HUDEquipment()
     {
-        hudEquipment = Instantiate(hudEquipmentPrefab, uiRoot.transform).GetComponent<HUD_Equipment>();
+        hudEquipment = Instantiate(hudEquipmentPrefab, moveHUD.transform).GetComponent<HUD_Equipment>();
 
         if (null != hudEquipment)
         {
@@ -100,13 +106,24 @@ public class UIView_HUD : UIView
 
     #region HUD_Stemina Logic
 
-    private void Init_HUDSteminaBar()
+    private void Init_HUDScreenBlood()
     {
-        hudSteminaBar = Instantiate(hudSteminaBarPrefab, uiRoot.transform).GetComponent<HUD_Stemina>();
+        hudScreenBlood = Instantiate(hudScreenBloodPrefab, uiRoot.transform).GetComponent<HUD_ScreenBlood>();
 
-        if (null != hudSteminaBar)
+        if (null != hudScreenBlood)
         {
-            hudSteminaBar.Initialize();
+            hudScreenBlood.Initialize();
+            hudScreenBlood.transform.SetAsLastSibling();
+        }
+    }
+
+    private void Init_HUDStaminaBar()
+    {
+        hudStaminaBar = Instantiate(hudSteminaBarPrefab, moveHUD.transform).GetComponent<HUD_Stemina>();
+
+        if (null != hudStaminaBar)
+        {
+            hudStaminaBar.Initialize(hudScreenBlood);
         }
     }
 
@@ -135,7 +152,7 @@ public class UIView_HUD : UIView
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
     {
         float newRatio = _currentStemina / _maxStemina;
-        hudSteminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
+        hudStaminaBar?.UpdateValue(Mathf.Clamp01(newRatio));
     }
 
     #endregion
@@ -144,12 +161,6 @@ public class UIView_HUD : UIView
     public void WeaponModeChanged(WeaponMode _currentWeaponMode, bool _isMapChanged = false)
     {
       
-    }
-
-
-    public void InventorySpecChanged() //인벤토리 스펙 변동 시 호출
-    {
-        
     }
 
     public override void Refresh()
@@ -170,7 +181,6 @@ public class UIView_HUD : UIView
         if (false == bTown)
         {
             hudEquipment?.ResetAllMotions();
-            hudDirIndicator?.OnShow();
         }
         else
         {
@@ -195,10 +205,10 @@ public class UIView_HUD : UIView
 
     private void ChangedActiveStateStemina(bool _isTwon)
     {
-        if (null == hudSteminaBar)
+        if (null == hudStaminaBar)
             return;
 
-        hudSteminaBar.SetActivate(!_isTwon);
+        hudStaminaBar.SetActivate(!_isTwon);
     }
 
     public void OffroadSpawned(IOffroadProvider _offroadProvider)
@@ -209,6 +219,9 @@ public class UIView_HUD : UIView
     public void HUDGoDown()
     {
         hudDirIndicator?.OnHide();
+
+        if (null != hudScreenBlood)
+            hudScreenBlood.ResetAnimation(false);
 
         if (null != omp)
         {
@@ -225,7 +238,13 @@ public class UIView_HUD : UIView
 
         if (MapType.Town != currentMapType)
         {
-            hudDirIndicator?.OnShow();
+            hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
+    }
+
+    //Dungeon State가 선언됨. 
+    public void DungeonStateDeclared(DungeonState _dungeonState)
+    {
+        Debug.Log(_dungeonState);
     }
 }

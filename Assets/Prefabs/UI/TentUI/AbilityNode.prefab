@@ -390,12 +390,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 1
   vfxPoolDataList:
   - vfxTag: LevelUpEffect
     effectPrefab: {fileID: 5748764238649717206, guid: 1797ceac0dec4a64da158d3d4dab7dba, type: 3}
     initialPoolSize: 10
     allowDynamicExpansion: 1
     maxPoolSize: 20
+    uiParticleScale: 15
 --- !u!1 &3681080422180222388
 GameObject:
   m_ObjectHideFlags: 0
@@ -763,6 +765,8 @@ MonoBehaviour:
   currentLevel: 0
   gridPosition: {x: 0, y: 0}
   parentSkillTypes: 
+  abilityNodeTouchArea: {fileID: 0}
+  abilityVisualRoot: {fileID: 0}
   abilityBaseImage: {fileID: 3304097743168148013}
   abilityBackgroundImage: {fileID: 1363425424598749706}
   abilityPictureImage: {fileID: 6666146036124203983}
@@ -777,7 +781,6 @@ MonoBehaviour:
   clickMotionTag: UIClick
   nonPassClickMotionTag: UIClick_Nonpass
   resetCurrentMotionBeforePlay: 0
-  hoverStablePadding: 8
   clickCancelDragThreshold: 8
 --- !u!1 &6942825010293521783
 GameObject:

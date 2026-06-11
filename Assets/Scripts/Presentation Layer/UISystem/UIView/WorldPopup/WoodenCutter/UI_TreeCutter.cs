@@ -12,7 +12,6 @@ public class UI_TreeCutter : MonoBehaviour
 
     // //내부 의존성
     private ILogItemData cachedItemData;
-    private float remaining = 0f;
     private ILogCutter logCutter;
 
     private UI_InventorySlot slot;
@@ -25,7 +24,7 @@ public class UI_TreeCutter : MonoBehaviour
     private MotionEntry popdown;
     private RectTransform rect;
     private bool bOpen = false;
-    public bool isCollShow { get; set; } = false;
+    public bool IsCollShow { get; set; } = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -58,7 +57,7 @@ public class UI_TreeCutter : MonoBehaviour
 
         SnapToPerfectPixel();
 
-        OnHide();
+        OnHide(true);
     }
 
     public void BindItemData(ILogItemData _itemData)
@@ -87,11 +86,6 @@ public class UI_TreeCutter : MonoBehaviour
         SnapToPerfectPixel();
     }
 
-    public void BindRemaining(float _remaining)
-    {
-        remaining = _remaining;
-    }
-
     public void BindLogCutter(ILogCutter _logCutter)
     {
         logCutter = _logCutter;
@@ -106,7 +100,6 @@ public class UI_TreeCutter : MonoBehaviour
     public void ResetCutter()
     {
         cachedItemData = null;
-        remaining = 0f;
 
         if (null != slot)
             slot.ResetData();
@@ -133,15 +126,15 @@ public class UI_TreeCutter : MonoBehaviour
         SnapToPerfectPixel();
     }
 
-    public void OnHide()
+    public void OnHide(bool _bSkip = false)
     {
-        if (null == omp || true == isCollShow)
+        if (null == omp || true == IsCollShow)
             return;
         
         bOpen = false;
 
         omp.SettingEntryMotion(popup, true, true);
-        popdown = omp.Play(popdownTag, bReset: true, _onComplete: OnCompletedAnimation);
+        popdown = omp.Play(popdownTag, bReset: true, _skip: _bSkip, _onComplete: OnCompletedAnimation);
     }
 
     // //내부 로직
@@ -149,23 +142,6 @@ public class UI_TreeCutter : MonoBehaviour
     private void OnCompletedAnimation()
     {
         gameObject.SetActive(false);
-    }
-
-    private void Update()
-    {
-        if (true == bOpen)
-        {
-            float _ratio = 0f;
-            if (null != logCutter)
-            {
-                float _total = logCutter.totalProcessingTime;
-                if (0f < _total)
-                    _ratio = Mathf.Clamp01(logCutter.elapsedProcessingTime / _total);
-            }
-
-            if (null != progressBar)
-                progressBar.UpdateValue(_ratio);
-        }
     }
 
     /// <summary>
@@ -231,5 +207,29 @@ public class UI_TreeCutter : MonoBehaviour
         }
 
         rect.anchoredPosition = _pos;
+    }
+
+
+    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void Update()
+    {
+        if (true == bOpen)
+        {
+            float _ratio = 0f;
+            if (null != logCutter)
+            {
+                float _total = logCutter.totalProcessingTime;
+                if (0f < _total)
+                    _ratio = Mathf.Clamp01(logCutter.elapsedProcessingTime / _total);
+            }
+
+            if (null != progressBar)
+                progressBar.UpdateValue(_ratio);
+        }
+    }
+
+    private void OnDestroy()
+    {
     }
 }

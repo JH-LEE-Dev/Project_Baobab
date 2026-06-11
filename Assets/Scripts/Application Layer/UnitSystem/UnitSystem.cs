@@ -285,6 +285,6 @@ public class UnitSystem
 
     private void InventoryItemTransferToOffroadContainer()
     {
-        signalHub.Publish(new OffroadContainerUpdatedSignal());
+        signalHub.Publish(new InventoryItemTransferToOffroadContainerSignal());
     }
 }

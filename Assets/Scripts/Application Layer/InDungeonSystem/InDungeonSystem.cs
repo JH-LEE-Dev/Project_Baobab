@@ -14,6 +14,7 @@ public class InDungeonSystem : MonoBehaviour
     private Character character;
     private SkyCameraProductionManager skyCameraProductionManager;
     public InDungeonResultManager inDungeonResultManager { get; private set; }
+    private InDungeonStateManager inDungeonStateManager;
 
     [Header("Dungeon Data Base")]
     [SerializeField] private DungeonValueDataBase dungeonDataBase;
@@ -47,6 +48,8 @@ public class InDungeonSystem : MonoBehaviour
 
         hiddenmapManager = GetComponentInChildren<HiddenmapManager>();
         hiddenmapManager.Initialize();
+
+        inDungeonStateManager = GetComponentInChildren<InDungeonStateManager>();
 
         inDungeonProductionManager = GetComponentInChildren<InDungeonProductionManager>();
         inDungeonProductionManager.Initialize(inputManager, _skyCameraProductionManager);
@@ -200,6 +203,8 @@ public class InDungeonSystem : MonoBehaviour
         {
             inDungeonProductionManager.RollbackCameraMove();
         }
+
+        signalHub.Publish(new DeclareDungeonStateSignal(inDungeonStateManager.CalcDungeonState(selectedMapType)));
     }
 
     private void ItemAcquired(Item _item)

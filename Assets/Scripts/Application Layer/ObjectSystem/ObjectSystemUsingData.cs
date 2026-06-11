@@ -14,6 +14,15 @@ public enum TreeType
     OakTree,
     PineTree,
     BirchTree,
+    SporepuffTree,
+    FluffyMyceliumTree,
+    BellpineTree,
+    StarrootTree,
+    MoonhaloTree,
+    GalaxygrainTree,
+    CinderTree,
+    LavasapTree,
+    ObsidianTree,
     Max,
 }
 

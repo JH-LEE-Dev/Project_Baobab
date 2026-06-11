@@ -111,81 +111,6 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!1 &449590774431312603
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2940820514560695883}
-  - component: {fileID: 3053551430078877949}
-  - component: {fileID: 3603348626001480310}
-  m_Layer: 5
-  m_Name: BloodScreen
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &2940820514560695883
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 449590774431312603}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2701751341482119836}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &3053551430078877949
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 449590774431312603}
-  m_CullTransparentMesh: 1
---- !u!114 &3603348626001480310
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 449590774431312603}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 5a77d3fe383b04143b63a029a7bb37ae, type: 3}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &673595831507678109
 GameObject:
   m_ObjectHideFlags: 0
@@ -216,7 +141,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2940820514560695883}
   - {fileID: 2589309034339573029}
   - {fileID: 9149485548939145862}
   m_Father: {fileID: 0}
@@ -248,10 +172,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_Stemina
   progressBar: {fileID: 5406003039614452065}
   motionPlayer: {fileID: 8531399470030340004}
-  screenBlood: {fileID: 3603348626001480310}
   shakeTag: DangerShake
   colorTag: DangerColor
-  bloodTag: BloodScreen
   startPoint: 20
 --- !u!1 &682020998110844698
 GameObject:
@@ -310,63 +232,6 @@ MonoBehaviour:
   resetOnValidateInPlayMode: 1
   colorA: {r: 1, g: 1, b: 1, a: 1}
   colorB: {r: 1, g: 0, b: 0, a: 1}
---- !u!1 &2668877204668751192
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 3764299820812809145}
-  - component: {fileID: 4968204100288040789}
-  m_Layer: 5
-  m_Name: OMB_BloodScreen
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &3764299820812809145
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2668877204668751192}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 9149485548939145862}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &4968204100288040789
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2668877204668751192}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7fc720bdea653c84a957cc8a1a106486, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OMB_ColorPingPong
-  forwardDuration: 0.75
-  forwardDelay: 0
-  forwardEase: 0
-  backwardDuration: 0.5
-  backwardDelay: 0
-  backwardEase: 0
-  resetOnValidateInPlayMode: 1
-  colorA: {r: 1, g: 1, b: 1, a: 0}
-  colorB: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &5690809713640595892
 GameObject:
   m_ObjectHideFlags: 0
@@ -398,7 +263,6 @@ RectTransform:
   m_Children:
   - {fileID: 5575289252724776473}
   - {fileID: 8873084031332664385}
-  - {fileID: 3764299820812809145}
   m_Father: {fileID: 2701751341482119836}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -436,15 +300,6 @@ MonoBehaviour:
       canvasGroup: {fileID: 0}
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 5946085439754738290}
-    motionInstance: {fileID: 0}
-  - motionTag: BloodScreen
-    motionPrefab: {fileID: 4968204100288040789}
-    targets:
-    - transform: {fileID: 0}
-      rectTransform: {fileID: 0}
-      canvasGroup: {fileID: 0}
-      spriteRenderer: {fileID: 0}
-      uiGraphic: {fileID: 3603348626001480310}
     motionInstance: {fileID: 0}
 --- !u!1 &5813383342020058914
 GameObject:
