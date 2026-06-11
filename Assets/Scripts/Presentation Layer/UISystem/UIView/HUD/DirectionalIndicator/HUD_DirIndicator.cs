@@ -38,7 +38,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
         public void Initialize(Transform _target = null)
         {
             targetTransform = _target;
-            mainCamera = Camera.main;
+            mainCamera = CameraFinder.Instance.PPMainCamera;
 
             if (null == rectTransform)
                 rectTransform = GetComponent<RectTransform>();
@@ -81,7 +81,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
             }
 
             if (null == mainCamera)
-                mainCamera = Camera.main;
+                mainCamera = CameraFinder.Instance.PPMainCamera;
 
             if (null == mainCamera)
                 return;
