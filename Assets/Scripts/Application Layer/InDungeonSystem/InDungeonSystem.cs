@@ -333,7 +333,10 @@ public class InDungeonSystem : MonoBehaviour
         inputManager.PauseInteractKey(false);
         inputManager.PauseMove(false);
 
-        signalHub.Publish(new ActivateCharacterSignal());
+
+        if (bCurrentlyDungeonScene == true)
+            signalHub.Publish(new ActivateCharacterSignal());
+            
         StartCoroutine(PopupUIGoUPCoroutine());
 
         if (bRetryGame == true)
@@ -349,7 +352,8 @@ public class InDungeonSystem : MonoBehaviour
 
         signalHub.Publish(new PopupUIUpSignal());
 
-        StartCoroutine(StaminaDecreaseCoroutine());
+        if (bCurrentlyDungeonScene == true)
+            StartCoroutine(StaminaDecreaseCoroutine());
     }
 
     private IEnumerator StaminaDecreaseCoroutine()
