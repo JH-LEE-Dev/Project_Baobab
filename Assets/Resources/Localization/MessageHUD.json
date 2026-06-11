@@ -1,0 +1,109 @@
+{
+  "jsonId": 4,
+  "entries": [
+    {
+      "id": 1,
+      "key": "forestNoneTitle",
+      "kr": "None",
+      "en": "None",
+      "enumType": "ForestType",
+      "enumValue": "None"
+    },
+    {
+      "id": 2,
+      "key": "forestInTownTitle",
+      "kr": "None",
+      "en": "None",
+      "enumType": "ForestType",
+      "enumValue": "InTown"
+    },
+    {
+      "id": 3,
+      "key": "forestVegetatedForest1Title",
+      "kr": "풀빛너른숲 I",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "VegetatedForest_1"
+    },
+    {
+      "id": 4,
+      "key": "forestVegetatedForest2Title",
+      "kr": "풀빛너른숲 II",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "VegetatedForest_2"
+    },
+    {
+      "id": 5,
+      "key": "forestVegetatedForest3Title",
+      "kr": "풀빛너른숲 III",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "VegetatedForest_3"
+    },
+    {
+      "id": 6,
+      "key": "forestMongleSporeForest1Title",
+      "kr": "몽글포자숲 I",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "MongleSporeForest_1"
+    },
+    {
+      "id": 7,
+      "key": "forestMongleSporeForest2Title",
+      "kr": "몽글포자숲 II",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "MongleSporeForest_2"
+    },
+    {
+      "id": 8,
+      "key": "forestMongleSporeForest3Title",
+      "kr": "몽글포자숲 III",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "MongleSporeForest_3"
+    },
+    {
+      "id": 101,
+      "key": "dungeonStateNoneSubText",
+      "kr": "None",
+      "en": "None",
+      "enumType": "DungeonState",
+      "enumValue": "None"
+    },
+    {
+      "id": 102,
+      "key": "dungeonStateStage1Idle0SubText",
+      "kr": "오늘은 날씨가 맑네요!",
+      "en": "A quiet breeze moves through the trees.",
+      "enumType": "DungeonState",
+      "enumValue": "Stage1_Idle0"
+    },
+    {
+      "id": 103,
+      "key": "dungeonStateStage1Idle1SubText",
+      "kr": "숲바람이 살랑살랑 불어요.",
+      "en": "The forest is calm for now.",
+      "enumType": "DungeonState",
+      "enumValue": "Stage1_Idle1"
+    },
+    {
+      "id": 104,
+      "key": "dungeonStateStage1Idle2SubText",
+      "kr": "숲속 공기가 참 상쾌하네요!",
+      "en": "Something soft stirs beneath the leaves.",
+      "enumType": "DungeonState",
+      "enumValue": "Stage1_Idle2"
+    },
+    {
+      "id": 105,
+      "key": "dungeonStateStage1Idle3SubText",
+      "kr": "오늘도 평화로운 벌목의 하루!",
+      "en": "The path ahead feels strangely peaceful.",
+      "enumType": "DungeonState",
+      "enumValue": "Stage1_Idle3"
+    }
+  ]
+}

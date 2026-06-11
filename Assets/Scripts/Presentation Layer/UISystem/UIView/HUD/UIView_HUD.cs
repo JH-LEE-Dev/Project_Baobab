@@ -57,6 +57,7 @@ public class UIView_HUD : UIView
     public override void OnDestroy()
     {
         hudEquipment?.OnDestroy();
+        hudMessage?.Release();
     }
 
     protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
@@ -145,7 +146,7 @@ public class UIView_HUD : UIView
             hudMessage = Instantiate(hudMessagePrefab, uiRoot.transform).GetComponent<HUD_Message>();
 
         if (null != hudMessage)
-            hudMessage.Initialize();
+            hudMessage.Initialize(viewCtx?.localizationManager);
     }
 
 
@@ -237,10 +238,9 @@ public class UIView_HUD : UIView
             omp.PlayBackward(mapTransitionMotionTag, bReset: true);
         }
 
-        hudMessage?.ShowForSeconds(hudMessageShowDuration);
-
         if (MapType.Town != currentMapType)
         {
+            hudMessage?.ShowForSeconds(hudMessageShowDuration);
             hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
     }
@@ -248,6 +248,6 @@ public class UIView_HUD : UIView
     //Dungeon State가 선언됨. 
     public void DungeonStateDeclared(MapType _mapType, ForestType _forestType, DungeonState _dungeonState)
     {
-        Debug.Log(_dungeonState);
+        hudMessage?.SetMessage(_forestType, _dungeonState);
     }
 }

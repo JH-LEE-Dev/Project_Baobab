@@ -81,6 +81,23 @@ public static class LocKeys
         public const int mapName5 = 2097158;
     }
 
+    public static class MessageHUD
+    {
+        public const int forestNoneTitle = 8388609;
+        public const int forestInTownTitle = 8388610;
+        public const int forestVegetatedForest1Title = 8388611;
+        public const int forestVegetatedForest2Title = 8388612;
+        public const int forestVegetatedForest3Title = 8388613;
+        public const int forestMongleSporeForest1Title = 8388614;
+        public const int forestMongleSporeForest2Title = 8388615;
+        public const int forestMongleSporeForest3Title = 8388616;
+        public const int dungeonStateNoneSubText = 8388709;
+        public const int dungeonStateStage1Idle0SubText = 8388710;
+        public const int dungeonStateStage1Idle1SubText = 8388711;
+        public const int dungeonStateStage1Idle2SubText = 8388712;
+        public const int dungeonStateStage1Idle3SubText = 8388713;
+    }
+
     public static class NavigationTreePropUI
     {
         public const int oakTree = 14680065;
