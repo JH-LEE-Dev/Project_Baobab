@@ -60,6 +60,7 @@ MonoBehaviour:
   hudEquipmentPrefab: {fileID: 3602922423060339287, guid: cd342e10fd24dc842b88530280f46250, type: 3}
   hudSteminaBarPrefab: {fileID: 673595831507678109, guid: 73a29f979ba233c4d9eb3cd34431268f, type: 3}
   hudDirectionalIndicatorPrefab: {fileID: 1916422466606343881, guid: 525fc2db4a3590d439ab8eb2c8f7fa09, type: 3}
+  hudMessagePrefab: {fileID: 3896767652643787913, guid: 7842cf31a45cee54ba7e7564a83bc5cb, type: 3}
   hudScreenBloodPrefab: {fileID: 1244665093748110384, guid: ffb38f872f5eefe4f8e2729e2b6c405a, type: 3}
   omp: {fileID: 3133789044350283666}
   mapTransitionMotionTag: GoDown

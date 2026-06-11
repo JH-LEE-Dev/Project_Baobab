@@ -129,6 +129,58 @@ MonoBehaviour:
     enumValueName: MagmaForest
     enumIntValue: 5
     compositeKey: 2097158
+  - enumTypeName: ForestType
+    enumValueName: None
+    enumIntValue: 0
+    compositeKey: 8388609
+  - enumTypeName: ForestType
+    enumValueName: InTown
+    enumIntValue: 1
+    compositeKey: 8388610
+  - enumTypeName: ForestType
+    enumValueName: VegetatedForest_1
+    enumIntValue: 2
+    compositeKey: 8388611
+  - enumTypeName: ForestType
+    enumValueName: VegetatedForest_2
+    enumIntValue: 3
+    compositeKey: 8388612
+  - enumTypeName: ForestType
+    enumValueName: VegetatedForest_3
+    enumIntValue: 4
+    compositeKey: 8388613
+  - enumTypeName: ForestType
+    enumValueName: MongleSporeForest_1
+    enumIntValue: 5
+    compositeKey: 8388614
+  - enumTypeName: ForestType
+    enumValueName: MongleSporeForest_2
+    enumIntValue: 6
+    compositeKey: 8388615
+  - enumTypeName: ForestType
+    enumValueName: MongleSporeForest_3
+    enumIntValue: 7
+    compositeKey: 8388616
+  - enumTypeName: DungeonState
+    enumValueName: None
+    enumIntValue: 0
+    compositeKey: 8388709
+  - enumTypeName: DungeonState
+    enumValueName: Stage1_Idle0
+    enumIntValue: 1
+    compositeKey: 8388710
+  - enumTypeName: DungeonState
+    enumValueName: Stage1_Idle1
+    enumIntValue: 2
+    compositeKey: 8388711
+  - enumTypeName: DungeonState
+    enumValueName: Stage1_Idle2
+    enumIntValue: 3
+    compositeKey: 8388712
+  - enumTypeName: DungeonState
+    enumValueName: Stage1_Idle3
+    enumIntValue: 4
+    compositeKey: 8388713
   - enumTypeName: TreeType
     enumValueName: OakTree
     enumIntValue: 1

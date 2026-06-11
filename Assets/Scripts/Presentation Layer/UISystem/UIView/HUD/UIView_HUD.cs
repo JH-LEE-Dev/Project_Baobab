@@ -12,6 +12,7 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
+    [SerializeField] private GameObject hudMessagePrefab;
     [SerializeField] private GameObject hudScreenBloodPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
@@ -19,6 +20,7 @@ public class UIView_HUD : UIView
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudStaminaBar;
     private HUD_DirIndicator hudDirIndicator;
+    private HUD_Message hudMessage;
     private HUD_ScreenBlood hudScreenBlood;
 
     private ICharacter character;
@@ -43,6 +45,7 @@ public class UIView_HUD : UIView
         Init_HUDScreenBlood();
         Init_HUDStaminaBar();
         Init_HUDEquipment();
+        Init_HUDMessage();
         Init_HUDDirIndicator();
 
         bool isTown = MapType.Town == currentMapType;
@@ -50,10 +53,10 @@ public class UIView_HUD : UIView
         ChangedActiveStateEquipment(isTown);
         ChangedActiveStateStemina(isTown);
     }
-
     public override void OnDestroy()
     {
         hudEquipment?.OnDestroy();
+        hudMessage?.Release();
     }
 
     protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
@@ -135,6 +138,17 @@ public class UIView_HUD : UIView
             hudDirIndicator.Initialize();
         }
     }
+
+    private void Init_HUDMessage()
+    {
+        if (null == hudMessage)
+            hudMessage = Instantiate(hudMessagePrefab, uiRoot.transform).GetComponent<HUD_Message>();
+
+        if (null != hudMessage)
+            hudMessage.Initialize(viewCtx?.localizationManager);
+    }
+
+
 
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
     {
@@ -225,6 +239,7 @@ public class UIView_HUD : UIView
 
         if (MapType.Town != currentMapType)
         {
+            hudMessage?.Play();
             hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
     }
@@ -232,6 +247,6 @@ public class UIView_HUD : UIView
     //Dungeon State가 선언됨. 
     public void DungeonStateDeclared(MapType _mapType, ForestType _forestType, DungeonState _dungeonState)
     {
-        Debug.Log(_dungeonState);
+        hudMessage?.SetMessage(_forestType, _dungeonState);
     }
 }
