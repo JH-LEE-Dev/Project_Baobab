@@ -201,7 +201,7 @@ public class UIView_Warning : UIView
             : bgProductionDuration + contentOpenInterval;
 
         PrepareOpenState(hasLogInInventory, mainTargetPivot);
-        EnableButtons();
+        SetButtonsInteractable(false);
 
         openSequence = DOTween.Sequence().SetUpdate(true);
 
@@ -225,6 +225,7 @@ public class UIView_Warning : UIView
 
         InsertContentOpenTween(buttonRoot, buttonRootCanvasGroup, buttonPivot, buttonStartTime);
 
+        openSequence.InsertCallback(buttonStartTime, EnableButtons);
     }
 
     private void CacheTargetSize()
@@ -259,7 +260,7 @@ public class UIView_Warning : UIView
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
         SetCanvasGroupRaycast(mainTextCanvasGroup, false);
         SetCanvasGroupRaycast(subTextCanvasGroup, false);
-        SetCanvasGroupRaycast(buttonRootCanvasGroup, true);
+        SetCanvasGroupRaycast(buttonRootCanvasGroup, false);
     }
 
     private void SetContentToHiddenPosition(RectTransform target, RectTransform pivot)
@@ -662,9 +663,8 @@ public class UIView_Warning : UIView
         if (hoverTarget == null)
             hoverTarget = touchArea.gameObject.AddComponent<UIHoverSelectionTarget>();
 
-        RectTransform visualRectTransform = visual != null ? visual : touchArea;
         ObjectMotionPlayer motionPlayer = visual != null ? visual.GetComponentInChildren<ObjectMotionPlayer>(true) : null;
-        hoverTarget.Initialize(selectionCursorInstance, visualRectTransform, motionPlayer);
+        hoverTarget.Initialize(selectionCursorInstance, touchArea, motionPlayer);
         return hoverTarget;
     }
 
