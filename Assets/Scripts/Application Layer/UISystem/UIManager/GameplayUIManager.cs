@@ -59,5 +59,8 @@ public class GameplayUIManager : UIManager
 
         if(view is UIView_Result resultUI)
             resultUI.DependencyInjection(offroadContainer, inventory, dungeonResultProvider);
+
+        if(view is UIView_Warning warningUI)
+            warningUI.DependencyInjection(inventory);
     }
 }
