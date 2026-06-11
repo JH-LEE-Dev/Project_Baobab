@@ -106,9 +106,14 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.RefreshCharacterStat();
     }
 
-    public void SetCharacterStaminaDecrease()
+    public void ActivateCharacter()
     {
-        character.StartDecraseStamina();
+        character.ActivateCharacter();
+    }
+
+    public void StartDecreaseStamina()
+    {
+        character.StartDecreaseStamina();
     }
 
     private IEnumerator GameEnd()

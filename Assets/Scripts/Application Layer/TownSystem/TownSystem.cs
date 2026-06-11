@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class TownSystem : MonoBehaviour
@@ -326,7 +327,23 @@ public class TownSystem : MonoBehaviour
         if (bCurrentlyTownScene == true)
             return;
 
+        signalHub.Publish(new ActivateCharacterSignal());
+
+        StartCoroutine(PopupUIGoUPCoroutine());
+    }
+
+    private IEnumerator PopupUIGoUPCoroutine()
+    {
+        yield return new WaitForSeconds(0.7f);
+
         signalHub.Publish(new PopupUIUpSignal());
+
+        StartCoroutine(StaminaDecreaseCoroutine());
+    }
+
+    private IEnumerator StaminaDecreaseCoroutine()
+    {
+        yield return new WaitForSeconds(0.7f);
         signalHub.Publish(new StartDecreaseStaminaSignal());
     }
 
