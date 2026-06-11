@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using DG.Tweening;
+using PresentationLayer.DOTweenAnimationSystem;
 using PresentationLayer.UISystem;
 using TMPro;
 using UnityEngine;
@@ -118,6 +119,8 @@ public class UIView_Result : UIView
     [Header("UI References")]
     [SerializeField] private Button goHomeButton;
     [SerializeField] private Button retryButton;
+    [SerializeField] private RectTransform goHomeButtonTouchArea;
+    [SerializeField] private RectTransform retryButtonTouchArea;
     [SerializeField] private GameObject resultContentsRoot;
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text treeKillCountText;
@@ -129,6 +132,9 @@ public class UIView_Result : UIView
     [SerializeField] private GameObject inventorySlotPrefab;
     [SerializeField] private Transform containerSlotBackground;
     [SerializeField] private float containerTopY = -15f;
+    [SerializeField] private UISelectionCursor selectionCursorPrefab;
+    [SerializeField] private RectTransform selectionCursorParent;
+    [SerializeField] private Vector2 selectionCursorSize = new Vector2(40f, 40f);
 
     [Header("Production References")]
     [SerializeField] private Image blackBG;
@@ -179,6 +185,13 @@ public class UIView_Result : UIView
     private bool hasCachedProductionStartState;
     private bool isClosingProduction;
     private Action pendingCloseCompletedEvent;
+    private UISelectionCursor selectionCursorInstance;
+    private UIHoverSelectionTarget goHomeHoverTarget;
+    private UIHoverSelectionTarget retryHoverTarget;
+    private Button goHomeTouchAreaButton;
+    private Button retryTouchAreaButton;
+    private RectTransform goHomeButtonVisual;
+    private RectTransform retryButtonVisual;
 
     #region Public Override Methods
 
@@ -195,12 +208,9 @@ public class UIView_Result : UIView
         CacheProductionStartState();
         InitializeResultLogRows();
         RefreshLocalizedStaticTexts();
-
-        if (goHomeButton != null)
-            goHomeButton.onClick.AddListener(OnGoHomeButtonClicked);
-
-        if (retryButton != null)
-            retryButton.onClick.AddListener(OnRetryButtonClicked);
+        CacheButtonTouchAreas();
+        InitializeButtonHoverTargets();
+        BindButtonEvents();
 
         SetResultContentsActive(false);
     }
@@ -213,11 +223,13 @@ public class UIView_Result : UIView
 
     public void OnGoHomeButtonClicked()
     {
+        HideSelectionCursorImmediately();
         PlayResultCloseProduction(InvokeGoHomeButtonClickedEvent);
     }
 
     public void OnRetryButtonClicked()
     {
+        HideSelectionCursorImmediately();
         PlayResultCloseProduction(InvokeRetryButtonClickedEvent);
     }
 
@@ -246,6 +258,7 @@ public class UIView_Result : UIView
         if (localizationManager != null)
             localizationManager.OnLanguageChanged -= RefreshLocalizedResultTexts;
 
+        UnbindButtonEvents();
         base.OnDestroy();
 
         GoHomeButtonClickedEvent = null;
@@ -538,6 +551,7 @@ public class UIView_Result : UIView
         CacheProductionStartState();
         KillResultProductionSequences();
         isClosingProduction = true;
+        HideSelectionCursorImmediately();
         SetButtonsInteractable(false);
 
         resultCloseSequence = DOTween.Sequence();
@@ -579,11 +593,144 @@ public class UIView_Result : UIView
 
     private void SetButtonsInteractable(bool enabled)
     {
+        if (goHomeTouchAreaButton != null)
+            goHomeTouchAreaButton.interactable = enabled;
+
+        if (retryTouchAreaButton != null)
+            retryTouchAreaButton.interactable = enabled;
+
         if (goHomeButton != null)
             goHomeButton.interactable = enabled;
 
         if (retryButton != null)
             retryButton.interactable = enabled;
+    }
+
+    private void CacheButtonTouchAreas()
+    {
+        if (goHomeButtonTouchArea == null)
+            goHomeButtonTouchArea = FindChildRecursive(transform, "Button_OK_TouchArea") as RectTransform;
+
+        if (retryButtonTouchArea == null)
+            retryButtonTouchArea = FindChildRecursive(transform, "Button_Retry_TouchArea") as RectTransform;
+
+        goHomeButtonVisual = GetButtonVisual(goHomeButton, "Button_OK");
+        retryButtonVisual = GetButtonVisual(retryButton, "Button_Retry");
+        goHomeTouchAreaButton = EnsureTouchAreaButton(goHomeButtonTouchArea);
+        retryTouchAreaButton = EnsureTouchAreaButton(retryButtonTouchArea);
+
+        SetButtonVisualRaycastTarget(goHomeButtonVisual, false);
+        SetButtonVisualRaycastTarget(retryButtonVisual, false);
+    }
+
+    private RectTransform GetButtonVisual(Button button, string visualName)
+    {
+        if (button != null)
+            return button.transform as RectTransform;
+
+        RectTransform visual = FindChildRecursive(transform, visualName) as RectTransform;
+        Button visualButton = visual != null ? visual.GetComponent<Button>() : null;
+
+        if (visualName == "Button_OK")
+            goHomeButton = visualButton;
+        else if (visualName == "Button_Retry")
+            retryButton = visualButton;
+
+        return visual;
+    }
+
+    private Button EnsureTouchAreaButton(RectTransform touchArea)
+    {
+        if (touchArea == null)
+            return null;
+
+        Image touchImage = touchArea.GetComponent<Image>();
+        if (touchImage != null)
+            touchImage.raycastTarget = true;
+
+        Button button = touchArea.GetComponent<Button>();
+        if (button == null)
+            button = touchArea.gameObject.AddComponent<Button>();
+
+        button.targetGraphic = touchImage;
+        button.transition = Selectable.Transition.None;
+        return button;
+    }
+
+    private void SetButtonVisualRaycastTarget(RectTransform visual, bool enabled)
+    {
+        if (visual == null)
+            return;
+
+        Graphic[] graphics = visual.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+            graphics[i].raycastTarget = enabled;
+    }
+
+    private void InitializeButtonHoverTargets()
+    {
+        EnsureSelectionCursorInstance();
+
+        goHomeHoverTarget = InitializeHoverTarget(goHomeButtonTouchArea, goHomeButtonVisual);
+        retryHoverTarget = InitializeHoverTarget(retryButtonTouchArea, retryButtonVisual);
+    }
+
+    private UIHoverSelectionTarget InitializeHoverTarget(RectTransform touchArea, RectTransform visual)
+    {
+        if (touchArea == null)
+            return null;
+
+        UIHoverSelectionTarget hoverTarget = touchArea.GetComponent<UIHoverSelectionTarget>();
+        if (hoverTarget == null)
+            hoverTarget = touchArea.gameObject.AddComponent<UIHoverSelectionTarget>();
+
+        RectTransform visualRectTransform = visual != null ? visual : touchArea;
+        ObjectMotionPlayer motionPlayer = visual != null ? visual.GetComponentInChildren<ObjectMotionPlayer>(true) : null;
+        hoverTarget.Initialize(selectionCursorInstance, visualRectTransform, motionPlayer);
+        return hoverTarget;
+    }
+
+    private void EnsureSelectionCursorInstance()
+    {
+        if (selectionCursorInstance != null || selectionCursorPrefab == null)
+            return;
+
+        RectTransform parent = selectionCursorParent != null ? selectionCursorParent : resultContentsRoot != null ? resultContentsRoot.transform as RectTransform : transform as RectTransform;
+        if (parent == null)
+            return;
+
+        selectionCursorInstance = Instantiate(selectionCursorPrefab, parent);
+        selectionCursorInstance.Initialize(selectionCursorSize);
+    }
+
+    private void HideSelectionCursorImmediately()
+    {
+        if (selectionCursorInstance != null)
+            selectionCursorInstance.HideImmediately();
+
+        if (goHomeHoverTarget != null)
+            goHomeHoverTarget.HideCursorImmediately();
+
+        if (retryHoverTarget != null)
+            retryHoverTarget.HideCursorImmediately();
+    }
+
+    private void BindButtonEvents()
+    {
+        if (goHomeTouchAreaButton != null)
+            goHomeTouchAreaButton.onClick.AddListener(OnGoHomeButtonClicked);
+
+        if (retryTouchAreaButton != null)
+            retryTouchAreaButton.onClick.AddListener(OnRetryButtonClicked);
+    }
+
+    private void UnbindButtonEvents()
+    {
+        if (goHomeTouchAreaButton != null)
+            goHomeTouchAreaButton.onClick.RemoveListener(OnGoHomeButtonClicked);
+
+        if (retryTouchAreaButton != null)
+            retryTouchAreaButton.onClick.RemoveListener(OnRetryButtonClicked);
     }
 
     private void InvokeGoHomeButtonClickedEvent()

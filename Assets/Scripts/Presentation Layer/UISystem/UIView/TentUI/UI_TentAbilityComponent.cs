@@ -72,7 +72,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private AbilityToolTip toolTipInstance;
     private UISelectionCursor selectionCursorInstance;
     private Material circleRevealDimMaterialInstance;
+    private ToolTipPlacementMode toolTipPlacementMode = ToolTipPlacementMode.Right;
     private readonly Dictionary<SkillType, SkillAccumulatedValueChangeData> toolTipPreviewDataMap = new Dictionary<SkillType, SkillAccumulatedValueChangeData>();
+
+    private enum ToolTipPlacementMode
+    {
+        Right,
+        Left
+    }
 
     private struct PrestigeHUDState
     {
@@ -115,7 +122,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [Header("ToolTip Setup")]
     [SerializeField] private AbilityToolTip toolTipPrefab;
     [SerializeField] private RectTransform toolTipParent;
-    [SerializeField] private float toolTipRightSideScreenThreshold = 32f;
+    [SerializeField] private float toolTipPlacementHysteresis = 32f;
 
     [Header("Selection Cursor Setup")]
     [SerializeField] private UISelectionCursor selectionCursorPrefab;
@@ -281,6 +288,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         isCloseFading = false;
         isCircleRevealPlaying = false;
+        toolTipPlacementMode = ToolTipPlacementMode.Right;
         SetCircleMaskActive(true);
         abilityBackground.gameObject.SetActive(true);
         SetAbilityAlpha(1f);
@@ -948,7 +956,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         Vector2 nodeCenter = (localBottomLeft + localTopRight) * 0.5f;
         float nodeWidth = Mathf.Abs(localTopRight.x - localBottomLeft.x);
-        bool placeOnRight = nodeCenter.x < toolTipRightSideScreenThreshold;
+        bool placeOnRight = ResolveToolTipPlaceOnRight(nodeCenter.x);
         float direction = placeOnRight ? 1f : -1f;
 
         float x = nodeCenter.x + direction * ((nodeWidth * 0.5f) + ToolTipSpacing + (toolTipSize.x * 0.5f));
@@ -961,6 +969,25 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 상위 스킬 시스템에서 툴팁에 필요한 레벨/비용 정보를 가져온다.
+    private bool ResolveToolTipPlaceOnRight(float _nodeCenterX)
+    {
+        float centerX = abilityBackground != null ? abilityBackground.rect.center.x : 0f;
+        float localCenterOffsetX = _nodeCenterX - centerX;
+        float hysteresis = Mathf.Max(0f, toolTipPlacementHysteresis);
+
+        if (toolTipPlacementMode == ToolTipPlacementMode.Right)
+        {
+            if (localCenterOffsetX > hysteresis)
+                toolTipPlacementMode = ToolTipPlacementMode.Left;
+        }
+        else if (localCenterOffsetX < -hysteresis)
+        {
+            toolTipPlacementMode = ToolTipPlacementMode.Right;
+        }
+
+        return toolTipPlacementMode == ToolTipPlacementMode.Right;
+    }
+
     private SkillInfo GetSkillInfo(SkillType _skillType)
     {
         if (skillSystemProvider != null)

@@ -17,6 +17,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private SkillType[] parentSkillTypes;
 
     [Header("UI References")]
+    [SerializeField] private RectTransform abilityNodeTouchArea;
+    [SerializeField] private RectTransform abilityVisualRoot;
     [SerializeField] private Image abilityBaseImage;
     [SerializeField] private Image abilityBackgroundImage;
     [SerializeField] private Image abilityPictureImage;
@@ -37,10 +39,9 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private string clickMotionTag = "UIClick";
     [SerializeField] private string nonPassClickMotionTag = "UIClick_Nonpass";
     [SerializeField] private bool resetCurrentMotionBeforePlay = false;
-    [SerializeField] private float hoverStablePadding = 8f;
+    [SerializeField] private float clickCancelDragThreshold = 8f;
 
     private UI_TentAbilityComponent owner;
-    private Canvas rootCanvas;
     private bool canApplyVisual;
     private bool completedVisual;
     private bool visualHidden;
@@ -64,13 +65,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void Awake()
     {
-        CacheRootCanvas();
-
-        if (null != motionPlayer)
-            return;
-
-        motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
-        vfxComponent = GetComponentInChildren<VFXComponent>(true);
+        CacheInteractionReferences();
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
@@ -81,22 +76,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void OnEnable()
     {
-        CacheRootCanvas();
+        CacheInteractionReferences();
     }
 
-    private void Update()
+    private void OnDisable()
     {
-        if (isPointerHovering == false)
-            return;
-
-        Mouse mouse = Mouse.current;
-        if (mouse == null)
-            return;
-
-        if (IsScreenPointInsideStableHoverArea(mouse.position.ReadValue()))
-            return;
-
-        EndHover();
+        CancelHoverState();
+        consumedRapidClick = false;
     }
 
     // 특성 노드의 내부 그림을 외부에서 교체한다.
@@ -242,9 +228,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     // 마우스가 노드 밖으로 나가면 상위 컴포넌트에 툴팁 숨김을 요청한다.
     public void OnPointerExit(PointerEventData eventData)
     {
-        if (IsPointerInsideStableHoverArea(eventData))
-            return;
-
         EndHover();
     }
 
@@ -273,6 +256,9 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
         }
 
+        if (IsDraggedClick(eventData))
+            return;
+
         bool isApproved = owner != null && owner.TryRequestNodeLevelUp(this);
         if (true == isApproved)
             PlayClickRequestMotion();
@@ -285,6 +271,19 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         Keyboard keyboard = Keyboard.current;
         return keyboard != null &&
                (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+    }
+
+    private bool IsDraggedClick(PointerEventData _eventData)
+    {
+        if (_eventData == null)
+            return false;
+
+        float threshold = Mathf.Max(0f, clickCancelDragThreshold);
+        if (threshold <= 0f)
+            return false;
+
+        Vector2 dragDelta = _eventData.position - _eventData.pressPosition;
+        return dragDelta.sqrMagnitude > threshold * threshold;
     }
 
     public void PlayClickRequestMotion()
@@ -392,38 +391,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         return isClickPlaying || isNonPassClickPlaying;
     }
 
-    private bool IsPointerInsideStableHoverArea(PointerEventData _eventData)
-    {
-        if (_eventData == null)
-            return false;
-
-        return IsScreenPointInsideStableHoverArea(_eventData.position);
-    }
-
-    private bool IsScreenPointInsideStableHoverArea(Vector2 _screenPoint)
-    {
-        RectTransform nodeRectTransform = RectTransform;
-        RectTransform visualRectTransform = GetStableHoverVisualRectTransform();
-        if (nodeRectTransform == null || visualRectTransform == null)
-            return false;
-
-        Vector2 size = visualRectTransform.rect.size;
-        Vector3 halfSize = new Vector3(size.x * 0.5f, size.y * 0.5f, 0f);
-        Camera eventCamera = GetEventCamera();
-        Vector2 cornerA = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(-halfSize.x, -halfSize.y, 0f)));
-        Vector2 cornerB = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(-halfSize.x, halfSize.y, 0f)));
-        Vector2 cornerC = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(halfSize.x, halfSize.y, 0f)));
-        Vector2 cornerD = RectTransformUtility.WorldToScreenPoint(eventCamera, nodeRectTransform.TransformPoint(new Vector3(halfSize.x, -halfSize.y, 0f)));
-        Vector2 min = Vector2.Min(Vector2.Min(cornerA, cornerB), Vector2.Min(cornerC, cornerD));
-        Vector2 max = Vector2.Max(Vector2.Max(cornerA, cornerB), Vector2.Max(cornerC, cornerD));
-
-        min -= Vector2.one * hoverStablePadding;
-        max += Vector2.one * hoverStablePadding;
-
-        Rect stableRect = Rect.MinMaxRect(min.x, min.y, max.x, max.y);
-        return stableRect.Contains(_screenPoint);
-    }
-
     private void EndHover()
     {
         if (isPointerHovering == false)
@@ -435,34 +402,72 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         PlayUnHoverMotion();
     }
 
-    private RectTransform GetStableHoverVisualRectTransform()
+    private void CacheInteractionReferences()
     {
-        if (abilityBaseImage != null)
-            return abilityBaseImage.rectTransform;
+        if (abilityNodeTouchArea == null)
+            abilityNodeTouchArea = FindChildRecursive(transform, "AbilityNode_TouchArea") as RectTransform;
 
-        if (abilityBackgroundImage != null)
-            return abilityBackgroundImage.rectTransform;
+        if (abilityVisualRoot == null)
+            abilityVisualRoot = FindChildRecursive(transform, "AbilityVisual") as RectTransform;
 
-        if (abilityPictureImage != null)
-            return abilityPictureImage.rectTransform;
+        if (motionPlayer == null)
+            motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
 
-        return RectTransform;
+        if (vfxComponent == null)
+            vfxComponent = GetComponentInChildren<VFXComponent>(true);
+
+        if (EnsureTouchAreaRaycastTarget())
+            DisableVisualRaycasts();
     }
 
-    private Camera GetEventCamera()
+    private bool EnsureTouchAreaRaycastTarget()
     {
-        CacheRootCanvas();
+        if (abilityNodeTouchArea == null)
+            return false;
 
-        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null ? rootCanvas.rootCanvas : rootCanvas;
-        if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+        Image touchAreaImage = abilityNodeTouchArea.GetComponent<Image>();
+        if (touchAreaImage != null)
+            touchAreaImage.raycastTarget = true;
+
+        return touchAreaImage != null;
+    }
+
+    private void DisableVisualRaycasts()
+    {
+        if (abilityVisualRoot == null)
+            return;
+
+        Graphic[] graphics = abilityVisualRoot.GetComponentsInChildren<Graphic>(true);
+        for (int i = 0; i < graphics.Length; i++)
+            graphics[i].raycastTarget = false;
+    }
+
+    private Transform FindChildRecursive(Transform root, string childName)
+    {
+        if (root == null)
             return null;
 
-        return targetCanvas.worldCamera;
+        for (int i = 0; i < root.childCount; i++)
+        {
+            Transform child = root.GetChild(i);
+            if (child.name == childName)
+                return child;
+
+            Transform result = FindChildRecursive(child, childName);
+            if (result != null)
+                return result;
+        }
+
+        return null;
     }
 
-    private void CacheRootCanvas()
+    private void CancelHoverState()
     {
-        if (rootCanvas == null)
-            rootCanvas = GetComponentInParent<Canvas>();
+        if (isPointerHovering == false)
+            return;
+
+        isPointerHovering = false;
+        owner?.HideSelectionCursor(this);
+        owner?.HideToolTip(this);
     }
 }
