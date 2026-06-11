@@ -390,12 +390,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 1
   vfxPoolDataList:
   - vfxTag: LevelUpEffect
     effectPrefab: {fileID: 5748764238649717206, guid: 1797ceac0dec4a64da158d3d4dab7dba, type: 3}
     initialPoolSize: 10
     allowDynamicExpansion: 1
     maxPoolSize: 20
+    uiParticleScale: 20
 --- !u!1 &3681080422180222388
 GameObject:
   m_ObjectHideFlags: 0

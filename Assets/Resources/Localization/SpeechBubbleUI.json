@@ -1,0 +1,29 @@
+{
+  "jsonId": 5,
+  "entries": [
+    {
+      "id": 1,
+      "key": "InventoryFull",
+      "kr": "가방에 빈 자리가 없어.",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 2,
+      "key": "ItemCantAcquired",
+      "kr": "다른 아이템을 담을 수 없어.",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 3,
+      "key": "AxeDurabilityEmpty",
+      "kr": "도끼가 <COLOR=FF0000><CHAR_SHAKE>파손 되었어!!!</CHAR_SHAKE></COLOR>",
+      "en": "",
+      "enumType": "",
+      "enumValue": ""
+    }
+  ]
+}

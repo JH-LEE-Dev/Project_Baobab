@@ -30,6 +30,7 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
     private TweenCallback onDisappearTweenCompleteCallback;
     private TweenCallback externalOnCompleteCallback;
     private Tweener colorTween;
+    private Tween transitionTween;
     private float pressTime = 0.0f;
     private bool isPressed = false;
     private bool isHovered = false;
@@ -48,21 +49,30 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void PlayDisappearAnimation(TweenCallback _onComplete)
     {
+        if (null != transitionTween && transitionTween.IsActive())
+            transitionTween.Kill();
+
         externalOnCompleteCallback = _onComplete;
-        transform.DOScale(Vector3.zero, disappearDuration)
-                 .SetEase(disappearEase)
-                 .OnComplete(onDisappearTweenCompleteCallback);
+        transitionTween = transform.DOScale(Vector3.zero, disappearDuration)
+                                   .SetEase(disappearEase)
+                                   .OnComplete(onDisappearTweenCompleteCallback);
     }
 
     public void PlayAppearAnimation()
     {
+        if (null != transitionTween && transitionTween.IsActive())
+            transitionTween.Kill();
+
         gameObject.SetActive(true);
         transform.localScale = Vector3.zero;
-        transform.DOScale(Vector3.one, appearDuration).SetEase(appearEase);
+        transitionTween = transform.DOScale(Vector3.one, appearDuration).SetEase(appearEase);
     }
 
     public void ResetAnimation()
     {
+        if (null != transitionTween && transitionTween.IsActive())
+            transitionTween.Kill();
+
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
 
@@ -97,7 +107,8 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         if (true == isPressed)
         {
             isPressed = false;
-            onPressStateChangedCallback?.Invoke(false);
+            if (false == IsTransitioning())
+                onPressStateChangedCallback?.Invoke(false);
         }
 
         PlayColorTween(normalColor);
@@ -105,14 +116,17 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void OnPointerDown(PointerEventData _eventData)
     {
-        isPressed = true;
-        pressTime = 0.0f;
-
         if (null != colorTween && colorTween.IsActive())
             colorTween.Kill();
 
         if (null != buttonImage)
             buttonImage.color = clickColor;
+
+        if (true == IsTransitioning())
+            return;
+
+        isPressed = true;
+        pressTime = 0.0f;
 
         onPressStateChangedCallback?.Invoke(true);
     }
@@ -122,15 +136,24 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         if (true == isPressed)
         {
             isPressed = false;
-            onPressStateChangedCallback?.Invoke(false);
-
-            Color _targetColor = true == isHovered ? hoverColor : normalColor;
-            PlayColorTween(_targetColor);
+            if (false == IsTransitioning())
+                onPressStateChangedCallback?.Invoke(false);
         }
+
+        Color _targetColor = true == isHovered ? hoverColor : normalColor;
+        PlayColorTween(_targetColor);
     }
 
 
     // 내부 로직
+
+    private bool IsTransitioning()
+    {
+        if (null != transitionTween && true == transitionTween.IsActive())
+            return true;
+
+        return false;
+    }
 
     private void OnDisappearTweenComplete()
     {
@@ -173,10 +196,22 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         isHovered = false;
         pressTime = 0.0f;
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != transitionTween && true == transitionTween.IsActive())
+            transitionTween.Kill();
+
+        if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
 
         if (null != buttonImage)
             buttonImage.color = normalColor;
+    }
+
+    private void OnDestroy()
+    {
+        if (null != transitionTween && true == transitionTween.IsActive())
+            transitionTween.Kill();
+
+        if (null != colorTween && true == colorTween.IsActive())
+            colorTween.Kill();
     }
 }

@@ -8,20 +8,26 @@ public class UIView_HUD : UIView
 {
     [Header("UI References")]
     [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
+    [SerializeField] private GameObject moveHUD;
     [SerializeField] private GameObject hudEquipmentPrefab;
     [SerializeField] private GameObject hudSteminaBarPrefab;
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
+    [SerializeField] private GameObject hudScreenBloodPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
     private HUD_Equipment hudEquipment;
     private HUD_Stemina hudSteminaBar;
     private HUD_DirIndicator hudDirIndicator;
+    private HUD_ScreenBlood hudScreenBlood;
 
     private ICharacter character;
 
     private MapType currentMapType;
     private ForestType currentForestType;
+
+    [Header("Indicator Settings")]
+    [SerializeField] private float dirIndicatorShowDelay = 1f;
 
     #region Default Logic
 
@@ -34,9 +40,10 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
-        Init_HUDDirIndicator();
+        Init_HUDScreenBlood();
         Init_HUDSteminaBar();
         Init_HUDEquipment();
+        Init_HUDDirIndicator();
 
         bool isTown = MapType.Town == currentMapType;
 
@@ -85,7 +92,7 @@ public class UIView_HUD : UIView
 
     private void Init_HUDEquipment()
     {
-        hudEquipment = Instantiate(hudEquipmentPrefab, uiRoot.transform).GetComponent<HUD_Equipment>();
+        hudEquipment = Instantiate(hudEquipmentPrefab, moveHUD.transform).GetComponent<HUD_Equipment>();
 
         if (null != hudEquipment)
         {
@@ -97,13 +104,24 @@ public class UIView_HUD : UIView
 
     #region HUD_Stemina Logic
 
+    private void Init_HUDScreenBlood()
+    {
+        hudScreenBlood = Instantiate(hudScreenBloodPrefab, uiRoot.transform).GetComponent<HUD_ScreenBlood>();
+
+        if (null != hudScreenBlood)
+        {
+            hudScreenBlood.Initialize();
+            hudScreenBlood.transform.SetAsLastSibling();
+        }
+    }
+
     private void Init_HUDSteminaBar()
     {
-        hudSteminaBar = Instantiate(hudSteminaBarPrefab, uiRoot.transform).GetComponent<HUD_Stemina>();
+        hudSteminaBar = Instantiate(hudSteminaBarPrefab, moveHUD.transform).GetComponent<HUD_Stemina>();
 
         if (null != hudSteminaBar)
         {
-            hudSteminaBar.Initialize();
+            hudSteminaBar.Initialize(hudScreenBlood);
         }
     }
 
@@ -156,7 +174,6 @@ public class UIView_HUD : UIView
         if (false == bTown)
         {
             hudEquipment?.ResetAllMotions();
-            hudDirIndicator?.OnShow();
         }
         else
         {
@@ -196,6 +213,9 @@ public class UIView_HUD : UIView
     {
         hudDirIndicator?.OnHide();
 
+        if (null != hudScreenBlood)
+            hudScreenBlood.ResetAnimation(false);
+
         if (null != omp)
         {
             omp.Play(mapTransitionMotionTag, bReset: true);
@@ -211,7 +231,7 @@ public class UIView_HUD : UIView
 
         if (MapType.Town != currentMapType)
         {
-            hudDirIndicator?.OnShow();
+            hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
     }
 }

@@ -27,7 +27,7 @@ public class UI_InventoryPopup : MonoBehaviour
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(int _defaultCap)
+    public void Initialize()
     {
         rect = GetComponent<RectTransform>();
         
@@ -84,5 +84,12 @@ public class UI_InventoryPopup : MonoBehaviour
     private void HandleCompletedAnimation()
     {
         gameObject.SetActive(false);
+    }
+
+
+    // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
+
+    private void OnDestroy()
+    {
     }
 }

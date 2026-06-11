@@ -140,7 +140,7 @@ public class HUD_NavigationTreeField : MonoBehaviour
     private void OnTreeDisappearComplete()
     {
         disappearCompletedCount++;
-        if (disappearCompletedCount == disappearActiveCount)
+        if (disappearActiveCount == disappearCompletedCount)
         {
             ResetSelection();
             allDisappearCompleteCallback?.Invoke();
@@ -177,5 +177,9 @@ public class HUD_NavigationTreeField : MonoBehaviour
     private void OnDisable()
     {
         ResetSelection();
+    }
+
+    private void OnDestroy()
+    {
     }
 }

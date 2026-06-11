@@ -93,6 +93,13 @@ public static class LocKeys
         public const int containerStateHeader = 6291464;
     }
 
+    public static class SpeechBubbleUI
+    {
+        public const int inventoryFull = 10485761;
+        public const int itemCantAcquired = 10485762;
+        public const int axeDurabilityEmpty = 10485763;
+    }
+
     public static class WarningUI
     {
         public const int mainText = 8388609;
