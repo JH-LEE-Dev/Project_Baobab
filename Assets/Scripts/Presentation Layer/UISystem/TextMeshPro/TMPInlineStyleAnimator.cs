@@ -78,14 +78,18 @@ namespace PresentationLayer.UISystem
             if (tmpText == null)
                 return;
 
+            isRevealPlaying = true;
+            revealStartTime = Time.time;
+
             tmpText.ForceMeshUpdate(false, true);
             revealCharacterCount = Mathf.Max(0, tmpText.textInfo.characterCount);
 
             if (revealCharacterCount == 0)
+            {
+                isRevealPlaying = false;
                 return;
+            }
 
-            isRevealPlaying = true;
-            revealStartTime = Time.time;
             tmpText.SetVerticesDirty();
         }
 

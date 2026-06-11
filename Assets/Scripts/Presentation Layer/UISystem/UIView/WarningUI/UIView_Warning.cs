@@ -11,6 +11,8 @@ public class UIView_Warning : UIView
     private const int WarningLocalizationJsonId = 4;
     private const int MainTextEntryId = 1;
     private const int SubTextEntryId = 2;
+    private const float HiddenBGWidth = 0f;
+    private const float WarningBGTargetAlpha = 0.95f;
 
     private IInventory characterInventory;
 
@@ -38,6 +40,7 @@ public class UIView_Warning : UIView
     [Header("Production Settings")]
     [SerializeField] private float bgOpenDuration = 0.25f;
     [SerializeField] private float bgTargetWidth = 700f;
+    [SerializeField] private float bgPieceOpenDelay = 0.04f;
     [SerializeField] private float contentOpenDuration = 0.25f;
     [SerializeField] private float contentOpenInterval = 0.15f;
     [SerializeField] private float contentOpenYOffset = -20f;
@@ -52,8 +55,10 @@ public class UIView_Warning : UIView
     private CanvasGroup mainTextCanvasGroup;
     private CanvasGroup subTextCanvasGroup;
     private CanvasGroup buttonRootCanvasGroup;
+    private CanvasGroup[] closeFadeCanvasGroups = Array.Empty<CanvasGroup>();
     private TMP_Text mainTMPText;
     private TMP_Text subTMPText;
+    private WarningBGPiece[] warningBGPieces = Array.Empty<WarningBGPiece>();
     private UISelectionCursor selectionCursorInstance;
     private UIHoverSelectionTarget okHoverTarget;
     private UIHoverSelectionTarget cancelHoverTarget;
@@ -63,6 +68,15 @@ public class UIView_Warning : UIView
     private RectTransform cancelButtonVisual;
     private LocalizationManager localizationManager;
     private bool isClosing;
+
+    private sealed class WarningBGPiece
+    {
+        public RectTransform rectTransform;
+        public Graphic graphic;
+        public float targetWidth;
+        public float targetAlpha;
+        public float delay;
+    }
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -136,10 +150,15 @@ public class UIView_Warning : UIView
 
     private void CacheCanvasGroups()
     {
+        if (warningBG == null)
+            warningBG = FindChildRecursive(transform, "BGRoot") as RectTransform;
+
         warningBGCanvasGroup = GetOrAddCanvasGroup(warningBG);
         mainTextCanvasGroup = GetOrAddCanvasGroup(mainText);
         subTextCanvasGroup = GetOrAddCanvasGroup(subText);
         buttonRootCanvasGroup = GetOrAddCanvasGroup(buttonRoot);
+        closeFadeCanvasGroups = new[] { warningBGCanvasGroup, mainTextCanvasGroup, subTextCanvasGroup, buttonRootCanvasGroup };
+        CacheWarningBGPieces();
     }
 
     private void CacheTextReferences()
@@ -175,42 +194,54 @@ public class UIView_Warning : UIView
         CacheTargetSize();
         bool hasLogInInventory = HasLogInCharacterInventory();
         RectTransform mainTargetPivot = hasLogInInventory || soloTextPivot == null ? mainTextPivot : soloTextPivot;
+        AssignRandomWarningBGDelays();
+        float bgProductionDuration = GetWarningBGProductionDuration();
         float buttonStartTime = hasLogInInventory
-            ? bgOpenDuration + (contentOpenInterval * 2f)
-            : bgOpenDuration + contentOpenInterval;
+            ? bgProductionDuration + (contentOpenInterval * 2f)
+            : bgProductionDuration + contentOpenInterval;
 
         PrepareOpenState(hasLogInInventory, mainTargetPivot);
-        SetButtonsInteractable(false);
+        EnableButtons();
 
         openSequence = DOTween.Sequence().SetUpdate(true);
 
-        if (warningBG != null)
-            openSequence.Join(DOTween.To(GetWarningBGWidth, SetWarningBGWidth, bgTargetWidth, bgOpenDuration).SetEase(productionEase));
+        if (warningBGPieces.Length > 0)
+        {
+            SetCanvasGroupAlpha(warningBGCanvasGroup, 1f);
+            InsertWarningBGOpenTweens();
+        }
+        else if (warningBG != null)
+        {
+            openSequence.Join(DOTween.To(GetWarningBGWidth, SetWarningBGWidth, bgTargetWidth, bgOpenDuration).SetEase(Ease.OutCubic));
 
-        if (warningBGCanvasGroup != null)
-            openSequence.Join(warningBGCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(productionEase));
+            if (warningBGCanvasGroup != null)
+                openSequence.Join(warningBGCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(productionEase));
+        }
 
-        InsertContentOpenTween(mainText, mainTextCanvasGroup, mainTargetPivot, bgOpenDuration);
+        InsertContentOpenTween(mainText, mainTextCanvasGroup, mainTargetPivot, bgProductionDuration);
 
         if (hasLogInInventory)
-            InsertContentOpenTween(subText, subTextCanvasGroup, subTextPivot, bgOpenDuration + contentOpenInterval);
+            InsertContentOpenTween(subText, subTextCanvasGroup, subTextPivot, bgProductionDuration + contentOpenInterval);
 
         InsertContentOpenTween(buttonRoot, buttonRootCanvasGroup, buttonPivot, buttonStartTime);
 
-        float inputEnableTime = buttonStartTime + contentOpenDuration;
-        openSequence.InsertCallback(inputEnableTime, EnableButtons);
     }
 
     private void CacheTargetSize()
     {
+        if (warningBGPieces.Length > 0 && bgTargetWidth <= 0f)
+            bgTargetWidth = warningBGPieces[0].targetWidth;
+
         if (warningBG != null && bgTargetWidth <= 0f)
             bgTargetWidth = warningBG.rect.width;
     }
 
     private void PrepareOpenState(bool showSubText, RectTransform mainTargetPivot)
     {
-        if (warningBG != null)
-            SetWarningBGWidth(1f);
+        if (warningBGPieces.Length > 0)
+            SetWarningBGPiecesHidden();
+        else if (warningBG != null)
+            SetWarningBGWidth(HiddenBGWidth);
 
         SetSubTextActive(showSubText);
         SetCanvasGroupAlpha(warningBGCanvasGroup, 0f);
@@ -228,7 +259,7 @@ public class UIView_Warning : UIView
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
         SetCanvasGroupRaycast(mainTextCanvasGroup, false);
         SetCanvasGroupRaycast(subTextCanvasGroup, false);
-        SetCanvasGroupRaycast(buttonRootCanvasGroup, false);
+        SetCanvasGroupRaycast(buttonRootCanvasGroup, true);
     }
 
     private void SetContentToHiddenPosition(RectTransform target, RectTransform pivot)
@@ -304,6 +335,144 @@ public class UIView_Warning : UIView
         return false;
     }
 
+    private void CacheWarningBGPieces()
+    {
+        warningBGPieces = Array.Empty<WarningBGPiece>();
+
+        if (warningBG == null)
+            return;
+
+        RectTransform[] rectTransforms = warningBG.GetComponentsInChildren<RectTransform>(true);
+        List<WarningBGPiece> pieces = new List<WarningBGPiece>();
+
+        for (int i = 0; i < rectTransforms.Length; i++)
+        {
+            RectTransform rectTransform = rectTransforms[i];
+            if (rectTransform == warningBG || rectTransform.name.StartsWith("BG_", StringComparison.Ordinal) == false)
+                continue;
+
+            Graphic graphic = rectTransform.GetComponent<Graphic>();
+            if (graphic == null)
+                continue;
+
+            pieces.Add(new WarningBGPiece
+            {
+                rectTransform = rectTransform,
+                graphic = graphic,
+                targetWidth = rectTransform.rect.width,
+                targetAlpha = WarningBGTargetAlpha
+            });
+        }
+
+        pieces.Sort((left, right) => string.CompareOrdinal(left.rectTransform.name, right.rectTransform.name));
+
+        warningBGPieces = pieces.ToArray();
+    }
+
+    private float GetWarningBGProductionDuration()
+    {
+        if (warningBGPieces.Length <= 0)
+            return bgOpenDuration;
+
+        float lastDelay = 0f;
+        for (int i = 0; i < warningBGPieces.Length; i++)
+            lastDelay = Mathf.Max(lastDelay, warningBGPieces[i].delay);
+
+        return bgOpenDuration + lastDelay;
+    }
+
+    private void InsertWarningBGOpenTweens()
+    {
+        if (warningBGPieces.Length > 0)
+        {
+            openSequence.Insert(0f, DOTween.To(
+                () => GetWarningBGPiecesAlpha(),
+                SetWarningBGPiecesAlpha,
+                1f,
+                bgOpenDuration).SetEase(Ease.Linear));
+        }
+
+        for (int i = 0; i < warningBGPieces.Length; i++)
+        {
+            WarningBGPiece piece = warningBGPieces[i];
+            float targetWidth = bgTargetWidth > 0f ? bgTargetWidth : piece.targetWidth;
+
+            openSequence.Insert(piece.delay, DOTween.To(
+                () => GetWarningBGPieceWidth(piece),
+                width => SetWarningBGPieceWidth(piece, width),
+                targetWidth,
+                bgOpenDuration).SetEase(Ease.OutCubic));
+        }
+    }
+
+    private void AssignRandomWarningBGDelays()
+    {
+        if (warningBGPieces.Length <= 0)
+            return;
+
+        float[] delays = new float[warningBGPieces.Length];
+        for (int i = 0; i < delays.Length; i++)
+            delays[i] = i * bgPieceOpenDelay;
+
+        for (int i = delays.Length - 1; i > 0; i--)
+        {
+            int randomIndex = UnityEngine.Random.Range(0, i + 1);
+            float temp = delays[i];
+            delays[i] = delays[randomIndex];
+            delays[randomIndex] = temp;
+        }
+
+        for (int i = 0; i < warningBGPieces.Length; i++)
+            warningBGPieces[i].delay = delays[i];
+    }
+
+    private void SetWarningBGPiecesHidden()
+    {
+        for (int i = 0; i < warningBGPieces.Length; i++)
+        {
+            SetWarningBGPieceWidth(warningBGPieces[i], HiddenBGWidth);
+            SetGraphicAlpha(warningBGPieces[i].graphic, 0f);
+        }
+    }
+
+    private float GetWarningBGPieceWidth(WarningBGPiece piece)
+    {
+        return piece?.rectTransform != null ? piece.rectTransform.rect.width : 0f;
+    }
+
+    private void SetWarningBGPieceWidth(WarningBGPiece piece, float width)
+    {
+        if (piece?.rectTransform == null)
+            return;
+
+        piece.rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, width);
+    }
+
+    private float GetWarningBGPiecesAlpha()
+    {
+        if (warningBGPieces.Length <= 0 || warningBGPieces[0].graphic == null)
+            return 0f;
+
+        float targetAlpha = Mathf.Max(warningBGPieces[0].targetAlpha, 0.0001f);
+        return Mathf.Clamp01(warningBGPieces[0].graphic.color.a / targetAlpha);
+    }
+
+    private void SetWarningBGPiecesAlpha(float ratio)
+    {
+        for (int i = 0; i < warningBGPieces.Length; i++)
+            SetGraphicAlpha(warningBGPieces[i].graphic, warningBGPieces[i].targetAlpha * ratio);
+    }
+
+    private void SetGraphicAlpha(Graphic graphic, float alpha)
+    {
+        if (graphic == null)
+            return;
+
+        Color color = graphic.color;
+        color.a = alpha;
+        graphic.color = color;
+    }
+
     private float GetWarningBGWidth()
     {
         return warningBG != null ? warningBG.rect.width : 0f;
@@ -328,8 +497,12 @@ public class UIView_Warning : UIView
 
         closeSequence = DOTween.Sequence().SetUpdate(true);
 
-        if (warningBGCanvasGroup != null)
-            closeSequence.Join(warningBGCanvasGroup.DOFade(0f, closeDuration).SetEase(productionEase));
+        for (int i = 0; i < closeFadeCanvasGroups.Length; i++)
+        {
+            CanvasGroup canvasGroup = closeFadeCanvasGroups[i];
+            if (canvasGroup != null)
+                closeSequence.Join(canvasGroup.DOFade(0f, closeDuration).SetEase(productionEase));
+        }
 
         closeSequence.OnComplete(OnCloseProductionComplete);
     }

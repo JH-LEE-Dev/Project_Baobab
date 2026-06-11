@@ -30,7 +30,6 @@ public class UIView_HUD : UIView
 
     [Header("Indicator Settings")]
     [SerializeField] private float dirIndicatorShowDelay = 1f;
-    [SerializeField] private float hudMessageShowDuration = 1f;
 
     #region Default Logic
 
@@ -240,7 +239,7 @@ public class UIView_HUD : UIView
 
         if (MapType.Town != currentMapType)
         {
-            hudMessage?.ShowForSeconds(hudMessageShowDuration);
+            hudMessage?.Play();
             hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
     }
