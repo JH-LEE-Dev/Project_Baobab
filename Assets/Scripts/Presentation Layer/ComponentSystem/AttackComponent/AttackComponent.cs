@@ -153,11 +153,25 @@ public class AttackComponent : PComponent
             }
         }
 
-        mouseTransform = mouseWorldPos;
-
-        // 5. 중심점에서 마우스 방향으로의 벡터 계산
         Vector3 centerPos = transform.position;
         Vector3 direction = mouseWorldPos - centerPos;
+
+        // 최소 거리 제한 (0.1 이하로 떨어지지 않도록 설정)
+        float distance = direction.magnitude;
+        if (distance < 0.1f)
+        {
+            if (direction.sqrMagnitude > 0.0001f)
+            {
+                mouseWorldPos = centerPos + direction.normalized * 0.1f;
+            }
+            else
+            {
+                mouseWorldPos = centerPos + Vector3.right * 0.1f;
+            }
+            direction = mouseWorldPos - centerPos;
+        }
+
+        mouseTransform = mouseWorldPos;
 
         // 6. 일정 거리(Radius) 무조건 유지
         if (direction.sqrMagnitude > 0.0001f)
