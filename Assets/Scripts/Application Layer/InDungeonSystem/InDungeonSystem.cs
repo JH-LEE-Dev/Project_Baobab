@@ -365,6 +365,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         if(_warningUIClosedSignal.bResult == true)
         {
+            signalHub.Publish(new PopupUIDownSignal());
             inDungeonObjectManager.HandleGameEnd();
         }
         else
