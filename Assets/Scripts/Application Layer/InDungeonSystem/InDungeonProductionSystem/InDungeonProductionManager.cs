@@ -123,15 +123,14 @@ public class InDungeonProductionManager : MonoBehaviour
         if (bCurrentlyDungeonScene == true && bRetryGame == false)
             return;
 
-        character.col.enabled = true;
-
-        inputManager.PauseInteractKey(false);
         inputManager.PauseMove(false);
+
         CameraDownEndEvent?.Invoke();
     }
 
     public void StartSkyProduction()
     {
+        character.col.enabled = false;
         skyCameraProductionManager.StartCameraMove();
     }
 

@@ -134,7 +134,7 @@ public class TownProductionManager : MonoBehaviour
     {
         character.SetFacingDirection(Vector2.down);
         character.ResetStatus();
-        character.col.enabled = true;
+
         bCanGetOff = true;
         OffroadDriveEndEvent?.Invoke();
     }
@@ -150,8 +150,6 @@ public class TownProductionManager : MonoBehaviour
         character.gameObject.SetActive(true);
         character.transform.position = offroadVehicleObj.getOffTransform.position;
 
-        // 2. 캐릭터 컴포넌트 상태 복구
-        character.col.enabled = true;
         character.EnableShadow();
 
         // 3. 탑승 위치에서 내리는 위치를 바라보도록 설정
@@ -212,13 +210,12 @@ public class TownProductionManager : MonoBehaviour
         if (bCurrentlyTownScene == true || bRetryGame == true)
             return;
 
-        inputManager.PauseInteractKey(false);
-        inputManager.PauseMove(false);
         CameraUpDownEndEvent?.Invoke();
     }
 
     public void StartSkyProduction()
     {
+        character.col.enabled = false;
         inputManager.PauseInteractKey(true);
         StartCoroutine(StartSkyProductionRoutine());
     }

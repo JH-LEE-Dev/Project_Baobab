@@ -327,6 +327,7 @@ public class TownSystem : MonoBehaviour
         if (bCurrentlyTownScene == true)
             return;
 
+        inputManager.PauseMove(false);
         signalHub.Publish(new ActivateCharacterSignal());
 
         StartCoroutine(PopupUIGoUPCoroutine());
@@ -338,13 +339,24 @@ public class TownSystem : MonoBehaviour
 
         signalHub.Publish(new PopupUIUpSignal());
 
-        StartCoroutine(StaminaDecreaseCoroutine());
+        if (bCurrentlyTownScene == false)
+        {
+            StartCoroutine(StaminaDecreaseCoroutine());
+        }
+        else
+        {
+            character.col.enabled = true;
+            inputManager.PauseInteractKey(false);
+        }
     }
 
     private IEnumerator StaminaDecreaseCoroutine()
     {
         yield return new WaitForSeconds(0.7f);
         signalHub.Publish(new StartDecreaseStaminaSignal());
+
+        character.col.enabled = true;
+        inputManager.PauseInteractKey(false);
     }
 
     private void PopupUIDown()
