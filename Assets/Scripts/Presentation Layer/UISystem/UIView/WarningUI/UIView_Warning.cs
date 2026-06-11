@@ -4,6 +4,7 @@ using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class UIView_Warning : UIView
@@ -201,7 +202,7 @@ public class UIView_Warning : UIView
             : bgProductionDuration + contentOpenInterval;
 
         PrepareOpenState(hasLogInInventory, mainTargetPivot);
-        SetButtonsInteractable(false);
+        SetButtonInputEnabled(false);
 
         openSequence = DOTween.Sequence().SetUpdate(true);
 
@@ -260,7 +261,7 @@ public class UIView_Warning : UIView
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
         SetCanvasGroupRaycast(mainTextCanvasGroup, false);
         SetCanvasGroupRaycast(subTextCanvasGroup, false);
-        SetCanvasGroupRaycast(buttonRootCanvasGroup, false);
+        SetButtonInputEnabled(false);
     }
 
     private void SetContentToHiddenPosition(RectTransform target, RectTransform pivot)
@@ -492,9 +493,8 @@ public class UIView_Warning : UIView
         KillProductionSequences();
         isClosing = true;
         HideSelectionCursorImmediately();
-        SetButtonsInteractable(false);
+        SetButtonInputEnabled(false);
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
-        SetCanvasGroupRaycast(buttonRootCanvasGroup, false);
 
         closeSequence = DOTween.Sequence().SetUpdate(true);
 
@@ -566,8 +566,18 @@ public class UIView_Warning : UIView
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
         SetCanvasGroupRaycast(mainTextCanvasGroup, false);
         SetCanvasGroupRaycast(subTextCanvasGroup, false);
-        SetCanvasGroupRaycast(buttonRootCanvasGroup, true);
-        SetButtonsInteractable(true);
+        SetButtonInputEnabled(true);
+        RefreshButtonHoverTargets();
+    }
+
+    private void SetButtonInputEnabled(bool enabled)
+    {
+        SetCanvasGroupRaycast(buttonRootCanvasGroup, enabled);
+        SetButtonsInteractable(enabled);
+        SetHoverTargetsEnabled(enabled);
+
+        if (enabled == false)
+            HideSelectionCursorImmediately();
     }
 
     private void SetButtonsInteractable(bool enabled)
@@ -583,6 +593,40 @@ public class UIView_Warning : UIView
 
         if (cancelButton != null)
             cancelButton.interactable = enabled;
+    }
+
+    private void SetHoverTargetsEnabled(bool enabled)
+    {
+        if (okHoverTarget != null)
+            okHoverTarget.enabled = enabled;
+
+        if (cancelHoverTarget != null)
+            cancelHoverTarget.enabled = enabled;
+    }
+
+    private void RefreshButtonHoverTargets()
+    {
+        Mouse mouse = Mouse.current;
+        if (mouse == null)
+            return;
+
+        Vector2 screenPosition = mouse.position.ReadValue();
+        Camera eventCamera = GetUICamera();
+
+        if (okHoverTarget != null)
+            okHoverTarget.RefreshHover(screenPosition, eventCamera);
+
+        if (cancelHoverTarget != null)
+            cancelHoverTarget.RefreshHover(screenPosition, eventCamera);
+    }
+
+    private Camera GetUICamera()
+    {
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            return null;
+
+        return canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
     }
 
     private void CacheButtonTouchAreas()

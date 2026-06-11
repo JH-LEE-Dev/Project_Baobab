@@ -32,12 +32,7 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (isPointerHovering)
-            return;
-
-        isPointerHovering = true;
-        selectionCursor?.Show(cursorTargetRectTransform != null ? cursorTargetRectTransform : targetRectTransform);
-        PlayHoverMotion();
+        BeginHover();
     }
 
     public void OnPointerExit(PointerEventData eventData)
@@ -56,6 +51,19 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
 
         if (selectionCursor != null)
             selectionCursor.HideImmediately();
+    }
+
+    public void RefreshHover(Vector2 screenPosition, Camera eventCamera = null)
+    {
+        CacheReferences();
+
+        if (targetRectTransform == null)
+            return;
+
+        if (RectTransformUtility.RectangleContainsScreenPoint(targetRectTransform, screenPosition, eventCamera))
+            BeginHover();
+        else
+            EndHover();
     }
 
     private void OnDisable()
@@ -115,5 +123,15 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
             return;
 
         motionPlayer.SettingEntryMotion(entry, true, true);
+    }
+
+    private void BeginHover()
+    {
+        if (isPointerHovering)
+            return;
+
+        isPointerHovering = true;
+        selectionCursor?.Show(cursorTargetRectTransform != null ? cursorTargetRectTransform : targetRectTransform);
+        PlayHoverMotion();
     }
 }
