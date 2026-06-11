@@ -10,6 +10,8 @@ public class UIView_Warning : UIView
     private const int MainTextEntryId = 1;
     private const int SubTextEntryId = 2;
 
+    private IInventory characterInventory;
+
     public event Action DeActivateWarningUIEvent;
 
     [Header("UI References")]
@@ -59,6 +61,11 @@ public class UIView_Warning : UIView
         CacheTextReferences();
         RefreshLocalizedTexts();
         BindButtonEvents();
+    }
+
+    public void DependencyInjection(IInventory _characterInventory)
+    {
+        characterInventory = _characterInventory;
     }
 
     public override void Hide()
