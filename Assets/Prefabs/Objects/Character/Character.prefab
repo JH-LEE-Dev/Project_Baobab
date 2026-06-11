@@ -1389,12 +1389,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
   vfxPoolDataList:
   - vfxTag: Dust
     effectPrefab: {fileID: 2164660391435094963, guid: f1dbff2c09d037a48b1cc41a85157b5c, type: 3}
     initialPoolSize: 10
     allowDynamicExpansion: 0
     maxPoolSize: 20
+    uiParticleScale: 1
 --- !u!1 &4035353486790179823
 GameObject:
   m_ObjectHideFlags: 0
