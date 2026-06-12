@@ -249,7 +249,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != localizationManager)
         {
             string _localizedName = localizationManager.GetText(mapType);
-            Debug.Log($"mapType: {mapType}, localizedName: {_localizedName}");
             if (false == string.IsNullOrEmpty(_localizedName))
             {
                 regionNameText.text = _localizedName;
