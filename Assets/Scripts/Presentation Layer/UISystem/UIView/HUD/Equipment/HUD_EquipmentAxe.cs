@@ -1,3 +1,4 @@
+using PresentationLayer.DOTweenAnimationSystem;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,6 +18,15 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private Image axeImage; // 도끼 이미지
         [SerializeField] private HUD_HPBar axeGaugeBar; // 도끼 특수 게이지 바
 
+        [Header("Animations")]
+        [SerializeField] private ObjectMotionPlayer omp;
+        [SerializeField] private string brokenAnimTag;
+
+        [Header("VFX Settings")]
+        [SerializeField] private VFXComponent vfxComponent;
+        [SerializeField] private GameObject axeHead;
+        [SerializeField] private string axeBrokenTag;
+
         // //내부 의존성
         private AxeMode axeMode = AxeMode.DB100;
 
@@ -31,6 +41,12 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null != axeGaugeBar)
                 axeGaugeBar.Initialize();
+
+            if (null != vfxComponent)
+                vfxComponent.Initialize();
+
+            if (null != omp)
+                omp.Initialize();
         }
 
         protected override void UpdateVisuals()
@@ -56,6 +72,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (null == axeImages || null == axeImage)
                 return;
 
+            AxeMode prevMode = axeMode;
+
             if (_ratio > 0.75f)
                 axeMode = AxeMode.DB100;
             else if (_ratio > 0.5f)
@@ -68,6 +86,19 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 axeMode = AxeMode.ZERO;
 
             axeImage.sprite = axeImages[(int)axeMode];
+
+            if (prevMode != axeMode)
+            {
+                if (null != omp)
+                {
+                    omp.Play(brokenAnimTag, bReset: true);
+                }
+
+                if (null != vfxComponent && null != axeHead)
+                {
+                    vfxComponent.Play(axeBrokenTag, axeHead.transform.position, Quaternion.identity, transform); 
+                }
+            }
         }
         // //유니티 이벤트 함수
     }

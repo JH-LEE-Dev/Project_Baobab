@@ -377,6 +377,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 9204860665959406124}
+  - {fileID: 7364583895654873141}
   m_Father: {fileID: 6236687586181825250}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
@@ -405,7 +406,7 @@ MonoBehaviour:
   - {fileID: 276415372774956654}
   inactiveAlpha: 0.5
   inactiveColor: {r: 0.75, g: 0.75, b: 0.75, a: 1}
-  motionPlayer: {fileID: 0}
+  motionPlayer: {fileID: 4529823348898067991}
   activateMotionTag: Activate
   deactivateMotionTag: Deactivate
   axeImages:
@@ -416,6 +417,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 7412c7e6f2194854ba7619df32f4b5e5, type: 3}
   axeImage: {fileID: 8614871370824734834}
   axeGaugeBar: {fileID: 423231602786947951}
+  omp: {fileID: 4529823348898067991}
+  brokenAnimTag: AxeSkew
+  vfxComponent: {fileID: 1823110791385607140}
+  axeHead: {fileID: 7893955336979294459}
+  axeBrokenTag: AxeBroken
 --- !u!225 &7975163883536258449
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -503,6 +509,74 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1 &2712072151678428499
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1562545087339277006}
+  - component: {fileID: 2349625450358625626}
+  m_Layer: 5
+  m_Name: OMB_Skew
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1562545087339277006
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2712072151678428499}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5118076543835089744}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2349625450358625626
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2712072151678428499}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f0895ea366333b4f8f6f0b17dadeb55, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UISkewClick
+  forwardDuration: 0.35
+  forwardDelay: 0
+  forwardEase: 0
+  backwardDuration: 0.35
+  backwardDelay: 0
+  backwardEase: 0
+  resetOnValidateInPlayMode: 1
+  valueSettings:
+    maxSkew: {x: 0.5, y: 0}
+    skewTimeRatio: 0.2
+    restoreTimeRatio: 0.8
+    skewEase: 6
+    restoreEase: 27
+    targetScale: {x: 1.5, y: 0.75}
+    scaleEase: 6
+    targetColor: {r: 0.85, g: 0.85, b: 0.85, a: 1}
+    colorEase: 6
+    punchRotation: 15
+    rotationVibrato: 10
+    rotationElasticity: 0.5
 --- !u!1 &2756164179181108811
 GameObject:
   m_ObjectHideFlags: 0
@@ -899,6 +973,7 @@ RectTransform:
   - {fileID: 5175255327761468778}
   - {fileID: 8398892545146681141}
   - {fileID: 3886465708085921938}
+  - {fileID: 4726552718736881447}
   - {fileID: 5118076543835089744}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -921,8 +996,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.UIView.HUD.Equipment.HUD_Equipment
   axeItem: {fileID: 3018060165584523092}
   axePop: {fileID: 6459669261124252473}
-  motionPlayer: {fileID: 0}
-  mapTransitionMotionTag: GoDown
 --- !u!1 &4018395521620533246
 GameObject:
   m_ObjectHideFlags: 0
@@ -1602,6 +1675,7 @@ RectTransform:
   - {fileID: 4205505425820929242}
   - {fileID: 1121671908777194091}
   - {fileID: 3103595156384486494}
+  - {fileID: 1562545087339277006}
   m_Father: {fileID: 6236687586181825250}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -1621,7 +1695,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 597ff1f3e8ce72346bc305fbba413bde, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.ObjectMotionPlayer
-  motionEntries: []
+  motionEntries:
+  - motionTag: AxeSkew
+    motionPrefab: {fileID: 2349625450358625626}
+    targets:
+    - transform: {fileID: 0}
+      rectTransform: {fileID: 4608528367752558394}
+      canvasGroup: {fileID: 0}
+      spriteRenderer: {fileID: 0}
+      uiGraphic: {fileID: 8614871370824734834}
+    motionInstance: {fileID: 0}
 --- !u!1 &5676571521274947121
 GameObject:
   m_ObjectHideFlags: 0
@@ -2141,6 +2224,97 @@ RectTransform:
   m_AnchoredPosition: {x: -6, y: 12}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &7572829697372769642
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4726552718736881447}
+  - component: {fileID: 1823110791385607140}
+  m_Layer: 5
+  m_Name: VFXComponent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4726552718736881447
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7572829697372769642}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6236687586181825250}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1823110791385607140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7572829697372769642}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 1
+  vfxPoolDataList:
+  - vfxTag: AxeBroken
+    effectPrefab: {fileID: 5748764238649717206, guid: 04f15c3050ad37a4296d4dae1e64071f, type: 3}
+    initialPoolSize: 2
+    allowDynamicExpansion: 1
+    maxPoolSize: 5
+    uiParticleScale: 30
+--- !u!1 &7893955336979294459
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7364583895654873141}
+  m_Layer: 5
+  m_Name: VFXT_Head
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &7364583895654873141
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7893955336979294459}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3886465708085921938}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -12, y: 43}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &7910847281721759248
 GameObject:
   m_ObjectHideFlags: 0
@@ -2152,6 +2326,7 @@ GameObject:
   - component: {fileID: 4608528367752558394}
   - component: {fileID: 224281497541168112}
   - component: {fileID: 8614871370824734834}
+  - component: {fileID: 7707407343954502270}
   m_Layer: 5
   m_Name: MainImage
   m_TagString: Untagged
@@ -2216,6 +2391,20 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &7707407343954502270
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7910847281721759248}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df2ab95be41064d43aa242e19ada5465, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.SkewEffect
+  skewX: 0
+  skewY: 0
 --- !u!1 &8499562317064618072
 GameObject:
   m_ObjectHideFlags: 0

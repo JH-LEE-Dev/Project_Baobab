@@ -181,10 +181,6 @@ public class UIView_HUD : UIView
 
         if (false == bTown)
         {
-            hudEquipment?.ResetAllMotions();
-        }
-        else
-        {
             hudDirIndicator?.OnHide();
         }
 
