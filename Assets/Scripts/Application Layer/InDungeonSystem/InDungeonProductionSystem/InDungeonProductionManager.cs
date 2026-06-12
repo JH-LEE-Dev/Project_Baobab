@@ -74,8 +74,6 @@ public class InDungeonProductionManager : MonoBehaviour
     {
         if (character == null) return;
 
-        character.col.enabled = false;
-
         if (characterRideCoroutine != null)
         {
             StopCoroutine(characterRideCoroutine);
@@ -130,7 +128,6 @@ public class InDungeonProductionManager : MonoBehaviour
 
     public void StartSkyProduction()
     {
-        character.col.enabled = false;
         skyCameraProductionManager.StartCameraMove();
     }
 

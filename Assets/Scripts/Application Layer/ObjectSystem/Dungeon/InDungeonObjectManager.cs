@@ -169,6 +169,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         portal.ResetPortal();
         portal.gameObject.SetActive(true);
         portal.SetCanTravel(true);
+        portal.col.enabled = false;
         BindPortalEvents();
     }
 

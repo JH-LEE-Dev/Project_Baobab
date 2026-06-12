@@ -1,8 +1,11 @@
 using System.Collections;
+using System;
 using UnityEngine;
 
 public class InDungeonSystem : MonoBehaviour
 {
+    public event Action ActivatePortalEvent;
+
     private SignalHub signalHub;
     public InDungeonObjectManager inDungeonObjectManager { get; private set; }
     public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
@@ -221,6 +224,11 @@ public class InDungeonSystem : MonoBehaviour
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
     {
         inDungeonProductionManager.StartSkyProduction();
+
+        offroadContainer.col.enabled = false;
+        if (inDungeonObjectManager.portal != null)
+            inDungeonObjectManager.portal.col.enabled = false;
+
         signalHub.Publish(new StartSkyProductionSignal());
     }
 
@@ -297,6 +305,10 @@ public class InDungeonSystem : MonoBehaviour
     private void RideOffroad()
     {
         inDungeonProductionManager.StartCharacterRide();
+
+        offroadContainer.col.enabled = false;
+        if (inDungeonObjectManager.portal != null)
+            inDungeonObjectManager.portal.col.enabled = false;
     }
 
     private void DropAllItem()
@@ -354,7 +366,12 @@ public class InDungeonSystem : MonoBehaviour
         }
         else
         {
-            character.col.enabled = true;
+            offroadContainer.col.enabled = true;
+            if (inDungeonObjectManager.portal != null)
+                inDungeonObjectManager.portal.col.enabled = true;
+
+            ActivatePortalEvent?.Invoke();
+
             inputManager.PauseInteractKey(false);
         }
     }
@@ -363,8 +380,11 @@ public class InDungeonSystem : MonoBehaviour
     {
         yield return new WaitForSeconds(0.7f);
         signalHub.Publish(new StartDecreaseStaminaSignal());
-        
-        character.col.enabled = true;
+
+        offroadContainer.col.enabled = true;
+        if (inDungeonObjectManager.portal != null)
+            inDungeonObjectManager.portal.col.enabled = true;
+
         inputManager.PauseInteractKey(false);
     }
 
@@ -407,5 +427,11 @@ public class InDungeonSystem : MonoBehaviour
         {
             inDungeonObjectManager.AbortGameEnd(true);
         }
+    }
+
+    public void ActivatePortal()
+    {
+        if (inDungeonObjectManager.portal != null)
+            inDungeonObjectManager.portal.col.enabled = true;
     }
 }
