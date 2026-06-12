@@ -346,7 +346,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
                 mapNameOmp.ResetAllMotions();
                 if (null != mapNameChangeTween && true == mapNameChangeTween.IsActive())
                     mapNameChangeTween.Kill();
-                mapNameChangeTween = DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
+                mapNameChangeTween = DOVirtual.DelayedCall(0.01f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
             }
         }
     }
@@ -556,7 +556,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
                 mapNameOmp.ResetAllMotions();
                 if (null != mapNameChangeTween && true == mapNameChangeTween.IsActive())
                     mapNameChangeTween.Kill();
-                mapNameChangeTween = DOVirtual.DelayedCall(0.05f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
+                mapNameChangeTween = DOVirtual.DelayedCall(0.01f, playMapNameChangeMotionCallback).SetEase(Ease.Linear);
             }
         }
     }

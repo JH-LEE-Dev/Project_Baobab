@@ -87,7 +87,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             axeImage.sprite = axeImages[(int)axeMode];
 
-            if (prevMode != axeMode)
+            if (1f > _ratio && prevMode != axeMode)
             {
                 if (null != omp)
                 {

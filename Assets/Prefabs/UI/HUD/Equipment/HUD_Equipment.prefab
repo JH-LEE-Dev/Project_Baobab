@@ -2279,7 +2279,7 @@ MonoBehaviour:
     initialPoolSize: 2
     allowDynamicExpansion: 1
     maxPoolSize: 5
-    uiParticleScale: 30
+    uiParticleScale: 25
 --- !u!1 &7893955336979294459
 GameObject:
   m_ObjectHideFlags: 0
