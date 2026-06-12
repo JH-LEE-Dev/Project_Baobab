@@ -176,7 +176,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
             cullingGroup.onStateChanged = onCullingStateChangedDelegate;
         }
 
-        cullingGroup.targetCamera = CameraFinder.Instance.PPMainCamera;
+        cullingGroup.targetCamera = Camera.main;
         cullingGroup.SetBoundingDistances(cullingDistances);
         cullingGroup.SetDistanceReferencePoint(Camera.main.transform);
         cullingGroup.SetBoundingSpheres(spheres);

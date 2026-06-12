@@ -53,7 +53,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     {
         environmentProvider = _environmentProvider;
         inputManager = _inputManager;
-        mainCam = CameraFinder.Instance.PPMainCamera;
+        mainCam = Camera.main;
         characterInventory = _characterInventory;
         offroadContainer = _offroadContainer;
 
@@ -141,7 +141,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private void SetupCullingGroup()
     {
-        if (mainCam == null) mainCam = CameraFinder.Instance.PPMainCamera;
+        if (mainCam == null) mainCam = Camera.main;
 
         // CullingGroup을 새로 생성하지 않고 기존 객체 설정만 갱신
         cullingGroup.targetCamera = mainCam;

@@ -51,7 +51,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             cullingGroup.onStateChanged = OnCullingStateChanged;
         }
 
-        cullingGroup.targetCamera = CameraFinder.Instance.PPMainCamera;
+        cullingGroup.targetCamera = Camera.main;
         spheres = new BoundingSphere[1000];
         cullingGroup.SetBoundingSpheres(spheres);
     }

@@ -80,7 +80,7 @@ MonoBehaviour:
     compositeLayerColor: 0
     threshold: 1
     softKnee: 0.5
-    intensity: 17
+    intensity: 1
     radius: 1.5
     downsample: 1
     blurIterations: 4

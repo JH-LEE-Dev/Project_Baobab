@@ -80,7 +80,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         characterInventory = _characterInventory;
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
-        mainCam = CameraFinder.Instance.PPMainCamera;
+        mainCam = Camera.main;
         inventoryChecker = _inventoryChecker;
         inDungeonResultManager = _inDungeonResultManager;
 
@@ -347,7 +347,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
             cullingGroup.onStateChanged = onCullingStateChangedDelegate;
         }
 
-        mainCam = CameraFinder.Instance.PPMainCamera;
+        mainCam = Camera.main;
 
         cullingGroup.targetCamera = mainCam;
         cullingGroup.SetBoundingDistances(cullingDistances);
