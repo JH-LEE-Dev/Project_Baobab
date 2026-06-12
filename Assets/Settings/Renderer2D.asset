@@ -72,11 +72,15 @@ MonoBehaviour:
   m_Active: 1
   settings:
     targetCameraName: PP UI Camera
+    bloomLayerMask:
+      serializedVersion: 2
+      m_Bits: 262144
     injectionPoint: 600
     bloomMaterial: {fileID: 2100000, guid: 1b53d7c319c7b264c8374af38661df4b, type: 2}
+    compositeLayerColor: 0
     threshold: 1
     softKnee: 0.5
-    intensity: 0.75
+    intensity: 17
     radius: 1.5
     downsample: 1
     blurIterations: 4
