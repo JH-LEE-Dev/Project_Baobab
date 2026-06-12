@@ -23,6 +23,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomOutlineSR;
     [SerializeField] private SpriteRenderer topStencilOutlineSR;
     [SerializeField] private SpriteRenderer bottomStencilOutlineSR;
+    [SerializeField] private SpriteRenderer topHighlightSR;
+    [SerializeField] private SpriteRenderer topHighlightOnWaterSR;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites;
@@ -84,6 +86,13 @@ public class TreeVisualComponent : MonoBehaviour
     private Color firstIndexBottomColor;
     private CustomSortable customSortable;
 
+    private Transform topHighlightOnWaterTransform;
+    private Vector3 topHighlightOnWaterBaseLocalPosition;
+    private Quaternion topHighlightOnWaterBaseLocalRotation;
+
+    private float topHighlightOriginalAlpha = 1f;
+    private float topHighlightOnWaterOriginalAlpha = 1f;
+
 
     private bool isOutlineActive = false;
     private bool bDisableOutline = false;
@@ -98,6 +107,10 @@ public class TreeVisualComponent : MonoBehaviour
     {
         cachedTransform = transform;
         if (topRenderer != null) topTransform = topRenderer.transform;
+        
+        if (topHighlightSR != null) topHighlightOriginalAlpha = topHighlightSR.color.a;
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterOriginalAlpha = topHighlightOnWaterSR.color.a;
+
         CacheSwayBasePose();
     }
 
@@ -115,6 +128,7 @@ public class TreeVisualComponent : MonoBehaviour
         int order = (int)(cachedTransform.position.y * 100);
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.sortingOrder = order;
         bOnWaterOrderSet = true;
     }
 
@@ -152,6 +166,9 @@ public class TreeVisualComponent : MonoBehaviour
         if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
         if (topShadowRenderer != null && topShadowTransform == null) topShadowTransform = _topShadowTransform;
 
+        if (topHighlightSR != null) topHighlightOriginalAlpha = topHighlightSR.color.a;
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterOriginalAlpha = topHighlightOnWaterSR.color.a;
+
         CacheSwayBasePose();
         ResetVisualState();
 
@@ -188,13 +205,30 @@ public class TreeVisualComponent : MonoBehaviour
             {
                 // 에디터 설정 시에는 바리에이션 요동을 막기 위해 첫 번째 대표 스프라이트로 고정
                 SetFirstSprite(bottomRenderer, customVisualData.bottomSprites);
-                SetFirstSprite(topRenderer, customVisualData.topSprites);
+                int index = SetFirstSprite(topRenderer, customVisualData.topSprites);
+
+                if (topHighlightSR != null)
+                {
+                    if (index >= 0 && customVisualData.highlightSprites != null && index < customVisualData.highlightSprites.Count)
+                    {
+                        topHighlightSR.sprite = customVisualData.highlightSprites[index];
+                    }
+                    else
+                    {
+                        topHighlightSR.sprite = null;
+                    }
+                }
             }
         }
         else
         {
             SetRandomSprite(bottomRenderer, bottomSprites);
             SetRandomSprite(topRenderer, topSprites);
+
+            if (topHighlightSR != null)
+            {
+                topHighlightSR.sprite = null;
+            }
         }
 
         if (bUseCustomColor)
@@ -203,6 +237,8 @@ public class TreeVisualComponent : MonoBehaviour
             if (bottomRenderer != null) bottomRenderer.color = customBottomColor;
             if (topOnWaterSR != null) topOnWaterSR.color = customTopColor;
             if (bottomOnWaterSR != null) bottomOnWaterSR.color = customBottomColor;
+            // if (topHighlightSR != null) topHighlightSR.color = customTopColor;
+            // if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.color = customTopColor;
         }
         else
         {
@@ -210,6 +246,8 @@ public class TreeVisualComponent : MonoBehaviour
             if (bottomRenderer != null) bottomRenderer.color = Color.white;
             if (topOnWaterSR != null) topOnWaterSR.color = Color.white;
             if (bottomOnWaterSR != null) bottomOnWaterSR.color = Color.white;
+            // if (topHighlightSR != null) topHighlightSR.color = Color.white;
+            // if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.color = Color.white;
         }
 
         ApplyDefaultScale();
@@ -239,7 +277,18 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (topRenderer != null)
         {
-            SetRandomSprite(topRenderer, visualData.topSprites);
+            int index = SetRandomSprite(topRenderer, visualData.topSprites);
+            if (topHighlightSR != null)
+            {
+                if (index >= 0 && visualData.highlightSprites != null && index < visualData.highlightSprites.Count)
+                {
+                    topHighlightSR.sprite = visualData.highlightSprites[index];
+                }
+                else
+                {
+                    topHighlightSR.sprite = null;
+                }
+            }
         }
 
         if (bottomRenderer != null)
@@ -270,7 +319,18 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (topRenderer != null)
         {
-            SetRandomSprite(topRenderer, visualData.saplingTopSprites);
+            int index = SetRandomSprite(topRenderer, visualData.saplingTopSprites);
+            if (topHighlightSR != null)
+            {
+                if (index >= 0 && visualData.highlightSprites != null && index < visualData.highlightSprites.Count)
+                {
+                    topHighlightSR.sprite = visualData.highlightSprites[index];
+                }
+                else
+                {
+                    topHighlightSR.sprite = null;
+                }
+            }
         }
 
         if (bottomRenderer != null)
@@ -291,6 +351,7 @@ public class TreeVisualComponent : MonoBehaviour
         bOnWaterOrderSet = false;
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(false);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(false);
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(false);
     }
 
     public void ActivateOnWaterObject()
@@ -299,6 +360,7 @@ public class TreeVisualComponent : MonoBehaviour
         bOnWaterOrderSet = false;
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(true);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(true);
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(true);
     }
 
 
@@ -346,6 +408,16 @@ public class TreeVisualComponent : MonoBehaviour
         {
             bottomOnWaterSR.color = bottomColor;
         }
+
+        // if (topHighlightSR != null)
+        // {
+        //     topHighlightSR.color = topColor;
+        // }
+        // 
+        // if (topHighlightOnWaterSR != null)
+        // {
+        //     topHighlightOnWaterSR.color = topColor;
+        // }
     }
     // 나무의 전체적인 크기를 기본값(1.0)으로 설정한다.
     private void ApplyDefaultScale()
@@ -391,6 +463,12 @@ public class TreeVisualComponent : MonoBehaviour
             {
                 topStencilOutlineSR.sprite = topRenderer.sprite;
             }
+
+            if (topHighlightOnWaterSR != null && topHighlightSR != null)
+            {
+                topHighlightOnWaterSR.sprite = topHighlightSR.sprite;
+                // topHighlightOnWaterSR.color = topHighlightSR.color;
+            }
         }
 
         if (bottomRenderer != null)
@@ -422,26 +500,29 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
-    // 전달받은 렌더러에 스프라이트 리스트 중 하나를 무작위로 적용한다.
-    private static void SetRandomSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
+    // 전달받은 렌더러에 스프라이트 리스트 중 하나를 무작위로 적용하고 선택된 인덱스를 반환한다.
+    private static int SetRandomSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
     {
         if (_renderer == null || _sprites == null || _sprites.Count == 0)
         {
-            return;
+            return -1;
         }
 
-        _renderer.sprite = _sprites[Random.Range(0, _sprites.Count)];
+        int index = Random.Range(0, _sprites.Count);
+        _renderer.sprite = _sprites[index];
+        return index;
     }
 
-    // 전달받은 렌더러에 스프라이트 리스트 중 첫 번째(기본) 스프라이트를 고정 적용한다.
-    private static void SetFirstSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
+    // 전달받은 렌더러에 스프라이트 리스트 중 첫 번째(기본) 스프라이트를 고정 적용하고 0을 반환한다.
+    private static int SetFirstSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
     {
         if (_renderer == null || _sprites == null || _sprites.Count == 0)
         {
-            return;
+            return -1;
         }
 
         _renderer.sprite = _sprites[0];
+        return 0;
     }
 
     #endregion
@@ -626,6 +707,20 @@ public class TreeVisualComponent : MonoBehaviour
             oBotColor.a = _alpha;
             bottomOutlineSR.color = oBotColor;
         }
+
+        if (topHighlightSR != null)
+        {
+            Color thColor = topHighlightSR.color;
+            thColor.a = topHighlightOriginalAlpha * _alpha;
+            topHighlightSR.color = thColor;
+        }
+
+        if (topHighlightOnWaterSR != null)
+        {
+            Color thowColor = topHighlightOnWaterSR.color;
+            thowColor.a = topHighlightOnWaterOriginalAlpha * _alpha;
+            topHighlightOnWaterSR.color = thowColor;
+        }
     }
 
     public void SetAlpha(float _alpha)
@@ -640,6 +735,8 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
         if (topOutlineSR != null) topOutlineSR.DOKill();
         if (bottomOutlineSR != null) bottomOutlineSR.DOKill();
+        if (topHighlightSR != null) topHighlightSR.DOKill();
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.DOKill();
 
         ApplyAlpha(_alpha);
     }
@@ -667,6 +764,8 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
         if (topOutlineSR != null) topOutlineSR.DOKill();
         if (bottomOutlineSR != null) bottomOutlineSR.DOKill();
+        if (topHighlightSR != null) topHighlightSR.DOKill();
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.DOKill();
 
         currentAlpha = topRenderer != null ? topRenderer.color.a : 1f;
 
