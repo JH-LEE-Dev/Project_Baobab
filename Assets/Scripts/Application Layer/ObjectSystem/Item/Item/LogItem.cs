@@ -797,7 +797,7 @@ public class LogItem : Item, IStaticCollidable
 
     private void CheckAcquireCondition()
     {
-        if (suckTarget != null && inventoryChecker.CanAcquired(this))
+        if (suckTarget != null && inventoryChecker.CanAcquired(this) && bCanAcquired == true)
         {
             StartSucking(suckTarget);
 

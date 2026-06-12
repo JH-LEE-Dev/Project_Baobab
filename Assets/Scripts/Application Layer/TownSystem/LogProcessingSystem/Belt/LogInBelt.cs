@@ -234,6 +234,40 @@ public class LogInBelt : MonoBehaviour
         isMoving = true;
     }
 
+    public void ShiftItems(Vector3 _offset)
+    {
+        for (int i = 0; i < activeItems.Count; i++)
+        {
+            if (activeItems[i].item != null)
+            {
+                activeItems[i].item.transform.position += _offset;
+            }
+        }
+
+        if (deactivatingItems.Count > 0)
+        {
+            for (int i = 0; i < deactivatingItems.Count; i++)
+            {
+                DeactivatingItem dItem = deactivatingItems[i];
+                if (dItem.item != null)
+                {
+                    dItem.item.transform.DOKill();
+
+                    logItemData.itemType = dItem.item.itemType;
+                    logItemData.sprite = dItem.item.sprite;
+                    logItemData.color = dItem.item.color;
+                    logItemData.logState = dItem.item.logState;
+                    logItemData.treeType = dItem.item.treeType;
+
+                    LogOutEvent?.Invoke(dItem.item, logItemData);
+
+                    dItem.item.gameObject.SetActive(false);
+                }
+            }
+            deactivatingItems.Clear();
+        }
+    }
+
     public void PopulateSaveData(ref BeltSaveData _saveData)
     {
         _saveData.isMoving = isMoving;

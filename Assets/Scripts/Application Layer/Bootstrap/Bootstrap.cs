@@ -127,7 +127,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             return;
         }
         
-        inputManager.PauseMove(true);
         bNewGame = _bNewGame;
         StartCoroutine(TransitionToScene(SceneType.Town));
     }

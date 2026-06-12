@@ -304,6 +304,7 @@ public class InDungeonSystem : MonoBehaviour
 
     private void RideOffroad()
     {
+        signalHub.Publish(new PopupUIDownSignal());
         inDungeonProductionManager.StartCharacterRide();
 
         offroadContainer.col.enabled = false;
@@ -420,7 +421,6 @@ public class InDungeonSystem : MonoBehaviour
 
         if (_warningUIClosedSignal.bResult == true)
         {
-            signalHub.Publish(new PopupUIDownSignal());
             inDungeonObjectManager.HandleGameEnd();
         }
         else

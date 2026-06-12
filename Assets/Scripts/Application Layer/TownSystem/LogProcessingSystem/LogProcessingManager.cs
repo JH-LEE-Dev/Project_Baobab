@@ -291,12 +291,30 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
     public void DisableShopObj()
     {
-        shopObj.transform.position = new Vector3(-99f, -99f, 0f);
+        if (shopObj != null)
+        {
+            Vector3 targetPos = new Vector3(-99f, -99f, 0f);
+            Vector3 offset = targetPos - shopObj.transform.position;
+
+            if (logInBelt != null) logInBelt.ShiftItems(offset);
+            if (logOutBelt != null) logOutBelt.ShiftItems(offset);
+
+            shopObj.transform.position = targetPos;
+        }
     }
 
     public void EnableShopObj()
     {
-        shopObj.transform.position = shopSpawnPoint.transform.position;
+        if (shopObj != null && shopSpawnPoint != null)
+        {
+            Vector3 targetPos = shopSpawnPoint.transform.position;
+            Vector3 offset = targetPos - shopObj.transform.position;
+
+            if (logInBelt != null) logInBelt.ShiftItems(offset);
+            if (logOutBelt != null) logOutBelt.ShiftItems(offset);
+
+            shopObj.transform.position = targetPos;
+        }
     }
 
     private void Update()

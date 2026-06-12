@@ -79,6 +79,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private bool bWhileReset = false;
 
+    private bool bCanAcquiredItem = false;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -170,13 +172,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             stateMachine.ChangeState<IdleState>();
             attackComponent.SetEnable(false);
             attackComponent.SetCursorEnable(false);
-            inputManager.PauseMove(false);
         }
         else
         {
+            bCanAcquiredItem = true;
             armComponent.ResetWeaponStatus();
         }
-
+    
         bDead = false;
 
         bInDungeon = _bInDungeon;
@@ -308,7 +310,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateItemDetection()
     {
-        if (CollisionSystem.Instance == null) return;
+        if (CollisionSystem.Instance == null || bCanAcquiredItem == false) return;
 
         float finalRadius = itemSensorRadius * statComponent.pickupRangeMultiplier;
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, finalRadius, itemLayer.value, itemDetectionResults);
@@ -409,6 +411,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.SetEnable(false);
         attackComponent.SetbCanAttack(false);
         armComponent.SetbCanAttack(false);
+        bCanAcquiredItem = false;
     }
 
     public void SetStaminaDecrease(bool _boolean)
