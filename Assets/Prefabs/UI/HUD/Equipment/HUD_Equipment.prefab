@@ -414,7 +414,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: ef4f866cf61a68b419774cae3c93f559, type: 3}
   - {fileID: 21300000, guid: bf8fce13b6c91bc42b2f6352f611e1dc, type: 3}
   - {fileID: 21300000, guid: afdee84185d4bb648b665a019128949b, type: 3}
-  - {fileID: 21300000, guid: 7412c7e6f2194854ba7619df32f4b5e5, type: 3}
+  - {fileID: 21300000, guid: 74a86569c5e60364d88e15975a06aa3d, type: 3}
   axeImage: {fileID: 8614871370824734834}
   axeGaugeBar: {fileID: 423231602786947951}
   omp: {fileID: 4529823348898067991}
@@ -422,6 +422,7 @@ MonoBehaviour:
   vfxComponent: {fileID: 1823110791385607140}
   axeHead: {fileID: 7893955336979294459}
   axeBrokenTag: AxeBroken
+  axeLastBrokenTag: AxeLastBroken
 --- !u!225 &7975163883536258449
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -2280,6 +2281,12 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 5
     uiParticleScale: 25
+  - vfxTag: AxeLastBroken
+    effectPrefab: {fileID: 5748764238649717206, guid: 537fd6a8906af264a9fa96f2eb9a60ed, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 0
+    maxPoolSize: 5
+    uiParticleScale: 11.5
 --- !u!1 &7893955336979294459
 GameObject:
   m_ObjectHideFlags: 0

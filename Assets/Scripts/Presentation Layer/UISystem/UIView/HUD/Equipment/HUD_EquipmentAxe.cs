@@ -26,6 +26,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private VFXComponent vfxComponent;
         [SerializeField] private GameObject axeHead;
         [SerializeField] private string axeBrokenTag;
+        [SerializeField] private string axeLastBrokenTag;
 
         // //내부 의존성
         private AxeMode axeMode = AxeMode.DB100;
@@ -94,9 +95,15 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     omp.Play(brokenAnimTag, bReset: true);
                 }
 
-                if (null != vfxComponent && null != axeHead)
+                if (null != vfxComponent && null != axeHead && 0.75f > _ratio)
                 {
-                    vfxComponent.Play(axeBrokenTag, axeHead.transform.position, Quaternion.identity, transform); 
+                    vfxComponent.Play(axeBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
+
+                    if (AxeMode.ZERO == axeMode)
+                    {
+                        ParticleSystem temp = vfxComponent.Play(axeLastBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
+                        Debug.Log(temp);
+                    }
                 }
             }
         }
