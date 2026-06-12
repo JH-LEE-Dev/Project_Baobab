@@ -69,14 +69,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9af2bd60b284c3c498c25051042487a8, type: 3}
   m_Name: HighResolutionBloomFeature
   m_EditorClassIdentifier: Assembly-CSharp::HighResolutionBloomFeature
-  m_Active: 0
+  m_Active: 1
   settings:
     targetCameraName: PP UI Camera
+    bloomLayerMask:
+      serializedVersion: 2
+      m_Bits: 262144
     injectionPoint: 600
     bloomMaterial: {fileID: 2100000, guid: 1b53d7c319c7b264c8374af38661df4b, type: 2}
+    compositeLayerColor: 0
     threshold: 1
     softKnee: 0.5
-    intensity: 0.75
+    intensity: 17
     radius: 1.5
     downsample: 1
     blurIterations: 4

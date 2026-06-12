@@ -18,7 +18,9 @@ Shader "ProjectBaobab/Rendering/HighResolutionBloom"
         #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
         float4 _BloomParams;
+        float _CompositeLayerColor;
         TEXTURE2D_X(_BloomTexture);
+        TEXTURE2D_X(_LayerTexture);
 
         half3 ApplyThreshold(half3 color)
         {
@@ -108,7 +110,9 @@ Shader "ProjectBaobab/Rendering/HighResolutionBloom"
 
                 float2 uv = input.texcoord.xy;
                 half4 source = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv);
+                half4 layer = SAMPLE_TEXTURE2D_X(_LayerTexture, sampler_LinearClamp, uv);
                 half3 bloom = SAMPLE_TEXTURE2D_X(_BloomTexture, sampler_LinearClamp, uv).rgb;
+                source.rgb = lerp(source.rgb, lerp(source.rgb, layer.rgb, saturate(layer.a)), saturate(_CompositeLayerColor));
                 source.rgb += bloom * _BloomParams.z;
                 return source;
             }
