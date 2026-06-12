@@ -166,6 +166,7 @@ public class UIView_Result : UIView
     private DisplayInventorySlot[] displayOffroadSlots;
     private float[] treeDisplayProgress;
     private readonly List<UI_InventorySlot> containerSlots = new List<UI_InventorySlot>();
+    private readonly List<Vector2> resultLogRowBasePositions = new List<Vector2>(2);
     private Sequence resultOpenSequence;
     private Sequence resultCloseSequence;
     private CanvasGroup sectionTitleCanvasGroup;
@@ -982,24 +983,24 @@ public class UIView_Result : UIView
             if (row == null || logCount.count <= 0)
                 continue;
 
+            Vector2 targetPosition = GetResultLogRowTargetPosition(row, i, acquiredLogs.Count);
             float startTime = i * resultLogRowInterval;
-            sequence.Insert(startTime, CreateResultLogRowProductionSequence(row, logCount.treeType, logCount.count));
+            sequence.Insert(startTime, CreateResultLogRowProductionSequence(row, logCount.treeType, logCount.count, targetPosition));
         }
 
         return sequence;
     }
 
-    private Sequence CreateResultLogRowProductionSequence(UI_ResultLogRow row, TreeType treeType, int targetCount)
+    private Sequence CreateResultLogRowProductionSequence(UI_ResultLogRow row, TreeType treeType, int targetCount, Vector2 targetPosition)
     {
         Sequence sequence = DOTween.Sequence();
         CanvasGroup rowCanvasGroup = GetOrAddCanvasGroup(row.transform as RectTransform);
         RectTransform rowRect = row.transform as RectTransform;
-        Vector2 rowStartPosition = rowRect != null ? rowRect.anchoredPosition : Vector2.zero;
 
         sequence.AppendCallback(() =>
         {
             if (rowRect != null)
-                rowRect.anchoredPosition = rowStartPosition + new Vector2(0f, resultOpenYOffset);
+                rowRect.anchoredPosition = targetPosition + new Vector2(0f, resultOpenYOffset);
 
             if (rowCanvasGroup != null)
             {
@@ -1013,7 +1014,7 @@ public class UIView_Result : UIView
 
         if (rowRect != null)
         {
-            sequence.Join(rowRect.DOAnchorPos(rowStartPosition, slotBackgroundOpenDuration)
+            sequence.Join(rowRect.DOAnchorPos(targetPosition, slotBackgroundOpenDuration)
                 .SetEase(resultOpenEase));
         }
 
@@ -1071,11 +1072,23 @@ public class UIView_Result : UIView
     {
         RemoveInvalidResultLogRows();
         AddPivotResultLogRows();
+        CacheResultLogRowBasePositions();
 
         for (int i = 0; i < resultLogRows.Count; i++)
         {
             if (resultLogRows[i] != null)
                 resultLogRows[i].Initialize();
+        }
+    }
+
+    private void CacheResultLogRowBasePositions()
+    {
+        resultLogRowBasePositions.Clear();
+
+        for (int i = 0; i < resultLogRows.Count; i++)
+        {
+            RectTransform rectTransform = resultLogRows[i] != null ? resultLogRows[i].transform as RectTransform : null;
+            resultLogRowBasePositions.Add(rectTransform != null ? rectTransform.anchoredPosition : Vector2.zero);
         }
     }
 
@@ -1370,13 +1383,27 @@ public class UIView_Result : UIView
         if (rectTransform == null)
             return;
 
+        rectTransform.anchoredPosition = GetResultLogRowTargetPosition(row, index, count);
+    }
+
+    private Vector2 GetResultLogRowTargetPosition(UI_ResultLogRow row, int index, int count)
+    {
         float x = 0f;
         if (count == 2)
             x = index == 0 ? -12f : 12f;
         else if (2 < count)
             x = (index - ((count - 1) * 0.5f)) * 24f;
 
-        rectTransform.anchoredPosition = new Vector2(x, rectTransform.anchoredPosition.y);
+        return new Vector2(x, GetResultLogRowBaseY(row, index));
+    }
+
+    private float GetResultLogRowBaseY(UI_ResultLogRow row, int index)
+    {
+        if (0 <= index && index < resultLogRowBasePositions.Count)
+            return resultLogRowBasePositions[index].y;
+
+        RectTransform rectTransform = row != null ? row.transform as RectTransform : null;
+        return rectTransform != null ? rectTransform.anchoredPosition.y : 0f;
     }
 
     private void RefreshContainerSlots()

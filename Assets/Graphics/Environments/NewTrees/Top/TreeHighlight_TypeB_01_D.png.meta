@@ -1,16 +1,22 @@
 fileFormatVersion: 2
-guid: f1507a43d1b78a44db331836183e0953
+guid: feaca42bead12ae4497daf01c3b1bbbf
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -6394450750598522044
-    second: TreeTop_TypeA_01_N_0
+      213: -6757867450862606972
+    second: TreeHighlight_TypeB_01_D_0
+  - first:
+      213: -8341694865342321072
+    second: TreeHighlight_TypeB_01_D_1
+  - first:
+      213: -8412348852781909849
+    second: TreeHighlight_TypeB_01_D_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
     mipMapMode: 0
     enableMipMap: 0
-    sRGBTexture: 0
+    sRGBTexture: 1
     linearTexture: 0
     fadeOut: 0
     borderMipMap: 0
@@ -100,13 +106,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TreeTop_TypeA_01_N_0
+      name: TreeHighlight_TypeB_01_D_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 12
-        width: 25
-        height: 40
+        x: 2
+        y: 19
+        width: 6
+        height: 11
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +121,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 44b58dcebe85247a0800000000000000
-      internalID: -6394450750598522044
+      spriteID: 485e820bb5b3732a0800000000000000
+      internalID: -6757867450862606972
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeHighlight_TypeB_01_D_1
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 33
+        width: 10
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 05e229657b85c3c80800000000000000
+      internalID: -8341694865342321072
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TreeHighlight_TypeB_01_D_2
+      rect:
+        serializedVersion: 2
+        x: 14
+        y: 19
+        width: 17
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7a8f447f945514b80800000000000000
+      internalID: -8412348852781909849
       vertices: []
       indices: 
       edges: []
@@ -135,7 +185,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TreeTop_TypeA_01_N_0: -6394450750598522044
+      TreeHighlight_TypeB_01_D_0: -6757867450862606972
+      TreeHighlight_TypeB_01_D_1: -8341694865342321072
+      TreeHighlight_TypeB_01_D_2: -8412348852781909849
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
