@@ -389,6 +389,8 @@ public class VFXComponent : MonoBehaviour
             if (null != _uiParticle)
                 _uiParticle.RefreshParticles();
 
+            _newInstance.gameObject.SetActive(false);
+
             VFXPoolInstanceHelper _helper = _newInstance.gameObject.AddComponent<VFXPoolInstanceHelper>();
             if (null != _helper)
                 _helper.Initialize(transform, _uiParentGo.transform);
