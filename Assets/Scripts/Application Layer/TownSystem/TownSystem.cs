@@ -1,8 +1,10 @@
 using System.Collections;
 using UnityEngine;
+using System;
 
 public class TownSystem : MonoBehaviour
 {
+    public event Action ActivatePortalEvent;
     //외부 의존성
     private InputManager inputManager;
 
@@ -186,6 +188,10 @@ public class TownSystem : MonoBehaviour
     private void PortalActivated()
     {
         townProductionManager.StartCharacterRide();
+
+        offroadContainer.col.enabled = false;
+        if (townObjectManager.portal != null)
+            townObjectManager.portal.col.enabled = false;
     }
 
     private void InventoryInitialized(InventoryInitializedSignal inventoryInitializedSignal)
@@ -222,6 +228,10 @@ public class TownSystem : MonoBehaviour
         selectedForestType = dungeonSelectedSignal.forestType;
 
         townProductionManager.StartDrive();
+
+        offroadContainer.col.enabled = false;
+        if (townObjectManager.portal != null)
+            townObjectManager.portal.col.enabled = false;
     }
 
     private void logContainerSpecChanged()
@@ -245,6 +255,14 @@ public class TownSystem : MonoBehaviour
     private void TeleportUIClosed(TeleportUIClosedSignal _teleportUIClosedSignal)
     {
         townProductionManager.GetOffFromTheVehicle();
+
+        if (townProductionManager.bCanGetOff == true)
+        {
+            offroadContainer.col.enabled = true;
+            if (townObjectManager.portal != null)
+                townObjectManager.portal.col.enabled = true;
+        }
+
         townObjectManager.TeleportUIClosed();
     }
 
@@ -345,7 +363,11 @@ public class TownSystem : MonoBehaviour
         }
         else
         {
-            character.col.enabled = true;
+            offroadContainer.col.enabled = true;
+
+            if (townObjectManager.portal != null)
+                townObjectManager.portal.col.enabled = true;
+
             inputManager.PauseInteractKey(false);
         }
     }
@@ -355,7 +377,13 @@ public class TownSystem : MonoBehaviour
         yield return new WaitForSeconds(0.7f);
         signalHub.Publish(new StartDecreaseStaminaSignal());
 
-        character.col.enabled = true;
+        offroadContainer.col.enabled = true;
+
+        if (townObjectManager.portal != null)
+            townObjectManager.portal.col.enabled = true;
+
+        ActivatePortalEvent?.Invoke();
+
         inputManager.PauseInteractKey(false);
     }
 
@@ -368,5 +396,11 @@ public class TownSystem : MonoBehaviour
     {
         bRetryGame = true;
         townProductionManager.bRetryGame = true;
+    }
+
+    public void ActivatePortal()
+    {
+        if (townObjectManager.portal != null)
+            townObjectManager.portal.col.enabled = true;
     }
 }

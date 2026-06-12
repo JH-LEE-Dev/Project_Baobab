@@ -68,7 +68,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private OffroadContainerVComponent offroadContainerVComponent;
 
-    private CircleCollider2D col;
+    public CircleCollider2D col;
     private float colRadius;
     private bool bCanReach = true;
     private bool bCanInteract = false;

@@ -91,6 +91,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private bool bContainerVisualOpened = false;
     private bool bIsInteracting = false;
 
+    public Collider2D col;
+
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
         characterInventory = _characterInventory;
@@ -99,6 +101,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
         logItemPoolManager = GetComponent<LogItemPoolingManager>();
         logItemPoolManager.Initialize(false);
+
+        col = GetComponent<Collider2D>();
 
         sr = GetComponent<SpriteRenderer>();
 

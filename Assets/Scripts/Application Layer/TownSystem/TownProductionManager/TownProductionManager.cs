@@ -22,7 +22,7 @@ public class TownProductionManager : MonoBehaviour
     private Transform characterRidePoint;
     private Coroutine characterRideCoroutine;
     private SkyCameraProductionManager skyCameraProductionManager;
-    private bool bCanGetOff = true;
+    public bool bCanGetOff = true;
 
     public bool bCurrentlyTownScene = true;
     public bool bRetryGame = false;
@@ -92,12 +92,11 @@ public class TownProductionManager : MonoBehaviour
     {
         if (character == null) return;
 
-        character.col.enabled = false;
-
         if (characterRideCoroutine != null)
         {
             StopCoroutine(characterRideCoroutine);
         }
+        
         characterRideCoroutine = StartCoroutine(CharacterRideRoutine());
     }
 
@@ -215,7 +214,6 @@ public class TownProductionManager : MonoBehaviour
 
     public void StartSkyProduction()
     {
-        character.col.enabled = false;
         inputManager.PauseInteractKey(true);
         StartCoroutine(StartSkyProductionRoutine());
     }
