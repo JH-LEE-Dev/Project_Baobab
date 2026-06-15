@@ -243,6 +243,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         SetLock(false);
+        SetNewIndicator(true);
         unlockCompleteCallback?.Invoke();
         unlockCompleteCallback = null;
     }

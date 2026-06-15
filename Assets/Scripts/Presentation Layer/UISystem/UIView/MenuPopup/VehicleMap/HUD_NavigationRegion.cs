@@ -248,6 +248,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         }
 
         SetLock(false);
+        SetNewIndicator(true);
         unlockCompleteCallback?.Invoke();
         unlockCompleteCallback = null;
     }
