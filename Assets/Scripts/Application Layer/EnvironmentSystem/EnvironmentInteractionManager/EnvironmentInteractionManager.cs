@@ -8,7 +8,7 @@ public class EnvironmentInteractionManager : MonoBehaviour
     private Character character;
     private TownObjectManager townObjectManager;
     private InDungeonObjectManager inDungeonObjectManager;
-    private InDungeonUnitSpawner inDungeonUnitSpawner;
+    //private InDungeonUnitSpawner inDungeonUnitSpawner;
 
     [SerializeField] private LayerMask treeLayer;
     [SerializeField] private float fadeDuration = 0.3f;
@@ -36,13 +36,11 @@ public class EnvironmentInteractionManager : MonoBehaviour
 
     public void DI(IEnvironmentProvider _environmentProvider,
         TownObjectManager _townObjectManager,
-        InDungeonObjectManager _inDungeonObjectManager,
-        InDungeonUnitSpawner _inDungeonUnitSpawner)
+        InDungeonObjectManager _inDungeonObjectManager)
     {
         environmentProvider = _environmentProvider;
         townObjectManager = _townObjectManager;
         inDungeonObjectManager = _inDungeonObjectManager;
-        inDungeonUnitSpawner = _inDungeonUnitSpawner;
     }
 
     [Header("Optimization Settings")]
@@ -133,14 +131,14 @@ public class EnvironmentInteractionManager : MonoBehaviour
         CheckUnitShadow(character, _invShadowRot, _shadowScaleY);
 
         // 2. 활성 동물 체크
-        if (inDungeonUnitSpawner != null)
-        {
-            var _activeAnimals = inDungeonUnitSpawner.ActiveAnimals;
-            for (int i = 0; i < _activeAnimals.Count; i++)
-            {
-                CheckUnitShadow(_activeAnimals[i], _invShadowRot, _shadowScaleY);
-            }
-        }
+        // if (inDungeonUnitSpawner != null)
+        // {
+        //     var _activeAnimals = inDungeonUnitSpawner.ActiveAnimals;
+        //     for (int i = 0; i < _activeAnimals.Count; i++)
+        //     {
+        //         CheckUnitShadow(_activeAnimals[i], _invShadowRot, _shadowScaleY);
+        //     }
+        // }
     }
 
     private void CheckUnitShadow(MonoBehaviour _unit, Quaternion _invShadowRot, float _shadowScaleY)

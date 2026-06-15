@@ -48,6 +48,9 @@ public class EHealthComponent : EComponent, IHealthComponent
         regenStrategy = _regenStrategy;
 
         isSetup = true;
+
+        // 리젠이 불가능하거나 이미 꽉 차있다면 Update 호출 비활성화
+        enabled = (currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
     public void Initialize()
@@ -59,6 +62,8 @@ public class EHealthComponent : EComponent, IHealthComponent
         isShieldBroken = (maxSP <= 0f);
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
+
+        enabled = (currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
     public void Reset()
@@ -70,6 +75,8 @@ public class EHealthComponent : EComponent, IHealthComponent
         isShieldBroken = (maxSP <= 0f);
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
+
+        enabled = (currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
     public void DecreaseHealth(float _damage)
@@ -98,6 +105,12 @@ public class EHealthComponent : EComponent, IHealthComponent
                 isShieldBroken = true;
                 ShieldBrokenEvent?.Invoke();
             }
+        }
+
+        // 쉴드가 깎였으므로 리젠 연산을 위해 Update 활성화
+        if (currentSP < maxSP && spRegen > 0f && regenStrategy != null)
+        {
+            enabled = true;
         }
 
         if (remainingDamage > 0f)
@@ -168,6 +181,12 @@ public class EHealthComponent : EComponent, IHealthComponent
             }
             disableTimestamp = -1f;
         }
+
+        // 활성화되었을 때 리젠할 필요가 없다면 Update 비활성화
+        if (currentSP >= maxSP || spRegen <= 0f || regenStrategy == null)
+        {
+            enabled = false;
+        }
     }
 
     private void OnDisable()
@@ -187,6 +206,17 @@ public class EHealthComponent : EComponent, IHealthComponent
                 isShieldBroken = false;
                 ShieldRegenedEvent?.Invoke();
             }
+
+            // 리젠 완료 시 Update 비활성화
+            if (currentSP >= maxSP)
+            {
+                currentSP = maxSP;
+                enabled = false;
+            }
+        }
+        else
+        {
+            enabled = false;
         }
     }
 }

@@ -1652,7 +1652,7 @@ MonoBehaviour:
   pickupRangeMultiplier: 1
   speed: 1
   originalSpeed: 1
-  maxStamina: 10
+  maxStamina: 100
   staminaIncreaseAlpha: 0
   staminaDecreaseAlpha: 0
   weaponChangeCoolTime: 0.5

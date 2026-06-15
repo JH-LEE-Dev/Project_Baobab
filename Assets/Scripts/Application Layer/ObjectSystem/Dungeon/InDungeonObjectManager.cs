@@ -623,9 +623,22 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private void Update()
     {
         // 최적화 및 버그 수정: ManualUpdate 중 나무가 죽거나 상태가 변하여 리스트가 변형될 수 있으므로 역순 순회
+        // 추가 최적화: 더 이상 업데이트가 필요 없는 경우(ManualUpdate가 false 반환 시) 즉시 O(1)로 제외
         for (int i = activeTreesForUpdate.Count - 1; i >= 0; i--)
         {
-            activeTreesForUpdate[i].ManualUpdate();
+            TreeObj tree = activeTreesForUpdate[i];
+            if (!tree.ManualUpdate())
+            {
+                int lastIdx = activeTreesForUpdate.Count - 1;
+                if (i != lastIdx)
+                {
+                    TreeObj lastTree = activeTreesForUpdate[lastIdx];
+                    activeTreesForUpdate[i] = lastTree;
+                    lastTree.UpdateIndex = i;
+                }
+                activeTreesForUpdate.RemoveAt(lastIdx);
+                tree.UpdateIndex = -1;
+            }
         }
     }
 

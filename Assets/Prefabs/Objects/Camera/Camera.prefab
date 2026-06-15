@@ -111,10 +111,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.087500006
+    x: -0.079687506
     y: 0
     width: 0.33333334
-    height: 0.86388886
+    height: 0.5287037
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
@@ -273,10 +273,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.087500006
+    x: -0.079687506
     y: 0
     width: 0.33333334
-    height: 0.86388886
+    height: 0.5287037
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
@@ -580,7 +580,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7979977446318086124}
-  - component: {fileID: 5439649788344067179}
   m_Layer: 0
   m_Name: Camera
   m_TagString: Untagged
@@ -607,20 +606,6 @@ Transform:
   - {fileID: 7168044261114613525}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5439649788344067179
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8144299782213539077}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5529c7e5c8ee7284ea1abcfaf26d7db4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CameraSyncController
-  sourceCamera: {fileID: 1417226923079838101}
-  targetCamera: {fileID: 9076175432428910233}
 --- !u!1 &8308394329529539000
 GameObject:
   m_ObjectHideFlags: 0

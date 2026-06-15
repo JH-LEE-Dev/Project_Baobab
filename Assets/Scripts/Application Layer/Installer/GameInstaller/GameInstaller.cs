@@ -97,7 +97,7 @@ public class GameInstaller : MonoBehaviour
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager, offroadContainer);
 
         unitSystem.CreateCharacter();
-        environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager, inDungeonSystem.inDungeonUnitSpawner);
+        environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager);
 
         gameSystem.Initialize(inDungeonSystem, townSystem);
 
