@@ -25,7 +25,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     bool ITreeObj.bDead => bDead;
 
     // IStaticCollidable 구현 - 캐싱된 트랜스폼 사용
-    public Vector2 Position => cachedTransform != null ? (Vector2)cachedTransform.position : (Vector2)transform.position;
+    public Vector2 Position => (Vector2)cachedTransform.position;
     public Vector2 Offset => collisionOffset;
     public float Radius => collisionRadius;
     public int Layer => gameObject.layer;
@@ -63,6 +63,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     float shadowAngle;
     float shadowScaleY;
     bool isShadowActive;
+
+    private void Awake()
+    {
+        cachedTransform = transform;
+    }
 
     public void Initialize(IEnvironmentProvider _environmentProvider)
     {
@@ -196,7 +201,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             TreeDeadEvent?.Invoke(this);
     }
 
-    public void ManualUpdate()
+    public bool ManualUpdate()
     {
         if (bIsSapling)
         {
@@ -215,6 +220,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.CacheSwayBasePose();
             bTreeShadowSet = true;
         }
+
+        // 묘목 상태이거나 그림자 설정이 아직 끝나지 않았다면 계속 Update가 필요함
+        return bIsSapling || !bTreeShadowSet;
     }
 
     private void GrowUp()
@@ -223,14 +231,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         if (treeVisualComponent != null)
         {
-            if (bWaterNearBy == true)
-                treeVisualComponent.ActivateOnWaterObject();
-            else
-                treeVisualComponent.DeActivateOnWaterObject();
-
-            // 기존 로직의 결과(항상 마지막에 Activate 호출)를 유지하면서 중복만 제거
-            if (bWaterNearBy == false)
-                treeVisualComponent.ActivateOnWaterObject();
+            // 기존 로직(bWaterNearBy 값에 관계 없이 결국 항상 ActivateOnWaterObject를 수행)의 비주얼 동작을 동일하게 유지하며
+            // 불필요한 이중 조건 연산과 중복 활성/비활성 호출 부하만 제거합니다.
+            treeVisualComponent.ActivateOnWaterObject();
 
             treeVisualComponent.ApplyVisual(treeData);
         }
@@ -277,6 +280,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
 
         healthComponent.EnemyIsDeadEvent -= TreeIsDead;
+
+        if (treeVisualComponent != null)
+        {
+            healthComponent.ShieldBrokenEvent -= treeVisualComponent.ShieldBroken;
+            healthComponent.ShieldRegenedEvent -= treeVisualComponent.ShieldRegened;
+        }
     }
 
     private void OnDestroy()

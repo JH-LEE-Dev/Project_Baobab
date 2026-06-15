@@ -20,11 +20,6 @@ public class ItemManager : MonoBehaviour
             logItemController.Initialize(inventoryChecker);
         }
 
-        if (carrrotItemController != null)
-        {
-            carrrotItemController.Initialize();
-        }
-
         BindEvents();
     }
 
@@ -92,7 +87,7 @@ public class ItemManager : MonoBehaviour
 
     public void ReleaseAllItems()
     {
-        carrrotItemController.ClearAll();
+        //carrrotItemController.ClearAll();
         logItemController.ClearAll();
     }
 }

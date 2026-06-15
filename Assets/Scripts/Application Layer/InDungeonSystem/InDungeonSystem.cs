@@ -8,7 +8,7 @@ public class InDungeonSystem : MonoBehaviour
 
     private SignalHub signalHub;
     public InDungeonObjectManager inDungeonObjectManager { get; private set; }
-    public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
+    //public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
     private IEnvironmentProvider environmentProvider;
     private HiddenmapManager hiddenmapManager;
     private InputManager inputManager;
@@ -47,8 +47,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory, offroadContainer,
         inDungeonResultManager);
 
-        inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
-        inDungeonUnitSpawner.Initialize(environmentProvider);
+        //inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
+        //inDungeonUnitSpawner.Initialize(environmentProvider);
 
         hiddenmapManager = GetComponentInChildren<HiddenmapManager>();
         hiddenmapManager.Initialize();
@@ -93,20 +93,20 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonObjectManager.TreeGetHitEvent += TreeGetHit;
 
-        inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
-        inDungeonUnitSpawner.AnimalIsDeadEvent += inDungeonObjectManager.SpawnCarrots;
+        //inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
+        //inDungeonUnitSpawner.AnimalIsDeadEvent += inDungeonObjectManager.SpawnCarrots;
 
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
 
-        inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
-        inDungeonUnitSpawner.AnimalHitEvent += AnimalHit;
+        //inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
+        //nDungeonUnitSpawner.AnimalHitEvent += AnimalHit;
 
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonObjectManager.TreeDeadEvent += TreeIsDead;
 
-        inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
-        inDungeonUnitSpawner.AnimalIsDeadEvent += AnimalIsDead;
+        //inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
+        //inDungeonUnitSpawner.AnimalIsDeadEvent += AnimalIsDead;
 
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadSpawnedEvent += OffroadSpawned;
@@ -141,11 +141,11 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
         inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
-        inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
+        //inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
-        inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
+        //inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
-        inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
+        //inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
@@ -189,7 +189,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.portal);
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
-        inDungeonUnitSpawner.SpawnAnimals();
+        //inDungeonUnitSpawner.SpawnAnimals();
 
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
 
@@ -247,7 +247,7 @@ public class InDungeonSystem : MonoBehaviour
         }
 
         inDungeonObjectManager.ClearObjManager();
-        inDungeonUnitSpawner.ReleaseAllAnimals();
+        //inDungeonUnitSpawner.ReleaseAllAnimals();
 
         if ((prevbCurrentlyDungeonScene != bCurrentlyDungeonScene) && bRetryGame == false)
         {
@@ -332,7 +332,7 @@ public class InDungeonSystem : MonoBehaviour
         else
         {
             inDungeonObjectManager.ClearObjManager();
-            inDungeonUnitSpawner.ReleaseAllAnimals();
+            //inDungeonUnitSpawner.ReleaseAllAnimals();
 
             signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
         }
