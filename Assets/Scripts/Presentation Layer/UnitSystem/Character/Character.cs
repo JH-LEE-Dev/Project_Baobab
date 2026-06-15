@@ -449,8 +449,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine.ChangeState<IdleState>();
         attackComponent.SetEnable(false);
         attackComponent.SetCursorEnable(false);
-
-        inputManager.PauseMove(false);
     }
 
     public bool IsAxeDurabilityZero()

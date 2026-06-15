@@ -375,6 +375,26 @@ public class TreeVisualComponent : MonoBehaviour
             }
         }
 
+        // 쉴드 및 하이라이트 관련 오브젝트 활성화
+        if (topHighlightSR != null) topHighlightSR.gameObject.SetActive(true);
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(true);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(true);
+
+        if (isOnWaterActive)
+        {
+            if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(true);
+            if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(true);
+            if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(true);
+        }
+
+        if (isOutlineActive)
+        {
+            if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(true);
+            if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(true);
+            if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(true);
+            if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(true);
+        }
+
         ApplyColorSet(visualData);
         ApplyDefaultScale();
         SyncShadowSprite();
@@ -439,6 +459,18 @@ public class TreeVisualComponent : MonoBehaviour
                 }
             }
         }
+
+        // 쉴드 및 하이라이트 관련 오브젝트 비활성화
+        if (topHighlightSR != null) topHighlightSR.gameObject.SetActive(false);
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(false);
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(false);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(false);
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(false);
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(false);
+        if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(false);
+        if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(false);
+        if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(false);
+        if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(false);
 
         ApplyColorSet(visualData);
         ApplyDefaultScale();
