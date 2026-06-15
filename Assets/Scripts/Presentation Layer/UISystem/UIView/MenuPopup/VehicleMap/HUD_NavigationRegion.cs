@@ -167,11 +167,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void SetNewIndicator(bool _active)
     {
-        if (null == newIndicatorObj)
-        {
-            Debug.LogError(string.Format("[HUD_NavigationRegion] newIndicatorObj is NULL for Region {0}! Please bind it in Inspector.", mapType));
-        }
-
         if (null != newIndicatorObj)
         {
             if (true == _active)
@@ -193,7 +188,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     public void PlayUnlockProduction(Action _onComplete)
     {
         unlockCompleteCallback = _onComplete;
-        Debug.Log(string.Format("[HUD_NavigationRegion] PlayUnlockProduction started for MapType: {0}", mapType));
 
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
         {
@@ -232,17 +226,11 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             unlockEntry = omp.Play(unlockTag, _onComplete: onOmpUnlockCompleteCallback);
             if (null == unlockEntry)
             {
-                Debug.LogWarning(string.Format("[HUD_NavigationRegion] OMP '{0}' motion entry is missing! Skipping to complete.", unlockTag));
                 OnOmpUnlockComplete();
-            }
-            else
-            {
-                Debug.Log(string.Format("[HUD_NavigationRegion] OMP '{0}' motion started playing.", unlockTag));
             }
         }
         else
         {
-            Debug.LogWarning("[HUD_NavigationRegion] OMP is null! Skipping to complete.");
             OnOmpUnlockComplete();
         }
     }
@@ -250,8 +238,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     private void OnOmpUnlockComplete()
     {
-        Debug.Log(string.Format("[HUD_NavigationRegion] OnOmpUnlockComplete for MapType: {0}", mapType));
-
         if (null != omp && null != unlockEntry)
         {
             omp.SettingEntryMotion(unlockEntry, true, true);
@@ -267,10 +253,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != vfxComponent)
         {
             unlockVfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
-            if (null != unlockVfx)
-            {
-                Debug.Log(string.Format("[HUD_NavigationRegion] VFX '{0}' started playing instantly at unlock complete.", unlockTag));
-            }
         }
 
         SetLock(false);
