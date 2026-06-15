@@ -17,13 +17,12 @@ public class HUD_NavigationSubField : MonoBehaviour
     [Header("Random Layout Config")]
     [SerializeField] private float minDistanceMultiplier = 2.5f;
 
+    private HUD_Vehicle vehicle;
+
     // 내부 의존성
     private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(maxSubRegionCount);
     private Action<int> onSubRegionSelectedCallback;
     private int currentSelectedNumber = -1;
-    private HUD_Vehicle vehicle;
-
-    public bool IsInputBlocked => vehicle != null && vehicle.IsUnlockingProductionActive;
     private bool isInitialized = false;
     private TweenCallback onSubRegionDisappearCompleteCallback;
     private int disappearCompletedCount = 0;
@@ -38,13 +37,27 @@ public class HUD_NavigationSubField : MonoBehaviour
     private const float distanceDecayRate = 0.8f;
     private static readonly Vector2 centerAnchorAndPivot = new Vector2(0.5f, 0.5f);
 
+    public bool IsInputBlocked
+    {
+        get
+        {
+            if (null != vehicle && true == vehicle.IsUnlockingProductionActive)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
+
 
     // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(HUD_Vehicle _vehicle)
     {
         if (true == isInitialized)
+        {
             return;
+        }
 
         vehicle = _vehicle;
         currentSelectedNumber = -1;
@@ -66,12 +79,16 @@ public class HUD_NavigationSubField : MonoBehaviour
     public void SetSubRegions(MapType _mapType, List<ForestEnvironmentInfo> _forestDatas)
     {
         if (false == isInitialized)
+        {
             Initialize(null);
+        }
 
         currentSelectedNumber = -1;
 
         if (null == subRegionPrefab || null == subRegionContainer || null == _forestDatas)
+        {
             return;
+        }
 
         int dataCount = _forestDatas.Count;
 
@@ -82,11 +99,15 @@ public class HUD_NavigationSubField : MonoBehaviour
             safetyCounter++;
             GameObject obj = Instantiate(subRegionPrefab, subRegionContainer);
             if (null == obj)
+            {
                 break;
+            }
 
             HUD_NavigationSubRegion sub = obj.GetComponent<HUD_NavigationSubRegion>();
             if (null != sub)
+            {
                 spawnedSubRegions.Add(sub);
+            }
             else
             {
                 Destroy(obj);
@@ -97,7 +118,9 @@ public class HUD_NavigationSubField : MonoBehaviour
         for (int i = 0; i < spawnedSubRegions.Count; i++)
         {
             if (null == spawnedSubRegions[i])
+            {
                 continue;
+            }
 
             if (maxSubRegionCount > i && dataCount > i)
             {
@@ -106,20 +129,147 @@ public class HUD_NavigationSubField : MonoBehaviour
                 spawnedSubRegions[i].PlayAppearAnimation(i * subRegionAppearDelayGap);
             }
             else
+            {
                 spawnedSubRegions[i].PlayCloseAnimation();
+            }
         }
 
         RepositionSubRegions(_mapType, dataCount);
     }
 
+    public HUD_NavigationSubRegion GetSubRegionInstance(ForestType _forestType)
+    {
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null != spawnedSubRegions[i] && spawnedSubRegions[i].GetForestType() == _forestType)
+            {
+                return spawnedSubRegions[i];
+            }
+        }
+        return null;
+    }
+
+    public void ClearAllNewIndicators()
+    {
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            HUD_NavigationSubRegion sub = spawnedSubRegions[i];
+            if (null != sub && true == sub.gameObject.activeSelf)
+            {
+                ForestType type = sub.GetForestType();
+                string key = string.Format("New_SubRegion_{0}", type);
+                if (1 == PlayerPrefs.GetInt(key, 0))
+                {
+                    PlayerPrefs.SetInt(key, 0);
+                    sub.SetNewIndicator(false);
+                }
+            }
+        }
+        PlayerPrefs.Save();
+    }
+
+    public ForestType GetSelectedForestType()
+    {
+        int index = currentSelectedNumber - 1;
+        if (null == spawnedSubRegions || 0 > index || spawnedSubRegions.Count <= index)
+        {
+            return ForestType.None;
+        }
+
+        if (null == spawnedSubRegions[index])
+        {
+            return ForestType.None;
+        }
+
+        return spawnedSubRegions[index].GetForestType();
+    }
+
+    public ForestEnvironmentInfo GetSelectedForestInfo()
+    {
+        int index = currentSelectedNumber - 1;
+        if (null == spawnedSubRegions || 0 > index || spawnedSubRegions.Count <= index)
+        {
+            return default;
+        }
+
+        if (null == spawnedSubRegions[index])
+        {
+            return default;
+        }
+
+        return spawnedSubRegions[index].GetForestInfo();
+    }
+
+    public void ResetSelection()
+    {
+        currentSelectedNumber = -1;
+
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null != spawnedSubRegions[i])
+            {
+                spawnedSubRegions[i].SetSelect(false);
+                spawnedSubRegions[i].ResetAnimation();
+                spawnedSubRegions[i].PlayCloseAnimation();
+            }
+        }
+
+        subRegionSelectedEvent?.Invoke();
+    }
+
+    public void PlayDisappearAnimations(Action _onComplete)
+    {
+        int activeCount = 0;
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null != spawnedSubRegions[i] && true == spawnedSubRegions[i].gameObject.activeSelf)
+            {
+                activeCount++;
+            }
+        }
+
+        if (0 == activeCount)
+        {
+            _onComplete?.Invoke();
+            return;
+        }
+
+        disappearCompletedCount = 0;
+        disappearActiveCount = activeCount;
+        allDisappearCompleteCallback = _onComplete;
+
+        int delayIndex = 0;
+
+        for (int i = spawnedSubRegions.Count - 1; i >= 0; i--)
+        {
+            HUD_NavigationSubRegion sub = spawnedSubRegions[i];
+            if (null == sub || false == sub.gameObject.activeSelf)
+            {
+                continue;
+            }
+
+            float delay = delayIndex * subRegionAppearDelayGap;
+            delayIndex++;
+
+            sub.PlayDisappearAnimation(delay, onSubRegionDisappearCompleteCallback);
+        }
+    }
+
+
+    // 내부 로직
+
     private void RepositionSubRegions(MapType _mapType, int _activeCount)
     {
         if (null == subRegionContainer || 0 >= _activeCount)
+        {
             return;
+        }
 
         int count = _activeCount;
         if (maxSubRegionCount < count)
+        {
             count = maxSubRegionCount;
+        }
 
         float containerWidth = subRegionContainer.rect.width;
         float containerHeight = subRegionContainer.rect.height;
@@ -176,14 +326,20 @@ public class HUD_NavigationSubField : MonoBehaviour
         for (int i = 0; i < spawnedSubRegions.Count; i++)
         {
             if (null == spawnedSubRegions[i] || i >= count)
+            {
                 continue;
+            }
 
             if (count <= posIndex)
+            {
                 break;
+            }
 
             RectTransform subRect = spawnedSubRegions[i].GetRectTransform();
             if (null == subRect)
+            {
                 continue;
+            }
 
             subRect.anchorMin = centerAnchorAndPivot;
             subRect.anchorMax = centerAnchorAndPivot;
@@ -222,11 +378,15 @@ public class HUD_NavigationSubField : MonoBehaviour
                 }
 
                 if (0 < attempt && 0 == attempt % 10)
+                {
                     currentMinDistance *= distanceDecayRate;
+                }
             }
 
             if (false == found)
+            {
                 targetPos = new Vector2(UnityEngine.Random.Range(minRangeX, maxRangeX), UnityEngine.Random.Range(minY, maxY));
+            }
 
             positions[posIndex] = targetPos;
             subRect.anchoredPosition = targetPos;
@@ -237,105 +397,23 @@ public class HUD_NavigationSubField : MonoBehaviour
         UnityEngine.Random.state = prevState;
     }
 
-    public HUD_NavigationSubRegion GetSubRegionInstance(ForestType _forestType)
-    {
-        for (int i = 0; i < spawnedSubRegions.Count; i++)
-        {
-            if (null != spawnedSubRegions[i] && spawnedSubRegions[i].GetForestType() == _forestType)
-                return spawnedSubRegions[i];
-        }
-        return null;
-    }
-
-    public ForestType GetSelectedForestType()
-    {
-        int index = currentSelectedNumber - 1;
-        if (null == spawnedSubRegions || 0 > index || spawnedSubRegions.Count <= index)
-            return ForestType.None;
-
-        if (null == spawnedSubRegions[index])
-            return ForestType.None;
-
-        return spawnedSubRegions[index].GetForestType();
-    }
-
-    public ForestEnvironmentInfo GetSelectedForestInfo()
-    {
-        int index = currentSelectedNumber - 1;
-        if (null == spawnedSubRegions || 0 > index || spawnedSubRegions.Count <= index)
-            return default;
-
-        if (null == spawnedSubRegions[index])
-            return default;
-
-        return spawnedSubRegions[index].GetForestInfo();
-    }
-
-    public void ResetSelection()
-    {
-        currentSelectedNumber = -1;
-
-        for (int i = 0; i < spawnedSubRegions.Count; i++)
-        {
-            if (null != spawnedSubRegions[i])
-            {
-                spawnedSubRegions[i].SetSelect(false);
-                spawnedSubRegions[i].ResetAnimation();
-                spawnedSubRegions[i].PlayCloseAnimation();
-            }
-        }
-
-        subRegionSelectedEvent?.Invoke();
-    }
-
-    public void PlayDisappearAnimations(Action _onComplete)
-    {
-        int activeCount = 0;
-        for (int i = 0; i < spawnedSubRegions.Count; i++)
-        {
-            if (null != spawnedSubRegions[i] && true == spawnedSubRegions[i].gameObject.activeSelf)
-                activeCount++;
-        }
-
-        if (0 == activeCount)
-        {
-            _onComplete?.Invoke();
-            return;
-        }
-
-        disappearCompletedCount = 0;
-        disappearActiveCount = activeCount;
-        allDisappearCompleteCallback = _onComplete;
-
-        int delayIndex = 0;
-
-        for (int i = spawnedSubRegions.Count - 1; i >= 0; i--)
-        {
-            HUD_NavigationSubRegion sub = spawnedSubRegions[i];
-            if (null == sub || false == sub.gameObject.activeSelf)
-                continue;
-
-            float delay = delayIndex * subRegionAppearDelayGap;
-            delayIndex++;
-
-            sub.PlayDisappearAnimation(delay, onSubRegionDisappearCompleteCallback);
-        }
-    }
-
     private void OnSubRegionDisappearComplete()
     {
         disappearCompletedCount++;
         if (disappearActiveCount == disappearCompletedCount)
         {
             for (int j = 0; j < spawnedSubRegions.Count; j++)
+            {
                 if (null != spawnedSubRegions[j])
+                {
                     spawnedSubRegions[j].PlayCloseAnimation();
+                }
+            }
 
             allDisappearCompleteCallback?.Invoke();
             allDisappearCompleteCallback = null;
         }
     }
-
 
     private void OnSubRegionSelected(int _number)
     {
@@ -346,7 +424,9 @@ public class HUD_NavigationSubField : MonoBehaviour
             for (int i = 0; i < spawnedSubRegions.Count; i++)
             {
                 if (null != spawnedSubRegions[i])
+                {
                     spawnedSubRegions[i].SetSelect(spawnedSubRegions[i].GetNumber() == _number);
+                }
             }
         }
 
@@ -359,9 +439,5 @@ public class HUD_NavigationSubField : MonoBehaviour
     private void OnDisable()
     {
         ResetSelection();
-    }
-
-    private void OnDestroy()
-    {
     }
 }

@@ -103,5 +103,8 @@ public class UIView_MenuPopup : UIView
     public override void Refresh()
     {
         base.Refresh();
+
+        if (null != vehicle)
+            vehicle.SyncUnlockStates();
     }
 }

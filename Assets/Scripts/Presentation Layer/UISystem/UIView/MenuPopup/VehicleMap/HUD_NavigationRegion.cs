@@ -16,18 +16,10 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private TextMeshProUGUI regionNameText;
     [SerializeField] private VFXComponent vfxComponent;
     [SerializeField] private GameObject newIndicatorObj;
+
     [Header("New Indicator Animation Settings")]
     [SerializeField] private float newIndicatorAnimDuration = 0.3f;
     [SerializeField] private Ease newIndicatorAnimEase = Ease.OutBack;
-
-    private HUD_VehicleNavigation navigation;
-    private Action unlockCompleteCallback;
-    private UnityEngine.Events.UnityAction onOmpUnlockCompleteCallback;
-    private string regionKey = string.Empty;
-    private string regionNewKey = string.Empty;
-    private MotionEntry unlockEntry;
-
-    public bool IsInputBlocked => navigation != null && navigation.IsInputBlocked;
 
     [Header("Color Settings")]
     [SerializeField] private Color normalColor = Color.white;
@@ -51,10 +43,16 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private float disappearDuration = 0.25f;
     [SerializeField] private Ease disappearEase = Ease.InBack;
 
+    private HUD_VehicleNavigation navigation;
+    private LocalizationManager localizationManager;
+
     // 내부 의존성
+    private Action unlockCompleteCallback;
+    private UnityEngine.Events.UnityAction onOmpUnlockCompleteCallback;
+    private MotionEntry unlockEntry;
+    private ParticleSystem unlockVfx;
     private MapType mapType = MapType.None;
     private Action<MapType> onSelectEvent;
-    private LocalizationManager localizationManager;
 
     private UnityEngine.Events.UnityAction onClickAnimationCompleteCallback;
     private MotionEntry hoverEntry;
@@ -77,6 +75,18 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private const string forestString = "Deepmossforest";
     private const string noneString = "None";
 
+    public bool IsInputBlocked
+    {
+        get
+        {
+            if (null != navigation && true == navigation.IsInputBlocked)
+            {
+                return true;
+            }
+            return false;
+        }
+    }
+
 
     // 퍼블릭 초기화 및 제어 메서드
 
@@ -94,11 +104,10 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         onAppearDelayCompleteCallback = OnAppearDelayComplete;
         onOmpUnlockCompleteCallback = OnOmpUnlockComplete;
 
-        regionKey = string.Format("UnLock_Region_{0}", _mapType);
-        regionNewKey = string.Format("New_Region_{0}", _mapType);
-
         if (null != omp)
+        {
             omp.Initialize();
+        }
 
         SetSelect(false);
         SetLock(false);
@@ -111,10 +120,14 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         isLocked = _isLock;
 
         if (null != lockObject)
+        {
             lockObject.SetActive(isLocked);
+        }
 
         if (null != regionNameText)
+        {
             regionNameText.gameObject.SetActive(!isLocked);
+        }
 
         UpdateColor();
     }
@@ -140,10 +153,14 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         isSelected = _isSelect;
 
         if (null == buttonImage)
+        {
             return;
+        }
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
+        {
             colorTween.Kill();
+        }
 
         colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
     }
@@ -151,11 +168,13 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     public void SetNewIndicator(bool _active)
     {
         if (null == newIndicatorObj)
+        {
             Debug.LogError(string.Format("[HUD_NavigationRegion] newIndicatorObj is NULL for Region {0}! Please bind it in Inspector.", mapType));
+        }
 
         if (null != newIndicatorObj)
         {
-            if (_active)
+            if (true == _active)
             {
                 if (false == newIndicatorObj.activeSelf)
                 {
@@ -229,11 +248,15 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         if (null != vfxComponent)
         {
-            ParticleSystem pfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
-            if (pfx != null)
+            unlockVfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
+            if (null != unlockVfx)
+            {
                 Debug.Log(string.Format("[HUD_NavigationRegion] VFX '{0}' started playing.", unlockTag));
+            }
             else
+            {
                 Debug.LogWarning(string.Format("[HUD_NavigationRegion] VFX '{0}' tag not found in VFXComponent!", unlockTag));
+            }
         }
     }
 
@@ -247,6 +270,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             unlockEntry = null;
         }
 
+        if (null != vfxComponent && null != unlockVfx)
+        {
+            vfxComponent.Stop(unlockVfx);
+            unlockVfx = null;
+        }
+
         SetLock(false);
         SetNewIndicator(true);
         unlockCompleteCallback?.Invoke();
@@ -255,8 +284,10 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void PlayAppearAnimation(float _delay)
     {
-        if (null != appearDelayTween && appearDelayTween.IsActive())
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+        {
             appearDelayTween.Kill();
+        }
 
         if (null != omp)
         {
@@ -275,22 +306,30 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void ResetAnimation()
     {
-        if (null != appearDelayTween && appearDelayTween.IsActive())
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+        {
             appearDelayTween.Kill();
+        }
 
-        if (null != scaleTween && scaleTween.IsActive())
+        if (null != scaleTween && true == scaleTween.IsActive())
+        {
             scaleTween.Kill();
+        }
 
         transform.localScale = Vector3.zero;
 
         if (null != omp)
+        {
             omp.ResetAllMotions();
+        }
     }
 
     public void PlayDisappearAnimation(float _delay, TweenCallback _onComplete)
     {
-        if (null != appearDelayTween && appearDelayTween.IsActive())
+        if (null != appearDelayTween && true == appearDelayTween.IsActive())
+        {
             appearDelayTween.Kill();
+        }
 
         if (null != omp)
         {
@@ -300,11 +339,15 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                 appearEntry = null;
             }
 
-            if (omp.IsPlaying(appearTag))
+            if (true == omp.IsPlaying(appearTag))
+            {
                 omp.Stop(appearTag);
+            }
 
-            if (null != scaleTween && scaleTween.IsActive())
+            if (null != scaleTween && true == scaleTween.IsActive())
+            {
                 scaleTween.Kill();
+            }
 
             scaleTween = transform.DOScale(Vector3.zero, disappearDuration)
                      .SetDelay(_delay)
@@ -338,38 +381,58 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private void UpdateColor()
     {
         if (null == buttonImage)
+        {
             return;
+        }
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
+        {
             colorTween.Kill();
+        }
 
         if (true == isLocked)
+        {
             buttonImage.color = lockColor;
+        }
         else if (true == isSelected)
+        {
             buttonImage.color = selectColor;
+        }
         else
+        {
             buttonImage.color = normalColor;
+        }
     }
 
     private Color GetOriginalColor()
     {
         if (true == isLocked)
+        {
             return lockColor;
+        }
         if (true == isSelected)
+        {
             return selectColor;
+        }
 
         return normalColor;
     }
 
     private Color GetHoverColor()
     {
-        return true == isLocked ? lockHoverColor : normalHoverColor;
+        if (true == isLocked)
+        {
+            return lockHoverColor;
+        }
+        return normalHoverColor;
     }
 
     private void UpdateRegionName()
     {
         if (null == regionNameText)
+        {
             return;
+        }
 
         if (null != localizationManager)
         {
@@ -387,7 +450,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         else
         {
             string _fallback = GetMapTypeString(mapType);
-
             regionNameText.text = _fallback;
         }
     }
@@ -405,13 +467,19 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         isClicked = false;
 
         if (false == isLocked)
+        {
             onSelectEvent?.Invoke(mapType);
+        }
 
         if (true == isSelected)
+        {
             return;
+        }
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
+        {
             colorTween.Kill();
+        }
 
         if (null != buttonImage)
         {
@@ -425,24 +493,20 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (IsInputBlocked)
+        if (true == IsInputBlocked)
+        {
             return;
+        }
 
         if (true == IsTransitioning())
-            return;
-
-        if (false == isLocked)
         {
-            if (PlayerPrefs.GetInt(regionNewKey, 0) == 1)
-            {
-                PlayerPrefs.SetInt(regionNewKey, 0);
-                PlayerPrefs.Save();
-                SetNewIndicator(false);
-            }
+            return;
         }
 
         if (true == isSelected || true == isClicked)
+        {
             return;
+        }
 
         isClicked = true;
 
@@ -461,13 +525,17 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (IsInputBlocked)
+        if (true == IsInputBlocked)
+        {
             return;
+        }
 
         isHovered = true;
 
         if (true == isClicked)
+        {
             return;
+        }
 
         if (false == IsTransitioning())
         {
@@ -483,25 +551,33 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             }
         }
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
+        {
             colorTween.Kill();
+        }
 
         if (false == isSelected)
         {
             if (null != buttonImage)
+            {
                 colorTween = buttonImage.DOColor(GetHoverColor(), hoverColorDuration).SetEase(Ease.Linear);
+            }
         }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (IsInputBlocked)
+        if (true == IsInputBlocked)
+        {
             return;
+        }
 
         isHovered = false;
 
         if (true == isClicked)
+        {
             return;
+        }
 
         if (false == IsTransitioning())
         {
@@ -516,33 +592,45 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                 if (false == isSelected)
                 {
                     if (null != buttonImage)
+                    {
                         buttonImage.color = GetHoverColor();
+                    }
                 }
 
                 unHoverEntry = omp.Play(unHoverTag, bReset: forceReset);
             }
         }
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
+        {
             colorTween.Kill();
+        }
 
         if (false == isSelected)
         {
             if (null != buttonImage)
+            {
                 colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
+            }
         }
     }
 
     private bool IsTransitioning()
     {
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
+        {
             return true;
+        }
 
         if (null != scaleTween && true == scaleTween.IsActive())
+        {
             return true;
+        }
 
         if (null != omp && true == omp.IsPlaying(appearTag))
+        {
             return true;
+        }
 
         return false;
     }
@@ -553,13 +641,25 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private void OnDisable()
     {
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
+        {
             appearDelayTween.Kill();
+        }
 
         if (null != scaleTween && true == scaleTween.IsActive())
+        {
             scaleTween.Kill();
+        }
 
         if (null != colorTween && true == colorTween.IsActive())
+        {
             colorTween.Kill();
+        }
+
+        if (null != vfxComponent && null != unlockVfx)
+        {
+            vfxComponent.Stop(unlockVfx, true);
+            unlockVfx = null;
+        }
 
         isClicked = false;
         isHovered = false;
@@ -568,12 +668,24 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private void OnDestroy()
     {
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
+        {
             appearDelayTween.Kill();
+        }
 
         if (null != scaleTween && true == scaleTween.IsActive())
+        {
             scaleTween.Kill();
+        }
 
         if (null != colorTween && true == colorTween.IsActive())
+        {
             colorTween.Kill();
+        }
+
+        if (null != vfxComponent && null != unlockVfx)
+        {
+            vfxComponent.Stop(unlockVfx, true);
+            unlockVfx = null;
+        }
     }
 }

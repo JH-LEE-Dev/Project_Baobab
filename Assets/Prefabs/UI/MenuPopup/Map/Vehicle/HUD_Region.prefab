@@ -130,6 +130,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startAngle: 2
     angleDamping: 0.62
@@ -328,6 +329,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffsetX: -1
     offsetDamping: 0.4
@@ -389,6 +391,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     maxSkew: {x: 0, y: 0}
     skewTimeRatio: 0.2
@@ -541,6 +544,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1293457865493029082}
+  - {fileID: 2364222227573629621}
   - {fileID: 8208404149202173040}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -573,7 +577,7 @@ MonoBehaviour:
   buttonImage: {fileID: 182640180337730717}
   lockObject: {fileID: 1151978907746785342}
   regionNameText: {fileID: 3845837017079714511}
-  vfxComponent: {fileID: 0}
+  vfxComponent: {fileID: 8180920533772156883}
   newIndicatorObj: {fileID: 8700845849746939958}
   newIndicatorAnimDuration: 0.3
   newIndicatorAnimEase: 27
@@ -588,8 +592,65 @@ MonoBehaviour:
   unHoverTag: HoverOff
   lockClickTag: LockClick
   appearTag: Appear
+  unlockTag: UnLock
   disappearDuration: 0.075
   disappearEase: 26
+--- !u!1 &3717875745450122893
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2364222227573629621}
+  - component: {fileID: 8180920533772156883}
+  m_Layer: 5
+  m_Name: VFXComponent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2364222227573629621
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3717875745450122893}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1526684421785479947}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &8180920533772156883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3717875745450122893}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 1
+  vfxPoolDataList:
+  - vfxTag: UnLock
+    effectPrefab: {fileID: 5748764238649717206, guid: 24b6ef70f1f1a1342908bdc1240eb134, type: 3}
+    initialPoolSize: 3
+    allowDynamicExpansion: 1
+    maxPoolSize: 10
+    uiParticleScale: 20
 --- !u!1 &4134617838903450338
 GameObject:
   m_ObjectHideFlags: 0
@@ -645,6 +706,9 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents:
+  - triggerTime: 0.8
+    eventTag: UnLock
   shrinkScaleMultiplier: 0.6
   shrinkDurationRatio: 0.8
   shakeStrength: 4
@@ -981,6 +1045,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkScale: 1
     shrinkTimeRatio: 0.08
