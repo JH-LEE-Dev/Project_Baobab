@@ -51,4 +51,14 @@ public class TentManager : MonoBehaviour
     {
         TentInteractStateChangedEvent?.Invoke(_boolean);
     }
+
+    public void DisableTent()
+    {
+        tent.gameObject.SetActive(false);
+    }
+
+    public void EnableTent()
+    {
+        tent.gameObject.SetActive(true);
+    }
 }

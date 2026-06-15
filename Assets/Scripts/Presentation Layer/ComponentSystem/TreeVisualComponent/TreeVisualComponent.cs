@@ -147,12 +147,12 @@ public class TreeVisualComponent : MonoBehaviour
     private void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;
-        int order = (int)(cachedTransform.position.y * 100);
+        int order = topRenderer.sortingOrder;
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.sortingOrder = order;
-        if (topShieldOnWaterSR != null) topShieldOnWaterSR.sortingOrder = order;
-        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.sortingOrder = order;
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.sortingOrder = order + 1;
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.sortingOrder = order + 1;
         bOnWaterOrderSet = true;
     }
 

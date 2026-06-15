@@ -55,6 +55,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     squashScale: {x: 1.4, y: 0.7}
     recoilScale: {x: 0.8, y: 1.3}

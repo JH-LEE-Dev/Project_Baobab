@@ -65,6 +65,7 @@ public class TownSystem : MonoBehaviour
         CollisionSystem.Instance?.ClearAll();
         townObjectManager.ReadyObj();
         logProcessingManager.EnableShopObj();
+        tentManager.EnableTent();
 
         if (townProductionManager.offroadVehicleObj == null)
         {
@@ -299,6 +300,7 @@ public class TownSystem : MonoBehaviour
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
     {
         logProcessingManager.DisableShopObj();
+        tentManager.DisableTent();
         townProductionManager.SetCharacterTransform();
 
         if (bRetryGame == false)

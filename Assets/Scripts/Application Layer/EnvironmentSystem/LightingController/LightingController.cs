@@ -54,12 +54,12 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     {
         timeDataProvider = _timeDataProvider;
 
-        if (globalLightPrefab != null)
-        {
-            globalLight = Instantiate(globalLightPrefab, transform);
-            globalLight.Initialize();
-            globalLight.SetCurrentWeather(WeatherType.Normal);
-        }
+        // if (globalLightPrefab != null)
+        // {
+        //     globalLight = Instantiate(globalLightPrefab, transform);
+        //     globalLight.Initialize();
+        //     globalLight.SetCurrentWeather(WeatherType.Normal);
+        // }
 
         BindEvents();
         Setup();
@@ -74,11 +74,11 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
     {
         character = _character;
 
-        if (characterPointLightPrefab != null)
-        {
-            characterPointLight = Instantiate(characterPointLightPrefab, character.GetTransform());
-            characterPointLight.Enable();
-        }
+        // if (characterPointLightPrefab != null)
+        // {
+        //     characterPointLight = Instantiate(characterPointLightPrefab, character.GetTransform());
+        //     characterPointLight.Enable();
+        // }
     }
 
     public void EnablePointLights()
