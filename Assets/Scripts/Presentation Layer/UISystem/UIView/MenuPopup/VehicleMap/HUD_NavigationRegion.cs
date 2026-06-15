@@ -14,6 +14,20 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private Image buttonImage;
     [SerializeField] private GameObject lockObject;
     [SerializeField] private TextMeshProUGUI regionNameText;
+    [SerializeField] private VFXComponent vfxComponent;
+    [SerializeField] private GameObject newIndicatorObj;
+    [Header("New Indicator Animation Settings")]
+    [SerializeField] private float newIndicatorAnimDuration = 0.3f;
+    [SerializeField] private Ease newIndicatorAnimEase = Ease.OutBack;
+
+    private HUD_VehicleNavigation navigation;
+    private Action unlockCompleteCallback;
+    private UnityEngine.Events.UnityAction onOmpUnlockCompleteCallback;
+    private string regionKey = string.Empty;
+    private string regionNewKey = string.Empty;
+    private MotionEntry unlockEntry;
+
+    public bool IsInputBlocked => navigation != null && navigation.IsInputBlocked;
 
     [Header("Color Settings")]
     [SerializeField] private Color normalColor = Color.white;
@@ -65,17 +79,22 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(MapType _mapType, Action<MapType> _onSelect, LocalizationManager _localizeManager)
+    public void Initialize(MapType _mapType, Action<MapType> _onSelect, LocalizationManager _localizeManager, HUD_VehicleNavigation _navigation)
     {
         mapType = _mapType;
         onSelectEvent = _onSelect;
         localizationManager = _localizeManager;
+        navigation = _navigation;
         isClicked = false;
         isLocked = false;
         isSelected = false;
         isHovered = false;
         onClickAnimationCompleteCallback = OnClickAnimationComplete;
         onAppearDelayCompleteCallback = OnAppearDelayComplete;
+        onOmpUnlockCompleteCallback = OnOmpUnlockComplete;
+
+        regionKey = string.Format("UnLock_Region_{0}", _mapType);
+        regionNewKey = string.Format("New_Region_{0}", _mapType);
 
         if (null != omp)
             omp.Initialize();
@@ -126,6 +145,102 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             colorTween.Kill();
 
         colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
+    }
+
+    public void SetNewIndicator(bool _active)
+    {
+        if (null == newIndicatorObj)
+            Debug.LogError(string.Format("[HUD_NavigationRegion] newIndicatorObj is NULL for Region {0}! Please bind it in Inspector.", mapType));
+
+        if (null != newIndicatorObj)
+        {
+            if (_active)
+            {
+                if (false == newIndicatorObj.activeSelf)
+                {
+                    newIndicatorObj.SetActive(true);
+                    newIndicatorObj.transform.localScale = Vector3.zero;
+                    newIndicatorObj.transform.DOScale(Vector3.one, newIndicatorAnimDuration).SetEase(newIndicatorAnimEase).SetUpdate(true);
+                }
+            }
+            else
+            {
+                newIndicatorObj.SetActive(false);
+            }
+        }
+    }
+
+    public void PlayUnlockProduction(Action _onComplete)
+    {
+        unlockCompleteCallback = _onComplete;
+        Debug.Log(string.Format("[HUD_NavigationRegion] PlayUnlockProduction started for MapType: {0}", mapType));
+
+        if (null != omp)
+        {
+            if (null != hoverEntry)
+            {
+                omp.SettingEntryMotion(hoverEntry, true, true);
+                hoverEntry = null;
+            }
+
+            if (null != clickEntry)
+            {
+                omp.SettingEntryMotion(clickEntry, true, true);
+                clickEntry = null;
+            }
+
+            if (null != unHoverEntry)
+            {
+                omp.SettingEntryMotion(unHoverEntry, true, true);
+                unHoverEntry = null;
+            }
+
+            if (null != appearEntry)
+            {
+                omp.SettingEntryMotion(appearEntry, true, true);
+                appearEntry = null;
+            }
+
+            unlockEntry = omp.Play("UnLock", _onComplete: onOmpUnlockCompleteCallback);
+            if (null == unlockEntry)
+            {
+                Debug.LogWarning("[HUD_NavigationRegion] OMP 'UnLock' motion entry is missing! Skipping to complete.");
+                OnOmpUnlockComplete();
+            }
+            else
+            {
+                Debug.Log("[HUD_NavigationRegion] OMP 'UnLock' motion started playing.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("[HUD_NavigationRegion] OMP is null! Skipping to complete.");
+            OnOmpUnlockComplete();
+        }
+
+        if (null != vfxComponent)
+        {
+            ParticleSystem pfx = vfxComponent.Play("UnLock", transform.position, Quaternion.identity, transform);
+            if (pfx != null)
+                Debug.Log("[HUD_NavigationRegion] VFX 'UnLock' started playing.");
+            else
+                Debug.LogWarning("[HUD_NavigationRegion] VFX 'UnLock' tag not found in VFXComponent!");
+        }
+    }
+
+    private void OnOmpUnlockComplete()
+    {
+        Debug.Log(string.Format("[HUD_NavigationRegion] OnOmpUnlockComplete for MapType: {0}", mapType));
+
+        if (null != omp && null != unlockEntry)
+        {
+            omp.SettingEntryMotion(unlockEntry, true, true);
+            unlockEntry = null;
+        }
+
+        SetLock(false);
+        unlockCompleteCallback?.Invoke();
+        unlockCompleteCallback = null;
     }
 
     public void PlayAppearAnimation(float _delay)
@@ -300,8 +415,21 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         if (true == IsTransitioning())
             return;
+
+        if (false == isLocked)
+        {
+            if (PlayerPrefs.GetInt(regionNewKey, 0) == 1)
+            {
+                PlayerPrefs.SetInt(regionNewKey, 0);
+                PlayerPrefs.Save();
+                SetNewIndicator(false);
+            }
+        }
 
         if (true == isSelected || true == isClicked)
             return;
@@ -317,9 +445,28 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             }
 
             if (null != hoverEntry)
+            {
                 omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
+                hoverEntry = null;
+            }
+
             if (null != unHoverEntry)
+            {
                 omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
+                unHoverEntry = null;
+            }
+
+            if (null != clickEntry)
+            {
+                omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
+                clickEntry = null;
+            }
+
+            if (null != unlockEntry)
+            {
+                omp.SettingEntryMotion(unlockEntry, forceReset, forceReset);
+                unlockEntry = null;
+            }
 
             string _targetTag = true == isLocked ? lockClickTag : clickTag;
             clickEntry = omp.Play(_targetTag, bReset: forceReset, _onComplete: onClickAnimationCompleteCallback);
@@ -328,6 +475,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         isHovered = true;
 
         if (true == isClicked)
@@ -343,10 +493,30 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                     appearEntry = null;
                 }
 
+                if (null != hoverEntry)
+                {
+                    omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
+                    hoverEntry = null;
+                }
+
                 if (null != unHoverEntry)
+                {
                     omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
+                    unHoverEntry = null;
+                }
+
                 if (null != clickEntry)
+                {
                     omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
+                    clickEntry = null;
+                }
+
+                if (null != unlockEntry)
+                {
+                    omp.SettingEntryMotion(unlockEntry, forceReset, forceReset);
+                    unlockEntry = null;
+                }
+
                 hoverEntry = omp.Play(hoverTag, bReset: forceReset);
             }
         }
@@ -363,6 +533,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         isHovered = false;
 
         if (true == isClicked)
@@ -379,9 +552,28 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                 }
 
                 if (null != hoverEntry)
+                {
                     omp.SettingEntryMotion(hoverEntry, forceReset, forceReset);
+                    hoverEntry = null;
+                }
+
                 if (null != clickEntry)
+                {
                     omp.SettingEntryMotion(clickEntry, forceReset, forceReset);
+                    clickEntry = null;
+                }
+
+                if (null != unHoverEntry)
+                {
+                    omp.SettingEntryMotion(unHoverEntry, forceReset, forceReset);
+                    unHoverEntry = null;
+                }
+
+                if (null != unlockEntry)
+                {
+                    omp.SettingEntryMotion(unlockEntry, forceReset, forceReset);
+                    unlockEntry = null;
+                }
 
                 if (false == isSelected)
                 {

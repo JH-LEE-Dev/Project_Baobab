@@ -21,6 +21,9 @@ public class HUD_NavigationSubField : MonoBehaviour
     private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(maxSubRegionCount);
     private Action<int> onSubRegionSelectedCallback;
     private int currentSelectedNumber = -1;
+    private HUD_Vehicle vehicle;
+
+    public bool IsInputBlocked => vehicle != null && vehicle.IsUnlockingProductionActive;
     private bool isInitialized = false;
     private TweenCallback onSubRegionDisappearCompleteCallback;
     private int disappearCompletedCount = 0;
@@ -38,11 +41,12 @@ public class HUD_NavigationSubField : MonoBehaviour
 
     // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize()
+    public void Initialize(HUD_Vehicle _vehicle)
     {
         if (true == isInitialized)
             return;
 
+        vehicle = _vehicle;
         currentSelectedNumber = -1;
         onSubRegionSelectedCallback = OnSubRegionSelected;
         onSubRegionDisappearCompleteCallback = OnSubRegionDisappearComplete;
@@ -62,7 +66,7 @@ public class HUD_NavigationSubField : MonoBehaviour
     public void SetSubRegions(MapType _mapType, List<ForestEnvironmentInfo> _forestDatas)
     {
         if (false == isInitialized)
-            Initialize();
+            Initialize(null);
 
         currentSelectedNumber = -1;
 
@@ -98,7 +102,7 @@ public class HUD_NavigationSubField : MonoBehaviour
             if (maxSubRegionCount > i && dataCount > i)
             {
                 spawnedSubRegions[i].PlayOpenAnimation();
-                spawnedSubRegions[i].Setup(_forestDatas[i], i + 1, null, null, onSubRegionSelectedCallback);
+                spawnedSubRegions[i].Setup(_forestDatas[i], i + 1, null, null, onSubRegionSelectedCallback, this);
                 spawnedSubRegions[i].PlayAppearAnimation(i * subRegionAppearDelayGap);
             }
             else
@@ -231,6 +235,16 @@ public class HUD_NavigationSubField : MonoBehaviour
 
         // 난수 상태 복구
         UnityEngine.Random.state = prevState;
+    }
+
+    public HUD_NavigationSubRegion GetSubRegionInstance(ForestType _forestType)
+    {
+        for (int i = 0; i < spawnedSubRegions.Count; i++)
+        {
+            if (null != spawnedSubRegions[i] && spawnedSubRegions[i].GetForestType() == _forestType)
+                return spawnedSubRegions[i];
+        }
+        return null;
     }
 
     public ForestType GetSelectedForestType()

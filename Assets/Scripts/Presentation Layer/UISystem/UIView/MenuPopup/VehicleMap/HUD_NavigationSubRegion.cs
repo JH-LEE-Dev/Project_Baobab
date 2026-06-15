@@ -11,6 +11,20 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     [Header("UI References")]
     [SerializeField] private Image iconImage;
     [SerializeField] private ObjectMotionPlayer motionPlayer;
+    [SerializeField] private VFXComponent vfxComponent;
+    [SerializeField] private GameObject newIndicatorObj;
+    [Header("New Indicator Animation Settings")]
+    [SerializeField] private float newIndicatorAnimDuration = 0.3f;
+    [SerializeField] private Ease newIndicatorAnimEase = Ease.OutBack;
+
+    private HUD_NavigationSubField subField;
+    private Action unlockCompleteCallback;
+    private UnityEngine.Events.UnityAction onOmpUnlockCompleteCallback;
+    private string subKey = string.Empty;
+    private string subNewKey = string.Empty;
+    private MotionEntry unlockEntry;
+
+    public bool IsInputBlocked => subField != null && subField.IsInputBlocked;
 
     [Header("Color Settings")]
     [SerializeField] private Color normalColor = Color.white;
@@ -65,14 +79,22 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     // 퍼블릭 초기화 및 제어 메서드
 
-    public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform, Vector2> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect)
+    public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform, Vector2> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect, HUD_NavigationSubField _subField)
     {
         forestInfo = _info;
+        subField = _subField;
         Initialize(_number);
 
         SetSelect(false);
         SetNumber(_number);
-        SetLock(!_info.bCanAccess);
+
+        subKey = string.Format("UnLock_SubRegion_{0}", _info.forestType);
+        subNewKey = string.Format("New_SubRegion_{0}", _info.forestType);
+
+        bool isSubLocked = !_info.bCanAccess || (PlayerPrefs.GetInt(subKey, 0) == 0);
+        SetLock(isSubLocked);
+
+        SetNewIndicator(PlayerPrefs.GetInt(subNewKey, 0) == 1);
 
         onHoverEnterEvent = _onHoverEnter;
         onHoverExitEvent = _onHoverExit;
@@ -87,6 +109,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         rect = GetComponent<RectTransform>();
         onClickAnimationCompleteCallback = OnClickAnimationComplete;
         onAppearDelayCompleteCallback = OnAppearDelayComplete;
+        onOmpUnlockCompleteCallback = OnOmpUnlockComplete;
 
         SetSelect(false);
         SetLock(false);
@@ -123,6 +146,96 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             colorTween = iconImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
         }
+    }
+
+    public void SetNewIndicator(bool _active)
+    {
+        if (null == newIndicatorObj)
+            Debug.LogError(string.Format("[HUD_NavigationSubRegion] newIndicatorObj is NULL for SubRegion {0}! Please bind it in Inspector.", forestInfo.forestType));
+
+        if (null != newIndicatorObj)
+        {
+            if (_active)
+            {
+                if (false == newIndicatorObj.activeSelf)
+                {
+                    newIndicatorObj.SetActive(true);
+                    newIndicatorObj.transform.localScale = Vector3.zero;
+                    newIndicatorObj.transform.DOScale(Vector3.one, newIndicatorAnimDuration).SetEase(newIndicatorAnimEase).SetUpdate(true);
+                }
+            }
+            else
+            {
+                newIndicatorObj.SetActive(false);
+            }
+        }
+    }
+
+    public void PlayUnlockProduction(Action _onComplete)
+    {
+        unlockCompleteCallback = _onComplete;
+        //Debug.Log(string.Format("[HUD_NavigationSubRegion] PlayUnlockProduction started for ForestType: {0}", forestInfo.forestType));
+
+        if (null != motionPlayer)
+        {
+            if (null != enterMotion)
+            {
+                motionPlayer.SettingEntryMotion(enterMotion, true, true);
+                enterMotion = null;
+            }
+
+            if (null != exitMotion)
+            {
+                motionPlayer.SettingEntryMotion(exitMotion, true, true);
+                exitMotion = null;
+            }
+
+            if (null != clickMotion)
+            {
+                motionPlayer.SettingEntryMotion(clickMotion, true, true);
+                clickMotion = null;
+            }
+
+            unlockEntry = motionPlayer.Play("UnLock", _onComplete: onOmpUnlockCompleteCallback);
+            if (null == unlockEntry)
+            {
+                //Debug.LogWarning("[HUD_NavigationSubRegion] OMP 'UnLock' motion entry is missing! Skipping to complete.");
+                OnOmpUnlockComplete();
+            }
+            else
+            {
+                //Debug.Log("[HUD_NavigationSubRegion] OMP 'UnLock' motion started playing.");
+            }
+        }
+        else
+        {
+            //Debug.LogWarning("[HUD_NavigationSubRegion] OMP is null! Skipping to complete.");
+            OnOmpUnlockComplete();
+        }
+
+        if (null != vfxComponent)
+        {
+            ParticleSystem pfx = vfxComponent.Play("UnLock", transform.position, Quaternion.identity, transform);
+            if (pfx != null)
+                Debug.Log("[HUD_NavigationSubRegion] VFX 'UnLock' started playing.");
+            else
+                Debug.LogWarning("[HUD_NavigationSubRegion] VFX 'UnLock' tag not found in VFXComponent!");
+        }
+    }
+
+    private void OnOmpUnlockComplete()
+    {
+        Debug.Log(string.Format("[HUD_NavigationSubRegion] OnOmpUnlockComplete for ForestType: {0}", forestInfo.forestType));
+
+        if (null != motionPlayer && null != unlockEntry)
+        {
+            motionPlayer.SettingEntryMotion(unlockEntry, true, true);
+            unlockEntry = null;
+        }
+
+        SetLock(false);
+        unlockCompleteCallback?.Invoke();
+        unlockCompleteCallback = null;
     }
 
     public void PlayAppearAnimation(float _delay)
@@ -287,6 +400,9 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         isHovered = true;
         isPendingExit = false;
         hoverEnterTime = Time.unscaledTime;
@@ -301,11 +417,10 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
             if (null != motionPlayer && false == isClicked)
             {
-                if (null != exitMotion)
-                    motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
-
-                if (null != clickMotion)
-                    motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
+                motionPlayer.SettingEntryMotion(enterMotion, forceReset, forceReset);
+                motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
+                motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
+                motionPlayer.SettingEntryMotion(unlockEntry, forceReset, forceReset);
 
                 UpdateColor();
 
@@ -325,6 +440,9 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         if (false == isHovered)
             return;
 
@@ -335,10 +453,26 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void OnPointerClick(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         if (true == IsTransitioning())
             return;
 
-        if (false == isLocked && false == isSelected)
+        if (false == isLocked)
+        {
+            if (PlayerPrefs.GetInt(subNewKey, 0) == 1)
+            {
+                PlayerPrefs.SetInt(subNewKey, 0);
+                PlayerPrefs.Save();
+                SetNewIndicator(false);
+            }
+        }
+
+        if (true == isSelected || true == isClicked)
+            return;
+
+        if (false == isLocked)
             onSelectEvent?.Invoke(fieldNumber);
 
         isClicked = true;
@@ -347,10 +481,28 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (null != motionPlayer)
         {
             if (null != enterMotion)
+            {
                 motionPlayer.SettingEntryMotion(enterMotion, forceReset, forceReset);
+                enterMotion = null;
+            }
 
             if (null != exitMotion)
+            {
                 motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
+                exitMotion = null;
+            }
+
+            if (null != clickMotion)
+            {
+                motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
+                clickMotion = null;
+            }
+
+            if (null != unlockEntry)
+            {
+                motionPlayer.SettingEntryMotion(unlockEntry, forceReset, forceReset);
+                unlockEntry = null;
+            }
 
             string _targetTag = true == isLocked ? lockClickTag : clickTag;
             clickMotion = motionPlayer.Play(_targetTag, bReset: forceReset, _onComplete: onClickAnimationCompleteCallback);
@@ -381,10 +533,28 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             if (null != motionPlayer)
             {
                 if (null != enterMotion)
+                {
                     motionPlayer.SettingEntryMotion(enterMotion, forceReset, forceReset);
+                    enterMotion = null;
+                }
+
+                if (null != exitMotion)
+                {
+                    motionPlayer.SettingEntryMotion(exitMotion, forceReset, forceReset);
+                    exitMotion = null;
+                }
 
                 if (null != clickMotion)
+                {
                     motionPlayer.SettingEntryMotion(clickMotion, forceReset, forceReset);
+                    clickMotion = null;
+                }
+
+                if (null != unlockEntry)
+                {
+                    motionPlayer.SettingEntryMotion(unlockEntry, forceReset, forceReset);
+                    unlockEntry = null;
+                }
 
                 if (false == isSelected)
                 {

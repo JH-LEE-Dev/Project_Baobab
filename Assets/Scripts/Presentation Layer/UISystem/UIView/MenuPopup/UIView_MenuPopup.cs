@@ -73,6 +73,14 @@ public class UIView_MenuPopup : UIView
             vehicle.Open();
     }
 
+    public override void Hide()
+    {
+        if (null != vehicle && vehicle.IsUnlockingProductionActive)
+            return;
+
+        base.Hide();
+    }
+
     protected override void OnHide()
     {
         base.OnHide();

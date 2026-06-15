@@ -44,6 +44,9 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
     private readonly List<HUD_NavigationRegion> spawnedRegions = new List<HUD_NavigationRegion>(8);
     private IMapDataProvider mapDataProvider;
     private LocalizationManager localizationManager;
+    private HUD_Vehicle vehicle;
+
+    public bool IsInputBlocked => null != vehicle && vehicle.IsUnlockingProductionActive;
     private TweenCallback onRegionDisappearCallback;
     private TweenCallback onAllDisappearComplete;
     private Action<bool> onUpButtonPressStateChangedCallback;
@@ -84,11 +87,12 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     // 퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(IMapDataProvider _mapDataProvider, LocalizationManager _localizeManager)
+    public void Initialize(IMapDataProvider _mapDataProvider, LocalizationManager _localizeManager, HUD_Vehicle _vehicle)
     {
         isDragging = false;
         mapDataProvider = _mapDataProvider;
         localizationManager = _localizeManager;
+        vehicle = _vehicle;
 
         if (null != localizationManager)
         {
@@ -124,6 +128,9 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     public void OnBeginDrag(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         // 런타임 Overlay 캔버스 모드 오작동 방지를 위해 Graphic 레이캐스트가 감지한 OnBeginDrag 이벤트를 즉각 신뢰하여 드래그 개시
         isDragging = true;
         dragVelocityY = 0f;
@@ -141,6 +148,9 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     public void OnDrag(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         if (false == isDragging)
             return;
 
@@ -198,6 +208,9 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
 
     public void OnScroll(PointerEventData _eventData)
     {
+        if (IsInputBlocked)
+            return;
+
         if (null == containerRect || null == viewportRect)
             return;
 
@@ -452,6 +465,16 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         HandleButtonPressStateChanged(false, _isPressed);
     }
 
+    public HUD_NavigationRegion GetRegionInstance(MapType _mapType)
+    {
+        for (int i = 0; i < spawnedRegions.Count; i++)
+        {
+            if (null != spawnedRegions[i] && spawnedRegions[i].GetMapType() == _mapType)
+                return spawnedRegions[i];
+        }
+        return null;
+    }
+
     private void SetupRegionsFromData()
     {
         if (null == mapDataProvider || null == containerRect || null == regionPrefab)
@@ -480,23 +503,24 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             HUD_NavigationRegion region = obj.GetComponent<HUD_NavigationRegion>();
             if (null != region)
             {
-                region.Initialize(info.mapType, onRegionSelectedCallback, localizationManager);
+                region.Initialize(info.mapType, onRegionSelectedCallback, localizationManager, this);
 
-                // 각 맵의 서브 리전들 중 접근 가능한 지역(bCanAccess == true)이 단 하나라도 없다면 락 처리
-                bool isMapLocked = true;
-                if (null != info.forestDatas)
+                // 대지역 자체의 bCanAccess 상태를 기준으로 락 여부 판단
+                bool isMapLocked = !info.bCanAccess;
+
+                // 만약 접근 가능한 맵인데 아직 해금 연출을 보지 못했다면 강제로 락 표시
+                string regionKey = string.Format("UnLock_Region_{0}", info.mapType);
+                if (false == isMapLocked && PlayerPrefs.GetInt(regionKey, 0) == 0)
                 {
-                    for (int j = 0; info.forestDatas.Count > j; j++)
-                    {
-                        if (true == info.forestDatas[j].bCanAccess)
-                        {
-                            isMapLocked = false;
-                            break;
-                        }
-                    }
+                    isMapLocked = true;
                 }
 
                 region.SetLock(isMapLocked);
+
+                // 신규 해금 New 인디케이터 활성화 처리
+                string regionNewKey = string.Format("New_Region_{0}", info.mapType);
+                region.SetNewIndicator(PlayerPrefs.GetInt(regionNewKey, 0) == 1);
+
                 spawnedRegions.Add(region);
             }
         }
@@ -504,6 +528,44 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         // 레이아웃이 즉각 갱신되어 드래그 스크롤 범위를 오차 없이 실시간 연산하도록 강제 빌드
         Canvas.ForceUpdateCanvases();
         LayoutRebuilder.ForceRebuildLayoutImmediate(containerRect);
+    }
+
+    public void RefreshRegionLocks()
+    {
+        if (null == mapDataProvider)
+            return;
+
+        MapEnvironmentDatabase db = mapDataProvider.GetMapEnvironmentDatabase();
+        if (null == db.mapDatas)
+            return;
+
+        int activeIndex = 0;
+        for (int i = 0; i < db.mapDatas.Count; i++)
+        {
+            MapEnvironmentDataInfo info = db.mapDatas[i];
+            if (MapType.Town == info.mapType)
+                continue;
+
+            if (activeIndex < spawnedRegions.Count)
+            {
+                HUD_NavigationRegion region = spawnedRegions[activeIndex];
+                if (null != region)
+                {
+                    bool isMapLocked = !info.bCanAccess;
+                    string regionKey = string.Format("UnLock_Region_{0}", info.mapType);
+                    if (false == isMapLocked && PlayerPrefs.GetInt(regionKey, 0) == 0)
+                    {
+                        isMapLocked = true;
+                    }
+
+                    region.SetLock(isMapLocked);
+
+                    string regionNewKey = string.Format("New_Region_{0}", info.mapType);
+                    region.SetNewIndicator(PlayerPrefs.GetInt(regionNewKey, 0) == 1);
+                }
+                activeIndex++;
+            }
+        }
     }
 
     public MapType GetSelectedMapType()
