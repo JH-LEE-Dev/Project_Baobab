@@ -521,9 +521,9 @@ public class HUD_Vehicle : MonoBehaviour
                         {
                             if (subInfo.bCanAccess)
                             {
-                                PlayerPrefs.SetInt(subKey, 1);
-                                PlayerPrefs.SetInt(subNewKey, 1);
-                                Debug.Log(string.Format("[HUD_Vehicle] SubRegion {0} auto-unlocked with New status because parent Region {1} is unlocking.", subInfo.forestType, regionInfo.mapType));
+                                PlayerPrefs.SetInt(subKey, 0);
+                                PlayerPrefs.SetInt(subNewKey, 0);
+                                Debug.Log(string.Format("[HUD_Vehicle] SubRegion {0} is kept locked (0) to trigger its own unlock animation on sub-region entry.", subInfo.forestType));
                             }
                             else
                             {
