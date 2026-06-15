@@ -21,10 +21,18 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomOnWaterSR;
     [SerializeField] private SpriteRenderer topOutlineSR;
     [SerializeField] private SpriteRenderer bottomOutlineSR;
+    [SerializeField] private SpriteRenderer topShieldOutlineSR;
+    [SerializeField] private SpriteRenderer bottomShieldOutlineSR;
     [SerializeField] private SpriteRenderer topStencilOutlineSR;
     [SerializeField] private SpriteRenderer bottomStencilOutlineSR;
+    [SerializeField] private SpriteRenderer topShieldStencilOutlineSR;
+    [SerializeField] private SpriteRenderer bottomShieldStencilOutlineSR;
     [SerializeField] private SpriteRenderer topHighlightSR;
     [SerializeField] private SpriteRenderer topHighlightOnWaterSR;
+    [SerializeField] private SpriteRenderer topShieldSR;
+    [SerializeField] private SpriteRenderer bottomShieldSR;
+    [SerializeField] private SpriteRenderer topShieldOnWaterSR;
+    [SerializeField] private SpriteRenderer bottomShieldOnWaterSR;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites;
@@ -92,6 +100,10 @@ public class TreeVisualComponent : MonoBehaviour
 
     private float topHighlightOriginalAlpha = 1f;
     private float topHighlightOnWaterOriginalAlpha = 1f;
+    private float topShieldOriginalAlpha = 1f;
+    private float bottomShieldOriginalAlpha = 1f;
+    private float topShieldOnWaterOriginalAlpha = 1f;
+    private float bottomShieldOnWaterOriginalAlpha = 1f;
 
 
     private bool isOutlineActive = false;
@@ -107,9 +119,13 @@ public class TreeVisualComponent : MonoBehaviour
     {
         cachedTransform = transform;
         if (topRenderer != null) topTransform = topRenderer.transform;
-        
+
         if (topHighlightSR != null) topHighlightOriginalAlpha = topHighlightSR.color.a;
         if (topHighlightOnWaterSR != null) topHighlightOnWaterOriginalAlpha = topHighlightOnWaterSR.color.a;
+        if (topShieldSR != null) topShieldOriginalAlpha = topShieldSR.color.a;
+        if (bottomShieldSR != null) bottomShieldOriginalAlpha = bottomShieldSR.color.a;
+        if (topShieldOnWaterSR != null) topShieldOnWaterOriginalAlpha = topShieldOnWaterSR.color.a;
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterOriginalAlpha = bottomShieldOnWaterSR.color.a;
 
         CacheSwayBasePose();
     }
@@ -123,12 +139,20 @@ public class TreeVisualComponent : MonoBehaviour
     private void LateUpdate()
     {
         // 물 위 효과가 활성화된 경우에만 실행하여 불필요한 계산 방지
-        if (!isOnWaterActive || bOnWaterOrderSet == true) return;
+        if (!isOnWaterActive || bOnWaterOrderSet) return;
 
+        UpdateOnWaterSortingOrder();
+    }
+
+    private void UpdateOnWaterSortingOrder()
+    {
+        if (cachedTransform == null) cachedTransform = transform;
         int order = (int)(cachedTransform.position.y * 100);
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.sortingOrder = order;
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.sortingOrder = order;
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.sortingOrder = order;
         bOnWaterOrderSet = true;
     }
 
@@ -168,6 +192,10 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (topHighlightSR != null) topHighlightOriginalAlpha = topHighlightSR.color.a;
         if (topHighlightOnWaterSR != null) topHighlightOnWaterOriginalAlpha = topHighlightOnWaterSR.color.a;
+        if (topShieldSR != null) topShieldOriginalAlpha = topShieldSR.color.a;
+        if (bottomShieldSR != null) bottomShieldOriginalAlpha = bottomShieldSR.color.a;
+        if (topShieldOnWaterSR != null) topShieldOnWaterOriginalAlpha = topShieldOnWaterSR.color.a;
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterOriginalAlpha = bottomShieldOnWaterSR.color.a;
 
         CacheSwayBasePose();
         ResetVisualState();
@@ -218,6 +246,30 @@ public class TreeVisualComponent : MonoBehaviour
                         topHighlightSR.sprite = null;
                     }
                 }
+
+                if (topShieldSR != null)
+                {
+                    if (index >= 0 && customVisualData.shieldTopSprites != null && index < customVisualData.shieldTopSprites.Count)
+                    {
+                        topShieldSR.sprite = customVisualData.shieldTopSprites[index];
+                    }
+                    else
+                    {
+                        topShieldSR.sprite = null;
+                    }
+                }
+
+                if (bottomShieldSR != null)
+                {
+                    if (customVisualData.shieldBottomSprites != null && customVisualData.shieldBottomSprites.Count > 0)
+                    {
+                        bottomShieldSR.sprite = customVisualData.shieldBottomSprites[0];
+                    }
+                    else
+                    {
+                        bottomShieldSR.sprite = null;
+                    }
+                }
             }
         }
         else
@@ -228,6 +280,16 @@ public class TreeVisualComponent : MonoBehaviour
             if (topHighlightSR != null)
             {
                 topHighlightSR.sprite = null;
+            }
+
+            if (topShieldSR != null)
+            {
+                topShieldSR.sprite = null;
+            }
+
+            if (bottomShieldSR != null)
+            {
+                bottomShieldSR.sprite = null;
             }
         }
 
@@ -289,11 +351,54 @@ public class TreeVisualComponent : MonoBehaviour
                     topHighlightSR.sprite = null;
                 }
             }
+
+            if (topShieldSR != null)
+            {
+                if (index >= 0 && visualData.shieldTopSprites != null && index < visualData.shieldTopSprites.Count)
+                {
+                    topShieldSR.sprite = visualData.shieldTopSprites[index];
+                }
+                else
+                {
+                    topShieldSR.sprite = null;
+                }
+            }
         }
 
         if (bottomRenderer != null)
         {
-            SetRandomSprite(bottomRenderer, visualData.bottomSprites);
+            int index = SetRandomSprite(bottomRenderer, visualData.bottomSprites);
+            if (bottomShieldSR != null)
+            {
+                if (index >= 0 && visualData.shieldBottomSprites != null && index < visualData.shieldBottomSprites.Count)
+                {
+                    bottomShieldSR.sprite = visualData.shieldBottomSprites[index];
+                }
+                else
+                {
+                    bottomShieldSR.sprite = null;
+                }
+            }
+        }
+
+        // 쉴드 및 하이라이트 관련 오브젝트 활성화
+        if (topHighlightSR != null) topHighlightSR.gameObject.SetActive(true);
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(true);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(true);
+
+        if (isOnWaterActive)
+        {
+            if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(true);
+            if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(true);
+            if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(true);
+        }
+
+        if (isOutlineActive)
+        {
+            if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(true);
+            if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(true);
+            if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(true);
+            if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(true);
         }
 
         ApplyColorSet(visualData);
@@ -331,12 +436,47 @@ public class TreeVisualComponent : MonoBehaviour
                     topHighlightSR.sprite = null;
                 }
             }
+
+            if (topShieldSR != null)
+            {
+                if (index >= 0 && visualData.shieldTopSprites != null && index < visualData.shieldTopSprites.Count)
+                {
+                    topShieldSR.sprite = visualData.shieldTopSprites[index];
+                }
+                else
+                {
+                    topShieldSR.sprite = null;
+                }
+            }
         }
 
         if (bottomRenderer != null)
         {
-            SetRandomSprite(bottomRenderer, visualData.saplingBottomSprites);
+            int index = SetRandomSprite(bottomRenderer, visualData.saplingBottomSprites);
+            if (bottomShieldSR != null)
+            {
+                if (index >= 0 && visualData.shieldBottomSprites != null && index < visualData.shieldBottomSprites.Count)
+                {
+                    bottomShieldSR.sprite = visualData.shieldBottomSprites[index];
+                }
+                else
+                {
+                    bottomShieldSR.sprite = null;
+                }
+            }
         }
+
+        // 쉴드 및 하이라이트 관련 오브젝트 비활성화
+        if (topHighlightSR != null) topHighlightSR.gameObject.SetActive(false);
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(false);
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(false);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(false);
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(false);
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(false);
+        if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(false);
+        if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(false);
+        if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(false);
+        if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(false);
 
         ApplyColorSet(visualData);
         ApplyDefaultScale();
@@ -352,6 +492,8 @@ public class TreeVisualComponent : MonoBehaviour
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(false);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(false);
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(false);
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(false);
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(false);
     }
 
     public void ActivateOnWaterObject()
@@ -361,6 +503,10 @@ public class TreeVisualComponent : MonoBehaviour
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(true);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(true);
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(true);
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(true);
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(true);
+
+        UpdateOnWaterSortingOrder();
     }
 
 
@@ -467,7 +613,24 @@ public class TreeVisualComponent : MonoBehaviour
             if (topHighlightOnWaterSR != null && topHighlightSR != null)
             {
                 topHighlightOnWaterSR.sprite = topHighlightSR.sprite;
-                // topHighlightOnWaterSR.color = topHighlightSR.color;
+            }
+
+            if (topShieldOnWaterSR != null && topShieldSR != null)
+            {
+                topShieldOnWaterSR.sprite = topShieldSR.sprite;
+            }
+
+            if (topShieldOutlineSR != null && topShieldSR != null)
+            {
+                topShieldOutlineSR.sprite = topShieldSR.sprite;
+                Color outlineColor = topShieldOutlineSR.color;
+                outlineColor.a = topShieldSR.color.a;
+                topShieldOutlineSR.color = outlineColor;
+            }
+
+            if (topShieldStencilOutlineSR != null && topShieldSR != null)
+            {
+                topShieldStencilOutlineSR.sprite = topShieldSR.sprite;
             }
         }
 
@@ -497,11 +660,29 @@ public class TreeVisualComponent : MonoBehaviour
             {
                 bottomStencilOutlineSR.sprite = bottomRenderer.sprite;
             }
+
+            if (bottomShieldOnWaterSR != null && bottomShieldSR != null)
+            {
+                bottomShieldOnWaterSR.sprite = bottomShieldSR.sprite;
+            }
+
+            if (bottomShieldOutlineSR != null && bottomShieldSR != null)
+            {
+                bottomShieldOutlineSR.sprite = bottomShieldSR.sprite;
+                Color outlineColor = bottomShieldOutlineSR.color;
+                outlineColor.a = bottomShieldSR.color.a;
+                bottomShieldOutlineSR.color = outlineColor;
+            }
+
+            if (bottomShieldStencilOutlineSR != null && bottomShieldSR != null)
+            {
+                bottomShieldStencilOutlineSR.sprite = bottomShieldSR.sprite;
+            }
         }
     }
 
     // 전달받은 렌더러에 스프라이트 리스트 중 하나를 무작위로 적용하고 선택된 인덱스를 반환한다.
-    private static int SetRandomSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
+    private static int SetRandomSprite(SpriteRenderer _renderer, System.Collections.Generic.List<Sprite> _sprites)
     {
         if (_renderer == null || _sprites == null || _sprites.Count == 0)
         {
@@ -513,10 +694,35 @@ public class TreeVisualComponent : MonoBehaviour
         return index;
     }
 
+    // 전달받은 렌더러에 스프라이트 배열 중 하나를 무작위로 적용하고 선택된 인덱스를 반환한다.
+    private static int SetRandomSprite(SpriteRenderer _renderer, Sprite[] _sprites)
+    {
+        if (_renderer == null || _sprites == null || _sprites.Length == 0)
+        {
+            return -1;
+        }
+
+        int index = Random.Range(0, _sprites.Length);
+        _renderer.sprite = _sprites[index];
+        return index;
+    }
+
     // 전달받은 렌더러에 스프라이트 리스트 중 첫 번째(기본) 스프라이트를 고정 적용하고 0을 반환한다.
-    private static int SetFirstSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
+    private static int SetFirstSprite(SpriteRenderer _renderer, System.Collections.Generic.List<Sprite> _sprites)
     {
         if (_renderer == null || _sprites == null || _sprites.Count == 0)
+        {
+            return -1;
+        }
+
+        _renderer.sprite = _sprites[0];
+        return 0;
+    }
+
+    // 전달받은 렌더러에 스프라이트 배열 중 첫 번째(기본) 스프라이트를 고정 적용하고 0을 반환한다.
+    private static int SetFirstSprite(SpriteRenderer _renderer, Sprite[] _sprites)
+    {
+        if (_renderer == null || _sprites == null || _sprites.Length == 0)
         {
             return -1;
         }
@@ -708,6 +914,20 @@ public class TreeVisualComponent : MonoBehaviour
             bottomOutlineSR.color = oBotColor;
         }
 
+        if (topShieldOutlineSR != null)
+        {
+            Color oTopColor = topShieldOutlineSR.color;
+            oTopColor.a = _alpha;
+            topShieldOutlineSR.color = oTopColor;
+        }
+
+        if (bottomShieldOutlineSR != null)
+        {
+            Color oBotColor = bottomShieldOutlineSR.color;
+            oBotColor.a = _alpha;
+            bottomShieldOutlineSR.color = oBotColor;
+        }
+
         if (topHighlightSR != null)
         {
             Color thColor = topHighlightSR.color;
@@ -720,6 +940,34 @@ public class TreeVisualComponent : MonoBehaviour
             Color thowColor = topHighlightOnWaterSR.color;
             thowColor.a = topHighlightOnWaterOriginalAlpha * _alpha;
             topHighlightOnWaterSR.color = thowColor;
+        }
+
+        if (topShieldSR != null)
+        {
+            Color tsColor = topShieldSR.color;
+            tsColor.a = topShieldOriginalAlpha * _alpha;
+            topShieldSR.color = tsColor;
+        }
+
+        if (bottomShieldSR != null)
+        {
+            Color bsColor = bottomShieldSR.color;
+            bsColor.a = bottomShieldOriginalAlpha * _alpha;
+            bottomShieldSR.color = bsColor;
+        }
+
+        if (topShieldOnWaterSR != null)
+        {
+            Color tsowColor = topShieldOnWaterSR.color;
+            tsowColor.a = topShieldOnWaterOriginalAlpha * _alpha;
+            topShieldOnWaterSR.color = tsowColor;
+        }
+
+        if (bottomShieldOnWaterSR != null)
+        {
+            Color bsowColor = bottomShieldOnWaterSR.color;
+            bsowColor.a = bottomShieldOnWaterOriginalAlpha * _alpha;
+            bottomShieldOnWaterSR.color = bsowColor;
         }
     }
 
@@ -735,8 +983,14 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
         if (topOutlineSR != null) topOutlineSR.DOKill();
         if (bottomOutlineSR != null) bottomOutlineSR.DOKill();
+        if (topShieldOutlineSR != null) topShieldOutlineSR.DOKill();
+        if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.DOKill();
         if (topHighlightSR != null) topHighlightSR.DOKill();
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.DOKill();
+        if (topShieldSR != null) topShieldSR.DOKill();
+        if (bottomShieldSR != null) bottomShieldSR.DOKill();
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.DOKill();
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.DOKill();
 
         ApplyAlpha(_alpha);
     }
@@ -764,8 +1018,14 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomOnWaterSR != null) bottomOnWaterSR.DOKill();
         if (topOutlineSR != null) topOutlineSR.DOKill();
         if (bottomOutlineSR != null) bottomOutlineSR.DOKill();
+        if (topShieldOutlineSR != null) topShieldOutlineSR.DOKill();
+        if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.DOKill();
         if (topHighlightSR != null) topHighlightSR.DOKill();
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.DOKill();
+        if (topShieldSR != null) topShieldSR.DOKill();
+        if (bottomShieldSR != null) bottomShieldSR.DOKill();
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.DOKill();
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.DOKill();
 
         currentAlpha = topRenderer != null ? topRenderer.color.a : 1f;
 
@@ -793,6 +1053,46 @@ public class TreeVisualComponent : MonoBehaviour
     public void EnableOutline()
     {
         bDisableOutline = false;
+    }
+
+    public void SetCustomSortingLayer()
+    {
+        topShieldSR.sortingOrder = topRenderer.sortingOrder + 1;
+        bottomShieldSR.sortingOrder = bottomRenderer.sortingOrder + 1;
+        topShieldOnWaterSR.sortingOrder = topOnWaterSR.sortingOrder + 1;
+        bottomShieldOnWaterSR.sortingOrder = bottomOnWaterSR.sortingOrder + 1;
+    }
+
+    public void ShieldBroken()
+    {
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(false);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(false);
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(false);
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(false);
+        if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(false);
+        if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(false);
+        if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(false);
+        if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(false);
+    }
+
+    public void ShieldRegened()
+    {
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(true);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(true);
+
+        if (isOnWaterActive)
+        {
+            if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(true);
+            if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(true);
+        }
+
+        if (isOutlineActive)
+        {
+            if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(true);
+            if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(true);
+            if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(true);
+            if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(true);
+        }
     }
 
     #endregion

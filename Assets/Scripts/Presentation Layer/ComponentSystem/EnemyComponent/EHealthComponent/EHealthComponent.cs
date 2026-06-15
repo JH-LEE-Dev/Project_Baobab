@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class EHealthComponent : EComponent, IHealthComponent
 {
+    public event Action ShieldBrokenEvent;
+    public event Action ShieldRegenedEvent;
     public event Action EnemyIsDeadEvent;
 
     //외부 의존성
@@ -22,6 +24,7 @@ public class EHealthComponent : EComponent, IHealthComponent
     private float disableTimestamp;
     private float lastHitTimestamp;
     private bool isSetup;
+    private bool isShieldBroken;
 
     private SPRegenStrategySO regenStrategy;
 
@@ -37,6 +40,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         spRegen = _spRegen;
         currentSP = maxSP;
         prevSP = maxSP;
+        isShieldBroken = (maxSP <= 0f);
 
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
@@ -52,6 +56,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         prevHealth = maxHealth;
         currentSP = maxSP;
         prevSP = maxSP;
+        isShieldBroken = (maxSP <= 0f);
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
     }
@@ -62,6 +67,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         prevHealth = maxHealth;
         currentSP = maxSP;
         prevSP = maxSP;
+        isShieldBroken = (maxSP <= 0f);
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
     }
@@ -85,6 +91,12 @@ public class EHealthComponent : EComponent, IHealthComponent
             {
                 remainingDamage -= currentSP;
                 currentSP = 0f;
+            }
+
+            if (currentSP <= 0f && !isShieldBroken)
+            {
+                isShieldBroken = true;
+                ShieldBrokenEvent?.Invoke();
             }
         }
 
@@ -147,6 +159,12 @@ public class EHealthComponent : EComponent, IHealthComponent
             {
                 prevSP = currentSP;
                 currentSP = newSP;
+
+                if (currentSP > 0f && isShieldBroken)
+                {
+                    isShieldBroken = false;
+                    ShieldRegenedEvent?.Invoke();
+                }
             }
             disableTimestamp = -1f;
         }
@@ -163,6 +181,12 @@ public class EHealthComponent : EComponent, IHealthComponent
         {
             prevSP = currentSP;
             currentSP = regenStrategy.CalculateRegen(currentSP, maxSP, spRegen, Time.deltaTime, lastHitTimestamp);
+
+            if (currentSP > 0f && isShieldBroken)
+            {
+                isShieldBroken = false;
+                ShieldRegenedEvent?.Invoke();
+            }
         }
     }
 }

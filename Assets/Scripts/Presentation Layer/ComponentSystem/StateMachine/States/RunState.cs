@@ -38,11 +38,17 @@ public class RunState : CharacterState
 
     public override void Update()
     {
+        if (bActivated == false)
+            return;
+
         HandleDelayedDirectionUpdate();
     }
 
     public override void FixedUpdate()
     {
+        if (bActivated == false)
+            return;
+
         ApplyMovement();
         UpdateOccupation();
     }
@@ -142,7 +148,7 @@ public class RunState : CharacterState
         float speed = groundData.maxSpeed * ctx.characterStat.speed;
 
         Vector2 targetVel = inputDir * speed;
-        CircleCollider2D circleCol = character.col;
+
         character.rb.linearVelocity = Vector2.MoveTowards(
           character.rb.linearVelocity,
           targetVel,

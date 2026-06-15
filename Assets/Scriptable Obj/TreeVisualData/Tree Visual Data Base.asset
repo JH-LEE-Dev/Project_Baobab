@@ -23,6 +23,8 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
     - {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
     - {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+    shieldTopSprites: []
+    shieldBottomSprites: []
     saplingTopSprites:
     - {fileID: 21300000, guid: 922595c7777a8bf4a91a4c3decf2ddb3, type: 3}
     saplingBottomSprites:
@@ -47,6 +49,8 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
     - {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
     - {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+    shieldTopSprites: []
+    shieldBottomSprites: []
     saplingTopSprites:
     - {fileID: 21300000, guid: 85b31df75be58564496862d060f09b1c, type: 3}
     saplingBottomSprites:
@@ -71,6 +75,8 @@ MonoBehaviour:
     - {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
     - {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
     - {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+    shieldTopSprites: []
+    shieldBottomSprites: []
     saplingTopSprites:
     - {fileID: 21300000, guid: 922595c7777a8bf4a91a4c3decf2ddb3, type: 3}
     saplingBottomSprites:
@@ -93,6 +99,12 @@ MonoBehaviour:
     bottomSprites:
     - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
     - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    shieldTopSprites:
+    - {fileID: 21300000, guid: d623ca3b0d1f78a47a89f1c80aed94c4, type: 3}
+    - {fileID: 21300000, guid: 35d7362e819d0744e9b33410617a5d7c, type: 3}
+    shieldBottomSprites:
+    - {fileID: 21300000, guid: 207cf87f1d2e02d41b8a1af3c1545fbd, type: 3}
+    - {fileID: 21300000, guid: 8d6b9d1cf3507d4478bb111dc31fb3e4, type: 3}
     saplingTopSprites:
     - {fileID: 21300000, guid: f60a119ba5fe7d94da98fe9b81edc06e, type: 3}
     saplingBottomSprites:
@@ -114,6 +126,12 @@ MonoBehaviour:
     bottomSprites:
     - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
     - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    shieldTopSprites:
+    - {fileID: 21300000, guid: d623ca3b0d1f78a47a89f1c80aed94c4, type: 3}
+    - {fileID: 21300000, guid: 35d7362e819d0744e9b33410617a5d7c, type: 3}
+    shieldBottomSprites:
+    - {fileID: 21300000, guid: 207cf87f1d2e02d41b8a1af3c1545fbd, type: 3}
+    - {fileID: 21300000, guid: 8d6b9d1cf3507d4478bb111dc31fb3e4, type: 3}
     saplingTopSprites:
     - {fileID: 21300000, guid: 922595c7777a8bf4a91a4c3decf2ddb3, type: 3}
     saplingBottomSprites:
@@ -135,6 +153,8 @@ MonoBehaviour:
     bottomSprites:
     - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
     - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    shieldTopSprites: []
+    shieldBottomSprites: []
     saplingTopSprites:
     - {fileID: 21300000, guid: f60a119ba5fe7d94da98fe9b81edc06e, type: 3}
     saplingBottomSprites:

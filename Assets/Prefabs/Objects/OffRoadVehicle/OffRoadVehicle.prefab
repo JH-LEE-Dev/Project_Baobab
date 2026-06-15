@@ -1745,6 +1745,7 @@ MonoBehaviour:
   containerCarryPoint: {fileID: 8170189756255339106}
   containerDropPoint: {fileID: 7940638458654477517}
   CharacterRidePoint: {fileID: 5304305252831328137}
+  col: {fileID: 0}
   baseSR: {fileID: 8911054006785933061}
   wheelStencilSR: {fileID: 3594479015764017572}
   baseOutlineStencilSR: {fileID: 7560987242974663247}

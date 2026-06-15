@@ -34,6 +34,11 @@ public class InputManager : MonoBehaviour
         inputReader.PauseMove(_bPause);
     }
 
+    public void ClearPrevKeyboardInput()
+    {
+        inputReader.ClearPrevKeyboardInput();
+    }
+
     public void SetCursorHoveredOnUI(bool _bCursorHoveredOnUI)
     {
         bCursorHoveredOnUI = _bCursorHoveredOnUI;
