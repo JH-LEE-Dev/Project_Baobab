@@ -261,6 +261,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         healthComponent.EnemyIsDeadEvent -= TreeIsDead;
         healthComponent.EnemyIsDeadEvent += TreeIsDead;
+
+        healthComponent.ShieldBrokenEvent -= treeVisualComponent.ShieldBroken;
+        healthComponent.ShieldBrokenEvent += treeVisualComponent.ShieldBroken;
+
+        healthComponent.ShieldRegenedEvent -= treeVisualComponent.ShieldRegened;
+        healthComponent.ShieldRegenedEvent += treeVisualComponent.ShieldRegened;
     }
 
     private void ReleaseEvents()
@@ -337,6 +343,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public void SetSortOrder()
     {
         customSortable.ManualLateUpdate();
+        //treeVisualComponent.SetCustomSortingLayer();
     }
 
     public TreeType GetTreeType()

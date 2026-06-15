@@ -1,5 +1,4 @@
 using System;
-using PresentationLayer.UISystem.UIView.MenuPopup.Map;
 using UnityEngine;
 
 public class UIView_MenuPopup : UIView

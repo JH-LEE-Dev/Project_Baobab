@@ -19,6 +19,8 @@ public struct TreeVisualData
     public TreeType treeType;
     public List<Sprite> topSprites;
     public List<Sprite> bottomSprites;
+    public List<Sprite> shieldTopSprites;
+    public List<Sprite> shieldBottomSprites;
     public List<Sprite> saplingTopSprites;
     public List<Sprite> saplingBottomSprites;
     public List<Sprite> highlightSprites;
