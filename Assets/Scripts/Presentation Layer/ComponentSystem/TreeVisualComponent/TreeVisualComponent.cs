@@ -177,7 +177,7 @@ public class TreeVisualComponent : MonoBehaviour
         }
 #endif
 
-        RefreshVisualPreview();
+        //RefreshVisualPreview();
     }
 
     #endregion

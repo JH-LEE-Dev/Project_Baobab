@@ -9,6 +9,7 @@ public class CustomSortable : MonoBehaviour
     [SerializeField] private List<SpriteRenderer> spriteRenderers = new List<SpriteRenderer>(4);
 
     // 내부 의존성 및 설정
+    private static readonly List<SpriteRenderer> tempRenderers = new List<SpriteRenderer>(32);
     private SortingGroup sortingGroup;
     [SerializeField] private int offset;
     [SerializeField] private int precision = 100;
@@ -53,6 +54,21 @@ public class CustomSortable : MonoBehaviour
         {
             AddSpriteRenderer(_renderers[i]);
         }
+    }
+
+    public void AddChildSpriteRenderers(GameObject _targetObject)
+    {
+        if (_targetObject == null) return;
+
+        tempRenderers.Clear();
+        _targetObject.GetComponentsInChildren<SpriteRenderer>(true, tempRenderers);
+
+        for (int i = 0; i < tempRenderers.Count; i++)
+        {
+            AddSpriteRenderer(tempRenderers[i]);
+        }
+
+        tempRenderers.Clear();
     }
 
     public void SetHeight(float _height)
