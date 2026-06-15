@@ -270,8 +270,8 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private string GetMapTypeString(MapType _type) => _type switch
     {
         MapType.Town => townString,
-        MapType.VegetatedForest => plainsString,
-        MapType.MongleSporeForest => forestString,
+        MapType.WideGreenForest => plainsString,
+        MapType.FluffySporeForest => forestString,
         _ => noneString
     };
 

@@ -23,52 +23,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
     [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
 
-    [Header("타일 에셋")]
-    [SerializeField] private TileBase waterTile;
-    [SerializeField] private TileBase waterTile_BorderRU;
-    [SerializeField] private TileBase waterTile_BorderRD;
-    [SerializeField] private TileBase waterTile_BorderLU;
-    [SerializeField] private TileBase waterTile_BorderLD;
-    [SerializeField] private TileBase waterTile_BorderRU_RD;
-    [SerializeField] private TileBase waterTile_BorderRU_LU;
-    [SerializeField] private TileBase waterTile_BorderRU_LD;
-    [SerializeField] private TileBase waterTile_BorderRD_LU;
-    [SerializeField] private TileBase waterTile_BorderRD_LD;
-    [SerializeField] private TileBase waterTile_BorderLU_LD;
-    [SerializeField] private TileBase waterTile_BorderRU_RD_LU;
-    [SerializeField] private TileBase waterTile_BorderRU_RD_LD;
-    [SerializeField] private TileBase waterTile_BorderRU_LU_LD;
-    [SerializeField] private TileBase waterTile_BorderRD_LU_LD;
-    [SerializeField] private TileBase waterTile_BorderAll;
-
-    [Header("물 코너 타일")]
-    [SerializeField] private TileBase waterTileCornerU;
-    [SerializeField] private TileBase waterTileCornerR;
-    [SerializeField] private TileBase waterTileCornerD;
-    [SerializeField] private TileBase waterTileCornerL;
-    [SerializeField] private TileBase waterTileCornerUR;
-    [SerializeField] private TileBase waterTileCornerUD;
-    [SerializeField] private TileBase waterTileCornerUL;
-    [SerializeField] private TileBase waterTileCornerRD;
-    [SerializeField] private TileBase waterTileCornerRL;
-    [SerializeField] private TileBase waterTileCornerDL;
-    [SerializeField] private TileBase waterTileCornerURD;
-    [SerializeField] private TileBase waterTileCornerURL;
-    [SerializeField] private TileBase waterTileCornerUDL;
-    [SerializeField] private TileBase waterTileCornerRDL;
-    [SerializeField] private TileBase waterTileCornerAll;
-
-    [SerializeField] private TileBase sandTile;
-    [SerializeField] private TileBase grassTile;
-    [SerializeField] private TileBase mountainTile;
-    [SerializeField] private TileBase treeCollisionTile;
-    [SerializeField] private List<TileBase> grassDecoTiles;
-    [SerializeField] private List<TileBase> groundDecoTiles;
-    [SerializeField] private List<TileBase> rockDecoTiles;
-    [SerializeField] private List<TileBase> waterDecoTiles;
-    [SerializeField] private List<TileBase> insectDecoTiles;
-    [SerializeField] private TileBase stencilTile;
-    [SerializeField] private TileBase groundStencilTile;
+    [Header("타일 데이터")]
+    [SerializeField] private StageTileDataSO stageTileData;
 
     private AnimatedObjGenerator animatedObjGenerator;
 
@@ -268,13 +224,13 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     public void SetTreeCollisionTile(Vector3 _worldPos)
     {
-        if (collisionTilemap == null || treeCollisionTile == null) return;
+        if (collisionTilemap == null || stageTileData == null || stageTileData.TreeCollisionTile == null) return;
 
         Vector3 adjustedPos = _worldPos;
         adjustedPos.y -= halfCellY;
 
         Vector3Int cellPos = collisionTilemap.WorldToCell(adjustedPos);
-        collisionTilemap.SetTile(cellPos, treeCollisionTile);
+        collisionTilemap.SetTile(cellPos, stageTileData.TreeCollisionTile);
 
         if (cellPos.x < 0 || cellPos.x >= width || cellPos.y < 0 || cellPos.y >= height) return;
 
@@ -466,10 +422,10 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             {
                 waterTiles[i] = GetWaterTile(x, y);
                 waterCornerTiles[i] = GetWaterCornerTile(x, y);
-                waterCollisionTiles[i] = treeCollisionTile;
-                waterStencilTiles[i] = stencilTile;
+                waterCollisionTiles[i] = stageTileData != null ? stageTileData.TreeCollisionTile : null;
+                waterStencilTiles[i] = stageTileData != null ? stageTileData.StencilTile : null;
 
-                if (waterDecoTiles != null && waterDecoTiles.Count > 0)
+                if (stageTileData != null && stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0)
                 {
                     bool _isDeepWater = true;
                     for (int _dy = -1; _dy <= 1; _dy++)
@@ -488,7 +444,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                     if (_isDeepWater)
                     {
-                        decoTilesToApply[i] = waterDecoTiles[UnityEngine.Random.Range(0, waterDecoTiles.Count)];
+                        decoTilesToApply[i] = stageTileData.WaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
                     }
                 }
             }
@@ -496,7 +452,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             {
                 if (isShoreline[i])
                 {
-                    groundStencilTiles[i] = groundStencilTile;
+                    groundStencilTiles[i] = stageTileData != null ? stageTileData.GroundStencilTile : null;
                 }
                 Vector3 pos = GetWorldPos(i);
 
@@ -506,22 +462,22 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _isSand = isShoreline[i] || v < sandThreshold;
                 if (_isSand)
                 {
-                    groundTiles[i] = sandTile;
+                    groundTiles[i] = stageTileData != null ? stageTileData.SandTile : null;
                 }
                 else
                 {
-                    groundTiles[i] = grassTile;
+                    groundTiles[i] = stageTileData != null ? stageTileData.GrassTile : null;
                 }
 
                 bool _hasRockDeco = false;
-                if (rockDecoTiles != null && rockDecoTiles.Count > 0 && UnityEngine.Random.value < 0.0005f)
+                if (stageTileData != null && stageTileData.RockDecoTiles != null && stageTileData.RockDecoTiles.Count > 0 && UnityEngine.Random.value < 0.0005f)
                 {
-                    int randomIndex = UnityEngine.Random.Range(0, rockDecoTiles.Count);
+                    int randomIndex = UnityEngine.Random.Range(0, stageTileData.RockDecoTiles.Count);
                     if (!inSafeZone)
                     {
-                        decoTilesToApply[i] = rockDecoTiles[randomIndex];
+                        decoTilesToApply[i] = stageTileData.RockDecoTiles[randomIndex];
                         _hasRockDeco = true;
-                        rockCollisionTiles[i] = treeCollisionTile;
+                        rockCollisionTiles[i] = stageTileData.TreeCollisionTile;
                     }
                 }
 
@@ -539,18 +495,18 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 if (false == _hasRockDeco && false == _hasAnimatedObj)
                 {
                     float _groundDecoProb = _isSand ? 0.05f : 0.01f;
-                    if (groundDecoTiles != null && groundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
+                    if (stageTileData != null && stageTileData.GroundDecoTiles != null && stageTileData.GroundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
                     {
-                        decoTilesToApply[i] = groundDecoTiles[UnityEngine.Random.Range(0, groundDecoTiles.Count)];
+                        decoTilesToApply[i] = stageTileData.GroundDecoTiles[UnityEngine.Random.Range(0, stageTileData.GroundDecoTiles.Count)];
                         _hasGroundDeco = true;
                     }
                 }
 
                 if (false == _isSand && false == _hasRockDeco && false == _hasAnimatedObj && false == _hasGroundDeco)
                 {
-                    if (grassDecoTiles != null && grassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.35f)
+                    if (stageTileData != null && stageTileData.GrassDecoTiles != null && stageTileData.GrassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.35f)
                     {
-                        decoTilesToApply[i] = grassDecoTiles[UnityEngine.Random.Range(0, grassDecoTiles.Count)];
+                        decoTilesToApply[i] = stageTileData.GrassDecoTiles[UnityEngine.Random.Range(0, stageTileData.GrassDecoTiles.Count)];
                     }
                 }
 
@@ -586,6 +542,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private TileBase GetWaterTile(int _x, int _y)
     {
+        if (stageTileData == null) return null;
+
         int mask = 0;
         if (IsLand(_x + 1, _y)) mask |= 1;  // RU
         if (IsLand(_x, _y - 1)) mask |= 2;  // RD
@@ -594,27 +552,29 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         switch (mask)
         {
-            case 1: return waterTile_BorderRU;
-            case 2: return waterTile_BorderRD;
-            case 3: return waterTile_BorderRU_RD;
-            case 4: return waterTile_BorderLU;
-            case 5: return waterTile_BorderRU_LU;
-            case 6: return waterTile_BorderRD_LU;
-            case 7: return waterTile_BorderRU_RD_LU;
-            case 8: return waterTile_BorderLD;
-            case 9: return waterTile_BorderRU_LD;
-            case 10: return waterTile_BorderRD_LD;
-            case 11: return waterTile_BorderRU_RD_LD;
-            case 12: return waterTile_BorderLU_LD;
-            case 13: return waterTile_BorderRU_LU_LD;
-            case 14: return waterTile_BorderRD_LU_LD;
-            case 15: return waterTile_BorderAll;
-            default: return waterTile;
+            case 1: return stageTileData.WaterTileBorderRU;
+            case 2: return stageTileData.WaterTileBorderRD;
+            case 3: return stageTileData.WaterTileBorderRURD;
+            case 4: return stageTileData.WaterTileBorderLU;
+            case 5: return stageTileData.WaterTileBorderRULU;
+            case 6: return stageTileData.WaterTileBorderRDLU;
+            case 7: return stageTileData.WaterTileBorderRURDLU;
+            case 8: return stageTileData.WaterTileBorderLD;
+            case 9: return stageTileData.WaterTileBorderRULD;
+            case 10: return stageTileData.WaterTileBorderRDLD;
+            case 11: return stageTileData.WaterTileBorderRURDLD;
+            case 12: return stageTileData.WaterTileBorderLULD;
+            case 13: return stageTileData.WaterTileBorderRULULD;
+            case 14: return stageTileData.WaterTileBorderRDLULD;
+            case 15: return stageTileData.WaterTileBorderAll;
+            default: return stageTileData.WaterTile;
         }
     }
 
     private TileBase GetWaterCornerTile(int _x, int _y)
     {
+        if (stageTileData == null) return null;
+
         int cornerMask = 0;
         if (IsLand(_x + 1, _y + 1) && !IsLand(_x + 1, _y) && !IsLand(_x, _y + 1)) cornerMask |= 1;  // U
         if (IsLand(_x + 1, _y - 1) && !IsLand(_x + 1, _y) && !IsLand(_x, _y - 1)) cornerMask |= 2;  // R
@@ -623,21 +583,21 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         switch (cornerMask)
         {
-            case 1: return waterTileCornerU;
-            case 2: return waterTileCornerR;
-            case 3: return waterTileCornerUR;
-            case 4: return waterTileCornerD;
-            case 5: return waterTileCornerUD;
-            case 6: return waterTileCornerRD;
-            case 7: return waterTileCornerURD;
-            case 8: return waterTileCornerL;
-            case 9: return waterTileCornerUL;
-            case 10: return waterTileCornerRL;
-            case 11: return waterTileCornerURL;
-            case 12: return waterTileCornerDL;
-            case 13: return waterTileCornerUDL;
-            case 14: return waterTileCornerRDL;
-            case 15: return waterTileCornerAll;
+            case 1: return stageTileData.WaterTileCornerU;
+            case 2: return stageTileData.WaterTileCornerR;
+            case 3: return stageTileData.WaterTileCornerUR;
+            case 4: return stageTileData.WaterTileCornerD;
+            case 5: return stageTileData.WaterTileCornerUD;
+            case 6: return stageTileData.WaterTileCornerRD;
+            case 7: return stageTileData.WaterTileCornerURD;
+            case 8: return stageTileData.WaterTileCornerL;
+            case 9: return stageTileData.WaterTileCornerUL;
+            case 10: return stageTileData.WaterTileCornerRL;
+            case 11: return stageTileData.WaterTileCornerURL;
+            case 12: return stageTileData.WaterTileCornerDL;
+            case 13: return stageTileData.WaterTileCornerUDL;
+            case 14: return stageTileData.WaterTileCornerRDL;
+            case 15: return stageTileData.WaterTileCornerAll;
             default: return null;
         }
     }
