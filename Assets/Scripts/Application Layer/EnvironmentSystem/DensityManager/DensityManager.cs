@@ -311,6 +311,16 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 };
                 mapInfo.forestDatas.Add(forestInfo);
             }
+
+            if (i == 0)
+            {
+                mapInfo.bCanAccess = true;
+            }
+            else
+            {
+                mapInfo.bCanAccess = mapInfo.forestDatas.Count > 0 ? mapInfo.forestDatas[0].bCanAccess : false;
+            }
+
             cachedDatabase.mapDatas.Add(mapInfo);
         }
         isDatabaseInitialized = true;
@@ -348,6 +358,17 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 // 구조체 업데이트 (Write back to list)
                 mapInfo.forestDatas[j] = forestInfo;
             }
+
+            if (i == 0)
+            {
+                mapInfo.bCanAccess = true;
+            }
+            else
+            {
+                mapInfo.bCanAccess = mapInfo.forestDatas.Count > 0 ? mapInfo.forestDatas[0].bCanAccess : false;
+            }
+
+            cachedDatabase.mapDatas[i] = mapInfo;
         }
 
         return cachedDatabase;

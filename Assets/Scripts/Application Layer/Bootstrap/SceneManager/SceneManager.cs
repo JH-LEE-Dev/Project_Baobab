@@ -4,20 +4,26 @@ public enum ForestType
 {
     None,
     InTown,
-    VegetatedForest_1,
-    VegetatedForest_2,
-    VegetatedForest_3,
-    MongleSporeForest_1,
-    MongleSporeForest_2,
-    MongleSporeForest_3,
+    WideGreenForest_1,
+    WideGreenForest_2,
+    WideGreenForest_3,
+    FluffySporeForest_1,
+    FluffySporeForest_2,
+    FluffySporeForest_3,
+    StarrootForest_1,
+    StarrootForest_2,
+    StarrootForest_3,
+    MagmaForest_1,
+    MagmaForest_2,
+    MagmaForest_3,
 }
 
 public enum MapType
 {
     None,
     Town,
-    VegetatedForest,
-    MongleSporeForest,
+    WideGreenForest,
+    FluffySporeForest,
     StarrootForest,
     MagmaForest,
 }

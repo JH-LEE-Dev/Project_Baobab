@@ -78,6 +78,7 @@ public struct MapEnvironmentDataInfo
 {
     public MapType mapType;
     public List<ForestEnvironmentInfo> forestDatas;
+    public bool bCanAccess;
 }
 
 [System.Serializable]
