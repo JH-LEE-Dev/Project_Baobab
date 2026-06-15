@@ -317,7 +317,19 @@ public class HUD_Vehicle : MonoBehaviour
         }
         else
         {
-            if (MapType.None != lastSelectedMapType)
+            MapType pendingSubRegionMapType = FindPendingSubRegionUnlockMapType();
+
+            if (MapType.None != pendingSubRegionMapType)
+            {
+                lastSelectedMapType = pendingSubRegionMapType;
+                RestoreToSelectedRegion(pendingSubRegionMapType);
+
+                if (null != cancelButton)
+                {
+                    cancelButton.PlayAppearAnimation(homeButtonAppearDelay + 0.1f);
+                }
+            }
+            else if (MapType.None != lastSelectedMapType)
             {
                 RestoreToSelectedRegion(lastSelectedMapType);
 
@@ -506,6 +518,54 @@ public class HUD_Vehicle : MonoBehaviour
 
         Debug.Log("[HUD_Vehicle] CheckPendingRegionUnlocks - Scan Finished. No pending region unlocks found.");
         return false;
+    }
+
+    private MapType FindPendingSubRegionUnlockMapType()
+    {
+        if (null == mapDataProvider)
+        {
+            return MapType.None;
+        }
+
+        MapEnvironmentDatabase db = mapDataProvider.GetMapEnvironmentDatabase();
+        if (null == db.mapDatas)
+        {
+            return MapType.None;
+        }
+
+        for (int i = 0; i < db.mapDatas.Count; i++)
+        {
+            MapEnvironmentDataInfo regionInfo = db.mapDatas[i];
+            if (MapType.Town == regionInfo.mapType)
+            {
+                continue;
+            }
+
+            string regionKey = regionKeyMap.TryGetValue(regionInfo.mapType, out string rKey) ? rKey : string.Empty;
+            if (string.IsNullOrEmpty(regionKey) || 0 == PlayerPrefs.GetInt(regionKey, 0))
+            {
+                continue;
+            }
+
+            if (null != regionInfo.forestDatas)
+            {
+                for (int j = 0; j < regionInfo.forestDatas.Count; j++)
+                {
+                    ForestEnvironmentInfo subInfo = regionInfo.forestDatas[j];
+                    string subKey = subRegionKeyMap.TryGetValue(subInfo.forestType, out string sKey) ? sKey : string.Empty;
+                    if (!string.IsNullOrEmpty(subKey))
+                    {
+                        if (true == subInfo.bCanAccess && 0 == PlayerPrefs.GetInt(subKey, 0))
+                        {
+                            Debug.Log(string.Format("[HUD_Vehicle] Found pending subregion unlock ({0}) under map ({1})", subInfo.forestType, regionInfo.mapType));
+                            return regionInfo.mapType;
+                        }
+                    }
+                }
+            }
+        }
+
+        return MapType.None;
     }
 
     private void BuildRegionUnlockQueue()

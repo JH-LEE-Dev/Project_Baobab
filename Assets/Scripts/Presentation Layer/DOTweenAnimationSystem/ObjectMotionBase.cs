@@ -6,6 +6,13 @@ using DG.Tweening;
 
 namespace PresentationLayer.DOTweenAnimationSystem
 {
+    [System.Serializable]
+    public struct MotionKeyEvent
+    {
+        public float triggerTime;
+        public string eventTag;
+    }
+
     public abstract class ObjectMotionBase : MonoBehaviour
     {
         // //구조체 정의
@@ -38,20 +45,28 @@ namespace PresentationLayer.DOTweenAnimationSystem
         [Header("Debug Settings")]
         [SerializeField] protected bool resetOnValidateInPlayMode = true;
 
+        [Header("Keyframe Events")]
+        [SerializeField] protected List<MotionKeyEvent> keyEvents = new List<MotionKeyEvent>();
+
         // //내부 의존성
         protected Tween currentTween;
         protected UnityAction onStartAction;
         protected UnityAction onCompleteAction;
+        protected System.Action<string> currentKeyEventAction;
 
         protected List<TargetInitialState> stateCache = new List<TargetInitialState>(4);
 
         public virtual bool Play(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete, bool bReset)
         {
             if (null == _targets || 0 == _targets.Count)
+            {
                 return false;
+            }
 
             if (true == bReset)
+            {
                 ResetToInitialState();
+            }
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
@@ -64,10 +79,14 @@ namespace PresentationLayer.DOTweenAnimationSystem
         public virtual bool PlayBackward(List<MotionTarget> _targets, UnityAction _onStart, UnityAction _onComplete, bool bReset)
         {
             if (null == _targets || 0 == _targets.Count)
+            {
                 return false;
+            }
 
             if (true == bReset)
+            {
                 ResetToInitialState();
+            }
 
             stateCache.Clear();
             Sequence _seq = StopAndBinding(_onStart, _onComplete);
@@ -112,9 +131,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
         protected virtual void ApplyTweenSettings(Tween _tween)
         {
             if (null == _tween)
+            {
                 return;
+            }
 
             currentTween = _tween;
+
+            Sequence _seq = _tween as Sequence;
+            if (null != _seq)
+            {
+                BindKeyEvents(_seq, currentKeyEventAction);
+            }
+
             currentTween.SetDelay(forwardDelay)
                         .OnStart(InternalOnStart)
                         .OnComplete(InternalOnComplete);
@@ -123,9 +151,18 @@ namespace PresentationLayer.DOTweenAnimationSystem
         protected virtual void ApplyBackwardTweenSettings(Tween _tween)
         {
             if (null == _tween)
+            {
                 return;
+            }
 
             currentTween = _tween;
+
+            Sequence _seq = _tween as Sequence;
+            if (null != _seq)
+            {
+                BindKeyEvents(_seq, currentKeyEventAction);
+            }
+
             currentTween.SetDelay(backwardDelay)
                         .OnStart(InternalOnStart)
                         .OnComplete(InternalOnComplete);
@@ -257,6 +294,36 @@ namespace PresentationLayer.DOTweenAnimationSystem
         {
             if (null != currentTween && currentTween.IsActive())
                 currentTween.Kill();
+        }
+
+        public void SetKeyEventAction(System.Action<string> _onKeyEvent)
+        {
+            currentKeyEventAction = _onKeyEvent;
+        }
+
+        protected void BindKeyEvents(Sequence _seq, System.Action<string> _onKeyEvent)
+        {
+            if (null == _onKeyEvent || null == keyEvents || 0 == keyEvents.Count)
+            {
+                return;
+            }
+
+            for (int _i = 0; _i < keyEvents.Count; _i++)
+            {
+                MotionKeyEvent _keyEvent = keyEvents[_i];
+                if (true == string.IsNullOrEmpty(_keyEvent.eventTag))
+                {
+                    continue;
+                }
+
+                float _time = _keyEvent.triggerTime;
+                string _tag = _keyEvent.eventTag;
+
+                _seq.InsertCallback(_time, () =>
+                {
+                    _onKeyEvent.Invoke(_tag);
+                });
+            }
         }
     }
 }

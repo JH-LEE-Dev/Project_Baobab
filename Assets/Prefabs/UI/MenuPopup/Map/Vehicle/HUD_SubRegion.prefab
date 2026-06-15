@@ -55,6 +55,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     maxSkew: {x: 0.8, y: -0.25}
     skewTimeRatio: 0.2
@@ -412,12 +413,69 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
-  shrinkScaleMultiplier: 0.4
+  keyEvents: []
+  shrinkScaleMultiplier: 0.3
   shrinkDurationRatio: 0.8
   shakeStrength: 1.5
   shakeVibrato: 20
-  expandScaleMultiplier: 2
+  expandScaleMultiplier: 1.5
   expandEase: 27
+--- !u!1 &2420652654395564993
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3338696318205138893}
+  - component: {fileID: 2673725877004435533}
+  m_Layer: 5
+  m_Name: VFXComponent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &3338696318205138893
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2420652654395564993}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4251798578508221984}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -960, y: -540}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &2673725877004435533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2420652654395564993}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 1
+  vfxPoolDataList:
+  - vfxTag: UnLock
+    effectPrefab: {fileID: 5748764238649717206, guid: f816706fc97104f42af425fec8478e1a, type: 3}
+    initialPoolSize: 3
+    allowDynamicExpansion: 1
+    maxPoolSize: 10
+    uiParticleScale: 8
 --- !u!1 &5162605234494448993
 GameObject:
   m_ObjectHideFlags: 0
@@ -538,6 +596,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8096288708993969600}
+  - {fileID: 3338696318205138893}
   - {fileID: 6961037496244977877}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -560,7 +619,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_NavigationSubRegion
   iconImage: {fileID: 8033886740915779442}
   motionPlayer: {fileID: 4032885503571627590}
-  vfxComponent: {fileID: 0}
+  vfxComponent: {fileID: 2673725877004435533}
   newIndicatorObj: {fileID: 1704490436478468864}
   newIndicatorAnimDuration: 0.15
   newIndicatorAnimEase: 27
@@ -578,6 +637,7 @@ MonoBehaviour:
   clickTag: Click
   lockClickTag: LockClick
   appearTag: Appear
+  unlockTag: UnLock
 --- !u!1 &6372244703501391218
 GameObject:
   m_ObjectHideFlags: 0
@@ -876,6 +936,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startAngle: 12
     angleDamping: 0.62
@@ -937,6 +998,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffsetX: 2
     offsetDamping: 0.4
@@ -998,6 +1060,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkScale: 0.8
     shrinkTimeRatio: 0.08

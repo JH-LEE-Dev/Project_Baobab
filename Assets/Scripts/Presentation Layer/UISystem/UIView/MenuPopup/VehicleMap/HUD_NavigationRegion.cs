@@ -245,20 +245,8 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             Debug.LogWarning("[HUD_NavigationRegion] OMP is null! Skipping to complete.");
             OnOmpUnlockComplete();
         }
-
-        if (null != vfxComponent)
-        {
-            unlockVfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
-            if (null != unlockVfx)
-            {
-                Debug.Log(string.Format("[HUD_NavigationRegion] VFX '{0}' started playing.", unlockTag));
-            }
-            else
-            {
-                Debug.LogWarning(string.Format("[HUD_NavigationRegion] VFX '{0}' tag not found in VFXComponent!", unlockTag));
-            }
-        }
     }
+
 
     private void OnOmpUnlockComplete()
     {
@@ -274,6 +262,15 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         {
             vfxComponent.Stop(unlockVfx);
             unlockVfx = null;
+        }
+
+        if (null != vfxComponent)
+        {
+            unlockVfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
+            if (null != unlockVfx)
+            {
+                Debug.Log(string.Format("[HUD_NavigationRegion] VFX '{0}' started playing instantly at unlock complete.", unlockTag));
+            }
         }
 
         SetLock(false);

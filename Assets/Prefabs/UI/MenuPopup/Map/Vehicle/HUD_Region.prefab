@@ -505,7 +505,7 @@ MonoBehaviour:
       uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
   - motionTag: UnLock
-    motionPrefab: {fileID: 8597025578380923767}
+    motionPrefab: {fileID: 3385455638549311079}
     targets:
     - transform: {fileID: 2445121431010259023}
       rectTransform: {fileID: 2445121431010259023}
@@ -543,8 +543,8 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1293457865493029082}
   - {fileID: 2364222227573629621}
+  - {fileID: 1293457865493029082}
   - {fileID: 8208404149202173040}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -650,7 +650,7 @@ MonoBehaviour:
     initialPoolSize: 3
     allowDynamicExpansion: 1
     maxPoolSize: 10
-    uiParticleScale: 20
+    uiParticleScale: 15
 --- !u!1 &4134617838903450338
 GameObject:
   m_ObjectHideFlags: 0
@@ -660,7 +660,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2952010903680608721}
-  - component: {fileID: 8597025578380923767}
+  - component: {fileID: 3385455638549311079}
   m_Layer: 5
   m_Name: OMB_UnLock
   m_TagString: Untagged
@@ -687,7 +687,7 @@ RectTransform:
   m_AnchoredPosition: {x: 960, y: 540}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &8597025578380923767
+--- !u!114 &3385455638549311079
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -699,21 +699,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 81ae58e50a268f74eabd894340f4faaf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_Unlock
-  forwardDuration: 1.5
+  forwardDuration: 1
   forwardDelay: 0
-  forwardEase: 1
+  forwardEase: 0
   backwardDuration: 0.5
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
-  keyEvents:
-  - triggerTime: 0.8
-    eventTag: UnLock
-  shrinkScaleMultiplier: 0.6
+  keyEvents: []
+  shrinkScaleMultiplier: 0.8
   shrinkDurationRatio: 0.8
-  shakeStrength: 4
+  shakeStrength: 5
   shakeVibrato: 20
-  expandScaleMultiplier: 1.2
+  expandScaleMultiplier: 1.15
   expandEase: 27
 --- !u!1 &4710241905108993867
 GameObject:

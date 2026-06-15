@@ -234,20 +234,8 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             OnOmpUnlockComplete();
         }
-
-        if (null != vfxComponent)
-        {
-            unlockVfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
-            if (null != unlockVfx)
-            {
-                Debug.Log(string.Format("[HUD_NavigationSubRegion] VFX '{0}' started playing.", unlockTag));
-            }
-            else
-            {
-                Debug.LogWarning(string.Format("[HUD_NavigationSubRegion] VFX '{0}' tag not found in VFXComponent!", unlockTag));
-            }
-        }
     }
+
 
     public void PlayAppearAnimation(float _delay)
     {
@@ -377,6 +365,15 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         {
             vfxComponent.Stop(unlockVfx);
             unlockVfx = null;
+        }
+
+        if (null != vfxComponent)
+        {
+            unlockVfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
+            if (null != unlockVfx)
+            {
+                Debug.Log(string.Format("[HUD_NavigationSubRegion] VFX '{0}' started playing instantly at unlock complete.", unlockTag));
+            }
         }
 
         SetLock(false);
