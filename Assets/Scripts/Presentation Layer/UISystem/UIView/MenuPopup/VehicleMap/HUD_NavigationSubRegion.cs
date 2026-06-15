@@ -169,11 +169,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void SetNewIndicator(bool _active)
     {
-        if (null == newIndicatorObj)
-        {
-            Debug.LogError(string.Format("[HUD_NavigationSubRegion] newIndicatorObj is NULL for SubRegion {0}! Please bind it in Inspector.", forestInfo.forestType));
-        }
-
         if (null != newIndicatorObj)
         {
             if (true == _active)
@@ -353,8 +348,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private void OnOmpUnlockComplete()
     {
-        Debug.Log(string.Format("[HUD_NavigationSubRegion] OnOmpUnlockComplete for ForestType: {0}", forestInfo.forestType));
-
         if (null != motionPlayer && null != unlockEntry)
         {
             motionPlayer.SettingEntryMotion(unlockEntry, true, true);
@@ -370,10 +363,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         if (null != vfxComponent)
         {
             unlockVfx = vfxComponent.Play(unlockTag, transform.position, Quaternion.identity, transform);
-            if (null != unlockVfx)
-            {
-                Debug.Log(string.Format("[HUD_NavigationSubRegion] VFX '{0}' started playing instantly at unlock complete.", unlockTag));
-            }
         }
 
         SetLock(false);

@@ -81,6 +81,15 @@ public class HUD_Vehicle : MonoBehaviour
     // 캐싱된 상수 및 리터럴 값
     private const float transparentAlpha = 0f;
     private const bool forceReset = true;
+    private const string unlockRegionFormat = "UnLock_Region_{0}";
+    private const string newRegionFormat = "New_Region_{0}";
+    private const string unlockSubRegionFormat = "UnLock_SubRegion_{0}";
+    private const string newSubRegionFormat = "New_SubRegion_{0}";
+    private const string visitedSubRegionFormat = "Visited_SubRegion_{0}";
+    private const string regionUnlockOccurredKey = "RegionUnlockOccurred";
+    private const float delayedCallDuration = 0.1f;
+    private const int prefValueActive = 1;
+    private const int prefValueInactive = 0;
 
     public bool IsUnlockingProductionActive
     {
@@ -171,6 +180,8 @@ public class HUD_Vehicle : MonoBehaviour
     public void SyncUnlockStates()
     {
         isUnlockStateSyncPending = true;
+        PlayerPrefs.SetInt(regionUnlockOccurredKey, prefValueInactive);
+        PlayerPrefs.Save();
         InitUnlockStates();
     }
 
@@ -326,7 +337,7 @@ public class HUD_Vehicle : MonoBehaviour
 
                 if (null != cancelButton)
                 {
-                    cancelButton.PlayAppearAnimation(homeButtonAppearDelay + 0.1f);
+                    cancelButton.PlayAppearAnimation(homeButtonAppearDelay + delayedCallDuration);
                 }
             }
             else if (MapType.None != lastSelectedMapType)
@@ -335,7 +346,7 @@ public class HUD_Vehicle : MonoBehaviour
 
                 if (null != cancelButton)
                 {
-                    cancelButton.PlayAppearAnimation(homeButtonAppearDelay + 0.1f);
+                    cancelButton.PlayAppearAnimation(homeButtonAppearDelay + delayedCallDuration);
                 }
             }
             else
@@ -364,18 +375,14 @@ public class HUD_Vehicle : MonoBehaviour
 
         if (null == mapDataProvider)
         {
-            Debug.LogError("[HUD_Vehicle] BuildKeyCaches - mapDataProvider is NULL!");
             return;
         }
 
         MapEnvironmentDatabase db = mapDataProvider.GetMapEnvironmentDatabase();
         if (null == db.mapDatas)
         {
-            Debug.LogError("[HUD_Vehicle] BuildKeyCaches - mapDatas is NULL!");
             return;
         }
-
-        Debug.Log(string.Format("[HUD_Vehicle] BuildKeyCaches - db.mapDatas Count: {0}", db.mapDatas.Count));
 
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
@@ -385,23 +392,19 @@ public class HUD_Vehicle : MonoBehaviour
                 continue;
             }
 
-            regionKeyMap[regionInfo.mapType] = string.Format("UnLock_Region_{0}", regionInfo.mapType);
-            regionNewKeyMap[regionInfo.mapType] = string.Format("New_Region_{0}", regionInfo.mapType);
-            Debug.Log(string.Format("[HUD_Vehicle] Cache added - Region: {0}, Key: {1}", regionInfo.mapType, regionKeyMap[regionInfo.mapType]));
+            regionKeyMap[regionInfo.mapType] = string.Format(unlockRegionFormat, regionInfo.mapType);
+            regionNewKeyMap[regionInfo.mapType] = string.Format(newRegionFormat, regionInfo.mapType);
 
             if (null != regionInfo.forestDatas)
             {
                 for (int j = 0; j < regionInfo.forestDatas.Count; j++)
                 {
                     ForestEnvironmentInfo subInfo = regionInfo.forestDatas[j];
-                    subRegionKeyMap[subInfo.forestType] = string.Format("UnLock_SubRegion_{0}", subInfo.forestType);
-                    subRegionNewKeyMap[subInfo.forestType] = string.Format("New_SubRegion_{0}", subInfo.forestType);
-                    Debug.Log(string.Format("[HUD_Vehicle] Cache added - SubRegion: {0}, Key: {1}", subInfo.forestType, subRegionKeyMap[subInfo.forestType]));
+                    subRegionKeyMap[subInfo.forestType] = string.Format(unlockSubRegionFormat, subInfo.forestType);
+                    subRegionNewKeyMap[subInfo.forestType] = string.Format(newSubRegionFormat, subInfo.forestType);
                 }
             }
         }
-
-        Debug.Log(string.Format("[HUD_Vehicle] BuildKeyCaches Finished. regionKeyMap Count: {0}, subRegionKeyMap Count: {1}", regionKeyMap.Count, subRegionKeyMap.Count));
     }
 
     private void InitUnlockStates()
@@ -434,13 +437,13 @@ public class HUD_Vehicle : MonoBehaviour
                 {
                     if (true == isUnlockStateSyncPending)
                     {
-                        PlayerPrefs.SetInt(regionKey, 1);
+                        PlayerPrefs.SetInt(regionKey, prefValueActive);
                     }
                 }
                 else
                 {
-                    PlayerPrefs.SetInt(regionKey, 0);
-                    PlayerPrefs.SetInt(regionNewKey, 0);
+                    PlayerPrefs.SetInt(regionKey, prefValueInactive);
+                    PlayerPrefs.SetInt(regionNewKey, prefValueInactive);
                 }
             }
 
@@ -458,13 +461,13 @@ public class HUD_Vehicle : MonoBehaviour
                         {
                             if (true == isUnlockStateSyncPending)
                             {
-                                PlayerPrefs.SetInt(subKey, 1);
+                                PlayerPrefs.SetInt(subKey, prefValueActive);
                             }
                         }
                         else
                         {
-                            PlayerPrefs.SetInt(subKey, 0);
-                            PlayerPrefs.SetInt(subNewKey, 0);
+                            PlayerPrefs.SetInt(subKey, prefValueInactive);
+                            PlayerPrefs.SetInt(subNewKey, prefValueInactive);
                         }
                     }
                 }
@@ -479,20 +482,16 @@ public class HUD_Vehicle : MonoBehaviour
     {
         if (null == mapDataProvider)
         {
-            Debug.LogError("[HUD_Vehicle] CheckPendingRegionUnlocks - mapDataProvider is NULL!");
             return false;
         }
 
         MapEnvironmentDatabase db = mapDataProvider.GetMapEnvironmentDatabase();
         if (null == db.mapDatas)
         {
-            Debug.LogError("[HUD_Vehicle] CheckPendingRegionUnlocks - mapDatas is NULL!");
             return false;
         }
 
         InitUnlockStates();
-
-        Debug.Log("[HUD_Vehicle] CheckPendingRegionUnlocks - Starting Scan...");
 
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
@@ -506,22 +505,22 @@ public class HUD_Vehicle : MonoBehaviour
             int regionPrefVal = true == hasKey ? PlayerPrefs.GetInt(regionKey, 0) : -999;
             bool isUnlockPending = regionInfo.bCanAccess && (regionPrefVal == 0);
 
-            Debug.Log(string.Format("[HUD_Vehicle] Scan Region: {0} | bCanAccess: {1} | HasCacheKey: {2} | RegionKey: {3} | PlayerPrefVal: {4} | Pending?: {5}",
-                regionInfo.mapType, regionInfo.bCanAccess, hasKey, regionKey ?? "NULL", regionPrefVal, isUnlockPending));
-
             if (true == isUnlockPending)
             {
-                Debug.Log(string.Format("[HUD_Vehicle] Scan Region - Found pending unlock region: {0}", regionInfo.mapType));
                 return true;
             }
         }
 
-        Debug.Log("[HUD_Vehicle] CheckPendingRegionUnlocks - Scan Finished. No pending region unlocks found.");
         return false;
     }
 
     private MapType FindPendingSubRegionUnlockMapType()
     {
+        if (prefValueActive == PlayerPrefs.GetInt(regionUnlockOccurredKey, prefValueInactive))
+        {
+            return MapType.None;
+        }
+
         if (null == mapDataProvider)
         {
             return MapType.None;
@@ -542,7 +541,13 @@ public class HUD_Vehicle : MonoBehaviour
             }
 
             string regionKey = regionKeyMap.TryGetValue(regionInfo.mapType, out string rKey) ? rKey : string.Empty;
-            if (string.IsNullOrEmpty(regionKey) || 0 == PlayerPrefs.GetInt(regionKey, 0))
+            if (string.IsNullOrEmpty(regionKey) || prefValueInactive == PlayerPrefs.GetInt(regionKey, prefValueInactive))
+            {
+                continue;
+            }
+
+            string visitedKey = string.Format(visitedSubRegionFormat, regionInfo.mapType);
+            if (prefValueInactive == PlayerPrefs.GetInt(visitedKey, prefValueInactive))
             {
                 continue;
             }
@@ -555,9 +560,8 @@ public class HUD_Vehicle : MonoBehaviour
                     string subKey = subRegionKeyMap.TryGetValue(subInfo.forestType, out string sKey) ? sKey : string.Empty;
                     if (!string.IsNullOrEmpty(subKey))
                     {
-                        if (true == subInfo.bCanAccess && 0 == PlayerPrefs.GetInt(subKey, 0))
+                        if (true == subInfo.bCanAccess && prefValueInactive == PlayerPrefs.GetInt(subKey, prefValueInactive))
                         {
-                            Debug.Log(string.Format("[HUD_Vehicle] Found pending subregion unlock ({0}) under map ({1})", subInfo.forestType, regionInfo.mapType));
                             return regionInfo.mapType;
                         }
                     }
@@ -582,6 +586,8 @@ public class HUD_Vehicle : MonoBehaviour
             return;
         }
 
+        bool hasRegionUnlock = false;
+
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
             MapEnvironmentDataInfo regionInfo = db.mapDatas[i];
@@ -596,15 +602,16 @@ public class HUD_Vehicle : MonoBehaviour
                 continue;
             }
 
-            int regionPrefVal = PlayerPrefs.GetInt(regionKey, 0);
-            if (true == regionInfo.bCanAccess && 0 == regionPrefVal)
+            int regionPrefVal = PlayerPrefs.GetInt(regionKey, prefValueInactive);
+            if (true == regionInfo.bCanAccess && prefValueInactive == regionPrefVal)
             {
                 UnlockQueueItem item;
                 item.isRegion = true;
                 item.mapType = regionInfo.mapType;
                 item.forestType = ForestType.None;
                 unlockQueue.Enqueue(item);
-                Debug.Log(string.Format("[HUD_Vehicle] Region {0} ENQUEUED to UnlockQueue.", regionInfo.mapType));
+
+                hasRegionUnlock = true;
 
                 if (null != regionInfo.forestDatas)
                 {
@@ -618,20 +625,25 @@ public class HUD_Vehicle : MonoBehaviour
                         {
                             if (true == subInfo.bCanAccess)
                             {
-                                PlayerPrefs.SetInt(subKey, 0);
-                                PlayerPrefs.SetInt(subNewKey, 0);
-                                Debug.Log(string.Format("[HUD_Vehicle] SubRegion {0} is kept locked (0) to trigger its own unlock animation on sub-region entry.", subInfo.forestType));
+                                PlayerPrefs.SetInt(subKey, prefValueInactive);
+                                PlayerPrefs.SetInt(subNewKey, prefValueInactive);
                             }
                             else
                             {
-                                PlayerPrefs.SetInt(subKey, 0);
-                                PlayerPrefs.SetInt(subNewKey, 0);
+                                PlayerPrefs.SetInt(subKey, prefValueInactive);
+                                PlayerPrefs.SetInt(subNewKey, prefValueInactive);
                             }
                         }
                     }
                     PlayerPrefs.Save();
                 }
             }
+        }
+
+        if (true == hasRegionUnlock)
+        {
+            PlayerPrefs.SetInt(regionUnlockOccurredKey, prefValueActive);
+            PlayerPrefs.Save();
         }
     }
 
@@ -640,20 +652,16 @@ public class HUD_Vehicle : MonoBehaviour
         unlockQueue.Clear();
         if (null == mapDataProvider)
         {
-            Debug.LogError("[HUD_Vehicle] BuildSubRegionUnlockQueue - mapDataProvider is NULL!");
             return;
         }
 
         MapEnvironmentDatabase db = mapDataProvider.GetMapEnvironmentDatabase();
         if (null == db.mapDatas)
         {
-            Debug.LogError("[HUD_Vehicle] BuildSubRegionUnlockQueue - mapDatas is NULL!");
             return;
         }
 
         InitUnlockStates();
-
-        Debug.Log(string.Format("[HUD_Vehicle] BuildSubRegionUnlockQueue - Starting Scan for Region {0}...", _mapType));
 
         for (int i = 0; i < db.mapDatas.Count; i++)
         {
@@ -672,9 +680,6 @@ public class HUD_Vehicle : MonoBehaviour
                     int subPrefVal = true == hasKey ? PlayerPrefs.GetInt(subKey, 0) : -999;
                     bool isSubUnlockPending = subInfo.bCanAccess && (0 == subPrefVal);
 
-                    Debug.Log(string.Format("[HUD_Vehicle] Scan SubRegion: {0} | bCanAccess: {1} | HasCacheKey: {2} | SubKey: {3} | PlayerPrefVal: {4} | Pending?: {5}",
-                        subInfo.forestType, subInfo.bCanAccess, hasKey, subKey ?? "NULL", subPrefVal, isSubUnlockPending));
-
                     if (true == isSubUnlockPending)
                     {
                         UnlockQueueItem item;
@@ -682,13 +687,10 @@ public class HUD_Vehicle : MonoBehaviour
                         item.mapType = _mapType;
                         item.forestType = subInfo.forestType;
                         unlockQueue.Enqueue(item);
-                        Debug.Log(string.Format("[HUD_Vehicle] SubRegion {0} ENQUEUED to UnlockQueue.", subInfo.forestType));
                     }
                 }
             }
         }
-
-        Debug.Log(string.Format("[HUD_Vehicle] BuildSubRegionUnlockQueue Finished. unlockQueue Count: {0}", unlockQueue.Count));
     }
 
     private void ProcessNextUnlock()
@@ -696,7 +698,6 @@ public class HUD_Vehicle : MonoBehaviour
         if (0 == unlockQueue.Count)
         {
             isUnlockingProductionActive = false;
-            Debug.Log("[HUD_Vehicle] ProcessNextUnlock finished. No more unlocks in queue.");
             return;
         }
 
@@ -705,9 +706,8 @@ public class HUD_Vehicle : MonoBehaviour
         UnlockQueueItem peekItem = unlockQueue.Peek();
         if (true == peekItem.isRegion && currentState != NavigationState.Region)
         {
-            Debug.Log("[HUD_Vehicle] Current state is not Region. Forcing RestoreToHome() before concurrent unlocks.");
             RestoreToHome();
-            DOVirtual.DelayedCall(0.1f, triggerAllUnlocksDirectlyCallback).SetEase(Ease.Linear);
+            DOVirtual.DelayedCall(delayedCallDuration, triggerAllUnlocksDirectlyCallback).SetEase(Ease.Linear);
         }
         else
         {
@@ -744,10 +744,9 @@ public class HUD_Vehicle : MonoBehaviour
             string _regionNewKey = regionNewKeyMap.TryGetValue(_item.mapType, out string rnKey) ? rnKey : string.Empty;
             if (!string.IsNullOrEmpty(_regionKey))
             {
-                PlayerPrefs.SetInt(_regionKey, 1);
-                PlayerPrefs.SetInt(_regionNewKey, 1);
+                PlayerPrefs.SetInt(_regionKey, prefValueActive);
+                PlayerPrefs.SetInt(_regionNewKey, prefValueActive);
                 PlayerPrefs.Save();
-                Debug.Log(string.Format("[HUD_Vehicle] Pre-saved UnLock_Region and New_Region key for {0}", _item.mapType));
             }
         }
         else
@@ -756,10 +755,9 @@ public class HUD_Vehicle : MonoBehaviour
             string _subNewKey = subRegionNewKeyMap.TryGetValue(_item.forestType, out string snKey) ? snKey : string.Empty;
             if (!string.IsNullOrEmpty(_subKey))
             {
-                PlayerPrefs.SetInt(_subKey, 1);
-                PlayerPrefs.SetInt(_subNewKey, 1);
+                PlayerPrefs.SetInt(_subKey, prefValueActive);
+                PlayerPrefs.SetInt(_subNewKey, prefValueActive);
                 PlayerPrefs.Save();
-                Debug.Log(string.Format("[HUD_Vehicle] Pre-saved UnLock_SubRegion and New_SubRegion key for {0}", _item.forestType));
             }
         }
     }
@@ -768,7 +766,6 @@ public class HUD_Vehicle : MonoBehaviour
     {
         if (null == navigation)
         {
-            Debug.LogError("[HUD_Vehicle] StartRegionUnlockProduction - navigation is null!");
             OnUnlockProductionComplete();
             return;
         }
@@ -776,12 +773,10 @@ public class HUD_Vehicle : MonoBehaviour
         HUD_NavigationRegion targetRegion = navigation.GetRegionInstance(_mapType);
         if (null != targetRegion)
         {
-            Debug.Log(string.Format("[HUD_Vehicle] Playing unlock production for Region: {0}", _mapType));
             targetRegion.PlayUnlockProduction(onUnlockProductionCompleteCallback);
         }
         else
         {
-            Debug.LogError(string.Format("[HUD_Vehicle] StartRegionUnlockProduction - Target HUD_NavigationRegion not found for: {0}!", _mapType));
             OnUnlockProductionComplete();
         }
     }
@@ -790,7 +785,6 @@ public class HUD_Vehicle : MonoBehaviour
     {
         if (null == subField)
         {
-            Debug.LogError("[HUD_Vehicle] StartSubRegionUnlockProduction - subField is null!");
             OnUnlockProductionComplete();
             return;
         }
@@ -798,12 +792,10 @@ public class HUD_Vehicle : MonoBehaviour
         HUD_NavigationSubRegion targetSubRegion = subField.GetSubRegionInstance(_forestType);
         if (null != targetSubRegion)
         {
-            Debug.Log(string.Format("[HUD_Vehicle] Playing unlock production for SubRegion: {0}", _forestType));
             targetSubRegion.PlayUnlockProduction(onUnlockProductionCompleteCallback);
         }
         else
         {
-            Debug.LogError(string.Format("[HUD_Vehicle] StartSubRegionUnlockProduction - Target HUD_NavigationSubRegion not found for: {0}!", _forestType));
             OnUnlockProductionComplete();
         }
     }
@@ -811,12 +803,10 @@ public class HUD_Vehicle : MonoBehaviour
     private void OnUnlockProductionComplete()
     {
         activeUnlockCount--;
-        Debug.Log(string.Format("[HUD_Vehicle] OnUnlockProductionComplete called. Remaining active unlocks: {0}", activeUnlockCount));
 
         if (0 == activeUnlockCount)
         {
             isUnlockingProductionActive = false;
-            Debug.Log("[HUD_Vehicle] All concurrent unlock productions completed.");
         }
     }
 
@@ -917,6 +907,10 @@ public class HUD_Vehicle : MonoBehaviour
 
         currentState = NavigationState.SubRegion;
 
+        string visitedKey = string.Format(visitedSubRegionFormat, pendingMapType);
+        PlayerPrefs.SetInt(visitedKey, prefValueActive);
+        PlayerPrefs.Save();
+
         subField.SetSubRegions(pendingMapType, pendingForestDatas);
 
         if (null != prevButton)
@@ -1001,6 +995,10 @@ public class HUD_Vehicle : MonoBehaviour
 
         navigation.ResetSelection(false);
         navigation.SetSelectedMapTypeWithoutAnimation(_mapType);
+
+        string visitedKey = string.Format(visitedSubRegionFormat, _mapType);
+        PlayerPrefs.SetInt(visitedKey, prefValueActive);
+        PlayerPrefs.Save();
 
         if (null != targetInfo.forestDatas)
         {
