@@ -23,8 +23,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
     [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
 
+    [System.Serializable]
+    public struct MapTypeTileData
+    {
+        public MapType mapType;
+        public StageTileDataSO tileData;
+    }
+
     [Header("타일 데이터")]
     [SerializeField] private StageTileDataSO stageTileData;
+    [SerializeField] private List<MapTypeTileData> mapTypeTileDatas;
 
     private AnimatedObjGenerator animatedObjGenerator;
 
@@ -71,6 +79,20 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private int portalIdx = -1;
 
     // // 퍼블릭 초기화 및 제어 메서드
+
+    public void SetupForMapType(MapType _mapType)
+    {
+        if (mapTypeTileDatas == null) return;
+
+        for (int i = 0; i < mapTypeTileDatas.Count; i++)
+        {
+            if (mapTypeTileDatas[i].mapType == _mapType)
+            {
+                stageTileData = mapTypeTileDatas[i].tileData;
+                return;
+            }
+        }
+    }
 
     public void InitializeMapData()
     {

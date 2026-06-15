@@ -23,6 +23,7 @@ public class MapDensityData
 {
     public MapType mapType;
     public List<DensityData> densityData;
+    public bool bCanAccess;
 }
 
 [System.Serializable]
