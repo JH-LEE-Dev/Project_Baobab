@@ -405,6 +405,15 @@ MonoBehaviour:
   - treeType: 3
     minCnt: 2
     maxCnt: 3
+  - treeType: 4
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 5
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 6
+    minCnt: 2
+    maxCnt: 3
   cullingUpdateInterval: 0.05
 --- !u!1 &2442542787030155420
 GameObject:
@@ -2152,6 +2161,12 @@ MonoBehaviour:
     decAmount: 4
   - forestType: 4
     decAmount: 12
+  - forestType: 5
+    decAmount: 30
+  - forestType: 6
+    decAmount: 60
+  - forestType: 7
+    decAmount: 150
 --- !u!114 &8919172322634990837
 MonoBehaviour:
   m_ObjectHideFlags: 0

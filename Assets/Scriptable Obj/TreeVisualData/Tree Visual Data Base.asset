@@ -86,3 +86,67 @@ MonoBehaviour:
       bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
     - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
       bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+  - treeType: 4
+    topSprites:
+    - {fileID: 21300000, guid: c1a8c72697732d64e873821f9f67e14e, type: 3}
+    - {fileID: 21300000, guid: 62f13af4e2d2bc740b52b9c47941c171, type: 3}
+    bottomSprites:
+    - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
+    - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    saplingTopSprites:
+    - {fileID: 21300000, guid: f60a119ba5fe7d94da98fe9b81edc06e, type: 3}
+    saplingBottomSprites:
+    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
+    highlightSprites:
+    - {fileID: 21300000, guid: 118ce8467be7f1547918f0919601e8fb, type: 3}
+    - {fileID: 21300000, guid: e37eb5a6258c00945881cc669cd967b3, type: 3}
+    treeColorSets:
+    - topColor: {r: 0.8980392, g: 0.78431374, b: 0.2901961, a: 1}
+      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+    - topColor: {r: 0.5882353, g: 0.6117647, b: 0.14117648, a: 1}
+      bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
+    - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
+      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+  - treeType: 5
+    topSprites:
+    - {fileID: 21300000, guid: c1a8c72697732d64e873821f9f67e14e, type: 3}
+    - {fileID: 21300000, guid: 62f13af4e2d2bc740b52b9c47941c171, type: 3}
+    bottomSprites:
+    - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
+    - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    saplingTopSprites:
+    - {fileID: 21300000, guid: 922595c7777a8bf4a91a4c3decf2ddb3, type: 3}
+    saplingBottomSprites:
+    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
+    highlightSprites:
+    - {fileID: 21300000, guid: 118ce8467be7f1547918f0919601e8fb, type: 3}
+    - {fileID: 21300000, guid: e37eb5a6258c00945881cc669cd967b3, type: 3}
+    treeColorSets:
+    - topColor: {r: 0.8980392, g: 0.78431374, b: 0.2901961, a: 1}
+      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+    - topColor: {r: 0.5882353, g: 0.6117647, b: 0.14117648, a: 1}
+      bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
+    - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
+      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+  - treeType: 6
+    topSprites:
+    - {fileID: 21300000, guid: c1a8c72697732d64e873821f9f67e14e, type: 3}
+    - {fileID: 21300000, guid: 62f13af4e2d2bc740b52b9c47941c171, type: 3}
+    bottomSprites:
+    - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
+    - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    saplingTopSprites:
+    - {fileID: 21300000, guid: f60a119ba5fe7d94da98fe9b81edc06e, type: 3}
+    saplingBottomSprites:
+    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
+    highlightSprites:
+    - {fileID: 21300000, guid: cbc8fd5f4a6e6d7499e8078cfb1e0f07, type: 3}
+    - {fileID: 21300000, guid: abb19d778307a5041a75e616bb7f826a, type: 3}
+    - {fileID: 21300000, guid: 5f9656797a731a74fa0f08793aa28b36, type: 3}
+    treeColorSets:
+    - topColor: {r: 0.8980392, g: 0.78431374, b: 0.2901961, a: 1}
+      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+    - topColor: {r: 0.5882353, g: 0.6117647, b: 0.14117648, a: 1}
+      bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
+    - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
+      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}

@@ -15,7 +15,31 @@ MonoBehaviour:
   treeStatDatas:
   - treeType: 1
     hp: 8
+    sp: 0
+    spRegen: 0
+    regenStrategy: {fileID: 0}
   - treeType: 2
     hp: 16
+    sp: 0
+    spRegen: 0
+    regenStrategy: {fileID: 0}
   - treeType: 3
     hp: 40
+    sp: 0
+    spRegen: 0
+    regenStrategy: {fileID: 0}
+  - treeType: 4
+    hp: 250
+    sp: 250
+    spRegen: 50
+    regenStrategy: {fileID: 11400000, guid: 7b249828b7ce57f419bb06c7ae2b983e, type: 2}
+  - treeType: 5
+    hp: 500
+    sp: 500
+    spRegen: 70
+    regenStrategy: {fileID: 11400000, guid: 9e46b28f810a621459f0a36efd75105e, type: 2}
+  - treeType: 6
+    hp: 2000
+    sp: 2000
+    spRegen: 1000
+    regenStrategy: {fileID: 11400000, guid: 9e46b28f810a621459f0a36efd75105e, type: 2}

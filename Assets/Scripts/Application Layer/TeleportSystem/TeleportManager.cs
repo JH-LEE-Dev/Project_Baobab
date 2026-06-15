@@ -52,6 +52,48 @@ public class TeleportManager : MonoBehaviour
                         break;
                 }
                 break;
+            case MapType.FluffySporeForest:
+                switch (goToDungeonSignal.forestType)
+                {
+                    case ForestType.FluffySporeForest_1:
+                        bootStrapProvider.GoToOtherScene(MapType.FluffySporeForest, ForestType.FluffySporeForest_1);
+                        break;
+                    case ForestType.FluffySporeForest_2:
+                        bootStrapProvider.GoToOtherScene(MapType.FluffySporeForest, ForestType.FluffySporeForest_2);
+                        break;
+                    case ForestType.FluffySporeForest_3:
+                        bootStrapProvider.GoToOtherScene(MapType.FluffySporeForest, ForestType.FluffySporeForest_3);
+                        break;
+                }
+                break;
+            case MapType.StarrootForest:
+                switch (goToDungeonSignal.forestType)
+                {
+                    case ForestType.StarrootForest_1:
+                        bootStrapProvider.GoToOtherScene(MapType.StarrootForest, ForestType.StarrootForest_1);
+                        break;
+                    case ForestType.StarrootForest_2:
+                        bootStrapProvider.GoToOtherScene(MapType.StarrootForest, ForestType.StarrootForest_3);
+                        break;
+                    case ForestType.StarrootForest_3:
+                        bootStrapProvider.GoToOtherScene(MapType.StarrootForest, ForestType.StarrootForest_3);
+                        break;
+                }
+                break;
+            case MapType.MagmaForest:
+                switch (goToDungeonSignal.forestType)
+                {
+                    case ForestType.MagmaForest_1:
+                        bootStrapProvider.GoToOtherScene(MapType.MagmaForest, ForestType.MagmaForest_1);
+                        break;
+                    case ForestType.MagmaForest_2:
+                        bootStrapProvider.GoToOtherScene(MapType.MagmaForest, ForestType.MagmaForest_2);
+                        break;
+                    case ForestType.MagmaForest_3:
+                        bootStrapProvider.GoToOtherScene(MapType.MagmaForest, ForestType.MagmaForest_3);
+                        break;
+                }
+                break;
         }
     }
 

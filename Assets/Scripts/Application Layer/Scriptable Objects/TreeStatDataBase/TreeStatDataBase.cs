@@ -18,6 +18,9 @@ public struct TreeStatData
 {
     public TreeType treeType;
     public float hp;
+    public float sp;
+    public float spRegen;
+    public SPRegenStrategySO regenStrategy;
 }
 
 [Serializable]

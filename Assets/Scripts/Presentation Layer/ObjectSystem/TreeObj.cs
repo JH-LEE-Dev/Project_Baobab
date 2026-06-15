@@ -134,7 +134,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         ResetTree();
 
-        healthComponent.Setup(treeData.treeStatData.hp);
+        healthComponent.Setup(treeData.type, treeData.treeStatData.hp, treeData.treeStatData.sp, treeData.treeStatData.spRegen, treeData.treeStatData.regenStrategy);
 
         if (treeVisualComponent != null)
         {
