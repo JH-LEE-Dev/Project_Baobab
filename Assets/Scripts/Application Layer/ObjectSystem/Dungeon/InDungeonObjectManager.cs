@@ -704,6 +704,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         if (_bAbort == true)
             character.SetStaminaDecrease(true);
+            
         character.PauseCharacter(false);
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);

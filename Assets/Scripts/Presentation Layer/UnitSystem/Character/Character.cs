@@ -297,7 +297,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         attackComponent.SetEnable(false);
         characterVisualComponent.CharacterIsDead(true);
         bDead = true;
-
+        healthComponent.SetStaminaDecrease(false);
         inputManager.PauseMove(true);
         StartCoroutine(StaminaIsEmptyRoutine());
     }
@@ -324,16 +324,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     }
 
     #endregion
-
-    private void OnEnable()
-    {
-
-    }
-
-    private void OnDisable()
-    {
-
-    }
 
     #region Unity Event Functions
 

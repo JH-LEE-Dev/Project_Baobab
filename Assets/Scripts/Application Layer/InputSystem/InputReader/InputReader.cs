@@ -80,6 +80,11 @@ public class InputReader
         }
     }
 
+    public void ClearPrevKeyboardInput()
+    {
+        keyboardMoveInput = Vector2.zero;
+    }
+
     public void OnMove(InputAction.CallbackContext context)
     {
         keyboardMoveInput = context.ReadValue<Vector2>();

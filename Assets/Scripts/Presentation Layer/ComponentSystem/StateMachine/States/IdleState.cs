@@ -23,10 +23,15 @@ public class IdleState : CharacterState
 
     public override void Update()
     {
+        if (bActivated == false)
+            return;
     }
 
     public override void FixedUpdate()
     {
+        if (bActivated == false)
+            return;
+
         if (ctx.moveInput.sqrMagnitude != 0)
             stateMachine.ChangeState<RunState>();
 

@@ -96,7 +96,7 @@ public class TownProductionManager : MonoBehaviour
         {
             StopCoroutine(characterRideCoroutine);
         }
-        
+
         characterRideCoroutine = StartCoroutine(CharacterRideRoutine());
     }
 
@@ -200,6 +200,7 @@ public class TownProductionManager : MonoBehaviour
     {
         if (bCurrentlyTownScene == false)
             return;
+
         character.ResetStatus();
         CameraUpIsEndEvent?.Invoke();
     }

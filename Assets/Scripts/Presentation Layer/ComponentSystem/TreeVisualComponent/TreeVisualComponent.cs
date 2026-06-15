@@ -139,8 +139,14 @@ public class TreeVisualComponent : MonoBehaviour
     private void LateUpdate()
     {
         // 물 위 효과가 활성화된 경우에만 실행하여 불필요한 계산 방지
-        if (!isOnWaterActive || bOnWaterOrderSet == true) return;
+        if (!isOnWaterActive || bOnWaterOrderSet) return;
 
+        UpdateOnWaterSortingOrder();
+    }
+
+    private void UpdateOnWaterSortingOrder()
+    {
+        if (cachedTransform == null) cachedTransform = transform;
         int order = (int)(cachedTransform.position.y * 100);
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
@@ -499,6 +505,8 @@ public class TreeVisualComponent : MonoBehaviour
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(true);
         if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(true);
         if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(true);
+
+        UpdateOnWaterSortingOrder();
     }
 
 
@@ -674,7 +682,7 @@ public class TreeVisualComponent : MonoBehaviour
     }
 
     // 전달받은 렌더러에 스프라이트 리스트 중 하나를 무작위로 적용하고 선택된 인덱스를 반환한다.
-    private static int SetRandomSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
+    private static int SetRandomSprite(SpriteRenderer _renderer, System.Collections.Generic.List<Sprite> _sprites)
     {
         if (_renderer == null || _sprites == null || _sprites.Count == 0)
         {
@@ -686,10 +694,35 @@ public class TreeVisualComponent : MonoBehaviour
         return index;
     }
 
+    // 전달받은 렌더러에 스프라이트 배열 중 하나를 무작위로 적용하고 선택된 인덱스를 반환한다.
+    private static int SetRandomSprite(SpriteRenderer _renderer, Sprite[] _sprites)
+    {
+        if (_renderer == null || _sprites == null || _sprites.Length == 0)
+        {
+            return -1;
+        }
+
+        int index = Random.Range(0, _sprites.Length);
+        _renderer.sprite = _sprites[index];
+        return index;
+    }
+
     // 전달받은 렌더러에 스프라이트 리스트 중 첫 번째(기본) 스프라이트를 고정 적용하고 0을 반환한다.
-    private static int SetFirstSprite(SpriteRenderer _renderer, System.Collections.Generic.IList<Sprite> _sprites)
+    private static int SetFirstSprite(SpriteRenderer _renderer, System.Collections.Generic.List<Sprite> _sprites)
     {
         if (_renderer == null || _sprites == null || _sprites.Count == 0)
+        {
+            return -1;
+        }
+
+        _renderer.sprite = _sprites[0];
+        return 0;
+    }
+
+    // 전달받은 렌더러에 스프라이트 배열 중 첫 번째(기본) 스프라이트를 고정 적용하고 0을 반환한다.
+    private static int SetFirstSprite(SpriteRenderer _renderer, Sprite[] _sprites)
+    {
+        if (_renderer == null || _sprites == null || _sprites.Length == 0)
         {
             return -1;
         }
