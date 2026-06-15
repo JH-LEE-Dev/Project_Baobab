@@ -99,4 +99,9 @@ public class UIView_MenuPopup : UIView
         if (null != vehicle)
             vehicle.mapSelectedEvent -= HandleEnterDungeon;
     }
+
+    public override void Refresh()
+    {
+        base.Refresh();
+    }
 }

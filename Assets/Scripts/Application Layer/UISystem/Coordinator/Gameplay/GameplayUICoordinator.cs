@@ -206,6 +206,7 @@ public class GameplayUICoordinator
         menuPopupUI.Refresh();
         tentUI.Refresh();
         escUI.Refresh();
+        menuPopupUI.Refresh();
     }
 
     private void OnInventoryKeyPressed()

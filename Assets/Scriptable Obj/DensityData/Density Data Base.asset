@@ -76,47 +76,59 @@ MonoBehaviour:
       animalRegenMaxTime: 15
       limitHiddenGauge: 250
       bCanAccess: 0
+    bCanAccess: 0
   - mapType: 3
     densityData:
     - forestType: 5
-      spawnTreeTypes: []
+      spawnTreeTypes:
+      - treeType: 4
+        regenProb: 100
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0
-      treeMaxDensityRatio: 0
+      treeStartDensityRatio: 0.04
+      treeMaxDensityRatio: 0.07
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
-      treeRegenMinTime: 0
-      treeRegenMaxTime: 0
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
       animalRegenMinTime: 0
       animalRegenMaxTime: 0
       limitHiddenGauge: 0
       bCanAccess: 0
     - forestType: 6
-      spawnTreeTypes: []
+      spawnTreeTypes:
+      - treeType: 4
+        regenProb: 30
+      - treeType: 5
+        regenProb: 70
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0
-      treeMaxDensityRatio: 0
+      treeStartDensityRatio: 0.04
+      treeMaxDensityRatio: 0.07
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
-      treeRegenMinTime: 0
-      treeRegenMaxTime: 0
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
       animalRegenMinTime: 0
       animalRegenMaxTime: 0
       limitHiddenGauge: 0
       bCanAccess: 0
     - forestType: 7
-      spawnTreeTypes: []
+      spawnTreeTypes:
+      - treeType: 5
+        regenProb: 60
+      - treeType: 6
+        regenProb: 40
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0
-      treeMaxDensityRatio: 0
+      treeStartDensityRatio: 0.04
+      treeMaxDensityRatio: 0.07
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
-      treeRegenMinTime: 0
-      treeRegenMaxTime: 0
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
       animalRegenMinTime: 0
       animalRegenMaxTime: 0
       limitHiddenGauge: 0
       bCanAccess: 0
+    bCanAccess: 0
   - mapType: 4
     densityData:
     - forestType: 8
@@ -158,6 +170,7 @@ MonoBehaviour:
       animalRegenMaxTime: 0
       limitHiddenGauge: 0
       bCanAccess: 0
+    bCanAccess: 0
   - mapType: 5
     densityData:
     - forestType: 11
@@ -199,3 +212,4 @@ MonoBehaviour:
       animalRegenMaxTime: 0
       limitHiddenGauge: 0
       bCanAccess: 0
+    bCanAccess: 0

@@ -19,3 +19,9 @@ MonoBehaviour:
     value: 12
   - treeType: 3
     value: 40
+  - treeType: 4
+    value: 500
+  - treeType: 5
+    value: 1500
+  - treeType: 6
+    value: 6000
