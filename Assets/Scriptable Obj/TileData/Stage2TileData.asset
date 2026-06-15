@@ -44,9 +44,10 @@ MonoBehaviour:
   waterTileCornerRDL: {fileID: 11400000, guid: 345945b8e86dc0c49b55590adf0dfb28, type: 2}
   waterTileCornerAll: {fileID: 11400000, guid: 5ef52f31b457ae04cb35e0f0a953d2de, type: 2}
   sandTiles:
-  - {fileID: 11400000, guid: b22a737e40330174abd9889d1ab15578, type: 2}
+  - {fileID: 11400000, guid: 3a43d51e0b1d297439ae845b042d4f38, type: 2}
   grassTiles:
-  - {fileID: 11400000, guid: 7b8329dc8ab116942bf0c77775877d08, type: 2}
+  - {fileID: 11400000, guid: 62433f312e4df024da7946282e499fdd, type: 2}
+  - {fileID: 11400000, guid: 86dc3f6ff7b564c448fd8afe37ac44f4, type: 2}
   mountainTiles:
   - {fileID: 11400000, guid: 9abb0510f152e8140b1612951c118a44, type: 2}
   treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}

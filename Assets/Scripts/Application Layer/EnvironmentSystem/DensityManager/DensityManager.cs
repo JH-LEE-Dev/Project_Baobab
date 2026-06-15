@@ -35,6 +35,19 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         if (densityDataBase != null)
         {
             densityDataBase = Instantiate(densityDataBase);
+            
+            for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
+            {
+                var mapData = densityDataBase.densityDatas[i];
+                if (i == 0)
+                {
+                    mapData.bCanAccess = true;
+                }
+                else
+                {
+                    mapData.bCanAccess = mapData.densityData.Count > 0 ? mapData.densityData[0].bCanAccess : false;
+                }
+            }
         }
         hiddenGaugeData = new Dictionary<ForestType, MapHiddenGaugeSaveData>();
     }
@@ -275,6 +288,23 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
             }
         }
 
+        // densityDataBase.densityDatas의 bCanAccess 업데이트
+        if (densityDataBase != null && densityDataBase.densityDatas != null)
+        {
+            for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
+            {
+                var mapData = densityDataBase.densityDatas[i];
+                if (i == 0)
+                {
+                    mapData.bCanAccess = true;
+                }
+                else
+                {
+                    mapData.bCanAccess = mapData.densityData.Count > 0 ? mapData.densityData[0].bCanAccess : false;
+                }
+            }
+        }
+
         // 현재 타일 수 정보가 있다면 데이터 갱신
         if (grassTileCnt > 0 || walkableTilesCnt > 0)
         {
@@ -474,6 +504,47 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 }
                 
                 globalForestIndex++;
+            }
+
+            // MapDensityData의 bCanAccess 업데이트
+            if (i == 0)
+            {
+                mapData.bCanAccess = true;
+            }
+            else
+            {
+                mapData.bCanAccess = mapData.densityData.Count > 0 ? mapData.densityData[0].bCanAccess : false;
+            }
+        }
+
+        // 캐싱된 데이터베이스의 bCanAccess 플래그들도 즉시 동기화
+        if (isDatabaseInitialized)
+        {
+            for (int i = 0; i < cachedDatabase.mapDatas.Count; i++)
+            {
+                var mapInfo = cachedDatabase.mapDatas[i];
+
+                for (int j = 0; j < mapInfo.forestDatas.Count; j++)
+                {
+                    var forestInfo = mapInfo.forestDatas[j];
+                    var originalData = densityDataBase.Get(mapInfo.mapType, forestInfo.forestType);
+                    if (originalData != null)
+                    {
+                        forestInfo.bCanAccess = originalData.bCanAccess;
+                    }
+                    mapInfo.forestDatas[j] = forestInfo;
+                }
+
+                if (i == 0)
+                {
+                    mapInfo.bCanAccess = true;
+                }
+                else
+                {
+                    mapInfo.bCanAccess = mapInfo.forestDatas.Count > 0 ? mapInfo.forestDatas[0].bCanAccess : false;
+                }
+
+                cachedDatabase.mapDatas[i] = mapInfo;
             }
         }
     }
