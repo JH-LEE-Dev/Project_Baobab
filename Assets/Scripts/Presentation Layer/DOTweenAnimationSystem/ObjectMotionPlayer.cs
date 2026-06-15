@@ -19,6 +19,7 @@ namespace PresentationLayer.DOTweenAnimationSystem
     {
         public UnityAction onStart;
         public UnityAction onComplete;
+        public System.Action<string> onKeyEvent;
         public bool bReset;
         public bool skip;
         public bool isSkipCallback;
@@ -101,33 +102,51 @@ namespace PresentationLayer.DOTweenAnimationSystem
             }
 
             if (null == _entry.motionInstance || null == _entry.targets || 0 == _entry.targets.Count)
+            {
                 return;
+            }
 
-            if (_settings.forceDelayForward >= 0f) 
+            if (_settings.forceDelayForward >= 0f)
+            {
                 _entry.motionInstance.SetDelayForward(_settings.forceDelayForward);
+            }
 
-            if (_settings.forceDelayBackward >= 0f) 
+            if (_settings.forceDelayBackward >= 0f)
+            {
                 _entry.motionInstance.SetDelayBackward(_settings.forceDelayBackward);
+            }
 
             if (_settings.forceDurationForward >= 0f)
+            {
                 _entry.motionInstance.SetDurationForward(_settings.forceDurationForward);
+            }
 
             if (_settings.forceDurationBackward >= 0f)
+            {
                 _entry.motionInstance.SetDurationBackward(_settings.forceDurationBackward);
+            }
+
+            // 플레이 시점 키프레임 액션 기입
+            _entry.motionInstance.SetKeyEventAction(_settings.onKeyEvent);
 
             if (false == _isBackward)
+            {
                 _entry.motionInstance.Play(_entry.targets, _settings.onStart, _settings.onComplete, _settings.bReset);
+            }
             else
+            {
                 _entry.motionInstance.PlayBackward(_entry.targets, _settings.onStart, _settings.onComplete, _settings.bReset);
+            }
         }
 
         // --- 기존 호환성 메서드 (향후 새 구조체 방식으로 교체 권장) ---
-        public MotionEntry Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, 
+        public MotionEntry Play(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, System.Action<string> _onKeyEvent = null,
             bool bReset = false, bool _skip = false, bool _isSkipCallback = false, float _forceDelayForward = -1f, float _forceDelayBackward = -1f)
         {
             MotionPlaySettings settings = MotionPlaySettings.Default;
             settings.onStart = _onStart;
             settings.onComplete = _onComplete;
+            settings.onKeyEvent = _onKeyEvent;
             settings.bReset = bReset;
             settings.skip = _skip;
             settings.isSkipCallback = _isSkipCallback;
@@ -137,13 +156,23 @@ namespace PresentationLayer.DOTweenAnimationSystem
             return Play(_tag, settings);
         }
 
+        public MotionEntry Play(string _tag, UnityAction _onStart, UnityAction _onComplete,
+            bool bReset, bool _skip, bool _isSkipCallback, float _forceDelayForward, float _forceDelayBackward)
+        {
+            return Play(_tag, _onStart, _onComplete, null, bReset, _skip, _isSkipCallback, _forceDelayForward, _forceDelayBackward);
+        }
+
         public MotionEntry Play(string _tag, MotionPlaySettings _settings)
         {
             if (null == motionMap)
+            {
                 InitializeMotionMap();
+            }
 
             if (false == motionMap.ContainsKey(_tag))
+            {
                 return null;
+            }
 
             PlayEntry(motionMap[_tag], false, _settings);
 
@@ -156,12 +185,13 @@ namespace PresentationLayer.DOTweenAnimationSystem
             return motionMap[_tag];
         }
 
-        public MotionEntry PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, 
+        public MotionEntry PlayBackward(string _tag, UnityAction _onStart = null, UnityAction _onComplete = null, System.Action<string> _onKeyEvent = null,
             bool bReset = false, bool _skip = false, bool _isSkipCallback = false, float _forceDelayForward = -1f, float _forceDelayBackward = -1f)
         {
             MotionPlaySettings settings = MotionPlaySettings.Default;
             settings.onStart = _onStart;
             settings.onComplete = _onComplete;
+            settings.onKeyEvent = _onKeyEvent;
             settings.bReset = bReset;
             settings.skip = _skip;
             settings.isSkipCallback = _isSkipCallback;
@@ -169,6 +199,12 @@ namespace PresentationLayer.DOTweenAnimationSystem
             settings.forceDelayBackward = _forceDelayBackward;
 
             return PlayBackward(_tag, settings);
+        }
+
+        public MotionEntry PlayBackward(string _tag, UnityAction _onStart, UnityAction _onComplete,
+            bool bReset, bool _skip, bool _isSkipCallback, float _forceDelayForward, float _forceDelayBackward)
+        {
+            return PlayBackward(_tag, _onStart, _onComplete, null, bReset, _skip, _isSkipCallback, _forceDelayForward, _forceDelayBackward);
         }
 
         public void Stop(string _tag)

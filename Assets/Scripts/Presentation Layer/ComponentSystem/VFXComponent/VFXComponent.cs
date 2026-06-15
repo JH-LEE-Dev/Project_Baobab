@@ -177,8 +177,9 @@ public class VFXComponent : MonoBehaviour
 
     /// <summary>
     /// 재생 중인 특정 이펙트의 재생을 멈추고 풀에 반환(비활성화)합니다.
+    /// _immediate가 true이면 즉시 끄고 반환하며, false이면 방출만 중지한 뒤 파티클이 모두 사라지면 자동으로 반환됩니다.
     /// </summary>
-    public void Stop(ParticleSystem _effect)
+    public void Stop(ParticleSystem _effect, bool _immediate = false)
     {
         if (null == _effect)
             return;
@@ -190,13 +191,22 @@ public class VFXComponent : MonoBehaviour
         {
             VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
             if (null != _helper)
-                _helper.ReturnToPool();
+            {
+                _helper.Stop(_immediate);
+            }
             else
             {
-                _effect.Stop(true);
-                _effect.Clear(true);
-                _effect.transform.SetParent(transform);
-                _effect.gameObject.SetActive(false);
+                if (true == _immediate)
+                {
+                    _effect.Stop(true);
+                    _effect.Clear(true);
+                    _effect.transform.SetParent(transform);
+                    _effect.gameObject.SetActive(false);
+                }
+                else
+                {
+                    _effect.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                }
             }
         }
     }
@@ -494,6 +504,7 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private Transform targetTransform;
     private ParticleSystem particleSys;
     private bool isReturning;
+    private Coroutine stopCoroutine;
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -506,12 +517,71 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         isReturning = false;
     }
 
+    public void Stop(bool _immediate)
+    {
+        if (null != stopCoroutine)
+        {
+            StopCoroutine(stopCoroutine);
+            stopCoroutine = null;
+        }
+
+        if (true == _immediate)
+        {
+            ReturnToPool();
+        }
+        else
+        {
+            if (null != particleSys)
+            {
+                particleSys.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+                stopCoroutine = StartCoroutine(CoWaitAndReturnToPool());
+            }
+        }
+    }
+
+    private System.Collections.IEnumerator CoWaitAndReturnToPool()
+    {
+        float _maxLifetime = 0f;
+        if (null != particleSys)
+        {
+            var _main = particleSys.main;
+            _maxLifetime = _main.startLifetime.constantMax;
+
+            ParticleSystem[] _children = particleSys.GetComponentsInChildren<ParticleSystem>(true);
+            if (null != _children)
+            {
+                int _len = _children.Length;
+                for (int i = 0; i < _len; i++)
+                {
+                    ParticleSystem _child = _children[i];
+                    if (null != _child)
+                    {
+                        var _childMain = _child.main;
+                        float _childLifetime = _childMain.startLifetime.constantMax;
+                        if (_childLifetime > _maxLifetime)
+                            _maxLifetime = _childLifetime;
+                    }
+                }
+            }
+        }
+
+        yield return new WaitForSeconds(_maxLifetime + 0.2f);
+        ReturnToPool();
+        stopCoroutine = null;
+    }
+
     public void ReturnToPool()
     {
         if (true == isReturning)
             return;
 
         isReturning = true;
+
+        if (null != stopCoroutine)
+        {
+            StopCoroutine(stopCoroutine);
+            stopCoroutine = null;
+        }
 
         if (null != particleSys)
         {
