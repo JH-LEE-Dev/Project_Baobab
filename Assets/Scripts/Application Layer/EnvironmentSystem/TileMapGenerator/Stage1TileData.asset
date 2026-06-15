@@ -48,7 +48,7 @@ MonoBehaviour:
   grassTiles:
   - {fileID: 11400000, guid: 7b8329dc8ab116942bf0c77775877d08, type: 2}
   mountainTiles:
-  - {fileID: 11400000, guid: 9abb0510f152e8140b1612951c118a44, type: 2}
+  - {fileID: 11400000, guid: ddb787362686b39489c3b3215fa3dac2, type: 2}
   treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
   grassDecoTiles:
   - {fileID: 11400000, guid: 497de42aa6ec0b84cb4c6f2508584131, type: 2}

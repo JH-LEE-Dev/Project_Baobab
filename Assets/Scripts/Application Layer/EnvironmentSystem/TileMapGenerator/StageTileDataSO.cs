@@ -45,9 +45,9 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private TileBase waterTileCornerAll;
 
     [Header("기타 타일 에셋")]
-    [SerializeField] private TileBase sandTile;
-    [SerializeField] private TileBase grassTile;
-    [SerializeField] private TileBase mountainTile;
+    [SerializeField] private List<TileBase> sandTiles;
+    [SerializeField] private List<TileBase> grassTiles;
+    [SerializeField] private List<TileBase> mountainTiles;
     [SerializeField] private TileBase treeCollisionTile;
     [SerializeField] private List<TileBase> grassDecoTiles;
     [SerializeField] private List<TileBase> groundDecoTiles;
@@ -91,9 +91,9 @@ public class StageTileDataSO : ScriptableObject
     public TileBase WaterTileCornerRDL => waterTileCornerRDL;
     public TileBase WaterTileCornerAll => waterTileCornerAll;
 
-    public TileBase SandTile => sandTile;
-    public TileBase GrassTile => grassTile;
-    public TileBase MountainTile => mountainTile;
+    public List<TileBase> SandTiles => sandTiles;
+    public List<TileBase> GrassTiles => grassTiles;
+    public List<TileBase> MountainTiles => mountainTiles;
     public TileBase TreeCollisionTile => treeCollisionTile;
     public List<TileBase> GrassDecoTiles => grassDecoTiles;
     public List<TileBase> GroundDecoTiles => groundDecoTiles;

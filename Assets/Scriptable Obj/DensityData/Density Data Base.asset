@@ -77,4 +77,125 @@ MonoBehaviour:
       limitHiddenGauge: 250
       bCanAccess: 0
   - mapType: 3
-    densityData: []
+    densityData:
+    - forestType: 5
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+    - forestType: 6
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+    - forestType: 7
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+  - mapType: 4
+    densityData:
+    - forestType: 8
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+    - forestType: 9
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+    - forestType: 10
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+  - mapType: 5
+    densityData:
+    - forestType: 11
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+    - forestType: 12
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0
+    - forestType: 13
+      spawnTreeTypes: []
+      spawnAnimalTypes: []
+      treeStartDensityRatio: 0
+      treeMaxDensityRatio: 0
+      animalStartDensityRatio: 0
+      animalMaxDensityRatio: 0
+      treeRegenMinTime: 0
+      treeRegenMaxTime: 0
+      animalRegenMinTime: 0
+      animalRegenMaxTime: 0
+      limitHiddenGauge: 0
+      bCanAccess: 0

@@ -462,11 +462,15 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _isSand = isShoreline[i] || v < sandThreshold;
                 if (_isSand)
                 {
-                    groundTiles[i] = stageTileData != null ? stageTileData.SandTile : null;
+                    groundTiles[i] = (stageTileData != null && stageTileData.SandTiles != null && stageTileData.SandTiles.Count > 0)
+                        ? stageTileData.SandTiles[UnityEngine.Random.Range(0, stageTileData.SandTiles.Count)]
+                        : null;
                 }
                 else
                 {
-                    groundTiles[i] = stageTileData != null ? stageTileData.GrassTile : null;
+                    groundTiles[i] = (stageTileData != null && stageTileData.GrassTiles != null && stageTileData.GrassTiles.Count > 0)
+                        ? stageTileData.GrassTiles[UnityEngine.Random.Range(0, stageTileData.GrassTiles.Count)]
+                        : null;
                 }
 
                 bool _hasRockDeco = false;

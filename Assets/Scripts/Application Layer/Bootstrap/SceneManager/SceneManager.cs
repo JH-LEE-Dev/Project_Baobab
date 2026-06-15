@@ -10,6 +10,12 @@ public enum ForestType
     FluffySporeForest_1,
     FluffySporeForest_2,
     FluffySporeForest_3,
+    StarrootForest_1,
+    StarrootForest_2,
+    StarrootForest_3,
+    MagmaForest_1,
+    MagmaForest_2,
+    MagmaForest_3,
 }
 
 public enum MapType
