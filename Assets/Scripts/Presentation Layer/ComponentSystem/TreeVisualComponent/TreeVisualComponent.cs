@@ -139,7 +139,7 @@ public class TreeVisualComponent : MonoBehaviour
     private void LateUpdate()
     {
         // 물 위 효과가 활성화된 경우에만 실행하여 불필요한 계산 방지
-        if (!isOnWaterActive || bOnWaterOrderSet) return;
+        //if (!isOnWaterActive || bOnWaterOrderSet) return;
 
         UpdateOnWaterSortingOrder();
     }
@@ -147,12 +147,12 @@ public class TreeVisualComponent : MonoBehaviour
     private void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;
-        int order = topRenderer.sortingOrder;
+        int order = (int)(cachedTransform.position.y * 100);
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
         if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.sortingOrder = order;
-        if (topShieldOnWaterSR != null) topShieldOnWaterSR.sortingOrder = order + 1;
-        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.sortingOrder = order + 1;
+        if (topShieldOnWaterSR != null) topShieldOnWaterSR.sortingOrder = order - 1;
+        if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.sortingOrder = order - 1;
         bOnWaterOrderSet = true;
     }
 
