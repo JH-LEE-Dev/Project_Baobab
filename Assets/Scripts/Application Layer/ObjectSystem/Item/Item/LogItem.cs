@@ -26,6 +26,7 @@ public class LogItem : Item, IStaticCollidable
     // 상태 변수
     private ItemMoveState state = ItemMoveState.None;
     public ItemMoveState MoveState => state;
+    public bool IsMoving => state != ItemMoveState.Dropped && state != ItemMoveState.None;
     private Transform suckTarget;
     private Transform dynamicTarget;
     private bool bDrop = true;
@@ -69,22 +70,29 @@ public class LogItem : Item, IStaticCollidable
 
     private bool bDisableCustomSortable = false;
     private float originalDurability;
+    private float inventoryCheckTimer = 0f;
 
     [SerializeField] private GameObject shadow;
+    private Transform shadowTransform;
 
     private Color originalColor;
 
     private string flyingItemSortingLayerName = "FlyingItem";
     private string objectsSortingLayerName = "Objects";
+    private static int objectsSortingLayerID = -1;
+    private static int flyingItemSortingLayerID = -1;
 
     [SerializeField] private GameObject outlineObj;
     [SerializeField] private SpriteRenderer outlineStencilSR;
     [SerializeField] private SpriteRenderer outlineSR;
 
-    public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, bool _bDisableCustomSortable = false)
+    private ICharacter character;
+
+    public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, ICharacter _character, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
 
+        character = _character;
         bDisableCustomSortable = _bDisableCustomSortable;
         logState = _logState;
         treeType = _logItemTypeData.treeType;
@@ -118,10 +126,28 @@ public class LogItem : Item, IStaticCollidable
                 outlineSR.sprite = sprite;
         }
 
+        if (shadow != null && shadowTransform == null)
+        {
+            shadowTransform = shadow.transform;
+        }
+
+        if (objectsSortingLayerID == -1)
+        {
+            objectsSortingLayerID = SortingLayer.NameToID(objectsSortingLayerName);
+        }
+
+        if (flyingItemSortingLayerID == -1)
+        {
+            flyingItemSortingLayerID = SortingLayer.NameToID(flyingItemSortingLayerName);
+        }
+
         transform.localScale = Vector3.one;
         originalMaterial = spriteRenderer.material;
 
-        customSortable = GetComponent<CustomSortable>();
+        if (customSortable == null)
+        {
+            customSortable = GetComponent<CustomSortable>();
+        }
 
         if (customSortable != null)
         {
@@ -290,6 +316,7 @@ public class LogItem : Item, IStaticCollidable
         transform.localScale = Vector3.one;
         landingDampTime = landingDampDuration;
         durability = originalDurability;
+        inventoryCheckTimer = 0.15f; // 스폰 시 즉시 검사하도록 설정
 
         if (outlineObj != null)
             outlineObj.SetActive(false);
@@ -298,7 +325,7 @@ public class LogItem : Item, IStaticCollidable
         {
             spriteRenderer.color = originalColor;
             spriteRenderer.SetPropertyBlock(null);
-            spriteRenderer.sortingLayerID = SortingLayer.NameToID(objectsSortingLayerName);
+            spriteRenderer.sortingLayerID = objectsSortingLayerID;
         }
 
         if (sprite != null && spriteRenderer != null)
@@ -315,9 +342,9 @@ public class LogItem : Item, IStaticCollidable
             customSortable.SetHeight(0f);
         }
 
-        if (shadow != null)
+        if (shadowTransform != null)
         {
-            shadow.transform.localScale = Vector3.one;
+            shadowTransform.localScale = Vector3.one;
         }
     }
 
@@ -353,6 +380,9 @@ public class LogItem : Item, IStaticCollidable
                 UpdateDropped(_deltaTime);
                 break;
         }
+
+        if (bDisableCustomSortable == false)
+            customSortable.ManualLateUpdate();
     }
 
     private void UpdateLaunching(float _deltaTime)
@@ -660,8 +690,11 @@ public class LogItem : Item, IStaticCollidable
 
     private void UpdateSucking(float _deltaTime)
     {
-        if (suckTarget == null)
+        if (suckTarget == null || (character != null && character.bDead))
         {
+            suckTarget = null;
+            transform.localScale = Vector3.one;
+            if (visualTransform != null) visualTransform.localScale = Vector3.one;
             state = ItemMoveState.Dropped;
             return;
         }
@@ -669,18 +702,23 @@ public class LogItem : Item, IStaticCollidable
         elapsed += _deltaTime;
 
         Vector3 targetPos = suckTarget.position;
-        float distance = Vector3.Distance(transform.position, targetPos);
+        Vector3 diff = targetPos - transform.position;
+        float sqrDistance = diff.sqrMagnitude;
 
         // 프레임 드랍 방어 가드: 다음 이동 거리가 남은 거리보다 크거나 같다면 오버슈트 방지를 위해 바로 획득 처리
-        if (suckSpeed > 0f && (suckSpeed * _deltaTime) >= distance)
+        if (suckSpeed > 0f)
         {
-            transform.position = targetPos;
-            LogItemAcquired?.Invoke(this);
-            return;
+            float nextMoveStep = suckSpeed * _deltaTime;
+            if (nextMoveStep * nextMoveStep >= sqrDistance)
+            {
+                transform.position = targetPos;
+                LogItemAcquired?.Invoke(this);
+                return;
+            }
         }
 
         // 도착 조건: 거리가 가깝고 타겟을 향해 이동 중일 때
-        if (distance < MinAcquireDist && suckSpeed > 0f)
+        if (suckSpeed > 0f && sqrDistance < (MinAcquireDist * MinAcquireDist))
         {
             LogItemAcquired?.Invoke(this);
             return;
@@ -710,7 +748,7 @@ public class LogItem : Item, IStaticCollidable
         }
 
         // 타겟 방향으로 부드럽게 이동
-        Vector3 dir = (targetPos - transform.position).normalized;
+        Vector3 dir = diff.normalized;
         transform.position += dir * suckSpeed * _deltaTime;
 
         if (visualTransform != null)
@@ -735,8 +773,9 @@ public class LogItem : Item, IStaticCollidable
         }
 
         // 타겟에 매우 가까워지면 전체 스케일 축소 (최소 0.25 유지)
-        if (distance < 1.5f && suckSpeed > 0f)
+        if (suckSpeed > 0f && sqrDistance < (1.5f * 1.5f))
         {
+            float distance = Mathf.Sqrt(sqrDistance);
             float scaleT = distance / 1.5f;
             scaleT = Mathf.Max(0.35f, scaleT);
             transform.localScale = Vector3.one * scaleT;
@@ -792,7 +831,12 @@ public class LogItem : Item, IStaticCollidable
 
         if (!bDrop || suckTarget == null) return;
 
-        CheckAcquireCondition();
+        inventoryCheckTimer += _deltaTime;
+        if (inventoryCheckTimer >= 0.15f)
+        {
+            inventoryCheckTimer = 0f;
+            CheckAcquireCondition();
+        }
     }
 
     private void CheckAcquireCondition()
@@ -834,16 +878,10 @@ public class LogItem : Item, IStaticCollidable
 
     private void UpdateShadowScale(float _heightOffset)
     {
-        if (shadow == null) return;
+        if (shadowTransform == null) return;
 
         float shadowScale = Mathf.Max(0.3f, 1f - (_heightOffset * 0.25f));
-        shadow.transform.localScale = new Vector3(shadowScale, shadowScale, 1f);
-    }
-
-    private void LateUpdate()
-    {
-        if (bDisableCustomSortable == false)
-            customSortable.ManualLateUpdate();
+        shadowTransform.localScale = new Vector3(shadowScale, shadowScale, 1f);
     }
 
     public void SetHeight(float _height)
@@ -853,6 +891,6 @@ public class LogItem : Item, IStaticCollidable
 
     public void SetFlyingItemSortingLayer()
     {
-        spriteRenderer.sortingLayerID = SortingLayer.NameToID(flyingItemSortingLayerName);
+        spriteRenderer.sortingLayerID = flyingItemSortingLayerID;
     }
 }

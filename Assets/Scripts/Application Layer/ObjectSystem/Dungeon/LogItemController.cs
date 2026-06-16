@@ -18,7 +18,6 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     // 최적화: 인덱스 기반 관리로 HashSet 제거
     private List<LogItem> activeItemsList = new List<LogItem>(256); // 마스터 리스트 (컬링 그룹용)
     private List<LogItem> activeItemsForUpdate = new List<LogItem>(256); // 업데이트 리스트 (가시성 기준)
-    private List<LogItem> cleanupList = new List<LogItem>(256); // ClearAll용 재사용 리스트
 
     [Header("Optimization")]
     [SerializeField] private float cullingUpdateInterval = 0.05f;
@@ -28,9 +27,12 @@ public class LogItemController : MonoBehaviour, ILogItemCH
 
     private IInventoryChecker inventoryChecker;
 
-    public void Initialize(IInventoryChecker _inventoryChecker)
+    private ICharacter character;
+
+    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character)
     {
         inventoryChecker = _inventoryChecker;
+        character = _character;
 
         logPool = new ObjectPool<LogItem>(
             createFunc: CreateLogItem,
@@ -128,8 +130,11 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         int count = activeItemsList.Count;
         for (int i = 0; i < count; i++)
         {
-            spheres[i].position = activeItemsList[i].transform.position;
-            spheres[i].radius = 1f;
+            var item = activeItemsList[i];
+            if (item.IsMoving)
+            {
+                spheres[i].position = item.transform.position;
+            }
         }
     }
 
@@ -237,17 +242,13 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         int count = activeItemsList.Count;
         if (count == 0) return;
 
-        cleanupList.Clear();
-        cleanupList.AddRange(activeItemsList);
-
-        for (int i = 0; i < cleanupList.Count; i++)
+        for (int i = count - 1; i >= 0; i--)
         {
-            logPool.Release(cleanupList[i]);
+            logPool.Release(activeItemsList[i]);
         }
 
         activeItemsList.Clear();
         activeItemsForUpdate.Clear();
-        cleanupList.Clear();
 
         if (cullingGroup != null)
         {
@@ -265,18 +266,20 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         LogDropCntData dropCntData = GetDropCntData(treeData.type);
         int spawnCount = Mathf.RoundToInt(UnityEngine.Random.Range(dropCntData.minCnt, dropCntData.maxCnt + 1) * _multiplier);
 
+        Vector3 spawnPos = _treeObj.transform.position;
+
         for (int i = 0; i < spawnCount; i++)
         {
             LogState logType = GetRandomLogState(dropProbData);
             LogItem logItem = logPool.Get();
 
-            logItem.transform.position = _treeObj.transform.position;
+            logItem.transform.position = spawnPos;
             var info = logItemTypeDataBase.Get(treeData.type);
-            logItem.Initialize(logItemTypeDataBase.Get(treeData.type), info.color, logType);
+            logItem.Initialize(info, info.color, logType, character);
             logItem.SetInventoryChecker(inventoryChecker);
 
             // 포물선 운동 설정
-            Vector3 startPos = _treeObj.transform.position;
+            Vector3 startPos = spawnPos;
             Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
             float randomDist = UnityEngine.Random.Range(1.25f, 1.75f);
             Vector3 endPos = startPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * randomDist;
