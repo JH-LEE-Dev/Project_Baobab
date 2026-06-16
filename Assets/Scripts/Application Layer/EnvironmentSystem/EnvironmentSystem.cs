@@ -153,7 +153,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     private void WeatherChanged(WeatherType _weatherType)
     {
-        lightingController.WeatherChanged(_weatherType);
+        //lightingController.WeatherChanged(_weatherType);
     }
 
     public void SetupForMapType(ForestType _forestType, MapType _mapType)
