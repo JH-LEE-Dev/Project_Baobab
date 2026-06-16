@@ -398,6 +398,7 @@ MonoBehaviour:
   _allowDynamicExpansion: 0
   _maxPoolSize: 10
   _autoSorting: 1
+  _updateSortingEveryFrame: 1
   _vfxSortingLayer: Default
   _vfxSortingOrder: 1
 --- !u!1 &8058589196582885879
