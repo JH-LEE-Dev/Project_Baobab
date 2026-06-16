@@ -352,7 +352,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public void SetSortOrder()
     {
         customSortable.ManualLateUpdate();
-        //treeVisualComponent.SetCustomSortingLayer();
+        treeVisualComponent.UpdateOnWaterSortingOrder();
     }
 
     public TreeType GetTreeType()

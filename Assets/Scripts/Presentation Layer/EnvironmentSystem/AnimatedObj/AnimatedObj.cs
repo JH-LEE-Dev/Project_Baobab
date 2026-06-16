@@ -57,10 +57,7 @@ public class AnimatedObj : MonoBehaviour
                 sr.sprite = sprites[currentFrameIndex];
             }
         }
-    }
 
-    private void LateUpdate()
-    {
         if (customSortable != null)
         {
             customSortable.ManualLateUpdate();
