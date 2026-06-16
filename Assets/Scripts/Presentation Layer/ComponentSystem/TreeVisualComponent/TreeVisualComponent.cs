@@ -128,23 +128,17 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomShieldOnWaterSR != null) bottomShieldOnWaterOriginalAlpha = bottomShieldOnWaterSR.color.a;
 
         CacheSwayBasePose();
+        UpdateOnWaterSortingOrder();
     }
 
     // 매 프레임 상단 수관에 아주 약한 바람 흔들림을 적용한다.
     private void Update()
     {
         ApplyWindSway();
+        //UpdateOnWaterSortingOrder();
     }
 
-    private void LateUpdate()
-    {
-        // 물 위 효과가 활성화된 경우에만 실행하여 불필요한 계산 방지
-        //if (!isOnWaterActive || bOnWaterOrderSet) return;
-
-        UpdateOnWaterSortingOrder();
-    }
-
-    private void UpdateOnWaterSortingOrder()
+    public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;
         int order = (int)(cachedTransform.position.y * 100);
