@@ -116,7 +116,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
                     trees[i].Initialize(environmentProvider);
                     trees[i].BTreeShadowSet = false;
 
-                    TreeType type = trees[i].GetTreeType();
+                    TreeType type = trees[i].GetCustomTreeType();
                     TreeGrade grade = TreeGrade.Normal;
 
                     trees[i].ApplyData(new TreeData(type, grade, treeVisualDataBase.Get(type), default));

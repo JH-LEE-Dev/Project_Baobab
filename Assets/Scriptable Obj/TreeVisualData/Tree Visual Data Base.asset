@@ -15,158 +15,107 @@ MonoBehaviour:
   treeVisualDatas:
   - treeType: 1
     topSprites:
-    - {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
-    - {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
-    - {fileID: 21300000, guid: faa5d1f9decdec04dbb99edcea569d87, type: 3}
+    - {fileID: 21300000, guid: 279b87ae59d71a640850e55141496f05, type: 3}
+    - {fileID: 21300000, guid: 63c992d08a1db5241bd44a628091b37a, type: 3}
+    - {fileID: 21300000, guid: eedb7c6638919814f8c14aedcc68cafe, type: 3}
+    - {fileID: 21300000, guid: 9edeb5fcdcc20ee46b1faee2dd440b1b, type: 3}
+    - {fileID: 21300000, guid: 4e0f7eb9509f5e740bace05d92c7a8d3, type: 3}
+    - {fileID: 21300000, guid: f3dd62734eb8e824e88f5e03071929bf, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
-    - {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
-    - {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
-    - {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+    - {fileID: 21300000, guid: d14eb52e5a8d41d4f84c6f4646038c31, type: 3}
+    - {fileID: 21300000, guid: 231aadfaff47cd94caba3e3658c2fe3d, type: 3}
+    - {fileID: 21300000, guid: 240f0b543f17dfd4bb536e998b92d21a, type: 3}
+    - {fileID: 21300000, guid: 08130e01bf6662e4b948a05d18986c7a, type: 3}
     shieldTopSprites: []
     shieldBottomSprites: []
     saplingTopSprites:
-    - {fileID: 21300000, guid: 922595c7777a8bf4a91a4c3decf2ddb3, type: 3}
+    - {fileID: 21300000, guid: aa88e4616e31ee34793c1e1cf133c960, type: 3}
     saplingBottomSprites:
-    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
-    highlightSprites:
-    - {fileID: 21300000, guid: cbc8fd5f4a6e6d7499e8078cfb1e0f07, type: 3}
-    - {fileID: 21300000, guid: abb19d778307a5041a75e616bb7f826a, type: 3}
-    - {fileID: 21300000, guid: 5f9656797a731a74fa0f08793aa28b36, type: 3}
-    treeColorSets:
-    - topColor: {r: 0.25490198, g: 0.7529412, b: 0.19607843, a: 1}
-      bottomColor: {r: 0.67058825, g: 0.32156864, b: 0.22352941, a: 1}
-    - topColor: {r: 0.28627452, g: 0.72156864, b: 0.101960786, a: 1}
-      bottomColor: {r: 0.67058825, g: 0.32156864, b: 0.22352941, a: 1}
-    - topColor: {r: 0.25490198, g: 0.7529412, b: 0.19607843, a: 1}
-      bottomColor: {r: 0.67058825, g: 0.32156864, b: 0.22352941, a: 1}
+    - {fileID: 21300000, guid: 12c96e895f290b8449aec7eebfc73e95, type: 3}
   - treeType: 2
     topSprites:
-    - {fileID: 21300000, guid: 0baebf858c2dac64e8099fe5f5f793cc, type: 3}
-    - {fileID: 21300000, guid: 50875f415a9ceda46aab0281271bcc7a, type: 3}
+    - {fileID: 21300000, guid: f988b93aeca181d4e91bdbc89211b362, type: 3}
+    - {fileID: 21300000, guid: c539ed2fdf8ef7147806cebb4d36a0cc, type: 3}
+    - {fileID: 21300000, guid: 980dfe37f6c8582448d0e0a54d89390d, type: 3}
+    - {fileID: 21300000, guid: 7550e842ce40e8749b2773d4af3d7f19, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
-    - {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
-    - {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
-    - {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+    - {fileID: 21300000, guid: d14eb52e5a8d41d4f84c6f4646038c31, type: 3}
+    - {fileID: 21300000, guid: 231aadfaff47cd94caba3e3658c2fe3d, type: 3}
+    - {fileID: 21300000, guid: 240f0b543f17dfd4bb536e998b92d21a, type: 3}
+    - {fileID: 21300000, guid: 08130e01bf6662e4b948a05d18986c7a, type: 3}
     shieldTopSprites: []
     shieldBottomSprites: []
     saplingTopSprites:
-    - {fileID: 21300000, guid: 85b31df75be58564496862d060f09b1c, type: 3}
+    - {fileID: 21300000, guid: 1d916e511d4e6d246908a8d2955a5eac, type: 3}
     saplingBottomSprites:
-    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
-    highlightSprites:
-    - {fileID: 21300000, guid: 0858638606872914ebf2b6bfa2828b1b, type: 3}
-    - {fileID: 21300000, guid: feaca42bead12ae4497daf01c3b1bbbf, type: 3}
-    treeColorSets:
-    - topColor: {r: 0.25490198, g: 0.7529412, b: 0.19607843, a: 1}
-      bottomColor: {r: 0.67058825, g: 0.32156864, b: 0.22352941, a: 1}
-    - topColor: {r: 0.28627452, g: 0.72156864, b: 0.101960786, a: 1}
-      bottomColor: {r: 0.67058825, g: 0.32156864, b: 0.22352941, a: 1}
-    - topColor: {r: 0.25490198, g: 0.7529412, b: 0.19607843, a: 1}
-      bottomColor: {r: 0.67058825, g: 0.32156864, b: 0.22352941, a: 1}
+    - {fileID: 21300000, guid: 12c96e895f290b8449aec7eebfc73e95, type: 3}
   - treeType: 3
     topSprites:
-    - {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
-    - {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
-    - {fileID: 21300000, guid: faa5d1f9decdec04dbb99edcea569d87, type: 3}
+    - {fileID: 21300000, guid: 8b6aa0e504d9e4041b18453193f2f185, type: 3}
+    - {fileID: 21300000, guid: a7287c4cf7aa663499a293ad4bc77894, type: 3}
+    - {fileID: 21300000, guid: 7fe1d4d9507bccd438010b3fc0343e8d, type: 3}
+    - {fileID: 21300000, guid: c406fa8d6e1d1d042bb424635fad79e9, type: 3}
+    - {fileID: 21300000, guid: adfe01b0f067a574b9dea58e5fdec2d8, type: 3}
+    - {fileID: 21300000, guid: 9ad45caab61c0264e85463127b290c97, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: 8570543ce8b20fd448fc041591f81849, type: 3}
-    - {fileID: 21300000, guid: 30c4b7458ae3538429604b201fe40761, type: 3}
-    - {fileID: 21300000, guid: 762f2e596555a0f4f9c4cd78c0591dd2, type: 3}
-    - {fileID: 21300000, guid: 8da985131347f95478d65c9cd4275bfa, type: 3}
+    - {fileID: 21300000, guid: 66ec9f8f7a3dadb4c8e46cde5409f58b, type: 3}
+    - {fileID: 21300000, guid: 8d15ef51f578b224094499cfb2960ce9, type: 3}
+    - {fileID: 21300000, guid: 3e524b0b00e9c0e47967ee9e032d732e, type: 3}
+    - {fileID: 21300000, guid: b66eba7859c6a074fbcc5072941f929a, type: 3}
     shieldTopSprites: []
     shieldBottomSprites: []
     saplingTopSprites:
-    - {fileID: 21300000, guid: 922595c7777a8bf4a91a4c3decf2ddb3, type: 3}
+    - {fileID: 21300000, guid: 572a941f08253e24fa876c99793c870d, type: 3}
     saplingBottomSprites:
-    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
-    highlightSprites:
-    - {fileID: 21300000, guid: cbc8fd5f4a6e6d7499e8078cfb1e0f07, type: 3}
-    - {fileID: 21300000, guid: abb19d778307a5041a75e616bb7f826a, type: 3}
-    - {fileID: 21300000, guid: 5f9656797a731a74fa0f08793aa28b36, type: 3}
-    treeColorSets:
-    - topColor: {r: 0.8980392, g: 0.78431374, b: 0.2901961, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
-    - topColor: {r: 0.5882353, g: 0.6117647, b: 0.14117648, a: 1}
-      bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
-    - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+    - {fileID: 21300000, guid: 17fece18d87633e4ba5a51518b694c3e, type: 3}
   - treeType: 4
     topSprites:
-    - {fileID: 21300000, guid: c1a8c72697732d64e873821f9f67e14e, type: 3}
-    - {fileID: 21300000, guid: 62f13af4e2d2bc740b52b9c47941c171, type: 3}
+    - {fileID: 21300000, guid: a8cb816e19a144549986d4d10926f666, type: 3}
+    - {fileID: 21300000, guid: 78ce4886bc29e034e92e5c2ed409715e, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
-    - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    - {fileID: 21300000, guid: a3e4d7fc180184d428174f91489fa0a1, type: 3}
+    - {fileID: 21300000, guid: 42d9eed6001a88446a3539f8d3774faa, type: 3}
     shieldTopSprites:
-    - {fileID: 21300000, guid: d623ca3b0d1f78a47a89f1c80aed94c4, type: 3}
-    - {fileID: 21300000, guid: 35d7362e819d0744e9b33410617a5d7c, type: 3}
+    - {fileID: 21300000, guid: cd570b7079ade1d499293e5c88701ae5, type: 3}
+    - {fileID: 21300000, guid: e9d4b71bb4df7cf44994a487934ccf00, type: 3}
     shieldBottomSprites:
-    - {fileID: 21300000, guid: 207cf87f1d2e02d41b8a1af3c1545fbd, type: 3}
-    - {fileID: 21300000, guid: 8d6b9d1cf3507d4478bb111dc31fb3e4, type: 3}
+    - {fileID: 21300000, guid: bb454fab3072a874490c0cc377815cc6, type: 3}
+    - {fileID: 21300000, guid: 6f03581edada1f44ba5a17dab473b647, type: 3}
     saplingTopSprites:
-    - {fileID: 21300000, guid: f60a119ba5fe7d94da98fe9b81edc06e, type: 3}
+    - {fileID: 21300000, guid: ab2f7f9324aa3e54dbfc19b2de263643, type: 3}
     saplingBottomSprites:
-    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
-    highlightSprites:
-    - {fileID: 21300000, guid: 118ce8467be7f1547918f0919601e8fb, type: 3}
-    - {fileID: 21300000, guid: e37eb5a6258c00945881cc669cd967b3, type: 3}
-    treeColorSets:
-    - topColor: {r: 0.8980392, g: 0.78431374, b: 0.2901961, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
-    - topColor: {r: 0.5882353, g: 0.6117647, b: 0.14117648, a: 1}
-      bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
-    - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+    - {fileID: 21300000, guid: fbb66f78bc468d1488c358c00fd925fe, type: 3}
   - treeType: 5
     topSprites:
-    - {fileID: 21300000, guid: c1a8c72697732d64e873821f9f67e14e, type: 3}
-    - {fileID: 21300000, guid: 62f13af4e2d2bc740b52b9c47941c171, type: 3}
+    - {fileID: 21300000, guid: dbbd31a91396bbe4f8361a143915c0a0, type: 3}
+    - {fileID: 21300000, guid: 7de9c790f41449545a90679bc94b7e71, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
-    - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
+    - {fileID: 21300000, guid: ba51e3c681f04684ab420e1d2c3d2035, type: 3}
+    - {fileID: 21300000, guid: 96e989925eb6be648bba57a1853909c4, type: 3}
     shieldTopSprites:
-    - {fileID: 21300000, guid: d623ca3b0d1f78a47a89f1c80aed94c4, type: 3}
-    - {fileID: 21300000, guid: 35d7362e819d0744e9b33410617a5d7c, type: 3}
+    - {fileID: 21300000, guid: 929a26623bf00054383705b7448c5c04, type: 3}
+    - {fileID: 21300000, guid: c09617d0c88559f4da3229034e068536, type: 3}
     shieldBottomSprites:
-    - {fileID: 21300000, guid: 207cf87f1d2e02d41b8a1af3c1545fbd, type: 3}
-    - {fileID: 21300000, guid: 8d6b9d1cf3507d4478bb111dc31fb3e4, type: 3}
+    - {fileID: 21300000, guid: 66e31edc55eff12408fbc9745ee3558a, type: 3}
+    - {fileID: 21300000, guid: 729e16e7748801a488678e7a4e22ee9b, type: 3}
     saplingTopSprites:
-    - {fileID: 21300000, guid: 922595c7777a8bf4a91a4c3decf2ddb3, type: 3}
+    - {fileID: 21300000, guid: ab2f7f9324aa3e54dbfc19b2de263643, type: 3}
     saplingBottomSprites:
-    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
-    highlightSprites:
-    - {fileID: 21300000, guid: 118ce8467be7f1547918f0919601e8fb, type: 3}
-    - {fileID: 21300000, guid: e37eb5a6258c00945881cc669cd967b3, type: 3}
-    treeColorSets:
-    - topColor: {r: 0.8980392, g: 0.78431374, b: 0.2901961, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
-    - topColor: {r: 0.5882353, g: 0.6117647, b: 0.14117648, a: 1}
-      bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
-    - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+    - {fileID: 21300000, guid: d11805765aaf20b46819c6a8788ade75, type: 3}
   - treeType: 6
     topSprites:
-    - {fileID: 21300000, guid: c1a8c72697732d64e873821f9f67e14e, type: 3}
-    - {fileID: 21300000, guid: 62f13af4e2d2bc740b52b9c47941c171, type: 3}
+    - {fileID: 21300000, guid: d2092bc0346f8b44fa873fb57e605e29, type: 3}
+    - {fileID: 21300000, guid: 4226c0d02c176a543bb20164badd0238, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: 124c36f2bcdf7fe468a19bf730373cf8, type: 3}
-    - {fileID: 21300000, guid: 966faf79161d2cc4f9b2aea358368b5c, type: 3}
-    shieldTopSprites: []
-    shieldBottomSprites: []
+    - {fileID: 21300000, guid: a3e4d7fc180184d428174f91489fa0a1, type: 3}
+    - {fileID: 21300000, guid: 42d9eed6001a88446a3539f8d3774faa, type: 3}
+    shieldTopSprites:
+    - {fileID: 21300000, guid: af9f31b6da1896749845fbe64976a4ac, type: 3}
+    - {fileID: 21300000, guid: a3e258964ff368c4e94fe1a002967235, type: 3}
+    shieldBottomSprites:
+    - {fileID: 21300000, guid: bb454fab3072a874490c0cc377815cc6, type: 3}
+    - {fileID: 21300000, guid: 6f03581edada1f44ba5a17dab473b647, type: 3}
     saplingTopSprites:
-    - {fileID: 21300000, guid: f60a119ba5fe7d94da98fe9b81edc06e, type: 3}
+    - {fileID: 21300000, guid: e12b140d8604d434ab7e80614fee477d, type: 3}
     saplingBottomSprites:
-    - {fileID: 21300000, guid: ae0191abb3c006948a15a118ae070950, type: 3}
-    highlightSprites:
-    - {fileID: 21300000, guid: cbc8fd5f4a6e6d7499e8078cfb1e0f07, type: 3}
-    - {fileID: 21300000, guid: abb19d778307a5041a75e616bb7f826a, type: 3}
-    - {fileID: 21300000, guid: 5f9656797a731a74fa0f08793aa28b36, type: 3}
-    treeColorSets:
-    - topColor: {r: 0.8980392, g: 0.78431374, b: 0.2901961, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
-    - topColor: {r: 0.5882353, g: 0.6117647, b: 0.14117648, a: 1}
-      bottomColor: {r: 0.8901961, g: 0.81960785, b: 0.8, a: 1}
-    - topColor: {r: 0.87058824, g: 0.8862745, b: 0.32156864, a: 1}
-      bottomColor: {r: 1, g: 0.83137256, b: 0.7882353, a: 1}
+    - {fileID: 21300000, guid: fbb66f78bc468d1488c358c00fd925fe, type: 3}

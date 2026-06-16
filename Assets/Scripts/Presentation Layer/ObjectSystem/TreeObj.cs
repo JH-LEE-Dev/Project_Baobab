@@ -129,14 +129,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         treeData = _treeData;
 
-        // 에디터 커스텀 모드일 경우 나무의 실질 종류 속성(TreeType)을 에디터 설정값으로 연동
-        if (treeVisualComponent != null && treeVisualComponent.bUseCustomColor)
-        {
-            var modifiedData = treeData;
-            modifiedData.type = treeVisualComponent.customTreeType;
-            treeData = modifiedData;
-        }
-
         ResetTree();
 
         healthComponent.Setup(treeData.type, treeData.treeStatData.hp, treeData.treeStatData.sp, treeData.treeStatData.spRegen, treeData.treeStatData.regenStrategy);
@@ -244,7 +236,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public Color GetColor()
     {
-        return treeVisualComponent.GetBottomColor();
+        return Color.white;
     }
 
     private void InitializeShadow(Shadow shadow)
@@ -357,11 +349,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public TreeType GetTreeType()
     {
-        if (treeVisualComponent != null && treeVisualComponent.bUseCustomColor)
-        {
-            return treeVisualComponent.customTreeType;
-        }
         return treeData.type;
+    }
+
+    public TreeType GetCustomTreeType()
+    {
+        return treeVisualComponent.customTreeType;
     }
 
     public bool BTreeShadowSet
