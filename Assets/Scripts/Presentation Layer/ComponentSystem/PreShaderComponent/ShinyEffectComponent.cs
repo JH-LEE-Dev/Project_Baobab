@@ -34,6 +34,9 @@ public class ShinyEffectComponent : MonoBehaviour
     
     [ShowIf("_useVfxEffect")]
     [SerializeField] private ParticleSystem _vfxPrefab;
+
+    [ShowIf("_useVfxEffect")]
+    [SerializeField] private string _vfxTag = "ShinyVFX";
     
     [ShowIf("_useVfxEffect")]
     [SerializeField] private Color _vfxColor = Color.white;
@@ -43,6 +46,18 @@ public class ShinyEffectComponent : MonoBehaviour
     
     [ShowIf("_useVfxEffect")]
     [SerializeField] private float _vfxUiScale = 1.0f;
+
+    [Header("VFX Pool Settings")]
+    [ShowIf("_useVfxEffect")]
+    [SerializeField] private int _initialPoolSize = 1;
+
+    [ShowIf("_useVfxEffect")]
+    [SerializeField] private bool _allowDynamicExpansion = true;
+
+    private bool ShowMaxPoolSize() => _useVfxEffect && _allowDynamicExpansion;
+
+    [ShowIf("ShowMaxPoolSize")]
+    [SerializeField] private int _maxPoolSize = 10;
 
     [Header("VFX Sorting")]
     [ShowIf("_useVfxEffect")]
@@ -76,7 +91,6 @@ public class ShinyEffectComponent : MonoBehaviour
     private static readonly int _shinyAngleId = Shader.PropertyToID("_ShinyAngle");
     private static readonly int _shinyLocationId = Shader.PropertyToID("_ShinyLocation");
 
-    private const string _vfxTag = "ShinyVFX";
     private const string _overlayName = "__ShinyOverlay__";
 
     /// <summary>
@@ -181,9 +195,9 @@ public class ShinyEffectComponent : MonoBehaviour
         var type = typeof(VFXPoolData);
         type.GetField("vfxTag", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _vfxTag);
         type.GetField("effectPrefab", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _vfxPrefab);
-        type.GetField("initialPoolSize", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, 1);
-        type.GetField("allowDynamicExpansion", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, true);
-        type.GetField("maxPoolSize", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, 10);
+        type.GetField("initialPoolSize", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _initialPoolSize);
+        type.GetField("allowDynamicExpansion", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _allowDynamicExpansion);
+        type.GetField("maxPoolSize", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _maxPoolSize);
         type.GetField("uiParticleScale", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _vfxUiScale);
 
         FieldInfo listField = typeof(VFXComponent).GetField("vfxPoolDataList", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -352,7 +366,10 @@ public class ShinyEffectComponent : MonoBehaviour
         }
         else if (_renderer != null)
         {
-            _renderer.sharedMaterials = _prevMaterials;
+            if (_prevMaterials != null)
+            {
+                _renderer.sharedMaterials = _prevMaterials;
+            }
         }
 
         if (_instanceMaterial != null)
