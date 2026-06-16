@@ -377,22 +377,26 @@ public class TreeVisualComponent : MonoBehaviour
 
         // 쉴드 및 하이라이트 관련 오브젝트 활성화
         if (topHighlightSR != null) topHighlightSR.gameObject.SetActive(true);
-        if (topShieldSR != null) topShieldSR.gameObject.SetActive(true);
-        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(true);
+
+        bool hasTopShield = topShieldSR != null && topShieldSR.sprite != null;
+        bool hasBottomShield = bottomShieldSR != null && bottomShieldSR.sprite != null;
+
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(hasTopShield);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(hasBottomShield);
 
         if (isOnWaterActive)
         {
             if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(true);
-            if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(true);
-            if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(true);
+            if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(hasTopShield);
+            if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(hasBottomShield);
         }
 
         if (isOutlineActive)
         {
-            if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(true);
-            if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(true);
-            if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(true);
-            if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(true);
+            if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(hasTopShield);
+            if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(hasBottomShield);
+            if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(hasTopShield);
+            if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(hasBottomShield);
         }
 
         ApplyColorSet(visualData);
@@ -1071,21 +1075,24 @@ public class TreeVisualComponent : MonoBehaviour
 
     public void ShieldRegened()
     {
-        if (topShieldSR != null) topShieldSR.gameObject.SetActive(true);
-        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(true);
+        bool hasTopShield = topShieldSR != null && topShieldSR.sprite != null;
+        bool hasBottomShield = bottomShieldSR != null && bottomShieldSR.sprite != null;
+
+        if (topShieldSR != null) topShieldSR.gameObject.SetActive(hasTopShield);
+        if (bottomShieldSR != null) bottomShieldSR.gameObject.SetActive(hasBottomShield);
 
         if (isOnWaterActive)
         {
-            if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(true);
-            if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(true);
+            if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(hasTopShield);
+            if (bottomShieldOnWaterSR != null) bottomShieldOnWaterSR.gameObject.SetActive(hasBottomShield);
         }
 
         if (isOutlineActive)
         {
-            if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(true);
-            if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(true);
-            if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(true);
-            if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(true);
+            if (topShieldOutlineSR != null) topShieldOutlineSR.gameObject.SetActive(hasTopShield);
+            if (bottomShieldOutlineSR != null) bottomShieldOutlineSR.gameObject.SetActive(hasBottomShield);
+            if (topShieldStencilOutlineSR != null) topShieldStencilOutlineSR.gameObject.SetActive(hasTopShield);
+            if (bottomShieldStencilOutlineSR != null) bottomShieldStencilOutlineSR.gameObject.SetActive(hasBottomShield);
         }
     }
 
