@@ -112,6 +112,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     squashScale: {x: 1.4, y: 0.7}
     recoilScale: {x: 0.8, y: 1.3}
@@ -277,6 +278,7 @@ GameObject:
   - component: {fileID: 5665415039286098442}
   - component: {fileID: 4461946511213407996}
   - component: {fileID: 1567634026135072655}
+  - component: {fileID: 2337659889583935036}
   m_Layer: 5
   m_Name: ItemImg
   m_TagString: Untagged
@@ -341,6 +343,40 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2337659889583935036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4217011972326639751}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67c094942956bdb4481657b7a3fbf13b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShinyEffectComponent
+  _useShinyEffect: 0
+  _shinyOriginalMaterial: {fileID: 2100000, guid: b7de3cc27b99cc2428225e2f4365f663, type: 2}
+  _shinyColor: {r: 1, g: 1, b: 1, a: 0.5}
+  _shinyWidth: 0.103
+  _shinySoftness: 0.05
+  _shinyAngle: 45
+  _playOnEnable: 1
+  _duration: 2
+  _delay: 0.5
+  _loopCount: -1
+  _useVfxEffect: 1
+  _vfxPrefab: {fileID: 2164660391435094963, guid: e7fbc58d37dba1640a273b065a7b985f, type: 3}
+  _vfxTag: ShinyVFX
+  _vfxColor: {r: 1, g: 1, b: 1, a: 1}
+  _isUIVfx: 1
+  _vfxUiScale: 40
+  _initialPoolSize: 1
+  _allowDynamicExpansion: 0
+  _maxPoolSize: 10
+  _autoSorting: 1
+  _vfxSortingLayer: Default
+  _vfxSortingOrder: 1
 --- !u!1 &4266648869552089038
 GameObject:
   m_ObjectHideFlags: 0
@@ -975,7 +1011,7 @@ SortingGroup:
   m_GameObject: {fileID: 3415230306803400403}
   m_Enabled: 1
   m_SortingLayerID: 962808927
-  m_SortingLayer: 13
+  m_SortingLayer: 14
   m_SortingOrder: 5
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0

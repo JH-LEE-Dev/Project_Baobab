@@ -31,6 +31,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     private int showCnt = 0;
     private CurrencyFontHUD currencyFont;
     private int maxItemCntPerSlot = 99;
+    private ShinyEffectComponent shinyEffectComponent;
 
     public IItemData ShowItemData => showItemData;
     public IInventorySlot InvSlotRef => invSlotRef;
@@ -40,6 +41,8 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void Initialize()
     {
+        shinyEffectComponent = GetComponentInChildren<ShinyEffectComponent>();
+
         UpdateImage(null, Color.white);
         
         if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
@@ -113,6 +116,9 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             uiImage.sprite = _sprite;
             //uiImage.color = _color;
         }
+
+        if (null != shinyEffectComponent)
+            shinyEffectComponent.UseShinyEffect = null != _sprite;
     }
 
     public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99, bool _playInteraction = false)

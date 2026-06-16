@@ -12,6 +12,10 @@ using UnityEditor;
 [RequireComponent(typeof(Component))]
 public class ShinyEffectComponent : MonoBehaviour
 {
+    [Header("Master Switch")]
+    [Tooltip("스크립트 기능(이펙트 재생) 사용 여부를 결정합니다. 끄더라도 세팅된 오버레이는 유지되나, 완전히 투명해져 부하가 사라집니다.")]
+    [SerializeField] private bool _useShinyEffect = true;
+
     // 외부 의존성
     [Header("Material")]
     [SerializeField] private Material _shinyOriginalMaterial;
@@ -54,7 +58,7 @@ public class ShinyEffectComponent : MonoBehaviour
     [ShowIf("_useVfxEffect")]
     [SerializeField] private bool _allowDynamicExpansion = true;
 
-    private bool ShowMaxPoolSize() => _useVfxEffect && _allowDynamicExpansion;
+    private bool ShowMaxPoolSize() => true == _useVfxEffect && true == _allowDynamicExpansion;
 
     [ShowIf("ShowMaxPoolSize")]
     [SerializeField] private int _maxPoolSize = 10;
@@ -64,7 +68,7 @@ public class ShinyEffectComponent : MonoBehaviour
     [Tooltip("체크 시 현재 렌더러나 캔버스의 소팅 속성을 찾아 +1 된 값으로 자동 렌더링합니다.")]
     [SerializeField] private bool _autoSorting = true;
     
-    private bool ShowCustomSorting() => _useVfxEffect && !_autoSorting;
+    private bool ShowCustomSorting() => true == _useVfxEffect && false == _autoSorting;
 
     [ShowIf("ShowCustomSorting")]
     [SerializeField] private string _vfxSortingLayer = "Default";
@@ -74,16 +78,31 @@ public class ShinyEffectComponent : MonoBehaviour
 
     // 내부 의존성
     private Material _instanceMaterial;
-    private Material[] _prevMaterials;
+    private Material[] _cachedMaterials; 
     private Graphic _graphic;
     private Renderer _renderer;
     private Tween _shinyTween;
 
     private VFXComponent _vfxComponent;
     private ParticleSystem _activeVfxParticle;
+    private List<VFXPoolData> _cachedPoolList; 
+    private VFXPoolData _cachedPoolData;
     
     private GameObject _uiOverlayObj;
     private Graphic _uiOverlayGraphic;
+    
+    private bool _isOverlaySetup = false;
+
+    // 리플렉션 정보 캐싱
+    private static readonly FieldInfo _isUiField = typeof(VFXComponent).GetField("isUIComponent", BindingFlags.NonPublic | BindingFlags.Instance);
+    private static readonly FieldInfo _listField = typeof(VFXComponent).GetField("vfxPoolDataList", BindingFlags.NonPublic | BindingFlags.Instance);
+    
+    private static readonly FieldInfo _tagField = typeof(VFXPoolData).GetField("vfxTag", BindingFlags.NonPublic | BindingFlags.Instance);
+    private static readonly FieldInfo _prefabField = typeof(VFXPoolData).GetField("effectPrefab", BindingFlags.NonPublic | BindingFlags.Instance);
+    private static readonly FieldInfo _initSizeField = typeof(VFXPoolData).GetField("initialPoolSize", BindingFlags.NonPublic | BindingFlags.Instance);
+    private static readonly FieldInfo _allowExpField = typeof(VFXPoolData).GetField("allowDynamicExpansion", BindingFlags.NonPublic | BindingFlags.Instance);
+    private static readonly FieldInfo _maxSizeField = typeof(VFXPoolData).GetField("maxPoolSize", BindingFlags.NonPublic | BindingFlags.Instance);
+    private static readonly FieldInfo _uiScaleField = typeof(VFXPoolData).GetField("uiParticleScale", BindingFlags.NonPublic | BindingFlags.Instance);
 
     private static readonly int _shinyColorId = Shader.PropertyToID("_ShinyColor");
     private static readonly int _shinyWidthId = Shader.PropertyToID("_ShinyWidth");
@@ -93,12 +112,31 @@ public class ShinyEffectComponent : MonoBehaviour
 
     private const string _overlayName = "__ShinyOverlay__";
 
-    /// <summary>
-    /// 수동으로 이펙트를 재생합니다.
-    /// </summary>
+    // 퍼블릭 초기화 및 제어 메서드
+    public bool UseShinyEffect
+    {
+        get => _useShinyEffect;
+        set
+        {
+            if (_useShinyEffect == value)
+                return;
+
+            _useShinyEffect = value;
+            if (false == _useShinyEffect)
+                StopEffect();
+            else if (true == Application.isPlaying && true == _playOnEnable)
+                PlayEffect();
+        }
+    }
+
     public void PlayEffect()
     {
-        if (_instanceMaterial != null)
+        if (false == _useShinyEffect)
+            return;
+
+        UpdateOverlaySprite();
+
+        if (null != _instanceMaterial)
         {
             StopEffect();
 
@@ -106,34 +144,31 @@ public class ShinyEffectComponent : MonoBehaviour
             
             _shinyTween = _instanceMaterial.DOFloat(2f, "_ShinyLocation", _duration)
                 .SetDelay(_delay)
-                .SetEase(Ease.Linear);
+                .SetEase(Ease.Linear)
+                .OnKill(() => 
+                {
+                    if (true == Application.isPlaying && null != _vfxComponent && null != _activeVfxParticle)
+                    {
+                        _vfxComponent.Stop(_activeVfxParticle, true);
+                        _activeVfxParticle = null;
+                    }
+                });
 
-            if (_loopCount == -1)
-            {
+            if (-1 == _loopCount)
                 _shinyTween.SetLoops(-1, LoopType.Restart);
-            }
-            else if (_loopCount > 0)
-            {
+            else if (0 < _loopCount)
                 _shinyTween.SetLoops(_loopCount, LoopType.Restart);
-            }
         }
 
-        // 재생 시 VFX 파티클 함께 출력
-        if (Application.isPlaying && _useVfxEffect && _vfxComponent != null)
+        if (true == Application.isPlaying && true == _useVfxEffect && null != _vfxComponent)
         {
-            if (_activeVfxParticle != null)
-            {
-                bool _immediate = !_activeVfxParticle.gameObject.activeInHierarchy;
-                _vfxComponent.Stop(_activeVfxParticle, _immediate);
-            }
-
             _activeVfxParticle = _vfxComponent.Play(_vfxTag, transform.position, transform.rotation, transform);
             
-            if (_activeVfxParticle != null)
+            if (null != _activeVfxParticle)
             {
                 _vfxComponent.SetStartColor(_activeVfxParticle, _vfxColor);
 
-                if (_autoSorting)
+                if (true == _autoSorting)
                     ApplyAutoSorting(_activeVfxParticle);
                 else
                     _vfxComponent.SetSortingSettings(_activeVfxParticle, _vfxSortingLayer, _vfxSortingOrder);
@@ -141,165 +176,248 @@ public class ShinyEffectComponent : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 진행 중인 이펙트를 중지합니다.
-    /// </summary>
-    public void StopEffect()
+    public void StopEffect(bool _immediate = false)
     {
-        if (_shinyTween != null)
+        if (null != _shinyTween)
         {
             _shinyTween.Kill();
             _shinyTween = null;
+            
+            if (null != _instanceMaterial)
+                _instanceMaterial.SetFloat(_shinyLocationId, -1f);
         }
 
-        if (Application.isPlaying && _activeVfxParticle != null && _vfxComponent != null)
+        if (true == Application.isPlaying && null != _vfxComponent && null != _activeVfxParticle)
         {
-            bool _immediate = !_activeVfxParticle.gameObject.activeInHierarchy;
             _vfxComponent.Stop(_activeVfxParticle, _immediate);
             _activeVfxParticle = null;
         }
     }
 
-    /// <summary>
-    /// 인스펙터의 변경사항을 머테리얼에 수동으로 즉시 적용합니다.
-    /// </summary>
     public void UpdateMaterialProperties()
     {
-        if (_instanceMaterial == null) return;
+        if (null == _instanceMaterial)
+            return;
 
         _instanceMaterial.SetColor(_shinyColorId, _shinyColor);
         _instanceMaterial.SetFloat(_shinyWidthId, _shinyWidth);
         _instanceMaterial.SetFloat(_shinySoftnessId, _shinySoftness);
         _instanceMaterial.SetFloat(_shinyAngleId, _shinyAngle);
 
-        if (_uiOverlayGraphic != null)
-        {
+        if (null != _uiOverlayGraphic && true == _uiOverlayGraphic.gameObject.activeInHierarchy)
             _uiOverlayGraphic.SetMaterialDirty();
+    }
+
+    public void UpdateOverlaySprite()
+    {
+        if (null == _graphic || null == _uiOverlayGraphic)
+            return;
+
+        if (_graphic is Image _origImg && _uiOverlayGraphic is Image _newImg)
+        {
+            _newImg.sprite = _origImg.sprite;
+            _newImg.type = _origImg.type;
+            _newImg.preserveAspect = _origImg.preserveAspect;
+            _newImg.fillMethod = _origImg.fillMethod;
+            _newImg.fillAmount = _origImg.fillAmount;
         }
+        else if (_graphic is RawImage _origRawI && _uiOverlayGraphic is RawImage _newRawI)
+        {
+            _newRawI.texture = _origRawI.texture;
+            _newRawI.uvRect = _origRawI.uvRect;
+        }
+    }
+
+    private void SetupOverlay()
+    {
+        if (true == _isOverlaySetup)
+            return;
+
+        SetupVFXComponent();
+
+        if (null == _shinyOriginalMaterial)
+            return;
+
+        if (null == _instanceMaterial)
+        {
+            _instanceMaterial = new Material(_shinyOriginalMaterial);
+            _instanceMaterial.hideFlags = HideFlags.DontSave;
+            
+            _instanceMaterial.SetFloat("_OverlayMode", 1f);
+            _instanceMaterial.EnableKeyword("UI_OVERLAY");
+        }
+
+        UpdateMaterialProperties();
+
+        if (null != _graphic)
+            CreateUIOverlay();
+        else if (null != _renderer)
+        {
+            Material[] _prevMaterials = _renderer.sharedMaterials;
+            if (null != _prevMaterials)
+            {
+                int _len = _prevMaterials.Length;
+                if (null == _cachedMaterials || _cachedMaterials.Length != _len + 1)
+                    _cachedMaterials = new Material[_len + 1];
+
+                for (int i = 0; i < _len; i++)
+                    _cachedMaterials[i] = _prevMaterials[i];
+                    
+                _cachedMaterials[_len] = _instanceMaterial;
+                _renderer.sharedMaterials = _cachedMaterials;
+            }
+            else
+            {
+                if (null == _cachedMaterials || _cachedMaterials.Length != 1)
+                    _cachedMaterials = new Material[] { _instanceMaterial };
+                else
+                    _cachedMaterials[0] = _instanceMaterial;
+                    
+                _renderer.sharedMaterials = _cachedMaterials;
+            }
+        }
+
+        _isOverlaySetup = true;
     }
 
     private void SetupVFXComponent()
     {
-        if (!_useVfxEffect || _vfxPrefab == null) return;
-        if (!Application.isPlaying) return;
+        if (false == _useVfxEffect || null == _vfxPrefab)
+            return;
+            
+        if (false == Application.isPlaying)
+            return;
 
-        _vfxComponent = GetComponent<VFXComponent>();
-        if (_vfxComponent == null)
+        if (null == _vfxComponent)
+            _vfxComponent = GetComponent<VFXComponent>();
+
+        if (null == _vfxComponent)
             _vfxComponent = gameObject.AddComponent<VFXComponent>();
 
-        FieldInfo isUiField = typeof(VFXComponent).GetField("isUIComponent", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (isUiField != null)
-            isUiField.SetValue(_vfxComponent, _isUIVfx);
+        if (null != _isUiField)
+            _isUiField.SetValue(_vfxComponent, _isUIVfx);
 
-        VFXPoolData poolData = new VFXPoolData();
-        var type = typeof(VFXPoolData);
-        type.GetField("vfxTag", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _vfxTag);
-        type.GetField("effectPrefab", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _vfxPrefab);
-        type.GetField("initialPoolSize", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _initialPoolSize);
-        type.GetField("allowDynamicExpansion", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _allowDynamicExpansion);
-        type.GetField("maxPoolSize", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _maxPoolSize);
-        type.GetField("uiParticleScale", BindingFlags.NonPublic | BindingFlags.Instance)?.SetValue(poolData, _vfxUiScale);
+        if (null == _cachedPoolData)
+            _cachedPoolData = new VFXPoolData();
 
-        FieldInfo listField = typeof(VFXComponent).GetField("vfxPoolDataList", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (listField != null)
-            listField.SetValue(_vfxComponent, new List<VFXPoolData> { poolData });
+        _tagField?.SetValue(_cachedPoolData, _vfxTag);
+        _prefabField?.SetValue(_cachedPoolData, _vfxPrefab);
+        _initSizeField?.SetValue(_cachedPoolData, _initialPoolSize);
+        _allowExpField?.SetValue(_cachedPoolData, _allowDynamicExpansion);
+        _maxSizeField?.SetValue(_cachedPoolData, _maxPoolSize);
+        _uiScaleField?.SetValue(_cachedPoolData, _vfxUiScale);
+
+        if (null != _listField)
+        {
+            if (null == _cachedPoolList)
+                _cachedPoolList = new List<VFXPoolData>(1) { _cachedPoolData };
+            else
+                _cachedPoolList[0] = _cachedPoolData;
+
+            _listField.SetValue(_vfxComponent, _cachedPoolList);
+        }
 
         _vfxComponent.Initialize();
         _vfxComponent.SetStartColorOfTag(_vfxTag, _vfxColor);
     }
 
-    private void ApplyAutoSorting(ParticleSystem vfxParticle)
+    private void ApplyAutoSorting(ParticleSystem _vfxParticle)
     {
         string _targetLayer = "Default";
         int _targetOrder = 1;
 
-        if (_renderer != null)
+        if (null != _renderer)
         {
             _targetLayer = _renderer.sortingLayerName;
             _targetOrder = _renderer.sortingOrder + 1;
         }
-        else if (_graphic != null && _graphic.canvas != null)
+        else if (null != _graphic && null != _graphic.canvas)
         {
             _targetLayer = _graphic.canvas.sortingLayerName;
             _targetOrder = _graphic.canvas.sortingOrder + 1;
         }
 
-        if (_vfxComponent != null)
-            _vfxComponent.SetSortingSettings(vfxParticle, _targetLayer, _targetOrder);
+        if (null != _vfxComponent)
+            _vfxComponent.SetSortingSettings(_vfxParticle, _targetLayer, _targetOrder);
     }
 
     private void CreateUIOverlay()
     {
-        if (_graphic == null) return;
-        DestroyUIOverlay(); // 기존 찌꺼기 방지
+        if (null == _graphic)
+            return;
 
-        _uiOverlayObj = new GameObject(_overlayName);
-        _uiOverlayObj.hideFlags = HideFlags.HideAndDontSave; // 에디터 씬 더티/누수 방지
-
-        RectTransform rt = _uiOverlayObj.AddComponent<RectTransform>();
-        rt.SetParent(_graphic.transform, false);
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-        rt.localScale = Vector3.one;
-
-        if (_graphic is Image origImage)
+        if (null == _uiOverlayObj)
         {
-            Image newImage = _uiOverlayObj.AddComponent<Image>();
-            newImage.sprite = origImage.sprite;
-            newImage.type = origImage.type;
-            newImage.preserveAspect = origImage.preserveAspect;
-            newImage.fillMethod = origImage.fillMethod;
-            newImage.fillAmount = origImage.fillAmount;
-            newImage.raycastTarget = false;
-            _uiOverlayGraphic = newImage;
-        }
-        else if (_graphic is RawImage origRaw)
-        {
-            RawImage newRaw = _uiOverlayObj.AddComponent<RawImage>();
-            newRaw.texture = origRaw.texture;
-            newRaw.uvRect = origRaw.uvRect;
-            newRaw.raycastTarget = false;
-            _uiOverlayGraphic = newRaw;
-        }
-
-        if (_uiOverlayGraphic != null && _instanceMaterial != null)
-        {
-            _uiOverlayGraphic.material = _instanceMaterial;
-        }
-    }
-
-    private void DestroyUIOverlay()
-    {
-        if (_uiOverlayObj != null)
-        {
-            if (Application.isPlaying) Destroy(_uiOverlayObj);
-            else DestroyImmediate(_uiOverlayObj);
-            _uiOverlayObj = null;
-            _uiOverlayGraphic = null;
-        }
-
-        // 찌꺼기 검사
-        if (_graphic != null)
-        {
-            Transform existing = _graphic.transform.Find(_overlayName);
-            if (existing != null)
+            Transform _existing = _graphic.transform.Find(_overlayName);
+            if (null != _existing)
             {
-                if (Application.isPlaying) Destroy(existing.gameObject);
-                else DestroyImmediate(existing.gameObject);
+                _uiOverlayObj = _existing.gameObject;
+                _uiOverlayGraphic = _uiOverlayObj.GetComponent<Graphic>();
+            }
+            else
+            {
+                _uiOverlayObj = new GameObject(_overlayName);
+                _uiOverlayObj.hideFlags = HideFlags.HideAndDontSave; 
+
+                RectTransform _rt = _uiOverlayObj.AddComponent<RectTransform>();
+                _rt.SetParent(_graphic.transform, false);
+                _rt.anchorMin = Vector2.zero;
+                _rt.anchorMax = Vector2.one;
+                _rt.offsetMin = Vector2.zero;
+                _rt.offsetMax = Vector2.zero;
+                _rt.localScale = Vector3.one;
             }
         }
+
+        if (null == _uiOverlayGraphic && null != _uiOverlayObj)
+        {
+            if (_graphic is Image _origImage)
+            {
+                Image _newImage = _uiOverlayObj.AddComponent<Image>();
+                _newImage.raycastTarget = false;
+                _uiOverlayGraphic = _newImage;
+            }
+            else if (_graphic is RawImage _origRaw)
+            {
+                RawImage _newRaw = _uiOverlayObj.AddComponent<RawImage>();
+                _newRaw.raycastTarget = false;
+                _uiOverlayGraphic = _newRaw;
+            }
+        }
+
+        if (null != _uiOverlayGraphic)
+        {
+            if (_graphic is Image _origImg && _uiOverlayGraphic is Image _newImg)
+            {
+                _newImg.sprite = _origImg.sprite;
+                _newImg.type = _origImg.type;
+                _newImg.preserveAspect = _origImg.preserveAspect;
+                _newImg.fillMethod = _origImg.fillMethod;
+                _newImg.fillAmount = _origImg.fillAmount;
+            }
+            else if (_graphic is RawImage _origRawI && _uiOverlayGraphic is RawImage _newRawI)
+            {
+                _newRawI.texture = _origRawI.texture;
+                _newRawI.uvRect = _origRawI.uvRect;
+            }
+
+            if (null != _instanceMaterial)
+                _uiOverlayGraphic.material = _instanceMaterial;
+        }
+
+        if (null != _uiOverlayObj && false == _uiOverlayObj.activeSelf)
+            _uiOverlayObj.SetActive(true);
     }
 
 #if UNITY_EDITOR
     private void Reset()
     {
-        if (_shinyOriginalMaterial == null)
+        if (null == _shinyOriginalMaterial)
             _shinyOriginalMaterial = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/ShinyCard.mat");
     }
 #endif
 
+    // 유니티 이벤트 함수
     private void Awake()
     {
         _graphic = GetComponent<Graphic>();
@@ -308,88 +426,54 @@ public class ShinyEffectComponent : MonoBehaviour
 
     private void OnEnable()
     {
-        SetupVFXComponent();
+        SetupOverlay();
 
-        if (_shinyOriginalMaterial == null) return;
-
-        if (_instanceMaterial == null)
-        {
-            _instanceMaterial = new Material(_shinyOriginalMaterial);
-            _instanceMaterial.hideFlags = HideFlags.DontSave;
-            
-            // 오버레이 모드 켜기 (기존 이미지를 지우고 빛만 렌더링하여 덧씌우기)
-            _instanceMaterial.SetFloat("_OverlayMode", 1f);
-            _instanceMaterial.EnableKeyword("UI_OVERLAY");
-        }
-
-        UpdateMaterialProperties();
-
-        if (_graphic != null)
-        {
-            // UI 자식 생성 방식 (기존 머테리얼 보존)
-            CreateUIOverlay();
-        }
-        else if (_renderer != null)
-        {
-            // 월드 렌더러 배열 추가 방식 (기존 머테리얼 보존)
-            _prevMaterials = _renderer.sharedMaterials;
-            
-            if (_prevMaterials != null)
-            {
-                Material[] newMaterials = new Material[_prevMaterials.Length + 1];
-                for (int i = 0; i < _prevMaterials.Length; i++)
-                {
-                    newMaterials[i] = _prevMaterials[i];
-                }
-                newMaterials[newMaterials.Length - 1] = _instanceMaterial;
-                _renderer.sharedMaterials = newMaterials;
-            }
-            else
-            {
-                _renderer.sharedMaterials = new Material[] { _instanceMaterial };
-            }
-        }
-
-        if (Application.isPlaying && _playOnEnable)
-        {
+        if (true == Application.isPlaying && true == _useShinyEffect && true == _playOnEnable)
             PlayEffect();
-        }
     }
 
     private void OnDisable()
     {
-        StopEffect();
+        StopEffect(true);
+    }
 
-        if (_graphic != null)
+    private void OnDestroy()
+    {
+        if (null != _instanceMaterial)
         {
-            DestroyUIOverlay();
-        }
-        else if (_renderer != null)
-        {
-            if (_prevMaterials != null)
-            {
-                _renderer.sharedMaterials = _prevMaterials;
-            }
-        }
-
-        if (_instanceMaterial != null)
-        {
-            if (Application.isPlaying) Destroy(_instanceMaterial);
-            else DestroyImmediate(_instanceMaterial);
+            if (true == Application.isPlaying)
+                Destroy(_instanceMaterial);
+            else
+                DestroyImmediate(_instanceMaterial);
+                
             _instanceMaterial = null;
+        }
+
+        if (null != _uiOverlayObj)
+        {
+            if (true == Application.isPlaying)
+                Destroy(_uiOverlayObj);
+            else
+                DestroyImmediate(_uiOverlayObj);
+                
+            _uiOverlayObj = null;
         }
     }
 
     private void OnValidate()
     {
-        if (_instanceMaterial != null)
+        if (false == isActiveAndEnabled)
+            return;
+
+        if (false == _isOverlaySetup)
+            SetupOverlay();
+
+        if (null != _instanceMaterial)
         {
             UpdateMaterialProperties();
             
-            if (!Application.isPlaying)
-            {
-                _instanceMaterial.SetFloat(_shinyLocationId, 0.5f);
-            }
+            if (false == Application.isPlaying)
+                _instanceMaterial.SetFloat(_shinyLocationId, true == _useShinyEffect ? 0.5f : -1f);
         }
     }
 }

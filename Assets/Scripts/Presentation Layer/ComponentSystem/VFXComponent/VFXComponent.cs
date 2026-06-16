@@ -525,10 +525,8 @@ public class VFXPoolInstanceHelper : MonoBehaviour
             stopCoroutine = null;
         }
 
-        if (true == _immediate)
-        {
+        if (true == _immediate || false == gameObject.activeInHierarchy)
             ReturnToPool();
-        }
         else
         {
             if (null != particleSys)
