@@ -83,14 +83,14 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
             if (null != trunkImage && null != visualData.bottomSprites && 0 < visualData.bottomSprites.Count)
                 trunkImage.sprite = visualData.bottomSprites[0];
 
-            if (null != visualData.treeColorSets && 0 < visualData.treeColorSets.Count)
-            {
-                if (null != leafImage)
-                    leafImage.color = visualData.treeColorSets[0].topColor;
+            // if (null != visualData.treeColorSets && 0 < visualData.treeColorSets.Count)
+            // {
+            //     if (null != leafImage)
+            //         leafImage.color = visualData.treeColorSets[0].topColor;
 
-                if (null != trunkImage)
-                    trunkImage.color = visualData.treeColorSets[0].bottomColor;
-            }
+            //     if (null != trunkImage)
+            //         trunkImage.color = visualData.treeColorSets[0].bottomColor;
+            // }
         }
 
         ResetAnimation();
