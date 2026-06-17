@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 
 public class LogItem : Item, IStaticCollidable
@@ -158,7 +157,6 @@ public class LogItem : Item, IStaticCollidable
             // 정렬 기준(Anchor)을 상하 이동하는 visualTransform으로 설정
             customSortable.Initialize(visualTransform != null ? visualTransform : transform);
             customSortable.AddSpriteRenderer(spriteRenderer);
-            customSortable.AddSpriteRenderer(outlineStencilSR);
             customSortable.AddSpriteRenderer(outlineSR);
         }
 
@@ -393,7 +391,10 @@ public class LogItem : Item, IStaticCollidable
         }
 
         if (bDisableCustomSortable == false)
+        {
             customSortable.ManualLateUpdate();
+            outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
+        }
     }
 
     private void UpdateLaunching(float _deltaTime)

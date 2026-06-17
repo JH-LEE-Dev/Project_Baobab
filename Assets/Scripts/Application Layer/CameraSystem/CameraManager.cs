@@ -31,7 +31,7 @@ public class CameraManager : MonoBehaviour
     public void ResetCamera()
     {
         // 씬 내에 존재하는 CinemachineCamera를 자동으로 검색하여 할당합니다.
-        virtualCamera = Object.FindAnyObjectByType<CinemachineCamera>();
+        virtualCamera = UnityEngine.Object.FindAnyObjectByType<CinemachineCamera>();
 
         if (virtualCamera == null)
         {

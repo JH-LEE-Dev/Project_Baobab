@@ -12,6 +12,14 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
         [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
+
+        [Header(Shiny Settings)]
+        [HDR] _ShinyColor("Shiny Color", Color) = (1, 1, 1, 0.5)
+        _ShinyWidth("Shiny Width", Range(0.01, 1.0)) = 0.2
+        _ShinySoftness("Shiny Softness", Range(0.01, 1.0)) = 0.1
+        _ShinyAngle("Shiny Angle", Range(0, 360)) = 45.0
+        _ShinyDuration("Shiny Duration", Float) = 1.0
+        _ShinyDelay("Shiny Delay", Float) = 0.5
     }
 
     SubShader
@@ -66,6 +74,12 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _ShinyColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyWidth)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinySoftness)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyAngle)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDuration)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDelay)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -110,6 +124,30 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
 
                 half4 color = CommonLitFragment(input, input.color);
                 clip(color.a - 0.01);
+
+                // Shiny effect (셰이더 내부 시간 기반, GPU 인스턴싱 호환)
+                float shinyDuration = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyDuration);
+                float shinyDelay = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyDelay);
+                float totalCycle = shinyDuration + shinyDelay;
+                float3 pivotPos = float3(UNITY_MATRIX_M[0][3], UNITY_MATRIX_M[1][3], UNITY_MATRIX_M[2][3]);
+                float phaseOffset = frac((pivotPos.x + pivotPos.y) * 0.37);
+                float shinyTime = fmod(_Time.y + phaseOffset * totalCycle, totalCycle);
+                float shinyLocation = lerp(-1.0, 2.0, saturate(shinyTime / shinyDuration));
+
+                float shinyAngle = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyAngle);
+                float rad = shinyAngle * 0.01745329;
+                float sinA = sin(rad);
+                float cosA = cos(rad);
+                float2 centeredUV = input.uv - 0.5;
+                float2 rotatedUV = float2(centeredUV.x * cosA - centeredUV.y * sinA,
+                                           centeredUV.x * sinA + centeredUV.y * cosA) + 0.5;
+                float dist = abs(rotatedUV.x - shinyLocation);
+                float shinyWidth = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyWidth);
+                float shinySoftness = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinySoftness);
+                float glow = smoothstep(shinyWidth, shinyWidth - shinySoftness, dist);
+                half4 shinyColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyColor);
+                color.rgb += shinyColor.rgb * glow * shinyColor.a * color.a;
+
                 return color;
             }
             ENDHLSL
@@ -148,6 +186,12 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _ShinyColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyWidth)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinySoftness)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyAngle)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDuration)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDelay)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -230,6 +274,12 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _ShinyColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyWidth)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinySoftness)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyAngle)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDuration)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDelay)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -271,7 +321,32 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
                     input.uv += uvDelta;
                 }
 
-                return CommonUnlitFragment(input, input.color);
+                half4 color = CommonUnlitFragment(input, input.color);
+
+                // Shiny effect (셰이더 내부 시간 기반, GPU 인스턴싱 호환)
+                float shinyDuration = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyDuration);
+                float shinyDelay = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyDelay);
+                float totalCycle = shinyDuration + shinyDelay;
+                float3 pivotPos = float3(UNITY_MATRIX_M[0][3], UNITY_MATRIX_M[1][3], UNITY_MATRIX_M[2][3]);
+                float phaseOffset = frac((pivotPos.x + pivotPos.y) * 0.37);
+                float shinyTime = fmod(_Time.y + phaseOffset * totalCycle, totalCycle);
+                float shinyLocation = lerp(-1.0, 2.0, saturate(shinyTime / shinyDuration));
+
+                float shinyAngle = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyAngle);
+                float rad = shinyAngle * 0.01745329;
+                float sinA = sin(rad);
+                float cosA = cos(rad);
+                float2 centeredUV = input.uv - 0.5;
+                float2 rotatedUV = float2(centeredUV.x * cosA - centeredUV.y * sinA,
+                                           centeredUV.x * sinA + centeredUV.y * cosA) + 0.5;
+                float dist = abs(rotatedUV.x - shinyLocation);
+                float shinyWidth = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyWidth);
+                float shinySoftness = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinySoftness);
+                float glow = smoothstep(shinyWidth, shinyWidth - shinySoftness, dist);
+                half4 shinyColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyColor);
+                color.rgb += shinyColor.rgb * glow * shinyColor.a * color.a;
+
+                return color;
             }
             ENDHLSL
         }

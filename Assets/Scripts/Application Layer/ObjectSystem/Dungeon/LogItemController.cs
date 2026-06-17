@@ -79,6 +79,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             {
                 _item.UpdateIndex = activeItemsForUpdate.Count;
                 activeItemsForUpdate.Add(_item);
+                _item.bCanGetSortingOrder = true;
             }
         }
         else
@@ -95,6 +96,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
                 }
                 activeItemsForUpdate.RemoveAt(lastIdx);
                 _item.UpdateIndex = -1;
+                _item.bCanGetSortingOrder = false;
             }
         }
     }
@@ -203,6 +205,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             // 컬링 그룹이 없으면 무조건 업데이트 리스트에 추가
             _item.UpdateIndex = activeItemsForUpdate.Count;
             activeItemsForUpdate.Add(_item);
+            _item.bCanGetSortingOrder = true;
         }
 
         _item.ResetItem();
@@ -431,6 +434,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         {
             _logItem.UpdateIndex = activeItemsForUpdate.Count;
             activeItemsForUpdate.Add(_logItem);
+            _logItem.bCanGetSortingOrder = true;
         }
     }
 
@@ -448,6 +452,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             }
             activeItemsForUpdate.RemoveAt(lastIdx);
             _logItem.UpdateIndex = -1;
+            _logItem.bCanGetSortingOrder = false;
         }
     }
 }

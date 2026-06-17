@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Item : MonoBehaviour
+public class Item : Object
 {
     public ItemType itemType { get; private set; }
     public Sprite sprite;

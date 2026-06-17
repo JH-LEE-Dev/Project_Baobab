@@ -378,7 +378,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67c094942956bdb4481657b7a3fbf13b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShinyEffectComponent
-  _useShinyEffect: 1
+  _useShinyEffect: 0
   _shinyOriginalMaterial: {fileID: 2100000, guid: b7de3cc27b99cc2428225e2f4365f663, type: 2}
   _shinyColor: {r: 1, g: 1, b: 1, a: 0.5}
   _shinyWidth: 0.103
