@@ -510,18 +510,8 @@ MonoBehaviour:
   bottomOnWaterSR: {fileID: 0}
   topOutlineSR: {fileID: 2537668001028267346}
   bottomOutlineSR: {fileID: 8035249395700068492}
-  topShieldOutlineSR: {fileID: 0}
-  bottomShieldOutlineSR: {fileID: 0}
   topStencilOutlineSR: {fileID: 6531924025935067938}
   bottomStencilOutlineSR: {fileID: 109527830833158442}
-  topShieldStencilOutlineSR: {fileID: 0}
-  bottomShieldStencilOutlineSR: {fileID: 0}
-  topHighlightSR: {fileID: 0}
-  topHighlightOnWaterSR: {fileID: 0}
-  topShieldSR: {fileID: 0}
-  bottomShieldSR: {fileID: 0}
-  topShieldOnWaterSR: {fileID: 0}
-  bottomShieldOnWaterSR: {fileID: 0}
   topSprites:
   - {fileID: 21300000, guid: 6d48fffe6752bed47a8784c90f35f548, type: 3}
   - {fileID: 21300000, guid: 85e12ab62b94e164287e857c24001b6f, type: 3}
@@ -547,10 +537,7 @@ MonoBehaviour:
   outlineStencilTopTransform: {fileID: 4492946464673899753}
   outlineTopTransform: {fileID: 3212163163668593646}
   baseVisualObj: {fileID: 3309576156863803684}
-  bUseCustomColor: 0
   customTreeType: 1
-  customTopColor: {r: 1, g: 1, b: 1, a: 1}
-  customBottomColor: {r: 1, g: 1, b: 1, a: 1}
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
 --- !u!114 &3142599335365549467
 MonoBehaviour:
@@ -747,7 +734,7 @@ SortingGroup:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3309576156863803684}
-  m_Enabled: 1
+  m_Enabled: 0
   m_SortingLayerID: -1266786427
   m_SortingLayer: 10
   m_SortingOrder: 0
@@ -984,7 +971,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1513284483311919982
 Transform:
   m_ObjectHideFlags: 0

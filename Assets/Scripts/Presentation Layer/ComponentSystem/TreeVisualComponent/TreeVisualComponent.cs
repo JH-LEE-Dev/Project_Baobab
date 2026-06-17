@@ -114,7 +114,16 @@ public class TreeVisualComponent : MonoBehaviour
         if (customSortable != null)
         {
             customSortable.Initialize(transform);
-            customSortable.SetSortingGroup(baseVisualObj.GetComponent<SortingGroup>());
+            customSortable.AddSpriteRenderer(topRenderer);
+            customSortable.AddSpriteRenderer(bottomRenderer);
+            customSortable.AddSpriteRenderer(topShadowRenderer);
+            customSortable.AddSpriteRenderer(bottomShadowRenderer);
+            customSortable.AddSpriteRenderer(topOutlineSR);
+            customSortable.AddSpriteRenderer(bottomOutlineSR);
+            customSortable.AddSpriteRenderer(topStencilOutlineSR);
+            customSortable.AddSpriteRenderer(bottomStencilOutlineSR);
+
+            //customSortable.SetSortingGroup(baseVisualObj.GetComponent<SortingGroup>());
         }
     }
 
@@ -124,6 +133,12 @@ public class TreeVisualComponent : MonoBehaviour
         int order = (int)(cachedTransform.position.y * 100);
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
+    }
+
+    public void UpdateSortingOrder()
+    {
+        topStencilOutlineSR.sortingOrder = topOutlineSR.sortingOrder - 1;
+        bottomStencilOutlineSR.sortingOrder = bottomOutlineSR.sortingOrder - 1;
     }
 
     // 루트 트랜스폼이 틀어졌을 때 위치, 회전, 스케일을 모두 기본값으로 맞춘다.

@@ -146,7 +146,7 @@ public class LogItem : Item, IStaticCollidable
         }
 
         transform.localScale = Vector3.one;
-        originalMaterial = spriteRenderer.material;
+        originalMaterial = spriteRenderer.sharedMaterial;
 
         if (customSortable == null)
         {
@@ -928,38 +928,9 @@ public class LogItem : Item, IStaticCollidable
 
     private void SetShaderFloating(bool _enable)
     {
-        if (spriteRenderer == null) return;
-        if (mpb == null) mpb = new MaterialPropertyBlock();
-        
-        float val = _enable ? 1f : 0f;
-        float offset = 0f;
-        if (_enable)
-        {
-            offset = (transform.position.x + transform.position.y) * 10f;
-        }
-
-        // 본체 렌더러 설정
-        spriteRenderer.GetPropertyBlock(mpb);
-        mpb.SetFloat(UseFloatingPropertyID, val);
-        mpb.SetFloat(FloatingOffsetPropertyID, offset);
-        spriteRenderer.SetPropertyBlock(mpb);
-
-        // 아웃라인 스텐실 렌더러 설정
-        if (outlineStencilSR != null)
-        {
-            outlineStencilSR.GetPropertyBlock(mpb);
-            mpb.SetFloat(UseFloatingPropertyID, val);
-            mpb.SetFloat(FloatingOffsetPropertyID, offset);
-            outlineStencilSR.SetPropertyBlock(mpb);
-        }
-
-        // 아웃라인 렌더러 설정
-        if (outlineSR != null)
-        {
-            outlineSR.GetPropertyBlock(mpb);
-            mpb.SetFloat(UseFloatingPropertyID, val);
-            mpb.SetFloat(FloatingOffsetPropertyID, offset);
-            outlineSR.SetPropertyBlock(mpb);
-        }
+        // GPU 인스턴싱(SRP Batcher) 유지를 위해 MaterialPropertyBlock 사용을 제거하고 셰이더 내부 연산으로 대체함
+        if (spriteRenderer != null) spriteRenderer.SetPropertyBlock(null);
+        if (outlineStencilSR != null) outlineStencilSR.SetPropertyBlock(null);
+        if (outlineSR != null) outlineSR.SetPropertyBlock(null);
     }
 }

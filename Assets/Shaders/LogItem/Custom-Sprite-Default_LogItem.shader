@@ -6,8 +6,6 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
         _MaskTex("Mask", 2D) = "white" {}
         _NormalMap("Normal Map", 2D) = "bump" {}
         [MaterialToggle] _ZWrite("ZWrite", Float) = 0
-        _UseFloating("Use Floating", Float) = 0
-        _FloatingOffset("Floating Offset", Float) = 0
 
         // Legacy properties. They're here so that materials using this shader can gracefully fallback to the legacy sprite shader.
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
@@ -66,27 +64,25 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Lit2DCommon.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
-            CBUFFER_START(UnityPerMaterial)
-                half4 _Color;
-                float _UseFloating;
-                float _FloatingOffset;
-            CBUFFER_END
+            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 
-                if (_UseFloating > 0.5)
-                {
-                    float floatOffset = sin(_Time.y * 2.5 + _FloatingOffset) * 0.05;
-                    input.positionOS.y += floatOffset;
-                }
+                float3 pivotWorldPos = TransformObjectToWorld(float3(0,0,0));
+                float floatingOffset = (pivotWorldPos.x + pivotWorldPos.y) * 10.0;
+                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * 0.05;
+                input.positionOS.y += floatOffset;
 
                 Varyings o = CommonLitVertex(input);
                 o.worldPos = TransformObjectToWorld(input.positionOS);
-                o.color = input.color * _Color * unity_SpriteColor;
+                o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
 
                 return o;
             }
@@ -150,27 +146,25 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Normals2DCommon.hlsl"
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
-            CBUFFER_START( UnityPerMaterial )
-                half4 _Color;
-                float _UseFloating;
-                float _FloatingOffset;
-            CBUFFER_END
+            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 
-                if (_UseFloating > 0.5)
-                {
-                    float floatOffset = sin(_Time.y * 2.5 + _FloatingOffset) * 0.05;
-                    input.positionOS.y += floatOffset;
-                }
+                float3 pivotWorldPos = TransformObjectToWorld(float3(0,0,0));
+                float floatingOffset = (pivotWorldPos.x + pivotWorldPos.y) * 10.0;
+                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * 0.05;
+                input.positionOS.y += floatOffset;
 
                 Varyings o = CommonNormalsVertex(input);
                 o.worldPos = TransformObjectToWorld(input.positionOS);
-                o.color = input.color * _Color * unity_SpriteColor;
+                o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
 
                 return o;
             }
@@ -234,27 +228,25 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
             #pragma multi_compile _ DEBUG_DISPLAY SKINNED_SPRITE
 
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
-            CBUFFER_START(UnityPerMaterial)
-                half4 _Color;
-                float _UseFloating;
-                float _FloatingOffset;
-            CBUFFER_END
+            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 
-                if (_UseFloating > 0.5)
-                {
-                    float floatOffset = sin(_Time.y * 2.5 + _FloatingOffset) * 0.05;
-                    input.positionOS.y += floatOffset;
-                }
+                float3 pivotWorldPos = TransformObjectToWorld(float3(0,0,0));
+                float floatingOffset = (pivotWorldPos.x + pivotWorldPos.y) * 10.0;
+                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * 0.05;
+                input.positionOS.y += floatOffset;
 
                 Varyings o = CommonUnlitVertex(input);
                 o.worldPos = TransformObjectToWorld(input.positionOS);
-                o.color = input.color *_Color * unity_SpriteColor;
+                o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
                 return o;
             }
 
