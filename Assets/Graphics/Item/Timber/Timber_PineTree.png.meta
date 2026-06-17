@@ -3,8 +3,8 @@ guid: ebc64161efcede648a39b6f8af43ac1c
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3477647542631892333
-    second: FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 2_0
+      213: -2138038033269509787
+    second: Timber_PineTree_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,11 +100,11 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 2_0
+      name: Timber_PineTree_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 1
+        x: 4
+        y: 9
         width: 24
         height: 15
       alignment: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 39a7a6f3cf9ecbfc0800000000000000
-      internalID: -3477647542631892333
+      spriteID: 56132be8cb92452e0800000000000000
+      internalID: -2138038033269509787
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 2_0: -3477647542631892333
+      Timber_PineTree_0: -2138038033269509787
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

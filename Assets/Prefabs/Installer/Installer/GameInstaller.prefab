@@ -334,6 +334,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7760121811131757844}
   - component: {fileID: 2016042900364419373}
+  - component: {fileID: 597610330652353424}
   m_Layer: 0
   m_Name: LogItemController
   m_TagString: Untagged
@@ -415,6 +416,26 @@ MonoBehaviour:
     minCnt: 2
     maxCnt: 3
   cullingUpdateInterval: 0.05
+--- !u!114 &597610330652353424
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2327565162841499606}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  vfxPoolDataList:
+  - vfxTag: Shiny
+    effectPrefab: {fileID: 2164660391435094963, guid: f9a4dc6ca35113949aeb0810ad1e7927, type: 3}
+    initialPoolSize: 200
+    allowDynamicExpansion: 1
+    maxPoolSize: 1000
+    uiParticleScale: 0
 --- !u!1 &2442542787030155420
 GameObject:
   m_ObjectHideFlags: 0

@@ -29,10 +29,15 @@ public class LogItemController : MonoBehaviour, ILogItemCH
 
     private ICharacter character;
 
+    private VFXComponent vfxComponent;
+
     public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character)
     {
         inventoryChecker = _inventoryChecker;
         character = _character;
+
+        vfxComponent = GetComponent<VFXComponent>();
+        vfxComponent.Initialize();
 
         logPool = new ObjectPool<LogItem>(
             createFunc: CreateLogItem,
@@ -40,7 +45,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             actionOnRelease: OnReleaseLogItem,
             actionOnDestroy: OnDestroyLogItem,
             collectionCheck: true,
-            defaultCapacity: 100,
+            defaultCapacity: 200,
             maxSize: 1000 // 최적화: 나무가 많은 게임 특성상 풀 크기를 넉넉하게 설정
         );
     }
@@ -75,7 +80,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
 
         if (_isVisible)
         {
-            if (_item.UpdateIndex == -1)
+            if (_item.UpdateIndex == -1 && _item.IsMoving)
             {
                 _item.UpdateIndex = activeItemsForUpdate.Count;
                 activeItemsForUpdate.Add(_item);
@@ -129,13 +134,13 @@ public class LogItemController : MonoBehaviour, ILogItemCH
 
     private void UpdateCullingSpheres()
     {
-        int count = activeItemsList.Count;
+        int count = activeItemsForUpdate.Count;
         for (int i = 0; i < count; i++)
         {
-            var item = activeItemsList[i];
-            if (item.IsMoving)
+            var item = activeItemsForUpdate[i];
+            if (item.IsMoving && item.PoolIndex != -1)
             {
-                spheres[i].position = item.transform.position;
+                spheres[item.PoolIndex].position = item.transform.position;
             }
         }
     }
@@ -169,6 +174,8 @@ public class LogItemController : MonoBehaviour, ILogItemCH
 
         newItem.LogItemDeActivatedEvent -= LogItemDeActivated;
         newItem.LogItemDeActivatedEvent += LogItemDeActivated;
+
+        newItem.SetVfxComponent(vfxComponent);
 
         return newItem;
     }
@@ -300,6 +307,9 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             float height = UnityEngine.Random.Range(0.75f, 1.25f);
 
             float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+            var particle = vfxComponent.Play("Shiny", logItem.transform.position, logItem.transform.rotation, logItem.transform);
+            logItem.SetParticleEffect(particle);
             logItem.Launch(startPos, endPos, height, randomRotation);
         }
     }

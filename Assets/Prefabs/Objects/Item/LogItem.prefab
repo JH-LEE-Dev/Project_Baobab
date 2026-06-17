@@ -284,7 +284,6 @@ GameObject:
   m_Component:
   - component: {fileID: 400034938723700626}
   - component: {fileID: 6555201725253046145}
-  - component: {fileID: 3023818824696075102}
   m_Layer: 11
   m_Name: Animator
   m_TagString: Untagged
@@ -366,41 +365,6 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
   m_SpriteSortPoint: 0
---- !u!114 &3023818824696075102
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7527179807894108053}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67c094942956bdb4481657b7a3fbf13b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ShinyEffectComponent
-  _useShinyEffect: 0
-  _shinyOriginalMaterial: {fileID: 2100000, guid: b7de3cc27b99cc2428225e2f4365f663, type: 2}
-  _shinyColor: {r: 1, g: 1, b: 1, a: 0.5}
-  _shinyWidth: 0.103
-  _shinySoftness: 0.05
-  _shinyAngle: 45
-  _playOnEnable: 1
-  _duration: 2
-  _delay: 0.5
-  _loopCount: -1
-  _useVfxEffect: 1
-  _vfxPrefab: {fileID: 2164660391435094963, guid: f9a4dc6ca35113949aeb0810ad1e7927, type: 3}
-  _vfxTag: ShinyVFX
-  _vfxColor: {r: 1, g: 1, b: 1, a: 1}
-  _isUIVfx: 0
-  _vfxUiScale: 1
-  _initialPoolSize: 1
-  _allowDynamicExpansion: 0
-  _maxPoolSize: 10
-  _autoSorting: 1
-  _updateSortingEveryFrame: 1
-  _vfxSortingLayer: Default
-  _vfxSortingOrder: 1
 --- !u!1 &8058589196582885879
 GameObject:
   m_ObjectHideFlags: 0
@@ -449,6 +413,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dd1e8a934c40a56439a4304dcb7e0b3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LogItem
+  bCanGetSortingOrder: 1
   sprite: {fileID: 0}
   color: {r: 0, g: 0, b: 0, a: 0}
   spriteRenderer: {fileID: 0}
