@@ -613,6 +613,12 @@ public class EnvironmentObjManager : MonoBehaviour
 
     private void Update()
     {
+        int _activeCount = activeObjs.Count;
+        for (int _i = 0; _i < _activeCount; _i++)
+        {
+            activeObjs[_i].ManualUpdate();
+        }
+
         if (null != cullingGroup && 0 < allSpawnedObjs.Count)
         {
             cullingUpdateTimer += Time.deltaTime;

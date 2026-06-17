@@ -36,6 +36,12 @@ public class BirdShadow : EnvironmentObj
     private float cycleDuration;
     private BirdShadow leaderBird;
 
+    private int currentCycleIndex = 0;
+    private float currentAccumulatedTime = 0f;
+    private float currentWaitEnd = 0f;
+    private float currentFlightEnd = 0f;
+    private int cachedLeaderCycleIndex = -1;
+
     // 퍼블릭 초기화 및 제어 메서드
 
     public override void Initialize()
@@ -77,6 +83,21 @@ public class BirdShadow : EnvironmentObj
         cycleDuration = lifeTime;
 
         timeOffset = -Time.time;
+        InitFlightState();
+        cachedLeaderCycleIndex = -1;
+    }
+
+    private void InitFlightState()
+    {
+        currentCycleIndex = 0;
+        currentAccumulatedTime = 0f;
+        currentWaitEnd = delayTime;
+        currentFlightEnd = currentWaitEnd + lifeTime;
+    }
+
+    public int GetCurrentCycleIndex()
+    {
+        return GetFlightState(Time.time + timeOffset).cycleIndex;
     }
 
     private struct FlightState
@@ -97,7 +118,7 @@ public class BirdShadow : EnvironmentObj
     {
         if (birdIndexInFlock > 0)
         {
-            return transform.position;
+            return cachedTransform.position;
         }
 
         float _totalTime = Time.time + timeOffset;
@@ -142,49 +163,42 @@ public class BirdShadow : EnvironmentObj
     {
         base.ResetObj();
         leaderBird = null;
+        cachedLeaderCycleIndex = -1;
     }
 
     // 내부 메서드
 
     private FlightState GetFlightState(float _totalTime)
     {
-        FlightState _state;
-        int _k = 0;
-        float _accumulatedTime = 0f;
-        float _currentCycleDelay = 0f;
-
-        while (true)
+        if (_totalTime < currentAccumulatedTime)
         {
-            if (_k == 0)
-            {
-                _currentCycleDelay = delayTime;
-            }
-            else
-            {
-                _currentCycleDelay = GetPseudoRandom(flockIndex * 10000 + _k, 15f, 20f);
-            }
-
-            float _waitEnd = _accumulatedTime + _currentCycleDelay;
-            float _flightEnd = _waitEnd + lifeTime;
-
-            if (_totalTime < _waitEnd)
-            {
-                _state.cycleIndex = _k;
-                _state.isWaiting = true;
-                _state.elapsedFlightTime = 0f;
-                return _state;
-            }
-            else if (_totalTime < _flightEnd)
-            {
-                _state.cycleIndex = _k;
-                _state.isWaiting = false;
-                _state.elapsedFlightTime = _totalTime - _waitEnd;
-                return _state;
-            }
-
-            _accumulatedTime = _flightEnd;
-            _k++;
+            InitFlightState();
         }
+
+        while (_totalTime >= currentFlightEnd)
+        {
+            currentAccumulatedTime = currentFlightEnd;
+            currentCycleIndex++;
+            float _delay = GetPseudoRandom(flockIndex * 10000 + currentCycleIndex, 15f, 20f);
+            currentWaitEnd = currentAccumulatedTime + _delay;
+            currentFlightEnd = currentWaitEnd + lifeTime;
+        }
+
+        FlightState _state;
+        _state.cycleIndex = currentCycleIndex;
+
+        if (_totalTime < currentWaitEnd)
+        {
+            _state.isWaiting = true;
+            _state.elapsedFlightTime = 0f;
+        }
+        else
+        {
+            _state.isWaiting = false;
+            _state.elapsedFlightTime = _totalTime - currentWaitEnd;
+        }
+
+        return _state;
     }
 
     private float GetPseudoRandom(int _seed, float _min, float _max)
@@ -207,14 +221,19 @@ public class BirdShadow : EnvironmentObj
                     sr.sprite = leaderBird.sr != null ? leaderBird.sr.sprite : null;
                 }
 
-                Vector3 _dir = leaderBird.GetFlightDirection();
-                Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
-                float _side = (birdIndexInFlock % 2 == 1) ? -1f : 1f;
-                int _depth = (birdIndexInFlock + 1) / 2;
-                float _stepSide = 0.5f;
-                float _stepBack = 0.6f;
+                int currentLeaderCycle = leaderBird.GetCurrentCycleIndex();
+                if (cachedLeaderCycleIndex != currentLeaderCycle)
+                {
+                    cachedLeaderCycleIndex = currentLeaderCycle;
+                    Vector3 _dir = leaderBird.GetFlightDirection();
+                    Vector3 _perp = new Vector3(-_dir.y, _dir.x, 0f);
+                    float _side = (birdIndexInFlock % 2 == 1) ? -1f : 1f;
+                    int _depth = (birdIndexInFlock + 1) / 2;
+                    float _stepSide = 0.5f;
+                    float _stepBack = 0.6f;
 
-                transform.localPosition = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
+                    cachedTransform.localPosition = -_dir * (_depth * _stepBack) + _perp * (_side * _depth * _stepSide);
+                }
             }
             else
             {
@@ -227,7 +246,7 @@ public class BirdShadow : EnvironmentObj
         }
 
         Vector3 _currentPos = GetCurrentPosition();
-        transform.position = _currentPos;
+        cachedTransform.position = _currentPos;
 
         float _totalTime = Time.time + timeOffset;
         FlightState _state = GetFlightState(_totalTime);
@@ -271,7 +290,7 @@ public class BirdShadow : EnvironmentObj
 
     // 유니티 이벤트 함수
 
-    private void Update()
+    public override void ManualUpdate()
     {
         UpdatePositionAndRotation();
     }
