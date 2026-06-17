@@ -64,7 +64,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private bool isHovered = false;
     private bool isPendingExit = false;
     private float hoverEnterTime = 0f;
-    private float pendingExitTime = 0f;
+    private Tween exitDelayTween;
     private PointerEventData pendingExitData;
     private UnityEngine.Events.UnityAction onClickAnimationCompleteCallback;
     private Tweener colorTween;
@@ -512,6 +512,8 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         isPendingExit = false;
         hoverEnterTime = Time.unscaledTime;
 
+        if (null != exitDelayTween) exitDelayTween.Kill();
+
         if (false == IsTransitioning())
         {
             if (false == isLocked)
@@ -560,8 +562,20 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         isPendingExit = true;
-        pendingExitTime = Time.unscaledTime + hoverExitDelay;
         pendingExitData = _eventData;
+
+        if (null != exitDelayTween) exitDelayTween.Kill();
+        exitDelayTween = DOVirtual.DelayedCall(hoverExitDelay, () => {
+            isPendingExit = false;
+            if (null != pendingExitData)
+            {
+                if (false == RectTransformUtility.RectangleContainsScreenPoint(GetRectTransform(), pendingExitData.position, pendingExitData.enterEventCamera))
+                {
+                    isHovered = false;
+                    ExecuteExit();
+                }
+            }
+        }, true);
     }
 
     public void OnPointerClick(PointerEventData _eventData)
@@ -619,28 +633,13 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
-    private void Update()
-    {
-        if (true == isPendingExit && Time.unscaledTime >= pendingExitTime)
-        {
-            isPendingExit = false;
-
-            if (null != pendingExitData)
-            {
-                if (false == RectTransformUtility.RectangleContainsScreenPoint(GetRectTransform(), pendingExitData.position, pendingExitData.enterEventCamera))
-                {
-                    isHovered = false;
-                    ExecuteExit();
-                }
-            }
-        }
-    }
-
     private void OnDisable()
     {
         isHovered = false;
         isClicked = false;
         isPendingExit = false;
+
+        if (null != exitDelayTween) exitDelayTween.Kill();
 
         if (null != colorTween && true == colorTween.IsActive())
         {
@@ -676,6 +675,8 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private void OnDestroy()
     {
+        if (null != exitDelayTween) exitDelayTween.Kill();
+
         if (null != colorTween && true == colorTween.IsActive())
         {
             colorTween.Kill();

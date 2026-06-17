@@ -68,12 +68,7 @@ public class ShinyEffectComponent : MonoBehaviour
     [Tooltip("체크 시 현재 렌더러나 캔버스의 소팅 속성을 찾아 +1 된 값으로 자동 렌더링합니다.")]
     [SerializeField] private bool _autoSorting = true;
 
-    [ShowIf("ShowUpdateSortingEveryFrame")]
-    [Tooltip("매 프레임마다 소팅 레이어와 오더를 갱신할지 여부를 결정합니다.")]
-    [SerializeField] private bool _updateSortingEveryFrame = false;
 
-    private bool ShowUpdateSortingEveryFrame() => true == _useVfxEffect && true == _autoSorting;
-    
     private bool ShowCustomSorting() => true == _useVfxEffect && false == _autoSorting;
 
     [ShowIf("ShowCustomSorting")]
@@ -466,11 +461,6 @@ public class ShinyEffectComponent : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (true == Application.isPlaying && true == _useVfxEffect && true == _autoSorting && true == _updateSortingEveryFrame && null != _activeVfxParticle)
-            ApplyAutoSorting(_activeVfxParticle);
-    }
 
     private void OnValidate()
     {

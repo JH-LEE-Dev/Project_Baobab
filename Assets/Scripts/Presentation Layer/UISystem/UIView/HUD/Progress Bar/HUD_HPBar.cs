@@ -27,7 +27,7 @@ public class HUD_HPBar : HUD_ProgressBar
     private GameObject targetObj;
     private float yOffset;
     private float showDuration;
-    private float displayTimer;
+    private Tween hideDelayTween;
     private Action<HUD_HPBar> onFinishCallback;
     private bool isHiding;
     private RectTransform rect;
@@ -75,7 +75,7 @@ public class HUD_HPBar : HUD_ProgressBar
         targetObj = _target;
         yOffset = _yOffset;
         showDuration = _duration;
-        displayTimer = showDuration;
+        RestartHideTimer();
         
         UpdatePosition();
 
@@ -129,7 +129,16 @@ public class HUD_HPBar : HUD_ProgressBar
     public void TriggerActive(Action<HUD_HPBar> _onFinish)
     {
         onFinishCallback = _onFinish;
-        displayTimer = showDuration;
+        RestartHideTimer();
+    }
+
+    private void RestartHideTimer()
+    {
+        if (null != hideDelayTween && true == hideDelayTween.IsActive())
+            hideDelayTween.Kill();
+
+        if (0.0f < showDuration)
+            hideDelayTween = DOVirtual.DelayedCall(showDuration, () => OnHide(-1f), false);
     }
 
     public void OnHide(float _forceDuration = -1f)
@@ -167,6 +176,9 @@ public class HUD_HPBar : HUD_ProgressBar
         if (null != ghostTween && true == ghostTween.IsActive())
             ghostTween.Kill();
 
+        if (null != hideDelayTween && true == hideDelayTween.IsActive())
+            hideDelayTween.Kill();
+
         owner = null;
         targetObj = null;
         onFinishCallback = null;
@@ -175,17 +187,6 @@ public class HUD_HPBar : HUD_ProgressBar
     }
 
     // //유니티 이벤트 함수
-
-    private void Update()
-    {
-        if (null == targetObj || true == isHiding)
-            return;
-
-        displayTimer -= Time.deltaTime;
-        
-        if (0.0f >= displayTimer)
-            OnHide();
-    }
 
     private void LateUpdate()
     {

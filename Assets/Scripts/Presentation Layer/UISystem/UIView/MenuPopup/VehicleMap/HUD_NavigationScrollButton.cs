@@ -31,7 +31,6 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
     private TweenCallback externalOnCompleteCallback;
     private Tweener colorTween;
     private Tween transitionTween;
-    private float pressTime = 0.0f;
     private bool isPressed = false;
     private bool isHovered = false;
 
@@ -84,7 +83,6 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
         isPressed = false;
         isHovered = false;
-        pressTime = 0.0f;
     }
 
 
@@ -126,7 +124,9 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
             return;
 
         isPressed = true;
-        pressTime = 0.0f;
+        
+        if (null != buttonImage)
+            colorTween = buttonImage.DOColor(maxPressColor, maxPressDuration).SetEase(Ease.Linear);
 
         onPressStateChangedCallback?.Invoke(true);
     }
@@ -176,25 +176,10 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
-    private void Update()
-    {
-        if (true == isPressed)
-        {
-            pressTime += Time.deltaTime;
-            float _ratio = Mathf.Clamp01(pressTime / maxPressDuration);
-
-            if (null != buttonImage)
-            {
-                buttonImage.color = Color.Lerp(clickColor, maxPressColor, _ratio);
-            }
-        }
-    }
-
     private void OnDisable()
     {
         isPressed = false;
         isHovered = false;
-        pressTime = 0.0f;
 
         if (null != transitionTween && true == transitionTween.IsActive())
             transitionTween.Kill();
