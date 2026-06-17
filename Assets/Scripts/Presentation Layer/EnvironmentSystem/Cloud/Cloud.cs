@@ -22,15 +22,15 @@ public class Cloud : EnvironmentObj
         minX = _minX;
         maxX = _maxX;
         
-        initialY = transform.position.y;
-        float initialX = transform.position.x;
+        initialY = cachedTransform.position.y;
+        float initialX = cachedTransform.position.x;
         timeOffset = (initialX - minX) / moveSpeed - Time.time;
     }
 
     public override Vector3 GetCurrentPosition()
     {
         float range = maxX - minX;
-        if (range <= 0 || moveSpeed <= 0) return transform.position;
+        if (range <= 0 || moveSpeed <= 0) return cachedTransform.position;
 
         float currentDistance = moveSpeed * (Time.time + timeOffset);
         float currentX = minX + (currentDistance % range);
@@ -40,14 +40,14 @@ public class Cloud : EnvironmentObj
 
     public override void Show()
     {
-        transform.position = GetCurrentPosition();
+        cachedTransform.position = GetCurrentPosition();
         base.Show();
     }
 
-    private void Update()
+    public override void ManualUpdate()
     {
         if (!bActivated) return;
-        transform.position = GetCurrentPosition();
+        cachedTransform.position = GetCurrentPosition();
     }
 
     public override void ResetObj()

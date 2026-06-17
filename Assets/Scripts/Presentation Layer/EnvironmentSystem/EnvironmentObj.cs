@@ -9,9 +9,28 @@ public class EnvironmentObj : MonoBehaviour
 
     [SerializeField] public EnvironmentObjType envObjType;
 
+    private Transform _cachedTransform;
+    public Transform cachedTransform 
+    { 
+        get 
+        { 
+            if (ReferenceEquals(_cachedTransform, null)) 
+            {
+                _cachedTransform = transform;
+            }
+            return _cachedTransform; 
+        } 
+        protected set => _cachedTransform = value; 
+    }
+
     public virtual void Initialize()
     {
         // 초기화 로직 (상속받아 사용)
+    }
+
+    public virtual void ManualUpdate()
+    {
+        // 매 프레임 Manager에 의해 호출됨
     }
 
     public virtual Vector3 GetCurrentPosition()
