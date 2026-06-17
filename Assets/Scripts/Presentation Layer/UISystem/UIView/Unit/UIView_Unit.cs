@@ -32,9 +32,9 @@ public class UIView_Unit : UIView
     [Header("Localization Settings")]
     [SerializeField] private int speechBubbleJsonId = 5;
 
-    private Dictionary<object, HUD_HPBar> activeHpBars = new Dictionary<object, HUD_HPBar>(64);
-    private List<HUD_HPBar> hpBarPool = new List<HUD_HPBar>(32);
-    private System.Action<HUD_HPBar> returnToPoolAction;
+    private Dictionary<object, HUD_ShieldHPBar> activeHpBars = new Dictionary<object, HUD_ShieldHPBar>(64);
+    private List<HUD_ShieldHPBar> hpBarPool = new List<HUD_ShieldHPBar>(32);
+    private System.Action<HUD_ShieldHPBar> returnToPoolAction;
 
 
     private UI_InteractionUnit interactionUnit;
@@ -105,7 +105,7 @@ public class UIView_Unit : UIView
 
         for (int _i = 0; 32 > _i; _i++)
         {
-            HUD_HPBar _bar = CreateNewHPBar();
+            HUD_ShieldHPBar _bar = CreateNewHPBar();
             
             if (null != _bar)
                 hpBarPool.Add(_bar);
@@ -137,14 +137,14 @@ public class UIView_Unit : UIView
         }
     }
 
-    private HUD_HPBar CreateNewHPBar()
+    private HUD_ShieldHPBar CreateNewHPBar()
     {
         GameObject _obj = Instantiate(hpBarPrefab, null != uiRoot ? uiRoot : this.transform);
         
         if (null == _obj)
             return null;
 
-        HUD_HPBar _bar = _obj.GetComponent<HUD_HPBar>();
+        HUD_ShieldHPBar _bar = _obj.GetComponent<HUD_ShieldHPBar>();
         
         if (null != _bar)
             _bar.Initialize();
@@ -159,34 +159,43 @@ public class UIView_Unit : UIView
         if (null == _owner || null == _health || null == _tf)
             return;
 
-        if (true == activeHpBars.TryGetValue(_owner, out HUD_HPBar _bar))
+        if (true == activeHpBars.TryGetValue(_owner, out HUD_ShieldHPBar _bar))
             UpdateHPBarState(_bar, _health, _bDead, _tf, _yOffset);
         else
         {
             if (true == _bDead)
                 return;
 
-            HUD_HPBar _newBar = GetHPBarFromPool();
+            HUD_ShieldHPBar _newBar = GetHPBarFromPool();
             
             if (null != _newBar)
             {
                 float _maxHp = _health.GetMaxHealth();
-                float _prevRatio = _maxHp > 0.0f ? Mathf.Clamp01(_health.GetPrevHealth() / _maxHp) : 1.0f;
-                _newBar.SetOwner(_owner, _prevRatio);
+                float _prevRatio = 0.0f < _maxHp ? Mathf.Clamp01(_health.GetPrevHealth() / _maxHp) : 1.0f;
+                float _maxSp = _health.GetMaxSP();
+                float _prevSpRatio = 0.0f < _maxSp ? Mathf.Clamp01(_health.GetPrevSP() / _maxSp) : 0.0f;
+                bool _useShield = 0.0f < _maxSp;
+
+                _newBar.SetOwner(_owner, _prevRatio, _prevSpRatio, _useShield);
                 activeHpBars.Add(_owner, _newBar);
                 UpdateHPBarState(_newBar, _health, _bDead, _tf, _yOffset);
             }
         }
     }
 
-    private void UpdateHPBarState(HUD_HPBar _bar, IHealthComponent _health, bool _bDead, Transform _tf, float _yOffset)
+    private void UpdateHPBarState(HUD_ShieldHPBar _bar, IHealthComponent _health, bool _bDead, Transform _tf, float _yOffset)
     {
         _bar.Setup(_tf.gameObject, _yOffset, hpBarShowDuration);
 
         float _currentHp = _health.GetCurrentHealth();
         float _maxHp = _health.GetMaxHealth();
-        float _ratio = Mathf.Clamp01(_currentHp / _maxHp);
-        _bar.UpdateValue(_ratio);
+        float _ratio = 0.0f < _maxHp ? Mathf.Clamp01(_currentHp / _maxHp) : 0.0f;
+        
+        float _currentSp = _health.GetCurrentSP();
+        float _maxSp = _health.GetMaxSP();
+        float _spRatio = 0.0f < _maxSp ? Mathf.Clamp01(_currentSp / _maxSp) : 0.0f;
+
+        _bar.UpdateValues(_ratio, _spRatio);
         
         // bDead 타이밍 보완: 실제 체력이 0 이하인 경우도 사망으로 간주
         bool _isDead = (true == _bDead || 0.0f >= _currentHp);
@@ -200,9 +209,9 @@ public class UIView_Unit : UIView
         _bar.TriggerActive(returnToPoolAction);
     }
 
-    private HUD_HPBar GetHPBarFromPool()
+    private HUD_ShieldHPBar GetHPBarFromPool()
     {
-        HUD_HPBar _bar = null;
+        HUD_ShieldHPBar _bar = null;
 
         if (0 < hpBarPool.Count)
         {
@@ -216,7 +225,7 @@ public class UIView_Unit : UIView
         return _bar;
     }
 
-    private void ReturnHPBarToPool(HUD_HPBar _bar)
+    private void ReturnHPBarToPool(HUD_ShieldHPBar _bar)
     {
         if (null == _bar)
             return;

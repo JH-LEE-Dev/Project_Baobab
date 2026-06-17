@@ -376,7 +376,15 @@ public class VFXComponent : MonoBehaviour
 
         ParticleSystem _prefab = _config.EffectPrefab;
 
-        if (true == isUIComponent)
+        bool _useUI = isUIComponent;
+        if (true == _useUI)
+        {
+            Canvas _canvas = GetComponentInParent<Canvas>();
+            if (null != _canvas && RenderMode.WorldSpace == _canvas.renderMode)
+                _useUI = false;
+        }
+
+        if (true == _useUI)
         {
             GameObject _uiParentGo = new GameObject(_prefab.name + "_UIParent", typeof(RectTransform), typeof(CanvasRenderer));
             if (null == _uiParentGo)
