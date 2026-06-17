@@ -7,17 +7,19 @@ public class ItemManager : MonoBehaviour
     public LogItemController logItemController { get; private set; }
     public CarrotItemController carrrotItemController { get; private set; }
     private IInventoryChecker inventoryChecker;
+    private ICharacter character;
 
-    public void Initialize(IInventoryChecker _inventoryChecker)
+    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character)
     {
         inventoryChecker = _inventoryChecker;
+        character = _character;
 
         logItemController = GetComponentInChildren<LogItemController>();
         carrrotItemController = GetComponentInChildren<CarrotItemController>();
 
         if (logItemController != null)
         {
-            logItemController.Initialize(inventoryChecker);
+            logItemController.Initialize(inventoryChecker, character);
         }
 
         BindEvents();
@@ -52,9 +54,9 @@ public class ItemManager : MonoBehaviour
     }
 
     // 외부에서 접근하기 위한 래퍼 메서드 (필요한 경우)
-    public void SpawnLogItem(TreeObj _treeObj,float _multiplier)
+    public void SpawnLogItem(TreeObj _treeObj, float _multiplier)
     {
-        logItemController?.SpawnLogItem(_treeObj,_multiplier);
+        logItemController?.SpawnLogItem(_treeObj, _multiplier);
     }
 
     public void ReturnLogToPool(LogItem _item)

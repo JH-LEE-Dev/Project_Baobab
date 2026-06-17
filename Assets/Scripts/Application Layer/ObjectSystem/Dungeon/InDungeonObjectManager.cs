@@ -85,7 +85,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         inDungeonResultManager = _inDungeonResultManager;
 
         itemManager = GetComponentInChildren<ItemManager>();
-        itemManager.Initialize(_inventoryChecker);
+        itemManager.Initialize(_inventoryChecker, character);
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();
@@ -717,7 +717,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     {
         if (_bAbort == true)
             character.SetStaminaDecrease(true);
-            
+
         character.PauseCharacter(false);
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);

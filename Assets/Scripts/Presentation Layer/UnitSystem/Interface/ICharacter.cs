@@ -6,4 +6,5 @@ public interface ICharacter
     public Transform GetTransform();
     public IStatComponent statComponent { get; }
     public IArmComponent armComponent { get; }
+    public bool bDead { get; }
 }

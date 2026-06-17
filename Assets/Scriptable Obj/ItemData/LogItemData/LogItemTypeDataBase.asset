@@ -34,18 +34,18 @@ MonoBehaviour:
   - itemType: 1
     treeType: 4
     durability: 60
-    sprite: {fileID: 21300000, guid: 578f2e4568b228f44b4543638a6afb12, type: 3}
+    sprite: {fileID: 21300000, guid: b63f7ce3222f9b04d96eecaae2f0ae2c, type: 3}
     timberSprite: {fileID: 21300000, guid: 49794b363b39018468fbd5aa4edd9fbd, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 5
     durability: 100
-    sprite: {fileID: 21300000, guid: 578f2e4568b228f44b4543638a6afb12, type: 3}
+    sprite: {fileID: 21300000, guid: 3cc6aa8a7e5568b41b5f8ab0fc15372a, type: 3}
     timberSprite: {fileID: 21300000, guid: 49794b363b39018468fbd5aa4edd9fbd, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
-    treeType: 5
+    treeType: 6
     durability: 150
-    sprite: {fileID: 21300000, guid: 578f2e4568b228f44b4543638a6afb12, type: 3}
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
     timberSprite: {fileID: 21300000, guid: 49794b363b39018468fbd5aa4edd9fbd, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}

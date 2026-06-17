@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: adcf202107c9af9498fe55d06c19332e
+guid: 24b0ff74e132f734db0e3505319f1395
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2978285945593061673
-    second: TreeHpBar_Mask_0
+      213: 3008381534555785628
+    second: Shieldbar_Ghost_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,12 +100,12 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TreeHpBar_Mask_0
+      name: Shieldbar_Ghost_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 26
+        width: 28
         height: 4
       alignment: 0
       pivot: {x: 0, y: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 7de136d46b00ba6d0800000000000000
-      internalID: -2978285945593061673
+      spriteID: c99ca0c011befb920800000000000000
+      internalID: 3008381534555785628
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TreeHpBar_Mask_0: -2978285945593061673
+      Shieldbar_Ghost_0: 3008381534555785628
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
