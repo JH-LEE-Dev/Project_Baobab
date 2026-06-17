@@ -79,6 +79,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             {
                 _item.UpdateIndex = activeItemsForUpdate.Count;
                 activeItemsForUpdate.Add(_item);
+                _item.bCanGetSortingOrder = true;
             }
         }
         else
@@ -95,6 +96,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
                 }
                 activeItemsForUpdate.RemoveAt(lastIdx);
                 _item.UpdateIndex = -1;
+                _item.bCanGetSortingOrder = false;
             }
         }
     }
@@ -161,6 +163,13 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         LogItem newItem = Instantiate(logItemPrefab, transform);
         newItem.LogItemAcquired -= LogItemAcquired;
         newItem.LogItemAcquired += LogItemAcquired;
+
+        newItem.LogItemActivatedEvent -= LogItemActivated;
+        newItem.LogItemActivatedEvent += LogItemActivated;
+
+        newItem.LogItemDeActivatedEvent -= LogItemDeActivated;
+        newItem.LogItemDeActivatedEvent += LogItemDeActivated;
+
         return newItem;
     }
 
@@ -196,6 +205,7 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             // 컬링 그룹이 없으면 무조건 업데이트 리스트에 추가
             _item.UpdateIndex = activeItemsForUpdate.Count;
             activeItemsForUpdate.Add(_item);
+            _item.bCanGetSortingOrder = true;
         }
 
         _item.ResetItem();
@@ -233,6 +243,9 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     private void OnDestroyLogItem(LogItem _item)
     {
         _item.LogItemAcquired -= LogItemAcquired;
+        _item.LogItemActivatedEvent -= LogItemActivated;
+        _item.LogItemDeActivatedEvent -= LogItemDeActivated;
+
         OnReleaseLogItem(_item);
         Destroy(_item.gameObject);
     }
@@ -413,5 +426,33 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     {
         if (_data.logProbDatas == null) return;
         logProbDatas = new List<LogDropProbData>(_data.logProbDatas);
+    }
+
+    private void LogItemActivated(LogItem _logItem)
+    {
+        if (_logItem.UpdateIndex == -1)
+        {
+            _logItem.UpdateIndex = activeItemsForUpdate.Count;
+            activeItemsForUpdate.Add(_logItem);
+            _logItem.bCanGetSortingOrder = true;
+        }
+    }
+
+    private void LogItemDeActivated(LogItem _logItem)
+    {
+        int idx = _logItem.UpdateIndex;
+        if (idx != -1)
+        {
+            int lastIdx = activeItemsForUpdate.Count - 1;
+            if (idx != lastIdx)
+            {
+                LogItem lastItem = activeItemsForUpdate[lastIdx];
+                activeItemsForUpdate[idx] = lastItem;
+                lastItem.UpdateIndex = idx;
+            }
+            activeItemsForUpdate.RemoveAt(lastIdx);
+            _logItem.UpdateIndex = -1;
+            _logItem.bCanGetSortingOrder = false;
+        }
     }
 }

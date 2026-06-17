@@ -36,6 +36,7 @@ Shader "Custom/OutlineWriter"
 
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile_instancing
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
@@ -43,6 +44,7 @@ Shader "Custom/OutlineWriter"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -50,20 +52,23 @@ Shader "Custom/OutlineWriter"
                 float4 positionHCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
                 float3 worldPos : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
             SAMPLER(sampler_BaseMap);
 
-            CBUFFER_START(UnityPerMaterial)
-                half4 _BaseColor;
-                half4 _OutlineColor;
-                float _OutlineWidth;
-            CBUFFER_END
+            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _BaseColor)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _OutlineColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _OutlineWidth)
+            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
+                UNITY_SETUP_INSTANCE_ID(IN);
+                UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
                 OUT.worldPos = TransformObjectToWorld(IN.positionOS.xyz);
                 OUT.uv = IN.uv; // 2D SRP Batcher 호환을 위해 TRANSFORM_TEX 제거
@@ -96,7 +101,7 @@ Shader "Custom/OutlineWriter"
                 }
 
                 // 3. 메인 컬러 샘플링
-                half4 mainColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV) * _BaseColor;
+                half4 mainColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV) * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _BaseColor);
                 
                 // 4. 아웃라인 로직 (PPU 단위의 인접 픽셀 샘플링)
                 float2 uvOffset_X = 0;
@@ -110,8 +115,9 @@ Shader "Custom/OutlineWriter"
                     uvOffset_Y = (one_over_ppu * (dx_wp.x * dy_uv - dx_wp.y * dx_uv)) / det;
                 }
 
-                float2 finalOffset_X = uvOffset_X * _OutlineWidth;
-                float2 finalOffset_Y = uvOffset_Y * _OutlineWidth;
+                float outlineWidth = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _OutlineWidth);
+                float2 finalOffset_X = uvOffset_X * outlineWidth;
+                float2 finalOffset_Y = uvOffset_Y * outlineWidth;
 
                 half alphaUp = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV + finalOffset_Y).a;
                 half alphaDown = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, snappedUV - finalOffset_Y).a;
@@ -127,7 +133,7 @@ Shader "Custom/OutlineWriter"
 
                 if (mainColor.a < 0.1 && outlineAlpha > 0.1)
                 {
-                    return _OutlineColor;
+                    return UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _OutlineColor);
                 }
 
                 discard;

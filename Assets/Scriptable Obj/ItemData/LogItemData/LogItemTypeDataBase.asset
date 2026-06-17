@@ -17,35 +17,35 @@ MonoBehaviour:
     treeType: 1
     durability: 3
     sprite: {fileID: 21300000, guid: 5acb479e00115ba47a061244bae4975a, type: 3}
-    timberSprite: {fileID: 21300000, guid: 904ba3ec35be96049bdde521548519cb, type: 3}
+    timberSprite: {fileID: 21300000, guid: 3133fa1164f5d124fa067149d1109f36, type: 3}
     color: {r: 0.5943396, g: 0.31676444, b: 0, a: 1}
   - itemType: 1
     treeType: 2
     durability: 6
     sprite: {fileID: 21300000, guid: ba6d5bf6c65ef6047b1f132029038cd5, type: 3}
-    timberSprite: {fileID: 21300000, guid: da148c2edbd98a34b80c4fa9cc67e774, type: 3}
+    timberSprite: {fileID: 21300000, guid: ebc64161efcede648a39b6f8af43ac1c, type: 3}
     color: {r: 0.3773585, g: 0.20109235, b: 0, a: 1}
   - itemType: 1
     treeType: 3
     durability: 20
     sprite: {fileID: 21300000, guid: 578f2e4568b228f44b4543638a6afb12, type: 3}
-    timberSprite: {fileID: 21300000, guid: 49794b363b39018468fbd5aa4edd9fbd, type: 3}
+    timberSprite: {fileID: 21300000, guid: c34014c92e391734ab6feab4eaaf8983, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 4
     durability: 60
     sprite: {fileID: 21300000, guid: b63f7ce3222f9b04d96eecaae2f0ae2c, type: 3}
-    timberSprite: {fileID: 21300000, guid: 49794b363b39018468fbd5aa4edd9fbd, type: 3}
+    timberSprite: {fileID: 21300000, guid: a0beab1716850d44f9d87f1ac4d691d0, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 5
     durability: 100
     sprite: {fileID: 21300000, guid: 3cc6aa8a7e5568b41b5f8ab0fc15372a, type: 3}
-    timberSprite: {fileID: 21300000, guid: 49794b363b39018468fbd5aa4edd9fbd, type: 3}
+    timberSprite: {fileID: 21300000, guid: f14fe471d37022a46b88e90df55543f1, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 6
     durability: 150
     sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
-    timberSprite: {fileID: 21300000, guid: 49794b363b39018468fbd5aa4edd9fbd, type: 3}
+    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}

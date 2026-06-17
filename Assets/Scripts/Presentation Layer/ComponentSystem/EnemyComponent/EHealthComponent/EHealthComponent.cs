@@ -49,8 +49,8 @@ public class EHealthComponent : EComponent, IHealthComponent
 
         isSetup = true;
 
-        // 리젠이 불가능하거나 이미 꽉 차있다면 Update 호출 비활성화
-        enabled = (currentSP < maxSP && spRegen > 0f && regenStrategy != null);
+        // 리젠이 불가능하거나 이미 꽉 차있거나 실드가 깨진 상태라면 Update 호출 비활성화
+        enabled = (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
     public void Initialize()
@@ -63,7 +63,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
 
-        enabled = (currentSP < maxSP && spRegen > 0f && regenStrategy != null);
+        enabled = (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
     public void Reset()
@@ -76,7 +76,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
 
-        enabled = (currentSP < maxSP && spRegen > 0f && regenStrategy != null);
+        enabled = (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
     public void DecreaseHealth(float _damage)
@@ -96,8 +96,8 @@ public class EHealthComponent : EComponent, IHealthComponent
             }
             else
             {
-                remainingDamage -= currentSP;
                 currentSP = 0f;
+                remainingDamage = 0f;
             }
 
             if (currentSP <= 0f && !isShieldBroken)
@@ -107,8 +107,8 @@ public class EHealthComponent : EComponent, IHealthComponent
             }
         }
 
-        // 쉴드가 깎였으므로 리젠 연산을 위해 Update 활성화
-        if (currentSP < maxSP && spRegen > 0f && regenStrategy != null)
+        // 쉴드가 깎였으므로 리젠 연산을 위해 Update 활성화 (단, 쉴드가 깨진 상태면 활성화하지 않음)
+        if (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null)
         {
             enabled = true;
         }
@@ -163,7 +163,8 @@ public class EHealthComponent : EComponent, IHealthComponent
             return;
         }
 
-        if (disableTimestamp > 0f && regenStrategy != null)
+        // 실드가 이미 깨진 상태라면 리젠하지 않음
+        if (!isShieldBroken && disableTimestamp > 0f && regenStrategy != null)
         {
             float enableTime = Time.time;
             float newSP = regenStrategy.CalculateOnEnableRegen(currentSP, maxSP, spRegen, disableTimestamp, enableTime, lastHitTimestamp);
@@ -182,8 +183,8 @@ public class EHealthComponent : EComponent, IHealthComponent
             disableTimestamp = -1f;
         }
 
-        // 활성화되었을 때 리젠할 필요가 없다면 Update 비활성화
-        if (currentSP >= maxSP || spRegen <= 0f || regenStrategy == null)
+        // 활성화되었을 때 리젠할 필요가 없거나 실드가 깨졌다면 Update 비활성화
+        if (isShieldBroken || currentSP >= maxSP || spRegen <= 0f || regenStrategy == null)
         {
             enabled = false;
         }
@@ -196,7 +197,7 @@ public class EHealthComponent : EComponent, IHealthComponent
 
     private void Update()
     {
-        if (currentSP < maxSP && spRegen > 0f && regenStrategy != null)
+        if (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null)
         {
             prevSP = currentSP;
             currentSP = regenStrategy.CalculateRegen(currentSP, maxSP, spRegen, Time.deltaTime, lastHitTimestamp);

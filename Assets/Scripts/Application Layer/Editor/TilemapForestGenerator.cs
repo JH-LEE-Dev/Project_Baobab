@@ -63,7 +63,7 @@ public class TilemapForestGenerator : EditorWindow
         );
 
         // Undo 기록 시작
-        Undo.RecordObjects(new Object[] { groundTilemap, colliderTilemap }, "Generate Forest Tiles");
+        Undo.RecordObjects(new UnityEngine.Object[] { groundTilemap, colliderTilemap }, "Generate Forest Tiles");
 
         // Perlin Noise를 위한 랜덤 오프셋 (매번 다른 지형 생성)
         float noiseOffsetX = Random.Range(0f, 1000f);

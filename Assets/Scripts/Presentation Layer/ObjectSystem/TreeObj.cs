@@ -225,7 +225,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             // 기존 로직(bWaterNearBy 값에 관계 없이 결국 항상 ActivateOnWaterObject를 수행)의 비주얼 동작을 동일하게 유지하며
             // 불필요한 이중 조건 연산과 중복 활성/비활성 호출 부하만 제거합니다.
-            treeVisualComponent.ActivateOnWaterObject();
+            if (bWaterNearBy == true)
+                treeVisualComponent.ActivateOnWaterObject();
 
             treeVisualComponent.ApplyVisual(treeData);
         }
@@ -345,6 +346,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         customSortable.ManualLateUpdate();
         treeVisualComponent.UpdateOnWaterSortingOrder();
+        treeVisualComponent.UpdateSortingOrder();
     }
 
     public TreeType GetTreeType()
