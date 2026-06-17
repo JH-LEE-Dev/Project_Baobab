@@ -5,6 +5,8 @@ using UnityEngine;
 public class LogItem : Item, IStaticCollidable
 {
     // 이벤트
+    public event Action<LogItem> LogItemActivatedEvent;
+    public event Action<LogItem> LogItemDeActivatedEvent;
     public event Action<LogItem> LogItemAcquired;
 
     // IStaticCollidable 구현
@@ -71,6 +73,8 @@ public class LogItem : Item, IStaticCollidable
     private bool bDisableCustomSortable = false;
     private float originalDurability;
     private float inventoryCheckTimer = 0f;
+    private static readonly int UseFloatingPropertyID = Shader.PropertyToID("_UseFloating");
+    private static readonly int FloatingOffsetPropertyID = Shader.PropertyToID("_FloatingOffset");
 
     [SerializeField] private GameObject shadow;
     private Transform shadowTransform;
@@ -190,6 +194,7 @@ public class LogItem : Item, IStaticCollidable
         totalRotation = _totalRotation;
         elapsed = 0f;
         state = ItemMoveState.Launching;
+        LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
 
         outlineObj.SetActive(true);
@@ -222,6 +227,7 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.Transferring;
+        LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
 
         if (gameObject.activeInHierarchy)
@@ -240,6 +246,7 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.ContainerTransferring;
+        LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
 
         if (gameObject.activeInHierarchy)
@@ -259,6 +266,7 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.DynamicTransferring;
+        LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
 
         if (gameObject.activeInHierarchy)
@@ -276,6 +284,7 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = _rotationSpeed;
         elapsed = 0f;
         state = ItemMoveState.CurveTransferring;
+        LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
 
         // 시점과 종점을 잇는 방향에 수직인 벡터 계산 (2D 법선)
@@ -346,6 +355,8 @@ public class LogItem : Item, IStaticCollidable
         {
             shadowTransform.localScale = Vector3.one;
         }
+
+        SetShaderFloating(false);
     }
 
     public void SetTimberSprite()
@@ -469,6 +480,7 @@ public class LogItem : Item, IStaticCollidable
             landingDampTime = 0f;
 
             state = ItemMoveState.Dropped;
+            SetShaderFloating(true);
             CheckAcquireCondition();
         }
     }
@@ -541,6 +553,7 @@ public class LogItem : Item, IStaticCollidable
             UpdateShadowScale(0f);
 
             state = ItemMoveState.Dropped;
+            SetShaderFloating(true);
         }
     }
 
@@ -609,6 +622,7 @@ public class LogItem : Item, IStaticCollidable
             UpdateShadowScale(0f);
 
             state = ItemMoveState.Dropped;
+            SetShaderFloating(true);
         }
     }
 
@@ -685,6 +699,7 @@ public class LogItem : Item, IStaticCollidable
             UpdateShadowScale(0f);
 
             state = ItemMoveState.Dropped;
+            SetShaderFloating(true);
         }
     }
 
@@ -788,8 +803,8 @@ public class LogItem : Item, IStaticCollidable
     {
         if (visualTransform != null)
         {
-            // Y축 둥둥 떠있는 움직임 (Sine Wave)
-            // 위치 기반 오프셋을 주어 아이템마다 타이밍이 다르게 함
+            // Y축 둥둥 떠있는 움직임 (Sine Wave) - 셰이더로 이관됨 (기존 코드 보존)
+            /*
             float posOffset = (transform.position.x + transform.position.y) * 10f;
             float floatOffset = Mathf.Sin(Time.time * 2.5f + posOffset) * 0.05f;
             visualTransform.localPosition = new Vector3(0, floatOffset, 0);
@@ -800,6 +815,15 @@ public class LogItem : Item, IStaticCollidable
             }
 
             UpdateShadowScale(floatOffset);
+            */
+
+            // 셰이더 연동용 기본값 설정 (CPU 연산 없음)
+            visualTransform.localPosition = Vector3.zero;
+            if (customSortable != null)
+            {
+                customSortable.SetHeight(0f);
+            }
+            UpdateShadowScale(0f);
 
             // 착지 후 스프링 댐퍼 쫀득한 Scale 연출
             if (landingDampTime < landingDampDuration)
@@ -815,6 +839,12 @@ public class LogItem : Item, IStaticCollidable
 
                 // Squash & Stretch: 수평(X)은 늘어나고 수직(Y)은 찌그러짐
                 visualTransform.localScale = new Vector3(1f + springEffect, 1f - springEffect, 1f);
+
+                if (landingDampTime >= landingDampDuration)
+                {
+                    visualTransform.localScale = Vector3.one;
+                    LogItemDeActivatedEvent?.Invoke(this);
+                }
             }
             else
             {
@@ -869,6 +899,8 @@ public class LogItem : Item, IStaticCollidable
         elapsed = 0f;
         bSuckAccelerating = false; // 플래그 초기화
         state = ItemMoveState.Sucking;
+        SetShaderFloating(false);
+        LogItemActivatedEvent?.Invoke(this);
     }
 
     public void SetbCanAcquired(bool _boolean)
@@ -892,5 +924,42 @@ public class LogItem : Item, IStaticCollidable
     public void SetFlyingItemSortingLayer()
     {
         spriteRenderer.sortingLayerID = flyingItemSortingLayerID;
+    }
+
+    private void SetShaderFloating(bool _enable)
+    {
+        if (spriteRenderer == null) return;
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        
+        float val = _enable ? 1f : 0f;
+        float offset = 0f;
+        if (_enable)
+        {
+            offset = (transform.position.x + transform.position.y) * 10f;
+        }
+
+        // 본체 렌더러 설정
+        spriteRenderer.GetPropertyBlock(mpb);
+        mpb.SetFloat(UseFloatingPropertyID, val);
+        mpb.SetFloat(FloatingOffsetPropertyID, offset);
+        spriteRenderer.SetPropertyBlock(mpb);
+
+        // 아웃라인 스텐실 렌더러 설정
+        if (outlineStencilSR != null)
+        {
+            outlineStencilSR.GetPropertyBlock(mpb);
+            mpb.SetFloat(UseFloatingPropertyID, val);
+            mpb.SetFloat(FloatingOffsetPropertyID, offset);
+            outlineStencilSR.SetPropertyBlock(mpb);
+        }
+
+        // 아웃라인 렌더러 설정
+        if (outlineSR != null)
+        {
+            outlineSR.GetPropertyBlock(mpb);
+            mpb.SetFloat(UseFloatingPropertyID, val);
+            mpb.SetFloat(FloatingOffsetPropertyID, offset);
+            outlineSR.SetPropertyBlock(mpb);
+        }
     }
 }

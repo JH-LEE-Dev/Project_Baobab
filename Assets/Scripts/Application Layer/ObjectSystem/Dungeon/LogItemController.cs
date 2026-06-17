@@ -161,6 +161,13 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         LogItem newItem = Instantiate(logItemPrefab, transform);
         newItem.LogItemAcquired -= LogItemAcquired;
         newItem.LogItemAcquired += LogItemAcquired;
+
+        newItem.LogItemActivatedEvent -= LogItemActivated;
+        newItem.LogItemActivatedEvent += LogItemActivated;
+
+        newItem.LogItemDeActivatedEvent -= LogItemDeActivated;
+        newItem.LogItemDeActivatedEvent += LogItemDeActivated;
+
         return newItem;
     }
 
@@ -233,6 +240,9 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     private void OnDestroyLogItem(LogItem _item)
     {
         _item.LogItemAcquired -= LogItemAcquired;
+        _item.LogItemActivatedEvent -= LogItemActivated;
+        _item.LogItemDeActivatedEvent -= LogItemDeActivated;
+
         OnReleaseLogItem(_item);
         Destroy(_item.gameObject);
     }
@@ -413,5 +423,31 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     {
         if (_data.logProbDatas == null) return;
         logProbDatas = new List<LogDropProbData>(_data.logProbDatas);
+    }
+
+    private void LogItemActivated(LogItem _logItem)
+    {
+        if (_logItem.UpdateIndex == -1)
+        {
+            _logItem.UpdateIndex = activeItemsForUpdate.Count;
+            activeItemsForUpdate.Add(_logItem);
+        }
+    }
+
+    private void LogItemDeActivated(LogItem _logItem)
+    {
+        int idx = _logItem.UpdateIndex;
+        if (idx != -1)
+        {
+            int lastIdx = activeItemsForUpdate.Count - 1;
+            if (idx != lastIdx)
+            {
+                LogItem lastItem = activeItemsForUpdate[lastIdx];
+                activeItemsForUpdate[idx] = lastItem;
+                lastItem.UpdateIndex = idx;
+            }
+            activeItemsForUpdate.RemoveAt(lastIdx);
+            _logItem.UpdateIndex = -1;
+        }
     }
 }
