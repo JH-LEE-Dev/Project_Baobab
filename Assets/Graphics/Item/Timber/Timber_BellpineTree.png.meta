@@ -3,8 +3,8 @@ guid: c03f189b15859e34f89c6e76dad53404
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -6061996944044181469
-    second: FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 6_0
+      213: 2659347608148238738
+    second: Timber_BellpineTree_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,11 +100,11 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 6_0
+      name: Timber_BellpineTree_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 1
+        x: 4
+        y: 9
         width: 24
         height: 15
       alignment: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3283eb0b5e57fdba0800000000000000
-      internalID: -6061996944044181469
+      spriteID: 291e5fd4f86e7e420800000000000000
+      internalID: 2659347608148238738
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 6_0: -6061996944044181469
+      Timber_BellpineTree_0: 2659347608148238738
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

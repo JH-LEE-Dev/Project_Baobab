@@ -96,6 +96,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkScale: 0.8
     shrinkTimeRatio: 0.08
@@ -1126,6 +1127,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startAngle: 5
     angleDamping: 0.62
@@ -1191,10 +1193,10 @@ MonoBehaviour:
   goHomeButtonTouchArea: {fileID: 7078762770774974765}
   retryButtonTouchArea: {fileID: 2416458133470098658}
   resultContentsRoot: {fileID: 1142698972501421563}
-  titleText: {fileID: 0}
+  titleText: {fileID: 4631010597832074935}
   treeKillCountText: {fileID: 449543583908602927}
-  acquiredLogsHeaderText: {fileID: 0}
-  containerHeaderText: {fileID: 0}
+  acquiredLogsHeaderText: {fileID: 4347851224132446743}
+  containerHeaderText: {fileID: 7135894476952496125}
   resultLogRowPivot: {fileID: 4672469189424875266}
   emptyLogText: {fileID: 8412020469594847905}
   resultLogRows:
@@ -1204,17 +1206,17 @@ MonoBehaviour:
   containerSlotBackground: {fileID: 8646736783059881141}
   containerTopY: -12
   selectionCursorPrefab: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
-  selectionCursorParent: {fileID: 0}
+  selectionCursorParent: {fileID: 4974913713587254515}
   selectionCursorSize: {x: 64, y: 30}
-  blackBG: {fileID: 0}
-  sectionTitle: {fileID: 0}
-  sectionKillCount: {fileID: 0}
-  sectionAcquiredLogs: {fileID: 0}
-  sectionContainer: {fileID: 0}
-  sectionButton: {fileID: 0}
-  treeKillCountTextAnimator: {fileID: 0}
-  acquiredLogsHeaderAnimator: {fileID: 0}
-  containerHeaderAnimator: {fileID: 0}
+  blackBG: {fileID: 9095366635969830895}
+  sectionTitle: {fileID: 2098486811772482228}
+  sectionKillCount: {fileID: 8927906452374081415}
+  sectionAcquiredLogs: {fileID: 4576977082440408362}
+  sectionContainer: {fileID: 1337949052037627175}
+  sectionButton: {fileID: 2456679885466909760}
+  treeKillCountTextAnimator: {fileID: 1024533598659604521}
+  acquiredLogsHeaderAnimator: {fileID: 1125917241456336188}
+  containerHeaderAnimator: {fileID: 656242218271120755}
   resultOpenDuration: 0.3
   resultOpenYOffset: -30
   resultOpenEase: 9
@@ -1356,6 +1358,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startAngle: 5
     angleDamping: 0.62
@@ -2270,6 +2273,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkScale: 0.8
     shrinkTimeRatio: 0.08

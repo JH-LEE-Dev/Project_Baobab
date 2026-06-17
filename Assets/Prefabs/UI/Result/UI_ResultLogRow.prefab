@@ -59,6 +59,12 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: ba6d5bf6c65ef6047b1f132029038cd5, type: 3}
   - treeType: 3
     sprite: {fileID: 21300000, guid: 578f2e4568b228f44b4543638a6afb12, type: 3}
+  - treeType: 4
+    sprite: {fileID: 21300000, guid: b63f7ce3222f9b04d96eecaae2f0ae2c, type: 3}
+  - treeType: 5
+    sprite: {fileID: 21300000, guid: 3cc6aa8a7e5568b41b5f8ab0fc15372a, type: 3}
+  - treeType: 6
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
 --- !u!1 &1891985346121398742
 GameObject:
   m_ObjectHideFlags: 0

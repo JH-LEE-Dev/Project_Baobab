@@ -3,8 +3,8 @@ guid: c34014c92e391734ab6feab4eaaf8983
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8285831749936508310
-    second: FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 3_0
+      213: 3505575839546406427
+    second: Timber_BirchTree_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,11 +100,11 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 3_0
+      name: Timber_BirchTree_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 1
+        x: 4
+        y: 9
         width: 24
         height: 15
       alignment: 0
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 69d6e9b83103df270800000000000000
-      internalID: 8285831749936508310
+      spriteID: b16fa5917ae46a030800000000000000
+      internalID: 3505575839546406427
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      FF89FF0B-F1D5-4C7B-A9D7-DFF4E8539933 - 3_0: 8285831749936508310
+      Timber_BirchTree_0: 3505575839546406427
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
