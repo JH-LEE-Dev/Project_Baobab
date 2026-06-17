@@ -91,6 +91,11 @@ public class LogItem : Item, IStaticCollidable
 
     private ICharacter character;
 
+    private ParticleSystem particleEffect;
+    private VFXComponent vfxComponent;
+
+    private string objectSortingLayerName = "Objects";
+
     public void Initialize(LogItemTypeData _logItemTypeData, Color _color, LogState _logState, ICharacter _character, bool _bDisableCustomSortable = false)
     {
         base.Initialize(_logItemTypeData.itemType);
@@ -161,6 +166,16 @@ public class LogItem : Item, IStaticCollidable
         }
 
         originalColor = spriteRenderer.color;
+    }
+
+    public void SetVfxComponent(VFXComponent _vfxComponent)
+    {
+        vfxComponent = _vfxComponent;
+    }
+
+    public void SetParticleEffect(ParticleSystem _particleEffect)
+    {
+        particleEffect = _particleEffect;
     }
 
     public void SetInventoryChecker(IInventoryChecker _inventoryChecker)
@@ -393,7 +408,23 @@ public class LogItem : Item, IStaticCollidable
         if (bDisableCustomSortable == false)
         {
             customSortable.ManualLateUpdate();
-            outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
+            if (outlineStencilSR != null && outlineSR != null)
+                outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
+        }
+
+        if (particleEffect != null)
+        {
+            vfxComponent.SetSortingSettings(particleEffect, objectSortingLayerName, spriteRenderer.sortingOrder + 1);
+        }
+    }
+
+    public void UpdateSortingOrder()
+    {
+        if (bDisableCustomSortable == false)
+        {
+            customSortable.ManualLateUpdate();
+            if (outlineStencilSR != null && outlineSR != null)
+                outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
         }
     }
 

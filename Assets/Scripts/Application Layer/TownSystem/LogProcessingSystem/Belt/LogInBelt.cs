@@ -146,6 +146,8 @@ public class LogInBelt : MonoBehaviour
                 step
             );
 
+            beltItem.item.UpdateSortingOrder();
+
             // 도달 확인
             if (Vector3.Distance(beltItem.item.transform.position, target.position) < 0.01f)
             {
@@ -172,6 +174,11 @@ public class LogInBelt : MonoBehaviour
         {
             DeactivatingItem dItem = deactivatingItems[i];
             dItem.remainingTime -= _deltaTime;
+
+            if (dItem.item != null)
+            {
+                dItem.item.UpdateSortingOrder();
+            }
 
             if (dItem.remainingTime <= 0f)
             {
