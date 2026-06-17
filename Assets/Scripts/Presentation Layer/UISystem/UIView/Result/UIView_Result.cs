@@ -204,8 +204,7 @@ public class UIView_Result : UIView
         if (localizationManager != null)
             localizationManager.OnLanguageChanged += RefreshLocalizedResultTexts;
 
-        CacheUIReferences();
-        CacheProductionReferences();
+        CacheProductionRuntimeReferences();
         CacheProductionStartState();
         InitializeResultLogRows();
         RefreshLocalizedStaticTexts();
@@ -280,52 +279,6 @@ public class UIView_Result : UIView
             child.gameObject.SetActive(active);
     }
 
-    private void CacheUIReferences()
-    {
-        if (resultContentsRoot == null)
-        {
-            Transform contents = transform.Find("Panel_ResultContents");
-            if (contents != null)
-                resultContentsRoot = contents.gameObject;
-        }
-
-        if (treeKillCountText == null)
-        {
-            Transform treeKillCount = transform.Find("Panel_ResultContents/Text_TreeKillCount");
-            if (treeKillCount == null)
-                treeKillCount = FindChildRecursive(transform, "Text_TreeKillCount");
-
-            if (treeKillCount != null)
-                treeKillCountText = treeKillCount.GetComponent<TMP_Text>();
-        }
-
-        if (titleText == null)
-        {
-            Transform title = FindChildRecursive(transform, "Text_Title");
-            if (title != null)
-                titleText = title.GetComponent<TMP_Text>();
-        }
-
-        if (acquiredLogsHeaderText == null)
-            acquiredLogsHeaderText = GetSectionHeaderText("Section_AcquiredLogs");
-
-        if (containerHeaderText == null)
-            containerHeaderText = GetSectionHeaderText("Section_Container");
-
-        if (resultLogRowPivot == null)
-            resultLogRowPivot = FindChildRecursive(transform, "UI_ResultLogRowPivot");
-
-        if (emptyLogText == null)
-        {
-            Transform emptyText = FindChildRecursive(transform, "Text_Empty");
-            if (emptyText != null)
-                emptyLogText = emptyText.GetComponent<TMP_Text>();
-        }
-
-        if (containerSlotBackground == null)
-            containerSlotBackground = FindChildRecursive(transform, "SlotBackground");
-    }
-
     private void RefreshLocalizedStaticTexts()
     {
         if (titleText != null)
@@ -347,44 +300,8 @@ public class UIView_Result : UIView
         RefreshTreeKillCount();
     }
 
-    private void CacheProductionReferences()
+    private void CacheProductionRuntimeReferences()
     {
-        if (blackBG == null)
-        {
-            Transform blackBGTransform = FindChildRecursive(transform, "BlackBG");
-            if (blackBGTransform != null)
-                blackBG = blackBGTransform.GetComponent<Image>();
-        }
-
-        if (sectionTitle == null)
-            sectionTitle = FindChildRecursive(transform, "Section_Title") as RectTransform;
-
-        if (sectionKillCount == null)
-            sectionKillCount = FindChildRecursive(transform, "Section_KillCount") as RectTransform;
-
-        if (sectionAcquiredLogs == null)
-            sectionAcquiredLogs = FindChildRecursive(transform, "Section_AcquiredLogs") as RectTransform;
-
-        if (sectionContainer == null)
-            sectionContainer = FindChildRecursive(transform, "Section_Container") as RectTransform;
-
-        if (sectionButton == null)
-        {
-            sectionButton = FindChildRecursive(transform, "Section_Button") as RectTransform;
-
-            if (sectionButton == null)
-                sectionButton = FindChildRecursive(transform, "ButtonRoot") as RectTransform;
-        }
-
-        if (treeKillCountTextAnimator == null && treeKillCountText != null)
-            treeKillCountTextAnimator = treeKillCountText.GetComponent<TMPInlineStyleAnimator>();
-
-        if (acquiredLogsHeaderAnimator == null)
-            acquiredLogsHeaderAnimator = GetSectionHeaderAnimator("Section_AcquiredLogs");
-
-        if (containerHeaderAnimator == null)
-            containerHeaderAnimator = GetSectionHeaderAnimator("Section_Container");
-
         sectionTitleCanvasGroup = GetOrAddCanvasGroup(sectionTitle);
         sectionButtonCanvasGroup = GetOrAddCanvasGroup(sectionButton);
 
@@ -609,14 +526,8 @@ public class UIView_Result : UIView
 
     private void CacheButtonTouchAreas()
     {
-        if (goHomeButtonTouchArea == null)
-            goHomeButtonTouchArea = FindChildRecursive(transform, "Button_OK_TouchArea") as RectTransform;
-
-        if (retryButtonTouchArea == null)
-            retryButtonTouchArea = FindChildRecursive(transform, "Button_Retry_TouchArea") as RectTransform;
-
-        goHomeButtonVisual = GetButtonVisual(goHomeButton, "Button_OK");
-        retryButtonVisual = GetButtonVisual(retryButton, "Button_Retry");
+        goHomeButtonVisual = GetButtonVisual(goHomeButton);
+        retryButtonVisual = GetButtonVisual(retryButton);
         goHomeTouchAreaButton = EnsureTouchAreaButton(goHomeButtonTouchArea);
         retryTouchAreaButton = EnsureTouchAreaButton(retryButtonTouchArea);
 
@@ -624,20 +535,12 @@ public class UIView_Result : UIView
         SetButtonVisualRaycastTarget(retryButtonVisual, false);
     }
 
-    private RectTransform GetButtonVisual(Button button, string visualName)
+    private RectTransform GetButtonVisual(Button button)
     {
         if (button != null)
             return button.transform as RectTransform;
 
-        RectTransform visual = FindChildRecursive(transform, visualName) as RectTransform;
-        Button visualButton = visual != null ? visual.GetComponent<Button>() : null;
-
-        if (visualName == "Button_OK")
-            goHomeButton = visualButton;
-        else if (visualName == "Button_Retry")
-            retryButton = visualButton;
-
-        return visual;
+        return null;
     }
 
     private Button EnsureTouchAreaButton(RectTransform touchArea)
@@ -753,28 +656,6 @@ public class UIView_Result : UIView
 
         SetResultContentsActive(false);
         completedEvent?.Invoke();
-    }
-
-    private TMPInlineStyleAnimator GetSectionHeaderAnimator(string sectionName)
-    {
-        Transform section = FindChildRecursive(transform, sectionName);
-        Transform header = FindChildRecursive(section, "Text_Header");
-
-        if (header == null)
-            return null;
-
-        return header.GetComponent<TMPInlineStyleAnimator>();
-    }
-
-    private TMP_Text GetSectionHeaderText(string sectionName)
-    {
-        Transform section = FindChildRecursive(transform, sectionName);
-        Transform header = FindChildRecursive(section, "Text_Header");
-
-        if (header == null)
-            return null;
-
-        return header.GetComponent<TMP_Text>();
     }
 
     private CanvasGroup GetOrAddCanvasGroup(RectTransform rectTransform)
@@ -1071,7 +952,6 @@ public class UIView_Result : UIView
     private void InitializeResultLogRows()
     {
         RemoveInvalidResultLogRows();
-        AddPivotResultLogRows();
         CacheResultLogRowBasePositions();
 
         for (int i = 0; i < resultLogRows.Count; i++)
@@ -1198,19 +1078,6 @@ public class UIView_Result : UIView
             UI_ResultLogRow row = resultLogRows[i];
             if (row == null || false == row.transform.IsChildOf(transform))
                 resultLogRows.RemoveAt(i);
-        }
-    }
-
-    private void AddPivotResultLogRows()
-    {
-        if (resultLogRowPivot == null)
-            return;
-
-        UI_ResultLogRow[] rows = resultLogRowPivot.GetComponentsInChildren<UI_ResultLogRow>(true);
-        for (int i = 0; i < rows.Length; i++)
-        {
-            if (rows[i] != null && false == resultLogRows.Contains(rows[i]))
-                resultLogRows.Add(rows[i]);
         }
     }
 
@@ -1495,22 +1362,4 @@ public class UIView_Result : UIView
         rootRect.anchoredPosition = new Vector2(0f, Mathf.Round(containerTopY));
     }
 
-    private Transform FindChildRecursive(Transform root, string childName)
-    {
-        if (root == null)
-            return null;
-
-        for (int i = 0; i < root.childCount; i++)
-        {
-            Transform child = root.GetChild(i);
-            if (child.name == childName)
-                return child;
-
-            Transform result = FindChildRecursive(child, childName);
-            if (result != null)
-                return result;
-        }
-
-        return null;
-    }
 }

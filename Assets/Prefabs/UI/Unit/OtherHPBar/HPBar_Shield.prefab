@@ -1433,8 +1433,8 @@ MonoBehaviour:
   shieldGhostSlider: {fileID: 4530840443062396663}
   shieldCanvasGroup: {fileID: 6972703436633816548}
   motionPlayer: {fileID: 4842467345709385059}
-  ghostFollowDuration: 0.5
-  ghostDelay: 0.5
+  ghostFollowDuration: 0.08
+  ghostDelay: 0.3
   useAccumulatedGhost: 1
-  resetDelayOnHit: 0
+  resetDelayOnHit: 1
   shieldFadeDuration: 0.3
