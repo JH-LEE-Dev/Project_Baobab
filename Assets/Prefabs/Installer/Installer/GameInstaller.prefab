@@ -431,7 +431,7 @@ MonoBehaviour:
   isUIComponent: 0
   vfxPoolDataList:
   - vfxTag: Shiny
-    effectPrefab: {fileID: 2164660391435094963, guid: c35801b392e7c2f4cb16cdc65fb2bc57, type: 3}
+    effectPrefab: {fileID: 2164660391435094963, guid: f9a4dc6ca35113949aeb0810ad1e7927, type: 3}
     initialPoolSize: 200
     allowDynamicExpansion: 1
     maxPoolSize: 1000

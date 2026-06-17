@@ -3,7 +3,6 @@ Shader "Custom/2D/Particle-PixelSnap"
     Properties
     {
         _MainTex("Texture", 2D) = "white" {}
-        [MaterialToggle] _ZWrite("ZWrite", Float) = 0
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
     }
 
@@ -20,7 +19,8 @@ Shader "Custom/2D/Particle-PixelSnap"
 
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
-        ZWrite [_ZWrite]
+        ZWrite Off
+        ZTest LEqual
 
         Pass
         {
@@ -52,7 +52,7 @@ Shader "Custom/2D/Particle-PixelSnap"
 
             sampler2D _MainTex;
             float4 _MainTex_ST;
-            float4 _MainTex_TexelSize;
+            float4 _MainTex_TexelSize; // (1/width, 1/height, width, height)
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
@@ -71,25 +71,26 @@ Shader "Custom/2D/Particle-PixelSnap"
                 float signY = 1.0;
                 #endif
 
-                // 1. 원본 화면 픽셀 좌표 구하기
+                // ──────────────────────────────────────────────
+                // [버텍스 위치 스냅] 팻픽셀(ㄱ,ㄴ) 방지
+                // ──────────────────────────────────────────────
+                // 1. 스크린 픽셀 좌표 산출
                 float3 vertexWS = TransformObjectToWorld(input.positionOS.xyz);
                 float4 vertexCS = TransformWorldToHClip(vertexWS);
-                
                 float2 vertexNDC = vertexCS.xy / vertexCS.w;
-                float2 vertexScreenPixel = (vertexNDC + float2(1.0, signY)) * 0.5 * _ScreenParams.xy;
+                float2 screenPixel = (vertexNDC + float2(1.0, signY)) * 0.5 * _ScreenParams.xy;
 
-                // 2. 완벽한 독립 정수 스냅
-                // [원인 규명] 유니티 파티클 시스템에서 TransformObjectToWorld(0,0,0)은 개별 파티클의 중심이 아니라 
-                // '파티클 시스템 오브젝트(에미터)'의 중심을 반환합니다. 
-                // 즉, 기존 로직은 파티클의 크기가 아니라 '에미터로부터 떨어진 거리'를 기준으로 홀/짝 스냅을 잘못 적용하고 있었습니다!
-                // 거리가 27일 때는 찢어지고, 28일 때는 안 찢어졌던 이유가 바로 이 때문입니다.
+                // 2. floor 스냅
+                //    round()는 4개 꼭짓점이 각자 다른 방향으로 스냅될 수 있어
+                //    쿼드 크기가 ±1px 변동됩니다 (팻픽셀의 원인).
                 //
-                // [해결] 32x32 해상도를 정수배로 스케일링하면 픽셀 크기는 언제나 '짝수'가 됩니다.
-                // 크기가 짝수인 사각형은 각 꼭짓점을 독립적으로 반올림(round)해도 수학적으로 절대 팻 픽셀이 발생하지 않습니다.
-                vertexScreenPixel = round(vertexScreenPixel);
-                
-                // 다시 NDC 및 클립 공간으로 복원
-                vertexNDC = vertexScreenPixel / _ScreenParams.xy * 2.0 - float2(1.0, signY);
+                //    floor()는 항상 같은 방향(음의 무한대)으로 스냅하므로
+                //    수학적으로 floor(a + n) - floor(a) = n (n이 정수)이 보장됩니다.
+                //    → 쿼드의 스크린 픽셀 크기가 정수인 한, 크기가 절대 변하지 않습니다.
+                screenPixel = floor(screenPixel);
+
+                // 3. NDC / 클립 공간으로 복원
+                vertexNDC = screenPixel / _ScreenParams.xy * 2.0 - float2(1.0, signY);
                 o.positionCS = vertexCS;
                 o.positionCS.xy = vertexNDC * vertexCS.w;
 
@@ -100,10 +101,25 @@ Shader "Custom/2D/Particle-PixelSnap"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
-                // Texture Sheet Animation 렌더링 시 부동소수점 오차로 인한 잘림을 방어하기 위한 미세 UV 조정
-                float2 safeUV = input.uv + (_MainTex_TexelSize.xy * 0.001);
-                
-                half4 texColor = tex2D(_MainTex, safeUV);
+                // ──────────────────────────────────────────────
+                // [텍셀 중심 스냅] ㅡ 현상 방지
+                // ──────────────────────────────────────────────
+                // GPU의 하드웨어 UV 보간에는 부동소수점 오차가 있습니다.
+                // 홀수 배율에서 텍셀 경계가 픽셀 중심과 정확히 겹치면,
+                // 오차에 의해 인접 텍셀을 잘못 샘플링하여 가로줄(ㅡ)이 생깁니다.
+                //
+                // 이를 방지하기 위해 UV를 해당 텍셀의 정중앙으로 명시적 스냅합니다.
+                // Point 필터링에 의존하지 않고 셰이더에서 직접 보정하므로
+                // 어떤 배율에서든 정확한 텍셀을 보장합니다.
+                //
+                // _MainTex_TexelSize: (1/width, 1/height, width, height)
+                //   .zw = 전체 텍스처 해상도 (예: 96, 32)
+                //   .xy = 텍셀 1개의 UV 크기 (예: 1/96, 1/32)
+                float2 texelCoord = input.uv * _MainTex_TexelSize.zw; // UV → 텍셀 좌표
+                texelCoord = floor(texelCoord) + 0.5;                  // 텍셀 정중앙으로 스냅
+                float2 snappedUV = texelCoord * _MainTex_TexelSize.xy; // 텍셀 좌표 → UV
+
+                half4 texColor = tex2D(_MainTex, snappedUV);
                 half4 finalColor = texColor * input.color;
 
                 clip(finalColor.a - 0.01);

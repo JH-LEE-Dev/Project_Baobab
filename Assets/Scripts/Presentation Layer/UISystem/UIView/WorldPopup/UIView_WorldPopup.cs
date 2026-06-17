@@ -332,10 +332,12 @@ public class UIView_WorldPopup : UIView
              ui_Storage.OnHide();
         if (true == ui_CarStorage.IsOpen)
             ui_CarStorage.OnHide();
+
+        ui_TraderCoin?.OnHide();
     }
 
     public void WorldPopupGoUp()
     {
-        
+        ui_TraderCoin?.OnShow();
     }
 }
