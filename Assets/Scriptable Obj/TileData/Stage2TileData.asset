@@ -72,3 +72,7 @@ MonoBehaviour:
   animatedObjPrefabs:
   - {fileID: 638856153476849655, guid: a1d5f83aeb9aa4b4f9e33778f82e1594, type: 3}
   - {fileID: 638856153476849655, guid: 5a1979a0ea399414ebe46c514a73b537, type: 3}
+  waterAnimatedObjPrefabs:
+  - {fileID: 797919803063131645, guid: e4b61bc5607848c4f8150fb503323cfe, type: 3}
+  - {fileID: 6049851641271938233, guid: 54ac872e6f8957549b32f8e0f6248201, type: 3}
+  - {fileID: 6158695759910253706, guid: 9d3500dd8baa2294ea0100f58bc905f3, type: 3}
