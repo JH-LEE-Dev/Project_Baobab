@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TreeShadow
-  m_Shader: {fileID: 4800000, guid: b082fd8c9ab1f934c874063dce173af8, type: 3}
+  m_Name: OutlineWriter_Tree_Top
+  m_Shader: {fileID: 4800000, guid: c66d826b8abc69f43b861111fc8b75a0, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -46,10 +46,18 @@ Material:
     m_Ints: []
     m_Floats:
     - _EnableExternalAlpha: 0
+    - _EnableWindSway: 1
+    - _OutlineWidth: 1
+    - _SwayDetailSpeed: 1.45
+    - _SwayDetailWeight: 0.35
+    - _SwayMainSpeed: 0.55
+    - _SwayPositionAmplitude: 0.03
+    - _SwayRotationAmplitude: 1.25
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _OutlineColor: {r: 0, g: 0, b: 0, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

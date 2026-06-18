@@ -4,6 +4,13 @@ Shader "Custom/TreeShadow"
     {
         [MainColor] _BaseColor("Shadow Color", Color) = (0, 0, 0, 0.5)
         [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
+        [Header(Wind Sway)]
+        _EnableWindSway("Enable Wind Sway", Float) = 0
+        _SwayPositionAmplitude("Sway Position Amplitude", Float) = 0.03
+        _SwayRotationAmplitude("Sway Rotation Amplitude", Float) = 1.25
+        _SwayMainSpeed("Sway Main Speed", Float) = 0.55
+        _SwayDetailSpeed("Sway Detail Speed", Float) = 1.45
+        _SwayDetailWeight("Sway Detail Weight", Float) = 0.35
     }
 
     SubShader
@@ -30,6 +37,7 @@ Shader "Custom/TreeShadow"
             #pragma fragment frag
             #pragma multi_compile_instancing
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "../Include/TreeWindSway.hlsl"
 
             struct Attributes
             {
@@ -51,6 +59,12 @@ Shader "Custom/TreeShadow"
 
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _BaseColor)
+                UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings vert(Attributes IN)
@@ -58,8 +72,22 @@ Shader "Custom/TreeShadow"
                 Varyings OUT;
                 UNITY_SETUP_INSTANCE_ID(IN);
                 UNITY_TRANSFER_INSTANCE_ID(IN, OUT);
-                OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
-                OUT.worldPos = TransformObjectToWorld(IN.positionOS.xyz);
+
+                // Wind Sway 버텍스 변위
+                float3 objectPivotWorldPos = float3(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13, UNITY_MATRIX_M._m23);
+                float3 swayedPos = ApplyWindSway(
+                    IN.positionOS.xyz,
+                    objectPivotWorldPos,
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EnableWindSway),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayPositionAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayRotationAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayMainSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailWeight)
+                );
+
+                OUT.positionHCS = TransformObjectToHClip(swayedPos);
+                OUT.worldPos = TransformObjectToWorld(swayedPos);
                 OUT.uv = IN.uv;
                 return OUT;
             }

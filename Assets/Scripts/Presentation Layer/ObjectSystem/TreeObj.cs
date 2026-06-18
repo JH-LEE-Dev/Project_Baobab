@@ -209,7 +209,6 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             if (topShadowObject != null) topShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
             if (bottomShadowObject != null) bottomShadowObject.ManualUpdate(shadowAngle, shadowScaleY, isShadowActive);
 
-            treeVisualComponent.CacheSwayBasePose();
             bTreeShadowSet = true;
         }
 

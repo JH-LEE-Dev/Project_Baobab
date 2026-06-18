@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Custom-Sprite-Default_Tree
-  m_Shader: {fileID: 4800000, guid: 7ebffd8be5722564da7dbd653a86d04d, type: 3}
+  m_Name: Custom-Sprite-Default_Tree_Bottom
+  m_Shader: {fileID: 4800000, guid: cc9efbaf848372348806223288c4a34a, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -47,7 +47,13 @@ Material:
     m_Floats:
     - _Dummy: 0
     - _EnableExternalAlpha: 0
+    - _EnableWindSway: 0
     - _StencilRef: 0
+    - _SwayDetailSpeed: 1.45
+    - _SwayDetailWeight: 0.35
+    - _SwayMainSpeed: 0.55
+    - _SwayPositionAmplitude: 0.03
+    - _SwayRotationAmplitude: 1.25
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

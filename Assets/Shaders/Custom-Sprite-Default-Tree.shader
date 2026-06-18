@@ -12,6 +12,14 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
+
+        [Header(Wind Sway)]
+        _EnableWindSway("Enable Wind Sway", Float) = 0
+        _SwayPositionAmplitude("Sway Position Amplitude", Float) = 0.03
+        _SwayRotationAmplitude("Sway Rotation Amplitude", Float) = 1.25
+        _SwayMainSpeed("Sway Main Speed", Float) = 0.55
+        _SwayDetailSpeed("Sway Detail Speed", Float) = 1.45
+        _SwayDetailWeight("Sway Detail Weight", Float) = 0.35
     }
 
     SubShader
@@ -36,6 +44,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Core2D.hlsl"
+            #include "Include/TreeWindSway.hlsl"
 
             #pragma vertex LitVertex
             #pragma fragment LitFragment
@@ -66,6 +75,12 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -74,6 +89,19 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
+
+                // Wind Sway 버텍스 변위
+                float3 objectPivotWorldPos = float3(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13, UNITY_MATRIX_M._m23);
+                input.positionOS = ApplyWindSway(
+                    input.positionOS,
+                    objectPivotWorldPos,
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EnableWindSway),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayPositionAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayRotationAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayMainSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailWeight)
+                );
 
                 Varyings o = CommonLitVertex(input);
                 o.worldPos = TransformObjectToWorld(input.positionOS);
@@ -116,6 +144,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Core2D.hlsl"
+            #include "Include/TreeWindSway.hlsl"
 
             #pragma vertex NormalsRenderingVertex
             #pragma fragment NormalsRenderingFragment
@@ -143,6 +172,12 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -151,6 +186,19 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
+
+                // Wind Sway 버텍스 변위
+                float3 objectPivotWorldPos = float3(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13, UNITY_MATRIX_M._m23);
+                input.positionOS = ApplyWindSway(
+                    input.positionOS,
+                    objectPivotWorldPos,
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EnableWindSway),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayPositionAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayRotationAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayMainSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailWeight)
+                );
 
                 Varyings o = CommonNormalsVertex(input);
                 o.worldPos = TransformObjectToWorld(input.positionOS);
@@ -193,6 +241,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
             HLSLPROGRAM
             #include "Packages/com.unity.render-pipelines.universal/Shaders/2D/Include/Core2D.hlsl"
+            #include "Include/TreeWindSway.hlsl"
 
             #pragma vertex UnlitVertex
             #pragma fragment UnlitFragment
@@ -220,6 +269,12 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayMainSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _SwayDetailWeight)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -228,6 +283,19 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
+
+                // Wind Sway 버텍스 변위
+                float3 objectPivotWorldPos = float3(UNITY_MATRIX_M._m03, UNITY_MATRIX_M._m13, UNITY_MATRIX_M._m23);
+                input.positionOS = ApplyWindSway(
+                    input.positionOS,
+                    objectPivotWorldPos,
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EnableWindSway),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayPositionAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayRotationAmplitude),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayMainSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailSpeed),
+                    UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SwayDetailWeight)
+                );
 
                 Varyings o = CommonUnlitVertex(input);
                 o.worldPos = TransformObjectToWorld(input.positionOS);
