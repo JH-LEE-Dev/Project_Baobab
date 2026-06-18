@@ -2286,6 +2286,14 @@ MonoBehaviour:
   - treeGrade: 4
     hpMultiplier: 10
     dropMultiplier: 5
+  currentTreeGenerationStrategy: {fileID: 0}
+  mapTypeTreeGenerationDatas:
+  - mapType: 2
+    strategy: {fileID: 11400000, guid: 2ffdf70e5db3b2748ad936c4f6ac06f3, type: 2}
+  - mapType: 3
+    strategy: {fileID: 11400000, guid: 2ffdf70e5db3b2748ad936c4f6ac06f3, type: 2}
+  - mapType: 4
+    strategy: {fileID: 11400000, guid: 98f8568db3fa69745a6689fb61e1fd15, type: 2}
   hiddenMapTreeGradeDatas:
   - grade: 2
     probability:
