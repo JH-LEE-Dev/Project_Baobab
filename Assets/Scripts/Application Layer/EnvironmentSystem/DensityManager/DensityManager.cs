@@ -5,6 +5,9 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 {
     [SerializeField] private MapDensityDataBase densityDataBase;
 
+    [Header("Debug")]
+    [SerializeField] private bool debugUnlockAllMaps = false;
+
     private int grassTileCnt;
     private int walkableTilesCnt;
     private int treeCnt;
@@ -547,5 +550,57 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 cachedDatabase.mapDatas[i] = mapInfo;
             }
         }
+    }
+
+    private void Update()
+    {
+        if (debugUnlockAllMaps)
+        {
+            debugUnlockAllMaps = false;
+            DebugUnlockAllMaps();
+        }
+    }
+
+    [ContextMenu("Debug Unlock All Maps")]
+    public void DebugUnlockAllMaps()
+    {
+        if (densityDataBase == null || densityDataBase.densityDatas == null) return;
+
+        for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
+        {
+            var mapData = densityDataBase.densityDatas[i];
+            mapData.bCanAccess = true;
+            
+            if (mapData.densityData != null)
+            {
+                for (int j = 0; j < mapData.densityData.Count; j++)
+                {
+                    mapData.densityData[j].bCanAccess = true;
+                }
+            }
+        }
+
+        if (isDatabaseInitialized)
+        {
+            for (int i = 0; i < cachedDatabase.mapDatas.Count; i++)
+            {
+                var mapInfo = cachedDatabase.mapDatas[i];
+                mapInfo.bCanAccess = true;
+
+                if (mapInfo.forestDatas != null)
+                {
+                    for (int j = 0; j < mapInfo.forestDatas.Count; j++)
+                    {
+                        var forestInfo = mapInfo.forestDatas[j];
+                        forestInfo.bCanAccess = true;
+                        mapInfo.forestDatas[j] = forestInfo;
+                    }
+                }
+
+                cachedDatabase.mapDatas[i] = mapInfo;
+            }
+        }
+
+        Debug.Log("[DensityManager] Debug: All Maps Unlocked.");
     }
 }
