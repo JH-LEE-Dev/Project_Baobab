@@ -96,7 +96,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
 
                 for (int j = 0; j < currentClusterPositions.Count; j++)
                 {
-                    if (Vector3.Distance(candidate, currentClusterPositions[j]) < 2.0f)
+                    if (Vector3.Distance(candidate, currentClusterPositions[j]) < 1.4f)
                     {
                         tooCloseToOtherTree = true;
                         break;
@@ -164,7 +164,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
                     bool tooCloseToOtherTree = false;
                     for (int j = 0; j < groupPositions.Count; j++)
                     {
-                        if (Vector3.Distance(candidate, groupPositions[j]) < 2.0f)
+                        if (Vector3.Distance(candidate, groupPositions[j]) < 1.4f)
                         {
                             tooCloseToOtherTree = true;
                             break;
