@@ -370,7 +370,7 @@ MonoBehaviour:
   _vfxTag: ShinyVFX
   _vfxColor: {r: 1, g: 1, b: 1, a: 1}
   _isUIVfx: 1
-  _vfxUiScale: 30
+  _vfxUiScale: 32
   _initialPoolSize: 1
   _allowDynamicExpansion: 0
   _maxPoolSize: 10

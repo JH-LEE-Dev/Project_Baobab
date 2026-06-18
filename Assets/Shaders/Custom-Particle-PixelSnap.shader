@@ -3,24 +3,26 @@ Shader "Custom/2D/Particle-PixelSnap"
     Properties
     {
         _MainTex("Texture", 2D) = "white" {}
-        [MaterialToggle] _ZWrite("ZWrite", Float) = 0
+        [HideInInspector] _TilesX("Tiles X", Float) = 3
+        [HideInInspector] _TilesY("Tiles Y", Float) = 1
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
     }
 
     SubShader
     {
-        Tags 
-        { 
-            "Queue" = "Transparent" 
-            "IgnoreProjector" = "True" 
-            "RenderType" = "Transparent" 
+        Tags
+        {
+            "Queue" = "Transparent"
+            "IgnoreProjector" = "True"
+            "RenderType" = "Transparent"
             "PreviewType" = "Plane"
-            "RenderPipeline" = "UniversalPipeline" 
+            "RenderPipeline" = "UniversalPipeline"
         }
 
         Blend SrcAlpha OneMinusSrcAlpha
         Cull Off
-        ZWrite [_ZWrite]
+        ZWrite Off
+        ZTest LEqual
 
         Pass
         {
@@ -37,7 +39,9 @@ Shader "Custom/2D/Particle-PixelSnap"
             struct Attributes
             {
                 float4 positionOS   : POSITION;
+                float3 normalOS     : NORMAL;
                 float2 uv           : TEXCOORD0;
+                float3 centerOS     : TEXCOORD1;
                 half4 color         : COLOR;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -56,7 +60,32 @@ Shader "Custom/2D/Particle-PixelSnap"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                float _TilesX;
+                float _TilesY;
             CBUFFER_END
+
+            float4 SnapClipPositionByParticleCenter(float4 vertexCS, float4 centerCS)
+            {
+                #if UNITY_UV_STARTS_AT_TOP
+                float signY = -1.0;
+                #else
+                float signY = 1.0;
+                #endif
+
+                float2 centerNDC = centerCS.xy / centerCS.w;
+                float2 centerScreenPixel = (centerNDC + float2(1.0, signY)) * 0.5 * _ScreenParams.xy;
+                float2 vertexNDC = vertexCS.xy / vertexCS.w;
+                float2 vertexScreenPixel = (vertexNDC + float2(1.0, signY)) * 0.5 * _ScreenParams.xy;
+                float2 vertexOffset = vertexScreenPixel - centerScreenPixel;
+                float2 snappedHalfSize = max(round(abs(vertexOffset) * 2.0), float2(1.0, 1.0)) * 0.5;
+                float2 centerOffset = frac(snappedHalfSize);
+                float2 snappedCenterScreenPixel = floor(centerScreenPixel - centerOffset + 0.5) + centerOffset;
+                float2 snappedVertexScreenPixel = snappedCenterScreenPixel + sign(vertexOffset) * snappedHalfSize;
+                float2 snappedVertexNDC = snappedVertexScreenPixel / _ScreenParams.xy * 2.0 - float2(1.0, signY);
+
+                vertexCS.xy = snappedVertexNDC * vertexCS.w;
+                return vertexCS;
+            }
 
             Varyings UnlitVertex(Attributes input)
             {
@@ -65,34 +94,11 @@ Shader "Custom/2D/Particle-PixelSnap"
                 UNITY_TRANSFER_INSTANCE_ID(input, o);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
-                #if UNITY_UV_STARTS_AT_TOP
-                float signY = -1.0;
-                #else
-                float signY = 1.0;
-                #endif
-
-                // 1. 원본 화면 픽셀 좌표 구하기
                 float3 vertexWS = TransformObjectToWorld(input.positionOS.xyz);
                 float4 vertexCS = TransformWorldToHClip(vertexWS);
-                
-                float2 vertexNDC = vertexCS.xy / vertexCS.w;
-                float2 vertexScreenPixel = (vertexNDC + float2(1.0, signY)) * 0.5 * _ScreenParams.xy;
+                float4 centerCS = TransformWorldToHClip(TransformObjectToWorld(input.centerOS));
 
-                // 2. 완벽한 독립 정수 스냅
-                // [원인 규명] 유니티 파티클 시스템에서 TransformObjectToWorld(0,0,0)은 개별 파티클의 중심이 아니라 
-                // '파티클 시스템 오브젝트(에미터)'의 중심을 반환합니다. 
-                // 즉, 기존 로직은 파티클의 크기가 아니라 '에미터로부터 떨어진 거리'를 기준으로 홀/짝 스냅을 잘못 적용하고 있었습니다!
-                // 거리가 27일 때는 찢어지고, 28일 때는 안 찢어졌던 이유가 바로 이 때문입니다.
-                //
-                // [해결] 32x32 해상도를 정수배로 스케일링하면 픽셀 크기는 언제나 '짝수'가 됩니다.
-                // 크기가 짝수인 사각형은 각 꼭짓점을 독립적으로 반올림(round)해도 수학적으로 절대 팻 픽셀이 발생하지 않습니다.
-                vertexScreenPixel = round(vertexScreenPixel);
-                
-                // 다시 NDC 및 클립 공간으로 복원
-                vertexNDC = vertexScreenPixel / _ScreenParams.xy * 2.0 - float2(1.0, signY);
-                o.positionCS = vertexCS;
-                o.positionCS.xy = vertexNDC * vertexCS.w;
-
+                o.positionCS = SnapClipPositionByParticleCenter(vertexCS, centerCS);
                 o.uv = input.uv;
                 o.color = input.color * _Color;
                 return o;
@@ -100,10 +106,17 @@ Shader "Custom/2D/Particle-PixelSnap"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
-                // Texture Sheet Animation 렌더링 시 부동소수점 오차로 인한 잘림을 방어하기 위한 미세 UV 조정
-                float2 safeUV = input.uv + (_MainTex_TexelSize.xy * 0.001);
-                
-                half4 texColor = tex2D(_MainTex, safeUV);
+                float2 tileCount = max(float2(_TilesX, _TilesY), float2(1.0, 1.0));
+                float2 textureSize = _MainTex_TexelSize.zw;
+                float2 tileSize = textureSize / tileCount;
+                float2 texelCoord = input.uv * _MainTex_TexelSize.zw;
+                float2 tileIndex = clamp(floor(texelCoord / tileSize), float2(0.0, 0.0), tileCount - 1.0);
+                float2 tileOrigin = tileIndex * tileSize;
+                float2 localTexel = texelCoord - tileOrigin;
+                localTexel = clamp(floor(localTexel) + 0.5, float2(0.5, 0.5), tileSize - 0.5);
+                float2 snappedUV = (tileOrigin + localTexel) * _MainTex_TexelSize.xy;
+
+                half4 texColor = tex2D(_MainTex, snappedUV);
                 half4 finalColor = texColor * input.color;
 
                 clip(finalColor.a - 0.01);

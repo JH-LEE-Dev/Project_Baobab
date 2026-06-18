@@ -40,4 +40,14 @@ public class UI_TraderCoin : MonoBehaviour
 
         omp.Play(twistTag, bReset: true);
     }
+
+    public void OnHide()
+    {
+        gameObject.SetActive(false);
+    }
+
+    public void OnShow()
+    {
+        gameObject.SetActive(true);
+    }
 }

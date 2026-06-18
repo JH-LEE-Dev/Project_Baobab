@@ -49,7 +49,7 @@ public class ShinyEffectComponent : MonoBehaviour
     [SerializeField] private bool _isUIVfx = true;
     
     [ShowIf("_useVfxEffect")]
-    [SerializeField] private float _vfxUiScale = 1.0f;
+    [SerializeField] private float _vfxUiScale = 32.0f;
 
     [Header("VFX Pool Settings")]
     [ShowIf("_useVfxEffect")]
