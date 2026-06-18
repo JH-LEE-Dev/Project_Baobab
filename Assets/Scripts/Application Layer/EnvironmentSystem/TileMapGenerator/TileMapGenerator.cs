@@ -170,6 +170,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         ReleaseAllAnimatedObj();
 
+        if (animatedObjGenerator != null && stageTileData != null)
+        {
+            animatedObjGenerator.SetPrefabs(stageTileData.AnimatedObjPrefabs);
+        }
+
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
         decoTilemap.ClearAllTiles();

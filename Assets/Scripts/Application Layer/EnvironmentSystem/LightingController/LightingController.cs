@@ -49,6 +49,7 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
     private SpritePointLight2D characterPointLight;
     private ICharacter character;
+    private bool bSet = false;
 
     public void Initialize(ITimeDataProvider _timeDataProvider)
     {
@@ -88,13 +89,15 @@ public class LightingController : MonoBehaviour, IShadowDataProvider
 
     private void Update()
     {
-        if (timeDataProvider == null)
+        if (timeDataProvider == null || bSet == true)
             return;
 
         float timePercent = timeDataProvider.currentTimePercent;
 
         UpdateShadows(timePercent);
         UpdateLights(timePercent);
+        bSet = true;
+        enabled = false;
     }
 
     private void Setup()

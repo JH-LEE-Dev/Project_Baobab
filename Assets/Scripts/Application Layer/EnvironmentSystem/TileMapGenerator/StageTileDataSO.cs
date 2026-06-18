@@ -56,8 +56,10 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private List<TileBase> insectDecoTiles;
     [SerializeField] private TileBase stencilTile;
     [SerializeField] private TileBase groundStencilTile;
+    [SerializeField] private List<AnimatedObj> animatedObjPrefabs;
 
     // // 퍼블릭 초기화 및 제어 메서드
+    public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public TileBase WaterTile => waterTile;
     public TileBase WaterTileBorderRU => waterTileBorderRU;
     public TileBase WaterTileBorderRD => waterTileBorderRD;

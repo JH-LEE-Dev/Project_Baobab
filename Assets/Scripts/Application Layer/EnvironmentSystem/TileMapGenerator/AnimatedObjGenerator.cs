@@ -4,62 +4,93 @@ using System.Collections.Generic;
 
 public class AnimatedObjGenerator : MonoBehaviour
 {
-    // // 외부 의존성
-    [SerializeField] private AnimatedObj animatedObjPrefab;
-
     // // 내부 의존성 및 캐싱 필드
-    private IObjectPool<AnimatedObj> animatedObjPool;
-    private List<AnimatedObj> activeObjects;
+    private List<AnimatedObj> currentPrefabs;
+    private Dictionary<AnimatedObj, IObjectPool<AnimatedObj>> poolDict;
+    private Dictionary<AnimatedObj, List<AnimatedObj>> activeObjectsDict;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
+    public void SetPrefabs(List<AnimatedObj> _prefabs)
+    {
+        ReleaseAllActive();
+        currentPrefabs = _prefabs;
+    }
+
     public void Initialize()
     {
-        activeObjects = new List<AnimatedObj>(32);
+        poolDict = new Dictionary<AnimatedObj, IObjectPool<AnimatedObj>>(8);
+        activeObjectsDict = new Dictionary<AnimatedObj, List<AnimatedObj>>(8);
+    }
 
-        animatedObjPool = new ObjectPool<AnimatedObj>(
-            createFunc: CreateAnimatedObj,
-            actionOnGet: OnGetAnimatedObj,
-            actionOnRelease: OnReleaseAnimatedObj,
-            actionOnDestroy: OnDestroyAnimatedObj,
-            collectionCheck: true,
-            defaultCapacity: 32,
-            maxSize: 100
-        );
+    private IObjectPool<AnimatedObj> GetPool(AnimatedObj _prefab)
+    {
+        if (!poolDict.TryGetValue(_prefab, out var _pool))
+        {
+            _pool = new ObjectPool<AnimatedObj>(
+                createFunc: () => CreateAnimatedObj(_prefab),
+                actionOnGet: OnGetAnimatedObj,
+                actionOnRelease: OnReleaseAnimatedObj,
+                actionOnDestroy: OnDestroyAnimatedObj,
+                collectionCheck: true,
+                defaultCapacity: 32,
+                maxSize: 100
+            );
+            poolDict.Add(_prefab, _pool);
+            activeObjectsDict.Add(_prefab, new List<AnimatedObj>(32));
+        }
+        return _pool;
     }
 
     public AnimatedObj SpawnAnimatedObj(Vector3 _position)
     {
-        AnimatedObj _targetObj = animatedObjPool.Get();
+        if (currentPrefabs == null || currentPrefabs.Count == 0) return null;
+
+        int randomIndex = UnityEngine.Random.Range(0, currentPrefabs.Count);
+        AnimatedObj _prefab = currentPrefabs[randomIndex];
+        if (_prefab == null) return null;
+
+        IObjectPool<AnimatedObj> _pool = GetPool(_prefab);
+        AnimatedObj _targetObj = _pool.Get();
+
         if (_targetObj != null)
         {
             _targetObj.transform.position = _position;
-            activeObjects.Add(_targetObj);
+            activeObjectsDict[_prefab].Add(_targetObj);
         }
         return _targetObj;
     }
 
     public void ReleaseAllActive()
     {
-        if (activeObjects == null || animatedObjPool == null) return;
+        if (activeObjectsDict == null || poolDict == null) return;
 
-        for (int i = 0; i < activeObjects.Count; i++)
+        foreach (var kvp in activeObjectsDict)
         {
-            AnimatedObj _obj = activeObjects[i];
-            if (_obj != null)
+            AnimatedObj _prefab = kvp.Key;
+            List<AnimatedObj> _activeList = kvp.Value;
+            if (poolDict.TryGetValue(_prefab, out var _pool))
             {
-                animatedObjPool.Release(_obj);
+                for (int i = 0; i < _activeList.Count; i++)
+                {
+                    AnimatedObj _obj = _activeList[i];
+                    if (_obj != null)
+                    {
+                        _pool.Release(_obj);
+                    }
+                }
             }
+            _activeList.Clear();
         }
-
-        activeObjects.Clear();
     }
 
     // // 내부 풀 관리 메서드
 
-    private AnimatedObj CreateAnimatedObj()
+    private AnimatedObj CreateAnimatedObj(AnimatedObj _prefab)
     {
-        AnimatedObj _newItem = Instantiate(animatedObjPrefab, transform);
+        if (_prefab == null) return null;
+
+        AnimatedObj _newItem = Instantiate(_prefab, transform);
         if (_newItem != null)
         {
             _newItem.Initialize();

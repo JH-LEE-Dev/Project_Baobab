@@ -68,3 +68,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0d558cdb55ad84c43903e762812d0e57, type: 2}
   stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
+  animatedObjPrefabs:
+  - {fileID: 638856153476849655, guid: bb9393c5a73b11e43a479f9bd10cde48, type: 3}
