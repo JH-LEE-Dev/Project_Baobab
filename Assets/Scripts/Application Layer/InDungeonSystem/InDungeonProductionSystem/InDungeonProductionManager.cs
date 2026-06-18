@@ -86,7 +86,7 @@ public class InDungeonProductionManager : MonoBehaviour
         if (character == null || characterRidePoint == null) yield break;
 
         inputManager.PauseMove(true);
-        character.DisableShadow();
+        //character.DisableShadow();
 
         Vector3 startPos = character.transform.position;
         Vector3 startScale = character.transform.localScale;
