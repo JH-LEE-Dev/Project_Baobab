@@ -288,11 +288,11 @@ MonoBehaviour:
   m_ShadowMode: 4
   m_ShadowDistance: {x: 1, y: -1}
   m_ShadowIteration: 1
-  m_ShadowFade: 0.9
+  m_ShadowFade: 1
   m_ShadowMirrorScale: 0.5
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 4
-  m_ShadowColor: {r: 1, g: 0.37931073, b: 0, a: 1}
+  m_ShadowColor: {r: 1, g: 0.17098704, b: 0, a: 1}
   m_ShadowColorGlow: 1
   m_GradationMode: 0
   m_GradationIntensity: 1

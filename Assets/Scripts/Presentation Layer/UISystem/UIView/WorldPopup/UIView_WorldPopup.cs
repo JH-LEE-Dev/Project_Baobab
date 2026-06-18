@@ -336,7 +336,8 @@ public class UIView_WorldPopup : UIView
 
     public void WorldPopupGoUp()
     {
-        ui_TraderCoin?.OnShow();
+        if (MapType.Town == currentMapType)
+            ui_TraderCoin?.OnShow();
     }
 
     public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
