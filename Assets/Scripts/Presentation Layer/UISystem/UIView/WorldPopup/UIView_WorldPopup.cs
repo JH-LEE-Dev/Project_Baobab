@@ -180,11 +180,6 @@ public class UIView_WorldPopup : UIView
         base.OnHide();
     }
 
-    public override void Update()
-    {
-        base.Update();
-    }
-
     public override void OnDestroy()
     {
         base.OnDestroy();

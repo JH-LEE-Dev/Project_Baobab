@@ -6,6 +6,7 @@ public class UI_TraderCoin : MonoBehaviour
 {
     [SerializeField] private CurrencyCounterHUD currencyCounter;
     [SerializeField] private ObjectMotionPlayer omp;
+    [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private string twistTag = "Twist";
 
     public void Initialize()
@@ -43,11 +44,17 @@ public class UI_TraderCoin : MonoBehaviour
 
     public void OnHide()
     {
-        gameObject.SetActive(false);
+        if(null == canvasGroup)
+            return;
+
+        canvasGroup.alpha = 0f;
     }
 
     public void OnShow()
     {
-        gameObject.SetActive(true);
+        if(null == canvasGroup)
+            return;
+            
+        canvasGroup.alpha = 1f;
     }
 }
