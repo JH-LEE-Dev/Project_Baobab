@@ -303,6 +303,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
   densityDataBase: {fileID: 11400000, guid: cb0b8bab5590ad8409bd563dc6f3cb61, type: 2}
+  debugUnlockAllMaps: 1
   applyToStartCnt: 1
   animalHiddenGaugeAmounts:
   - animalType: 1
@@ -1795,6 +1796,8 @@ MonoBehaviour:
     tileData: {fileID: 11400000, guid: 7f7e6fd6cc9cc7f45acefb152231cf44, type: 2}
   - mapType: 3
     tileData: {fileID: 11400000, guid: 35b7d7d6af5f44145bb981d76aedb7af, type: 2}
+  - mapType: 4
+    tileData: {fileID: 11400000, guid: 3a05eaff175f44f478e08144fc71f366, type: 2}
 --- !u!114 &5405137478683244198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1807,7 +1810,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50fe2d9a8536e5b478d93d3c195df74a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AnimatedObjGenerator
-  animatedObjPrefab: {fileID: 638856153476849655, guid: bb9393c5a73b11e43a479f9bd10cde48, type: 3}
+  cullingDistance: 35
 --- !u!1 &7432536287932878892
 GameObject:
   m_ObjectHideFlags: 0
@@ -2067,6 +2070,12 @@ MonoBehaviour:
     decAmount: 60
   - forestType: 7
     decAmount: 150
+  - forestType: 8
+    decAmount: 300
+  - forestType: 9
+    decAmount: 500
+  - forestType: 10
+    decAmount: 1000
 --- !u!114 &8919172322634990837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2277,6 +2286,14 @@ MonoBehaviour:
   - treeGrade: 4
     hpMultiplier: 10
     dropMultiplier: 5
+  currentTreeGenerationStrategy: {fileID: 0}
+  mapTypeTreeGenerationDatas:
+  - mapType: 2
+    strategy: {fileID: 11400000, guid: 2ffdf70e5db3b2748ad936c4f6ac06f3, type: 2}
+  - mapType: 3
+    strategy: {fileID: 11400000, guid: 2ffdf70e5db3b2748ad936c4f6ac06f3, type: 2}
+  - mapType: 4
+    strategy: {fileID: 11400000, guid: 98f8568db3fa69745a6689fb61e1fd15, type: 2}
   hiddenMapTreeGradeDatas:
   - grade: 2
     probability:
