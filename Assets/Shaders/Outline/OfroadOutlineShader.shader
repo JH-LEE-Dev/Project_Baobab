@@ -1,4 +1,4 @@
-Shader "Custom/TreeOutlineShader"
+Shader "Custom/OffroadOutlineShader"
 {
     Properties
     {

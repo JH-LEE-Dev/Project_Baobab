@@ -170,6 +170,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         ReleaseAllAnimatedObj();
 
+        if (animatedObjGenerator != null && stageTileData != null)
+        {
+            animatedObjGenerator.SetPrefabs(stageTileData.AnimatedObjPrefabs, stageTileData.WaterAnimatedObjPrefabs);
+        }
+
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
         decoTilemap.ClearAllTiles();
@@ -447,26 +452,32 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 waterCollisionTiles[i] = stageTileData != null ? stageTileData.TreeCollisionTile : null;
                 waterStencilTiles[i] = stageTileData != null ? stageTileData.StencilTile : null;
 
-                if (stageTileData != null && stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0)
+                bool _isDeepWater = true;
+                for (int _dy = -1; _dy <= 1; _dy++)
                 {
-                    bool _isDeepWater = true;
-                    for (int _dy = -1; _dy <= 1; _dy++)
+                    for (int _dx = -1; _dx <= 1; _dx++)
                     {
-                        for (int _dx = -1; _dx <= 1; _dx++)
+                        if (_dx == 0 && _dy == 0) continue;
+                        if (IsLand(x + _dx, y + _dy))
                         {
-                            if (_dx == 0 && _dy == 0) continue;
-                            if (IsLand(x + _dx, y + _dy))
-                            {
-                                _isDeepWater = false;
-                                break;
-                            }
+                            _isDeepWater = false;
+                            break;
                         }
-                        if (!_isDeepWater) break;
                     }
+                    if (!_isDeepWater) break;
+                }
 
-                    if (_isDeepWater)
+                if (_isDeepWater)
+                {
+                    if (stageTileData != null && stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0)
                     {
                         decoTilesToApply[i] = stageTileData.WaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
+                    }
+
+                    if (animatedObjGenerator != null && UnityEngine.Random.value < 0.1f)
+                    {
+                        Vector3 pos = GetWorldPos(i);
+                        animatedObjGenerator.SpawnWaterAnimatedObj(pos);
                     }
                 }
             }

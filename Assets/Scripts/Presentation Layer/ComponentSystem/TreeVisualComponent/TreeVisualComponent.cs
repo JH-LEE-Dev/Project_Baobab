@@ -34,18 +34,10 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private int hitVibrato = 15;
     [SerializeField] private float hitElasticity = 1f;
 
-    [Header("Wind Sway")]
-    [SerializeField] private bool enableWindSway = true;
-    [SerializeField] private float swayPositionAmplitude = 0.03f;
-    [SerializeField] private float swayRotationAmplitude = 1.25f;
-    [SerializeField] private float swayMainSpeed = 0.55f;
-    [SerializeField] private float swayDetailSpeed = 1.45f;
-    [SerializeField] private float swayDetailWeight = 0.35f;
+
 
     [Header("Outline")]
     [SerializeField] private GameObject outlineVisualObj;
-    [SerializeField] private Transform outlineStencilTopTransform;
-    [SerializeField] private Transform outlineTopTransform;
 
     [Header("Other Settings")]
     public GameObject baseVisualObj;
@@ -64,20 +56,6 @@ public class TreeVisualComponent : MonoBehaviour
 
     // 내부 의존성
     private Transform cachedTransform;
-    private Transform topTransform;
-    private Transform topShadowTransform;
-
-    // 캐시된 기본 포즈
-    private Vector3 topRendererBaseLocalPosition;
-    private Quaternion topRendererBaseLocalRotation;
-    private Vector3 topShadowBaseLocalPosition;
-    private Quaternion topShadowBaseLocalRotation;
-
-    private Vector3 outlineTopBaseLocalPosition;
-    private Quaternion outlineTopBaseLocalRotation;
-
-    private Vector3 outlineStencilTopBaseLocalPosition;
-    private Quaternion outlineStencilTopBaseLocalRotation;
 
     // 스프라이트 리소스 캐시 및 상태
     private Sprite defaultTopSprite;
@@ -86,7 +64,6 @@ public class TreeVisualComponent : MonoBehaviour
     private Sprite shieldBottomSprite;
 
     // 상태 변수
-    private float swayPhase;
     private bool isOutlineActive = false;
     private bool bDisableOutline = false;
     private float currentAlpha;
@@ -103,10 +80,7 @@ public class TreeVisualComponent : MonoBehaviour
     public void Initialize(Transform _topShadowTransform, CustomSortable _customSortable)
     {
         if (cachedTransform == null) cachedTransform = transform;
-        if (topRenderer != null && topTransform == null) topTransform = topRenderer.transform;
-        if (topShadowRenderer != null && topShadowTransform == null) topShadowTransform = _topShadowTransform;
 
-        CacheSwayBasePose();
         ResetVisualState();
 
         customSortable = _customSortable;
@@ -152,7 +126,6 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localPosition = Vector3.zero;
         visualRoot.localRotation = Quaternion.identity;
         visualRoot.localScale = Vector3.one;
-        ResetTopSway();
     }
 
     // 상단/하단 스프라이트를 랜덤으로 고르고 그림자 비주얼까지 함께 갱신한다. (에디터 미리보기용)
@@ -254,8 +227,6 @@ public class TreeVisualComponent : MonoBehaviour
 
         UpdateRendererSprites();
         ApplyDefaultScale();
-        ResetTopSway();
-        CacheSwayBasePose();
     }
 
     // 묘목(Sapling) 비주얼을 적용한다.
@@ -281,8 +252,6 @@ public class TreeVisualComponent : MonoBehaviour
 
         UpdateRendererSprites();
         ApplyDefaultScale();
-        ResetTopSway();
-        CacheSwayBasePose();
     }
 
     public void DeActivateOnWaterObject()
@@ -460,109 +429,9 @@ public class TreeVisualComponent : MonoBehaviour
 
         visualRoot.DOKill();
         visualRoot.localPosition = Vector3.zero;
-        ResetTopSway();
     }
 
-    // 상단 스프라이트의 기본 위치와 회전, 그리고 개체별 랜덤 위상을 저장한다.
-    public void CacheSwayBasePose()
-    {
-        if (topRenderer == null)
-        {
-            return;
-        }
 
-        topTransform = topRenderer.transform;
-
-        topRendererBaseLocalPosition = topTransform.localPosition;
-        topRendererBaseLocalRotation = topTransform.localRotation;
-
-        if (topShadowRenderer != null)
-        {
-            topShadowTransform = topShadowRenderer.transform;
-            topShadowBaseLocalPosition = topShadowTransform.localPosition;
-            topShadowBaseLocalRotation = topShadowTransform.localRotation;
-        }
-
-        if (outlineTopTransform != null)
-        {
-            outlineTopBaseLocalPosition = outlineTopTransform.localPosition;
-            outlineTopBaseLocalRotation = outlineTopTransform.localRotation;
-        }
-
-        if (outlineStencilTopTransform != null)
-        {
-            outlineStencilTopBaseLocalPosition = outlineStencilTopTransform.localPosition;
-            outlineStencilTopBaseLocalRotation = outlineStencilTopTransform.localRotation;
-        }
-
-        swayPhase = Random.Range(0f, Mathf.PI * 2f);
-    }
-
-    // 느린 큰 파형과 빠른 작은 파형을 섞어 나무 윗부분만 자연스럽게 흔들리게 만든다.
-    private void ApplyWindSway()
-    {
-        if (!Application.isPlaying || !enableWindSway || topTransform == null)
-        {
-            return;
-        }
-
-        float time = Time.time;
-        float mainWave = Mathf.Sin((time * swayMainSpeed) + swayPhase);
-        float detailWave = Mathf.Sin((time * swayDetailSpeed) + (swayPhase * 1.73f)) * swayDetailWeight;
-        float sway = mainWave + detailWave;
-
-        Vector3 swayOffset = new Vector3(sway * swayPositionAmplitude, 0f, 0f);
-        Quaternion swayRotation = Quaternion.Euler(0f, 0f, -sway * swayRotationAmplitude);
-
-        topTransform.localPosition = topRendererBaseLocalPosition + swayOffset;
-        topTransform.localRotation = topRendererBaseLocalRotation * swayRotation;
-
-        if (topShadowTransform != null)
-        {
-            topShadowTransform.localPosition = topShadowBaseLocalPosition + swayOffset;
-            topShadowTransform.localRotation = topShadowBaseLocalRotation * swayRotation;
-        }
-
-        if (isOutlineActive && outlineTopTransform != null)
-        {
-            outlineTopTransform.localPosition = outlineTopBaseLocalPosition + swayOffset;
-            outlineTopTransform.localRotation = outlineTopBaseLocalRotation * swayRotation;
-        }
-
-        if (isOutlineActive && outlineStencilTopTransform != null)
-        {
-            outlineStencilTopTransform.localPosition = outlineStencilTopBaseLocalPosition + swayOffset;
-            outlineStencilTopTransform.localRotation = outlineStencilTopBaseLocalRotation * swayRotation;
-        }
-    }
-
-    // 바람 흔들림을 제거하고 상단 스프라이트를 저장된 기본 포즈로 되돌린다.
-    private void ResetTopSway()
-    {
-        if (topTransform != null)
-        {
-            topTransform.localPosition = topRendererBaseLocalPosition;
-            topTransform.localRotation = topRendererBaseLocalRotation;
-        }
-
-        if (topShadowTransform != null)
-        {
-            topShadowTransform.localPosition = topShadowBaseLocalPosition;
-            topShadowTransform.localRotation = topShadowBaseLocalRotation;
-        }
-
-        if (outlineTopTransform != null)
-        {
-            outlineTopTransform.localPosition = outlineTopBaseLocalPosition;
-            outlineTopTransform.localRotation = outlineTopBaseLocalRotation;
-        }
-
-        if (outlineStencilTopTransform != null)
-        {
-            outlineStencilTopTransform.localPosition = outlineStencilTopBaseLocalPosition;
-            outlineStencilTopTransform.localRotation = outlineStencilTopBaseLocalRotation;
-        }
-    }
 
     private void ApplyAlpha(float _alpha)
     {
@@ -704,7 +573,6 @@ public class TreeVisualComponent : MonoBehaviour
     private void Awake()
     {
         cachedTransform = transform;
-        if (topRenderer != null) topTransform = topRenderer.transform;
 
         if (topRenderer != null) topRenderer.color = Color.white;
         if (bottomRenderer != null) bottomRenderer.color = Color.white;
@@ -717,14 +585,10 @@ public class TreeVisualComponent : MonoBehaviour
         if (topStencilOutlineSR != null) topStencilOutlineSR.color = Color.white;
         if (bottomStencilOutlineSR != null) bottomStencilOutlineSR.color = Color.white;
 
-        CacheSwayBasePose();
         UpdateOnWaterSortingOrder();
     }
 
-    private void Update()
-    {
-        ApplyWindSway();
-    }
+
 
     private void OnValidate()
     {

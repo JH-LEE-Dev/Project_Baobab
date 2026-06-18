@@ -73,7 +73,7 @@ public class DecoSpritePatternAnimator : MonoBehaviour
 
         if (targetRenderer != null)
         {
-            targetRenderer.enabled = true;
+            // targetRenderer.enabled = true; // 컬링 복귀 시 원치 않는 표시 방지
         }
 
         SetFrame(0);
@@ -81,7 +81,10 @@ public class DecoSpritePatternAnimator : MonoBehaviour
 
     private IEnumerator AnimationLoop()
     {
-        SetVisible(true);
+        bool startHidden = (playbackMode == PlaybackMode.PlayPatternThenHideWithWait) ||
+                           (playbackMode == PlaybackMode.RandomPatternWithWait && hideBetweenPatterns);
+
+        SetVisible(!startHidden);
         SetFrame(0);
 
         if (randomizeInitialWait && playbackMode != PlaybackMode.LoopPattern)
@@ -91,6 +94,7 @@ public class DecoSpritePatternAnimator : MonoBehaviour
 
         while (true)
         {
+            SetVisible(true);
             FramePattern pattern = GetNextPattern();
             yield return PlayPattern(pattern);
 
