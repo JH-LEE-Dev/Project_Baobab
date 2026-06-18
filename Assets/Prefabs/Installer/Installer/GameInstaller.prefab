@@ -715,6 +715,7 @@ GameObject:
   - component: {fileID: 2906103801948541194}
   - component: {fileID: 6484410132478005881}
   - component: {fileID: 28769940137761721}
+  - component: {fileID: 6639644036879904494}
   m_Layer: 0
   m_Name: InventoryManager
   m_TagString: Untagged
@@ -770,6 +771,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LogItemPoolingManager
   logItemPrefab: {fileID: 5360078145449572918, guid: 6767a4df1c674c5479f6bc03a6d92291, type: 3}
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+--- !u!114 &6639644036879904494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3306528137990007570}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  vfxPoolDataList:
+  - vfxTag: Shiny
+    effectPrefab: {fileID: 2164660391435094963, guid: f9a4dc6ca35113949aeb0810ad1e7927, type: 3}
+    initialPoolSize: 100
+    allowDynamicExpansion: 1
+    maxPoolSize: 500
+    uiParticleScale: 0
 --- !u!1 &3535782070355411120
 GameObject:
   m_ObjectHideFlags: 0
