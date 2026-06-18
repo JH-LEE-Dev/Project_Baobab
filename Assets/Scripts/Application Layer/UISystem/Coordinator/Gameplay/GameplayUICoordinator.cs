@@ -369,8 +369,10 @@ public class GameplayUICoordinator
     {
         unitUI.Refresh();
         unitUI.TownStarted();
+        
         hudUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         popUpUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
+        worldPopupUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
 
         bInventoryOpened = false;
         popUpUI.Hide();
@@ -380,6 +382,8 @@ public class GameplayUICoordinator
     {
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
+        worldPopupUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
+
         resultUI.DungeonStarted();
 
         bInventoryOpened = false;

@@ -29,6 +29,9 @@ public class UIView_WorldPopup : UIView
     private UI_TreeCutter ui_Cutter;
     private UI_TraderCoin ui_TraderCoin;
 
+    private MapType currentMapType;
+    private ForestType currentForestType;
+
     private bool isLogProcesserActive = false;
 
     //퍼블릭 초기화 및 제어 메서드
@@ -207,7 +210,7 @@ public class UIView_WorldPopup : UIView
         if (null != ui_Cutter)
             ui_Cutter.IsCollShow = _state;
 
-        if(false == isLogProcesserActive)
+        if (false == isLogProcesserActive)
             ShowLogProcessor(_state);
     }
 
@@ -324,7 +327,7 @@ public class UIView_WorldPopup : UIView
     public void WorldPopupGoDown()
     {
         if (true == ui_Storage.IsOpen)
-             ui_Storage.OnHide();
+            ui_Storage.OnHide();
         if (true == ui_CarStorage.IsOpen)
             ui_CarStorage.OnHide();
 
@@ -334,5 +337,11 @@ public class UIView_WorldPopup : UIView
     public void WorldPopupGoUp()
     {
         ui_TraderCoin?.OnShow();
+    }
+
+    public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
+    {
+        currentMapType = _currentMapType;
+        currentForestType = _currentForestType;
     }
 }
