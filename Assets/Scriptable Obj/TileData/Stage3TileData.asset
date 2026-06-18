@@ -12,37 +12,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9c5f0af08b4e4994d89be85df430cba2, type: 3}
   m_Name: Stage3TileData
   m_EditorClassIdentifier: 
-  waterTile: {fileID: 11400000, guid: cfdf1b9c56061eb46b3e864ff2fa83ef, type: 2}
-  waterTileBorderRU: {fileID: 11400000, guid: 4d67f04681f10de41a231cc32ace48f8, type: 2}
-  waterTileBorderRD: {fileID: 11400000, guid: 609d5492266db6d4fbec9368e2100ff3, type: 2}
-  waterTileBorderLU: {fileID: 11400000, guid: 2a1237e6ef51ab04cad8360a426d57fd, type: 2}
-  waterTileBorderLD: {fileID: 11400000, guid: c8c390385ecebf94f8d097eb9b4e7c2d, type: 2}
-  waterTileBorderRURD: {fileID: 11400000, guid: 21ee3ddb1abcb0d41b7a314a6388cd60, type: 2}
-  waterTileBorderRULU: {fileID: 11400000, guid: dd9e5f09f38d2ef4b890b9e3de5bb9b2, type: 2}
-  waterTileBorderRULD: {fileID: 11400000, guid: afa8f5d48fb5654499700f36a4abc9fe, type: 2}
-  waterTileBorderRDLU: {fileID: 11400000, guid: 3012b0de753d50b428e12abab812bd4d, type: 2}
-  waterTileBorderRDLD: {fileID: 11400000, guid: 88db033d6aba3344c86c18ee96ff2400, type: 2}
-  waterTileBorderLULD: {fileID: 11400000, guid: da78cd380a0338746ae78532ed05ad9f, type: 2}
-  waterTileBorderRURDLU: {fileID: 11400000, guid: c013171164277b14095dad5ca1bb0e10, type: 2}
-  waterTileBorderRURDLD: {fileID: 11400000, guid: 5a4e5b0fea46fe14cb8973e7f88d58b3, type: 2}
-  waterTileBorderRULULD: {fileID: 11400000, guid: e3bce2dd71e465240a56f85e9a43ad59, type: 2}
-  waterTileBorderRDLULD: {fileID: 11400000, guid: db98acb2e797dc04aafaaca8d77205d7, type: 2}
-  waterTileBorderAll: {fileID: 11400000, guid: fb2700989101cde40834b5627198d860, type: 2}
-  waterTileCornerU: {fileID: 11400000, guid: 8c5f0af08b4e4994d89be85df430cbc1, type: 2}
-  waterTileCornerR: {fileID: 11400000, guid: b8b8366e5b1931a4cad0dcc5c83aa8f4, type: 2}
-  waterTileCornerD: {fileID: 11400000, guid: e52ebf19cd6c185448d1f2fbc6383c25, type: 2}
-  waterTileCornerL: {fileID: 11400000, guid: ae18edf01c908b949a8802110e3231a5, type: 2}
-  waterTileCornerUR: {fileID: 11400000, guid: 9f90f279cfdd5cc4099dba563d36805b, type: 2}
-  waterTileCornerUD: {fileID: 11400000, guid: b256708ac42a19146ae870d8277a759d, type: 2}
-  waterTileCornerUL: {fileID: 11400000, guid: 810b7f6e2403874449741775804a0567, type: 2}
-  waterTileCornerRD: {fileID: 11400000, guid: 1e761e974f1acc8438ee03c56db36218, type: 2}
-  waterTileCornerRL: {fileID: 11400000, guid: f634aabea51b633428baaadec26c0762, type: 2}
-  waterTileCornerDL: {fileID: 11400000, guid: 19763e1fd5dadf0409042567a67d996b, type: 2}
-  waterTileCornerURD: {fileID: 11400000, guid: 8a63d014e42a0cc47a897eae4f81f4b2, type: 2}
-  waterTileCornerURL: {fileID: 11400000, guid: 684c77e406452364d99e6b76cebaa988, type: 2}
-  waterTileCornerUDL: {fileID: 11400000, guid: c6b153e63d3a140479946ede4c01ed0a, type: 2}
-  waterTileCornerRDL: {fileID: 11400000, guid: 345945b8e86dc0c49b55590adf0dfb28, type: 2}
-  waterTileCornerAll: {fileID: 11400000, guid: 5ef52f31b457ae04cb35e0f0a953d2de, type: 2}
+  waterTile: {fileID: 11400000, guid: 162137549f5840118d7656530469cfeb, type: 2}
+  waterTileBorderRU: {fileID: 11400000, guid: 8b881e58bba24581b686e01510462fcc, type: 2}
+  waterTileBorderRD: {fileID: 11400000, guid: f8c532dc6a8942fc8c763fa8690e8599, type: 2}
+  waterTileBorderLU: {fileID: 11400000, guid: ca6c78e11c964b7793e579600d61b96f, type: 2}
+  waterTileBorderLD: {fileID: 11400000, guid: 0aeb90879ec4490b8c9ee2c21f635f91, type: 2}
+  waterTileBorderRURD: {fileID: 11400000, guid: 5f68f82833764bcba7b20abaf751c3b2, type: 2}
+  waterTileBorderRULU: {fileID: 11400000, guid: f51278ebc58b4d17af700cebc293573b, type: 2}
+  waterTileBorderRULD: {fileID: 11400000, guid: fe44871e40214a9e9b7d8d60def3472f, type: 2}
+  waterTileBorderRDLU: {fileID: 11400000, guid: 89d5881095504f1889f9ae1400da448d, type: 2}
+  waterTileBorderRDLD: {fileID: 11400000, guid: 2c96574b43624c018446749683f6a0d8, type: 2}
+  waterTileBorderLULD: {fileID: 11400000, guid: a195e4a4367d495eb840804fbd6ae0a3, type: 2}
+  waterTileBorderRURDLU: {fileID: 11400000, guid: df9200ddbfee4c60b6e0a8f52df60039, type: 2}
+  waterTileBorderRURDLD: {fileID: 11400000, guid: 81aba57037f04926831b640f696ef5de, type: 2}
+  waterTileBorderRULULD: {fileID: 11400000, guid: a9223ad6997c4c55b3ab7a4711f3b624, type: 2}
+  waterTileBorderRDLULD: {fileID: 11400000, guid: 1391eef5892b4e97b9c809c198937795, type: 2}
+  waterTileBorderAll: {fileID: 11400000, guid: aa6a5a1f62a04b2ab1b6c57a57340675, type: 2}
+  waterTileCornerU: {fileID: 11400000, guid: ada2404e3d8a451baf223092d3f90193, type: 2}
+  waterTileCornerR: {fileID: 11400000, guid: f95477e2088441058df2ca1b80826fac, type: 2}
+  waterTileCornerD: {fileID: 11400000, guid: da0b7912ea964ba3a78b6e8c1f00c9ef, type: 2}
+  waterTileCornerL: {fileID: 11400000, guid: a48645cb20c94c359b9e72cfe63fb9d9, type: 2}
+  waterTileCornerUR: {fileID: 11400000, guid: 0d4af06580034484a025cbed3ad1e626, type: 2}
+  waterTileCornerUD: {fileID: 11400000, guid: 8e402a860330496c84f15ce21856012e, type: 2}
+  waterTileCornerUL: {fileID: 11400000, guid: a9af22a3f1a24b0e91a99c2dc1f6882b, type: 2}
+  waterTileCornerRD: {fileID: 11400000, guid: bef2394f44194165b07cb208e056ddd6, type: 2}
+  waterTileCornerRL: {fileID: 11400000, guid: 75cc8a95081442d9974dbd19014d5052, type: 2}
+  waterTileCornerDL: {fileID: 11400000, guid: eef18bb3ea1d4fff97eb18cb98ade2f4, type: 2}
+  waterTileCornerURD: {fileID: 11400000, guid: e3d4cf94a6b041a581b627a41ae5e5b9, type: 2}
+  waterTileCornerURL: {fileID: 11400000, guid: 8bb5399bc6314c5a86a7dbf9a3223474, type: 2}
+  waterTileCornerUDL: {fileID: 11400000, guid: aa9f06bb7e4543b7a34c4ed122371339, type: 2}
+  waterTileCornerRDL: {fileID: 11400000, guid: 2af51f0662714a2a9e80c0df1f9a885f, type: 2}
+  waterTileCornerAll: {fileID: 11400000, guid: 8cb09ba7075647ce94fae9d1667dcc31, type: 2}
   sandTiles:
   - {fileID: 11400000, guid: 3a43d51e0b1d297439ae845b042d4f38, type: 2}
   grassTiles:
