@@ -62,7 +62,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private bool isInitialized = false;
     private bool isClicked = false;
     private bool isHovered = false;
-    private bool isPendingExit = false;
     private float hoverEnterTime = 0f;
     private Tween exitDelayTween;
     private PointerEventData pendingExitData;
@@ -305,6 +304,12 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void PlayCloseAnimation()
     {
+        if (null != vfxComponent && null != unlockVfx)
+        {
+            vfxComponent.Stop(unlockVfx, true);
+            unlockVfx = null;
+        }
+
         gameObject.SetActive(false);
     }
 
@@ -509,7 +514,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         isHovered = true;
-        isPendingExit = false;
         hoverEnterTime = Time.unscaledTime;
 
         if (null != exitDelayTween) exitDelayTween.Kill();
@@ -561,12 +565,10 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             return;
         }
 
-        isPendingExit = true;
         pendingExitData = _eventData;
 
         if (null != exitDelayTween) exitDelayTween.Kill();
         exitDelayTween = DOVirtual.DelayedCall(hoverExitDelay, () => {
-            isPendingExit = false;
             if (null != pendingExitData)
             {
                 if (false == RectTransformUtility.RectangleContainsScreenPoint(GetRectTransform(), pendingExitData.position, pendingExitData.enterEventCamera))
@@ -601,7 +603,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         isClicked = true;
-        isPendingExit = false;
 
         if (null != motionPlayer)
         {
@@ -637,7 +638,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     {
         isHovered = false;
         isClicked = false;
-        isPendingExit = false;
 
         if (null != exitDelayTween) exitDelayTween.Kill();
 

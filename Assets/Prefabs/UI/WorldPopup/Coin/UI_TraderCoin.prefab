@@ -55,6 +55,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     squashScale: {x: 1.4, y: 0.7}
     recoilScale: {x: 0.8, y: 1.3}
@@ -170,6 +171,7 @@ GameObject:
   m_Component:
   - component: {fileID: 787900108897235290}
   - component: {fileID: 3221742832436022381}
+  - component: {fileID: 5530532960206569667}
   m_Layer: 5
   m_Name: UI_TraderCoin
   m_TagString: Untagged
@@ -212,7 +214,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_TraderCoin
   currencyCounter: {fileID: 8880328956546289508}
   omp: {fileID: 8365811520589610679}
+  canvasGroup: {fileID: 5530532960206569667}
   twistTag: Twist
+--- !u!225 &5530532960206569667
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9012121178195185827}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1001 &4792483411866901452
 PrefabInstance:
   m_ObjectHideFlags: 0

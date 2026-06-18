@@ -598,7 +598,16 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         if (null != originalParent && null != targetTransform)
         {
             if (targetTransform.parent != originalParent)
-                targetTransform.SetParent(originalParent);
+            {
+                try
+                {
+                    targetTransform.SetParent(originalParent);
+                }
+                catch (System.Exception ex)
+                {
+                    UnityEngine.Debug.LogWarning($"[VFXPoolInstanceHelper] Failed to set parent during activation/deactivation lifecycle: {ex.Message}");
+                }
+            }
         }
 
         if (null != targetTransform && true == targetTransform.gameObject.activeSelf)
