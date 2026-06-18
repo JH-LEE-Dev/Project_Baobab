@@ -17,6 +17,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private VFXComponent vfxComponent;
     [SerializeField] private GameObject newIndicatorObj;
 
+    [Header("Background Settings")]
+    [SerializeField] private MapBackgroundData[] mapBackgrounds;
+
     [Header("New Indicator Animation Settings")]
     [SerializeField] private float newIndicatorAnimDuration = 0.3f;
     [SerializeField] private Ease newIndicatorAnimEase = Ease.OutBack;
@@ -66,6 +69,9 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private Tweener colorTween;
     private Tween appearDelayTween;
     private Tweener scaleTween;
+    private Sprite defaultBackgroundSprite;
+    private Sprite cachedUnlockedSprite;
+    private bool isBackgroundSwapped;
     private TweenCallback onAppearDelayCompleteCallback;
 
     // 캐싱된 상수 및 리터럴 값
@@ -104,6 +110,26 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         onAppearDelayCompleteCallback = OnAppearDelayComplete;
         onOmpUnlockCompleteCallback = OnOmpUnlockComplete;
 
+        if (null != buttonImage && null == defaultBackgroundSprite)
+        {
+            defaultBackgroundSprite = buttonImage.sprite;
+        }
+
+        cachedUnlockedSprite = null;
+        if (null != mapBackgrounds)
+        {
+            int _len = mapBackgrounds.Length;
+            for (int i = 0; i < _len; i++)
+            {
+                if (mapBackgrounds[i].mapType == _mapType)
+                {
+                    cachedUnlockedSprite = mapBackgrounds[i].backgroundSprite;
+                    break;
+                }
+            }
+        }
+        isBackgroundSwapped = false;
+
         if (null != omp)
         {
             omp.Initialize();
@@ -130,6 +156,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         }
 
         UpdateColor();
+        UpdateBackgroundSprite();
     }
 
     public void ClearEntry()
@@ -380,6 +407,34 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         else
         {
             buttonImage.color = normalColor;
+        }
+    }
+
+    private void UpdateBackgroundSprite()
+    {
+        if (null == buttonImage)
+        {
+            return;
+        }
+
+        if (false == isLocked)
+        {
+            if (null != cachedUnlockedSprite)
+            {
+                if (false == isBackgroundSwapped || buttonImage.sprite != cachedUnlockedSprite)
+                {
+                    buttonImage.sprite = cachedUnlockedSprite;
+                    isBackgroundSwapped = true;
+                }
+            }
+        }
+        else
+        {
+            if (true == isBackgroundSwapped || buttonImage.sprite != defaultBackgroundSprite)
+            {
+                buttonImage.sprite = defaultBackgroundSprite;
+                isBackgroundSwapped = false;
+            }
         }
     }
 
@@ -667,4 +722,11 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             unlockVfx = null;
         }
     }
+}
+
+[System.Serializable]
+public struct MapBackgroundData
+{
+    public MapType mapType;
+    public Sprite backgroundSprite;
 }
