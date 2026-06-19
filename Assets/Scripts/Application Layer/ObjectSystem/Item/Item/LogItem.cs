@@ -326,6 +326,14 @@ public class LogItem : Item, IStaticCollidable
     public override void ResetItem()
     {
         base.ResetItem();
+
+        if(particleEffect != null)
+        {
+            if(vfxComponent != null)
+                vfxComponent.Stop(particleEffect, true);
+            particleEffect = null;    
+        }
+
         state = ItemMoveState.None;
         suckTarget = null;
         dynamicTarget = null;
@@ -513,6 +521,11 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
+            if (vfxComponent != null)
+            {
+                particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
+                if (particleEffect != null) particleEffect.transform.localScale = Vector3.one;
+            }
             CheckAcquireCondition();
         }
     }
@@ -586,6 +599,11 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
+            
+            if (vfxComponent != null && particleEffect != null)
+            {
+                vfxComponent.Stop(particleEffect, false);
+            }
         }
     }
 
@@ -655,6 +673,11 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
+            
+            if (vfxComponent != null && particleEffect != null)
+            {
+                vfxComponent.Stop(particleEffect, false);
+            }
         }
     }
 
@@ -663,6 +686,11 @@ public class LogItem : Item, IStaticCollidable
         if (dynamicTarget == null)
         {
             state = ItemMoveState.Dropped;
+            
+            if (vfxComponent != null && particleEffect != null)
+            {
+                vfxComponent.Stop(particleEffect, false);
+            }
             return;
         }
 
@@ -732,6 +760,11 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
+            
+            if (vfxComponent != null && particleEffect != null)
+            {
+                vfxComponent.Stop(particleEffect, false);
+            }
         }
     }
 
@@ -743,6 +776,13 @@ public class LogItem : Item, IStaticCollidable
             transform.localScale = Vector3.one;
             if (visualTransform != null) visualTransform.localScale = Vector3.one;
             state = ItemMoveState.Dropped;
+            
+            if (vfxComponent != null)
+            {
+                particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
+                if (particleEffect != null) particleEffect.transform.localScale = Vector3.one;
+            }
+                
             return;
         }
 
@@ -864,9 +904,6 @@ public class LogItem : Item, IStaticCollidable
                 {
                     visualTransform.localScale = Vector3.one;
                     LogItemDeActivatedEvent?.Invoke(this);
-
-                    if (vfxComponent != null)
-                        particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
                 }
             }
             else
@@ -920,7 +957,6 @@ public class LogItem : Item, IStaticCollidable
         if (vfxComponent != null && particleEffect != null)
         {
             vfxComponent.Stop(particleEffect, false);
-            particleEffect = null;
         }
 
         suckTarget = _target;
