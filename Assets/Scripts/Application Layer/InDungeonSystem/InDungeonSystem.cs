@@ -77,9 +77,11 @@ public class InDungeonSystem : MonoBehaviour
         currentMapType = _sceneChangeData.mapType;
         currentForestType = _sceneChangeData.forestType;
 
-        signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType), currentForestType));
         inDungeonObjectManager.SetDungeonData(dungeonDataBase.GetDungeonData(currentMapType));
+        inDungeonObjectManager.SetupForMapType(currentMapType);
         inDungeonObjectManager.SetupItemManagerCulling();
+        
+        signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType), currentForestType));
     }
 
     private void BindEvents()

@@ -349,8 +349,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -25.5, y: 47.25}
-  m_SizeDelta: {x: 191, y: 15.5}
+  m_AnchoredPosition: {x: -25.5, y: 46}
+  m_SizeDelta: {x: 191, y: 16}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &3964161766771163500
 GameObject:
@@ -553,6 +553,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5337220286153030346}
+  - component: {fileID: 1968308479237392732}
   m_Layer: 5
   m_Name: Visual
   m_TagString: Untagged
@@ -581,6 +582,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 26, y: 44}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &1968308479237392732
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4791882116067128791}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &4961246461107332392
 GameObject:
   m_ObjectHideFlags: 0
@@ -943,6 +956,7 @@ MonoBehaviour:
   maxPressColor: {r: 0, g: 0.6592593, b: 1, a: 0.7490196}
   colorDuration: 0.2
   maxPressDuration: 1.5
+  canvasGroup: {fileID: 1968308479237392732}
 --- !u!1 &6595759153962658993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1037,7 +1051,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 8.5, y: -0.25}
+  m_AnchoredPosition: {x: 8.5, y: -1}
   m_SizeDelta: {x: 174, y: 15}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &458575590346112000
@@ -1149,6 +1163,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3427400005624225117}
+  - component: {fileID: 4231822737743484966}
   m_Layer: 5
   m_Name: Visual
   m_TagString: Untagged
@@ -1177,6 +1192,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 26, y: 44}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &4231822737743484966
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7611893933550234229}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &7656371323252562172
 GameObject:
   m_ObjectHideFlags: 0
@@ -1245,6 +1272,7 @@ MonoBehaviour:
   downButton: {fileID: 7927836566111108331}
   repeatDelay: 0.4
   repeatInterval: 0.1
+  localizationMapping: {fileID: 0}
 --- !u!1 &7986957727270662319
 GameObject:
   m_ObjectHideFlags: 0
@@ -1279,7 +1307,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -88.5, y: 0.75}
+  m_AnchoredPosition: {x: -88.5, y: 0}
   m_SizeDelta: {x: 14, y: 14}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7483740932053405926
@@ -1420,3 +1448,4 @@ MonoBehaviour:
   maxPressColor: {r: 0, g: 0.6592593, b: 1, a: 0.7490196}
   colorDuration: 0.2
   maxPressDuration: 1.5
+  canvasGroup: {fileID: 4231822737743484966}

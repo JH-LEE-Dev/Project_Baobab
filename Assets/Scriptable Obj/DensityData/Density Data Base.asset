@@ -132,40 +132,50 @@ MonoBehaviour:
   - mapType: 4
     densityData:
     - forestType: 8
-      spawnTreeTypes: []
+      spawnTreeTypes:
+      - treeType: 7
+        regenProb: 100
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0
-      treeMaxDensityRatio: 0
+      treeStartDensityRatio: 0.05
+      treeMaxDensityRatio: 0.05
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
-      treeRegenMinTime: 0
-      treeRegenMaxTime: 0
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
       animalRegenMinTime: 0
       animalRegenMaxTime: 0
       limitHiddenGauge: 0
       bCanAccess: 0
     - forestType: 9
-      spawnTreeTypes: []
+      spawnTreeTypes:
+      - treeType: 7
+        regenProb: 30
+      - treeType: 8
+        regenProb: 70
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0
-      treeMaxDensityRatio: 0
+      treeStartDensityRatio: 0.05
+      treeMaxDensityRatio: 0.05
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
-      treeRegenMinTime: 0
-      treeRegenMaxTime: 0
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
       animalRegenMinTime: 0
       animalRegenMaxTime: 0
       limitHiddenGauge: 0
       bCanAccess: 0
     - forestType: 10
-      spawnTreeTypes: []
+      spawnTreeTypes:
+      - treeType: 8
+        regenProb: 60
+      - treeType: 9
+        regenProb: 40
       spawnAnimalTypes: []
-      treeStartDensityRatio: 0
-      treeMaxDensityRatio: 0
+      treeStartDensityRatio: 0.05
+      treeMaxDensityRatio: 0.05
       animalStartDensityRatio: 0
       animalMaxDensityRatio: 0
-      treeRegenMinTime: 0
-      treeRegenMaxTime: 0
+      treeRegenMinTime: 10
+      treeRegenMaxTime: 15
       animalRegenMinTime: 0
       animalRegenMaxTime: 0
       limitHiddenGauge: 0

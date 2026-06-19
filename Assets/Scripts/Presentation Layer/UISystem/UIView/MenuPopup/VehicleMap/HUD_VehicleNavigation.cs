@@ -286,7 +286,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         {
             if (null != spawnedRegions[i])
             {
-                spawnedRegions[i].gameObject.SetActive(true);
+                spawnedRegions[i].SetVisibility(true);
                 spawnedRegions[i].SetSelect(false);
                 spawnedRegions[i].ClearEntry();
                 spawnedRegions[i].ResetAnimation();
@@ -329,7 +329,7 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         {
             if (null != spawnedRegions[i])
             {
-                spawnedRegions[i].gameObject.SetActive(true);
+                spawnedRegions[i].SetVisibility(true);
                 spawnedRegions[i].PlayAppearAnimation(i * appearDelayGap);
             }
         }
@@ -356,13 +356,11 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         if (0 == activeCount)
         {
             if (null != upButton)
-            {
-                upButton.gameObject.SetActive(false);
-            }
+                upButton.SetVisibility(false);
+
             if (null != downButton)
-            {
-                downButton.gameObject.SetActive(false);
-            }
+                downButton.SetVisibility(false);
+
             _onComplete?.Invoke();
             return;
         }
@@ -522,12 +520,8 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
         if (disappearActiveCount == disappearCompletedCount)
         {
             for (int j = 0; j < spawnedRegions.Count; j++)
-            {
                 if (null != spawnedRegions[j])
-                {
-                    spawnedRegions[j].gameObject.SetActive(false);
-                }
-            }
+                    spawnedRegions[j].SetVisibility(false);
 
             isTransitioning = false;
             onAllDisappearComplete?.Invoke();

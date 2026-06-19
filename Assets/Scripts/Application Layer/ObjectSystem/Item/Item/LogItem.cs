@@ -760,6 +760,7 @@ public class LogItem : Item, IStaticCollidable
             {
                 transform.position = targetPos;
                 LogItemAcquired?.Invoke(this);
+
                 return;
             }
         }
@@ -768,6 +769,7 @@ public class LogItem : Item, IStaticCollidable
         if (suckSpeed > 0f && sqrDistance < (MinAcquireDist * MinAcquireDist))
         {
             LogItemAcquired?.Invoke(this);
+
             return;
         }
 
@@ -835,20 +837,6 @@ public class LogItem : Item, IStaticCollidable
     {
         if (visualTransform != null)
         {
-            // Y축 둥둥 떠있는 움직임 (Sine Wave) - 셰이더로 이관됨 (기존 코드 보존)
-            /*
-            float posOffset = (transform.position.x + transform.position.y) * 10f;
-            float floatOffset = Mathf.Sin(Time.time * 2.5f + posOffset) * 0.05f;
-            visualTransform.localPosition = new Vector3(0, floatOffset, 0);
-
-            if (customSortable != null)
-            {
-                customSortable.SetHeight(floatOffset);
-            }
-
-            UpdateShadowScale(floatOffset);
-            */
-
             // 셰이더 연동용 기본값 설정 (CPU 연산 없음)
             visualTransform.localPosition = Vector3.zero;
             if (customSortable != null)
@@ -876,6 +864,9 @@ public class LogItem : Item, IStaticCollidable
                 {
                     visualTransform.localScale = Vector3.one;
                     LogItemDeActivatedEvent?.Invoke(this);
+
+                    if (vfxComponent != null)
+                        particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
                 }
             }
             else
@@ -926,6 +917,12 @@ public class LogItem : Item, IStaticCollidable
 
     private void StartSucking(Transform _target)
     {
+        if (vfxComponent != null && particleEffect != null)
+        {
+            vfxComponent.Stop(particleEffect, false);
+            particleEffect = null;
+        }
+
         suckTarget = _target;
         suckSpeed = -5.0f; // 뒤로 튕기는 동작을 더 크게 하기 위해 초기 음수 속도 상향
         elapsed = 0f;

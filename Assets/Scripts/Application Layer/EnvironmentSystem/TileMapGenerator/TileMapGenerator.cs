@@ -310,7 +310,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         float invHeight = 1f / height;
         float centerX = width * 0.5f;
         float centerY = height * 0.5f;
-        float radiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
+        float safeRadiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
 
         for (int y = 0; y < height; y++)
         {
@@ -326,7 +326,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                 // 중앙 보호 구역 내에는 물이 생기지 않도록 보정
                 float dx = x - centerX;
-                if (dx * dx + dy * dy < radiusSq)
+                if (dx * dx + dy * dy < safeRadiusSq)
                 {
                     val = Mathf.Max(val, waterThreshold + 0.05f);
                 }
@@ -433,17 +433,25 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         float centerX = width * 0.5f;
         float centerY = height * 0.5f;
-        float radiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
+        float safeRadiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
+        
+        float mapRadius = Mathf.Min(width, height) * 0.5f;
+        float mapRadiusSq = mapRadius * mapRadius;
 
         for (int i = 0; i < size; i++)
         {
-            float v = noiseValues[i];
             int x = i % width;
             int y = i / width;
-
             float dx = x - centerX;
             float dy = y - centerY;
-            bool inSafeZone = (dx * dx + dy * dy < radiusSq);
+
+            if (dx * dx + dy * dy > mapRadiusSq)
+            {
+                continue;
+            }
+
+            float v = noiseValues[i];
+            bool inSafeZone = (dx * dx + dy * dy < safeRadiusSq);
 
             if (v < waterThreshold)
             {

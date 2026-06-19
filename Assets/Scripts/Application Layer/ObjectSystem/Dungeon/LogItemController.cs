@@ -308,8 +308,6 @@ public class LogItemController : MonoBehaviour, ILogItemCH
 
             float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
-            var particle = vfxComponent.Play("Shiny", logItem.transform.position, logItem.transform.rotation, logItem.transform);
-            logItem.SetParticleEffect(particle);
             logItem.Launch(startPos, endPos, height, randomRotation);
         }
     }

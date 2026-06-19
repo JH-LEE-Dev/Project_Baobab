@@ -294,7 +294,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             hideDelayTween = DOVirtual.DelayedCall(showDuration, () => OnHide(-1f), false);
     }
 
-    public void OnHide(float _forceDuration = -1f)
+    public void OnHide(float _forceDuration = -1f, bool _bSkip = false)
     {
         if (true == isHiding)
             return;
@@ -306,6 +306,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             MotionPlaySettings _newPlaySettings = MotionPlaySettings.Default;
             _newPlaySettings.onComplete = onHideCompleteAction;
             _newPlaySettings.bReset = true;
+            _newPlaySettings.skip = _bSkip;
 
             if (0.0f < _forceDuration)
                 _newPlaySettings.forceDelayBackward = _forceDuration;

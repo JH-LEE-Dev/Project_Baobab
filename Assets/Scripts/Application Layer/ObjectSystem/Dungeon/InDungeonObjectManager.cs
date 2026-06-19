@@ -60,6 +60,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     [SerializeField] private TreeStatDataBase treeStatDataBase;
     [SerializeField] private List<TreeGradeStatMultiplierData> treeGradeStatMultiplierDatas;
 
+    [System.Serializable]
+    public struct MapTypeTreeGenerationData
+    {
+        public MapType mapType;
+        public TreeGenerationStrategySO strategy;
+    }
+
+    [Header("Tree Generation")]
+    [SerializeField] private TreeGenerationStrategySO currentTreeGenerationStrategy;
+    [SerializeField] private List<MapTypeTreeGenerationData> mapTypeTreeGenerationDatas;
+
     private float treeGrowTime = 10f;
 
     private HiddenMapGrade hiddenMapGrade = HiddenMapGrade.None;
@@ -141,6 +152,23 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         itemManager.SetupCulling();
     }
 
+    public void SetupForMapType(MapType _mapType)
+    {
+        if (mapTypeTreeGenerationDatas == null) return;
+  
+        for (int i = 0; i < mapTypeTreeGenerationDatas.Count; i++)
+        {
+            if (mapTypeTreeGenerationDatas[i].mapType == _mapType)
+            {
+                if (mapTypeTreeGenerationDatas[i].strategy != null)
+                {
+                    currentTreeGenerationStrategy = Instantiate(mapTypeTreeGenerationDatas[i].strategy);
+                }
+                return;
+            }
+        }
+    }
+
     public void SetDungeonData(DungeonData _dungeonData)
     {
         dungeonData = _dungeonData;
@@ -203,19 +231,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         StopGrowth();
         ClearTrees();
 
-        // 1. 위치 목록 준비 및 셔플
-        availablePositions.Clear();
-        for (int i = 0; i < grassTileWorldPositions.Count; i++)
+        if (currentTreeGenerationStrategy != null)
         {
-            availablePositions.Add(grassTileWorldPositions[i]);
-        }
-        ShufflePositions(availablePositions);
-
-        // 2. 초기 개수 스폰
-        int startCount = environmentProvider.densityProvider.GetTreeStartCnt();
-        for (int i = 0; i < startCount; i++)
-        {
-            SpawnOneTreeFromAvailable(false);
+            currentTreeGenerationStrategy.SpawnInitialTrees(this, grassTileWorldPositions);
         }
 
         RefreshCullingGroup();
@@ -227,10 +245,91 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private IEnumerator StartGrowthAfterDelay()
     {
         yield return new WaitForSeconds(0.1f);
-        growthCoroutine = StartCoroutine(GrowthRoutine());
+        if (currentTreeGenerationStrategy != null)
+        {
+            growthCoroutine = StartCoroutine(currentTreeGenerationStrategy.GrowthRoutine(this));
+        }
     }
 
-    private bool SpawnOneTreeFromAvailable(bool _isGrowing)
+    public IEnvironmentProvider EnvironmentProvider => environmentProvider;
+    public int AvailablePositionsCount => availablePositions.Count;
+
+    public void ClearAvailablePositions()
+    {
+        availablePositions.Clear();
+    }
+
+    public void AddAvailablePosition(Vector3 _pos)
+    {
+        availablePositions.Add(_pos);
+    }
+
+    public void ShuffleAvailablePositions()
+    {
+        ShufflePositions(availablePositions);
+    }
+
+    public void SwapRandomAvailablePositionWithLast()
+    {
+        int lastIdx = availablePositions.Count - 1;
+        int swapIdx = UnityEngine.Random.Range(0, lastIdx);
+        Vector3 temp = availablePositions[lastIdx];
+        availablePositions[lastIdx] = availablePositions[swapIdx];
+        availablePositions[swapIdx] = temp;
+    }
+
+    public TreeObj SpawnTreeAt(Vector3 _spawnPos, bool _isGrowing)
+    {
+        Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(_spawnPos);
+
+        if (!environmentProvider.pathfindGridProvider.IsOccupied(cellPos) &&
+            !environmentProvider.tilemapDataProvider.HasRockDeco(cellPos))
+        {
+            TreeObj tree = treePool.Get();
+            tree.transform.position = _spawnPos;
+
+            bool isWaterNearby = environmentProvider.tilemapDataProvider.IsWaterTile(cellPos + new Vector3Int(-1, -1, 0)) ||
+                                 environmentProvider.tilemapDataProvider.IsWaterTile(cellPos + new Vector3Int(-2, -2, 0));
+            tree.SetOnWaterObjectState(isWaterNearby);
+
+            tree.PoolIndex = activeTrees.Count;
+            activeTrees.Add(tree);
+
+            if (spheres.Length <= tree.PoolIndex)
+            {
+                System.Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, tree.PoolIndex + 1));
+                cullingGroup.SetBoundingSpheres(spheres);
+            }
+            spheres[tree.PoolIndex] = new BoundingSphere(_spawnPos, 3f);
+
+            environmentProvider.tilemapDataProvider.SetTreeCollisionTile(_spawnPos);
+            environmentProvider.densityProvider.UpdateTreeCnt(true);
+
+            if (cullingGroup != null)
+            {
+                cullingGroup.SetBoundingSphereCount(activeTrees.Count);
+                UpdateTreeVisibility(tree, cullingGroup.IsVisible(tree.PoolIndex) && (cullingGroup.GetDistance(tree.PoolIndex) == 0));
+            }
+            else
+            {
+                tree.gameObject.SetActive(true);
+            }
+
+            if (_isGrowing)
+            {
+                tree.SetIsSapling(true, treeGrowTime);
+            }
+
+            tree.SetSortOrder();
+            tree.EnableOutline();
+
+            return tree;
+        }
+
+        return null;
+    }
+
+    public bool SpawnOneTreeFromAvailable(bool _isGrowing)
     {
         int count = availablePositions.Count;
         if (count == 0) return false;
@@ -251,66 +350,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                 availablePositions[checkIdx] = availablePositions[lastIdx];
                 availablePositions.RemoveAt(lastIdx);
 
-                TreeObj tree = treePool.Get();
-                tree.transform.position = spawnPos;
-
-                // 물 타일 체크: 아래로 두 타일 검토
-                bool isWaterNearby = environmentProvider.tilemapDataProvider.IsWaterTile(cellPos + new Vector3Int(-1, -1, 0)) ||
-                                     environmentProvider.tilemapDataProvider.IsWaterTile(cellPos + new Vector3Int(-2, -2, 0));
-                tree.SetOnWaterObjectState(isWaterNearby);
-
-                // 최적화: 증분 업데이트 (O(1))
-                tree.PoolIndex = activeTrees.Count;
-                activeTrees.Add(tree);
-
-                if (spheres.Length <= tree.PoolIndex)
+                TreeObj tree = SpawnTreeAt(spawnPos, _isGrowing);
+                if (tree != null)
                 {
-                    Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, tree.PoolIndex + 1));
-                    cullingGroup.SetBoundingSpheres(spheres);
+                    return true;
                 }
-                spheres[tree.PoolIndex] = new BoundingSphere(spawnPos, 3f);
-
-                environmentProvider.tilemapDataProvider.SetTreeCollisionTile(spawnPos);
-                environmentProvider.densityProvider.UpdateTreeCnt(true);
-
-                if (cullingGroup != null)
-                {
-                    cullingGroup.SetBoundingSphereCount(activeTrees.Count);
-                    // 즉시 가시성 체크 및 초기 상태 설정
-                    UpdateTreeVisibility(tree, cullingGroup.IsVisible(tree.PoolIndex) && (cullingGroup.GetDistance(tree.PoolIndex) == 0));
-                }
-                else
-                {
-                    tree.gameObject.SetActive(true);
-                }
-
-                if (_isGrowing)
-                {
-                    tree.SetIsSapling(true, treeGrowTime);
-                }
-
-                tree.SetSortOrder();
-                tree.EnableOutline();
-
-                return true;
             }
         }
 
         return false;
-    }
-
-    private IEnumerator GrowthRoutine()
-    {
-        while (true)
-        {
-            float interval = environmentProvider.densityProvider.GetTreeRegenTime();
-            yield return new WaitForSeconds(interval);
-
-            if (environmentProvider.densityProvider.CanCreateTree() && availablePositions.Count > 0)
-            {
-                SpawnOneTreeFromAvailable(true);
-            }
-        }
     }
 
     private void ClearTrees()
@@ -476,15 +524,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         // 죽은 위치 재사용 준비
         Vector3 deadPos = _treeObj.transform.position;
-        availablePositions.Add(deadPos);
-
-        if (availablePositions.Count > 1)
+        if (currentTreeGenerationStrategy != null)
         {
-            int lastIdx = availablePositions.Count - 1;
-            int swapIdx = UnityEngine.Random.Range(0, lastIdx);
-            Vector3 temp = availablePositions[lastIdx];
-            availablePositions[lastIdx] = availablePositions[swapIdx];
-            availablePositions[swapIdx] = temp;
+            currentTreeGenerationStrategy.OnTreeDead(this, deadPos);
         }
 
         treePool.Release(_treeObj);
@@ -664,6 +706,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void OnTreeHit(TreeObj _treeObj)
     {
+        if (currentTreeGenerationStrategy != null)
+        {
+            currentTreeGenerationStrategy.OnTreeGetHit(this, _treeObj);
+        }
         TreeGetHitEvent?.Invoke(_treeObj);
     }
 
@@ -722,9 +768,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         inputManager.PauseMove(false);
         inputManager.PauseInteractKey(false);
 
-        if (growthCoroutine == null)
+        if (growthCoroutine == null && currentTreeGenerationStrategy != null)
         {
-            growthCoroutine = StartCoroutine(GrowthRoutine());
+            growthCoroutine = StartCoroutine(currentTreeGenerationStrategy.GrowthRoutine(this));
         }
     }
 

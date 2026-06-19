@@ -62,7 +62,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private bool isInitialized = false;
     private bool isClicked = false;
     private bool isHovered = false;
-    private bool isPendingExit = false;
     private float hoverEnterTime = 0f;
     private Tween exitDelayTween;
     private PointerEventData pendingExitData;
@@ -71,6 +70,7 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
     private Tween appearDelayTween;
     private Tweener pingPongTween;
     private TweenCallback onAppearDelayCompleteCallback;
+    [SerializeField] private CanvasGroup canvasGroup;
 
     // 캐싱된 상수 및 리터럴 값
     private const bool forceReset = true;
@@ -89,6 +89,24 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
 
     // 퍼블릭 초기화 및 제어 메서드
+
+    private CanvasGroup GetCanvasGroup()
+    {
+        if (null == canvasGroup)
+            canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+        return canvasGroup;
+    }
+
+    public void SetVisibility(bool _visible)
+    {
+        CanvasGroup _cg = GetCanvasGroup();
+        _cg.alpha = true == _visible ? 1f : 0f;
+        _cg.blocksRaycasts = _visible;
+        _cg.interactable = _visible;
+
+        if (false == _visible)
+            CleanupOnHide();
+    }
 
     public void Setup(ForestEnvironmentInfo _info, int _number, Action<RectTransform, Vector2> _onHoverEnter, Action _onHoverExit, Action<int> _onSelect, HUD_NavigationSubField _subField)
     {
@@ -300,12 +318,12 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     public void PlayOpenAnimation()
     {
-        gameObject.SetActive(true);
+        SetVisibility(true);
     }
 
     public void PlayCloseAnimation()
     {
-        gameObject.SetActive(false);
+        SetVisibility(false);
     }
 
     public ForestType GetForestType()
@@ -509,7 +527,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         isHovered = true;
-        isPendingExit = false;
         hoverEnterTime = Time.unscaledTime;
 
         if (null != exitDelayTween) exitDelayTween.Kill();
@@ -561,12 +578,10 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
             return;
         }
 
-        isPendingExit = true;
         pendingExitData = _eventData;
 
         if (null != exitDelayTween) exitDelayTween.Kill();
         exitDelayTween = DOVirtual.DelayedCall(hoverExitDelay, () => {
-            isPendingExit = false;
             if (null != pendingExitData)
             {
                 if (false == RectTransformUtility.RectangleContainsScreenPoint(GetRectTransform(), pendingExitData.position, pendingExitData.enterEventCamera))
@@ -601,7 +616,6 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         isClicked = true;
-        isPendingExit = false;
 
         if (null != motionPlayer)
         {
@@ -635,26 +649,25 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
 
     private void OnDisable()
     {
+        CleanupOnHide();
+    }
+
+    private void CleanupOnHide()
+    {
         isHovered = false;
         isClicked = false;
-        isPendingExit = false;
 
-        if (null != exitDelayTween) exitDelayTween.Kill();
+        if (null != exitDelayTween)
+            exitDelayTween.Kill();
 
         if (null != colorTween && true == colorTween.IsActive())
-        {
             colorTween.Kill();
-        }
 
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
-        {
             appearDelayTween.Kill();
-        }
 
         if (null != pingPongTween && true == pingPongTween.IsActive())
-        {
             pingPongTween.Kill();
-        }
 
         if (null != vfxComponent && null != unlockVfx)
         {
@@ -663,14 +676,10 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         }
 
         if (null != iconImage)
-        {
             iconImage.color = normalColor;
-        }
 
         if (null != motionPlayer)
-        {
             motionPlayer.ResetAllMotions();
-        }
     }
 
     private void OnDestroy()

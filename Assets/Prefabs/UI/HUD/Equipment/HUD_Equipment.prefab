@@ -565,6 +565,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     maxSkew: {x: 0.5, y: 0}
     skewTimeRatio: 0.2
@@ -2286,7 +2287,7 @@ MonoBehaviour:
     initialPoolSize: 1
     allowDynamicExpansion: 0
     maxPoolSize: 5
-    uiParticleScale: 11.5
+    uiParticleScale: 38
 --- !u!1 &7893955336979294459
 GameObject:
   m_ObjectHideFlags: 0

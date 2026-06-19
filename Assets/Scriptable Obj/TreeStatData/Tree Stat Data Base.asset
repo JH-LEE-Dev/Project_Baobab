@@ -43,3 +43,18 @@ MonoBehaviour:
     sp: 2000
     spRegen: 1000
     regenStrategy: {fileID: 11400000, guid: 9e46b28f810a621459f0a36efd75105e, type: 2}
+  - treeType: 7
+    hp: 20000
+    sp: 0
+    spRegen: 0
+    regenStrategy: {fileID: 0}
+  - treeType: 8
+    hp: 8000
+    sp: 0
+    spRegen: 0
+    regenStrategy: {fileID: 0}
+  - treeType: 9
+    hp: 300000
+    sp: 0
+    spRegen: 0
+    regenStrategy: {fileID: 0}
