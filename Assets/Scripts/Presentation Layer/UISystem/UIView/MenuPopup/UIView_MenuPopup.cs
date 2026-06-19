@@ -17,6 +17,7 @@ public class UIView_MenuPopup : UIView
     [Header("Sub UI Prefabs")]
     [SerializeField] private GameObject vehiclePrefab;
     private HUD_Vehicle vehicle;
+    private bool isInitialOpen = false;
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -24,10 +25,11 @@ public class UIView_MenuPopup : UIView
 
         if (null == vehicle && null != vehiclePrefab)
            vehicle = Instantiate(vehiclePrefab, this.transform).GetComponent<HUD_Vehicle>();
-        
-        vehicle?.transform.SetParent(_ctx.ppCanvas.transform);
 
-        OnHide();
+        if (null != vehicle)
+        {
+            vehicle.transform.SetParent(_ctx.ppCanvas.transform);
+        }
     }
 
     public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)
@@ -41,6 +43,7 @@ public class UIView_MenuPopup : UIView
             vehicle.Initialize(mapDataProvider, HandlePrev, HandleHome, OnHide, viewCtx.localizationManager);
             vehicle.mapSelectedEvent -= HandleEnterDungeon;
             vehicle.mapSelectedEvent += HandleEnterDungeon;
+            vehicle.Close(true);
         }
     }
 
@@ -67,6 +70,12 @@ public class UIView_MenuPopup : UIView
     protected override void OnShow()
     {
         base.OnShow();
+
+        if (false == isInitialOpen)
+        {
+            isInitialOpen = true;
+            return;
+        }
 
         if (null != vehicle)
             vehicle.Open();

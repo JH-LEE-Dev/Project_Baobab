@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: e57ef21be2ae9d244af959296a5a2132
+guid: 690a22f715d4b5d4b9d4961004ba5199
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2365556692732728239
-    second: Bottom_G_01_0
+      213: -4397452927077344054
+    second: Newtiles - 10_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -49,8 +49,8 @@ TextureImporter:
   spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 0
-  alignment: 9
-  spritePivot: {x: 0.5, y: 0.13}
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
   spritePixelsToUnits: 32
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Bottom_G_01_0
+      name: Newtiles - 10_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 4
-        width: 22
-        height: 21
+        x: 0
+        y: 0
+        width: 32
+        height: 32
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 15c2e91a8badb2fd0800000000000000
-      internalID: -2365556692732728239
+      spriteID: acc9d0d8cdb19f2c0800000000000000
+      internalID: -4397452927077344054
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Bottom_G_01_0: -2365556692732728239
+      Newtiles - 10_0: -4397452927077344054
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

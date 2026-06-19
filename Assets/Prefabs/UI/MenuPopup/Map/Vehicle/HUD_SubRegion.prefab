@@ -638,6 +638,7 @@ MonoBehaviour:
   lockClickTag: LockClick
   appearTag: Appear
   unlockTag: UnLock
+  canvasGroup: {fileID: 694425531297231729}
 --- !u!1 &6372244703501391218
 GameObject:
   m_ObjectHideFlags: 0
@@ -816,6 +817,7 @@ GameObject:
   - component: {fileID: 8096288708993969600}
   - component: {fileID: 8032576416459850308}
   - component: {fileID: 2337216021500169027}
+  - component: {fileID: 694425531297231729}
   m_Layer: 5
   m_Name: Raycast
   m_TagString: Untagged
@@ -881,6 +883,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!225 &694425531297231729
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8596299761603190466}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &8950907294755120958
 GameObject:
   m_ObjectHideFlags: 0

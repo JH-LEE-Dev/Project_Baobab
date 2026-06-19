@@ -14,6 +14,8 @@ public class UIView_Tent : UIView
 
     private CurrencyCounterHUD coinCounter;
 
+    private bool isInitialOpen = false;
+
     #region Default Logic
 
     // Tent UI 초기 설정을 진행한다.
@@ -61,6 +63,13 @@ public class UIView_Tent : UIView
     protected override void OnShow()
     {
         base.OnShow();
+
+        if (false == isInitialOpen)
+        {
+            isInitialOpen = true;
+            return;
+        }
+
         viewCtx.inputManager.PauseMove(true);
 
         RefreshMoneyTexts(false);

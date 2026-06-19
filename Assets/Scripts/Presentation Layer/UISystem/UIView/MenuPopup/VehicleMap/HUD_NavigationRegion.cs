@@ -73,6 +73,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private Sprite cachedUnlockedSprite;
     private bool isBackgroundSwapped;
     private TweenCallback onAppearDelayCompleteCallback;
+    [SerializeField] private CanvasGroup canvasGroup;
 
     // 캐싱된 상수 및 리터럴 값
     private const bool forceReset = true;
@@ -95,6 +96,24 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
 
     // 퍼블릭 초기화 및 제어 메서드
+
+    private CanvasGroup GetCanvasGroup()
+    {
+        if (null == canvasGroup)
+            canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+        return canvasGroup;
+    }
+
+    public void SetVisibility(bool _visible)
+    {
+        CanvasGroup _cg = GetCanvasGroup();
+        _cg.alpha = true == _visible ? 1f : 0f;
+        _cg.blocksRaycasts = _visible;
+        _cg.interactable = _visible;
+
+        if (false == _visible)
+            CleanupOnHide();
+    }
 
     public void Initialize(MapType _mapType, Action<MapType> _onSelect, LocalizationManager _localizeManager, HUD_VehicleNavigation _navigation)
     {
@@ -674,20 +693,19 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     private void OnDisable()
     {
+        CleanupOnHide();
+    }
+
+    private void CleanupOnHide()
+    {
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
-        {
             appearDelayTween.Kill();
-        }
 
         if (null != scaleTween && true == scaleTween.IsActive())
-        {
             scaleTween.Kill();
-        }
 
         if (null != colorTween && true == colorTween.IsActive())
-        {
             colorTween.Kill();
-        }
 
         if (null != vfxComponent && null != unlockVfx)
         {
