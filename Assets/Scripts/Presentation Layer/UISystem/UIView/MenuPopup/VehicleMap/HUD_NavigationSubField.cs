@@ -69,7 +69,7 @@ public class HUD_NavigationSubField : MonoBehaviour
             if (null != spawnedSubRegions[i])
             {
                 spawnedSubRegions[i].ResetAnimation();
-                spawnedSubRegions[i].gameObject.SetActive(false);
+                spawnedSubRegions[i].SetVisibility(false);
             }
         }
 

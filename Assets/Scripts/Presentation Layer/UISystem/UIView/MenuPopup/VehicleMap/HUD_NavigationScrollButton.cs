@@ -33,9 +33,28 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
     private Tween transitionTween;
     private bool isPressed = false;
     private bool isHovered = false;
+    [SerializeField] private CanvasGroup canvasGroup;
 
 
     // 퍼블릭 초기화 및 제어 메서드
+
+    private CanvasGroup GetCanvasGroup()
+    {
+        if (null == canvasGroup)
+            canvasGroup = GetComponent<CanvasGroup>() ?? gameObject.AddComponent<CanvasGroup>();
+        return canvasGroup;
+    }
+
+    public void SetVisibility(bool _visible)
+    {
+        CanvasGroup _cg = GetCanvasGroup();
+        _cg.alpha = true == _visible ? 1f : 0f;
+        _cg.blocksRaycasts = _visible;
+        _cg.interactable = _visible;
+
+        if (false == _visible)
+            CleanupOnHide();
+    }
 
     public void Initialize(Action<bool> _onPressStateChanged)
     {
@@ -62,7 +81,7 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         if (null != transitionTween && transitionTween.IsActive())
             transitionTween.Kill();
 
-        gameObject.SetActive(true);
+        SetVisibility(true);
         transform.localScale = Vector3.zero;
         transitionTween = transform.DOScale(Vector3.one, appearDuration).SetEase(appearEase);
     }
@@ -79,7 +98,7 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
             buttonImage.color = normalColor;
 
         transform.localScale = Vector3.zero;
-        gameObject.SetActive(true);
+        SetVisibility(true);
 
         isPressed = false;
         isHovered = false;
@@ -157,7 +176,7 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     private void OnDisappearTweenComplete()
     {
-        gameObject.SetActive(false);
+        SetVisibility(false);
         externalOnCompleteCallback?.Invoke();
         externalOnCompleteCallback = null;
     }
@@ -177,6 +196,11 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
     private void OnDisable()
+    {
+        CleanupOnHide();
+    }
+
+    private void CleanupOnHide()
     {
         isPressed = false;
         isHovered = false;
