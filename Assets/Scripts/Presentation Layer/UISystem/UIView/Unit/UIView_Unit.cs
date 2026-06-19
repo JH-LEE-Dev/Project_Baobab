@@ -40,6 +40,8 @@ public class UIView_Unit : UIView
     private UI_InteractionUnit interactionUnit;
     private UI_SpeechBubble speechBubble;
 
+    private bool isInitialOpen = false;
+
     // //퍼블릭 초기화 및 제어 메서드
 
     public override void Initialize(UIViewContext _ctx)
@@ -100,15 +102,18 @@ public class UIView_Unit : UIView
 
     private void InitHPBarPool()
     {
-        if (null == hpBarPrefab)
+        if (null == hpBarPrefab || null == hpBarPool)
             return;
 
         for (int _i = 0; 32 > _i; _i++)
         {
             HUD_ShieldHPBar _bar = CreateNewHPBar();
-            
+
             if (null != _bar)
+            {
                 hpBarPool.Add(_bar);
+                _bar.OnHide(_bSkip: true);
+            }
         }
     }
 
@@ -133,7 +138,7 @@ public class UIView_Unit : UIView
         if (null != speechBubble)
         {
             speechBubble.Initialize();
-            speechBubble.Hide();
+            speechBubble.Hide(true);
         }
     }
 

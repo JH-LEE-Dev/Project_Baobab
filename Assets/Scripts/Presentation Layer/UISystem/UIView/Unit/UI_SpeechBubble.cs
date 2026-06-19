@@ -113,12 +113,12 @@ public class UI_SpeechBubble : MonoBehaviour
         motionPlayer.Play(absolTag, bReset: true);
     }
 
-    public void Hide()
+    public void Hide(bool _bSkip = false)
     {
         if (null == motionPlayer)
             return;
 
-        motionPlayer.PlayBackward(absolTag, bReset: true);
+        motionPlayer.PlayBackward(absolTag, bReset: true, _skip: _bSkip);
     }
 
     public void Play(int _id, string _text, float _duration = 3f)

@@ -173,8 +173,6 @@ public class HUD_Vehicle : MonoBehaviour
         {
             omp.Initialize();
         }
-
-        Close(true);
     }
 
     public void SyncUnlockStates()
