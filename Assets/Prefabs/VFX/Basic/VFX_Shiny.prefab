@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5011412818755092560}
   - component: {fileID: 2164660391435094963}
   - component: {fileID: 2277403994126306174}
-  m_Layer: 18
+  m_Layer: 5
   m_Name: VFX_Shiny
   m_TagString: Untagged
   m_Icon: {fileID: 0}
