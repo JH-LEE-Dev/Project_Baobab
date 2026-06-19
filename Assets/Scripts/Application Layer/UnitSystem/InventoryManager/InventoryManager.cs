@@ -73,8 +73,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     private LogItemPoolingManager logItemPoolingManager;
     private List<LogItem> activeDroppedItems = new List<LogItem>(64);
 
+    private VFXComponent vfxComponent;
+
     public void Initialize()
     {
+        vfxComponent = GetComponent<VFXComponent>();
+        vfxComponent.Initialize();
+
         logItemPoolingManager = GetComponent<LogItemPoolingManager>();
         logItemPoolingManager.Initialize(false);
 
@@ -589,8 +594,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                         Vector3 endPos = startPos + offset;
 
                         float height = UnityEngine.Random.Range(0.3f, 0.6f);
-                        float duration = UnityEngine.Random.Range(0.4f, 0.6f);
+                        float duration = UnityEngine.Random.Range(0.4f, 0.6f);  
 
+                        logItem.SetVfxComponent(vfxComponent);
                         logItem.Launch(startPos, endPos, height, duration);
                     }
 

@@ -93,7 +93,7 @@ public class LogInBelt : MonoBehaviour
         // 진입 연출 (스프링 댐퍼 효과)
         _item.transform.DOKill();
         _item.transform.localScale = Vector3.zero;
-        var targetScale = new Vector3(-1f,1f,1f);
+        var targetScale = new Vector3(1f,1f,1f);
         _item.transform.DOScale(targetScale, 0.5f).SetEase(Ease.OutElastic, 1.7f, 0.3f);
 
         // 다음 목표 인덱스 설정 (체크포인트가 1개보다 많으면 1번부터, 아니면 0번 도달 처리 대기)
