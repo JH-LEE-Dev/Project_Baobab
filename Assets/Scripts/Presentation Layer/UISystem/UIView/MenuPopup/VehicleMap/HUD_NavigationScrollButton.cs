@@ -3,11 +3,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+using Coffee.UIEffects;
 
 public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IPointerExitHandler, IPointerEnterHandler
 {
     // 외부 의존성
     [SerializeField] private Image buttonImage;
+    [SerializeField] private Image outlineImage;
 
     [Header("Disappear Config")]
     [SerializeField] private float disappearDuration = 0.2f;
@@ -25,11 +27,26 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
     [SerializeField] private float colorDuration = 0.2f;
     [SerializeField] private float maxPressDuration = 1.5f;
 
+    [Header("Outline Color Config")]
+    [SerializeField] private Color outlineNormalColor = Color.white;
+    [SerializeField] private Color outlineHoverColor = Color.green;
+    [SerializeField] private Color outlineClickColor = Color.yellow;
+    [SerializeField] private Color outlineMaxPressColor = Color.red;
+
+    [Header("UI Effect Outline Intensity Settings")]
+    [SerializeField] private UIEffect uiEffect;
+    [Range(0f, 1f)] [SerializeField] private float outlineNormalIntensity = 0.5f;
+    [Range(0f, 1f)] [SerializeField] private float outlineHoverIntensity = 1f;
+    [Range(0f, 1f)] [SerializeField] private float outlineClickIntensity = 1f;
+    [Range(0f, 1f)] [SerializeField] private float outlineMaxPressIntensity = 1f;
+
     // 내부 의존성
     private Action<bool> onPressStateChangedCallback;
     private TweenCallback onDisappearTweenCompleteCallback;
     private TweenCallback externalOnCompleteCallback;
     private Tweener colorTween;
+    private Tweener outlineColorTween;
+    private Tweener shadowAlphaTween;
     private Tween transitionTween;
     private bool isPressed = false;
     private bool isHovered = false;
@@ -88,14 +105,26 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
     public void ResetAnimation()
     {
-        if (null != transitionTween && transitionTween.IsActive())
+        if (null != transitionTween && true == transitionTween.IsActive())
             transitionTween.Kill();
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
+
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
 
         if (null != buttonImage)
             buttonImage.color = normalColor;
+
+        if (null != outlineImage)
+            outlineImage.color = outlineNormalColor;
+
+        if (null != uiEffect)
+            uiEffect.shadowColorAlpha = outlineNormalIntensity;
 
         transform.localScale = Vector3.zero;
         SetVisibility(true);
@@ -114,6 +143,8 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         if (false == isPressed)
         {
             PlayColorTween(hoverColor);
+            PlayOutlineColorTween(outlineHoverColor);
+            PlayShadowAlphaTween(outlineHoverIntensity);
         }
     }
 
@@ -129,15 +160,29 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         }
 
         PlayColorTween(normalColor);
+        PlayOutlineColorTween(outlineNormalColor);
+        PlayShadowAlphaTween(outlineNormalIntensity);
     }
 
     public void OnPointerDown(PointerEventData _eventData)
     {
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
+
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
 
         if (null != buttonImage)
             buttonImage.color = clickColor;
+
+        if (null != outlineImage)
+            outlineImage.color = outlineClickColor;
+
+        if (null != uiEffect)
+            uiEffect.shadowColorAlpha = outlineClickIntensity;
 
         if (true == IsTransitioning())
             return;
@@ -146,6 +191,12 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         
         if (null != buttonImage)
             colorTween = buttonImage.DOColor(maxPressColor, maxPressDuration).SetEase(Ease.Linear);
+
+        if (null != outlineImage)
+            outlineColorTween = outlineImage.DOColor(outlineMaxPressColor, maxPressDuration).SetEase(Ease.Linear);
+
+        if (null != uiEffect)
+            shadowAlphaTween = DOTween.To(GetShadowColorAlpha, SetShadowColorAlpha, outlineMaxPressIntensity, maxPressDuration).SetEase(Ease.Linear);
 
         onPressStateChangedCallback?.Invoke(true);
     }
@@ -160,7 +211,12 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         }
 
         Color _targetColor = true == isHovered ? hoverColor : normalColor;
+        Color _targetOutlineColor = true == isHovered ? outlineHoverColor : outlineNormalColor;
+        float _targetIntensity = true == isHovered ? outlineHoverIntensity : outlineNormalIntensity;
+
         PlayColorTween(_targetColor);
+        PlayOutlineColorTween(_targetOutlineColor);
+        PlayShadowAlphaTween(_targetIntensity);
     }
 
 
@@ -186,10 +242,45 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         if (null == buttonImage)
             return;
 
-        if (null != colorTween && colorTween.IsActive())
+        if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
 
         colorTween = buttonImage.DOColor(_targetColor, colorDuration).SetEase(Ease.Linear);
+    }
+
+    private void PlayOutlineColorTween(Color _targetColor)
+    {
+        if (null == outlineImage)
+            return;
+
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        outlineColorTween = outlineImage.DOColor(_targetColor, colorDuration).SetEase(Ease.Linear);
+    }
+
+    private float GetShadowColorAlpha()
+    {
+        if (null != uiEffect)
+            return uiEffect.shadowColorAlpha;
+        return 0f;
+    }
+
+    private void SetShadowColorAlpha(float _value)
+    {
+        if (null != uiEffect)
+            uiEffect.shadowColorAlpha = _value;
+    }
+
+    private void PlayShadowAlphaTween(float _targetIntensity)
+    {
+        if (null == uiEffect)
+            return;
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
+
+        shadowAlphaTween = DOTween.To(GetShadowColorAlpha, SetShadowColorAlpha, _targetIntensity, colorDuration).SetEase(Ease.Linear);
     }
 
 
@@ -211,8 +302,20 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
         if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
 
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
+
         if (null != buttonImage)
             buttonImage.color = normalColor;
+
+        if (null != outlineImage)
+            outlineImage.color = outlineNormalColor;
+
+        if (null != uiEffect)
+            uiEffect.shadowColorAlpha = outlineNormalIntensity;
     }
 
     private void OnDestroy()
@@ -222,5 +325,11 @@ public class HUD_NavigationScrollButton : MonoBehaviour, IPointerDownHandler, IP
 
         if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
+
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
     }
 }

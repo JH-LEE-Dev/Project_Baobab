@@ -5,6 +5,7 @@ using UnityEngine.EventSystems;
 using TMPro;
 using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
+using Coffee.UIEffects;
 
 public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
@@ -12,6 +13,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [Header("UI References")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private Image buttonImage;
+    [SerializeField] private Image outlineImage;
     [SerializeField] private GameObject lockObject;
     [SerializeField] private TextMeshProUGUI regionNameText;
     [SerializeField] private VFXComponent vfxComponent;
@@ -33,6 +35,20 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     [SerializeField] private Color normalHoverColor = Color.white;
     [SerializeField] private Color lockHoverColor = Color.red;
     [SerializeField] private float hoverColorDuration = 0.2f;
+
+    [Header("Outline Color Settings")]
+    [SerializeField] private Color outlineNormalColor = Color.white;
+    [SerializeField] private Color outlineSelectColor = Color.green;
+    [SerializeField] private Color outlineLockColor = Color.gray;
+
+    [Header("Outline Hover Color Settings")]
+    [SerializeField] private Color outlineNormalHoverColor = Color.white;
+    [SerializeField] private Color outlineLockHoverColor = Color.red;
+
+    [Header("UI Effect Outline Intensity Settings")]
+    [SerializeField] private UIEffect uiEffect;
+    [Range(0f, 1f)] [SerializeField] private float outlineNormalIntensity = 0.5f;
+    [Range(0f, 1f)] [SerializeField] private float outlineHoverIntensity = 1f;
 
     [Header("Motion Tags")]
     [SerializeField] private string hoverTag = "Hover";
@@ -67,6 +83,8 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     private bool isLocked = false;
     private bool isSelected = false;
     private Tweener colorTween;
+    private Tweener outlineColorTween;
+    private Tweener shadowAlphaTween;
     private Tween appearDelayTween;
     private Tweener scaleTween;
     private Sprite defaultBackgroundSprite;
@@ -198,17 +216,29 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     {
         isSelected = _isSelect;
 
-        if (null == buttonImage)
+        if (null != buttonImage)
         {
-            return;
+            if (null != colorTween && true == colorTween.IsActive())
+                colorTween.Kill();
+
+            colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
         }
 
-        if (null != colorTween && true == colorTween.IsActive())
+        if (null != outlineImage)
         {
-            colorTween.Kill();
+            if (null != outlineColorTween && true == outlineColorTween.IsActive())
+                outlineColorTween.Kill();
+
+            outlineColorTween = outlineImage.DOColor(GetOriginalOutlineColor(), hoverColorDuration).SetEase(Ease.Linear);
         }
 
-        colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
+        if (null != uiEffect)
+        {
+            if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+                shadowAlphaTween.Kill();
+
+            shadowAlphaTween = DOTween.To(GetShadowColorAlpha, SetShadowColorAlpha, GetTargetIntensity(), hoverColorDuration).SetEase(Ease.Linear);
+        }
     }
 
     public void SetNewIndicator(bool _active)
@@ -332,21 +362,33 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     public void ResetAnimation()
     {
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
-        {
             appearDelayTween.Kill();
-        }
 
         if (null != scaleTween && true == scaleTween.IsActive())
-        {
             scaleTween.Kill();
-        }
+
+        if (null != colorTween && true == colorTween.IsActive())
+            colorTween.Kill();
+
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
+
+        if (null != buttonImage)
+            buttonImage.color = GetOriginalColor();
+
+        if (null != outlineImage)
+            outlineImage.color = GetOriginalOutlineColor();
+
+        if (null != uiEffect)
+            uiEffect.shadowColorAlpha = GetTargetIntensity();
 
         transform.localScale = Vector3.zero;
 
         if (null != omp)
-        {
             omp.ResetAllMotions();
-        }
     }
 
     public void PlayDisappearAnimation(float _delay, TweenCallback _onComplete)
@@ -405,27 +447,38 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     private void UpdateColor()
     {
-        if (null == buttonImage)
+        if (null != buttonImage)
         {
-            return;
+            if (null != colorTween && true == colorTween.IsActive())
+                colorTween.Kill();
+
+            if (true == isLocked)
+                buttonImage.color = lockColor;
+            else if (true == isSelected)
+                buttonImage.color = selectColor;
+            else
+                buttonImage.color = normalColor;
         }
 
-        if (null != colorTween && true == colorTween.IsActive())
+        if (null != outlineImage)
         {
-            colorTween.Kill();
+            if (null != outlineColorTween && true == outlineColorTween.IsActive())
+                outlineColorTween.Kill();
+
+            if (true == isLocked)
+                outlineImage.color = outlineLockColor;
+            else if (true == isSelected)
+                outlineImage.color = outlineSelectColor;
+            else
+                outlineImage.color = outlineNormalColor;
         }
 
-        if (true == isLocked)
+        if (null != uiEffect)
         {
-            buttonImage.color = lockColor;
-        }
-        else if (true == isSelected)
-        {
-            buttonImage.color = selectColor;
-        }
-        else
-        {
-            buttonImage.color = normalColor;
+            if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+                shadowAlphaTween.Kill();
+
+            uiEffect.shadowColorAlpha = GetTargetIntensity();
         }
     }
 
@@ -480,6 +533,44 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         return normalHoverColor;
     }
 
+    private Color GetOriginalOutlineColor()
+    {
+        if (true == isLocked)
+            return outlineLockColor;
+        if (true == isSelected)
+            return outlineSelectColor;
+        return outlineNormalColor;
+    }
+
+    private Color GetHoverOutlineColor()
+    {
+        if (true == isLocked)
+            return outlineLockHoverColor;
+        return outlineNormalHoverColor;
+    }
+
+    private float GetShadowColorAlpha()
+    {
+        if (null != uiEffect)
+            return uiEffect.shadowColorAlpha;
+        return 0f;
+    }
+
+    private void SetShadowColorAlpha(float _value)
+    {
+        if (null != uiEffect)
+            uiEffect.shadowColorAlpha = _value;
+    }
+
+    private float GetTargetIntensity()
+    {
+        if (true == isSelected)
+            return outlineHoverIntensity;
+        if (true == isHovered)
+            return outlineHoverIntensity;
+        return outlineNormalIntensity;
+    }
+
     private void UpdateRegionName()
     {
         if (null == regionNameText)
@@ -520,24 +611,35 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         isClicked = false;
 
         if (false == isLocked)
-        {
             onSelectEvent?.Invoke(mapType);
-        }
 
         if (true == isSelected)
-        {
             return;
-        }
-
-        if (null != colorTween && true == colorTween.IsActive())
-        {
-            colorTween.Kill();
-        }
 
         if (null != buttonImage)
         {
+            if (null != colorTween && true == colorTween.IsActive())
+                colorTween.Kill();
+
             Color _targetColor = true == isHovered ? GetHoverColor() : GetOriginalColor();
             colorTween = buttonImage.DOColor(_targetColor, hoverColorDuration).SetEase(Ease.Linear);
+        }
+
+        if (null != outlineImage)
+        {
+            if (null != outlineColorTween && true == outlineColorTween.IsActive())
+                outlineColorTween.Kill();
+
+            Color _targetOutlineColor = true == isHovered ? GetHoverOutlineColor() : GetOriginalOutlineColor();
+            outlineColorTween = outlineImage.DOColor(_targetOutlineColor, hoverColorDuration).SetEase(Ease.Linear);
+        }
+
+        if (null != uiEffect)
+        {
+            if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+                shadowAlphaTween.Kill();
+
+            shadowAlphaTween = DOTween.To(GetShadowColorAlpha, SetShadowColorAlpha, GetTargetIntensity(), hoverColorDuration).SetEase(Ease.Linear);
         }
     }
 
@@ -579,16 +681,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
     public void OnPointerEnter(PointerEventData _eventData)
     {
         if (true == IsInputBlocked)
-        {
             return;
-        }
 
         isHovered = true;
 
         if (true == isClicked)
-        {
             return;
-        }
 
         if (false == IsTransitioning())
         {
@@ -604,33 +702,43 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
             }
         }
 
-        if (null != colorTween && true == colorTween.IsActive())
-        {
-            colorTween.Kill();
-        }
-
         if (false == isSelected)
         {
             if (null != buttonImage)
             {
+                if (null != colorTween && true == colorTween.IsActive())
+                    colorTween.Kill();
+
                 colorTween = buttonImage.DOColor(GetHoverColor(), hoverColorDuration).SetEase(Ease.Linear);
             }
+
+            if (null != outlineImage)
+            {
+                if (null != outlineColorTween && true == outlineColorTween.IsActive())
+                    outlineColorTween.Kill();
+
+                outlineColorTween = outlineImage.DOColor(GetHoverOutlineColor(), hoverColorDuration).SetEase(Ease.Linear);
+            }
+        }
+
+        if (null != uiEffect)
+        {
+            if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+                shadowAlphaTween.Kill();
+
+            shadowAlphaTween = DOTween.To(GetShadowColorAlpha, SetShadowColorAlpha, outlineHoverIntensity, hoverColorDuration).SetEase(Ease.Linear);
         }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
         if (true == IsInputBlocked)
-        {
             return;
-        }
 
         isHovered = false;
 
         if (true == isClicked)
-        {
             return;
-        }
 
         if (false == IsTransitioning())
         {
@@ -645,26 +753,42 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
                 if (false == isSelected)
                 {
                     if (null != buttonImage)
-                    {
                         buttonImage.color = GetHoverColor();
-                    }
+
+                    if (null != outlineImage)
+                        outlineImage.color = GetHoverOutlineColor();
                 }
 
                 unHoverEntry = omp.Play(unHoverTag, bReset: forceReset);
             }
         }
 
-        if (null != colorTween && true == colorTween.IsActive())
-        {
-            colorTween.Kill();
-        }
-
         if (false == isSelected)
         {
             if (null != buttonImage)
             {
+                if (null != colorTween && true == colorTween.IsActive())
+                    colorTween.Kill();
+
                 colorTween = buttonImage.DOColor(GetOriginalColor(), hoverColorDuration).SetEase(Ease.Linear);
             }
+
+            if (null != outlineImage)
+            {
+                if (null != outlineColorTween && true == outlineColorTween.IsActive())
+                    outlineColorTween.Kill();
+
+                outlineColorTween = outlineImage.DOColor(GetOriginalOutlineColor(), hoverColorDuration).SetEase(Ease.Linear);
+            }
+        }
+
+        if (null != uiEffect)
+        {
+            if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+                shadowAlphaTween.Kill();
+
+            float _targetIntensity = true == isSelected ? outlineHoverIntensity : outlineNormalIntensity;
+            shadowAlphaTween = DOTween.To(GetShadowColorAlpha, SetShadowColorAlpha, _targetIntensity, hoverColorDuration).SetEase(Ease.Linear);
         }
     }
 
@@ -707,6 +831,12 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
         if (null != colorTween && true == colorTween.IsActive())
             colorTween.Kill();
 
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
+
         if (null != vfxComponent && null != unlockVfx)
         {
             vfxComponent.Stop(unlockVfx, true);
@@ -715,24 +845,33 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         isClicked = false;
         isHovered = false;
+
+        if (null != buttonImage)
+            buttonImage.color = GetOriginalColor();
+
+        if (null != outlineImage)
+            outlineImage.color = GetOriginalOutlineColor();
+
+        if (null != uiEffect)
+            uiEffect.shadowColorAlpha = GetTargetIntensity();
     }
 
     private void OnDestroy()
     {
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
-        {
             appearDelayTween.Kill();
-        }
 
         if (null != scaleTween && true == scaleTween.IsActive())
-        {
             scaleTween.Kill();
-        }
 
         if (null != colorTween && true == colorTween.IsActive())
-        {
             colorTween.Kill();
-        }
+
+        if (null != outlineColorTween && true == outlineColorTween.IsActive())
+            outlineColorTween.Kill();
+
+        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
+            shadowAlphaTween.Kill();
 
         if (null != vfxComponent && null != unlockVfx)
         {

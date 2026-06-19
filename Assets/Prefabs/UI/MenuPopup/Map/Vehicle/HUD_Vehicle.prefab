@@ -55,6 +55,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 18
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: -270}
     endOffset: {x: 0, y: 0}
@@ -117,6 +118,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     maxSkew: {x: 0, y: 0}
     skewTimeRatio: 0.2
@@ -607,6 +609,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startAngle: 7
     angleDamping: 0.62
@@ -668,6 +671,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     maxSkew: {x: 0.45, y: -0.25}
     skewTimeRatio: 0.2
@@ -811,6 +815,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 18
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 22}
     endOffset: {x: 0, y: 0}
@@ -873,6 +878,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 1
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 20, y: 0}
     endOffset: {x: 0, y: 0}
@@ -1550,6 +1556,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkScale: 1
     shrinkTimeRatio: 0.08
@@ -1624,8 +1631,6 @@ MonoBehaviour:
   controlBoardMotionTag: ControlPanel
   navTopMotionTag: OnNavTop
   selectorButtonAppearDelay: 0.2
-  blinkDuration: 0.5
-  blinkEase: 4
   prevButtonAppearDelay: 0.1
   homeButtonAppearDelay: 0.2
 --- !u!1 &6791670516459754279
@@ -1683,6 +1688,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 0}
