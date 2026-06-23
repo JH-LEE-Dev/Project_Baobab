@@ -1,10 +1,16 @@
 fileFormatVersion: 2
-guid: e57ef21be2ae9d244af959296a5a2132
+guid: 6fce8cfe7c8208e489d820b06432312e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -2365556692732728239
-    second: Bottom_G_01_0
+      213: 8224413713010589956
+    second: SporepuffTree_Shield_00_0
+  - first:
+      213: 6670178001722032646
+    second: SporepuffTree_Shield_00_1
+  - first:
+      213: 7347568732505368269
+    second: SporepuffTree_Shield_00_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +106,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Bottom_G_01_0
+      name: SporepuffTree_Shield_00_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 4
-        width: 22
-        height: 21
+        x: 0
+        y: 28
+        width: 12
+        height: 13
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +121,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 15c2e91a8badb2fd0800000000000000
-      internalID: -2365556692732728239
+      spriteID: 40109d972bcf22270800000000000000
+      internalID: 8224413713010589956
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SporepuffTree_Shield_00_1
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 38
+        width: 16
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 602444d6d8b319c50800000000000000
+      internalID: 6670178001722032646
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: SporepuffTree_Shield_00_2
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 21
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc6efb745dec7f560800000000000000
+      internalID: 7347568732505368269
       vertices: []
       indices: 
       edges: []
@@ -135,7 +185,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Bottom_G_01_0: -2365556692732728239
+      SporepuffTree_Shield_00_0: 8224413713010589956
+      SporepuffTree_Shield_00_1: 6670178001722032646
+      SporepuffTree_Shield_00_2: 7347568732505368269
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
