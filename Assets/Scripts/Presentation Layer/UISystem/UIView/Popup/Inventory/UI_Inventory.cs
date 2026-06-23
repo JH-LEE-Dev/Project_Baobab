@@ -27,6 +27,7 @@ public class UI_Inventory : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
     [SerializeField] private GameObject uiPopupPrefab;
+    [SerializeField] private string uiSlotLayerName = "ScreenSpaceUI";
 
     [Header("Inventory Settings")]
     [SerializeField] private List<UI_InventorySlot> inventorySlots = new List<UI_InventorySlot>(32);
@@ -107,6 +108,7 @@ public class UI_Inventory : MonoBehaviour
                 continue;
 
             _slot.Initialize();
+            _slot.SetLayer(uiSlotLayerName);
 
             _slot.exitSlot -= inventoryUnHoverEvent;
             _slot.exitSlot += inventoryUnHoverEvent;

@@ -156,6 +156,39 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             uiImage.raycastTarget = false;
     }
 
+    public void SetLayer(string _layerName)
+    {
+        int _layer = LayerMask.NameToLayer(_layerName);
+        if (-1 != _layer)
+        {
+            SetLayer(_layer);
+        }
+    }
+
+    public void SetLayer(int _layer)
+    {
+        SetLayerRecursive(gameObject, _layer);
+    }
+
+    private void SetLayerRecursive(GameObject _obj, int _layer)
+    {
+        if (null == _obj)
+        {
+            return;
+        }
+
+        _obj.layer = _layer;
+        int _childCount = _obj.transform.childCount;
+        for (int i = 0; i < _childCount; i++)
+        {
+            Transform _child = _obj.transform.GetChild(i);
+            if (null != _child)
+            {
+                SetLayerRecursive(_child.gameObject, _layer);
+            }
+        }
+    }
+
     private void PlayItemInteraction()
     {
         if (null != omp)
