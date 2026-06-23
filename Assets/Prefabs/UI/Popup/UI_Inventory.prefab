@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7039290970557162733}
   - component: {fileID: 3295636771788556412}
   - component: {fileID: 3915635661359771656}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Backpack_Shadow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -86,7 +86,7 @@ GameObject:
   - component: {fileID: 1727600902651143512}
   - component: {fileID: 7567719939687046975}
   - component: {fileID: 6177818820070488920}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Backpack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -157,7 +157,7 @@ GameObject:
   m_Component:
   - component: {fileID: 266377206756053037}
   - component: {fileID: 6656528587843225706}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: OMB_NotificationAbsol
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -202,6 +202,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 18
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: -5}
     endOffset: {x: 0, y: 0}
@@ -218,7 +219,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 808296747011894848}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Icons
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -256,7 +257,7 @@ GameObject:
   - component: {fileID: 6412711164574742135}
   - component: {fileID: 8018817754167464486}
   - component: {fileID: 2836068899765005361}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -328,7 +329,7 @@ GameObject:
   - component: {fileID: 7316568340774369417}
   - component: {fileID: 1612376820300429613}
   - component: {fileID: 5737649794967700801}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Backpack_Base
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -403,7 +404,7 @@ GameObject:
   - component: {fileID: 2838159875185745971}
   - component: {fileID: 5663465319797005329}
   - component: {fileID: 448505721121896031}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -475,7 +476,7 @@ GameObject:
   - component: {fileID: 1532751914691185205}
   - component: {fileID: 4229104506408514594}
   - component: {fileID: 8137169785087513220}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -546,7 +547,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3523496341642845800}
   - component: {fileID: 981896029900642224}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: OMB_NotificationPop
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -591,6 +592,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 18
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     squashScale: {x: 1.4, y: 0.7}
     recoilScale: {x: 0.8, y: 1.3}
@@ -612,7 +614,7 @@ GameObject:
   - component: {fileID: 2466075597888032385}
   - component: {fileID: 8645239962874976247}
   - component: {fileID: 8207945149305419290}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -684,7 +686,7 @@ GameObject:
   - component: {fileID: 2549808780390607842}
   - component: {fileID: 6744654085910721533}
   - component: {fileID: 4404759271728242885}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -756,7 +758,7 @@ GameObject:
   - component: {fileID: 3555539458117257655}
   - component: {fileID: 5614515867755658274}
   - component: {fileID: 4937300568975086307}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -828,7 +830,7 @@ GameObject:
   - component: {fileID: 7483379663357245722}
   - component: {fileID: 964094262584746715}
   - component: {fileID: 488053289031389834}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -902,7 +904,7 @@ GameObject:
   - component: {fileID: 422067291625476913}
   - component: {fileID: 466032390791215493}
   - component: {fileID: 6308575793307732763}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: NotificationBadge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1009,7 +1011,7 @@ GameObject:
   - component: {fileID: 4196466543483854343}
   - component: {fileID: 8007406078667185350}
   - component: {fileID: 1684981575009709981}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Count
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1146,7 +1148,7 @@ GameObject:
   - component: {fileID: 2975368759121095182}
   - component: {fileID: 1262408464139938424}
   - component: {fileID: 4514826112934664941}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1218,7 +1220,7 @@ GameObject:
   - component: {fileID: 4752603429770623112}
   - component: {fileID: 6936574598921815077}
   - component: {fileID: 8806443731535225244}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1289,7 +1291,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7710995094093309807}
   - component: {fileID: 161844645900401759}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: NotificationVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1338,7 +1340,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7740009692593848616}
   - component: {fileID: 8859991050559067172}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: OMB_AbsoluteMoveBackpack
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1383,6 +1385,7 @@ MonoBehaviour:
   backwardDelay: 0.2
   backwardEase: 18
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: -24}
@@ -1401,7 +1404,7 @@ GameObject:
   - component: {fileID: 5955985603632891772}
   - component: {fileID: 1277075411165431048}
   - component: {fileID: 4131151707560778026}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: UI_Inventory
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1474,7 +1477,7 @@ GameObject:
   m_Component:
   - component: {fileID: 464342055785017809}
   - component: {fileID: 9061330992110133810}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Motions
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1564,7 +1567,7 @@ GameObject:
   - component: {fileID: 4809703170637836250}
   - component: {fileID: 1233687733733290552}
   - component: {fileID: 2708815393649643688}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1636,7 +1639,7 @@ GameObject:
   - component: {fileID: 3132259225993456588}
   - component: {fileID: 2564734699895686882}
   - component: {fileID: 1251039551470032372}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1708,7 +1711,7 @@ GameObject:
   - component: {fileID: 2807648167478920352}
   - component: {fileID: 8564760372653727572}
   - component: {fileID: 6778203810412062101}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_6
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1780,7 +1783,7 @@ GameObject:
   - component: {fileID: 3374302702722018182}
   - component: {fileID: 2954975339402475846}
   - component: {fileID: 8955155674529491529}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Keyboard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1854,7 +1857,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5483390632391851099}
   - component: {fileID: 4312291483352131633}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: InventoryPopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1904,7 +1907,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6185929840272700763}
   - component: {fileID: 8752792782165176703}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: OMB_AbsoluteMovePopup
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1949,6 +1952,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 18
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: 6}
@@ -1967,7 +1971,7 @@ GameObject:
   - component: {fileID: 33365982318406828}
   - component: {fileID: 1087425656767134970}
   - component: {fileID: 2545655084593966533}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2039,7 +2043,7 @@ GameObject:
   - component: {fileID: 2605357469308065724}
   - component: {fileID: 3224406892551328632}
   - component: {fileID: 6137804880556267882}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: CurrencyGlyph_4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2109,7 +2113,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6456015435980945757}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Items
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -2230,6 +2234,10 @@ PrefabInstance:
       value: SlotBackground
       objectReference: {fileID: 0}
     - target: {fileID: 6659610576506340938, guid: 91fb41b086325604ea63f2ba561068af, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 6659610576506340938, guid: 91fb41b086325604ea63f2ba561068af, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
@@ -2259,6 +2267,10 @@ PrefabInstance:
     - target: {fileID: 1125404888247100001, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
       propertyPath: m_Name
       value: UISelectionCursor
+      objectReference: {fileID: 0}
+    - target: {fileID: 1125404888247100001, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
+      propertyPath: m_Layer
+      value: 18
       objectReference: {fileID: 0}
     - target: {fileID: 1125404888247100001, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
       propertyPath: m_IsActive
@@ -2352,6 +2364,22 @@ PrefabInstance:
       propertyPath: cursorSize.y
       value: 26
       objectReference: {fileID: 0}
+    - target: {fileID: 1125404888247100101, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 1125404888247100201, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 1125404888247100301, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 1125404888247100401, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2381,6 +2409,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4467659322512094184}
     m_Modifications:
+    - target: {fileID: 2486859381311932401, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
     - target: {fileID: 3118576089537169764, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
       propertyPath: currency0
       value: 
@@ -2424,6 +2456,14 @@ PrefabInstance:
     - target: {fileID: 4540705592233903731, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
       propertyPath: m_Name
       value: CurrencyFontHUD
+      objectReference: {fileID: 0}
+    - target: {fileID: 4540705592233903731, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 6139975010779844595, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
+      propertyPath: m_Layer
+      value: 18
       objectReference: {fileID: 0}
     - target: {fileID: 7976620843109558160, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
       propertyPath: m_Pivot.x
@@ -2504,6 +2544,10 @@ PrefabInstance:
     - target: {fileID: 7976620843109558160, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8564551551735323046, guid: dda98f53d4c3d1546b45f99f38ece494, type: 3}
+      propertyPath: m_Layer
+      value: 18
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -2640,6 +2684,10 @@ PrefabInstance:
       value: UI_Homing
       objectReference: {fileID: 0}
     - target: {fileID: 7019952593193086363, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 7019952593193086363, guid: eefd2e0ff38d7de458e3db2bc6e6f7f4, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
@@ -2672,6 +2720,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6456015435980945757}
     m_Modifications:
+    - target: {fileID: 1098802990191956952, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
     - target: {fileID: 1681667128835878382, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: m_SizeDelta.x
       value: 38
@@ -2760,6 +2812,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: CurrencyCounterHUD_Coin
       objectReference: {fileID: 0}
+    - target: {fileID: 2718141575618077796, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 3229449822574331277, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 5109068317126577165, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 5613791140173978126, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 6586448842898607503, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -2815,6 +2887,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6456015435980945757}
     m_Modifications:
+    - target: {fileID: 1098802990191956952, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
     - target: {fileID: 1681667128835878382, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: m_SizeDelta.x
       value: 38
@@ -2908,12 +2984,32 @@ PrefabInstance:
       value: CurrencyCounterHUD_Sub
       objectReference: {fileID: 0}
     - target: {fileID: 2718141575618077796, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 2718141575618077796, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3229449822574331277, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
       objectReference: {fileID: 0}
     - target: {fileID: 4161069215367419048, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
       propertyPath: defaultMoneyType
       value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5109068317126577165, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 5613791140173978126, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
+      objectReference: {fileID: 0}
+    - target: {fileID: 6586448842898607503, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+      propertyPath: m_Layer
+      value: 18
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

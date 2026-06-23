@@ -765,8 +765,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIView_ESC
   layer: 2
-  startHidden: 1
+  bCloseableByESC: 0
   bWorld: 0
+  bScreenSpace: 0
   uiRoot: {fileID: 1428547135923378214}
   uiPrefab: {fileID: 0}
   saveGameButton: {fileID: 3743975452646040495}

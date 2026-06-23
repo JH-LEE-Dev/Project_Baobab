@@ -1880,11 +1880,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GameplayUIInstaller
   canvasRootPrefab:
     popupLayerRoot: {fileID: 0}
-    overlayLayerRoot: {fileID: 4750015337367576829, guid: cbd5119decaf607429f3b180b835f245, type: 3}
+    overlayLayerRoot: {fileID: 4750015337367576829, guid: e340b3963d1832046b5134e14f2cfad1, type: 3}
     tooltipLayerRoot: {fileID: 0}
-  ppCanvasRootPrefab:
+  screenSpaceCanvasRootPrefab:
     popupLayerRoot: {fileID: 0}
-    overlayLayerRoot: {fileID: 4750015337367576829, guid: 39f3f0c9f2c63ed459cc16639c44185c, type: 3}
+    overlayLayerRoot: {fileID: 4750015337367576829, guid: e340b3963d1832046b5134e14f2cfad1, type: 3}
     tooltipLayerRoot: {fileID: 0}
   worldCanvasRootPrefab:
     popupLayerRoot: {fileID: 0}
@@ -1896,7 +1896,7 @@ MonoBehaviour:
     tooltipLayerRoot: {fileID: 0}
   canvasPrefab: {fileID: 5983813252923583599, guid: 3397ab25825686d409ff314f4d9c4ac1, type: 3}
   worldCanvasPrefab: {fileID: 3260921118342786162, guid: 044099fe73343f8468018a34e8a8b1c2, type: 3}
-  ppCanvasPrefab: {fileID: 5983813252923583599, guid: 5fa73b4c95085e149a082def6acd67a4, type: 3}
+  scrennSpaceCanvasPrefab: {fileID: 5983813252923583599, guid: 5fa73b4c95085e149a082def6acd67a4, type: 3}
   overlayCanvasPrefab: {fileID: 5983813252923583599, guid: 3db5eb1612747ce4aa7cc1e7363c3642, type: 3}
 --- !u!114 &1519226333585974322
 MonoBehaviour:

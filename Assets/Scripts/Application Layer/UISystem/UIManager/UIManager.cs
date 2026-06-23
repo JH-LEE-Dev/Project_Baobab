@@ -18,9 +18,9 @@ public class UIManager : MonoBehaviour
     protected Transform overlayOverlayLayerRoot;
     protected Transform overlayTooltipLayerRoot;
 
-    protected Transform ppPopupLayerRoot;
-    protected Transform ppOverlayLayerRoot;
-    protected Transform ppTooltipLayerRoot;
+    protected Transform screenSpacePopupLayerRoot;
+    protected Transform screenSpaceOverlayLayerRoot;
+    protected Transform screenSpaceTooltipLayerRoot;
 
     protected Canvas ppCanvas;
 
@@ -31,7 +31,7 @@ public class UIManager : MonoBehaviour
 
     private Dictionary<Type, UIView> instanceByType = new Dictionary<Type, UIView>();
 
-    public void SceneChanged(CanvasRoot canvasRoot, CanvasRoot worldCanvasRoot, CanvasRoot overlayCanvasRoot,CanvasRoot ppCanvasRoot)
+    public void SceneChanged(CanvasRoot canvasRoot, CanvasRoot worldCanvasRoot, CanvasRoot overlayCanvasRoot, CanvasRoot screenSpaceCanvasRoot)
     {
         CloseAll();
 
@@ -42,14 +42,14 @@ public class UIManager : MonoBehaviour
         worldPopupLayerRoot = worldCanvasRoot.popupLayerRoot;
         worldOverlayLayerRoot = worldCanvasRoot.overlayLayerRoot;
         worldTooltipLayerRoot = worldCanvasRoot.tooltipLayerRoot;
-        
+
         overlayPopupLayerRoot = overlayCanvasRoot.popupLayerRoot;
         overlayOverlayLayerRoot = overlayCanvasRoot.overlayLayerRoot;
         overlayTooltipLayerRoot = overlayCanvasRoot.tooltipLayerRoot;
 
-        ppPopupLayerRoot = ppCanvasRoot.popupLayerRoot;
-        ppOverlayLayerRoot = ppCanvasRoot.overlayLayerRoot;
-        ppTooltipLayerRoot = ppCanvasRoot.tooltipLayerRoot;
+        screenSpacePopupLayerRoot = screenSpaceCanvasRoot.popupLayerRoot;
+        screenSpaceOverlayLayerRoot = screenSpaceCanvasRoot.overlayLayerRoot;
+        screenSpaceTooltipLayerRoot = screenSpaceCanvasRoot.tooltipLayerRoot;
     }
 
     public void DI(Canvas _ppCanvas)
@@ -136,7 +136,7 @@ public class UIManager : MonoBehaviour
             return null;
         }
 
-        Transform parent = GetLayerRoot(prefab.Layer, prefab.bWorld, prefab.bOverlay, prefab.bPPUI);
+        Transform parent = GetLayerRoot(prefab.Layer, prefab.bWorld, prefab.bScreenSpace, prefab.bOverlay);
 
         UIView instance = Instantiate(prefab, parent);
         instance.gameObject.name = $"{prefab.gameObject.name}_Instance";
@@ -147,19 +147,8 @@ public class UIManager : MonoBehaviour
         return (T)instance;
     }
 
-    private Transform GetLayerRoot(UILayer _layer, bool _bWorld, bool _bOverlay, bool _bPPUI)
+    private Transform GetLayerRoot(UILayer _layer, bool _bWorld, bool _bScreenSpace, bool _bOverlay)
     {
-        if (_bPPUI)
-        {
-            switch (_layer)
-            {
-                case UILayer.Popup: return ppPopupLayerRoot;
-                case UILayer.Overlay: return ppOverlayLayerRoot;
-                case UILayer.Tooltip: return ppTooltipLayerRoot;
-                default: return default;
-            }
-        }
-
         if (_bOverlay)
         {
             switch (_layer)
@@ -167,6 +156,17 @@ public class UIManager : MonoBehaviour
                 case UILayer.Popup: return overlayPopupLayerRoot;
                 case UILayer.Overlay: return overlayOverlayLayerRoot;
                 case UILayer.Tooltip: return overlayTooltipLayerRoot;
+                default: return default;
+            }
+        }
+
+        if (_bScreenSpace)
+        {
+            switch (_layer)
+            {
+                case UILayer.Popup: return screenSpacePopupLayerRoot;
+                case UILayer.Overlay: return screenSpaceOverlayLayerRoot;
+                case UILayer.Tooltip: return screenSpaceTooltipLayerRoot;
                 default: return default;
             }
         }

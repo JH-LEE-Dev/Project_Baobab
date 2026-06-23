@@ -329,7 +329,7 @@ public class LogItem : Item, IStaticCollidable
 
         if(particleEffect != null)
         {
-            if(vfxComponent != null)
+            if(vfxComponent != null && particleEffect.transform.IsChildOf(transform))
                 vfxComponent.Stop(particleEffect, true);
             particleEffect = null;    
         }
@@ -422,7 +422,14 @@ public class LogItem : Item, IStaticCollidable
 
         if (particleEffect != null)
         {
-            vfxComponent.SetSortingSettings(particleEffect, objectSortingLayerName, spriteRenderer.sortingOrder + 1);
+            if (particleEffect.transform.IsChildOf(transform))
+            {
+                vfxComponent.SetSortingSettings(particleEffect, objectSortingLayerName, spriteRenderer.sortingOrder + 1);
+            }
+            else
+            {
+                particleEffect = null;
+            }
         }
     }
 

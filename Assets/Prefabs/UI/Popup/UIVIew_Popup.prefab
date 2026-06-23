@@ -112,6 +112,7 @@ MonoBehaviour:
   layer: 2
   bCloseableByESC: 0
   bWorld: 0
+  bScreenSpace: 1
   uiRoot: {fileID: 4833147362847093384}
   uiInventoryPrefab: {fileID: 7019952593193086363, guid: c12e0ecbfef8767468e41930b0814944, type: 3}
   omp: {fileID: 3823983716572130153}
@@ -179,6 +180,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: -100}

@@ -548,6 +548,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkScale: 0.8
     shrinkTimeRatio: 0.08
@@ -943,6 +944,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkScale: 0.8
     shrinkTimeRatio: 0.08
@@ -1112,6 +1114,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startAngle: 5
     angleDamping: 0.62
@@ -1245,8 +1248,7 @@ MonoBehaviour:
   layer: 2
   bCloseableByESC: 1
   bWorld: 0
-  bOverlay: 0
-  bPPUI: 0
+  bScreenSpace: 1
   warningBG: {fileID: 0}
   mainText: {fileID: 3978917961975102837}
   subText: {fileID: 2189045935089087278}
@@ -1522,6 +1524,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startAngle: 5
     angleDamping: 0.62

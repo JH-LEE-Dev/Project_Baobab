@@ -54,8 +54,13 @@ public class DecoSpritePatternAnimator : MonoBehaviour
         {
             customSortable.Initialize(transform);
             customSortable.AddSpriteRenderer(targetRenderer);
-            customSortable.ManualLateUpdate();
         }
+    }
+
+    public void SetSortingOrder()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
     }
 
     private void OnEnable()
