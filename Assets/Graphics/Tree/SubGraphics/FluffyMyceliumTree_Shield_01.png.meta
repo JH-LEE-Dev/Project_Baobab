@@ -1,10 +1,16 @@
 fileFormatVersion: 2
-guid: e7c8b086af506cb46aab6f1c38d3d89c
+guid: f334f63d15bb46045a6275d2b5e48257
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -5071396271935472609
-    second: Bottom_G_00_0
+      213: 3310852187038419118
+    second: FluffyMyceliumTree_Shield_01_0
+  - first:
+      213: -7019559576301699210
+    second: FluffyMyceliumTree_Shield_01_1
+  - first:
+      213: -4538698387587832120
+    second: FluffyMyceliumTree_Shield_01_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +106,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Bottom_G_00_0
+      name: FluffyMyceliumTree_Shield_01_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 3
-        width: 23
-        height: 22
+        x: 3
+        y: 39
+        width: 16
+        height: 15
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +121,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: f1cbb08c5f7ce99b0800000000000000
-      internalID: -5071396271935472609
+      spriteID: ea80040c58282fd20800000000000000
+      internalID: 3310852187038419118
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FluffyMyceliumTree_Shield_01_1
+      rect:
+        serializedVersion: 2
+        x: 19
+        y: 33
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 67f78dea1c3859e90800000000000000
+      internalID: -7019559576301699210
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: FluffyMyceliumTree_Shield_01_2
+      rect:
+        serializedVersion: 2
+        x: 4
+        y: 25
+        width: 12
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8c660311ddd4301c0800000000000000
+      internalID: -4538698387587832120
       vertices: []
       indices: 
       edges: []
@@ -135,7 +185,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Bottom_G_00_0: -5071396271935472609
+      FluffyMyceliumTree_Shield_01_0: 3310852187038419118
+      FluffyMyceliumTree_Shield_01_1: -7019559576301699210
+      FluffyMyceliumTree_Shield_01_2: -4538698387587832120
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

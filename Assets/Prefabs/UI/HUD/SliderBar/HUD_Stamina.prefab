@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2957991479362383593}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Fill Area
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -47,7 +47,7 @@ GameObject:
   - component: {fileID: 2156090190785859471}
   - component: {fileID: 7032183770323128102}
   - component: {fileID: 5444176541600458225}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -122,8 +122,8 @@ GameObject:
   - component: {fileID: 2701751341482119836}
   - component: {fileID: 1539176003130554182}
   - component: {fileID: 903511047653134305}
-  m_Layer: 5
-  m_Name: HUD_Stemina
+  m_Layer: 18
+  m_Name: HUD_Stamina
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -185,7 +185,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8873084031332664385}
   - component: {fileID: 302823491587765767}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: OMB_DangerColor
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -230,6 +230,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   colorA: {r: 1, g: 1, b: 1, a: 1}
   colorB: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &5690809713640595892
@@ -242,7 +243,7 @@ GameObject:
   m_Component:
   - component: {fileID: 9149485548939145862}
   - component: {fileID: 8531399470030340004}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Motions
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -312,7 +313,7 @@ GameObject:
   - component: {fileID: 2589309034339573029}
   - component: {fileID: 3411610090452061643}
   - component: {fileID: 5406003039614452065}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: SteminaBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -414,7 +415,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5575289252724776473}
   - component: {fileID: 905749258087313065}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: OMB_DangerShake
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -459,6 +460,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   positionStrength: 2
   rotationStrength: 1
   vibrato: 35
@@ -474,7 +476,7 @@ GameObject:
   - component: {fileID: 8530845131236274161}
   - component: {fileID: 8052767403378986071}
   - component: {fileID: 5946085439754738290}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: Fill
   m_TagString: Untagged
   m_Icon: {fileID: 0}

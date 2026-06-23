@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 596133ae24886714180c4ed937c6abf8
+guid: cd4fb2ecdcf26b14687494f2c4ba2f4e
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4285292866047522608
-    second: Bottom_F_01_0
+      213: 235075437653919439
+    second: StarrootTree_Bottom_Bloom_00_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Bottom_F_01_0
+      name: StarrootTree_Bottom_Bloom_00_0
       rect:
         serializedVersion: 2
-        x: 5
-        y: 4
-        width: 22
-        height: 21
+        x: 9
+        y: 7
+        width: 13
+        height: 11
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 0d8c8b0c7d49784c0800000000000000
-      internalID: -4285292866047522608
+      spriteID: fc608c47dd7234300800000000000000
+      internalID: 235075437653919439
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Bottom_F_01_0: -4285292866047522608
+      StarrootTree_Bottom_Bloom_00_0: 235075437653919439
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
