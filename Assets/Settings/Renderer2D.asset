@@ -24,9 +24,8 @@ MonoBehaviour:
     probeSamplingDebugMesh: {fileID: -3555484719484374845, guid: 57d7c4c16e2765b47a4d2069b311bffe, type: 3}
     probeSamplingDebugTexture: {fileID: 2800000, guid: 24ec0e140fb444a44ab96ee80844e18e, type: 3}
     probeVolumeBlendStatesCS: {fileID: 0}
-  m_RendererFeatures:
-  - {fileID: 6060703660988115286}
-  m_RendererFeatureMap: 56291b62def11b54
+  m_RendererFeatures: []
+  m_RendererFeatureMap: 
   m_UseNativeRenderPass: 0
   m_LayerMask:
     serializedVersion: 2
@@ -57,31 +56,3 @@ MonoBehaviour:
   m_PostProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_DefaultMaterialType: 0
   m_DefaultCustomMaterial: {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
---- !u!114 &6060703660988115286
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9af2bd60b284c3c498c25051042487a8, type: 3}
-  m_Name: HighResolutionBloomFeature
-  m_EditorClassIdentifier: Assembly-CSharp::HighResolutionBloomFeature
-  m_Active: 1
-  settings:
-    targetCameraName: PP UI Camera
-    bloomLayerMask:
-      serializedVersion: 2
-      m_Bits: 262144
-    injectionPoint: 600
-    bloomMaterial: {fileID: 2100000, guid: 1b53d7c319c7b264c8374af38661df4b, type: 2}
-    compositeLayerColor: 0
-    threshold: 1
-    softKnee: 0.5
-    intensity: 1
-    radius: 1.5
-    downsample: 1
-    blurIterations: 4
-    runInSceneView: 0
