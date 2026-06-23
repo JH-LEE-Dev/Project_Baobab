@@ -1611,7 +1611,7 @@ MonoBehaviour:
   m_ShadowMirrorScale: 0.5
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 4
-  m_ShadowColor: {r: 1, g: 0.17098704, b: 0, a: 1}
+  m_ShadowColor: {r: 0.5, g: 0.08549352, b: 0, a: 1}
   m_ShadowColorGlow: 1
   m_GradationMode: 0
   m_GradationIntensity: 1
