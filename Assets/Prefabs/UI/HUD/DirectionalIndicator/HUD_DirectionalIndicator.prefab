@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 4136428577803533724}
   - component: {fileID: 7783983704913653975}
   - component: {fileID: 6140344899616592753}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: HUD_DirectionalIndicator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -67,7 +67,7 @@ SortingGroup:
   m_GameObject: {fileID: 1916422466606343881}
   m_Enabled: 1
   m_SortingLayerID: 962808927
-  m_SortingLayer: 10
+  m_SortingLayer: 14
   m_SortingOrder: 99
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0
@@ -82,7 +82,7 @@ GameObject:
   - component: {fileID: 6498105150004310958}
   - component: {fileID: 3627605254838472048}
   - component: {fileID: 5919390118902400474}
-  m_Layer: 5
+  m_Layer: 18
   m_Name: IMG_Indicator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
