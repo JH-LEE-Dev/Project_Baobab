@@ -130,7 +130,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         treeData = _treeData;
 
         ResetTree();
-        Debug.Log(treeData.type);
+
         healthComponent.Setup(treeData.type, treeData.treeStatData.hp, treeData.treeStatData.sp, treeData.treeStatData.spRegen, treeData.treeStatData.regenStrategy);
 
         if (treeVisualComponent != null)
