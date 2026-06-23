@@ -21,8 +21,12 @@ public struct TreeVisualData
     public List<Sprite> bottomSprites;
     public List<Sprite> shieldTopSprites;
     public List<Sprite> shieldBottomSprites;
+    public List<Sprite> highlightTopSprites;
+    public List<Sprite> highlightBottomSprites;
     public List<Sprite> saplingTopSprites;
     public List<Sprite> saplingBottomSprites;
+    public float shieldHDRIntensity;
+    public float highlightHDRIntensity;
 }
 
 [Serializable]
