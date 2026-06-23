@@ -1,13 +1,13 @@
 fileFormatVersion: 2
-guid: 207cf87f1d2e02d41b8a1af3c1545fbd
+guid: 0b94324cd8e5b9f49ab34fea611df156
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4426339257925694004
-    second: TreeSubObjectBase_0
+      213: -6753977472200922581
+    second: Bottom_D_01_Shield_0
   - first:
-      213: -5565508726857603944
-    second: TreeSubObjectBase_1
+      213: 407140151814450843
+    second: Bottom_D_01_Shield_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -103,10 +103,32 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: TreeSubObjectBase_0
+      name: Bottom_D_01_Shield_0
       rect:
         serializedVersion: 2
-        x: 7
+        x: 6
+        y: 13
+        width: 11
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b2a297ce54d0542a0800000000000000
+      internalID: -6753977472200922581
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Bottom_D_01_Shield_1
+      rect:
+        serializedVersion: 2
+        x: 14
         y: 9
         width: 11
         height: 8
@@ -118,30 +140,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ccd09fb85eb7292c0800000000000000
-      internalID: -4426339257925694004
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: TreeSubObjectBase_1
-      rect:
-        serializedVersion: 2
-        x: 16
-        y: 12
-        width: 11
-        height: 8
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 894e05ddc4753c2b0800000000000000
-      internalID: -5565508726857603944
+      spriteID: b9ee2ba9fc376a500800000000000000
+      internalID: 407140151814450843
       vertices: []
       indices: 
       edges: []
@@ -160,8 +160,8 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      TreeSubObjectBase_0: -4426339257925694004
-      TreeSubObjectBase_1: -5565508726857603944
+      Bottom_D_01_Shield_0: -6753977472200922581
+      Bottom_D_01_Shield_1: 407140151814450843
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
