@@ -7,6 +7,9 @@ Shader "Custom/OnWaterObject"
         _Alpha ("Alpha", Range(0, 1)) = 1.0
         [MaterialToggle] _ZWrite("ZWrite", Float) = 0
         
+        [Header(HDR)]
+        _HDRIntensity("HDR Intensity", Float) = 1
+
         _WaveSpeed("Wave Speed", Float) = 2.0
         _WaveStrength("Wave Strength", Float) = 0.01
         _WaveFreq("Wave Frequency", Float) = 15.0
@@ -69,23 +72,25 @@ Shader "Custom/OnWaterObject"
             #pragma multi_compile_instancing
             #pragma multi_compile _ DEBUG_DISPLAY SKINNED_SPRITE
 
-            CBUFFER_START(UnityPerMaterial)
-                half4 _Color;
-                float _Alpha;
-                float _WaveSpeed;
-                float _WaveStrength;
-                float _WaveFreq;
-                float _DistortionAmount;
-            CBUFFER_END
+            UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
+                UNITY_DEFINE_INSTANCED_PROP(float, _Alpha)
+                UNITY_DEFINE_INSTANCED_PROP(float, _WaveSpeed)
+                UNITY_DEFINE_INSTANCED_PROP(float, _WaveStrength)
+                UNITY_DEFINE_INSTANCED_PROP(float, _WaveFreq)
+                UNITY_DEFINE_INSTANCED_PROP(float, _DistortionAmount)
+            UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SKINNED_VERTEX_COMPUTE(input);
                 SetUpSpriteInstanceProperties();
                 input.positionOS = UnityFlipSprite(input.positionOS, unity_SpriteProps.xy);
 
                 Varyings o = CommonUnlitVertex(input);
-                o.color = input.color * _Color * unity_SpriteColor;
+                o.color = input.color * UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Color) * unity_SpriteColor;
                 
                 // 일렁임 계산을 위해 월드 XY 좌표 전달
                 float3 wPos = TransformObjectToWorld(input.positionOS.xyz);
@@ -96,21 +101,25 @@ Shader "Custom/OnWaterObject"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
-                // 월드 좌표를 기준으로 일렁임 계산
                 float2 waveCoord = input.worldPos;
-                
-                float2 distortion;
-                distortion.x = sin(_Time.y * _WaveSpeed + waveCoord.y * _WaveFreq) * _WaveStrength;
-                distortion.y = cos(_Time.y * _WaveSpeed * 0.7 + waveCoord.x * _WaveFreq * 0.8) * _WaveStrength;
 
-                // 최종 샘플링 UV에 왜곡 적용
-                float2 finalUV = input.uv + (distortion * _DistortionAmount);
+                float _waveSpeed = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveSpeed);
+                float _waveStrength = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveStrength);
+                float _waveFreq = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _WaveFreq);
+                float _distortionAmount = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DistortionAmount);
+
+                float2 distortion;
+                distortion.x = sin(_Time.y * _waveSpeed + waveCoord.y * _waveFreq) * _waveStrength;
+                distortion.y = cos(_Time.y * _waveSpeed * 0.7 + waveCoord.x * _waveFreq * 0.8) * _waveStrength;
+
+                float2 finalUV = input.uv + (distortion * _distortionAmount);
 
                 half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, finalUV) * input.color;
-                color.a *= _Alpha;
-                
+                color.a *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Alpha);
+
                 if (color.a < 0.01) discard;
 
+                color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 return color;
             }
             ENDHLSL

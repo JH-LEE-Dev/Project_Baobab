@@ -48,6 +48,7 @@ Material:
     - _Dummy: 0
     - _EnableExternalAlpha: 0
     - _EnableWindSway: 1
+    - _ShieldHDRIntensity: 1
     - _StencilRef: 0
     - _SwayDetailSpeed: 1.45
     - _SwayDetailWeight: 0.35
