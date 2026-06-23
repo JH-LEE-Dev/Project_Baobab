@@ -298,11 +298,11 @@ public class GameplayUICoordinator
 
     private void DungeonSelected(MapType _type, ForestType _forestType)
     {
-        signalHub.Publish(new TeleportUIClosedWhileTeleportSignal());
-        signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
-
         mapType = _type;
         forestType = _forestType;
+        
+        signalHub.Publish(new TeleportUIClosedWhileTeleportSignal());
+        signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
     }
 
     private void InventorySpecChanged(InventorySpecChangedSignal _inventorySpecChangedSignal)
@@ -369,7 +369,7 @@ public class GameplayUICoordinator
     {
         unitUI.Refresh();
         unitUI.TownStarted();
-        
+
         hudUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         popUpUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         worldPopupUI.SetCurrentMapType(MapType.Town, ForestType.InTown);

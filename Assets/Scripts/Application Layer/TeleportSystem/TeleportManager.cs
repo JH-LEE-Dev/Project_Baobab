@@ -73,7 +73,7 @@ public class TeleportManager : MonoBehaviour
                         bootStrapProvider.GoToOtherScene(MapType.StarrootForest, ForestType.StarrootForest_1);
                         break;
                     case ForestType.StarrootForest_2:
-                        bootStrapProvider.GoToOtherScene(MapType.StarrootForest, ForestType.StarrootForest_3);
+                        bootStrapProvider.GoToOtherScene(MapType.StarrootForest, ForestType.StarrootForest_2);
                         break;
                     case ForestType.StarrootForest_3:
                         bootStrapProvider.GoToOtherScene(MapType.StarrootForest, ForestType.StarrootForest_3);
