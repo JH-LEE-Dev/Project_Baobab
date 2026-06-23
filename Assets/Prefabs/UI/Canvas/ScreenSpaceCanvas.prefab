@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 5903493271542259228}
   - component: {fileID: 8858733093728536719}
   m_Layer: 18
-  m_Name: PP Canvas
+  m_Name: ScreenSpaceCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

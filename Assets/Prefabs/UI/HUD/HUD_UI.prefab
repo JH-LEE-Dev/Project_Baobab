@@ -53,8 +53,7 @@ MonoBehaviour:
   layer: 2
   bCloseableByESC: 0
   bWorld: 0
-  bOverlay: 0
-  bPPUI: 0
+  bScreenSpace: 1
   uiRoot: {fileID: 1772526790917447411}
   moveHUD: {fileID: 5488935301192403642}
   hudEquipmentPrefab: {fileID: 3602922423060339287, guid: cd342e10fd24dc842b88530280f46250, type: 3}
@@ -155,6 +154,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 0, y: -100}

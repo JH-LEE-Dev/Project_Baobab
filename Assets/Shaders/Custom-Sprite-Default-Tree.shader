@@ -13,6 +13,9 @@ Shader "Custom/Custom-Sprite-Default-Tree"
         [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
 
+        [Header(Shield HDR)]
+        _ShieldHDRIntensity("Shield HDR Intensity", Float) = 1
+
         [Header(Wind Sway)]
         _EnableWindSway("Enable Wind Sway", Float) = 0
         _SwayPositionAmplitude("Sway Position Amplitude", Float) = 0.03
@@ -75,6 +78,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShieldHDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -133,6 +137,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
 
                 half4 color = CommonLitFragment(input, input.color);
                 clip(color.a - 0.01);
+                color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShieldHDRIntensity);
                 return color;
             }
             ENDHLSL
@@ -172,6 +177,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShieldHDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -269,6 +275,7 @@ Shader "Custom/Custom-Sprite-Default-Tree"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShieldHDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayPositionAmplitude)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SwayRotationAmplitude)
@@ -324,7 +331,9 @@ Shader "Custom/Custom-Sprite-Default-Tree"
                     input.uv += uvDelta;
                 }
 
-                return CommonUnlitFragment(input, input.color);
+                half4 color = CommonUnlitFragment(input, input.color);
+                color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShieldHDRIntensity);
+                return color;
             }
             ENDHLSL
         }

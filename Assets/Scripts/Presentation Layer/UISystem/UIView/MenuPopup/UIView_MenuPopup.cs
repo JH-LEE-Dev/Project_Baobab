@@ -24,12 +24,7 @@ public class UIView_MenuPopup : UIView
         base.Initialize(_ctx);
 
         if (null == vehicle && null != vehiclePrefab)
-           vehicle = Instantiate(vehiclePrefab, this.transform).GetComponent<HUD_Vehicle>();
-
-        if (null != vehicle)
-        {
-            vehicle.transform.SetParent(_ctx.ppCanvas.transform);
-        }
+           vehicle = Instantiate(vehiclePrefab, _ctx.overlayUICanvas.transform).GetComponent<HUD_Vehicle>();
     }
 
     public void DependencyInjection(IMapDataProvider _mapDataProvider, IWeatherProvider _weatherProvider, ITimeDataProvider _timeDataProvider)

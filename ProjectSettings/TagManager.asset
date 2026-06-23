@@ -26,7 +26,7 @@ TagManager:
   - CharacterSensor
   - Machine
   - Outline
-  - UI_PP
+  - ScreenSpaceUI
   - WorldEffect
   - PPWorldEffect
   - 
