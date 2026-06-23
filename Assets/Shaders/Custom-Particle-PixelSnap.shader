@@ -6,6 +6,7 @@ Shader "Custom/2D/Particle-PixelSnap"
         [HideInInspector] _TilesX("Tiles X", Float) = 3
         [HideInInspector] _TilesY("Tiles Y", Float) = 1
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
+        [HDR] _EmissionColor("Emission Color", Color) = (1,1,1,1)
     }
 
     SubShader
@@ -60,6 +61,7 @@ Shader "Custom/2D/Particle-PixelSnap"
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                half4 _EmissionColor;
                 float _TilesX;
                 float _TilesY;
             CBUFFER_END
@@ -118,6 +120,7 @@ Shader "Custom/2D/Particle-PixelSnap"
 
                 half4 texColor = tex2D(_MainTex, snappedUV);
                 half4 finalColor = texColor * input.color;
+                finalColor.rgb *= _EmissionColor.rgb;
 
                 clip(finalColor.a - 0.01);
                 return finalColor;

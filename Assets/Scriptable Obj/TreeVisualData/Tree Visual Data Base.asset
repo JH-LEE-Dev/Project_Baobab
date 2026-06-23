@@ -163,7 +163,7 @@ MonoBehaviour:
     saplingBottomSprites:
     - {fileID: 21300000, guid: 0ea52882cb7586e4c8e9d95a5d01041f, type: 3}
     shieldHDRIntensity: 1
-    highlightHDRIntensity: 1.5
+    highlightHDRIntensity: 1.6
   - treeType: 8
     topSprites:
     - {fileID: 21300000, guid: 3f7c496047244cd42a7d46dc1de96867, type: 3}
