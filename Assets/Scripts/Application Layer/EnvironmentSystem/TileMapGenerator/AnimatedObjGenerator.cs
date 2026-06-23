@@ -161,6 +161,7 @@ public class AnimatedObjGenerator : MonoBehaviour
         if (_targetObj != null)
         {
             _targetObj.transform.position = _position;
+            _targetObj.SetSortingOrder();
             activeObjectsDict[_prefab].Add(_targetObj);
             AddCullingObject(_targetObj, _position);
         }
@@ -181,6 +182,7 @@ public class AnimatedObjGenerator : MonoBehaviour
         if (_targetObj != null)
         {
             _targetObj.transform.position = _position;
+            _targetObj.SetSortingOrder();
             activeWaterObjectsDict[_prefab].Add(_targetObj);
             AddCullingObject(_targetObj, _position);
         }

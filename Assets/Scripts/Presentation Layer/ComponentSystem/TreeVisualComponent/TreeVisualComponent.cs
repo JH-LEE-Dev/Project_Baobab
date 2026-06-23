@@ -42,6 +42,9 @@ public class TreeVisualComponent : MonoBehaviour
     [Header("Other Settings")]
     public GameObject baseVisualObj;
 
+    [Header("Shield HDR")]
+    [SerializeField] private float shieldHDRIntensity = 1.05f;
+
 
     [Header("Editor Custom Settings")]
     public TreeType customTreeType = TreeType.OakTree;
@@ -68,6 +71,11 @@ public class TreeVisualComponent : MonoBehaviour
     private bool bDisableOutline = false;
     private float currentAlpha;
     private bool isShieldActive = false;
+
+    // Shield HDR
+    private static readonly int ShieldHDRIntensityID = Shader.PropertyToID("_ShieldHDRIntensity");
+    private MaterialPropertyBlock _mpb;
+    private MaterialPropertyBlock Mpb => _mpb ??= new MaterialPropertyBlock();
 
     #endregion
 
@@ -227,6 +235,10 @@ public class TreeVisualComponent : MonoBehaviour
 
         UpdateRendererSprites();
         ApplyDefaultScale();
+        if (isShieldActive)
+        {
+            ApplyShieldHDR(true);
+        }
     }
 
     // 묘목(Sapling) 비주얼을 적용한다.
@@ -558,12 +570,20 @@ public class TreeVisualComponent : MonoBehaviour
     {
         isShieldActive = false;
         UpdateRendererSprites();
+        ApplyShieldHDR(false);
     }
 
     public void ShieldRegened()
     {
         isShieldActive = true;
         UpdateRendererSprites();
+    }
+
+    private void ApplyShieldHDR(bool active)
+    {
+        Mpb.SetFloat(ShieldHDRIntensityID, active ? shieldHDRIntensity : 1f);
+        if (topRenderer != null) topRenderer.SetPropertyBlock(Mpb);
+        if (bottomRenderer != null) bottomRenderer.SetPropertyBlock(Mpb);
     }
 
     #endregion

@@ -29,6 +29,12 @@ public class AnimatedObj : MonoBehaviour
         ResetAnimationToRandomFrame();
     }
 
+    public void SetSortingOrder()
+    {
+        if (customSortable != null)
+            customSortable.ManualLateUpdate();
+    }
+
     public void ResetAnimationToRandomFrame()
     {
         if (sprites == null || sprites.Count == 0) return;
@@ -56,11 +62,6 @@ public class AnimatedObj : MonoBehaviour
             {
                 sr.sprite = sprites[currentFrameIndex];
             }
-        }
-
-        if (customSortable != null)
-        {
-            customSortable.ManualLateUpdate();
         }
     }
 }

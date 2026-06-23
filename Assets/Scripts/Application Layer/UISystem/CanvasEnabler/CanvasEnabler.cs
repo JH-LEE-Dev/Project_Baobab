@@ -4,7 +4,7 @@ public class CanvasEnabler : MonoBehaviour
 {
     [SerializeField] private Canvas canvas;
     public bool bPPUI = false;
-    public bool bScreenSpace_NoPP = false;
+    //public bool bScreenSpace_NoPP = false;
 
     public void Initialize()
     {
@@ -16,11 +16,8 @@ public class CanvasEnabler : MonoBehaviour
             {
                 canvas.worldCamera = CameraFinder.Instance.PPUiCamera;
             }
-
-            if (bScreenSpace_NoPP == true)
-            {
-                canvas.worldCamera = CameraFinder.Instance.OverlayCamera;
-            }
+            else
+                canvas.worldCamera = Camera.main;
 
             canvas.sortingLayerName = "HUD";
         }
@@ -34,16 +31,18 @@ public class CanvasEnabler : MonoBehaviour
         if (bPPUI == true)
         {
             if (canvas != null)
+            {
                 canvas.worldCamera = CameraFinder.Instance.PPUiCamera;
+                canvas.sortingLayerName = "HUD";
+            }
         }
-
-        if (bScreenSpace_NoPP == true)
+        else
         {
             if (canvas != null)
-                canvas.worldCamera = CameraFinder.Instance.OverlayCamera;
+            {
+                canvas.worldCamera = Camera.main;
+                canvas.sortingLayerName = "HUD";
+            }
         }
-
-        if (canvas != null)
-            canvas.sortingLayerName = "HUD";
     }
 }
