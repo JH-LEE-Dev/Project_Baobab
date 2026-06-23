@@ -749,9 +749,9 @@ MonoBehaviour:
   hoverColorDuration: 0.15
   outlineNormalColor: {r: 0.5019608, g: 0.5019608, b: 0.5019608, a: 0.5019608}
   outlineSelectColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineLockColor: {r: 0.75294125, g: 0.16862746, b: 0.16862746, a: 0.5019608}
+  outlineLockColor: {r: 1, g: 1, b: 1, a: 0.5019608}
   outlineNormalHoverColor: {r: 1, g: 1, b: 1, a: 0.7490196}
-  outlineLockHoverColor: {r: 1, g: 0, b: 0, a: 1}
+  outlineLockHoverColor: {r: 1, g: 1, b: 1, a: 0.7490196}
   uiEffect: {fileID: 8625300975163311128}
   outlineNormalIntensity: 0
   outlineHoverIntensity: 1
