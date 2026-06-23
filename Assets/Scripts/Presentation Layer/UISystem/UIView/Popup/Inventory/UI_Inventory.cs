@@ -19,9 +19,7 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private GameObject invBackground;
     [SerializeField] private UI_Homing uiHoming;
     [SerializeField] private CurrencyCounterHUD uiCoin;
-    [SerializeField] private CurrencyCounterHUD uiSubCoin;
     [SerializeField] private UI_Backpack uiBackpack;
-    [SerializeField] private UISelectionCursor selectionCursor;
     [SerializeField] private HUD_NotificationBadge notificationBadge;
 
     [Header("Prefabs")]
@@ -81,9 +79,6 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != uiCoin)
             uiCoin.SetMoneyType(MoneyType.Coin);
-        
-        if (null != uiSubCoin)
-            uiSubCoin.SetMoneyType(MoneyType.Carrot);
             
         CharactersMoneyChanged();
     }
@@ -187,8 +182,6 @@ public class UI_Inventory : MonoBehaviour
     {
         if (null != uiCoin) 
             uiCoin.Initialize();
-        if (null != uiSubCoin) 
-            uiSubCoin.Initialize();
     }
 
     private void InitBackpack()
@@ -210,8 +203,6 @@ public class UI_Inventory : MonoBehaviour
 
         if (MoneyType.Coin == _moneyType)
             uiCoin?.SetNumberAnimated(moneyData.money);
-        else if (MoneyType.Carrot == _moneyType)
-            uiSubCoin?.SetNumberAnimated(moneyData.carrot);
     }
 
     public void CharactersMoneyChanged()
@@ -220,7 +211,6 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         uiCoin?.SetNumber(moneyData.money);
-        uiSubCoin?.SetNumber(moneyData.carrot);
     }
 
     public void InventoryShowEvent()

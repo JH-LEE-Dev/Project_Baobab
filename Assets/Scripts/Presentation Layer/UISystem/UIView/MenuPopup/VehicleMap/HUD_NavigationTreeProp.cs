@@ -10,6 +10,10 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
     //외부 의존성
     [SerializeField] private Image leafImage;
     [SerializeField] private Image trunkImage;
+    [SerializeField] private Image shieldLeafImage;
+    [SerializeField] private Image shieldTrunkImage;
+    [SerializeField] private Image highlightLeafImage;
+    [SerializeField] private Image highlightTrunkImage;
     [SerializeField] private TMPro.TextMeshProUGUI nameText;
     [SerializeField] private ParticleSystem leafParticle;
     [SerializeField] private ParticleSystem trunkParticle;
@@ -77,12 +81,53 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
         {
             TreeVisualData visualData = treeVisualDataBase.Get(_treeType);
 
-            if (null != leafImage && null != visualData.topSprites && 0 < visualData.topSprites.Count)
-                leafImage.sprite = visualData.topSprites[0];
+            bool _hasLeaf = (null != visualData.topSprites && 0 < visualData.topSprites.Count);
+            if (null != leafImage)
+            {
+                leafImage.gameObject.SetActive(_hasLeaf);
+                if (_hasLeaf)
+                    leafImage.sprite = visualData.topSprites[0];
+            }
 
-            if (null != trunkImage && null != visualData.bottomSprites && 0 < visualData.bottomSprites.Count)
-                trunkImage.sprite = visualData.bottomSprites[0];
+            bool _hasTrunk = (null != visualData.bottomSprites && 0 < visualData.bottomSprites.Count);
+            if (null != trunkImage)
+            {
+                trunkImage.gameObject.SetActive(_hasTrunk);
+                if (_hasTrunk)
+                    trunkImage.sprite = visualData.bottomSprites[0];
+            }
 
+            bool _hasShieldLeaf = (null != visualData.shieldTopSprites && 0 < visualData.shieldTopSprites.Count);
+            if (null != shieldLeafImage)
+            {
+                shieldLeafImage.gameObject.SetActive(_hasShieldLeaf);
+                if (_hasShieldLeaf)
+                    shieldLeafImage.sprite = visualData.shieldTopSprites[0];
+            }
+
+            bool _hasShieldTrunk = (null != visualData.shieldBottomSprites && 0 < visualData.shieldBottomSprites.Count);
+            if (null != shieldTrunkImage)
+            {
+                shieldTrunkImage.gameObject.SetActive(_hasShieldTrunk);
+                if (_hasShieldTrunk)
+                    shieldTrunkImage.sprite = visualData.shieldBottomSprites[0];
+            }
+
+            bool _hasHighlightLeaf = (null != visualData.highlightTopSprites && 0 < visualData.highlightTopSprites.Count);
+            if (null != highlightLeafImage)
+            {
+                highlightLeafImage.gameObject.SetActive(_hasHighlightLeaf);
+                if (_hasHighlightLeaf)
+                    highlightLeafImage.sprite = visualData.highlightTopSprites[0];
+            }
+
+            bool _hasHighlightTrunk = (null != visualData.highlightBottomSprites && 0 < visualData.highlightBottomSprites.Count);
+            if (null != highlightTrunkImage)
+            {
+                highlightTrunkImage.gameObject.SetActive(_hasHighlightTrunk);
+                if (_hasHighlightTrunk)
+                    highlightTrunkImage.sprite = visualData.highlightBottomSprites[0];
+            }
         }
 
         ResetAnimation();

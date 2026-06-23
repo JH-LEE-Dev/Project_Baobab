@@ -31,6 +31,8 @@ ShaderVariantCollection:
         passType: 0
       - keywords: COLOR_FILTER TONE_SEPIA
         passType: 0
+      - keywords: EDGE_SHINY
+        passType: 0
   - first: {fileID: 4800000, guid: d1cb940e3804b4adcaf9b22083fadfad, type: 3}
     second:
       variants:

@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
 using PresentationLayer.UISystem.CustomNumber;
+using Coffee.UIEffects;
 
 /// <summary>
 /// 인벤토리의 개별 아이템 슬롯을 관리하는 클래스입니다.
@@ -14,12 +15,18 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     // //외부 의존성
     [SerializeField] private Image uiImage;
     [SerializeField] private ObjectMotionPlayer omp;
+    [SerializeField] private UIEffect uiEffect;
 
     [SerializeField] private Sprite emptySprite;
 
     [Header("Slot Count Settings")]
     [SerializeField] private Color defaultColor = Color.white;
     [SerializeField] private Color maxColor = Color.red;
+
+    [Header("Rarity Effect Colors")]
+    [SerializeField] private Color fascinatingColor = new Color(0.2f, 1.0f, 0.2f, 1.0f);
+    [SerializeField] private Color advancedColor = new Color(0.2f, 0.6f, 1.0f, 1.0f);
+    [SerializeField] private Color perfectColor = new Color(1.0f, 0.85f, 0.0f, 1.0f);
 
     public Action<UI_InventorySlot, IItemData, Vector2> enterSlot;
     public Action exitSlot;
@@ -44,6 +51,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         shinyEffectComponent = GetComponentInChildren<ShinyEffectComponent>();
 
         UpdateImage(null, Color.white);
+        SetEffectActive(false);
         
         if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
@@ -68,6 +76,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             invSlotRef.SlotUpdatedEvent -= PlayItemInteraction;
 
         UpdateImage(null, Color.white);
+        SetEffectActive(false);
         UpdateItemCount(0);
 
         invSlotRef = null;
@@ -145,6 +154,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         UpdateImage(showItemData.sprite, Color.white);
         UpdateItemCount(invSlotRef.count);
+        UpdateRarityEffect(showItemData);
 
         if (_playInteraction)
             PlayItemInteraction();
@@ -154,6 +164,59 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         if (null != uiImage)
             uiImage.raycastTarget = false;
+    }
+ 
+    public void SetEffectActive(bool _active)
+    {
+        if (null != uiEffect)
+        {
+            uiEffect.gameObject.SetActive(_active);
+        }
+    }
+ 
+    public void SetEdgeColor(Color _color)
+    {
+        if (null != uiEffect)
+        {
+            uiEffect.edgeMode = EdgeMode.Shiny;
+            uiEffect.edgeColor = _color;
+        }
+    }
+
+    private void UpdateRarityEffect(IItemData _itemData)
+    {
+        if (null == _itemData)
+        {
+            SetEffectActive(false);
+            return;
+        }
+
+        if (_itemData is ILogItemData _logData)
+        {
+            LogState _state = _logData.logState;
+            switch (_state)
+            {
+                case LogState.Fascinating:
+                    SetEffectActive(true);
+                    SetEdgeColor(fascinatingColor);
+                    break;
+                case LogState.Advanced:
+                    SetEffectActive(true);
+                    SetEdgeColor(advancedColor);
+                    break;
+                case LogState.Perfect:
+                    SetEffectActive(true);
+                    SetEdgeColor(perfectColor);
+                    break;
+                default:
+                    SetEffectActive(false);
+                    break;
+            }
+        }
+        else
+        {
+            SetEffectActive(false);
+        }
     }
 
     public void SetLayer(string _layerName)
@@ -200,9 +263,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             UpdateItemCount(invSlotRef.count);
 
             if (null == showItemData || 0 >= invSlotRef.count)
+            {
                 UpdateImage(null, Color.white);
+                SetEffectActive(false);
+            }
             else
+            {
                 UpdateImage(showItemData.sprite, showItemData.color);
+                UpdateRarityEffect(showItemData);
+            }
         }
     }
 
