@@ -47,6 +47,7 @@ public class EnvironmentObjManager : MonoBehaviour
 
     [Header("Cloud Settings")]
     [SerializeField] private List<Sprite> cloudSprites;
+    [SerializeField] private Color cloudColor = Color.white;
     [SerializeField] private int cloudCnt = 60;
     [SerializeField] private float cloudMinSpeed = 0.02f;
     [SerializeField] private float cloudMaxSpeed = 0.06f;
@@ -350,10 +351,12 @@ public class EnvironmentObjManager : MonoBehaviour
             ? currentStageEnvData.CloudSprites
             : cloudSprites;
 
+        Color colorToUse = (currentStageEnvData != null) ? currentStageEnvData.CloudColor : cloudColor;
+
         if (_obj is Cloud cloud)
         {
             float moveSpeed = UnityEngine.Random.Range(cloudMinSpeed, cloudMaxSpeed); // 수평 이동 속도
-            cloud.SetupCloud(spritesToUse, moveSpeed, _minX, _maxX);
+            cloud.SetupCloud(spritesToUse, colorToUse, moveSpeed, _minX, _maxX);
         }
 
         _obj.PoolIndex = allSpawnedObjs.Count;
