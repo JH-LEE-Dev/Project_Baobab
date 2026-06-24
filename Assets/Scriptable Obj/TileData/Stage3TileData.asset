@@ -52,7 +52,9 @@ MonoBehaviour:
   mountainTiles:
   - {fileID: 11400000, guid: 9abb0510f152e8140b1612951c118a44, type: 2}
   treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
-  grassDecoTiles: []
+  grassDecoTiles:
+  - {fileID: 11400000, guid: c2e44bea0e740a74bace8ddf3f74b4e1, type: 2}
+  - {fileID: 11400000, guid: 20239b0dee807034c887a910f41f9916, type: 2}
   groundDecoTiles: []
   bloomGrassDecoTiles:
   - {fileID: 11400000, guid: 019b1a13404f92747adfdcff47d4a57b, type: 2}
@@ -70,14 +72,14 @@ MonoBehaviour:
   animatedObjPrefabs: []
   waterAnimatedObjPrefabs: []
   staticObjPrefabs: []
-  bloomDecoHDRIntensity: 2.25
+  bloomDecoHDRIntensity: 2.5
   rockDecoDensity: 0.0005
   animatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
   waterDecoDensity: 0
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
-  grassDecoDensity: 0.35
+  grassDecoDensity: 0.03
   bloomSandDecoDensity: 0.01
   bloomGroundDecoDensity: 0.002
   bloomGrassDecoDensity: 0.05
