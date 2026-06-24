@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: OnWater Material
+  m_Name: OnWater Deco Material
   m_Shader: {fileID: 4800000, guid: 1a8e87a7b9f1cf0418e41d22797b64a3, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -46,13 +46,13 @@ Material:
     m_Ints: []
     m_Floats:
     - PixelSnap: 0
-    - _Alpha: 0.65
+    - _Alpha: 0.5
     - _DistortionAmount: 1
     - _EnableExternalAlpha: 0
     - _HDRIntensity: 1
     - _WaveFreq: 35
     - _WaveSpeed: 5.5
-    - _WaveStrength: 0.01
+    - _WaveStrength: 0.005
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

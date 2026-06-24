@@ -14,7 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StageEnvironmentDataSO
   envObjPrefabs:
   - {fileID: 7529419962234095240, guid: 2514a7c8ad19a64448721c6c21e7a06c, type: 3}
-  - {fileID: 1247708929555277769, guid: 626303961cb4de4418c900b680db4cee, type: 3}
   cloudSprites:
   - {fileID: 21300000, guid: 166bb817ec776e94d9d3ab9664e8592e, type: 3}
   - {fileID: 21300000, guid: 1cf8b3dcf8d645f4da556c1e052d1cdd, type: 3}

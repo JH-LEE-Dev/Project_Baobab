@@ -65,7 +65,18 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 97555ba0cad42af4a826794c66fd872f, type: 2}
   - {fileID: 11400000, guid: c1e791eae7177fc49873c6dba5c78ab2, type: 2}
   waterDecoTiles: []
-  bloomWaterDecoTiles: []
+  bloomWaterDecoTiles:
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 6a3dbcdb43d4fa14297264834e921ded, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 6a3dbcdb43d4fa14297264834e921ded, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  - {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
   insectDecoTiles: []
   stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
@@ -73,13 +84,16 @@ MonoBehaviour:
   waterAnimatedObjPrefabs: []
   staticObjPrefabs: []
   bloomDecoHDRIntensity: 2.5
+  bloomWaterDecoHDRIntensity: 4
   rockDecoDensity: 0.0005
   animatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
-  waterDecoDensity: 0
+  waterDecoDensity: 0.7
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
   grassDecoDensity: 0.03
   bloomSandDecoDensity: 0.01
   bloomGroundDecoDensity: 0.002
   bloomGrassDecoDensity: 0.05
+  useBloomWaterDecoDensity: 0
+  bloomWaterDecoDensity: 0.8
