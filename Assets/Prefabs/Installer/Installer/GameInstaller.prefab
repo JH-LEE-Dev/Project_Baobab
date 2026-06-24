@@ -416,6 +416,24 @@ MonoBehaviour:
   - treeType: 6
     minCnt: 2
     maxCnt: 3
+  - treeType: 7
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 8
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 9
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 10
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 11
+    minCnt: 2
+    maxCnt: 3
+  - treeType: 12
+    minCnt: 4
+    maxCnt: 5
   cullingUpdateInterval: 0.05
 --- !u!114 &597610330652353424
 MonoBehaviour:
@@ -1819,6 +1837,8 @@ MonoBehaviour:
     tileData: {fileID: 11400000, guid: 35b7d7d6af5f44145bb981d76aedb7af, type: 2}
   - mapType: 4
     tileData: {fileID: 11400000, guid: 3a05eaff175f44f478e08144fc71f366, type: 2}
+  - mapType: 5
+    tileData: {fileID: 11400000, guid: 3453cf5f6052f954787f92944c21b9cc, type: 2}
 --- !u!114 &5405137478683244198
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2315,6 +2335,8 @@ MonoBehaviour:
     strategy: {fileID: 11400000, guid: 2ffdf70e5db3b2748ad936c4f6ac06f3, type: 2}
   - mapType: 4
     strategy: {fileID: 11400000, guid: 98f8568db3fa69745a6689fb61e1fd15, type: 2}
+  - mapType: 5
+    strategy: {fileID: 11400000, guid: 2ffdf70e5db3b2748ad936c4f6ac06f3, type: 2}
   hiddenMapTreeGradeDatas:
   - grade: 2
     probability:

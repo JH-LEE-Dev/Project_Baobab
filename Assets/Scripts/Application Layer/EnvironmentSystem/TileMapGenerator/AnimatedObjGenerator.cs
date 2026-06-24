@@ -10,12 +10,16 @@ public class AnimatedObjGenerator : MonoBehaviour
     // // 내부 의존성 및 캐싱 필드
     private List<AnimatedObj> currentLandPrefabs;
     private List<DecoSpritePatternAnimator> currentWaterPrefabs;
+    private List<StaticObj> currentStaticPrefabs;
     
     private Dictionary<AnimatedObj, IObjectPool<AnimatedObj>> poolDict;
     private Dictionary<AnimatedObj, List<AnimatedObj>> activeObjectsDict;
 
     private Dictionary<DecoSpritePatternAnimator, IObjectPool<DecoSpritePatternAnimator>> waterPoolDict;
     private Dictionary<DecoSpritePatternAnimator, List<DecoSpritePatternAnimator>> activeWaterObjectsDict;
+
+    private Dictionary<StaticObj, IObjectPool<StaticObj>> staticPoolDict;
+    private Dictionary<StaticObj, List<StaticObj>> activeStaticObjectsDict;
 
     // // 컬링 최적화
     private List<Component> cullableObjects;
@@ -27,11 +31,12 @@ public class AnimatedObjGenerator : MonoBehaviour
 
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void SetPrefabs(List<AnimatedObj> _landPrefabs, List<DecoSpritePatternAnimator> _waterPrefabs)
+    public void SetPrefabs(List<AnimatedObj> _landPrefabs, List<DecoSpritePatternAnimator> _waterPrefabs, List<StaticObj> _staticPrefabs)
     {
         ReleaseAllActive();
         currentLandPrefabs = _landPrefabs;
         currentWaterPrefabs = _waterPrefabs;
+        currentStaticPrefabs = _staticPrefabs;
 
         if (mainCam == null)
         {
@@ -51,6 +56,9 @@ public class AnimatedObjGenerator : MonoBehaviour
 
         waterPoolDict = new Dictionary<DecoSpritePatternAnimator, IObjectPool<DecoSpritePatternAnimator>>(8);
         activeWaterObjectsDict = new Dictionary<DecoSpritePatternAnimator, List<DecoSpritePatternAnimator>>(8);
+
+        staticPoolDict = new Dictionary<StaticObj, IObjectPool<StaticObj>>(8);
+        activeStaticObjectsDict = new Dictionary<StaticObj, List<StaticObj>>(8);
 
         cullableObjects = new List<Component>(2000);
         cullingDistances = new float[] { cullingDistance };
@@ -147,6 +155,25 @@ public class AnimatedObjGenerator : MonoBehaviour
         return _pool;
     }
 
+    private IObjectPool<StaticObj> GetStaticPool(StaticObj _prefab)
+    {
+        if (!staticPoolDict.TryGetValue(_prefab, out var _pool))
+        {
+            _pool = new ObjectPool<StaticObj>(
+                createFunc: () => CreateStaticObj(_prefab),
+                actionOnGet: OnGetStaticObj,
+                actionOnRelease: OnReleaseStaticObj,
+                actionOnDestroy: OnDestroyStaticObj,
+                collectionCheck: true,
+                defaultCapacity: 32,
+                maxSize: 500
+            );
+            staticPoolDict.Add(_prefab, _pool);
+            activeStaticObjectsDict.Add(_prefab, new List<StaticObj>(100));
+        }
+        return _pool;
+    }
+
     public AnimatedObj SpawnAnimatedObj(Vector3 _position)
     {
         if (currentLandPrefabs == null || currentLandPrefabs.Count == 0) return null;
@@ -184,6 +211,27 @@ public class AnimatedObjGenerator : MonoBehaviour
             _targetObj.transform.position = _position;
             _targetObj.SetSortingOrder();
             activeWaterObjectsDict[_prefab].Add(_targetObj);
+            AddCullingObject(_targetObj, _position);
+        }
+        return _targetObj;
+    }
+
+    public StaticObj SpawnStaticObj(Vector3 _position)
+    {
+        if (currentStaticPrefabs == null || currentStaticPrefabs.Count == 0) return null;
+
+        int randomIndex = UnityEngine.Random.Range(0, currentStaticPrefabs.Count);
+        StaticObj _prefab = currentStaticPrefabs[randomIndex];
+        if (_prefab == null) return null;
+
+        IObjectPool<StaticObj> _pool = GetStaticPool(_prefab);
+        StaticObj _targetObj = _pool.Get();
+
+        if (_targetObj != null)
+        {
+            _targetObj.transform.position = _position;
+            _targetObj.SetSortingOrder();
+            activeStaticObjectsDict[_prefab].Add(_targetObj);
             AddCullingObject(_targetObj, _position);
         }
         return _targetObj;
@@ -252,6 +300,24 @@ public class AnimatedObjGenerator : MonoBehaviour
             }
         }
 
+        if (activeStaticObjectsDict != null && staticPoolDict != null)
+        {
+            foreach (var kvp in activeStaticObjectsDict)
+            {
+                StaticObj _prefab = kvp.Key;
+                List<StaticObj> _activeList = kvp.Value;
+                if (staticPoolDict.TryGetValue(_prefab, out var _pool))
+                {
+                    for (int i = 0; i < _activeList.Count; i++)
+                    {
+                        StaticObj _obj = _activeList[i];
+                        if (_obj != null) _pool.Release(_obj);
+                    }
+                }
+                _activeList.Clear();
+            }
+        }
+
         if (cullableObjects != null)
         {
             cullableObjects.Clear();
@@ -309,6 +375,30 @@ public class AnimatedObjGenerator : MonoBehaviour
     }
 
     private void OnDestroyWaterAnimatedObj(DecoSpritePatternAnimator _obj)
+    {
+        if (_obj != null) Destroy(_obj.gameObject);
+    }
+
+    // // Static Pool
+    private StaticObj CreateStaticObj(StaticObj _prefab)
+    {
+        if (_prefab == null) return null;
+        StaticObj _newItem = Instantiate(_prefab, transform);
+        if (_newItem != null) _newItem.Initialize();
+        return _newItem;
+    }
+
+    private void OnGetStaticObj(StaticObj _obj)
+    {
+        if (_obj != null) _obj.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseStaticObj(StaticObj _obj)
+    {
+        if (_obj != null) _obj.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyStaticObj(StaticObj _obj)
     {
         if (_obj != null) Destroy(_obj.gameObject);
     }

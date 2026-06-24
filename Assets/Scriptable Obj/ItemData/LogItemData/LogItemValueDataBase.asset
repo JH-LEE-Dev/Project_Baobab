@@ -25,3 +25,15 @@ MonoBehaviour:
     value: 1500
   - treeType: 6
     value: 6000
+  - treeType: 7
+    value: 30000
+  - treeType: 8
+    value: 150000
+  - treeType: 9
+    value: 500000
+  - treeType: 10
+    value: 1500000
+  - treeType: 11
+    value: 5000000
+  - treeType: 12
+    value: 30000000

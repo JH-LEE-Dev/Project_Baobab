@@ -141,7 +141,7 @@ public class GameplayUIInstaller : MonoBehaviour
         if (screenSpaceCanvas == null)
             screenSpaceCanvas = Instantiate(scrennSpaceCanvasPrefab, transform);
 
-        uiManager.DI(screenSpaceCanvas);
+        uiManager.DI(screenSpaceCanvas, overlayCanvas);
 
         var canvasEnabler = canvas.GetComponent<CanvasEnabler>();
         if (canvasEnabler != null)

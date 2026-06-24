@@ -4,11 +4,13 @@ using System.Collections.Generic;
 public class AnimatedObj : MonoBehaviour
 {
     // // 외부 의존성
+    [SerializeField] private float hdrIntensity = 1f; 
     [SerializeField] private List<Sprite> sprites;
     [SerializeField] private SpriteRenderer sr;
     [SerializeField] private float frameRate = 10f;
 
     // // 내부 의존성 및 상태 필드
+    private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private CustomSortable customSortable;
     private int currentFrameIndex;
     private float timer;
@@ -24,6 +26,11 @@ public class AnimatedObj : MonoBehaviour
             customSortable.Initialize(transform);
             customSortable.AddSpriteRenderer(sr);
         }
+
+        var mpb = new MaterialPropertyBlock();
+        sr.GetPropertyBlock(mpb);
+        mpb.SetFloat(HDRIntensityID, hdrIntensity);
+        sr.SetPropertyBlock(mpb);
 
         frameDuration = frameRate > 0f ? 1f / frameRate : 0.1f;
         ResetAnimationToRandomFrame();

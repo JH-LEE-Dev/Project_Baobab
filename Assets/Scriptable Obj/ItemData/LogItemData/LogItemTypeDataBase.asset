@@ -49,3 +49,39 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
     timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
+  - itemType: 1
+    treeType: 7
+    durability: 300
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
+    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  - itemType: 1
+    treeType: 8
+    durability: 500
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
+    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  - itemType: 1
+    treeType: 9
+    durability: 1000
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
+    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  - itemType: 1
+    treeType: 10
+    durability: 1500
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
+    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  - itemType: 1
+    treeType: 11
+    durability: 2000
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
+    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}
+  - itemType: 1
+    treeType: 12
+    durability: 3000
+    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
+    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    color: {r: 1, g: 1, b: 1, a: 1}

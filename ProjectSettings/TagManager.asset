@@ -59,6 +59,9 @@ TagManager:
   - name: TreeShadow
     uniqueID: 2456909477
     locked: 0
+  - name: BloomTile
+    uniqueID: 1617079569
+    locked: 0
   - name: ItemShadow
     uniqueID: 1330461129
     locked: 0

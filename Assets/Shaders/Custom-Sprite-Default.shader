@@ -7,6 +7,9 @@ Shader "Custom/2D/Custom-Sprite-Default"
         _NormalMap("Normal Map", 2D) = "bump" {}
         [MaterialToggle] _ZWrite("ZWrite", Float) = 0
 
+        [Header(HDR)]
+        _HDRIntensity("HDR Intensity", Float) = 1
+
         // Legacy properties. They're here so that materials using this shader can gracefully fallback to the legacy sprite shader.
         [HideInInspector] _Color("Tint", Color) = (1,1,1,1)
         [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
@@ -66,6 +69,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -105,6 +109,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
 
                 half4 color = CommonLitFragment(input, input.color);
                 clip(color.a - 0.01);
+                color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 return color;
             }
             ENDHLSL
@@ -143,6 +148,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -220,6 +226,7 @@ Shader "Custom/2D/Custom-Sprite-Default"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
+                UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -256,7 +263,9 @@ Shader "Custom/2D/Custom-Sprite-Default"
                     input.uv += uvDelta;
                 }
 
-                return CommonUnlitFragment(input, input.color);
+                half4 color = CommonUnlitFragment(input, input.color);
+                color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
+                return color;
             }
             ENDHLSL
         }
