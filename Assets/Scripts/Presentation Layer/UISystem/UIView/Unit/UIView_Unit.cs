@@ -40,7 +40,7 @@ public class UIView_Unit : UIView
     private UI_InteractionUnit interactionUnit;
     private UI_SpeechBubble speechBubble;
 
-    private bool isInitialOpen = false;
+    //private bool isInitialOpen = false;
 
     // //퍼블릭 초기화 및 제어 메서드
 
