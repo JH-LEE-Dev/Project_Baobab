@@ -496,12 +496,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                 if (_isDeepWater)
                 {
-                    if (stageTileData != null && stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0)
+                    if (stageTileData != null && stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.WaterDecoDensity)
                     {
                         decoTilesToApply[i] = stageTileData.WaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
                     }
 
-                    if (animatedObjGenerator != null && UnityEngine.Random.value < 0.1f)
+                    if (animatedObjGenerator != null && stageTileData != null && UnityEngine.Random.value < stageTileData.WaterAnimatedObjDensity)
                     {
                         Vector3 pos = GetWorldPos(i);
                         animatedObjGenerator.SpawnWaterAnimatedObj(pos);
@@ -534,7 +534,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 }
 
                 bool _hasRockDeco = false;
-                if (stageTileData != null && stageTileData.StaticObjPrefabs != null && stageTileData.StaticObjPrefabs.Count > 0 && UnityEngine.Random.value < 0.0005f)
+                if (stageTileData != null && stageTileData.StaticObjPrefabs != null && stageTileData.StaticObjPrefabs.Count > 0 && UnityEngine.Random.value < stageTileData.RockDecoDensity)
                 {
                     if (!inSafeZone)
                     {
@@ -550,7 +550,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _hasAnimatedObj = false;
                 if (false == _hasRockDeco && false == _isSand)
                 {
-                    if (animatedObjGenerator != null && UnityEngine.Random.value < 0.0025f)
+                    if (animatedObjGenerator != null && stageTileData != null && UnityEngine.Random.value < stageTileData.AnimatedObjDensity)
                     {
                         animatedObjGenerator.SpawnAnimatedObj(pos);
                         _hasAnimatedObj = true;
@@ -558,28 +558,30 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 }
 
                 bool _hasGroundDeco = false;
-                if (false == _hasRockDeco && false == _hasAnimatedObj)
+                if (false == _hasRockDeco && false == _hasAnimatedObj && stageTileData != null)
                 {
-                    float _groundDecoProb = _isSand ? 0.05f : 0.01f;
-                    if (stageTileData != null && stageTileData.GroundDecoTiles != null && stageTileData.GroundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
+                    float _groundDecoProb = _isSand ? stageTileData.SandDecoDensity : stageTileData.GroundDecoDensity;
+                    float _bloomDecoProb = _isSand ? stageTileData.BloomSandDecoDensity : stageTileData.BloomGroundDecoDensity;
+
+                    if (stageTileData.GroundDecoTiles != null && stageTileData.GroundDecoTiles.Count > 0 && UnityEngine.Random.value < _groundDecoProb)
                     {
                         decoTilesToApply[i] = stageTileData.GroundDecoTiles[UnityEngine.Random.Range(0, stageTileData.GroundDecoTiles.Count)];
                         _hasGroundDeco = true;
                     }
-                    else if (stageTileData != null && stageTileData.BloomGroundDecoTiles != null && stageTileData.BloomGroundDecoTiles.Count > 0 && UnityEngine.Random.value < (_groundDecoProb * 0.2f))
+                    else if (stageTileData.BloomGroundDecoTiles != null && stageTileData.BloomGroundDecoTiles.Count > 0 && UnityEngine.Random.value < _bloomDecoProb)
                     {
                         bloomDecoTilesToApply[i] = stageTileData.BloomGroundDecoTiles[UnityEngine.Random.Range(0, stageTileData.BloomGroundDecoTiles.Count)];
                         _hasGroundDeco = true;
                     }
                 }
 
-                if (false == _isSand && false == _hasRockDeco && false == _hasAnimatedObj && false == _hasGroundDeco)
+                if (false == _isSand && false == _hasRockDeco && false == _hasAnimatedObj && false == _hasGroundDeco && stageTileData != null)
                 {
-                    if (stageTileData != null && stageTileData.GrassDecoTiles != null && stageTileData.GrassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.35f)
+                    if (stageTileData.GrassDecoTiles != null && stageTileData.GrassDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.GrassDecoDensity)
                     {
                         decoTilesToApply[i] = stageTileData.GrassDecoTiles[UnityEngine.Random.Range(0, stageTileData.GrassDecoTiles.Count)];
                     }
-                    else if (stageTileData != null && stageTileData.BloomGrassDecoTiles != null && stageTileData.BloomGrassDecoTiles.Count > 0 && UnityEngine.Random.value < 0.07f)
+                    else if (stageTileData.BloomGrassDecoTiles != null && stageTileData.BloomGrassDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.BloomGrassDecoDensity)
                     {
                         bloomDecoTilesToApply[i] = stageTileData.BloomGrassDecoTiles[UnityEngine.Random.Range(0, stageTileData.BloomGrassDecoTiles.Count)];
                     }

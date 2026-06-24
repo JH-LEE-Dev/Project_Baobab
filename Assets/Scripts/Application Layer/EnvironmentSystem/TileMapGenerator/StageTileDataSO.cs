@@ -63,7 +63,33 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private List<StaticObj> staticObjPrefabs;
     [SerializeField] private float bloomDecoHDRIntensity = 1f;
 
+    [Header("오브젝트 밀도 설정")]
+    [SerializeField, Range(0f, 0.1f)] private float rockDecoDensity = 0.0005f;
+    [SerializeField, Range(0f, 0.1f)] private float animatedObjDensity = 0.0025f;
+    [SerializeField, Range(0f, 1f)] private float waterAnimatedObjDensity = 0.1f;
+
+    [Header("데코 타일 밀도 설정")]
+    [SerializeField, Range(0f, 1f)] private float waterDecoDensity = 1f;
+    [SerializeField, Range(0f, 1f)] private float sandDecoDensity = 0.05f;
+    [SerializeField, Range(0f, 1f)] private float groundDecoDensity = 0.01f;
+    [SerializeField, Range(0f, 1f)] private float grassDecoDensity = 0.35f;
+
+    [Header("블룸(Bloom) 데코 타일 밀도 설정")]
+    [SerializeField, Range(0f, 1f)] private float bloomSandDecoDensity = 0.01f;
+    [SerializeField, Range(0f, 1f)] private float bloomGroundDecoDensity = 0.002f;
+    [SerializeField, Range(0f, 1f)] private float bloomGrassDecoDensity = 0.07f;
+
     // // 퍼블릭 초기화 및 제어 메서드
+    public float RockDecoDensity => rockDecoDensity;
+    public float AnimatedObjDensity => animatedObjDensity;
+    public float WaterAnimatedObjDensity => waterAnimatedObjDensity;
+    public float WaterDecoDensity => waterDecoDensity;
+    public float SandDecoDensity => sandDecoDensity;
+    public float GroundDecoDensity => groundDecoDensity;
+    public float GrassDecoDensity => grassDecoDensity;
+    public float BloomSandDecoDensity => bloomSandDecoDensity;
+    public float BloomGroundDecoDensity => bloomGroundDecoDensity;
+    public float BloomGrassDecoDensity => bloomGrassDecoDensity;
     public float BloomDecoHDRIntensity => bloomDecoHDRIntensity;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
