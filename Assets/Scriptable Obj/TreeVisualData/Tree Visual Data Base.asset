@@ -163,38 +163,46 @@ MonoBehaviour:
     saplingBottomSprites:
     - {fileID: 21300000, guid: 0ea52882cb7586e4c8e9d95a5d01041f, type: 3}
     shieldHDRIntensity: 1
-    highlightHDRIntensity: 1.6
+    highlightHDRIntensity: 3
   - treeType: 8
     topSprites:
     - {fileID: 21300000, guid: 3f7c496047244cd42a7d46dc1de96867, type: 3}
     - {fileID: 21300000, guid: b6e13b7fd72528c47b562b682ea53a96, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: f6f37f667b74b21429501d52d83640b7, type: 3}
-    - {fileID: 21300000, guid: 596133ae24886714180c4ed937c6abf8, type: 3}
+    - {fileID: 21300000, guid: 7f29b9271a820124a9448c73e5d03823, type: 3}
+    - {fileID: 21300000, guid: 051973b106edec543a459c63577860f5, type: 3}
     shieldTopSprites: []
     shieldBottomSprites: []
-    highlightTopSprites: []
-    highlightBottomSprites: []
+    highlightTopSprites:
+    - {fileID: 21300000, guid: 76fd06d9293da01489a00c8664e56cba, type: 3}
+    - {fileID: 21300000, guid: 59dca7827f695bf4986ff6975818bb41, type: 3}
+    highlightBottomSprites:
+    - {fileID: 21300000, guid: 2e1d23bf749d98f4db141e90198f6f16, type: 3}
+    - {fileID: 21300000, guid: d8e867fcf7a8bf740831c5167123072b, type: 3}
     saplingTopSprites:
     - {fileID: 21300000, guid: 2aa683877e10c4b42ae52a872674a196, type: 3}
     saplingBottomSprites:
     - {fileID: 21300000, guid: 0ea52882cb7586e4c8e9d95a5d01041f, type: 3}
     shieldHDRIntensity: 1
-    highlightHDRIntensity: 1
+    highlightHDRIntensity: 3
   - treeType: 9
     topSprites:
     - {fileID: 21300000, guid: 36d57fd10144b924bb75368287a7cf21, type: 3}
     - {fileID: 21300000, guid: cf0489f3a7883ee4f8fffa33af27bb35, type: 3}
     bottomSprites:
-    - {fileID: 21300000, guid: e7c8b086af506cb46aab6f1c38d3d89c, type: 3}
-    - {fileID: 21300000, guid: e57ef21be2ae9d244af959296a5a2132, type: 3}
+    - {fileID: 21300000, guid: 7f29b9271a820124a9448c73e5d03823, type: 3}
+    - {fileID: 21300000, guid: 051973b106edec543a459c63577860f5, type: 3}
     shieldTopSprites: []
     shieldBottomSprites: []
-    highlightTopSprites: []
-    highlightBottomSprites: []
+    highlightTopSprites:
+    - {fileID: 21300000, guid: c698e132001fda64f96910f0756d6a3f, type: 3}
+    - {fileID: 21300000, guid: c7d3b591fef7c2948a4d4bc23372950b, type: 3}
+    highlightBottomSprites:
+    - {fileID: 21300000, guid: 29230b85beb7e5e4f8eff6d3944e8036, type: 3}
+    - {fileID: 21300000, guid: 8f3e369271901ff499ba066fe2ad3f45, type: 3}
     saplingTopSprites:
     - {fileID: 21300000, guid: 05c0011d8912acd47a54f7ba1da717dd, type: 3}
     saplingBottomSprites:
     - {fileID: 21300000, guid: 0ea52882cb7586e4c8e9d95a5d01041f, type: 3}
     shieldHDRIntensity: 1
-    highlightHDRIntensity: 1
+    highlightHDRIntensity: 2.5
