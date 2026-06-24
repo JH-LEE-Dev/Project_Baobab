@@ -776,7 +776,7 @@ MonoBehaviour:
     maxPoolSize: 2
     uiParticleScale: 0
   - vfxTag: TreeHitEffect_Trunk
-    effectPrefab: {fileID: 7006864300503741061, guid: 519f604c79133d5409ed1b32f90b74cd, type: 3}
+    effectPrefab: {fileID: 2164660391435094963, guid: 5a3539de96509c24192188b23daeaa32, type: 3}
     initialPoolSize: 5
     allowDynamicExpansion: 0
     maxPoolSize: 2
