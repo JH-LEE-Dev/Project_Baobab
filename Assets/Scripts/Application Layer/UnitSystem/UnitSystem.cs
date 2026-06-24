@@ -9,8 +9,8 @@ public class UnitSystem
     private InventoryManager inventoryManager;
     private OffroadContainer offroadContainer;
     private InDungeonResultManager inDungeonResultManager;
+    
     //내부 의존성
-
 
     public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager, InventoryManager _inventoryManager,
     OffroadContainer _offroadContainer, InDungeonResultManager _inDungeonResultManager)

@@ -2,51 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[Serializable]
-public struct CharacterStatSaveData
-{
-    public float pickupRangeMultiplier;
-    public float originalSpeed;
-    public float speedMultiplier;
-    public float maxStamina;
-    public float maxStaminaBonus;
-    public float staminaIncreaseAlpha;
-    public float staminaDecreaseAlpha;
-    
-    public float axeDamage;
-    public float axeDamageMultiplier;
-    public float axeAttackCoolTime;
-    public float axeAttackSpeedMultiplier;
-    public float axeDurability;
-    public float speedDecreaseWhileAction;
-    public float axeAttackRangeMultiplier;
-    public float axeDurabilityDecIgnoreChance;
-
-    public float rifleDamage;
-    public float rifleDamageMultiplier;
-    public float shotDelay;
-    public float rifleAttackSpeedMultiplier;
-    public float gunPenetrationChance;
-    public float reloadDuration;
-    public float reloadSpeedMultiplier;
-
-    public int ricochetCnt;
-    public float ricochetAngle;
-    public float ricochetDist;
-    public float ricochetDamage;
-    
-    public float weaponChangeCoolTime;
-    public float switchSpeedMultiplier;
-    
-    public bool bCanHunting;
-
-    public float shockWaveChance;
-    public float shockWaveDamage;
-    public float shockWaveDamageMultiplier;
-    public float shockWaveSpeed;
-    public float shockWaveSpeedMultiplier;
-    public float shockWaveCreateDelay;
-}
 
 [Serializable]
 public struct SkillSaveData
@@ -230,7 +185,6 @@ public struct LogDropProbSaveData
 [Serializable]
 public class GameSaveData
 {
-    public CharacterStatSaveData characterStatData;
     public SkillTreeSaveData skillTreeSaveData;
     public InventorySaveData inventorySaveData;
     public LogProcessingSaveData logProcessingSaveData;

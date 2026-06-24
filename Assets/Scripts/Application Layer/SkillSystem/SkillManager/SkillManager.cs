@@ -345,10 +345,13 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
                 // 대부분의 시스템이 레벨별 절대값을 사용한다면 마지막 레벨만 발송)
                 if (node.commands != null)
                 {
-                    for (int i = 0; i < node.commands.Count; i++)
+                    for (int lvl = 1; lvl <= node.currentLevel; lvl++)
                     {
-                        var info = new SkillDispatchInfo(node.currentLevel, node.commands[i]);
-                        //DispatchSkillsEvent?.Invoke(info);
+                        for (int i = 0; i < node.commands.Count; i++)
+                        {
+                            var info = new SkillDispatchInfo(lvl, node.commands[i]);
+                            DispatchSkillsEvent?.Invoke(info);
+                        }
                     }
                 }
             }

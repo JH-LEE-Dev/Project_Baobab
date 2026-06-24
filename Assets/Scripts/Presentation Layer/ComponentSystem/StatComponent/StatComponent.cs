@@ -153,55 +153,6 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
         speed = originalSpeed;
     }
 
-    public void LoadSaveData(CharacterStatSaveData _data)
-    {
-        pickupRangeMultiplier = _data.pickupRangeMultiplier;
-        originalSpeed = _data.originalSpeed;
-        speedMultiplier = _data.speedMultiplier;
-        speed = originalSpeed; // 현재 속도를 원본 속도로 초기화
-
-        maxStamina = _data.maxStamina;
-        maxStaminaBonus = _data.maxStaminaBonus;
-        staminaIncreaseAlpha = _data.staminaIncreaseAlpha;
-        staminaDecreaseAlpha = _data.staminaDecreaseAlpha;
-
-        axeDamage = _data.axeDamage;
-        axeDamageMultiplier = _data.axeDamageMultiplier;
-        axeAttackCoolTime = _data.axeAttackCoolTime;
-        axeAttackSpeedMultiplier = _data.axeAttackSpeedMultiplier;
-        axeDurability = _data.axeDurability;
-        speedDecreaseWhileAction = _data.speedDecreaseWhileAction;
-        axeAttackRangeMultiplier = _data.axeAttackRangeMultiplier;
-        axeDurabilityDecIgnoreChance = _data.axeDurabilityDecIgnoreChance;
-
-        rifleDamage = _data.rifleDamage;
-        rifleDamageMultiplier = _data.rifleDamageMultiplier;
-        shotDelay = _data.shotDelay;
-        rifleAttackSpeedMultiplier = _data.rifleAttackSpeedMultiplier;
-        gunPenetrationChance = _data.gunPenetrationChance;
-        reloadDuration = _data.reloadDuration;
-        reloadSpeedMultiplier = _data.reloadSpeedMultiplier;
-
-        ricochetCnt = _data.ricochetCnt;
-        ricochetAngle = _data.ricochetAngle;
-        ricochetDist = _data.ricochetDist;
-        ricochetDamage = _data.ricochetDamage;
-
-        weaponChangeCoolTime = _data.weaponChangeCoolTime;
-        switchSpeedMultiplier = _data.switchSpeedMultiplier;
-
-        bCanHunting = _data.bCanHunting;
-
-        shockWaveChance = _data.shockWaveChance;
-        shockWaveDamage = _data.shockWaveDamage;
-        shockWaveDamageMultiplier = _data.shockWaveDamageMultiplier;
-        shockWaveSpeed = _data.shockWaveSpeed;
-        shockWaveSpeedMultiplier = _data.shockWaveSpeedMultiplier;
-        shockWaveCreateDelay = _data.shockWaveCreateDelay;
-
-        Debug.Log("[StatComponent] Save Data Loaded and Applied.");
-    }
-
     public void IncreaseAmmoCap(int _amount)
     {
         ammoCap += _amount;

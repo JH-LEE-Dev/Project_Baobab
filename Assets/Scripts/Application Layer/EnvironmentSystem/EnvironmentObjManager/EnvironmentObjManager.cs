@@ -8,8 +8,19 @@ public class EnvironmentObjManager : MonoBehaviour
     //외부 의존성
     private ITilemapDataProvider tilemapDataProvider;
 
+    [System.Serializable]
+    public struct MapTypeEnvironmentData
+    {
+        public MapType mapType;
+        public StageEnvironmentDataSO envData;
+    }
+
+    [Header("Environment Data (Dungeon)")]
+    [SerializeField] private List<MapTypeEnvironmentData> mapTypeEnvDatas;
+    private StageEnvironmentDataSO currentStageEnvData;
+
     //내부 의존성
-    [Header("Pool Settings")]
+    [Header("Pool Settings (Town / Fallback)")]
     [SerializeField] private List<EnvironmentObj> envObjPrefabs;
     private Dictionary<EnvironmentObjType, IObjectPool<EnvironmentObj>> objPools = new Dictionary<EnvironmentObjType, IObjectPool<EnvironmentObj>>();
 
@@ -39,7 +50,6 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private int cloudCnt = 60;
     [SerializeField] private float cloudMinSpeed = 0.02f;
     [SerializeField] private float cloudMaxSpeed = 0.06f;
-    private List<int> cellIndices = new List<int>(100); // GC Alloc 방지용 재사용 리스트
 
     [Header("Bird Shadow Settings")]
     [SerializeField] private int birdFlockCnt = 5;
@@ -57,6 +67,8 @@ public class EnvironmentObjManager : MonoBehaviour
     [SerializeField] private float townMinY = 0f;
     [SerializeField] private float townMaxY = 40f;
 
+    private List<int> cellIndices = new List<int>(100); // GC Alloc 방지용 재사용 리스트
+
     [Space]
     [Header("BirdSpawnPoint")]
     [SerializeField] Transform birdSpawnPoint_LU;
@@ -66,6 +78,21 @@ public class EnvironmentObjManager : MonoBehaviour
 
 
     // // 퍼블릭 메서드
+
+    public void SetupForMapType(MapType _mapType)
+    {
+        if (mapTypeEnvDatas == null) return;
+
+        for (int i = 0; i < mapTypeEnvDatas.Count; i++)
+        {
+            if (mapTypeEnvDatas[i].mapType == _mapType)
+            {
+                currentStageEnvData = mapTypeEnvDatas[i].envData;
+                break;
+            }
+        }
+        SetupPools();
+    }
 
     public void Initialize(ITilemapDataProvider _tilemapDataProvider)
     {
@@ -241,7 +268,7 @@ public class EnvironmentObjManager : MonoBehaviour
 
     private void SpawnClouds()
     {
-        if (tilemapDataProvider == null) return;
+        if (tilemapDataProvider == null || currentStageEnvData == null) return;
 
         // 맵의 전체 범위 계산
         Vector3 bottomLeft = new Vector3Int(-tilemapDataProvider.GridWidth / 2, 0, 0);
@@ -319,11 +346,14 @@ public class EnvironmentObjManager : MonoBehaviour
         _obj.transform.position = _pos;
         _obj.Initialize();
 
+        List<Sprite> spritesToUse = (currentStageEnvData != null && currentStageEnvData.CloudSprites != null && currentStageEnvData.CloudSprites.Count > 0)
+            ? currentStageEnvData.CloudSprites
+            : cloudSprites;
+
         if (_obj is Cloud cloud)
         {
-            Sprite sprite = cloudSprites[UnityEngine.Random.Range(0, cloudSprites.Count)];
             float moveSpeed = UnityEngine.Random.Range(cloudMinSpeed, cloudMaxSpeed); // 수평 이동 속도
-            cloud.SetupCloud(sprite, moveSpeed, _minX, _maxX);
+            cloud.SetupCloud(spritesToUse, moveSpeed, _minX, _maxX);
         }
 
         _obj.PoolIndex = allSpawnedObjs.Count;
@@ -344,7 +374,7 @@ public class EnvironmentObjManager : MonoBehaviour
 
     private void SpawnBirdShadows()
     {
-        if (null == tilemapDataProvider)
+        if (null == tilemapDataProvider || currentStageEnvData == null)
             return;
 
         Vector3 _bottomLeft = new Vector3Int(-tilemapDataProvider.GridWidth / 2, 0, 0);
@@ -454,8 +484,14 @@ public class EnvironmentObjManager : MonoBehaviour
 
     private void SetupPools()
     {
+        List<EnvironmentObj> prefabsToUse = (currentStageEnvData != null && currentStageEnvData.EnvObjPrefabs != null && currentStageEnvData.EnvObjPrefabs.Count > 0) 
+            ? currentStageEnvData.EnvObjPrefabs 
+            : envObjPrefabs;
+
+        if (prefabsToUse == null || prefabsToUse.Count == 0) return;
+
         objPools.Clear();
-        foreach (EnvironmentObj _prefab in envObjPrefabs)
+        foreach (EnvironmentObj _prefab in prefabsToUse)
         {
             if (null == _prefab) continue;
 

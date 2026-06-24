@@ -188,7 +188,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonObjectManager.ReadyTrees(mapGeneratedSignal.grassTilePositions);
         inDungeonObjectManager.ReadyPortal();
-        inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.portal);
+        inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         //inDungeonUnitSpawner.SpawnAnimals();
@@ -228,8 +228,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.StartSkyProduction();
 
         offroadContainer.col.enabled = false;
-        if (inDungeonObjectManager.portal != null)
-            inDungeonObjectManager.portal.col.enabled = false;
+        if (inDungeonObjectManager.offroadVehicle != null)
+            inDungeonObjectManager.offroadVehicle.col.enabled = false;
 
         signalHub.Publish(new StartSkyProductionSignal());
     }
@@ -310,8 +310,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.StartCharacterRide();
 
         offroadContainer.col.enabled = false;
-        if (inDungeonObjectManager.portal != null)
-            inDungeonObjectManager.portal.col.enabled = false;
+        if (inDungeonObjectManager.offroadVehicle != null)
+            inDungeonObjectManager.offroadVehicle.col.enabled = false;
     }
 
     private void DropAllItem()
@@ -370,8 +370,8 @@ public class InDungeonSystem : MonoBehaviour
         else
         {
             offroadContainer.col.enabled = true;
-            if (inDungeonObjectManager.portal != null)
-                inDungeonObjectManager.portal.col.enabled = true;
+            if (inDungeonObjectManager.offroadVehicle != null)
+                inDungeonObjectManager.offroadVehicle.col.enabled = true;
 
             ActivatePortalEvent?.Invoke();
 
@@ -385,8 +385,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new StartDecreaseStaminaSignal());
 
         offroadContainer.col.enabled = true;
-        if (inDungeonObjectManager.portal != null)
-            inDungeonObjectManager.portal.col.enabled = true;
+        if (inDungeonObjectManager.offroadVehicle != null)
+            inDungeonObjectManager.offroadVehicle.col.enabled = true;
 
         inputManager.PauseInteractKey(false);
     }
@@ -433,7 +433,7 @@ public class InDungeonSystem : MonoBehaviour
 
     public void ActivatePortal()
     {
-        if (inDungeonObjectManager.portal != null)
-            inDungeonObjectManager.portal.col.enabled = true;
+        if (inDungeonObjectManager.offroadVehicle != null)
+            inDungeonObjectManager.offroadVehicle.col.enabled = true;
     }
 }

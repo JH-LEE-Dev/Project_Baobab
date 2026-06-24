@@ -34,10 +34,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     [SerializeField] private float cullingDistance = 25f;
 
     [Header("Portal")]
-    [SerializeField] private OffroadVehicleObj portalPrefab;
+    [SerializeField] private OffroadVehicleObj offroadVehiclePrefab;
 
     // // 내부 상태 및 컬렉션
-    public OffroadVehicleObj portal;
+    public OffroadVehicleObj offroadVehicle;
     private List<Vector3> grassTileWorldPositions;
     private List<Vector3> availablePositions = new List<Vector3>(2500);
     private List<TreeObj> activeTrees = new List<TreeObj>(2500);
@@ -81,6 +81,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private OffroadContainer offroadContainer;
     private IInventoryChecker inventoryChecker;
     private InDungeonResultManager inDungeonResultManager;
+    private MapType currentMapType;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -130,9 +131,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         StopGrowth();
         ClearTrees();
 
-        if (portal != null)
+        if (offroadVehicle != null)
         {
-            portal.PortalActivated -= OnPortalActivated;
+            offroadVehicle.PortalActivated -= OnPortalActivated;
         }
 
         if (cullingGroup != null)
@@ -155,7 +156,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     public void SetupForMapType(MapType _mapType)
     {
         if (mapTypeTreeGenerationDatas == null) return;
-  
+
+        currentMapType = _mapType;
+
         for (int i = 0; i < mapTypeTreeGenerationDatas.Count; i++)
         {
             if (mapTypeTreeGenerationDatas[i].mapType == _mapType)
@@ -182,23 +185,32 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     public void ReadyPortal()
     {
-        if (portal == null)
+        if (offroadVehicle == null)
         {
-            portal = Instantiate(portalPrefab, transform);
-            portal.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
+            offroadVehicle = Instantiate(offroadVehiclePrefab, transform);
+            offroadVehicle.Initialize(PortalType.ToTownPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
             character.centerTransform);
-            OffroadSpawnedEvent?.Invoke(portal);
+            OffroadSpawnedEvent?.Invoke(offroadVehicle);
         }
 
         var pos = environmentProvider.tilemapDataProvider.GetPortalSpawnPosition();
         pos.y -= 0.25f;
 
-        portal.transform.position = pos;
-        portal.ResetPortal();
-        portal.gameObject.SetActive(true);
-        portal.SetCanTravel(true);
-        portal.col.enabled = false;
+        offroadVehicle.transform.position = pos;
+        offroadVehicle.ResetPortal();
+        offroadVehicle.gameObject.SetActive(true);
+        offroadVehicle.SetCanTravel(true);
+        offroadVehicle.col.enabled = false;
         BindPortalEvents();
+
+        if (currentMapType == MapType.StarrootForest)
+        {
+            offroadVehicle.ChangeSprite();
+        }
+        else
+        {
+            offroadVehicle.ResetSprite();
+        }
     }
 
     public Vector3 GetPlayerStartPos()
@@ -208,10 +220,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     public void ClearObjManager()
     {
-        if (portal != null)
+        if (offroadVehicle != null)
         {
-            portal.SetVisualActive(false);
-            portal.gameObject.SetActive(false);
+            offroadVehicle.SetVisualActive(false);
+            offroadVehicle.gameObject.SetActive(false);
         }
 
         if (itemManager != null)
@@ -486,15 +498,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void BindPortalEvents()
     {
-        if (portal == null) return;
-        portal.PortalActivated -= OnPortalActivated;
-        portal.PortalActivated += OnPortalActivated;
+        if (offroadVehicle == null) return;
+        offroadVehicle.PortalActivated -= OnPortalActivated;
+        offroadVehicle.PortalActivated += OnPortalActivated;
 
-        portal.GameEndEvent -= GameEnd;
-        portal.GameEndEvent += GameEnd;
+        offroadVehicle.GameEndEvent -= GameEnd;
+        offroadVehicle.GameEndEvent += GameEnd;
 
-        portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
-        portal.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
+        offroadVehicle.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        offroadVehicle.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
     }
 
     private void OnPortalActivated()
@@ -689,11 +701,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         StopGrowth();
         ClearTrees();
 
-        if (portal != null)
+        if (offroadVehicle != null)
         {
-            portal.PortalActivated -= OnPortalActivated;
-            portal.GameEndEvent -= GameEnd;
-            portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+            offroadVehicle.PortalActivated -= OnPortalActivated;
+            offroadVehicle.GameEndEvent -= GameEnd;
+            offroadVehicle.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         }
 
         if (cullingGroup != null)

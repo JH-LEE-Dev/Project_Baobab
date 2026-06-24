@@ -65,54 +65,7 @@ public class SaveManager : MonoBehaviour
         // 기존 데이터 클리어 (리스트 등 재사용)
         cachedSaveData.Clear();
         
-        // 1. 캐릭터 스탯 데이터 추출
-        var stats = character.statComponent;
-        cachedSaveData.characterStatData = new CharacterStatSaveData
-        {
-            pickupRangeMultiplier = stats.pickupRangeMultiplier,
-            originalSpeed = stats.originalSpeed,
-            speedMultiplier = stats.speedMultiplier,
-            maxStamina = stats.maxStamina,
-            maxStaminaBonus = stats.maxStaminaBonus,
-            staminaIncreaseAlpha = stats.staminaIncreaseAlpha,
-            staminaDecreaseAlpha = stats.staminaDecreaseAlpha,
-            
-            axeDamage = stats.axeDamage,
-            axeDamageMultiplier = stats.axeDamageMultiplier,
-            axeAttackCoolTime = stats.axeAttackCoolTime,
-            axeAttackSpeedMultiplier = stats.axeAttackSpeedMultiplier,
-            axeDurability = stats.axeDurability,
-            speedDecreaseWhileAction = stats.speedDecreaseWhileAction,
-            axeAttackRangeMultiplier = stats.axeAttackRangeMultiplier,
-            axeDurabilityDecIgnoreChance = stats.axeDurabilityDecIgnoreChance,
-            
-            rifleDamage = stats.rifleDamage,
-            rifleDamageMultiplier = stats.rifleDamageMultiplier,
-            shotDelay = stats.shotDelay,
-            rifleAttackSpeedMultiplier = stats.rifleAttackSpeedMultiplier,
-            gunPenetrationChance = stats.gunPenetrationChance,
-            reloadDuration = stats.reloadDuration,
-            reloadSpeedMultiplier = stats.reloadSpeedMultiplier,
-            
-            ricochetCnt = stats.ricochetCnt,
-            ricochetAngle = stats.ricochetAngle,
-            ricochetDist = stats.ricochetDist,
-            ricochetDamage = stats.ricochetDamage,
-            
-            weaponChangeCoolTime = stats.weaponChangeCoolTime,
-            switchSpeedMultiplier = stats.switchSpeedMultiplier,
-            
-            bCanHunting = stats.bCanHunting,
-
-            shockWaveChance = stats.shockWaveChance,
-            shockWaveDamage = stats.shockWaveDamage,
-            shockWaveDamageMultiplier = stats.shockWaveDamageMultiplier,
-            shockWaveSpeed = stats.shockWaveSpeed,
-            shockWaveSpeedMultiplier = stats.shockWaveSpeedMultiplier,
-            shockWaveCreateDelay = stats.shockWaveCreateDelay
-        };
-
-        // 2. 스킬 데이터 추출 (리스트 재사용)
+        // 1. 스킬 데이터 추출 (리스트 재사용)
         if (skillSystem != null && skillSystem.skillManager != null)
         {
             skillSystem.skillManager.PopulateSkillSaveData(ref cachedSaveData.skillTreeSaveData);
@@ -200,13 +153,7 @@ public class SaveManager : MonoBehaviour
 
         if (saveData == null) return;
 
-        // 1. 캐릭터 스탯 복구
-        if (character != null && character.statComponent != null)
-        {
-            character.statComponent.LoadSaveData(saveData.characterStatData);
-        }
-
-        // 2. 스킬 데이터 복구
+        // 1. 스킬 데이터 복구
         if (skillSystem != null && skillSystem.skillManager != null)
         {
             skillSystem.skillManager.LoadSaveData(saveData.skillTreeSaveData);
