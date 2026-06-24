@@ -770,14 +770,14 @@ MonoBehaviour:
   isUIComponent: 0
   vfxPoolDataList:
   - vfxTag: TreeHitEffect_Leaf
-    effectPrefab: {fileID: 0}
-    initialPoolSize: 2
+    effectPrefab: {fileID: 7006864300503741061, guid: e471b86a20e7300478d33f5733d26505, type: 3}
+    initialPoolSize: 5
     allowDynamicExpansion: 0
     maxPoolSize: 2
     uiParticleScale: 0
   - vfxTag: TreeHitEffect_Trunk
-    effectPrefab: {fileID: 0}
-    initialPoolSize: 2
+    effectPrefab: {fileID: 7006864300503741061, guid: 519f604c79133d5409ed1b32f90b74cd, type: 3}
+    initialPoolSize: 5
     allowDynamicExpansion: 0
     maxPoolSize: 2
     uiParticleScale: 0
