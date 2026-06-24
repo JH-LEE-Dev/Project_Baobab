@@ -1,0 +1,79 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c5f0af08b4e4994d89be85df430cba2, type: 3}
+  m_Name: Stage4TileData
+  m_EditorClassIdentifier: 
+  waterTile: {fileID: 11400000, guid: c37b5d182cbe48c29a2ed151ba9bddba, type: 2}
+  waterTileBorderRU: {fileID: 11400000, guid: e43289857bde460090301d66d715799f, type: 2}
+  waterTileBorderRD: {fileID: 11400000, guid: 489818ccbaca40e984d17f1202c409f9, type: 2}
+  waterTileBorderLU: {fileID: 11400000, guid: e7a61c151a564e5d98db8b14f4752bae, type: 2}
+  waterTileBorderLD: {fileID: 11400000, guid: 717ae6900c90409e937464ef9c220153, type: 2}
+  waterTileBorderRURD: {fileID: 11400000, guid: 8bdd899b4f834cb4b903f82653fb1396, type: 2}
+  waterTileBorderRULU: {fileID: 11400000, guid: 60300656868f486495b2cc770861c363, type: 2}
+  waterTileBorderRULD: {fileID: 11400000, guid: 47f7d02c083a4ffa87a03f70a4346bcc, type: 2}
+  waterTileBorderRDLU: {fileID: 11400000, guid: f8f7b0c31f3d4273a3adb1a400093da8, type: 2}
+  waterTileBorderRDLD: {fileID: 11400000, guid: 6f4a9aab32c74ad98c48d93d42614d58, type: 2}
+  waterTileBorderLULD: {fileID: 11400000, guid: aa64549a0d044161ae4bc4e05d9be676, type: 2}
+  waterTileBorderRURDLU: {fileID: 11400000, guid: 256e811e4f3649908863c32996631bef, type: 2}
+  waterTileBorderRURDLD: {fileID: 11400000, guid: 57699b03b8a942b3aec3affe3975e325, type: 2}
+  waterTileBorderRULULD: {fileID: 11400000, guid: 8d95eeca2fc843d68453b17ffb97ce0f, type: 2}
+  waterTileBorderRDLULD: {fileID: 11400000, guid: 0a7dec171bc2478fa48bf0cf7f2734a9, type: 2}
+  waterTileBorderAll: {fileID: 11400000, guid: 0a2667e9c4224909a0f20d0727914f76, type: 2}
+  waterTileCornerU: {fileID: 11400000, guid: 81abd57bd9f74934960bb8f51d358a0e, type: 2}
+  waterTileCornerR: {fileID: 11400000, guid: 211a94f2f7814fba95c9b53c97cc4b42, type: 2}
+  waterTileCornerD: {fileID: 11400000, guid: 5c6f351b99a448dba31d4b340f233883, type: 2}
+  waterTileCornerL: {fileID: 11400000, guid: c3d35e3a8a9c416dbb3720a4432281d4, type: 2}
+  waterTileCornerUR: {fileID: 11400000, guid: 751a90b5ebb1421c90554900d183bc78, type: 2}
+  waterTileCornerUD: {fileID: 11400000, guid: ae0ae727e05b49d4b59d4e300ace32fc, type: 2}
+  waterTileCornerUL: {fileID: 11400000, guid: 3b909578a38b43fb937feb20b9f0d28d, type: 2}
+  waterTileCornerRD: {fileID: 11400000, guid: 4688a0ad4d65481eb6e95e2e9ef2733e, type: 2}
+  waterTileCornerRL: {fileID: 11400000, guid: 830dbeaec0d04f15b827c73445492f15, type: 2}
+  waterTileCornerDL: {fileID: 11400000, guid: 96dc9136e0bd499094c23c9823ed1e3d, type: 2}
+  waterTileCornerURD: {fileID: 11400000, guid: ca15eda165e44385b8eadc60c690fccb, type: 2}
+  waterTileCornerURL: {fileID: 11400000, guid: ba5b5361f6ec4e628b9fd1b654fb7ac6, type: 2}
+  waterTileCornerUDL: {fileID: 11400000, guid: 11f32f78978645f1943e5f4d7e6e6a7d, type: 2}
+  waterTileCornerRDL: {fileID: 11400000, guid: 66012f9318114b5eb26cd9fa1f324a89, type: 2}
+  waterTileCornerAll: {fileID: 11400000, guid: e624f016d2604e4da57042881267df6a, type: 2}
+  sandTiles:
+  - {fileID: 11400000, guid: 6da88a799c298514b95bc6cc39acbf63, type: 2}
+  - {fileID: 11400000, guid: 98e8f2f3b5857f54984dcfb195c2dee2, type: 2}
+  grassTiles:
+  - {fileID: 11400000, guid: 07db7a0a9ae41e54f806a5bdf81fbbed, type: 2}
+  - {fileID: 11400000, guid: 38107885f08ce1f43a9a2fd7c680f663, type: 2}
+  mountainTiles:
+  - {fileID: 11400000, guid: 9abb0510f152e8140b1612951c118a44, type: 2}
+  treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
+  grassDecoTiles:
+  - {fileID: 11400000, guid: 0c51573997f2cc7478181c719301b513, type: 2}
+  - {fileID: 11400000, guid: c47be4081de10614db1fcf1e62b20a40, type: 2}
+  - {fileID: 11400000, guid: 8bcb3671235c2894eb949898110d4efe, type: 2}
+  - {fileID: 11400000, guid: 942fa7e60e36ffd41be2cd872b9ab5bd, type: 2}
+  - {fileID: 11400000, guid: 83e4ee51242f6d24082b1d9e6dfb6271, type: 2}
+  - {fileID: 11400000, guid: e1d88828922f5fc428c56d27aea12288, type: 2}
+  - {fileID: 11400000, guid: 6d3022aae76ee73439f5e2d870b4d6a0, type: 2}
+  - {fileID: 11400000, guid: b9901ab9d455ce54b9215700390a2858, type: 2}
+  - {fileID: 11400000, guid: 6ddaa3b0bc927ac4abcab318ef675d16, type: 2}
+  groundDecoTiles:
+  - {fileID: 11400000, guid: 0c51573997f2cc7478181c719301b513, type: 2}
+  - {fileID: 11400000, guid: c47be4081de10614db1fcf1e62b20a40, type: 2}
+  rockDecoTiles: []
+  waterDecoTiles: []
+  insectDecoTiles: []
+  stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
+  groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
+  animatedObjPrefabs:
+  - {fileID: 638856153476849655, guid: a1d5f83aeb9aa4b4f9e33778f82e1594, type: 3}
+  - {fileID: 638856153476849655, guid: 5a1979a0ea399414ebe46c514a73b537, type: 3}
+  waterAnimatedObjPrefabs:
+  - {fileID: 797919803063131645, guid: e4b61bc5607848c4f8150fb503323cfe, type: 3}
+  - {fileID: 6049851641271938233, guid: 54ac872e6f8957549b32f8e0f6248201, type: 3}
+  - {fileID: 6158695759910253706, guid: 9d3500dd8baa2294ea0100f58bc905f3, type: 3}

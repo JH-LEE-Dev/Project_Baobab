@@ -51,17 +51,23 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private TileBase treeCollisionTile;
     [SerializeField] private List<TileBase> grassDecoTiles;
     [SerializeField] private List<TileBase> groundDecoTiles;
-    [SerializeField] private List<TileBase> rockDecoTiles;
+    [SerializeField] private List<TileBase> bloomGrassDecoTiles;
+    [SerializeField] private List<TileBase> bloomGroundDecoTiles;
     [SerializeField] private List<TileBase> waterDecoTiles;
+    [SerializeField] private List<TileBase> bloomWaterDecoTiles;
     [SerializeField] private List<TileBase> insectDecoTiles;
     [SerializeField] private TileBase stencilTile;
     [SerializeField] private TileBase groundStencilTile;
     [SerializeField] private List<AnimatedObj> animatedObjPrefabs;
     [SerializeField] private List<DecoSpritePatternAnimator> waterAnimatedObjPrefabs;
+    [SerializeField] private List<StaticObj> staticObjPrefabs;
+    [SerializeField] private float bloomDecoHDRIntensity = 1f;
 
     // // 퍼블릭 초기화 및 제어 메서드
+    public float BloomDecoHDRIntensity => bloomDecoHDRIntensity;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
+    public List<StaticObj> StaticObjPrefabs => staticObjPrefabs;
     public TileBase WaterTile => waterTile;
     public TileBase WaterTileBorderRU => waterTileBorderRU;
     public TileBase WaterTileBorderRD => waterTileBorderRD;
@@ -100,9 +106,11 @@ public class StageTileDataSO : ScriptableObject
     public List<TileBase> MountainTiles => mountainTiles;
     public TileBase TreeCollisionTile => treeCollisionTile;
     public List<TileBase> GrassDecoTiles => grassDecoTiles;
+    public List<TileBase> BloomGrassDecoTiles => bloomGrassDecoTiles;
     public List<TileBase> GroundDecoTiles => groundDecoTiles;
-    public List<TileBase> RockDecoTiles => rockDecoTiles;
+    public List<TileBase> BloomGroundDecoTiles => bloomGroundDecoTiles;
     public List<TileBase> WaterDecoTiles => waterDecoTiles;
+    public List<TileBase> BloomWaterDecoTiles => bloomWaterDecoTiles;
     public List<TileBase> InsectDecoTiles => insectDecoTiles;
     public TileBase StencilTile => stencilTile;
     public TileBase GroundStencilTile => groundStencilTile;

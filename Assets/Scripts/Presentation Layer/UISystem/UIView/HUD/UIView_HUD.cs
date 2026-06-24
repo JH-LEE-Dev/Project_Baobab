@@ -142,7 +142,7 @@ public class UIView_HUD : UIView
     private void Init_HUDMessage()
     {
         if (null == hudMessage)
-            hudMessage = Instantiate(hudMessagePrefab, uiRoot.transform).GetComponent<HUD_Message>();
+            hudMessage = Instantiate(hudMessagePrefab, viewCtx.overlayCanvas.transform).GetComponent<HUD_Message>();
 
         if (null != hudMessage)
             hudMessage.Initialize(viewCtx?.localizationManager);

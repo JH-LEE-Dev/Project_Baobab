@@ -1248,7 +1248,8 @@ MonoBehaviour:
   layer: 2
   bCloseableByESC: 1
   bWorld: 0
-  bScreenSpace: 1
+  bScreenSpace: 0
+  bOverlay: 1
   warningBG: {fileID: 0}
   mainText: {fileID: 3978917961975102837}
   subText: {fileID: 2189045935089087278}

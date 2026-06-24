@@ -23,6 +23,7 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomShadowRenderer;
     [SerializeField] private SpriteRenderer topOnWaterSR;
     [SerializeField] private SpriteRenderer topShieldOnWaterSR;
+    [SerializeField] private SpriteRenderer topHighlightOnWaterSR;
     [SerializeField] private SpriteRenderer bottomOnWaterSR;
     [SerializeField] private SpriteRenderer topOutlineSR;
     [SerializeField] private SpriteRenderer bottomOutlineSR;
@@ -121,6 +122,7 @@ public class TreeVisualComponent : MonoBehaviour
         if (topOnWaterSR != null) topOnWaterSR.sortingOrder = order;
         if (bottomOnWaterSR != null) bottomOnWaterSR.sortingOrder = order;
         if (topShieldOnWaterSR != null) topShieldOnWaterSR.sortingOrder = order - 1;
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.sortingOrder = order - 1;
     }
 
     public void UpdateSortingOrder()
@@ -321,6 +323,7 @@ public class TreeVisualComponent : MonoBehaviour
         if (topOnWaterSR != null) topOnWaterSR.gameObject.SetActive(false);
         if (bottomOnWaterSR != null) bottomOnWaterSR.gameObject.SetActive(false);
         if (topShieldOnWaterSR != null) topShieldOnWaterSR.gameObject.SetActive(false);
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.gameObject.SetActive(false);
         UpdateHDRStates();
     }
 
@@ -333,6 +336,11 @@ public class TreeVisualComponent : MonoBehaviour
         if (topShieldOnWaterSR != null)
         {
             topShieldOnWaterSR.gameObject.SetActive(isShieldActive && topShieldRenderer != null && topShieldRenderer.sprite != null);
+        }
+
+        if (topHighlightOnWaterSR != null)
+        {
+            topHighlightOnWaterSR.gameObject.SetActive(topHighlightRenderer != null && topHighlightRenderer.sprite != null);
         }
 
         UpdateOnWaterSortingOrder();
@@ -375,6 +383,11 @@ public class TreeVisualComponent : MonoBehaviour
             topShieldOnWaterSR.gameObject.SetActive(isOnWaterActive && isShieldActive && topShieldRenderer != null && topShieldRenderer.sprite != null);
         }
 
+        if (topHighlightOnWaterSR != null)
+        {
+            topHighlightOnWaterSR.gameObject.SetActive(isOnWaterActive && topHighlightRenderer != null && topHighlightRenderer.sprite != null);
+        }
+
         SyncShadowSprite();
     }
 
@@ -399,6 +412,12 @@ public class TreeVisualComponent : MonoBehaviour
             {
                 topShieldOnWaterSR.sprite = topShieldRenderer != null ? topShieldRenderer.sprite : null;
                 topShieldOnWaterSR.color = topShieldRenderer != null ? topShieldRenderer.color : Color.white;
+            }
+
+            if (topHighlightOnWaterSR != null)
+            {
+                topHighlightOnWaterSR.sprite = topHighlightRenderer != null ? topHighlightRenderer.sprite : null;
+                topHighlightOnWaterSR.color = topHighlightRenderer != null ? topHighlightRenderer.color : Color.white;
             }
 
             if (topOutlineSR != null)
@@ -675,7 +694,8 @@ public class TreeVisualComponent : MonoBehaviour
         if (topShieldRenderer != null) ApplyHDRToRenderer(topShieldRenderer, isShieldActive && topShieldRenderer.sprite != null, shieldHDRIntensity);
         if (bottomShieldRenderer != null) ApplyHDRToRenderer(bottomShieldRenderer, isShieldActive && bottomShieldRenderer.sprite != null, shieldHDRIntensity);
 
-        if (topShieldOnWaterSR != null) ApplyHDRToRenderer(topShieldOnWaterSR, isOnWaterActive && isShieldActive && topShieldOnWaterSR.sprite != null, shieldHDRIntensity);
+        if (topShieldOnWaterSR != null) ApplyHDRToRenderer(topShieldOnWaterSR, isOnWaterActive && isShieldActive && topShieldOnWaterSR.sprite != null, shieldHDRIntensity + 0.25f);
+        if (topHighlightOnWaterSR != null) ApplyHDRToRenderer(topHighlightOnWaterSR, isOnWaterActive && topHighlightOnWaterSR.sprite != null, highlightHDRIntensity + 0.25f);
     }
 
     #endregion
@@ -692,6 +712,7 @@ public class TreeVisualComponent : MonoBehaviour
         if (bottomShadowRenderer != null) bottomShadowRenderer.color = Color.white;
         if (topOnWaterSR != null) topOnWaterSR.color = Color.white;
         if (topShieldOnWaterSR != null) topShieldOnWaterSR.color = Color.white;
+        if (topHighlightOnWaterSR != null) topHighlightOnWaterSR.color = Color.white;
         if (bottomOnWaterSR != null) bottomOnWaterSR.color = Color.white;
         if (topOutlineSR != null) topOutlineSR.color = Color.white;
         if (bottomOutlineSR != null) bottomOutlineSR.color = Color.white;

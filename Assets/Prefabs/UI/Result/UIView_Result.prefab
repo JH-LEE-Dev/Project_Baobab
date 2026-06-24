@@ -1186,7 +1186,8 @@ MonoBehaviour:
   layer: 2
   bCloseableByESC: 0
   bWorld: 0
-  bScreenSpace: 1
+  bScreenSpace: 0
+  bOverlay: 1
   goHomeButton: {fileID: 320109981100000001}
   retryButton: {fileID: 320109981100000002}
   goHomeButtonTouchArea: {fileID: 7078762770774974765}

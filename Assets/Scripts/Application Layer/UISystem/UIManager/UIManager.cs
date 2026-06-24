@@ -22,7 +22,7 @@ public class UIManager : MonoBehaviour
     protected Transform screenSpaceOverlayLayerRoot;
     protected Transform screenSpaceTooltipLayerRoot;
 
-    protected Canvas ppCanvas;
+    protected Canvas screenSpaceCanvas;
 
     [Header("UIView Prefab")]
     [SerializeField] private List<UIView> viewPrefabs = new List<UIView>();
@@ -52,10 +52,10 @@ public class UIManager : MonoBehaviour
         screenSpaceTooltipLayerRoot = screenSpaceCanvasRoot.tooltipLayerRoot;
     }
 
-    public void DI(Canvas _ppCanvas)
+    public void DI(Canvas _screenSpaceCanvas, Canvas _overlayCanvas)
     {
-        ppCanvas = _ppCanvas;
-        viewCtx.DI(ppCanvas);
+        screenSpaceCanvas = _screenSpaceCanvas;
+        viewCtx.DI(screenSpaceCanvas, _overlayCanvas);
     }
 
     public void Initialize(InputManager _inputManager, LocalizationManager _localizeManager, UIDepthController _depthController)

@@ -18,6 +18,7 @@ public class DecoSpritePatternAnimator : MonoBehaviour
         public int[] frameIndices;
     }
 
+    [SerializeField] private float hdrIntensity = 1f;
     [SerializeField] private SpriteRenderer targetRenderer;
     [SerializeField] private Sprite[] frames;
     [SerializeField] private FramePattern[] patterns;
@@ -28,6 +29,8 @@ public class DecoSpritePatternAnimator : MonoBehaviour
     [SerializeField, Min(0f)] private float waitMax = 1f;
     [SerializeField] private bool randomizeInitialWait = true;
     [SerializeField] private bool hideBetweenPatterns;
+
+    private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
 
     private Coroutine routine;
     private readonly FramePattern fallbackFramePattern = new FramePattern();
@@ -56,6 +59,11 @@ public class DecoSpritePatternAnimator : MonoBehaviour
             customSortable.AddSpriteRenderer(targetRenderer);
             customSortable.ManualLateUpdate();
         }
+
+        var mpb = new MaterialPropertyBlock();
+        targetRenderer.GetPropertyBlock(mpb);
+        mpb.SetFloat(HDRIntensityID, hdrIntensity);
+        targetRenderer.SetPropertyBlock(mpb);
     }
 
     public void SetSortingOrder()
