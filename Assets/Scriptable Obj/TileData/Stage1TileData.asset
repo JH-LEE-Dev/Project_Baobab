@@ -60,7 +60,10 @@ MonoBehaviour:
   groundDecoTiles:
   - {fileID: 11400000, guid: 8f76bb77283f27c4c91c61f69cd7b85c, type: 2}
   - {fileID: 11400000, guid: edf0bc271764ee24ea84f6c093c53180, type: 2}
+  bloomGrassDecoTiles: []
+  bloomGroundDecoTiles: []
   waterDecoTiles: []
+  bloomWaterDecoTiles: []
   insectDecoTiles:
   - {fileID: 11400000, guid: 0d558cdb55ad84c43903e762812d0e57, type: 2}
   stencilTile: {fileID: 11400000, guid: 216c6fab6aaddbc40908cd618d642be6, type: 2}
@@ -74,3 +77,14 @@ MonoBehaviour:
   staticObjPrefabs:
   - {fileID: 5425288766945036917, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
   - {fileID: 563241788502290586, guid: ce53722f442ca18478b233a84a3cdfbb, type: 3}
+  bloomDecoHDRIntensity: 1
+  rockDecoDensity: 0.0005
+  animatedObjDensity: 0.0025
+  waterAnimatedObjDensity: 0.1
+  waterDecoDensity: 0
+  sandDecoDensity: 0.05
+  groundDecoDensity: 0.01
+  grassDecoDensity: 0.35
+  bloomSandDecoDensity: 0.01
+  bloomGroundDecoDensity: 0.002
+  bloomGrassDecoDensity: 0.07

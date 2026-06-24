@@ -11,6 +11,8 @@ public class TreeVisualComponent : MonoBehaviour
 
     [Header("Roots")]
     [SerializeField] private Transform visualRoot;
+    [SerializeField] private Transform topRoot;
+    [SerializeField] private Transform bottomRoot;
 
     [Header("Renderers")]
     [SerializeField] private SpriteRenderer topRenderer;
@@ -102,6 +104,7 @@ public class TreeVisualComponent : MonoBehaviour
         customSortable = _customSortable;
 
         vfxComponent = GetComponent<VFXComponent>();
+        vfxComponent.Initialize();
 
         if (customSortable != null)
         {
@@ -533,7 +536,8 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localPosition = Vector3.zero;
         visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity);
 
-        
+        vfxComponent.Play("TreeHitEffect_Leaf",topRoot.transform.position,topRoot.transform.rotation,topRoot.transform);
+        vfxComponent.Play("TreeHitEffect_Trunk",bottomRoot.transform.position,bottomRoot.transform.rotation,bottomRoot.transform);
     }
 
     // 누적된 연출 값을 지우고 비주얼을 기본 위치와 포즈로 되돌린다.
