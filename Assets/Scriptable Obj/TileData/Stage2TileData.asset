@@ -80,3 +80,13 @@ MonoBehaviour:
   staticObjPrefabs:
   - {fileID: 5425288766945036917, guid: 4b4964fb6d2f76b43b39d86d8348c028, type: 3}
   bloomDecoHDRIntensity: 2.25
+  rockDecoDensity: 0.0005
+  animatedObjDensity: 0.0025
+  waterAnimatedObjDensity: 0.1
+  waterDecoDensity: 0
+  sandDecoDensity: 0.05
+  groundDecoDensity: 0.01
+  grassDecoDensity: 0.35
+  bloomSandDecoDensity: 0.01
+  bloomGroundDecoDensity: 0.002
+  bloomGrassDecoDensity: 0.07
