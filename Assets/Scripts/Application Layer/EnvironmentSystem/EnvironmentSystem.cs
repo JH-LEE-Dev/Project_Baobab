@@ -160,6 +160,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     {
         densityManager.SetDensityData(_forestType, _mapType);
         tileMapGenerator.SetupForMapType(_mapType);
+        environmentObjManager.SetupForMapType(_mapType);
     }
 
     private void AnimalIsDead(AnimalIsDeadSignal animalIsDeadSignal)

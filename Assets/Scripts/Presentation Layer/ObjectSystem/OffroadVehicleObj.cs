@@ -78,14 +78,25 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private Transform charTransform;
 
     public SpriteRenderer baseSR;
+    public SpriteRenderer wheelSR;
+    public SpriteRenderer containerSR;
     public SpriteRenderer wheelStencilSR;
 
     public SpriteRenderer baseOutlineStencilSR;
     public SpriteRenderer wheelOutlineStencilSR;
 
+    [SerializeField] private Sprite darkBaseSprite;
+    [SerializeField] private Sprite darkWheelSprite;
+    [SerializeField] private Sprite darkContainerSprite;
+
+    private Sprite originalBaseSprite;
+    private Sprite originalWheelSprite;
+    private Color originalContainerColor;
+    private bool bOriginalSpritesSaved = false;
+
     [SerializeField] private GameObject containerShadowObj;
 
-    
+
     [Space]
     [Header("Character Ride Settings")]
     public Transform getOffTransform;
@@ -396,7 +407,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public IEnumerator CharacterRideLandingImpactSequence(Action _onHalfway = null)
     {
         if (visualObject == null) yield break;
-        
+
         if (_onHalfway != null)
         {
             _onHalfway.Invoke();
@@ -553,5 +564,39 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private void ContainerVisualClosed()
     {
         offroadContainer.SetContainerVisualOpened(false);
+    }
+
+    public void ChangeSprite()
+    {
+        if (!bOriginalSpritesSaved)
+        {
+            if (baseSR != null) originalBaseSprite = baseSR.sprite;
+            if (wheelSR != null) originalWheelSprite = wheelSR.sprite;
+            if (containerSR != null) 
+            {
+                originalContainerColor = containerSR.color;
+            }
+            bOriginalSpritesSaved = true;
+        }
+
+        if (baseSR != null && darkBaseSprite != null) baseSR.sprite = darkBaseSprite;
+        if (wheelSR != null && darkWheelSprite != null) wheelSR.sprite = darkWheelSprite;
+        if (containerSR != null) 
+        {
+            containerSR.color = new Color32(144, 157, 224, 255);
+        }
+    }
+
+    public void ResetSprite()
+    {
+        if (bOriginalSpritesSaved)
+        {
+            if (baseSR != null) baseSR.sprite = originalBaseSprite;
+            if (wheelSR != null) wheelSR.sprite = originalWheelSprite;
+            if (containerSR != null) 
+            {
+                containerSR.color = originalContainerColor;
+            }
+        }
     }
 }
