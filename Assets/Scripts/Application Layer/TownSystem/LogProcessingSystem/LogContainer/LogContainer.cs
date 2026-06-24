@@ -867,6 +867,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         ContainerUpdatedEvent?.Invoke();
         ContainerSpecChangedEvent?.Invoke();
         UpdateSprite();
+        
         Debug.Log("[LogContainer] Container Save Data Loaded.");
     }
 

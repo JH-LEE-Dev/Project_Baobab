@@ -102,7 +102,7 @@ public class CollisionSystem : MonoBehaviour
 
         ownerToEntityIndex = new Dictionary<IStaticCollidable, int>(maxEntities);
 
-        Debug.Log($"<color=green><b>[CollisionSystem]</b> Doubly Linked Grid Initialized: {gridCount.x}x{gridCount.y} cells, Max Entities: {maxEntities}.</color>");
+        //Debug.Log($"<color=green><b>[CollisionSystem]</b> Doubly Linked Grid Initialized: {gridCount.x}x{gridCount.y} cells, Max Entities: {maxEntities}.</color>");
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -201,7 +201,7 @@ public class CollisionSystem : MonoBehaviour
 
         ownerToEntityIndex.Clear();
 
-        Debug.Log("<color=yellow><b>[CollisionSystem]</b> All colliders cleared and system reset.</color>");
+        //Debug.Log("<color=yellow><b>[CollisionSystem]</b> All colliders cleared and system reset.</color>");
     }
 
     public void UpdatePosition(IStaticCollidable _obj, Vector2 _newPos)
