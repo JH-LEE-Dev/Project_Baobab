@@ -28,6 +28,14 @@ public class StaticObj : MonoBehaviour
         sr.SetPropertyBlock(mpb);
     }
 
+    public void Awake()
+    {
+        if (customSortable != null)
+        {
+            customSortable.ManualLateUpdate();
+        }
+    }
+
     public void SetSortingOrder()
     {
         if (customSortable != null)

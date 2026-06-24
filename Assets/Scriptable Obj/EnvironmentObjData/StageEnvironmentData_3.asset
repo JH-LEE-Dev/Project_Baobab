@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StageEnvironmentDataSO
   envObjPrefabs:
   - {fileID: 7529419962234095240, guid: 2514a7c8ad19a64448721c6c21e7a06c, type: 3}
-  - {fileID: 1247708929555277769, guid: 626303961cb4de4418c900b680db4cee, type: 3}
   cloudSprites:
-  - {fileID: 21300000, guid: 33656ac5d8c66bd4792b78d998007dbf, type: 3}
-  - {fileID: 21300000, guid: aa9a63fb08939b94aae698cd3309c9c9, type: 3}
-  - {fileID: 21300000, guid: 392f8b28682cef34c890625521f8d01a, type: 3}
-  - {fileID: 21300000, guid: a8f3f05e393d92f4aa023c7a50d6f156, type: 3}
-  - {fileID: 21300000, guid: 7ec6bd0048a7985478b0b57ac7a1a4d3, type: 3}
+  - {fileID: 21300000, guid: 166bb817ec776e94d9d3ab9664e8592e, type: 3}
+  - {fileID: 21300000, guid: 1cf8b3dcf8d645f4da556c1e052d1cdd, type: 3}
+  - {fileID: 21300000, guid: 83c2bad7de0384e468ce12c34c95b8f1, type: 3}
+  - {fileID: 21300000, guid: 5ab479140c3366b4d83dc875c4087476, type: 3}
+  - {fileID: 21300000, guid: b600a6c252153fd48af425fb7aa2a924, type: 3}
+  cloudColor: {r: 1, g: 1, b: 1, a: 1}

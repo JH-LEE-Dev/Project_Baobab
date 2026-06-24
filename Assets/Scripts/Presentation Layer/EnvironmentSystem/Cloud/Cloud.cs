@@ -15,11 +15,12 @@ public class Cloud : EnvironmentObj
         if (sr == null) sr = GetComponentInChildren<SpriteRenderer>();
     }
 
-    public void SetupCloud(System.Collections.Generic.List<Sprite> _sprites, float _moveSpeed, float _minX, float _maxX)
+    public void SetupCloud(System.Collections.Generic.List<Sprite> _sprites, Color _color, float _moveSpeed, float _minX, float _maxX)
     {
         if (_sprites != null && _sprites.Count > 0 && sr != null)
         {
             sr.sprite = _sprites[UnityEngine.Random.Range(0, _sprites.Count)];
+            sr.color = _color;
         }
         moveSpeed = _moveSpeed;
         minX = _minX;

@@ -40,6 +40,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private Tilemap groundTilemap;
     private Tilemap collisionTilemap;
     private Tilemap decoTilemap;
+    private Tilemap waterDecoTilemap;
+    private Tilemap bloomWaterDecoTilemap;
     private Tilemap bloomDecoTilemap;
     private Tilemap waterStencilTilemap;
     private Tilemap groundStencilTilemap;
@@ -61,6 +63,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private TileBase[] rockCollisionTiles;
     private TileBase[] decoTilesToApply;
     private TileBase[] bloomDecoTilesToApply;
+    private TileBase[] waterDecoTilesToApply;
+    private TileBase[] bloomWaterDecoTilesToApply;
     private TileBase[] waterStencilTiles;
     private TileBase[] groundStencilTiles;
     private int[] cellToIndex;
@@ -122,6 +126,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             else if (maps[i].name == "WaterStencilTilemap") waterStencilTilemap = maps[i];
             else if (maps[i].name == "GroundStencilTilemap") groundStencilTilemap = maps[i];
             else if (maps[i].name == "WaterTilemap") waterTilemap = maps[i];
+            else if (maps[i].name == "WaterDecoTilemap") waterDecoTilemap = maps[i];
+            else if (maps[i].name == "BloomWaterDecoTilemap") bloomWaterDecoTilemap = maps[i];
             else if (maps[i].name == "WaterCornerTilemap") waterCornerTilemap = maps[i];
             else if (maps[i].name == "WaterColliderTilemap") waterCollisionTilemap = maps[i];
             else if (maps[i].name == "RockColliderTilemap" || maps[i].name == "RockCollisionTilemap") rockCollisionTilemap = maps[i];
@@ -137,6 +143,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         rockCollisionTiles = new TileBase[size];
         decoTilesToApply = new TileBase[size];
         bloomDecoTilesToApply = new TileBase[size];
+        waterDecoTilesToApply = new TileBase[size];
+        bloomWaterDecoTilesToApply = new TileBase[size];
         waterStencilTiles = new TileBase[size];
         groundStencilTiles = new TileBase[size];
         cellToIndex = new int[size];
@@ -192,11 +200,25 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
+        if (bloomWaterDecoTilemap != null && stageTileData != null)
+        {
+            TilemapRenderer tr = bloomWaterDecoTilemap.GetComponent<TilemapRenderer>();
+            if (tr != null)
+            {
+                var mpb = new MaterialPropertyBlock();
+                tr.GetPropertyBlock(mpb);
+                mpb.SetFloat(HDRIntensityID, stageTileData.BloomWaterDecoHDRIntensity);
+                tr.SetPropertyBlock(mpb);
+            }
+        }
+
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
         decoTilemap.ClearAllTiles();
         if (bloomDecoTilemap != null) bloomDecoTilemap.ClearAllTiles();
         if (waterTilemap != null) waterTilemap.ClearAllTiles();
+        if (waterDecoTilemap != null) waterDecoTilemap.ClearAllTiles();
+        if (bloomWaterDecoTilemap != null) bloomWaterDecoTilemap.ClearAllTiles();
         if (waterCollisionTilemap != null) waterCollisionTilemap.ClearAllTiles();
         if (rockCollisionTilemap != null) rockCollisionTilemap.ClearAllTiles();
         if (waterStencilTilemap != null) waterStencilTilemap.ClearAllTiles();
@@ -433,6 +455,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Array.Clear(rockCollisionTiles, 0, size);
         Array.Clear(decoTilesToApply, 0, size);
         Array.Clear(bloomDecoTilesToApply, 0, size);
+        Array.Clear(waterDecoTilesToApply, 0, size);
+        Array.Clear(bloomWaterDecoTilesToApply, 0, size);
         Array.Clear(waterStencilTiles, 0, size);
         Array.Clear(groundStencilTiles, 0, size);
 
@@ -479,6 +503,22 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 waterCollisionTiles[i] = stageTileData != null ? stageTileData.TreeCollisionTile : null;
                 waterStencilTiles[i] = stageTileData != null ? stageTileData.StencilTile : null;
 
+                if (stageTileData != null && stageTileData.BloomWaterDecoTiles != null && stageTileData.BloomWaterDecoTiles.Count > 0)
+                {
+                    bool shouldPlaceBloom = true;
+                    if (stageTileData.UseBloomWaterDecoDensity)
+                    {
+                        shouldPlaceBloom = UnityEngine.Random.value < stageTileData.BloomWaterDecoDensity;
+                    }
+                    
+                    if (shouldPlaceBloom)
+                    {
+                        bloomWaterDecoTilesToApply[i] = stageTileData.BloomWaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.BloomWaterDecoTiles.Count)];
+                    }
+                }
+
+
+
                 bool _isDeepWater = true;
                 for (int _dy = -1; _dy <= 1; _dy++)
                 {
@@ -496,9 +536,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                 if (_isDeepWater)
                 {
-                    if (stageTileData != null && stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.WaterDecoDensity)
+                    if (stageTileData != null)
                     {
-                        decoTilesToApply[i] = stageTileData.WaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
+                        if (stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0 && UnityEngine.Random.value < stageTileData.WaterDecoDensity)
+                        {
+                            waterDecoTilesToApply[i] = stageTileData.WaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
+                        }
                     }
 
                     if (animatedObjGenerator != null && stageTileData != null && UnityEngine.Random.value < stageTileData.WaterAnimatedObjDensity)
@@ -614,6 +657,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (rockCollisionTilemap != null) rockCollisionTilemap.SetTilesBlock(b, rockCollisionTiles);
         decoTilemap.SetTilesBlock(b, decoTilesToApply);
         if (bloomDecoTilemap != null) bloomDecoTilemap.SetTilesBlock(b, bloomDecoTilesToApply);
+        if (waterDecoTilemap != null) waterDecoTilemap.SetTilesBlock(b, waterDecoTilesToApply);
+        if (bloomWaterDecoTilemap != null) bloomWaterDecoTilemap.SetTilesBlock(b, bloomWaterDecoTilesToApply);
         if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, waterStencilTiles);
         if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);
     }
