@@ -138,10 +138,13 @@ public class TreeVisualComponent : MonoBehaviour
     public void UpdateSortingOrder()
     {
         topRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
+
         topStencilOutlineSR.sortingOrder = topOutlineSR.sortingOrder - 1;
         bottomStencilOutlineSR.sortingOrder = bottomOutlineSR.sortingOrder - 1;
-        topHighlightRenderer.sortingOrder = topRenderer.sortingOrder + 1;
-        bottomHighlightRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
+
+        bottomHighlightRenderer.sortingOrder = topRenderer.sortingOrder + 1;
+        topHighlightRenderer.sortingOrder = bottomHighlightRenderer.sortingOrder + 1;
+
         topShieldRenderer.sortingOrder = topRenderer.sortingOrder + 1;
         bottomShieldRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
     }
