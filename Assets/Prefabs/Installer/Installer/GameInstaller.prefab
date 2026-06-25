@@ -1316,25 +1316,19 @@ MonoBehaviour:
     maxPoolSize: 50
     uiParticleScale: 0
   - vfxTag: TreeHitEffect_Bottom
-    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
+    effectPrefab: {fileID: 7836741438559938216, guid: c5e88873e2106c24d9168cc295f0cac5, type: 3}
     initialPoolSize: 20
     allowDynamicExpansion: 0
     maxPoolSize: 50
     uiParticleScale: 0
   - vfxTag: TreeDeadEffect_Top
-    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
-    initialPoolSize: 20
-    allowDynamicExpansion: 0
-    maxPoolSize: 50
-    uiParticleScale: 0
-  - vfxTag: TreeDeadEffect_Top
-    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
+    effectPrefab: {fileID: 7006864300503741061, guid: 5b55385ff94d83d49a232cf9fe798911, type: 3}
     initialPoolSize: 20
     allowDynamicExpansion: 0
     maxPoolSize: 50
     uiParticleScale: 0
   - vfxTag: TreeDeadEffect_Bottom
-    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
+    effectPrefab: {fileID: 3423223590745634705, guid: e5162976570cc5e48b65f1069e9c193e, type: 3}
     initialPoolSize: 20
     allowDynamicExpansion: 0
     maxPoolSize: 50
