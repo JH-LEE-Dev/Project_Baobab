@@ -12,7 +12,6 @@ public class InDungeonVFXManager : MonoBehaviour
 
     public void Initialize()
     {
-        vfxComponent = GetComponent<VFXComponent>();
         if (vfxComponent != null)
             vfxComponent.Initialize();
     }
@@ -24,27 +23,25 @@ public class InDungeonVFXManager : MonoBehaviour
     {
         if (vfxComponent == null || _visual == null) return;
 
-        ParticleColorSet topColor = _visual.GetTopHitColor();
-        VFXPlaySettings topSettings = new VFXPlaySettings(
+        ParticleColorSet color = _visual.GetVfxColor();
+
+        vfxComponent.Play(new VFXPlaySettings(
             "TreeHitEffect_Top",
             _visual.GetTopRootPosition(),
             _visual.GetTopRootRotation(),
-            topColor.startColor,
-            topColor.overrideChildrenColor,
+            color.startColor,
+            color.overrideChildrenColor,
             null
-        );
-        vfxComponent.Play(topSettings);
+        ));
 
-        ParticleColorSet bottomColor = _visual.GetBottomHitColor();
-        VFXPlaySettings bottomSettings = new VFXPlaySettings(
+        vfxComponent.Play(new VFXPlaySettings(
             "TreeHitEffect_Bottom",
             _visual.GetBottomRootPosition(),
             _visual.GetBottomRootRotation(),
-            bottomColor.startColor,
-            bottomColor.overrideChildrenColor,
+            color.startColor,
+            color.overrideChildrenColor,
             null
-        );
-        vfxComponent.Play(bottomSettings);
+        ));
     }
 
     /// <summary>
@@ -54,26 +51,24 @@ public class InDungeonVFXManager : MonoBehaviour
     {
         if (vfxComponent == null || _visual == null) return;
 
-        ParticleColorSet topColor = _visual.GetTopDeadColor();
-        VFXPlaySettings topSettings = new VFXPlaySettings(
+        ParticleColorSet color = _visual.GetVfxColor();
+
+        vfxComponent.Play(new VFXPlaySettings(
             "TreeDeadEffect_Top",
             _visual.GetTopRootPosition(),
             _visual.GetTopRootRotation(),
-            topColor.startColor,
-            topColor.overrideChildrenColor,
+            color.startColor,
+            color.overrideChildrenColor,
             null
-        );
-        vfxComponent.Play(topSettings);
+        ));
 
-        ParticleColorSet bottomColor = _visual.GetBottomDeadColor();
-        VFXPlaySettings bottomSettings = new VFXPlaySettings(
+        vfxComponent.Play(new VFXPlaySettings(
             "TreeDeadEffect_Bottom",
             _visual.GetBottomRootPosition(),
             _visual.GetBottomRootRotation(),
-            bottomColor.startColor,
-            bottomColor.overrideChildrenColor,
+            color.startColor,
+            color.overrideChildrenColor,
             null
-        );
-        vfxComponent.Play(bottomSettings);
+        ));
     }
 }
