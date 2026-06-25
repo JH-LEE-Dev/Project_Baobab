@@ -61,8 +61,13 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private List<AnimatedObj> animatedObjPrefabs;
     [SerializeField] private List<DecoSpritePatternAnimator> waterAnimatedObjPrefabs;
     [SerializeField] private List<StaticObj> staticObjPrefabs;
+
+    [Header("블룸(Bloom) HDR 강도 설정")]
     [SerializeField] private float bloomDecoHDRIntensity = 1f;
     [SerializeField] private float bloomWaterDecoHDRIntensity = 1f;
+    [Space(10)]
+    [SerializeField] private bool useWaterTileBloom = false;
+    [SerializeField] private float waterTileHDRIntensity = 1f;
 
     [Header("오브젝트 밀도 설정")]
     [SerializeField, Range(0f, 0.1f)] private float rockDecoDensity = 0.0005f;
@@ -97,6 +102,8 @@ public class StageTileDataSO : ScriptableObject
     public float BloomWaterDecoDensity => bloomWaterDecoDensity;
     public float BloomDecoHDRIntensity => bloomDecoHDRIntensity;
     public float BloomWaterDecoHDRIntensity => bloomWaterDecoHDRIntensity;
+    public bool UseWaterTileBloom => useWaterTileBloom;
+    public float WaterTileHDRIntensity => waterTileHDRIntensity;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
     public List<StaticObj> StaticObjPrefabs => staticObjPrefabs;

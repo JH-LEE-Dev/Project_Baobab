@@ -26,6 +26,9 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
     public DensityManager densityManager { get; private set; }
     public EnvironmentInteractionManager environmentInteractionManager { get; private set; }
     public EnvironmentObjManager environmentObjManager { get; private set; }
+    private EnvironmentParticleSystem environmentParticleSystem;
+
+
 
     //퍼블릭 초기화 및 제어 메서드
 
@@ -42,6 +45,10 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         pathfindGridManager = GetComponentInChildren<PathfindGridManager>();
         densityManager = GetComponentInChildren<DensityManager>();
         environmentObjManager = GetComponentInChildren<EnvironmentObjManager>();
+        environmentParticleSystem = GetComponentInChildren<EnvironmentParticleSystem>();
+
+        if (environmentParticleSystem != null)
+            environmentParticleSystem.Initialize();
 
         if (timeController != null)
             timeController.Initialize();
@@ -161,6 +168,7 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         densityManager.SetDensityData(_forestType, _mapType);
         tileMapGenerator.SetupForMapType(_mapType);
         environmentObjManager.SetupForMapType(_mapType);
+        environmentParticleSystem.ChangeMap(_mapType);
     }
 
     private void AnimalIsDead(AnimalIsDeadSignal animalIsDeadSignal)
