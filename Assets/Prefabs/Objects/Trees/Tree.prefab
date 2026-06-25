@@ -663,7 +663,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Tree
   topShadowObject: {fileID: 2746110928990139193}
   bottomShadowObject: {fileID: 3831676453712277121}
-  _treeVisualComponent: {fileID: 0}
+  _treeVisualComponent: {fileID: 7941305713547832146}
   collisionRadius: 0.29
   collisionOffset: {x: 0, y: 0}
   bDead: 0
