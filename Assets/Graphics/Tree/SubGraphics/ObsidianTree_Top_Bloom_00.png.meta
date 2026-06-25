@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 7642a69b39f44874bb9a244c93b27a2f
+guid: 88bbdcae3a88ebb4cb5819a8602a0389
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 3535224124556717220
-    second: KakaoTalk_20260625_195320065_0
+      213: -7183499838628064523
+    second: ObsidianTree_Top_Bloom_00_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -100,13 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: KakaoTalk_20260625_195320065_0
+      name: ObsidianTree_Top_Bloom_00_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 44
-        width: 18
-        height: 13
+        x: 2
+        y: 20
+        width: 29
+        height: 33
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -115,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 4ac28916c93af0130800000000000000
-      internalID: 3535224124556717220
+      spriteID: 5f29f72e4f41f4c90800000000000000
+      internalID: -7183499838628064523
       vertices: []
       indices: 
       edges: []
@@ -135,7 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      KakaoTalk_20260625_195320065_0: 3535224124556717220
+      ObsidianTree_Top_Bloom_00_0: -7183499838628064523
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

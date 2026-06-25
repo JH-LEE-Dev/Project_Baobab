@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: 33c72a357ee2bfd4fbdaaeb0a90aa250
+guid: 7238a95d8c590b54a9b4b1ed37a27eba
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 5146387291062629243
-    second: KakaoTalk_20260625_193606085_0
-  - first:
-      213: 8310624066719155938
-    second: KakaoTalk_20260625_193606085_1
+      213: 4982988019611596666
+    second: LavasapTree_Baby_Top_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -103,35 +100,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: KakaoTalk_20260625_193606085_0
-      rect:
-        serializedVersion: 2
-        x: 1
-        y: 16
-        width: 30
-        height: 16
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: b737f5879f3ab6740800000000000000
-      internalID: 5146387291062629243
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: KakaoTalk_20260625_193606085_1
+      name: LavasapTree_Baby_Top_0
       rect:
         serializedVersion: 2
         x: 6
-        y: 32
-        width: 25
-        height: 28
+        y: 12
+        width: 19
+        height: 22
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -140,8 +115,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2e68b9e9e84455370800000000000000
-      internalID: 8310624066719155938
+      spriteID: a77f9fce331272540800000000000000
+      internalID: 4982988019611596666
       vertices: []
       indices: 
       edges: []
@@ -160,8 +135,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      KakaoTalk_20260625_193606085_0: 5146387291062629243
-      KakaoTalk_20260625_193606085_1: 8310624066719155938
+      LavasapTree_Baby_Top_0: 4982988019611596666
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
