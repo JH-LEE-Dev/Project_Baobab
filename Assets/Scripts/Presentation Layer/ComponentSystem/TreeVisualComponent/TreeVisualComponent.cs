@@ -85,13 +85,8 @@ public class TreeVisualComponent : MonoBehaviour
     private MaterialPropertyBlock _mpb;
     private MaterialPropertyBlock Mpb => _mpb ??= new MaterialPropertyBlock();
 
-    // Hit VFX Color Settings
-    private ParticleColorSet currentLeafHitColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
-    private ParticleColorSet currentTrunkHitColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
-
-    // Dead VFX Color Settings
-    private ParticleColorSet currentTopDeadColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
-    private ParticleColorSet currentBottomDeadColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
+    // VFX Color Settings
+    private ParticleColorSet currentVfxColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
 
     #endregion
 
@@ -138,12 +133,15 @@ public class TreeVisualComponent : MonoBehaviour
     public void UpdateSortingOrder()
     {
         topRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
-        topStencilOutlineSR.sortingOrder = topOutlineSR.sortingOrder - 1;
-        bottomStencilOutlineSR.sortingOrder = bottomOutlineSR.sortingOrder - 1;
-        topHighlightRenderer.sortingOrder = topRenderer.sortingOrder + 1;
-        bottomHighlightRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
+
         topShieldRenderer.sortingOrder = topRenderer.sortingOrder + 1;
         bottomShieldRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
+        
+        topStencilOutlineSR.sortingOrder = topOutlineSR.sortingOrder - 1;
+        bottomStencilOutlineSR.sortingOrder = bottomOutlineSR.sortingOrder - 1;
+
+        bottomHighlightRenderer.sortingOrder = topRenderer.sortingOrder + 1;
+        topHighlightRenderer.sortingOrder = bottomHighlightRenderer.sortingOrder + 1;
     }
 
     // 루트 트랜스폼이 틀어졌을 때 위치, 회전, 스케일을 모두 기본값으로 맞춘다.
@@ -204,10 +202,7 @@ public class TreeVisualComponent : MonoBehaviour
                 ApplyDefaultScale();
                 shieldHDRIntensity = customVisualData.shieldHDRIntensity;
                 highlightHDRIntensity = customVisualData.highlightHDRIntensity;
-                currentLeafHitColor = customVisualData.topHitVfxColor;
-                currentTrunkHitColor = customVisualData.bottomHitVfxColor;
-                currentTopDeadColor = customVisualData.topDeadVfxColor;
-                currentBottomDeadColor = customVisualData.bottomDeadVfxColor;
+                currentVfxColor = customVisualData.vfxColor;
                 UpdateHDRStates();
                 return;
             }
@@ -291,10 +286,7 @@ public class TreeVisualComponent : MonoBehaviour
 
         shieldHDRIntensity = _treeData.treeVisualData.shieldHDRIntensity;
         highlightHDRIntensity = _treeData.treeVisualData.highlightHDRIntensity;
-        currentLeafHitColor = _treeData.treeVisualData.topHitVfxColor;
-        currentTrunkHitColor = _treeData.treeVisualData.bottomHitVfxColor;
-        currentTopDeadColor = _treeData.treeVisualData.topDeadVfxColor;
-        currentBottomDeadColor = _treeData.treeVisualData.bottomDeadVfxColor;
+        currentVfxColor = _treeData.treeVisualData.vfxColor;
         UpdateHDRStates();
     }
 
@@ -332,10 +324,7 @@ public class TreeVisualComponent : MonoBehaviour
 
         UpdateRendererSprites();
         ApplyDefaultScale();
-        currentLeafHitColor = visualData.topHitVfxColor;
-        currentTrunkHitColor = visualData.bottomHitVfxColor;
-        currentTopDeadColor = visualData.topDeadVfxColor;
-        currentBottomDeadColor = visualData.bottomDeadVfxColor;
+        currentVfxColor = visualData.vfxColor;
         UpdateHDRStates();
     }
 
@@ -557,10 +546,7 @@ public class TreeVisualComponent : MonoBehaviour
     public Vector3 GetBottomRootPosition() => bottomRoot != null ? bottomRoot.position : transform.position;
     public Quaternion GetTopRootRotation() => topRoot != null ? topRoot.rotation : Quaternion.identity;
     public Quaternion GetBottomRootRotation() => bottomRoot != null ? bottomRoot.rotation : Quaternion.identity;
-    public ParticleColorSet GetTopHitColor() => currentLeafHitColor;
-    public ParticleColorSet GetBottomHitColor() => currentTrunkHitColor;
-    public ParticleColorSet GetTopDeadColor() => currentTopDeadColor;
-    public ParticleColorSet GetBottomDeadColor() => currentBottomDeadColor;
+    public ParticleColorSet GetVfxColor() => currentVfxColor;
 
     // 누적된 연출 값을 지우고 비주얼을 기본 위치와 포즈로 되돌린다.
     public void ResetVisualState()

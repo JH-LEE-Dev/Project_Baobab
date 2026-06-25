@@ -28,13 +28,8 @@ public struct TreeVisualData
     public float shieldHDRIntensity;
     public float highlightHDRIntensity;
 
-    [Header("Hit VFX Colors")]
-    public ParticleColorSet topHitVfxColor;
-    public ParticleColorSet bottomHitVfxColor;
-
-    [Header("Dead VFX Colors")]
-    public ParticleColorSet topDeadVfxColor;
-    public ParticleColorSet bottomDeadVfxColor;
+    [Header("VFX Color")]
+    public ParticleColorSet vfxColor;
 }
 
 [Serializable]
