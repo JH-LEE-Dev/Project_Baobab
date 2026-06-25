@@ -89,6 +89,10 @@ public class TreeVisualComponent : MonoBehaviour
     private ParticleColorSet currentLeafHitColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
     private ParticleColorSet currentTrunkHitColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
 
+    // Dead VFX Color Settings
+    private ParticleColorSet currentTopDeadColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
+    private ParticleColorSet currentBottomDeadColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
+
     #endregion
 
     #region Unity Events
@@ -97,8 +101,6 @@ public class TreeVisualComponent : MonoBehaviour
 
     #region Initialize
 
-    private VFXComponent vfxComponent;
-
     public void Initialize(Transform _topShadowTransform, CustomSortable _customSortable)
     {
         if (cachedTransform == null) cachedTransform = transform;
@@ -106,9 +108,6 @@ public class TreeVisualComponent : MonoBehaviour
         ResetVisualState();
 
         customSortable = _customSortable;
-
-        vfxComponent = GetComponent<VFXComponent>();
-        vfxComponent.Initialize();
 
         if (customSortable != null)
         {
@@ -205,8 +204,10 @@ public class TreeVisualComponent : MonoBehaviour
                 ApplyDefaultScale();
                 shieldHDRIntensity = customVisualData.shieldHDRIntensity;
                 highlightHDRIntensity = customVisualData.highlightHDRIntensity;
-                currentLeafHitColor = customVisualData.leafHitVfxColor;
-                currentTrunkHitColor = customVisualData.trunkHitVfxColor;
+                currentLeafHitColor = customVisualData.topHitVfxColor;
+                currentTrunkHitColor = customVisualData.bottomHitVfxColor;
+                currentTopDeadColor = customVisualData.topDeadVfxColor;
+                currentBottomDeadColor = customVisualData.bottomDeadVfxColor;
                 UpdateHDRStates();
                 return;
             }
@@ -290,8 +291,10 @@ public class TreeVisualComponent : MonoBehaviour
 
         shieldHDRIntensity = _treeData.treeVisualData.shieldHDRIntensity;
         highlightHDRIntensity = _treeData.treeVisualData.highlightHDRIntensity;
-        currentLeafHitColor = _treeData.treeVisualData.leafHitVfxColor;
-        currentTrunkHitColor = _treeData.treeVisualData.trunkHitVfxColor;
+        currentLeafHitColor = _treeData.treeVisualData.topHitVfxColor;
+        currentTrunkHitColor = _treeData.treeVisualData.bottomHitVfxColor;
+        currentTopDeadColor = _treeData.treeVisualData.topDeadVfxColor;
+        currentBottomDeadColor = _treeData.treeVisualData.bottomDeadVfxColor;
         UpdateHDRStates();
     }
 
@@ -329,8 +332,10 @@ public class TreeVisualComponent : MonoBehaviour
 
         UpdateRendererSprites();
         ApplyDefaultScale();
-        currentLeafHitColor = visualData.leafHitVfxColor;
-        currentTrunkHitColor = visualData.trunkHitVfxColor;
+        currentLeafHitColor = visualData.topHitVfxColor;
+        currentTrunkHitColor = visualData.bottomHitVfxColor;
+        currentTopDeadColor = visualData.topDeadVfxColor;
+        currentBottomDeadColor = visualData.bottomDeadVfxColor;
         UpdateHDRStates();
     }
 
@@ -545,27 +550,17 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.DOKill();
         visualRoot.localPosition = Vector3.zero;
         visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity);
-
-        VFXPlaySettings leafSettings = new VFXPlaySettings(
-            "TreeHitEffect_Leaf",
-            topRoot.transform.position,
-            topRoot.transform.rotation,
-            currentLeafHitColor.startColor,
-            currentLeafHitColor.overrideChildrenColor,
-            topRoot.transform
-        );
-        vfxComponent.Play(leafSettings);
-
-        VFXPlaySettings trunkSettings = new VFXPlaySettings(
-            "TreeHitEffect_Trunk",
-            bottomRoot.transform.position,
-            bottomRoot.transform.rotation,
-            currentTrunkHitColor.startColor,
-            currentTrunkHitColor.overrideChildrenColor,
-            bottomRoot.transform
-        );
-        vfxComponent.Play(trunkSettings);
     }
+
+    // VFX 재생에 필요한 위치/회전/색상 데이터를 외부(InDungeonVFXManager)에 제공한다.
+    public Vector3 GetTopRootPosition() => topRoot != null ? topRoot.position : transform.position;
+    public Vector3 GetBottomRootPosition() => bottomRoot != null ? bottomRoot.position : transform.position;
+    public Quaternion GetTopRootRotation() => topRoot != null ? topRoot.rotation : Quaternion.identity;
+    public Quaternion GetBottomRootRotation() => bottomRoot != null ? bottomRoot.rotation : Quaternion.identity;
+    public ParticleColorSet GetTopHitColor() => currentLeafHitColor;
+    public ParticleColorSet GetBottomHitColor() => currentTrunkHitColor;
+    public ParticleColorSet GetTopDeadColor() => currentTopDeadColor;
+    public ParticleColorSet GetBottomDeadColor() => currentBottomDeadColor;
 
     // 누적된 연출 값을 지우고 비주얼을 기본 위치와 포즈로 되돌린다.
     public void ResetVisualState()
@@ -759,7 +754,10 @@ public class TreeVisualComponent : MonoBehaviour
         UpdateOnWaterSortingOrder();
     }
 
-
+    // 나무가 죽었음을 알린다. VFX 재생은 InDungeonVFXManager에서 담당한다.
+    public void TreeIsDead()
+    {
+    }
 
     private void OnValidate()
     {

@@ -8,7 +8,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
-    [SerializeField] private TreeVisualComponent treeVisualComponent;
+    [SerializeField] private TreeVisualComponent _treeVisualComponent;
+    public TreeVisualComponent treeVisualComponent => _treeVisualComponent;
     [SerializeField] private float collisionRadius = 0.29f;
     [SerializeField] private Vector2 collisionOffset = Vector2.zero; // 충돌 오프셋 필드 추가
 
@@ -190,7 +191,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         TreeGetHitEvent?.Invoke(this);
 
         if (bDead)
+        {
             TreeDeadEvent?.Invoke(this);
+        }
     }
 
     public bool ManualUpdate()
