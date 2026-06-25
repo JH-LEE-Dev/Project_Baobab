@@ -2,21 +2,38 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public struct TreeVFXColorData
+{
+    public TreeType treeType;
+    public ParticleSystem.MinMaxGradient effectColor;
+}
+
 public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 {
     public event Action CuttingDoneEvent;
     public event Action<ILogItemData> CuttingStartEvent;
 
-    private LogItem cuttingItem;
-
-    // 외부 의존성
-    private float totalSpeedMultiplier = 1.0f;
+    [Header("Data References")]
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
+    [SerializeField] private List<LogItemDurabilityData> logItemDurabilityDatas;
 
-    // 내부 상태
+    [Space(10)]
+    [Header("Visual & Animation")]
+    [SerializeField] private List<Sprite> cuttingAnimationSprites;
+
+    [Space(10)]
+    [Header("VFX Settings")]
+    [SerializeField] private Transform effectTransform;
+    [SerializeField] private List<TreeVFXColorData> treeVFXColorDatas;
+    private ParticleSystem.MinMaxGradient effectColor;
+
+    // 내부 상태 및 컴포넌트 참조
+    private LogItem cuttingItem;
+    private float totalSpeedMultiplier = 1.0f;
     private bool bIsCutting = false;
     private bool bPowerSupply = false;
-    private float bPowerSupplyValue = 5f; //500퍼센트를 의미.
+    private float bPowerSupplyValue = 5f; // 500퍼센트를 의미
     private float maxDurability = 0f;
     private SpriteRenderer visualSpriteRenderer;
     private float animProgress = 0f;
@@ -27,10 +44,14 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private float bounceTime = 1f;
     private const float BOUNCE_DURATION = 0.2f;
 
-    [SerializeField] private List<LogItemDurabilityData> logItemDurabilityDatas;
-
     private CustomSortable customSortable;
+    private ILogItemData logToCut;
+    private MapType mapType;
+    private VFXComponent vfxComponent;
+    private ParticleSystem cuttingEffect;
+    private bool wasForward = false;
 
+    // 프로퍼티
     public float timeRemaining
     {
         get
@@ -59,18 +80,9 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     }
 
     ILogItemData ILogCutter.logToCut => logToCut;
-
     bool ILogCutter.bIsCutting => bIsCutting;
-
     float ILogCutter.elapsedProcessingTime => elapsedProcessingTime;
-
     float ILogCutter.totalProcessingTime => totalProcessingTime;
-
-    private ILogItemData logToCut;
-
-    private MapType mapType;
-
-    [SerializeField] private List<Sprite> cuttingAnimationSprites;
 
     public void Initialize()
     {
@@ -81,6 +93,9 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         customSortable = GetComponent<CustomSortable>();
         customSortable.Initialize(transform);
         customSortable.AddSpriteRenderer(visualSpriteRenderer);
+
+        vfxComponent = GetComponent<VFXComponent>();
+        vfxComponent.Initialize();
     }
 
     private void Update()
@@ -88,7 +103,11 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         UpdateBounce(Time.deltaTime);
         UpdateAnimation(Time.deltaTime);
 
-        if (!bIsCutting || cuttingItem == null) return;
+        if (!bIsCutting || cuttingItem == null)
+        {
+            UpdateVFXState();
+            return;
+        }
 
         float currentSpeed = GetCurrentSpeed();
 
@@ -102,6 +121,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             bIsCutting = false;
             CuttingDone();
         }
+
+        UpdateVFXState();
     }
 
     private void LateUpdate()
@@ -141,6 +162,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         logToCut = _itemData;
         TriggerBounce();
         CuttingStartEvent?.Invoke(logToCut);
+
+        UpdateVFXState();
     }
 
     public Transform GetTransform()
@@ -284,6 +307,61 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         return speed;
     }
 
+    private void UpdateVFXState()
+    {
+        bool isForward = bIsCutting && !isReversing;
+        if (isForward != wasForward)
+        {
+            if (isForward)
+            {
+                PlayCuttingEffect();
+            }
+            else
+            {
+                StopCuttingEffect();
+            }
+            wasForward = isForward;
+        }
+    }
+
+    private void PlayCuttingEffect()
+    {
+        if (vfxComponent != null && effectTransform != null)
+        {
+            if (cuttingEffect != null)
+            {
+                vfxComponent.Stop(cuttingEffect, true);
+            }
+            ParticleSystem.MinMaxGradient color = GetVFXColorForCurrentTree();
+            VFXPlaySettings settings = new VFXPlaySettings("CuttingEffect", effectTransform.position, effectTransform.rotation, color, effectTransform);
+            cuttingEffect = vfxComponent.Play(settings);
+        }
+    }
+
+    private void StopCuttingEffect()
+    {
+        if (vfxComponent != null && cuttingEffect != null)
+        {
+            vfxComponent.Stop(cuttingEffect);
+            cuttingEffect = null;
+        }
+    }
+
+    private ParticleSystem.MinMaxGradient GetVFXColorForCurrentTree()
+    {
+        if (cuttingItem != null && treeVFXColorDatas != null)
+        {
+            for (int i = 0; i < treeVFXColorDatas.Count; i++)
+            {
+                if (treeVFXColorDatas[i].treeType == cuttingItem.treeType)
+                {
+                    return treeVFXColorDatas[i].effectColor;
+                }
+            }
+        }
+        return effectColor;
+    }
+
     private void UpdateAnimation(float _deltaTime)
     {
         if (cuttingAnimationSprites == null || cuttingAnimationSprites.Count == 0 || visualSpriteRenderer == null) return;
@@ -350,5 +428,11 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
         int frameIndex = Mathf.Clamp(Mathf.FloorToInt(animProgress * (totalFrames - 1)), 0, totalFrames - 1);
         visualSpriteRenderer.sprite = cuttingAnimationSprites[frameIndex];
+    }
+
+    private void OnDisable()
+    {
+        StopCuttingEffect();
+        wasForward = false;
     }
 }

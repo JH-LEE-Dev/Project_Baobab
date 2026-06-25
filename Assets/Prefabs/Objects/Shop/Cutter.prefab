@@ -1,0 +1,220 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &800043032616001017
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6380985641534888201}
+  - component: {fileID: 4318390648824541227}
+  - component: {fileID: 233713377803597925}
+  - component: {fileID: 3588820305495845982}
+  - component: {fileID: 922299830925418842}
+  - component: {fileID: -3062997830473244146}
+  m_Layer: 0
+  m_Name: Cutter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6380985641534888201
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800043032616001017}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -1.75, y: 0.5, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8522301488535263732}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &4318390648824541227
+SpriteRenderer:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800043032616001017}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 184caaab2f1748c09f2059757f4ad491, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: -1266786427
+  m_SortingLayer: 11
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_Sprite: {fileID: -7896710973168869388, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 2, y: 2}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_SpriteSortPoint: 1
+--- !u!114 &233713377803597925
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800043032616001017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7559b12313912794c982a315ade0d46a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LogCutter
+  logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+  logItemDurabilityDatas:
+  - logState: 2
+    durabilityMultiplier: 1
+  - logState: 3
+    durabilityMultiplier: 3
+  - logState: 4
+    durabilityMultiplier: 5
+  - logState: 5
+    durabilityMultiplier: 10
+  cuttingAnimationSprites:
+  - {fileID: -7896710973168869388, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 5400649770365408191, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 8135126225707487952, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -9054230113398377456, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -2536270164083684573, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 6199511080900211807, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -8670843338282149104, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -3341035605502056626, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -72728862045718021, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 932431973857736503, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -5579592309352113486, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -5315355030976554450, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 8525603074032478141, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 8723916478084445089, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 4584995241994716258, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -9088088442317076698, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: -1435166703101837660, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  - {fileID: 2140725537203604868, guid: d6ad69a93c08337479e282cff29f43dc, type: 3}
+  effectTransform: {fileID: 8522301488535263732}
+  treeVFXColorDatas: []
+--- !u!114 &3588820305495845982
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800043032616001017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 77bf5da141de9e645922322d0fa9836c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomSortable
+  sortAnchor: {fileID: 0}
+  spriteRenderers: []
+  offset: 0
+  precision: 100
+--- !u!114 &922299830925418842
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800043032616001017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb3d4e1743a5c1549a05a2230da096aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CutterAnimTrigger
+--- !u!114 &-3062997830473244146
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 800043032616001017}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  vfxPoolDataList:
+  - vfxTag: CuttingEffect
+    effectPrefab: {fileID: 0}
+    initialPoolSize: 1
+    allowDynamicExpansion: 0
+    maxPoolSize: 1
+    uiParticleScale: 0
+--- !u!1 &7155943417138528147
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8522301488535263732}
+  m_Layer: 0
+  m_Name: EffectPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8522301488535263732
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7155943417138528147}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.388, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6380985641534888201}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
