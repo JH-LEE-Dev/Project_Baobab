@@ -1294,7 +1294,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed1de89995130bb45be1934f24245170, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonVFXManager
-  vfxComponent: {fileID: 0}
+  vfxComponent: {fileID: 777467232540049004}
 --- !u!114 &777467232540049004
 MonoBehaviour:
   m_ObjectHideFlags: 0
