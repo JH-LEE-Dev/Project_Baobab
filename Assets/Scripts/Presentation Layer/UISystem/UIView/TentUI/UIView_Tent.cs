@@ -135,6 +135,7 @@ public class UIView_Tent : UIView
 
         GameObject _counterObject = Instantiate(currencyCounterHUDPrefab, moneyPivot);
         _counterObject.name = "CurrencyCounterHUD_Coin";
+        SetLayerRecursive(_counterObject, gameObject.layer);
 
         RectTransform _counterRect = _counterObject.GetComponent<RectTransform>();
         if (null != _counterRect)
@@ -171,6 +172,20 @@ public class UIView_Tent : UIView
         }
 
         return null;
+    }
+
+    private void SetLayerRecursive(GameObject _target, int _layer)
+    {
+        if (_target == null)
+            return;
+
+        _target.layer = _layer;
+
+        Transform _targetTransform = _target.transform;
+        for (int i = 0; i < _targetTransform.childCount; i++)
+        {
+            SetLayerRecursive(_targetTransform.GetChild(i).gameObject, _layer);
+        }
     }
 
     #endregion
