@@ -27,11 +27,15 @@ public struct TreeVisualData
     public List<Sprite> saplingBottomSprites;
     public float shieldHDRIntensity;
     public float highlightHDRIntensity;
+
+    [Header("Hit VFX Colors")]
+    public ParticleColorSet leafHitVfxColor;
+    public ParticleColorSet trunkHitVfxColor;
 }
 
 [Serializable]
-public struct TreeColorSet
+public struct ParticleColorSet
 {
-    public Color topColor;
-    public Color bottomColor;
+    public ParticleSystem.MinMaxGradient startColor;
+    public bool overrideChildrenColor;
 }

@@ -85,6 +85,10 @@ public class TreeVisualComponent : MonoBehaviour
     private MaterialPropertyBlock _mpb;
     private MaterialPropertyBlock Mpb => _mpb ??= new MaterialPropertyBlock();
 
+    // Hit VFX Color Settings
+    private ParticleColorSet currentLeafHitColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
+    private ParticleColorSet currentTrunkHitColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
+
     #endregion
 
     #region Unity Events
@@ -201,6 +205,8 @@ public class TreeVisualComponent : MonoBehaviour
                 ApplyDefaultScale();
                 shieldHDRIntensity = customVisualData.shieldHDRIntensity;
                 highlightHDRIntensity = customVisualData.highlightHDRIntensity;
+                currentLeafHitColor = customVisualData.leafHitVfxColor;
+                currentTrunkHitColor = customVisualData.trunkHitVfxColor;
                 UpdateHDRStates();
                 return;
             }
@@ -284,6 +290,8 @@ public class TreeVisualComponent : MonoBehaviour
 
         shieldHDRIntensity = _treeData.treeVisualData.shieldHDRIntensity;
         highlightHDRIntensity = _treeData.treeVisualData.highlightHDRIntensity;
+        currentLeafHitColor = _treeData.treeVisualData.leafHitVfxColor;
+        currentTrunkHitColor = _treeData.treeVisualData.trunkHitVfxColor;
         UpdateHDRStates();
     }
 
@@ -321,6 +329,8 @@ public class TreeVisualComponent : MonoBehaviour
 
         UpdateRendererSprites();
         ApplyDefaultScale();
+        currentLeafHitColor = visualData.leafHitVfxColor;
+        currentTrunkHitColor = visualData.trunkHitVfxColor;
         UpdateHDRStates();
     }
 
@@ -536,8 +546,25 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.localPosition = Vector3.zero;
         visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity);
 
-        vfxComponent.Play("TreeHitEffect_Leaf",topRoot.transform.position,topRoot.transform.rotation,topRoot.transform);
-        vfxComponent.Play("TreeHitEffect_Trunk",bottomRoot.transform.position,bottomRoot.transform.rotation,bottomRoot.transform);
+        VFXPlaySettings leafSettings = new VFXPlaySettings(
+            "TreeHitEffect_Leaf",
+            topRoot.transform.position,
+            topRoot.transform.rotation,
+            currentLeafHitColor.startColor,
+            currentLeafHitColor.overrideChildrenColor,
+            topRoot.transform
+        );
+        vfxComponent.Play(leafSettings);
+
+        VFXPlaySettings trunkSettings = new VFXPlaySettings(
+            "TreeHitEffect_Trunk",
+            bottomRoot.transform.position,
+            bottomRoot.transform.rotation,
+            currentTrunkHitColor.startColor,
+            currentTrunkHitColor.overrideChildrenColor,
+            bottomRoot.transform
+        );
+        vfxComponent.Play(trunkSettings);
     }
 
     // 누적된 연출 값을 지우고 비주얼을 기본 위치와 포즈로 되돌린다.
