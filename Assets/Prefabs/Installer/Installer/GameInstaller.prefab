@@ -1507,15 +1507,33 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Project_Baobab.Presentation.EnvironmentSystem.ParallaxParticleSystem
   mapParticleMappings:
   - mapType: 2
-    particlePrefab: {fileID: 0}
+    particlePrefab: {fileID: 7006864300503741061, guid: eecf1bf9970f49747936facdc1cea4d5, type: 3}
+    autoGenerateLayerCount: 3
+    autoWrapPadding: 2
+    minParallaxFactor: {x: -0.2, y: -0.2}
+    maxParallaxFactor: {x: -2, y: -2}
+    minParticleSizeMultiplier: 0.1
+    maxParticleSizeMultiplier: 0.3
+    minHDRIntensity: 1
+    maxHDRIntensity: 1
+    customEmissionRates:
+    - 5
+    - 2
+    - 0.5
   - mapType: 4
     particlePrefab: {fileID: 7006864300503741061, guid: 128618a97f11d7447a3645261684e008, type: 3}
-  autoGenerateLayerCount: 3
-  autoWrapPadding: 2
-  minParallaxFactor: {x: -0.2, y: -0.2}
-  maxParallaxFactor: {x: -2, y: -2}
-  minParticleSizeMultiplier: 0.8
-  maxParticleSizeMultiplier: 1.5
+    autoGenerateLayerCount: 3
+    autoWrapPadding: 2
+    minParallaxFactor: {x: -0.2, y: -0.2}
+    maxParallaxFactor: {x: -2, y: -2}
+    minParticleSizeMultiplier: 0.5
+    maxParticleSizeMultiplier: 1
+    minHDRIntensity: 1
+    maxHDRIntensity: 3
+    customEmissionRates:
+    - 15
+    - 2
+    - 1
 --- !u!1 &6583048210432933352
 GameObject:
   m_ObjectHideFlags: 0

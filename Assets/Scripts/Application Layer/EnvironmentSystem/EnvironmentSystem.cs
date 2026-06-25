@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using Project_Baobab.Presentation.EnvironmentSystem;
 
 public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 {
