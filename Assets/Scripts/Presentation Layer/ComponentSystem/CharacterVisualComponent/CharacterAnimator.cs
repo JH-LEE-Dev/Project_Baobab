@@ -88,6 +88,11 @@ public class CharacterAnimator : MonoBehaviour
     [SerializeField] private float idleSample = 5;
     [SerializeField] private float runSample = 10;
 
+    [Space]
+    [Header("VFX Settings")]
+    [SerializeField] private float dustEffectInterval = 0.3f;
+    [SerializeField] private float dustOffsetDistance = 0.15f;
+
     // 상태 데이터
     private float frameTimer = 0f;
     private int currentFrameIndex = 0;
@@ -100,6 +105,9 @@ public class CharacterAnimator : MonoBehaviour
     private int prevDirIndex = -1;
     private int prevShadowDirIndex = -1;
 
+    private float dustTimer = 0f;
+    private Vector3 lastPosition;
+
     #region Public Methods
 
     private VFXComponent vfxComponent;
@@ -111,6 +119,8 @@ public class CharacterAnimator : MonoBehaviour
         frameTimer = 0f;
         currentFrameIndex = 0;
         isDeadStartFinished = false;
+        dustTimer = 0f;
+        lastPosition = transform.position;
     }
 
     public void UpdateAnimation(float _deltaTime, bool _isMoving, bool _bInHub, float _facingAngle, float _shadowAngle, bool _isBlinking, bool _isDead)
@@ -230,14 +240,6 @@ public class CharacterAnimator : MonoBehaviour
                 else
                 {
                     currentFrameIndex = (currentFrameIndex + 1) % baseSprites.Count;
-                    if (_isMoving && vfxComponent != null)
-                    {
-                        ParticleSystem effect = vfxComponent.Play("Dust", transform.position, Quaternion.identity);
-                        if (effect != null && baseSR != null)
-                        {
-                            vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerName, baseSR.sortingOrder);
-                        }
-                    }
                 }
             }
 
@@ -348,6 +350,34 @@ public class CharacterAnimator : MonoBehaviour
                 }
             }
         }
+
+        // 먼지 이펙트 (Dust VFX) 처리
+        if (_isMoving && !_isDead)
+        {
+            dustTimer += _deltaTime;
+            if (dustTimer >= dustEffectInterval)
+            {
+                dustTimer = 0f;
+                if (vfxComponent != null)
+                {
+                    float angleRad = _facingAngle * Mathf.Deg2Rad;
+                    Vector3 facingDir = new Vector3(Mathf.Cos(angleRad), Mathf.Sin(angleRad), 0f);
+                    Vector3 spawnPosition = lastPosition - facingDir * dustOffsetDistance;
+
+                    ParticleSystem effect = vfxComponent.Play("Dust", spawnPosition, Quaternion.identity);
+                    if (effect != null && baseSR != null)
+                    {
+                        vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerName, baseSR.sortingOrder);
+                    }
+                }
+            }
+        }
+        else
+        {
+            dustTimer = 0f;
+        }
+
+        lastPosition = transform.position;
     }
 
     #endregion

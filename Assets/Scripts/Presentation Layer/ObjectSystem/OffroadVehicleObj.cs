@@ -5,30 +5,18 @@ using UnityEngine.Rendering;
 
 public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 {
-    //이벤트
+    // 이벤트
     public event Action GameEndEvent;
     public event Action OffroadDriveEndEvent;
     public event Action PortalActivated;
     public event Action PortalDeActivatedEvent;
     public event Action<bool> OffroadInteractStateChangedEvent;
 
-    private IEnvironmentProvider environmentProvider;
-
-    private InputManager inputManager;
-    private IInventory characterInventory;
-    private OffroadContainer offroadContainer;
-
-    //내부 의존성
-    private int characterLayer;
+    [Header("Portal Settings")]
     [SerializeField] private PortalType type;
-    //[SerializeField] private float cooldownTime = 2.0f; // 쿨타임 설정
-    private float lastActivatedTime = -10.0f; // 마지막 활성화 시간 (초기값은 충분히 과거로 설정)
 
-    private bool bCanJump = false;
-
-    private bool bOverlapped = false;
-
-    private bool bUIActivated = false;
+    [Space(10)]
+    [Header("Visual Object References")]
     [SerializeField] private GameObject outLineObject;
     [SerializeField] private GameObject baseObject;
     [SerializeField] private GameObject wheelObjectForStencil;
@@ -36,70 +24,88 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [SerializeField] private GameObject containerObject;
     [SerializeField] private GameObject visualObject;
     [SerializeField] private GameObject jitterVisualObject;
+    [SerializeField] private GameObject containerShadowObj;
 
+    [Space(10)]
     [Header("Container Jump Settings")]
     [SerializeField] private float containerJumpDuration = 0.5f;
     [SerializeField] private float containerJumpHeight = 1.5f;
     [SerializeField] private float containerSpringFrequency = 20f;
     [SerializeField] private float containerSpringDamping = 5f;
 
+    [Space(10)]
     [Header("Drive Settings")]
     [SerializeField] private float acceleration = 5f;
     [SerializeField] private float maxSpeed = 15f;
-    [SerializeField] private float shakeIntensity = 0.008f; // 떨림 세기 감소 (0.05 -> 0.02)
+    [SerializeField] private float shakeIntensity = 0.008f; // 떨림 세기 감소
     [SerializeField] private float ignitionShakeMultiplier = 5.0f; // 시동 시 떨림 배율
     [SerializeField] private float ignitionScaleIntensity = 0.3f; // 시동 시 최대 스케일 변화량
-    [SerializeField] private float ignitionSpringFrequency = 18f; // 스프링 진동 주파수 (높을수록 많이 뜀)
-    [SerializeField] private float ignitionSpringDamping = 6f; // 스프링 감쇄율 (높을수록 빨리 멈춤)
+    [SerializeField] private float ignitionSpringFrequency = 18f; // 스프링 진동 주파수
+    [SerializeField] private float ignitionSpringDamping = 6f; // 스프링 감쇄율
     [SerializeField] private float ignitionSquashDuration = 0.4f; // 스프링 연출이 일어나는 전체 시간
     [SerializeField] private float ignitionDelay = 0.1f; // 연출 후 대기 시간
     [SerializeField] private float reachThreshold = 0.1f;
 
-    private Animator wheelAnimator;
-
-    private CustomSortable customSortable;
-    private CustomSortable customSortable_wheel;
-
-    private Coroutine driveCoroutine;
-
+    [Space(10)]
+    [Header("Point Transforms")]
     [SerializeField] private Transform containerCarryPoint;
     [SerializeField] private Transform containerDropPoint;
     public Transform CharacterRidePoint;
+    public Transform getOffTransform;
 
+    [Space(10)]
+    [Header("Sprites Settings")]
+    [SerializeField] private Sprite darkBaseSprite;
+    [SerializeField] private Sprite darkWheelSprite;
+    [SerializeField] private Sprite darkContainerSprite;
+
+    [Space(10)]
+    [Header("VFX Settings")]
+    [SerializeField] private Transform startUpEffectPoint;
+    [SerializeField] private Transform goEffectPoint;
+    [SerializeField] private ParticleSystem.MinMaxGradient effectColor;
+    [SerializeField] private float goEffectInterval = 0.2f;
+
+    // 외부 의존성 및 컴포넌트
+    private IEnvironmentProvider environmentProvider;
+    private InputManager inputManager;
+    private IInventory characterInventory;
+    private OffroadContainer offroadContainer;
+    private VFXComponent vfxComponent;
+    private Animator wheelAnimator;
+    private CustomSortable customSortable;
+    private CustomSortable customSortable_wheel;
     private OffroadContainerVComponent offroadContainerVComponent;
 
+    [Space(10)]
+    [Header("Physics & Renderers")]
     public CircleCollider2D col;
+
+    // Sprite Renderers
+    public SpriteRenderer baseSR;
+    public SpriteRenderer wheelSR;
+    public SpriteRenderer containerSR;
+    public SpriteRenderer wheelStencilSR;
+    public SpriteRenderer baseOutlineStencilSR;
+    public SpriteRenderer wheelOutlineStencilSR;
+
+    // 내부 상태 변수들
+    private int characterLayer;
+    private float lastActivatedTime = -10.0f;
+    private bool bCanJump = false;
+    private bool bOverlapped = false;
+    private bool bUIActivated = false;
+    private Coroutine driveCoroutine;
     private float colRadius;
     private bool bCanReach = true;
     private bool bCanInteract = false;
     private bool bPhysicalOverlapped = false;
     private bool bLastInteractState = false;
-
     private Transform charTransform;
-
-    public SpriteRenderer baseSR;
-    public SpriteRenderer wheelSR;
-    public SpriteRenderer containerSR;
-    public SpriteRenderer wheelStencilSR;
-
-    public SpriteRenderer baseOutlineStencilSR;
-    public SpriteRenderer wheelOutlineStencilSR;
-
-    [SerializeField] private Sprite darkBaseSprite;
-    [SerializeField] private Sprite darkWheelSprite;
-    [SerializeField] private Sprite darkContainerSprite;
-
     private Sprite originalBaseSprite;
     private Sprite originalWheelSprite;
     private Color originalContainerColor;
     private bool bOriginalSpritesSaved = false;
-
-    [SerializeField] private GameObject containerShadowObj;
-
-
-    [Space]
-    [Header("Character Ride Settings")]
-    public Transform getOffTransform;
 
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
@@ -107,6 +113,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         offroadContainer = _offroadContainer;
         charTransform = _characterTransform;
+
+        vfxComponent = GetComponent<VFXComponent>();
 
         col = GetComponent<CircleCollider2D>();
         colRadius = col.radius;
@@ -435,6 +443,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     private IEnumerator IgnitionImpactSequence(Vector3 _initialPos, Vector3 _initialScale)
     {
+        PlayStartUpEffect();
         float elapsed = 0f;
         while (elapsed < ignitionSquashDuration)
         {
@@ -468,6 +477,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private IEnumerator TravelSequence(Vector3 _targetPos, Vector3 _initialLocalPos)
     {
         float currentSpeed = 0f;
+        float goEffectTimer = 0f;
         while (Vector3.Distance(transform.position, _targetPos) > reachThreshold)
         {
             currentSpeed = Mathf.MoveTowards(currentSpeed, maxSpeed, acceleration * Time.deltaTime);
@@ -475,6 +485,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
             ApplyShake(_initialLocalPos, shakeIntensity);
             UpdateWheelAnimation(currentSpeed);
+
+            goEffectTimer += Time.deltaTime;
+            if (goEffectTimer >= goEffectInterval)
+            {
+                goEffectTimer = 0f;
+                PlayGoEffect();
+            }
 
             yield return null;
         }
@@ -492,6 +509,22 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         if (wheelAnimator != null)
         {
             wheelAnimator.speed = _speed * 0.2f;
+        }
+    }
+
+    private void PlayStartUpEffect()
+    {
+        if (vfxComponent != null && startUpEffectPoint != null)
+        {
+            vfxComponent.Play(new VFXPlaySettings("StartUp", startUpEffectPoint.position, startUpEffectPoint.rotation, effectColor, startUpEffectPoint));
+        }
+    }
+
+    private void PlayGoEffect()
+    {
+        if (vfxComponent != null && goEffectPoint != null)
+        {
+            vfxComponent.Play(new VFXPlaySettings("Go", goEffectPoint.position, goEffectPoint.rotation, effectColor, goEffectPoint));
         }
     }
 
