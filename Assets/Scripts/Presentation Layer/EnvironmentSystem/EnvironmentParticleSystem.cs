@@ -20,6 +20,17 @@ public class EnvironmentParticleSystem : MonoBehaviour
     public Vector2 minParallaxFactor = new Vector2(0.2f, 0.2f);
     public Vector2 maxParallaxFactor = new Vector2(0.8f, 0.8f);
 
+    [Tooltip("가장 먼 층(0번)의 파티클 크기 배율")]
+    public float minParticleSizeMultiplier = 0.5f;
+    [Tooltip("가장 가까운 층(마지막)의 파티클 크기 배율")]
+    public float maxParticleSizeMultiplier = 1.2f;
+
+    [Header("HDR Scaling")]
+    [Tooltip("가장 먼 층(0번)의 HDR 강도")]
+    public float minHDRIntensity = 1.0f;
+    [Tooltip("가장 가까운 층(마지막)의 HDR 강도")]
+    public float maxHDRIntensity = 3.0f;
+
     // 내부 의존성
     private struct ParallaxLayerSetting
     {
@@ -34,6 +45,9 @@ public class EnvironmentParticleSystem : MonoBehaviour
     private Camera mainCamera;
     private Transform cameraTransform;
     private Vector3 previousCameraPosition;
+    
+    private MaterialPropertyBlock propertyBlock;
+    private static readonly int HdrIntensityPropertyId = Shader.PropertyToID("_HDRIntensity");
 
     public void Initialize()
     {
@@ -42,6 +56,8 @@ public class EnvironmentParticleSystem : MonoBehaviour
         // 예상 최대 용량 기반 List 초기화 (단편화 방지 최적화)
         int expectedCapacity = mapParticleMappings != null ? mapParticleMappings.Count * autoGenerateLayerCount : 10;
         layers = new List<ParallaxLayerSetting>(expectedCapacity);
+        
+        propertyBlock = new MaterialPropertyBlock();
     }
 
     public void SetupCamera()
@@ -111,8 +127,20 @@ public class EnvironmentParticleSystem : MonoBehaviour
 
             float t = autoGenerateLayerCount > 1 ? (float)i / (autoGenerateLayerCount - 1) : 1f;
             Vector2 factor = Vector2.Lerp(minParallaxFactor, maxParallaxFactor, t);
+            float sizeMult = Mathf.Lerp(minParticleSizeMultiplier, maxParticleSizeMultiplier, t);
+            float hdrInt = Mathf.Lerp(minHDRIntensity, maxHDRIntensity, t);
+
+            var renderer = instance.GetComponent<ParticleSystemRenderer>();
+            if (renderer != null)
+            {
+                renderer.GetPropertyBlock(propertyBlock);
+                propertyBlock.SetFloat(HdrIntensityPropertyId, hdrInt);
+                renderer.SetPropertyBlock(propertyBlock);
+            }
 
             var mainModule = instance.main;
+            mainModule.startSizeMultiplier *= sizeMult;
+
             if (mainModule.simulationSpace != ParticleSystemSimulationSpace.Local)
             {
                 mainModule.simulationSpace = ParticleSystemSimulationSpace.Local;
