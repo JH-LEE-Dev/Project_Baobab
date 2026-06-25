@@ -18,56 +18,58 @@ public class InDungeonVFXManager : MonoBehaviour
 
     /// <summary>
     /// 나무 피격 VFX를 재생합니다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
+    /// Top/Bottom 이펙트는 각각 설정된 컬러를 공유합니다.
     /// </summary>
     public void PlayTreeHitVFX(TreeVisualComponent _visual)
     {
         if (vfxComponent == null || _visual == null) return;
 
-        ParticleColorSet color = _visual.GetVfxColor();
-
+        ParticleColorSet topColor = _visual.GetTopVfxColor();
         vfxComponent.Play(new VFXPlaySettings(
             "TreeHitEffect_Top",
             _visual.GetTopRootPosition(),
             _visual.GetTopRootRotation(),
-            color.startColor,
-            color.overrideChildrenColor,
+            topColor.startColor,
+            topColor.overrideChildrenColor,
             null
         ));
 
+        ParticleColorSet bottomColor = _visual.GetBottomVfxColor();
         vfxComponent.Play(new VFXPlaySettings(
             "TreeHitEffect_Bottom",
             _visual.GetBottomRootPosition(),
             _visual.GetBottomRootRotation(),
-            color.startColor,
-            color.overrideChildrenColor,
+            bottomColor.startColor,
+            bottomColor.overrideChildrenColor,
             null
         ));
     }
 
     /// <summary>
     /// 나무 사망 VFX를 재생합니다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
+    /// Top/Bottom 이펙트는 각각 설정된 컬러를 공유합니다.
     /// </summary>
     public void PlayTreeDeadVFX(TreeVisualComponent _visual)
     {
         if (vfxComponent == null || _visual == null) return;
 
-        ParticleColorSet color = _visual.GetVfxColor();
-
+        ParticleColorSet topColor = _visual.GetTopVfxColor();
         vfxComponent.Play(new VFXPlaySettings(
             "TreeDeadEffect_Top",
             _visual.GetTopRootPosition(),
             _visual.GetTopRootRotation(),
-            color.startColor,
-            color.overrideChildrenColor,
+            topColor.startColor,
+            topColor.overrideChildrenColor,
             null
         ));
 
+        ParticleColorSet bottomColor = _visual.GetBottomVfxColor();
         vfxComponent.Play(new VFXPlaySettings(
             "TreeDeadEffect_Bottom",
             _visual.GetBottomRootPosition(),
             _visual.GetBottomRootRotation(),
-            color.startColor,
-            color.overrideChildrenColor,
+            bottomColor.startColor,
+            bottomColor.overrideChildrenColor,
             null
         ));
     }
