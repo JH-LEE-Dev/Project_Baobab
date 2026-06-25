@@ -83,6 +83,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private InDungeonResultManager inDungeonResultManager;
     private MapType currentMapType;
 
+    private InDungeonVFXManager inDungeonVFXManager;
+
     // // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager,
@@ -101,6 +103,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();
+
+        inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
+        inDungeonVFXManager.Initialize();
 
         cullingDistances = new float[] { cullingDistance };
         spheres = new BoundingSphere[2500]; // 최대 개수에 맞춰 미리 할당
@@ -516,6 +521,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void OnTreeDead(TreeObj _treeObj)
     {
+        inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
+
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
         environmentProvider.densityProvider.UpdateTreeCnt(false);
 
@@ -718,6 +725,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
 
     private void OnTreeHit(TreeObj _treeObj)
     {
+        inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
+
         if (currentTreeGenerationStrategy != null)
         {
             currentTreeGenerationStrategy.OnTreeGetHit(this, _treeObj);

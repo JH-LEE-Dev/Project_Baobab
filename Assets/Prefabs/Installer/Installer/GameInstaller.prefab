@@ -971,6 +971,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 83c2bad7de0384e468ce12c34c95b8f1, type: 3}
   - {fileID: 21300000, guid: 5ab479140c3366b4d83dc875c4087476, type: 3}
   - {fileID: 21300000, guid: b600a6c252153fd48af425fb7aa2a924, type: 3}
+  cloudColor: {r: 1, g: 1, b: 1, a: 1}
   cloudCnt: 500
   cloudMinSpeed: 0.06
   cloudMaxSpeed: 0.075
@@ -1248,6 +1249,96 @@ MonoBehaviour:
   skillDataBase: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
   prestigeLevel: 0
   skillExperience: 0
+--- !u!1 &5075027738427714103
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 444120359889368032}
+  - component: {fileID: 8778314863377964389}
+  - component: {fileID: 777467232540049004}
+  m_Layer: 0
+  m_Name: VFXManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &444120359889368032
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5075027738427714103}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7610549331774678628}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8778314863377964389
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5075027738427714103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed1de89995130bb45be1934f24245170, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InDungeonVFXManager
+  vfxComponent: {fileID: 0}
+--- !u!114 &777467232540049004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5075027738427714103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  vfxPoolDataList:
+  - vfxTag: TreeHitEffect_Top
+    effectPrefab: {fileID: 7006864300503741061, guid: e471b86a20e7300478d33f5733d26505, type: 3}
+    initialPoolSize: 20
+    allowDynamicExpansion: 0
+    maxPoolSize: 50
+    uiParticleScale: 0
+  - vfxTag: TreeHitEffect_Bottom
+    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
+    initialPoolSize: 20
+    allowDynamicExpansion: 0
+    maxPoolSize: 50
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_Top
+    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
+    initialPoolSize: 20
+    allowDynamicExpansion: 0
+    maxPoolSize: 50
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_Top
+    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
+    initialPoolSize: 20
+    allowDynamicExpansion: 0
+    maxPoolSize: 50
+    uiParticleScale: 0
+  - vfxTag: TreeDeadEffect_Bottom
+    effectPrefab: {fileID: 2164660391435094963, guid: 4ebe2784b99043d449fd477fb75f74e9, type: 3}
+    initialPoolSize: 20
+    allowDynamicExpansion: 0
+    maxPoolSize: 50
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0
@@ -2303,6 +2394,7 @@ Transform:
   m_Children:
   - {fileID: 1304635927712425472}
   - {fileID: 4100863405783768896}
+  - {fileID: 444120359889368032}
   m_Father: {fileID: 6142116780314600098}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &6203375709117898116
