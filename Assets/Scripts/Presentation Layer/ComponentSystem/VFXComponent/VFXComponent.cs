@@ -22,6 +22,66 @@ public class VFXPoolData
     public float UiParticleScale => uiParticleScale;
 }
 
+[System.Serializable]
+public struct VFXPlaySettings
+{
+    // 외부 의존성
+    [SerializeField] private string vfxTag;
+    [SerializeField] private Vector3 position;
+    [SerializeField] private Quaternion rotation;
+    [SerializeField] private Transform parent;
+    [SerializeField] private bool withChildren;
+    [SerializeField] private bool overrideColor;
+    [SerializeField] private bool overrideChildrenColor;
+    [SerializeField] private ParticleSystem.MinMaxGradient startColor;
+
+    // 퍼블릭 초기화 및 제어 메서드
+    public string VfxTag => vfxTag;
+    public Vector3 Position => position;
+    public Quaternion Rotation => rotation;
+    public Transform Parent => parent;
+    public bool WithChildren => withChildren;
+    public bool OverrideColor => overrideColor;
+    public bool OverrideChildrenColor => overrideChildrenColor;
+    public ParticleSystem.MinMaxGradient StartColor => startColor;
+
+    public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, Transform _parent = null)
+    {
+        vfxTag = _tag;
+        position = _pos;
+        rotation = _rot;
+        parent = _parent;
+        withChildren = true;
+        overrideColor = false;
+        overrideChildrenColor = false;
+        startColor = new ParticleSystem.MinMaxGradient(Color.white);
+    }
+
+    public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, ParticleSystem.MinMaxGradient _color, Transform _parent = null)
+    {
+        vfxTag = _tag;
+        position = _pos;
+        rotation = _rot;
+        parent = _parent;
+        withChildren = true;
+        overrideColor = true;
+        overrideChildrenColor = false;
+        startColor = _color;
+    }
+
+    public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, ParticleSystem.MinMaxGradient _color, bool _overrideChildrenColor, Transform _parent = null)
+    {
+        vfxTag = _tag;
+        position = _pos;
+        rotation = _rot;
+        parent = _parent;
+        withChildren = true;
+        overrideColor = true;
+        overrideChildrenColor = _overrideChildrenColor;
+        startColor = _color;
+    }
+}
+
 /// <summary>
 /// 여러 종류의 이펙트 프리팹을 태그별로 바인딩하여 각각 로컬 오브젝트 풀링을 수행하는 VFX 컴포넌트입니다.
 /// </summary>
@@ -154,6 +214,20 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
+    /// 지정된 설정 구조체 데이터를 기반으로 이펙트를 꺼내어 즉시 재생합니다.
+    /// </summary>
+    public ParticleSystem Play(VFXPlaySettings _settings)
+    {
+        ParticleSystem _effect = Get(_settings.VfxTag);
+        if (null == _effect)
+            return null;
+
+        Play(_effect, _settings);
+
+        return _effect;
+    }
+
+    /// <summary>
     /// 이미 가져온 특정 이펙트 인스턴스의 부모, 위치, 회전값을 설정하고 즉시 재생합니다.
     /// </summary>
     public void Play(ParticleSystem _effect, Vector3 _position, Quaternion _rotation, Transform _parent = null)
@@ -173,6 +247,54 @@ public class VFXComponent : MonoBehaviour
             _effect.gameObject.SetActive(true);
 
         _effect.Play(true);
+    }
+
+    /// <summary>
+    /// 이미 가져온 특정 이펙트 인스턴스를 지정된 설정 구조체 정보에 맞춰 가공 후 즉시 재생합니다.
+    /// </summary>
+    public void Play(ParticleSystem _effect, VFXPlaySettings _settings)
+    {
+        if (null == _effect)
+            return;
+
+        VFXPoolInstanceHelper _helper = _effect.GetComponent<VFXPoolInstanceHelper>();
+        Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
+
+        _target.SetParent(_settings.Parent);
+        _target.position = _settings.Position;
+        _target.rotation = _settings.Rotation;
+
+        _target.gameObject.SetActive(true);
+        if (_target != _effect.transform)
+            _effect.gameObject.SetActive(true);
+
+        // 색상 오버라이드 처리
+        if (true == _settings.OverrideColor)
+        {
+            var _main = _effect.main;
+            _main.startColor = _settings.StartColor;
+
+            // 자식 파티클 색상 덮어쓰기 여부 판정
+            if (true == _settings.OverrideChildrenColor)
+            {
+                ParticleSystem[] _children = _effect.GetComponentsInChildren<ParticleSystem>(true);
+                if (null != _children)
+                {
+                    int _len = _children.Length;
+                    for (int i = 0; i < _len; i++)
+                    {
+                        ParticleSystem _child = _children[i];
+                        if (null != _child)
+                        {
+                            var _childMain = _child.main;
+                            _childMain.startColor = _settings.StartColor;
+                        }
+                    }
+                }
+            }
+        }
+
+        _effect.Play(_settings.WithChildren);
     }
 
     /// <summary>
