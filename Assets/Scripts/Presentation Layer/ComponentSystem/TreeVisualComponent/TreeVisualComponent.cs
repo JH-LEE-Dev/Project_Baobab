@@ -139,14 +139,14 @@ public class TreeVisualComponent : MonoBehaviour
     {
         topRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
 
+        topShieldRenderer.sortingOrder = topRenderer.sortingOrder + 1;
+        bottomShieldRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
+        
         topStencilOutlineSR.sortingOrder = topOutlineSR.sortingOrder - 1;
         bottomStencilOutlineSR.sortingOrder = bottomOutlineSR.sortingOrder - 1;
 
         bottomHighlightRenderer.sortingOrder = topRenderer.sortingOrder + 1;
         topHighlightRenderer.sortingOrder = bottomHighlightRenderer.sortingOrder + 1;
-
-        topShieldRenderer.sortingOrder = topRenderer.sortingOrder + 1;
-        bottomShieldRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
     }
 
     // 루트 트랜스폼이 틀어졌을 때 위치, 회전, 스케일을 모두 기본값으로 맞춘다.
