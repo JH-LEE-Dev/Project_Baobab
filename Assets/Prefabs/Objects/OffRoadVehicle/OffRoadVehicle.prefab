@@ -557,6 +557,37 @@ TilemapCollider2D:
   m_MaximumTileChangeCount: 1000
   m_ExtrusionFactor: 0
   m_UseDelaunayMesh: 0
+--- !u!1 &611873229726077775
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 693034830568491026}
+  m_Layer: 7
+  m_Name: GoEffectPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &693034830568491026
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 611873229726077775}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2765096103720082767}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1081182053721403114
 GameObject:
   m_ObjectHideFlags: 0
@@ -1678,6 +1709,7 @@ GameObject:
   - component: {fileID: 2765096103720082767}
   - component: {fileID: 256747857165204771}
   - component: {fileID: 4433508306021481703}
+  - component: {fileID: 7069369861082404106}
   m_Layer: 7
   m_Name: OffRoadVehicle
   m_TagString: Untagged
@@ -1706,6 +1738,8 @@ Transform:
   - {fileID: 3413446501128252447}
   - {fileID: 8399006661337756551}
   - {fileID: 843943444443842380}
+  - {fileID: 7055498286988681686}
+  - {fileID: 693034830568491026}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &256747857165204771
@@ -1728,6 +1762,7 @@ MonoBehaviour:
   containerObject: {fileID: 4630919652543835906}
   visualObject: {fileID: 5095953006596015848}
   jitterVisualObject: {fileID: 6141652187031796601}
+  containerShadowObj: {fileID: 2040180491576184137}
   containerJumpDuration: 0.5
   containerJumpHeight: 1.5
   containerSpringFrequency: 20
@@ -1745,6 +1780,77 @@ MonoBehaviour:
   containerCarryPoint: {fileID: 8170189756255339106}
   containerDropPoint: {fileID: 7940638458654477517}
   CharacterRidePoint: {fileID: 5304305252831328137}
+  getOffTransform: {fileID: 843943444443842380}
+  darkBaseSprite: {fileID: 21300000, guid: 0b7d4f73ec5692845871cca9304b6bbb, type: 3}
+  darkWheelSprite: {fileID: 21300000, guid: 632cff2dba2b5d44988bc4622dd53f13, type: 3}
+  darkContainerSprite: {fileID: 0}
+  startUpEffectPoint: {fileID: 7055498286988681686}
+  goEffectPoint: {fileID: 693034830568491026}
+  effectColor:
+    m_Mode: 0
+    m_GradientMin:
+      serializedVersion: 2
+      key0: {r: 1, g: 1, b: 1, a: 1}
+      key1: {r: 1, g: 1, b: 1, a: 1}
+      key2: {r: 0, g: 0, b: 0, a: 0}
+      key3: {r: 0, g: 0, b: 0, a: 0}
+      key4: {r: 0, g: 0, b: 0, a: 0}
+      key5: {r: 0, g: 0, b: 0, a: 0}
+      key6: {r: 0, g: 0, b: 0, a: 0}
+      key7: {r: 0, g: 0, b: 0, a: 0}
+      ctime0: 0
+      ctime1: 65535
+      ctime2: 0
+      ctime3: 0
+      ctime4: 0
+      ctime5: 0
+      ctime6: 0
+      ctime7: 0
+      atime0: 0
+      atime1: 65535
+      atime2: 0
+      atime3: 0
+      atime4: 0
+      atime5: 0
+      atime6: 0
+      atime7: 0
+      m_Mode: 0
+      m_ColorSpace: -1
+      m_NumColorKeys: 2
+      m_NumAlphaKeys: 2
+    m_GradientMax:
+      serializedVersion: 2
+      key0: {r: 1, g: 1, b: 1, a: 1}
+      key1: {r: 1, g: 1, b: 1, a: 1}
+      key2: {r: 0, g: 0, b: 0, a: 0}
+      key3: {r: 0, g: 0, b: 0, a: 0}
+      key4: {r: 0, g: 0, b: 0, a: 0}
+      key5: {r: 0, g: 0, b: 0, a: 0}
+      key6: {r: 0, g: 0, b: 0, a: 0}
+      key7: {r: 0, g: 0, b: 0, a: 0}
+      ctime0: 0
+      ctime1: 65535
+      ctime2: 0
+      ctime3: 0
+      ctime4: 0
+      ctime5: 0
+      ctime6: 0
+      ctime7: 0
+      atime0: 0
+      atime1: 65535
+      atime2: 0
+      atime3: 0
+      atime4: 0
+      atime5: 0
+      atime6: 0
+      atime7: 0
+      m_Mode: 0
+      m_ColorSpace: -1
+      m_NumColorKeys: 2
+      m_NumAlphaKeys: 2
+    m_ColorMin: {r: 0, g: 0, b: 0, a: 0}
+    m_ColorMax: {r: 0, g: 0, b: 0, a: 0}
+  goEffectInterval: 0.2
   col: {fileID: 0}
   baseSR: {fileID: 8911054006785933061}
   wheelSR: {fileID: 7586187257306013718}
@@ -1752,11 +1858,6 @@ MonoBehaviour:
   wheelStencilSR: {fileID: 3594479015764017572}
   baseOutlineStencilSR: {fileID: 7560987242974663247}
   wheelOutlineStencilSR: {fileID: 767506997055690360}
-  darkBaseSprite: {fileID: 21300000, guid: 0b7d4f73ec5692845871cca9304b6bbb, type: 3}
-  darkWheelSprite: {fileID: 21300000, guid: 632cff2dba2b5d44988bc4622dd53f13, type: 3}
-  darkContainerSprite: {fileID: 0}
-  containerShadowObj: {fileID: 2040180491576184137}
-  getOffTransform: {fileID: 843943444443842380}
 --- !u!58 &4433508306021481703
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -1793,6 +1894,32 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: -0.03, y: 0.3}
   m_Radius: 1.25
+--- !u!114 &7069369861082404106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3816919449108685317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  vfxPoolDataList:
+  - vfxTag: StartUp
+    effectPrefab: {fileID: 0}
+    initialPoolSize: 0
+    allowDynamicExpansion: 0
+    maxPoolSize: 0
+    uiParticleScale: 0
+  - vfxTag: Go
+    effectPrefab: {fileID: 0}
+    initialPoolSize: 0
+    allowDynamicExpansion: 0
+    maxPoolSize: 0
+    uiParticleScale: 0
 --- !u!1 &3967389484218223539
 GameObject:
   m_ObjectHideFlags: 0
@@ -2310,6 +2437,37 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 1
+--- !u!1 &5818712333322530924
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7055498286988681686}
+  m_Layer: 7
+  m_Name: StartUpEffectPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7055498286988681686
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5818712333322530924}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2765096103720082767}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6141652187031796601
 GameObject:
   m_ObjectHideFlags: 0
