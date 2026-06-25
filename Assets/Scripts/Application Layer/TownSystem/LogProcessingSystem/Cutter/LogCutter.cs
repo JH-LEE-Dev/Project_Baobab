@@ -2,6 +2,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public struct TreeVFXColorData
+{
+    public TreeType treeType;
+    public ParticleSystem.MinMaxGradient effectColor;
+}
+
 public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 {
     public event Action CuttingDoneEvent;
@@ -18,7 +25,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     [Space(10)]
     [Header("VFX Settings")]
     [SerializeField] private Transform effectTransform;
-    [SerializeField] private ParticleSystem.MinMaxGradient effectColor;
+    [SerializeField] private List<TreeVFXColorData> treeVFXColorDatas;
+    private ParticleSystem.MinMaxGradient effectColor;
 
     // 내부 상태 및 컴포넌트 참조
     private LogItem cuttingItem;
@@ -324,7 +332,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             {
                 vfxComponent.Stop(cuttingEffect, true);
             }
-            VFXPlaySettings settings = new VFXPlaySettings("CuttingEffect", effectTransform.position, effectTransform.rotation, effectColor, effectTransform);
+            ParticleSystem.MinMaxGradient color = GetVFXColorForCurrentTree();
+            VFXPlaySettings settings = new VFXPlaySettings("CuttingEffect", effectTransform.position, effectTransform.rotation, color, effectTransform);
             cuttingEffect = vfxComponent.Play(settings);
         }
     }
@@ -336,6 +345,21 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             vfxComponent.Stop(cuttingEffect);
             cuttingEffect = null;
         }
+    }
+
+    private ParticleSystem.MinMaxGradient GetVFXColorForCurrentTree()
+    {
+        if (cuttingItem != null && treeVFXColorDatas != null)
+        {
+            for (int i = 0; i < treeVFXColorDatas.Count; i++)
+            {
+                if (treeVFXColorDatas[i].treeType == cuttingItem.treeType)
+                {
+                    return treeVFXColorDatas[i].effectColor;
+                }
+            }
+        }
+        return effectColor;
     }
 
     private void UpdateAnimation(float _deltaTime)
