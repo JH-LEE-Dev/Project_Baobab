@@ -103,10 +103,10 @@ TextureImporter:
       name: Bottom_F_00_0
       rect:
         serializedVersion: 2
-        x: 9
-        y: 5
-        width: 14
-        height: 31
+        x: 4
+        y: 3
+        width: 23
+        height: 23
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
