@@ -86,7 +86,8 @@ public class TreeVisualComponent : MonoBehaviour
     private MaterialPropertyBlock Mpb => _mpb ??= new MaterialPropertyBlock();
 
     // VFX Color Settings
-    private ParticleColorSet currentVfxColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
+    private ParticleColorSet currentTopVfxColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
+    private ParticleColorSet currentBottomVfxColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
 
     #endregion
 
@@ -202,7 +203,8 @@ public class TreeVisualComponent : MonoBehaviour
                 ApplyDefaultScale();
                 shieldHDRIntensity = customVisualData.shieldHDRIntensity;
                 highlightHDRIntensity = customVisualData.highlightHDRIntensity;
-                currentVfxColor = customVisualData.vfxColor;
+                currentTopVfxColor = customVisualData.topVfxColor;
+                currentBottomVfxColor = customVisualData.bottomVfxColor;
                 UpdateHDRStates();
                 return;
             }
@@ -286,7 +288,8 @@ public class TreeVisualComponent : MonoBehaviour
 
         shieldHDRIntensity = _treeData.treeVisualData.shieldHDRIntensity;
         highlightHDRIntensity = _treeData.treeVisualData.highlightHDRIntensity;
-        currentVfxColor = _treeData.treeVisualData.vfxColor;
+        currentTopVfxColor = _treeData.treeVisualData.topVfxColor;
+        currentBottomVfxColor = _treeData.treeVisualData.bottomVfxColor;
         UpdateHDRStates();
     }
 
@@ -324,7 +327,8 @@ public class TreeVisualComponent : MonoBehaviour
 
         UpdateRendererSprites();
         ApplyDefaultScale();
-        currentVfxColor = visualData.vfxColor;
+        currentTopVfxColor = visualData.topVfxColor;
+        currentBottomVfxColor = visualData.bottomVfxColor;
         UpdateHDRStates();
     }
 
@@ -546,7 +550,8 @@ public class TreeVisualComponent : MonoBehaviour
     public Vector3 GetBottomRootPosition() => bottomRoot != null ? bottomRoot.position : transform.position;
     public Quaternion GetTopRootRotation() => topRoot != null ? topRoot.rotation : Quaternion.identity;
     public Quaternion GetBottomRootRotation() => bottomRoot != null ? bottomRoot.rotation : Quaternion.identity;
-    public ParticleColorSet GetVfxColor() => currentVfxColor;
+    public ParticleColorSet GetTopVfxColor() => currentTopVfxColor;
+    public ParticleColorSet GetBottomVfxColor() => currentBottomVfxColor;
 
     // 누적된 연출 값을 지우고 비주얼을 기본 위치와 포즈로 되돌린다.
     public void ResetVisualState()
