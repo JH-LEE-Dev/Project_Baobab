@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 7006864300503741061}
   - component: {fileID: 6509270631852307149}
   m_Layer: 0
-  m_Name: VFX_LeafImpact
+  m_Name: VFX_LeafExplosion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -612,7 +612,7 @@ ParticleSystem:
     gravityModifier:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.15
+      scalar: 0.4
       minScalar: 0
       maxCurve:
         serializedVersion: 2
@@ -1554,8 +1554,8 @@ ParticleSystem:
     x:
       serializedVersion: 2
       minMaxState: 3
-      scalar: -1
-      minScalar: 1
+      scalar: -2
+      minScalar: 2
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -1608,7 +1608,7 @@ ParticleSystem:
       serializedVersion: 2
       minMaxState: 3
       scalar: 0
-      minScalar: 0
+      minScalar: 2
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -5499,7 +5499,7 @@ ParticleSystem:
         m_RotationOrder: 4
     randomizeRotationDirection: 0
     gravitySource: 1
-    maxNumParticles: 50
+    maxNumParticles: 30
     customEmitterVelocity: {x: 0, y: 0, z: 0}
     size3D: 0
     rotation3D: 0
@@ -5875,7 +5875,7 @@ ParticleSystem:
       countCurve:
         serializedVersion: 2
         minMaxState: 0
-        scalar: 10
+        scalar: 30
         minScalar: 30
         maxCurve:
           serializedVersion: 2
@@ -6448,8 +6448,8 @@ ParticleSystem:
     x:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0
-      minScalar: 0
+      scalar: -1
+      minScalar: 1
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -6501,8 +6501,8 @@ ParticleSystem:
     y:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0
-      minScalar: 1.5
+      scalar: 1
+      minScalar: 2
       maxCurve:
         serializedVersion: 2
         m_Curve:

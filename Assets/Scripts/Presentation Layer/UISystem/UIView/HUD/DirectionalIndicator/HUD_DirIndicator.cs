@@ -197,9 +197,28 @@ namespace PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator
                 }
             }
 
-            // 4. 픽셀 격자 스냅 및 좌표 대입
+            // 4. 픽셀 격자 스냅 및 캔버스 렌더 모드 대응 좌표 대입
             if (null != rectTransform)
-                rectTransform.position = new Vector3(Mathf.Round(_finalX), Mathf.Round(_finalY), 0f);
+            {
+                RectTransform _parentRect = transform.parent as RectTransform;
+                if (null != _parentRect)
+                {
+                    Canvas _canvas = GetComponentInParent<Canvas>();
+                    Camera _uiCamera = (null != _canvas) ? _canvas.worldCamera : null;
+
+                    Vector2 _localPoint;
+                    Vector2 _screenPoint = new Vector2(Mathf.Round(_finalX), Mathf.Round(_finalY));
+
+                    if (RectTransformUtility.ScreenPointToLocalPointInRectangle(_parentRect, _screenPoint, _uiCamera, out _localPoint))
+                    {
+                        rectTransform.anchoredPosition = _localPoint;
+                    }
+                }
+                else
+                {
+                    rectTransform.position = new Vector3(Mathf.Round(_finalX), Mathf.Round(_finalY), 0f);
+                }
+            }
         }
 
         public void OnHide()
