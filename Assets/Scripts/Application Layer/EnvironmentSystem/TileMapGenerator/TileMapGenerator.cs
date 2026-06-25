@@ -212,6 +212,25 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
+        if (waterTilemap != null && stageTileData != null)
+        {
+            TilemapRenderer tr = waterTilemap.GetComponent<TilemapRenderer>();
+            if (tr != null)
+            {
+                var mpb = new MaterialPropertyBlock();
+                tr.GetPropertyBlock(mpb);
+                if (stageTileData.UseWaterTileBloom)
+                {
+                    mpb.SetFloat(HDRIntensityID, stageTileData.WaterTileHDRIntensity);
+                }
+                else
+                {
+                    mpb.SetFloat(HDRIntensityID, 1.0f);
+                }
+                tr.SetPropertyBlock(mpb);
+            }
+        }
+
         groundTilemap.ClearAllTiles();
         collisionTilemap.ClearAllTiles();
         decoTilemap.ClearAllTiles();

@@ -65,6 +65,9 @@ MonoBehaviour:
   waterAnimatedObjPrefabs: []
   staticObjPrefabs: []
   bloomDecoHDRIntensity: 1
+  bloomWaterDecoHDRIntensity: 1
+  useWaterTileBloom: 1
+  waterTileHDRIntensity: 2.25
   rockDecoDensity: 0.0005
   animatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
@@ -75,3 +78,5 @@ MonoBehaviour:
   bloomSandDecoDensity: 0.01
   bloomGroundDecoDensity: 0.002
   bloomGrassDecoDensity: 0.07
+  useBloomWaterDecoDensity: 0
+  bloomWaterDecoDensity: 0.1
