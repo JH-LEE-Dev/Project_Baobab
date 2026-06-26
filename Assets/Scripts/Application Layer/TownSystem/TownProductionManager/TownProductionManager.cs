@@ -134,7 +134,7 @@ public class TownProductionManager : MonoBehaviour
 
     private IEnumerator InvokeCharacterRideEndEventRoutine()
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(0.25f);
         CharacterRideEndEvent?.Invoke();
     }
 

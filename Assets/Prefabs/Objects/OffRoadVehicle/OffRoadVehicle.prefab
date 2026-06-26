@@ -1784,6 +1784,9 @@ MonoBehaviour:
   darkBaseSprite: {fileID: 21300000, guid: 0b7d4f73ec5692845871cca9304b6bbb, type: 3}
   darkWheelSprite: {fileID: 21300000, guid: 632cff2dba2b5d44988bc4622dd53f13, type: 3}
   darkContainerSprite: {fileID: 0}
+  cinderBaseSprite: {fileID: 21300000, guid: 65cde72fcfe81af4ab9c9303998b48ca, type: 3}
+  cinderWheelSprite: {fileID: 21300000, guid: e706cfd3bd2845241901859350a91cce, type: 3}
+  cinderContainerSprite: {fileID: 0}
   startUpEffectPoint: {fileID: 7055498286988681686}
   goEffectPoint: {fileID: 693034830568491026}
   effectColor:

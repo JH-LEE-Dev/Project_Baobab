@@ -23,7 +23,8 @@ public class UIView_MenuPopup : UIView
     private bool isInitialOpen = false;
 
     [Header("Open Delay Settings")]
-    [SerializeField] private float vehicleOpenDelay = 0.5f;
+    [SerializeField] private float vehicleOpenDelay = 0f;
+
 
     private Coroutine vehicleOpenCoroutine;
     private readonly Dictionary<float, WaitForSeconds> waitCache = new Dictionary<float, WaitForSeconds>(4);
