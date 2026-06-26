@@ -270,6 +270,7 @@ public class EnvironmentObjManager : MonoBehaviour
     private void SpawnClouds()
     {
         if (tilemapDataProvider == null || currentStageEnvData == null) return;
+        if (false == objPools.ContainsKey(EnvironmentObjType.Cloud)) return;
 
         // 맵의 전체 범위 계산
         Vector3 bottomLeft = new Vector3Int(-tilemapDataProvider.GridWidth / 2, 0, 0);
@@ -379,6 +380,8 @@ public class EnvironmentObjManager : MonoBehaviour
     {
         if (null == tilemapDataProvider || currentStageEnvData == null)
             return;
+        if (false == objPools.ContainsKey(EnvironmentObjType.BirdShadow))
+            return;
 
         Vector3 _bottomLeft = new Vector3Int(-tilemapDataProvider.GridWidth / 2, 0, 0);
         Vector3 _topRight = new Vector3Int(tilemapDataProvider.GridWidth / 2, tilemapDataProvider.GridHeight / 2, 0);
@@ -487,13 +490,14 @@ public class EnvironmentObjManager : MonoBehaviour
 
     private void SetupPools()
     {
-        List<EnvironmentObj> prefabsToUse = (currentStageEnvData != null && currentStageEnvData.EnvObjPrefabs != null && currentStageEnvData.EnvObjPrefabs.Count > 0) 
+        objPools.Clear();
+
+        List<EnvironmentObj> prefabsToUse = (currentStageEnvData != null) 
             ? currentStageEnvData.EnvObjPrefabs 
             : envObjPrefabs;
 
         if (prefabsToUse == null || prefabsToUse.Count == 0) return;
 
-        objPools.Clear();
         foreach (EnvironmentObj _prefab in prefabsToUse)
         {
             if (null == _prefab) continue;

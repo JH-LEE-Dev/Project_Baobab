@@ -950,7 +950,7 @@ MonoBehaviour:
   - mapType: 2
     envData: {fileID: 11400000, guid: 861ee03f683560540aa845ae157a2016, type: 2}
   - mapType: 3
-    envData: {fileID: 0}
+    envData: {fileID: 11400000, guid: 86ecb37f3d21d9d4c99500d03da24e9f, type: 2}
   - mapType: 4
     envData: {fileID: 11400000, guid: 76d72ed6ee9dba544ac5d44ca731ccdd, type: 2}
   - mapType: 5
