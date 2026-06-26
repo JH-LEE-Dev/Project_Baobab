@@ -13,6 +13,8 @@ public class StaticObj : MonoBehaviour
 
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
 
+    private bool bInitialize = false;
+
     public void Initialize()
     {
         customSortable = GetComponent<CustomSortable>();
@@ -26,13 +28,32 @@ public class StaticObj : MonoBehaviour
         sr.GetPropertyBlock(mpb);
         mpb.SetFloat(HDRIntensityID, hdrIntensity);
         sr.SetPropertyBlock(mpb);
+
+        bInitialize = true;
     }
 
     public void Awake()
     {
-        if (customSortable != null)
+        if (bInitialize == false)
         {
-            customSortable.ManualLateUpdate();
+            customSortable = GetComponent<CustomSortable>();
+            if (customSortable != null)
+            {
+                customSortable.Initialize(transform);
+                customSortable.AddSpriteRenderer(sr);
+            }
+
+            var mpb = new MaterialPropertyBlock();
+            sr.GetPropertyBlock(mpb);
+            mpb.SetFloat(HDRIntensityID, hdrIntensity);
+            sr.SetPropertyBlock(mpb);
+
+            bInitialize = true;
+            
+            if (customSortable != null)
+            {
+                customSortable.ManualLateUpdate();
+            }
         }
     }
 
