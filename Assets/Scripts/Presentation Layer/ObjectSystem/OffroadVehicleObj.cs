@@ -620,7 +620,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.SetContainerVisualOpened(false);
     }
 
-    public void ChangeSprite()
+    public void ChangeSprite(MapType _mapType)
     {
         if (!bOriginalSpritesSaved)
         {
