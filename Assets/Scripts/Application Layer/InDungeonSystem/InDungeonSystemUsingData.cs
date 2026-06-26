@@ -51,4 +51,13 @@ public enum DungeonState
     Stage1_Idle1,
     Stage1_Idle2,
     Stage1_Idle3,
+    Stage2_Idle0,
+    Stage2_Idle1,
+    Stage2_Idle2,
+    Stage3_Idle0,
+    Stage3_Idle1,
+    Stage3_Idle2,
+    Stage4_Idle0,
+    Stage4_Idle1,
+    Stage4_Idle2,
 }
