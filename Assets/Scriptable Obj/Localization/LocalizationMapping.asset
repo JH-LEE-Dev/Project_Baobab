@@ -114,6 +114,14 @@ MonoBehaviour:
     enumIntValue: 0
     compositeKey: 2097154
   - enumTypeName: MapType
+    enumValueName: WideGreenForest
+    enumIntValue: 2
+    compositeKey: 2097155
+  - enumTypeName: MapType
+    enumValueName: FluffySporeForest
+    enumIntValue: 3
+    compositeKey: 2097156
+  - enumTypeName: MapType
     enumValueName: StarrootForest
     enumIntValue: 4
     compositeKey: 2097157

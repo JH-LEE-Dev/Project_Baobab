@@ -1,5 +1,8 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using DG.Tweening;
 
 public class UIView_MenuPopup : UIView
 {
@@ -18,6 +21,22 @@ public class UIView_MenuPopup : UIView
     [SerializeField] private GameObject vehiclePrefab;
     private HUD_Vehicle vehicle;
     private bool isInitialOpen = false;
+
+    [Header("Open Delay Settings")]
+    [SerializeField] private float vehicleOpenDelay = 0.5f;
+
+    private Coroutine vehicleOpenCoroutine;
+    private readonly Dictionary<float, WaitForSeconds> waitCache = new Dictionary<float, WaitForSeconds>(4);
+
+    private WaitForSeconds GetWaitForSeconds(float _seconds)
+    {
+        if (false == waitCache.TryGetValue(_seconds, out WaitForSeconds _w))
+        {
+            _w = new WaitForSeconds(_seconds);
+            waitCache.Add(_seconds, _w);
+        }
+        return _w;
+    }
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -72,8 +91,31 @@ public class UIView_MenuPopup : UIView
             return;
         }
 
+        if (null != vehicleOpenCoroutine)
+        {
+            StopCoroutine(vehicleOpenCoroutine);
+            vehicleOpenCoroutine = null;
+        }
+
+        if (null != vehicle)
+        {
+            if (vehicleOpenDelay > 0f)
+            {
+                vehicleOpenCoroutine = StartCoroutine(CoOpenVehicle());
+            }
+            else
+            {
+                vehicle.Open();
+            }
+        }
+    }
+
+    private IEnumerator CoOpenVehicle()
+    {
+        yield return GetWaitForSeconds(vehicleOpenDelay);
         if (null != vehicle)
             vehicle.Open();
+        vehicleOpenCoroutine = null;
     }
 
     public override void Hide()
@@ -88,6 +130,12 @@ public class UIView_MenuPopup : UIView
     {
         base.OnHide();
 
+        if (null != vehicleOpenCoroutine)
+        {
+            StopCoroutine(vehicleOpenCoroutine);
+            vehicleOpenCoroutine = null;
+        }
+
         if (null != vehicle)
         {
             vehicle.Close();
@@ -98,6 +146,12 @@ public class UIView_MenuPopup : UIView
     public override void OnDestroy()
     {
         base.OnDestroy();
+
+        if (null != vehicleOpenCoroutine)
+        {
+            StopCoroutine(vehicleOpenCoroutine);
+            vehicleOpenCoroutine = null;
+        }
 
         if (null != vehicle)
             vehicle.mapSelectedEvent -= HandleEnterDungeon;
