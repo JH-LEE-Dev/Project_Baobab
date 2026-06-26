@@ -582,7 +582,7 @@ Transform:
   m_GameObject: {fileID: 611873229726077775}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.5, y: 0.25, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1849,7 +1849,7 @@ MonoBehaviour:
       m_NumColorKeys: 2
       m_NumAlphaKeys: 2
     m_ColorMin: {r: 0, g: 0, b: 0, a: 0}
-    m_ColorMax: {r: 0, g: 0, b: 0, a: 0}
+    m_ColorMax: {r: 1, g: 1, b: 1, a: 1}
   goEffectInterval: 0.2
   col: {fileID: 0}
   baseSR: {fileID: 8911054006785933061}
@@ -1909,14 +1909,14 @@ MonoBehaviour:
   isUIComponent: 0
   vfxPoolDataList:
   - vfxTag: StartUp
-    effectPrefab: {fileID: 0}
-    initialPoolSize: 0
+    effectPrefab: {fileID: 5748764238649717206, guid: a2f48f48d8c96b64dbfeb7a97164b433, type: 3}
+    initialPoolSize: 1
     allowDynamicExpansion: 0
     maxPoolSize: 0
     uiParticleScale: 0
   - vfxTag: Go
-    effectPrefab: {fileID: 0}
-    initialPoolSize: 0
+    effectPrefab: {fileID: 2164660391435094963, guid: 1d9031cb94bee8347b5e660953a337dc, type: 3}
+    initialPoolSize: 10
     allowDynamicExpansion: 0
     maxPoolSize: 0
     uiParticleScale: 0
@@ -2462,7 +2462,7 @@ Transform:
   m_GameObject: {fileID: 5818712333322530924}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: -0.075, y: 0.05, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

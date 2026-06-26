@@ -516,11 +516,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         if (vfxComponent != null && startUpEffectPoint != null)
         {
-            ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings("StartUp", startUpEffectPoint.position, startUpEffectPoint.rotation, effectColor, startUpEffectPoint));
-            if (effect != null && baseSR != null)
-            {
-                vfxComponent.SetSortingSettings(effect, "Objects", baseSR.sortingOrder);
-            }
+            OffroadPlayEffect("StartUp", startUpEffectPoint);
         }
     }
 
@@ -528,11 +524,20 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         if (vfxComponent != null && goEffectPoint != null)
         {
-            ParticleSystem effect = vfxComponent.Play(new VFXPlaySettings("Go", goEffectPoint.position, goEffectPoint.rotation, effectColor, goEffectPoint));
-            if (effect != null && baseSR != null)
-            {
-                vfxComponent.SetSortingSettings(effect, "Objects", baseSR.sortingOrder);
-            }
+            OffroadPlayEffect("Go", goEffectPoint);
+        }
+    }
+
+    private void OffroadPlayEffect(string _effectName, Transform _effectPoint)
+    {
+        if (vfxComponent != null && _effectPoint != null)
+        {
+            VFXPlaySettings settings = new VFXPlaySettings(_effectName, _effectPoint.position, _effectPoint.rotation, effectColor);
+            settings.OverrideSorting = true;
+            settings.SortingLayerName = "Objects";
+            settings.SortingOrder = baseSR.sortingOrder;
+
+            ParticleSystem effect = vfxComponent.Play(settings);
         }
     }
 
