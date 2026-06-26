@@ -10,7 +10,8 @@ public class AnimatedObjGenerator : MonoBehaviour
     // // 내부 의존성 및 캐싱 필드
     private List<AnimatedObj> currentLandPrefabs;
     private List<DecoSpritePatternAnimator> currentWaterPrefabs;
-    private List<StaticObj> currentStaticPrefabs;
+    private List<StaticObj> currentGrassStaticPrefabs;
+    private List<StaticObj> currentSandStaticPrefabs;
     
     private Dictionary<AnimatedObj, IObjectPool<AnimatedObj>> poolDict;
     private Dictionary<AnimatedObj, List<AnimatedObj>> activeObjectsDict;
@@ -31,12 +32,13 @@ public class AnimatedObjGenerator : MonoBehaviour
 
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void SetPrefabs(List<AnimatedObj> _landPrefabs, List<DecoSpritePatternAnimator> _waterPrefabs, List<StaticObj> _staticPrefabs)
+    public void SetPrefabs(List<AnimatedObj> _landPrefabs, List<DecoSpritePatternAnimator> _waterPrefabs, List<StaticObj> _grassStaticPrefabs, List<StaticObj> _sandStaticPrefabs)
     {
         ReleaseAllActive();
         currentLandPrefabs = _landPrefabs;
         currentWaterPrefabs = _waterPrefabs;
-        currentStaticPrefabs = _staticPrefabs;
+        currentGrassStaticPrefabs = _grassStaticPrefabs;
+        currentSandStaticPrefabs = _sandStaticPrefabs;
 
         if (mainCam == null)
         {
@@ -216,12 +218,22 @@ public class AnimatedObjGenerator : MonoBehaviour
         return _targetObj;
     }
 
-    public StaticObj SpawnStaticObj(Vector3 _position)
+    public StaticObj SpawnGrassStaticObj(Vector3 _position)
     {
-        if (currentStaticPrefabs == null || currentStaticPrefabs.Count == 0) return null;
+        return SpawnStaticObjFromList(_position, currentGrassStaticPrefabs);
+    }
 
-        int randomIndex = UnityEngine.Random.Range(0, currentStaticPrefabs.Count);
-        StaticObj _prefab = currentStaticPrefabs[randomIndex];
+    public StaticObj SpawnSandStaticObj(Vector3 _position)
+    {
+        return SpawnStaticObjFromList(_position, currentSandStaticPrefabs);
+    }
+
+    private StaticObj SpawnStaticObjFromList(Vector3 _position, List<StaticObj> _prefabs)
+    {
+        if (_prefabs == null || _prefabs.Count == 0) return null;
+
+        int randomIndex = UnityEngine.Random.Range(0, _prefabs.Count);
+        StaticObj _prefab = _prefabs[randomIndex];
         if (_prefab == null) return null;
 
         IObjectPool<StaticObj> _pool = GetStaticPool(_prefab);
