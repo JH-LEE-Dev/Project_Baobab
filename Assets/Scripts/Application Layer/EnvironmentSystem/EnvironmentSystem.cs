@@ -172,6 +172,11 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
         environmentParticleSystem.ChangeMap(_mapType);
     }
 
+    public void SetupForTownMap()
+    {
+        environmentParticleSystem.ChangeMap(MapType.Town);
+    }
+
     private void AnimalIsDead(AnimalIsDeadSignal animalIsDeadSignal)
     {
         //densityManager.AddHiddenGauge(animalIsDeadSignal.type);

@@ -123,6 +123,7 @@ public class GameInstaller : MonoBehaviour
         }
         else
         {
+            environmentSystem.SetupForTownMap();
             inDungeonSystem.ClearInDungeonSystem();
             townSystem.StartTownSystem(_sceneChangeData);
             unitSystem.SetWhereIsCharacter(false);
