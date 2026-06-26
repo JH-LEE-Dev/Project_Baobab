@@ -114,14 +114,6 @@ MonoBehaviour:
     enumIntValue: 0
     compositeKey: 2097154
   - enumTypeName: MapType
-    enumValueName: VegetatedForest
-    enumIntValue: 2
-    compositeKey: 2097155
-  - enumTypeName: MapType
-    enumValueName: MongleSporeForest
-    enumIntValue: 3
-    compositeKey: 2097156
-  - enumTypeName: MapType
     enumValueName: StarrootForest
     enumIntValue: 4
     compositeKey: 2097157
@@ -138,29 +130,53 @@ MonoBehaviour:
     enumIntValue: 1
     compositeKey: 8388610
   - enumTypeName: ForestType
-    enumValueName: VegetatedForest_1
+    enumValueName: WideGreenForest_1
     enumIntValue: 2
     compositeKey: 8388611
   - enumTypeName: ForestType
-    enumValueName: VegetatedForest_2
+    enumValueName: WideGreenForest_2
     enumIntValue: 3
     compositeKey: 8388612
   - enumTypeName: ForestType
-    enumValueName: VegetatedForest_3
+    enumValueName: WideGreenForest_3
     enumIntValue: 4
     compositeKey: 8388613
   - enumTypeName: ForestType
-    enumValueName: MongleSporeForest_1
+    enumValueName: FluffySporeForest_1
     enumIntValue: 5
     compositeKey: 8388614
   - enumTypeName: ForestType
-    enumValueName: MongleSporeForest_2
+    enumValueName: FluffySporeForest_2
     enumIntValue: 6
     compositeKey: 8388615
   - enumTypeName: ForestType
-    enumValueName: MongleSporeForest_3
+    enumValueName: FluffySporeForest_3
     enumIntValue: 7
     compositeKey: 8388616
+  - enumTypeName: ForestType
+    enumValueName: StarrootForest_1
+    enumIntValue: 8
+    compositeKey: 8388617
+  - enumTypeName: ForestType
+    enumValueName: StarrootForest_2
+    enumIntValue: 9
+    compositeKey: 8388618
+  - enumTypeName: ForestType
+    enumValueName: StarrootForest_3
+    enumIntValue: 10
+    compositeKey: 8388619
+  - enumTypeName: ForestType
+    enumValueName: MagmaForest_1
+    enumIntValue: 11
+    compositeKey: 8388620
+  - enumTypeName: ForestType
+    enumValueName: MagmaForest_2
+    enumIntValue: 12
+    compositeKey: 8388621
+  - enumTypeName: ForestType
+    enumValueName: MagmaForest_3
+    enumIntValue: 13
+    compositeKey: 8388622
   - enumTypeName: DungeonState
     enumValueName: None
     enumIntValue: 0

@@ -85,12 +85,18 @@ public static class LocKeys
     {
         public const int forestNoneTitle = 8388609;
         public const int forestInTownTitle = 8388610;
-        public const int forestVegetatedForest1Title = 8388611;
-        public const int forestVegetatedForest2Title = 8388612;
-        public const int forestVegetatedForest3Title = 8388613;
-        public const int forestMongleSporeForest1Title = 8388614;
-        public const int forestMongleSporeForest2Title = 8388615;
-        public const int forestMongleSporeForest3Title = 8388616;
+        public const int forestWideGreenForest1Title = 8388611;
+        public const int forestWideGreenForest2Title = 8388612;
+        public const int forestWideGreenForest3Title = 8388613;
+        public const int forestFluffySporeForest1Title = 8388614;
+        public const int forestFluffySporeForest2Title = 8388615;
+        public const int forestFluffySporeForest3Title = 8388616;
+        public const int forestStarrootForest1Title = 8388617;
+        public const int forestStarrootForest2Title = 8388618;
+        public const int forestStarrootForest3Title = 8388619;
+        public const int forestMagmaForest1Title = 8388620;
+        public const int forestMagmaForest2Title = 8388621;
+        public const int forestMagmaForest3Title = 8388622;
         public const int dungeonStateNoneSubText = 8388709;
         public const int dungeonStateStage1Idle0SubText = 8388710;
         public const int dungeonStateStage1Idle1SubText = 8388711;
