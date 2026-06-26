@@ -46,9 +46,9 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
         // 내부 의존성
         private struct ParallaxLayerSetting
         {
-            public ParticleSystem targetParticleSystem;
+            public ParticleSystem[] targetParticleSystems;
             public Vector2 parallaxFactor;
-            public ParticleSystem.Particle[] particlesBuffer;
+            public ParticleSystem.Particle[][] particlesBuffers;
             public MapType mapType;
         }
 
@@ -97,16 +97,17 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
             for (int i = 0; i < layers.Count; i++)
             {
                 ParallaxLayerSetting layer = layers[i];
-                if (layer.targetParticleSystem == null) continue;
+                if (layer.targetParticleSystems == null || layer.targetParticleSystems.Length == 0) continue;
 
                 // 타겟 맵이 아닐 경우, 또는 타겟이 타운(Town)일 경우 모든 파티클 강제 종료
                 if (_targetMapType == MapType.Town || layer.mapType != _targetMapType)
                 {
-                    layer.targetParticleSystem.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                    // 루트만 멈춰도 자식까지 멈춤(withChildren = true)
+                    layer.targetParticleSystems[0].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                 }
                 else
                 {
-                    layer.targetParticleSystem.Play();
+                    layer.targetParticleSystems[0].Play(true);
                     isAlreadyPooled = true;
                 }
             }
@@ -157,41 +158,54 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 float sizeMult = Mathf.Lerp(targetMapping.minParticleSizeMultiplier, targetMapping.maxParticleSizeMultiplier, t);
                 float hdrInt = Mathf.Lerp(targetMapping.minHDRIntensity, targetMapping.maxHDRIntensity, t);
 
-                var renderer = instance.GetComponent<ParticleSystemRenderer>();
-                if (renderer != null)
+                ParticleSystem[] allSystems = instance.GetComponentsInChildren<ParticleSystem>(true);
+                ParticleSystemRenderer[] allRenderers = instance.GetComponentsInChildren<ParticleSystemRenderer>(true);
+
+                // 모든 자식 렌더러에 HDR 속성 적용
+                for (int r = 0; r < allRenderers.Length; r++)
                 {
+                    var renderer = allRenderers[r];
                     renderer.GetPropertyBlock(propertyBlock);
                     propertyBlock.SetFloat(HdrIntensityPropertyId, hdrInt);
                     renderer.SetPropertyBlock(propertyBlock);
                 }
 
-                var mainModule = instance.main;
-                mainModule.startSizeMultiplier *= sizeMult;
+                ParticleSystem.Particle[][] buffers = new ParticleSystem.Particle[allSystems.Length][];
 
-                var emissionModule = instance.emission;
-                if (targetMapping.customEmissionRates != null && i < targetMapping.customEmissionRates.Count)
+                // 모든 자식 파티클 시스템에 크기, 방출량, 공간 속성 적용
+                for (int s = 0; s < allSystems.Length; s++)
                 {
-                    emissionModule.rateOverTime = new ParticleSystem.MinMaxCurve(targetMapping.customEmissionRates[i]);
-                }
+                    var sys = allSystems[s];
+                    var mainModule = sys.main;
+                    mainModule.startSizeMultiplier *= sizeMult;
 
-                if (mainModule.simulationSpace != ParticleSystemSimulationSpace.Local)
-                {
-                    mainModule.simulationSpace = ParticleSystemSimulationSpace.Local;
+                    var emissionModule = sys.emission;
+                    if (targetMapping.customEmissionRates != null && i < targetMapping.customEmissionRates.Count)
+                    {
+                        emissionModule.rateOverTime = new ParticleSystem.MinMaxCurve(targetMapping.customEmissionRates[i]);
+                    }
+
+                    if (mainModule.simulationSpace != ParticleSystemSimulationSpace.Local)
+                    {
+                        mainModule.simulationSpace = ParticleSystemSimulationSpace.Local;
+                    }
+
+                    buffers[s] = new ParticleSystem.Particle[mainModule.maxParticles];
                 }
 
                 // Prewarm이나 PlayOnAwake 옵션으로 인해 크기/Emission 변경 전에 미리 쏟아진 파티클들 초기화 후 재시작
                 bool wasPlaying = instance.isPlaying;
                 instance.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-                if (wasPlaying || mainModule.playOnAwake)
+                if (wasPlaying || instance.main.playOnAwake)
                 {
-                    instance.Play();
+                    instance.Play(true);
                 }
 
                 ParallaxLayerSetting newLayer = new ParallaxLayerSetting()
                 {
-                    targetParticleSystem = instance,
+                    targetParticleSystems = allSystems,
                     parallaxFactor = factor,
-                    particlesBuffer = new ParticleSystem.Particle[mainModule.maxParticles],
+                    particlesBuffers = buffers,
                     mapType = _targetMapType
                 };
                 
@@ -255,25 +269,32 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 ParallaxLayerSetting layer = layers[i];
 
                 if (layer.mapType != currentMapType) continue;
-                if (layer.targetParticleSystem == null || layer.particlesBuffer == null) continue;
-
-                int aliveParticlesCount = layer.targetParticleSystem.GetParticles(layer.particlesBuffer);
-                if (aliveParticlesCount == 0) continue;
+                if (layer.targetParticleSystems == null || layer.particlesBuffers == null) continue;
 
                 float moveRatioX = 1f - layer.parallaxFactor.x;
                 float moveRatioY = 1f - layer.parallaxFactor.y;
                 Vector3 parallaxDelta = new Vector3(-cameraDelta.x * moveRatioX, -cameraDelta.y * moveRatioY, 0f);
 
-                for (int j = 0; j < aliveParticlesCount; j++)
+                for (int s = 0; s < layer.targetParticleSystems.Length; s++)
                 {
-                    Vector3 pos = layer.particlesBuffer[j].position;
-                    pos += parallaxDelta;
-                    pos.x = WrapCoordinate(pos.x, currentWrapBounds.x);
-                    pos.y = WrapCoordinate(pos.y, currentWrapBounds.y);
-                    layer.particlesBuffer[j].position = pos;
-                }
+                    ParticleSystem ps = layer.targetParticleSystems[s];
+                    if (ps == null) continue;
 
-                layer.targetParticleSystem.SetParticles(layer.particlesBuffer, aliveParticlesCount);
+                    ParticleSystem.Particle[] buffer = layer.particlesBuffers[s];
+                    int aliveParticlesCount = ps.GetParticles(buffer);
+                    if (aliveParticlesCount == 0) continue;
+
+                    for (int j = 0; j < aliveParticlesCount; j++)
+                    {
+                        Vector3 pos = buffer[j].position;
+                        pos += parallaxDelta;
+                        pos.x = WrapCoordinate(pos.x, currentWrapBounds.x);
+                        pos.y = WrapCoordinate(pos.y, currentWrapBounds.y);
+                        buffer[j].position = pos;
+                    }
+
+                    ps.SetParticles(buffer, aliveParticlesCount);
+                }
             }
         }
 
@@ -306,9 +327,12 @@ namespace Project_Baobab.Presentation.EnvironmentSystem
                 for (int i = 0; i < layers.Count; i++)
                 {
                     ParallaxLayerSetting layer = layers[i];
-                    if (layer.targetParticleSystem != null && layer.mapType == currentMapType)
+                    if (layer.targetParticleSystems != null && layer.targetParticleSystems.Length > 0 && layer.mapType == currentMapType)
                     {
-                        Gizmos.DrawWireCube(layer.targetParticleSystem.transform.position, currentWrapBounds);
+                        if (layer.targetParticleSystems[0] != null)
+                        {
+                            Gizmos.DrawWireCube(layer.targetParticleSystems[0].transform.position, currentWrapBounds);
+                        }
                     }
                 }
             }
