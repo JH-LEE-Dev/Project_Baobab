@@ -26,24 +26,30 @@ public class VFXPoolData
 public struct VFXPlaySettings
 {
     // 외부 의존성
-    [SerializeField] private string vfxTag;
-    [SerializeField] private Vector3 position;
-    [SerializeField] private Quaternion rotation;
-    [SerializeField] private Transform parent;
-    [SerializeField] private bool withChildren;
-    [SerializeField] private bool overrideColor;
-    [SerializeField] private bool overrideChildrenColor;
-    [SerializeField] private ParticleSystem.MinMaxGradient startColor;
+    [SerializeField] public string vfxTag;
+    [SerializeField] public Vector3 position;
+    [SerializeField] public Quaternion rotation;
+    [SerializeField] public Transform parent;
+    [SerializeField] public bool withChildren;
+    [SerializeField] public bool overrideColor;
+    [SerializeField] public bool overrideChildrenColor;
+    [SerializeField] public ParticleSystem.MinMaxGradient startColor;
+    [SerializeField] public bool overrideSorting;
+    [SerializeField] public string sortingLayerName;
+    [SerializeField] public int sortingOrder;
 
     // 퍼블릭 초기화 및 제어 메서드
-    public string VfxTag => vfxTag;
-    public Vector3 Position => position;
-    public Quaternion Rotation => rotation;
-    public Transform Parent => parent;
-    public bool WithChildren => withChildren;
-    public bool OverrideColor => overrideColor;
-    public bool OverrideChildrenColor => overrideChildrenColor;
-    public ParticleSystem.MinMaxGradient StartColor => startColor;
+    public string VfxTag { get => vfxTag; set => vfxTag = value; }
+    public Vector3 Position { get => position; set => position = value; }
+    public Quaternion Rotation { get => rotation; set => rotation = value; }
+    public Transform Parent { get => parent; set => parent = value; }
+    public bool WithChildren { get => withChildren; set => withChildren = value; }
+    public bool OverrideColor { get => overrideColor; set => overrideColor = value; }
+    public bool OverrideChildrenColor { get => overrideChildrenColor; set => overrideChildrenColor = value; }
+    public ParticleSystem.MinMaxGradient StartColor { get => startColor; set => startColor = value; }
+    public bool OverrideSorting { get => overrideSorting; set => overrideSorting = value; }
+    public string SortingLayerName { get => sortingLayerName; set => sortingLayerName = value; }
+    public int SortingOrder { get => sortingOrder; set => sortingOrder = value; }
 
     public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, Transform _parent = null)
     {
@@ -55,6 +61,9 @@ public struct VFXPlaySettings
         overrideColor = false;
         overrideChildrenColor = false;
         startColor = new ParticleSystem.MinMaxGradient(Color.white);
+        overrideSorting = false;
+        sortingLayerName = string.Empty;
+        sortingOrder = 0;
     }
 
     public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, ParticleSystem.MinMaxGradient _color, Transform _parent = null)
@@ -67,6 +76,9 @@ public struct VFXPlaySettings
         overrideColor = true;
         overrideChildrenColor = false;
         startColor = _color;
+        overrideSorting = false;
+        sortingLayerName = string.Empty;
+        sortingOrder = 0;
     }
 
     public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, ParticleSystem.MinMaxGradient _color, bool _overrideChildrenColor, Transform _parent = null)
@@ -79,6 +91,54 @@ public struct VFXPlaySettings
         overrideColor = true;
         overrideChildrenColor = _overrideChildrenColor;
         startColor = _color;
+        overrideSorting = false;
+        sortingLayerName = string.Empty;
+        sortingOrder = 0;
+    }
+
+    public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, int _sortingOrder, Transform _parent = null)
+    {
+        vfxTag = _tag;
+        position = _pos;
+        rotation = _rot;
+        parent = _parent;
+        withChildren = true;
+        overrideColor = false;
+        overrideChildrenColor = false;
+        startColor = new ParticleSystem.MinMaxGradient(Color.white);
+        overrideSorting = true;
+        sortingLayerName = string.Empty;
+        sortingOrder = _sortingOrder;
+    }
+
+    public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, string _sortingLayerName, int _sortingOrder, Transform _parent = null)
+    {
+        vfxTag = _tag;
+        position = _pos;
+        rotation = _rot;
+        parent = _parent;
+        withChildren = true;
+        overrideColor = false;
+        overrideChildrenColor = false;
+        startColor = new ParticleSystem.MinMaxGradient(Color.white);
+        overrideSorting = true;
+        sortingLayerName = _sortingLayerName;
+        sortingOrder = _sortingOrder;
+    }
+
+    public VFXPlaySettings(string _tag, Vector3 _pos, Quaternion _rot, ParticleSystem.MinMaxGradient _color, bool _overrideChildrenColor, string _sortingLayerName, int _sortingOrder, Transform _parent = null)
+    {
+        vfxTag = _tag;
+        position = _pos;
+        rotation = _rot;
+        parent = _parent;
+        withChildren = true;
+        overrideColor = true;
+        overrideChildrenColor = _overrideChildrenColor;
+        startColor = _color;
+        overrideSorting = true;
+        sortingLayerName = _sortingLayerName;
+        sortingOrder = _sortingOrder;
     }
 }
 
@@ -267,6 +327,12 @@ public class VFXComponent : MonoBehaviour
         _target.gameObject.SetActive(true);
         if (_target != _effect.transform)
             _effect.gameObject.SetActive(true);
+
+        // 소팅 오버라이드 처리 (재생 전에 먼저 적용)
+        if (true == _settings.OverrideSorting)
+        {
+            ApplySortingSettings(_effect, _settings.SortingLayerName, _settings.SortingOrder);
+        }
 
         // 색상 오버라이드 처리
         if (true == _settings.OverrideColor)
@@ -583,7 +649,10 @@ public class VFXComponent : MonoBehaviour
             Renderer _renderer = _renderers[i];
             if (null != _renderer)
             {
-                _renderer.sortingLayerName = _layerName;
+                if (false == string.IsNullOrEmpty(_layerName))
+                {
+                    _renderer.sortingLayerName = _layerName;
+                }
                 _renderer.sortingOrder = _order;
             }
         }
@@ -719,7 +788,7 @@ public class VFXPoolInstanceHelper : MonoBehaviour
 
         if (null != originalParent && null != targetTransform)
         {
-            if (targetTransform.parent != originalParent && null != targetTransform.parent && true == targetTransform.parent.gameObject.activeSelf && true == targetTransform.parent.gameObject.activeInHierarchy)
+            if (targetTransform.parent != originalParent)
             {
                 try
                 {
