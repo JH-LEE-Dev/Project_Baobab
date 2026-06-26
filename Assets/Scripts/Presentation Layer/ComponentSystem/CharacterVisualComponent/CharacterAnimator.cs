@@ -91,7 +91,7 @@ public class CharacterAnimator : MonoBehaviour
     [Space]
     [Header("VFX Settings")]
     [SerializeField] private float dustEffectInterval = 0.3f;
-    [SerializeField] private float dustOffsetDistance = 0.35f;
+    [SerializeField] private float dustOffsetDistance = 0.15f;
 
     // 상태 데이터
     private float frameTimer = 0f;
