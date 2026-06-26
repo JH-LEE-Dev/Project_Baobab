@@ -21,23 +21,23 @@
     {
       "id": 3,
       "key": "mapName_2",
-      "kr": "풀빛너른 숲",
-      "en": "Vegetated Forest",
+      "kr": "풀빛너른숲",
+      "en": "WideGreen Forest",
       "enumType": "MapType",
-      "enumValue": "VegetatedForest"
+      "enumValue": "WideGreenForest"
     },
     {
       "id": 4,
       "key": "mapName_3",
-      "kr": "몽글포자 숲",
-      "en": "Mongle Spore Forest",
+      "kr": "몽글포자숲",
+      "en": "Fluffy Spore Forest",
       "enumType": "MapType",
-      "enumValue": "MongleSporeForest"
+      "enumValue": "FluffySporeForest"
     },
     {
       "id": 5,
       "key": "mapName_4",
-      "kr": "별뿌리 숲",
+      "kr": "별뿌리숲",
       "en": "Starroot Forest",
       "enumType": "MapType",
       "enumValue": "StarrootForest"
@@ -45,7 +45,7 @@
     {
       "id": 6,
       "key": "mapName_5",
-      "kr": "용암 숲",
+      "kr": "용암숲",
       "en": "Magma Forest",
       "enumType": "MapType",
       "enumValue": "MagmaForest"
