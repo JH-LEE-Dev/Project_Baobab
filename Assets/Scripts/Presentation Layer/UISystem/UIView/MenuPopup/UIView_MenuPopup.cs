@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using DG.Tweening;
 
 public class UIView_MenuPopup : UIView
 {
@@ -18,6 +19,11 @@ public class UIView_MenuPopup : UIView
     [SerializeField] private GameObject vehiclePrefab;
     private HUD_Vehicle vehicle;
     private bool isInitialOpen = false;
+
+    [Header("Open Delay Settings")]
+    [SerializeField] private float vehicleOpenDelay = 0.5f;
+
+    private Tween vehicleOpenTween;
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -72,8 +78,24 @@ public class UIView_MenuPopup : UIView
             return;
         }
 
+        if (null != vehicleOpenTween && vehicleOpenTween.IsActive())
+            vehicleOpenTween.Kill();
+
         if (null != vehicle)
-            vehicle.Open();
+        {
+            if (vehicleOpenDelay > 0f)
+            {
+                vehicleOpenTween = DOVirtual.DelayedCall(vehicleOpenDelay, () =>
+                {
+                    if (null != vehicle)
+                        vehicle.Open();
+                });
+            }
+            else
+            {
+                vehicle.Open();
+            }
+        }
     }
 
     public override void Hide()
@@ -88,6 +110,9 @@ public class UIView_MenuPopup : UIView
     {
         base.OnHide();
 
+        if (null != vehicleOpenTween && vehicleOpenTween.IsActive())
+            vehicleOpenTween.Kill();
+
         if (null != vehicle)
         {
             vehicle.Close();
@@ -98,6 +123,9 @@ public class UIView_MenuPopup : UIView
     public override void OnDestroy()
     {
         base.OnDestroy();
+
+        if (null != vehicleOpenTween && vehicleOpenTween.IsActive())
+            vehicleOpenTween.Kill();
 
         if (null != vehicle)
             vehicle.mapSelectedEvent -= HandleEnterDungeon;
