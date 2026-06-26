@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
 
@@ -23,7 +25,18 @@ public class UIView_MenuPopup : UIView
     [Header("Open Delay Settings")]
     [SerializeField] private float vehicleOpenDelay = 0.5f;
 
-    private Tween vehicleOpenTween;
+    private Coroutine vehicleOpenCoroutine;
+    private readonly Dictionary<float, WaitForSeconds> waitCache = new Dictionary<float, WaitForSeconds>(4);
+
+    private WaitForSeconds GetWaitForSeconds(float _seconds)
+    {
+        if (false == waitCache.TryGetValue(_seconds, out WaitForSeconds _w))
+        {
+            _w = new WaitForSeconds(_seconds);
+            waitCache.Add(_seconds, _w);
+        }
+        return _w;
+    }
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -78,24 +91,31 @@ public class UIView_MenuPopup : UIView
             return;
         }
 
-        if (null != vehicleOpenTween && vehicleOpenTween.IsActive())
-            vehicleOpenTween.Kill();
+        if (null != vehicleOpenCoroutine)
+        {
+            StopCoroutine(vehicleOpenCoroutine);
+            vehicleOpenCoroutine = null;
+        }
 
         if (null != vehicle)
         {
             if (vehicleOpenDelay > 0f)
             {
-                vehicleOpenTween = DOVirtual.DelayedCall(vehicleOpenDelay, () =>
-                {
-                    if (null != vehicle)
-                        vehicle.Open();
-                });
+                vehicleOpenCoroutine = StartCoroutine(CoOpenVehicle());
             }
             else
             {
                 vehicle.Open();
             }
         }
+    }
+
+    private IEnumerator CoOpenVehicle()
+    {
+        yield return GetWaitForSeconds(vehicleOpenDelay);
+        if (null != vehicle)
+            vehicle.Open();
+        vehicleOpenCoroutine = null;
     }
 
     public override void Hide()
@@ -110,8 +130,11 @@ public class UIView_MenuPopup : UIView
     {
         base.OnHide();
 
-        if (null != vehicleOpenTween && vehicleOpenTween.IsActive())
-            vehicleOpenTween.Kill();
+        if (null != vehicleOpenCoroutine)
+        {
+            StopCoroutine(vehicleOpenCoroutine);
+            vehicleOpenCoroutine = null;
+        }
 
         if (null != vehicle)
         {
@@ -124,8 +147,11 @@ public class UIView_MenuPopup : UIView
     {
         base.OnDestroy();
 
-        if (null != vehicleOpenTween && vehicleOpenTween.IsActive())
-            vehicleOpenTween.Kill();
+        if (null != vehicleOpenCoroutine)
+        {
+            StopCoroutine(vehicleOpenCoroutine);
+            vehicleOpenCoroutine = null;
+        }
 
         if (null != vehicle)
             vehicle.mapSelectedEvent -= HandleEnterDungeon;

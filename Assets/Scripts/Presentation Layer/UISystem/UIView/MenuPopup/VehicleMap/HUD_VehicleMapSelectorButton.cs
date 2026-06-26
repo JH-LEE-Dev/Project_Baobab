@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
@@ -49,6 +50,9 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
     private bool isInitialized = false;
     private bool isButtonActive = true;
     private bool isHovered = false;
+    private bool isClickProcessed = false;
+    private Coroutine clickCooldownCoroutine;
+    private readonly WaitForSeconds clickCooldownWait = new WaitForSeconds(0.4f);
 
     // 캐싱된 상수 및 리터럴 값
     private const float defaultAlpha = 1.0f;
@@ -69,6 +73,7 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         onHoverEnterEvent = _onHoverEnter;
         onHoverExitEvent = _onHoverExit;
         rect = GetComponent<RectTransform>();
+        isClickProcessed = false;
         
         isInitialized = true;
     }
@@ -143,6 +148,13 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
         isHovered = false;
         isClicked = false;
+        
+        if (null != clickCooldownCoroutine)
+        {
+            StopCoroutine(clickCooldownCoroutine);
+            clickCooldownCoroutine = null;
+        }
+        isClickProcessed = false;
 
         if (null != motionPlayer)
         {
@@ -221,10 +233,10 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         if (true == isOkButton && false == isButtonActive)
             return;
 
-        PlayColorTween(clickColor);
-
         if (true == IsTransitioning())
             return;
+
+        PlayColorTween(clickColor);
 
         if (null == motionPlayer)
             return;
@@ -247,12 +259,12 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         if (true == isOkButton && false == isButtonActive)
             return;
 
+        if (true == IsTransitioning())
+            return;
+
         isClicked = false;
         Color _targetColor = true == isHovered ? hoverColor : normalColor;
         PlayColorTween(_targetColor);
-
-        if (true == IsTransitioning())
-            return;
     }
 
     public void OnPointerClick(PointerEventData _eventData)
@@ -263,7 +275,12 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         if (null == motionPlayer || (true == isOkButton && false == isButtonActive))
             return;
 
+        if (true == isClickProcessed)
+            return;
+
+        isClickProcessed = true;
         onConfirmEvent?.Invoke();
+        clickCooldownCoroutine = StartCoroutine(CoClickCooldown());
     }
 
     private bool IsTransitioning()
@@ -275,6 +292,18 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
             return true;
 
         return false;
+    }
+
+    private bool IsDelayingAppear()
+    {
+        return null != appearDelayTween && true == appearDelayTween.IsActive();
+    }
+
+    private IEnumerator CoClickCooldown()
+    {
+        yield return clickCooldownWait;
+        isClickProcessed = false;
+        clickCooldownCoroutine = null;
     }
 
     private void PlayColorTween(Color _targetColor)
@@ -305,6 +334,13 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
         isClicked = false;
         isHovered = false;
 
+        if (null != clickCooldownCoroutine)
+        {
+            StopCoroutine(clickCooldownCoroutine);
+            clickCooldownCoroutine = null;
+        }
+        isClickProcessed = false;
+
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
             appearDelayTween.Kill();
 
@@ -320,6 +356,12 @@ public class HUD_VehicleMapSelectorButton : MonoBehaviour, IPointerEnterHandler,
 
     private void OnDestroy()
     {
+        if (null != clickCooldownCoroutine)
+        {
+            StopCoroutine(clickCooldownCoroutine);
+            clickCooldownCoroutine = null;
+        }
+
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
             appearDelayTween.Kill();
 
