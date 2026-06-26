@@ -102,6 +102,15 @@ public static class LocKeys
         public const int dungeonStateStage1Idle1SubText = 8388711;
         public const int dungeonStateStage1Idle2SubText = 8388712;
         public const int dungeonStateStage1Idle3SubText = 8388713;
+        public const int dungeonStateStage2Idle0SubText = 8388714;
+        public const int dungeonStateStage2Idle1SubText = 8388715;
+        public const int dungeonStateStage2Idle2SubText = 8388716;
+        public const int dungeonStateStage3Idle0SubText = 8388717;
+        public const int dungeonStateStage3Idle1SubText = 8388718;
+        public const int dungeonStateStage3Idle2SubText = 8388719;
+        public const int dungeonStateStage4Idle0SubText = 8388720;
+        public const int dungeonStateStage4Idle1SubText = 8388721;
+        public const int dungeonStateStage4Idle2SubText = 8388722;
     }
 
     public static class NavigationTreePropUI
