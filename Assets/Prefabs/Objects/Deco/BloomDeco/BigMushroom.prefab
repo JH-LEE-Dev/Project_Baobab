@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::StaticObj
   sr: {fileID: 861993711761315240}
-  hdrIntensity: 1.75
+  hdrIntensity: 1.5
 --- !u!114 &3386723666598852496
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -142,7 +142,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 10
+  m_SortingLayer: 11
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -4821254161689323273, guid: 579995fa38fb6ed499e976469d738809, type: 3}

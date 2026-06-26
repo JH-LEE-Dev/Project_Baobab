@@ -12,6 +12,8 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
         [HideInInspector] _RendererColor("RendererColor", Color) = (1,1,1,1)
         [HideInInspector] _AlphaTex("External Alpha", 2D) = "white" {}
         [HideInInspector] _EnableExternalAlpha("Enable External Alpha", Float) = 0
+
+        _FlashAmount("Flash Amount", Range(0,1)) = 0
     }
 
     SubShader
@@ -65,6 +67,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                half _FlashAmount;
             CBUFFER_END
 
             Varyings LitVertex(Attributes input)
@@ -81,7 +84,9 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
 
             half4 LitFragment(Varyings input) : SV_Target
             {
-                return CommonLitFragment(input, input.color);
+                half4 col = CommonLitFragment(input, input.color);
+                col.rgb = lerp(col.rgb, half3(1,1,1), _FlashAmount * col.a);
+                return col;
             }
             ENDHLSL
         }
@@ -118,6 +123,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START( UnityPerMaterial )
                 half4 _Color;
+                half _FlashAmount;
             CBUFFER_END
 
             Varyings NormalsRenderingVertex(Attributes input)
@@ -171,6 +177,7 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
             // NOTE: Do not ifdef the properties here as SRP batcher can not handle different layouts.
             CBUFFER_START(UnityPerMaterial)
                 half4 _Color;
+                half _FlashAmount;
             CBUFFER_END
 
             Varyings UnlitVertex(Attributes input)
@@ -186,7 +193,9 @@ Shader "Custom/Custom-Sprite-Default-NoSnap"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
-                return CommonUnlitFragment(input, input.color);
+                half4 col = CommonUnlitFragment(input, input.color);
+                col.rgb = lerp(col.rgb, half3(1,1,1), _FlashAmount * col.a);
+                return col;
             }
             ENDHLSL
         }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "StageTileData", menuName = "ScriptableObjects/StageTileData", order = 1)]
 public class StageTileDataSO : ScriptableObject
@@ -60,7 +61,8 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private TileBase groundStencilTile;
     [SerializeField] private List<AnimatedObj> animatedObjPrefabs;
     [SerializeField] private List<DecoSpritePatternAnimator> waterAnimatedObjPrefabs;
-    [SerializeField] private List<StaticObj> staticObjPrefabs;
+    [SerializeField] [FormerlySerializedAs("staticObjPrefabs")] private List<StaticObj> grassStaticObjPrefabs;
+    [SerializeField] [FormerlySerializedAs("staticObjPrefabs")] private List<StaticObj> sandStaticObjPrefabs;
 
     [Header("블룸(Bloom) HDR 강도 설정")]
     [SerializeField] private float bloomDecoHDRIntensity = 1f;
@@ -70,7 +72,8 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private float waterTileHDRIntensity = 1f;
 
     [Header("오브젝트 밀도 설정")]
-    [SerializeField, Range(0f, 0.1f)] private float rockDecoDensity = 0.0005f;
+    [SerializeField, Range(0f, 0.1f)] [FormerlySerializedAs("rockDecoDensity")] private float grassStaticObjDensity = 0.0005f;
+    [SerializeField, Range(0f, 0.1f)] [FormerlySerializedAs("rockDecoDensity")] private float sandStaticObjDensity = 0.0005f;
     [SerializeField, Range(0f, 0.1f)] private float animatedObjDensity = 0.0025f;
     [SerializeField, Range(0f, 1f)] private float waterAnimatedObjDensity = 0.1f;
 
@@ -88,7 +91,8 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField, Range(0f, 1f)] private float bloomWaterDecoDensity = 0.1f;
 
     // // 퍼블릭 초기화 및 제어 메서드
-    public float RockDecoDensity => rockDecoDensity;
+    public float GrassStaticObjDensity => grassStaticObjDensity;
+    public float SandStaticObjDensity => sandStaticObjDensity;
     public float AnimatedObjDensity => animatedObjDensity;
     public float WaterAnimatedObjDensity => waterAnimatedObjDensity;
     public float WaterDecoDensity => waterDecoDensity;
@@ -106,7 +110,8 @@ public class StageTileDataSO : ScriptableObject
     public float WaterTileHDRIntensity => waterTileHDRIntensity;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
-    public List<StaticObj> StaticObjPrefabs => staticObjPrefabs;
+    public List<StaticObj> GrassStaticObjPrefabs => grassStaticObjPrefabs;
+    public List<StaticObj> SandStaticObjPrefabs => sandStaticObjPrefabs;
     public TileBase WaterTile => waterTile;
     public TileBase WaterTileBorderRU => waterTileBorderRU;
     public TileBase WaterTileBorderRD => waterTileBorderRD;

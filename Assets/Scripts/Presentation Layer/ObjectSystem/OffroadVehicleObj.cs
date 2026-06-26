@@ -107,6 +107,14 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private Color originalContainerColor;
     private bool bOriginalSpritesSaved = false;
 
+    [Space(10)]
+    [Header("Shiny Effect Settings")]
+    [SerializeField] private float shinyDuration = 0.15f;
+    [SerializeField] private AnimationCurve shinyCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+
+    private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+    private MaterialPropertyBlock _flashMPB;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, Transform _characterTransform)
@@ -618,7 +626,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             if (baseSR != null) originalBaseSprite = baseSR.sprite;
             if (wheelSR != null) originalWheelSprite = wheelSR.sprite;
-            if (containerSR != null) 
+            if (containerSR != null)
             {
                 originalContainerColor = containerSR.color;
             }
@@ -627,7 +635,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         if (baseSR != null && darkBaseSprite != null) baseSR.sprite = darkBaseSprite;
         if (wheelSR != null && darkWheelSprite != null) wheelSR.sprite = darkWheelSprite;
-        if (containerSR != null) 
+        if (containerSR != null)
         {
             containerSR.color = new Color32(144, 157, 224, 255);
         }
@@ -639,10 +647,37 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             if (baseSR != null) baseSR.sprite = originalBaseSprite;
             if (wheelSR != null) wheelSR.sprite = originalWheelSprite;
-            if (containerSR != null) 
+            if (containerSR != null)
             {
                 containerSR.color = originalContainerColor;
             }
         }
+    }
+
+    public void PlayShinyEffect()
+    {
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+        StartCoroutine(ShinyRoutine());
+    }
+
+    private IEnumerator ShinyRoutine()
+    {
+        float elapsed = 0f;
+        while (elapsed < shinyDuration)
+        {
+            float t = elapsed / shinyDuration;
+            float flash = shinyCurve.Evaluate(t);
+
+            _flashMPB.SetFloat(FlashAmountID, flash);
+            baseSR?.SetPropertyBlock(_flashMPB);
+            wheelSR?.SetPropertyBlock(_flashMPB);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        _flashMPB.SetFloat(FlashAmountID, 0f);
+        baseSR?.SetPropertyBlock(_flashMPB);
+        wheelSR?.SetPropertyBlock(_flashMPB);
     }
 }
