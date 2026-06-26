@@ -19,51 +19,99 @@
     },
     {
       "id": 3,
-      "key": "forestVegetatedForest1Title",
+      "key": "forestWideGreenForest1Title",
       "kr": "풀빛너른숲 I",
       "en": "",
       "enumType": "ForestType",
-      "enumValue": "VegetatedForest_1"
+      "enumValue": "WideGreenForest_1"
     },
     {
       "id": 4,
-      "key": "forestVegetatedForest2Title",
+      "key": "forestWideGreenForest2Title",
       "kr": "풀빛너른숲 II",
       "en": "",
       "enumType": "ForestType",
-      "enumValue": "VegetatedForest_2"
+      "enumValue": "WideGreenForest_2"
     },
     {
       "id": 5,
-      "key": "forestVegetatedForest3Title",
+      "key": "forestWideGreenForest3Title",
       "kr": "풀빛너른숲 III",
       "en": "",
       "enumType": "ForestType",
-      "enumValue": "VegetatedForest_3"
+      "enumValue": "WideGreenForest_3"
     },
     {
       "id": 6,
-      "key": "forestMongleSporeForest1Title",
+      "key": "forestFluffySporeForest1Title",
       "kr": "몽글포자숲 I",
       "en": "",
       "enumType": "ForestType",
-      "enumValue": "MongleSporeForest_1"
+      "enumValue": "FluffySporeForest_1"
     },
     {
       "id": 7,
-      "key": "forestMongleSporeForest2Title",
+      "key": "forestFluffySporeForest2Title",
       "kr": "몽글포자숲 II",
       "en": "",
       "enumType": "ForestType",
-      "enumValue": "MongleSporeForest_2"
+      "enumValue": "FluffySporeForest_2"
     },
     {
       "id": 8,
-      "key": "forestMongleSporeForest3Title",
+      "key": "forestFluffySporeForest3Title",
       "kr": "몽글포자숲 III",
       "en": "",
       "enumType": "ForestType",
-      "enumValue": "MongleSporeForest_3"
+      "enumValue": "FluffySporeForest_3"
+    },
+    {
+      "id": 9,
+      "key": "forestStarrootForest1Title",
+      "kr": "별뿌리숲 I",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "StarrootForest_1"
+    },
+    {
+      "id": 10,
+      "key": "forestStarrootForest2Title",
+      "kr": "별뿌리숲 II",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "StarrootForest_2"
+    },
+    {
+      "id": 11,
+      "key": "forestStarrootForest3Title",
+      "kr": "별뿌리숲 III",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "StarrootForest_3"
+    },
+    {
+      "id": 12,
+      "key": "forestMagmaForest1Title",
+      "kr": "용암숲 I",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "MagmaForest_1"
+    },
+    {
+      "id": 13,
+      "key": "forestMagmaForest2Title",
+      "kr": "용암숲 II",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "MagmaForest_2"
+    },
+    {
+      "id": 14,
+      "key": "forestMagmaForest3Title",
+      "kr": "용암숲 III",
+      "en": "",
+      "enumType": "ForestType",
+      "enumValue": "MagmaForest_3"
     },
     {
       "id": 101,
