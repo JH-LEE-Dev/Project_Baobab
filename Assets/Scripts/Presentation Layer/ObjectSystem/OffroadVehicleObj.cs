@@ -156,6 +156,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             wheelAnimator = wheelObject.GetComponentInChildren<Animator>();
             wheelAnimator.speed = 0;
+            wheelAnimator.enabled = false;
             customSortable_wheel = wheelObject.GetComponent<CustomSortable>();
             if (customSortable_wheel != null)
             {
@@ -517,7 +518,16 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         if (wheelAnimator != null)
         {
-            wheelAnimator.speed = _speed * 0.2f;
+            if (_speed > 0f)
+            {
+                wheelAnimator.enabled = true;
+                wheelAnimator.speed = _speed * 0.2f;
+            }
+            else
+            {
+                wheelAnimator.speed = 0;
+                wheelAnimator.enabled = false;
+            }
         }
     }
 
@@ -557,7 +567,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         wheelObjectForStencil.SetActive(true);
 
-        if (wheelAnimator != null) wheelAnimator.speed = 0;
+        if (wheelAnimator != null)
+        {
+            wheelAnimator.speed = 0;
+            wheelAnimator.enabled = false;
+        }
 
         driveCoroutine = null;
         OffroadDriveEndEvent?.Invoke();
@@ -638,6 +652,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             if (baseSR != null && darkBaseSprite != null) baseSR.sprite = darkBaseSprite;
             if (wheelSR != null && darkWheelSprite != null) wheelSR.sprite = darkWheelSprite;
+
             if (containerSR != null)
             {
                 containerSR.color = new Color32(144, 157, 224, 255);
@@ -646,7 +661,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         else if (_mapType == MapType.MagmaForest)
         {
             if (baseSR != null && cinderBaseSprite != null) baseSR.sprite = cinderBaseSprite;
-            if (wheelSR != null && cinderWheelSprite != null) wheelSR.sprite = cinderWheelSprite;
+            if (wheelSR != null && cinderWheelSprite != null) wheelSR.sprite = cinderWheelSprite;   
             if (containerSR != null)
             {
                 containerSR.color = new Color32(255, 200, 200, 255);
