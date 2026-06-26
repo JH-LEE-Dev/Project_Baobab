@@ -57,7 +57,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [Header("Sprites Settings")]
     [SerializeField] private Sprite darkBaseSprite;
     [SerializeField] private Sprite darkWheelSprite;
-    [SerializeField] private Sprite darkContainerSprite;
+    [SerializeField] private Sprite cinderBaseSprite;
+    [SerializeField] private Sprite cinderWheelSprite;
 
     [Space(10)]
     [Header("VFX Settings")]
@@ -633,11 +634,23 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             bOriginalSpritesSaved = true;
         }
 
-        if (baseSR != null && darkBaseSprite != null) baseSR.sprite = darkBaseSprite;
-        if (wheelSR != null && darkWheelSprite != null) wheelSR.sprite = darkWheelSprite;
-        if (containerSR != null)
+        if (_mapType == MapType.StarrootForest)
         {
-            containerSR.color = new Color32(144, 157, 224, 255);
+            if (baseSR != null && darkBaseSprite != null) baseSR.sprite = darkBaseSprite;
+            if (wheelSR != null && darkWheelSprite != null) wheelSR.sprite = darkWheelSprite;
+            if (containerSR != null)
+            {
+                containerSR.color = new Color32(144, 157, 224, 255);
+            }
+        }
+        else if (_mapType == MapType.MagmaForest)
+        {
+            if (baseSR != null && cinderBaseSprite != null) baseSR.sprite = cinderBaseSprite;
+            if (wheelSR != null && cinderWheelSprite != null) wheelSR.sprite = cinderWheelSprite;
+            if (containerSR != null)
+            {
+                containerSR.color = new Color32(255, 200, 200, 255);
+            }
         }
     }
 
