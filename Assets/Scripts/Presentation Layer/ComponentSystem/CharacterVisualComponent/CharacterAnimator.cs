@@ -91,7 +91,7 @@ public class CharacterAnimator : MonoBehaviour
     [Space]
     [Header("VFX Settings")]
     [SerializeField] private float dustEffectInterval = 0.3f;
-    [SerializeField] private float dustOffsetDistance = 0.15f;
+    [SerializeField] private float dustOffsetDistance = 0.35f;
 
     // 상태 데이터
     private float frameTimer = 0f;
@@ -360,9 +360,18 @@ public class CharacterAnimator : MonoBehaviour
                 dustTimer = 0f;
                 if (vfxComponent != null)
                 {
-                    float angleRad = _facingAngle * Mathf.Deg2Rad;
-                    Vector3 facingDir = new Vector3(Mathf.Cos(angleRad), Mathf.Sin(angleRad), 0f);
-                    Vector3 spawnPosition = lastPosition - facingDir * dustOffsetDistance;
+                    Vector3 moveDelta = transform.position - lastPosition;
+                    Vector3 moveDir;
+                    if (moveDelta.sqrMagnitude > 0.0001f)
+                    {
+                        moveDir = moveDelta.normalized;
+                    }
+                    else
+                    {
+                        float angleRad = _facingAngle * Mathf.Deg2Rad;
+                        moveDir = new Vector3(Mathf.Cos(angleRad), Mathf.Sin(angleRad), 0f);
+                    }
+                    Vector3 spawnPosition = lastPosition - moveDir * dustOffsetDistance;
 
                     ParticleSystem effect = vfxComponent.Play("Dust", spawnPosition, Quaternion.identity);
                     if (effect != null && baseSR != null)
