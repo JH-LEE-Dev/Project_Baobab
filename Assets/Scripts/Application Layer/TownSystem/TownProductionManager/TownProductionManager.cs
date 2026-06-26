@@ -22,6 +22,7 @@ public class TownProductionManager : MonoBehaviour
     private Transform characterRidePoint;
     private Coroutine characterRideCoroutine;
     private SkyCameraProductionManager skyCameraProductionManager;
+    private Vector3 originalRidePosition;
     public bool bCanGetOff = true;
 
     public bool bCurrentlyTownScene = true;
@@ -107,12 +108,14 @@ public class TownProductionManager : MonoBehaviour
         inputManager.PauseMove(true);
         //character.DisableShadow();
 
-        Vector3 startPos = character.transform.position;
+        originalRidePosition = character.transform.position;
+        Vector3 startPos = originalRidePosition;
         Vector3 startScale = character.transform.localScale;
 
         character.transform.position = characterRidePoint.position;
+        character.bRide = true;
         character.gameObject.SetActive(false);
-
+        offroadVehicleObj.PlayShinyEffect();
         character.EnableShadow();
 
         // 캐릭터 도착 시 차량 착륙 임팩트 연출 실행
@@ -126,6 +129,12 @@ public class TownProductionManager : MonoBehaviour
 
     private void InvokeCharacterRideEndEvent()
     {
+        StartCoroutine(InvokeCharacterRideEndEventRoutine());
+    }
+
+    private IEnumerator InvokeCharacterRideEndEventRoutine()
+    {
+        yield return new WaitForSeconds(0.5f);
         CharacterRideEndEvent?.Invoke();
     }
 
@@ -140,21 +149,21 @@ public class TownProductionManager : MonoBehaviour
 
     public void GetOffFromTheVehicle()
     {
-        if (character == null || offroadVehicleObj == null || offroadVehicleObj.getOffTransform == null || bCanGetOff == false)
+        if (character == null || offroadVehicleObj == null || bCanGetOff == false)
         {
             return;
         }
 
         // 1. 캐릭터 복구 및 위치 설정
         character.gameObject.SetActive(true);
-        character.transform.position = offroadVehicleObj.getOffTransform.position;
-
+        character.transform.position = originalRidePosition;
+        character.bRide = false;
         character.EnableShadow();
 
         // 3. 탑승 위치에서 내리는 위치를 바라보도록 설정
         if (offroadVehicleObj.CharacterRidePoint != null)
         {
-            Vector3 getOffDir = offroadVehicleObj.getOffTransform.position - offroadVehicleObj.CharacterRidePoint.position;
+            Vector3 getOffDir = originalRidePosition - offroadVehicleObj.CharacterRidePoint.position;
             character.SetFacingDirection(getOffDir);
         }
 
@@ -201,6 +210,7 @@ public class TownProductionManager : MonoBehaviour
         if (bCurrentlyTownScene == false)
             return;
 
+        character.bRide = false;
         character.ResetStatus();
         CameraUpIsEndEvent?.Invoke();
     }

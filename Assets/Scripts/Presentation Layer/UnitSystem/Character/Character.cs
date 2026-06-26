@@ -75,6 +75,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public bool bDead { get; private set; } = false;
 
+    bool ICharacter.bRide => bRide;
+
+    public bool bRide = false;
+
     private float visualHeight = 0f;
 
     private bool bWhileReset = false;

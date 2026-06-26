@@ -92,8 +92,9 @@ public class InDungeonProductionManager : MonoBehaviour
         Vector3 startScale = character.transform.localScale;
 
         character.transform.position = characterRidePoint.position;
+        character.bRide = true;
         character.gameObject.SetActive(false);
-
+        offroadVehicleObj.PlayShinyEffect();
         if (offroadVehicleObj != null)
         {
             yield return offroadVehicleObj.CharacterRideLandingImpactSequence(InvokeCharacterRideEndEvent);
@@ -104,6 +105,12 @@ public class InDungeonProductionManager : MonoBehaviour
 
     private void InvokeCharacterRideEndEvent()
     {
+        StartCoroutine(InvokeCharacterRideEndEventRoutine());
+    }
+
+    private IEnumerator InvokeCharacterRideEndEventRoutine()
+    {
+        yield return new WaitForSeconds(0.5f);
         CharacterRideEndEvent?.Invoke();
     }
 
@@ -112,6 +119,7 @@ public class InDungeonProductionManager : MonoBehaviour
         if (bCurrentlyDungeonScene == false)
             return;
 
+        character.bRide = false;
         character.gameObject.SetActive(true);
         CameraUpIsEndEvent?.Invoke();
     }

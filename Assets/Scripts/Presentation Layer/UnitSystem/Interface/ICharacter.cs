@@ -7,4 +7,5 @@ public interface ICharacter
     public IStatComponent statComponent { get; }
     public IArmComponent armComponent { get; }
     public bool bDead { get; }
+    public bool bRide { get; }
 }
