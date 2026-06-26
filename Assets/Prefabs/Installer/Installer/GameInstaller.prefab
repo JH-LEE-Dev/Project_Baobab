@@ -2285,6 +2285,12 @@ MonoBehaviour:
     decAmount: 500
   - forestType: 10
     decAmount: 1000
+  - forestType: 11
+    decAmount: 2000
+  - forestType: 12
+    decAmount: 5000
+  - forestType: 13
+    decAmount: 10000
 --- !u!114 &8919172322634990837
 MonoBehaviour:
   m_ObjectHideFlags: 0
