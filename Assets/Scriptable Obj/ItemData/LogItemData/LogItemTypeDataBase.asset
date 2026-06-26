@@ -52,36 +52,36 @@ MonoBehaviour:
   - itemType: 1
     treeType: 7
     durability: 300
-    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
-    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    sprite: {fileID: 21300000, guid: 39ffeb265e07d3b45a78a12882e51b90, type: 3}
+    timberSprite: {fileID: 21300000, guid: 65f664dd0306e0b4ab5a99348124d2f6, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 8
     durability: 500
-    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
-    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    sprite: {fileID: 21300000, guid: 01c84f829f208764a8915df18e35fe22, type: 3}
+    timberSprite: {fileID: 21300000, guid: 53e5a89c4b73a2840b48e3b5f98da310, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 9
     durability: 1000
-    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
-    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    sprite: {fileID: 21300000, guid: a9075905726912a4591b9dbf33ca7e1f, type: 3}
+    timberSprite: {fileID: 21300000, guid: cfddf4568535bfc428f71be28094dce7, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 10
     durability: 1500
-    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
-    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    sprite: {fileID: 21300000, guid: e64cedb735bd45b40b4777214099c246, type: 3}
+    timberSprite: {fileID: 21300000, guid: f1c160bd94854a74f828a48a79552975, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 11
     durability: 2000
-    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
-    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    sprite: {fileID: 21300000, guid: 8b0526a04f2b8184dae2a8f293711260, type: 3}
+    timberSprite: {fileID: 21300000, guid: b0945f2cf92ea3e4597e0149c036b25c, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
   - itemType: 1
     treeType: 12
     durability: 3000
-    sprite: {fileID: 21300000, guid: 02cf505fb780be14dab26e0fce8a714f, type: 3}
-    timberSprite: {fileID: 21300000, guid: c03f189b15859e34f89c6e76dad53404, type: 3}
+    sprite: {fileID: 21300000, guid: 6ea3431f24c5c464e88ec17d4852cc33, type: 3}
+    timberSprite: {fileID: 21300000, guid: 309f0139707129b49a2ea0a9cb408816, type: 3}
     color: {r: 1, g: 1, b: 1, a: 1}
