@@ -54,7 +54,15 @@ MonoBehaviour:
   treeCollisionTile: {fileID: 11400000, guid: 374b4f33dc2191142b5ebd7c8b6c5ea2, type: 2}
   grassDecoTiles:
   - {fileID: 11400000, guid: c2e44bea0e740a74bace8ddf3f74b4e1, type: 2}
+  - {fileID: 11400000, guid: c2e44bea0e740a74bace8ddf3f74b4e1, type: 2}
+  - {fileID: 11400000, guid: c2e44bea0e740a74bace8ddf3f74b4e1, type: 2}
   - {fileID: 11400000, guid: 20239b0dee807034c887a910f41f9916, type: 2}
+  - {fileID: 11400000, guid: 20239b0dee807034c887a910f41f9916, type: 2}
+  - {fileID: 11400000, guid: 20239b0dee807034c887a910f41f9916, type: 2}
+  - {fileID: 11400000, guid: 35b0bf4bfca747248a70e626329abe84, type: 2}
+  - {fileID: 11400000, guid: 6edc195024bd37942a752045fe1999f6, type: 2}
+  - {fileID: 11400000, guid: aea44304579767b4fa883f980f78b201, type: 2}
+  - {fileID: 11400000, guid: 75d5c4272d8fa234eb82725345ad33d2, type: 2}
   groundDecoTiles: []
   bloomGrassDecoTiles:
   - {fileID: 11400000, guid: 019b1a13404f92747adfdcff47d4a57b, type: 2}
@@ -82,16 +90,20 @@ MonoBehaviour:
   groundStencilTile: {fileID: 11400000, guid: b3ac472f3137a764d884349e72c0fb05, type: 2}
   animatedObjPrefabs: []
   waterAnimatedObjPrefabs: []
-  staticObjPrefabs: []
+  staticObjPrefabs:
+  - {fileID: 5425288766945036917, guid: 3163e8b3171c55f4baad1c47a70d62e6, type: 3}
+  - {fileID: 5425288766945036917, guid: 414f16ee9dec383479a0bcb93d814575, type: 3}
   bloomDecoHDRIntensity: 2.5
   bloomWaterDecoHDRIntensity: 4
-  rockDecoDensity: 0.0005
+  useWaterTileBloom: 0
+  waterTileHDRIntensity: 1
+  rockDecoDensity: 0.0045
   animatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
   waterDecoDensity: 0.7
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
-  grassDecoDensity: 0.03
+  grassDecoDensity: 0.1
   bloomSandDecoDensity: 0.01
   bloomGroundDecoDensity: 0.002
   bloomGrassDecoDensity: 0.05

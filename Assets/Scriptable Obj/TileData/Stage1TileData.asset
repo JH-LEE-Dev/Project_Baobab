@@ -78,7 +78,10 @@ MonoBehaviour:
   - {fileID: 5425288766945036917, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
   - {fileID: 563241788502290586, guid: ce53722f442ca18478b233a84a3cdfbb, type: 3}
   bloomDecoHDRIntensity: 1
-  rockDecoDensity: 0.0005
+  bloomWaterDecoHDRIntensity: 1
+  useWaterTileBloom: 0
+  waterTileHDRIntensity: 1
+  rockDecoDensity: 0.0025
   animatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
   waterDecoDensity: 0
@@ -88,3 +91,5 @@ MonoBehaviour:
   bloomSandDecoDensity: 0.01
   bloomGroundDecoDensity: 0.002
   bloomGrassDecoDensity: 0.07
+  useBloomWaterDecoDensity: 0
+  bloomWaterDecoDensity: 0.1

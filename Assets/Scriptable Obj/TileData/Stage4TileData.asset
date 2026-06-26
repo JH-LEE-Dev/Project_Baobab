@@ -68,7 +68,7 @@ MonoBehaviour:
   bloomWaterDecoHDRIntensity: 1
   useWaterTileBloom: 1
   waterTileHDRIntensity: 2.25
-  rockDecoDensity: 0.0005
+  rockDecoDensity: 0.0025
   animatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
   waterDecoDensity: 0
