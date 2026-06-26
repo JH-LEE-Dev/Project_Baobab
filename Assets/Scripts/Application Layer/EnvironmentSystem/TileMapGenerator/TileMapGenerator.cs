@@ -185,7 +185,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         if (animatedObjGenerator != null && stageTileData != null)
         {
-            animatedObjGenerator.SetPrefabs(stageTileData.AnimatedObjPrefabs, stageTileData.WaterAnimatedObjPrefabs, stageTileData.StaticObjPrefabs);
+            animatedObjGenerator.SetPrefabs(stageTileData.AnimatedObjPrefabs, stageTileData.WaterAnimatedObjPrefabs, stageTileData.GrassStaticObjPrefabs, stageTileData.SandStaticObjPrefabs);
         }
 
         if (bloomDecoTilemap != null && stageTileData != null)
@@ -596,16 +596,25 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 }
 
                 bool _hasRockDeco = false;
-                if (stageTileData != null && stageTileData.StaticObjPrefabs != null && stageTileData.StaticObjPrefabs.Count > 0 && UnityEngine.Random.value < stageTileData.RockDecoDensity)
+                if (stageTileData != null)
                 {
-                    if (!inSafeZone)
+                    var staticPrefabs = _isSand ? stageTileData.SandStaticObjPrefabs : stageTileData.GrassStaticObjPrefabs;
+                    float density = _isSand ? stageTileData.SandStaticObjDensity : stageTileData.GrassStaticObjDensity;
+
+                    if (staticPrefabs != null && staticPrefabs.Count > 0 && UnityEngine.Random.value < density)
                     {
-                        if (animatedObjGenerator != null)
+                        if (!inSafeZone)
                         {
-                            animatedObjGenerator.SpawnStaticObj(pos);
+                            if (animatedObjGenerator != null)
+                            {
+                                if (_isSand)
+                                    animatedObjGenerator.SpawnSandStaticObj(pos);
+                                else
+                                    animatedObjGenerator.SpawnGrassStaticObj(pos);
+                            }
+                            _hasRockDeco = true;
+                            rockCollisionTiles[i] = stageTileData.TreeCollisionTile;
                         }
-                        _hasRockDeco = true;
-                        rockCollisionTiles[i] = stageTileData.TreeCollisionTile;
                     }
                 }
 
