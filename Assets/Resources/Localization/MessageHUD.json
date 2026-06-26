@@ -152,6 +152,78 @@
       "en": "The path ahead feels strangely peaceful.",
       "enumType": "DungeonState",
       "enumValue": "Stage1_Idle3"
+    },
+    {
+      "id": 106,
+      "key": "dungeonStateStage2Idle0SubText",
+      "kr": "말랑한 숲향기가 코끝을 간질여요.",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage2_Idle0"
+    },
+    {
+      "id": 107,
+      "key": "dungeonStateStage2Idle1SubText",
+      "kr": "발밑에서 푹신한 기운이 느껴집니다.",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage2_Idle1"
+    },
+    {
+      "id": 108,
+      "key": "dungeonStateStage2Idle2SubText",
+      "kr": "몽글몽글 피어오르네요!",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage2_Idle2"
+    },
+    {
+      "id": 109,
+      "key": "dungeonStateStage3Idle0SubText",
+      "kr": "나무뿌리 사이로 별빛이 스며들고 있네요.",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage3_Idle0"
+    },
+    {
+      "id": 110,
+      "key": "dungeonStateStage3Idle1SubText",
+      "kr": "오늘은 별빛이 길을 밝혀주네요.",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage3_Idle1"
+    },
+    {
+      "id": 111,
+      "key": "dungeonStateStage3Idle2SubText",
+      "kr": "오늘 숲은 조금 신비로운 표정이에요.",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage3_Idle2"
+    },
+    {
+      "id": 112,
+      "key": "dungeonStateStage4Idle0SubText",
+      "kr": "뜨거운 열기가 숲길 위로 아른거려요.",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage4_Idle0"
+    },
+    {
+      "id": 113,
+      "key": "dungeonStateStage4Idle1SubText",
+      "kr": "발밑이 따끈하니 조심히 걸어야겠어요!",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage4_Idle1"
+    },
+    {
+      "id": 114,
+      "key": "dungeonStateStage4Idle2SubText",
+      "kr": "용암빛이 나무 그림자를 흔들고있어요.",
+      "en": "",
+      "enumType": "DungeonState",
+      "enumValue": "Stage4_Idle2"
     }
   ]
 }
