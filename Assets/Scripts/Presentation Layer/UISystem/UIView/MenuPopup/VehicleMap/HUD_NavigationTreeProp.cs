@@ -31,6 +31,10 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
     [SerializeField] private float disappearDuration = 0.2f;
     [SerializeField] private Ease disappearEase = Ease.InBack;
 
+    [Header("HDR Intensity Config")]
+    [SerializeField] private float shieldHdrIntensityMultiplier = 1.0f;
+    [SerializeField] private float highlightHdrIntensityMultiplier = 1.0f;
+
     //내부 의존성
     private RectTransform rect;
     private TreeType treeType;
@@ -41,6 +45,16 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
     private bool isDisappearing = false;
     private TweenCallback onAppearDelayCompleteCallback;
     private LocalizationManager localizationManager;
+    private Material shieldLeafMat;
+    private Material shieldTrunkMat;
+    private Material highlightLeafMat;
+    private Material highlightTrunkMat;
+    private Color originalShieldLeafColor;
+    private Color originalShieldTrunkColor;
+    private Color originalHighlightLeafColor;
+    private Color originalHighlightTrunkColor;
+
+    private static readonly int HdrColorPropertyId = Shader.PropertyToID("_HDRColor");
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -128,6 +142,19 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
                 if (_hasHighlightTrunk)
                     highlightTrunkImage.sprite = visualData.highlightBottomSprites[0];
             }
+
+            // Shield 및 Highlight 머테리얼 HDR Intensity 값 적용
+            if (null != shieldLeafImage && true == shieldLeafImage.gameObject.activeSelf)
+                ApplyHdrIntensity(shieldLeafImage, ref shieldLeafMat, ref originalShieldLeafColor, visualData.shieldHDRIntensity * shieldHdrIntensityMultiplier);
+
+            if (null != shieldTrunkImage && true == shieldTrunkImage.gameObject.activeSelf)
+                ApplyHdrIntensity(shieldTrunkImage, ref shieldTrunkMat, ref originalShieldTrunkColor, visualData.shieldHDRIntensity * shieldHdrIntensityMultiplier);
+
+            if (null != highlightLeafImage && true == highlightLeafImage.gameObject.activeSelf)
+                ApplyHdrIntensity(highlightLeafImage, ref highlightLeafMat, ref originalHighlightLeafColor, visualData.highlightHDRIntensity * highlightHdrIntensityMultiplier);
+
+            if (null != highlightTrunkImage && true == highlightTrunkImage.gameObject.activeSelf)
+                ApplyHdrIntensity(highlightTrunkImage, ref highlightTrunkMat, ref originalHighlightTrunkColor, visualData.highlightHDRIntensity * highlightHdrIntensityMultiplier);
         }
 
         ResetAnimation();
@@ -216,6 +243,35 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
     }
 
 
+    private void ApplyHdrIntensity(Image _image, ref Material _cachedMaterial, ref Color _originalColor, float _intensity)
+    {
+        if (null == _image)
+            return;
+
+        Material _currentMat = _image.material;
+        if (null == _currentMat)
+            return;
+
+        if (null == _cachedMaterial)
+        {
+            _cachedMaterial = Instantiate(_currentMat);
+            _image.material = _cachedMaterial;
+            _originalColor = _cachedMaterial.GetColor(HdrColorPropertyId);
+        }
+
+        if (null != _cachedMaterial)
+        {
+            Color _targetColor = new Color(
+                _originalColor.r * _intensity,
+                _originalColor.g * _intensity,
+                _originalColor.b * _intensity,
+                _originalColor.a
+            );
+            _cachedMaterial.SetColor(HdrColorPropertyId, _targetColor);
+        }
+    }
+
+
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
     private void OnDisable()
@@ -230,5 +286,29 @@ public class HUD_NavigationTreeProp : MonoBehaviour, IPointerClickHandler
 
         if (null != shakeTween && true == shakeTween.IsActive())
             shakeTween.Kill();
+
+        if (null != shieldLeafMat)
+        {
+            Destroy(shieldLeafMat);
+            shieldLeafMat = null;
+        }
+
+        if (null != shieldTrunkMat)
+        {
+            Destroy(shieldTrunkMat);
+            shieldTrunkMat = null;
+        }
+
+        if (null != highlightLeafMat)
+        {
+            Destroy(highlightLeafMat);
+            highlightLeafMat = null;
+        }
+
+        if (null != highlightTrunkMat)
+        {
+            Destroy(highlightTrunkMat);
+            highlightTrunkMat = null;
+        }
     }
 }
