@@ -165,6 +165,10 @@ public enum SkillType
     ShockwaveDamage2, //충격파데미지2
     ShockwaveRange2, // 충격파 범위2
 
+
+
+
+    TestNode,  // TestNode
     MAX
 }
 
