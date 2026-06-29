@@ -679,6 +679,37 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1 &1180013566394593322
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3253313251135332226}
+  m_Layer: 7
+  m_Name: ShinyEffectPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3253313251135332226
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1180013566394593322}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.5, y: 0.25, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2765096103720082767}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1222708001054535174
 GameObject:
   m_ObjectHideFlags: 0
@@ -1740,6 +1771,7 @@ Transform:
   - {fileID: 843943444443842380}
   - {fileID: 7055498286988681686}
   - {fileID: 693034830568491026}
+  - {fileID: 3253313251135332226}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &256747857165204771
@@ -1787,6 +1819,7 @@ MonoBehaviour:
   cinderWheelSprite: {fileID: 21300000, guid: e706cfd3bd2845241901859350a91cce, type: 3}
   startUpEffectPoint: {fileID: 7055498286988681686}
   goEffectPoint: {fileID: 693034830568491026}
+  shinyEffectPoint: {fileID: 3253313251135332226}
   effectColor:
     m_Mode: 0
     m_GradientMin:
@@ -1943,6 +1976,12 @@ MonoBehaviour:
   - vfxTag: Go
     effectPrefab: {fileID: 2164660391435094963, guid: 1d9031cb94bee8347b5e660953a337dc, type: 3}
     initialPoolSize: 10
+    allowDynamicExpansion: 0
+    maxPoolSize: 0
+    uiParticleScale: 0
+  - vfxTag: Shiny
+    effectPrefab: {fileID: 0}
+    initialPoolSize: 1
     allowDynamicExpansion: 0
     maxPoolSize: 0
     uiParticleScale: 0
