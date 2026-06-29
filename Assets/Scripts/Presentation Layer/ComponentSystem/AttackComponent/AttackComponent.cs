@@ -273,7 +273,7 @@ public class AttackComponent : PComponent
             ShockWave sw = axeExtraAttackCreator.CreateShockWave(spawnPos);
             if (sw != null)
             {
-                sw.transform.rotation = Quaternion.FromToRotation(Vector3.right, _direction) * sw.InitialRotation;
+                sw.SetDirection(_direction);
             }
         }
     }
