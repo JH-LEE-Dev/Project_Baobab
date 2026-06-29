@@ -64,6 +64,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [Header("VFX Settings")]
     [SerializeField] private Transform startUpEffectPoint;
     [SerializeField] private Transform goEffectPoint;
+    [SerializeField] private Transform shinyEffectPoint;
     [SerializeField] private ParticleSystem.MinMaxGradient effectColor;
     [SerializeField] private float goEffectInterval = 0.2f;
 
@@ -661,7 +662,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         else if (_mapType == MapType.MagmaForest)
         {
             if (baseSR != null && cinderBaseSprite != null) baseSR.sprite = cinderBaseSprite;
-            if (wheelSR != null && cinderWheelSprite != null) wheelSR.sprite = cinderWheelSprite;   
+            if (wheelSR != null && cinderWheelSprite != null) wheelSR.sprite = cinderWheelSprite;
             if (containerSR != null)
             {
                 containerSR.color = new Color32(255, 200, 200, 255);
@@ -685,6 +686,12 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public void PlayShinyEffect()
     {
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        if (vfxComponent != null && shinyEffectPoint != null)
+        {
+            OffroadPlayEffect("Shiny", shinyEffectPoint);
+        }
+        
         StartCoroutine(ShinyRoutine());
     }
 
