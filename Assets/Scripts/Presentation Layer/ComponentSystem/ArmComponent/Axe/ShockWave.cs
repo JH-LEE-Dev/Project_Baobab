@@ -27,6 +27,7 @@ public class ShockWave : MonoBehaviour
     private float initialMinDist;
     private float initialMaxDist;
     private float initialFindRange;
+    public Quaternion InitialRotation { get; private set; }
 
     // 최적화: 판정 주기 및 수학 연산용
     private float lastDamageCheckTime;
@@ -44,6 +45,7 @@ public class ShockWave : MonoBehaviour
         initialMinDist = minDist;
         initialMaxDist = maxDist;
         initialFindRange = findRange;
+        InitialRotation = transform.rotation;
 
         // 부채꼴 판정용 코사인 값 및 제곱값 미리 계산 (Acos, Sqrt 제거용)
         float _halfRad = angle * 0.5f * Mathf.Deg2Rad;
@@ -68,6 +70,7 @@ public class ShockWave : MonoBehaviour
 
         // 리셋 시 스케일과 범위를 초기 상태로 복구
         transform.localScale = initialScale;
+        transform.rotation = InitialRotation;
         minDist = initialMinDist;
         maxDist = initialMaxDist;
         findRange = initialFindRange;
