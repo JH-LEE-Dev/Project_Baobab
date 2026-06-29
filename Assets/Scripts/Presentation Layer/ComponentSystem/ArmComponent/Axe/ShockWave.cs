@@ -15,6 +15,7 @@ public class ShockWave : MonoBehaviour
     private float timer;
     private Vector3 startPosition;
     private float damage;
+    private Vector3 moveDirection = Vector3.right;
 
     [Header("Sector Ring Settings")]
     public float minDist = 0f;
@@ -60,6 +61,12 @@ public class ShockWave : MonoBehaviour
         lifeTime = _duration;
     }
 
+    public void SetDirection(Vector3 _dir)
+    {
+        moveDirection = _dir.normalized;
+        transform.rotation = Quaternion.FromToRotation(Vector3.right, moveDirection) * InitialRotation;
+    }
+
     public void Reset()
     {
         timer = 0f;
@@ -67,6 +74,7 @@ public class ShockWave : MonoBehaviour
         startPosition = transform.position;
         targetsInRange.Clear();
         hitTargets.Clear();
+        moveDirection = Vector3.right;
 
         // 리셋 시 스케일과 범위를 초기 상태로 복구
         transform.localScale = initialScale;
@@ -87,7 +95,7 @@ public class ShockWave : MonoBehaviour
         // 현재 확장된 findRange를 사용하여 검색
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, findRange, targetLayer.value, targetsInRange);
 
-        Vector2 forward = transform.right;
+        Vector2 forward = moveDirection;
         float minDistSqr = minDist * minDist;
         float maxDistSqr = maxDist * maxDist;
 
@@ -124,8 +132,8 @@ public class ShockWave : MonoBehaviour
     {
         timer += Time.deltaTime;
 
-        // 1. 지정된 방향(transform.right)으로 이동
-        transform.position += transform.right * (moveSpeed * Time.deltaTime);
+        // 1. 지정된 방향(moveDirection)으로 이동
+        transform.position += moveDirection * (moveSpeed * Time.deltaTime);
 
         // 2. 이동 거리에 따른 스케일 및 충돌 범위 확장
         // 최적화: Vector3.Distance(sqrt) 대신 단순 시간*속도로 계산
