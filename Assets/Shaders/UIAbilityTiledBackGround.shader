@@ -7,6 +7,9 @@ Shader "UI/AbilityTiledBackGround"
         _TileSize ("Tile Size", Vector) = (64, 64, 0, 0)
         _RectSize ("Rect Size", Vector) = (640, 360, 0, 0)
         _Pivot ("Pivot", Vector) = (0.5, 0.5, 0, 0)
+        _VignetteIntensity ("Vignette Intensity", Range(0, 1)) = 0.35
+        _VignetteRadius ("Vignette Radius", Range(0, 1)) = 0.28
+        _VignetteSoftness ("Vignette Softness", Range(0.001, 1)) = 0.75
 
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -72,6 +75,9 @@ Shader "UI/AbilityTiledBackGround"
             float4 _RectSize;
             float4 _Pivot;
             float4 _AbilityTileBGOffset;
+            float _VignetteIntensity;
+            float _VignetteRadius;
+            float _VignetteSoftness;
 
             v2f vert(appdata_t v)
             {
@@ -90,7 +96,17 @@ Shader "UI/AbilityTiledBackGround"
                 float2 samplePixel = floor(frac(tilePixel / tileSize) * tileSize) + 0.5;
                 float2 uv = samplePixel * _MainTex_TexelSize.xy;
 
-                return tex2D(_MainTex, uv) * IN.color;
+                fixed4 color = tex2D(_MainTex, uv) * IN.color;
+
+                float2 rectSize = max(_RectSize.xy, float2(1.0, 1.0));
+                float2 centeredUV = (localPixel / rectSize) - 0.5;
+                centeredUV.x *= rectSize.x / rectSize.y;
+
+                float distanceFromCenter = length(centeredUV);
+                float vignette = smoothstep(_VignetteRadius, _VignetteRadius + _VignetteSoftness, distanceFromCenter);
+                color.rgb *= lerp(1.0, 1.0 - _VignetteIntensity, vignette);
+
+                return color;
             }
             ENDCG
         }

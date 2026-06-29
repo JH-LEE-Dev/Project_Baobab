@@ -452,7 +452,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 2100000, guid: d283e98145a14b8cb5cdb42efadac820, type: 2}
-  m_Color: {r: 0.43137255, g: 0.43137255, b: 0.43137255, a: 1}
+  m_Color: {r: 0.47058824, g: 0.47058824, b: 0.47058824, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1588,7 +1588,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1604,7 +1604,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6519470873578380521, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 23
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6811739450326591716, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Layer

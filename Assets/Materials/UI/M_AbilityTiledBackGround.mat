@@ -35,6 +35,9 @@ Material:
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
+    - _VignetteIntensity: 0.9
+    - _VignetteRadius: 0.38
+    - _VignetteSoftness: 0.9
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _Pivot: {r: 0.5, g: 0.5, b: 0, a: 0}
