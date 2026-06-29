@@ -205,6 +205,42 @@ MonoBehaviour:
     enumValueName: Stage1_Idle3
     enumIntValue: 4
     compositeKey: 8388713
+  - enumTypeName: DungeonState
+    enumValueName: Stage2_Idle0
+    enumIntValue: 5
+    compositeKey: 8388714
+  - enumTypeName: DungeonState
+    enumValueName: Stage2_Idle1
+    enumIntValue: 6
+    compositeKey: 8388715
+  - enumTypeName: DungeonState
+    enumValueName: Stage2_Idle2
+    enumIntValue: 7
+    compositeKey: 8388716
+  - enumTypeName: DungeonState
+    enumValueName: Stage3_Idle0
+    enumIntValue: 8
+    compositeKey: 8388717
+  - enumTypeName: DungeonState
+    enumValueName: Stage3_Idle1
+    enumIntValue: 9
+    compositeKey: 8388718
+  - enumTypeName: DungeonState
+    enumValueName: Stage3_Idle2
+    enumIntValue: 10
+    compositeKey: 8388719
+  - enumTypeName: DungeonState
+    enumValueName: Stage4_Idle0
+    enumIntValue: 11
+    compositeKey: 8388720
+  - enumTypeName: DungeonState
+    enumValueName: Stage4_Idle1
+    enumIntValue: 12
+    compositeKey: 8388721
+  - enumTypeName: DungeonState
+    enumValueName: Stage4_Idle2
+    enumIntValue: 13
+    compositeKey: 8388722
   - enumTypeName: TreeType
     enumValueName: OakTree
     enumIntValue: 1

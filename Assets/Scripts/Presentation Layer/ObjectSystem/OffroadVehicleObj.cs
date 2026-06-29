@@ -57,12 +57,14 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [Header("Sprites Settings")]
     [SerializeField] private Sprite darkBaseSprite;
     [SerializeField] private Sprite darkWheelSprite;
-    [SerializeField] private Sprite darkContainerSprite;
+    [SerializeField] private Sprite cinderBaseSprite;
+    [SerializeField] private Sprite cinderWheelSprite;
 
     [Space(10)]
     [Header("VFX Settings")]
     [SerializeField] private Transform startUpEffectPoint;
     [SerializeField] private Transform goEffectPoint;
+    [SerializeField] private Transform shinyEffectPoint;
     [SerializeField] private ParticleSystem.MinMaxGradient effectColor;
     [SerializeField] private float goEffectInterval = 0.2f;
 
@@ -155,6 +157,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             wheelAnimator = wheelObject.GetComponentInChildren<Animator>();
             wheelAnimator.speed = 0;
+            wheelAnimator.enabled = false;
             customSortable_wheel = wheelObject.GetComponent<CustomSortable>();
             if (customSortable_wheel != null)
             {
@@ -516,7 +519,16 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         if (wheelAnimator != null)
         {
-            wheelAnimator.speed = _speed * 0.2f;
+            if (_speed > 0f)
+            {
+                wheelAnimator.enabled = true;
+                wheelAnimator.speed = _speed * 0.2f;
+            }
+            else
+            {
+                wheelAnimator.speed = 0;
+                wheelAnimator.enabled = false;
+            }
         }
     }
 
@@ -556,7 +568,11 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         wheelObjectForStencil.SetActive(true);
 
-        if (wheelAnimator != null) wheelAnimator.speed = 0;
+        if (wheelAnimator != null)
+        {
+            wheelAnimator.speed = 0;
+            wheelAnimator.enabled = false;
+        }
 
         driveCoroutine = null;
         OffroadDriveEndEvent?.Invoke();
@@ -620,7 +636,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.SetContainerVisualOpened(false);
     }
 
-    public void ChangeSprite()
+    public void ChangeSprite(MapType _mapType)
     {
         if (!bOriginalSpritesSaved)
         {
@@ -633,11 +649,24 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             bOriginalSpritesSaved = true;
         }
 
-        if (baseSR != null && darkBaseSprite != null) baseSR.sprite = darkBaseSprite;
-        if (wheelSR != null && darkWheelSprite != null) wheelSR.sprite = darkWheelSprite;
-        if (containerSR != null)
+        if (_mapType == MapType.StarrootForest)
         {
-            containerSR.color = new Color32(144, 157, 224, 255);
+            if (baseSR != null && darkBaseSprite != null) baseSR.sprite = darkBaseSprite;
+            if (wheelSR != null && darkWheelSprite != null) wheelSR.sprite = darkWheelSprite;
+
+            if (containerSR != null)
+            {
+                containerSR.color = new Color32(144, 157, 224, 255);
+            }
+        }
+        else if (_mapType == MapType.MagmaForest)
+        {
+            if (baseSR != null && cinderBaseSprite != null) baseSR.sprite = cinderBaseSprite;
+            if (wheelSR != null && cinderWheelSprite != null) wheelSR.sprite = cinderWheelSprite;
+            if (containerSR != null)
+            {
+                containerSR.color = new Color32(255, 200, 200, 255);
+            }
         }
     }
 
@@ -657,6 +686,12 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public void PlayShinyEffect()
     {
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        if (vfxComponent != null && shinyEffectPoint != null)
+        {
+            OffroadPlayEffect("Shiny", shinyEffectPoint);
+        }
+        
         StartCoroutine(ShinyRoutine());
     }
 

@@ -208,9 +208,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         offroadVehicle.col.enabled = false;
         BindPortalEvents();
 
-        if (currentMapType == MapType.StarrootForest)
+        if (currentMapType == MapType.StarrootForest || currentMapType == MapType.MagmaForest)
         {
-            offroadVehicle.ChangeSprite();
+            offroadVehicle.ChangeSprite(currentMapType);
         }
         else
         {
