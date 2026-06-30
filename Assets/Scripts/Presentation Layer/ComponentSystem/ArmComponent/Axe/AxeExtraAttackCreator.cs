@@ -32,6 +32,7 @@ public class AxeExtraAttackCreator : MonoBehaviour
     {
         ShockWave sw = shockWavePool.Get();
         sw.transform.position = _position;
+        sw.SetVisualOrigin(transform);
         sw.Reset();
 
         return sw;

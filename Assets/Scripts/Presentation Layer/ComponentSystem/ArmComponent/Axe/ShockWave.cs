@@ -23,6 +23,13 @@ public class ShockWave : MonoBehaviour
     public float angle = 90f;
     public float findRange = 2.5f;
 
+    [Header("Visual Settings")]
+    [SerializeField] private float visualRangeMultiplier = 3f;
+    [SerializeField] private float visualExtraDuration = 0.2f;
+    [SerializeField] private float visualFadeOutDuration = 0.25f;
+    [SerializeField] private float visualStartThickness = 0.025f;
+    [SerializeField] private float visualAngleMultiplier = 1f;
+
     // 초기 설정값 캐싱용
     private Vector3 initialScale;
     private float initialMinDist;
@@ -39,6 +46,19 @@ public class ShockWave : MonoBehaviour
     private List<IStaticCollidable> targetsInRange = new List<IStaticCollidable>(128);
     private HashSet<IStaticCollidable> hitTargets = new HashSet<IStaticCollidable>();
 
+    private SpriteRenderer sourceSpriteRenderer;
+    private SpriteRenderer visualSpriteRenderer;
+    private MaterialPropertyBlock visualPropertyBlock;
+    private Transform visualOrigin;
+    private Transform visualTransform;
+    private float visualFullRadius;
+    private static readonly int MinRadiusID = Shader.PropertyToID("_MinRadius");
+    private static readonly int MaxRadiusID = Shader.PropertyToID("_MaxRadius");
+    private static readonly int AngleID = Shader.PropertyToID("_Angle");
+    private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
+    private static readonly int AlphaID = Shader.PropertyToID("_Alpha");
+    private static readonly int TrailTimeID = Shader.PropertyToID("_TrailTime");
+
     public void Initialize()
     {
         // 인스펙터에서 설정된 초기값들을 저장
@@ -47,11 +67,16 @@ public class ShockWave : MonoBehaviour
         initialMaxDist = maxDist;
         initialFindRange = findRange;
         InitialRotation = transform.rotation;
+        sourceSpriteRenderer = GetComponent<SpriteRenderer>();
+        visualPropertyBlock = new MaterialPropertyBlock();
+        EnsureVisualRenderer();
 
         // 부채꼴 판정용 코사인 값 및 제곱값 미리 계산 (Acos, Sqrt 제거용)
         float _halfRad = angle * 0.5f * Mathf.Deg2Rad;
         cosHalfAngle = Mathf.Cos(_halfRad);
         cosHalfAngleSqr = cosHalfAngle * cosHalfAngle;
+        CacheVisualRange();
+        UpdateVisualArcProperties();
     }
 
     public void SetValue(float _damage, float _speed, float _duration)
@@ -65,6 +90,13 @@ public class ShockWave : MonoBehaviour
     {
         moveDirection = _dir.normalized;
         transform.rotation = Quaternion.FromToRotation(Vector3.right, moveDirection) * InitialRotation;
+        UpdateVisualArcProperties();
+    }
+
+    public void SetVisualOrigin(Transform _origin)
+    {
+        visualOrigin = _origin;
+        UpdateVisualArcTransform();
     }
 
     public void Reset()
@@ -86,6 +118,96 @@ public class ShockWave : MonoBehaviour
         float _halfRad = angle * 0.5f * Mathf.Deg2Rad;
         cosHalfAngle = Mathf.Cos(_halfRad);
         cosHalfAngleSqr = cosHalfAngle * cosHalfAngle;
+        CacheVisualRange();
+        UpdateVisualArcTransform();
+        UpdateVisualArcProperties();
+    }
+
+    private void EnsureVisualRenderer()
+    {
+        if (sourceSpriteRenderer == null || visualSpriteRenderer != null) return;
+
+        GameObject visualObject = new GameObject("ShockWaveArcVisual");
+        visualTransform = visualObject.transform;
+        visualTransform.SetParent(transform, false);
+
+        visualSpriteRenderer = visualObject.AddComponent<SpriteRenderer>();
+        visualSpriteRenderer.sprite = sourceSpriteRenderer.sprite;
+        visualSpriteRenderer.sharedMaterial = sourceSpriteRenderer.sharedMaterial;
+        visualSpriteRenderer.color = sourceSpriteRenderer.color;
+        visualSpriteRenderer.sortingLayerID = sourceSpriteRenderer.sortingLayerID;
+        visualSpriteRenderer.sortingOrder = sourceSpriteRenderer.sortingOrder;
+        sourceSpriteRenderer.enabled = false;
+    }
+
+    private void CacheVisualRange()
+    {
+        float distanceAtEnd = moveSpeed * Mathf.Max(lifeTime, 0f);
+        float finalScaleMultiplier = 1f + distanceAtEnd * scaleFactor;
+        float visualMultiplier = Mathf.Max(visualRangeMultiplier, 0.0001f);
+        float finalRadius = Mathf.Max(initialFindRange, initialMaxDist) * finalScaleMultiplier;
+        visualFullRadius = Mathf.Max(finalRadius * visualMultiplier, 0.0001f);
+    }
+
+    private void UpdateVisualArcTransform()
+    {
+        if (visualTransform == null) return;
+
+        visualTransform.position = visualOrigin != null ? visualOrigin.position : startPosition;
+        visualTransform.rotation = Quaternion.identity;
+
+        const float spriteRadius = 4f;
+        float scale = visualFullRadius / spriteRadius;
+        Vector3 parentScale = transform.lossyScale;
+        visualTransform.localScale = new Vector3(
+            scale / Mathf.Max(Mathf.Abs(parentScale.x), 0.0001f),
+            scale / Mathf.Max(Mathf.Abs(parentScale.y), 0.0001f),
+            1f);
+    }
+
+    private void UpdateVisualArcProperties()
+    {
+        if (visualSpriteRenderer == null) return;
+        if (visualPropertyBlock == null) visualPropertyBlock = new MaterialPropertyBlock();
+
+        float maxRadius = Mathf.Max(
+            Mathf.Clamp01(visualStartThickness),
+            Mathf.Clamp01(timer / Mathf.Max(lifeTime, 0.0001f)));
+        float minProgress = Mathf.Clamp01(timer / Mathf.Max(GetArcVisualDuration(), 0.0001f));
+        float minRadius = Mathf.SmoothStep(0f, 1f, minProgress);
+        minRadius = Mathf.Min(minRadius, maxRadius);
+        Vector2 visualDirection = new Vector2(moveDirection.x, moveDirection.y * 2f).normalized;
+        if (visualDirection.sqrMagnitude < 0.0001f) visualDirection = Vector2.right;
+
+        visualSpriteRenderer.GetPropertyBlock(visualPropertyBlock);
+        visualPropertyBlock.SetFloat(MinRadiusID, minRadius);
+        visualPropertyBlock.SetFloat(MaxRadiusID, maxRadius);
+        visualPropertyBlock.SetFloat(AngleID, angle * Mathf.Max(visualAngleMultiplier, 0f));
+        visualPropertyBlock.SetVector(AttackDirID, visualDirection);
+        visualPropertyBlock.SetFloat(AlphaID, GetVisualAlpha());
+        visualPropertyBlock.SetFloat(TrailTimeID, timer);
+        visualSpriteRenderer.SetPropertyBlock(visualPropertyBlock);
+    }
+
+    private float GetArcVisualDuration()
+    {
+        return lifeTime + Mathf.Max(visualExtraDuration, 0f);
+    }
+
+    private float GetReturnDuration()
+    {
+        return GetArcVisualDuration();
+    }
+
+    private float GetVisualAlpha()
+    {
+        float fadeDuration = Mathf.Max(visualFadeOutDuration, 0.0001f);
+        float visualDuration = GetArcVisualDuration();
+        float fadeStartTime = Mathf.Max(0f, visualDuration - fadeDuration);
+        if (timer <= fadeStartTime) return 1f;
+
+        float fadeProgress = Mathf.InverseLerp(fadeStartTime, visualDuration, timer);
+        return 1f - Mathf.SmoothStep(0f, 1f, fadeProgress);
     }
 
     private void ApplyShockWaveDamage()
@@ -146,17 +268,20 @@ public class ShockWave : MonoBehaviour
         minDist = initialMinDist * currentScaleMultiplier;
         maxDist = initialMaxDist * currentScaleMultiplier;
         findRange = initialFindRange * currentScaleMultiplier;
+        UpdateVisualArcTransform();
+        UpdateVisualArcProperties();
 
         // 3. 판정 주기 조절 (매 프레임 실행하지 않음)
-        if (timer >= lastDamageCheckTime + DAMAGE_CHECK_INTERVAL)
+        if (timer <= lifeTime && timer >= lastDamageCheckTime + DAMAGE_CHECK_INTERVAL)
         {
             lastDamageCheckTime = timer;
             ApplyShockWaveDamage();
         }
 
-        if (timer >= lifeTime)
+        if (timer >= GetReturnDuration())
         {
             ReturnToPoolEvent?.Invoke(this);
         }
     }
+
 }
