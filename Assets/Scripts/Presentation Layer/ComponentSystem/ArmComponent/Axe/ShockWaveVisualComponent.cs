@@ -7,7 +7,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
     [SerializeField] private float visualExtraDuration = 0.1f;
     [SerializeField] private float visualFadeOutDuration = 0.15f;
     [SerializeField] private float visualStartThickness = 0.025f;
-    [SerializeField] private float visualAngleMultiplier = 0.75f;
+    [SerializeField] private float visualAngleMultiplier = 1f;
 
     private ShockWave shockWave;
     private SpriteRenderer sourceRenderer;
@@ -26,7 +26,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
 
     }
 
-    public void Play(float _moveSpeed, float _duration)
+    public void Play(float _duration)
     {
         if (shockWave == null)
         {
@@ -58,7 +58,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
             Color = sourceRenderer != null ? sourceRenderer.color : Color.white,
             SortingLayerID = sourceRenderer != null ? sourceRenderer.sortingLayerID : 0,
             SortingOrder = sourceRenderer != null ? sourceRenderer.sortingOrder : 0,
-            MoveSpeed = _moveSpeed,
+            ExpandSpeed = shockWave.EffectiveExpandSpeed,
             Duration = _duration,
             InitialMinDist = shockWave.minDist,
             MaxDist = shockWave.maxDist,
@@ -68,7 +68,8 @@ public class ShockWaveVisualComponent : MonoBehaviour
             VisualExtraDuration = visualExtraDuration,
             VisualFadeOutDuration = visualFadeOutDuration,
             VisualStartThickness = visualStartThickness,
-            VisualAngleMultiplier = visualAngleMultiplier
+            VisualAngleMultiplier = visualAngleMultiplier,
+            TrailSeed = Random.Range(0f, 1000f)
         });
     }
 
@@ -93,7 +94,7 @@ public class ShockWaveVisualRunner : MonoBehaviour
         public Color Color;
         public int SortingLayerID;
         public int SortingOrder;
-        public float MoveSpeed;
+        public float ExpandSpeed;
         public float Duration;
         public float InitialMinDist;
         public float MaxDist;
@@ -104,6 +105,7 @@ public class ShockWaveVisualRunner : MonoBehaviour
         public float VisualFadeOutDuration;
         public float VisualStartThickness;
         public float VisualAngleMultiplier;
+        public float TrailSeed;
     }
 
     private const float SpriteRadius = 4f;
@@ -122,6 +124,7 @@ public class ShockWaveVisualRunner : MonoBehaviour
     private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
     private static readonly int AlphaID = Shader.PropertyToID("_Alpha");
     private static readonly int TrailTimeID = Shader.PropertyToID("_TrailTime");
+    private static readonly int TrailSeedID = Shader.PropertyToID("_TrailSeed");
 
     public void Play(PlayData _data)
     {
@@ -170,7 +173,7 @@ public class ShockWaveVisualRunner : MonoBehaviour
 
     private void CacheVisualRange()
     {
-        float distanceAtEnd = data.MoveSpeed * Mathf.Max(data.Duration, 0f);
+        float distanceAtEnd = data.ExpandSpeed * Mathf.Max(data.Duration, 0f);
         float visualMultiplier = Mathf.Max(data.VisualRangeMultiplier, 0.0001f);
         float finalRadius = Mathf.Max(data.FindRange, data.MaxDist) + distanceAtEnd;
         visualFullRadius = Mathf.Max(finalRadius * visualMultiplier, 0.0001f);
@@ -220,7 +223,7 @@ public class ShockWaveVisualRunner : MonoBehaviour
         if (spriteRenderer == null || spriteRenderer.enabled == false) return;
 
         float rangeTimer = Mathf.Min(timer, data.Duration);
-        float expandDistance = data.MoveSpeed * rangeTimer;
+        float expandDistance = data.ExpandSpeed * rangeTimer;
         float minRadius = (data.InitialMinDist + expandDistance) / visualFullRadius;
         float maxRadius = (data.MaxDist + expandDistance) / visualFullRadius;
 
@@ -236,10 +239,11 @@ public class ShockWaveVisualRunner : MonoBehaviour
         spriteRenderer.GetPropertyBlock(propertyBlock);
         propertyBlock.SetFloat(MinRadiusID, minRadius);
         propertyBlock.SetFloat(MaxRadiusID, maxRadius);
-        propertyBlock.SetFloat(AngleID, data.Angle * Mathf.Max(data.VisualAngleMultiplier, 0f));
+        propertyBlock.SetFloat(AngleID, data.Angle * 2f * Mathf.Max(data.VisualAngleMultiplier, 0f));
         propertyBlock.SetVector(AttackDirID, cachedDirection);
         propertyBlock.SetFloat(AlphaID, GetAlpha());
         propertyBlock.SetFloat(TrailTimeID, timer);
+        propertyBlock.SetFloat(TrailSeedID, data.TrailSeed);
         spriteRenderer.SetPropertyBlock(propertyBlock);
     }
 

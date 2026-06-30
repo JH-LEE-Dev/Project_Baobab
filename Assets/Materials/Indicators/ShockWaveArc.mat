@@ -35,10 +35,11 @@ Material:
     - _MaxRadius: 0.5
     - _MinRadius: 0.3
     - _TrailAlpha: 0.45
-    - _TrailFrequency: 12
-    - _TrailNoise: 0.08
-    - _TrailOffset: 0.12
-    - _TrailThickness: 0.018
+    - _TrailFrequency: 18
+    - _TrailNoise: 0.15
+    - _TrailOffset: 0.1
+    - _TrailSeed: 0
+    - _TrailThickness: 0.03
     - _TrailTime: 0
     m_Colors:
     - _AttackDir: {r: 1, g: 0, b: 0, a: 0}

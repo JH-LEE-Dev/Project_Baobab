@@ -130,4 +130,4 @@ MonoBehaviour:
   visualExtraDuration: 0.1
   visualFadeOutDuration: 0.15
   visualStartThickness: 0.025
-  visualAngleMultiplier: 0.75
+  visualAngleMultiplier: 1

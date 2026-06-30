@@ -44,6 +44,7 @@ public class ShockWave : MonoBehaviour
     // 비주얼 프로퍼티
     private Transform visualOrigin;
     public Transform VisualOrigin => visualOrigin;
+    public float EffectiveExpandSpeed => moveSpeed * (1f + initialMaxDist * scaleFactor);
 
     public void Initialize()
     {
@@ -62,7 +63,7 @@ public class ShockWave : MonoBehaviour
         moveSpeed = _speed;
         lifeTime = _duration;
 
-        float effectiveExpandSpeed = moveSpeed * (1f + initialMaxDist * scaleFactor);
+        float effectiveExpandSpeed = EffectiveExpandSpeed;
         maxEffectiveDistance = initialMaxDist + (effectiveExpandSpeed * lifeTime);
     }
 
@@ -183,7 +184,7 @@ public class ShockWave : MonoBehaviour
 
         // 1. 이동 거리에 따른 충돌 범위 확장
         // 기존에 날아가던 총합 속도(중심 이동 속도 + 스케일로 인한 범위 증가 속도)를 계산
-        float effectiveExpandSpeed = moveSpeed * (1f + initialMaxDist * scaleFactor);
+        float effectiveExpandSpeed = EffectiveExpandSpeed;
         float expandDistance = effectiveExpandSpeed * timer;
 
         // 판정 수치들은 차이를 유지하기 위해 곱연산 대신 합연산 적용

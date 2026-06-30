@@ -40,7 +40,7 @@ public class AxeExtraAttackCreator : MonoBehaviour
 
     public void PlayShockWaveVisual(ShockWave _shockWave)
     {
-        _shockWave.GetComponent<ShockWaveVisualComponent>()?.Play(ctx.characterStat.shockWaveSpeed, ctx.characterStat.shockWaveDuration);
+        _shockWave.GetComponent<ShockWaveVisualComponent>()?.Play(ctx.characterStat.shockWaveDuration);
     }
 
     public void ReturnShockWave(ShockWave _shockWave)

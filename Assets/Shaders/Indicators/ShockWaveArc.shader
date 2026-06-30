@@ -10,11 +10,12 @@ Shader "Custom/ShockWaveArc"
         _AttackDir("Attack Direction", Vector) = (1, 0, 0, 0)
         _Alpha("Alpha", Range(0, 1)) = 1
         _TrailAlpha("Trail Alpha", Range(0, 1)) = 0.45
-        _TrailOffset("Trail Offset", Range(0, 0.5)) = 0.12
-        _TrailThickness("Trail Thickness", Range(0.001, 0.08)) = 0.018
-        _TrailNoise("Trail Noise", Range(0, 0.25)) = 0.08
-        _TrailFrequency("Trail Frequency", Range(1, 32)) = 12
+        _TrailOffset("Trail Offset", Range(0, 0.5)) = 0.1
+        _TrailThickness("Trail Thickness", Range(0.001, 0.08)) = 0.03
+        _TrailNoise("Trail Noise", Range(0, 0.25)) = 0.15
+        _TrailFrequency("Trail Frequency", Range(1, 32)) = 18
         _TrailTime("Trail Time", Float) = 0
+        _TrailSeed("Trail Seed", Float) = 0
     }
 
     SubShader
@@ -68,6 +69,7 @@ Shader "Custom/ShockWaveArc"
                 float _TrailNoise;
                 float _TrailFrequency;
                 float _TrailTime;
+                float _TrailSeed;
             CBUFFER_END
 
             float Hash(float n)
@@ -106,8 +108,10 @@ Shader "Custom/ShockWaveArc"
                 float angleMask = smoothstep(cosThreshold, cosThreshold + _AngleEdgeFade, angleDot);
 
                 float angleCoord = atan2(dir.y, dir.x);
-                float noiseA = Noise1D(angleCoord * _TrailFrequency + _TrailTime * 8.0);
-                float noiseB = Noise1D(angleCoord * (_TrailFrequency * 0.43) - _TrailTime * 5.0 + 17.0);
+                float seedA = _TrailSeed * 37.17;
+                float seedB = _TrailSeed * 91.73 + 17.0;
+                float noiseA = Noise1D(angleCoord * _TrailFrequency + _TrailTime * 8.0 + seedA);
+                float noiseB = Noise1D(angleCoord * (_TrailFrequency * 0.43) - _TrailTime * 5.0 + seedB);
                 float jagged = (noiseA * 0.7 + noiseB * 0.3) * 2.0 - 1.0;
                 float noisyInnerRadius = saturate(_MinRadius - _TrailOffset + jagged * _TrailNoise);
                 float innerMask = smoothstep(noisyInnerRadius, noisyInnerRadius + _TrailThickness, radius);
