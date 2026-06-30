@@ -12,4 +12,5 @@ public interface ICommandHandleSystem
     public ILogProcessingSystemCH logProcessingSystemCH { get; }
     public ILogItemControllerCH logItemControllerCH { get; }
     public IOffroadContainerCH offroadContainerCH { get; }
+    public IInDungeonObjManagerCH inDungeonObjManagerCH { get; }
 }

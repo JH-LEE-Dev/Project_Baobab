@@ -88,7 +88,8 @@ public class GameInstaller : MonoBehaviour
            townSystem.townObjectManager,
             townSystem.logProcessingManager,
              inDungeonSystem.inDungeonObjectManager.itemManager.logItemController,
-             offroadContainer);
+             offroadContainer,
+             inDungeonSystem.inDungeonObjectManager);
 
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager, offroadContainer, inDungeonSystem.inDungeonResultManager);
         skillSystem.Initialize(signalHub, skillManager, skillDispatcher);

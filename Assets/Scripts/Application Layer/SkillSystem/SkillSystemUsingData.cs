@@ -110,7 +110,7 @@ public enum SkillType
     BountifulTree2, // 아낌없이주는나무2
 
     FascinatingLogChance1, // 희귀원목확률I
-
+    TreeVitamin1, //나무 영양제
 
 
 
@@ -246,6 +246,7 @@ public enum SkillCommandType
     ShockWaveMastery,
     IncreaseJackPotChance,
     IncreaseJackPotAmount,
+    TreeVitamin,
 }
 
 public enum AbilityLevelUpRejectReason
