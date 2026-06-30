@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class LogItemController : MonoBehaviour, ILogItemCH
+public class LogItemController : MonoBehaviour, ILogItemControllerCH
 {
     public event Action<Item> LogItemAcquiredEvent;
 
@@ -30,6 +30,10 @@ public class LogItemController : MonoBehaviour, ILogItemCH
     private ICharacter character;
 
     private VFXComponent vfxComponent;
+
+    [Header("Skill Attribute")]
+    private float jackPotChance = 0f;
+    private float jackPotAmount = 2f;
 
     public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character)
     {
@@ -286,6 +290,11 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         LogDropCntData dropCntData = GetDropCntData(treeData.type);
         int spawnCount = Mathf.RoundToInt(UnityEngine.Random.Range(dropCntData.minCnt, dropCntData.maxCnt + 1) * _multiplier);
 
+        if (UnityEngine.Random.value < jackPotChance)
+        {
+            spawnCount = Mathf.RoundToInt(spawnCount * jackPotAmount);
+        }
+
         Vector3 spawnPos = _treeObj.transform.position;
 
         for (int i = 0; i < spawnCount; i++)
@@ -422,20 +431,6 @@ public class LogItemController : MonoBehaviour, ILogItemCH
         }
     }
 
-    public LogDropProbSaveData GetSaveData()
-    {
-        return new LogDropProbSaveData
-        {
-            logProbDatas = new List<LogDropProbData>(logProbDatas)
-        };
-    }
-
-    public void LoadSaveData(LogDropProbSaveData _data)
-    {
-        if (_data.logProbDatas == null) return;
-        logProbDatas = new List<LogDropProbData>(_data.logProbDatas);
-    }
-
     private void LogItemActivated(LogItem _logItem)
     {
         if (_logItem.UpdateIndex == -1)
@@ -462,5 +457,16 @@ public class LogItemController : MonoBehaviour, ILogItemCH
             _logItem.UpdateIndex = -1;
             _logItem.bCanGetSortingOrder = false;
         }
+    }
+
+    public void IncreaseJackPotChance(float _amount)
+    {
+        //0~1의 값.
+        jackPotChance += (_amount / 100f);
+    }
+
+    public void IncreaseJackPotAmount(float _amount)
+    {
+        jackPotAmount += _amount;
     }
 }

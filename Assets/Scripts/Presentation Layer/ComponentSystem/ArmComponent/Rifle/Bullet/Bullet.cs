@@ -71,10 +71,9 @@ public class Bullet : MonoBehaviour
             // 데미지 처리 (TreeObj인 경우 데미지를 주지 않음)
             if (!(hitObject is TreeObj))
             {
-                hitObject.TakeDamage(damage);
-
                 if (hitObject is IDamageable damageable)
                 {
+                    damageable.TakeDamage(damage);
                     damageable.KnockBack(direction, knockBackForce);
                 }
 

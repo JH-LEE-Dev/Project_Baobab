@@ -14,7 +14,7 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
         }
         _manager.ShuffleAvailablePositions();
 
-        int startCount = _manager.EnvironmentProvider.densityProvider.GetTreeStartCnt();
+        int startCount = _manager.EnvironmentProvider.densityProvider.GetTreeStartCnt(currentMapType);
         for (int i = 0; i < startCount; i++)
         {
             _manager.SpawnOneTreeFromAvailable(false);
@@ -28,7 +28,7 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
             float interval = _manager.EnvironmentProvider.densityProvider.GetTreeRegenTime();
             yield return new WaitForSeconds(interval);
 
-            if (_manager.EnvironmentProvider.densityProvider.CanCreateTree() && _manager.AvailablePositionsCount > 0)
+            if (_manager.EnvironmentProvider.densityProvider.CanCreateTree(currentMapType) && _manager.AvailablePositionsCount > 0)
             {
                 _manager.SpawnOneTreeFromAvailable(true);
             }

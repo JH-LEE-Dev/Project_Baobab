@@ -112,7 +112,7 @@ public enum SkillType
 
 
 
-    
+
 
 
     AxeDamage1,//도끼데미지I
@@ -164,6 +164,20 @@ public enum SkillType
     Shockwave2, //충격파2
     ShockwaveDamage2, //충격파데미지2
     ShockwaveRange2, // 충격파 범위2
+    ShockWaveCritical, // 충격파 치명타 적용
+    ShockWaveEnforcement, //충격파 파동 강화
+    ShockWaveMastery, //충격파 경지
+
+    WeakPointHit, //약점 타격
+    Hello, //첫 인사
+    MultiAttack, //도끼 다중 공격
+    FinalAttack, //마무리 벌목
+    AttackRythm, //벌목 리듬
+    WhirlWind, //회전 베기
+
+
+    IncreaseJackPotChance, //잭팟
+    IncreaseJackPotAmount, //잭팟 효율 증가
 
     MAX
 }
@@ -209,6 +223,19 @@ public enum SkillCommandType
     ShockwaveRange,
     AxeAttackSpeed,
     WoodenTransportBox,
+    WeakPointHit,
+    Hello,
+    MultiAttack,
+    FinalAttack,
+    AttackRythm,
+    WhirlWind,
+    AxeCriticalChance,
+    AxeCriticalDamage,
+    ShockWaveCritical,
+    ShockWaveEnforcement,
+    ShockWaveMastery,
+    IncreaseJackPotChance,
+    IncreaseJackPotAmount,
 }
 
 public enum AbilityLevelUpRejectReason

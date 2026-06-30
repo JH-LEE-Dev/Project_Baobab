@@ -23,7 +23,6 @@ public class CarrotItem : Item, IStaticCollidable
     public Vector2 Offset => Vector2.zero;
     public float Radius => 0.1f;
     public int Layer => gameObject.layer;
-    public void TakeDamage(float _damage) { }
 
     // 내부 의존성
     private SpriteRenderer spriteRenderer;
@@ -35,7 +34,7 @@ public class CarrotItem : Item, IStaticCollidable
     private bool bDrop = true;
     public float amount { get; private set; } = 0;
 
-    public bool bCanApplyDamage => false;
+
 
     // 이동 관련 변수 (캐싱)
     private Vector3 startPos;

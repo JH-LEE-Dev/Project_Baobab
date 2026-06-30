@@ -57,14 +57,4 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         logValueMultiplier += (_amount / 100.0f);
     }
 
-    public EvaluatorSaveData GetSaveData()
-    {
-        return new EvaluatorSaveData { logValueMultiplier = logValueMultiplier };
-    }
-
-    public void LoadSaveData(EvaluatorSaveData _data)
-    {
-        logValueMultiplier = _data.logValueMultiplier;
-        Debug.Log("[LogEvaluator] Evaluator Save Data Loaded.");
-    }
 }

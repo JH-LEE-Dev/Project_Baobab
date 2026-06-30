@@ -19,6 +19,9 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public float CurrentStamina => currentStamina;
     public float MaxStamina => maxStamina;
 
+    private bool bFirstDamage = false;
+    public bool bIsFirstDamage => bFirstDamage;
+
     private bool bStaminaDecrease = false;
 
     /// <summary>
@@ -31,6 +34,7 @@ public class PHealthComponent : PComponent, IPHealthComponent
         currentStamina = maxStamina;
         currentHealth = maxHealth;
         prevHealth = currentHealth;
+        bFirstDamage = false;
     }
 
     /// <summary>
@@ -40,6 +44,8 @@ public class PHealthComponent : PComponent, IPHealthComponent
     {
         prevHealth = currentHealth;
         currentHealth = Mathf.Max(0, currentHealth - _damage);
+        if (bFirstDamage == false)
+            bFirstDamage = true;
     }
 
     /// <summary>

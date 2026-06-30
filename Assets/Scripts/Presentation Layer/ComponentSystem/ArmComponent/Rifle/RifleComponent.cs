@@ -42,7 +42,6 @@ public class RifleComponent : WeaponComponent, IRifleComponent
     private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
     private List<IStaticCollidable> soundRangeResults = new List<IStaticCollidable>(16);
 
-    private float originalSpeed;
     private bool bIsSpeedReduced = false;
     private float mouseColRadius = 0.75f;
     private float gunFireSoundRadius = 5.5f;
@@ -173,8 +172,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
             // 발사 시 이동 속도 감소 및 0.3초 후 회복 코루틴 시작
             if (!bIsSpeedReduced)
             {
-                originalSpeed = ctx.characterStat.originalSpeed;
-                ctx.characterStat.speed = originalSpeed * ctx.characterStat.speedDecreaseWhileAction;
+                ctx.characterStat.AddActionState();
                 bIsSpeedReduced = true;
             }
             StopCoroutine(nameof(SpeedRecoveryRoutine));
@@ -308,7 +306,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
         if (bIsSpeedReduced)
         {
-            ctx.characterStat.speed = originalSpeed;
+            ctx.characterStat.RemoveActionState();
             bIsSpeedReduced = false;
         }
     }
@@ -325,14 +323,13 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
             if (bIsSpeedReduced)
             {
-                ctx.characterStat.speed = originalSpeed;
+                ctx.characterStat.RemoveActionState();
                 bIsSpeedReduced = false;
             }
-
+        
             bReload = false;
         }
-
-        originalSpeed = ctx.characterStat.originalSpeed;
+        
         bReady = false;
         bFired = false;
         bInCoolDown = false;
@@ -431,7 +428,7 @@ public class RifleComponent : WeaponComponent, IRifleComponent
 
             if (bIsSpeedReduced)
             {
-                ctx.characterStat.speed = originalSpeed;
+                ctx.characterStat.RemoveActionState();
                 bIsSpeedReduced = false;
             }
 

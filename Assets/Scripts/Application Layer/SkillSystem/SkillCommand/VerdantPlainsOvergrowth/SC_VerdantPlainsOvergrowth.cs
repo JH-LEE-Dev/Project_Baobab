@@ -6,11 +6,11 @@ public class SC_VerdantPlainsOvergrowth : SkillCommand
     public override void Execute(ICommandHandleSystem _system)
     {
         PrintDebug();
-        _system.densityCH.IncreaseTreeDensity(amount);
+        _system.densityCH.IncreaseTreeDensity(MapType.WideGreenForest, amount);
     }
 
     public override void Undo(ICommandHandleSystem _system)
     {
-        _system.densityCH.IncreaseTreeDensity(-amount);
+        _system.densityCH.IncreaseTreeDensity(MapType.WideGreenForest, -amount);
     }
 }

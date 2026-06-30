@@ -171,6 +171,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
                 if (mapTypeTreeGenerationDatas[i].strategy != null)
                 {
                     currentTreeGenerationStrategy = Instantiate(mapTypeTreeGenerationDatas[i].strategy);
+                    currentTreeGenerationStrategy.currentMapType = _mapType;
                 }
                 return;
             }

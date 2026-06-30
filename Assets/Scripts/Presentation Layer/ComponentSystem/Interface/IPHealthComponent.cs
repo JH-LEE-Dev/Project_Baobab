@@ -1,11 +1,7 @@
 using UnityEngine;
 
-public interface IPHealthComponent
+public interface IPHealthComponent : IBaseHealthComponent
 {
-    float GetMaxHealth();
-    float GetCurrentHealth();
-    float GetPrevHealth();
-
     float GetMaxStamina();
     float GetCurrentStamina();
 }

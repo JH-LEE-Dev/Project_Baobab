@@ -375,6 +375,12 @@ MonoBehaviour:
     probDatas:
     - type: 2
       probability: 100
+    - type: 3
+      probability: 0
+    - type: 4
+      probability: 0
+    - type: 5
+      probability: 0
   - treeGrade: 2
     probDatas:
     - type: 2
@@ -2417,6 +2423,19 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2d74edaef491e54459c42bc0fe3bab45, type: 2}
   - {fileID: 11400000, guid: 0e46118768b7a8d46963d8c2562eec5f, type: 2}
   - {fileID: 11400000, guid: 00622f6810bca154bbe17f261e2c9f2c, type: 2}
+  - {fileID: 11400000, guid: 254bec4dfd5659f4986dc15652dfbf3c, type: 2}
+  - {fileID: 11400000, guid: 49b02709abca97d4e9292e812df8d034, type: 2}
+  - {fileID: 11400000, guid: 78e1d583bc1508f418294988bef354f1, type: 2}
+  - {fileID: 11400000, guid: be80afe1f80295a49a2e598b769695f6, type: 2}
+  - {fileID: 11400000, guid: 8d427da69342e2d44a0a1dd037c6600d, type: 2}
+  - {fileID: 11400000, guid: 4318fce16edcac04cb0f0a50ef163b0c, type: 2}
+  - {fileID: 11400000, guid: 3866e3081f900ad49a357bab6417e7b5, type: 2}
+  - {fileID: 11400000, guid: cff2ca3db2b451249b1f03023422d1cf, type: 2}
+  - {fileID: 11400000, guid: 3d8bc489ac649834181cb9f1bc266ca1, type: 2}
+  - {fileID: 11400000, guid: 73c61def67ad419419cfbfe108bd8897, type: 2}
+  - {fileID: 11400000, guid: 6f54e713ff0a39a439d0b3cb5f4f41c1, type: 2}
+  - {fileID: 11400000, guid: 6692909a9e1a76d40bde3b6bfef00472, type: 2}
+  - {fileID: 11400000, guid: f3c9ea9ecb991d045b216874d2bb0519, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0

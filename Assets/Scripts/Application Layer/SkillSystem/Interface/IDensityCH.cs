@@ -1,7 +1,7 @@
 using UnityEngine;
 
-public interface IDensityCH 
+public interface IDensityCH
 {
-    public void IncreaseTreeDensity(float _amount);
+    public void IncreaseTreeDensity(MapType _mapType, float _amount);
     public void IncreaseRabbitDensity(float _amount);
 }

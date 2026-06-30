@@ -16,6 +16,8 @@ public class ShockWave : MonoBehaviour
     private Vector3 startPosition;
     private float damage;
     private Vector3 moveDirection = Vector3.right;
+    private bool bIsEnforced = false;
+    private float maxEffectiveDistance = 0f;
 
     [Header("Sector Ring Settings")]
     public float minDist = 0f;
@@ -59,6 +61,14 @@ public class ShockWave : MonoBehaviour
         damage = _damage;
         moveSpeed = _speed;
         lifeTime = _duration;
+
+        float maxScaleMult = 1f + (moveSpeed * lifeTime * scaleFactor);
+        maxEffectiveDistance = (moveSpeed * lifeTime) + initialMaxDist * maxScaleMult;
+    }
+
+    public void SetEnforced(bool _isEnforced)
+    {
+        bIsEnforced = _isEnforced;
     }
 
     public void SetDirection(Vector3 _dir)
@@ -75,6 +85,7 @@ public class ShockWave : MonoBehaviour
         targetsInRange.Clear();
         hitTargets.Clear();
         moveDirection = Vector3.right;
+        bIsEnforced = false;
 
         // 리셋 시 스케일과 범위를 초기 상태로 복구
         transform.localScale = initialScale;
@@ -107,9 +118,9 @@ public class ShockWave : MonoBehaviour
             if (hitTargets.Contains(target)) continue;
             
             // 2. 타입 체크 (레이어 필터링이 잘 되어 있다면 무시 가능하지만 안전을 위해 유지)
-            if (!(target is TreeObj)) continue;
+            if (!(target is TreeObj treeObj)) continue;
 
-            Vector2 targetPos = target.Position + target.Offset;
+            Vector2 targetPos = treeObj.Position + treeObj.Offset;
             Vector2 dirToTarget = targetPos - (Vector2)transform.position;
             float distSqr = dirToTarget.sqrMagnitude;
 
@@ -121,7 +132,16 @@ public class ShockWave : MonoBehaviour
                 // 방향이 앞쪽이고(dot > 0), 각도 조건 만족 시 (cos^2 * dist^2 <= dot^2)
                 if (dot > 0 && (dot * dot) >= (cosHalfAngleSqr * distSqr))
                 {
-                    target.TakeDamage(damage);
+                    float finalDamage = damage;
+                    if (bIsEnforced && maxEffectiveDistance > 0f)
+                    {
+                        float distFromStart = Vector2.Distance(startPosition, targetPos);
+                        float t = Mathf.Clamp01(distFromStart / maxEffectiveDistance);
+                        float damageMultiplier = Mathf.Lerp(1.5f, 1.0f, t);
+                        finalDamage *= damageMultiplier;
+                    }
+
+                    treeObj.TakeDamage(finalDamage);
                     hitTargets.Add(target);
                 }
             }
@@ -157,6 +177,54 @@ public class ShockWave : MonoBehaviour
         if (timer >= lifeTime)
         {
             ReturnToPoolEvent?.Invoke(this);
+        }
+    }
+
+    private void OnDrawGizmos()
+    {
+        Vector3 centerPos = transform.position;
+        Vector3 dir = moveDirection.normalized;
+
+        // 에디터가 실행 중이 아닐 때는 moveDirection이 기본값일 수 있으므로 transform.right 사용
+        if (dir.sqrMagnitude < 0.0001f)
+        {
+            dir = transform.right;
+        }
+
+        float halfAngle = angle * 0.5f;
+        Vector3 leftDir = Quaternion.Euler(0, 0, halfAngle) * dir;
+        Vector3 rightDir = Quaternion.Euler(0, 0, -halfAngle) * dir;
+
+        // 1. 전체 탐색 범위 (findRange) - 하늘색 원
+        Gizmos.color = new Color(0f, 0.8f, 1f, 0.15f);
+        Gizmos.DrawWireSphere(centerPos, findRange);
+
+        // 2. 실제 타격 판정 부채꼴 범위 (Sector Ring) - 빨간색
+        Gizmos.color = Color.red;
+
+        // 좌우 경계선 (minDist에서 maxDist까지의 직선)
+        Gizmos.DrawLine(centerPos + leftDir * minDist, centerPos + leftDir * maxDist);
+        Gizmos.DrawLine(centerPos + rightDir * minDist, centerPos + rightDir * maxDist);
+
+        // 최소/최대 거리 원호(Arc) 그리기
+        int segments = 16;
+        Vector3 prevMinPoint = centerPos + leftDir * minDist;
+        Vector3 prevMaxPoint = centerPos + leftDir * maxDist;
+
+        for (int i = 1; i <= segments; i++)
+        {
+            float t = (float)i / segments;
+            float currAngle = Mathf.Lerp(halfAngle, -halfAngle, t);
+            Vector3 currDir = Quaternion.Euler(0, 0, currAngle) * dir;
+
+            Vector3 currMinPoint = centerPos + currDir * minDist;
+            Vector3 currMaxPoint = centerPos + currDir * maxDist;
+
+            Gizmos.DrawLine(prevMinPoint, currMinPoint);
+            Gizmos.DrawLine(prevMaxPoint, currMaxPoint);
+
+            prevMinPoint = currMinPoint;
+            prevMaxPoint = currMaxPoint;
         }
     }
 }
