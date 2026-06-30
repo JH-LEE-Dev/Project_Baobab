@@ -112,7 +112,7 @@ public enum SkillType
 
 
 
-    
+
 
 
     AxeDamage1,//도끼데미지I
@@ -185,9 +185,6 @@ public enum SkillCommandType
     GunDamage, // 불필요
     LogValue,
     WideGreenForestOvergrowth, // 풀빛너른숲 과성장 
-    FluffySporeForestOverGrowh,
-    StarrootForestOverGrowh,
-    MagmaForestOverGrowh,
     CarrotBundle,   // 불필요
     RabbitBoom,  // 불필요
     Stamina,
@@ -230,6 +227,9 @@ public enum SkillCommandType
     IncreaseJackPotChance,
     IncreaseJackPotAmount,
     TreeVitamin,
+    FluffySporeForestOverGrowh,
+    StarrootForestOverGrowh,
+    MagmaForestOverGrowh,
 }
 
 public enum AbilityLevelUpRejectReason
