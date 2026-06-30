@@ -14,4 +14,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SC_MagmaForestOverGrowth
   level: 0
   amount: 0
-  skillCommandType: 13
+  skillCommandType: 55
