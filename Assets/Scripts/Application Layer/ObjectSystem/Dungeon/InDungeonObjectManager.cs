@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
+public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH
 {
     // // 이벤트
     public event Action ActivateWarningUIEvent;
@@ -84,6 +84,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
     private MapType currentMapType;
 
     private InDungeonVFXManager inDungeonVFXManager;
+
+    private float growthSpeedMul = 0f;
+    public float GrowthSpeedMul => growthSpeedMul;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -840,5 +843,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider
         }
 
         return true;
+    }
+
+    public void IncreaseGrowthSpeed(float _amount)
+    {
+        growthSpeedMul += (_amount / 100f);
     }
 }

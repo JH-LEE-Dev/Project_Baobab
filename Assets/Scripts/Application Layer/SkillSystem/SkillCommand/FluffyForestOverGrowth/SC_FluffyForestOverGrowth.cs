@@ -14,3 +14,4 @@ public class SC_FluffyForestOverGrowth : SkillCommand
         _system.densityCH.IncreaseTreeDensity(MapType.FluffySporeForest, -amount);
     }
 }
+

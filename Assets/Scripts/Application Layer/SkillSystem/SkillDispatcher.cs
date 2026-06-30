@@ -18,6 +18,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private ILogProcessingSystemCH logProcessingSystemCH;
     private ILogItemControllerCH logItemControllerCH;
     private IOffroadContainerCH offroadContainerCH;
+    private IInDungeonObjManagerCH inDungeonObjManagerCH;
 
 
     [SerializeField] private List<SkillCommand> skillCommands;
@@ -46,9 +47,12 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     IOffroadContainerCH ICommandHandleSystem.offroadContainerCH => offroadContainerCH;
 
+    IInDungeonObjManagerCH ICommandHandleSystem.inDungeonObjManagerCH => inDungeonObjManagerCH;
+
     public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
     ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH,
-    ILogProcessingSystemCH _logProcessingSystemCH, ILogItemControllerCH _logItemCH, IOffroadContainerCH _offroadContainerCH)
+    ILogProcessingSystemCH _logProcessingSystemCH, ILogItemControllerCH _logItemCH, IOffroadContainerCH _offroadContainerCH,
+    IInDungeonObjManagerCH _inDungeonObjManagerCH)
     {
         offroadContainerCH = _offroadContainerCH;
         signalHub = _signalHub;
@@ -61,6 +65,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         townObjSystemCH = _townObjSystemCH;
         logProcessingSystemCH = _logProcessingSystemCH;
         logItemControllerCH = _logItemCH;
+        inDungeonObjManagerCH = _inDungeonObjManagerCH;
         
         if (skillCommands == null) return;
 

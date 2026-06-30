@@ -117,7 +117,6 @@ public enum SkillType
 
 
 
-
     AxeDamage1,//도끼데미지I
     AxeDamage2,//도끼데미지II
     AxeDamage3,//도끼데미지II
@@ -134,9 +133,6 @@ public enum SkillType
 
 
     AxeAttackSpeed1, // 도끼 공격 속도 I
-
-    AxeCriticalChance1, // 도끼 치명타 확률1
-    AxeCriticalDamage1, // 도끼 치명타 데미지1
 
 
 
@@ -167,9 +163,6 @@ public enum SkillType
     Shockwave2, //충격파2
     ShockwaveDamage2, //충격파데미지2
     ShockwaveRange2, // 충격파 범위2
-    ShockWaveCritical, // 충격파 치명타 적용
-    ShockWaveEnforcement, //충격파 파동 강화
-    ShockWaveMastery, //충격파 경지
 
     WeakPointHit, //약점 타격
     Hello, //첫 인사
@@ -177,13 +170,14 @@ public enum SkillType
     FinalAttack, //마무리 벌목
     AttackRythm, //벌목 리듬
     WhirlWind, //회전 베기
-
-
+    AxeCriticalChance1, // 도끼 치명타 확률1
+    AxeCriticalDamage1, // 도끼 치명타 데미지1
+    ShockWaveCritical, // 충격파 치명타 적용
+    ShockWaveEnforcement, //충격파 파동 강화
+    ShockWaveMastery, //충격파 경지
     IncreaseJackPotChance, //잭팟
     IncreaseJackPotAmount, //잭팟 효율 증가
-
-
-
+    TreeVitamin1, //나무 영양제
 
     TestNode,  // TestNode
     MAX
@@ -246,6 +240,7 @@ public enum SkillCommandType
     ShockWaveMastery,
     IncreaseJackPotChance,
     IncreaseJackPotAmount,
+    TreeVitamin,
 }
 
 public enum AbilityLevelUpRejectReason
