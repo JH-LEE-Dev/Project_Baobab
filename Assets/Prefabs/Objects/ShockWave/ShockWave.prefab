@@ -59,7 +59,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: 85ebf1b7f2a84f5b91f6bc645ddb621a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -82,7 +82,7 @@ SpriteRenderer:
   m_SortingLayer: 11
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 21300000, guid: 80d43fe7e6ad28141944695e8c8c560c, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 380cee39bfac2204ebd9ae96532998b4, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -112,5 +112,15 @@ MonoBehaviour:
   scaleFactor: 2
   minDist: 0.1
   maxDist: 0.5
-  angle: 120
+  angle: 110
   findRange: 0.5
+  visualRangeMultiplier: 3
+  visualExtraDuration: 0.1
+  visualFadeOutDuration: 0.15
+  visualStartThickness: 0.025
+  visualAngleMultiplier: 0.75
+  dustMaxCount: 24
+  dustSpawnInterval: 0.025
+  dustLifeTime: 1
+  dustScaleRange: {x: 0.65, y: 1.15}
+  dustMoveDistanceRange: {x: 0.05, y: 0.2}
