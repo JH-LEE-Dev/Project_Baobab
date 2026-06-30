@@ -101,7 +101,7 @@ public enum SkillType
 
 
     LogValue1, //원목 가치1
-    VerdantPlainsOvergrowth, // 풀빛너른숲 과성장 
+    WideGreenForestOvergrowth, // 풀빛너른숲 과성장 
 
     BountifulTree1, // 아낌없이주는나무1
     BountifulTree2, // 아낌없이주는나무2
