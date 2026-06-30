@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f2f168133818d242bc3b69563c1d7ce, type: 3}
-  m_Name: Verdant Plains Overgrowth
+  m_Name: WideGreen Forest OverGrowth
   m_EditorClassIdentifier: Assembly-CSharp::SC_VerdantPlainsOvergrowth
   level: 0
   amount: 0

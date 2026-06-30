@@ -1,7 +1,7 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "Verdant Plains Overgrowth", menuName = "Game/Skill Command/Verdant Plains Overgrowth")]
-public class SC_VerdantPlainsOvergrowth : SkillCommand
+[CreateAssetMenu(fileName = "WideGreen Forest OverGrowth", menuName = "Game/Skill Command/WideGreen Forest OverGrowth")]
+public class SC_WideGreenForestOverGrowth : SkillCommand
 {
     public override void Execute(ICommandHandleSystem _system)
     {
