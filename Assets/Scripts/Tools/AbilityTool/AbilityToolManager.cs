@@ -14,6 +14,8 @@ public class AbilityToolManager : MonoBehaviour
 {
     private const int AbilityLocalizationJsonId = 2;
     private const int LocalizationEntryIdMask = 0x1FFFFF;
+    private const int AbilityNameLocalizationIdStart = 101;
+    private const int AbilityCommandDescriptionLocalizationIdStart = 9100;
     private const string AbilityNameKeySuffix = "_Name";
     private const float DefaultZoom = 1f;
     private const float MinZoom = 0.2f;
@@ -1019,7 +1021,7 @@ public class AbilityToolManager : MonoBehaviour
             if (node == null || node.SkillType == SkillType.None)
                 continue;
 
-            int nameLocId = _localizationContext.GetOrCreate(
+            int nameLocId = _localizationContext.GetOrCreateName(
                 node.NameLocId,
                 BuildAbilityLocalizationKey(node.SkillType, AbilityNameKeySuffix),
                 node.DisplayName);
@@ -1486,7 +1488,8 @@ public class AbilityToolManager : MonoBehaviour
         private readonly Dictionary<int, int> indexById = new Dictionary<int, int>();
         private readonly Dictionary<string, int> idByKey = new Dictionary<string, int>();
         private readonly Dictionary<string, int> idByEnum = new Dictionary<string, int>();
-        private int nextId = 1;
+        private int nextNameId = AbilityNameLocalizationIdStart;
+        private int nextCommandDescriptionId = AbilityCommandDescriptionLocalizationIdStart;
 
         public void AddOrUpdate(LocalizationEntry _entry)
         {
@@ -1520,16 +1523,23 @@ public class AbilityToolManager : MonoBehaviour
 
         public void EnsureNextId()
         {
-            nextId = 1;
+            nextNameId = AbilityNameLocalizationIdStart;
+            nextCommandDescriptionId = AbilityCommandDescriptionLocalizationIdStart;
             for (int i = 0; i < entries.Count; i++)
-                nextId = Mathf.Max(nextId, entries[i].id + 1);
+            {
+                LocalizationEntry entry = entries[i];
+                if (IsAbilityNameEntry(entry))
+                    nextNameId = Mathf.Max(nextNameId, entry.id + 1);
+                else if (IsCommandDescriptionEntry(entry))
+                    nextCommandDescriptionId = Mathf.Max(nextCommandDescriptionId, entry.id + 1);
+            }
         }
 
-        public int GetOrCreate(int _preferredId, string _key, string _krText)
+        public int GetOrCreateName(int _preferredId, string _key, string _krText)
         {
-            int id = ResolveExistingId(_preferredId, _key);
+            int id = ResolveExistingNameId(_preferredId, _key);
             if (id <= 0)
-                id = ResolveNewId(_preferredId);
+                id = ResolveNewNameId();
 
             LocalizationEntry entry = GetEntryOrDefault(id);
             entry.id = id;
@@ -1548,7 +1558,7 @@ public class AbilityToolManager : MonoBehaviour
             if (id <= 0)
                 id = ResolveExistingId(0, _key);
             if (id <= 0)
-                id = ResolveNewId(0);
+                id = ResolveNewCommandDescriptionId();
 
             LocalizationEntry entry = GetEntryOrDefault(id);
             entry.id = id;
@@ -1566,6 +1576,23 @@ public class AbilityToolManager : MonoBehaviour
         {
             entries.Sort((a, b) => a.id.CompareTo(b.id));
             return entries.ToArray();
+        }
+
+        private int ResolveExistingNameId(int _preferredId, string _key)
+        {
+            if (_preferredId > 0 && IsNameLocalizationId(_preferredId) && indexById.ContainsKey(_preferredId))
+                return _preferredId;
+
+            if (string.IsNullOrEmpty(_key) == false && idByKey.TryGetValue(_key, out int idByExistingKey) &&
+                IsNameLocalizationId(idByExistingKey))
+            {
+                return idByExistingKey;
+            }
+
+            if (_preferredId > 0 && IsNameLocalizationId(_preferredId) && indexById.ContainsKey(_preferredId) == false)
+                return _preferredId;
+
+            return 0;
         }
 
         private int ResolveExistingId(int _preferredId, string _key)
@@ -1594,15 +1621,40 @@ public class AbilityToolManager : MonoBehaviour
             return 0;
         }
 
-        private int ResolveNewId(int _preferredId)
+        private int ResolveNewNameId()
         {
-            if (_preferredId > 0 && indexById.ContainsKey(_preferredId) == false)
-                return _preferredId;
+            while (indexById.ContainsKey(nextNameId))
+                nextNameId++;
 
-            while (indexById.ContainsKey(nextId))
-                nextId++;
+            return nextNameId++;
+        }
 
-            return nextId++;
+        private int ResolveNewCommandDescriptionId()
+        {
+            while (indexById.ContainsKey(nextCommandDescriptionId))
+                nextCommandDescriptionId++;
+
+            return nextCommandDescriptionId++;
+        }
+
+        private bool IsAbilityNameEntry(LocalizationEntry _entry)
+        {
+            return IsNameLocalizationId(_entry.id) &&
+                   string.IsNullOrEmpty(_entry.enumType) &&
+                   string.IsNullOrEmpty(_entry.enumValue) &&
+                   string.IsNullOrEmpty(_entry.key) == false &&
+                   _entry.key.EndsWith(AbilityNameKeySuffix, StringComparison.Ordinal);
+        }
+
+        private bool IsCommandDescriptionEntry(LocalizationEntry _entry)
+        {
+            return _entry.id >= AbilityCommandDescriptionLocalizationIdStart &&
+                   string.IsNullOrEmpty(BuildEnumLookupKey(_entry.enumType, _entry.enumValue)) == false;
+        }
+
+        private bool IsNameLocalizationId(int _id)
+        {
+            return _id >= AbilityNameLocalizationIdStart && _id < AbilityCommandDescriptionLocalizationIdStart;
         }
 
         private string BuildEnumLookupKey(string _enumType, string _enumValue)

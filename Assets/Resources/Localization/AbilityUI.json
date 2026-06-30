@@ -322,6 +322,14 @@
             "enumValue": ""
         },
         {
+            "id": 180,
+            "key": "TestNode_Name",
+            "kr": "테스트노드 입니다",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
             "id": 9000,
             "key": "Common_Level",
             "kr": "레벨",

@@ -399,6 +399,7 @@ GameObject:
   - component: {fileID: 7063596525735268374}
   - component: {fileID: 6853928503307352207}
   - component: {fileID: 8148571235628424554}
+  - component: {fileID: 3234609912523664601}
   m_Layer: 18
   m_Name: AbiliyBG
   m_TagString: Untagged
@@ -450,15 +451,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 0.142, g: 0.04316801, b: 0.0061060064, a: 1}
+  m_Material: {fileID: 2100000, guid: d283e98145a14b8cb5cdb42efadac820, type: 2}
+  m_Color: {r: 0.47058824, g: 0.47058824, b: 0.47058824, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 7257334876017096610, guid: 7a21f22c3bda8324092ac56384e44bf9, type: 3}
+  m_Sprite: {fileID: 7899023265598804292, guid: 66ebdf9db3dc98643896125b8ec8ce8c, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -468,6 +469,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &3234609912523664601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2821106008103057743}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9f4d5b1c6e24a8ba7df2f5cc47c1e10, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AbilityBackGround
+  backgroundMaterial: {fileID: 2100000, guid: d283e98145a14b8cb5cdb42efadac820, type: 2}
+  tileSize: {x: 64, y: 64}
+  speedPixelsPerSecond: 12
 --- !u!1 &3166310292131078781
 GameObject:
   m_ObjectHideFlags: 0

@@ -179,6 +179,10 @@ public enum SkillType
     IncreaseJackPotChance, //잭팟
     IncreaseJackPotAmount, //잭팟 효율 증가
 
+
+
+
+    TestNode,  // TestNode
     MAX
 }
 
