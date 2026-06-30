@@ -101,10 +101,7 @@ public enum SkillType
 
 
     LogValue1, //원목 가치1
-    WideGreenForestOvergrowth, // 풀빛너른숲 과성장 
-    FluffySporeForestOverGrowh,
-    StarrootForestOverGrowh,
-    MagmaForestOverGrowh,
+    VerdantPlainsOvergrowth, // 풀빛너른숲 과성장 
 
     BountifulTree1, // 아낌없이주는나무1
     BountifulTree2, // 아낌없이주는나무2
@@ -115,6 +112,7 @@ public enum SkillType
 
 
 
+    
 
 
     AxeDamage1,//도끼데미지I
@@ -133,6 +131,9 @@ public enum SkillType
 
 
     AxeAttackSpeed1, // 도끼 공격 속도 I
+
+    AxeCriticalChance1, // 도끼 치명타 확률1
+    AxeCriticalDamage1, // 도끼 치명타 데미지1
 
 
 
@@ -164,20 +165,8 @@ public enum SkillType
     ShockwaveDamage2, //충격파데미지2
     ShockwaveRange2, // 충격파 범위2
 
-    WeakPointHit, //약점 타격
-    Hello, //첫 인사
-    MultiAttack, //도끼 다중 공격
-    FinalAttack, //마무리 벌목
-    AttackRythm, //벌목 리듬
-    WhirlWind, //회전 베기
-    AxeCriticalChance1, // 도끼 치명타 확률1
-    AxeCriticalDamage1, // 도끼 치명타 데미지1
-    ShockWaveCritical, // 충격파 치명타 적용
-    ShockWaveEnforcement, //충격파 파동 강화
-    ShockWaveMastery, //충격파 경지
-    IncreaseJackPotChance, //잭팟
-    IncreaseJackPotAmount, //잭팟 효율 증가
-    TreeVitamin1, //나무 영양제
+
+
 
     TestNode,  // TestNode
     MAX
