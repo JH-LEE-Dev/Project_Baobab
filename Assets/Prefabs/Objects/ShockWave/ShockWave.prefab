@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1548179376118486074}
   - component: {fileID: 1226623982931405024}
   - component: {fileID: 1065524423041008248}
+  - component: {fileID: 7246650193022089713}
   m_Layer: 0
   m_Name: ShockWave
   m_TagString: Untagged
@@ -114,13 +115,21 @@ MonoBehaviour:
   maxDist: 0.5
   angle: 110
   findRange: 0.5
+--- !u!114 &7246650193022089713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2280394207308710043}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12f682da3586418ea23241d1db147fd9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShockWaveVisualComponent
   visualRangeMultiplier: 3
   visualExtraDuration: 0.1
   visualFadeOutDuration: 0.15
   visualStartThickness: 0.025
   visualAngleMultiplier: 0.75
-  dustMaxCount: 24
-  dustSpawnInterval: 0.025
-  dustLifeTime: 1
-  dustScaleRange: {x: 0.65, y: 1.15}
-  dustMoveDistanceRange: {x: 0.05, y: 0.2}
+  shockWaveScaleFactor: 2

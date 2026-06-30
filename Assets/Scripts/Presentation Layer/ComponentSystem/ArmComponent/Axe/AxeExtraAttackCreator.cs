@@ -32,8 +32,8 @@ public class AxeExtraAttackCreator : MonoBehaviour
     {
         ShockWave sw = shockWavePool.Get();
         sw.transform.position = _position;
-        sw.SetVisualOrigin(transform);
         sw.Reset();
+        sw.GetComponent<ShockWaveVisualComponent>()?.Play(transform, ctx.characterStat.shockWaveSpeed, ctx.characterStat.shockWaveDuration);
 
         return sw;
     }
@@ -49,6 +49,7 @@ public class AxeExtraAttackCreator : MonoBehaviour
     {
         ShockWave newSW = Instantiate(shockWavePrefab);
         newSW.Initialize();
+        newSW.GetComponent<ShockWaveVisualComponent>()?.Initialize(newSW);
 
         newSW.ReturnToPoolEvent -= ReturnShockWave;
         newSW.ReturnToPoolEvent += ReturnShockWave;
