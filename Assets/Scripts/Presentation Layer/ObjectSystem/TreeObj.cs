@@ -21,6 +21,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public TreeData treeData { get; private set; }
     public IHealthComponent health => healthComponent;
+    IBaseHealthComponent IDamageable.health => healthComponent;
 
     public bool bDead = false;
     bool ITreeObj.bDead => bDead;

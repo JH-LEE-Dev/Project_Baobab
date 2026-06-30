@@ -793,6 +793,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 2048
   centerTransform: {fileID: 4602724895061784125}
+  bRide: 0
 --- !u!50 &1880944115013296388
 Rigidbody2D:
   serializedVersion: 5
@@ -1355,6 +1356,7 @@ MonoBehaviour:
   idleSample: 5
   runSample: 10
   dustEffectInterval: 0.15
+  dustOffsetDistance: 0.15
 --- !u!114 &1264849590636372518
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1628,7 +1630,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatComponent
   money: 1000000
   pickupRangeMultiplier: 1
-  speed: 1
   originalSpeed: 1
   maxStamina: 10000000
   staminaIncreaseAlpha: 0
@@ -1647,6 +1648,9 @@ MonoBehaviour:
   shockWaveSpeed: 2
   shockWaveDuration: 0.25
   shockWaveCreateDelay: 0
+  bShockWaveCritical: 0
+  bShockWaveEnforcement: 0
+  bShockWaveMastery: 0
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1
@@ -1658,6 +1662,14 @@ MonoBehaviour:
   ricochetAngle: 90
   ricochetDist: 1.25
   ricochetDamage: 1
+  weakPointDamageMul: 1
+  helloDamageMul: 1
+  bMultiAttack: 0
+  finalAttackHealthPercent: 0
+  attackRythmSpeedMul: 0
+  bWhirlWind: 0
+  criticalChance: 0
+  ciriticalDamageMul: 2
 --- !u!1 &5310717925593560820
 GameObject:
   m_ObjectHideFlags: 0

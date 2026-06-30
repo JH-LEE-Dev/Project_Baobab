@@ -309,20 +309,6 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             portal.SetCanTravel(bCanTravel);
     }
 
-    public TownSaveData GetSaveData()
-    {
-        return new TownSaveData { bCanTravel = bCanTravel };
-    }
-
-    public void LoadSaveData(TownSaveData _data)
-    {
-        bCanTravel = _data.bCanTravel;
-        if (portal != null)
-        {
-            portal.SetCanTravel(bCanTravel);
-        }
-    }
-
     public void TeleportUIClosed()
     {
         if (portal != null)

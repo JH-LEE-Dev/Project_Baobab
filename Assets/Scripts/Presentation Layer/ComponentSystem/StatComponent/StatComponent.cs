@@ -4,7 +4,7 @@ using UnityEngine;
 public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 {
     public event Action CanHuntEvent;
-    
+
     [Header("For Debugging")]
     public int money = 0;
 
@@ -12,8 +12,21 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public float pickupRangeMultiplier = 1f;
 
     [Header("Movement")]
-    public float speed = 1f;
     public float originalSpeed = 1f;
+    public float speed => (activeActionCount > 0) ? originalSpeed * speedDecreaseWhileAction : originalSpeed;
+
+    private int activeActionCount = 0;
+
+    public void AddActionState()
+    {
+        activeActionCount++;
+    }
+
+    public void RemoveActionState()
+    {
+        activeActionCount--;
+        if (activeActionCount < 0) activeActionCount = 0;
+    }
     public float baseSpeed { get; private set; }
     public float speedMultiplier { get; private set; } = 1.0f;
 
@@ -53,6 +66,9 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public float shockWaveDamageMultiplier { get; private set; } = 1.0f;
     public float baseShockWaveSpeed { get; private set; }
     public float shockWaveSpeedMultiplier { get; private set; } = 1.0f;
+    public bool bShockWaveCritical = false;
+    public bool bShockWaveEnforcement = false;
+    public bool bShockWaveMastery = false;
 
     [Header("Rifle Settings")]
     public float rifleDamage = 10f;
@@ -74,6 +90,18 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public float ricochetAngle = 90f;
     public float ricochetDist = 0.5f;
     public float ricochetDamage = 1f;
+
+    [Header("Attack")]
+    public float weakPointDamageMul = 1f;
+    public float helloDamageMul = 1f;
+    public bool bMultiAttack = false;
+    public float finalAttackHealthPercent = 1f;
+    public float attackRythmSpeedMul = 1f;
+    public bool bWhirlWind = false;
+
+    [Header("Critical")]
+    public float criticalChance = 0f;
+    public float ciriticalDamageMul = 2f;
 
     // 인터페이스 구현 프로퍼티들
     float IStatComponent.speed => speed;
@@ -150,7 +178,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     public void ResetSpeed()
     {
-        speed = originalSpeed;
+        activeActionCount = 0;
     }
 
     public void IncreaseAmmoCap(int _amount)
@@ -248,5 +276,60 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     {
         axeAttackSpeedMultiplier += (_amount / 100.0f);
         axeAttackCoolTime = baseAxeAttackCoolTime / axeAttackSpeedMultiplier;
+    }
+
+    public void IncreaseWeakPointDamageMul(float _amount)
+    {
+        weakPointDamageMul = _amount;
+    }
+
+    public void IncreaseHelloDamage(float _amount)
+    {
+        helloDamageMul = _amount;
+    }
+
+    public void SetMultiAttack(bool _boolean)
+    {
+        bMultiAttack = _boolean;
+    }
+
+    public void SetFinalAttackHealthPercent(float _percent)
+    {
+        finalAttackHealthPercent = (_percent / 100.0f);
+    }
+
+    public void SetAttackRythmSpeedAmount(float _percent)
+    {
+        attackRythmSpeedMul = _percent;
+    }
+
+    public void ActivateWhirlWind(bool _boolean)
+    {
+        bWhirlWind = _boolean;
+    }
+
+    public void IncreaseCriticalChance(float _amount)
+    {
+        criticalChance += (_amount / 100.0f);
+    }
+
+    public void IncreaseCriticalDamage(float _amount)
+    {
+        ciriticalDamageMul += (_amount / 100.0f);
+    }
+
+    public void ActivateShockWaveCritical(bool _boolean)
+    {
+        bShockWaveCritical = _boolean;
+    }
+
+    public void ActivateShockWaveEnforcement(bool _boolean)
+    {
+        bShockWaveEnforcement = _boolean;
+    }
+
+    public void ShockWaveMastery(bool _boolean)
+    {
+        bShockWaveMastery = _boolean;
     }
 }

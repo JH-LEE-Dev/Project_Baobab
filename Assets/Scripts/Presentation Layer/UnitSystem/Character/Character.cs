@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable
+public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollidable, IDamageable
 {
     public event Action StaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
@@ -49,9 +49,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public int Layer => gameObject.layer;
     public int EntityIndex { get; set; } = -1;
     public void TakeDamage(float _damage) => healthComponent.DecreaseHealth(_damage);
+    public void KnockBack(Vector2 _knockBackDir, float _knockBackForce) { }
 
     // 캐싱된 해시 및 프로퍼티 (성능 최적화)
     public IPHealthComponent pHealthComponent => healthComponent;
+    IBaseHealthComponent IDamageable.health => healthComponent;
 
     IStatComponent ICharacter.statComponent => statComponent;
 

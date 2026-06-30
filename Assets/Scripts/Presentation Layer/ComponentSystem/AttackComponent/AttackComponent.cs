@@ -30,6 +30,9 @@ public class AttackComponent : PComponent
     //최적화를 위한 재사용 컬렉션
     private List<IStaticCollidable> collisionResults = new List<IStaticCollidable>(16);
     private List<IStaticCollidable> correctionResults = new List<IStaticCollidable>(16);
+    private List<IStaticCollidable> multiAttackResults = new List<IStaticCollidable>(16);
+    private List<TreeObj> currentlyDetectedTrees = new List<TreeObj>(16);
+    private List<TreeObj> previouslyDetectedTrees = new List<TreeObj>(16);
 
     private WeaponMode currentWeaponMode = WeaponMode.Axe;
 
@@ -38,15 +41,15 @@ public class AttackComponent : PComponent
     private Vector2 lastMouseScreenPos;
     public Vector3 mouseTransform { get; private set; }
 
-    private float originalSpeed; // 무기 교체 전 원래 속도 캐싱용
-
     private bool bCanSwap = false;
 
     private float detectionTimer = 0f;
     private const float detectionInterval = 0.2f;
     private List<IStaticCollidable> detectionResults = new List<IStaticCollidable>(16);
+
+    // 이중 버퍼용 리스트
+    private List<IStaticCollidable> detectionResultsA = new List<IStaticCollidable>(16);
     public IStaticCollidable nearestTarget { get; private set; }
-    private IStaticCollidable lastNearestTarget;
 
     private AxeExtraAttackCreator axeExtraAttackCreator;
 
@@ -57,6 +60,7 @@ public class AttackComponent : PComponent
 
     private bool bCursorEnable = false;
     private bool bCanAttack = false;
+    private int successfulAttackCount = 0;
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -194,6 +198,17 @@ public class AttackComponent : PComponent
     {
         if (CollisionSystem.Instance == null || bCanAttack == false) return;
 
+        Vector3 centerPos = transform.position;
+
+        if (ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null)
+        {
+            if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
+            {
+                Vector3 direction = (mouseTransform - centerPos).normalized;
+                StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
+            }
+        }
+
         float effectiveEllipseRadius = ellipseAttackRadius * ctx.characterStat.axeAttackRangeMultiplier;
 
         // 1단계: 타원 판정 범위를 모두 포함할 수 있도록 타원의 장반경(effectiveEllipseRadius)으로 1차 탐색
@@ -201,8 +216,6 @@ public class AttackComponent : PComponent
 
         int hitCount = collisionResults.Count;
         if (hitCount <= 0) return;
-
-        Vector3 centerPos = transform.position;
 
         Vector3 attackDirVec = attackPointTransform.position - centerPos;
         Vector3 isoAttackDir = Vector3.right;
@@ -213,6 +226,10 @@ public class AttackComponent : PComponent
 
         float cosThreshold = Mathf.Cos(attackAngle * Mathf.Deg2Rad);
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
+
+        bool bMultiAttack = ctx.characterStat.bMultiAttack;
+        bool bIsWhirlwindStrike = ctx.characterStat.bWhirlWind && (successfulAttackCount % 3 == 2);
+        multiAttackResults.Clear();
 
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
@@ -235,30 +252,99 @@ public class AttackComponent : PComponent
 
             float dot = Vector2.Dot(isoAttackDir, targetDir);
 
-            if (dot >= cosThreshold)
+            bool bHitByAngle = bIsWhirlwindStrike || (dot >= cosThreshold);
+
+            if (bHitByAngle)
             {
-                if (isoDistSq < minDistanceSqr)
+                if (bIsWhirlwindStrike)
                 {
-                    minDistanceSqr = isoDistSq;
-                    nearestDamageable = target;
+                    multiAttackResults.Add(target);
+                }
+                else if (bMultiAttack && target is TreeObj)
+                {
+                    multiAttackResults.Add(target);
+                }
+                else
+                {
+                    if (isoDistSq < minDistanceSqr)
+                    {
+                        minDistanceSqr = isoDistSq;
+                        nearestDamageable = target;
+                    }
                 }
             }
         }
 
-        if (nearestDamageable != null && nearestDamageable.bCanApplyDamage)
+        if ((bMultiAttack || bIsWhirlwindStrike) && multiAttackResults.Count > 0)
         {
             CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
-            nearestDamageable.TakeDamage(ctx.characterStat.axeDamage);
-            AttackSuccessEvent?.Invoke();
+            bool bAnyHit = false;
 
-            // 나무 타격 시 확률적으로 충격파 생성
-            if (nearestDamageable is TreeObj && axeExtraAttackCreator != null)
+            for (int i = 0; i < multiAttackResults.Count; i++)
             {
-                if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
+                var target = multiAttackResults[i];
+                if (target is IDamageable damageable && damageable.bCanApplyDamage)
                 {
-                    Vector3 direction = (mouseTransform - centerPos).normalized;
-                    StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
+                    ProcessAxeHit(damageable, centerPos);
+                    bAnyHit = true;
                 }
+            }
+
+            if (bAnyHit)
+            {
+                successfulAttackCount++;
+                AttackSuccessEvent?.Invoke();
+            }
+        }
+        else if (nearestDamageable != null && nearestDamageable is IDamageable damageable && damageable.bCanApplyDamage)
+        {
+            CameraMoveController.Instance?.ShakeCamera(2f, 0.15f);
+            ProcessAxeHit(damageable, centerPos);
+            successfulAttackCount++;
+            AttackSuccessEvent?.Invoke();
+        }
+    }
+
+    private void ProcessAxeHit(IDamageable damageable, Vector3 centerPos)
+    {
+        float damage = ctx.characterStat.axeDamage;
+        if (damageable.health != null)
+        {
+            float currentHp = damageable.health.GetCurrentHealth();
+            float maxHp = damageable.health.GetMaxHealth();
+
+            if (damageable is TreeObj && maxHp > 0f && (currentHp / maxHp) <= ctx.characterStat.finalAttackHealthPercent)
+            {
+                damage = currentHp;
+            }
+            else
+            {
+                if (!damageable.health.bIsFirstDamage)
+                {
+                    damage *= ctx.characterStat.helloDamageMul;
+                }
+
+                if (maxHp > 0f && (currentHp / maxHp) <= 0.5f)
+                {
+                    damage *= ctx.characterStat.weakPointDamageMul;
+                }
+            }
+        }
+
+        if (UnityEngine.Random.value < ctx.characterStat.criticalChance)
+        {
+            damage *= ctx.characterStat.ciriticalDamageMul;
+        }
+
+        damageable.TakeDamage(damage);
+
+        // 나무 타격 시 (마스터리가 없을 때만) 확률적으로 충격파 생성
+        if (!ctx.characterStat.bShockWaveMastery && damageable is TreeObj && axeExtraAttackCreator != null)
+        {
+            if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
+            {
+                Vector3 direction = (mouseTransform - centerPos).normalized;
+                StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
             }
         }
     }
@@ -317,21 +403,6 @@ public class AttackComponent : PComponent
         {
             detectionTimer = 0f;
             DetectNearestTarget();
-
-            if (lastNearestTarget != nearestTarget)
-            {
-                if (lastNearestTarget is TreeObj oldTree)
-                {
-                    oldTree.SetOutline(false);
-                }
-
-                if (nearestTarget is TreeObj newTree)
-                {
-                    newTree.SetOutline(true);
-                }
-
-                lastNearestTarget = nearestTarget;
-            }
         }
     }
 
@@ -341,6 +412,7 @@ public class AttackComponent : PComponent
         if (currentWeaponMode != WeaponMode.Axe)
         {
             nearestTarget = null;
+            ClearDetectedTreeOutlines();
             return;
         }
 
@@ -353,6 +425,7 @@ public class AttackComponent : PComponent
         if (hitCount <= 0)
         {
             nearestTarget = null;
+            ClearDetectedTreeOutlines();
             return;
         }
 
@@ -367,6 +440,9 @@ public class AttackComponent : PComponent
 
         float cosThreshold = Mathf.Cos(attackAngle * Mathf.Deg2Rad);
         float radiusSq = effectiveEllipseRadius * effectiveEllipseRadius;
+
+        bool bMultiAttack = ctx.characterStat.bMultiAttack;
+        currentlyDetectedTrees.Clear();
 
         IStaticCollidable nearest = null;
         float minDistanceSqr = float.MaxValue;
@@ -392,15 +468,64 @@ public class AttackComponent : PComponent
 
             if (dot >= cosThreshold)
             {
-                if (isoDistSq < minDistanceSqr)
+                if (bMultiAttack && target is TreeObj tree)
                 {
-                    minDistanceSqr = isoDistSq;
-                    nearest = target;
+                    currentlyDetectedTrees.Add(tree);
+                }
+                else
+                {
+                    if (isoDistSq < minDistanceSqr)
+                    {
+                        minDistanceSqr = isoDistSq;
+                        nearest = target;
+                    }
                 }
             }
         }
 
         nearestTarget = nearest;
+
+        // 광역 공격 모드가 아니고 가장 가까운 대상이 나무라면 감지 목록에 추가
+        if (!bMultiAttack && nearest is TreeObj nearestTree)
+        {
+            currentlyDetectedTrees.Add(nearestTree);
+        }
+
+        // 기존 감지 대상 중 제외된 대상들의 아웃라인 끄기
+        for (int i = 0; i < previouslyDetectedTrees.Count; i++)
+        {
+            var oldTree = previouslyDetectedTrees[i];
+            if (!currentlyDetectedTrees.Contains(oldTree))
+            {
+                oldTree.SetOutline(false);
+            }
+        }
+
+        // 새로 감지된 대상들의 아웃라인 켜기
+        for (int i = 0; i < currentlyDetectedTrees.Count; i++)
+        {
+            var newTree = currentlyDetectedTrees[i];
+            if (!previouslyDetectedTrees.Contains(newTree))
+            {
+                newTree.SetOutline(true);
+            }
+        }
+
+        // 리스트 스왑 (GC 할당 방지)
+        var temp = previouslyDetectedTrees;
+        previouslyDetectedTrees = currentlyDetectedTrees;
+        currentlyDetectedTrees = temp;
+        currentlyDetectedTrees.Clear();
+    }
+
+    private void ClearDetectedTreeOutlines()
+    {
+        for (int i = 0; i < previouslyDetectedTrees.Count; i++)
+        {
+            previouslyDetectedTrees[i].SetOutline(false);
+        }
+        previouslyDetectedTrees.Clear();
+        currentlyDetectedTrees.Clear();
     }
 
     private void OnDestroy()
@@ -469,29 +594,21 @@ public class AttackComponent : PComponent
         currentWeaponMode = targetMode;
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
 
-        if (ctx != null && ctx.characterStat != null)
-        {
-            StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
-            StartCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
-        }
+        ApplyWeaponChangeSpeedModifier();
     }
 
     private System.Collections.IEnumerator WeaponChangeSpeedModifierRoutine()
     {
-        // 무기 교체 중이 아닐 때만 원래 속도를 저장합니다.
-        // 이미 교체 중이라면 originalSpeed에 진짜 원래 속도가 저장되어 있습니다.
         if (!ctx.bWhileChangingWeapon)
         {
-            originalSpeed = ctx.characterStat.originalSpeed;
+            ctx.characterStat.AddActionState();
+            ctx.bWhileChangingWeapon = true;
         }
-
-        ctx.characterStat.speed = originalSpeed * ctx.characterStat.speedDecreaseWhileAction;
-        ctx.bWhileChangingWeapon = true;
 
         yield return new WaitForSeconds(ctx.characterStat.weaponChangeCoolTime);
 
         ctx.bWhileChangingWeapon = false;
-        ctx.characterStat.speed = originalSpeed;
+        ctx.characterStat.RemoveActionState();
     }
 
     public void SetbAttack(bool _bAttack)
@@ -517,11 +634,7 @@ public class AttackComponent : PComponent
         currentWeaponMode = WeaponMode.Axe;
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
 
-        if (ctx != null && ctx.characterStat != null)
-        {
-            StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
-            StartCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
-        }
+        ApplyWeaponChangeSpeedModifier();
     }
 
     public void GoToRifleMode()
@@ -532,6 +645,11 @@ public class AttackComponent : PComponent
         currentWeaponMode = WeaponMode.Rifle;
         WeaponModeChangedEvent?.Invoke(currentWeaponMode);
 
+        ApplyWeaponChangeSpeedModifier();
+    }
+
+    private void ApplyWeaponChangeSpeedModifier()
+    {
         if (ctx != null && ctx.characterStat != null)
         {
             StopCoroutine(nameof(WeaponChangeSpeedModifierRoutine));
@@ -551,12 +669,8 @@ public class AttackComponent : PComponent
         SetbCanSwap(false);
         SetbAttack(false);
 
-        if (lastNearestTarget is TreeObj tree)
-        {
-            tree.SetOutline(false);
-            lastNearestTarget = null;
-            nearestTarget = null;
-        }
+        ClearDetectedTreeOutlines();
+        nearestTarget = null;
     }
 
     public void Refresh()

@@ -133,16 +133,19 @@ public class TreeVisualComponent : MonoBehaviour
 
     public void UpdateSortingOrder()
     {
+        // [1단계] 스텐실 쓰기: 무조건 본체(bottomRenderer)보다 먼저(음수) 그려서 도화지를 깐다.
+        bottomStencilOutlineSR.sortingOrder = bottomRenderer.sortingOrder - 2;
+        topStencilOutlineSR.sortingOrder = bottomRenderer.sortingOrder - 1;
+        // [2단계] 본체 그리기: 스텐실 영역에 0을 써서 구멍을 뚫는다.
         topRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
-
-        topShieldRenderer.sortingOrder = topRenderer.sortingOrder + 1;
-        bottomShieldRenderer.sortingOrder = bottomRenderer.sortingOrder + 1;
-        
-        topStencilOutlineSR.sortingOrder = topOutlineSR.sortingOrder - 1;
-        bottomStencilOutlineSR.sortingOrder = bottomOutlineSR.sortingOrder - 1;
-
-        bottomHighlightRenderer.sortingOrder = topRenderer.sortingOrder + 1;
-        topHighlightRenderer.sortingOrder = bottomHighlightRenderer.sortingOrder + 1;
+        // [3단계] 아웃라인 그리기: 구멍이 뚫리고 남은 스텐실에만 선을 그린다.
+        bottomOutlineSR.sortingOrder = topRenderer.sortingOrder + 1;
+        topOutlineSR.sortingOrder = topRenderer.sortingOrder + 2;
+        // [4단계] 기타 이펙트 (아웃라인 위를 덮음)
+        bottomShieldRenderer.sortingOrder = topOutlineSR.sortingOrder + 1;
+        topShieldRenderer.sortingOrder = topOutlineSR.sortingOrder + 2;
+        bottomHighlightRenderer.sortingOrder = topShieldRenderer.sortingOrder + 1;
+        topHighlightRenderer.sortingOrder = topShieldRenderer.sortingOrder + 2;
     }
 
     // 루트 트랜스폼이 틀어졌을 때 위치, 회전, 스케일을 모두 기본값으로 맞춘다.

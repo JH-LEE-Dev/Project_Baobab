@@ -756,8 +756,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         _saveData.money = 0;
         _saveData.carrot = 0;
-        _saveData.currentSlotCount = currentSlotCount;
-        _saveData.maxItemsPerSlot = maxItemsPerSlot;
 
         _saveData.Initialize(currentSlotCount);
 
@@ -789,9 +787,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     public void LoadSaveData(InventorySaveData _data)
     {
-        currentSlotCount = _data.currentSlotCount;
-        maxItemsPerSlot = _data.maxItemsPerSlot;
-
         // 기존 슬롯 초기화
         for (int i = 0; i < inventorySlots.Count; i++)
         {
