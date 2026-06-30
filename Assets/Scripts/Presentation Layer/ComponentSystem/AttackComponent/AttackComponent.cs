@@ -360,6 +360,7 @@ public class AttackComponent : PComponent
             if (sw != null)
             {
                 sw.SetDirection(_direction);
+                axeExtraAttackCreator.PlayShockWaveVisual(sw);
             }
         }
     }

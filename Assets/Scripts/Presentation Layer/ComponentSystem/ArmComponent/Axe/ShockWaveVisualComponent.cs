@@ -8,7 +8,6 @@ public class ShockWaveVisualComponent : MonoBehaviour
     [SerializeField] private float visualFadeOutDuration = 0.15f;
     [SerializeField] private float visualStartThickness = 0.025f;
     [SerializeField] private float visualAngleMultiplier = 0.75f;
-    [SerializeField] private float shockWaveScaleFactor = 2f;
 
     private ShockWave shockWave;
     private SpriteRenderer sourceRenderer;
@@ -27,7 +26,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
 
     }
 
-    public void Play(Transform _origin, float _moveSpeed, float _duration)
+    public void Play(float _moveSpeed, float _duration)
     {
         if (shockWave == null)
         {
@@ -51,7 +50,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
         visualRunner.Play(new ShockWaveVisualRunner.PlayData
         {
             Owner = transform,
-            Origin = _origin,
+            Origin = shockWave.VisualOrigin,
             InitialRotation = initialRotation,
             StartPosition = transform.position,
             Sprite = sourceRenderer != null ? sourceRenderer.sprite : null,
@@ -61,7 +60,7 @@ public class ShockWaveVisualComponent : MonoBehaviour
             SortingOrder = sourceRenderer != null ? sourceRenderer.sortingOrder : 0,
             MoveSpeed = _moveSpeed,
             Duration = _duration,
-            ScaleFactor = shockWaveScaleFactor,
+            InitialMinDist = shockWave.minDist,
             MaxDist = shockWave.maxDist,
             FindRange = shockWave.findRange,
             Angle = shockWave.angle,
@@ -96,7 +95,7 @@ public class ShockWaveVisualRunner : MonoBehaviour
         public int SortingOrder;
         public float MoveSpeed;
         public float Duration;
-        public float ScaleFactor;
+        public float InitialMinDist;
         public float MaxDist;
         public float FindRange;
         public float Angle;
@@ -172,9 +171,8 @@ public class ShockWaveVisualRunner : MonoBehaviour
     private void CacheVisualRange()
     {
         float distanceAtEnd = data.MoveSpeed * Mathf.Max(data.Duration, 0f);
-        float finalScaleMultiplier = 1f + distanceAtEnd * data.ScaleFactor;
         float visualMultiplier = Mathf.Max(data.VisualRangeMultiplier, 0.0001f);
-        float finalRadius = Mathf.Max(data.FindRange, data.MaxDist) * finalScaleMultiplier;
+        float finalRadius = Mathf.Max(data.FindRange, data.MaxDist) + distanceAtEnd;
         visualFullRadius = Mathf.Max(finalRadius * visualMultiplier, 0.0001f);
     }
 
@@ -209,7 +207,8 @@ public class ShockWaveVisualRunner : MonoBehaviour
 
     private void UpdateTransform()
     {
-        transform.position = data.Origin != null ? data.Origin.position : data.StartPosition;
+        bool bFollowOrigin = data.Origin != null && data.Origin != data.Owner;
+        transform.position = bFollowOrigin ? data.Origin.position : data.StartPosition;
         transform.rotation = Quaternion.identity;
 
         float scale = visualFullRadius / SpriteRadius;
@@ -220,12 +219,19 @@ public class ShockWaveVisualRunner : MonoBehaviour
     {
         if (spriteRenderer == null || spriteRenderer.enabled == false) return;
 
-        float maxRadius = Mathf.Max(
-            Mathf.Clamp01(data.VisualStartThickness),
-            Mathf.Clamp01(timer / Mathf.Max(data.Duration, 0.0001f)));
-        float minProgress = Mathf.Clamp01(timer / Mathf.Max(GetVisualDuration(), 0.0001f));
-        float minRadius = Mathf.SmoothStep(0f, 1f, minProgress);
-        minRadius = Mathf.Min(minRadius, maxRadius);
+        float rangeTimer = Mathf.Min(timer, data.Duration);
+        float expandDistance = data.MoveSpeed * rangeTimer;
+        float minRadius = (data.InitialMinDist + expandDistance) / visualFullRadius;
+        float maxRadius = (data.MaxDist + expandDistance) / visualFullRadius;
+
+        if (timer > data.Duration)
+        {
+            float fadeProgress = Mathf.InverseLerp(data.Duration, GetVisualDuration(), timer);
+            minRadius = Mathf.Lerp(minRadius, maxRadius, Mathf.SmoothStep(0f, 1f, fadeProgress));
+        }
+
+        maxRadius = Mathf.Max(Mathf.Clamp01(data.VisualStartThickness), Mathf.Clamp01(maxRadius));
+        minRadius = Mathf.Clamp01(Mathf.Min(minRadius, maxRadius));
 
         spriteRenderer.GetPropertyBlock(propertyBlock);
         propertyBlock.SetFloat(MinRadiusID, minRadius);

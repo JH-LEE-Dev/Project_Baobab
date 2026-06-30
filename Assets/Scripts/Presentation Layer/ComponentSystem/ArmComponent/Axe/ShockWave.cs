@@ -10,7 +10,6 @@ public class ShockWave : MonoBehaviour
     [SerializeField] private float lifeTime = 0.5f;
     [SerializeField] private LayerMask targetLayer;
     [SerializeField] private float moveSpeed = 2f;
-    //[SerializeField] private float scaleFactor = 2f;
 
     private float timer;
     private Vector3 startPosition;
@@ -42,6 +41,7 @@ public class ShockWave : MonoBehaviour
 
     // 비주얼 프로퍼티
     private Transform visualOrigin;
+    public Transform VisualOrigin => visualOrigin;
 
     public void Initialize()
     {
