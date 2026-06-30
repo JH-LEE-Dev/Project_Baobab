@@ -10,6 +10,7 @@ public class ShockWave : MonoBehaviour
     [SerializeField] private float lifeTime = 0.5f;
     [SerializeField] private LayerMask targetLayer;
     [SerializeField] private float moveSpeed = 2f;
+    [SerializeField] private float scaleFactor = 2f; // 스피드 보정을 위해 유지
 
     private float timer;
     private Vector3 startPosition;
@@ -21,7 +22,7 @@ public class ShockWave : MonoBehaviour
     [Header("Sector Ring Settings")]
     public float minDist = 0f;
     public float maxDist = 2f;
-    public float angle = 90f;
+    public float angle = 55f;
     public float findRange = 2.5f;
 
     // 초기 설정값 캐싱용
@@ -34,10 +35,11 @@ public class ShockWave : MonoBehaviour
     // 최적화: 판정 주기 및 수학 연산용
     private float lastDamageCheckTime;
     private const float DAMAGE_CHECK_INTERVAL = 0.04f; // 약 25FPS 판정 (나무는 정적이므로 충분)
-    private float cosHalfAngle; 
-    private float cosHalfAngleSqr;
     private List<IStaticCollidable> targetsInRange = new List<IStaticCollidable>(128);
     private HashSet<IStaticCollidable> hitTargets = new HashSet<IStaticCollidable>();
+    
+    // 빠른 확장 시 충돌 누락(터널링) 방지용 (Sweep 처리)
+    private float lastMinDist;
 
     // 비주얼 프로퍼티
     private Transform visualOrigin;
@@ -45,17 +47,13 @@ public class ShockWave : MonoBehaviour
 
     public void Initialize()
     {
+        angle = 45f; // 각도를 45도로 고정
         // 인스펙터에서 설정된 초기값들을 저장
         initialScale = transform.localScale;
         initialMinDist = minDist;
         initialMaxDist = maxDist;
         initialFindRange = findRange;
         InitialRotation = transform.rotation;
-
-        // 부채꼴 판정용 코사인 값 및 제곱값 미리 계산 (Acos, Sqrt 제거용)
-        float _halfRad = angle * 0.5f * Mathf.Deg2Rad;
-        cosHalfAngle = Mathf.Cos(_halfRad);
-        cosHalfAngleSqr = cosHalfAngle * cosHalfAngle;
     }
 
     public void SetValue(float _damage, float _speed, float _duration)
@@ -64,7 +62,8 @@ public class ShockWave : MonoBehaviour
         moveSpeed = _speed;
         lifeTime = _duration;
 
-        maxEffectiveDistance = initialMaxDist + (moveSpeed * lifeTime);
+        float effectiveExpandSpeed = moveSpeed * (1f + initialMaxDist * scaleFactor);
+        maxEffectiveDistance = initialMaxDist + (effectiveExpandSpeed * lifeTime);
     }
 
     public void SetEnforced(bool _isEnforced)
@@ -80,6 +79,7 @@ public class ShockWave : MonoBehaviour
 
     public void Reset()
     {
+        angle = 45f; // 각도 고정 유지
         timer = 0f;
         lastDamageCheckTime = 0f;
         startPosition = transform.position;
@@ -94,10 +94,7 @@ public class ShockWave : MonoBehaviour
         minDist = initialMinDist;
         maxDist = initialMaxDist;
         findRange = initialFindRange;
-        
-        float _halfRad = angle * 0.5f * Mathf.Deg2Rad;
-        cosHalfAngle = Mathf.Cos(_halfRad);
-        cosHalfAngleSqr = cosHalfAngle * cosHalfAngle;
+        lastMinDist = initialMinDist;
     }
 
     private void ApplyShockWaveDamage()
@@ -107,14 +104,18 @@ public class ShockWave : MonoBehaviour
         // 현재 확장된 findRange를 사용하여 검색
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, findRange, targetLayer.value, targetsInRange);
 
-        Vector2 centerPos = transform.position;
-        Vector2 isoForward = Vector2.right;
+        Vector3 centerPos = transform.position;
+        Vector3 isoForward = Vector3.right;
         if (moveDirection.sqrMagnitude > 0.0001f)
         {
-            isoForward = new Vector2(moveDirection.x, moveDirection.y * 2f).normalized;
+            isoForward = new Vector3(moveDirection.x, moveDirection.y * 2f, 0f).normalized;
         }
 
-        float minDistSqr = minDist * minDist;
+        // AttackComponent.cs와 완전히 동일한 코사인 임계값 계산
+        float cosThreshold = Mathf.Cos(angle * Mathf.Deg2Rad);
+
+        // 스윕(Sweep) 로직: 이전 주기의 안쪽 반지름(lastMinDist)부터 현재 주기의 바깥쪽 반지름(maxDist)까지 한 번에 검사하여 터널링 방지
+        float sweepMinDistSqr = lastMinDist * lastMinDist;
         float maxDistSqr = maxDist * maxDist;
 
         for (int i = 0; i < targetsInRange.Count; i++)
@@ -127,20 +128,23 @@ public class ShockWave : MonoBehaviour
             // 2. 타입 체크 (레이어 필터링이 잘 되어 있다면 무시 가능하지만 안전을 위해 유지)
             if (!(target is TreeObj treeObj)) continue;
 
-            Vector2 targetPos = treeObj.Position + treeObj.Offset;
+            Vector3 targetPos = treeObj.Position + treeObj.Offset;
             float isoDistSq = GetIsometricDistSq(targetPos, centerPos);
 
-            // 3. 거리 범위 체크 (타원 적용)
-            if (isoDistSq >= minDistSqr && isoDistSq <= maxDistSqr)
+            // 3. 거리 범위 체크 (타원 적용 및 스윕)
+            if (isoDistSq >= sweepMinDistSqr && isoDistSq <= maxDistSqr)
             {
-                float dx = targetPos.x - centerPos.x;
-                float dy = (targetPos.y - centerPos.y) * 2f;
-                Vector2 isoTargetOffset = new Vector2(dx, dy);
+                // AttackComponent.cs와 완전히 동일한 타원 판정 로직
+                Vector3 targetOffset = targetPos - centerPos;
+                Vector3 targetDir = Vector3.right;
+                if (targetOffset.sqrMagnitude > 0.0001f)
+                {
+                    targetDir = new Vector3(targetOffset.x, targetOffset.y * 2f, 0f).normalized;
+                }
 
-                // 4. 내적을 이용한 부채꼴 판정 (Sqrt 연산 없이 제곱 비교)
-                float dot = Vector2.Dot(isoForward, isoTargetOffset);
-                // 방향이 앞쪽이고(dot > 0), 각도 조건 만족 시 (cos^2 * dist^2 <= dot^2)
-                if (dot > 0 && (dot * dot) >= (cosHalfAngleSqr * isoDistSq))
+                float dot = Vector3.Dot(isoForward, targetDir);
+
+                if (dot >= cosThreshold)
                 {
                     float finalDamage = damage;
                     if (bIsEnforced && maxEffectiveDistance > 0f)
@@ -159,7 +163,7 @@ public class ShockWave : MonoBehaviour
         }
     }
 
-    private float GetIsometricDistSq(Vector2 _p1, Vector2 _p2)
+    private float GetIsometricDistSq(Vector3 _p1, Vector3 _p2)
     {
         float _dx = _p1.x - _p2.x;
         float _dy = (_p1.y - _p2.y) * 2f;
@@ -168,25 +172,34 @@ public class ShockWave : MonoBehaviour
 
     private void Update()
     {
+        bool bIsFinished = false;
         timer += Time.deltaTime;
 
+        if (timer >= lifeTime)
+        {
+            timer = lifeTime; // 최대 사거리 초과 방지
+            bIsFinished = true;
+        }
+
         // 1. 이동 거리에 따른 충돌 범위 확장
-        // 객체가 이동하는 대신, 범위가 넓어짐 (Min/Max Radius 차이 유지)
-        float expandDistance = moveSpeed * timer;
+        // 기존에 날아가던 총합 속도(중심 이동 속도 + 스케일로 인한 범위 증가 속도)를 계산
+        float effectiveExpandSpeed = moveSpeed * (1f + initialMaxDist * scaleFactor);
+        float expandDistance = effectiveExpandSpeed * timer;
 
         // 판정 수치들은 차이를 유지하기 위해 곱연산 대신 합연산 적용
         minDist = initialMinDist + expandDistance;
         maxDist = initialMaxDist + expandDistance;
         findRange = initialFindRange + expandDistance;
 
-        // 2. 판정 주기 조절 (매 프레임 실행하지 않음)
-        if (timer >= lastDamageCheckTime + DAMAGE_CHECK_INTERVAL)
+        // 2. 판정 주기 조절 (끝부분 누락을 방지하기 위해 종료 시에도 강제 판정)
+        if (bIsFinished || timer >= lastDamageCheckTime + DAMAGE_CHECK_INTERVAL)
         {
             lastDamageCheckTime = timer;
             ApplyShockWaveDamage();
+            lastMinDist = minDist; // 스윕 시작점 갱신
         }
 
-        if (timer >= lifeTime)
+        if (bIsFinished)
         {
             ReturnToPoolEvent?.Invoke(this);
         }
@@ -205,9 +218,9 @@ public class ShockWave : MonoBehaviour
 
         Vector3 isoDir = new Vector3(dir.x, dir.y * 2f, 0f).normalized;
 
-        float halfAngle = angle * 0.5f;
-        Vector3 leftDir = Quaternion.Euler(0, 0, halfAngle) * isoDir;
-        Vector3 rightDir = Quaternion.Euler(0, 0, -halfAngle) * isoDir;
+        // AttackComponent와 동일하게 angle 자체가 반각을 의미함
+        Vector3 leftDir = Quaternion.Euler(0, 0, angle) * isoDir;
+        Vector3 rightDir = Quaternion.Euler(0, 0, -angle) * isoDir;
 
         Vector3 ApplyIsometricScale(Vector3 v) => new Vector3(v.x, v.y * 0.5f, v.z);
 
@@ -223,7 +236,7 @@ public class ShockWave : MonoBehaviour
         Vector3 rightMin = ApplyIsometricScale(rightDir * minDist);
         Vector3 rightMax = ApplyIsometricScale(rightDir * maxDist);
 
-        // 좌우 경계선 (minDist에서 maxDist까지의 직선)
+        // 좌우 경계선
         Gizmos.DrawLine(centerPos + leftMin, centerPos + leftMax);
         Gizmos.DrawLine(centerPos + rightMin, centerPos + rightMax);
 
@@ -235,7 +248,7 @@ public class ShockWave : MonoBehaviour
         for (int i = 1; i <= segments; i++)
         {
             float t = (float)i / segments;
-            float currAngle = Mathf.Lerp(halfAngle, -halfAngle, t);
+            float currAngle = Mathf.Lerp(angle, -angle, t);
             Vector3 currDir = Quaternion.Euler(0, 0, currAngle) * isoDir;
 
             Vector3 currMinPoint = centerPos + ApplyIsometricScale(currDir * minDist);

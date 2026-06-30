@@ -101,7 +101,10 @@ public enum SkillType
 
 
     LogValue1, //원목 가치1
-    VerdantPlainsOvergrowth, // 풀빛너른숲 과성장 
+    WideGreenForestOvergrowth, // 풀빛너른숲 과성장 
+    FluffySporeForestOverGrowh,
+    StarrootForestOverGrowh,
+    MagmaForestOverGrowh,
 
     BountifulTree1, // 아낌없이주는나무1
     BountifulTree2, // 아낌없이주는나무2
@@ -198,7 +201,10 @@ public enum SkillCommandType
     EquipmentSwitchSpeed, // 불필요
     GunDamage, // 불필요
     LogValue,
-    VerdantPlainsOvergrowth,
+    WideGreenForestOvergrowth, // 풀빛너른숲 과성장 
+    FluffySporeForestOverGrowh,
+    StarrootForestOverGrowh,
+    MagmaForestOverGrowh,
     CarrotBundle,   // 불필요
     RabbitBoom,  // 불필요
     Stamina,
