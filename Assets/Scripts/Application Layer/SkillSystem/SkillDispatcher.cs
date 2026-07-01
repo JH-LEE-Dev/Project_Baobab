@@ -16,8 +16,9 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private ICarrotItemCH carrotItemCH;
     private ITownObjSystemCH townObjSystemCH;
     private ILogProcessingSystemCH logProcessingSystemCH;
-    private ILogItemCH logItemCH;
+    private ILogItemControllerCH logItemControllerCH;
     private IOffroadContainerCH offroadContainerCH;
+    private IInDungeonObjManagerCH inDungeonObjManagerCH;
 
 
     [SerializeField] private List<SkillCommand> skillCommands;
@@ -42,13 +43,16 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     ILogProcessingSystemCH ICommandHandleSystem.logProcessingSystemCH => logProcessingSystemCH;
 
-    ILogItemCH ICommandHandleSystem.logItemCH => logItemCH;
+    ILogItemControllerCH ICommandHandleSystem.logItemControllerCH => logItemControllerCH;
 
     IOffroadContainerCH ICommandHandleSystem.offroadContainerCH => offroadContainerCH;
 
+    IInDungeonObjManagerCH ICommandHandleSystem.inDungeonObjManagerCH => inDungeonObjManagerCH;
+
     public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
     ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH,
-    ILogProcessingSystemCH _logProcessingSystemCH, ILogItemCH _logItemCH, IOffroadContainerCH _offroadContainerCH)
+    ILogProcessingSystemCH _logProcessingSystemCH, ILogItemControllerCH _logItemCH, IOffroadContainerCH _offroadContainerCH,
+    IInDungeonObjManagerCH _inDungeonObjManagerCH)
     {
         offroadContainerCH = _offroadContainerCH;
         signalHub = _signalHub;
@@ -60,7 +64,8 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         carrotItemCH = _carrotItemCH;
         townObjSystemCH = _townObjSystemCH;
         logProcessingSystemCH = _logProcessingSystemCH;
-        logItemCH = _logItemCH;
+        logItemControllerCH = _logItemCH;
+        inDungeonObjManagerCH = _inDungeonObjManagerCH;
         
         if (skillCommands == null) return;
 

@@ -9,9 +9,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0f2f168133818d242bc3b69563c1d7ce, type: 3}
-  m_Name: Verdant Plains Overgrowth
-  m_EditorClassIdentifier: Assembly-CSharp::SC_VerdantPlainsOvergrowth
+  m_Script: {fileID: 11500000, guid: 5445edcdef9c04f4389dbc4c47310e15, type: 3}
+  m_Name: Starroot Forest OverGrowth
+  m_EditorClassIdentifier: Assembly-CSharp::SC_StarrootForestOverGrowth
   level: 0
   amount: 0
-  skillCommandType: 10
+  skillCommandType: 54

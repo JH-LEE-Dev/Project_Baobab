@@ -2,10 +2,10 @@
 public interface IDensityProvider
 {
     bool CanCreateAnimal();
-    bool CanCreateTree();
+    bool CanCreateTree(MapType _mapType);
     void UpdateTreeCnt(bool _up);
     void UpdateAnimalCnt(bool _up);
-    int GetTreeStartCnt();
+    int GetTreeStartCnt(MapType _mapType);
     int GetAnimalStartCnt();
     void SetActiveTilesCnt(int _cnt1,int _cnt2);
     float GetTreeRegenTime();

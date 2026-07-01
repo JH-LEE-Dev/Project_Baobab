@@ -101,7 +101,7 @@ public enum SkillType
 
 
     LogValue1, //원목 가치1
-    VerdantPlainsOvergrowth, // 풀빛너른숲 과성장 
+    WideGreenForestOvergrowth, // 풀빛너른숲 과성장 
 
     BountifulTree1, // 아낌없이주는나무1
     BountifulTree2, // 아낌없이주는나무2
@@ -112,7 +112,7 @@ public enum SkillType
 
 
 
-    
+
 
 
     AxeDamage1,//도끼데미지I
@@ -165,6 +165,10 @@ public enum SkillType
     ShockwaveDamage2, //충격파데미지2
     ShockwaveRange2, // 충격파 범위2
 
+
+
+
+    TestNode,  // TestNode
     MAX
 }
 
@@ -180,7 +184,7 @@ public enum SkillCommandType
     EquipmentSwitchSpeed, // 불필요
     GunDamage, // 불필요
     LogValue,
-    VerdantPlainsOvergrowth,
+    WideGreenForestOvergrowth, // 풀빛너른숲 과성장 
     CarrotBundle,   // 불필요
     RabbitBoom,  // 불필요
     Stamina,
@@ -209,6 +213,23 @@ public enum SkillCommandType
     ShockwaveRange,
     AxeAttackSpeed,
     WoodenTransportBox,
+    WeakPointHit,
+    Hello,
+    MultiAttack,
+    FinalAttack,
+    AttackRythm,
+    WhirlWind,
+    AxeCriticalChance,
+    AxeCriticalDamage,
+    ShockWaveCritical,
+    ShockWaveEnforcement,
+    ShockWaveMastery,
+    IncreaseJackPotChance,
+    IncreaseJackPotAmount,
+    TreeVitamin,
+    FluffySporeForestOverGrowh,
+    StarrootForestOverGrowh,
+    MagmaForestOverGrowh,
 }
 
 public enum AbilityLevelUpRejectReason

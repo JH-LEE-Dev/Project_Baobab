@@ -14,7 +14,7 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
         }
         _manager.ShuffleAvailablePositions();
 
-        int startCount = _manager.EnvironmentProvider.densityProvider.GetTreeStartCnt();
+        int startCount = _manager.EnvironmentProvider.densityProvider.GetTreeStartCnt(currentMapType);
         for (int i = 0; i < startCount; i++)
         {
             _manager.SpawnOneTreeFromAvailable(false);
@@ -25,10 +25,13 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
     {
         while (true)
         {
-            float interval = _manager.EnvironmentProvider.densityProvider.GetTreeRegenTime();
+            float baseInterval = _manager.EnvironmentProvider.densityProvider.GetTreeRegenTime();
+            // speedMul이 1 이상이 되어 시간이 0이 되면 무한루프에 빠질 수 있으므로, 최소 대기 시간(0.1초) 보장
+            float interval = Mathf.Max(0.1f, baseInterval * (1f - _manager.GrowthSpeedMul));
+            
             yield return new WaitForSeconds(interval);
 
-            if (_manager.EnvironmentProvider.densityProvider.CanCreateTree() && _manager.AvailablePositionsCount > 0)
+            if (_manager.EnvironmentProvider.densityProvider.CanCreateTree(currentMapType) && _manager.AvailablePositionsCount > 0)
             {
                 _manager.SpawnOneTreeFromAvailable(true);
             }

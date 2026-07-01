@@ -1,10 +1,7 @@
 using UnityEngine;
 
-public interface IHealthComponent
+public interface IHealthComponent : IBaseHealthComponent
 {
-    float GetMaxHealth();
-    float GetCurrentHealth();
-    float GetPrevHealth();
     float GetMaxSP();
     float GetCurrentSP();
     float GetPrevSP();

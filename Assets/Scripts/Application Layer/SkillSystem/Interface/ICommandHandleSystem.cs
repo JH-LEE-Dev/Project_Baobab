@@ -10,6 +10,7 @@ public interface ICommandHandleSystem
     public ICarrotItemCH carrotItemCH { get; }
     public ITownObjSystemCH townObjSystemCH { get; }
     public ILogProcessingSystemCH logProcessingSystemCH { get; }
-    public ILogItemCH logItemCH { get; }
+    public ILogItemControllerCH logItemControllerCH { get; }
     public IOffroadContainerCH offroadContainerCH { get; }
+    public IInDungeonObjManagerCH inDungeonObjManagerCH { get; }
 }

@@ -12,13 +12,20 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
     private int walkableTilesCnt;
     private int treeCnt;
     private int animalCnt;
-    private int maxTreeCnt;
     private int maxAnimalCnt;
     private int animalStartCnt;
-    private int treeStartCnt;
 
-    private float treeDensityMultiplier = 1.0f;
+    private Dictionary<MapType, float> treeDensityMultipliers = new Dictionary<MapType, float>();
     private float rabbitDensityMultiplier = 1.0f;
+
+    private float GetTreeDensityMultiplier(MapType _mapType)
+    {
+        if (treeDensityMultipliers.TryGetValue(_mapType, out float multiplier))
+        {
+            return multiplier;
+        }
+        return 1.0f;
+    }
 
     [SerializeField] private bool applyToStartCnt = false;
 
@@ -38,7 +45,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         if (densityDataBase != null)
         {
             densityDataBase = Instantiate(densityDataBase);
-            
+
             for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
             {
                 var mapData = densityDataBase.densityDatas[i];
@@ -142,12 +149,11 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
             return true;
     }
 
-    public bool CanCreateTree()
+    public bool CanCreateTree(MapType _mapType)
     {
-        if (treeCnt >= maxTreeCnt)
-            return false;
-        else
-            return true;
+        float currentTreeMultiplier = GetTreeDensityMultiplier(_mapType);
+        int maxCnt = (int)(grassTileCnt * currentDensityData.treeMaxDensityRatio * currentTreeMultiplier);
+        return treeCnt < maxCnt;
     }
 
     public void UpdateAnimalCnt(bool _up)
@@ -177,14 +183,20 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         else
         {
             treeCnt += 1;
-            if (treeCnt > maxTreeCnt)
-                treeCnt = maxTreeCnt;
         }
     }
 
-    public int GetTreeStartCnt()
+    public int GetTreeStartCnt(MapType _mapType)
     {
-        return treeStartCnt;
+        float currentTreeMultiplier = GetTreeDensityMultiplier(_mapType);
+        if (applyToStartCnt)
+        {
+            return (int)(grassTileCnt * currentDensityData.treeStartDensityRatio * currentTreeMultiplier);
+        }
+        else
+        {
+            return (int)(grassTileCnt * currentDensityData.treeStartDensityRatio);
+        }
     }
 
     public int GetAnimalStartCnt()
@@ -202,26 +214,24 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         grassTileCnt = _grassCnt;
         walkableTilesCnt = _walkableCnt;
 
-        maxTreeCnt = (int)(grassTileCnt * currentDensityData.treeMaxDensityRatio * treeDensityMultiplier);
         maxAnimalCnt = (int)(walkableTilesCnt * currentDensityData.animalMaxDensityRatio * rabbitDensityMultiplier);
 
         // applyToStartCnt가 true이면 현재 배율을 적용, 아니면 기본값 사용
         if (applyToStartCnt)
         {
-            treeStartCnt = (int)(grassTileCnt * currentDensityData.treeStartDensityRatio * treeDensityMultiplier);
             animalStartCnt = (int)(walkableTilesCnt * currentDensityData.animalStartDensityRatio * rabbitDensityMultiplier);
         }
         else
         {
-            treeStartCnt = (int)(grassTileCnt * currentDensityData.treeStartDensityRatio);
             animalStartCnt = (int)(walkableTilesCnt * currentDensityData.animalStartDensityRatio);
         }
     }
 
-    public void IncreaseTreeDensity(float _amount)
+    public void IncreaseTreeDensity(MapType _mapType, float _amount)
     {
         // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
-        treeDensityMultiplier += (_amount / 100.0f);
+        float currentMultiplier = GetTreeDensityMultiplier(_mapType);
+        treeDensityMultipliers[_mapType] = currentMultiplier + (_amount / 100.0f);
     }
 
     public void IncreaseRabbitDensity(float _amount)
@@ -232,9 +242,6 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
     public void PopulateSaveData(ref EnvironmentSaveData _data)
     {
-        _data.treeDensityMultiplier = treeDensityMultiplier;
-        _data.rabbitDensityMultiplier = rabbitDensityMultiplier;
-
         _data.hiddenGaugeDatas.Clear();
         foreach (var kvp in hiddenGaugeData)
         {
@@ -264,9 +271,6 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
     public void LoadSaveData(EnvironmentSaveData _data)
     {
-        treeDensityMultiplier = _data.treeDensityMultiplier;
-        rabbitDensityMultiplier = _data.rabbitDensityMultiplier;
-
         hiddenGaugeData.Clear();
         if (_data.hiddenGaugeDatas != null)
         {
@@ -455,7 +459,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         {
             data.hiddenGauge += _amount;
             hiddenGaugeData[fType] = data;
-        }   
+        }
         else
         {
             MapHiddenGaugeSaveData newData = new MapHiddenGaugeSaveData();
@@ -505,7 +509,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 {
                     mapData.densityData[j].bCanAccess = true;
                 }
-                
+
                 globalForestIndex++;
             }
 
@@ -570,7 +574,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         {
             var mapData = densityDataBase.densityDatas[i];
             mapData.bCanAccess = true;
-            
+
             if (mapData.densityData != null)
             {
                 for (int j = 0; j < mapData.densityData.Count; j++)

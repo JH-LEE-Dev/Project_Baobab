@@ -9,7 +9,7 @@ public class EHealthComponent : EComponent, IHealthComponent
 
     //외부 의존성
     [SerializeField] private float maxHealth;
-    
+
     //내부 의존성
     private float currentHealth;
     private float prevHealth;
@@ -27,6 +27,8 @@ public class EHealthComponent : EComponent, IHealthComponent
     private bool isShieldBroken;
 
     private SPRegenStrategySO regenStrategy;
+    private bool bFirstDamage = false;
+    public bool bIsFirstDamage => bFirstDamage;
 
     public void Setup(TreeType _treeType, float _maxHealth, float _maxSP, float _spRegen, SPRegenStrategySO _regenStrategy)
     {
@@ -75,12 +77,16 @@ public class EHealthComponent : EComponent, IHealthComponent
         isShieldBroken = (maxSP <= 0f);
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
+        bFirstDamage = false;
 
         enabled = (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
     public void DecreaseHealth(float _damage)
     {
+        if (bFirstDamage == false)
+            bFirstDamage = true;
+
         prevSP = currentSP;
         prevHealth = currentHealth;
         lastHitTimestamp = Time.time;
@@ -140,7 +146,7 @@ public class EHealthComponent : EComponent, IHealthComponent
     {
         return prevHealth;
     }
-    
+
     public float GetMaxSP()
     {
         return maxSP;
@@ -168,7 +174,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         {
             float enableTime = Time.time;
             float newSP = regenStrategy.CalculateOnEnableRegen(currentSP, maxSP, spRegen, disableTimestamp, enableTime, lastHitTimestamp);
-            
+
             if (Mathf.Abs(newSP - currentSP) > 0.0001f)
             {
                 prevSP = currentSP;

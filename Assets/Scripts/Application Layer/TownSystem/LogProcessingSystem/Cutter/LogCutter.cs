@@ -187,8 +187,6 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         CutterSaveData saveData = new CutterSaveData();
         saveData.bIsCutting = bIsCutting;
-        saveData.totalSpeedMultiplier = totalSpeedMultiplier;
-        saveData.bPowerSupply = bPowerSupply;
 
         if (bIsCutting && cuttingItem != null)
         {
@@ -207,9 +205,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
 
     public void LoadSaveData(CutterSaveData _data, LogItemPoolingManager _poolingManager)
     {
-        totalSpeedMultiplier = _data.totalSpeedMultiplier;
         bIsCutting = _data.bIsCutting;
-        bPowerSupply = _data.bPowerSupply;
 
         if (bIsCutting && _data.cuttingItemData.itemType != ItemType.None)
         {

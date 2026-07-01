@@ -24,7 +24,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
             availableSet.Add(cellPos);
         }
 
-        int startCount = _manager.EnvironmentProvider.densityProvider.GetTreeStartCnt();
+        int startCount = _manager.EnvironmentProvider.densityProvider.GetTreeStartCnt(currentMapType);
         int estimatedSpawnCount = 0;
 
         List<Vector3Int> clusterSeeds = new List<Vector3Int>();

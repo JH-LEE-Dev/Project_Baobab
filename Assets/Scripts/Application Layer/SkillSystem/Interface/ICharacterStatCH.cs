@@ -27,4 +27,15 @@ public interface ICharacterStatCH
     public void IncreaseRifleAttackSpeed(float _amount);
     public void IncreaseMovementSpeed(float _amount);
     public void IncreaseAxeAttackSpeed(float _amount);
+    public void IncreaseWeakPointDamageMul(float _amount);
+    public void IncreaseHelloDamage(float _amount);
+    public void SetMultiAttack(bool _boolean);
+    public void SetFinalAttackHealthPercent(float _percent);
+    public void SetAttackRythmSpeedAmount(float _amount);
+    public void ActivateWhirlWind(bool _boolean);
+    public void IncreaseCriticalChance(float _amount);
+    public void IncreaseCriticalDamage(float _amount);
+    public void ActivateShockWaveCritical(bool _boolean);
+    public void ActivateShockWaveEnforcement(bool _boolean);
+    public void ShockWaveMastery(bool _boolean);
 }

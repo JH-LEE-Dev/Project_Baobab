@@ -89,26 +89,6 @@ public class SaveManager : MonoBehaviour
             densityManager.PopulateSaveData(ref cachedSaveData.environmentSaveData);
         }
 
-        // 6. 당근 드랍 데이터 추출
-        if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null)
-        {
-            if (inDungeonObjectManager.itemManager.carrrotItemController != null)
-            {
-                cachedSaveData.carrotSaveData = inDungeonObjectManager.itemManager.carrrotItemController.GetSaveData();
-            }
-
-            if (inDungeonObjectManager.itemManager.logItemController != null)
-            {
-                cachedSaveData.logDropProbSaveData = inDungeonObjectManager.itemManager.logItemController.GetSaveData();
-            }
-        }
-
-        // 7. 마을 오브젝트 데이터 추출 (bCanTravel 등)
-        if (townObjectManager != null)
-        {
-            cachedSaveData.townSaveData = townObjectManager.GetSaveData();
-        }
-
         // 8. 오프로드 컨테이너 데이터 추출
         if (offroadContainer != null)
         {
@@ -175,26 +155,6 @@ public class SaveManager : MonoBehaviour
         if (densityManager != null)
         {
             densityManager.LoadSaveData(saveData.environmentSaveData);
-        }
-
-        // 6. 드랍 데이터 복구
-        if (inDungeonObjectManager != null && inDungeonObjectManager.itemManager != null)
-        {
-            if (inDungeonObjectManager.itemManager.carrrotItemController != null)
-            {
-                inDungeonObjectManager.itemManager.carrrotItemController.LoadSaveData(saveData.carrotSaveData);
-            }
-
-            if (inDungeonObjectManager.itemManager.logItemController != null)
-            {
-                inDungeonObjectManager.itemManager.logItemController.LoadSaveData(saveData.logDropProbSaveData);
-            }
-        }
-
-        // 7. 마을 오브젝트 데이터 복구
-        if (townObjectManager != null)
-        {
-            townObjectManager.LoadSaveData(saveData.townSaveData);
         }
 
         // 8. 오프로드 컨테이너 데이터 복구

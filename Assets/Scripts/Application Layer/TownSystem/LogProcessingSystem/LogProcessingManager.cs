@@ -178,7 +178,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         if (logInBelt != null) logInBelt.PopulateSaveData(ref _saveData.logInBeltData);
         if (logOutBelt != null) logOutBelt.PopulateSaveData(ref _saveData.logOutBeltData);
         if (logCutter != null) _saveData.cutterData = logCutter.GetSaveData();
-        if (logEvaluator != null) _saveData.evaluatorData = logEvaluator.GetSaveData();
     }
 
     public void LoadSaveData(LogProcessingSaveData _data)
@@ -196,7 +195,6 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         if (logInBelt != null) logInBelt.LoadSaveData(_data.logInBeltData, logItemPoolingManager);
         if (logOutBelt != null) logOutBelt.LoadSaveData(_data.logOutBeltData, logItemPoolingManager);
         if (logCutter != null) logCutter.LoadSaveData(_data.cutterData, logItemPoolingManager);
-        if (logEvaluator != null) logEvaluator.LoadSaveData(_data.evaluatorData);
 
         Debug.Log("[LogProcessingManager] Log Processing System Save Data Loaded.");
     }

@@ -54,7 +54,6 @@ public struct BeltSaveData
 {
     public List<BeltItemSaveData> activeItems;
     public bool isMoving;
-    public float beltSpeed;
 
     public void Initialize()
     {
@@ -68,15 +67,9 @@ public struct CutterSaveData
 {
     public bool bIsCutting;
     public ItemSaveData cuttingItemData;
-    public float totalSpeedMultiplier;
-    public bool bPowerSupply;
 }
 
-[Serializable]
-public struct EvaluatorSaveData
-{
-    public float logValueMultiplier;
-}
+
 
 [Serializable]
 public struct InventorySlotSaveData
@@ -91,8 +84,6 @@ public struct InventorySaveData
 {
     public long money;
     public long carrot;
-    public int currentSlotCount;
-    public int maxItemsPerSlot;
     public List<InventorySlotSaveData> slots;
 
     public void Initialize(int _capacity)
@@ -120,7 +111,6 @@ public struct LogProcessingSaveData
     public BeltSaveData logInBeltData;
     public BeltSaveData logOutBeltData;
     public CutterSaveData cutterData;
-    public EvaluatorSaveData evaluatorData;
 
     public void Initialize()
     {
@@ -147,10 +137,15 @@ public struct MapAccessSaveData
 }
 
 [Serializable]
+public struct MapTreeDensitySaveData
+{
+    public MapType mapType;
+    public float multiplier;
+}
+
+[Serializable]
 public struct EnvironmentSaveData
 {
-    public float treeDensityMultiplier;
-    public float rabbitDensityMultiplier;
     public List<MapHiddenGaugeSaveData> hiddenGaugeDatas;
     public List<MapAccessSaveData> mapAccessDatas;
 
@@ -164,23 +159,7 @@ public struct EnvironmentSaveData
     }
 }
 
-[Serializable]
-public struct CarrotSaveData
-{
-    public float dropMultiplier;
-}
 
-[Serializable]
-public struct TownSaveData
-{
-    public bool bCanTravel;
-}
-
-[Serializable]
-public struct LogDropProbSaveData
-{
-    public List<LogDropProbData> logProbDatas;
-}
 
 [Serializable]
 public class GameSaveData
@@ -189,9 +168,6 @@ public class GameSaveData
     public InventorySaveData inventorySaveData;
     public LogProcessingSaveData logProcessingSaveData;
     public EnvironmentSaveData environmentSaveData;
-    public CarrotSaveData carrotSaveData;
-    public LogDropProbSaveData logDropProbSaveData;
-    public TownSaveData townSaveData;
     public InventorySaveData offroadContainerSaveData;
 
     public void Clear()
@@ -200,7 +176,6 @@ public class GameSaveData
         inventorySaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
         offroadContainerSaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
         logProcessingSaveData.Initialize();
-        if (logDropProbSaveData.logProbDatas != null) logDropProbSaveData.logProbDatas.Clear();
         environmentSaveData.Initialize();
     }
 }

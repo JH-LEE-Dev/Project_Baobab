@@ -278,7 +278,6 @@ public class LogInBelt : MonoBehaviour
     public void PopulateSaveData(ref BeltSaveData _saveData)
     {
         _saveData.isMoving = isMoving;
-        _saveData.beltSpeed = beltSpeed;
         _saveData.activeItems.Clear();
 
         for (int i = 0; i < activeItems.Count; i++)
@@ -308,7 +307,6 @@ public class LogInBelt : MonoBehaviour
         activeItems.Clear();
         deactivatingItems.Clear();
         isMoving = _data.isMoving;
-        beltSpeed = _data.beltSpeed;
 
         if (_data.activeItems != null)
         {

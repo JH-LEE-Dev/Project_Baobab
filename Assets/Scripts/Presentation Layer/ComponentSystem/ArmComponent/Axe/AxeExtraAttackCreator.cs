@@ -32,9 +32,15 @@ public class AxeExtraAttackCreator : MonoBehaviour
     {
         ShockWave sw = shockWavePool.Get();
         sw.transform.position = _position;
+        sw.SetVisualOrigin(sw.transform);
         sw.Reset();
 
         return sw;
+    }
+
+    public void PlayShockWaveVisual(ShockWave _shockWave)
+    {
+        _shockWave.GetComponent<ShockWaveVisualComponent>()?.Play(ctx.characterStat.shockWaveDuration);
     }
 
     public void ReturnShockWave(ShockWave _shockWave)
@@ -48,6 +54,7 @@ public class AxeExtraAttackCreator : MonoBehaviour
     {
         ShockWave newSW = Instantiate(shockWavePrefab);
         newSW.Initialize();
+        newSW.GetComponent<ShockWaveVisualComponent>()?.Initialize(newSW);
 
         newSW.ReturnToPoolEvent -= ReturnShockWave;
         newSW.ReturnToPoolEvent += ReturnShockWave;
@@ -59,7 +66,15 @@ public class AxeExtraAttackCreator : MonoBehaviour
 
     private void OnGetShockWave(ShockWave _shockWave)
     {
-        _shockWave.SetValue(ctx.characterStat.shockWaveDamage, ctx.characterStat.shockWaveSpeed,ctx.characterStat.shockWaveDuration);
+        float finalDamage = ctx.characterStat.shockWaveDamage;
+
+        if (ctx.characterStat.bShockWaveCritical && UnityEngine.Random.value < ctx.characterStat.criticalChance)
+        {
+            finalDamage *= ctx.characterStat.ciriticalDamageMul;
+        }
+
+        _shockWave.SetValue(finalDamage, ctx.characterStat.shockWaveSpeed, ctx.characterStat.shockWaveDuration);
+        _shockWave.SetEnforced(ctx.characterStat.bShockWaveEnforcement);
         _shockWave.gameObject.SetActive(true);
     }
 

@@ -18,10 +18,15 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private bool bAttacked = false;
     private bool bLeftButtonClicked = false;
     private readonly int facingDirHash = Animator.StringToHash("facingDir");
-    private float originalSpeed;
+    private bool bIsSpeedReduced = false;
     private int sortingOrder = 0;
     private Sprite originalSprite;
     private Sprite targetSprite;
+
+    // 공격 리듬 콤보
+    private int attackComboStack = 0;
+    private float comboResetTimer = 0f;
+    private const float COMBO_RESET_TIME = 3f;
 
     float IAxeComponent.durability => durability;
 
@@ -86,8 +91,11 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         bAttacked = true;
         axeAnimation.PlaySwing(OnAttackImpact);
 
-        originalSpeed = ctx.characterStat.originalSpeed;
-        ctx.characterStat.speed = originalSpeed * ctx.characterStat.speedDecreaseWhileAction;
+        if (!bIsSpeedReduced)
+        {
+            bIsSpeedReduced = true;
+            ctx.characterStat.AddActionState();
+        }
 
         DeclareCanSwapEvent?.Invoke(false);
         DeclareAttackStateEvent?.Invoke(true);
@@ -107,10 +115,17 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private System.Collections.IEnumerator AttackCoolDownRoutine()
     {
-        yield return new WaitForSeconds(ctx.characterStat.axeAttackCoolTime);
+        float currentCoolTime = GetEffectiveAxeAttackCoolTime();
+        yield return new WaitForSeconds(currentCoolTime);
 
         bAttacked = false;
-        ctx.characterStat.speed = originalSpeed;
+        
+        if (bIsSpeedReduced)
+        {
+            bIsSpeedReduced = false;
+            ctx.characterStat.RemoveActionState();
+        }
+
         DeclareAttackStateEvent?.Invoke(false);
 
         if (bLeftButtonClicked && durability > 0f && bCanAttack == true)
@@ -135,6 +150,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
             DurabilityEmptyEvent?.Invoke();
 
         AxeAttackedEvent?.Invoke();
+
+        // 공격 성공 시 콤보 누적 및 타이머 초기화 (최대 10중첩)
+        attackComboStack = Mathf.Min(attackComboStack + 1, 10);
+        comboResetTimer = COMBO_RESET_TIME;
     }
 
     public override void ResetDurability()
@@ -167,7 +186,11 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         if (!_boolean)
         {
             StopCoroutine(nameof(AttackCoolDownRoutine));
-            ctx.characterStat.speed = originalSpeed;
+            if (bIsSpeedReduced)
+            {
+                bIsSpeedReduced = false;
+                ctx.characterStat.RemoveActionState();
+            }
         }
     }
 
@@ -179,6 +202,29 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public void SortingOrder()
     {
         spriteRenderer.sortingOrder += sortingOrder;
+    }
+
+    private float GetEffectiveAxeAttackCoolTime()
+    {
+        if (ctx == null || ctx.characterStat == null) return 1.2f;
+        
+        float baseCoolTime = ctx.characterStat.axeAttackCoolTime; // 오염되지 않은 순수 쿨타임
+        float decreaseRatio = (ctx.characterStat.attackRythmSpeedMul / 100f) * attackComboStack;
+        
+        // 쿨타임이 음수가 되지 않도록 방어 (최소 0.05초)
+        return Mathf.Max(0.05f, baseCoolTime * (1f - decreaseRatio));
+    }
+
+    private void Update()
+    {
+        if (attackComboStack > 0)
+        {
+            comboResetTimer -= Time.deltaTime;
+            if (comboResetTimer <= 0f)
+            {
+                attackComboStack = 0;
+            }
+        }
     }
 
     private void LateUpdate()

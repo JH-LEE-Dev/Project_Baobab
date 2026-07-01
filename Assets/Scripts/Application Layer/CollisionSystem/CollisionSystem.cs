@@ -21,8 +21,6 @@ public interface IStaticCollidable
     Vector2 Offset { get; }
     float Radius { get; }
     int Layer { get; }
-    void TakeDamage(float _damage);
-    bool bCanApplyDamage { get; }
 }
 
 public class CollisionSystem : MonoBehaviour

@@ -83,7 +83,7 @@
         },
         {
             "id": 121,
-            "key": "VerdantPlainsOvergrowth_Name",
+            "key": "WideGreenForestOvergrowth_Name",
             "kr": "풀빛너른숲 과성장",
             "en": "",
             "enumType": "",
@@ -322,6 +322,14 @@
             "enumValue": ""
         },
         {
+            "id": 180,
+            "key": "TestNode_Name",
+            "kr": "테스트노드 입니다",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
             "id": 9000,
             "key": "Common_Level",
             "kr": "레벨",
@@ -395,11 +403,11 @@
         },
         {
             "id": 9106,
-            "key": "AbilityDescription_VerdantPlainsOvergrowth",
+            "key": "AbilityDescription_WideGreenForestOvergrowth",
             "kr": "풀빛너른숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
-            "enumValue": "VerdantPlainsOvergrowth"
+            "enumValue": "WideGreenForestOvergrowth"
         },
         {
             "id": 9107,

@@ -134,7 +134,7 @@
             ]
         },
         {
-            "skillType": "VerdantPlainsOvergrowth",
+            "skillType": "WideGreenForestOvergrowth",
             "nameLocId": 121,
             "gridX": 5,
             "gridY": 0,
@@ -552,6 +552,13 @@
                     "pivotY": 0
                 }
             ]
+        },
+        {
+            "skillType": "TestNode",
+            "nameLocId": 180,
+            "gridX": 2,
+            "gridY": 2,
+            "parents": []
         }
     ]
 }

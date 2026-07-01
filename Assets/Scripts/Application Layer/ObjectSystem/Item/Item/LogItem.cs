@@ -13,13 +13,12 @@ public class LogItem : Item, IStaticCollidable
     public Vector2 Offset => Vector2.zero;
     public float Radius => 0.1f;
     public int Layer => gameObject.layer;
-    public void TakeDamage(float _damage) { }
 
     // 내부 의존성
     public LogState logState { get; private set; }
     public TreeType treeType { get; private set; }
 
-    public bool bCanApplyDamage => false;
+
 
     public SpriteRenderer spriteRenderer;
     private Transform visualTransform;
