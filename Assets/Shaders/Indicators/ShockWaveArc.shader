@@ -56,7 +56,6 @@ Shader "Custom/ShockWaveArc"
             SAMPLER(sampler_MainTex);
 
             CBUFFER_START(UnityPerMaterial)
-                float4 _MainTex_ST;
                 float _MinRadius;
                 float _MaxRadius;
                 float _Angle;
@@ -89,7 +88,7 @@ Shader "Custom/ShockWaveArc"
             {
                 Varyings OUT;
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
-                OUT.uv = TRANSFORM_TEX(IN.uv, _MainTex);
+                OUT.uv = IN.uv;
                 OUT.color = IN.color;
                 return OUT;
             }

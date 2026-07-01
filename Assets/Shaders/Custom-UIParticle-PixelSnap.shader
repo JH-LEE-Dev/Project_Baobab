@@ -87,7 +87,6 @@ Shader "Custom/UI/Particle"
             {
                 Varyings o = (Varyings)0;
                 UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_TRANSFER_INSTANCE_ID(input, o);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
 
                 float3 vertexWS = TransformObjectToWorld(input.positionOS.xyz);

@@ -31,6 +31,12 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     // 내부 상태 및 컴포넌트 참조
     private LogItem cuttingItem;
     private float totalSpeedMultiplier = 1.0f;
+    private float globalSpeedMultiplier = 1.0f;
+
+    public void SetGlobalSpeedMultiplier(float _mul)
+    {
+        globalSpeedMultiplier = _mul;
+    }
     private bool bIsCutting = false;
     private bool bPowerSupply = false;
     private float bPowerSupplyValue = 5f; // 500퍼센트를 의미
@@ -300,7 +306,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         float speed = totalSpeedMultiplier;
         if (bPowerSupply && mapType != MapType.Town) speed *= bPowerSupplyValue;
-        return speed;
+        return speed * globalSpeedMultiplier;
     }
 
     private void UpdateVFXState()

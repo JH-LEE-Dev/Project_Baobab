@@ -227,9 +227,13 @@ public enum SkillCommandType
     IncreaseJackPotChance,
     IncreaseJackPotAmount,
     TreeVitamin,
-    FluffySporeForestOverGrowh,
-    StarrootForestOverGrowh,
-    MagmaForestOverGrowh,
+    FluffySporeForestOverGrowth,
+    StarrootForestOverGrowth,
+    MagmaForestOverGrowth,
+    ItemTransferSpeedUP,
+    OffroadContainerRangeIncrease,
+    LogProcessorSpeedUp,
+    TopgradeAssessment,
 }
 
 public enum AbilityLevelUpRejectReason

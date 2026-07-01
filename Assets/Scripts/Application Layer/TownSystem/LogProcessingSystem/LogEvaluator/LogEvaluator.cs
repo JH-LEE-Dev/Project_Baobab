@@ -18,7 +18,7 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
     private float logValueMultiplier = 1.0f;
 
     private CustomSortable customSortable;
-
+    private float topgradeAssessmentChance = 0f;
 
     public void Initialize()
     {
@@ -41,6 +41,13 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
         // 최종 가격 = 기본 가치 * 가치 배율 * 내구도 배율 * 스킬 배율
         int finalPrice = Mathf.RoundToInt(baseValue * stateData.valueMultiplier * logValueMultiplier);
+
+        // 확률적으로 최종 가격 2배 책정
+        if (UnityEngine.Random.value < topgradeAssessmentChance)
+        {
+            finalPrice *= 2;
+        }
+
         logEvaluatedEvent?.Invoke(finalPrice);
 
         if (logStorage != null) logStorage.TriggerBounce();
@@ -57,4 +64,9 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
         logValueMultiplier += (_amount / 100.0f);
     }
 
+    public void IncreaseTopgradeAssessmentChance(float _amount)
+    {
+        // _amount는 0보다 큰 퍼센트 (예: 10.0f는 10% 증가)
+        topgradeAssessmentChance += (_amount / 100.0f);
+    }
 }

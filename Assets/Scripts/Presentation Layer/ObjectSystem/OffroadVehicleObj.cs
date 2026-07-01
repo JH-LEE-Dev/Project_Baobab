@@ -588,8 +588,17 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             return;
         }
 
-        float distToVehicleSq = (col.bounds.center - charTransform.position).sqrMagnitude;
-        float distToContainerSq = (offroadContainer.transform.position - charTransform.position).sqrMagnitude;
+        Vector3 playerPos = charTransform.position;
+        float distToVehicleSq = (col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
+        float distToContainerSq = (offroadContainer.col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
+
+        // 플레이어가 두 콜라이더가 겹치는 교집합 영역 안에 있을 경우 (둘 다 거리 0)
+        // 기존 방식처럼 중심점과의 거리를 비교하여 더 가까운 쪽을 활성화하여 자연스럽게 영역을 반분합니다.
+        if (distToVehicleSq == 0f && distToContainerSq == 0f)
+        {
+            distToVehicleSq = (col.bounds.center - playerPos).sqrMagnitude;
+            distToContainerSq = (offroadContainer.transform.position - playerPos).sqrMagnitude;
+        }
 
         if (offroadContainer.bCanInteract == false)
             offroadContainerVComponent.ResetMaterial();

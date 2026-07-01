@@ -93,6 +93,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     public Collider2D col;
 
+    public float itemTransferSpeedMul = 1f;
+    public float colliderRangeMul =1f;
+
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
         characterInventory = _characterInventory;
@@ -230,7 +233,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         while (true)
         {
             // 이전 전송으로부터 인터벌이 지날 때까지 대기
-            while (Time.time - lastTransferTime < transferInterval)
+            while (Time.time - lastTransferTime < (transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
             {
                 yield return null;
             }
@@ -375,7 +378,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter });
 
-                yield return new WaitForSeconds(FLY_INTERVAL);
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
             }
 
             if (_sourceSlot.count == 0)
@@ -689,7 +692,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private void UpdateInteractState()
     {
         bool currentState = bCollisionEnabled && bCanReach && bPhysicalOverlapped;
-        
+
         if (currentState != bLastInteractState)
         {
             bLastInteractState = currentState;
@@ -1047,6 +1050,34 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             {
                 transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
             }
+        }
+    }
+
+    public void ItemTransferSpeedUP(float _amount)
+    {
+        itemTransferSpeedMul += (_amount / 100f);
+    }
+
+    public void ColliderRangeIncrease(float _amount)
+    {
+        float previousMul = colliderRangeMul;
+        colliderRangeMul += (_amount / 100f);
+        
+        if (col == null || previousMul <= 0f) return;
+
+        float scaleRatio = colliderRangeMul / previousMul;
+
+        if (col is BoxCollider2D box)
+        {
+            box.size *= scaleRatio;
+        }
+        else if (col is CircleCollider2D circle)
+        {
+            circle.radius *= scaleRatio;
+        }
+        else if (col is CapsuleCollider2D capsule)
+        {
+            capsule.size *= scaleRatio;
         }
     }
 }
