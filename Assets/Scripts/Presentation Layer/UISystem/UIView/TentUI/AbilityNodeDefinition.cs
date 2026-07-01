@@ -11,6 +11,7 @@ public class AbilityNodeDefinitionJson
 {
     public string skillType;
     public int nameLocId;
+    public string levelBadge;
     public int gridX;
     public int gridY;
     public AbilityParentJson[] parents;
@@ -65,9 +66,33 @@ public class AbilityParentJson
 }
 
 [Serializable]
+public enum AbilityLevelBadgeType
+{
+    None,
+    I,
+    II,
+    III,
+    IV,
+    V,
+    VI,
+    VII,
+    VIII,
+    IX,
+    X,
+    M
+}
+
+[Serializable]
 public class AbilityPictureBinding
 {
     public SkillType skillType;
+    public UnityEngine.Sprite sprite;
+}
+
+[Serializable]
+public class AbilityLevelBadgeBinding
+{
+    public AbilityLevelBadgeType levelBadge;
     public UnityEngine.Sprite sprite;
 }
 

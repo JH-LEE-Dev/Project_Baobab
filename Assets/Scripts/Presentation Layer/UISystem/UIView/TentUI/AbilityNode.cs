@@ -12,6 +12,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private string displayName;
+    [SerializeField] private AbilityLevelBadgeType levelBadge = AbilityLevelBadgeType.None;
     [SerializeField] private int currentLevel;
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private SkillType[] parentSkillTypes;
@@ -22,6 +23,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private Image abilityBaseImage;
     [SerializeField] private Image abilityBackgroundImage;
     [SerializeField] private Image abilityPictureImage;
+    [SerializeField] private Image abilityLevelImage;
     [SerializeField] private Image abilityBarImage;
 
     [Header("Default Visual")]
@@ -55,6 +57,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
+    public AbilityLevelBadgeType LevelBadge => levelBadge;
     public int CurrentLevel => currentLevel;
     public Vector2Int GridPosition => gridPosition;
     public SkillType[] ParentSkillTypes => parentSkillTypes;
@@ -94,6 +97,17 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         abilityPictureImage.sprite = _sprite != null ? _sprite : defaultPictureSprite;
     }
 
+    private void SetLevelBadgeSprite(Sprite _sprite)
+    {
+        CacheLevelImageIfNeeded();
+        if (abilityLevelImage == null)
+            return;
+
+        bool shouldShow = levelBadge != AbilityLevelBadgeType.None && _sprite != null;
+        abilityLevelImage.gameObject.SetActive(shouldShow);
+        abilityLevelImage.sprite = shouldShow ? _sprite : null;
+    }
+
     // 노드가 포인터 이벤트를 전달할 상위 능력 UI 컴포넌트를 연결한다.
     public void BindOwner(UI_TentAbilityComponent _owner)
     {
@@ -101,18 +115,20 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     }
 
     // JSON에서 읽은 노드 정의를 현재 프리팹 인스턴스에 반영한다.
-    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, string _displayName, Sprite _pictureSprite, float _gridCellSize)
+    public void ApplyDefinition(AbilityNodeDefinitionJson _definition, SkillType _skillType, string _displayName, Sprite _pictureSprite, Sprite _levelBadgeSprite, float _gridCellSize)
     {
         if (_definition == null)
             return;
 
         skillType = _skillType;
         displayName = _displayName;
+        levelBadge = ParseLevelBadge(_definition.levelBadge);
         currentLevel = 0;
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());
 
         SetPicture(_pictureSprite);
+        SetLevelBadgeSprite(_levelBadgeSprite);
         ApplyLevelProgressBar(0, 0);
         ApplyAnchoredPosition(_gridCellSize);
     }
@@ -152,6 +168,32 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         }
 
         return result;
+    }
+
+    private AbilityLevelBadgeType ParseLevelBadge(string _levelBadge)
+    {
+        if (string.IsNullOrWhiteSpace(_levelBadge))
+            return AbilityLevelBadgeType.None;
+
+        return Enum.TryParse(_levelBadge, true, out AbilityLevelBadgeType parsedLevelBadge)
+            ? parsedLevelBadge
+            : AbilityLevelBadgeType.None;
+    }
+
+    private void CacheLevelImageIfNeeded()
+    {
+        if (abilityLevelImage != null)
+            return;
+
+        Image[] images = GetComponentsInChildren<Image>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i] != null && images[i].gameObject.name == "AbilityLevel")
+            {
+                abilityLevelImage = images[i];
+                return;
+            }
+        }
     }
 
     // 현재 레벨이 1 이상인지 반환한다.
@@ -206,6 +248,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         ApplyImageAlpha(abilityBaseImage, _visible ? 1f : 0f);
         ApplyImageAlpha(abilityBackgroundImage, _visible ? 1f : 0f);
         ApplyImageAlpha(abilityPictureImage, _visible ? 1f : 0f);
+        ApplyImageAlpha(abilityLevelImage, _visible ? 1f : 0f);
     }
 
     public void PlayUnlockAppearMotion()
