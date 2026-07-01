@@ -79,7 +79,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -1266786427
+  m_SortingLayerID: -547504293
   m_SortingLayer: 11
   m_SortingOrder: 0
   m_MaskInteraction: 0
@@ -110,6 +110,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   moveSpeed: 2
+  scaleFactor: 2
   minDist: 0.1
   maxDist: 0.5
   angle: 110

@@ -74,6 +74,9 @@ TagManager:
   - name: OnWater_First
     uniqueID: 2538142585
     locked: 0
+  - name: ShockWave
+    uniqueID: 3747463003
+    locked: 0
   - name: Objects
     uniqueID: 3028180869
     locked: 0

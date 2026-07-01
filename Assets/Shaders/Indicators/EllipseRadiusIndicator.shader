@@ -2,6 +2,7 @@ Shader "Custom/EllipseRadiusIndicator"
 {
     Properties
     {
+        [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
         [MainColor] _BaseColor("Base Color", Color) = (1, 0, 0, 1)
         _EllipseRadius("Ellipse Radius (Units)", Float) = 1.5
         _AttackDir("Attack Direction (XY)", Vector) = (1, 0, 0, 0)
