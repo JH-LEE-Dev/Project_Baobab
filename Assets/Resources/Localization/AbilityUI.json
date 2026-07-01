@@ -536,6 +536,22 @@
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "WoodenTransportBox"
+        },
+        {
+            "id": 9123,
+            "key": "AbilityDescription_AxeCriticalChance",
+            "kr": "<COLOR=fca311>도끼 치명타 확률</COLOR>이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "AxeCriticalChance"
+        },
+        {
+            "id": 9124,
+            "key": "AbilityDescription_AxeCriticalDamage",
+            "kr": "<COLOR=fca311>도끼 치명타 데미지</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "AxeCriticalDamage"
         }
     ]
 }

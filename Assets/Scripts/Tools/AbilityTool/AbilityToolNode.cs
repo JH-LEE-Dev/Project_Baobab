@@ -29,18 +29,20 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private int nameLocId;
     [SerializeField] private string displayName;
+    [SerializeField] private AbilityLevelBadgeType levelBadge = AbilityLevelBadgeType.None;
     [SerializeField] private int maxLevel = 1;
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private List<AbilityToolParentLink> parentLinks = new List<AbilityToolParentLink>();
 
     [Header("Logic Export Data")]
     [SerializeField] private ProgressionCurve moneyCurve;
-    [SerializeField] private ProgressionCurve carrotCurve;
+    [SerializeField, HideInInspector] private ProgressionCurve carrotCurve;
     [SerializeField] private List<AbilityToolSkillCommandEntry> skillCommands = new List<AbilityToolSkillCommandEntry>();
 
     [Header("UI References")]
     [SerializeField] private Image abilityBaseImage;
     [SerializeField] private Image abilityPictureImage;
+    [SerializeField] private Image abilityLevelImage;
 
     [Header("Default Visual")]
     [SerializeField] private Sprite defaultPictureSprite;
@@ -52,6 +54,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public SkillType SkillType => skillType;
     public int NameLocId => nameLocId;
     public string DisplayName => displayName;
+    public AbilityLevelBadgeType LevelBadge => levelBadge;
     public int MaxLevel => maxLevel;
     public ProgressionCurve MoneyCurve => moneyCurve;
     public ProgressionCurve CarrotCurve => carrotCurve;
@@ -73,6 +76,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
         skillType = _skillType;
         nameLocId = _definition.nameLocId;
         displayName = _displayName;
+        levelBadge = ParseLevelBadge(_definition.levelBadge);
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentLinks.Clear();
 
@@ -83,6 +87,12 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public void ApplyLocalizationId(int _nameLocId)
     {
         nameLocId = _nameLocId;
+    }
+
+    public void ApplyLevelBadge(AbilityLevelBadgeType _levelBadge)
+    {
+        levelBadge = _levelBadge;
+        owner?.RefreshNodeLevelBadge(this);
     }
 
     public void ApplyLogicData(int _maxLevel, ProgressionCurve _moneyCurve, ProgressionCurve _carrotCurve, List<AbilityToolSkillCommandEntry> _skillCommands)
@@ -108,6 +118,17 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
             return;
 
         abilityPictureImage.sprite = lastPictureSprite;
+    }
+
+    public void SetLevelBadgeSprite(Sprite _sprite)
+    {
+        CacheLevelImageIfNeeded();
+        if (abilityLevelImage == null)
+            return;
+
+        bool shouldShow = levelBadge != AbilityLevelBadgeType.None && _sprite != null;
+        abilityLevelImage.gameObject.SetActive(shouldShow);
+        abilityLevelImage.sprite = shouldShow ? _sprite : null;
     }
 
     // 툴에서 지정한 그리드 좌표를 저장하고 실제 UI 위치에 반영한다.
@@ -230,6 +251,37 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
         }
 
         return result;
+    }
+
+    private AbilityLevelBadgeType ParseLevelBadge(string _levelBadge)
+    {
+        if (string.IsNullOrWhiteSpace(_levelBadge))
+            return AbilityLevelBadgeType.None;
+
+        return Enum.TryParse(_levelBadge, true, out AbilityLevelBadgeType parsedLevelBadge)
+            ? parsedLevelBadge
+            : AbilityLevelBadgeType.None;
+    }
+
+    private void CacheLevelImageIfNeeded()
+    {
+        if (abilityLevelImage != null)
+            return;
+
+        Image[] images = GetComponentsInChildren<Image>(true);
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i] != null && images[i].gameObject.name == "AbilityLevel")
+            {
+                abilityLevelImage = images[i];
+                return;
+            }
+        }
+    }
+
+    private void OnValidate()
+    {
+        owner?.RefreshNodeLevelBadge(this);
     }
 
     public void OnPointerEnter(PointerEventData eventData)

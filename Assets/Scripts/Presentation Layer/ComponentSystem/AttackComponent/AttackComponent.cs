@@ -16,7 +16,7 @@ public class AttackComponent : PComponent
     [SerializeField] private float maxAttackDistance = 0.15f; // 캐릭터로부터 공격 포인트가 떨어질 수 있는 최대 거리
     [SerializeField] private float attackRadius = 0.5f; // 충돌 탐지 판정 반경
     [SerializeField] private float ellipseAttackRadius = 1.5f; // 타원 공격 판정 반경
-    [SerializeField] private float attackAngle = 45f; // 공격 범위 반각 (중심선으로부터 좌우 각도)
+    [SerializeField] private float attackAngle = 55f; // 공격 범위 반각 (중심선으로부터 좌우 각도)
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (도끼용)
     [SerializeField] private float shockWaveSpawnOffset = 0.35f; // 충격파 생성 시 공격 지점으로부터의 오프셋
 
