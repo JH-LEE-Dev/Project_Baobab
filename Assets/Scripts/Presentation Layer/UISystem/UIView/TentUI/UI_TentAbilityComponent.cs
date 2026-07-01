@@ -56,6 +56,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private readonly Dictionary<SkillType, AbilityNodeDefinitionJson> nodeDefinitionMap = new Dictionary<SkillType, AbilityNodeDefinitionJson>();
     private readonly List<SkillType> nodeBuildOrder = new List<SkillType>();
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
+    private readonly Dictionary<AbilityLevelBadgeType, Sprite> levelBadgeSpriteMap = new Dictionary<AbilityLevelBadgeType, Sprite>();
     private readonly List<AbilityNode> spawnedNodes = new List<AbilityNode>();
     private readonly Dictionary<SkillType, AbilityNode> spawnedNodeMap = new Dictionary<SkillType, AbilityNode>();
     private readonly Queue<AbilityNode> nodePool = new Queue<AbilityNode>();
@@ -116,6 +117,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private float gridCellSize = 32f;
     [SerializeField] private int prewarmNodePoolCount = 64;
     [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
+    [SerializeField] private List<AbilityLevelBadgeBinding> levelBadgeBindings = new List<AbilityLevelBadgeBinding>();
     [SerializeField] private List<AbilityLineSegmentSpriteBinding> lineSpriteBindings = new List<AbilityLineSegmentSpriteBinding>();
     [SerializeField] private RectTransform lineParent;
 
@@ -162,6 +164,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         BindAbilityHUDIfNeeded();
         lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor);
         CachePictureBindings();
+        CacheLevelBadgeBindings();
         CacheLineSpriteBindings();
         LoadNodeDefinitions();
         PrewarmNodePool();
@@ -207,6 +210,20 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 continue;
 
             pictureSpriteMap[binding.skillType] = binding.sprite;
+        }
+    }
+
+    private void CacheLevelBadgeBindings()
+    {
+        levelBadgeSpriteMap.Clear();
+
+        for (int i = 0; i < levelBadgeBindings.Count; i++)
+        {
+            AbilityLevelBadgeBinding binding = levelBadgeBindings[i];
+            if (binding == null || binding.levelBadge == AbilityLevelBadgeType.None || binding.sprite == null)
+                continue;
+
+            levelBadgeSpriteMap[binding.levelBadge] = binding.sprite;
         }
     }
 
@@ -340,6 +357,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             _skillType,
             ResolveLocalizedEntryText(nodeDefinition.nameLocId),
             ResolvePicture(_skillType),
+            ResolveLevelBadgeSprite(ParseLevelBadge(nodeDefinition.levelBadge)),
             gridCellSize);
         spawnedNodes.Add(node);
         spawnedNodeMap[_skillType] = node;
@@ -430,6 +448,27 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return sprite;
 
         return null;
+    }
+
+    private Sprite ResolveLevelBadgeSprite(AbilityLevelBadgeType _levelBadge)
+    {
+        if (_levelBadge == AbilityLevelBadgeType.None)
+            return null;
+
+        if (levelBadgeSpriteMap.TryGetValue(_levelBadge, out Sprite sprite))
+            return sprite;
+
+        return null;
+    }
+
+    private AbilityLevelBadgeType ParseLevelBadge(string _levelBadge)
+    {
+        if (string.IsNullOrWhiteSpace(_levelBadge))
+            return AbilityLevelBadgeType.None;
+
+        return Enum.TryParse(_levelBadge, true, out AbilityLevelBadgeType parsedLevelBadge)
+            ? parsedLevelBadge
+            : AbilityLevelBadgeType.None;
     }
 
     // 저장된 마지막 투자 노드와 줌 상태가 있으면 복원하고, 없으면 기본 위치로 연다.

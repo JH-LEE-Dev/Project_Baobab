@@ -21,7 +21,7 @@ MonoBehaviour:
         baseValue: 5
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -44,7 +44,7 @@ MonoBehaviour:
         - 150
         - 200
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -67,7 +67,7 @@ MonoBehaviour:
         - 150
         - 200
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -85,7 +85,7 @@ MonoBehaviour:
         baseValue: 5
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -103,7 +103,7 @@ MonoBehaviour:
         baseValue: 1000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -126,7 +126,7 @@ MonoBehaviour:
         - 15000
         - 20000
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -144,7 +144,7 @@ MonoBehaviour:
         baseValue: 10
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -162,7 +162,7 @@ MonoBehaviour:
         baseValue: 250
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -180,7 +180,7 @@ MonoBehaviour:
         baseValue: 1000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -198,7 +198,7 @@ MonoBehaviour:
         baseValue: 1000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes: []
@@ -221,7 +221,7 @@ MonoBehaviour:
         - 150
         - 200
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -239,7 +239,7 @@ MonoBehaviour:
         baseValue: 10
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -257,7 +257,7 @@ MonoBehaviour:
         baseValue: 2000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -275,7 +275,7 @@ MonoBehaviour:
         baseValue: 2000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -293,7 +293,7 @@ MonoBehaviour:
         baseValue: 25
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -311,7 +311,7 @@ MonoBehaviour:
         baseValue: 500
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -329,7 +329,7 @@ MonoBehaviour:
         baseValue: 30
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -347,7 +347,7 @@ MonoBehaviour:
         baseValue: 100
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -365,7 +365,7 @@ MonoBehaviour:
         baseValue: 2000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -383,7 +383,7 @@ MonoBehaviour:
         baseValue: 4000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -401,7 +401,7 @@ MonoBehaviour:
         baseValue: 3000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -419,7 +419,7 @@ MonoBehaviour:
         baseValue: 150
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -437,7 +437,7 @@ MonoBehaviour:
         baseValue: 250
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -455,7 +455,7 @@ MonoBehaviour:
         baseValue: 300
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -473,7 +473,7 @@ MonoBehaviour:
         baseValue: 250
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -491,7 +491,7 @@ MonoBehaviour:
         baseValue: 8000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -509,7 +509,7 @@ MonoBehaviour:
         baseValue: 500
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -527,7 +527,7 @@ MonoBehaviour:
         baseValue: 150
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -545,7 +545,7 @@ MonoBehaviour:
         baseValue: 200
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -563,7 +563,7 @@ MonoBehaviour:
         baseValue: 3000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -574,7 +574,7 @@ MonoBehaviour:
         manualValues: []
     prerequisiteSkills: 10000000
   - skillType: 25
-    maxLevel: 3
+    maxLevel: 4
     cost:
       moneyCurve:
         type: 0
@@ -584,10 +584,15 @@ MonoBehaviour:
         - 1000
         - 1500
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
-    skillTypes: []
+    skillTypes:
+    - skillCommandType: 45
+      amountCurve:
+        type: 3
+        baseValue: 5
+        manualValues: []
     prerequisiteSkills: 10000000
   - skillType: 22
     maxLevel: 10
@@ -597,7 +602,7 @@ MonoBehaviour:
         baseValue: 300
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -615,7 +620,7 @@ MonoBehaviour:
         baseValue: 300
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -633,10 +638,15 @@ MonoBehaviour:
         baseValue: 1500
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
-    skillTypes: []
+    skillTypes:
+    - skillCommandType: 46
+      amountCurve:
+        type: 3
+        baseValue: 10
+        manualValues: []
     prerequisiteSkills: 19000000
   - skillType: 40
     maxLevel: 1
@@ -646,7 +656,7 @@ MonoBehaviour:
         baseValue: 3000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -664,7 +674,7 @@ MonoBehaviour:
         baseValue: 2000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -682,7 +692,7 @@ MonoBehaviour:
         baseValue: 2000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -700,7 +710,7 @@ MonoBehaviour:
         baseValue: 10000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:
@@ -718,7 +728,7 @@ MonoBehaviour:
         baseValue: 20000
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes: []
@@ -731,7 +741,7 @@ MonoBehaviour:
         baseValue: 200
         manualValues: []
       carrotCurve:
-        type: 0
+        type: 3
         baseValue: 0
         manualValues: []
     skillTypes:

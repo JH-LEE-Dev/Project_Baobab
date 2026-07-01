@@ -27,6 +27,7 @@ public class AbilityToolManager : MonoBehaviour
 
     private readonly Dictionary<Vector2Int, AbilityToolNode> nodeMap = new Dictionary<Vector2Int, AbilityToolNode>();
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
+    private readonly Dictionary<AbilityLevelBadgeType, Sprite> levelBadgeSpriteMap = new Dictionary<AbilityLevelBadgeType, Sprite>();
     private readonly Dictionary<int, LocalizationEntry> localizationEntryMap = new Dictionary<int, LocalizationEntry>();
     private readonly Dictionary<SkillCommandType, LocalizationEntry> localizationEntryBySkillCommandMap = new Dictionary<SkillCommandType, LocalizationEntry>();
     private readonly List<AbilityToolNode> nodeList = new List<AbilityToolNode>();
@@ -69,6 +70,7 @@ public class AbilityToolManager : MonoBehaviour
     [SerializeField] private AbilityLine abilityLinePrefab;
     [SerializeField] private float gridCellSize = 32f;
     [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
+    [SerializeField] private List<AbilityLevelBadgeBinding> levelBadgeBindings = new List<AbilityLevelBadgeBinding>();
 
     [Header("Line Sprites")]
     [SerializeField] private Sprite row4Sprite;
@@ -94,6 +96,7 @@ public class AbilityToolManager : MonoBehaviour
     {
         rootCanvas = GetComponentInParent<Canvas>();
         CachePictureBindings();
+        CacheLevelBadgeBindings();
         EnsureGridCursorFollowsMoveTarget();
         EnsurePivotMarkerFollowsMoveTarget();
         lineRenderer.Initialize(
@@ -125,6 +128,7 @@ public class AbilityToolManager : MonoBehaviour
         UpdateGridCoordinateText();
         RefreshLines();
         RefreshNodePictures();
+        RefreshNodeLevelBadges();
         UpdateToolTipPosition();
         HandleToolInput();
     }
@@ -143,6 +147,23 @@ public class AbilityToolManager : MonoBehaviour
                 continue;
 
             pictureSpriteMap[binding.skillType] = binding.sprite;
+        }
+    }
+
+    private void CacheLevelBadgeBindings()
+    {
+        levelBadgeSpriteMap.Clear();
+
+        if (levelBadgeBindings == null)
+            return;
+
+        for (int i = 0; i < levelBadgeBindings.Count; i++)
+        {
+            AbilityLevelBadgeBinding binding = levelBadgeBindings[i];
+            if (binding == null || binding.levelBadge == AbilityLevelBadgeType.None || binding.sprite == null)
+                continue;
+
+            levelBadgeSpriteMap[binding.levelBadge] = binding.sprite;
         }
     }
 
@@ -186,6 +207,7 @@ public class AbilityToolManager : MonoBehaviour
             node.SetSelectedVisual(false);
             node.SetMoveSelectedVisual(false);
             node.SetPicture(ResolvePicture(node.SkillType));
+            node.SetLevelBadgeSprite(ResolveLevelBadgeSprite(node.LevelBadge));
             nodeMap[node.GridPosition] = node;
             nodeList.Add(node);
         }
@@ -311,19 +333,12 @@ public class AbilityToolManager : MonoBehaviour
     private string BuildToolTipCostText(AbilityToolNode _node, out MoneyType _costMoneyType)
     {
         long moneyCost = AbilityNumberFormatter.RoundToLong(_node.MoneyCurve.Evaluate(1));
-        long carrotCost = AbilityNumberFormatter.RoundToLong(_node.CarrotCurve.Evaluate(1));
         _costMoneyType = MoneyType.None;
 
         if (moneyCost > 0)
         {
             _costMoneyType = MoneyType.Coin;
             return AbilityNumberFormatter.FormatCompact(moneyCost);
-        }
-
-        if (carrotCost > 0)
-        {
-            _costMoneyType = MoneyType.Carrot;
-            return AbilityNumberFormatter.FormatCompact(carrotCost);
         }
 
         return ResolveToolLocalizationText(LocKeys.AbilityUI.commonFree);
@@ -742,6 +757,7 @@ public class AbilityToolManager : MonoBehaviour
         node.SetGridPosition(_gridPosition, gridCellSize);
         node.SetSelectedVisual(false);
         node.SetPicture(ResolvePicture(node.SkillType));
+        node.SetLevelBadgeSprite(ResolveLevelBadgeSprite(node.LevelBadge));
         nodeMap[_gridPosition] = node;
         nodeList.Add(node);
         allowEmptyExport = false;
@@ -907,6 +923,40 @@ public class AbilityToolManager : MonoBehaviour
         return null;
     }
 
+    private void RefreshNodeLevelBadges()
+    {
+        CacheLevelBadgeBindings();
+
+        for (int i = 0; i < nodeList.Count; i++)
+        {
+            AbilityToolNode node = nodeList[i];
+            if (node == null)
+                continue;
+
+            node.SetLevelBadgeSprite(ResolveLevelBadgeSprite(node.LevelBadge));
+        }
+    }
+
+    public void RefreshNodeLevelBadge(AbilityToolNode _node)
+    {
+        if (_node == null)
+            return;
+
+        CacheLevelBadgeBindings();
+        _node.SetLevelBadgeSprite(ResolveLevelBadgeSprite(_node.LevelBadge));
+    }
+
+    private Sprite ResolveLevelBadgeSprite(AbilityLevelBadgeType _levelBadge)
+    {
+        if (_levelBadge == AbilityLevelBadgeType.None)
+            return null;
+
+        if (levelBadgeSpriteMap.TryGetValue(_levelBadge, out Sprite sprite))
+            return sprite;
+
+        return null;
+    }
+
 #endregion
 
 
@@ -1032,6 +1082,7 @@ public class AbilityToolManager : MonoBehaviour
             {
                 skillType = node.SkillType.ToString(),
                 nameLocId = nameLocId,
+                levelBadge = node.LevelBadge.ToString(),
                 gridX = node.GridPosition.x,
                 gridY = node.GridPosition.y,
                 parents = BuildExportParents(node.ParentLinks)
@@ -1081,7 +1132,7 @@ public class AbilityToolManager : MonoBehaviour
                 cost = new SkillCost
                 {
                     moneyCurve = CloneCurve(node.MoneyCurve),
-                    carrotCurve = CloneCurve(node.CarrotCurve)
+                    carrotCurve = CreateZeroCurve()
                 },
                 skillTypes = BuildExportSkillCommands(node.SkillCommands),
                 prerequisiteSkills = BuildExportPrerequisiteSkills(node.ParentLinks)
@@ -1100,6 +1151,16 @@ public class AbilityToolManager : MonoBehaviour
             manualValues = _curve.manualValues != null
                 ? new List<float>(_curve.manualValues)
                 : new List<float>()
+        };
+    }
+
+    private ProgressionCurve CreateZeroCurve()
+    {
+        return new ProgressionCurve
+        {
+            type = ProgressionType.Constant,
+            baseValue = 0f,
+            manualValues = new List<float>()
         };
     }
 
@@ -1301,6 +1362,7 @@ public class AbilityToolManager : MonoBehaviour
         node.ApplyDefinition(_nodeDefinition, _skillType, _displayName, gridCellSize);
         node.SetSelectedVisual(false);
         node.SetPicture(ResolvePicture(_skillType));
+        node.SetLevelBadgeSprite(ResolveLevelBadgeSprite(node.LevelBadge));
         nodeMap[gridPosition] = node;
         nodeList.Add(node);
         return node;
@@ -1477,6 +1539,7 @@ public class AbilityToolManager : MonoBehaviour
     {
         public string skillType;
         public int nameLocId;
+        public string levelBadge;
         public int gridX;
         public int gridY;
         public AbilityParentJson[] parents;
