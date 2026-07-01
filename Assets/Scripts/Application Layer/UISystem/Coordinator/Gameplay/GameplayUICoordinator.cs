@@ -90,6 +90,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<ActivateWarningUISignal>(ActivateWarningUI);
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
         signalHub.Subscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
+        signalHub.Subscribe<RepairBoxInteractStateChangedSignal>(RepairBoxInteractStateChanged);
     }
 
     private void UnSubscribeSignals()
@@ -134,6 +135,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<ActivateWarningUISignal>(ActivateWarningUI);
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
         signalHub.UnSubscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
+        signalHub.UnSubscribe<RepairBoxInteractStateChangedSignal>(RepairBoxInteractStateChanged);
     }
 
     private void BindEvents()
@@ -454,6 +456,11 @@ public class GameplayUICoordinator
     private void OffroadInteractStateChanged(OffroadInteractStateChangedSignal _offroadInteractStateChangedSignal)
     {
         unitUI.OffroadInteractStateChanged(_offroadInteractStateChangedSignal.state);
+    }
+
+    private void RepairBoxInteractStateChanged(RepairBoxInteractStateChangedSignal _repairBoxInteractStateChangedSignal)
+    {
+        unitUI.RepairBoxInteractStateChanged(_repairBoxInteractStateChangedSignal.state);
     }
 
     private void ShopInteractStateChanged(ShopInteractStateChangedSignal _shopInteractStateChangedSignal)

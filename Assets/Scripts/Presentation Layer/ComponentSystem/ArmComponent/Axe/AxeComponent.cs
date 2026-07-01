@@ -162,6 +162,17 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         UpdateSpriteByDurability();
     }
 
+    public void RepairDurability(float percentage)
+    {
+        float healAmount = ctx.characterStat.axeDurability * percentage;
+        durability += healAmount;
+        if (durability > ctx.characterStat.axeDurability)
+        {
+            durability = ctx.characterStat.axeDurability;
+        }
+        UpdateSpriteByDurability();
+    }
+
     private void UpdateSpriteByDurability()
     {
         float maxDurability = ctx.characterStat.axeDurability;

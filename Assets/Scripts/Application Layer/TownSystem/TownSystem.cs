@@ -69,7 +69,7 @@ public class TownSystem : MonoBehaviour
 
         if (townProductionManager.offroadVehicleObj == null)
         {
-            townProductionManager.Offroad_DI(townObjectManager.portal);
+            townProductionManager.Offroad_DI(townObjectManager.offroadVehicle);
         }
 
         if (_sceneChangeData.prevScene == SceneType.DungeonScene)
@@ -191,8 +191,8 @@ public class TownSystem : MonoBehaviour
         townProductionManager.StartCharacterRide();
 
         offroadContainer.col.enabled = false;
-        if (townObjectManager.portal != null)
-            townObjectManager.portal.col.enabled = false;
+        if (townObjectManager.offroadVehicle != null)
+            townObjectManager.offroadVehicle.col.enabled = false;
     }
 
     private void InventoryInitialized(InventoryInitializedSignal inventoryInitializedSignal)
@@ -231,8 +231,8 @@ public class TownSystem : MonoBehaviour
         townProductionManager.StartDrive();
 
         offroadContainer.col.enabled = false;
-        if (townObjectManager.portal != null)
-            townObjectManager.portal.col.enabled = false;
+        if (townObjectManager.offroadVehicle != null)
+            townObjectManager.offroadVehicle.col.enabled = false;
     }
 
     private void logContainerSpecChanged()
@@ -260,8 +260,8 @@ public class TownSystem : MonoBehaviour
         if (townProductionManager.bCanGetOff == true)
         {
             offroadContainer.col.enabled = true;
-            if (townObjectManager.portal != null)
-                townObjectManager.portal.col.enabled = true;
+            if (townObjectManager.offroadVehicle != null)
+                townObjectManager.offroadVehicle.col.enabled = true;
         }
 
         townObjectManager.TeleportUIClosed();
@@ -367,8 +367,8 @@ public class TownSystem : MonoBehaviour
         {
             offroadContainer.col.enabled = true;
 
-            if (townObjectManager.portal != null)
-                townObjectManager.portal.col.enabled = true;
+            if (townObjectManager.offroadVehicle != null)
+                townObjectManager.offroadVehicle.col.enabled = true;
 
             inputManager.PauseInteractKey(false);
         }
@@ -381,8 +381,8 @@ public class TownSystem : MonoBehaviour
 
         offroadContainer.col.enabled = true;
 
-        if (townObjectManager.portal != null)
-            townObjectManager.portal.col.enabled = true;
+        if (townObjectManager.offroadVehicle != null)
+            townObjectManager.offroadVehicle.col.enabled = true;
 
         ActivatePortalEvent?.Invoke();
 
@@ -402,7 +402,7 @@ public class TownSystem : MonoBehaviour
 
     public void ActivatePortal()
     {
-        if (townObjectManager.portal != null)
-            townObjectManager.portal.col.enabled = true;
+        if (townObjectManager.offroadVehicle != null)
+            townObjectManager.offroadVehicle.col.enabled = true;
     }
 }

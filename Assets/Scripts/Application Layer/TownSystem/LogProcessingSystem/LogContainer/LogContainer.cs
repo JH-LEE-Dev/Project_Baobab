@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 
 public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 {
+    public event Action LogContainerIsEmptyEvent;
     public event Action ItemAddedEvent;
     public event Action ContainerSpecChangedEvent;
     public event Action<LogItemData> LogOutEvent;
@@ -98,7 +99,15 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private Sprite fewLogSprite;
     [SerializeField] private Sprite MiddleLogSprite;
     [SerializeField] private Sprite ManyLogSprite;
- 
+
+    public float itemTransferSpeedMul = 1f;
+    private float globalSpeedMultiplier = 1f;
+
+    public void SetGlobalSpeedMultiplier(float _mul)
+    {
+        globalSpeedMultiplier = _mul;
+    }
+
     public void Initialize(InputManager _inputManager, LogItemPoolingManager logItemPoolingManager)
     {
         inputManager = _inputManager;
@@ -185,7 +194,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
 
         lastInterval = Time.time - lastOutputTime;
-        if (lastInterval >= transferInterval)
+        if (lastInterval >= (transferInterval / (Mathf.Max(0.01f, itemTransferSpeedMul) * Mathf.Max(0.01f, globalSpeedMultiplier))))
         {
             TakeFirstItem();
             lastOutputTime = Time.time;
@@ -338,7 +347,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         while (true)
         {
             // 이전 전송으로부터 인터벌이 지날 때까지 대기 (연타 대응)
-            while (Time.time - lastTransferTime < transferInterval)
+            while (Time.time - lastTransferTime < (transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
             {
                 yield return null;
             }
@@ -426,7 +435,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                 ContainerUpdatedEvent?.Invoke();
 
-                yield return new WaitForSeconds(FLY_INTERVAL);
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
             }
 
             // 슬롯이 비었다면 정리
@@ -763,6 +772,12 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 ContainerUpdatedEvent?.Invoke();
 
                 LogOutEvent?.Invoke(resultData);
+
+                if (((IInventory)this).currentItemCount == 0)
+                {
+                    LogContainerIsEmptyEvent?.Invoke();
+                }
+
                 return;
             }
         }
@@ -863,7 +878,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         ContainerUpdatedEvent?.Invoke();
         ContainerSpecChangedEvent?.Invoke();
         UpdateSprite();
-        
+
         Debug.Log("[LogContainer] Container Save Data Loaded.");
     }
 
@@ -902,5 +917,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         maxItemsPerSlot += (int)_amount;
         ContainerUpdatedEvent?.Invoke();
+    }
+
+    public void ItemTransferSpeedUP(float _amount)
+    {
+        itemTransferSpeedMul += (_amount / 100f);
     }
 }

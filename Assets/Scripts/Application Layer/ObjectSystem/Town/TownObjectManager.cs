@@ -15,7 +15,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     //내부 의존성
     [Header("Portal")]
-    [SerializeField] private OffroadVehicleObj portalPrefab;
+    [SerializeField] private OffroadVehicleObj offroadVehiclePrefab;
     [SerializeField] private Transform portalSpawnPoint;
 
     [Header("Optimization")]
@@ -27,7 +27,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     private Camera mainCam; // 최적화: 카메라 캐싱
 
     //내부 상태
-    public OffroadVehicleObj portal { get; private set; }
+    public OffroadVehicleObj offroadVehicle { get; private set; }
     private TreeObj[] trees;
     public IReadOnlyList<TreeObj> Trees => trees;
 
@@ -80,23 +80,24 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public void ReadyObj()
     {
-        if (portal == null)
+        if (offroadVehicle == null)
         {
-            portal = Instantiate(portalPrefab);
-            portal.transform.position = portalSpawnPoint.position;
-            portal.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
+            offroadVehicle = Instantiate(offroadVehiclePrefab);
+            offroadVehicle.transform.position = portalSpawnPoint.position;
+            offroadVehicle.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
             character.centerTransform);
-            portal.ResetPortal();
-            portal.SetCanTravel(bCanTravel);
+            offroadVehicle.ResetPortal();
+            offroadVehicle.SetCanTravel(bCanTravel);
         }
         else
         {
-            portal.ResetPortal();
-            portal.SetCanTravel(bCanTravel);
+            offroadVehicle.ResetPortal();
+            offroadVehicle.SetCanTravel(bCanTravel);
         }
 
-        portal.SetVisualActive(true);
-
+        offroadVehicle.SetVisualActive(true);
+        offroadVehicle.DeActivateRepairBox();
+        
         trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
 
         if (trees != null && trees.Length > 0)
@@ -131,7 +132,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public Transform GetPortalTransform()
     {
-        return portal.transform;
+        return offroadVehicle.transform;
     }
 
     public Transform GetTownReturnPoint()
@@ -254,25 +255,25 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private void BindEvents()
     {
-        if (portal == null) return;
+        if (offroadVehicle == null) return;
 
-        portal.PortalActivated -= PortalActivated;
-        portal.PortalActivated += PortalActivated;
+        offroadVehicle.PortalActivated -= PortalActivated;
+        offroadVehicle.PortalActivated += PortalActivated;
 
-        portal.PortalDeActivatedEvent -= PortalDeActivated;
-        portal.PortalDeActivatedEvent += PortalDeActivated;
+        offroadVehicle.PortalDeActivatedEvent -= PortalDeActivated;
+        offroadVehicle.PortalDeActivatedEvent += PortalDeActivated;
 
-        portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
-        portal.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
+        offroadVehicle.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        offroadVehicle.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
     }
 
     private void ReleaseEvents()
     {
-        if (portal != null)
+        if (offroadVehicle != null)
         {
-            portal.PortalActivated -= PortalActivated;
-            portal.PortalDeActivatedEvent -= PortalDeActivated;
-            portal.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+            offroadVehicle.PortalActivated -= PortalActivated;
+            offroadVehicle.PortalDeActivatedEvent -= PortalDeActivated;
+            offroadVehicle.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         }
     }
 
@@ -283,8 +284,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public void ClearObjManager()
     {
-        portal.SetVisualActive(false);
-        portal.gameObject.SetActive(false);
+        offroadVehicle.SetVisualActive(false);
+        offroadVehicle.gameObject.SetActive(false);
         // 참조를 해제하지 않고 개수만 0으로 설정하여 재할당 방지
         if (cullingGroup != null)
         {
@@ -305,15 +306,15 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     {
         bCanTravel = true;
 
-        if (portal != null)
-            portal.SetCanTravel(bCanTravel);
+        if (offroadVehicle != null)
+            offroadVehicle.SetCanTravel(bCanTravel);
     }
 
     public void TeleportUIClosed()
     {
-        if (portal != null)
+        if (offroadVehicle != null)
         {
-            portal.SetUIActivated(false);
+            offroadVehicle.SetUIActivated(false);
         }
     }
 

@@ -56,6 +56,7 @@ public class UnitSystem
         signalHub.Subscribe<DropAllItemSignal>(DropAllItem);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.Subscribe<ActivateCharacterSignal>(ActivateCharacter);
+        signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
     }
 
     private void UnSubscribeSignals()
@@ -73,6 +74,7 @@ public class UnitSystem
         signalHub.UnSubscribe<DropAllItemSignal>(DropAllItem);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.UnSubscribe<ActivateCharacterSignal>(ActivateCharacter);
+        signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
     }
 
     private void BindEvents()
@@ -293,5 +295,10 @@ public class UnitSystem
     private void ActivateCharacter(ActivateCharacterSignal _activateCharacterSignal)
     {
         unitLogicManager.ActivateCharacter();
+    }
+
+    private void TreeIsDead(TreeIsDeadSignal _signal)
+    {
+        unitLogicManager.SourceOfStaminaRecover();
     }
 }

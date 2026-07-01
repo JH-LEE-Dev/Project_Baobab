@@ -81,6 +81,8 @@ public class OffroadContainerVComponent : MonoBehaviour
         currentSprite = spriteRenderer.sprite;
         outlineStencilSR.sprite = currentSprite;
         outlineSR.sprite = currentSprite;
+
+        outlineSR.sortingOrder = outlineSR.sortingOrder + 1;
     }
 
     public IEnumerator JumpSequence(Vector3 _targetPos, float _jumpHeight, float _duration, float _springFreq, float _springDamping)

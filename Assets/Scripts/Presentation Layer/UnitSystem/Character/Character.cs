@@ -59,6 +59,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     IArmComponent ICharacter.armComponent => armComponent;
 
+    public void RepairWeapon(float _amount)
+    {
+        if (armComponent != null && armComponent.axeComponent != null)
+        {
+            armComponent.axeComponent.RepairDurability(_amount);
+        }
+    }
+
     public bool bCanApplyDamage => true;
 
     public bool bMoving = false;
@@ -192,6 +200,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         characterVisualComponent.CharacterIsDead(false);
         armComponent.SetActivate(bInDungeon);
         SetFacingDirection(Vector2.down);
+
+        statComponent.Reset();
     }
 
     public Transform GetTransform() => transform;
@@ -466,5 +476,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             attackComponent.SetbCanAttack(true);
             armComponent.SetbCanAttack(true);
         }
+    }
+
+    public void StaminaRecover()
+    {
+        healthComponent.StaminaRecover(statComponent.sourceOfStaminaRecoverAmount);
+        statComponent.ActivateSourceOfSpeed();
     }
 }

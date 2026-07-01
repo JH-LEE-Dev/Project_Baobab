@@ -11,6 +11,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action DropAllItemEvent;
     public event Action RideOffroadEvent;
     public event Action<bool> OffroadInteractStateChangedEvent;
+    public event Action<bool> RepairBoxInteractStateChangedEvent;
     public event Action<OffroadVehicleObj> OffroadSpawnedEvent;
     public event Action<TreeType> TreeDeadEvent;
     public event Action PortalActivatedEvent;
@@ -516,6 +517,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         offroadVehicle.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         offroadVehicle.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
+
+        offroadVehicle.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
+        offroadVehicle.RepairBoxInteractStateChangedEvent += RepairBoxInteractStateChanged;
     }
 
     private void OnPortalActivated()
@@ -717,6 +721,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             offroadVehicle.PortalActivated -= OnPortalActivated;
             offroadVehicle.GameEndEvent -= GameEnd;
             offroadVehicle.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+            offroadVehicle.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
         }
 
         if (cullingGroup != null)
@@ -830,6 +835,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         OffroadInteractStateChangedEvent?.Invoke(_boolean);
     }
 
+    private void RepairBoxInteractStateChanged(bool _boolean)
+    {
+        RepairBoxInteractStateChangedEvent?.Invoke(_boolean);
+    }
+
     private bool CheckWarningUIActivate()
     {
         if (offroadContainer.currentItemCount == offroadContainer.maxCapacity)
@@ -848,5 +858,21 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void IncreaseGrowthSpeed(float _amount)
     {
         growthSpeedMul += (_amount / 100f);
+    }
+
+    public void IncreaseRepairBoxCount(float _amount)
+    {
+        if(offroadVehicle != null)
+        {
+            offroadVehicle.IncreaseRepairBoxCount(_amount);
+        }
+    }
+
+    public void IncreaseRepairAmount(float _amount)
+    {
+         if(offroadVehicle != null)
+        {
+            offroadVehicle.IncreaseRepairAmount(_amount);
+        }
     }
 }

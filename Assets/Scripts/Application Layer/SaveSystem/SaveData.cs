@@ -112,6 +112,8 @@ public struct LogProcessingSaveData
     public BeltSaveData logOutBeltData;
     public CutterSaveData cutterData;
 
+    public int logProcessingStack;
+
     public void Initialize()
     {
         containerInventoryData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);

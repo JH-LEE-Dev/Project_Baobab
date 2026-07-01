@@ -117,6 +117,15 @@ public struct OffroadInteractStateChangedSignal
     }
 }
 
+public struct RepairBoxInteractStateChangedSignal
+{
+    public bool state;
+    public RepairBoxInteractStateChangedSignal(bool _state)
+    {
+        state = _state;
+    }
+}
+
 public struct ShopInteractStateChangedSignal
 {
     public bool state;
