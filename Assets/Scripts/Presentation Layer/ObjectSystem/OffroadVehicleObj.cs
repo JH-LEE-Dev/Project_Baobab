@@ -11,6 +11,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public event Action PortalActivated;
     public event Action PortalDeActivatedEvent;
     public event Action<bool> OffroadInteractStateChangedEvent;
+    public event Action<bool> RepairBoxInteractStateChangedEvent;
 
     [Header("Portal Settings")]
     [SerializeField] private PortalType type;
@@ -117,6 +118,14 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private MaterialPropertyBlock _flashMPB;
 
+    private StaminaRecoverCircle staminaRecoverCircle;
+
+    private RepairBox repairBox;
+
+    [Header("Repair Box Settings")]
+    public float repairBoxCount = 0f;
+    public float repairAmount = 0.25f;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, Transform _characterTransform)
@@ -168,6 +177,15 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         offroadContainerVComponent = containerObject.GetComponentInChildren<OffroadContainerVComponent>();
 
+        staminaRecoverCircle = GetComponent<StaminaRecoverCircle>();
+        staminaRecoverCircle.Initialize(charTransform);
+
+        repairBox = GetComponentInChildren<RepairBox>();
+        if (repairBox != null)
+        {
+            repairBox.Initialize(_inputManager, charTransform);
+        }
+
         BindEvents();
     }
 
@@ -193,6 +211,26 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         containerShadowObj.SetActive(true);
 
         offroadContainerVComponent.Reset();
+        ResetRepairBox();
+    }
+
+    public void ResetRepairBox()
+    {
+        if (repairBoxCount > 0)
+        {
+            repairBox.gameObject.SetActive(true);
+            repairBox.SetRepairBoxCount(repairBoxCount);
+            repairBox.SetRepairAmount(repairAmount);
+        }
+        else
+        {
+            repairBox.gameObject.SetActive(false);
+        }
+    }
+
+    public void DeActivateRepairBox()
+    {
+        repairBox.gameObject.SetActive(false);
     }
 
     public void SetVisualActive(bool _boolean)
@@ -268,6 +306,12 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.ContainerClosedEvent -= ContainerClosed;
         offroadContainer.ContainerClosedEvent += ContainerClosed;
 
+        if (repairBox != null)
+        {
+            repairBox.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
+            repairBox.RepairBoxInteractStateChangedEvent += RepairBoxInteractStateChanged;
+        }
+
         if (type == PortalType.ToDungeonPortal)
         {
             offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
@@ -285,11 +329,21 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.ContainerOpenedEvent -= ContainerOpend;
         offroadContainer.ContainerClosedEvent -= ContainerClosed;
 
+        if (repairBox != null)
+        {
+            repairBox.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
+        }
+
         if (type == PortalType.ToDungeonPortal)
         {
             offroadContainerVComponent.ContainerOpenedEvent -= ContainerVisualOpened;
             offroadContainerVComponent.ContainerClosedEvent -= ContainerVisualClosed;
         }
+    }
+
+    private void RepairBoxInteractStateChanged(bool _state)
+    {
+        RepairBoxInteractStateChangedEvent?.Invoke(_state);
     }
 
     public void OnDestroy()
@@ -585,37 +639,69 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         if (offroadContainer.gameObject.activeSelf == false)
         {
             SetbCanReach(true);
+            if (repairBox != null) repairBox.SetCanReach(false);
             return;
         }
 
         Vector3 playerPos = charTransform.position;
         float distToVehicleSq = (col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
         float distToContainerSq = (offroadContainer.col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
+        float distToRepairBoxSq = float.MaxValue;
 
-        // 플레이어가 두 콜라이더가 겹치는 교집합 영역 안에 있을 경우 (둘 다 거리 0)
-        // 기존 방식처럼 중심점과의 거리를 비교하여 더 가까운 쪽을 활성화하여 자연스럽게 영역을 반분합니다.
-        if (distToVehicleSq == 0f && distToContainerSq == 0f)
+        if (repairBox != null && repairBox.gameObject.activeSelf)
         {
-            distToVehicleSq = (col.bounds.center - playerPos).sqrMagnitude;
-            distToContainerSq = (offroadContainer.transform.position - playerPos).sqrMagnitude;
+            distToRepairBoxSq = (repairBox.col.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude;
         }
 
-        if (offroadContainer.bCanInteract == false)
+        // 플레이어가 여러 콜라이더 교집합 영역(거리 0)에 있을 경우 중심점 거리를 비교하여 가장 가까운 쪽을 활성화
+        float minDist = Mathf.Min(distToVehicleSq, Mathf.Min(distToContainerSq, distToRepairBoxSq));
+        if (minDist == 0f)
+        {
+            float centerDistV = distToVehicleSq == 0f ? (col.bounds.center - playerPos).sqrMagnitude : float.MaxValue;
+            float centerDistC = distToContainerSq == 0f ? (offroadContainer.transform.position - playerPos).sqrMagnitude : float.MaxValue;
+            float centerDistR = distToRepairBoxSq == 0f ? (repairBox.transform.position - playerPos).sqrMagnitude : float.MaxValue;
+
+            float minCenterDist = Mathf.Min(centerDistV, Mathf.Min(centerDistC, centerDistR));
+
+            if (minCenterDist == centerDistV) distToVehicleSq = -1f;
+            else if (minCenterDist == centerDistC) distToContainerSq = -1f;
+            else if (minCenterDist == centerDistR) distToRepairBoxSq = -1f;
+
+            minDist = Mathf.Min(distToVehicleSq, Mathf.Min(distToContainerSq, distToRepairBoxSq));
+        }
+
+        bool vehicleCanReach = false;
+        bool containerCanReach = false;
+        bool repairBoxCanReach = false;
+
+        if (minDist == distToVehicleSq)
+        {
+            vehicleCanReach = true;
+        }
+        else if (minDist == distToContainerSq)
+        {
+            containerCanReach = true;
+        }
+        else if (repairBox != null && minDist == distToRepairBoxSq)
+        {
+            repairBoxCanReach = true;
+        }
+
+        SetbCanReach(vehicleCanReach);
+        offroadContainer.SetCanReach(containerCanReach);
+        if (repairBox != null) repairBox.SetCanReach(repairBoxCanReach);
+
+        if (offroadContainer.bCanInteract)
+            offroadContainerVComponent.SetOutlineMaterial();
+        else
             offroadContainerVComponent.ResetMaterial();
 
-        if (distToVehicleSq <= distToContainerSq)
+        if (repairBox != null)
         {
-            SetbCanReach(true);
-            offroadContainer.SetCanReach(false);
-        }
-        else
-        {
-            SetbCanReach(false);
-
-            offroadContainer.SetCanReach(true);
-
-            if (offroadContainer.bCanInteract == true)
-                offroadContainerVComponent.SetOutlineMaterial();
+            if (repairBox.bCanInteract)
+                repairBox.SetOutlineMaterial();
+            else
+                repairBox.ResetMaterial();
         }
     }
 
@@ -700,7 +786,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             OffroadPlayEffect("Shiny", shinyEffectPoint);
         }
-        
+
         StartCoroutine(ShinyRoutine());
     }
 
@@ -723,5 +809,15 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         _flashMPB.SetFloat(FlashAmountID, 0f);
         baseSR?.SetPropertyBlock(_flashMPB);
         wheelSR?.SetPropertyBlock(_flashMPB);
+    }
+
+    public void IncreaseRepairBoxCount(float _amount)
+    {
+        repairBoxCount = _amount;
+    }
+
+    public void IncreaseRepairAmount(float _amount)
+    {
+        repairAmount += (_amount / 100f);
     }
 }

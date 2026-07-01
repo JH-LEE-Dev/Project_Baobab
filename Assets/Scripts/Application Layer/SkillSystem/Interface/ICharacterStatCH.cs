@@ -38,4 +38,7 @@ public interface ICharacterStatCH
     public void ActivateShockWaveCritical(bool _boolean);
     public void ActivateShockWaveEnforcement(bool _boolean);
     public void ShockWaveMastery(bool _boolean);
+    public void IncreaseSourceOfStaminaRecoverAmount(float _amount);
+    public void IncreaseSourceOfSpeedAmount(float _amount);
+    public void IncreaseStaminaRecoverAmount(float _amount);
 }

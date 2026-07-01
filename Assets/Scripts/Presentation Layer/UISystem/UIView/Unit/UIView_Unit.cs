@@ -274,6 +274,11 @@ public class UIView_Unit : UIView
         InteractionStateChange(_state);
     }
 
+    public void RepairBoxInteractStateChanged(bool _state)
+    {
+        InteractionStateChange(_state);
+    }
+
     public void ShopInteractStateChanged(bool _state)
     {
         InteractionStateChange(_state);

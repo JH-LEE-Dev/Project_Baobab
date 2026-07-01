@@ -95,26 +95,20 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
         inDungeonObjectManager.TreeGetHitEvent += TreeGetHit;
 
-        //inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
-        //inDungeonUnitSpawner.AnimalIsDeadEvent += inDungeonObjectManager.SpawnCarrots;
-
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
         inDungeonObjectManager.CarrotItemAcquiredEvent += CarrotItemAcquired;
 
-        //inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
-        //nDungeonUnitSpawner.AnimalHitEvent += AnimalHit;
-
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
         inDungeonObjectManager.TreeDeadEvent += TreeIsDead;
-
-        //inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
-        //inDungeonUnitSpawner.AnimalIsDeadEvent += AnimalIsDead;
 
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadSpawnedEvent += OffroadSpawned;
 
         inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         inDungeonObjectManager.OffroadInteractStateChangedEvent += OffroadInteractStateChanged;
+
+        inDungeonObjectManager.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
+        inDungeonObjectManager.RepairBoxInteractStateChangedEvent += RepairBoxInteractStateChanged;
 
         inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
         inDungeonObjectManager.RideOffroadEvent += RideOffroad;
@@ -143,13 +137,11 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.PortalActivatedEvent -= PortalActivated;
         inDungeonObjectManager.ItemAcquiredEvent -= ItemAcquired;
         inDungeonObjectManager.TreeGetHitEvent -= TreeGetHit;
-        //inDungeonUnitSpawner.AnimalIsDeadEvent -= inDungeonObjectManager.SpawnCarrots;
         inDungeonObjectManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
-        //inDungeonUnitSpawner.AnimalHitEvent -= AnimalHit;
         inDungeonObjectManager.TreeDeadEvent -= TreeIsDead;
-        //inDungeonUnitSpawner.AnimalIsDeadEvent -= AnimalIsDead;
         inDungeonObjectManager.OffroadSpawnedEvent -= OffroadSpawned;
         inDungeonObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
+        inDungeonObjectManager.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
         inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
@@ -302,6 +294,11 @@ public class InDungeonSystem : MonoBehaviour
     private void OffroadInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new OffroadInteractStateChangedSignal(_boolean));
+    }
+
+    private void RepairBoxInteractStateChanged(bool _boolean)
+    {
+        signalHub.Publish(new RepairBoxInteractStateChangedSignal(_boolean));
     }
 
     private void RideOffroad()

@@ -134,4 +134,9 @@ public class PHealthComponent : PComponent, IPHealthComponent
     {
         bStaminaDecrease = _boolean;
     }
+
+    public void StaminaRecover(float _amount)
+    {
+        currentStamina = Mathf.Min(maxStamina, currentStamina + _amount);
+    }
 }

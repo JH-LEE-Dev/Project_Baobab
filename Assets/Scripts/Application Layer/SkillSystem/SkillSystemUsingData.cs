@@ -234,6 +234,11 @@ public enum SkillCommandType
     OffroadContainerRangeIncrease,
     LogProcessorSpeedUp,
     TopgradeAssessment,
+    SourceOfStamina,
+    SourceOfSpeed,
+    StaminaRecover,
+    Repair,
+    IncreaseRepairEfficiency,
 }
 
 public enum AbilityLevelUpRejectReason
