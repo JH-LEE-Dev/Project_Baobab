@@ -704,6 +704,7 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private ParticleSystem particleSys;
     private bool isReturning;
     private Coroutine stopCoroutine;
+    private DG.Tweening.TweenCallback cachedDeferredSetParent;
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -714,6 +715,9 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         targetTransform = (null != _target) ? _target : transform;
         particleSys = GetComponent<ParticleSystem>();
         isReturning = false;
+
+        if (null == cachedDeferredSetParent)
+            cachedDeferredSetParent = ExecuteDeferredSetParent;
     }
 
     public void Stop(bool _immediate)
@@ -792,7 +796,17 @@ public class VFXPoolInstanceHelper : MonoBehaviour
             {
                 try
                 {
-                    targetTransform.SetParent(originalParent);
+                    // 부모 객체가 비활성화(OnDisable)되는 도중에 SetParent가 호출되면 에러가 발생함.
+                    // 따라서 활성화 상태일 때만 즉시 부모를 바꾸고, 비활성화 중일 때는 한 프레임 지연시킵니다.
+                    // (GC 최적화를 위해 람다식 대신 캐싱된 델리게이트 사용)
+                    if (targetTransform.gameObject.activeInHierarchy)
+                    {
+                        targetTransform.SetParent(originalParent);
+                    }
+                    else
+                    {
+                        DG.Tweening.DOVirtual.DelayedCall(0.01f, cachedDeferredSetParent, true);
+                    }
                 }
                 catch (System.Exception ex)
                 {
@@ -813,6 +827,13 @@ public class VFXPoolInstanceHelper : MonoBehaviour
 
     public Transform TargetTransform => targetTransform;
 
+    private void ExecuteDeferredSetParent()
+    {
+        if (null != targetTransform && null != originalParent)
+        {
+            try { targetTransform.SetParent(originalParent); } catch {}
+        }
+    }
 
     // 유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 
