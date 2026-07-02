@@ -30,10 +30,17 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
     public ShopNPC shopNPC { get; private set; }
 
+    private Collider2D logContainerCol;
+    private Collider2D shopNPCCol;
+
     private Character character;
 
     private int preCutItemCnt = 0;
     private bool bLogProcessorActive = false;
+    private float logProcessorSpeedMul = 1f;
+    private int logProcessingStack = 0;
+    private float amountMultiplier = 0f;
+
 
     public void Initialize(InputManager _inputManager)
     {
@@ -47,12 +54,14 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
         logContainer = shopObj.GetComponentInChildren<LogContainer>();
         logContainer.Initialize(inputManager, logItemPoolingManager);
+        logContainerCol = logContainer.GetComponent<Collider2D>();
 
         logEvaluator = shopObj.GetComponentInChildren<LogEvaluator>();
         logEvaluator.Initialize();
 
         shopNPC = shopObj.GetComponentInChildren<ShopNPC>();
         shopNPC.Initialize(inputManager);
+        shopNPCCol = shopNPC.GetComponent<Collider2D>();
 
         LogInBelt[] belts = shopObj.GetComponentsInChildren<LogInBelt>();
         for (int i = 0; i < belts.Length; i++)
@@ -134,6 +143,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
         logContainer.ItemAddedEvent -= ItemAddedInContainer;
         logContainer.ItemAddedEvent += ItemAddedInContainer;
+
+        logContainer.LogContainerIsEmptyEvent -= LogContainerIsEmpty;
+        logContainer.LogContainerIsEmptyEvent += LogContainerIsEmpty;
     }
 
     private void ReleaseEvents()
@@ -150,6 +162,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logInBelt.BeltStopEvent -= InBeltStop;
         shopNPC.InteractStateEvent -= ShopInteractStateChanged;
         logContainer.ItemAddedEvent -= ItemAddedInContainer;
+        logContainer.LogContainerIsEmptyEvent -= LogContainerIsEmpty;
     }
 
     public void PopulateSaveData(ref LogProcessingSaveData _saveData)
@@ -178,6 +191,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         if (logInBelt != null) logInBelt.PopulateSaveData(ref _saveData.logInBeltData);
         if (logOutBelt != null) logOutBelt.PopulateSaveData(ref _saveData.logOutBeltData);
         if (logCutter != null) _saveData.cutterData = logCutter.GetSaveData();
+
+        _saveData.logProcessingStack = logProcessingStack;
     }
 
     public void LoadSaveData(LogProcessingSaveData _data)
@@ -195,6 +210,22 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         if (logInBelt != null) logInBelt.LoadSaveData(_data.logInBeltData, logItemPoolingManager);
         if (logOutBelt != null) logOutBelt.LoadSaveData(_data.logOutBeltData, logItemPoolingManager);
         if (logCutter != null) logCutter.LoadSaveData(_data.cutterData, logItemPoolingManager);
+
+        logProcessingStack = _data.logProcessingStack;
+
+        // 로드 후 현재 가공 전(컨테이너 + 첫 번째 벨트 + 커터)인 아이템 총 개수로 preCutItemCnt 동기화
+        if (logContainer != null)
+        {
+            preCutItemCnt = ((IInventory)logContainer).currentItemCount;
+            if (_data.logInBeltData.activeItems != null)
+                preCutItemCnt += _data.logInBeltData.activeItems.Count;
+            if (_data.cutterData.bIsCutting)
+                preCutItemCnt += 1;
+
+            UpdateProcessorActiveState();
+        }
+
+        UpdateProcessorSpeed();
 
         Debug.Log("[LogProcessingManager] Log Processing System Save Data Loaded.");
     }
@@ -231,6 +262,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
     private void LogToEvaluator(LogItem _item, ILogItemData _itemData)
     {
+        ++logProcessingStack;
+        if (logProcessingStack >= 10)
+            logProcessingStack = 10;
+
+        UpdateProcessorSpeed();
+
         logItemPoolingManager.ReturnLogItem(_item);
         logEvaluator.EvaluateLog(_itemData);
     }
@@ -343,8 +380,16 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
         if (logContainer.isPhysicalOverlapped && shopNPC.isPhysicalOverlapped)
         {
-            float distToContainerSq = (logContainer.transform.position - character.centerTransform.position).sqrMagnitude;
-            float distToShopNPCSq = (shopNPC.transform.position - character.centerTransform.position).sqrMagnitude;
+            Vector3 playerPos = character.centerTransform.position;
+            float distToContainerSq = (logContainerCol != null) ? (logContainerCol.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude : (logContainer.transform.position - playerPos).sqrMagnitude;
+            float distToShopNPCSq = (shopNPCCol != null) ? (shopNPCCol.ClosestPoint(playerPos) - (Vector2)playerPos).sqrMagnitude : (shopNPC.transform.position - playerPos).sqrMagnitude;
+
+            // 두 콜라이더의 교집합 영역에 있을 경우 (둘 다 거리 0) 중심점 기준으로 다시 판별
+            if (distToContainerSq == 0f && distToShopNPCSq == 0f)
+            {
+                distToContainerSq = (logContainer.transform.position - playerPos).sqrMagnitude;
+                distToShopNPCSq = (shopNPC.transform.position - playerPos).sqrMagnitude;
+            }
 
             if (distToContainerSq <= distToShopNPCSq)
             {
@@ -362,5 +407,35 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
             logContainer.SetCanReach(true);
             shopNPC.SetCanReach(true);
         }
+    }
+
+    public void LogProcessorSpeedUp(float _amount)
+    {
+        amountMultiplier = _amount;
+        UpdateProcessorSpeed();
+    }
+
+    private void UpdateProcessorSpeed()
+    {
+        if (logProcessingStack == 0 || amountMultiplier <= 0f)
+        {
+            logProcessorSpeedMul = 1f; // 스택이 0이거나 배수가 안 들어왔을 때는 기본 속도(1배)
+        }
+        else
+        {
+            // 받아온 amount 배수 * stack 적용 (최소 1배 보장)
+            logProcessorSpeedMul = Mathf.Max(1f, amountMultiplier * logProcessingStack);
+        }
+
+        if (logInBelt != null) logInBelt.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
+        if (logOutBelt != null) logOutBelt.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
+        if (logCutter != null) logCutter.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
+        if (logContainer != null) logContainer.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
+    }
+
+    private void LogContainerIsEmpty()
+    {
+        logProcessingStack = 0;
+        UpdateProcessorSpeed();
     }
 }

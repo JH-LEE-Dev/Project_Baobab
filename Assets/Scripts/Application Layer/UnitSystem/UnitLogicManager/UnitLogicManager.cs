@@ -126,4 +126,9 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     {
         character.ResetStatus();
     }
+
+    public void SourceOfStaminaRecover()
+    {
+        character.StaminaRecover();
+    }
 }

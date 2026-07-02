@@ -29,6 +29,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     }
     public float baseSpeed { get; private set; }
     public float speedMultiplier { get; private set; } = 1.0f;
+    public float sourceOfSpeedAmount = 0f;
 
     [Header("Stamina")]
     public float maxStamina = 100f;
@@ -36,6 +37,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public float staminaDecreaseAlpha = 0f;
     public float baseMaxStamina { get; private set; }
     public float maxStaminaBonus { get; private set; } = 0f;
+    public float sourceOfStaminaRecoverAmount = 0f;
+    private float currentSourceOfSpeedBonus = 0f;
+    private Coroutine sourceOfSpeedCoroutine;
+    public float staminaRecoverAmount = 0f;
 
     [Header("General Weapon Settings")]
     public float weaponChangeCoolTime = 0.5f;
@@ -203,7 +208,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
 
     public void IncreaseSpeedWhileAction(float _amount)
     {
-        speedDecreaseWhileAction -= (_amount / 100.0f);
+        speedDecreaseWhileAction += (_amount / 100.0f);
     }
 
     public void IncreaseShockWaveChance(float _amount)
@@ -331,5 +336,61 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     public void ShockWaveMastery(bool _boolean)
     {
         bShockWaveMastery = _boolean;
+    }
+
+    public void IncreaseSourceOfStaminaRecoverAmount(float _amount)
+    {
+        sourceOfStaminaRecoverAmount += _amount;
+    }
+
+    public void IncreaseSourceOfSpeedAmount(float _amount)
+    {
+        sourceOfSpeedAmount += (_amount / 100.0f);
+    }
+
+    private float sourceOfSpeedTimer = 0f;
+
+    public void ActivateSourceOfSpeed()
+    {
+        if (sourceOfSpeedAmount <= 0) return;
+
+        sourceOfSpeedTimer = 3f;
+
+        if (sourceOfSpeedCoroutine == null)
+        {
+            sourceOfSpeedCoroutine = StartCoroutine(SourceOfSpeedRoutine());
+        }
+    }
+
+    private System.Collections.IEnumerator SourceOfSpeedRoutine()
+    {
+        currentSourceOfSpeedBonus = sourceOfSpeedAmount;
+        IncreaseMovementSpeed(currentSourceOfSpeedBonus * 100.0f);
+
+        while (sourceOfSpeedTimer > 0f)
+        {
+            sourceOfSpeedTimer -= Time.deltaTime;
+            yield return null;
+        }
+
+        IncreaseMovementSpeed(-currentSourceOfSpeedBonus * 100.0f);
+        currentSourceOfSpeedBonus = 0f;
+        sourceOfSpeedCoroutine = null;
+    }
+
+    public void Reset()
+    {
+        if (sourceOfSpeedCoroutine != null)
+        {
+            StopCoroutine(sourceOfSpeedCoroutine);
+            IncreaseMovementSpeed(-currentSourceOfSpeedBonus * 100.0f);
+            currentSourceOfSpeedBonus = 0f;
+            sourceOfSpeedCoroutine = null;
+        }
+    }
+
+    public void IncreaseStaminaRecoverAmount(float _amount)
+    {
+        staminaRecoverAmount = _amount;
     }
 }

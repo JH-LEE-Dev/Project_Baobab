@@ -20,6 +20,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
     private List<LogItem> activeItemsForUpdate = new List<LogItem>(256); // 업데이트 리스트 (가시성 기준)
 
     [Header("Optimization")]
+    [SerializeField] private bool enableCulling = true;
     [SerializeField] private float cullingUpdateInterval = 0.05f;
     private float cullingUpdateTimer = 0f;
     private CullingGroup cullingGroup;
@@ -56,6 +57,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     public void SetupCullingGroup()
     {
+        if (!enableCulling) return;
+
         if (cullingGroup == null)
         {
             cullingGroup = new CullingGroup();
@@ -69,6 +72,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     private void OnCullingStateChanged(CullingGroupEvent _ev)
     {
+        if (!enableCulling) return;
         if (_ev.index >= activeItemsList.Count) return;
 
         bool isVisible = _ev.isVisible;
@@ -125,7 +129,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         }
 
         // 컬링 구체 위치 업데이트 (스로틀링) - 마스터 리스트 기반
-        if (cullingGroup != null && activeItemsList.Count > 0)
+        if (enableCulling && cullingGroup != null && activeItemsList.Count > 0)
         {
             cullingUpdateTimer += deltaTime;
             if (cullingUpdateTimer >= cullingUpdateInterval)
@@ -151,6 +155,8 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     private void RefreshCullingGroup()
     {
+        if (!enableCulling || cullingGroup == null) return;
+
         int count = activeItemsList.Count;
         cullingGroup.SetBoundingSpheres(spheres);
         cullingGroup.SetBoundingSphereCount(count);
@@ -191,20 +197,23 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         activeItemsList.Add(_item);
 
         // BoundingSphere 즉시 동기화
-        if (spheres == null)
+        if (enableCulling)
         {
-            spheres = new BoundingSphere[1000];
-            if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
+            if (spheres == null)
+            {
+                spheres = new BoundingSphere[1000];
+                if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
+            }
+
+            if (spheres.Length <= _item.PoolIndex)
+            {
+                Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, _item.PoolIndex + 1));
+                if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
+            }
+            spheres[_item.PoolIndex] = new BoundingSphere(_item.transform.position, 1f);
         }
 
-        if (spheres.Length <= _item.PoolIndex)
-        {
-            Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, _item.PoolIndex + 1));
-            if (cullingGroup != null) cullingGroup.SetBoundingSpheres(spheres);
-        }
-        spheres[_item.PoolIndex] = new BoundingSphere(_item.transform.position, 1f);
-
-        if (cullingGroup != null)
+        if (enableCulling && cullingGroup != null)
         {
             cullingGroup.SetBoundingSphereCount(activeItemsList.Count);
             // 즉시 가시성 체크하여 활성화 및 업데이트 등록 여부 결정
@@ -213,7 +222,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         else
         {
             _item.gameObject.SetActive(true);
-            // 컬링 그룹이 없으면 무조건 업데이트 리스트에 추가
+            // 컬링이 꺼져 있거나 컬링 그룹이 없으면 무조건 업데이트 리스트에 추가
             _item.UpdateIndex = activeItemsForUpdate.Count;
             activeItemsForUpdate.Add(_item);
             _item.bCanGetSortingOrder = true;
@@ -237,12 +246,12 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
                 LogItem lastItem = activeItemsList[lastIdx];
                 activeItemsList[idx] = lastItem;
                 lastItem.PoolIndex = idx;
-                spheres[idx] = spheres[lastIdx];
+                if (spheres != null) spheres[idx] = spheres[lastIdx];
             }
             activeItemsList.RemoveAt(lastIdx);
             _item.PoolIndex = -1;
 
-            if (cullingGroup != null)
+            if (enableCulling && cullingGroup != null)
             {
                 cullingGroup.SetBoundingSphereCount(activeItemsList.Count);
             }
@@ -274,7 +283,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         activeItemsList.Clear();
         activeItemsForUpdate.Clear();
 
-        if (cullingGroup != null)
+        if (enableCulling && cullingGroup != null)
         {
             cullingGroup.SetBoundingSphereCount(0);
         }

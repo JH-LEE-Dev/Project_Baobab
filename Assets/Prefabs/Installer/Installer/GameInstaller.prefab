@@ -53,6 +53,8 @@ MonoBehaviour:
   transferInterval: 1
   bCanInteract: 0
   col: {fileID: 0}
+  itemTransferSpeedMul: 1
+  colliderRangeMul: 1
 --- !u!114 &8344768423549439187
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -440,6 +442,7 @@ MonoBehaviour:
   - treeType: 12
     minCnt: 4
     maxCnt: 5
+  enableCulling: 0
   cullingUpdateInterval: 0.05
 --- !u!114 &597610330652353424
 MonoBehaviour:
@@ -1822,7 +1825,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a9197973ec34524790dfeeb099ae2ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownObjectManager
-  portalPrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
+  offroadVehiclePrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   portalSpawnPoint: {fileID: 4103959821245234347, guid: 4b288be7fa674804ab828020e0b795ce, type: 3}
   cullingDistance: 25
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
@@ -2440,6 +2443,15 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 371fac1b496b42a4e8138baa0e964ce6, type: 2}
   - {fileID: 11400000, guid: 25243afd7d98ecd4d8d2ec9b3f401cab, type: 2}
   - {fileID: 11400000, guid: 9b272aabf5049b64f8f6d7ca5316a517, type: 2}
+  - {fileID: 11400000, guid: fa66103c748345e4d9442af85a500e3d, type: 2}
+  - {fileID: 11400000, guid: 1785067aa66bb2b4f8f53c6ba2fa04f6, type: 2}
+  - {fileID: 11400000, guid: 5f2d6fd8dbf267149b8b155dd19a1ba1, type: 2}
+  - {fileID: 11400000, guid: b383428d097a942478d3e858b4070bba, type: 2}
+  - {fileID: 11400000, guid: 184038f077518544398678f02a964c4b, type: 2}
+  - {fileID: 11400000, guid: 37a0bf8eefc6c074b8a40d50269ec9d9, type: 2}
+  - {fileID: 11400000, guid: 2f0709cd39a291844bec9439e384b0a1, type: 2}
+  - {fileID: 11400000, guid: 2b464164859c48f458caaa309cb5079c, type: 2}
+  - {fileID: 11400000, guid: ebe6cfcf401dbc041b50af22188c7cd0, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0
@@ -2535,6 +2547,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonObjectManager
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
+  enableCulling: 0
   cullingDistance: 25
   offroadVehiclePrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   offroadVehicle: {fileID: 0}

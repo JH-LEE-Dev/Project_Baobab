@@ -48,6 +48,12 @@ public class LogInBelt : MonoBehaviour
     private bool isMoving = false;
     private float currentSpeed = 0f;
     private float slideSpeed = 1f;
+    private float globalSpeedMultiplier = 1f;
+
+    public void SetGlobalSpeedMultiplier(float _mul)
+    {
+        globalSpeedMultiplier = _mul;
+    }
 
     public void Initialize()
     {
@@ -69,7 +75,7 @@ public class LogInBelt : MonoBehaviour
         {
             if (belts[i].animator != null)
             {
-                belts[i].animator.speed = _speed * beltAnimationSpeedMultiplier;
+                belts[i].animator.speed = _speed * beltAnimationSpeedMultiplier * globalSpeedMultiplier;
             }
         }
     }
@@ -126,7 +132,7 @@ public class LogInBelt : MonoBehaviour
         // 4. 아이템 이동 처리
         if (activeItems.Count == 0) return;
 
-        float step = currentSpeed * deltaTime;
+        float step = currentSpeed * globalSpeedMultiplier * deltaTime;
         for (int i = activeItems.Count - 1; i >= 0; i--)
         {
             BeltItem beltItem = activeItems[i];
