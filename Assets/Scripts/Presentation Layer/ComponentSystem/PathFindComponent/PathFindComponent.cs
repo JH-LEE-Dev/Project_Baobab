@@ -95,7 +95,6 @@ public class PathFindComponent : MonoBehaviour
 
     // // 외부 의존성
     private ITilemapDataProvider tilemapDataProvider;
-    private IPathfindGridProvider pathfindGridProvider;
     private IPathfindTreeProvider pathfindTreeProvider;
 
     // // 내부 데이터 (경로 공유 및 GC 최소화)
@@ -104,7 +103,7 @@ public class PathFindComponent : MonoBehaviour
 
     // // 내부 의존성 (재사용을 위한 컬렉션, GC 최소화)
     private readonly FastPriorityQueue openList = new FastPriorityQueue(1024);
-    
+
     // Dictionary 대체: 1차원 배열 최적화
     private int[] parentIndices;
     private int[] gCosts;
@@ -126,34 +125,34 @@ public class PathFindComponent : MonoBehaviour
 
     private static readonly int[] neighborCosts = new int[] { 10, 10, 10, 10, 14, 14, 14, 14 };
 
-    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindGridProvider _pathfindGridProvider, IPathfindTreeProvider _pathfindTreeProvider)
+    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindTreeProvider _pathfindTreeProvider)
     {
         tilemapDataProvider = _tilemapDataProvider;
-        pathfindGridProvider = _pathfindGridProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
 
         gridWidth = tilemapDataProvider.GridWidth;
         gridHeight = tilemapDataProvider.GridHeight;
 
         int size = gridWidth * gridHeight;
-        parentIndices = new int[size];
-        gCosts = new int[size];
         
-        bfsQueue = new int[size];
-        bfsVisited = new int[size];
+        if (parentIndices == null || parentIndices.Length != size)
+        {
+            parentIndices = new int[size];
+            gCosts = new int[size];
+            bfsQueue = new int[size];
+            bfsVisited = new int[size];
+        }
+        else
+        {
+            System.Array.Clear(bfsQueue, 0, size);
+            System.Array.Clear(bfsVisited, 0, size);
+        }
+
         bfsVisitedCounter = 0;
-        
+
         System.Array.Fill(parentIndices, -1);
         System.Array.Fill(gCosts, int.MaxValue);
     }
-
-    // // 점유 관리 API
-    public bool IsOccupied(Vector3Int _cellPos) => pathfindGridProvider.IsOccupied(_cellPos);
-    public bool Occupy(Vector3Int _cellPos) => pathfindGridProvider.Occupy(_cellPos);
-    public void Release(Vector3Int _cellPos) => pathfindGridProvider.Release(_cellPos);
-    public Vector3Int WorldToCell(Vector3 _worldPos) => tilemapDataProvider.WorldToCell(_worldPos);
-    public Vector3 CellToWorld(Vector3Int _cellPos) => tilemapDataProvider.CellToWorld(_cellPos);
-    public bool IsWalkable(Vector3Int _cellPos) => tilemapDataProvider.IsWalkable(_cellPos);
 
     /// <summary>
     /// 내부 리스트(currentPath)를 사용하여 길을 찾습니다.
@@ -164,7 +163,7 @@ public class PathFindComponent : MonoBehaviour
     }
 
     /// <summary>
-    /// A* 알고리즘을 사용하여 두 지점 사이의 길을 찾습니다.
+    /// A* 알고리즘을 사용하여 두 지점 사이의 길을 찾습니다. (나무가 아닌 임의의 지점까지 이동할 때 사용)
     /// </summary>
     public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos, List<Vector3> _pathResult, int _maxIterations = 500)
     {
@@ -184,17 +183,13 @@ public class PathFindComponent : MonoBehaviour
             return false;
         }
 
-        // 초기화 최적화: Dictionary.Clear() 대신 사용했던 인덱스들만 추적해서 초기화하는 방식도 있으나, 
-        // 여기서는 매번 전체 초기화 대신 int.MaxValue를 활용하여 방문 여부 체크
-        // 단, 이전 경로 데이터가 남아있으면 안 되므로 최소한의 초기화는 필요
-        // 실무에서는 '방문 번호(Visited Counter)' 방식을 써서 배열 초기화 자체를 없애기도 함.
         ResetArrays();
 
         int startIndex = PosToIndex(startPos);
         int targetIndex = PosToIndex(targetPos);
 
         openList.Clear();
-        
+
         gCosts[startIndex] = 0;
         openList.Push(new Node(startIndex, 0, GetDistance(startPos, targetPos)));
 
@@ -255,6 +250,72 @@ public class PathFindComponent : MonoBehaviour
             if (++iterations > _maxIterations) break;
         }
 
+        return false;
+    }
+
+    /// <summary>
+    /// _nearWorldPos 자체가 이동 불가 타일이어도(오브젝트가 자기 발밑을 길찾기 이동 불가 타일로
+    /// 막아둔 경우 등) 그 주변에서 BFS로 가장 가까운 이동 가능한 타일을 찾아 그 타일까지의
+    /// 경로를 채웁니다. _nearWorldPos가 이미 이동 가능한 타일이면 그냥 FindPath와 동일하게 동작합니다.
+    /// </summary>
+    public bool FindPathNear(Vector3 _startWorldPos, Vector3 _nearWorldPos, List<Vector3> _pathResult)
+    {
+        Vector3Int nearCell = tilemapDataProvider.WorldToCell(_nearWorldPos);
+
+        if (nearCell.x < 0 || nearCell.x >= gridWidth || nearCell.y < 0 || nearCell.y >= gridHeight)
+        {
+            _pathResult.Clear();
+            return false;
+        }
+
+        if (tilemapDataProvider.IsWalkable(nearCell) && !tilemapDataProvider.HasRockDeco(nearCell))
+        {
+            return FindPath(_startWorldPos, _nearWorldPos, _pathResult);
+        }
+
+        // GC-Free BFS 상태 초기화 (막힌 타일 주변을 걸을 수 있는 타일이 나올 때까지 바깥으로 훑는다)
+        bfsVisitedCounter++;
+        if (bfsVisitedCounter == int.MaxValue)
+        {
+            System.Array.Fill(bfsVisited, 0);
+            bfsVisitedCounter = 1;
+        }
+
+        int head = 0;
+        int tail = 0;
+        int nearIndex = PosToIndex(nearCell);
+        bfsQueue[tail++] = nearIndex;
+        bfsVisited[nearIndex] = bfsVisitedCounter;
+
+        while (head < tail)
+        {
+            int currentIndex = bfsQueue[head++];
+            Vector3Int currentPos = IndexToPos(currentIndex);
+
+            for (int i = 0; i < neighborOffsets.Length; i++)
+            {
+                Vector3Int neighborPos = currentPos + neighborOffsets[i];
+                if (neighborPos.x < 0 || neighborPos.x >= gridWidth || neighborPos.y < 0 || neighborPos.y >= gridHeight)
+                    continue;
+
+                int neighborIndex = PosToIndex(neighborPos);
+                if (bfsVisited[neighborIndex] == bfsVisitedCounter)
+                    continue;
+                bfsVisited[neighborIndex] = bfsVisitedCounter;
+
+                if (tilemapDataProvider.IsWalkable(neighborPos) && !tilemapDataProvider.HasRockDeco(neighborPos))
+                {
+                    // 걸을 수 있는 타일을 찾음 - 그 지점까지 실제 A* 경로를 계산해서 반환
+                    Vector3 walkableWorldPos = tilemapDataProvider.CellToWorld(neighborPos);
+                    return FindPath(_startWorldPos, walkableWorldPos, _pathResult);
+                }
+
+                // 막힌 타일이라도 그 너머를 확인하기 위해 계속 확장한다
+                bfsQueue[tail++] = neighborIndex;
+            }
+        }
+
+        _pathResult.Clear();
         return false;
     }
 
@@ -331,6 +392,10 @@ public class PathFindComponent : MonoBehaviour
                 ITreeObj tree = pathfindTreeProvider.GetTreeAt(neighborIndex);
                 if (tree != null)
                 {
+                    // 다른 NPC가 이미 타겟팅 중인 나무는 건너뛰고 계속 탐색 (같은 나무 동시 타겟팅 방지)
+                    if (tree.bReserved)
+                        continue;
+
                     _targetTree = tree;
                     // 나무가 있는 타일로는 이동할 수 없으므로, 현재 타일(currentIndex)까지의 경로를 반환
                     RetracePath(startIndex, currentIndex, _pathResult);

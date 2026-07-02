@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Pool;
 
 public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, IInventoryChecker, IInventoryCH, IMoneyData
 {
@@ -25,7 +24,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     [SerializeField] private long lightningEssence;
 
     // 타입별 아이템 데이터 풀링 (GC 최적화)
-    private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
+    private ItemDataPool itemDataPool;
 
     public bool bInventoryIsEmpty { get; private set; }
 
@@ -77,6 +76,8 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     public void Initialize()
     {
+        if (itemDataPool == null) itemDataPool = new ItemDataPool(CreateItemData);
+
         vfxComponent = GetComponent<VFXComponent>();
         vfxComponent.Initialize();
 
@@ -100,20 +101,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         {
             if (inventorySlots[i].itemData is ItemData data)
             {
-                ReleaseToPool(data);
+                itemDataPool.Release(data);
             }
             inventorySlots[i].Setup(null, 0);
         }
 
-        // 3. 모든 아이템 타입에 대해 풀 미리 생성 (None, Max 제외)
-        for (int i = (int)ItemType.None + 1; i < (int)ItemType.Max; i++)
-        {
-            ItemType type = (ItemType)i;
-            if (!itemDataPools.ContainsKey(type))
-            {
-                itemDataPools[type] = CreatePoolForType(type);
-            }
-        }
+        // 3. 모든 아이템 타입에 대해 풀 미리 생성
+        itemDataPool.WarmAll();
 
         UpdateInventoryEmptyState();
     }
@@ -165,7 +159,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             {
                 if (inventorySlots[i].itemData == null)
                 {
-                    ItemData newData = GetFromPool(_item.itemType);
+                    ItemData newData = itemDataPool.Get(_item.itemType);
                     if (newData != null)
                     {
                         newData.CopyFrom(_item);
@@ -260,38 +254,6 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return true;
     }
 
-    private ItemData GetFromPool(ItemType _type)
-    {
-        if (!itemDataPools.ContainsKey(_type))
-        {
-            itemDataPools[_type] = CreatePoolForType(_type);
-        }
-
-        return itemDataPools[_type].Get();
-    }
-
-    private void ReleaseToPool(ItemData _data)
-    {
-        if (_data == null) return;
-        if (itemDataPools.TryGetValue(_data.itemType, out var pool))
-        {
-            pool.Release(_data);
-        }
-    }
-
-    private IObjectPool<ItemData> CreatePoolForType(ItemType _type)
-    {
-        return new ObjectPool<ItemData>(
-            createFunc: () => CreateItemData(_type),
-            actionOnGet: (data) => { },
-            actionOnRelease: (data) => data.Reset(),
-            actionOnDestroy: (data) => { },
-            collectionCheck: true,
-            defaultCapacity: 5,
-            maxSize: 50
-        );
-    }
-
     private ItemData CreateItemData(ItemType _type)
     {
         switch (_type)
@@ -319,7 +281,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         {
             if (slot.itemData != null)
             {
-                ReleaseToPool(slot.itemData);
+                itemDataPool.Release(slot.itemData);
             }
             slot.Setup(null, 0);
             UpdateInventoryEmptyState();
@@ -497,7 +459,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         {
             if (inventorySlots[i].itemData is ItemData itemData)
             {
-                ReleaseToPool(itemData);
+                itemDataPool.Release(itemData);
             }
             inventorySlots[i].Setup(null, 0);
         }
@@ -512,7 +474,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 var slotData = _data.slots[i];
                 if (slotData.itemSaveData.itemType != ItemType.None)
                 {
-                    ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
+                    ItemData newData = itemDataPool.Get(slotData.itemSaveData.itemType);
                     if (newData != null)
                     {
                         newData.color = slotData.itemSaveData.color; // 컬러 복구
@@ -608,7 +570,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             }
 
             // 슬롯 비우기 및 데이터 반환
-            ReleaseToPool((ItemData)slot.itemData);
+            itemDataPool.Release((ItemData)slot.itemData);
             slot.Setup(null, 0);
         }
 

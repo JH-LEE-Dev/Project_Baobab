@@ -13,7 +13,6 @@ public class InDungeonUnitSpawner : MonoBehaviour
     [Header("Spawn Settings")]
     [SerializeField] private LumberjackNPC npcPrefab;
     [SerializeField] private int maxNPCs = 3;
-    [SerializeField] private float spawnRadius = 10f; // 캐릭터 스폰 위치 기준 반경
 
     private IObjectPool<LumberjackNPC> npcPool;
 
@@ -39,13 +38,15 @@ public class InDungeonUnitSpawner : MonoBehaviour
     [SerializeField] private int maxSize = 50;
 
     private IPathfindTreeProvider pathfindTreeProvider;
+    private OffroadContainer offroadContainer;
 
     // 퍼블릭 메서드
-    public void Initialize(IEnvironmentProvider _environmentProvider, IPathfindTreeProvider _pathfindTreeProvider)
+    public void Initialize(IEnvironmentProvider _environmentProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null)
     {
         environmentProvider = _environmentProvider;
         tilemapDataProvider = environmentProvider.tilemapDataProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
+        offroadContainer = _offroadContainer;
 
         cullingDistances = new float[] { cullingDistance };
         spheres = new BoundingSphere[maxSize];
@@ -83,34 +84,22 @@ public class InDungeonUnitSpawner : MonoBehaviour
         }
 
         Vector3 playerPos = tilemapDataProvider.GetPlayerSpawnPosition();
-        List<Vector3> walkablePositions = tilemapDataProvider.GetWalkableTileWorldPositions();
-        
-        if (walkablePositions == null || walkablePositions.Count == 0) return;
+        Vector3Int playerCellPos = tilemapDataProvider.WorldToCell(playerPos);
 
-        // 반경 내의 후보지 찾기
-        List<Vector3> safeWalkablePositions = new List<Vector3>();
-        float radiusSq = spawnRadius * spawnRadius;
+        // 캐릭터 두 칸 아래 셀의 월드 좌표를 기준점으로 사용
+        Vector3Int centerCell = new Vector3Int(playerCellPos.x, playerCellPos.y - 2, 0);
+        Vector3 centerWorldPos = tilemapDataProvider.CellToWorld(centerCell);
 
-        for (int i = 0; i < walkablePositions.Count; i++)
+        // 타일맵이 아이소메트릭 등으로 기울어져 있어도 화면상 완전한 수평 배치가 되도록,
+        // 인접 셀 간 월드 X 간격만 구해서 순수 X축으로만 좌우 대칭 배치한다.
+        float spacingX = tilemapDataProvider.CellToWorld(centerCell + new Vector3Int(1, 0, 0)).x - centerWorldPos.x;
+        float startOffsetX = -(maxNPCs - 1) * 0.5f * spacingX;
+
+        for (int i = 0; i < maxNPCs; i++)
         {
-            Vector3 pos = walkablePositions[i];
-            if ((pos - playerPos).sqrMagnitude <= radiusSq)
-            {
-                safeWalkablePositions.Add(pos);
-            }
-        }
+            Vector3 spawnWorldPos = centerWorldPos + new Vector3(startOffsetX + i * spacingX, 0f, 0f);
 
-        int spawnLimit = Mathf.Min(maxNPCs, safeWalkablePositions.Count);
-
-        // 부분 셔플
-        for (int i = 0; i < spawnLimit; i++)
-        {
-            int rnd = UnityEngine.Random.Range(i, safeWalkablePositions.Count);
-            Vector3 temp = safeWalkablePositions[rnd];
-            safeWalkablePositions[rnd] = safeWalkablePositions[i];
-            safeWalkablePositions[i] = temp;
-
-            SpawnNPCAt(safeWalkablePositions[i]);
+            SpawnNPCAt(spawnWorldPos);
         }
 
         if (useCulling)
@@ -234,11 +223,11 @@ public class InDungeonUnitSpawner : MonoBehaviour
         npc.transform.position = _pos;
         npc.gameObject.SetActive(true);
         
-        // NPC 초기화 (환경 데이터 및 길찾기 그리드 제공)
+        // NPC 초기화 (환경 데이터, 길찾기 그리드, 로그 납품용 오프로드 컨테이너 제공)
         npc.Initialize(
-            environmentProvider.tilemapDataProvider, 
-            environmentProvider.pathfindGridProvider, 
-            pathfindTreeProvider
+            environmentProvider,
+            pathfindTreeProvider,
+            offroadContainer
         );
 
         allSpawnedNPCs.Add(npc);
@@ -320,13 +309,12 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     private void OnReleaseNPC(LumberjackNPC _npc)
     {
-        UpdateNPCVisibility(_npc, false);
+        // NPC는 던전에서만 유효하므로, 마을로 돌아가는 시점에 인벤토리/타겟나무/경로/방향을 즉시 전부 초기화한다.
+        // (다음 던전에서 Initialize() 시 다시 한 번 초기화되지만, 여기서도 즉시 정리해 풀에 머무는 동안
+        // 이전 생애의 상태가 하나도 남아있지 않도록 보장한다)
+        _npc.ResetToCleanState();
+        UpdateNPCVisibility(_npc, false); // 여기서 SetActive(false)까지 처리됨
         allSpawnedNPCs.Remove(_npc);
-        
-        if (_npc.gameObject.activeSelf)
-        {
-            _npc.gameObject.SetActive(false);
-        }
     }
 
     private void OnDestroyNPC(LumberjackNPC _npc)
@@ -334,6 +322,24 @@ public class InDungeonUnitSpawner : MonoBehaviour
         if (_npc != null && _npc.gameObject != null)
         {
             Destroy(_npc.gameObject);
+        }
+    }
+
+    public void PauseAllNPC()
+    {
+        for (int i = 0; i < allSpawnedNPCs.Count; i++)
+        {
+            if (allSpawnedNPCs[i] != null)
+                allSpawnedNPCs[i].PauseNPC();
+        }
+    }
+
+    public void ResumeAllNPC()
+    {
+        for (int i = 0; i < allSpawnedNPCs.Count; i++)
+        {
+            if (allSpawnedNPCs[i] != null)
+                allSpawnedNPCs[i].ResumeNPC();
         }
     }
 

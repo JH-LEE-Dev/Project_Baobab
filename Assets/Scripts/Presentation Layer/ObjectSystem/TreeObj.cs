@@ -26,6 +26,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public bool bDead = false;
     bool ITreeObj.bDead => bDead;
 
+    // 여러 NPC가 같은 나무를 동시에 타겟팅하지 못하도록 하는 예약 플래그
+    public bool bReserved { get; set; } = false;
+
     // IStaticCollidable 구현 - 캐싱된 트랜스폼 사용
     public Vector2 Position => (Vector2)cachedTransform.position;
     public Vector2 Offset => collisionOffset;
@@ -163,9 +166,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
     }
 
+    [HideInInspector] public bool bLastHitByPlayer = true;
+
     public void ResetTree()
     {
         bDead = false;
+        bReserved = false;
+        bLastHitByPlayer = true;
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
@@ -195,6 +202,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             TreeDeadEvent?.Invoke(this);
         }
+
+        bLastHitByPlayer = true;
     }
 
     public bool ManualUpdate()
@@ -382,7 +391,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     [ContextMenu("Update All Trees In Scene")]
     public void UpdateAllTreesInScene()
     {
-        TreeObj[] trees = FindObjectsOfType<TreeObj>();
+        TreeObj[] trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Exclude);
         int updatedCount = 0;
         foreach (var tree in trees)
         {

@@ -12,6 +12,7 @@ public class LJState_Chop : LumberjackState
 
         if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy)
         {
+            npc.ReleaseTargetTree();
             stateMachine.ChangeState<LJState_Idle>();
             return;
         }
@@ -29,6 +30,7 @@ public class LJState_Chop : LumberjackState
         // 나무가 파괴되었거나 비활성화되었는지 검사
         if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy)
         {
+            npc.ReleaseTargetTree();
             stateMachine.ChangeState<LJState_Idle>();
             return;
         }

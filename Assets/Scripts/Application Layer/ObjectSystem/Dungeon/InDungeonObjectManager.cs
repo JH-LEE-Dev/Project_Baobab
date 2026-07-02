@@ -13,11 +13,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<bool> OffroadInteractStateChangedEvent;
     public event Action<bool> RepairBoxInteractStateChangedEvent;
     public event Action<OffroadVehicleObj> OffroadSpawnedEvent;
-    public event Action<TreeType> TreeDeadEvent;
+    public event Action<TreeType, bool> TreeDeadEvent;
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
+    public event Action<bool> NPCPauseRequestedEvent;
+    public event Action FlyingItemPauseRequestedEvent;
+    public event Action FlyingItemResumeRequestedEvent;
+    public event Action FlyingItemDismissRequestedEvent;
 
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -228,8 +232,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         pos.y -= 0.25f;
 
         offroadVehicle.transform.position = pos;
-        offroadVehicle.ResetPortal();
+        // ResetPortal() 내부에서 발밑 타일 재등록 코루틴(StartCoroutine)을 실행하므로,
+        // 코루틴이 비활성 상태의 게임 오브젝트에서 시작 실패하지 않도록 활성화를 먼저 한다.
         offroadVehicle.gameObject.SetActive(true);
+        offroadVehicle.ResetPortal();
         offroadVehicle.SetCanTravel(true);
         offroadVehicle.col.enabled = false;
         BindPortalEvents();
@@ -430,13 +436,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
-                
-                Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(activeTrees[i].transform.position);
-                int flatIdx = cellPos.x + cellPos.y * gridWidth;
-                if (flatIdx >= 0 && flatIdx < treeGridMap.Length)
-                {
-                    treeGridMap[flatIdx] = null;
-                }
 
                 activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
                 treePool.Release(activeTrees[i]);
@@ -444,6 +443,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         activeTrees.Clear();
         activeTreesForUpdate.Clear();
+        System.Array.Clear(treeGridMap, 0, treeGridMap.Length);
         if (enableCulling && cullingGroup != null) cullingGroup.SetBoundingSphereCount(0);
     }
 
@@ -609,7 +609,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         treePool.Release(_treeObj);
-        TreeDeadEvent?.Invoke(_treeObj.treeData.type);
+        TreeDeadEvent?.Invoke(_treeObj.treeData.type, _treeObj.bLastHitByPlayer);
 
         inDungeonResultManager.IncreaseTreeKillCnt();
     }
@@ -834,9 +834,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         if (CheckWarningUIActivate() == false)
         {
+            NPCPauseRequestedEvent?.Invoke(true);
+            FlyingItemDismissRequestedEvent?.Invoke();
             HandleGameEnd();
             return;
         }
+
+        NPCPauseRequestedEvent?.Invoke(true);
+        FlyingItemPauseRequestedEvent?.Invoke();
 
         StopGrowth();
 
@@ -851,7 +856,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void AbortGameEnd(bool _bAbort)
     {
         if (_bAbort == true)
+        {
             character.SetStaminaDecrease(true);
+            NPCPauseRequestedEvent?.Invoke(false);
+            FlyingItemResumeRequestedEvent?.Invoke();
+        }
 
         character.PauseCharacter(false);
         inputManager.PauseMove(false);
@@ -865,6 +874,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void HandleGameEnd()
     {
+        FlyingItemDismissRequestedEvent?.Invoke();
+
         AbortGameEnd(false);
 
         character.DisableAttackComponent();

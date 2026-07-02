@@ -1,20 +1,29 @@
 using UnityEngine;
-using System.Collections.Generic;
 
 public class LJState_Move : LumberjackState
 {
     private int pathIndex = 0;
-    private const float WAYPOINT_TOLERANCE = 0.05f;
+    private float treeCheckTimer = 0f;
+    private const float TREE_CHECK_INTERVAL = 0.5f;
 
     public override void Enter()
     {
         base.Enter();
         pathIndex = 0;
+        treeCheckTimer = 0f;
         npc.SetVisualMoving(true);
-        
+
         if (npc.currentPath == null || npc.currentPath.Count == 0)
         {
-            stateMachine.ChangeState<LJState_Idle>();
+            // 빈 경로 = 이미 타겟 나무 바로 옆에 있다는 뜻 (PathFindComponent.FindNearestTreePath 참고)
+            if (npc.targetTree != null)
+            {
+                stateMachine.ChangeState<LJState_Chop>();
+            }
+            else
+            {
+                stateMachine.ChangeState<LJState_Idle>();
+            }
         }
     }
 
@@ -22,33 +31,23 @@ public class LJState_Move : LumberjackState
     {
         base.Update();
 
-        if (npc.currentPath == null || pathIndex >= npc.currentPath.Count)
+        // 0.5초마다 목표 나무 생존 여부 확인
+        treeCheckTimer += Time.deltaTime;
+        if (treeCheckTimer >= TREE_CHECK_INTERVAL)
+        {
+            treeCheckTimer = 0f;
+            if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.targetTree.bDead)
+            {
+                npc.ReleaseTargetTree();
+                stateMachine.ChangeState<LJState_Idle>();
+                return;
+            }
+        }
+
+        if (StepAlongPath(ref pathIndex))
         {
             // 경로의 끝에 도달 = 나무 바로 옆
             stateMachine.ChangeState<LJState_Chop>();
-            return;
-        }
-
-        Vector3 currentPos = npc.transform.position;
-        Vector3 targetPos = npc.currentPath[pathIndex];
-        
-        // y 오프셋 등 높이 차이 무시 (2D 평면 기준)
-        targetPos.z = currentPos.z;
-
-        float distance = Vector2.Distance(currentPos, targetPos);
-
-        if (distance <= WAYPOINT_TOLERANCE)
-        {
-            pathIndex++;
-        }
-        else
-        {
-            Vector2 direction = ((Vector2)targetPos - (Vector2)currentPos).normalized;
-            npc.transform.position = Vector3.MoveTowards(currentPos, targetPos, npc.moveSpeed * Time.deltaTime);
-            
-            // 이동 방향 시각적 업데이트
-            npc.SetVisualFacing(direction);
-            npc.SetArmDirection(direction);
         }
     }
 }

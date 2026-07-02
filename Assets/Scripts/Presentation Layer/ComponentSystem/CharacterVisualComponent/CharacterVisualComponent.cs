@@ -53,6 +53,7 @@ public class CharacterVisualComponent : MonoBehaviour
     [SerializeField] private GameObject characterVisualComponent;
 
     private CharacterAnimator characterAnimator;
+    private bool bIsInitialized = false;
 
     // Character.cs 컴파일 호환성 유지용 (혹시 외부에서 사용되는 경우 대비)
     public Animator Anim => null;
@@ -62,7 +63,6 @@ public class CharacterVisualComponent : MonoBehaviour
     public void Initialize(IEnvironmentProvider _environmentProvider, GameObject _onWaterAnimatorObject, Shadow _shadowObject,
         CustomSortable _customSortable)
     {
-        
         vfxComponent = GetComponent<VFXComponent>();
         characterAnimator = GetComponent<CharacterAnimator>();
 
@@ -80,42 +80,46 @@ public class CharacterVisualComponent : MonoBehaviour
 
         sr = GetComponent<SpriteRenderer>();
 
-        if (faceObject != null)
+        if (!bIsInitialized)
         {
-            faceSR = faceObject.GetComponent<SpriteRenderer>();
-            if (faceSR != null)
+            if (faceObject != null)
             {
-                originalFaceSortingLayer = faceSR.sortingLayerID;
+                faceSR = faceObject.GetComponent<SpriteRenderer>();
+                if (faceSR != null)
+                {
+                    originalFaceSortingLayer = faceSR.sortingLayerID;
+                }
             }
-        }
 
-        if (faceObjectBlink != null)
-        {
-            faceBlinkSR = faceObjectBlink.GetComponent<SpriteRenderer>();
-            if (faceBlinkSR != null)
+            if (faceObjectBlink != null)
             {
-                originalFaceBlinkSortingLayer = faceBlinkSR.sortingLayerID;
+                faceBlinkSR = faceObjectBlink.GetComponent<SpriteRenderer>();
+                if (faceBlinkSR != null)
+                {
+                    originalFaceBlinkSortingLayer = faceBlinkSR.sortingLayerID;
+                }
             }
-        }
 
-        if (onWaterFaceObject != null)
-        {
-            onWaterFaceSR = onWaterFaceObject.GetComponent<SpriteRenderer>();
-            if (onWaterFaceSR != null)
+            if (onWaterFaceObject != null)
             {
-                onWaterFaceSR.material.SetFloat("_DistortionAmount", 0.5f);
-                originalOnWaterFaceSortingLayer = onWaterFaceSR.sortingLayerID;
+                onWaterFaceSR = onWaterFaceObject.GetComponent<SpriteRenderer>();
+                if (onWaterFaceSR != null)
+                {
+                    onWaterFaceSR.material.SetFloat("_DistortionAmount", 0.5f);
+                    originalOnWaterFaceSortingLayer = onWaterFaceSR.sortingLayerID;
+                }
             }
-        }
 
-        if (onWaterFaceObjectBlink != null)
-        {
-            onWaterFaceBlinkSR = onWaterFaceObjectBlink.GetComponent<SpriteRenderer>();
-            if (onWaterFaceBlinkSR != null)
+            if (onWaterFaceObjectBlink != null)
             {
-                onWaterFaceBlinkSR.material.SetFloat("_DistortionAmount", 0.5f);
-                originalOnWaterFaceBlinkSortingLayer = onWaterFaceBlinkSR.sortingLayerID;
+                onWaterFaceBlinkSR = onWaterFaceObjectBlink.GetComponent<SpriteRenderer>();
+                if (onWaterFaceBlinkSR != null)
+                {
+                    onWaterFaceBlinkSR.material.SetFloat("_DistortionAmount", 0.5f);
+                    originalOnWaterFaceBlinkSortingLayer = onWaterFaceBlinkSR.sortingLayerID;
+                }
             }
+            bIsInitialized = true;
         }
 
         if (_onWaterAnimatorObject != null)

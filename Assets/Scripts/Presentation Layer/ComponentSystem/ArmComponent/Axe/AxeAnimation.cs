@@ -17,8 +17,14 @@ public class AxeAnimation : MonoBehaviour
     // 내부 의존성
     private Tween rotateTween;
     private Quaternion initialLocalRot;
+    private Quaternion restLocalRot;
     private Action onSwingComplete;
     private Action onReturnComplete;
+
+    private void Awake()
+    {
+        restLocalRot = transform.localRotation;
+    }
 
     public void PlaySwing(Action _onComplete)
     {
@@ -58,8 +64,19 @@ public class AxeAnimation : MonoBehaviour
 
     public void KillTweens()
     {
-        if (null != rotateTween && rotateTween.IsActive()) 
+        if (null != rotateTween && rotateTween.IsActive())
             rotateTween.Kill();
+    }
+
+    /// <summary>
+    /// 진행 중인 트윈을 정리하고 최초(휴식) 회전 상태로 되돌립니다. (오브젝트 풀 재사용 시 사용)
+    /// </summary>
+    public void ResetPose()
+    {
+        KillTweens();
+        onSwingComplete = null;
+        onReturnComplete = null;
+        transform.localRotation = restLocalRot;
     }
 
     private void OnDestroy()

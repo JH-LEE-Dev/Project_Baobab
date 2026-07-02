@@ -71,9 +71,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public bool bMoving = false;
     [SerializeField] private float itemSensorRadius = 0.35f;
-    private readonly List<IStaticCollidable> itemDetectionResults = new List<IStaticCollidable>(16);
     private float itemDetectionInterval = 0.2f; // 최적화: 0.2초 간격 (5Hz)
-    private float itemDetectionTimer = 0f;
+    private ItemDetector itemDetector;
 
     [SerializeField] private LayerMask itemLayer; // 아이템 레이어
 
@@ -101,6 +100,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
+
+        itemDetector = new ItemDetector(transform, itemLayer);
 
         // 컴포넌트 할당
         characterVisualComponent = animatorObject.GetComponent<CharacterVisualComponent>();
@@ -326,16 +327,17 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateItemDetection()
     {
-        if (CollisionSystem.Instance == null || bCanAcquiredItem == false) return;
+        if (bCanAcquiredItem == false) return;
 
         float finalRadius = itemSensorRadius * statComponent.pickupRangeMultiplier;
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, finalRadius, itemLayer.value, itemDetectionResults);
-        for (int i = 0; i < itemDetectionResults.Count; i++)
+        itemDetector.Tick(Time.fixedDeltaTime, itemDetectionInterval, finalRadius, OnItemDetected);
+    }
+
+    private void OnItemDetected(IStaticCollidable _collidable)
+    {
+        if (_collidable is Item item)
         {
-            if (itemDetectionResults[i] is Item item)
-            {
-                item.SetSuckTarget(transform);
-            }
+            item.SetSuckTarget(transform);
         }
     }
 
@@ -369,12 +371,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void FixedUpdate()
     {
-        itemDetectionTimer += Time.fixedDeltaTime;
-        if (itemDetectionTimer >= itemDetectionInterval)
-        {
-            UpdateItemDetection();
-            itemDetectionTimer = 0f;
-        }
+        UpdateItemDetection(); // 내부적으로 itemDetectionInterval마다만 실제 스캔을 수행함
 
         // 커스텀 충돌 시스템 격자 정보 갱신
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);

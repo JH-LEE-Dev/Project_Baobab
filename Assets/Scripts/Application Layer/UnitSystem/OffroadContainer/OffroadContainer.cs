@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Pool;
 
 public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 {
@@ -28,7 +27,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     [SerializeField] private float transferInterval = 0.5f;
 
     // 타입별 아이템 데이터 풀링 (GC 최적화)
-    private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
+    private ItemDataPool itemDataPool;
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
     long IInventory.money => 0;
@@ -65,6 +64,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         public bool toCharacter;
     }
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
+    private List<FlyingTransferItem> dismissingItems = new List<FlyingTransferItem>(16);
+    private bool bFlyingPaused = false;
 
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private LogItemData arrivalDataBuffer = new LogItemData();
@@ -98,6 +99,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     public void Initialize(IInventory _characterInventory, InputManager _inputManager)
     {
+        if (itemDataPool == null) itemDataPool = new ItemDataPool(CreateItemData);
+
         characterInventory = _characterInventory;
         characterInventoryManager = _characterInventory as InventoryManager;
         inputManager = _inputManager;
@@ -126,20 +129,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             if (inventorySlots[i].itemData is ItemData data)
             {
-                ReleaseToPool(data);
+                itemDataPool.Release(data);
             }
             inventorySlots[i].Setup(null, 0);
         }
 
-        // 3. 모든 아이템 타입에 대해 풀 미리 생성 (None, Max 제외)
-        for (int i = (int)ItemType.None + 1; i < (int)ItemType.Max; i++)
-        {
-            ItemType type = (ItemType)i;
-            if (!itemDataPools.ContainsKey(type))
-            {
-                itemDataPools[type] = CreatePoolForType(type);
-            }
-        }
+        // 3. 모든 아이템 타입에 대해 풀 미리 생성
+        itemDataPool.WarmAll();
 
         BindEvents();
     }
@@ -163,6 +159,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void UpdateFlyingItems(float _deltaTime)
     {
+        UpdateDismissingItems(_deltaTime);
+
+        if (bFlyingPaused) return;
+
         for (int i = flyingItems.Count - 1; i >= 0; i--)
         {
             var flyingData = flyingItems[i];
@@ -196,6 +196,77 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 flyingItems.RemoveAt(i);
             }
         }
+    }
+
+    private void UpdateDismissingItems(float _deltaTime)
+    {
+        for (int i = dismissingItems.Count - 1; i >= 0; i--)
+        {
+            var flyingData = dismissingItems[i];
+            LogItem item = flyingData.item;
+
+            Vector3 scale = item.transform.localScale;
+            scale -= Vector3.one * _deltaTime * 3f;
+
+            if (scale.x <= 0.01f)
+            {
+                item.transform.localScale = Vector3.zero;
+                item.ResetItem();
+                logItemPoolManager.ReturnLogItem(item);
+                dismissingItems.RemoveAt(i);
+            }
+            else
+            {
+                item.transform.localScale = scale;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 현재 날아가고 있는 모든 LogItem의 이동을 일시정지합니다.
+    /// </summary>
+    public void PauseAllFlyingItems()
+    {
+        bFlyingPaused = true;
+    }
+
+    /// <summary>
+    /// 일시정지된 모든 LogItem의 이동을 재개합니다.
+    /// </summary>
+    public void ResumeAllFlyingItems()
+    {
+        bFlyingPaused = false;
+    }
+
+    public void DismissAllFlyingItems()
+    {
+        bFlyingPaused = false;
+        for (int i = flyingItems.Count - 1; i >= 0; i--)
+        {
+            dismissingItems.Add(flyingItems[i]);
+        }
+        flyingItems.Clear();
+    }
+
+    /// <summary>
+    /// 던전/마을 재진입 시 오프로드 컨테이너의 논리적 상태(열림 여부 등)를 강제 초기화합니다.
+    /// </summary>
+    public void ResetState()
+    {
+        bContainerOpen = false;
+        bContainerVisualOpened = false;
+        closeTimer = -1f;
+        DismissAllFlyingItems();
+
+        if (transferCoroutine != null)
+        {
+            StopCoroutine(transferCoroutine);
+            transferCoroutine = null;
+        }
+
+        transferringSlots.Clear();
+        bIsInteracting = false;
+        lastTransferTime = -transferInterval;
     }
 
     private void TriggerBounce()
@@ -507,7 +578,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             if (slots[i].itemData == null)
             {
-                ItemData newData = GetFromPool(_sourceData.itemType);
+                ItemData newData = itemDataPool.Get(_sourceData.itemType);
                 if (newData != null)
                 {
                     newData.itemType = _sourceData.itemType;
@@ -561,38 +632,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return true;
     }
 
-    private ItemData GetFromPool(ItemType _type)
-    {
-        if (!itemDataPools.ContainsKey(_type))
-        {
-            itemDataPools[_type] = CreatePoolForType(_type);
-        }
-
-        return itemDataPools[_type].Get();
-    }
-
-    private void ReleaseToPool(ItemData _data)
-    {
-        if (_data == null) return;
-        if (itemDataPools.TryGetValue(_data.itemType, out var pool))
-        {
-            pool.Release(_data);
-        }
-    }
-
-    private IObjectPool<ItemData> CreatePoolForType(ItemType _type)
-    {
-        return new ObjectPool<ItemData>(
-            createFunc: () => CreateItemData(_type),
-            actionOnGet: (data) => { },
-            actionOnRelease: (data) => data.Reset(),
-            actionOnDestroy: (data) => { },
-            collectionCheck: true,
-            defaultCapacity: 5,
-            maxSize: 50
-        );
-    }
-
     private ItemData CreateItemData(ItemType _type)
     {
         switch (_type)
@@ -620,7 +659,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             if (slot.itemData != null)
             {
-                ReleaseToPool(slot.itemData);
+                itemDataPool.Release(slot.itemData);
             }
             slot.Setup(null, 0);
         }
@@ -795,7 +834,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             if (inventorySlots[i].itemData is ItemData itemData)
             {
-                ReleaseToPool(itemData);
+                itemDataPool.Release(itemData);
             }
             inventorySlots[i].Setup(null, 0);
         }
@@ -809,7 +848,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 var slotData = _data.slots[i];
                 if (slotData.itemSaveData.itemType != ItemType.None)
                 {
-                    ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
+                    ItemData newData = itemDataPool.Get(slotData.itemSaveData.itemType);
                     if (newData != null)
                     {
                         newData.color = slotData.itemSaveData.color;
@@ -865,6 +904,106 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void SetInTown(bool _boolean)
     {
         bInTown = _boolean;
+    }
+
+    /// <summary>
+    /// 주어진 월드 좌표가 컨테이너의 실제 충돌 반경(collider) 안에 들어와 있는지 확인합니다.
+    /// NPC가 길찾기로 컨테이너를 향해 이동하다가 이 반경에 들어오는 순간 납품을 시작한다.
+    /// </summary>
+    public bool IsWithinInteractRadius(Vector3 _worldPos)
+    {
+        if (col == null) return false;
+        return col.OverlapPoint(_worldPos);
+    }
+
+    /// <summary>
+    /// 럼버잭 NPC 등 플레이어가 아닌 소비자가 로그를 컨테이너에 직접 납품할 때 사용하는 공개 API.
+    /// 플레이어가 TransferOneSlotVisualRoutine으로 넣을 때와 동일하게 로그가 날아가는 연출(flyingItems)을
+    /// 거쳐 도착 시점에 실제로 슬롯에 더해진다 - 즉시 데이터만 추가하지 않는다.
+    ///
+    /// 플레이어 전용 상호작용 상태(bIsInteracting/transferCoroutine/물리 오버랩)는 전혀 건드리지 않으므로
+    /// 플레이어의 컨테이너 상호작용이나 다른 NPC의 납품 호출과 서로 간섭하지 않는다.
+    /// CanAddItemByData가 이미 flyingItems에 대기 중인(아직 도착 안 한) 항목까지 포함해 공간을 계산하므로,
+    /// 같은 프레임에 캐릭터/여러 NPC가 연달아 이 메서드를 호출해도(Unity 싱글스레드) 서로의 몫을 침범하지 않고
+    /// 컨테이너 용량을 초과해서 예약되는 일이 없다.
+    /// </summary>
+    public bool TryDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, LogState _state)
+    {
+        if (!CanAddItemByData(_sourceData)) return false;
+
+        LogItemData visualData = new LogItemData
+        {
+            treeType = _sourceData.treeType,
+            logState = _state,
+            color = _sourceData.color
+        };
+
+        LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+        flyingItem.SetFlyingItemSortingLayer();
+        flyingItem.IsDropItem(false);
+        flyingItem.spriteRenderer.sortingOrder = 100;
+
+        Vector3 containerPos = transform.position + new Vector3(0f, 0.2f, 0f);
+
+        Vector3 dir = (containerPos - _fromWorldPos).normalized;
+        if (dir == Vector3.zero) dir = Vector3.up;
+        Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
+        float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
+        Vector3 trajectoryJitter = normal * arcPower;
+
+        float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+        flyingItem.transform.position = _fromWorldPos;
+        flyingItem.ContainerTransferLaunch(_fromWorldPos, containerPos, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
+
+        flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = false });
+
+        return true;
+    }
+
+    /// <summary>
+    /// NPC 인벤토리의 로그 아이템들을 캐릭터의 컨테이너 전송과 동일한 시간 간격(인터벌)을 적용하여 천천히 납품합니다.
+    /// 납품 연출이 모두 끝나면 _onComplete 콜백을 호출합니다.
+    /// </summary>
+    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    {
+        StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete));
+    }
+
+    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    {
+        var slots = _npcInventory.GetInventorySlots();
+        for (int i = 0; i < _npcInventory.currentSlotCnt; i++)
+        {
+            var slot = slots[i];
+            if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+
+            bool slotTransferredAny = false;
+            while (slot.totalCount > 0)
+            {
+                if (!TryDepositLogItemVisual(logData, _fromWorldPos, logData.logState))
+                {
+                    break;
+                }
+
+                slot.TakeOneItem();
+                slotTransferredAny = true;
+
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+
+            if (slot.totalCount == 0)
+            {
+                _npcInventory.ItemDeleted(slot);
+            }
+
+            if (slotTransferredAny)
+            {
+                yield return new WaitForSeconds(transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+        }
+
+        _onComplete?.Invoke();
     }
 
     private bool CanAddItemByData(ItemData _sourceData)
@@ -924,7 +1063,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             if (inventorySlots[i].itemData == null)
             {
-                ItemData newData = GetFromPool(_sourceData.itemType);
+                ItemData newData = itemDataPool.Get(_sourceData.itemType);
                 if (newData != null)
                 {
                     // 데이터 복사
