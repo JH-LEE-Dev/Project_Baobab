@@ -8,7 +8,7 @@ public class InDungeonSystem : MonoBehaviour
 
     private SignalHub signalHub;
     public InDungeonObjectManager inDungeonObjectManager { get; private set; }
-    //public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
+    public InDungeonUnitSpawner inDungeonUnitSpawner { get; private set; }
     private IEnvironmentProvider environmentProvider;
     private HiddenmapManager hiddenmapManager;
     private InputManager inputManager;
@@ -47,8 +47,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.Initialize(environmentProvider, _inventoryChecker, inputManager, characterInventory, offroadContainer,
         inDungeonResultManager);
 
-        //inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
-        //inDungeonUnitSpawner.Initialize(environmentProvider);
+        inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
+        inDungeonUnitSpawner.Initialize(environmentProvider, inDungeonObjectManager);
 
         hiddenmapManager = GetComponentInChildren<HiddenmapManager>();
         hiddenmapManager.Initialize();
@@ -183,7 +183,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
-        //inDungeonUnitSpawner.SpawnAnimals();
+        inDungeonUnitSpawner.SpawnNPC();
 
         signalHub.Publish(new DecalreDungeonTypeSignal(currentMapType, currentForestType));
 
@@ -241,7 +241,7 @@ public class InDungeonSystem : MonoBehaviour
         }
 
         inDungeonObjectManager.ClearObjManager();
-        //inDungeonUnitSpawner.ReleaseAllAnimals();
+        inDungeonUnitSpawner.ReleaseAllNPC();
 
         if ((prevbCurrentlyDungeonScene != bCurrentlyDungeonScene) && bRetryGame == false)
         {
@@ -331,7 +331,7 @@ public class InDungeonSystem : MonoBehaviour
         else
         {
             inDungeonObjectManager.ClearObjManager();
-            //inDungeonUnitSpawner.ReleaseAllAnimals();
+            inDungeonUnitSpawner.ReleaseAllNPC();
 
             signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
         }

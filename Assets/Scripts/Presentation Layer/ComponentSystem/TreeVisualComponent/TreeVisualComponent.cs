@@ -231,8 +231,11 @@ public class TreeVisualComponent : MonoBehaviour
         UpdateHDRStates();
     }
 
-    private void RefreshVisualPreview()
+    public void RefreshVisualPreview()
     {
+        if (topRenderer != null) topRenderer.color = Color.white;
+        if (bottomRenderer != null) bottomRenderer.color = Color.white;
+        
         ApplyRandomVisual();
         SyncShadowSprite();
     }

@@ -377,4 +377,23 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     {
         treeVisualComponent.EnableOutline();
     }
+
+#if UNITY_EDITOR
+    [ContextMenu("Update All Trees In Scene")]
+    public void UpdateAllTreesInScene()
+    {
+        TreeObj[] trees = FindObjectsOfType<TreeObj>();
+        int updatedCount = 0;
+        foreach (var tree in trees)
+        {
+            if (tree.treeVisualComponent != null)
+            {
+                tree.treeVisualComponent.RefreshVisualPreview();
+                UnityEditor.EditorUtility.SetDirty(tree.treeVisualComponent);
+                updatedCount++;
+            }
+        }
+        Debug.Log($"Updated {updatedCount} trees in the scene based on CustomType.");
+    }
+#endif
 }

@@ -716,6 +716,7 @@ Transform:
   - {fileID: 2057691699847441429}
   - {fileID: 2225124705072599937}
   - {fileID: 844731684170270846}
+  - {fileID: 2158512037941339785}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7398738596507401122
@@ -1000,6 +1001,59 @@ MonoBehaviour:
   birdSpawnPoint_LD: {fileID: 2189180156696780080, guid: 46ac5ea4f3b4f0a42a7225ac74d86f2e, type: 3}
   birdSpawnPoint_RU: {fileID: 1590439173435823183, guid: 7ba108d711c7ca84eb7807d044e71bad, type: 3}
   birdSpawnPoint_RD: {fileID: 6114465032127502753, guid: c17c4d73521eef542acafeed059b41b7, type: 3}
+--- !u!1 &3897124674819666006
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2158512037941339785}
+  - component: {fileID: 2197108781500586585}
+  m_Layer: 0
+  m_Name: InDungeonUnitSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2158512037941339785
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3897124674819666006}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6142116780314600098}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2197108781500586585
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3897124674819666006}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e39068f27ffa5ae4692647311d234cc3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
+  npcPrefab: {fileID: 9197713879388921321, guid: 0a673e3ff0ddf2645b1b837f534f144b, type: 3}
+  maxNPCs: 3
+  spawnRadius: 10
+  useCulling: 0
+  cullingDistance: 25
+  cullingUpdateInterval: 0.1
+  collectionCheck: 0
+  defaultCapacity: 10
+  maxSize: 50
 --- !u!1 &3941740186820979649
 GameObject:
   m_ObjectHideFlags: 0

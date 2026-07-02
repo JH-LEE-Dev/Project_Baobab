@@ -287,9 +287,6 @@ public class PathFindComponent : MonoBehaviour
         _pathResult.Reverse();
     }
 
-    /// <summary>
-    /// BFS 알고리즘을 사용하여 도달 가능한 가장 가까운 나무를 찾고 경로를 반환합니다. (GC-Free)
-    /// </summary>
     public bool FindNearestTreePath(Vector3 _startWorldPos, out ITreeObj _targetTree, List<Vector3> _pathResult)
     {
         _targetTree = null;
@@ -301,7 +298,7 @@ public class PathFindComponent : MonoBehaviour
         if (startPos.x < 0 || startPos.x >= gridWidth || startPos.y < 0 || startPos.y >= gridHeight)
             return false;
 
-        // GC-Free BFS 상태 초기화 (Array.Clear 오버헤드 제거)
+        // GC-Free BFS 상태 초기화
         bfsVisitedCounter++;
         if (bfsVisitedCounter == int.MaxValue)
         {
@@ -320,16 +317,6 @@ public class PathFindComponent : MonoBehaviour
         while (head < tail)
         {
             int currentIndex = bfsQueue[head++];
-
-            // 가장 먼저 발견한 나무가 최단 거리(BFS 특성 보장)
-            ITreeObj tree = pathfindTreeProvider.GetTreeAt(currentIndex);
-            if (tree != null)
-            {
-                _targetTree = tree;
-                RetracePath(startIndex, currentIndex, _pathResult);
-                return true;
-            }
-
             Vector3Int currentPos = IndexToPos(currentIndex);
 
             for (int i = 0; i < neighborOffsets.Length; i++)
@@ -338,6 +325,19 @@ public class PathFindComponent : MonoBehaviour
                 if (neighborPos.x < 0 || neighborPos.x >= gridWidth || neighborPos.y < 0 || neighborPos.y >= gridHeight)
                     continue;
 
+                int neighborIndex = PosToIndex(neighborPos);
+
+                // 1. 나무가 있는지 먼저 확인 (나무 타일은 IsWalkable이 false이므로 먼저 체크해야 함)
+                ITreeObj tree = pathfindTreeProvider.GetTreeAt(neighborIndex);
+                if (tree != null)
+                {
+                    _targetTree = tree;
+                    // 나무가 있는 타일로는 이동할 수 없으므로, 현재 타일(currentIndex)까지의 경로를 반환
+                    RetracePath(startIndex, currentIndex, _pathResult);
+                    return true;
+                }
+
+                // 2. 나무가 없다면 이동 가능한지 확인
                 if (!tilemapDataProvider.IsWalkable(neighborPos) || tilemapDataProvider.HasRockDeco(neighborPos))
                     continue;
 
@@ -353,7 +353,6 @@ public class PathFindComponent : MonoBehaviour
                     }
                 }
 
-                int neighborIndex = PosToIndex(neighborPos);
                 if (bfsVisited[neighborIndex] != bfsVisitedCounter)
                 {
                     bfsVisited[neighborIndex] = bfsVisitedCounter;
