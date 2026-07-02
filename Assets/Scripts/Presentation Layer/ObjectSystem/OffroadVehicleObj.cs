@@ -360,10 +360,17 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             return;
         }
 
+        // 상호작용 연타 방지 (쿨다운 0.5초)
+        if (Time.time - lastActivatedTime < 0.5f)
+        {
+            return;
+        }
+
         if (bUIActivated)
         {
             if (type == PortalType.ToDungeonPortal)
             {
+                lastActivatedTime = Time.time;
                 PortalDeActivatedEvent?.Invoke();
                 bUIActivated = false;
             }
@@ -372,11 +379,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             if (type == PortalType.ToDungeonPortal)
             {
+                lastActivatedTime = Time.time;
                 bUIActivated = true;
                 PortalActivated?.Invoke();
             }
             else
             {
+                lastActivatedTime = Time.time;
                 GameEndEvent?.Invoke();
             }
         }

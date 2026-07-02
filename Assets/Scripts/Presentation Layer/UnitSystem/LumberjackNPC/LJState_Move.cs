@@ -5,11 +5,14 @@ public class LJState_Move : LumberjackState
 {
     private int pathIndex = 0;
     private const float WAYPOINT_TOLERANCE = 0.05f;
+    private float treeCheckTimer = 0f;
+    private const float TREE_CHECK_INTERVAL = 0.5f;
 
     public override void Enter()
     {
         base.Enter();
         pathIndex = 0;
+        treeCheckTimer = 0f;
         npc.SetVisualMoving(true);
         
         if (npc.currentPath == null || npc.currentPath.Count == 0)
@@ -21,6 +24,18 @@ public class LJState_Move : LumberjackState
     public override void Update()
     {
         base.Update();
+
+        // 0.5초마다 목표 나무 생존 여부 확인
+        treeCheckTimer += Time.deltaTime;
+        if (treeCheckTimer >= TREE_CHECK_INTERVAL)
+        {
+            treeCheckTimer = 0f;
+            if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.targetTree.bDead)
+            {
+                stateMachine.ChangeState<LJState_Idle>();
+                return;
+            }
+        }
 
         if (npc.currentPath == null || pathIndex >= npc.currentPath.Count)
         {

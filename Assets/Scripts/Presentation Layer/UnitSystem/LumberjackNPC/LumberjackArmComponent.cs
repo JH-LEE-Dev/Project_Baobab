@@ -13,9 +13,14 @@ public class LumberjackArmComponent : MonoBehaviour
     private Vector2 targetDirection = Vector2.down;
     private bool bIsAttacking = false;
 
-    public void Initialize()
+    private void Awake()
     {
         initialLocalPosition = transform.localPosition;
+    }
+
+    public void Initialize()
+    {
+        // Awake에서 initialLocalPosition을 캐싱하여 Update가 먼저 실행되어 좌표가 망가지는 현상 방지
     }
 
     /// <summary>
@@ -43,22 +48,42 @@ public class LumberjackArmComponent : MonoBehaviour
         UpdateFlip();
     }
 
+    private Vector3 GetFakeTargetPosition()
+    {
+        // 부모(몸체) 중심에서 타겟 방향으로 일정 거리만큼 떨어진 가상의 목표점 계산
+        return transform.parent.position + (Vector3)targetDirection * 2f;
+    }
+
+    public void UpdateSortingOrder()
+    {
+        if (axeSpriteRenderer == null) return;
+
+        Vector2 direction = (GetFakeTargetPosition() - transform.position);
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+        if (angle < 0) angle += 360f;
+
+        // 위쪽 방향(0도~180도)을 바라볼 때는 무기가 몸 뒤에 가려져야 함 (-1)
+        int sortingOffset = (angle > 0f && angle < 180f) ? -1 : 1;
+        axeSpriteRenderer.sortingOrder += sortingOffset;
+    }
+
     private void UpdateRotation()
     {
-        // Down(0, -1) 방향을 0도로 기준 삼기 위해 90도 오프셋 추가
-        float angle = Mathf.Atan2(targetDirection.y, targetDirection.x) * Mathf.Rad2Deg + 90f;
-        Quaternion targetRotation = Quaternion.Euler(0, 0, angle);
-
-        // 회전 스무딩 적용
-        transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
+        Vector2 dirToTarget = GetFakeTargetPosition() - transform.parent.position;
+        if (dirToTarget.sqrMagnitude > 0.001f)
+        {
+            float angle = Mathf.Atan2(dirToTarget.y, dirToTarget.x) * Mathf.Rad2Deg + 90f;
+            Quaternion targetRotation = Quaternion.Euler(0, 0, angle);
+            transform.rotation = Quaternion.Lerp(transform.rotation, targetRotation, Time.deltaTime * smoothSpeed);
+        }
     }
 
     private void UpdatePositionOffset()
     {
-        float angle = Mathf.Atan2(targetDirection.y, targetDirection.x) * Mathf.Rad2Deg;
+        Vector2 direction = GetFakeTargetPosition() - transform.position;
+        float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         if (angle < 0) angle += 360f;
 
-        // 0~180도(상단 반원) 범위일 때만 Sin 곡선을 따라 오프셋 적용
         if (angle >= 0f && angle <= 180f)
         {
             float offsetMultiplier = Mathf.Sin(angle * Mathf.Deg2Rad);
@@ -73,9 +98,9 @@ public class LumberjackArmComponent : MonoBehaviour
 
     private void UpdateFlip()
     {
-        // 타겟의 x 방향이 왼쪽이면 -1, 오른쪽이면 1
+        Vector3 fakePos = GetFakeTargetPosition();
         Vector3 localScale = transform.localScale;
-        localScale.x = (targetDirection.x < 0) ? -1f : 1f;
+        localScale.x = (fakePos.x < transform.position.x) ? -1f : 1f;
         transform.localScale = localScale;
     }
 

@@ -32,56 +32,70 @@ public class LumberjackPrefabBuilder
         // 3. Remove unwanted components from root
         RemoveComponent<Character>(instance);
         RemoveComponent<InputManager>(instance);
-        RemoveComponent<CustomSortable>(instance);
         RemoveComponent<Rigidbody2D>(instance);
         RemoveComponent<CircleCollider2D>(instance);
 
-        // Remove AttackComponent, HealthComponent, StatComponent which might be on children
-        foreach (var attack in instance.GetComponentsInChildren<AttackComponent>(true)) Object.DestroyImmediate(attack);
+        // Remove AttackComponent GameObject completely (including RadiusIndicator)
+        foreach (var attack in instance.GetComponentsInChildren<AttackComponent>(true)) 
+        {
+            Object.DestroyImmediate(attack.gameObject);
+        }
         foreach (var health in instance.GetComponentsInChildren<PHealthComponent>(true)) Object.DestroyImmediate(health);
         foreach (var stat in instance.GetComponentsInChildren<StatComponent>(true)) Object.DestroyImmediate(stat);
         
         // Remove old ArmComponent but keep the GameObject and AxeComponent
         var oldArm = instance.GetComponentInChildren<ArmComponent>(true);
         GameObject armObj = oldArm != null ? oldArm.gameObject : null;
+
+        // 기존 ArmComponent에서 튜닝된 값을 가져와 새 컴포넌트에 그대로 이어받음
+        float oldSmoothSpeed = 10f;
+        float oldMaxYOffset = 0.15f;
+        if (oldArm != null)
+        {
+            SerializedObject soOldArm = new SerializedObject(oldArm);
+            oldSmoothSpeed = soOldArm.FindProperty("smoothSpeed").floatValue;
+            oldMaxYOffset = soOldArm.FindProperty("maxYOffset").floatValue;
+        }
+
         if (oldArm != null) Object.DestroyImmediate(oldArm);
 
-        // Remove old CharacterVisualComponent
-        var oldVisual = instance.GetComponentInChildren<CharacterVisualComponent>(true);
-        GameObject visualObj = oldVisual != null ? oldVisual.gameObject : null;
-        if (oldVisual != null) Object.DestroyImmediate(oldVisual);
+        // Remove old ArmAnimTrigger
+        var armTriggers = instance.GetComponentsInChildren<ArmAnimTrigger>(true);
+        foreach (var t in armTriggers) Object.DestroyImmediate(t);
 
         // 4. Add new components
         LumberjackNPC npcMain = instance.AddComponent<LumberjackNPC>();
         PathFindComponent pathFind = instance.AddComponent<PathFindComponent>();
         
-        if (visualObj != null)
+        // Get existing CharacterVisualComponent instead of creating LumberjackVisualComponent
+        var visualComp = instance.GetComponentInChildren<CharacterVisualComponent>(true);
+        if (visualComp != null)
         {
-            LumberjackVisualComponent visComp = visualObj.AddComponent<LumberjackVisualComponent>();
-            // Use serialized object to assign private fields
             SerializedObject so = new SerializedObject(npcMain);
-            so.FindProperty("visualComponent").objectReferenceValue = visComp;
+            so.FindProperty("visualComponent").objectReferenceValue = visualComp;
             so.ApplyModifiedProperties();
         }
 
         if (armObj != null)
         {
-            LumberjackArmComponent armComp = armObj.AddComponent<LumberjackArmComponent>();
-            
-            // Assign AxeAnimation to armComp
+            // Remove Player-specific AxeComponent
+            var axeComp = armObj.GetComponentInChildren<AxeComponent>(true);
+            if (axeComp != null) Object.DestroyImmediate(axeComp);
+
+            LumberjackArmComponent newArmComp = armObj.AddComponent<LumberjackArmComponent>();
+
             var axeAnim = armObj.GetComponentInChildren<AxeAnimation>(true);
-            if (axeAnim != null)
-            {
-                SerializedObject soArm = new SerializedObject(armComp);
-                soArm.FindProperty("axeAnimation").objectReferenceValue = axeAnim;
-                // Also find SpriteRenderer on the Axe
-                var sr = axeAnim.GetComponent<SpriteRenderer>();
-                if (sr != null) soArm.FindProperty("axeSpriteRenderer").objectReferenceValue = sr;
-                soArm.ApplyModifiedProperties();
-            }
+            var axeSR = axeAnim != null ? axeAnim.GetComponent<SpriteRenderer>() : null;
+
+            SerializedObject soArm = new SerializedObject(newArmComp);
+            soArm.FindProperty("axeAnimation").objectReferenceValue = axeAnim;
+            soArm.FindProperty("axeSpriteRenderer").objectReferenceValue = axeSR;
+            soArm.FindProperty("smoothSpeed").floatValue = oldSmoothSpeed;
+            soArm.FindProperty("maxYOffset").floatValue = oldMaxYOffset;
+            soArm.ApplyModifiedProperties();
 
             SerializedObject so = new SerializedObject(npcMain);
-            so.FindProperty("armComponent").objectReferenceValue = armComp;
+            so.FindProperty("armComponent").objectReferenceValue = newArmComp;
             so.ApplyModifiedProperties();
             
             // Disable RifleComponent if it exists

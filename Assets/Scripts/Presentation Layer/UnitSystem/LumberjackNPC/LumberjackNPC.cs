@@ -6,9 +6,10 @@ public class LumberjackNPC : MonoBehaviour
     // 외부 데이터 제공자
     public ITilemapDataProvider tilemapDataProvider { get; private set; }
     public IPathfindTreeProvider pathfindTreeProvider { get; private set; }
+    private IEnvironmentProvider environmentProvider;
 
     // 내부 컴포넌트
-    [SerializeField] private LumberjackVisualComponent visualComponent;
+    [SerializeField] private CharacterVisualComponent visualComponent;
     [SerializeField] private LumberjackArmComponent armComponent;
     private PathFindComponent pathFindComponent;
     
@@ -27,19 +28,38 @@ public class LumberjackNPC : MonoBehaviour
     public ITreeObj targetTree;
     public List<Vector3> currentPath = new List<Vector3>();
 
-    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindGridProvider _pathfindGridProvider, IPathfindTreeProvider _pathfindTreeProvider)
+    private bool isMoving = false;
+    private Vector2 currentFacingDir = Vector2.down;
+    
+    private CustomSortable customSortable;
+
+    public void Initialize(IEnvironmentProvider _envProvider, IPathfindTreeProvider _pathfindTreeProvider)
     {
-        tilemapDataProvider = _tilemapDataProvider;
+        environmentProvider = _envProvider;
+        tilemapDataProvider = environmentProvider.tilemapDataProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
 
         // 길찾기 컴포넌트 초기화
         pathFindComponent = GetComponent<PathFindComponent>();
         if (pathFindComponent != null)
         {
-            pathFindComponent.Initialize(_tilemapDataProvider, _pathfindGridProvider, _pathfindTreeProvider);
+            pathFindComponent.Initialize(tilemapDataProvider, environmentProvider.pathfindGridProvider, _pathfindTreeProvider);
         }
 
-        if (visualComponent != null) visualComponent.Initialize();
+        if (visualComponent != null)
+        {
+            var shadow = GetComponentInChildren<Shadow>(true);
+            customSortable = GetComponentInChildren<CustomSortable>(true);
+            if (customSortable != null)
+            {
+                customSortable.Initialize(transform);
+            }
+            Transform waterObj = transform.Find("Visual/OnWaterAnimatorObject");
+            GameObject waterGo = waterObj != null ? waterObj.gameObject : null;
+
+            visualComponent.Initialize(environmentProvider, waterGo, shadow, customSortable);
+        }
+
         if (armComponent != null) armComponent.Initialize();
 
         // 상태 머신 초기화
@@ -60,11 +80,22 @@ public class LumberjackNPC : MonoBehaviour
     private void Update()
     {
         stateMachine?.Update();
+        
+        if (visualComponent != null)
+        {
+            visualComponent.UpdateVisuals(isMoving, false, false);
+        }
     }
 
     private void FixedUpdate()
     {
         stateMachine?.FixedUpdate();
+    }
+
+    private void LateUpdate()
+    {
+        customSortable?.ManualLateUpdate();
+        armComponent?.UpdateSortingOrder();
     }
 
     private void OnDestroy()
@@ -83,14 +114,12 @@ public class LumberjackNPC : MonoBehaviour
 
     public void SetVisualMoving(bool _isMoving)
     {
-        if (visualComponent != null)
-        {
-            visualComponent.SetMoving(_isMoving);
-        }
+        isMoving = _isMoving;
     }
 
     public void SetVisualFacing(Vector2 _direction)
     {
+        currentFacingDir = _direction;
         if (visualComponent != null)
         {
             visualComponent.SetFacingDirection(_direction);

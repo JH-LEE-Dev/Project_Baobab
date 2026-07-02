@@ -83,34 +83,19 @@ public class InDungeonUnitSpawner : MonoBehaviour
         }
 
         Vector3 playerPos = tilemapDataProvider.GetPlayerSpawnPosition();
-        List<Vector3> walkablePositions = tilemapDataProvider.GetWalkableTileWorldPositions();
+        Vector3Int playerCellPos = tilemapDataProvider.WorldToCell(playerPos);
         
-        if (walkablePositions == null || walkablePositions.Count == 0) return;
+        // 한 칸 아래 (y - 1)
+        int targetY = playerCellPos.y - 1;
+        // 여러 마리일 경우 x축을 기준으로 수평(가로) 중앙 정렬 배치
+        int startX = playerCellPos.x - (maxNPCs / 2);
 
-        // 반경 내의 후보지 찾기
-        List<Vector3> safeWalkablePositions = new List<Vector3>();
-        float radiusSq = spawnRadius * spawnRadius;
-
-        for (int i = 0; i < walkablePositions.Count; i++)
+        for (int i = 0; i < maxNPCs; i++)
         {
-            Vector3 pos = walkablePositions[i];
-            if ((pos - playerPos).sqrMagnitude <= radiusSq)
-            {
-                safeWalkablePositions.Add(pos);
-            }
-        }
-
-        int spawnLimit = Mathf.Min(maxNPCs, safeWalkablePositions.Count);
-
-        // 부분 셔플
-        for (int i = 0; i < spawnLimit; i++)
-        {
-            int rnd = UnityEngine.Random.Range(i, safeWalkablePositions.Count);
-            Vector3 temp = safeWalkablePositions[rnd];
-            safeWalkablePositions[rnd] = safeWalkablePositions[i];
-            safeWalkablePositions[i] = temp;
-
-            SpawnNPCAt(safeWalkablePositions[i]);
+            Vector3Int spawnCell = new Vector3Int(startX + i, targetY, 0);
+            Vector3 spawnWorldPos = tilemapDataProvider.CellToWorld(spawnCell);
+            
+            SpawnNPCAt(spawnWorldPos);
         }
 
         if (useCulling)
@@ -236,8 +221,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         
         // NPC 초기화 (환경 데이터 및 길찾기 그리드 제공)
         npc.Initialize(
-            environmentProvider.tilemapDataProvider, 
-            environmentProvider.pathfindGridProvider, 
+            environmentProvider, 
             pathfindTreeProvider
         );
 
