@@ -294,7 +294,10 @@ public class UIView_Unit : UIView
         else
         {
             if (null != interactionUnit)
-                interactionUnit.HideInteraction();
+            {
+                bool _stopFollowing = (null != character && true == character.bRide);
+                interactionUnit.HideInteraction(_bSkip: false, _stopFollowing: _stopFollowing);
+            }
         }
     }
 
