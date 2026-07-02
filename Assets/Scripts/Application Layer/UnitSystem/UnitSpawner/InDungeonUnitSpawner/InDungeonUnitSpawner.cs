@@ -325,6 +325,24 @@ public class InDungeonUnitSpawner : MonoBehaviour
         }
     }
 
+    public void PauseAllNPC()
+    {
+        for (int i = 0; i < allSpawnedNPCs.Count; i++)
+        {
+            if (allSpawnedNPCs[i] != null)
+                allSpawnedNPCs[i].PauseNPC();
+        }
+    }
+
+    public void ResumeAllNPC()
+    {
+        for (int i = 0; i < allSpawnedNPCs.Count; i++)
+        {
+            if (allSpawnedNPCs[i] != null)
+                allSpawnedNPCs[i].ResumeNPC();
+        }
+    }
+
     private void OnDestroy()
     {
         if (cullingGroup != null)

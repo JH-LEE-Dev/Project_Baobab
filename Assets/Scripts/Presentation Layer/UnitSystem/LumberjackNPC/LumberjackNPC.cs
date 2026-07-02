@@ -47,6 +47,7 @@ public class LumberjackNPC : MonoBehaviour
     public IReadOnlyList<Vector3> currentPath => pathBuffer;
 
     private bool isMoving = false;
+    private bool isPaused = false;
     private Vector2 currentFacingDir = Vector2.down;
     
     private CustomSortable customSortable;
@@ -107,6 +108,7 @@ public class LumberjackNPC : MonoBehaviour
     /// </summary>
     public void ResetToCleanState()
     {
+        isPaused = false;
         if (armComponent != null) armComponent.Initialize();
         if (inventoryComponent != null) inventoryComponent.Initialize();
 
@@ -118,6 +120,17 @@ public class LumberjackNPC : MonoBehaviour
         SetArmDirection(Vector2.down);
     }
 
+    public void PauseNPC()
+    {
+        isPaused = true;
+        SetVisualMoving(false);
+    }
+
+    public void ResumeNPC()
+    {
+        isPaused = false;
+    }
+
     private void AddState(LumberjackState _state)
     {
         _state.Initialize(stateMachine, this);
@@ -126,6 +139,8 @@ public class LumberjackNPC : MonoBehaviour
 
     private void Update()
     {
+        if (isPaused) return;
+
         stateMachine?.Update();
 
         if (visualComponent != null)
@@ -153,6 +168,8 @@ public class LumberjackNPC : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (isPaused) return;
+
         stateMachine?.FixedUpdate();
     }
 

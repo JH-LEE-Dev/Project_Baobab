@@ -18,6 +18,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<Item> ItemAcquiredEvent;
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
+    public event Action<bool> NPCPauseRequestedEvent;
+    public event Action FlyingItemPauseRequestedEvent;
+    public event Action FlyingItemResumeRequestedEvent;
+    public event Action FlyingItemDismissRequestedEvent;
 
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -836,9 +840,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         if (CheckWarningUIActivate() == false)
         {
+            NPCPauseRequestedEvent?.Invoke(true);
+            FlyingItemDismissRequestedEvent?.Invoke();
             HandleGameEnd();
             return;
         }
+
+        NPCPauseRequestedEvent?.Invoke(true);
+        FlyingItemPauseRequestedEvent?.Invoke();
 
         StopGrowth();
 
@@ -853,7 +862,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void AbortGameEnd(bool _bAbort)
     {
         if (_bAbort == true)
+        {
             character.SetStaminaDecrease(true);
+            NPCPauseRequestedEvent?.Invoke(false);
+            FlyingItemResumeRequestedEvent?.Invoke();
+        }
 
         character.PauseCharacter(false);
         inputManager.PauseMove(false);
@@ -867,6 +880,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void HandleGameEnd()
     {
+        FlyingItemDismissRequestedEvent?.Invoke();
+
         AbortGameEnd(false);
 
         character.DisableAttackComponent();

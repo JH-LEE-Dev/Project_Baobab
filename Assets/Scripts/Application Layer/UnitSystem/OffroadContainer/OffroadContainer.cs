@@ -64,6 +64,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         public bool toCharacter;
     }
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
+    private List<FlyingTransferItem> dismissingItems = new List<FlyingTransferItem>(16);
+    private bool bFlyingPaused = false;
 
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private LogItemData arrivalDataBuffer = new LogItemData();
@@ -157,6 +159,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private void UpdateFlyingItems(float _deltaTime)
     {
+        UpdateDismissingItems(_deltaTime);
+
+        if (bFlyingPaused) return;
+
         for (int i = flyingItems.Count - 1; i >= 0; i--)
         {
             var flyingData = flyingItems[i];
@@ -190,6 +196,60 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 flyingItems.RemoveAt(i);
             }
         }
+    }
+
+    private void UpdateDismissingItems(float _deltaTime)
+    {
+        for (int i = dismissingItems.Count - 1; i >= 0; i--)
+        {
+            var flyingData = dismissingItems[i];
+            LogItem item = flyingData.item;
+
+            Vector3 scale = item.transform.localScale;
+            scale -= Vector3.one * _deltaTime * 3f;
+
+            if (scale.x <= 0.01f)
+            {
+                item.transform.localScale = Vector3.zero;
+                item.ResetItem();
+                logItemPoolManager.ReturnLogItem(item);
+                dismissingItems.RemoveAt(i);
+            }
+            else
+            {
+                item.transform.localScale = scale;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 현재 날아가고 있는 모든 LogItem의 이동을 일시정지합니다.
+    /// </summary>
+    public void PauseAllFlyingItems()
+    {
+        bFlyingPaused = true;
+    }
+
+    /// <summary>
+    /// 일시정지된 모든 LogItem의 이동을 재개합니다.
+    /// </summary>
+    public void ResumeAllFlyingItems()
+    {
+        bFlyingPaused = false;
+    }
+
+    /// <summary>
+    /// 현재 날아가고 있는 모든 LogItem을 스케일 축소 연출 후 풀에 반환합니다.
+    /// 상자에 데이터를 추가하지 않고 사라집니다.
+    /// </summary>
+    public void DismissAllFlyingItems()
+    {
+        bFlyingPaused = false;
+        for (int i = flyingItems.Count - 1; i >= 0; i--)
+        {
+            dismissingItems.Add(flyingItems[i]);
+        }
+        flyingItems.Clear();
     }
 
     private void TriggerBounce()

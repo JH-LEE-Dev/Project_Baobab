@@ -130,6 +130,18 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.ActivateWarningUIEvent -= ActivateWarningUI;
         inDungeonObjectManager.ActivateWarningUIEvent += ActivateWarningUI;
+
+        inDungeonObjectManager.NPCPauseRequestedEvent -= NPCPauseRequested;
+        inDungeonObjectManager.NPCPauseRequestedEvent += NPCPauseRequested;
+
+        inDungeonObjectManager.FlyingItemPauseRequestedEvent -= FlyingItemPauseRequested;
+        inDungeonObjectManager.FlyingItemPauseRequestedEvent += FlyingItemPauseRequested;
+
+        inDungeonObjectManager.FlyingItemResumeRequestedEvent -= FlyingItemResumeRequested;
+        inDungeonObjectManager.FlyingItemResumeRequestedEvent += FlyingItemResumeRequested;
+
+        inDungeonObjectManager.FlyingItemDismissRequestedEvent -= FlyingItemDismissRequested;
+        inDungeonObjectManager.FlyingItemDismissRequestedEvent += FlyingItemDismissRequested;
     }
 
     private void ReleaseEvents()
@@ -149,6 +161,10 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.CameraDownEndEvent -= CameraDownIsEnd;
         inDungeonProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
         inDungeonObjectManager.ActivateWarningUIEvent -= ActivateWarningUI;
+        inDungeonObjectManager.NPCPauseRequestedEvent -= NPCPauseRequested;
+        inDungeonObjectManager.FlyingItemPauseRequestedEvent -= FlyingItemPauseRequested;
+        inDungeonObjectManager.FlyingItemResumeRequestedEvent -= FlyingItemResumeRequested;
+        inDungeonObjectManager.FlyingItemDismissRequestedEvent -= FlyingItemDismissRequested;
     }
 
     private void SubscribeSignals()
@@ -432,5 +448,28 @@ public class InDungeonSystem : MonoBehaviour
     {
         if (inDungeonObjectManager.offroadVehicle != null)
             inDungeonObjectManager.offroadVehicle.col.enabled = true;
+    }
+
+    private void NPCPauseRequested(bool _pause)
+    {
+        if (_pause)
+            inDungeonUnitSpawner.PauseAllNPC();
+        else
+            inDungeonUnitSpawner.ResumeAllNPC();
+    }
+
+    private void FlyingItemPauseRequested()
+    {
+        offroadContainer.PauseAllFlyingItems();
+    }
+
+    private void FlyingItemResumeRequested()
+    {
+        offroadContainer.ResumeAllFlyingItems();
+    }
+
+    private void FlyingItemDismissRequested()
+    {
+        offroadContainer.DismissAllFlyingItems();
     }
 }
