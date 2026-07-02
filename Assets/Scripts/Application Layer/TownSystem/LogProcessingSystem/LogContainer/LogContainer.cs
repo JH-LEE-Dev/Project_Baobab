@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Pool;
 using System;
 using System.Text;
 using System.Collections;
@@ -36,7 +35,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private List<InventorySlot> containerSlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
     [SerializeField] private float transferInterval = 2f;
     // 타입별 아이템 데이터 풀링 (GC 최적화)
-    private Dictionary<ItemType, IObjectPool<ItemData>> itemDataPools = new Dictionary<ItemType, IObjectPool<ItemData>>();
+    private ItemDataPool itemDataPool;
 
     public Transform visualTransform;
     private float bounceTime = 1f;
@@ -110,6 +109,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     public void Initialize(InputManager _inputManager, LogItemPoolingManager logItemPoolingManager)
     {
+        if (itemDataPool == null) itemDataPool = new ItemDataPool(CreateItemData);
+
         inputManager = _inputManager;
         logItemPoolManager = logItemPoolingManager;
 
@@ -147,20 +148,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             if (containerSlots[i].itemData is ItemData data)
             {
-                ReleaseToPool(data);
+                itemDataPool.Release(data);
             }
             containerSlots[i].Setup(null, 0);
         }
 
-        // 3. 모든 아이템 타입에 대해 풀 미리 생성 (None, Max 제외)
-        for (int i = (int)ItemType.None + 1; i < (int)ItemType.Max; i++)
-        {
-            ItemType type = (ItemType)i;
-            if (!itemDataPools.ContainsKey(type))
-            {
-                itemDataPools[type] = CreatePoolForType(type);
-            }
-        }
+        // 3. 모든 아이템 타입에 대해 풀 미리 생성
+        itemDataPool.WarmAll();
 
         BindEvents();
         UpdateSprite();
@@ -266,38 +260,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
-    private ItemData GetFromPool(ItemType _type)
-    {
-        if (!itemDataPools.ContainsKey(_type))
-        {
-            itemDataPools[_type] = CreatePoolForType(_type);
-        }
-
-        return itemDataPools[_type].Get();
-    }
-
-    private void ReleaseToPool(ItemData _data)
-    {
-        if (_data == null) return;
-        if (itemDataPools.TryGetValue(_data.itemType, out var pool))
-        {
-            pool.Release(_data);
-        }
-    }
-
-    private IObjectPool<ItemData> CreatePoolForType(ItemType _type)
-    {
-        return new UnityEngine.Pool.ObjectPool<ItemData>(
-            createFunc: () => CreateItemData(_type),
-            actionOnGet: (data) => { },
-            actionOnRelease: (data) => data.Reset(),
-            actionOnDestroy: (data) => { },
-            collectionCheck: true,
-            defaultCapacity: 5,
-            maxSize: 50
-        );
-    }
-
     private ItemData CreateItemData(ItemType _type)
     {
         switch (_type)
@@ -321,7 +283,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             if (slot.itemData != null)
             {
-                ReleaseToPool(slot.itemData);
+                itemDataPool.Release(slot.itemData);
             }
             slot.Setup(null, 0);
         }
@@ -520,7 +482,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             if (containerSlots[i].itemData == null)
             {
-                ItemData newData = GetFromPool(_sourceData.itemType);
+                ItemData newData = itemDataPool.Get(_sourceData.itemType);
                 if (newData != null)
                 {
                     // 데이터 복사
@@ -740,7 +702,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 LogState takenState = slot.TakeOneItem();
 
                 // 2. 외부로 반환할 데이터 생성 (풀링 활용)
-                LogItemData resultData = GetFromPool(ItemType.Log) as LogItemData;
+                LogItemData resultData = itemDataPool.Get(ItemType.Log) as LogItemData;
                 if (resultData != null && slot.itemData is LogItemData sourceLog)
                 {
                     // 원본 데이터 복사
@@ -757,7 +719,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     // 데이터 풀 반환 및 슬롯 초기화
                     if (slot.itemData is ItemData data)
                     {
-                        ReleaseToPool(data);
+                        itemDataPool.Release(data);
                     }
                     slot.Setup(null, 0);
 
@@ -831,7 +793,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             if (containerSlots[i].itemData is ItemData itemData)
             {
-                ReleaseToPool(itemData);
+                itemDataPool.Release(itemData);
             }
             containerSlots[i].Setup(null, 0);
         }
@@ -847,7 +809,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 var slotData = inventoryData.slots[i];
                 if (slotData.itemSaveData.itemType != ItemType.None)
                 {
-                    ItemData newData = GetFromPool(slotData.itemSaveData.itemType);
+                    ItemData newData = itemDataPool.Get(slotData.itemSaveData.itemType);
                     if (newData != null)
                     {
                         newData.color = slotData.itemSaveData.color; // 컬러 복구

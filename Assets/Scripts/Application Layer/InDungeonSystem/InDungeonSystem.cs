@@ -48,7 +48,7 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonResultManager);
 
         inDungeonUnitSpawner = GetComponentInChildren<InDungeonUnitSpawner>();
-        inDungeonUnitSpawner.Initialize(environmentProvider, inDungeonObjectManager);
+        inDungeonUnitSpawner.Initialize(environmentProvider, inDungeonObjectManager, offroadContainer);
 
         hiddenmapManager = GetComponentInChildren<HiddenmapManager>();
         hiddenmapManager.Initialize();

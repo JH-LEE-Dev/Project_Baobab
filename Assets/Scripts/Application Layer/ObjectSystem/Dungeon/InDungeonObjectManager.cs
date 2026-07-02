@@ -228,8 +228,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         pos.y -= 0.25f;
 
         offroadVehicle.transform.position = pos;
-        offroadVehicle.ResetPortal();
+        // ResetPortal() 내부에서 발밑 타일 재등록 코루틴(StartCoroutine)을 실행하므로,
+        // 코루틴이 비활성 상태의 게임 오브젝트에서 시작 실패하지 않도록 활성화를 먼저 한다.
         offroadVehicle.gameObject.SetActive(true);
+        offroadVehicle.ResetPortal();
         offroadVehicle.SetCanTravel(true);
         offroadVehicle.col.enabled = false;
         BindPortalEvents();

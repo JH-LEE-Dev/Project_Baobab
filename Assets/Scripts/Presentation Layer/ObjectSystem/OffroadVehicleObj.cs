@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Tilemaps;
 
 public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 {
@@ -126,6 +127,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public float repairBoxCount = 0f;
     public float repairAmount = 0.25f;
 
+    // 차량+컨테이너 발밑에 깔린(RepairBox 소유가 아닌) ColliderTilemap - 길찾기 상 이동 불가 타일로 등록하기 위함
+    private TilemapFootprintCollider footprintCollider;
+
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, Transform _characterTransform)
@@ -183,8 +187,21 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         repairBox = GetComponentInChildren<RepairBox>();
         if (repairBox != null)
         {
-            repairBox.Initialize(_inputManager, charTransform);
+            repairBox.Initialize(_inputManager, charTransform, environmentProvider);
         }
+
+        // 차량/컨테이너 자체의 ColliderTilemap을 찾는다. RepairBox 밑에 있는 것과 이름이 같아서(둘 다 "ColliderTilemap")
+        // RepairBox의 하위 트리에 속하지 않는 것만 골라야 한다.
+        Tilemap footprintColliderTilemap = null;
+        Tilemap[] allTilemaps = GetComponentsInChildren<Tilemap>(true);
+        for (int i = 0; i < allTilemaps.Length; i++)
+        {
+            if (repairBox != null && allTilemaps[i].transform.IsChildOf(repairBox.transform)) continue;
+            footprintColliderTilemap = allTilemaps[i];
+            break;
+        }
+        footprintCollider = new TilemapFootprintCollider(footprintColliderTilemap);
+        footprintCollider.SetEnvironmentProvider(environmentProvider);
 
         BindEvents();
     }
@@ -212,6 +229,29 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         offroadContainerVComponent.Reset();
         ResetRepairBox();
+
+        // 차량이 배치/재배치될 때마다 발밑 타일을 길찾기 불가 타일로 등록 (이전 위치의 등록은 먼저 해제)
+        footprintCollider?.Register();
+
+        // 던전 재입장 시 타일맵이 이후 프레임에 걸쳐 다시 초기화/갱신되면서 방금 한 등록이
+        // 뒤늦게 걷어차이는 경우를 대비해, 몇 프레임 뒤 한 번 더 재등록해서 안전하게 확정한다.
+        StopCoroutine(nameof(ReregisterFootprintDelayed));
+        StartCoroutine(nameof(ReregisterFootprintDelayed));
+    }
+
+    private IEnumerator ReregisterFootprintDelayed()
+    {
+        yield return null;
+        yield return null;
+        footprintCollider?.Register();
+
+        yield return new WaitForSeconds(0.2f);
+        footprintCollider?.Register();
+    }
+
+    private void OnDisable()
+    {
+        footprintCollider?.Clear();
     }
 
     public void ResetRepairBox()

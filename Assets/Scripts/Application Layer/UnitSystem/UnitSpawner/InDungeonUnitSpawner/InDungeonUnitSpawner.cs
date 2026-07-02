@@ -38,13 +38,15 @@ public class InDungeonUnitSpawner : MonoBehaviour
     [SerializeField] private int maxSize = 50;
 
     private IPathfindTreeProvider pathfindTreeProvider;
+    private OffroadContainer offroadContainer;
 
     // 퍼블릭 메서드
-    public void Initialize(IEnvironmentProvider _environmentProvider, IPathfindTreeProvider _pathfindTreeProvider)
+    public void Initialize(IEnvironmentProvider _environmentProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null)
     {
         environmentProvider = _environmentProvider;
         tilemapDataProvider = environmentProvider.tilemapDataProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
+        offroadContainer = _offroadContainer;
 
         cullingDistances = new float[] { cullingDistance };
         spheres = new BoundingSphere[maxSize];
@@ -221,10 +223,11 @@ public class InDungeonUnitSpawner : MonoBehaviour
         npc.transform.position = _pos;
         npc.gameObject.SetActive(true);
         
-        // NPC 초기화 (환경 데이터 및 길찾기 그리드 제공)
+        // NPC 초기화 (환경 데이터, 길찾기 그리드, 로그 납품용 오프로드 컨테이너 제공)
         npc.Initialize(
-            environmentProvider, 
-            pathfindTreeProvider
+            environmentProvider,
+            pathfindTreeProvider,
+            offroadContainer
         );
 
         allSpawnedNPCs.Add(npc);
@@ -306,7 +309,10 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     private void OnReleaseNPC(LumberjackNPC _npc)
     {
-        _npc.ReleaseTargetTree(); // 타겟 나무 예약을 풀어 다른 NPC가 다시 타겟팅할 수 있도록 함
+        // NPC는 던전에서만 유효하므로, 마을로 돌아가는 시점에 인벤토리/타겟나무/경로/방향을 즉시 전부 초기화한다.
+        // (다음 던전에서 Initialize() 시 다시 한 번 초기화되지만, 여기서도 즉시 정리해 풀에 머무는 동안
+        // 이전 생애의 상태가 하나도 남아있지 않도록 보장한다)
+        _npc.ResetToCleanState();
         UpdateNPCVisibility(_npc, false); // 여기서 SetActive(false)까지 처리됨
         allSpawnedNPCs.Remove(_npc);
     }

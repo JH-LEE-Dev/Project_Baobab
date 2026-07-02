@@ -1431,6 +1431,7 @@ GameObject:
   - component: {fileID: 7019057010896650018}
   - component: {fileID: 9197713879388921321}
   - component: {fileID: 8505061167446907806}
+  - component: {fileID: 1654896444801992708}
   m_Layer: 8
   m_Name: LumberjackNPC
   m_TagString: Player
@@ -1493,9 +1494,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LumberjackNPC
   visualComponent: {fileID: 6347319552071559647}
   armComponent: {fileID: 3008963349970507585}
+  inventoryComponent: {fileID: 1654896444801992708}
+  itemLayer:
+    serializedVersion: 2
+    m_Bits: 2048
+  pickupRadius: 1
   moveSpeed: 3
   chopDamage: 10
   chopInterval: 1
+  initialMoveDelay: 5
   currentPath: []
 --- !u!114 &8505061167446907806
 MonoBehaviour:
@@ -1509,6 +1516,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf5e00459b1eaaf44bb0def6eda12530, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PathFindComponent
+--- !u!114 &1654896444801992708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4513264868654122896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 805ae7fb3f5718e439ca425ff32494d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LumberjackInventoryComponent
+  currentSlotCount: 1
+  maxItemsPerSlot: 3
+  inventorySlots: []
 --- !u!1 &5386294816354799521
 GameObject:
   m_ObjectHideFlags: 0

@@ -169,7 +169,16 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     private void LogItemAcquired(LogItem _item)
     {
-        LogItemAcquiredEvent?.Invoke(_item);
+        if (_item.CustomAcquirer != null)
+        {
+            // NPC 등 특정 소비자가 지정된 경우, 전역(플레이어) 이벤트 체인을 타지 않고 직접 귀속시킨다
+            _item.CustomAcquirer.ItemAcquired(_item);
+        }
+        else
+        {
+            LogItemAcquiredEvent?.Invoke(_item);
+        }
+
         logPool.Release(_item);
     }
 

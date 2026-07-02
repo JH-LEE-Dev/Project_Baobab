@@ -33,6 +33,10 @@ public class LogItem : Item, IStaticCollidable
     public float durability = 0f;
 
     private IInventoryChecker inventoryChecker;
+    // 특정 대상(NPC 등)이 흡입을 시도할 때, 전역 inventoryChecker 대신 이 값을 우선 사용한다
+    private IInventoryChecker suckerChecker;
+    private IItemAcquirer customAcquirer;
+    public IItemAcquirer CustomAcquirer => customAcquirer;
 
     // 이동 관련 변수 (캐싱)
     private Vector3 startPos;
@@ -105,6 +109,8 @@ public class LogItem : Item, IStaticCollidable
         treeType = _logItemTypeData.treeType;
         state = ItemMoveState.None;
         suckTarget = null;
+        suckerChecker = null;
+        customAcquirer = null;
         dynamicTarget = null;
         sprite = _logItemTypeData.sprite;
         durability = _logItemTypeData.durability;
@@ -335,6 +341,8 @@ public class LogItem : Item, IStaticCollidable
 
         state = ItemMoveState.None;
         suckTarget = null;
+        suckerChecker = null;
+        customAcquirer = null;
         dynamicTarget = null;
         elapsed = 0;
         trajectoryJitter = Vector3.zero;
@@ -937,7 +945,8 @@ public class LogItem : Item, IStaticCollidable
 
     private void CheckAcquireCondition()
     {
-        if (suckTarget != null && inventoryChecker.CanAcquired(this) && bCanAcquired == true)
+        IInventoryChecker checker = suckerChecker ?? inventoryChecker;
+        if (suckTarget != null && checker != null && checker.CanAcquired(this) && bCanAcquired == true)
         {
             StartSucking(suckTarget);
 
@@ -952,6 +961,29 @@ public class LogItem : Item, IStaticCollidable
         if (state != ItemMoveState.Dropped || !bDrop || bCanAcquired == false) return;
 
         suckTarget = _target;
+        // 특정 소비자 지정 없이 호출된 경우(플레이어 경로) 이전에 남아있을 수 있는
+        // NPC용 checker/acquirer를 지워 전역 inventoryChecker/이벤트 체인으로 되돌린다
+        suckerChecker = null;
+        customAcquirer = null;
+
+        if (state == ItemMoveState.Dropped)
+        {
+            CheckAcquireCondition();
+        }
+    }
+
+    /// <summary>
+    /// 특정 소비자(NPC 등)를 지정해 흡입을 시도합니다. 전역 inventoryChecker/이벤트 체인을 타지 않고
+    /// 지정된 checker/acquirer로만 습득 여부를 판단하고 귀속시킵니다.
+    /// </summary>
+    public void SetSuckTarget(Transform _target, IInventoryChecker _checker, IItemAcquirer _acquirer)
+    {
+        if (state != ItemMoveState.Dropped || !bDrop || bCanAcquired == false) return;
+
+        suckTarget = _target;
+        suckerChecker = _checker;
+        customAcquirer = _acquirer;
+
         if (state == ItemMoveState.Dropped)
         {
             CheckAcquireCondition();

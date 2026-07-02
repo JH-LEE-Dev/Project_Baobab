@@ -30,6 +30,16 @@ public class LumberjackPrefabBuilder
         instance.name = "LumberjackNPC";
 
         // 3. Remove unwanted components from root
+
+        // 제거되기 전에 Character의 아이템 감지 레이어 값을 그대로 이어받음
+        LayerMask itemLayer = default;
+        Character oldCharacter = instance.GetComponent<Character>();
+        if (oldCharacter != null)
+        {
+            SerializedObject soOldCharacter = new SerializedObject(oldCharacter);
+            itemLayer = soOldCharacter.FindProperty("itemLayer").intValue;
+        }
+
         RemoveComponent<Character>(instance);
         RemoveComponent<InputManager>(instance);
         RemoveComponent<Rigidbody2D>(instance);
@@ -66,13 +76,15 @@ public class LumberjackPrefabBuilder
         // 4. Add new components
         LumberjackNPC npcMain = instance.AddComponent<LumberjackNPC>();
         PathFindComponent pathFind = instance.AddComponent<PathFindComponent>();
-        
+        LumberjackInventoryComponent inventoryComp = instance.AddComponent<LumberjackInventoryComponent>();
+
         // Get existing CharacterVisualComponent instead of creating LumberjackVisualComponent
         var visualComp = instance.GetComponentInChildren<CharacterVisualComponent>(true);
-        if (visualComp != null)
         {
             SerializedObject so = new SerializedObject(npcMain);
-            so.FindProperty("visualComponent").objectReferenceValue = visualComp;
+            if (visualComp != null) so.FindProperty("visualComponent").objectReferenceValue = visualComp;
+            so.FindProperty("inventoryComponent").objectReferenceValue = inventoryComp;
+            so.FindProperty("itemLayer").intValue = itemLayer.value;
             so.ApplyModifiedProperties();
         }
 
