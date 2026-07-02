@@ -49,8 +49,14 @@ public class LumberjackNPC : MonoBehaviour
     private bool isMoving = false;
     private bool isPaused = false;
     private Vector2 currentFacingDir = Vector2.down;
-    
+
     private CustomSortable customSortable;
+
+    // 오브젝트 풀 재사용 시(던전 재입장마다) Initialize()가 반복 호출되는데, 아래 컴포넌트/자식 오브젝트
+    // 참조들은 같은 인스턴스인 한 절대 바뀌지 않으므로 GetComponent 계열 탐색은 최초 1회만 수행한다.
+    private bool bComponentsCached = false;
+    private Shadow cachedShadow;
+    private GameObject cachedWaterGo;
 
     public void Initialize(IEnvironmentProvider _envProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null)
     {
@@ -59,8 +65,26 @@ public class LumberjackNPC : MonoBehaviour
         tilemapDataProvider = environmentProvider.tilemapDataProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
 
-        // 길찾기 컴포넌트 초기화
-        pathFindComponent = GetComponent<PathFindComponent>();
+        if (!bComponentsCached)
+        {
+            pathFindComponent = GetComponent<PathFindComponent>();
+
+            if (visualComponent != null)
+            {
+                cachedShadow = GetComponentInChildren<Shadow>(true);
+                customSortable = GetComponentInChildren<CustomSortable>(true);
+                if (customSortable != null)
+                {
+                    customSortable.Initialize(transform);
+                }
+                Transform waterObj = transform.Find("Visual/OnWaterAnimatorObject");
+                cachedWaterGo = waterObj != null ? waterObj.gameObject : null;
+            }
+
+            bComponentsCached = true;
+        }
+
+        // 길찾기 컴포넌트는 던전마다 그리드/타겟 제공자가 바뀌므로 매번 다시 초기화해야 한다.
         if (pathFindComponent != null)
         {
             pathFindComponent.Initialize(tilemapDataProvider, _pathfindTreeProvider);
@@ -68,16 +92,7 @@ public class LumberjackNPC : MonoBehaviour
 
         if (visualComponent != null)
         {
-            var shadow = GetComponentInChildren<Shadow>(true);
-            customSortable = GetComponentInChildren<CustomSortable>(true);
-            if (customSortable != null)
-            {
-                customSortable.Initialize(transform);
-            }
-            Transform waterObj = transform.Find("Visual/OnWaterAnimatorObject");
-            GameObject waterGo = waterObj != null ? waterObj.gameObject : null;
-
-            visualComponent.Initialize(environmentProvider, waterGo, shadow, customSortable);
+            visualComponent.Initialize(environmentProvider, cachedWaterGo, cachedShadow, customSortable);
         }
 
         if (itemDetector == null) itemDetector = new ItemDetector(transform, itemLayer);
