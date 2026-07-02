@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH
+public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider
 {
     // // 이벤트
     public event Action ActivateWarningUIEvent;
@@ -55,6 +55,22 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private float[] cullingDistances;
     private CullingGroup.StateChanged onCullingStateChangedDelegate;
     private Camera mainCam; // 최적화: 카메라 캐싱
+
+    private TreeObj[] treeGridMap;
+    private int gridWidth;
+
+    public ITreeObj GetTreeAt(int _index)
+    {
+        if (_index < 0 || _index >= treeGridMap.Length) return null;
+        return treeGridMap[_index];
+    }
+
+    public ITreeObj GetTreeAt(Vector3Int _cellPos)
+    {
+        int index = _cellPos.x + _cellPos.y * gridWidth;
+        if (index < 0 || index >= treeGridMap.Length) return null;
+        return treeGridMap[index];
+    }
 
     public IReadOnlyList<ITreeObj> trees => activeTrees;
 
@@ -111,6 +127,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
+
+        gridWidth = environmentProvider.tilemapDataProvider.GridWidth;
+        int gridHeight = environmentProvider.tilemapDataProvider.GridHeight;
+        treeGridMap = new TreeObj[gridWidth * gridHeight];
 
         cullingDistances = new float[] { cullingDistance };
         spheres = new BoundingSphere[2500]; // 최대 개수에 맞춰 미리 할당
@@ -318,6 +338,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             tree.PoolIndex = activeTrees.Count;
             activeTrees.Add(tree);
 
+            int flatIdx = cellPos.x + cellPos.y * gridWidth;
+            if (flatIdx >= 0 && flatIdx < treeGridMap.Length)
+            {
+                treeGridMap[flatIdx] = tree;
+            }
+
             if (enableCulling)
             {
                 if (spheres.Length <= tree.PoolIndex)
@@ -404,6 +430,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
+                
+                Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(activeTrees[i].transform.position);
+                int flatIdx = cellPos.x + cellPos.y * gridWidth;
+                if (flatIdx >= 0 && flatIdx < treeGridMap.Length)
+                {
+                    treeGridMap[flatIdx] = null;
+                }
+
                 activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
                 treePool.Release(activeTrees[i]);
             }
@@ -669,6 +703,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         // 최적화: 업데이트 리스트에서 제거
         UpdateTreeVisibility(_tree, false);
+
+        Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(_tree.transform.position);
+        int flatIdx = cellPos.x + cellPos.y * gridWidth;
+        if (flatIdx >= 0 && flatIdx < treeGridMap.Length)
+        {
+            treeGridMap[flatIdx] = null;
+        }
 
         // 최적화: Swap-with-last O(1) 증분 업데이트로 마스터 리스트에서 제거
         int index = _tree.PoolIndex;

@@ -96,6 +96,7 @@ public class PathFindComponent : MonoBehaviour
     // // 외부 의존성
     private ITilemapDataProvider tilemapDataProvider;
     private IPathfindGridProvider pathfindGridProvider;
+    private IPathfindTreeProvider pathfindTreeProvider;
 
     // // 내부 데이터 (경로 공유 및 GC 최소화)
     private readonly List<Vector3> currentPath = new List<Vector3>(64);
@@ -110,6 +111,11 @@ public class PathFindComponent : MonoBehaviour
     private int gridWidth;
     private int gridHeight;
 
+    // BFS 전용 최적화 큐 및 방문 배열
+    private int[] bfsQueue;
+    private int[] bfsVisited;
+    private int bfsVisitedCounter = 0;
+
     private static readonly Vector3Int[] neighborOffsets = new Vector3Int[]
     {
         new Vector3Int(1, 0, 0), new Vector3Int(-1, 0, 0),
@@ -120,10 +126,11 @@ public class PathFindComponent : MonoBehaviour
 
     private static readonly int[] neighborCosts = new int[] { 10, 10, 10, 10, 14, 14, 14, 14 };
 
-    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindGridProvider _pathfindGridProvider)
+    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindGridProvider _pathfindGridProvider, IPathfindTreeProvider _pathfindTreeProvider)
     {
         tilemapDataProvider = _tilemapDataProvider;
         pathfindGridProvider = _pathfindGridProvider;
+        pathfindTreeProvider = _pathfindTreeProvider;
 
         gridWidth = tilemapDataProvider.GridWidth;
         gridHeight = tilemapDataProvider.GridHeight;
@@ -131,6 +138,10 @@ public class PathFindComponent : MonoBehaviour
         int size = gridWidth * gridHeight;
         parentIndices = new int[size];
         gCosts = new int[size];
+        
+        bfsQueue = new int[size];
+        bfsVisited = new int[size];
+        bfsVisitedCounter = 0;
         
         System.Array.Fill(parentIndices, -1);
         System.Array.Fill(gCosts, int.MaxValue);
@@ -168,8 +179,7 @@ public class PathFindComponent : MonoBehaviour
             return false;
         }
 
-        if (!tilemapDataProvider.IsWalkable(targetPos) || pathfindGridProvider.IsOccupied(targetPos) ||
-            tilemapDataProvider.HasRockDeco(targetPos))
+        if (!tilemapDataProvider.IsWalkable(targetPos) || tilemapDataProvider.HasRockDeco(targetPos))
         {
             return false;
         }
@@ -214,8 +224,7 @@ public class PathFindComponent : MonoBehaviour
                 if (neighborPos.x < 0 || neighborPos.x >= gridWidth || neighborPos.y < 0 || neighborPos.y >= gridHeight)
                     continue;
 
-                if (!tilemapDataProvider.IsWalkable(neighborPos) || pathfindGridProvider.IsOccupied(neighborPos) ||
-                    tilemapDataProvider.HasRockDeco(neighborPos))
+                if (!tilemapDataProvider.IsWalkable(neighborPos) || tilemapDataProvider.HasRockDeco(neighborPos))
                 {
                     continue;
                 }
@@ -276,5 +285,84 @@ public class PathFindComponent : MonoBehaviour
             if (curr == -1) break; // 안전장치
         }
         _pathResult.Reverse();
+    }
+
+    /// <summary>
+    /// BFS 알고리즘을 사용하여 도달 가능한 가장 가까운 나무를 찾고 경로를 반환합니다. (GC-Free)
+    /// </summary>
+    public bool FindNearestTreePath(Vector3 _startWorldPos, out ITreeObj _targetTree, List<Vector3> _pathResult)
+    {
+        _targetTree = null;
+        _pathResult.Clear();
+        if (pathfindTreeProvider == null) return false;
+
+        Vector3Int startPos = tilemapDataProvider.WorldToCell(_startWorldPos);
+
+        if (startPos.x < 0 || startPos.x >= gridWidth || startPos.y < 0 || startPos.y >= gridHeight)
+            return false;
+
+        // GC-Free BFS 상태 초기화 (Array.Clear 오버헤드 제거)
+        bfsVisitedCounter++;
+        if (bfsVisitedCounter == int.MaxValue)
+        {
+            System.Array.Fill(bfsVisited, 0);
+            bfsVisitedCounter = 1;
+        }
+
+        int head = 0;
+        int tail = 0;
+
+        int startIndex = PosToIndex(startPos);
+        bfsQueue[tail++] = startIndex;
+        bfsVisited[startIndex] = bfsVisitedCounter;
+        parentIndices[startIndex] = -1;
+
+        while (head < tail)
+        {
+            int currentIndex = bfsQueue[head++];
+
+            // 가장 먼저 발견한 나무가 최단 거리(BFS 특성 보장)
+            ITreeObj tree = pathfindTreeProvider.GetTreeAt(currentIndex);
+            if (tree != null)
+            {
+                _targetTree = tree;
+                RetracePath(startIndex, currentIndex, _pathResult);
+                return true;
+            }
+
+            Vector3Int currentPos = IndexToPos(currentIndex);
+
+            for (int i = 0; i < neighborOffsets.Length; i++)
+            {
+                Vector3Int neighborPos = currentPos + neighborOffsets[i];
+                if (neighborPos.x < 0 || neighborPos.x >= gridWidth || neighborPos.y < 0 || neighborPos.y >= gridHeight)
+                    continue;
+
+                if (!tilemapDataProvider.IsWalkable(neighborPos) || tilemapDataProvider.HasRockDeco(neighborPos))
+                    continue;
+
+                // 대각선 이동 시 코너 커팅 방지
+                if (i >= 4)
+                {
+                    Vector3Int side1 = currentPos + new Vector3Int(neighborOffsets[i].x, 0, 0);
+                    Vector3Int side2 = currentPos + new Vector3Int(0, neighborOffsets[i].y, 0);
+                    if (!tilemapDataProvider.IsWalkable(side1) || tilemapDataProvider.HasRockDeco(side1) ||
+                        !tilemapDataProvider.IsWalkable(side2) || tilemapDataProvider.HasRockDeco(side2))
+                    {
+                        continue;
+                    }
+                }
+
+                int neighborIndex = PosToIndex(neighborPos);
+                if (bfsVisited[neighborIndex] != bfsVisitedCounter)
+                {
+                    bfsVisited[neighborIndex] = bfsVisitedCounter;
+                    parentIndices[neighborIndex] = currentIndex;
+                    bfsQueue[tail++] = neighborIndex;
+                }
+            }
+        }
+
+        return false;
     }
 }

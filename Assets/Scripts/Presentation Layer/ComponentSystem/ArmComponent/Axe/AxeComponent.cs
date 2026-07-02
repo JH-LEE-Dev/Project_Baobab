@@ -64,7 +64,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         //int dirIndex = Mathf.RoundToInt(angle / 45f) % 8;
 
         //if (bAttacked == false)
-            //anim.SetFloat(facingDirHash, dirIndex);
+        //anim.SetFloat(facingDirHash, dirIndex);
 
         // 정렬 레이어 처리
         sortingOrder = (angle > 0 && angle < 180) ? -1 : 1;
@@ -119,7 +119,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         yield return new WaitForSeconds(currentCoolTime);
 
         bAttacked = false;
-        
+
         if (bIsSpeedReduced)
         {
             bIsSpeedReduced = false;
@@ -166,10 +166,13 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     {
         float healAmount = ctx.characterStat.axeDurability * percentage;
         durability += healAmount;
+
         if (durability > ctx.characterStat.axeDurability)
         {
             durability = ctx.characterStat.axeDurability;
         }
+        AxeAttackedEvent?.Invoke();
+
         UpdateSpriteByDurability();
     }
 
@@ -218,10 +221,10 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private float GetEffectiveAxeAttackCoolTime()
     {
         if (ctx == null || ctx.characterStat == null) return 1.2f;
-        
+
         float baseCoolTime = ctx.characterStat.axeAttackCoolTime; // 오염되지 않은 순수 쿨타임
         float decreaseRatio = (ctx.characterStat.attackRythmSpeedMul / 100f) * attackComboStack;
-        
+
         // 쿨타임이 음수가 되지 않도록 방어 (최소 0.05초)
         return Mathf.Max(0.05f, baseCoolTime * (1f - decreaseRatio));
     }

@@ -52,8 +52,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
     public readonly int isMovingHash = Animator.StringToHash("IsMoving");
     private readonly List<IStaticCollidable> detectionResults = new List<IStaticCollidable>(4);
 
-    private PathFindComponent pathFindComponent;
-
     //군중 제어 코드
     public Vector3 centerPos;
     public Vector3 targetPos;
@@ -123,12 +121,9 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         sr = animatorObject.GetComponent<SpriteRenderer>();
         shadowSR = shadowObject.GetComponent<SpriteRenderer>();
         shadowAnim = shadowObject.GetComponent<Animator>();
-        pathFindComponent = GetComponent<PathFindComponent>();
-        healthComponent = GetComponent<EHealthComponent>();
         healthComponent.Initialize();
 
         shadowObject.Initialize();
-        pathFindComponent.Initialize(environmentProvider.tilemapDataProvider, environmentProvider.pathfindGridProvider);
 
         Hide();
         SetupStateMachine();
@@ -228,8 +223,6 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
         centerPos = _centerPos;
         scatterRadius = _scatterRadius;
 
-        pathFindComponent.FindPath(cachedTransform.position, _endPos);
-
         stateMachine.ChangeState<AS_RunState>();
     }
 
@@ -246,7 +239,7 @@ public class Animal : MonoBehaviour, IDamageable, IStaticCollidable, IAnimalObj
 
     private void AddState(AnimalState _state)
     {
-        _state.Initialize(stateMachine, this, pathFindComponent);
+        _state.Initialize(stateMachine, this);
         stateMachine.AddState(_state);
     }
 
