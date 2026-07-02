@@ -17,6 +17,7 @@ public class UI_InteractionUnit : MonoBehaviour
     private Vector2 positionOffset;
     private int showCount = 0;
     private bool bHide = false;
+    private bool bFollowTarget = true;
 
     public void Initialize()
     {
@@ -45,6 +46,7 @@ public class UI_InteractionUnit : MonoBehaviour
     public void ShowInteraction(int _iconIndex = 0)
     {
         bHide = false;
+        bFollowTarget = true;
 
         if (null == interactionIcons || 0 == interactionIcons.Length)
             return;
@@ -65,7 +67,7 @@ public class UI_InteractionUnit : MonoBehaviour
     /// <summary>
     /// 상호작용 UI를 숨깁니다. (카운트 감소, 0일 때만 실제 은닉)
     /// </summary>
-    public void HideInteraction(bool _bSkip = false)
+    public void HideInteraction(bool _bSkip = false, bool _stopFollowing = false)
     {
         // 안전 장치: 카운트가 음수가 되지 않도록 함
         if (0 > --showCount)
@@ -73,6 +75,9 @@ public class UI_InteractionUnit : MonoBehaviour
 
         if (0 < showCount)
             return;
+
+        if (true == _stopFollowing)
+            bFollowTarget = false;
 
         if (null == motionPlayer)
             return;
@@ -91,8 +96,8 @@ public class UI_InteractionUnit : MonoBehaviour
         if (null == targetTransform || null == rectTransform)
             return;
 
-        // 노출 카운트가 0이면 위치 업데이트 생략 가능 (최적화)
-        if (true == bHide)
+        // 노출 카운트가 0이거나 따라가지 않는 상태면 위치 업데이트 생략 가능 (최적화)
+        if (true == bHide || false == bFollowTarget)
             return;
 
         Vector2 targetPosition = targetTransform.position;
