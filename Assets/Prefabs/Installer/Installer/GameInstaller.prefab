@@ -442,6 +442,7 @@ MonoBehaviour:
   - treeType: 12
     minCnt: 4
     maxCnt: 5
+  enableCulling: 0
   cullingUpdateInterval: 0.05
 --- !u!114 &597610330652353424
 MonoBehaviour:
@@ -2546,6 +2547,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonObjectManager
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
+  enableCulling: 0
   cullingDistance: 25
   offroadVehiclePrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   offroadVehicle: {fileID: 0}

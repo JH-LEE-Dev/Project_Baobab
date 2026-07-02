@@ -32,6 +32,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private TreeObj treePrefab;
 
     [Header("Optimization")]
+    [SerializeField] private bool enableCulling = true;
     [SerializeField] private float cullingDistance = 25f;
 
     [Header("Portal")]
@@ -317,17 +318,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             tree.PoolIndex = activeTrees.Count;
             activeTrees.Add(tree);
 
-            if (spheres.Length <= tree.PoolIndex)
+            if (enableCulling)
             {
-                System.Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, tree.PoolIndex + 1));
-                cullingGroup.SetBoundingSpheres(spheres);
+                if (spheres.Length <= tree.PoolIndex)
+                {
+                    System.Array.Resize(ref spheres, Mathf.Max(spheres.Length * 2, tree.PoolIndex + 1));
+                    cullingGroup.SetBoundingSpheres(spheres);
+                }
+                spheres[tree.PoolIndex] = new BoundingSphere(_spawnPos, 3f);
             }
-            spheres[tree.PoolIndex] = new BoundingSphere(_spawnPos, 3f);
 
             environmentProvider.tilemapDataProvider.SetTreeCollisionTile(_spawnPos);
             environmentProvider.densityProvider.UpdateTreeCnt(true);
 
-            if (cullingGroup != null)
+            if (enableCulling && cullingGroup != null)
             {
                 cullingGroup.SetBoundingSphereCount(activeTrees.Count);
                 UpdateTreeVisibility(tree, cullingGroup.IsVisible(tree.PoolIndex) && (cullingGroup.GetDistance(tree.PoolIndex) == 0));
@@ -335,6 +339,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             else
             {
                 tree.gameObject.SetActive(true);
+                // Instantiate로 처음 생성된 나무는 이미 active 상태라 SetActive(true)가 OnEnable을 재실행하지 않음
+                // 따라서 수동으로 올바른 위치에 재등록 (Register 내부에서 중복 등록은 안전하게 처리됨)
+                CollisionSystem.Instance?.Register(tree, true);
+
+                if (tree.UpdateIndex == -1)
+                {
+                    tree.UpdateIndex = activeTreesForUpdate.Count;
+                    activeTreesForUpdate.Add(tree);
+                }
             }
 
             if (_isGrowing)
@@ -397,7 +410,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         activeTrees.Clear();
         activeTreesForUpdate.Clear();
-        if (cullingGroup != null) cullingGroup.SetBoundingSphereCount(0);
+        if (enableCulling && cullingGroup != null) cullingGroup.SetBoundingSphereCount(0);
     }
 
     private void StopGrowth()
@@ -411,6 +424,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void SetupCullingGroup()
     {
+        if (!enableCulling) return;
+
         if (cullingGroup == null)
         {
             cullingGroup = new CullingGroup();
@@ -427,6 +442,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void RefreshCullingGroup()
     {
+        if (!enableCulling || cullingGroup == null) return;
+
         // 최적화: 전체 갱신은 던전 시작 시나 대규모 변경 시에만 사용 (O(N))
         int count = activeTrees.Count;
         for (int i = 0; i < count; i++)
@@ -448,6 +465,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnCullingStateChanged(CullingGroupEvent _ev)
     {
+        if (!enableCulling) return;
         if (_ev.index >= activeTrees.Count) return;
 
         bool shouldBeActive = _ev.isVisible && (_ev.currentDistance == 0);
@@ -662,11 +680,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 TreeObj lastTree = activeTrees[lastIdx];
                 activeTrees[index] = lastTree;
                 lastTree.PoolIndex = index;
-                spheres[index] = spheres[lastIdx];
+                if (spheres != null) spheres[index] = spheres[lastIdx];
             }
             activeTrees.RemoveAt(lastIdx);
 
-            if (cullingGroup != null)
+            if (enableCulling && cullingGroup != null)
             {
                 cullingGroup.SetBoundingSphereCount(activeTrees.Count);
             }
