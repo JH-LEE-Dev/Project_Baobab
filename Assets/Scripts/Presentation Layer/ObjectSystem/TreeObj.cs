@@ -166,10 +166,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
     }
 
+    [HideInInspector] public bool bLastHitByPlayer = true;
+
     public void ResetTree()
     {
         bDead = false;
         bReserved = false;
+        bLastHitByPlayer = true;
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
@@ -199,6 +202,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             TreeDeadEvent?.Invoke(this);
         }
+
+        bLastHitByPlayer = true;
     }
 
     public bool ManualUpdate()

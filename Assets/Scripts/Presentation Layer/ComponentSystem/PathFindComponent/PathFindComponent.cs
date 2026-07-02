@@ -134,11 +134,20 @@ public class PathFindComponent : MonoBehaviour
         gridHeight = tilemapDataProvider.GridHeight;
 
         int size = gridWidth * gridHeight;
-        parentIndices = new int[size];
-        gCosts = new int[size];
+        
+        if (parentIndices == null || parentIndices.Length != size)
+        {
+            parentIndices = new int[size];
+            gCosts = new int[size];
+            bfsQueue = new int[size];
+            bfsVisited = new int[size];
+        }
+        else
+        {
+            System.Array.Clear(bfsQueue, 0, size);
+            System.Array.Clear(bfsVisited, 0, size);
+        }
 
-        bfsQueue = new int[size];
-        bfsVisited = new int[size];
         bfsVisitedCounter = 0;
 
         System.Array.Fill(parentIndices, -1);

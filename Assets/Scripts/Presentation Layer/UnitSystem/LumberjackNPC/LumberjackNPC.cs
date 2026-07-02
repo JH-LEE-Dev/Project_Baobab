@@ -137,6 +137,31 @@ public class LumberjackNPC : MonoBehaviour
         stateMachine.AddState(_state);
     }
 
+    private void OnEnable()
+    {
+        if (inventoryComponent != null)
+        {
+            inventoryComponent.InventoryIsFullEvent -= HandleInventoryFull;
+            inventoryComponent.InventoryIsFullEvent += HandleInventoryFull;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (inventoryComponent != null)
+        {
+            inventoryComponent.InventoryIsFullEvent -= HandleInventoryFull;
+        }
+    }
+
+    private void HandleInventoryFull()
+    {
+        if (stateMachine != null && !(stateMachine.CurrentState is LJState_Deliver) && offroadContainer != null)
+        {
+            stateMachine.ChangeState<LJState_Deliver>();
+        }
+    }
+
     private void Update()
     {
         if (isPaused) return;
@@ -162,6 +187,11 @@ public class LumberjackNPC : MonoBehaviour
     {
         if (_collidable is LogItem logItem)
         {
+            if (inventoryComponent != null && !inventoryComponent.CanAcquired(logItem))
+            {
+                HandleInventoryFull();
+                return;
+            }
             logItem.SetSuckTarget(transform, inventoryComponent, inventoryComponent);
         }
     }
@@ -240,12 +270,15 @@ public class LumberjackNPC : MonoBehaviour
     /// 동일하게 로그가 날아가는 연출을 거쳐 도착 시점에 실제로 컨테이너 슬롯에 더해집니다.
     /// 컨테이너가 가득 차서 일부만 들어가면 나머지는 인벤토리에 그대로 남습니다(유실 없음).
     /// </summary>
-    public void DepositInventoryToOffroad()
+    public void DepositInventoryToOffroad(System.Action _onComplete)
     {
-        if (offroadContainer == null || inventoryComponent == null) return;
+        if (offroadContainer == null || inventoryComponent == null)
+        {
+            _onComplete?.Invoke();
+            return;
+        }
 
-        inventoryComponent.TransferLogItemsTo((logData, state) =>
-            offroadContainer.TryDepositLogItemVisual(logData, transform.position, state));
+        offroadContainer.TransferFromNPC(inventoryComponent, transform.position, _onComplete);
     }
 
     public void SetVisualMoving(bool _isMoving)
@@ -287,6 +320,7 @@ public class LumberjackNPC : MonoBehaviour
             {
                 // 실제 나무 오브젝트인 경우 데미지 적용
                 // (죽으면서 스폰되는 로그는 주기적으로 도는 itemDetector가 착지 후 자연스럽게 주워간다)
+                treeObj.bLastHitByPlayer = false;
                 treeObj.TakeDamage(chopDamage);
             }
         }

@@ -1499,11 +1499,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 2048
   pickupRadius: 1
+  itemDetectionInterval: 0.2
   moveSpeed: 3
   chopDamage: 10
   chopInterval: 1
-  initialMoveDelay: 5
-  currentPath: []
+  initialMoveDelay: 2.5
 --- !u!114 &8505061167446907806
 MonoBehaviour:
   m_ObjectHideFlags: 0

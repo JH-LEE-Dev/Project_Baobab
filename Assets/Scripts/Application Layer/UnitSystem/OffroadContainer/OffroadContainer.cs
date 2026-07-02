@@ -238,10 +238,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         bFlyingPaused = false;
     }
 
-    /// <summary>
-    /// 현재 날아가고 있는 모든 LogItem을 스케일 축소 연출 후 풀에 반환합니다.
-    /// 상자에 데이터를 추가하지 않고 사라집니다.
-    /// </summary>
     public void DismissAllFlyingItems()
     {
         bFlyingPaused = false;
@@ -250,6 +246,27 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             dismissingItems.Add(flyingItems[i]);
         }
         flyingItems.Clear();
+    }
+
+    /// <summary>
+    /// 던전/마을 재진입 시 오프로드 컨테이너의 논리적 상태(열림 여부 등)를 강제 초기화합니다.
+    /// </summary>
+    public void ResetState()
+    {
+        bContainerOpen = false;
+        bContainerVisualOpened = false;
+        closeTimer = -1f;
+        DismissAllFlyingItems();
+
+        if (transferCoroutine != null)
+        {
+            StopCoroutine(transferCoroutine);
+            transferCoroutine = null;
+        }
+
+        transferringSlots.Clear();
+        bIsInteracting = false;
+        lastTransferTime = -transferInterval;
     }
 
     private void TriggerBounce()
@@ -942,6 +959,51 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = false });
 
         return true;
+    }
+
+    /// <summary>
+    /// NPC 인벤토리의 로그 아이템들을 캐릭터의 컨테이너 전송과 동일한 시간 간격(인터벌)을 적용하여 천천히 납품합니다.
+    /// 납품 연출이 모두 끝나면 _onComplete 콜백을 호출합니다.
+    /// </summary>
+    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    {
+        StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete));
+    }
+
+    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    {
+        var slots = _npcInventory.GetInventorySlots();
+        for (int i = 0; i < _npcInventory.currentSlotCnt; i++)
+        {
+            var slot = slots[i];
+            if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+
+            bool slotTransferredAny = false;
+            while (slot.totalCount > 0)
+            {
+                if (!TryDepositLogItemVisual(logData, _fromWorldPos, logData.logState))
+                {
+                    break;
+                }
+
+                slot.TakeOneItem();
+                slotTransferredAny = true;
+
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+
+            if (slot.totalCount == 0)
+            {
+                _npcInventory.ItemDeleted(slot);
+            }
+
+            if (slotTransferredAny)
+            {
+                yield return new WaitForSeconds(transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+        }
+
+        _onComplete?.Invoke();
     }
 
     private bool CanAddItemByData(ItemData _sourceData)

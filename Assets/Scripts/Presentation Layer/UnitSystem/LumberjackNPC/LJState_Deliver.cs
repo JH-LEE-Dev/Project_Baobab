@@ -8,10 +8,13 @@ public class LJState_Deliver : LumberjackState
 {
     private int pathIndex = 0;
 
+    private bool bIsDepositing = false;
+
     public override void Enter()
     {
         base.Enter();
         pathIndex = 0;
+        bIsDepositing = false;
         npc.SetVisualMoving(true);
 
         if (npc.offroadContainer == null)
@@ -47,6 +50,8 @@ public class LJState_Deliver : LumberjackState
     {
         base.Update();
 
+        if (bIsDepositing) return;
+
         if (npc.offroadContainer == null)
         {
             stateMachine.ChangeState<LJState_Idle>();
@@ -69,7 +74,14 @@ public class LJState_Deliver : LumberjackState
 
     private void DepositAndReturn()
     {
-        npc.DepositInventoryToOffroad();
-        stateMachine.ChangeState<LJState_Idle>();
+        if (bIsDepositing) return;
+
+        bIsDepositing = true;
+        npc.SetVisualMoving(false); // 납품 중에는 멈춰 서 있는다
+        npc.DepositInventoryToOffroad(() => 
+        {
+            bIsDepositing = false;
+            stateMachine.ChangeState<LJState_Idle>();
+        });
     }
 }

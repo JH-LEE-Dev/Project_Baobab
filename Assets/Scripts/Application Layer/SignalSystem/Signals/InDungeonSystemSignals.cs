@@ -73,9 +73,11 @@ public struct AnimalHitSignal
 public struct TreeIsDeadSignal
 {
     public TreeType type;
-    public TreeIsDeadSignal(TreeType _type)
+    public bool isPlayerKilled;
+    public TreeIsDeadSignal(TreeType _type, bool _isPlayerKilled = true)
     {
         type = _type;
+        isPlayerKilled = _isPlayerKilled;
     }
 }
 

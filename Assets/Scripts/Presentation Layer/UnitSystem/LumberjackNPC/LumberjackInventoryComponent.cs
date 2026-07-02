@@ -282,6 +282,11 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
         return transform;
     }
 
+    public List<InventorySlot> GetInventorySlots()
+    {
+        return inventorySlots;
+    }
+
     private void UpdateInventoryEmptyState()
     {
         bool isEmpty = true;

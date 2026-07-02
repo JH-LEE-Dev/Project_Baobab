@@ -299,6 +299,9 @@ public class UnitSystem
 
     private void TreeIsDead(TreeIsDeadSignal _signal)
     {
-        unitLogicManager.SourceOfStaminaRecover();
+        if (_signal.isPlayerKilled)
+        {
+            unitLogicManager.SourceOfStaminaRecover();
+        }
     }
 }

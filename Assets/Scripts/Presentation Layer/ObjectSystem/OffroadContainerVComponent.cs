@@ -356,5 +356,31 @@ public class OffroadContainerVComponent : MonoBehaviour
         spriteRenderer.enabled = true;
         containerForJump.SetActive(false);
         carriedContainer.SetActive(false);
+        
+        bActive = true;
+        if (anim != null)
+        {
+            anim.SetBool(bOpenHash, false);
+            anim.Rebind();
+            anim.Update(0f);
+        }
+
+        if (parentTransformForOpen != null)
+        {
+            parentTransformForOpen.DOKill();
+            parentTransformForOpen.localScale = originalOpenScale;
+            parentTransformForOpen.localRotation = originalOpenRot;
+        }
+
+        if (openCoroutine != null)
+        {
+            StopCoroutine(openCoroutine);
+            openCoroutine = null;
+        }
+        if (closeCoroutine != null)
+        {
+            StopCoroutine(closeCoroutine);
+            closeCoroutine = null;
+        }
     }
 }

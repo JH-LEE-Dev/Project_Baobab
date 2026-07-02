@@ -270,9 +270,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Publish(new AnimalHitSignal(_animal));
     }
 
-    private void TreeIsDead(TreeType _type)
+    private void TreeIsDead(TreeType _type, bool isPlayerKilled)
     {
-        signalHub.Publish(new TreeIsDeadSignal(_type));
+        signalHub.Publish(new TreeIsDeadSignal(_type, isPlayerKilled));
     }
 
     private void AnimalIsDead(Animal _animal)

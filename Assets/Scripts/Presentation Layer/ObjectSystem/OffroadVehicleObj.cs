@@ -227,6 +227,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         containerShadowObj.SetActive(true);
 
+        offroadContainer.ResetState();
         offroadContainerVComponent.Reset();
         ResetRepairBox();
 

@@ -13,7 +13,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<bool> OffroadInteractStateChangedEvent;
     public event Action<bool> RepairBoxInteractStateChangedEvent;
     public event Action<OffroadVehicleObj> OffroadSpawnedEvent;
-    public event Action<TreeType> TreeDeadEvent;
+    public event Action<TreeType, bool> TreeDeadEvent;
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
@@ -436,13 +436,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             {
                 environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(activeTrees[i].transform.position);
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
-                
-                Vector3Int cellPos = environmentProvider.tilemapDataProvider.WorldToCell(activeTrees[i].transform.position);
-                int flatIdx = cellPos.x + cellPos.y * gridWidth;
-                if (flatIdx >= 0 && flatIdx < treeGridMap.Length)
-                {
-                    treeGridMap[flatIdx] = null;
-                }
 
                 activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
                 treePool.Release(activeTrees[i]);
@@ -450,6 +443,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         activeTrees.Clear();
         activeTreesForUpdate.Clear();
+        System.Array.Clear(treeGridMap, 0, treeGridMap.Length);
         if (enableCulling && cullingGroup != null) cullingGroup.SetBoundingSphereCount(0);
     }
 
@@ -615,7 +609,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         treePool.Release(_treeObj);
-        TreeDeadEvent?.Invoke(_treeObj.treeData.type);
+        TreeDeadEvent?.Invoke(_treeObj.treeData.type, _treeObj.bLastHitByPlayer);
 
         inDungeonResultManager.IncreaseTreeKillCnt();
     }
