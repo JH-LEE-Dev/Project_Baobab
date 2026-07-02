@@ -24,6 +24,11 @@ public class LumberjackNPC : MonoBehaviour
     public float chopDamage = 10f;
     public float chopInterval = 1.0f;
 
+    [Header("Spawn Settings")]
+    public float initialMoveDelay = 5f;
+    private float spawnDelayEndTime = 0f;
+    public bool IsSpawnDelayFinished => Time.time >= spawnDelayEndTime;
+
     // 현재 공유 데이터
     public ITreeObj targetTree;
     public List<Vector3> currentPath = new List<Vector3>();
@@ -43,7 +48,7 @@ public class LumberjackNPC : MonoBehaviour
         pathFindComponent = GetComponent<PathFindComponent>();
         if (pathFindComponent != null)
         {
-            pathFindComponent.Initialize(tilemapDataProvider, environmentProvider.pathfindGridProvider, _pathfindTreeProvider);
+            pathFindComponent.Initialize(tilemapDataProvider, _pathfindTreeProvider);
         }
 
         if (visualComponent != null)
@@ -62,11 +67,21 @@ public class LumberjackNPC : MonoBehaviour
 
         if (armComponent != null) armComponent.Initialize();
 
-        // 상태 머신 초기화
-        stateMachine = new LumberjackStateMachine();
-        AddState(new LJState_Idle());
-        AddState(new LJState_Move());
-        AddState(new LJState_Chop());
+        // 상태 머신 초기화 (오브젝트 풀 재사용 시 불필요한 재생성을 피하기 위해 최초 1회만 생성)
+        if (stateMachine == null)
+        {
+            stateMachine = new LumberjackStateMachine();
+            AddState(new LJState_Idle());
+            AddState(new LJState_Move());
+            AddState(new LJState_Chop());
+        }
+
+        // 이전 생애의 타겟/경로 정보가 남아있지 않도록 초기화
+        ReleaseTargetTree();
+        currentPath.Clear();
+
+        // 스폰 직후 일정 시간 동안은 움직이지 않도록 지연시간 설정
+        spawnDelayEndTime = Time.time + initialMoveDelay;
 
         stateMachine.ChangeState<LJState_Idle>();
     }
@@ -100,6 +115,7 @@ public class LumberjackNPC : MonoBehaviour
 
     private void OnDestroy()
     {
+        ReleaseTargetTree();
         stateMachine?.ReleaseAllState();
     }
 
@@ -109,7 +125,27 @@ public class LumberjackNPC : MonoBehaviour
     {
         if (pathFindComponent == null) return false;
 
-        return pathFindComponent.FindNearestTreePath(transform.position, out targetTree, currentPath);
+        bool found = pathFindComponent.FindNearestTreePath(transform.position, out targetTree, currentPath);
+        if (found && targetTree != null)
+        {
+            // 다른 NPC가 같은 나무를 동시에 타겟팅하지 못하도록 예약
+            targetTree.bReserved = true;
+        }
+
+        return found;
+    }
+
+    /// <summary>
+    /// 현재 타겟 나무의 예약을 해제하고 참조를 비웁니다. (나무를 포기하거나 다 벤 경우 호출)
+    /// </summary>
+    public void ReleaseTargetTree()
+    {
+        if (targetTree != null)
+        {
+            targetTree.bReserved = false;
+        }
+
+        targetTree = null;
     }
 
     public void SetVisualMoving(bool _isMoving)

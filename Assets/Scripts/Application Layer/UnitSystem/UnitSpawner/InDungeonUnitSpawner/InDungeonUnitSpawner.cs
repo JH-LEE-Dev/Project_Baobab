@@ -13,7 +13,6 @@ public class InDungeonUnitSpawner : MonoBehaviour
     [Header("Spawn Settings")]
     [SerializeField] private LumberjackNPC npcPrefab;
     [SerializeField] private int maxNPCs = 3;
-    [SerializeField] private float spawnRadius = 10f; // 캐릭터 스폰 위치 기준 반경
 
     private IObjectPool<LumberjackNPC> npcPool;
 
@@ -84,17 +83,20 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
         Vector3 playerPos = tilemapDataProvider.GetPlayerSpawnPosition();
         Vector3Int playerCellPos = tilemapDataProvider.WorldToCell(playerPos);
-        
-        // 한 칸 아래 (y - 1)
-        int targetY = playerCellPos.y - 1;
-        // 여러 마리일 경우 x축을 기준으로 수평(가로) 중앙 정렬 배치
-        int startX = playerCellPos.x - (maxNPCs / 2);
+
+        // 캐릭터 두 칸 아래 셀의 월드 좌표를 기준점으로 사용
+        Vector3Int centerCell = new Vector3Int(playerCellPos.x, playerCellPos.y - 2, 0);
+        Vector3 centerWorldPos = tilemapDataProvider.CellToWorld(centerCell);
+
+        // 타일맵이 아이소메트릭 등으로 기울어져 있어도 화면상 완전한 수평 배치가 되도록,
+        // 인접 셀 간 월드 X 간격만 구해서 순수 X축으로만 좌우 대칭 배치한다.
+        float spacingX = tilemapDataProvider.CellToWorld(centerCell + new Vector3Int(1, 0, 0)).x - centerWorldPos.x;
+        float startOffsetX = -(maxNPCs - 1) * 0.5f * spacingX;
 
         for (int i = 0; i < maxNPCs; i++)
         {
-            Vector3Int spawnCell = new Vector3Int(startX + i, targetY, 0);
-            Vector3 spawnWorldPos = tilemapDataProvider.CellToWorld(spawnCell);
-            
+            Vector3 spawnWorldPos = centerWorldPos + new Vector3(startOffsetX + i * spacingX, 0f, 0f);
+
             SpawnNPCAt(spawnWorldPos);
         }
 
@@ -304,13 +306,9 @@ public class InDungeonUnitSpawner : MonoBehaviour
 
     private void OnReleaseNPC(LumberjackNPC _npc)
     {
-        UpdateNPCVisibility(_npc, false);
+        _npc.ReleaseTargetTree(); // 타겟 나무 예약을 풀어 다른 NPC가 다시 타겟팅할 수 있도록 함
+        UpdateNPCVisibility(_npc, false); // 여기서 SetActive(false)까지 처리됨
         allSpawnedNPCs.Remove(_npc);
-        
-        if (_npc.gameObject.activeSelf)
-        {
-            _npc.gameObject.SetActive(false);
-        }
     }
 
     private void OnDestroyNPC(LumberjackNPC _npc)

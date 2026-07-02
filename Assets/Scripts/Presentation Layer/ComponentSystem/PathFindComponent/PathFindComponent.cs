@@ -3,111 +3,13 @@ using System.Collections.Generic;
 
 public class PathFindComponent : MonoBehaviour
 {
-    private struct Node
-    {
-        public int index;
-        public int gCost;
-        public int hCost;
-
-        public int fCost => gCost + hCost;
-
-        public Node(int _index, int _gCost, int _hCost)
-        {
-            index = _index;
-            gCost = _gCost;
-            hCost = _hCost;
-        }
-    }
-
-    /// <summary>
-    /// A* 전용 최소 힙 (GC 최소화 및 O(log N) 성능 확보)
-    /// </summary>
-    private class FastPriorityQueue
-    {
-        private Node[] nodes;
-        private int count;
-
-        public int Count => count;
-
-        public FastPriorityQueue(int _capacity)
-        {
-            nodes = new Node[_capacity];
-            count = 0;
-        }
-
-        public void Clear() => count = 0;
-
-        public void Push(Node _node)
-        {
-            if (count >= nodes.Length) return;
-
-            nodes[count] = _node;
-            int i = count;
-            count++;
-
-            while (i > 0)
-            {
-                int p = (i - 1) / 2;
-                if (!IsHigherPriority(nodes[i], nodes[p])) break;
-
-                Node temp = nodes[i];
-                nodes[i] = nodes[p];
-                nodes[p] = temp;
-                i = p;
-            }
-        }
-
-        public Node Pop()
-        {
-            Node result = nodes[0];
-            count--;
-            if (count > 0)
-            {
-                nodes[0] = nodes[count];
-                int i = 0;
-                while (true)
-                {
-                    int left = i * 2 + 1;
-                    int right = i * 2 + 2;
-                    int best = i;
-
-                    if (left < count && IsHigherPriority(nodes[left], nodes[best])) best = left;
-                    if (right < count && IsHigherPriority(nodes[right], nodes[best])) best = right;
-
-                    if (best == i) break;
-
-                    Node temp = nodes[i];
-                    nodes[i] = nodes[best];
-                    nodes[best] = temp;
-                    i = best;
-                }
-            }
-            return result;
-        }
-
-        private bool IsHigherPriority(Node _a, Node _b)
-        {
-            if (_a.fCost < _b.fCost) return true;
-            if (_a.fCost == _b.fCost) return _a.hCost < _b.hCost;
-            return false;
-        }
-    }
-
     // // 외부 의존성
     private ITilemapDataProvider tilemapDataProvider;
-    private IPathfindGridProvider pathfindGridProvider;
     private IPathfindTreeProvider pathfindTreeProvider;
 
-    // // 내부 데이터 (경로 공유 및 GC 최소화)
-    private readonly List<Vector3> currentPath = new List<Vector3>(64);
-    public IReadOnlyList<Vector3> Path => currentPath;
-
     // // 내부 의존성 (재사용을 위한 컬렉션, GC 최소화)
-    private readonly FastPriorityQueue openList = new FastPriorityQueue(1024);
-    
     // Dictionary 대체: 1차원 배열 최적화
     private int[] parentIndices;
-    private int[] gCosts;
     private int gridWidth;
     private int gridHeight;
 
@@ -124,12 +26,9 @@ public class PathFindComponent : MonoBehaviour
         new Vector3Int(1, -1, 0), new Vector3Int(-1, -1, 0)
     };
 
-    private static readonly int[] neighborCosts = new int[] { 10, 10, 10, 10, 14, 14, 14, 14 };
-
-    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindGridProvider _pathfindGridProvider, IPathfindTreeProvider _pathfindTreeProvider)
+    public void Initialize(ITilemapDataProvider _tilemapDataProvider, IPathfindTreeProvider _pathfindTreeProvider)
     {
         tilemapDataProvider = _tilemapDataProvider;
-        pathfindGridProvider = _pathfindGridProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
 
         gridWidth = tilemapDataProvider.GridWidth;
@@ -137,143 +36,16 @@ public class PathFindComponent : MonoBehaviour
 
         int size = gridWidth * gridHeight;
         parentIndices = new int[size];
-        gCosts = new int[size];
-        
+
         bfsQueue = new int[size];
         bfsVisited = new int[size];
         bfsVisitedCounter = 0;
-        
+
         System.Array.Fill(parentIndices, -1);
-        System.Array.Fill(gCosts, int.MaxValue);
-    }
-
-    // // 점유 관리 API
-    public bool IsOccupied(Vector3Int _cellPos) => pathfindGridProvider.IsOccupied(_cellPos);
-    public bool Occupy(Vector3Int _cellPos) => pathfindGridProvider.Occupy(_cellPos);
-    public void Release(Vector3Int _cellPos) => pathfindGridProvider.Release(_cellPos);
-    public Vector3Int WorldToCell(Vector3 _worldPos) => tilemapDataProvider.WorldToCell(_worldPos);
-    public Vector3 CellToWorld(Vector3Int _cellPos) => tilemapDataProvider.CellToWorld(_cellPos);
-    public bool IsWalkable(Vector3Int _cellPos) => tilemapDataProvider.IsWalkable(_cellPos);
-
-    /// <summary>
-    /// 내부 리스트(currentPath)를 사용하여 길을 찾습니다.
-    /// </summary>
-    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos, int _maxIterations = 500)
-    {
-        return FindPath(_startWorldPos, _endWorldPos, currentPath, _maxIterations);
-    }
-
-    /// <summary>
-    /// A* 알고리즘을 사용하여 두 지점 사이의 길을 찾습니다.
-    /// </summary>
-    public bool FindPath(Vector3 _startWorldPos, Vector3 _endWorldPos, List<Vector3> _pathResult, int _maxIterations = 500)
-    {
-        _pathResult.Clear();
-        Vector3Int startPos = tilemapDataProvider.WorldToCell(_startWorldPos);
-        Vector3Int targetPos = tilemapDataProvider.WorldToCell(_endWorldPos);
-
-        // 범위 밖 예외 처리
-        if (startPos.x < 0 || startPos.x >= gridWidth || startPos.y < 0 || startPos.y >= gridHeight ||
-            targetPos.x < 0 || targetPos.x >= gridWidth || targetPos.y < 0 || targetPos.y >= gridHeight)
-        {
-            return false;
-        }
-
-        if (!tilemapDataProvider.IsWalkable(targetPos) || tilemapDataProvider.HasRockDeco(targetPos))
-        {
-            return false;
-        }
-
-        // 초기화 최적화: Dictionary.Clear() 대신 사용했던 인덱스들만 추적해서 초기화하는 방식도 있으나, 
-        // 여기서는 매번 전체 초기화 대신 int.MaxValue를 활용하여 방문 여부 체크
-        // 단, 이전 경로 데이터가 남아있으면 안 되므로 최소한의 초기화는 필요
-        // 실무에서는 '방문 번호(Visited Counter)' 방식을 써서 배열 초기화 자체를 없애기도 함.
-        ResetArrays();
-
-        int startIndex = PosToIndex(startPos);
-        int targetIndex = PosToIndex(targetPos);
-
-        openList.Clear();
-        
-        gCosts[startIndex] = 0;
-        openList.Push(new Node(startIndex, 0, GetDistance(startPos, targetPos)));
-
-        int iterations = 0;
-        while (openList.Count > 0)
-        {
-            Node currentNode = openList.Pop();
-
-            // 이미 더 좋은 경로를 찾은 노드라면 스킵
-            if (currentNode.gCost > gCosts[currentNode.index])
-            {
-                continue;
-            }
-
-            if (currentNode.index == targetIndex)
-            {
-                RetracePath(startIndex, targetIndex, _pathResult);
-                return true;
-            }
-
-            Vector3Int currentPos = IndexToPos(currentNode.index);
-
-            for (int i = 0; i < neighborOffsets.Length; i++)
-            {
-                Vector3Int neighborPos = currentPos + neighborOffsets[i];
-
-                if (neighborPos.x < 0 || neighborPos.x >= gridWidth || neighborPos.y < 0 || neighborPos.y >= gridHeight)
-                    continue;
-
-                if (!tilemapDataProvider.IsWalkable(neighborPos) || tilemapDataProvider.HasRockDeco(neighborPos))
-                {
-                    continue;
-                }
-
-                // 대각선 이동 시 코너 커팅 방지
-                if (i >= 4)
-                {
-                    Vector3Int side1 = currentPos + new Vector3Int(neighborOffsets[i].x, 0, 0);
-                    Vector3Int side2 = currentPos + new Vector3Int(0, neighborOffsets[i].y, 0);
-                    if (!tilemapDataProvider.IsWalkable(side1) || tilemapDataProvider.HasRockDeco(side1) ||
-                        !tilemapDataProvider.IsWalkable(side2) || tilemapDataProvider.HasRockDeco(side2))
-                    {
-                        continue;
-                    }
-                }
-
-                int neighborIndex = PosToIndex(neighborPos);
-                int newGCost = currentNode.gCost + neighborCosts[i];
-
-                if (newGCost < gCosts[neighborIndex])
-                {
-                    gCosts[neighborIndex] = newGCost;
-                    parentIndices[neighborIndex] = currentNode.index;
-                    openList.Push(new Node(neighborIndex, newGCost, GetDistance(neighborPos, targetPos)));
-                }
-            }
-
-            if (++iterations > _maxIterations) break;
-        }
-
-        return false;
-    }
-
-    private void ResetArrays()
-    {
-        System.Array.Fill(parentIndices, -1);
-        System.Array.Fill(gCosts, int.MaxValue);
     }
 
     private int PosToIndex(Vector3Int _pos) => _pos.x + _pos.y * gridWidth;
     private Vector3Int IndexToPos(int _index) => new Vector3Int(_index % gridWidth, _index / gridWidth, 0);
-
-    private int GetDistance(Vector3Int _a, Vector3Int _b)
-    {
-        int dstX = Mathf.Abs(_a.x - _b.x);
-        int dstY = Mathf.Abs(_a.y - _b.y);
-        if (dstX > dstY) return 14 * dstY + 10 * (dstX - dstY);
-        return 14 * dstX + 10 * (dstY - dstX);
-    }
 
     private void RetracePath(int _startIndex, int _targetIndex, List<Vector3> _pathResult)
     {
@@ -331,6 +103,10 @@ public class PathFindComponent : MonoBehaviour
                 ITreeObj tree = pathfindTreeProvider.GetTreeAt(neighborIndex);
                 if (tree != null)
                 {
+                    // 다른 NPC가 이미 타겟팅 중인 나무는 건너뛰고 계속 탐색 (같은 나무 동시 타겟팅 방지)
+                    if (tree.bReserved)
+                        continue;
+
                     _targetTree = tree;
                     // 나무가 있는 타일로는 이동할 수 없으므로, 현재 타일(currentIndex)까지의 경로를 반환
                     RetracePath(startIndex, currentIndex, _pathResult);

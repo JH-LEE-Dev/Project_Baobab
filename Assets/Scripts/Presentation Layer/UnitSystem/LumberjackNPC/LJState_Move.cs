@@ -17,7 +17,15 @@ public class LJState_Move : LumberjackState
         
         if (npc.currentPath == null || npc.currentPath.Count == 0)
         {
-            stateMachine.ChangeState<LJState_Idle>();
+            // 빈 경로 = 이미 타겟 나무 바로 옆에 있다는 뜻 (PathFindComponent.FindNearestTreePath 참고)
+            if (npc.targetTree != null)
+            {
+                stateMachine.ChangeState<LJState_Chop>();
+            }
+            else
+            {
+                stateMachine.ChangeState<LJState_Idle>();
+            }
         }
     }
 
@@ -32,6 +40,7 @@ public class LJState_Move : LumberjackState
             treeCheckTimer = 0f;
             if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.targetTree.bDead)
             {
+                npc.ReleaseTargetTree();
                 stateMachine.ChangeState<LJState_Idle>();
                 return;
             }

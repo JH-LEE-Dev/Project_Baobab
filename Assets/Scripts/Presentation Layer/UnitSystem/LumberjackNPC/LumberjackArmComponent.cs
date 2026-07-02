@@ -21,6 +21,14 @@ public class LumberjackArmComponent : MonoBehaviour
     public void Initialize()
     {
         // Awake에서 initialLocalPosition을 캐싱하여 Update가 먼저 실행되어 좌표가 망가지는 현상 방지
+
+        // 오브젝트 풀에서 재사용될 때, 이전 생애에 스윙 도중 상태가 남아있으면
+        // bIsAttacking이 true로 고정되어 SwingAxe()가 영원히 무시되는 문제를 방지
+        bIsAttacking = false;
+        if (axeAnimation != null)
+        {
+            axeAnimation.ResetPose();
+        }
     }
 
     /// <summary>
@@ -124,10 +132,5 @@ public class LumberjackArmComponent : MonoBehaviour
                 bIsAttacking = false;
             });
         });
-    }
-
-    public void EnableAxe(bool _enable)
-    {
-        gameObject.SetActive(_enable);
     }
 }

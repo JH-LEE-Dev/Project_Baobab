@@ -16,6 +16,9 @@ public class LJState_Idle : LumberjackState
     {
         base.Update();
 
+        // 스폰 직후 일정 시간 동안은 나무를 찾지 않고 가만히 대기
+        if (!npc.IsSpawnDelayFinished) return;
+
         searchTimer += Time.deltaTime;
         if (searchTimer >= SEARCH_INTERVAL)
         {
