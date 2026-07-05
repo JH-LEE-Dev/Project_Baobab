@@ -21,9 +21,17 @@ public class AxeAnimation : MonoBehaviour
     private Action onSwingComplete;
     private Action onReturnComplete;
 
+    // NotifySwingComplete/NotifyReturnComplete는 인스턴스 메서드라서 메서드 그룹을 델리게이트로
+    // 넘길 때마다(OnComplete(NotifySwingComplete) 등) 매번 새 델리게이트가 할당된다.
+    // 도끼 스윙마다 반복 호출되므로 한 번만 캐싱해서 재사용한다.
+    private Action cachedNotifySwingComplete;
+    private Action cachedNotifyReturnComplete;
+
     private void Awake()
     {
         restLocalRot = transform.localRotation;
+        cachedNotifySwingComplete = NotifySwingComplete;
+        cachedNotifyReturnComplete = NotifyReturnComplete;
     }
 
     public void PlaySwing(Action _onComplete)
@@ -37,7 +45,7 @@ public class AxeAnimation : MonoBehaviour
         // 2. 휘두르기 회전 시작
         rotateTween = transform.DOLocalRotate(new Vector3(0, 0, endRotationZ), swingDuration, RotateMode.LocalAxisAdd)
             .SetEase(swingEase)
-            .OnComplete(NotifySwingComplete);
+            .OnComplete(cachedNotifySwingComplete);
     }
 
     public void PlayReturn(Action _onComplete)
@@ -47,7 +55,7 @@ public class AxeAnimation : MonoBehaviour
         // 3. 원래 회전으로 복귀 시작
         rotateTween = transform.DOLocalRotateQuaternion(initialLocalRot, returnDuration)
             .SetEase(returnEase)
-            .OnComplete(NotifyReturnComplete);
+            .OnComplete(cachedNotifyReturnComplete);
     }
 
     private void NotifySwingComplete()

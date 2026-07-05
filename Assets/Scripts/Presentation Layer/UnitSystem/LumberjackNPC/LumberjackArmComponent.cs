@@ -13,9 +13,17 @@ public class LumberjackArmComponent : MonoBehaviour
     private Vector2 targetDirection = Vector2.down;
     private bool bIsAttacking = false;
 
+    // SwingAxe()는 chopInterval마다 반복 호출되는 핫 패스이므로, 매번 새 람다 클로저를 만드는 대신
+    // 콜백은 필드에 저장하고 완료 델리게이트는 한 번만 캐싱해 재사용한다 (GC 할당 제거).
+    private System.Action pendingImpactCallback;
+    private System.Action cachedOnSwingComplete;
+    private System.Action cachedOnReturnComplete;
+
     private void Awake()
     {
         initialLocalPosition = transform.localPosition;
+        cachedOnSwingComplete = OnSwingComplete;
+        cachedOnReturnComplete = OnReturnComplete;
     }
 
     public void Initialize()
@@ -120,17 +128,21 @@ public class LumberjackArmComponent : MonoBehaviour
         if (bIsAttacking || axeAnimation == null) return;
 
         bIsAttacking = true;
+        pendingImpactCallback = _onImpactCallback;
 
-        axeAnimation.PlaySwing(() =>
-        {
-            // 타격 시점
-            _onImpactCallback?.Invoke();
-            
-            axeAnimation.PlayReturn(() =>
-            {
-                // 타격 종료
-                bIsAttacking = false;
-            });
-        });
+        axeAnimation.PlaySwing(cachedOnSwingComplete);
+    }
+
+    private void OnSwingComplete()
+    {
+        // 타격 시점
+        pendingImpactCallback?.Invoke();
+        axeAnimation.PlayReturn(cachedOnReturnComplete);
+    }
+
+    private void OnReturnComplete()
+    {
+        // 타격 종료
+        bIsAttacking = false;
     }
 }
