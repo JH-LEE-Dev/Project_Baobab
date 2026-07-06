@@ -22,6 +22,14 @@ public class TownSystem : MonoBehaviour
     private MapType selectedMapType;
     private ForestType selectedForestType;
     private SkyCameraProductionManager skyCameraProductionManager;
+    private TownTileManager townTileManager;
+    private TownUnitSpawner townUnitSpawner;
+
+    /// <summary>
+    /// 게임이 처음 시작됐을 때(던전에서 돌아온 것이 아닐 때) 캐릭터가 생성되는 위치.
+    /// TownUnitSpawner가 운반 NPC를 집 주변에 배치할 때 보조 기준점으로 사용한다.
+    /// </summary>
+    public Transform TownStartPoint => townStartPoint;
 
     private bool bCurrentlyTownScene = true;
     private bool bRetryGame = false;
@@ -39,11 +47,16 @@ public class TownSystem : MonoBehaviour
         logProcessingManager = GetComponentInChildren<LogProcessingManager>();
         tentManager = GetComponentInChildren<TentManager>();
         townProductionManager = GetComponentInChildren<TownProductionManager>();
+        townTileManager = GetComponentInChildren<TownTileManager>();
+        townUnitSpawner = GetComponentInChildren<TownUnitSpawner>();
+        skyCameraProductionManager = _skyCameraProductionManager;
 
         townProductionManager.Initialize(inputManager, _skyCameraProductionManager);
         townObjectManager.Initialize(environmentProvider, inputManager, characterInventory, offroadContainer);
         logProcessingManager.Initialize(inputManager);
         tentManager.Initialize(inputManager);
+        townTileManager.Initialize();
+        townUnitSpawner?.Initialize(environmentProvider);
 
         BindEvents();
         SubscribeSignals();
@@ -62,6 +75,8 @@ public class TownSystem : MonoBehaviour
 
     public void StartTownSystem(SceneChangeData _sceneChangeData)
     {
+        townTileManager.CreateGrid();
+
         CollisionSystem.Instance?.ClearAll();
         townObjectManager.ReadyObj();
         logProcessingManager.EnableShopObj();
@@ -72,6 +87,9 @@ public class TownSystem : MonoBehaviour
             townProductionManager.Offroad_DI(townObjectManager.offroadVehicle);
         }
 
+        townUnitSpawner?.SpawnNPCsIfNeeded(townTileManager, townObjectManager.offroadVehicle, offroadContainer,
+            logProcessingManager.logContainer, tentManager.TentSpawnPoint, townStartPoint);
+
         if (_sceneChangeData.prevScene == SceneType.DungeonScene)
             signalHub.Publish(new TownStartedSignal(townObjectManager.GetTownReturnPoint()));
         else
@@ -81,6 +99,8 @@ public class TownSystem : MonoBehaviour
 
         bCurrentlyTownScene = true;
         townProductionManager.bCurrentlyTownScene = true;
+
+        townUnitSpawner?.ResetAllNPCsToSpawn();
     }
 
     private void BindEvents()
@@ -337,6 +357,8 @@ public class TownSystem : MonoBehaviour
     {
         if (bCurrentlyTownScene == false)
             return;
+
+        townUnitSpawner?.PauseAllNPCs();
 
         townObjectManager.ClearObjManager();
         signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));

@@ -25,24 +25,27 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
     long IInventory.money => 0;
     long IInventory.carrot => 0;
     int IInventory.maxCapacity => currentSlotCount * maxItemsPerSlot;
-    int IInventory.currentItemCount
-    {
-        get
-        {
-            int total = 0;
-            for (int i = 0; i < currentSlotCount; i++)
-            {
-                if (inventorySlots[i].itemData != null)
-                {
-                    total += inventorySlots[i].totalCount;
-                }
-            }
-            return total;
-        }
-    }
+    int IInventory.currentItemCount => GetTotalItemCount();
 
     public int currentSlotCnt => currentSlotCount;
     public int maxItemCntPerSlot => maxItemsPerSlot;
+
+    /// <summary>
+    /// 현재 모든 슬롯에 들어있는 아이템의 총 개수. 납품 시도 전/후 개수를 비교해서
+    /// "하나라도 넣었는지"를 판단하는 데 사용한다(LJState_Deliver).
+    /// </summary>
+    public int GetTotalItemCount()
+    {
+        int total = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData != null)
+            {
+                total += inventorySlots[i].totalCount;
+            }
+        }
+        return total;
+    }
 
     private List<LogItem> reservedItems = new List<LogItem>(8);
 
@@ -212,6 +215,84 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
         }
 
         return true;
+    }
+
+    private bool IsSameItemByData(ItemData _data1, ItemData _data2)
+    {
+        if (_data1.itemType != _data2.itemType) return false;
+
+        if (_data1 is LogItemData log1 && _data2 is LogItemData log2)
+        {
+            return log1.logState == log2.logState && log1.treeType == log2.treeType;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// 물리적 LogItem 흡입(ItemAcquired)과 달리, 컨테이너 간 이동 연출(날아가는 아이템)이 도착했을 때
+    /// 데이터만으로 슬롯을 채우기 위한 경로입니다. (예: OffroadContainer -> 운반 NPC)
+    /// </summary>
+    public bool CanAcquireData(ItemData _sourceData)
+    {
+        if (_sourceData == null) return false;
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData == null) return true;
+
+            if (inventorySlots[i].totalCount < maxItemsPerSlot && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+                return true;
+        }
+
+        return false;
+    }
+
+    public void AddItemByData(ItemData _sourceData, LogState _state)
+    {
+        if (_sourceData == null) return;
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData != null &&
+                inventorySlots[i].totalCount < maxItemsPerSlot &&
+                IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            {
+                inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                CheckInventoryFull();
+                UpdateInventoryEmptyState();
+                ItemAddedEvent?.Invoke();
+                return;
+            }
+        }
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData == null)
+            {
+                ItemData newData = itemDataPool.Get(_sourceData.itemType);
+                if (newData != null)
+                {
+                    newData.itemType = _sourceData.itemType;
+                    newData.sprite = _sourceData.sprite;
+                    newData.color = _sourceData.color;
+
+                    if (newData is LogItemData newLogData && _sourceData is LogItemData sourceLogData)
+                    {
+                        newLogData.treeType = sourceLogData.treeType;
+                        newLogData.logState = _state;
+                    }
+
+                    inventorySlots[i].Setup(newData, 0);
+                    inventorySlots[i].AddCountByState(_state, (_sourceData as LogItemData)?.treeType ?? TreeType.None);
+                    CheckInventoryFull();
+                    UpdateInventoryEmptyState();
+                    ItemAddedEvent?.Invoke();
+                }
+
+                return;
+            }
+        }
     }
 
     private ItemData CreateItemData(ItemType _type)

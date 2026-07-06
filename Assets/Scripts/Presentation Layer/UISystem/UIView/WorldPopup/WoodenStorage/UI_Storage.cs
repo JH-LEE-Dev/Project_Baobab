@@ -20,6 +20,11 @@ public class UI_Storage : MonoBehaviour
     // //내부 의존성
     private const int defaultCap = 2;
 
+    // 캐릭터가 보관함과 X축상 거의 같은 위치(예: 바로 위/아래)에 있을 때, 여유(deadzone) 없이 딱 붙은
+    // 부등호로만 좌/우를 판정하면 아주 미세한 위치 변화만으로도 판정이 계속 뒤바뀌어 UI가 좌우로
+    // 떨리듯 튀는 문제가 있었다. 이 임계값을 넘어 확실히 한쪽으로 벗어났을 때만 좌/우 상태를 갱신한다.
+    private const float POSITION_DEADZONE = 0.15f;
+
     private IInventory storage;
     private List<UI_InventorySlot> storageSlots;
     public bool IsOpening { get; private set; } = false;
@@ -322,7 +327,13 @@ public class UI_Storage : MonoBehaviour
         if (true == IsOpening && null != rect && null != storage && null != playerTransform && true == useDynamicPositioning)
         {
             Vector3 _storagePos = storage.GetTransform().position;
-            bool _currentLeft = (playerTransform.position.x < _storagePos.x);
+            float _deltaX = playerTransform.position.x - _storagePos.x;
+
+            // 임계값 안에 있으면(거의 같은 X좌표) 좌/우 판정을 갱신하지 않고 이전 상태를 그대로 유지한다.
+            if (Mathf.Abs(_deltaX) < POSITION_DEADZONE)
+                return;
+
+            bool _currentLeft = _deltaX < 0f;
 
             if (_currentLeft != isPlayerOnLeft)
             {

@@ -188,7 +188,10 @@ public class LumberjackNPC : MonoBehaviour
             visualComponent.UpdateVisuals(isMoving, false, false);
         }
 
-        if (inventoryComponent != null)
+        // 납품(LJState_Deliver) 중에는 새 아이템을 줍지 않는다. 그렇지 않으면 가지고 있던 로그를
+        // 전부 성공적으로 던진 직후(또는 던지는 도중) 근처의 로그를 하나 더 주워버려서, 납품이
+        // 끝났을 때 인벤토리가 다시 비어있지 않은 것으로 보여 영구 정지로 오인되는 문제가 있었다.
+        if (inventoryComponent != null && (stateMachine == null || !(stateMachine.CurrentState is LJState_Deliver)))
         {
             itemDetector.Tick(Time.deltaTime, itemDetectionInterval, pickupRadius, OnItemDetected);
         }
@@ -285,11 +288,11 @@ public class LumberjackNPC : MonoBehaviour
     /// 동일하게 로그가 날아가는 연출을 거쳐 도착 시점에 실제로 컨테이너 슬롯에 더해집니다.
     /// 컨테이너가 가득 차서 일부만 들어가면 나머지는 인벤토리에 그대로 남습니다(유실 없음).
     /// </summary>
-    public void DepositInventoryToOffroad(System.Action _onComplete)
+    public void DepositInventoryToOffroad(System.Action<bool> _onComplete)
     {
         if (offroadContainer == null || inventoryComponent == null)
         {
-            _onComplete?.Invoke();
+            _onComplete?.Invoke(false);
             return;
         }
 

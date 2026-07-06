@@ -12,6 +12,11 @@ public class TentManager : MonoBehaviour
     [SerializeField] private Transform tentSpawnPoint;
     private Tent tent;
 
+    /// <summary>
+    /// 텐트(집)의 스폰 위치. TownUnitSpawner가 운반 NPC를 집 주변에 배치할 때 기준점으로 사용한다.
+    /// </summary>
+    public Transform TentSpawnPoint => tentSpawnPoint;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;

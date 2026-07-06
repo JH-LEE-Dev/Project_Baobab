@@ -62,7 +62,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         public LogItem item;
         public bool toCharacter;
+        // null이 아니면 toCharacter 경로 대신 이 운반 NPC(예: OffroadPorterNPC)의 인벤토리로 도착 처리한다.
+        public LumberjackInventoryComponent toCarrier;
+        // 이 아이템이 flyingItems에 들어온 뒤 경과한 시간. 정상적인 비행은 길어도 1~2초 안에 끝나므로,
+        // FLYING_TIMEOUT을 넘기면 연출 버그 등으로 영영 도착하지 않는 것으로 보고 강제로 도착 처리한다.
+        public float elapsedTime;
     }
+    private const float FLYING_TIMEOUT = 5f;
     private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
     private List<FlyingTransferItem> dismissingItems = new List<FlyingTransferItem>(16);
     private bool bFlyingPaused = false;
@@ -168,14 +174,31 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             var flyingData = flyingItems[i];
             LogItem item = flyingData.item;
             item.ManualUpdate(_deltaTime);
+            flyingData.elapsedTime += _deltaTime;
 
             // ContainerTransferring 및 DynamicTransferring 상태도 비행 중인 상태로 간주
-            if (item.MoveState != ItemMoveState.Transferring &&
-                item.MoveState != ItemMoveState.CurveTransferring &&
-                item.MoveState != ItemMoveState.ContainerTransferring &&
-                item.MoveState != ItemMoveState.DynamicTransferring)
+            bool bStillFlying = item.MoveState == ItemMoveState.Transferring ||
+                item.MoveState == ItemMoveState.CurveTransferring ||
+                item.MoveState == ItemMoveState.ContainerTransferring ||
+                item.MoveState == ItemMoveState.DynamicTransferring;
+
+            if (bStillFlying && flyingData.elapsedTime < FLYING_TIMEOUT)
             {
-                // 도착 연출 완료 (Scale 0 시점) - 실제 데이터 추가
+                flyingItems[i] = flyingData;
+                continue;
+            }
+
+            if (bStillFlying)
+            {
+                // 방어 코드: 정상적인 비행은 몇 초 안에 끝나야 한다. 어떤 이유로든 비행 상태가
+                // 비정상적으로 오래 지속되면, 던전이 끝날 때까지 flyingItems에 남아 같은 조합의
+                // 납품/인출 여유공간 계산(예: CanAddToCharacterInventory의 pendingCount)을 영구히
+                // 막는 것을 방지하기 위해 여기서 강제로 도착 처리한다.
+                Debug.LogWarning($"[OffroadContainer] 비행 아이템이 {FLYING_TIMEOUT}초 넘게 도착하지 않아 강제로 도착 처리합니다. state={item.MoveState}");
+            }
+
+            // 도착 연출 완료(정상 도착 또는 타임아웃 강제 처리) - 실제 데이터 추가
+            {
                 arrivalDataBuffer.itemType = item.itemType;
                 arrivalDataBuffer.sprite = item.sprite;
                 arrivalDataBuffer.color = item.color;
@@ -184,11 +207,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 if (flyingData.toCharacter)
                 {
-                    AddToCharacterInventory(arrivalDataBuffer, item.logState);
+                    if (flyingData.toCarrier != null)
+                        flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
+                    else
+                        AddToCharacterInventory(arrivalDataBuffer, item.logState);
                 }
                 else
                 {
-                    AddItemByData(arrivalDataBuffer, item.logState);
+                    // 데이터는 이미 발사 시점(TryDepositLogItemVisual)에 확정됐으므로 여기서는
+                    // 착지 연출(바운스)만 처리한다.
                     TriggerBounce();
                 }
 
@@ -392,7 +419,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 ItemTransferToContainerEvent?.Invoke();
             }
 
-            for (int i = 0; i < countToTransfer; i++)
+            // countToTransfer는 시작 시점의 스냅샷일 뿐이라 루프 조건으로 쓰지 않는다 - 이 슬롯을
+            // WithdrawToCarrierRoutine(운반 NPC 인출)이 동시에 비우고 있을 수 있어서, 매 반복마다
+            // _sourceSlot.count를 직접 다시 확인해야 한다. 그렇지 않으면 실제로는 이미 빈 슬롯인데도
+            // 정해진 횟수만큼 TakeOneItem()을 계속 호출하게 되고, TakeOneItem()은 안전하게 기본값을
+            // 반환하므로 존재하지 않는 아이템이 날아가는(복제되는) 결과가 된다.
+            while (_sourceSlot.count > 0)
             {
                 if (_toCharacter)
                 {
@@ -405,9 +437,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 LogState takenState = _sourceSlot.TakeOneItem();
 
-                if (!_toCharacter && characterInventoryManager != null)
+                if (!_toCharacter)
                 {
-                    characterInventoryManager.ItemRemoved();
+                    if (characterInventoryManager != null)
+                    {
+                        characterInventoryManager.ItemRemoved();
+                    }
+
+                    // 데이터는 여기서 즉시 커밋한다(날아가는 연출은 순수 시각 효과일 뿐) - 서로 다른
+                    // 조합이 같은 빈 슬롯을 동시에 예약해서 나중에 착지하는 쪽 데이터가 사라지는
+                    // 문제를 방지한다.
+                    AddItemByData(sourceData, takenState);
                 }
 
                 LogItemData visualData = new LogItemData
@@ -919,17 +959,22 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// <summary>
     /// 럼버잭 NPC 등 플레이어가 아닌 소비자가 로그를 컨테이너에 직접 납품할 때 사용하는 공개 API.
     /// 플레이어가 TransferOneSlotVisualRoutine으로 넣을 때와 동일하게 로그가 날아가는 연출(flyingItems)을
-    /// 거쳐 도착 시점에 실제로 슬롯에 더해진다 - 즉시 데이터만 추가하지 않는다.
+    /// 거치지만, 슬롯 데이터 자체는 착지를 기다리지 않고 이 메서드 안에서 즉시 확정된다.
+    ///
+    /// (착지 시점에 데이터를 넣으면, 서로 다른 나무종류/등급을 가진 두 NPC가 거의 동시에 같은 빈
+    /// 슬롯을 "아직 비어있다"고 각자 착각해서 예약할 수 있고, 나중에 착지한 쪽 데이터가 조용히
+    /// 사라지는 문제가 있었다. 발사 시점에 슬롯을 즉시 점유시키면 그 순간부터 다른 조합에게는
+    /// "이미 찬 슬롯"으로 보이므로 이 문제가 원천적으로 발생하지 않는다.)
     ///
     /// 플레이어 전용 상호작용 상태(bIsInteracting/transferCoroutine/물리 오버랩)는 전혀 건드리지 않으므로
     /// 플레이어의 컨테이너 상호작용이나 다른 NPC의 납품 호출과 서로 간섭하지 않는다.
-    /// CanAddItemByData가 이미 flyingItems에 대기 중인(아직 도착 안 한) 항목까지 포함해 공간을 계산하므로,
-    /// 같은 프레임에 캐릭터/여러 NPC가 연달아 이 메서드를 호출해도(Unity 싱글스레드) 서로의 몫을 침범하지 않고
-    /// 컨테이너 용량을 초과해서 예약되는 일이 없다.
     /// </summary>
     public bool TryDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, LogState _state)
     {
         if (!CanAddItemByData(_sourceData)) return false;
+
+        // 데이터를 여기서 즉시 커밋한다 - 아래 날아가는 연출은 순수 시각 효과일 뿐이다.
+        AddItemByData(_sourceData, _state);
 
         LogItemData visualData = new LogItemData
         {
@@ -963,15 +1008,18 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     /// <summary>
     /// NPC 인벤토리의 로그 아이템들을 캐릭터의 컨테이너 전송과 동일한 시간 간격(인터벌)을 적용하여 천천히 납품합니다.
-    /// 납품 연출이 모두 끝나면 _onComplete 콜백을 호출합니다.
+    /// 납품 연출이 모두 끝나면 _onComplete 콜백을 호출합니다. 인자는 "이번 시도에서 실제로 하나라도
+    /// 넣었는지"이며, 납품 도중/직후에 흡입 중이던 다른 로그가 뒤늦게 착지해 인벤토리 총량이 달라져도
+    /// 영향받지 않도록 넣은 개수를 여기서 직접 셉니다(호출부가 전/후 총량을 비교하지 않게 하기 위함).
     /// </summary>
-    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action<bool> _onComplete)
     {
         StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete));
     }
 
-    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action<bool> _onComplete)
     {
+        bool anyDelivered = false;
         var slots = _npcInventory.GetInventorySlots();
         for (int i = 0; i < _npcInventory.currentSlotCnt; i++)
         {
@@ -988,6 +1036,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 slot.TakeOneItem();
                 slotTransferredAny = true;
+                anyDelivered = true;
 
                 yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
             }
@@ -1003,42 +1052,109 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             }
         }
 
+        _onComplete?.Invoke(anyDelivered);
+    }
+
+    /// <summary>
+    /// 운반 NPC(OffroadPorterNPC 등)가 이 컨테이너의 로그를 자신의 인벤토리로 꺼내갈 때 사용하는 공개 API.
+    /// TransferFromNPC(납품)와 반대 방향으로, 컨테이너 -> 운반 NPC 인벤토리로 로그가 하나씩 날아가는 연출을 거친다.
+    /// </summary>
+    public void WithdrawToCarrier(LumberjackInventoryComponent _carrierInventory, Action _onComplete)
+    {
+        StartCoroutine(WithdrawToCarrierRoutine(_carrierInventory, _onComplete));
+    }
+
+    private IEnumerator WithdrawToCarrierRoutine(LumberjackInventoryComponent _carrierInventory, Action _onComplete)
+    {
+        if (_carrierInventory == null)
+        {
+            _onComplete?.Invoke();
+            yield break;
+        }
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (!(slot.itemData is LogItemData sourceData) || slot.totalCount <= 0) continue;
+
+            bool transferredAny = false;
+            while (slot.totalCount > 0)
+            {
+                if (!_carrierInventory.CanAcquireData(sourceData)) break;
+
+                LogState takenState = slot.TakeOneItem();
+
+                LogItemData visualData = new LogItemData
+                {
+                    treeType = sourceData.treeType,
+                    logState = takenState,
+                    color = sourceData.color
+                };
+
+                LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+                flyingItem.SetFlyingItemSortingLayer();
+                flyingItem.IsDropItem(false);
+                flyingItem.spriteRenderer.sortingOrder = 100;
+
+                Vector3 containerPos = transform.position + new Vector3(0f, 0.2f, 0f);
+                Vector3 carrierPos = _carrierInventory.transform.position;
+
+                Vector3 dir = (carrierPos - containerPos).normalized;
+                if (dir == Vector3.zero) dir = Vector3.up;
+                Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
+                float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
+                Vector3 trajectoryJitter = normal * arcPower;
+
+                float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+                flyingItem.transform.position = containerPos;
+                flyingItem.DynamicTransferLaunch(containerPos, _carrierInventory.transform, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
+
+                flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = true, toCarrier = _carrierInventory });
+
+                transferredAny = true;
+
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+
+            if (slot.count == 0)
+            {
+                ItemDeleted(slot);
+                ContainerUpdatedEvent?.Invoke();
+            }
+
+            if (transferredAny)
+            {
+                yield return new WaitForSeconds(transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+        }
+
         _onComplete?.Invoke();
     }
 
+    // 로그를 실제로 슬롯에 커밋하는 시점이 이제 발사 즉시(TryDepositLogItemVisual/
+    // TransferOneSlotVisualRoutine)이므로, inventorySlots는 항상 "지금 진짜로 확정된" 상태를
+    // 그대로 반영한다. 그래서 착지 대기 중인 물량을 따로 빼는 pendingCount 계산 없이,
+    // 현재 슬롯 데이터만 보고 판단해도 정확하다.
     private bool CanAddItemByData(ItemData _sourceData)
     {
         if (_sourceData == null) return false;
 
-        // 현재 비행 중인 동일 타입 아이템 개수 계산
-        int pendingCount = 0;
-        if (_sourceData is LogItemData logSource)
-        {
-            for (int i = 0; i < flyingItems.Count; i++)
-            {
-                if (!flyingItems[i].toCharacter &&
-                    flyingItems[i].item.itemType == ItemType.Log &&
-                    flyingItems[i].item.logState == logSource.logState &&
-                    flyingItems[i].item.treeType == logSource.treeType)
-                    pendingCount++;
-            }
-        }
-
-        // 전체 수용 가능한 동일 아이템 남은 공간 계산
-        int availableSpace = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData) &&
+                inventorySlots[i].totalCount < maxItemsPerSlot)
             {
-                availableSpace += Mathf.Max(0, maxItemsPerSlot - inventorySlots[i].totalCount);
+                return true;
             }
-            else if (inventorySlots[i].itemData == null)
+
+            if (inventorySlots[i].itemData == null)
             {
-                availableSpace += maxItemsPerSlot;
+                return true;
             }
         }
 
-        return pendingCount < availableSpace;
+        return false;
     }
 
     private void AddItemByData(ItemData _sourceData, LogState _state)
