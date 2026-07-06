@@ -438,7 +438,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 environmentProvider.densityProvider.UpdateTreeCnt(false);
 
                 activeTrees[i].transform.position = new Vector2(-10000f, -10000f);
-                treePool.Release(activeTrees[i]);
+
+                // 개별 나무 반환이 실패(예: 이미 반환된 나무 재반환)하더라도 전체 정리 루프가
+                // 중단되어 나머지 나무가 다음 스테이지까지 남아버리는 일이 없도록 방어한다.
+                try
+                {
+                    treePool.Release(activeTrees[i]);
+                }
+                catch (System.InvalidOperationException e)
+                {
+                    Debug.LogWarning($"[InDungeonObjectManager] 나무 정리 중 이미 반환된 오브젝트를 건너뜁니다: {e.Message}");
+                }
             }
         }
         activeTrees.Clear();
@@ -581,6 +591,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnTreeDead(TreeObj _treeObj)
     {
+        // 이미 풀로 반환된(= 활성 목록에서 빠진) 나무가 중복 사망 이벤트로 다시 들어오면
+        // 여기서 걸러서 아이템 중복 지급, 밀도 카운트 오염, 풀 이중 반환 예외를 막는다.
+        if (_treeObj.PoolIndex == -1) return;
+
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
 
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);

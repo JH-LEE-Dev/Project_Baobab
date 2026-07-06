@@ -1056,6 +1056,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2158512037941339785}
   - component: {fileID: 2197108781500586585}
+  - component: {fileID: 4073779457967939185}
+  - component: {fileID: 845993863184817069}
   m_Layer: 0
   m_Name: InDungeonUnitSpawner
   m_TagString: Untagged
@@ -1092,12 +1094,44 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   npcPrefab: {fileID: 9197713879388921321, guid: 0a673e3ff0ddf2645b1b837f534f144b, type: 3}
   maxNPCs: 3
+  statComponent: {fileID: 845993863184817069}
+  sharedShockWaveCreator: {fileID: 4073779457967939185}
   useCulling: 0
   cullingDistance: 25
   cullingUpdateInterval: 0.1
   collectionCheck: 0
   defaultCapacity: 10
   maxSize: 50
+  enableLJDebugLog: 0
+--- !u!114 &4073779457967939185
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3897124674819666006}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 607f91aa193aa6747b9507fc6003586c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AxeExtraAttackCreator
+  shockWavePrefab: {fileID: 1065524423041008248, guid: c2e7f28940e13bc4ea336ffed68402b6, type: 3}
+--- !u!114 &845993863184817069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3897124674819666006}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b46d533070ab0e247b9c4f3f7e9bcb46, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LumberjackStatComponent
+  moveSpeed: 3
+  attackDamage: 10
+  attackInterval: 1
+  bCanUseShockWave: 0
 --- !u!1 &3941740186820979649
 GameObject:
   m_ObjectHideFlags: 0
@@ -2489,7 +2523,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TownUnitSpawner
   npcPrefab: {fileID: 1313503206885682807, guid: 0428298bd8aec6f459c8e3f9e9cbf4c8, type: 3}
   npcCount: 3
-  npcSpacing: 1.2
+  diagonalWorldStep: {x: 0.6, y: -0.35}
 --- !u!1 &8421553769195273407
 GameObject:
   m_ObjectHideFlags: 0
@@ -2599,6 +2633,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2f0709cd39a291844bec9439e384b0a1, type: 2}
   - {fileID: 11400000, guid: 2b464164859c48f458caaa309cb5079c, type: 2}
   - {fileID: 11400000, guid: ebe6cfcf401dbc041b50af22188c7cd0, type: 2}
+  - {fileID: 11400000, guid: e2df72479d5db984b96b54e852c895b7, type: 2}
+  - {fileID: 11400000, guid: 2a1c27959fe93f24786f763ecdfdb0d7, type: 2}
+  - {fileID: 11400000, guid: d7d9c8d94281fcc4d831cdcd955821c3, type: 2}
+  - {fileID: 11400000, guid: 15c39ad1d2bc0154996081c2c8e02370, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0

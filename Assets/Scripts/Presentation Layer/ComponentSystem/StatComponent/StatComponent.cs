@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
+public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, ICharacterStatForNPC
 {
     public event Action CanHuntEvent;
 
@@ -125,6 +125,18 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH
     float IStatComponent.reloadDuration => reloadDuration;
 
     bool IStatComponent.bCanHunting => bCanHunting;
+
+    // ICharacterStatForNPC 구현 - NPC(럼버잭 등)가 캐릭터와 동일한 셰이크웨이브 스탯을 그대로 참조할 때 사용
+    float ICharacterStatForNPC.shockWaveChance => shockWaveChance;
+    float ICharacterStatForNPC.shockWaveDamage => shockWaveDamage;
+    float ICharacterStatForNPC.shockWaveSpeed => shockWaveSpeed;
+    float ICharacterStatForNPC.shockWaveDuration => shockWaveDuration;
+    float ICharacterStatForNPC.shockWaveCreateDelay => shockWaveCreateDelay;
+    bool ICharacterStatForNPC.bShockWaveMastery => bShockWaveMastery;
+    bool ICharacterStatForNPC.bShockWaveCritical => bShockWaveCritical;
+    bool ICharacterStatForNPC.bShockWaveEnforcement => bShockWaveEnforcement;
+    float ICharacterStatForNPC.criticalChance => criticalChance;
+    float ICharacterStatForNPC.ciriticalDamageMul => ciriticalDamageMul;
 
     public override void Initialize(ComponentCtx _ctx)
     {

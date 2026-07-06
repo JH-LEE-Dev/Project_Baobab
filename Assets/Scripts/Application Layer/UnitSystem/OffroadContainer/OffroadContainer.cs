@@ -1019,6 +1019,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action<bool> _onComplete)
     {
+        // TEMP DEBUG
+        LJDebugLog.Log($"[LJDebug] t={Time.time:F2} NPCTransferRoutine 시작. npc={_npcInventory.name}({_npcInventory.GetEntityId()}), 슬롯수={_npcInventory.currentSlotCnt}");
+
         bool anyDelivered = false;
         var slots = _npcInventory.GetInventorySlots();
         for (int i = 0; i < _npcInventory.currentSlotCnt; i++)
@@ -1031,6 +1034,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             {
                 if (!TryDepositLogItemVisual(logData, _fromWorldPos, logData.logState))
                 {
+                    // TEMP DEBUG
+                    LJDebugLog.Log($"[LJDebug] t={Time.time:F2} NPCTransferRoutine 슬롯{i} 납품 중단. npc={_npcInventory.name}({_npcInventory.GetEntityId()}), 조합=({logData.treeType}/{logData.logState}), 남은수량={slot.totalCount}");
                     break;
                 }
 
@@ -1051,6 +1056,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 yield return new WaitForSeconds(transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul));
             }
         }
+
+        // TEMP DEBUG
+        LJDebugLog.Log($"[LJDebug] t={Time.time:F2} NPCTransferRoutine 완료, 콜백 호출 직전. npc={_npcInventory.name}({_npcInventory.GetEntityId()}), anyDelivered={anyDelivered}");
 
         _onComplete?.Invoke(anyDelivered);
     }

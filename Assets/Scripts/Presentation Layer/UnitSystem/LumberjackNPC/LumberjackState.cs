@@ -7,6 +7,9 @@ public abstract class LumberjackState
     protected LumberjackStateMachine stateMachine;
     protected LumberjackNPC npc;
 
+    // TEMP DEBUG: LumberjackStateMachine이 상태 전환 로그를 찍을 때 어느 NPC인지 식별하기 위해 노출.
+    public LumberjackNPC Npc => npc;
+
     public virtual void Initialize(LumberjackStateMachine _stateMachine, LumberjackNPC _npc)
     {
         stateMachine = _stateMachine;
@@ -44,7 +47,7 @@ public abstract class LumberjackState
         else
         {
             Vector2 direction = ((Vector2)targetPos - (Vector2)currentPos).normalized;
-            npc.transform.position = Vector3.MoveTowards(currentPos, targetPos, npc.moveSpeed * Time.deltaTime);
+            npc.transform.position = Vector3.MoveTowards(currentPos, targetPos, npc.stat.moveSpeed * Time.deltaTime);
 
             npc.SetVisualFacing(direction);
             npc.SetArmDirection(direction);

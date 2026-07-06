@@ -13,6 +13,21 @@ public class LumberjackNPC : MonoBehaviour
     [SerializeField] private LumberjackArmComponent armComponent;
     [SerializeField] private LumberjackInventoryComponent inventoryComponent;
     public LumberjackInventoryComponent inventory => inventoryComponent;
+    // InDungeonUnitSpawner가 들고 있는 공용 인스턴스를 Initialize()에서 주입받는다(NPC마다 따로 안 만듦).
+    private LumberjackStatComponent statComponent;
+    public LumberjackStatComponent stat => statComponent;
+
+    // 셰이크웨이브 생성기와, 셰이크웨이브 계산에 필요한 캐릭터 스탯. 둘 다 InDungeonUnitSpawner가
+    // 공용으로 들고 있다가 SetShockWaveDependencies()로 주입해준다.
+    private IShockWaveCreator shockWaveCreator;
+    private ICharacterStatForNPC playerStatForShockWave;
+
+    public void SetShockWaveDependencies(IShockWaveCreator _shockWaveCreator, ICharacterStatForNPC _playerStat)
+    {
+        shockWaveCreator = _shockWaveCreator;
+        playerStatForShockWave = _playerStat;
+    }
+
     private PathFindComponent pathFindComponent;
     public OffroadContainer offroadContainer { get; private set; }
 
@@ -21,17 +36,9 @@ public class LumberjackNPC : MonoBehaviour
     [SerializeField] private float pickupRadius = 2.5f;
     [SerializeField] private float itemDetectionInterval = 0.2f;
     private ItemDetector itemDetector;
-    
+
     // 상태 머신
     public LumberjackStateMachine stateMachine { get; private set; }
-
-    // 이동 관련 설정
-    [Header("Movement Settings")]
-    public float moveSpeed = 3f;
-    
-    [Header("Chop Settings")]
-    public float chopDamage = 10f;
-    public float chopInterval = 1.0f;
 
     [Header("Spawn Settings")]
     public float initialMoveDelay = 5f;
@@ -58,10 +65,11 @@ public class LumberjackNPC : MonoBehaviour
     private Shadow cachedShadow;
     private GameObject cachedWaterGo;
 
-    public void Initialize(IEnvironmentProvider _envProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null)
+    public void Initialize(IEnvironmentProvider _envProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null, LumberjackStatComponent _statComponent = null)
     {
         environmentProvider = _envProvider;
         offroadContainer = _offroadContainer;
+        if (_statComponent != null) statComponent = _statComponent;
         tilemapDataProvider = environmentProvider.tilemapDataProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
 
@@ -137,12 +145,16 @@ public class LumberjackNPC : MonoBehaviour
 
     public void PauseNPC()
     {
+        // TEMP DEBUG
+        LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) PauseNPC() 호출됨. state={stateMachine?.CurrentState?.GetType().Name}");
         isPaused = true;
         SetVisualMoving(false);
     }
 
     public void ResumeNPC()
     {
+        // TEMP DEBUG
+        LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) ResumeNPC() 호출됨.");
         isPaused = false;
     }
 
@@ -158,6 +170,9 @@ public class LumberjackNPC : MonoBehaviour
         {
             inventoryComponent.InventoryIsFullEvent -= HandleInventoryFull;
             inventoryComponent.InventoryIsFullEvent += HandleInventoryFull;
+
+            inventoryComponent.ItemAddedEvent -= HandleItemAdded;
+            inventoryComponent.ItemAddedEvent += HandleItemAdded;
         }
     }
 
@@ -166,22 +181,64 @@ public class LumberjackNPC : MonoBehaviour
         if (inventoryComponent != null)
         {
             inventoryComponent.InventoryIsFullEvent -= HandleInventoryFull;
+            inventoryComponent.ItemAddedEvent -= HandleItemAdded;
+        }
+    }
+
+    // 이미 "하나도 못 넣어서 영구 정지" 판정이 난 뒤에도, 그 전에 이미 흡입 중이던 로그가 뒤늦게
+    // 인벤토리에 들어올 수 있다(문제 3). 그 순간 인벤토리 상황이 바뀐 것이므로, Deliver 상태에
+    // 있다면 영구 정지 판정을 다시 풀어서 새로 들어온 걸 납품할 기회를 준다.
+    private void HandleItemAdded()
+    {
+        if (stateMachine?.CurrentState is LJState_Deliver deliverState)
+        {
+            deliverState.ClearPermanentStuckIfNeeded();
         }
     }
 
     private void HandleInventoryFull()
     {
+        // TEMP DEBUG
+        LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) HandleInventoryFull() 호출됨. currentState={stateMachine?.CurrentState?.GetType().Name}, offroadContainer={(offroadContainer != null)}");
+
         if (stateMachine != null && !(stateMachine.CurrentState is LJState_Deliver) && offroadContainer != null)
         {
             stateMachine.ChangeState<LJState_Deliver>();
         }
     }
 
+    // TEMP DEBUG: 같은 상태에 너무 오래 머물면 자동으로 상세 정보를 찍는 감시용 타이머.
+    private System.Type lastWatchedState;
+    private float stateStuckTimer = 0f;
+    private bool stuckWarningLogged = false;
+    private const float STUCK_WARNING_THRESHOLD = 5f;
+
     private void Update()
     {
         if (isPaused) return;
 
         stateMachine?.Update();
+
+        // TEMP DEBUG: 상태 정체 감시
+        var currentStateType = stateMachine?.CurrentState?.GetType();
+        if (currentStateType != lastWatchedState)
+        {
+            lastWatchedState = currentStateType;
+            stateStuckTimer = 0f;
+            stuckWarningLogged = false;
+        }
+        else
+        {
+            stateStuckTimer += Time.deltaTime;
+            if (!stuckWarningLogged && stateStuckTimer > STUCK_WARNING_THRESHOLD)
+            {
+                stuckWarningLogged = true;
+                int invCount = inventoryComponent != null ? inventoryComponent.GetTotalItemCount() : -1;
+                bool invFull = inventoryComponent != null && inventoryComponent.bInventoryIsFull;
+                LJDebugLog.LogWarning($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) 상태 정체 감지! state={currentStateType?.Name}, {STUCK_WARNING_THRESHOLD}초 이상 유지, " +
+                    $"pos={transform.position}, isPaused={isPaused}, 인벤토리={invCount}, bInventoryIsFull={invFull}, targetTree={(targetTree != null ? targetTree.GetTransform()?.name : "null")}");
+            }
+        }
 
         if (visualComponent != null)
         {
@@ -211,6 +268,15 @@ public class LumberjackNPC : MonoBehaviour
                 return;
             }
             logItem.SetSuckTarget(transform, inventoryComponent, inventoryComponent);
+
+            // 같은 로그를 다른 NPC(또는 캐릭터)가 같은 프레임에 먼저 흡입 걸었다면 SetSuckTarget이
+            // 조용히 무시된다(state != Dropped). 그러면 이 NPC의 CanAcquired 예약만 유령처럼 남아서,
+            // 실제로는 나에게 오지 않을 아이템 때문에 다른 진짜 아이템을 잘못 거부하게 된다.
+            // 그래서 내가 실제로 이 아이템의 소유자가 됐는지 확인하고, 아니라면 예약을 즉시 취소한다.
+            if (!ReferenceEquals(logItem.CustomAcquirer, inventoryComponent))
+            {
+                inventoryComponent.CancelReservation(logItem);
+            }
         }
     }
 
@@ -244,6 +310,9 @@ public class LumberjackNPC : MonoBehaviour
         {
             // 다른 NPC가 같은 나무를 동시에 타겟팅하지 못하도록 예약
             targetTree.bReserved = true;
+
+            // TEMP DEBUG
+            LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) TryFindTree 성공. tree={targetTree.GetTransform().name}({targetTree.GetTransform().GetEntityId()}), treePos={targetTree.GetTransform().position}, npcPos={transform.position}, pathCount={pathBuffer.Count}");
         }
 
         return found;
@@ -344,8 +413,37 @@ public class LumberjackNPC : MonoBehaviour
                 // 실제 나무 오브젝트인 경우 데미지 적용
                 // (죽으면서 스폰되는 로그는 주기적으로 도는 itemDetector가 착지 후 자연스럽게 주워간다)
                 treeObj.bLastHitByPlayer = false;
-                treeObj.TakeDamage(chopDamage);
+                treeObj.TakeDamage(statComponent.attackDamage);
+
+                TryTriggerShockWave();
             }
+        }
+    }
+
+    // bCanUseShockWave가 켜져 있으면, 캐릭터의 StatComponent에 정의된 셰이크웨이브 스탯을 그대로 사용해
+    // 나무를 벨 때 확률적으로 셰이크웨이브를 발생시킨다(캐릭터의 AttackComponent.ProcessAxeHit와 동일한 방식).
+    private void TryTriggerShockWave()
+    {
+        if (!statComponent.bCanUseShockWave || shockWaveCreator == null || playerStatForShockWave == null) return;
+        if (playerStatForShockWave.bShockWaveMastery) return;
+
+        if (UnityEngine.Random.Range(0f, 100f) < playerStatForShockWave.shockWaveChance)
+        {
+            StartCoroutine(CreateShockWaveRoutine(transform.position, currentFacingDir));
+        }
+    }
+
+    private System.Collections.IEnumerator CreateShockWaveRoutine(Vector3 _position, Vector3 _direction)
+    {
+        yield return new WaitForSeconds(playerStatForShockWave.shockWaveCreateDelay);
+
+        if (shockWaveCreator == null) yield break;
+
+        ShockWave sw = shockWaveCreator.CreateShockWave(_position);
+        if (sw != null)
+        {
+            sw.SetDirection(_direction);
+            shockWaveCreator.PlayShockWaveVisual(sw);
         }
     }
 }

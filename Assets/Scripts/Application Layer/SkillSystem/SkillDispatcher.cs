@@ -19,6 +19,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private ILogItemControllerCH logItemControllerCH;
     private IOffroadContainerCH offroadContainerCH;
     private IInDungeonObjManagerCH inDungeonObjManagerCH;
+    private IInDungeonUnitSpawnerCH inDungeonUnitSpawnerCH;
 
 
     [SerializeField] private List<SkillCommand> skillCommands;
@@ -49,10 +50,12 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     IInDungeonObjManagerCH ICommandHandleSystem.inDungeonObjManagerCH => inDungeonObjManagerCH;
 
+    IInDungeonUnitSpawnerCH ICommandHandleSystem.inDungeonUnitSpawnerCH => inDungeonUnitSpawnerCH;
+
     public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
     ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH,
     ILogProcessingSystemCH _logProcessingSystemCH, ILogItemControllerCH _logItemCH, IOffroadContainerCH _offroadContainerCH,
-    IInDungeonObjManagerCH _inDungeonObjManagerCH)
+    IInDungeonObjManagerCH _inDungeonObjManagerCH, IInDungeonUnitSpawnerCH _inDungeonUnitSpawnerCH)
     {
         offroadContainerCH = _offroadContainerCH;
         signalHub = _signalHub;
@@ -66,6 +69,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         logProcessingSystemCH = _logProcessingSystemCH;
         logItemControllerCH = _logItemCH;
         inDungeonObjManagerCH = _inDungeonObjManagerCH;
+        inDungeonUnitSpawnerCH = _inDungeonUnitSpawnerCH;
         
         if (skillCommands == null) return;
 

@@ -177,7 +177,26 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
             }
             else
             {
-                totalSpace += maxItemsPerSlot;
+                // 빈 슬롯이라도, 이미 다른 조합이 이 빈 슬롯을 먼저 예약(흡입 중)해뒀다면 이 아이템에게는
+                // 공간이 없는 것으로 취급한다. 그렇지 않으면 서로 다른 조합의 로그 두 개가 거의 동시에
+                // 감지될 때 "빈 슬롯이니 둘 다 들어갈 수 있다"고 착각해 둘 다 흡입을 승인해버리고,
+                // 나중에 도착한 쪽이 ItemAcquired에서 거부되면서 실제로는 가득 차지도 않았는데
+                // InventoryIsFullEvent가 잘못 발생하는 문제가 있었다.
+                bool slotClaimedByOtherCombo = false;
+                for (int r = 0; r < reservedItems.Count; r++)
+                {
+                    var reserved = reservedItems[r];
+                    if (reserved.itemType != _item.itemType || reserved.treeType != _item.treeType || reserved.logState != _item.logState)
+                    {
+                        slotClaimedByOtherCombo = true;
+                        break;
+                    }
+                }
+
+                if (!slotClaimedByOtherCombo)
+                {
+                    totalSpace += maxItemsPerSlot;
+                }
             }
         }
 
@@ -199,6 +218,16 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// CanAcquired가 예약을 승인했지만, 실제로는 다른 소비자(다른 NPC나 캐릭터)가 같은 프레임에
+    /// 먼저 SetSuckTarget을 걸어 이 NPC에게는 오지 않게 된 경우, 남아있는 유령 예약을 지운다.
+    /// 이걸 안 지우면 실제로 나에게 오지 않을 아이템 때문에 다른 진짜 아이템이 계속 거부당한다.
+    /// </summary>
+    public void CancelReservation(LogItem _item)
+    {
+        reservedItems.Remove(_item);
     }
 
     private bool IsSameItem(Item _item, ItemData _data)

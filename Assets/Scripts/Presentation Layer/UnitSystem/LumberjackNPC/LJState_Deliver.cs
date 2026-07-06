@@ -120,27 +120,55 @@ public class LJState_Deliver : LumberjackState
         int myAttemptId = ++depositAttemptId;
         npc.SetVisualMoving(false); // 납품 중에는 멈춰 서 있는다
 
+        // TEMP DEBUG
+        int invCountAtStart = npc.inventory != null ? npc.inventory.GetTotalItemCount() : -1;
+        LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) DepositAndReturn 시작. attemptId={myAttemptId}, 시작인벤토리={invCountAtStart}, pos={npc.transform.position}");
+
         // 납품 전/후 인벤토리 총량을 비교하지 않는다 - 납품 도중/직후에 흡입 중이던 다른 로그가
         // 뒤늦게 착지해 총량이 바뀌면(문제 3) "하나라도 넣었는지"가 총량 비교만으로는 잘못 판정될 수
         // 있다. 대신 실제로 넣은 개수를 납품 루틴 내부에서 직접 세어 그 결과만 그대로 사용한다.
         npc.DepositInventoryToOffroad((bool _wasDelivered) =>
         {
+            // TEMP DEBUG
+            int invCountNow = npc.inventory != null ? npc.inventory.GetTotalItemCount() : -1;
+            LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) 콜백 도착. attemptId(당시)={myAttemptId}, attemptId(현재)={depositAttemptId}, wasDelivered={_wasDelivered}, 현재인벤토리={invCountNow}");
+
             // 타임아웃으로 이 시도를 이미 포기한 뒤에 뒤늦게 콜백이 오면 무시한다 - 그 사이 다른
             // 상태로 넘어갔거나(재시도 중 다시 Deliver에 들어와 새 시도가 진행 중일 수 있음),
             // 오브젝트가 풀링으로 재사용되어 완전히 다른 NPC를 대변하고 있을 수도 있다.
-            if (myAttemptId != depositAttemptId) return;
+            if (myAttemptId != depositAttemptId)
+            {
+                LJDebugLog.LogWarning($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) attemptId 불일치로 콜백 무시됨! (당시={myAttemptId}, 현재={depositAttemptId})");
+                return;
+            }
 
             bIsDepositing = false;
 
             // 하나라도 넣는 데 성공했다면 남은 게 있어도 다시 벌목하러 간다.
             if (_wasDelivered)
             {
+                LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) 납품 성공 -> Idle로 전환");
                 stateMachine.ChangeState<LJState_Idle>();
                 return;
             }
 
             // 단 하나도 넣지 못했다 - 재시도 없이 이 자리에 영구 정지한다.
+            LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) 하나도 못 넣음 -> bPermanentlyStuck=true (인벤토리={invCountNow})");
             bPermanentlyStuck = true;
         });
+    }
+
+    /// <summary>
+    /// bPermanentlyStuck으로 정지한 뒤에도, 그 전에 이미 흡입 중이던 로그가 뒤늦게 인벤토리에
+    /// 들어올 수 있다. 그 순간 상황이 바뀐 것이므로(원래 못 넣던 조합과는 다른 새 로그일 수 있음)
+    /// 영구 정지를 풀어서 다음 Update()에서 다시 납품을 시도하게 한다.
+    /// </summary>
+    public void ClearPermanentStuckIfNeeded()
+    {
+        if (bPermanentlyStuck)
+        {
+            LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) 새 아이템 도착으로 bPermanentlyStuck 해제 -> 재시도");
+            bPermanentlyStuck = false;
+        }
     }
 }

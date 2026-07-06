@@ -239,6 +239,10 @@ public enum SkillCommandType
     StaminaRecover,
     Repair,
     IncreaseRepairEfficiency,
+    LumberjackNPC,
+    LumberjackNPCAttackSpeed,
+    LumberjackNPCDamage,
+    LumberjackNPCShockWave,
 }
 
 public enum AbilityLevelUpRejectReason

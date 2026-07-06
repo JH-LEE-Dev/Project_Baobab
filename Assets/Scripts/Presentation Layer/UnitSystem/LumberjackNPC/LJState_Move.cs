@@ -38,6 +38,8 @@ public class LJState_Move : LumberjackState
             treeCheckTimer = 0f;
             if (npc.targetTree == null || !npc.targetTree.GetTransform().gameObject.activeInHierarchy || npc.targetTree.bDead)
             {
+                // TEMP DEBUG
+                LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) LJState_Move: 타겟 나무 죽음/비활성 감지 -> Idle로 복귀");
                 npc.ReleaseTargetTree();
                 stateMachine.ChangeState<LJState_Idle>();
                 return;
@@ -46,6 +48,8 @@ public class LJState_Move : LumberjackState
 
         if (StepAlongPath(ref pathIndex))
         {
+            // TEMP DEBUG
+            LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) LJState_Move: 경로 끝 도달 -> Chop으로 전환. targetTree={(npc.targetTree != null ? npc.targetTree.GetTransform()?.name : "null")}, targetPos={(npc.targetTree != null ? npc.targetTree.GetTransform()?.position.ToString() : "N/A")}, npcPos={npc.transform.position}");
             // 경로의 끝에 도달 = 나무 바로 옆
             stateMachine.ChangeState<LJState_Chop>();
         }
