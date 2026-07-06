@@ -1116,7 +1116,7 @@ MonoBehaviour:
     useFade: 1
     startAlpha: 0
     endAlpha: 1
-    fadeEase: 1
+    fadeEase: 18
 --- !u!1 &6582585802516617690
 GameObject:
   m_ObjectHideFlags: 0

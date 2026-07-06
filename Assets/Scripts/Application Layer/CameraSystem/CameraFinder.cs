@@ -5,6 +5,7 @@ using System;
 public class CameraFinder : MonoBehaviour
 {
     public event Action CameraFindEvent;
+    public event Action HandleCameraFindingEvent;
 
     public static CameraFinder Instance { get; private set; }
 
@@ -63,5 +64,6 @@ public class CameraFinder : MonoBehaviour
         }
 
         CameraFindEvent?.Invoke();
+        HandleCameraFindingEvent?.Invoke();
     }
 }
