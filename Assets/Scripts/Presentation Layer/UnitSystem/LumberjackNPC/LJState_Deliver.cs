@@ -10,11 +10,16 @@ public class LJState_Deliver : LumberjackState
 
     private bool bIsDepositing = false;
 
+    // 도착해서 납품을 시도했지만 상자가 가득 차 로그가 남아있는 경우를 나타낸다. 상자는 다음 던전
+    // 진입 전까지 다시 비워지지 않으므로, 이 NPC는 재시도 없이 이 자리에 멈춰 생애를 마친다.
+    private bool bWaitingForSpace = false;
+
     public override void Enter()
     {
         base.Enter();
         pathIndex = 0;
         bIsDepositing = false;
+        bWaitingForSpace = false;
         npc.SetVisualMoving(true);
 
         if (npc.offroadContainer == null)
@@ -58,6 +63,10 @@ public class LJState_Deliver : LumberjackState
             return;
         }
 
+        // 상자가 가득 차 더 이상 납품할 수 없는 상태 - 다음 던전 전까지 상자에 자리가 생기지
+        // 않으므로 재시도하지 않고 이 자리에 계속 멈춰 있는다.
+        if (bWaitingForSpace) return;
+
         // 경로를 따라가는 중 컨테이너의 충돌 반경에 들어오면 남은 경로와 무관하게 즉시 납품
         if (npc.offroadContainer.IsWithinInteractRadius(npc.transform.position))
         {
@@ -78,9 +87,19 @@ public class LJState_Deliver : LumberjackState
 
         bIsDepositing = true;
         npc.SetVisualMoving(false); // 납품 중에는 멈춰 서 있는다
-        npc.DepositInventoryToOffroad(() => 
+        npc.DepositInventoryToOffroad(() =>
         {
             bIsDepositing = false;
+
+            // 상자가 가득 차 미처 납품하지 못한 로그가 남아있다면, 벌목하러 가지 않고
+            // 재시도 없이 이 자리에 멈춰 있는다.
+            if (npc.inventory != null && !npc.inventory.bInventoryIsEmpty)
+            {
+                bWaitingForSpace = true;
+                return;
+            }
+
+            bWaitingForSpace = false;
             stateMachine.ChangeState<LJState_Idle>();
         });
     }
