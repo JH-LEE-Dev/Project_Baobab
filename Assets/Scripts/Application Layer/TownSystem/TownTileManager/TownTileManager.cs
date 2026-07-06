@@ -23,6 +23,30 @@ public class TownTileManager : MonoBehaviour
         
     }
 
+    /// <summary>
+    /// 던전 진입 등으로 마을 Grid가 더 이상 필요 없을 때 파괴합니다. 마을로 돌아오면
+    /// CreateGrid()가 다시 새로 만들어줍니다.
+    /// </summary>
+    public void DestroyGrid()
+    {
+        if (currentGrid != null)
+        {
+            Destroy(currentGrid);
+            currentGrid = null;
+        }
+
+        GroundTilemap = null;
+        WaterTilemap = null;
+        WaterCornerTilemap = null;
+        DecoTilemap = null;
+        ColliderTilemap = null;
+        BuildingColliderTilemap = null;
+        WaterColliderTilemap = null;
+        RockColliderTilemap = null;
+        WaterStencilTilemap = null;
+        GroundStencilTilemap = null;
+    }
+
     public void CreateGrid()
     {
         if (tilemapPrefab == null)

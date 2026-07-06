@@ -108,4 +108,14 @@ public class PorterState_MoveToLogContainer : PorterState
             stateMachine.ChangeState<PorterState_Idle>();
         });
     }
+
+    /// <summary>
+    /// 텔레포트 UI가 닫히는 시점에 호출된다(Pause 로직과는 별개). 상자로 가져가려던 걸 그만두고
+    /// Idle로 전환한다. 이미 납품 코루틴이 도는 중이었다면 그건 그대로 자연스럽게 끝나도록 두며
+    /// (데이터는 발사 시점에 이미 커밋되므로 안전), 그 콜백이 나중에 와도 이미 Idle에 있으니 무해하다.
+    /// </summary>
+    public void CancelForTeleport()
+    {
+        stateMachine.ChangeState<PorterState_Idle>();
+    }
 }

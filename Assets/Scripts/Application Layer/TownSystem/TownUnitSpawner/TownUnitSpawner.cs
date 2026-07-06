@@ -106,6 +106,20 @@ public class TownUnitSpawner : MonoBehaviour
     }
 
     /// <summary>
+    /// 던전으로 카메라가 완전히 올라간 뒤(CameraUpIsEnd) 호출한다. 이 NPC들은 DontDestroyOnLoad
+    /// 계층에 있어 던전 씬으로 넘어가도 파괴되지 않으므로, GameObject 자체를 꺼서 던전을 도는 동안
+    /// 마을에 멈춰있던 위치에 그대로 남아 렌더링/갱신되는 일이 없도록 한다. 다시 켜는 건
+    /// ResetAllNPCsToSpawn()(ResetToSpawnPosition)에서 처리한다.
+    /// </summary>
+    public void DeactivateAllNPCs()
+    {
+        for (int i = 0; i < spawnedNPCs.Count; i++)
+        {
+            if (spawnedNPCs[i] != null) spawnedNPCs[i].Deactivate();
+        }
+    }
+
+    /// <summary>
     /// 던전에서 돌아와 카메라가 마을로 복귀하는 연출(CameraDownIsEnd)이 끝나면, NPC들을 원래
     /// 생성 위치로 되돌리고 스폰 직후와 동일하게 initialMoveDelay만큼 대기한 뒤 다시 움직이게 한다.
     /// </summary>
@@ -114,6 +128,18 @@ public class TownUnitSpawner : MonoBehaviour
         for (int i = 0; i < spawnedNPCs.Count; i++)
         {
             if (spawnedNPCs[i] != null) spawnedNPCs[i].ResetToSpawnPosition(spawnPositions[i]);
+        }
+    }
+
+    /// <summary>
+    /// 텔레포트 UI가 닫히는 시점에 호출된다(Pause 로직과는 별개). 지금 하던 일을 각자 알맞게
+    /// 중단시킨다(OffroadPorterNPC.CancelCurrentTaskForTeleport 참고).
+    /// </summary>
+    public void CancelActiveTasksForTeleport()
+    {
+        for (int i = 0; i < spawnedNPCs.Count; i++)
+        {
+            spawnedNPCs[i]?.CancelCurrentTaskForTeleport();
         }
     }
 }

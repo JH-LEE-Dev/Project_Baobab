@@ -259,22 +259,43 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
     }
 
     /// <summary>
-    /// 물리적 LogItem 흡입(ItemAcquired)과 달리, 컨테이너 간 이동 연출(날아가는 아이템)이 도착했을 때
-    /// 데이터만으로 슬롯을 채우기 위한 경로입니다. (예: OffroadContainer -> 운반 NPC)
+    /// 착지 시점 커밋 방식에서, _sourceData와 같은 종류로 이미 채워진 슬롯에 남은 여유 공간만
+    /// 계산한다(빈 슬롯은 포함하지 않음). 호출부가 이미 발사되어 날아오는 중인 같은 종류의
+    /// pendingCount와 비교해, "기존에 확보된 슬롯"만으로 충분한지 먼저 판단할 때 쓴다.
     /// </summary>
-    public bool CanAcquireData(ItemData _sourceData)
+    public int GetMatchingSlotSpaceFor(ItemData _sourceData)
     {
-        if (_sourceData == null) return false;
+        if (_sourceData == null) return 0;
 
+        int space = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (inventorySlots[i].itemData == null) return true;
-
-            if (inventorySlots[i].totalCount < maxItemsPerSlot && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
-                return true;
+            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            {
+                int remaining = maxItemsPerSlot - inventorySlots[i].totalCount;
+                if (remaining > 0) space += remaining;
+            }
         }
 
-        return false;
+        return space;
+    }
+
+    /// <summary>
+    /// 현재 완전히 비어있는 슬롯의 개수. 기존에 확보된 슬롯만으로 부족해서 새 빈 슬롯이 필요한
+    /// 종류를 승인할지 판단할 때 쓴다. 호출부는 이 개수를, 이미 다른 종류가 빈 슬롯을 예약(발사)
+    /// 중인 "서로 다른 종류의 개수"와 비교해야 한다 - 단순히 "빈 슬롯이 하나라도 있는지"만 보면,
+    /// 빈 슬롯이 2개 있어도 다른 종류가 하나만 대기 중일 때 나에게 남는 자리가 있는데도 불필요하게
+    /// 거절해버릴 수 있다.
+    /// </summary>
+    public int GetEmptySlotCount()
+    {
+        int count = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData == null) count++;
+        }
+
+        return count;
     }
 
     public void AddItemByData(ItemData _sourceData, LogState _state)

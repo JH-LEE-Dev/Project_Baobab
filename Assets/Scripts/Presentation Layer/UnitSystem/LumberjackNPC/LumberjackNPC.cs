@@ -215,42 +215,45 @@ public class LumberjackNPC : MonoBehaviour
 
     private void Update()
     {
-        if (isPaused) return;
-
-        stateMachine?.Update();
-
-        // TEMP DEBUG: 상태 정체 감시
-        var currentStateType = stateMachine?.CurrentState?.GetType();
-        if (currentStateType != lastWatchedState)
+        // 일시정지 중에는 상태 로직(이동/벌목/납품/아이템 감지)만 멈추고, 시각 갱신은 계속 돌려서
+        // 멈춘 프레임의 움직이는 포즈가 그대로 굳어있지 않고 Idle 포즈로 정상적으로 보이게 한다.
+        if (!isPaused)
         {
-            lastWatchedState = currentStateType;
-            stateStuckTimer = 0f;
-            stuckWarningLogged = false;
-        }
-        else
-        {
-            stateStuckTimer += Time.deltaTime;
-            if (!stuckWarningLogged && stateStuckTimer > STUCK_WARNING_THRESHOLD)
+            stateMachine?.Update();
+
+            // TEMP DEBUG: 상태 정체 감시
+            var currentStateType = stateMachine?.CurrentState?.GetType();
+            if (currentStateType != lastWatchedState)
             {
-                stuckWarningLogged = true;
-                int invCount = inventoryComponent != null ? inventoryComponent.GetTotalItemCount() : -1;
-                bool invFull = inventoryComponent != null && inventoryComponent.bInventoryIsFull;
-                LJDebugLog.LogWarning($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) 상태 정체 감지! state={currentStateType?.Name}, {STUCK_WARNING_THRESHOLD}초 이상 유지, " +
-                    $"pos={transform.position}, isPaused={isPaused}, 인벤토리={invCount}, bInventoryIsFull={invFull}, targetTree={(targetTree != null ? targetTree.GetTransform()?.name : "null")}");
+                lastWatchedState = currentStateType;
+                stateStuckTimer = 0f;
+                stuckWarningLogged = false;
+            }
+            else
+            {
+                stateStuckTimer += Time.deltaTime;
+                if (!stuckWarningLogged && stateStuckTimer > STUCK_WARNING_THRESHOLD)
+                {
+                    stuckWarningLogged = true;
+                    int invCount = inventoryComponent != null ? inventoryComponent.GetTotalItemCount() : -1;
+                    bool invFull = inventoryComponent != null && inventoryComponent.bInventoryIsFull;
+                    LJDebugLog.LogWarning($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) 상태 정체 감지! state={currentStateType?.Name}, {STUCK_WARNING_THRESHOLD}초 이상 유지, " +
+                        $"pos={transform.position}, isPaused={isPaused}, 인벤토리={invCount}, bInventoryIsFull={invFull}, targetTree={(targetTree != null ? targetTree.GetTransform()?.name : "null")}");
+                }
+            }
+
+            // 납품(LJState_Deliver) 중에는 새 아이템을 줍지 않는다. 그렇지 않으면 가지고 있던 로그를
+            // 전부 성공적으로 던진 직후(또는 던지는 도중) 근처의 로그를 하나 더 주워버려서, 납품이
+            // 끝났을 때 인벤토리가 다시 비어있지 않은 것으로 보여 영구 정지로 오인되는 문제가 있었다.
+            if (inventoryComponent != null && (stateMachine == null || !(stateMachine.CurrentState is LJState_Deliver)))
+            {
+                itemDetector.Tick(Time.deltaTime, itemDetectionInterval, pickupRadius, OnItemDetected);
             }
         }
 
         if (visualComponent != null)
         {
             visualComponent.UpdateVisuals(isMoving, false, false);
-        }
-
-        // 납품(LJState_Deliver) 중에는 새 아이템을 줍지 않는다. 그렇지 않으면 가지고 있던 로그를
-        // 전부 성공적으로 던진 직후(또는 던지는 도중) 근처의 로그를 하나 더 주워버려서, 납품이
-        // 끝났을 때 인벤토리가 다시 비어있지 않은 것으로 보여 영구 정지로 오인되는 문제가 있었다.
-        if (inventoryComponent != null && (stateMachine == null || !(stateMachine.CurrentState is LJState_Deliver)))
-        {
-            itemDetector.Tick(Time.deltaTime, itemDetectionInterval, pickupRadius, OnItemDetected);
         }
     }
 

@@ -97,6 +97,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     private bool bContainerVisualOpened = false;
     private bool bIsInteracting = false;
+    // 지금 진행 중인 "닫힘->열림" 연출이 플레이어의 상호작용 키 입력으로 시작된 것인지 표시하는 1회성
+    // 플래그. bIsInteracting(키를 누르고 있는 동안만 true)을 대신 쓰면, 연출이 끝나기 전에 키를 놓아도
+    // (짧게 탭만 해도) SetContainerVisualOpened(true) 시점엔 이미 false가 되어 전송이 시작되지 않는
+    // 문제가 있었다. 이 플래그는 SetContainerVisualOpened(true)에서 한 번 소비되면 즉시 false로 리셋된다.
+    private bool bPlayerOpenRequested = false;
 
     public Collider2D col;
 
@@ -207,6 +212,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
                 if (flyingData.toCharacter)
                 {
+                    // 착지 시점에 실제로 커밋한다(발사 시점엔 여유공간 계산에서 pendingCount로만
+                    // 반영됨 - CanAcquireData/CanAddToCharacterInventory 호출부 참고).
                     if (flyingData.toCarrier != null)
                         flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
                     else
@@ -214,8 +221,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 }
                 else
                 {
-                    // 데이터는 이미 발사 시점(TryDepositLogItemVisual)에 확정됐으므로 여기서는
-                    // 착지 연출(바운스)만 처리한다.
+                    // 컨테이너로 들어오는 납품도 착지 시점에 커밋한다(발사 시점엔 CanAddItemByData의
+                    // pendingCount로만 반영됨).
+                    AddItemByData(arrivalDataBuffer, item.logState);
                     TriggerBounce();
                 }
 
@@ -444,10 +452,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                         characterInventoryManager.ItemRemoved();
                     }
 
-                    // 데이터는 여기서 즉시 커밋한다(날아가는 연출은 순수 시각 효과일 뿐) - 서로 다른
-                    // 조합이 같은 빈 슬롯을 동시에 예약해서 나중에 착지하는 쪽 데이터가 사라지는
-                    // 문제를 방지한다.
-                    AddItemByData(sourceData, takenState);
+                    // 컨테이너로의 실제 데이터 커밋은 착지 시점(UpdateFlyingItems)에 한다. 발사 시점엔
+                    // CanAddItemByData의 pendingCount 계산에 이 날아가는 아이템이 반영되어, 다른 조합이
+                    // 같은 빈 슬롯을 이중으로 예약하는 것을 막아준다.
                 }
 
                 LogItemData visualData = new LogItemData
@@ -518,40 +525,68 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
     }
 
+    // 컨테이너/캐릭터 슬롯과 마찬가지로, 캐릭터의 인벤토리도 착지 시점 커밋이라 "빈 슬롯 쟁탈전"
+    // 문제에서 자유롭지 않다. TransferAllItemsRoutine은 한 슬롯의 발사가 끝나면(아직 착지 전이어도)
+    // 곧바로 다음 슬롯(다른 나무종류일 수 있음)으로 넘어가므로, 서로 다른 두 종류가 거의 동시에
+    // 캐릭터의 같은 빈 슬롯을 향해 날아오는 상황이 실제로 발생할 수 있다. 그래서 이미 확보된(같은
+    // 종류) 슬롯 여유로 충분한지 먼저 보고, 부족하면 "물리적으로 남은 빈 슬롯 수"와 "이미 다른
+    // 종류가 빈 슬롯을 예약 중인 개수"를 정확히 비교한다(OffroadContainer/LogContainer의
+    // CanAddItemByData와 동일한 방식).
     private bool CanAddToCharacterInventory(ItemData _sourceData)
     {
-        if (_sourceData == null || characterInventoryManager == null) return false;
+        if (!(_sourceData is LogItemData logSource) || characterInventoryManager == null) return false;
 
-        int pendingCount = 0;
-        if (_sourceData is LogItemData logSource)
-        {
-            for (int i = 0; i < flyingItems.Count; i++)
-            {
-                if (flyingItems[i].toCharacter &&
-                    flyingItems[i].item.itemType == ItemType.Log &&
-                    flyingItems[i].item.logState == logSource.logState &&
-                    flyingItems[i].item.treeType == logSource.treeType)
-                    pendingCount++;
-            }
-        }
-
-        int availableSpace = 0;
         var slots = characterInventoryManager.GetInventorySlots();
         int maxItems = characterInventoryManager.GetMaxItemsPerSlot();
 
+        int matchingExistingSpace = 0;
+        int emptySlotCount = 0;
         for (int i = 0; i < characterInventoryManager.currentSlotCnt; i++)
         {
-            if (slots[i].itemData != null && IsSameItemByData(_sourceData, slots[i].itemData))
+            if (slots[i].itemData == null)
             {
-                availableSpace += Mathf.Max(0, maxItems - slots[i].totalCount);
+                emptySlotCount++;
             }
-            else if (slots[i].itemData == null)
+            else if (IsSameItemByData(_sourceData, slots[i].itemData))
             {
-                availableSpace += maxItems;
+                matchingExistingSpace += Mathf.Max(0, maxItems - slots[i].totalCount);
             }
         }
 
-        bool isSuccess = pendingCount < availableSpace;
+        int pendingSameType = 0;
+        int distinctOtherPendingTypes = 0;
+        for (int i = 0; i < flyingItems.Count; i++)
+        {
+            // toCarrier != null이면 운반 NPC(WithdrawToCarrierRoutine)로 향하는 아이템이라 캐릭터의
+            // 자리를 전혀 차지하지 않는다. 이걸 걸러내지 않으면 NPC가 동시에 인출 중일 때 캐릭터
+            // 몫으로 잘못 카운트되어, 실제로는 자리가 있는데도 없다고 오판할 수 있다.
+            if (!flyingItems[i].toCharacter || flyingItems[i].toCarrier != null || flyingItems[i].item.itemType != ItemType.Log)
+                continue;
+
+            if (flyingItems[i].item.logState == logSource.logState && flyingItems[i].item.treeType == logSource.treeType)
+            {
+                pendingSameType++;
+                continue;
+            }
+
+            bool alreadyCounted = false;
+            for (int j = 0; j < i; j++)
+            {
+                if (flyingItems[j].toCharacter && flyingItems[j].toCarrier == null && flyingItems[j].item.itemType == ItemType.Log &&
+                    flyingItems[j].item.logState == flyingItems[i].item.logState &&
+                    flyingItems[j].item.treeType == flyingItems[i].item.treeType)
+                {
+                    alreadyCounted = true;
+                    break;
+                }
+            }
+            if (!alreadyCounted) distinctOtherPendingTypes++;
+        }
+
+        // 단순 불리언(다른 종류가 하나라도 대기 중이면 무조건 거절) 대신, 물리적으로 남은 빈 슬롯
+        // 수와 이미 다른 종류가 예약 중인 개수를 정확히 비교한다.
+        bool isSuccess = pendingSameType < matchingExistingSpace || emptySlotCount > distinctOtherPendingTypes;
+
         if (!isSuccess)
         {
             bool isFull = true;
@@ -568,7 +603,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     int slotPendingCount = 0;
                     for (int j = 0; j < flyingItems.Count; j++)
                     {
-                        if (flyingItems[j].toCharacter && IsSameItem(flyingItems[j].item, slots[i].itemData))
+                        // 위 계산과 동일한 이유로, 운반 NPC로 향하는 아이템(toCarrier != null)은
+                        // 캐릭터 슬롯을 차지하지 않으므로 여기서도 제외해야 한다.
+                        if (flyingItems[j].toCharacter && flyingItems[j].toCarrier == null && IsSameItem(flyingItems[j].item, slots[i].itemData))
                         {
                             slotPendingCount++;
                         }
@@ -727,9 +764,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             {
                 if (bInTown)
                 {
+                    bPlayerOpenRequested = true;
                     OpenContainerImmediately();
                     if (bContainerVisualOpened)
                     {
+                        bPlayerOpenRequested = false;
                         transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
                     }
                 }
@@ -813,6 +852,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         {
             bPhysicalOverlapped = false;
             bIsInteracting = false;
+            bPlayerOpenRequested = false;
             UpdateInteractState();
 
             if (transferCoroutine != null)
@@ -959,12 +999,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// <summary>
     /// 럼버잭 NPC 등 플레이어가 아닌 소비자가 로그를 컨테이너에 직접 납품할 때 사용하는 공개 API.
     /// 플레이어가 TransferOneSlotVisualRoutine으로 넣을 때와 동일하게 로그가 날아가는 연출(flyingItems)을
-    /// 거치지만, 슬롯 데이터 자체는 착지를 기다리지 않고 이 메서드 안에서 즉시 확정된다.
+    /// 거치며, 슬롯 데이터는 착지 시점(UpdateFlyingItems)에 실제로 커밋된다.
     ///
-    /// (착지 시점에 데이터를 넣으면, 서로 다른 나무종류/등급을 가진 두 NPC가 거의 동시에 같은 빈
-    /// 슬롯을 "아직 비어있다"고 각자 착각해서 예약할 수 있고, 나중에 착지한 쪽 데이터가 조용히
-    /// 사라지는 문제가 있었다. 발사 시점에 슬롯을 즉시 점유시키면 그 순간부터 다른 조합에게는
-    /// "이미 찬 슬롯"으로 보이므로 이 문제가 원천적으로 발생하지 않는다.)
+    /// (서로 다른 나무종류/등급을 가진 두 NPC가 거의 동시에 같은 빈 슬롯을 향해 발사되면, 착지
+    /// 전까지는 CanAddItemByData의 pendingCount 계산이 이미 발사된 물량을 반영해 여유 공간을
+    /// 정확히 판단한다. 그래서 착지 시점 커밋이어도 슬롯 초과로 인한 증발이 발생하지 않는다.)
     ///
     /// 플레이어 전용 상호작용 상태(bIsInteracting/transferCoroutine/물리 오버랩)는 전혀 건드리지 않으므로
     /// 플레이어의 컨테이너 상호작용이나 다른 NPC의 납품 호출과 서로 간섭하지 않는다.
@@ -972,9 +1011,6 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public bool TryDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, LogState _state)
     {
         if (!CanAddItemByData(_sourceData)) return false;
-
-        // 데이터를 여기서 즉시 커밋한다 - 아래 날아가는 연출은 순수 시각 효과일 뿐이다.
-        AddItemByData(_sourceData, _state);
 
         LogItemData visualData = new LogItemData
         {
@@ -1043,12 +1079,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 slotTransferredAny = true;
                 anyDelivered = true;
 
-                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
-            }
+                // 이 코루틴을 미래에 외부에서 취소하는 경로가 생기더라도(현재는 없음), 슬롯이 이번
+                // 아이템으로 완전히 비었으면 즉시 정리해서 totalCount==0인데 itemData가 남아있는
+                // "유령 점유" 슬롯이 생기지 않도록 방어한다(WithdrawToCarrierRoutine과 동일한 패턴).
+                if (slot.totalCount == 0)
+                {
+                    _npcInventory.ItemDeleted(slot);
+                }
 
-            if (slot.totalCount == 0)
-            {
-                _npcInventory.ItemDeleted(slot);
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
             }
 
             if (slotTransferredAny)
@@ -1066,19 +1105,39 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     /// <summary>
     /// 운반 NPC(OffroadPorterNPC 등)가 이 컨테이너의 로그를 자신의 인벤토리로 꺼내갈 때 사용하는 공개 API.
     /// TransferFromNPC(납품)와 반대 방향으로, 컨테이너 -> 운반 NPC 인벤토리로 로그가 하나씩 날아가는 연출을 거친다.
+    /// 반환하는 Coroutine 핸들은 CancelWithdraw로 도중에 취소할 때 쓴다.
     /// </summary>
-    public void WithdrawToCarrier(LumberjackInventoryComponent _carrierInventory, Action _onComplete)
+    public Coroutine WithdrawToCarrier(LumberjackInventoryComponent _carrierInventory, Action<bool> _onComplete)
     {
-        StartCoroutine(WithdrawToCarrierRoutine(_carrierInventory, _onComplete));
+        return StartCoroutine(WithdrawToCarrierRoutine(_carrierInventory, _onComplete));
     }
 
-    private IEnumerator WithdrawToCarrierRoutine(LumberjackInventoryComponent _carrierInventory, Action _onComplete)
+    /// <summary>
+    /// 진행 중인 인출 코루틴을 중단한다. 이미 발사되어 flyingItems에 들어간 아이템은(발사 시점에
+    /// 데이터가 이미 커밋되므로) 이 컨테이너의 UpdateFlyingItems에 의해 그대로 착지/습득되고,
+    /// 아직 발사되지 않은(더 가져오려던) 나머지만 취소된다. _onComplete는 호출되지 않는다.
+    /// </summary>
+    public void CancelWithdraw(Coroutine _coroutine)
+    {
+        if (_coroutine != null)
+        {
+            StopCoroutine(_coroutine);
+        }
+    }
+
+    private IEnumerator WithdrawToCarrierRoutine(LumberjackInventoryComponent _carrierInventory, Action<bool> _onComplete)
     {
         if (_carrierInventory == null)
         {
-            _onComplete?.Invoke();
+            _onComplete?.Invoke(false);
             yield break;
         }
+
+        // 착지 시점 커밋이라 코루틴이 끝나는 시점엔 방금 발사한 아이템들이 아직 캐리어 인벤토리에
+        // 반영되지 않았을 수 있다. bInventoryIsEmpty만으로 완료를 판단하면 "분명히 인출했는데
+        // 아직 착지 전이라 비어있다고 착각해서" 바로 Idle로 돌아가 버리는 문제가 생기므로, 이번
+        // 세션에서 실제로 하나라도 발사했는지를 별도로 반환한다.
+        bool anyWithdrawn = false;
 
         for (int i = 0; i < currentSlotCount; i++)
         {
@@ -1088,7 +1147,58 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             bool transferredAny = false;
             while (slot.totalCount > 0)
             {
-                if (!_carrierInventory.CanAcquireData(sourceData)) break;
+                // 착지 시점(UpdateFlyingItems)에 실제로 커밋되므로, 아직 도착하지 않고 날아오는 중인
+                // 물량까지 캐리어의 여유 공간과 비교해야 한다. FLY_INTERVAL(0.075초)이 실제 비행
+                // 시간(0.8~1.2초)보다 훨씬 짧아 앞서 발사된 아이템들이 아직 반영 안 된 상태로 계속
+                // 승인되면, 실제 용량보다 훨씬 많이 발사되어 나중에 도착한 아이템이 갈 곳을 잃는다.
+                int pendingSameTypeForCarrier = 0;
+                int distinctOtherPendingTypesForCarrier = 0;
+                for (int j = 0; j < flyingItems.Count; j++)
+                {
+                    if (!flyingItems[j].toCharacter || flyingItems[j].toCarrier != _carrierInventory ||
+                        flyingItems[j].item.itemType != ItemType.Log)
+                        continue;
+
+                    if (flyingItems[j].item.logState == sourceData.logState && flyingItems[j].item.treeType == sourceData.treeType)
+                    {
+                        pendingSameTypeForCarrier++;
+                        continue;
+                    }
+
+                    // 다른 종류가 이 캐리어를 향해 이미 여러 개 대기 중이어도 빈 슬롯은 하나만
+                    // 필요하므로, 처음 등장한 조합일 때만 새로 카운트한다(중복 방지).
+                    bool alreadyCounted = false;
+                    for (int k = 0; k < j; k++)
+                    {
+                        if (flyingItems[k].toCharacter && flyingItems[k].toCarrier == _carrierInventory &&
+                            flyingItems[k].item.itemType == ItemType.Log &&
+                            flyingItems[k].item.logState == flyingItems[j].item.logState &&
+                            flyingItems[k].item.treeType == flyingItems[j].item.treeType)
+                        {
+                            alreadyCounted = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyCounted) distinctOtherPendingTypesForCarrier++;
+                }
+
+                bool canAcquireMore;
+                if (pendingSameTypeForCarrier < _carrierInventory.GetMatchingSlotSpaceFor(sourceData))
+                {
+                    // 이미 확보된(같은 종류) 슬롯에 여유가 있으면 빈 슬롯 쟁탈전과 무관하게 안전하다.
+                    canAcquireMore = true;
+                }
+                else
+                {
+                    // 기존 슬롯 여유로는 부족해서 빈 슬롯이 필요하다. "물리적으로 남은 빈 슬롯 수"가
+                    // "이미 다른 종류가 빈 슬롯을 예약 중인 개수"보다 많을 때만 나에게도 자리가 있다고
+                    // 본다(단순 불리언 판정은 빈 슬롯이 여러 개 있어도 하나만 다른 종류가 써도 전부
+                    // 거절해버려, 캐리어가 그 세션에 하나도 못 받아 상태가 꼬이는 일을 불필요하게
+                    // 유발할 수 있다).
+                    canAcquireMore = _carrierInventory.GetEmptySlotCount() > distinctOtherPendingTypesForCarrier;
+                }
+
+                if (!canAcquireMore) break;
 
                 LogState takenState = slot.TakeOneItem();
 
@@ -1121,14 +1231,19 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = true, toCarrier = _carrierInventory });
 
                 transferredAny = true;
+                anyWithdrawn = true;
+
+                // 슬롯이 이번 아이템으로 완전히 비었다면 바로 정리한다. 아래 yield 도중
+                // CancelWithdraw(StopCoroutine)로 이 코루틴이 외부에서 즉시 중단되면(예: 텔레포트
+                // 취소) 루프 밖의 정리 코드에 도달하지 못해, totalCount는 0인데 itemData는 남아있는
+                // "유령 점유" 슬롯이 생겨 이후 같은 나무종류만 받을 수 있게 굳어버리는 문제가 있었다.
+                if (slot.totalCount == 0)
+                {
+                    ItemDeleted(slot);
+                    ContainerUpdatedEvent?.Invoke();
+                }
 
                 yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
-            }
-
-            if (slot.count == 0)
-            {
-                ItemDeleted(slot);
-                ContainerUpdatedEvent?.Invoke();
             }
 
             if (transferredAny)
@@ -1137,32 +1252,70 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             }
         }
 
-        _onComplete?.Invoke();
+        _onComplete?.Invoke(anyWithdrawn);
     }
 
-    // 로그를 실제로 슬롯에 커밋하는 시점이 이제 발사 즉시(TryDepositLogItemVisual/
-    // TransferOneSlotVisualRoutine)이므로, inventorySlots는 항상 "지금 진짜로 확정된" 상태를
-    // 그대로 반영한다. 그래서 착지 대기 중인 물량을 따로 빼는 pendingCount 계산 없이,
-    // 현재 슬롯 데이터만 보고 판단해도 정확하다.
+    // 로그를 실제로 슬롯에 커밋하는 시점이 착지 시점(UpdateFlyingItems)이므로, 아직 도착하지 않고
+    // 날아오는 중인 물량까지 감안해야 한다. 단순히 "빈 슬롯 용량을 전부 더한 합"과 비교하면, 서로
+    // 다른 조합이 같은 빈 슬롯 하나를 향해 거의 동시에 발사됐을 때 둘 다 "빈 슬롯 있음"으로 통과해
+    // 버려 나중에 착지하는 쪽이 갈 곳을 잃는다(증발). 그래서 이미 확보된(같은 종류) 슬롯 여유로
+    // 충분한지 먼저 보고, 부족하면 "물리적으로 남은 빈 슬롯 수"와 "이미 빈 슬롯을 예약 중인 서로
+    // 다른 종류의 개수"를 정확히 비교한다. 단순 불리언(다른 종류가 하나라도 있으면 무조건 거절)으로
+    // 하면 빈 슬롯이 2개 있는데 서로 다른 종류 2개가 동시에 들어와도 하나가 불필요하게 거절당해,
+    // 럼버잭 NPC가 그 세션에 하나도 못 넣어서 재시도 없이 영구 정지(bPermanentlyStuck)하는 상황을
+    // 실제보다 더 자주 유발할 수 있었다.
     private bool CanAddItemByData(ItemData _sourceData)
     {
-        if (_sourceData == null) return false;
+        if (!(_sourceData is LogItemData logSource)) return false;
 
+        int matchingExistingSpace = 0;
+        int emptySlotCount = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData) &&
-                inventorySlots[i].totalCount < maxItemsPerSlot)
-            {
-                return true;
-            }
-
             if (inventorySlots[i].itemData == null)
             {
-                return true;
+                emptySlotCount++;
+            }
+            else if (IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            {
+                int remaining = maxItemsPerSlot - inventorySlots[i].totalCount;
+                if (remaining > 0) matchingExistingSpace += remaining;
             }
         }
 
-        return false;
+        int pendingSameType = 0;
+        int distinctOtherPendingTypes = 0;
+        for (int i = 0; i < flyingItems.Count; i++)
+        {
+            // !toCharacter인 항목은 캐릭터/NPC가 이 컨테이너로 납품 중인(아직 착지 안 한) 물량이다.
+            if (flyingItems[i].toCharacter || flyingItems[i].item.itemType != ItemType.Log) continue;
+
+            if (flyingItems[i].item.logState == logSource.logState && flyingItems[i].item.treeType == logSource.treeType)
+            {
+                pendingSameType++;
+                continue;
+            }
+
+            // 다른 종류가 이미 본 적 없는 조합이면(=아직 빈 슬롯을 하나 점유하지 않았다면) 새로 하나
+            // 카운트한다. 같은 다른 종류가 여러 개 대기 중이어도 빈 슬롯은 하나만 필요하므로 중복
+            // 카운트하지 않는다.
+            bool alreadyCounted = false;
+            for (int j = 0; j < i; j++)
+            {
+                // flyingItems[j]가 flyingItems[i]와 같은 (다른) 조합이면 이미 카운트된 것이다.
+                if (!flyingItems[j].toCharacter && flyingItems[j].item.itemType == ItemType.Log &&
+                    flyingItems[j].item.logState == flyingItems[i].item.logState &&
+                    flyingItems[j].item.treeType == flyingItems[i].item.treeType)
+                {
+                    alreadyCounted = true;
+                    break;
+                }
+            }
+            if (!alreadyCounted) distinctOtherPendingTypes++;
+        }
+
+        if (pendingSameType < matchingExistingSpace) return true;
+        return emptySlotCount > distinctOtherPendingTypes;
     }
 
     private void AddItemByData(ItemData _sourceData, LogState _state)
@@ -1307,8 +1460,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     public void SetContainerVisualOpened(bool _boolean)
     {
         bContainerVisualOpened = _boolean;
-        if (bInTown && bContainerVisualOpened && transferCoroutine == null)
+
+        // flyingItems(운반 NPC 인출 등)만으로도 bContainerOpen -> ContainerOpenedEvent -> 뚜껑 열림
+        // 연출 -> 이 메서드까지 이어질 수 있다. bPlayerOpenRequested(이번 열림이 플레이어의 상호작용
+        // 키 입력으로 시작됐는지)를 확인하지 않으면, 캐릭터가 우연히 근처에 서 있기만 해도 NPC 활동으로
+        // 열린 뚜껑에 반응해 캐릭터 전송이 자동으로 시작되어 버린다(운반 NPC가 가져가려던 로그를
+        // 가로채는 문제). bIsInteracting(키를 누르고 있는 동안만 true) 대신 이 플래그를 쓰는 이유는,
+        // 연출이 끝나기 전에 키를 놓아도(짧게 탭만 해도) 정상적으로 전송이 시작되어야 하기 때문이다.
+        if (bInTown && bContainerVisualOpened && bPlayerOpenRequested && transferCoroutine == null)
         {
+            bPlayerOpenRequested = false;
+
             if (HasAnyItemToTransfer())
             {
                 transferCoroutine = StartCoroutine(TransferAllItemsRoutine());
