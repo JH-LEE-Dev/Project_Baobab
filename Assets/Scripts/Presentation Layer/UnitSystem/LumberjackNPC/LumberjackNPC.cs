@@ -68,7 +68,24 @@ public class LumberjackNPC : MonoBehaviour
     public void Initialize(IEnvironmentProvider _envProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null, LumberjackStatComponent _statComponent = null)
     {
         environmentProvider = _envProvider;
+
+        // offroadContainer는 던전마다 새로 주입되는 참조라, 이전 던전에서 구독했던 인스턴스가 남아있지
+        // 않도록 매번 재구독한다. bPermanentlyStuck은 원래 "내 인벤토리가 바뀔 때"만 재확인했는데,
+        // 다른 럼버잭이나 캐릭터의 납품이 착지(AddItemByData)해서 자리가 새로 생기는 경우는 이 NPC의
+        // 인벤토리와 무관해서 절대 감지되지 않아, 실제로는 자리가 다시 났는데도 영구히 멈춰있는
+        // 경우가 있었다. (던전에서는 컨테이너에서 아이템을 "빼가는" 경로가 없으므로 여기서
+        // ContainerUpdatedEvent가 의미 있게 발생하는 건 사실상 납품 착지뿐이다.)
+        if (offroadContainer != null)
+        {
+            offroadContainer.ContainerUpdatedEvent -= HandleOffroadContainerUpdated;
+        }
         offroadContainer = _offroadContainer;
+        if (offroadContainer != null)
+        {
+            offroadContainer.ContainerUpdatedEvent -= HandleOffroadContainerUpdated;
+            offroadContainer.ContainerUpdatedEvent += HandleOffroadContainerUpdated;
+        }
+
         if (_statComponent != null) statComponent = _statComponent;
         tilemapDataProvider = environmentProvider.tilemapDataProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
@@ -196,6 +213,19 @@ public class LumberjackNPC : MonoBehaviour
         }
     }
 
+    // 영구 정지는 "내 인벤토리가 바뀔 때"만 재확인되던 HandleItemAdded와 별개로, 다른 럼버잭이나
+    // 캐릭터의 납품이 착지해서 자리가 새로 생긴 경우도 감지해야 한다(던전에서 컨테이너 아이템이
+    // 줄어드는 경로는 없으므로, 여기서 의미 있는 경우는 사실상 "다른 쪽 납품 착지"뿐이다). 이건 이
+    // NPC의 인벤토리와 무관하므로 HandleItemAdded로는 절대 잡히지 않는다 - 실제로 자리가 다시
+    // 났는데도 이 NPC만 영구히 멈춰있는 문제를 막기 위한 것이다.
+    private void HandleOffroadContainerUpdated()
+    {
+        if (stateMachine?.CurrentState is LJState_Deliver deliverState)
+        {
+            deliverState.ClearPermanentStuckIfNeeded();
+        }
+    }
+
     private void HandleInventoryFull()
     {
         // TEMP DEBUG
@@ -298,6 +328,11 @@ public class LumberjackNPC : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (offroadContainer != null)
+        {
+            offroadContainer.ContainerUpdatedEvent -= HandleOffroadContainerUpdated;
+        }
+
         ReleaseTargetTree();
         stateMachine?.ReleaseAllState();
     }
