@@ -23,9 +23,10 @@ public class AxeAnimation : MonoBehaviour
 
     // NotifySwingComplete/NotifyReturnComplete는 인스턴스 메서드라서 메서드 그룹을 델리게이트로
     // 넘길 때마다(OnComplete(NotifySwingComplete) 등) 매번 새 델리게이트가 할당된다.
-    // 도끼 스윙마다 반복 호출되므로 한 번만 캐싱해서 재사용한다.
-    private Action cachedNotifySwingComplete;
-    private Action cachedNotifyReturnComplete;
+    // 도끼 스윙마다 반복 호출되므로 한 번만 캐싱해서 재사용한다. (OnComplete은 Action이 아닌
+    // DOTween의 TweenCallback 델리게이트 타입을 요구한다)
+    private TweenCallback cachedNotifySwingComplete;
+    private TweenCallback cachedNotifyReturnComplete;
 
     private void Awake()
     {
