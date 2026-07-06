@@ -1,5 +1,50 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &324414497528792689
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3279444899425718996}
+  - component: {fileID: 6088753128934878941}
+  m_Layer: 0
+  m_Name: TownTileManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3279444899425718996
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 324414497528792689}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7167910169251179437}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6088753128934878941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 324414497528792689}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7434c6a3a57b14e45a1ef365eefeda7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TownTileManager
+  tilemapPrefab: {fileID: 6881421302417486748, guid: 46c9e6a76e2525643a8501b428463eae, type: 3}
 --- !u!1 &616997715229847835
 GameObject:
   m_ObjectHideFlags: 0
@@ -1047,7 +1092,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   npcPrefab: {fileID: 9197713879388921321, guid: 0a673e3ff0ddf2645b1b837f534f144b, type: 3}
   maxNPCs: 3
-  spawnRadius: 10
   useCulling: 0
   cullingDistance: 25
   cullingUpdateInterval: 0.1
@@ -2246,6 +2290,8 @@ Transform:
   - {fileID: 6974097051142031380}
   - {fileID: 9120751978631468573}
   - {fileID: 413762451555364679}
+  - {fileID: 3279444899425718996}
+  - {fileID: 2112430069709630900}
   m_Father: {fileID: 1821968231370692703}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2035583621322038210
@@ -2397,6 +2443,53 @@ MonoBehaviour:
   characterSpawnPoint: {fileID: 5004496044835778804, guid: e8c773d61d82f3b4086ee1131624cecc, type: 3}
   characterPrefab: {fileID: 8662941010871122232, guid: e73742882640a0d4787ce81c60e7198b, type: 3}
   character: {fileID: 0}
+--- !u!1 &8319344316240393611
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2112430069709630900}
+  - component: {fileID: 8026624552342623080}
+  m_Layer: 0
+  m_Name: TownUnitSpawner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2112430069709630900
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8319344316240393611}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7167910169251179437}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8026624552342623080
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8319344316240393611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e0ffbacc2421b64f965305c8be8fb51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TownUnitSpawner
+  npcPrefab: {fileID: 1313503206885682807, guid: 0428298bd8aec6f459c8e3f9e9cbf4c8, type: 3}
+  npcCount: 3
+  npcSpacing: 1.2
 --- !u!1 &8421553769195273407
 GameObject:
   m_ObjectHideFlags: 0

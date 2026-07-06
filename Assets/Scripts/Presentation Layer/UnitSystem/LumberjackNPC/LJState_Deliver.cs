@@ -1,3 +1,5 @@
+using UnityEngine;
+
 /// <summary>
 /// 인벤토리가 가득 찬 럼버잭 NPC가 오프로드 컨테이너를 향해 길찾기로 이동하다가,
 /// 컨테이너의 실제 충돌 반경(collider) 안에 들어오는 순간 바로 그 자리에서 납품하는 상태.
@@ -9,17 +11,30 @@ public class LJState_Deliver : LumberjackState
     private int pathIndex = 0;
 
     private bool bIsDepositing = false;
+    private float depositTimer = 0f;
+    private const float DEPOSIT_TIMEOUT = 8f;
 
-    // 도착해서 납품을 시도했지만 상자가 가득 차 로그가 남아있는 경우를 나타낸다. 상자는 다음 던전
-    // 진입 전까지 다시 비워지지 않으므로, 이 NPC는 재시도 없이 이 자리에 멈춰 생애를 마친다.
-    private bool bWaitingForSpace = false;
+    // DepositAndReturn을 호출할 때마다 증가하는 시도 번호. OffroadContainer 쪽 코루틴이 어떤
+    // 이유로든 끝까지 돌지 않아 완료 콜백이 영영 안 오는 경우, 타임아웃으로 이 시도를 포기하고
+    // 번호를 다시 증가시켜 둔다. 그 뒤에 원래 콜백이 뒤늦게 와도 자신이 발급받은 번호가 최신이
+    // 아님을 확인하고 조용히 무시하게 만들어, 이미 다른 상태로 넘어간 뒤에(혹은 오브젝트 풀링으로
+    // 재사용된 뒤에) 상태를 잘못 건드리는 것을 막는다.
+    private int depositAttemptId = 0;
+
+    // 납품을 시도했는데 단 하나도 넣지 못한 경우를 나타낸다(자리가 없거나, 들고 있는 로그의
+    // 나무종류+등급이 상자 슬롯들과 안 맞아서 중첩이 안 되는 경우 등). 이 경우 이번 던전 안에서는
+    // 더 이상 방법이 없다고 보고 재시도 없이 이 자리에 멈춘다. 하나라도 넣는 데 성공했다면
+    // 남은 게 있어도 다시 벌목하러 돌아간다.
+    private bool bPermanentlyStuck = false;
 
     public override void Enter()
     {
         base.Enter();
         pathIndex = 0;
         bIsDepositing = false;
-        bWaitingForSpace = false;
+        depositTimer = 0f;
+        depositAttemptId++; // 풀링으로 재사용된 경우 이전 생애의 늦은 콜백을 무효화
+        bPermanentlyStuck = false;
         npc.SetVisualMoving(true);
 
         if (npc.offroadContainer == null)
@@ -55,7 +70,23 @@ public class LJState_Deliver : LumberjackState
     {
         base.Update();
 
-        if (bIsDepositing) return;
+        if (bIsDepositing)
+        {
+            // 방어 코드: OffroadContainer 쪽 코루틴이 중간에 멈추면(예: 도중에 GameObject
+            // 비활성화) 완료 콜백이 영영 안 올 수 있다. 그러면 bIsDepositing이 계속 true로 남아
+            // 이 NPC가 bPermanentlyStuck 체크도 못 해보고 완전히 얼어붙으므로, 일정 시간 넘게
+            // 완료되지 않으면 이 시도를 포기하고 Idle로 되돌려 다시 시도할 기회를 준다.
+            depositTimer += Time.deltaTime;
+            if (depositTimer > DEPOSIT_TIMEOUT)
+            {
+                Debug.LogWarning($"[LJState_Deliver] 납품 완료 콜백이 {DEPOSIT_TIMEOUT}초 넘게 오지 않아 강제로 재시도합니다. NPC={npc.name}");
+                depositAttemptId++;
+                bIsDepositing = false;
+                depositTimer = 0f;
+                stateMachine.ChangeState<LJState_Idle>();
+            }
+            return;
+        }
 
         if (npc.offroadContainer == null)
         {
@@ -63,9 +94,8 @@ public class LJState_Deliver : LumberjackState
             return;
         }
 
-        // 상자가 가득 차 더 이상 납품할 수 없는 상태 - 다음 던전 전까지 상자에 자리가 생기지
-        // 않으므로 재시도하지 않고 이 자리에 계속 멈춰 있는다.
-        if (bWaitingForSpace) return;
+        // 단 하나도 못 넣어서 영구 정지한 상태 - 다음 던전 전까지 상황이 안 바뀌므로 재시도하지 않는다.
+        if (bPermanentlyStuck) return;
 
         // 경로를 따라가는 중 컨테이너의 충돌 반경에 들어오면 남은 경로와 무관하게 즉시 납품
         if (npc.offroadContainer.IsWithinInteractRadius(npc.transform.position))
@@ -86,21 +116,31 @@ public class LJState_Deliver : LumberjackState
         if (bIsDepositing) return;
 
         bIsDepositing = true;
+        depositTimer = 0f;
+        int myAttemptId = ++depositAttemptId;
         npc.SetVisualMoving(false); // 납품 중에는 멈춰 서 있는다
-        npc.DepositInventoryToOffroad(() =>
+
+        // 납품 전/후 인벤토리 총량을 비교하지 않는다 - 납품 도중/직후에 흡입 중이던 다른 로그가
+        // 뒤늦게 착지해 총량이 바뀌면(문제 3) "하나라도 넣었는지"가 총량 비교만으로는 잘못 판정될 수
+        // 있다. 대신 실제로 넣은 개수를 납품 루틴 내부에서 직접 세어 그 결과만 그대로 사용한다.
+        npc.DepositInventoryToOffroad((bool _wasDelivered) =>
         {
+            // 타임아웃으로 이 시도를 이미 포기한 뒤에 뒤늦게 콜백이 오면 무시한다 - 그 사이 다른
+            // 상태로 넘어갔거나(재시도 중 다시 Deliver에 들어와 새 시도가 진행 중일 수 있음),
+            // 오브젝트가 풀링으로 재사용되어 완전히 다른 NPC를 대변하고 있을 수도 있다.
+            if (myAttemptId != depositAttemptId) return;
+
             bIsDepositing = false;
 
-            // 상자가 가득 차 미처 납품하지 못한 로그가 남아있다면, 벌목하러 가지 않고
-            // 재시도 없이 이 자리에 멈춰 있는다.
-            if (npc.inventory != null && !npc.inventory.bInventoryIsEmpty)
+            // 하나라도 넣는 데 성공했다면 남은 게 있어도 다시 벌목하러 간다.
+            if (_wasDelivered)
             {
-                bWaitingForSpace = true;
+                stateMachine.ChangeState<LJState_Idle>();
                 return;
             }
 
-            bWaitingForSpace = false;
-            stateMachine.ChangeState<LJState_Idle>();
+            // 단 하나도 넣지 못했다 - 재시도 없이 이 자리에 영구 정지한다.
+            bPermanentlyStuck = true;
         });
     }
 }

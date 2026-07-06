@@ -129,6 +129,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     // 차량+컨테이너 발밑에 깔린(RepairBox 소유가 아닌) ColliderTilemap - 길찾기 상 이동 불가 타일로 등록하기 위함
     private TilemapFootprintCollider footprintCollider;
+    private Tilemap footprintColliderTilemap;
+
+    /// <summary>
+    /// 차량 발밑 ColliderTilemap 원본 참조. TownTilemapDataProvider 등 외부 길찾기 시스템이
+    /// 이 타일맵이 덮는 영역을 이동 불가 타일로 등록할 때 사용한다.
+    /// </summary>
+    public Tilemap FootprintColliderTilemap => footprintColliderTilemap;
 
     //퍼블릭 초기화 및 제어 메서드
     public void Initialize(PortalType _type, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
@@ -192,7 +199,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
         // 차량/컨테이너 자체의 ColliderTilemap을 찾는다. RepairBox 밑에 있는 것과 이름이 같아서(둘 다 "ColliderTilemap")
         // RepairBox의 하위 트리에 속하지 않는 것만 골라야 한다.
-        Tilemap footprintColliderTilemap = null;
+        footprintColliderTilemap = null;
         Tilemap[] allTilemaps = GetComponentsInChildren<Tilemap>(true);
         for (int i = 0; i < allTilemaps.Length; i++)
         {

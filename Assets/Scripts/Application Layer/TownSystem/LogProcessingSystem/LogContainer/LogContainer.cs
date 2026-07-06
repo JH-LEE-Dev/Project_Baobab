@@ -26,6 +26,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     private SpriteRenderer sr;
     private SpriteRenderer outlineSr;
+    private Collider2D col;
 
     //외부 의존성
 
@@ -120,6 +121,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         // 시각적 효과를 위한 트랜스폼 캐싱
         sr = GetComponent<SpriteRenderer>();
+        col = GetComponent<Collider2D>();
         if (outLineObject != null)
         {
             outlineSr = outLineObject.GetComponent<SpriteRenderer>();
@@ -214,17 +216,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
             if (item.MoveState != ItemMoveState.Transferring)
             {
-                // 도착 연출 완료 (Scale 0 시점) - 실제 데이터 추가
-                arrivalDataBuffer.itemType = item.itemType;
-                arrivalDataBuffer.sprite = item.sprite;
-                arrivalDataBuffer.color = item.color;
-                arrivalDataBuffer.treeType = item.treeType;
-                arrivalDataBuffer.logState = item.logState;
-
-                AddItemByData(arrivalDataBuffer, item.logState);
-
-                ContainerUpdatedEvent?.Invoke();
-
+                // 도착 연출 완료 (Scale 0 시점). 데이터는 이미 발사 시점(TryDepositLogItemVisual/
+                // TransferOneSlotVisualRoutine)에 커밋됐으므로 여기서는 착지 연출(바운스)만 처리한다.
                 TriggerBounce();
 
                 logItemPoolManager.ReturnLogItem(item);
@@ -366,7 +359,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 {
                     characterInventoryManager.ItemRemoved();
                 }
-                // AddItemByData(sourceData, takenState); // [제거] 도착 시점으로 연기
+
+                // 데이터는 여기서 즉시 커밋한다(착지 연출은 순수 시각 효과일 뿐) - 서로 다른 조합이
+                // 같은 빈 슬롯을 동시에 예약해서 나중에 착지하는 쪽 데이터가 사라지는 문제를 방지한다.
+                AddItemByData(sourceData, takenState);
 
                 // 시각적 비행 아이템 생성
                 LogItemData visualData = new LogItemData
@@ -419,41 +415,26 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
+    // 로그를 실제로 슬롯에 커밋하는 시점이 이제 발사 즉시(TryDepositLogItemVisual/
+    // TransferOneSlotVisualRoutine)이므로, containerSlots는 항상 "지금 진짜로 확정된" 상태를
+    // 그대로 반영한다. 그래서 착지 대기 중인 물량을 따로 빼는 pendingCount 계산 없이,
+    // 현재 슬롯 데이터만 보고 판단해도 정확하다.
     private bool CanAddItemByData(ItemData _sourceData)
     {
         if (_sourceData == null) return false;
 
-        // 현재 비행 중인 동일 타입 아이템 개수 계산
-        int pendingCount = 0;
-        if (_sourceData is LogItemData logSource)
-        {
-            for (int i = 0; i < flyingItems.Count; i++)
-            {
-                if (flyingItems[i].itemType == ItemType.Log &&
-                    flyingItems[i].logState == logSource.logState &&
-                    flyingItems[i].treeType == logSource.treeType)
-                    pendingCount++;
-            }
-        }
-
-        // 1. 현재 활성화된 슬롯 범위 내에서 기존 슬롯 확인 (중첩 가능하고 공간이 있는지)
         for (int i = 0; i < currentSlotCount; i++)
         {
             if (containerSlots[i].itemData != null &&
-                (containerSlots[i].totalCount + pendingCount) < maxItemsPerSlot &&
+                containerSlots[i].totalCount < maxItemsPerSlot &&
                 IsSameItemByData(_sourceData, containerSlots[i].itemData))
             {
                 return true;
             }
-        }
 
-        // 2. 현재 활성화된 슬롯 범위 내에서 빈 슬롯이 있는지 확인
-        for (int i = 0; i < currentSlotCount; i++)
-        {
             if (containerSlots[i].itemData == null)
             {
-                // 빈 슬롯이 있으면 진입 가능 (비행 중인 것들이 이 슬롯을 채울 것임)
-                return pendingCount < maxItemsPerSlot;
+                return true;
             }
         }
 
@@ -680,6 +661,103 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     public Transform GetTransform()
     {
         return transform;
+    }
+
+    /// <summary>
+    /// 주어진 월드 좌표가 이 컨테이너의 실제 충돌 반경(collider) 안에 들어와 있는지 확인합니다.
+    /// 운반 NPC가 길찾기로 이 컨테이너를 향해 이동하다가 이 반경에 들어오는 순간 납품을 시작한다.
+    /// </summary>
+    public bool IsWithinInteractRadius(Vector3 _worldPos)
+    {
+        if (col == null) return false;
+        return col.OverlapPoint(_worldPos);
+    }
+
+    /// <summary>
+    /// 운반 NPC(OffroadPorterNPC 등)가 로그를 이 컨테이너에 직접 납품할 때 사용하는 공개 API.
+    /// 슬롯 데이터는 착지를 기다리지 않고 이 메서드 안에서 즉시 커밋되고, 날아가는 아이템은
+    /// 순수 시각 연출만 담당한다(서로 다른 조합이 같은 빈 슬롯을 동시에 예약해서 나중에
+    /// 착지하는 쪽 데이터가 사라지는 문제를 방지하기 위함).
+    /// </summary>
+    public bool TryDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, LogState _state)
+    {
+        if (!CanAddItemByData(_sourceData)) return false;
+
+        AddItemByData(_sourceData, _state);
+
+        LogItemData visualData = new LogItemData
+        {
+            treeType = _sourceData.treeType,
+            logState = _state,
+            color = _sourceData.color
+        };
+
+        LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
+        flyingItem.SetFlyingItemSortingLayer();
+        flyingItem.IsDropItem(false);
+
+        Vector3 end = inputTransform != null ? inputTransform.position : transform.position;
+
+        Vector3 dir = (end - _fromWorldPos).normalized;
+        if (dir == Vector3.zero) dir = Vector3.up;
+        Vector3 normal = new Vector3(-dir.y, dir.x, 0f);
+        float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
+        Vector3 trajectoryJitter = normal * arcPower;
+
+        float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+        flyingItem.transform.position = _fromWorldPos;
+        flyingItem.TransferLaunch(_fromWorldPos, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter, rotationSpeed);
+        flyingItems.Add(flyingItem);
+
+        ContainerUpdatedEvent?.Invoke();
+
+        return true;
+    }
+
+    /// <summary>
+    /// 운반 NPC 인벤토리의 로그 아이템들을 캐릭터 납품과 동일한 연출로 천천히 이 컨테이너에 납품합니다.
+    /// 납품 연출이 모두 끝나면(상자가 가득 차 일부가 남더라도) _onComplete 콜백을 호출합니다.
+    /// </summary>
+    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    {
+        StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete));
+    }
+
+    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    {
+        var slots = _npcInventory.GetInventorySlots();
+        for (int i = 0; i < _npcInventory.currentSlotCnt; i++)
+        {
+            var slot = slots[i];
+            if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+
+            bool slotTransferredAny = false;
+            while (slot.totalCount > 0)
+            {
+                if (!TryDepositLogItemVisual(logData, _fromWorldPos, logData.logState))
+                {
+                    break;
+                }
+
+                slot.TakeOneItem();
+                slotTransferredAny = true;
+
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+
+            if (slot.totalCount == 0)
+            {
+                _npcInventory.ItemDeleted(slot);
+            }
+
+            if (slotTransferredAny)
+            {
+                yield return new WaitForSeconds(transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul));
+            }
+        }
+
+        _onComplete?.Invoke();
     }
 
     /// <summary>

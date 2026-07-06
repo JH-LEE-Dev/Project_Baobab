@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8279056523211415421}
   - component: {fileID: 2194254827805538895}
   - component: {fileID: 4343640217795709761}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: OnWaterFace
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -123,7 +123,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2954841671662310478}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: StatComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -154,7 +154,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7925078424189318453}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Control
   m_TagString: Untagged
   m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
@@ -187,7 +187,7 @@ GameObject:
   - component: {fileID: 6685958093442976972}
   - component: {fileID: 176869674312974860}
   - component: {fileID: 788877737260180193}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: FaceAnimator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -304,7 +304,7 @@ GameObject:
   - component: {fileID: 6347319552071559647}
   - component: {fileID: 6736512610062053557}
   - component: {fileID: 750198600321005175}
-  m_Layer: 0
+  m_Layer: 21
   m_Name: Animator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -669,7 +669,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5893014463743108845}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: AimCorrectionCollider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -702,7 +702,7 @@ GameObject:
   - component: {fileID: 2435598852096795751}
   - component: {fileID: 7211484069950590435}
   - component: {fileID: 9183082777183674002}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Axe
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -812,7 +812,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3614498564118773610}
   - component: {fileID: 2932174563416855427}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: FeetShadow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -903,7 +903,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7501358206034538532}
   - component: {fileID: 2411420920891242028}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: BulletObjManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -950,7 +950,7 @@ GameObject:
   - component: {fileID: 6444412150713118473}
   - component: {fileID: 1751233377343582312}
   - component: {fileID: 5703221483670915186}
-  m_Layer: 0
+  m_Layer: 21
   m_Name: OnWater
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1077,7 +1077,7 @@ GameObject:
   - component: {fileID: 1714684825680876344}
   - component: {fileID: 5898982970203040197}
   - component: {fileID: 1316088712387137813}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: OnWaterFace_Blink
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1194,7 +1194,7 @@ GameObject:
   - component: {fileID: 6955610423500683071}
   - component: {fileID: 8620535143034596911}
   - component: {fileID: 2653239091035476879}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Shadow
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1346,7 +1346,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8431569276431631581}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: RevolutionPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1377,7 +1377,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5480909666241068875}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Muzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1412,7 +1412,7 @@ GameObject:
   - component: {fileID: 9197713879388921321}
   - component: {fileID: 8505061167446907806}
   - component: {fileID: 1654896444801992708}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: LumberjackNPC
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -1520,7 +1520,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3555462457218810438}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Target
   m_TagString: Untagged
   m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
@@ -1552,7 +1552,7 @@ GameObject:
   m_Component:
   - component: {fileID: 669200331279007551}
   - component: {fileID: 1159105790820385092}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Visuals
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1604,7 +1604,7 @@ GameObject:
   - component: {fileID: 760674201297796072}
   - component: {fileID: 8515267401498345339}
   - component: {fileID: 43850899433444905}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Rifle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1758,7 +1758,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6838149026492023820}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: HealthComponent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1791,7 +1791,7 @@ GameObject:
   - component: {fileID: 4746303403047370620}
   - component: {fileID: 5042562710383407411}
   - component: {fileID: 3885287197987716993}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: FaceBlinkAnimator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1903,7 +1903,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4370299803978844474}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: CenterTransform
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1935,7 +1935,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6201343523155214067}
   - component: {fileID: 3008963349970507585}
-  m_Layer: 8
+  m_Layer: 21
   m_Name: Arm
   m_TagString: Untagged
   m_Icon: {fileID: 0}
