@@ -799,7 +799,6 @@ MonoBehaviour:
     m_Bits: 1024
   treeSensorRadius: 4
   treeDetectionInterval: 0.5
-  boomerangCooldown: 2.5
   boomerangEdgePadding: 0.5
   centerTransform: {fileID: 4602724895061784125}
   bRide: 0
@@ -1678,6 +1677,14 @@ MonoBehaviour:
   bShockWaveCritical: 0
   bShockWaveEnforcement: 0
   bShockWaveMastery: 0
+  boomerangCount: 0
+  boomerangDamage: 1
+  boomerangHitRadius: 0.5
+  boomerangMajorAxisRatio: 1
+  boomerangCooldown: 2.5
+  boomerangDamageInterval: 0.3
+  bBoomerangCritical: 0
+  boomerangCooldownReductionAlpha: 0
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1

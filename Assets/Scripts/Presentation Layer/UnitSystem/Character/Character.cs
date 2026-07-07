@@ -88,6 +88,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly List<Boomerang> activeBoomerangs = new List<Boomerang>(4);
     private float treeScanTimer = 0f;
     private float boomerangCooldownTimer = 0f;
+    private bool bBoomerangSystemPaused = false; // WarningUI가 떠 있거나 마을로 돌아가는 동안 새로 발사되지 않도록 막는다
 
     private CharacterVisualComponent characterVisualComponent;
 
@@ -194,6 +195,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         ClearActiveBoomerangs();
         treeScanTimer = 0f;
         boomerangCooldownTimer = 0f;
+        bBoomerangSystemPaused = false; // 다음 던전 입장 때는 다시 발사 가능해야 하므로 여기서 해제
 
         if (_bInDungeon == false)
         {
@@ -365,7 +367,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // bWhileReset은 던전 입장 직후(ResetStatus)부터 카메라 연출이 끝나 실제로 조작 가능해지는
         // 시점(ActivateCharacter)까지 true로 유지된다. 이 동안엔 아직 캐릭터를 움직일 수 없는데도
         // 부메랑이 먼저 발사되고 있었으므로, 같은 조건으로 막는다.
-        if (bInDungeon == false || bDead || bWhileReset || boomerangCreator == null) return;
+        // bBoomerangSystemPaused는 WarningUI가 떠 있는 동안이나 마을로 돌아가는 도중에 새로 발사되지
+        // 않도록 막는다(PauseBoomerangs/DismissBoomerangsWithShrink에서 켜짐).
+        if (bInDungeon == false || bDead || bWhileReset || bBoomerangSystemPaused || boomerangCreator == null) return;
 
         // "부메랑" 스킬을 찍어 boomerangCount(동시에 존재 가능한 부메랑 개수)가 1 이상이 되기 전에는
         // 아예 발사되지 않는다.
@@ -472,6 +476,43 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         activeBoomerangs.Clear();
         activeBoomerangTargets.Clear();
+    }
+
+    // WarningUI가 뜨는 동안 NPC/FlyingItem과 동일하게 부메랑도 그 자리에서 멈춘다. 새로 발사되는 것도
+    // bBoomerangSystemPaused로 함께 막는다(InDungeonObjectManager.GameEnd에서 호출).
+    public void PauseBoomerangs()
+    {
+        bBoomerangSystemPaused = true;
+
+        for (int i = 0; i < activeBoomerangs.Count; i++)
+        {
+            activeBoomerangs[i]?.Pause();
+        }
+    }
+
+    // WarningUI를 취소했을 때(계속 진행) 멈춰있던 부메랑을 그 자리에서 다시 이어서 움직이게 한다
+    // (InDungeonObjectManager.AbortGameEnd에서 _bAbort == true일 때 호출).
+    public void ResumeBoomerangs()
+    {
+        bBoomerangSystemPaused = false;
+
+        for (int i = 0; i < activeBoomerangs.Count; i++)
+        {
+            activeBoomerangs[i]?.Resume();
+        }
+    }
+
+    // 마을로 돌아가기가 확정됐을 때(InDungeonObjectManager.HandleGameEnd) 호출된다. 날아가던 부메랑들을
+    // 즉시 없애는 대신 허공에서 스케일을 줄이며 사라지게 한다. bBoomerangSystemPaused는 계속 true로
+    // 남겨서, 씬이 바뀌기 전까지 다시 발사되지 않게 막는다(다음 던전 입장 시 SetWhereIsCharacter(true)에서 해제).
+    public void DismissBoomerangsWithShrink()
+    {
+        bBoomerangSystemPaused = true;
+
+        for (int i = 0; i < activeBoomerangs.Count; i++)
+        {
+            activeBoomerangs[i]?.DismissWithShrink();
+        }
     }
 
     // 나무 밑동(GetTransform)이 아니라 TreeVisualComponent의 topRoot(나무 윗부분, 잎이 있는 쪽) 방향으로
@@ -590,6 +631,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         ClearActiveBoomerangs();
         treeScanTimer = 0f;
         boomerangCooldownTimer = 0f;
+        bBoomerangSystemPaused = false;
 
         attackComponent.ResetAttackTransform();
         armComponent.ResetRotation();

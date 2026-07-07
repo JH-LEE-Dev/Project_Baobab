@@ -34,6 +34,9 @@ public class Boomerang : MonoBehaviour
     [SerializeField] private float startSampleRate = 16f;
     [SerializeField] private float loopSampleRate = 16f;
 
+    [Header("Shadow (LogItem과 동일한 방식)")]
+    [SerializeField] private SpriteRenderer shadowSpriteRenderer; // Shadow Material을 쓰는 별도 렌더러. 본체와 동일한 프레임을 매 프레임 그대로 따라간다.
+
     [Header("Damage Settings")]
     [SerializeField] private LayerMask targetLayer; // 나무(Tree) 레이어
     [SerializeField] private float hitRadius = 0.5f; // 현재 위치 기준 판정 반경. 타일 1칸(Grid CellSize x=1)의 지름과 맞도록 반지름 0.5로 설정.
@@ -56,9 +59,14 @@ public class Boomerang : MonoBehaviour
 
     private float damage;
     private float damageCheckTimer;
+    private Vector2 lastDamageCheckPosition; // 터널링 방지: 직전 판정 시점의 위치. 이 위치~현재 위치 사이 선분 전체를 검사한다.
     private readonly List<IStaticCollidable> hitScanResults = new List<IStaticCollidable>(16);
 
     private CustomSortable customSortable;
+
+    private bool isPaused; // WarningUI가 떠 있는 동안 그 자리에서 완전히 멈춘다 (이동/애니메이션/데미지 판정 전부 정지)
+    private bool isDismissing; // 마을로 돌아가기 확정 시 축소 애니메이션 재생 중 (Update의 나머지 로직과 무관하게 별도 코루틴으로 처리)
+    private Coroutine dismissRoutine;
 
     public bool IsActive { get; private set; }
 
@@ -114,6 +122,12 @@ public class Boomerang : MonoBehaviour
         ApplyCurrentFrame();
 
         damageCheckTimer = 0f;
+        lastDamageCheckPosition = _origin;
+
+        isPaused = false;
+        isDismissing = false;
+        dismissRoutine = null;
+        transform.localScale = Vector3.one;
     }
 
     /// <summary>
@@ -122,6 +136,61 @@ public class Boomerang : MonoBehaviour
     public void ForceStop()
     {
         if (!IsActive) return;
+
+        if (dismissRoutine != null)
+        {
+            StopCoroutine(dismissRoutine);
+            dismissRoutine = null;
+        }
+
+        Finish();
+    }
+
+    /// <summary>
+    /// WarningUI가 뜨는 동안 그 자리에서 완전히 멈춘다. 이동/애니메이션/데미지 판정이 모두 정지된다.
+    /// </summary>
+    public void Pause()
+    {
+        if (!IsActive || isDismissing) return;
+        isPaused = true;
+    }
+
+    /// <summary>
+    /// Pause() 이전 상태 그대로 이어서 다시 움직인다.
+    /// </summary>
+    public void Resume()
+    {
+        if (!IsActive || isDismissing) return;
+        isPaused = false;
+    }
+
+    /// <summary>
+    /// 마을로 돌아가기가 확정됐을 때 호출한다. 그 자리에서 스케일을 0으로 줄이며 사라진 뒤 풀로 돌아간다.
+    /// </summary>
+    public void DismissWithShrink(float _duration = 0.25f)
+    {
+        if (!IsActive || isDismissing) return;
+
+        isDismissing = true;
+        isPaused = true; // 축소되는 동안 이동/판정/애니메이션은 멈춘 상태를 유지
+        dismissRoutine = StartCoroutine(DismissRoutine(_duration));
+    }
+
+    private System.Collections.IEnumerator DismissRoutine(float _duration)
+    {
+        Vector3 startScale = transform.localScale;
+        float duration = Mathf.Max(_duration, 0.01f);
+        float t = 0f;
+
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            transform.localScale = Vector3.Lerp(startScale, Vector3.zero, Mathf.Clamp01(t / duration));
+            yield return null;
+        }
+
+        transform.localScale = Vector3.zero;
+        dismissRoutine = null;
         Finish();
     }
 
@@ -136,7 +205,7 @@ public class Boomerang : MonoBehaviour
 
     private void Update()
     {
-        if (!IsActive) return;
+        if (!IsActive || isPaused) return;
 
         UpdateAnimationFrame(Time.deltaTime);
         UpdateDamageTick(Time.deltaTime); // 가는 길/오는 길 구분 없이 왕복 내내 동일하게 판정
@@ -177,31 +246,58 @@ public class Boomerang : MonoBehaviour
     // 최대 0.75), 그 값과 정확히 맞춰서 후보를 놓치지 않는 최소한의 여유만 둔다.
     private const float TopRootScanMargin = 0.75f;
 
+    // damageInterval(예: 0.3초)마다 "현재 위치 한 점"만 검사하면, throwSpeed가 빠를 때 그 간격 동안
+    // 이동한 거리가 hitRadius보다 커져서 나무를 그냥 통과(터널링)해버릴 수 있다. 그래서 직전 판정
+    // 위치(lastDamageCheckPosition)부터 현재 위치까지의 선분 전체를 훑어서, 그 사이 어느 순간이든
+    // 나무가 hitRadius 안에 들어왔으면 놓치지 않고 맞은 것으로 처리한다.
     private void ApplyDamageInRange()
     {
         if (CollisionSystem.Instance == null) return;
 
-        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, hitRadius + TopRootScanMargin, targetLayer.value, hitScanResults);
+        Vector2 segStart = lastDamageCheckPosition;
+        Vector2 segEnd = transform.position;
 
-        Vector2 myPos = transform.position;
+        Vector2 scanCenter = (segStart + segEnd) * 0.5f;
+        float scanRadius = Vector2.Distance(segStart, segEnd) * 0.5f + hitRadius + TopRootScanMargin;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(scanCenter, scanRadius, targetLayer.value, hitScanResults);
+
         float hitRadiusSqr = hitRadius * hitRadius;
 
         for (int i = 0; i < hitScanResults.Count; i++)
         {
             if (hitScanResults[i] is TreeObj treeObj && !treeObj.bDead)
             {
-                Vector2 topPos = GetTreeTopPosition(treeObj);
-                if ((topPos - myPos).sqrMagnitude <= hitRadiusSqr)
+                // topRoot/밑둥 둘 중 하나라도 이동 경로(선분)에 판정 반경만큼 가까웠으면 맞은 것으로
+                // 처리한다. ||는 short-circuit이라 topRoot에서 이미 맞았으면 밑동 거리는 계산하지
+                // 않고, 두 지점이 동시에 맞아도 TakeDamage는 이 한 번만 호출되어 중복 데미지가 없다.
+                bool isHit = DistancePointToSegmentSqr(GetTreeTopPosition(treeObj), segStart, segEnd) <= hitRadiusSqr
+                    || DistancePointToSegmentSqr(treeObj.Position, segStart, segEnd) <= hitRadiusSqr;
+
+                if (isHit)
                 {
                     treeObj.TakeDamage(damage);
                 }
             }
         }
+
+        lastDamageCheckPosition = segEnd;
     }
 
     private static Vector2 GetTreeTopPosition(TreeObj _treeObj)
     {
         return _treeObj.treeVisualComponent != null ? (Vector2)_treeObj.treeVisualComponent.GetTopRootPosition() : _treeObj.Position;
+    }
+
+    private static float DistancePointToSegmentSqr(Vector2 _p, Vector2 _a, Vector2 _b)
+    {
+        Vector2 ab = _b - _a;
+        float ab2 = Vector2.Dot(ab, ab);
+        if (ab2 < 0.0001f) return (_p - _a).sqrMagnitude; // 선분 길이가 거의 0이면 점 판정과 동일
+
+        float t = Mathf.Clamp01(Vector2.Dot(_p - _a, ab) / ab2);
+        Vector2 closest = _a + ab * t;
+        return (_p - closest).sqrMagnitude;
     }
 
     // ease-out 곡선(1-(1-t)^2)으로 위치를 직접 계산한다. t=0에서 속도 throwSpeed로 출발해
@@ -308,7 +404,15 @@ public class Boomerang : MonoBehaviour
     private void ApplyFrame(List<Sprite> _sprites)
     {
         if (spriteRenderer == null || _sprites == null || _sprites.Count == 0) return;
-        spriteRenderer.sprite = _sprites[Mathf.Clamp(currentFrameIndex, 0, _sprites.Count - 1)];
+
+        Sprite currentSprite = _sprites[Mathf.Clamp(currentFrameIndex, 0, _sprites.Count - 1)];
+        spriteRenderer.sprite = currentSprite;
+
+        // TreeVisualComponent.SyncShadowSprite와 동일한 방식: 그림자는 본체와 항상 같은 프레임을 보여준다.
+        if (shadowSpriteRenderer != null)
+        {
+            shadowSpriteRenderer.sprite = currentSprite;
+        }
     }
 
     private void Finish()
