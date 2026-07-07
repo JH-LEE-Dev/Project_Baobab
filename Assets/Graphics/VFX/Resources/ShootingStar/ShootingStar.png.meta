@@ -1,0 +1,426 @@
+fileFormatVersion: 2
+guid: a874d103d92e75f4fb877ce643908d70
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -1750559015080959364
+    second: ShootingStar_0
+  - first:
+      213: 5097427417170848326
+    second: ShootingStar_1
+  - first:
+      213: -7832311200584198081
+    second: ShootingStar_2
+  - first:
+      213: -1789887714271847416
+    second: ShootingStar_3
+  - first:
+      213: -2767186041196030324
+    second: ShootingStar_4
+  - first:
+      213: -1169483118600578624
+    second: ShootingStar_5
+  - first:
+      213: -8503242987984062234
+    second: ShootingStar_6
+  - first:
+      213: 4270579337140016285
+    second: ShootingStar_7
+  - first:
+      213: -1555733811927953632
+    second: ShootingStar_8
+  - first:
+      213: -6213402416563247813
+    second: ShootingStar_9
+  - first:
+      213: 9021022773379071182
+    second: ShootingStar_10
+  - first:
+      213: -6167830968040591343
+    second: ShootingStar_11
+  - first:
+      213: -7981629683134869617
+    second: ShootingStar_12
+  - first:
+      213: -189629951675592698
+    second: ShootingStar_13
+  - first:
+      213: -2204797118676142459
+    second: ShootingStar_14
+  - first:
+      213: -2835460850195134338
+    second: ShootingStar_15
+  - first:
+      213: 6856657855759972881
+    second: ShootingStar_16
+  - first:
+      213: 3706909082404930695
+    second: ShootingStar_17
+  - first:
+      213: -6939348299597376978
+    second: ShootingStar_18
+  - first:
+      213: 8464335589811929140
+    second: ShootingStar_19
+  - first:
+      213: -3542623625963505232
+    second: ShootingStar_20
+  - first:
+      213: 7163227550183638027
+    second: ShootingStar_21
+  - first:
+      213: -2078677625399646041
+    second: ShootingStar_22
+  - first:
+      213: -6600236780190637604
+    second: ShootingStar_23
+  - first:
+      213: -7554737294005014311
+    second: ShootingStar_24
+  - first:
+      213: 520439707625777051
+    second: ShootingStar_25
+  - first:
+      213: -5215091358518088578
+    second: ShootingStar_26
+  - first:
+      213: -2556698348114999923
+    second: ShootingStar_27
+  - first:
+      213: -941133243629627005
+    second: ShootingStar_28
+  - first:
+      213: 3303847146097954577
+    second: ShootingStar_29
+  - first:
+      213: 6616631867664773424
+    second: ShootingStar_30
+  - first:
+      213: 6959907831273185783
+    second: ShootingStar_31
+  - first:
+      213: 2020937896910305850
+    second: ShootingStar_32
+  - first:
+      213: 2280554115390475343
+    second: ShootingStar_33
+  - first:
+      213: 7880735786821680422
+    second: ShootingStar_34
+  - first:
+      213: -221718169848339676
+    second: ShootingStar_35
+  - first:
+      213: 3084908260380657789
+    second: ShootingStar_36
+  - first:
+      213: -7659935769997601709
+    second: ShootingStar_37
+  - first:
+      213: 403474658408075212
+    second: ShootingStar_38
+  - first:
+      213: 7501256414915552292
+    second: ShootingStar_39
+  - first:
+      213: 8743931503856248415
+    second: ShootingStar_40
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: ShootingStar_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c72edb3c9d3c4b7e0800000000000000
+      internalID: -1750559015080959364
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShootingStar_1
+      rect:
+        serializedVersion: 2
+        x: 64
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 64a2ec48a33bdb640800000000000000
+      internalID: 5097427417170848326
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShootingStar_2
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f389dded57a0e4390800000000000000
+      internalID: -7832311200584198081
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShootingStar_3
+      rect:
+        serializedVersion: 2
+        x: 192
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 80c9dfa6b9a0927e0800000000000000
+      internalID: -1789887714271847416
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShootingStar_4
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c86571be4faf899d0800000000000000
+      internalID: -2767186041196030324
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShootingStar_5
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c91ff0cc4925cfe0800000000000000
+      internalID: -1169483118600578624
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShootingStar_6
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6e8f066fd896ef980800000000000000
+      internalID: -8503242987984062234
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: ShootingStar_7
+      rect:
+        serializedVersion: 2
+        x: 448
+        y: 0
+        width: 64
+        height: 96
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d949a57d745244b30800000000000000
+      internalID: 4270579337140016285
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 981ff0318155d7840be24c18851c87ed
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":64.0,"y":96.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      ShootingStar_0: -1750559015080959364
+      ShootingStar_1: 5097427417170848326
+      ShootingStar_2: -7832311200584198081
+      ShootingStar_3: -1789887714271847416
+      ShootingStar_4: -2767186041196030324
+      ShootingStar_5: -1169483118600578624
+      ShootingStar_6: -8503242987984062234
+      ShootingStar_7: 4270579337140016285
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

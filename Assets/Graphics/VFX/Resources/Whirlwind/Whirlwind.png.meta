@@ -1,22 +1,61 @@
 fileFormatVersion: 2
-guid: e6a8019481705e74ab97ba90c99cbfb7
+guid: e0e7bc20a5743aa4287a64278579a07a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6828952278985953215
-    second: Drone_Idle_0
+      213: -5408193984500294317
+    second: Whirlwind_0
   - first:
-      213: 8045602147652343046
-    second: Drone_Idle_1
+      213: -7408280920834179055
+    second: Whirlwind_1
   - first:
-      213: -2008379782812194055
-    second: Drone_Idle_2
+      213: 1757503365097481093
+    second: Whirlwind_2
   - first:
-      213: 3346191941518664324
-    second: Drone_Idle_3
+      213: 8909519306989496007
+    second: Whirlwind_3
   - first:
-      213: 100669072484946027
-    second: Drone_Idle_4
+      213: -6337279227023466627
+    second: Whirlwind_4
+  - first:
+      213: -629048883709668978
+    second: Whirlwind_5
+  - first:
+      213: 7538441034235752720
+    second: Whirlwind_6
+  - first:
+      213: -5038717723868688837
+    second: Whirlwind_7
+  - first:
+      213: -1142530098644304198
+    second: Whirlwind_8
+  - first:
+      213: -2220823117508542465
+    second: Whirlwind_9
+  - first:
+      213: 1906442050081494519
+    second: Whirlwind_10
+  - first:
+      213: -6591677574642154629
+    second: Whirlwind_11
+  - first:
+      213: -8312677321999598811
+    second: Whirlwind_12
+  - first:
+      213: -7683831260675822425
+    second: Whirlwind_13
+  - first:
+      213: 1829869891912420764
+    second: Whirlwind_14
+  - first:
+      213: 7088955783907640051
+    second: Whirlwind_15
+  - first:
+      213: 2293760125801926881
+    second: Whirlwind_16
+  - first:
+      213: 408474051982278207
+    second: Whirlwind_17
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -112,13 +151,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Drone_Idle_0
+      name: Whirlwind_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 32
-        height: 32
+        width: 128
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -127,86 +166,20 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: fbf4d099aef45ce50800000000000000
-      internalID: 6828952278985953215
+      spriteID: 35d9475993c32f4b0800000000000000
+      internalID: -5408193984500294317
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: Drone_Idle_1
-      rect:
-        serializedVersion: 2
-        x: 32
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 60510fe9688b7af60800000000000000
-      internalID: 8045602147652343046
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Drone_Idle_2
-      rect:
-        serializedVersion: 2
-        x: 64
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 9fa27677a3dc024e0800000000000000
-      internalID: -2008379782812194055
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Drone_Idle_3
-      rect:
-        serializedVersion: 2
-        x: 96
-        y: 0
-        width: 32
-        height: 32
-      alignment: 0
-      pivot: {x: 0.5, y: 0.5}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 482ae7887df007e20800000000000000
-      internalID: 3346191941518664324
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: Drone_Idle_4
+      name: Whirlwind_1
       rect:
         serializedVersion: 2
         x: 128
         y: 0
-        width: 32
-        height: 32
+        width: 128
+        height: 64
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -215,8 +188,140 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b605551fcf5a56100800000000000000
-      internalID: 100669072484946027
+      spriteID: 1100065d0cf703990800000000000000
+      internalID: -7408280920834179055
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Whirlwind_2
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5836038bff7e36810800000000000000
+      internalID: 1757503365097481093
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Whirlwind_3
+      rect:
+        serializedVersion: 2
+        x: 384
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c6e794ea98f4ab70800000000000000
+      internalID: 8909519306989496007
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Whirlwind_4
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d7fddce8e167d08a0800000000000000
+      internalID: -6337279227023466627
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Whirlwind_5
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e8111248f5b2547f0800000000000000
+      internalID: -629048883709668978
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Whirlwind_6
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 011b9d52e2ced9860800000000000000
+      internalID: 7538441034235752720
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Whirlwind_7
+      rect:
+        serializedVersion: 2
+        x: 896
+        y: 0
+        width: 128
+        height: 64
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b3e87592de0e21ab0800000000000000
+      internalID: -5038717723868688837
       vertices: []
       indices: 
       edges: []
@@ -225,7 +330,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: c3bf566d10cdd4442b78dbaec3848a08
+    spriteID: 1cbcc97309e99d9448d18bf348789eec
     internalID: 0
     vertices: []
     indices: 
@@ -235,13 +340,16 @@ TextureImporter:
     spriteCustomMetadata:
       entries:
       - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":5.0,"y":1.0},"gridSpriteSize":{"x":32.0,"y":32.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":128.0,"y":64.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Drone_Idle_0: 6828952278985953215
-      Drone_Idle_1: 8045602147652343046
-      Drone_Idle_2: -2008379782812194055
-      Drone_Idle_3: 3346191941518664324
-      Drone_Idle_4: 100669072484946027
+      Whirlwind_0: -5408193984500294317
+      Whirlwind_1: -7408280920834179055
+      Whirlwind_2: 1757503365097481093
+      Whirlwind_3: 8909519306989496007
+      Whirlwind_4: -6337279227023466627
+      Whirlwind_5: -629048883709668978
+      Whirlwind_6: 7538441034235752720
+      Whirlwind_7: -5038717723868688837
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
