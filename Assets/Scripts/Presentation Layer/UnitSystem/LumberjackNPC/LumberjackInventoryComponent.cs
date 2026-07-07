@@ -31,6 +31,14 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
     public int maxItemCntPerSlot => maxItemsPerSlot;
 
     /// <summary>
+    /// 공용 StatComponent(예: OffroadPorterStatComponent)의 슬롯 용량 값을 그대로 적용할 때 사용한다.
+    /// </summary>
+    public void SetSlotCount(int _count)
+    {
+        currentSlotCount = Mathf.Clamp(_count, 1, SYSTEM_VAR.MAX_INVENTORY_CNT);
+    }
+
+    /// <summary>
     /// 현재 모든 슬롯에 들어있는 아이템의 총 개수. 납품 시도 전/후 개수를 비교해서
     /// "하나라도 넣었는지"를 판단하는 데 사용한다(LJState_Deliver).
     /// </summary>

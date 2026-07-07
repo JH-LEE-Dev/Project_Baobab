@@ -765,14 +765,20 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     /// </summary>
     public bool TryDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, LogState _state)
     {
-        if (!CanAddItemByData(_sourceData)) return false;
-
         LogItemData visualData = new LogItemData
         {
+            // itemType을 반드시 원본과 동일하게(Log) 세팅해야 한다. 빼먹으면 기본값 None이 되어
+            // CanAddItemByData 내부 IsSameItemByData의 itemType 비교에서 기존 슬롯과 절대 매칭되지
+            // 않아, 실제로는 기존 슬롯에 자리가 있는데도 새 빈 슬롯이 필요하다고 오판한다.
+            itemType = _sourceData.itemType,
             treeType = _sourceData.treeType,
             logState = _state,
             color = _sourceData.color
         };
+
+        // 잭팟 등으로 _state가 _sourceData.logState와 달라질 수 있으므로, 공간 체크도 실제로
+        // 착지할 상태(visualData) 기준으로 해야 서로 다른 슬롯 조합끼리 용량이 어긋나지 않는다.
+        if (!CanAddItemByData(visualData)) return false;
 
         LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
         flyingItem.SetFlyingItemSortingLayer();
@@ -800,13 +806,15 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     /// <summary>
     /// 운반 NPC 인벤토리의 로그 아이템들을 캐릭터 납품과 동일한 연출로 천천히 이 컨테이너에 납품합니다.
     /// 납품 연출이 모두 끝나면(상자가 가득 차 일부가 남더라도) _onComplete 콜백을 호출합니다.
+    /// _jackpotChance(퍼센트, 0~100)를 넘기면, 납품되는 로그 하나하나에 대해 그 확률로 한 단계 높은
+    /// LogState로 승급되어 납품됩니다(OffroadPorterNPCJackpot 스킬용, 이미 최고 등급 Perfect은 제외).
     /// </summary>
-    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete, float _jackpotChance = 0f)
     {
-        StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete));
+        StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete, _jackpotChance));
     }
 
-    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete, float _jackpotChance)
     {
         var slots = _npcInventory.GetInventorySlots();
         for (int i = 0; i < _npcInventory.currentSlotCnt; i++)
@@ -817,7 +825,32 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             bool slotTransferredAny = false;
             while (slot.totalCount > 0)
             {
-                if (!TryDepositLogItemVisual(logData, _fromWorldPos, logData.logState))
+                LogState originalState = logData.logState;
+                LogState depositState = originalState;
+
+                // 잭팟이 터지면 현재 등급에서 한 단계 높은 LogState로 승급 시도한다. 이미 최고 등급
+                // (Perfect)이면 더 올릴 곳이 없으므로 제외한다.
+                if (_jackpotChance > 0f && originalState < LogState.Perfect && UnityEngine.Random.Range(0f, 100f) < _jackpotChance)
+                {
+                    depositState = originalState + 1;
+                }
+
+                // 승급 등급 기준으로 착지 자리가 있는지까지 포함해 발사한다(TryDepositLogItemVisual
+                // 내부에서 CanAddItemByData로 확인). 착지 시점(AddItemByData)에 자리가 없으면 로그가
+                // 조용히 사라지므로, 이 발사 단계 검사에서 반드시 걸러야 한다.
+                bool deposited = TryDepositLogItemVisual(logData, _fromWorldPos, depositState);
+
+                // 승급 등급으로는 들어갈 자리가 아예 없으면(빈 슬롯도 없고 그 등급 슬롯도 없음) 승급
+                // (변환)을 취소하고 원래 등급으로 다시 시도한다. 실패한 첫 호출은 CanAddItemByData
+                // 단계에서 막혀 부수효과가 없으므로 재시도는 안전하다.
+                if (!deposited && depositState != originalState)
+                {
+                    deposited = TryDepositLogItemVisual(logData, _fromWorldPos, originalState);
+                }
+
+                // 승급/원래 등급 어느 쪽으로도 자리가 없으면 컨테이너가 이 종류로 가득 찬 것이므로 이
+                // 슬롯 납품을 멈춘다. 남은 로그는 NPC 인벤토리에 그대로 남아 다음 기회에 납품된다(유실 없음).
+                if (!deposited)
                 {
                     break;
                 }

@@ -6,13 +6,16 @@ using UnityEngine;
 /// 관리한다. InDungeonUnitSpawner(럼버잭 NPC)와 달리 던전 재입장마다 반복 스폰/해제되는 것이 아니라,
 /// 마을 최초 진입 시 한 번만 집 주변에 배치된다.
 /// </summary>
-public class TownUnitSpawner : MonoBehaviour
+public class TownUnitSpawner : MonoBehaviour, ITownUnitSpawnerCH
 {
     [Header("Spawn Settings")]
     [SerializeField] private OffroadPorterNPC npcPrefab;
     [SerializeField] private int npcCount = 3;
     [Tooltip("캐릭터 스폰 위치 기준, 한 명씩 이 방향(월드 좌표 벡터)으로 한 칸씩 더 떨어진 위치에 배치된다.")]
     [SerializeField] private Vector2 diagonalWorldStep = new Vector2(0.6f, -0.35f);
+
+    // 모든 오프로드 포터 NPC가 공용으로 참조하는 스탯. 여기 값을 바꾸면 스폰된 NPC 전체에 동일하게 적용된다.
+    [SerializeField] private OffroadPorterStatComponent statComponent;
 
     private IEnvironmentProvider environmentProvider;
     private TownTilemapDataProvider tilemapDataProvider;
@@ -88,7 +91,7 @@ public class TownUnitSpawner : MonoBehaviour
     private void SpawnNPCAt(Vector3 _pos)
     {
         OffroadPorterNPC npc = Instantiate(npcPrefab, _pos, Quaternion.identity, transform);
-        npc.Initialize(tilemapDataProvider, environmentProvider, offroadContainer, logContainer);
+        npc.Initialize(tilemapDataProvider, environmentProvider, offroadContainer, logContainer, statComponent);
         spawnedNPCs.Add(npc);
         spawnPositions.Add(_pos);
     }
@@ -141,5 +144,25 @@ public class TownUnitSpawner : MonoBehaviour
         {
             spawnedNPCs[i]?.CancelCurrentTaskForTeleport();
         }
+    }
+
+    public void SetOffroadPorterNPCCount(float _amount)
+    {
+        npcCount = (int)_amount;
+    }
+
+    public void IncreaseOffroadPorterNPCSpeed(float _amount)
+    {
+        statComponent.IncreaseSpeed(_amount);
+    }
+
+    public void IncreaseOffroadPorterNPCSlotCapacity(float _amount)
+    {
+        statComponent.IncreaseSlotCapacity((int)_amount);
+    }
+
+    public void IncreaseOffroadPorterNPCJackpotChance(float _amount)
+    {
+        statComponent.IncreaseJackpotChance(_amount);
     }
 }

@@ -14,4 +14,5 @@ public interface ICommandHandleSystem
     public IOffroadContainerCH offroadContainerCH { get; }
     public IInDungeonObjManagerCH inDungeonObjManagerCH { get; }
     public IInDungeonUnitSpawnerCH inDungeonUnitSpawnerCH { get; }
+    public ITownUnitSpawnerCH townUnitSpawnerCH { get; }
 }

@@ -2488,6 +2488,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2112430069709630900}
   - component: {fileID: 8026624552342623080}
+  - component: {fileID: 3043546774119391079}
   m_Layer: 0
   m_Name: TownUnitSpawner
   m_TagString: Untagged
@@ -2525,6 +2526,22 @@ MonoBehaviour:
   npcPrefab: {fileID: 1313503206885682807, guid: 0428298bd8aec6f459c8e3f9e9cbf4c8, type: 3}
   npcCount: 3
   diagonalWorldStep: {x: 0.6, y: -0.35}
+  statComponent: {fileID: 3043546774119391079}
+--- !u!114 &3043546774119391079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8319344316240393611}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95cf8f53c667f8244a7b0cf7c8d2d443, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OffroadPorterStatComponent
+  moveSpeed: 3
+  slotCapacity: 1
+  jackpotChance: 0
 --- !u!1 &8421553769195273407
 GameObject:
   m_ObjectHideFlags: 0
@@ -2638,6 +2655,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2a1c27959fe93f24786f763ecdfdb0d7, type: 2}
   - {fileID: 11400000, guid: d7d9c8d94281fcc4d831cdcd955821c3, type: 2}
   - {fileID: 11400000, guid: 15c39ad1d2bc0154996081c2c8e02370, type: 2}
+  - {fileID: 11400000, guid: 9201d3557b94e8c4f94778a793801030, type: 2}
+  - {fileID: 11400000, guid: 7522980212c27ec44a9b6fa9d0925996, type: 2}
+  - {fileID: 11400000, guid: 98c4e7f7b2abc9946990f0cf2b3748bf, type: 2}
+  - {fileID: 11400000, guid: 2792d7ef97f9f414e91a95ffb0468408, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0

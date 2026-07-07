@@ -21,9 +21,9 @@ public class OffroadPorterNPC : MonoBehaviour
     public OffroadContainer offroadContainer { get; private set; }
     public LogContainer logContainer { get; private set; }
 
-    // 이동 관련 설정
-    [Header("Movement Settings")]
-    public float moveSpeed = 3f;
+    // 모든 오프로드 포터 NPC가 공용으로 참조하는 스탯. TownUnitSpawner가 들고 있다가 Initialize()에서 주입해준다.
+    private OffroadPorterStatComponent statComponent;
+    public OffroadPorterStatComponent stat => statComponent;
 
     [Header("Spawn Settings")]
     public float initialMoveDelay = 3f;
@@ -46,11 +46,13 @@ public class OffroadPorterNPC : MonoBehaviour
     private GameObject cachedWaterGo;
 
     public void Initialize(ITilemapDataProvider _tilemapDataProvider, IEnvironmentProvider _envProvider,
-        OffroadContainer _offroadContainer, LogContainer _logContainer)
+        OffroadContainer _offroadContainer, LogContainer _logContainer, OffroadPorterStatComponent _statComponent = null)
     {
         tilemapDataProvider = _tilemapDataProvider;
         offroadContainer = _offroadContainer;
         logContainer = _logContainer;
+
+        if (_statComponent != null) statComponent = _statComponent;
 
         if (!bComponentsCached)
         {
@@ -82,7 +84,11 @@ public class OffroadPorterNPC : MonoBehaviour
             visualComponent.Initialize(_envProvider, cachedWaterGo, cachedShadow, customSortable);
         }
 
-        if (inventoryComponent != null) inventoryComponent.Initialize();
+        if (inventoryComponent != null)
+        {
+            inventoryComponent.Initialize();
+            if (statComponent != null) inventoryComponent.SetSlotCount(statComponent.slotCapacity);
+        }
 
         if (stateMachine == null)
         {
@@ -235,6 +241,7 @@ public class OffroadPorterNPC : MonoBehaviour
             return;
         }
 
-        logContainer.TransferFromNPC(inventoryComponent, transform.position, _onComplete);
+        float jackpotChance = statComponent != null ? statComponent.jackpotChance : 0f;
+        logContainer.TransferFromNPC(inventoryComponent, transform.position, _onComplete, jackpotChance);
     }
 }

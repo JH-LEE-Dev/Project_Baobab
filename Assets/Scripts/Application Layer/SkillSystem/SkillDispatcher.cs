@@ -20,8 +20,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
     private IOffroadContainerCH offroadContainerCH;
     private IInDungeonObjManagerCH inDungeonObjManagerCH;
     private IInDungeonUnitSpawnerCH inDungeonUnitSpawnerCH;
-
-
+    private ITownUnitSpawnerCH townUnitSpawnerCH;
     [SerializeField] private List<SkillCommand> skillCommands;
     private Dictionary<SkillCommandType, SkillCommand> skillDic;
     private Dictionary<SkillCommandType, float> accumulatedAmounts;
@@ -52,10 +51,12 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
 
     IInDungeonUnitSpawnerCH ICommandHandleSystem.inDungeonUnitSpawnerCH => inDungeonUnitSpawnerCH;
 
+    ITownUnitSpawnerCH ICommandHandleSystem.townUnitSpawnerCH => townUnitSpawnerCH;
+
     public void Initialize(SignalHub _signalHub, IInventoryCH _inventoryCH, IContainerCH _containerCH, ICutterCH _cutterCH,
     ILogEvaluatorCH _logEvaluatorCH, IDensityCH _densityCH,ICarrotItemCH _carrotItemCH, ITownObjSystemCH _townObjSystemCH,
     ILogProcessingSystemCH _logProcessingSystemCH, ILogItemControllerCH _logItemCH, IOffroadContainerCH _offroadContainerCH,
-    IInDungeonObjManagerCH _inDungeonObjManagerCH, IInDungeonUnitSpawnerCH _inDungeonUnitSpawnerCH)
+    IInDungeonObjManagerCH _inDungeonObjManagerCH, IInDungeonUnitSpawnerCH _inDungeonUnitSpawnerCH, ITownUnitSpawnerCH _townUnitSpawnerCH)
     {
         offroadContainerCH = _offroadContainerCH;
         signalHub = _signalHub;
@@ -70,6 +71,7 @@ public class SkillDispatcher : MonoBehaviour, ICommandHandleSystem
         logItemControllerCH = _logItemCH;
         inDungeonObjManagerCH = _inDungeonObjManagerCH;
         inDungeonUnitSpawnerCH = _inDungeonUnitSpawnerCH;
+        townUnitSpawnerCH = _townUnitSpawnerCH;
         
         if (skillCommands == null) return;
 

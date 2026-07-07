@@ -243,6 +243,10 @@ public enum SkillCommandType
     LumberjackNPCAttackSpeed,
     LumberjackNPCDamage,
     LumberjackNPCShockWave,
+    OffroadPorterNPC,
+    OffroadPorterNPCSpeed,
+    OffroadPorterNPCSlotCapacity,
+    OffroadPorterNPCJackpot,
 }
 
 public enum AbilityLevelUpRejectReason

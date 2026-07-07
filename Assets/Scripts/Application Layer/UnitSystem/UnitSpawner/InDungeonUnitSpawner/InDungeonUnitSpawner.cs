@@ -422,4 +422,9 @@ public class InDungeonUnitSpawner : MonoBehaviour, IInDungeonUnitSpawnerCH
     {
         statComponent.SetShockWaveEnabled(_boolean);
     }
+
+    public void SetOffroadPorterNPCCount(float _amount)
+    {
+        throw new NotImplementedException();
+    }
 }
