@@ -6,13 +6,16 @@ using UnityEngine;
 /// 관리한다. InDungeonUnitSpawner(럼버잭 NPC)와 달리 던전 재입장마다 반복 스폰/해제되는 것이 아니라,
 /// 마을 최초 진입 시 한 번만 집 주변에 배치된다.
 /// </summary>
-public class TownUnitSpawner : MonoBehaviour
+public class TownUnitSpawner : MonoBehaviour, ITownUnitSpawnerCH
 {
     [Header("Spawn Settings")]
     [SerializeField] private OffroadPorterNPC npcPrefab;
     [SerializeField] private int npcCount = 3;
     [Tooltip("캐릭터 스폰 위치 기준, 한 명씩 이 방향(월드 좌표 벡터)으로 한 칸씩 더 떨어진 위치에 배치된다.")]
     [SerializeField] private Vector2 diagonalWorldStep = new Vector2(0.6f, -0.35f);
+
+    // 모든 오프로드 포터 NPC가 공용으로 참조하는 스탯. 여기 값을 바꾸면 스폰된 NPC 전체에 동일하게 적용된다.
+    [SerializeField] private OffroadPorterStatComponent statComponent;
 
     private IEnvironmentProvider environmentProvider;
     private TownTilemapDataProvider tilemapDataProvider;
@@ -88,7 +91,7 @@ public class TownUnitSpawner : MonoBehaviour
     private void SpawnNPCAt(Vector3 _pos)
     {
         OffroadPorterNPC npc = Instantiate(npcPrefab, _pos, Quaternion.identity, transform);
-        npc.Initialize(tilemapDataProvider, environmentProvider, offroadContainer, logContainer);
+        npc.Initialize(tilemapDataProvider, environmentProvider, offroadContainer, logContainer, statComponent);
         spawnedNPCs.Add(npc);
         spawnPositions.Add(_pos);
     }
@@ -106,6 +109,20 @@ public class TownUnitSpawner : MonoBehaviour
     }
 
     /// <summary>
+    /// 던전으로 카메라가 완전히 올라간 뒤(CameraUpIsEnd) 호출한다. 이 NPC들은 DontDestroyOnLoad
+    /// 계층에 있어 던전 씬으로 넘어가도 파괴되지 않으므로, GameObject 자체를 꺼서 던전을 도는 동안
+    /// 마을에 멈춰있던 위치에 그대로 남아 렌더링/갱신되는 일이 없도록 한다. 다시 켜는 건
+    /// ResetAllNPCsToSpawn()(ResetToSpawnPosition)에서 처리한다.
+    /// </summary>
+    public void DeactivateAllNPCs()
+    {
+        for (int i = 0; i < spawnedNPCs.Count; i++)
+        {
+            if (spawnedNPCs[i] != null) spawnedNPCs[i].Deactivate();
+        }
+    }
+
+    /// <summary>
     /// 던전에서 돌아와 카메라가 마을로 복귀하는 연출(CameraDownIsEnd)이 끝나면, NPC들을 원래
     /// 생성 위치로 되돌리고 스폰 직후와 동일하게 initialMoveDelay만큼 대기한 뒤 다시 움직이게 한다.
     /// </summary>
@@ -115,5 +132,37 @@ public class TownUnitSpawner : MonoBehaviour
         {
             if (spawnedNPCs[i] != null) spawnedNPCs[i].ResetToSpawnPosition(spawnPositions[i]);
         }
+    }
+
+    /// <summary>
+    /// 텔레포트 UI가 닫히는 시점에 호출된다(Pause 로직과는 별개). 지금 하던 일을 각자 알맞게
+    /// 중단시킨다(OffroadPorterNPC.CancelCurrentTaskForTeleport 참고).
+    /// </summary>
+    public void CancelActiveTasksForTeleport()
+    {
+        for (int i = 0; i < spawnedNPCs.Count; i++)
+        {
+            spawnedNPCs[i]?.CancelCurrentTaskForTeleport();
+        }
+    }
+
+    public void SetOffroadPorterNPCCount(float _amount)
+    {
+        npcCount = (int)_amount;
+    }
+
+    public void IncreaseOffroadPorterNPCSpeed(float _amount)
+    {
+        statComponent.IncreaseSpeed(_amount);
+    }
+
+    public void IncreaseOffroadPorterNPCSlotCapacity(float _amount)
+    {
+        statComponent.IncreaseSlotCapacity((int)_amount);
+    }
+
+    public void IncreaseOffroadPorterNPCJackpotChance(float _amount)
+    {
+        statComponent.IncreaseJackpotChance(_amount);
     }
 }

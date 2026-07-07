@@ -189,6 +189,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     public void TakeDamage(float _damage)
     {
+        // 죽음 판정 직전 상태를 기억해, 이미 죽은 나무가 정리되기 전 다시 타격당해도
+        // TreeDeadEvent가 중복 발생하지 않도록 false->true 전이 시점에만 이벤트를 발생시킨다.
+        bool wasAlreadyDead = bDead;
+
         healthComponent.DecreaseHealth(_damage);
 
         if (treeVisualComponent != null)
@@ -198,7 +202,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         TreeGetHitEvent?.Invoke(this);
 
-        if (bDead)
+        if (!wasAlreadyDead && bDead)
         {
             TreeDeadEvent?.Invoke(this);
         }

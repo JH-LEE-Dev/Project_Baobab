@@ -19,6 +19,7 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     [SerializeField] private Transform portalSpawnPoint;
 
     [Header("Optimization")]
+    [SerializeField] private bool enableCulling = false;
     [SerializeField] private float cullingDistance = 25; // 거리 컬링 기준
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
@@ -30,6 +31,11 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
     public OffroadVehicleObj offroadVehicle { get; private set; }
     private TreeObj[] trees;
     public IReadOnlyList<TreeObj> Trees => trees;
+
+    // Town 소유 나무 루트. 씬 전체를 뒤지면 InDungeonObjectManager가 풀링 중인 나무(비활성/죽은 나무 포함)까지
+    // 함께 잡혀서 Town 진입 시 되살아나 보이는 문제가 있어, 이 루트 하위만 탐색하도록 범위를 제한한다.
+    private const string TreeRootName = "Trees";
+    private Transform treeRoot;
 
     // 최적화: 인덱스 기반 관리로 HashSet 제거 및 O(1) 처리
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(200);
@@ -58,14 +64,17 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         offroadContainer = _offroadContainer;
 
         // CullingGroup 및 거리 배열 미리 생성하여 재사용
-        if (cullingGroup == null)
+        if (enableCulling)
         {
-            cullingGroup = new CullingGroup();
-            onCullingStateChangedDelegate = OnCullingStateChanged;
-            cullingGroup.onStateChanged = onCullingStateChangedDelegate;
-        }
+            if (cullingGroup == null)
+            {
+                cullingGroup = new CullingGroup();
+                onCullingStateChangedDelegate = OnCullingStateChanged;
+                cullingGroup.onStateChanged = onCullingStateChangedDelegate;
+            }
 
-        cullingDistances = new float[] { cullingDistance };
+            cullingDistances = new float[] { cullingDistance };
+        }
     }
 
     public void Release()
@@ -98,18 +107,21 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
         offroadVehicle.SetVisualActive(true);
         offroadVehicle.DeActivateRepairBox();
         
-        trees = FindObjectsByType<TreeObj>(FindObjectsInactive.Include);
+        if (treeRoot == null)
+        {
+            GameObject treeRootObj = GameObject.Find(TreeRootName);
+            if (treeRootObj != null)
+            {
+                treeRoot = treeRootObj.transform;
+            }
+        }
+
+        trees = treeRoot != null
+            ? treeRoot.GetComponentsInChildren<TreeObj>(true)
+            : Array.Empty<TreeObj>();
 
         if (trees != null && trees.Length > 0)
         {
-            // BoundingSphere 배열 크기 최적화 및 캐싱
-            if (spheres == null || spheres.Length < trees.Length)
-            {
-                spheres = new BoundingSphere[trees.Length];
-            }
-
-            SetupCullingGroup();
-
             for (int i = 0; i < trees.Length; i++)
             {
                 if (trees[i] != null)
@@ -123,6 +135,30 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
                     trees[i].ApplyData(new TreeData(type, grade, treeVisualDataBase.Get(type), default));
                     trees[i].SetSortOrder();
                     trees[i].DisableOutline();
+                }
+            }
+
+            if (enableCulling)
+            {
+                // BoundingSphere 배열 크기 최적화 및 캐싱
+                if (spheres == null || spheres.Length < trees.Length)
+                {
+                    spheres = new BoundingSphere[trees.Length];
+                }
+
+                SetupCullingGroup();
+            }
+            else
+            {
+                activeTreesForUpdate.Clear();
+                for (int i = 0; i < trees.Length; i++)
+                {
+                    if (trees[i] != null)
+                    {
+                        trees[i].gameObject.SetActive(true);
+                        trees[i].UpdateIndex = activeTreesForUpdate.Count;
+                        activeTreesForUpdate.Add(trees[i]);
+                    }
                 }
             }
         }
@@ -142,6 +178,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private void SetupCullingGroup()
     {
+        if (!enableCulling) return;
+
         if (mainCam == null) mainCam = Camera.main;
 
         // CullingGroup을 새로 생성하지 않고 기존 객체 설정만 갱신
@@ -186,6 +224,8 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     private void OnCullingStateChanged(CullingGroupEvent ev)
     {
+        if (!enableCulling) return;
+
         if (trees == null)
             return;
 

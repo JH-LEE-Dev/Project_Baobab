@@ -239,6 +239,14 @@ public enum SkillCommandType
     StaminaRecover,
     Repair,
     IncreaseRepairEfficiency,
+    LumberjackNPC,
+    LumberjackNPCAttackSpeed,
+    LumberjackNPCDamage,
+    LumberjackNPCShockWave,
+    OffroadPorterNPC,
+    OffroadPorterNPCSpeed,
+    OffroadPorterNPCSlotCapacity,
+    OffroadPorterNPCJackpot,
 }
 
 public enum AbilityLevelUpRejectReason

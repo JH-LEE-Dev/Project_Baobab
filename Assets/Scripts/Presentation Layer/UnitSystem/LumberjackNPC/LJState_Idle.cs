@@ -28,6 +28,8 @@ public class LJState_Idle : LumberjackState
             // (1초 간격 재시도라 컨테이너에 도달 불가능해도 매 프레임 재귀호출 없이 안전하게 반복됨)
             if (npc.inventory != null && npc.inventory.bInventoryIsFull && npc.offroadContainer != null)
             {
+                // TEMP DEBUG
+                LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) LJState_Idle: 인벤토리 가득 참 감지 -> Deliver로 전환 시도");
                 stateMachine.ChangeState<LJState_Deliver>();
                 return;
             }
@@ -36,6 +38,12 @@ public class LJState_Idle : LumberjackState
             {
                 // 나무 찾음!
                 stateMachine.ChangeState<LJState_Move>();
+            }
+            else
+            {
+                // TEMP DEBUG
+                int invCount = npc.inventory != null ? npc.inventory.GetTotalItemCount() : -1;
+                LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={npc.name}({npc.GetEntityId()}) LJState_Idle: TryFindTree 실패 (나무 없음). 인벤토리={invCount}");
             }
         }
     }

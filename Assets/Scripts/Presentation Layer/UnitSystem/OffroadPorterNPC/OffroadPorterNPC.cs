@@ -21,9 +21,9 @@ public class OffroadPorterNPC : MonoBehaviour
     public OffroadContainer offroadContainer { get; private set; }
     public LogContainer logContainer { get; private set; }
 
-    // 이동 관련 설정
-    [Header("Movement Settings")]
-    public float moveSpeed = 3f;
+    // 모든 오프로드 포터 NPC가 공용으로 참조하는 스탯. TownUnitSpawner가 들고 있다가 Initialize()에서 주입해준다.
+    private OffroadPorterStatComponent statComponent;
+    public OffroadPorterStatComponent stat => statComponent;
 
     [Header("Spawn Settings")]
     public float initialMoveDelay = 3f;
@@ -46,11 +46,13 @@ public class OffroadPorterNPC : MonoBehaviour
     private GameObject cachedWaterGo;
 
     public void Initialize(ITilemapDataProvider _tilemapDataProvider, IEnvironmentProvider _envProvider,
-        OffroadContainer _offroadContainer, LogContainer _logContainer)
+        OffroadContainer _offroadContainer, LogContainer _logContainer, OffroadPorterStatComponent _statComponent = null)
     {
         tilemapDataProvider = _tilemapDataProvider;
         offroadContainer = _offroadContainer;
         logContainer = _logContainer;
+
+        if (_statComponent != null) statComponent = _statComponent;
 
         if (!bComponentsCached)
         {
@@ -82,7 +84,11 @@ public class OffroadPorterNPC : MonoBehaviour
             visualComponent.Initialize(_envProvider, cachedWaterGo, cachedShadow, customSortable);
         }
 
-        if (inventoryComponent != null) inventoryComponent.Initialize();
+        if (inventoryComponent != null)
+        {
+            inventoryComponent.Initialize();
+            if (statComponent != null) inventoryComponent.SetSlotCount(statComponent.slotCapacity);
+        }
 
         if (stateMachine == null)
         {
@@ -119,11 +125,22 @@ public class OffroadPorterNPC : MonoBehaviour
     }
 
     /// <summary>
+    /// 던전으로 카메라가 완전히 올라간 뒤(CameraUpIsEnd) 호출한다. 이 NPC는 GameInstaller 하위의
+    /// DontDestroyOnLoad 계층에 있어 던전 씬으로 넘어가도 파괴되지 않으므로, 여기서 직접 꺼주지
+    /// 않으면 마을에서 멈췄던 위치 그대로 던전 화면에 계속 살아있게 된다(트리 컬링 버그와 동일한 원인).
+    /// </summary>
+    public void Deactivate()
+    {
+        gameObject.SetActive(false);
+    }
+
+    /// <summary>
     /// 던전에 다녀와 마을로 복귀했을 때 호출한다. 원래 생성 위치로 되돌리고, 진행 중이던 경로/상태를
     /// 전부 초기화한 뒤 Idle로 되돌리고, 스폰 직후와 동일하게 initialMoveDelay만큼 재차 대기시킨다.
     /// </summary>
     public void ResetToSpawnPosition(Vector3 _spawnPos)
     {
+        gameObject.SetActive(true);
         transform.position = _spawnPos;
         pathBuffer.Clear();
         SetVisualMoving(false);
@@ -138,9 +155,12 @@ public class OffroadPorterNPC : MonoBehaviour
 
     private void Update()
     {
-        if (isPaused) return;
-
-        stateMachine?.Update();
+        // 일시정지 중에는 상태 로직(이동/작업)만 멈추고, 시각 갱신은 계속 돌려서 멈춘 프레임의
+        // 움직이는 포즈가 그대로 굳어있지 않고 Idle 포즈로 정상적으로 보이게 한다.
+        if (!isPaused)
+        {
+            stateMachine?.Update();
+        }
 
         if (visualComponent != null)
         {
@@ -184,15 +204,33 @@ public class OffroadPorterNPC : MonoBehaviour
         return pathFindComponent.FindPathNear(transform.position, _targetWorldPos, pathBuffer);
     }
 
-    public void WithdrawFromOffroad(Action _onComplete)
+    public Coroutine WithdrawFromOffroad(Action<bool> _onComplete)
     {
         if (offroadContainer == null)
         {
-            _onComplete?.Invoke();
-            return;
+            _onComplete?.Invoke(false);
+            return null;
         }
 
-        offroadContainer.WithdrawToCarrier(inventoryComponent, _onComplete);
+        return offroadContainer.WithdrawToCarrier(inventoryComponent, _onComplete);
+    }
+
+    /// <summary>
+    /// 텔레포트 UI가 닫히는 시점 등, Pause와는 별개로 지금 하던 작업을 중단시켜야 할 때 호출한다.
+    /// 현재 상태에 따라 알맞게 취소를 위임한다.
+    /// </summary>
+    public void CancelCurrentTaskForTeleport()
+    {
+        if (stateMachine == null) return;
+
+        if (stateMachine.CurrentState is PorterState_MoveToOffroad moveToOffroad)
+        {
+            moveToOffroad.CancelForTeleport();
+        }
+        else if (stateMachine.CurrentState is PorterState_MoveToLogContainer moveToLogContainer)
+        {
+            moveToLogContainer.CancelForTeleport();
+        }
     }
 
     public void DepositToLogContainer(Action _onComplete)
@@ -203,6 +241,7 @@ public class OffroadPorterNPC : MonoBehaviour
             return;
         }
 
-        logContainer.TransferFromNPC(inventoryComponent, transform.position, _onComplete);
+        float jackpotChance = statComponent != null ? statComponent.jackpotChance : 0f;
+        logContainer.TransferFromNPC(inventoryComponent, transform.position, _onComplete, jackpotChance);
     }
 }

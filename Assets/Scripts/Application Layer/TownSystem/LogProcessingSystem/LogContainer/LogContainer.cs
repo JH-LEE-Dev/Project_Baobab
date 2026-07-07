@@ -216,8 +216,15 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
             if (item.MoveState != ItemMoveState.Transferring)
             {
-                // 도착 연출 완료 (Scale 0 시점). 데이터는 이미 발사 시점(TryDepositLogItemVisual/
-                // TransferOneSlotVisualRoutine)에 커밋됐으므로 여기서는 착지 연출(바운스)만 처리한다.
+                // 도착 연출 완료 (Scale 0 시점) - 실제 데이터 커밋은 여기서 한다(발사 시점엔
+                // CanAddItemByData의 pendingCount로만 반영됨).
+                arrivalDataBuffer.itemType = item.itemType;
+                arrivalDataBuffer.sprite = item.sprite;
+                arrivalDataBuffer.color = item.color;
+                arrivalDataBuffer.treeType = item.treeType;
+                arrivalDataBuffer.logState = item.logState;
+
+                AddItemByData(arrivalDataBuffer, item.logState);
                 TriggerBounce();
 
                 logItemPoolManager.ReturnLogItem(item);
@@ -360,9 +367,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     characterInventoryManager.ItemRemoved();
                 }
 
-                // 데이터는 여기서 즉시 커밋한다(착지 연출은 순수 시각 효과일 뿐) - 서로 다른 조합이
-                // 같은 빈 슬롯을 동시에 예약해서 나중에 착지하는 쪽 데이터가 사라지는 문제를 방지한다.
-                AddItemByData(sourceData, takenState);
+                // 컨테이너로의 실제 데이터 커밋은 착지 시점(UpdateFlyingItems)에 한다. 발사 시점엔
+                // CanAddItemByData의 pendingCount 계산에 이 날아가는 아이템이 반영되어, 다른 조합이
+                // 같은 빈 슬롯을 이중으로 예약하는 것을 막아준다.
 
                 // 시각적 비행 아이템 생성
                 LogItemData visualData = new LogItemData
@@ -415,30 +422,107 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
-    // 로그를 실제로 슬롯에 커밋하는 시점이 이제 발사 즉시(TryDepositLogItemVisual/
-    // TransferOneSlotVisualRoutine)이므로, containerSlots는 항상 "지금 진짜로 확정된" 상태를
-    // 그대로 반영한다. 그래서 착지 대기 중인 물량을 따로 빼는 pendingCount 계산 없이,
-    // 현재 슬롯 데이터만 보고 판단해도 정확하다.
+    // 로그를 실제로 슬롯에 커밋하는 시점이 착지 시점(UpdateFlyingItems)이므로, 아직 도착하지 않고
+    // 날아오는 중인 물량까지 감안해야 한다. 단순히 "빈 슬롯 용량을 전부 더한 합"과 비교하면, 서로
+    // 다른 조합(캐릭터가 넣는 것 + 운반 NPC가 넣는 것 등)이 같은 빈 슬롯 하나를 향해 거의 동시에
+    // 발사됐을 때 둘 다 "빈 슬롯 있음"으로 통과해버려 나중에 착지하는 쪽이 갈 곳을 잃는다(증발).
+    // 그래서 이미 확보된(같은 종류) 슬롯 여유로 충분한지 먼저 보고, 부족하면 "물리적으로 남은 빈
+    // 슬롯 수"와 "이미 빈 슬롯을 예약 중인 서로 다른 종류의 개수"를 정확히 비교한다. 단순 불리언
+    // (다른 종류가 하나라도 있으면 무조건 거절)으로 하면 빈 슬롯이 2개 있어도 하나가 불필요하게
+    // 거절당해, 운반 NPC가 그 세션에 하나도 못 넣어서 재시도 없이 멈추는 상황을 실제보다 더 자주
+    // 유발할 수 있다.
     private bool CanAddItemByData(ItemData _sourceData)
     {
-        if (_sourceData == null) return false;
+        if (!(_sourceData is LogItemData logSource)) return false;
 
+        int matchingExistingSpace = 0;
+        int emptySlotCount = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (containerSlots[i].itemData != null &&
-                containerSlots[i].totalCount < maxItemsPerSlot &&
-                IsSameItemByData(_sourceData, containerSlots[i].itemData))
-            {
-                return true;
-            }
-
             if (containerSlots[i].itemData == null)
             {
-                return true;
+                emptySlotCount++;
+            }
+            else if (IsSameItemByData(_sourceData, containerSlots[i].itemData))
+            {
+                int remaining = maxItemsPerSlot - containerSlots[i].totalCount;
+                if (remaining > 0) matchingExistingSpace += remaining;
             }
         }
 
-        return false;
+        int pendingSameType = 0;
+        int emptySlotsReservedByOthers = 0;
+        for (int i = 0; i < flyingItems.Count; i++)
+        {
+            // LogContainer의 flyingItems는 전부 "이 컨테이너로 들어오는 중"인 항목뿐이다
+            // (여기서 밖으로 꺼내가는 경로는 없음).
+            if (flyingItems[i].itemType != ItemType.Log) continue;
+
+            if (flyingItems[i].logState == logSource.logState && flyingItems[i].treeType == logSource.treeType)
+            {
+                pendingSameType++;
+                continue;
+            }
+
+            // 다른 조합은 첫 등장에서 한 번만 처리한다.
+            bool alreadyCounted = false;
+            for (int j = 0; j < i; j++)
+            {
+                if (flyingItems[j].itemType == ItemType.Log &&
+                    flyingItems[j].logState == flyingItems[i].logState &&
+                    flyingItems[j].treeType == flyingItems[i].treeType)
+                {
+                    alreadyCounted = true;
+                    break;
+                }
+            }
+            if (alreadyCounted) continue;
+
+            // 이 다른 조합이 실제로 몇 칸의 빈 슬롯을 필요로 하는지 계산한다. 대기 물량 중 "이미
+            // 확보된(같은 조합) 슬롯 여유"로 흡수되고 남은 초과분만 빈 슬롯으로 넘어가며, 그 초과분을
+            // 슬롯당 최대 용량으로 나눠 올림한 값이 필요한 빈 슬롯 수다. (조합당 무조건 1칸으로만 세면,
+            // 한 조합이 대량이라 빈 슬롯을 여러 칸 점유하는 경우를 놓쳐, 내가 초과 발사되고 나중에
+            // 착지하는 쪽이 갈 곳을 잃는 증발 버그가 생긴다.)
+            int otherPending = 0;
+            for (int k = i; k < flyingItems.Count; k++)
+            {
+                if (flyingItems[k].itemType == ItemType.Log &&
+                    flyingItems[k].logState == flyingItems[i].logState &&
+                    flyingItems[k].treeType == flyingItems[i].treeType)
+                {
+                    otherPending++;
+                }
+            }
+
+            int otherExistingSpace = 0;
+            for (int s = 0; s < currentSlotCount; s++)
+            {
+                if (containerSlots[s].itemData is LogItemData otherSlotData &&
+                    otherSlotData.logState == flyingItems[i].logState &&
+                    otherSlotData.treeType == flyingItems[i].treeType)
+                {
+                    int remaining = maxItemsPerSlot - containerSlots[s].totalCount;
+                    if (remaining > 0) otherExistingSpace += remaining;
+                }
+            }
+
+            int overflow = otherPending - otherExistingSpace;
+            if (overflow > 0)
+            {
+                emptySlotsReservedByOthers += (overflow + maxItemsPerSlot - 1) / maxItemsPerSlot;
+            }
+        }
+
+        // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) * 슬롯당
+        // 최대 용량. 배정 가능한 빈 슬롯 수는 다른 조합들이 실제로 필요로 하는 칸수를 뺀 값이다.
+        int emptySlotsAvailableToMe = emptySlotCount - emptySlotsReservedByOthers;
+        int totalCapacity = matchingExistingSpace;
+        if (emptySlotsAvailableToMe > 0)
+        {
+            totalCapacity += maxItemsPerSlot * emptySlotsAvailableToMe;
+        }
+
+        return pendingSameType < totalCapacity;
     }
 
     private void AddItemByData(ItemData _sourceData, LogState _state)
@@ -675,22 +759,26 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
     /// <summary>
     /// 운반 NPC(OffroadPorterNPC 등)가 로그를 이 컨테이너에 직접 납품할 때 사용하는 공개 API.
-    /// 슬롯 데이터는 착지를 기다리지 않고 이 메서드 안에서 즉시 커밋되고, 날아가는 아이템은
-    /// 순수 시각 연출만 담당한다(서로 다른 조합이 같은 빈 슬롯을 동시에 예약해서 나중에
-    /// 착지하는 쪽 데이터가 사라지는 문제를 방지하기 위함).
+    /// 슬롯 데이터는 착지 시점(UpdateFlyingItems)에 커밋된다. 발사 시점엔 CanAddItemByData의
+    /// pendingCount 계산이 이미 발사된 물량을 반영하므로, 서로 다른 조합이 같은 빈 슬롯을 동시에
+    /// 예약해서 나중에 착지하는 쪽 데이터가 사라지는 문제는 생기지 않는다.
     /// </summary>
     public bool TryDepositLogItemVisual(LogItemData _sourceData, Vector3 _fromWorldPos, LogState _state)
     {
-        if (!CanAddItemByData(_sourceData)) return false;
-
-        AddItemByData(_sourceData, _state);
-
         LogItemData visualData = new LogItemData
         {
+            // itemType을 반드시 원본과 동일하게(Log) 세팅해야 한다. 빼먹으면 기본값 None이 되어
+            // CanAddItemByData 내부 IsSameItemByData의 itemType 비교에서 기존 슬롯과 절대 매칭되지
+            // 않아, 실제로는 기존 슬롯에 자리가 있는데도 새 빈 슬롯이 필요하다고 오판한다.
+            itemType = _sourceData.itemType,
             treeType = _sourceData.treeType,
             logState = _state,
             color = _sourceData.color
         };
+
+        // 잭팟 등으로 _state가 _sourceData.logState와 달라질 수 있으므로, 공간 체크도 실제로
+        // 착지할 상태(visualData) 기준으로 해야 서로 다른 슬롯 조합끼리 용량이 어긋나지 않는다.
+        if (!CanAddItemByData(visualData)) return false;
 
         LogItem flyingItem = logItemPoolManager.GetLogItem(visualData);
         flyingItem.SetFlyingItemSortingLayer();
@@ -718,13 +806,15 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     /// <summary>
     /// 운반 NPC 인벤토리의 로그 아이템들을 캐릭터 납품과 동일한 연출로 천천히 이 컨테이너에 납품합니다.
     /// 납품 연출이 모두 끝나면(상자가 가득 차 일부가 남더라도) _onComplete 콜백을 호출합니다.
+    /// _jackpotChance(퍼센트, 0~100)를 넘기면, 납품되는 로그 하나하나에 대해 그 확률로 한 단계 높은
+    /// LogState로 승급되어 납품됩니다(OffroadPorterNPCJackpot 스킬용, 이미 최고 등급 Perfect은 제외).
     /// </summary>
-    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    public void TransferFromNPC(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete, float _jackpotChance = 0f)
     {
-        StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete));
+        StartCoroutine(NPCTransferRoutine(_npcInventory, _fromWorldPos, _onComplete, _jackpotChance));
     }
 
-    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete)
+    private IEnumerator NPCTransferRoutine(LumberjackInventoryComponent _npcInventory, Vector3 _fromWorldPos, Action _onComplete, float _jackpotChance)
     {
         var slots = _npcInventory.GetInventorySlots();
         for (int i = 0; i < _npcInventory.currentSlotCnt; i++)
@@ -735,7 +825,32 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             bool slotTransferredAny = false;
             while (slot.totalCount > 0)
             {
-                if (!TryDepositLogItemVisual(logData, _fromWorldPos, logData.logState))
+                LogState originalState = logData.logState;
+                LogState depositState = originalState;
+
+                // 잭팟이 터지면 현재 등급에서 한 단계 높은 LogState로 승급 시도한다. 이미 최고 등급
+                // (Perfect)이면 더 올릴 곳이 없으므로 제외한다.
+                if (_jackpotChance > 0f && originalState < LogState.Perfect && UnityEngine.Random.Range(0f, 100f) < _jackpotChance)
+                {
+                    depositState = originalState + 1;
+                }
+
+                // 승급 등급 기준으로 착지 자리가 있는지까지 포함해 발사한다(TryDepositLogItemVisual
+                // 내부에서 CanAddItemByData로 확인). 착지 시점(AddItemByData)에 자리가 없으면 로그가
+                // 조용히 사라지므로, 이 발사 단계 검사에서 반드시 걸러야 한다.
+                bool deposited = TryDepositLogItemVisual(logData, _fromWorldPos, depositState);
+
+                // 승급 등급으로는 들어갈 자리가 아예 없으면(빈 슬롯도 없고 그 등급 슬롯도 없음) 승급
+                // (변환)을 취소하고 원래 등급으로 다시 시도한다. 실패한 첫 호출은 CanAddItemByData
+                // 단계에서 막혀 부수효과가 없으므로 재시도는 안전하다.
+                if (!deposited && depositState != originalState)
+                {
+                    deposited = TryDepositLogItemVisual(logData, _fromWorldPos, originalState);
+                }
+
+                // 승급/원래 등급 어느 쪽으로도 자리가 없으면 컨테이너가 이 종류로 가득 찬 것이므로 이
+                // 슬롯 납품을 멈춘다. 남은 로그는 NPC 인벤토리에 그대로 남아 다음 기회에 납품된다(유실 없음).
+                if (!deposited)
                 {
                     break;
                 }
@@ -743,12 +858,16 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 slot.TakeOneItem();
                 slotTransferredAny = true;
 
-                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
-            }
+                // 이 코루틴을 미래에 외부에서 취소하는 경로가 생기더라도(현재는 없음), 슬롯이 이번
+                // 아이템으로 완전히 비었으면 즉시 정리해서 totalCount==0인데 itemData가 남아있는
+                // "유령 점유" 슬롯이 생기지 않도록 방어한다(OffroadContainer.WithdrawToCarrierRoutine과
+                // 동일한 패턴).
+                if (slot.totalCount == 0)
+                {
+                    _npcInventory.ItemDeleted(slot);
+                }
 
-            if (slot.totalCount == 0)
-            {
-                _npcInventory.ItemDeleted(slot);
+                yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
             }
 
             if (slotTransferredAny)

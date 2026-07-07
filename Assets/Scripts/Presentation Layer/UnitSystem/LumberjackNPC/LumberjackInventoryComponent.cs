@@ -31,6 +31,14 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
     public int maxItemCntPerSlot => maxItemsPerSlot;
 
     /// <summary>
+    /// 공용 StatComponent(예: OffroadPorterStatComponent)의 슬롯 용량 값을 그대로 적용할 때 사용한다.
+    /// </summary>
+    public void SetSlotCount(int _count)
+    {
+        currentSlotCount = Mathf.Clamp(_count, 1, SYSTEM_VAR.MAX_INVENTORY_CNT);
+    }
+
+    /// <summary>
     /// 현재 모든 슬롯에 들어있는 아이템의 총 개수. 납품 시도 전/후 개수를 비교해서
     /// "하나라도 넣었는지"를 판단하는 데 사용한다(LJState_Deliver).
     /// </summary>
@@ -177,7 +185,26 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
             }
             else
             {
-                totalSpace += maxItemsPerSlot;
+                // 빈 슬롯이라도, 이미 다른 조합이 이 빈 슬롯을 먼저 예약(흡입 중)해뒀다면 이 아이템에게는
+                // 공간이 없는 것으로 취급한다. 그렇지 않으면 서로 다른 조합의 로그 두 개가 거의 동시에
+                // 감지될 때 "빈 슬롯이니 둘 다 들어갈 수 있다"고 착각해 둘 다 흡입을 승인해버리고,
+                // 나중에 도착한 쪽이 ItemAcquired에서 거부되면서 실제로는 가득 차지도 않았는데
+                // InventoryIsFullEvent가 잘못 발생하는 문제가 있었다.
+                bool slotClaimedByOtherCombo = false;
+                for (int r = 0; r < reservedItems.Count; r++)
+                {
+                    var reserved = reservedItems[r];
+                    if (reserved.itemType != _item.itemType || reserved.treeType != _item.treeType || reserved.logState != _item.logState)
+                    {
+                        slotClaimedByOtherCombo = true;
+                        break;
+                    }
+                }
+
+                if (!slotClaimedByOtherCombo)
+                {
+                    totalSpace += maxItemsPerSlot;
+                }
             }
         }
 
@@ -199,6 +226,16 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// CanAcquired가 예약을 승인했지만, 실제로는 다른 소비자(다른 NPC나 캐릭터)가 같은 프레임에
+    /// 먼저 SetSuckTarget을 걸어 이 NPC에게는 오지 않게 된 경우, 남아있는 유령 예약을 지운다.
+    /// 이걸 안 지우면 실제로 나에게 오지 않을 아이템 때문에 다른 진짜 아이템이 계속 거부당한다.
+    /// </summary>
+    public void CancelReservation(LogItem _item)
+    {
+        reservedItems.Remove(_item);
     }
 
     private bool IsSameItem(Item _item, ItemData _data)
@@ -230,22 +267,64 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
     }
 
     /// <summary>
-    /// 물리적 LogItem 흡입(ItemAcquired)과 달리, 컨테이너 간 이동 연출(날아가는 아이템)이 도착했을 때
-    /// 데이터만으로 슬롯을 채우기 위한 경로입니다. (예: OffroadContainer -> 운반 NPC)
+    /// 착지 시점 커밋 방식에서, _sourceData와 같은 종류로 이미 채워진 슬롯에 남은 여유 공간만
+    /// 계산한다(빈 슬롯은 포함하지 않음). 호출부가 이미 발사되어 날아오는 중인 같은 종류의
+    /// pendingCount와 비교해, "기존에 확보된 슬롯"만으로 충분한지 먼저 판단할 때 쓴다.
     /// </summary>
-    public bool CanAcquireData(ItemData _sourceData)
+    public int GetMatchingSlotSpaceFor(ItemData _sourceData)
     {
-        if (_sourceData == null) return false;
+        if (_sourceData == null) return 0;
 
+        int space = 0;
         for (int i = 0; i < currentSlotCount; i++)
         {
-            if (inventorySlots[i].itemData == null) return true;
-
-            if (inventorySlots[i].totalCount < maxItemsPerSlot && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
-                return true;
+            if (inventorySlots[i].itemData != null && IsSameItemByData(_sourceData, inventorySlots[i].itemData))
+            {
+                int remaining = maxItemsPerSlot - inventorySlots[i].totalCount;
+                if (remaining > 0) space += remaining;
+            }
         }
 
-        return false;
+        return space;
+    }
+
+    /// <summary>
+    /// GetMatchingSlotSpaceFor(ItemData)와 동일하되, ItemData가 아니라 (logState, treeType) 조합으로
+    /// 직접 조회한다. 인출 경로(WithdrawToCarrierRoutine)에서 이미 발사되어 날아오는 다른 조합의
+    /// 기존 슬롯 여유를 구할 때 쓴다(비행 아이템은 ItemData가 아니라 상태/종류만 갖고 있으므로).
+    /// </summary>
+    public int GetMatchingSlotSpaceFor(LogState _logState, TreeType _treeType)
+    {
+        int space = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData is LogItemData logData &&
+                logData.logState == _logState && logData.treeType == _treeType)
+            {
+                int remaining = maxItemsPerSlot - inventorySlots[i].totalCount;
+                if (remaining > 0) space += remaining;
+            }
+        }
+
+        return space;
+    }
+
+    /// <summary>
+    /// 현재 완전히 비어있는 슬롯의 개수. 기존에 확보된 슬롯만으로 부족해서 새 빈 슬롯이 필요한
+    /// 종류를 승인할지 판단할 때 쓴다. 호출부는 이 개수를, 이미 다른 종류가 빈 슬롯을 예약(발사)
+    /// 중인 "서로 다른 종류의 개수"와 비교해야 한다 - 단순히 "빈 슬롯이 하나라도 있는지"만 보면,
+    /// 빈 슬롯이 2개 있어도 다른 종류가 하나만 대기 중일 때 나에게 남는 자리가 있는데도 불필요하게
+    /// 거절해버릴 수 있다.
+    /// </summary>
+    public int GetEmptySlotCount()
+    {
+        int count = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData == null) count++;
+        }
+
+        return count;
     }
 
     public void AddItemByData(ItemData _sourceData, LogState _state)

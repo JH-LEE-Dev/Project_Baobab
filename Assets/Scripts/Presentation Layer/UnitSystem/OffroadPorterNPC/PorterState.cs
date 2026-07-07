@@ -42,7 +42,7 @@ public abstract class PorterState
         else
         {
             Vector2 direction = ((Vector2)targetPos - (Vector2)currentPos).normalized;
-            npc.transform.position = Vector3.MoveTowards(currentPos, targetPos, npc.moveSpeed * Time.deltaTime);
+            npc.transform.position = Vector3.MoveTowards(currentPos, targetPos, npc.stat.moveSpeed * Time.deltaTime);
 
             npc.SetVisualFacing(direction);
         }

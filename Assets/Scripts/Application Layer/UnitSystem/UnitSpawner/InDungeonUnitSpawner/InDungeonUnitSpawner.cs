@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Pool;
 
-public class InDungeonUnitSpawner : MonoBehaviour
+public class InDungeonUnitSpawner : MonoBehaviour, IInDungeonUnitSpawnerCH
 {
     // 외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -14,11 +14,24 @@ public class InDungeonUnitSpawner : MonoBehaviour
     [SerializeField] private LumberjackNPC npcPrefab;
     [SerializeField] private int maxNPCs = 3;
 
+    // 모든 럼버잭 NPC가 공용으로 참조하는 스탯. 여기 값을 바꾸면 스폰된 NPC 전체에 동일하게 적용된다.
+    [SerializeField] private LumberjackStatComponent statComponent;
+
+    // 셰이크웨이브 생성을 담당하는 공용 인스턴스. 인스펙터 연결을 위해 구체 타입 필드로 두지만,
+    // 실제로 NPC에 넘길 때나 내부적으로 다룰 때는 IShockWaveCreator 인터페이스로만 참조한다.
+    [SerializeField] private AxeExtraAttackCreator sharedShockWaveCreator;
+    private IShockWaveCreator shockWaveCreator => sharedShockWaveCreator;
+
+    // 캐릭터의 StatComponent를 셰이크웨이브 스탯 전용 인터페이스로 좁혀서 들고 있는다.
+    // InDungeonUnitSpawner.Initialize() 시점엔 아직 캐릭터가 스폰되기 전이라, 캐릭터 스폰 이후
+    // SetPlayerStatForShockWave()로 뒤늦게 주입받는다.
+    private ICharacterStatForNPC playerStatForShockWave;
+
     private IObjectPool<LumberjackNPC> npcPool;
 
     private List<LumberjackNPC> allSpawnedNPCs = new List<LumberjackNPC>(16); // 마스터 리스트 (컬링 그룹용)
     public IReadOnlyList<LumberjackNPC> NPCs => allSpawnedNPCs;
-    
+
     private List<LumberjackNPC> activeNPCs = new List<LumberjackNPC>(16); // 업데이트 및 가시성 리스트
     public IReadOnlyList<LumberjackNPC> ActiveNPCs => activeNPCs;
 
@@ -40,9 +53,20 @@ public class InDungeonUnitSpawner : MonoBehaviour
     private IPathfindTreeProvider pathfindTreeProvider;
     private OffroadContainer offroadContainer;
 
+    [Header("Debug")]
+    [Tooltip("럼버잭 NPC 멈춤 버그 추적용 [LJDebug] 로그를 켜고 끕니다. 재현할 때만 켜두세요.")]
+    [SerializeField] private bool enableLJDebugLog = false;
+
+    private void OnValidate()
+    {
+        LJDebugLog.Enabled = enableLJDebugLog;
+    }
+
     // 퍼블릭 메서드
     public void Initialize(IEnvironmentProvider _environmentProvider, IPathfindTreeProvider _pathfindTreeProvider, OffroadContainer _offroadContainer = null)
     {
+        LJDebugLog.Enabled = enableLJDebugLog; // OnValidate는 에디터 전용이라, 빌드에서도 적용되도록 여기서 동기화
+
         environmentProvider = _environmentProvider;
         tilemapDataProvider = environmentProvider.tilemapDataProvider;
         pathfindTreeProvider = _pathfindTreeProvider;
@@ -146,7 +170,7 @@ public class InDungeonUnitSpawner : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             spheres[i].position = allSpawnedNPCs[i].transform.position;
-            spheres[i].radius = 3f; 
+            spheres[i].radius = 3f;
         }
 
         cullingGroup.SetBoundingSpheres(spheres);
@@ -222,13 +246,15 @@ public class InDungeonUnitSpawner : MonoBehaviour
         LumberjackNPC npc = npcPool.Get();
         npc.transform.position = _pos;
         npc.gameObject.SetActive(true);
-        
-        // NPC 초기화 (환경 데이터, 길찾기 그리드, 로그 납품용 오프로드 컨테이너 제공)
+
+        // NPC 초기화 (환경 데이터, 길찾기 그리드, 로그 납품용 오프로드 컨테이너, 공용 스탯 제공)
         npc.Initialize(
             environmentProvider,
             pathfindTreeProvider,
-            offroadContainer
+            offroadContainer,
+            statComponent
         );
+        npc.SetShockWaveDependencies(shockWaveCreator, playerStatForShockWave);
 
         allSpawnedNPCs.Add(npc);
         int index = allSpawnedNPCs.Count - 1;
@@ -351,5 +377,54 @@ public class InDungeonUnitSpawner : MonoBehaviour
             cullingGroup.Dispose();
             cullingGroup = null;
         }
+    }
+
+    public void SetLumberjackNPCCount(float _amount)
+    {
+        maxNPCs = (int)_amount;
+    }
+
+    /// <summary>
+    /// 캐릭터가 스폰된 뒤(InDungeonUnitSpawner.Initialize() 시점엔 아직 캐릭터가 없으므로) 호출해서
+    /// 럼버잭 NPC들이 셰이크웨이브에 사용할 캐릭터 스탯을 넘겨준다. 이미 스폰된 NPC들에게도 즉시 반영된다.
+    /// </summary>
+    public void SetPlayerStatForShockWave(ICharacterStatForNPC _playerStat)
+    {
+        playerStatForShockWave = _playerStat;
+
+        if (sharedShockWaveCreator != null)
+        {
+            sharedShockWaveCreator.Initialize(_playerStat);
+        }
+
+        for (int i = 0; i < allSpawnedNPCs.Count; i++)
+        {
+            allSpawnedNPCs[i]?.SetShockWaveDependencies(shockWaveCreator, playerStatForShockWave);
+        }
+    }
+
+    public void IncreaseAttackSpeed(float _amount)
+    {
+        statComponent.IncreaseAttackSpeed(_amount);
+    }
+
+    public void IncreaseDamage(float _amount)
+    {
+        statComponent.IncreaseDamage(_amount);
+    }
+
+    public void IncreaseSpeed(float _amount)
+    {
+        statComponent.IncreaseSpeed(_amount);
+    }
+
+    public void SetShockWaveEnable(bool _boolean)
+    {
+        statComponent.SetShockWaveEnabled(_boolean);
+    }
+
+    public void SetOffroadPorterNPCCount(float _amount)
+    {
+        throw new NotImplementedException();
     }
 }

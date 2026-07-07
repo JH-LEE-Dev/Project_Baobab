@@ -13,4 +13,6 @@ public interface ICommandHandleSystem
     public ILogItemControllerCH logItemControllerCH { get; }
     public IOffroadContainerCH offroadContainerCH { get; }
     public IInDungeonObjManagerCH inDungeonObjManagerCH { get; }
+    public IInDungeonUnitSpawnerCH inDungeonUnitSpawnerCH { get; }
+    public ITownUnitSpawnerCH townUnitSpawnerCH { get; }
 }

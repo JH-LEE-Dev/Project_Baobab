@@ -23,7 +23,7 @@ public class TownSystem : MonoBehaviour
     private ForestType selectedForestType;
     private SkyCameraProductionManager skyCameraProductionManager;
     private TownTileManager townTileManager;
-    private TownUnitSpawner townUnitSpawner;
+    public TownUnitSpawner townUnitSpawner { get; private set; }
 
     /// <summary>
     /// 게임이 처음 시작됐을 때(던전에서 돌아온 것이 아닐 때) 캐릭터가 생성되는 위치.
@@ -210,9 +210,11 @@ public class TownSystem : MonoBehaviour
     {
         townProductionManager.StartCharacterRide();
 
-        offroadContainer.col.enabled = false;
-        if (townObjectManager.offroadVehicle != null)
-            townObjectManager.offroadVehicle.col.enabled = false;
+        // 컨테이너/차량 콜라이더 비활성화는 DungeonSelected()에서 NPC 일시정지(PauseAllNPCs)와
+        // 같은 시점에 함께 처리한다. 여기서 미리 꺼두면 "탑승~던전 선택" 대기 구간 동안 운반 NPC의
+        // IsWithinInteractRadius(col.OverlapPoint 기반)가 항상 false로 판정되어, 감지 반경에서
+        // 멈추지 못하고 경로 끝(컨테이너 안쪽)까지 걸어 들어가 버리는 문제가 있었다. 이 시점엔
+        // 캐릭터 오브젝트가 비활성화되고 차량도 아직 물리적으로 움직이지 않으므로 미리 꺼둘 필요가 없다.
     }
 
     private void InventoryInitialized(InventoryInitializedSignal inventoryInitializedSignal)
@@ -244,6 +246,13 @@ public class TownSystem : MonoBehaviour
     {
         if (bRetryGame == true)
             return;
+
+        // 상자에서 인출 중이던 NPC는 이미 날아온 것만 습득하고 그만두게 하고,
+        // 상점으로 납품하러 가던 NPC는 곧바로 Idle로 되돌린 뒤, 그대로 멈춰서 다시 새 작업을
+        // 찾아 나서지 않게 한다(원래 CameraUpIsEnd에서만 Pause했는데, 그 사이 텀에 Idle이 스스로
+        // 새 작업을 찾아 다시 움직여버리는 문제가 있었다).
+        townUnitSpawner?.CancelActiveTasksForTeleport();
+        townUnitSpawner?.PauseAllNPCs();
 
         selectedMapType = dungeonSelectedSignal.type;
         selectedForestType = dungeonSelectedSignal.forestType;
@@ -359,8 +368,10 @@ public class TownSystem : MonoBehaviour
             return;
 
         townUnitSpawner?.PauseAllNPCs();
+        townUnitSpawner?.DeactivateAllNPCs();
 
         townObjectManager.ClearObjManager();
+        townTileManager.DestroyGrid();
         signalHub.Publish(new GoToDungeonSignal(selectedMapType, selectedForestType));
     }
 
