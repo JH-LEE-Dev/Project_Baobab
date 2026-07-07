@@ -1093,7 +1093,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   npcPrefab: {fileID: 9197713879388921321, guid: 0a673e3ff0ddf2645b1b837f534f144b, type: 3}
-  maxNPCs: 3
+  maxNPCs: 0
   statComponent: {fileID: 845993863184817069}
   sharedShockWaveCreator: {fileID: 4073779457967939185}
   useCulling: 0
@@ -2524,7 +2524,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TownUnitSpawner
   npcPrefab: {fileID: 1313503206885682807, guid: 0428298bd8aec6f459c8e3f9e9cbf4c8, type: 3}
-  npcCount: 3
+  npcCount: 0
   diagonalWorldStep: {x: 0.6, y: -0.35}
   statComponent: {fileID: 3043546774119391079}
 --- !u!114 &3043546774119391079
@@ -2659,6 +2659,13 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 7522980212c27ec44a9b6fa9d0925996, type: 2}
   - {fileID: 11400000, guid: 98c4e7f7b2abc9946990f0cf2b3748bf, type: 2}
   - {fileID: 11400000, guid: 2792d7ef97f9f414e91a95ffb0468408, type: 2}
+  - {fileID: 11400000, guid: bfc0b805ed080d1eaacfe66752efcf7e, type: 2}
+  - {fileID: 11400000, guid: c4267ce068c39d2fc44af41ced47ea78, type: 2}
+  - {fileID: 11400000, guid: 0a504ddfa478208f2fb0fbe641cf221c, type: 2}
+  - {fileID: 11400000, guid: 3cc9fe3ef028c60593f4afdb947bff3e, type: 2}
+  - {fileID: 11400000, guid: 05218c5cab76c3abd2fc2fa4657bce38, type: 2}
+  - {fileID: 11400000, guid: cf57fc813035d3651df1eeba80f0ea44, type: 2}
+  - {fileID: 11400000, guid: 701393574dec4974d52c3c1ccd001bbe, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0

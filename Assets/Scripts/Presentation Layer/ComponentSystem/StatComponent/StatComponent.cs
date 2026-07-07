@@ -75,6 +75,25 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public bool bShockWaveEnforcement = false;
     public bool bShockWaveMastery = false;
 
+    [Header("Axe - Boomerang")]
+    public int boomerangCount = 0; // "부메랑" 스킬 레벨 = 동시에 존재 가능한 부메랑 개수 (0이면 미해금 상태로 발사되지 않음)
+    public float boomerangDamage = 1f;
+    public float boomerangHitRadius = 0.5f; // "범위"
+    public float boomerangMajorAxisRatio = 1f; // "사정거리" (CameraBoundsUtil 타원 장축 비율)
+    public float boomerangCooldown = 2.5f; // "쿨타임"
+    public float boomerangDamageInterval = 0.3f; // "공격 속도"가 반영되는 판정 주기
+    public bool bBoomerangCritical = false;
+    public float baseBoomerangDamage { get; private set; }
+    public float boomerangDamageMultiplier { get; private set; } = 1.0f;
+    public float baseBoomerangHitRadius { get; private set; }
+    public float boomerangRangeMultiplier { get; private set; } = 1.0f;
+    public float baseBoomerangMajorAxisRatio { get; private set; }
+    public float boomerangDistanceMultiplier { get; private set; } = 1.0f;
+    public float baseBoomerangCooldown { get; private set; }
+    public float boomerangCooldownReductionAlpha = 0f;
+    public float baseBoomerangDamageInterval { get; private set; }
+    public float boomerangAttackSpeedMultiplier { get; private set; } = 1.0f;
+
     [Header("Rifle Settings")]
     public float rifleDamage = 10f;
     public float rifleReadyTime = 0;
@@ -151,6 +170,11 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         baseReloadDuration = reloadDuration;
         baseShockWaveDamage = shockWaveDamage;
         baseShockWaveSpeed = shockWaveSpeed;
+        baseBoomerangDamage = boomerangDamage;
+        baseBoomerangHitRadius = boomerangHitRadius;
+        baseBoomerangMajorAxisRatio = boomerangMajorAxisRatio;
+        baseBoomerangCooldown = boomerangCooldown;
+        baseBoomerangDamageInterval = boomerangDamageInterval;
     }
 
     public void IncreaseAxeDamage(float _amount)
@@ -404,5 +428,45 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public void IncreaseStaminaRecoverAmount(float _amount)
     {
         staminaRecoverAmount = _amount;
+    }
+
+    public void IncreaseBoomerangCount(int _amount)
+    {
+        boomerangCount += _amount;
+    }
+
+    public void IncreaseBoomerangDamage(float _amount)
+    {
+        boomerangDamageMultiplier += (_amount / 100.0f);
+        boomerangDamage = baseBoomerangDamage * boomerangDamageMultiplier;
+    }
+
+    public void IncreaseBoomerangRange(float _amount)
+    {
+        boomerangRangeMultiplier += (_amount / 100.0f);
+        boomerangHitRadius = baseBoomerangHitRadius * boomerangRangeMultiplier;
+    }
+
+    public void IncreaseBoomerangDistance(float _amount)
+    {
+        boomerangDistanceMultiplier += (_amount / 100.0f);
+        boomerangMajorAxisRatio = baseBoomerangMajorAxisRatio * boomerangDistanceMultiplier;
+    }
+
+    public void IncreaseBoomerangCooldownReduction(float _amount)
+    {
+        boomerangCooldownReductionAlpha += _amount;
+        boomerangCooldown = baseBoomerangCooldown * Mathf.Max(0f, 1f - (boomerangCooldownReductionAlpha / 100.0f));
+    }
+
+    public void IncreaseBoomerangAttackSpeed(float _amount)
+    {
+        boomerangAttackSpeedMultiplier += (_amount / 100.0f);
+        boomerangDamageInterval = baseBoomerangDamageInterval / boomerangAttackSpeedMultiplier;
+    }
+
+    public void ActivateBoomerangCritical(bool _boolean)
+    {
+        bBoomerangCritical = _boolean;
     }
 }

@@ -247,6 +247,13 @@ public enum SkillCommandType
     OffroadPorterNPCSpeed,
     OffroadPorterNPCSlotCapacity,
     OffroadPorterNPCJackpot,
+    Boomerang,
+    BoomerangDamage,
+    BoomerangRange,
+    BoomerangDistance,
+    BoomerangCooldownReduction,
+    BoomerangAttackSpeed,
+    BoomerangCritical,
 }
 
 public enum AbilityLevelUpRejectReason

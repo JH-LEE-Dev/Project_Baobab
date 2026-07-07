@@ -76,6 +76,19 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     [SerializeField] private LayerMask itemLayer; // 아이템 레이어
 
+    [Header("Boomerang Settings")]
+    [SerializeField] private BoomerangCreator boomerangCreator;
+    [SerializeField] private LayerMask treeLayer;
+    [SerializeField] private float treeSensorRadius = 4f;
+    [SerializeField] private float treeDetectionInterval = 0.5f; // 나무는 정적이라 아이템보다 낮은 주기로 충분함
+    [SerializeField] private float boomerangEdgePadding = 0.5f; // 화면 경계에서 안쪽으로 두는 여유
+
+    private readonly List<IStaticCollidable> treeScanResults = new List<IStaticCollidable>(16);
+    private readonly List<ITreeObj> activeBoomerangTargets = new List<ITreeObj>(4); // 동시에 날아가는 부메랑들이 각자 다른 나무를 노리도록 이미 타겟팅된 나무를 추적
+    private readonly List<Boomerang> activeBoomerangs = new List<Boomerang>(4);
+    private float treeScanTimer = 0f;
+    private float boomerangCooldownTimer = 0f;
+
     private CharacterVisualComponent characterVisualComponent;
 
     public Transform centerTransform;
@@ -112,6 +125,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         armComponent = GetComponentInChildren<ArmComponent>();
         statComponent = GetComponentInChildren<StatComponent>();
         customSortable = GetComponent<CustomSortable>();
+
+        boomerangCreator?.Initialize(statComponent);
 
         if (customSortable != null)
         {
@@ -175,6 +190,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void SetWhereIsCharacter(bool _bInDungeon)
     {
         CollisionSystem.Instance?.Register(this, false);
+
+        ClearActiveBoomerangs();
+        treeScanTimer = 0f;
+        boomerangCooldownTimer = 0f;
 
         if (_bInDungeon == false)
         {
@@ -341,6 +360,133 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
     }
 
+    private void UpdateTreeBoomerang()
+    {
+        // bWhileReset은 던전 입장 직후(ResetStatus)부터 카메라 연출이 끝나 실제로 조작 가능해지는
+        // 시점(ActivateCharacter)까지 true로 유지된다. 이 동안엔 아직 캐릭터를 움직일 수 없는데도
+        // 부메랑이 먼저 발사되고 있었으므로, 같은 조건으로 막는다.
+        if (bInDungeon == false || bDead || bWhileReset || boomerangCreator == null) return;
+
+        // "부메랑" 스킬을 찍어 boomerangCount(동시에 존재 가능한 부메랑 개수)가 1 이상이 되기 전에는
+        // 아예 발사되지 않는다.
+        if (statComponent.boomerangCount <= 0) return;
+
+        boomerangCooldownTimer -= Time.fixedDeltaTime;
+
+        treeScanTimer += Time.fixedDeltaTime;
+        if (treeScanTimer < treeDetectionInterval) return;
+        treeScanTimer = 0f;
+
+        if (boomerangCooldownTimer > 0f) return;
+        if (activeBoomerangTargets.Count >= statComponent.boomerangCount) return;
+
+        ITreeObj nearestTree = FindNearestTree();
+        if (nearestTree == null) return;
+
+        ThrowBoomerangAt(nearestTree);
+        boomerangCooldownTimer = statComponent.boomerangCooldown;
+    }
+
+    private ITreeObj FindNearestTree()
+    {
+        if (CollisionSystem.Instance == null) return null;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, treeSensorRadius, treeLayer.value, treeScanResults);
+
+        ITreeObj nearest = null;
+        float nearestIsoSqr = float.MaxValue;
+        Vector2 myPos = transform.position;
+
+        for (int i = 0; i < treeScanResults.Count; i++)
+        {
+            // 이미 다른 부메랑이 향하고 있는 나무는 제외해서, 동시에 여러 개가 날아갈 때 서로
+            // 다른 나무를 노리도록 한다.
+            if (treeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj))
+            {
+                // 순수 유클리드 거리로 고르면, 아이소메트릭 시점에서는 세로로 떨어진 나무가
+                // 실제로 화면상 더 가까운 나무보다 먼저 뽑히는 경우가 있었다(세로 이동이 화면에서
+                // 절반만큼만 보이므로). ShockWave.GetIsometricDistSq와 동일하게 세로 차이를
+                // 2배로 가중해서 "실제로 가장 가까워 보이는" 나무를 고르도록 맞춘다.
+                float isoSqr = GetIsometricDistSq(treeScanResults[i].Position, myPos);
+                if (isoSqr < nearestIsoSqr)
+                {
+                    nearestIsoSqr = isoSqr;
+                    nearest = treeObj;
+                }
+            }
+        }
+
+        return nearest;
+    }
+
+    private static float GetIsometricDistSq(Vector2 _a, Vector2 _b)
+    {
+        float dx = _a.x - _b.x;
+        float dy = (_a.y - _b.y) * 2f;
+        return dx * dx + dy * dy;
+    }
+
+    private void ThrowBoomerangAt(ITreeObj _tree)
+    {
+        Vector3 origin = transform.position;
+        Vector3 dir = GetBoomerangTargetPosition(_tree) - origin;
+        if (dir.sqrMagnitude < 0.0001f) return;
+        dir.Normalize();
+
+        // "부메랑 사정거리" 스킬(boomerangMajorAxisRatio)을 타원 장축 비율로 그대로 전달한다.
+        float maxDistance = CameraBoundsUtil.GetMaxDistanceToEdge(dir, boomerangEdgePadding, statComponent.boomerangMajorAxisRatio);
+        if (maxDistance <= 0.1f) return;
+
+        activeBoomerangTargets.Add(_tree);
+
+        Boomerang thrownBoomerang = null;
+        Action onFinished = () =>
+        {
+            activeBoomerangTargets.Remove(_tree);
+            activeBoomerangs.Remove(thrownBoomerang);
+        };
+
+        thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished);
+
+        if (thrownBoomerang == null)
+        {
+            // Initialize가 아직 안 됐거나 풀 생성에 실패한 경우: 예약해둔 타겟팅을 되돌린다.
+            activeBoomerangTargets.Remove(_tree);
+            return;
+        }
+
+        activeBoomerangs.Add(thrownBoomerang);
+    }
+
+    // 캐릭터가 죽거나 던전을 나가는 등 왕복이 끝나기 전에 상태를 리셋해야 할 때, 날아가고 있던
+    // 부메랑을 전부 강제로 회수하고 추적 목록을 비운다.
+    private void ClearActiveBoomerangs()
+    {
+        if (activeBoomerangs.Count > 0)
+        {
+            foreach (Boomerang boomerang in activeBoomerangs.ToArray())
+            {
+                boomerang?.ForceStop();
+            }
+        }
+
+        activeBoomerangs.Clear();
+        activeBoomerangTargets.Clear();
+    }
+
+    // 나무 밑동(GetTransform)이 아니라 TreeVisualComponent의 topRoot(나무 윗부분, 잎이 있는 쪽) 방향으로
+    // 부메랑이 날아가도록 목표 지점을 구한다. topRoot가 없는 나무(비주얼 컴포넌트 누락 등)는 기존처럼
+    // 트리 오브젝트 위치로 폴백한다.
+    private Vector3 GetBoomerangTargetPosition(ITreeObj _tree)
+    {
+        if (_tree is TreeObj treeObj && treeObj.treeVisualComponent != null)
+        {
+            return treeObj.treeVisualComponent.GetTopRootPosition();
+        }
+
+        return _tree.GetTransform().position;
+    }
+
     #endregion
 
     #region Unity Event Functions
@@ -372,6 +518,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void FixedUpdate()
     {
         UpdateItemDetection(); // 내부적으로 itemDetectionInterval마다만 실제 스캔을 수행함
+        UpdateTreeBoomerang(); // 내부적으로 treeDetectionInterval마다만 실제 스캔을 수행함
 
         // 커스텀 충돌 시스템 격자 정보 갱신
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
@@ -440,6 +587,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void ResetStatus()
     {
+        ClearActiveBoomerangs();
+        treeScanTimer = 0f;
+        boomerangCooldownTimer = 0f;
+
         attackComponent.ResetAttackTransform();
         armComponent.ResetRotation();
         bWhileReset = true;

@@ -9,11 +9,12 @@ public class UnitSystem
     private InventoryManager inventoryManager;
     private OffroadContainer offroadContainer;
     private InDungeonResultManager inDungeonResultManager;
+    private IEnvironmentProvider environmentProvider;
     
     //내부 의존성
 
     public void Initialize(SignalHub _signalHub, UnitSpawner _unitSpawner, UnitLogicManager _unitLogicManager, InventoryManager _inventoryManager,
-    OffroadContainer _offroadContainer, InDungeonResultManager _inDungeonResultManager)
+    OffroadContainer _offroadContainer, InDungeonResultManager _inDungeonResultManager, IEnvironmentProvider _environmentProvider)
     {
         signalHub = _signalHub;
         unitSpawner = _unitSpawner;
@@ -21,6 +22,7 @@ public class UnitSystem
         inventoryManager = _inventoryManager;
         offroadContainer = _offroadContainer;
         inDungeonResultManager = _inDungeonResultManager;
+        environmentProvider = _environmentProvider;
 
         SubscribeSignals();
         BindEvents();
