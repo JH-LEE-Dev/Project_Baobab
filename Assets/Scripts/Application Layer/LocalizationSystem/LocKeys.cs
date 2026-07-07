@@ -13,7 +13,7 @@ public static class LocKeys
         public const int fatigueMaxIncrease2Name = 4194419;
         public const int fatigueMaxIncrease3Name = 4194421;
         public const int sourceOfSpeed1Name = 4194423;
-        public const int verdantPlainsOvergrowthName = 4194425;
+        public const int wideGreenForestOvergrowthName = 4194425;
         public const int woodenTransportBoxExpansion1Name = 4194427;
         public const int inventoryExpansion1Name = 4194429;
         public const int woodenTransportBoxExpansion2Name = 4194431;
@@ -43,16 +43,19 @@ public static class LocKeys
         public const int efficientMovement1Name = 4194479;
         public const int sporeShieldRegenBlock1Name = 4194481;
         public const int steelAxe1Name = 4194483;
+        public const int testNodeName = 4194484;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
+        public const int commonToUnlock = 4203307;
+        public const int commonUnlockComplete = 4203308;
         public const int abilityDescriptionInventoryExpansion = 4203404;
         public const int abilityDescriptionLogCapacityIncrease = 4203405;
         public const int abilityDescriptionSawmillLogStorageExpansion = 4203406;
         public const int abilityDescriptionLogProcessingSpeed = 4203407;
         public const int abilityDescriptionAxeDamage = 4203408;
         public const int abilityDescriptionLogValue = 4203409;
-        public const int abilityDescriptionVerdantPlainsOvergrowth = 4203410;
+        public const int abilityDescriptionWideGreenForestOvergrowth = 4203410;
         public const int abilityDescriptionStamina = 4203411;
         public const int abilityDescriptionStaminaMaxIncrease = 4203412;
         public const int abilityDescriptionConveyorSpeed = 4203413;
@@ -69,6 +72,8 @@ public static class LocKeys
         public const int abilityDescriptionShockwaveRange = 4203424;
         public const int abilityDescriptionAxeAttackSpeed = 4203425;
         public const int abilityDescriptionWoodenTransportBox = 4203426;
+        public const int abilityDescriptionAxeCriticalChance = 4203427;
+        public const int abilityDescriptionAxeCriticalDamage = 4203428;
     }
 
     public static class MenuPopupUI

@@ -1108,6 +1108,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_node == null || toolTipInstance == null)
             return;
 
+        _previewData = ConvertToToolTipDisplayValue(_previewData);
+
         string costText = BuildToolTipCostText(_skillInfo, _applyReason, out MoneyType costMoneyType);
         string descriptionFormat = GetToolTipDescriptionFormat(_previewData.type);
         toolTipInstance.SetContent(
@@ -1117,6 +1119,37 @@ public class UI_TentAbilityComponent : MonoBehaviour
             BuildToolTipValueText(_previewData, IsMaxLevel(_skillInfo, _applyReason), ShouldAppendPercentUnit(descriptionFormat)),
             costText,
             costMoneyType);
+    }
+
+    private SkillAccumulatedValueChangeData ConvertToToolTipDisplayValue(SkillAccumulatedValueChangeData _data)
+    {
+        float baseValue = GetToolTipDisplayBaseValue(_data.type);
+        _data.currentValueX += baseValue;
+        _data.totalValueZ += baseValue;
+        return _data;
+    }
+
+    private float GetToolTipDisplayBaseValue(SkillCommandType _type)
+    {
+        switch (_type)
+        {
+            case SkillCommandType.AxeDurability:
+                return 40f;
+            case SkillCommandType.InventoryExpansion:
+                return 2f;
+            case SkillCommandType.SawmillLogStorageExpansion:
+                return 2f;
+            case SkillCommandType.WoodenTransportBox:
+                return 2f;
+            case SkillCommandType.LogCapacityIncrease:
+                return 5f;
+            //case SkillCommandType.제재소증설:
+                //return 1f;
+            case SkillCommandType.StaminaMaxIncrease:
+                return 100f;
+            default:
+                return 0f;
+        }
     }
 
     private string GetToolTipDescriptionFormat(SkillCommandType _commandType)
@@ -1151,12 +1184,36 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_data.type == SkillCommandType.None)
             return string.Empty;
 
+        if (ShouldUseUnlockToolTipValueText(_data.type))
+            return BuildUnlockToolTipValueText(_isMaxLevel);
+
         string currentValue = FormatToolTipValue(_data.currentValueX, _appendPercentUnit);
         if (_isMaxLevel)
             return BuildToolTipColorText(currentValue, ToolTipCostMaxLevelColor);
 
         string totalValue = BuildToolTipColorText(FormatToolTipValue(_data.totalValueZ, _appendPercentUnit), ToolTipValueColor);
         return $"{currentValue} -> {totalValue}";
+    }
+
+    private bool ShouldUseUnlockToolTipValueText(SkillCommandType _type)
+    {
+        switch (_type)
+        {
+            case SkillCommandType.ShockWaveMastery:
+            case SkillCommandType.ShockWaveEnforcement:
+            case SkillCommandType.ShockWaveCritical:
+            //case SkillCommandType.
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private string BuildUnlockToolTipValueText(bool _isUnlocked)
+    {
+        int textKey = _isUnlocked ? LocKeys.AbilityUI.commonUnlockComplete : LocKeys.AbilityUI.commonToUnlock;
+        string color = _isUnlocked ? ToolTipCostMaxLevelColor : ToolTipValueColor;
+        return BuildToolTipColorText(ResolveLocalizedText(textKey), color);
     }
 
     private string FormatToolTipValue(float _value, bool _appendPercentUnit = false)

@@ -176,7 +176,7 @@ public enum SkillCommandType
 {
     None,
     InventoryExpansion,
-    logCapacityIncrease,
+    LogCapacityIncrease,
     SawmillLogStorageExpansion,
     LogProcessingSpeed,
     AxeDamage,
