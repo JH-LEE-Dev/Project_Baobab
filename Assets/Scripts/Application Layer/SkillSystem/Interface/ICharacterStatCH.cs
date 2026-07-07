@@ -41,4 +41,11 @@ public interface ICharacterStatCH
     public void IncreaseSourceOfStaminaRecoverAmount(float _amount);
     public void IncreaseSourceOfSpeedAmount(float _amount);
     public void IncreaseStaminaRecoverAmount(float _amount);
+    public void IncreaseBoomerangCount(int _amount);
+    public void IncreaseBoomerangDamage(float _amount);
+    public void IncreaseBoomerangRange(float _amount);
+    public void IncreaseBoomerangDistance(float _amount);
+    public void IncreaseBoomerangCooldownReduction(float _amount);
+    public void IncreaseBoomerangAttackSpeed(float _amount);
+    public void ActivateBoomerangCritical(bool _boolean);
 }

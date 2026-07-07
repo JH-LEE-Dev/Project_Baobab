@@ -856,6 +856,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         NPCPauseRequestedEvent?.Invoke(true);
         FlyingItemPauseRequestedEvent?.Invoke();
+        character.PauseBoomerangs();
 
         StopGrowth();
 
@@ -874,6 +875,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             character.SetStaminaDecrease(true);
             NPCPauseRequestedEvent?.Invoke(false);
             FlyingItemResumeRequestedEvent?.Invoke();
+            character.ResumeBoomerangs();
         }
 
         character.PauseCharacter(false);
@@ -889,6 +891,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void HandleGameEnd()
     {
         FlyingItemDismissRequestedEvent?.Invoke();
+        character.DismissBoomerangsWithShrink();
 
         AbortGameEnd(false);
 
