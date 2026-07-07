@@ -281,6 +281,27 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
     }
 
     /// <summary>
+    /// GetMatchingSlotSpaceFor(ItemData)와 동일하되, ItemData가 아니라 (logState, treeType) 조합으로
+    /// 직접 조회한다. 인출 경로(WithdrawToCarrierRoutine)에서 이미 발사되어 날아오는 다른 조합의
+    /// 기존 슬롯 여유를 구할 때 쓴다(비행 아이템은 ItemData가 아니라 상태/종류만 갖고 있으므로).
+    /// </summary>
+    public int GetMatchingSlotSpaceFor(LogState _logState, TreeType _treeType)
+    {
+        int space = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData is LogItemData logData &&
+                logData.logState == _logState && logData.treeType == _treeType)
+            {
+                int remaining = maxItemsPerSlot - inventorySlots[i].totalCount;
+                if (remaining > 0) space += remaining;
+            }
+        }
+
+        return space;
+    }
+
+    /// <summary>
     /// 현재 완전히 비어있는 슬롯의 개수. 기존에 확보된 슬롯만으로 부족해서 새 빈 슬롯이 필요한
     /// 종류를 승인할지 판단할 때 쓴다. 호출부는 이 개수를, 이미 다른 종류가 빈 슬롯을 예약(발사)
     /// 중인 "서로 다른 종류의 개수"와 비교해야 한다 - 단순히 "빈 슬롯이 하나라도 있는지"만 보면,

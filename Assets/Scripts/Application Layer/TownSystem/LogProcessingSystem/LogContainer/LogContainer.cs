@@ -451,7 +451,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
 
         int pendingSameType = 0;
-        int distinctOtherPendingTypes = 0;
+        int emptySlotsReservedByOthers = 0;
         for (int i = 0; i < flyingItems.Count; i++)
         {
             // LogContainer의 flyingItems는 전부 "이 컨테이너로 들어오는 중"인 항목뿐이다
@@ -464,6 +464,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 continue;
             }
 
+            // 다른 조합은 첫 등장에서 한 번만 처리한다.
             bool alreadyCounted = false;
             for (int j = 0; j < i; j++)
             {
@@ -475,13 +476,46 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                     break;
                 }
             }
-            if (!alreadyCounted) distinctOtherPendingTypes++;
+            if (alreadyCounted) continue;
+
+            // 이 다른 조합이 실제로 몇 칸의 빈 슬롯을 필요로 하는지 계산한다. 대기 물량 중 "이미
+            // 확보된(같은 조합) 슬롯 여유"로 흡수되고 남은 초과분만 빈 슬롯으로 넘어가며, 그 초과분을
+            // 슬롯당 최대 용량으로 나눠 올림한 값이 필요한 빈 슬롯 수다. (조합당 무조건 1칸으로만 세면,
+            // 한 조합이 대량이라 빈 슬롯을 여러 칸 점유하는 경우를 놓쳐, 내가 초과 발사되고 나중에
+            // 착지하는 쪽이 갈 곳을 잃는 증발 버그가 생긴다.)
+            int otherPending = 0;
+            for (int k = i; k < flyingItems.Count; k++)
+            {
+                if (flyingItems[k].itemType == ItemType.Log &&
+                    flyingItems[k].logState == flyingItems[i].logState &&
+                    flyingItems[k].treeType == flyingItems[i].treeType)
+                {
+                    otherPending++;
+                }
+            }
+
+            int otherExistingSpace = 0;
+            for (int s = 0; s < currentSlotCount; s++)
+            {
+                if (containerSlots[s].itemData is LogItemData otherSlotData &&
+                    otherSlotData.logState == flyingItems[i].logState &&
+                    otherSlotData.treeType == flyingItems[i].treeType)
+                {
+                    int remaining = maxItemsPerSlot - containerSlots[s].totalCount;
+                    if (remaining > 0) otherExistingSpace += remaining;
+                }
+            }
+
+            int overflow = otherPending - otherExistingSpace;
+            if (overflow > 0)
+            {
+                emptySlotsReservedByOthers += (overflow + maxItemsPerSlot - 1) / maxItemsPerSlot;
+            }
         }
 
         // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) * 슬롯당
-        // 최대 용량. "빈 슬롯이 있는지"만 보고 계속 승인하면, 같은 종류가 그 빈 슬롯 하나에 이미 몇
-        // 개나 쌓아뒀는지 전혀 빼지 않아 슬롯 용량을 훨씬 초과해서 발사되는 버그가 생긴다.
-        int emptySlotsAvailableToMe = emptySlotCount - distinctOtherPendingTypes;
+        // 최대 용량. 배정 가능한 빈 슬롯 수는 다른 조합들이 실제로 필요로 하는 칸수를 뺀 값이다.
+        int emptySlotsAvailableToMe = emptySlotCount - emptySlotsReservedByOthers;
         int totalCapacity = matchingExistingSpace;
         if (emptySlotsAvailableToMe > 0)
         {

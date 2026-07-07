@@ -554,7 +554,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
 
         int pendingSameType = 0;
-        int distinctOtherPendingTypes = 0;
+        int emptySlotsReservedByOthers = 0;
         for (int i = 0; i < flyingItems.Count; i++)
         {
             // toCarrier != null이면 운반 NPC(WithdrawToCarrierRoutine)로 향하는 아이템이라 캐릭터의
@@ -569,6 +569,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 continue;
             }
 
+            // 다른 조합은 첫 등장에서 한 번만 처리한다.
             bool alreadyCounted = false;
             for (int j = 0; j < i; j++)
             {
@@ -580,13 +581,45 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     break;
                 }
             }
-            if (!alreadyCounted) distinctOtherPendingTypes++;
+            if (alreadyCounted) continue;
+
+            // 이 다른 조합이 실제로 몇 칸의 캐릭터 빈 슬롯을 필요로 하는지 계산한다. 대기 물량 중
+            // "이미 확보된(같은 조합) 슬롯 여유"로 흡수되고 남은 초과분만 빈 슬롯으로 넘어가며, 그
+            // 초과분을 슬롯당 최대 용량으로 나눠 올림한 값이 필요한 빈 슬롯 수다. (조합당 무조건 1칸으로만
+            // 세면, 한 조합이 대량이라 빈 슬롯을 여러 칸 점유하는 경우를 놓쳐 초과 발사/증발이 생긴다.)
+            int otherPending = 0;
+            for (int k = i; k < flyingItems.Count; k++)
+            {
+                if (flyingItems[k].toCharacter && flyingItems[k].toCarrier == null && flyingItems[k].item.itemType == ItemType.Log &&
+                    flyingItems[k].item.logState == flyingItems[i].item.logState &&
+                    flyingItems[k].item.treeType == flyingItems[i].item.treeType)
+                {
+                    otherPending++;
+                }
+            }
+
+            int otherExistingSpace = 0;
+            for (int s = 0; s < characterInventoryManager.currentSlotCnt; s++)
+            {
+                if (slots[s].itemData is LogItemData otherSlotData &&
+                    otherSlotData.logState == flyingItems[i].item.logState &&
+                    otherSlotData.treeType == flyingItems[i].item.treeType)
+                {
+                    int remaining = maxItems - slots[s].totalCount;
+                    if (remaining > 0) otherExistingSpace += remaining;
+                }
+            }
+
+            int overflow = otherPending - otherExistingSpace;
+            if (overflow > 0)
+            {
+                emptySlotsReservedByOthers += (overflow + maxItems - 1) / maxItems;
+            }
         }
 
         // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) * 슬롯당
-        // 최대 용량. "빈 슬롯이 있는지"만 보고 계속 승인하면, 같은 종류가 그 빈 슬롯 하나에 이미 몇
-        // 개나 쌓아뒀는지 전혀 빼지 않아 슬롯 용량을 훨씬 초과해서 발사되는 버그가 생긴다.
-        int emptySlotsAvailableToMe = emptySlotCount - distinctOtherPendingTypes;
+        // 최대 용량. 배정 가능한 빈 슬롯 수는 다른 조합들이 실제로 필요로 하는 칸수를 뺀 값이다.
+        int emptySlotsAvailableToMe = emptySlotCount - emptySlotsReservedByOthers;
         int totalCapacity = matchingExistingSpace;
         if (emptySlotsAvailableToMe > 0)
         {
@@ -1160,7 +1193,8 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 // 시간(0.8~1.2초)보다 훨씬 짧아 앞서 발사된 아이템들이 아직 반영 안 된 상태로 계속
                 // 승인되면, 실제 용량보다 훨씬 많이 발사되어 나중에 도착한 아이템이 갈 곳을 잃는다.
                 int pendingSameTypeForCarrier = 0;
-                int distinctOtherPendingTypesForCarrier = 0;
+                int emptySlotsReservedByOthers = 0;
+                int carrierMaxPerSlot = _carrierInventory.maxItemCntPerSlot;
                 for (int j = 0; j < flyingItems.Count; j++)
                 {
                     if (!flyingItems[j].toCharacter || flyingItems[j].toCarrier != _carrierInventory ||
@@ -1173,8 +1207,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                         continue;
                     }
 
-                    // 다른 종류가 이 캐리어를 향해 이미 여러 개 대기 중이어도 빈 슬롯은 하나만
-                    // 필요하므로, 처음 등장한 조합일 때만 새로 카운트한다(중복 방지).
+                    // 다른 조합은 첫 등장에서 한 번만 처리한다.
                     bool alreadyCounted = false;
                     for (int k = 0; k < j; k++)
                     {
@@ -1187,19 +1220,42 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                             break;
                         }
                     }
-                    if (!alreadyCounted) distinctOtherPendingTypesForCarrier++;
+                    if (alreadyCounted) continue;
+
+                    // 이 다른 조합이 실제로 몇 칸의 캐리어 빈 슬롯을 필요로 하는지 계산한다. 대기 물량 중
+                    // "이미 확보된(같은 조합) 슬롯 여유"로 흡수되고 남은 초과분만 빈 슬롯으로 넘어가며, 그
+                    // 초과분을 슬롯당 최대 용량으로 나눠 올림한 값이 필요한 빈 슬롯 수다. (조합당 무조건 1칸으로만
+                    // 세면, 캐리어가 다중 슬롯일 때 한 조합이 빈 슬롯을 여러 칸 점유하는 경우를 놓쳐,
+                    // 내가 초과 발사되고 나중에 착지하는 쪽이 갈 곳을 잃는 증발 버그가 생긴다.)
+                    int otherPending = 0;
+                    for (int k = j; k < flyingItems.Count; k++)
+                    {
+                        if (flyingItems[k].toCharacter && flyingItems[k].toCarrier == _carrierInventory &&
+                            flyingItems[k].item.itemType == ItemType.Log &&
+                            flyingItems[k].item.logState == flyingItems[j].item.logState &&
+                            flyingItems[k].item.treeType == flyingItems[j].item.treeType)
+                        {
+                            otherPending++;
+                        }
+                    }
+
+                    int otherExistingSpace = _carrierInventory.GetMatchingSlotSpaceFor(flyingItems[j].item.logState, flyingItems[j].item.treeType);
+
+                    int overflow = otherPending - otherExistingSpace;
+                    if (overflow > 0)
+                    {
+                        emptySlotsReservedByOthers += (overflow + carrierMaxPerSlot - 1) / carrierMaxPerSlot;
+                    }
                 }
 
                 // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) *
-                // 슬롯당 최대 용량. 예전엔 "빈 슬롯이 있는지"만 봐서, 같은 종류가 그 빈 슬롯 하나에
-                // 이미 몇 개나 쌓아뒀는지를 전혀 빼지 않고 계속 승인해버려 슬롯 용량(예: 3개)을 훨씬
-                // 초과해서 발사되는 버그가 있었다(예: 슬롯 하나 x 3개 용량인데 6개가 빠져나감).
+                // 슬롯당 최대 용량. 배정 가능한 빈 슬롯 수는 다른 조합들이 실제로 필요로 하는 칸수를 뺀 값이다.
                 int matchingExistingSpace = _carrierInventory.GetMatchingSlotSpaceFor(sourceData);
-                int emptySlotsAvailableToMe = _carrierInventory.GetEmptySlotCount() - distinctOtherPendingTypesForCarrier;
+                int emptySlotsAvailableToMe = _carrierInventory.GetEmptySlotCount() - emptySlotsReservedByOthers;
                 int totalCapacityForCarrier = matchingExistingSpace;
                 if (emptySlotsAvailableToMe > 0)
                 {
-                    totalCapacityForCarrier += _carrierInventory.maxItemCntPerSlot * emptySlotsAvailableToMe;
+                    totalCapacityForCarrier += carrierMaxPerSlot * emptySlotsAvailableToMe;
                 }
 
                 if (pendingSameTypeForCarrier >= totalCapacityForCarrier) break;
@@ -1288,7 +1344,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
 
         int pendingSameType = 0;
-        int distinctOtherPendingTypes = 0;
+        int emptySlotsReservedByOthers = 0;
         for (int i = 0; i < flyingItems.Count; i++)
         {
             // !toCharacter인 항목은 캐릭터/NPC가 이 컨테이너로 납품 중인(아직 착지 안 한) 물량이다.
@@ -1300,13 +1356,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 continue;
             }
 
-            // 다른 종류가 이미 본 적 없는 조합이면(=아직 빈 슬롯을 하나 점유하지 않았다면) 새로 하나
-            // 카운트한다. 같은 다른 종류가 여러 개 대기 중이어도 빈 슬롯은 하나만 필요하므로 중복
-            // 카운트하지 않는다.
+            // 다른 조합은 첫 등장에서 한 번만 처리한다.
             bool alreadyCounted = false;
             for (int j = 0; j < i; j++)
             {
-                // flyingItems[j]가 flyingItems[i]와 같은 (다른) 조합이면 이미 카운트된 것이다.
+                // flyingItems[j]가 flyingItems[i]와 같은 (다른) 조합이면 이미 처리된 것이다.
                 if (!flyingItems[j].toCharacter && flyingItems[j].item.itemType == ItemType.Log &&
                     flyingItems[j].item.logState == flyingItems[i].item.logState &&
                     flyingItems[j].item.treeType == flyingItems[i].item.treeType)
@@ -1315,13 +1369,45 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     break;
                 }
             }
-            if (!alreadyCounted) distinctOtherPendingTypes++;
+            if (alreadyCounted) continue;
+
+            // 이 다른 조합이 실제로 몇 칸의 빈 슬롯을 필요로 하는지 계산한다. 대기 물량 중 "이미
+            // 확보된(같은 조합) 슬롯 여유"로 흡수되고 남은 초과분만 빈 슬롯으로 넘어가며, 그 초과분을
+            // 슬롯당 최대 용량으로 나눠 올림한 값이 필요한 빈 슬롯 수다. (조합당 무조건 1칸으로만 세면,
+            // 한 조합이 대량이라 빈 슬롯을 여러 칸 점유하는 경우를 놓쳐 초과 발사/증발이 생긴다.)
+            int otherPending = 0;
+            for (int k = i; k < flyingItems.Count; k++)
+            {
+                if (!flyingItems[k].toCharacter && flyingItems[k].item.itemType == ItemType.Log &&
+                    flyingItems[k].item.logState == flyingItems[i].item.logState &&
+                    flyingItems[k].item.treeType == flyingItems[i].item.treeType)
+                {
+                    otherPending++;
+                }
+            }
+
+            int otherExistingSpace = 0;
+            for (int s = 0; s < currentSlotCount; s++)
+            {
+                if (inventorySlots[s].itemData is LogItemData otherSlotData &&
+                    otherSlotData.logState == flyingItems[i].item.logState &&
+                    otherSlotData.treeType == flyingItems[i].item.treeType)
+                {
+                    int remaining = maxItemsPerSlot - inventorySlots[s].totalCount;
+                    if (remaining > 0) otherExistingSpace += remaining;
+                }
+            }
+
+            int overflow = otherPending - otherExistingSpace;
+            if (overflow > 0)
+            {
+                emptySlotsReservedByOthers += (overflow + maxItemsPerSlot - 1) / maxItemsPerSlot;
+            }
         }
 
         // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) * 슬롯당
-        // 최대 용량. "빈 슬롯이 있는지"만 보고 계속 승인하면, 같은 종류가 그 빈 슬롯 하나에 이미 몇
-        // 개나 쌓아뒀는지 전혀 빼지 않아 슬롯 용량을 훨씬 초과해서 발사되는 버그가 생긴다.
-        int emptySlotsAvailableToMe = emptySlotCount - distinctOtherPendingTypes;
+        // 최대 용량. 배정 가능한 빈 슬롯 수는 다른 조합들이 실제로 필요로 하는 칸수를 뺀 값이다.
+        int emptySlotsAvailableToMe = emptySlotCount - emptySlotsReservedByOthers;
         int totalCapacity = matchingExistingSpace;
         if (emptySlotsAvailableToMe > 0)
         {
