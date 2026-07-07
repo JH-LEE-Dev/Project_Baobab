@@ -1959,6 +1959,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TownObjectManager
   offroadVehiclePrefab: {fileID: 256747857165204771, guid: a9cdc1b8c81a1404ea1a5d3a7fff408a, type: 3}
   portalSpawnPoint: {fileID: 4103959821245234347, guid: 4b288be7fa674804ab828020e0b795ce, type: 3}
+  enableCulling: 0
   cullingDistance: 25
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
   townReturnPoint: {fileID: 3911149870861120381, guid: 570d329ddbf9a9e4a9562d85ba75ab08, type: 3}

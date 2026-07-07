@@ -478,8 +478,17 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             if (!alreadyCounted) distinctOtherPendingTypes++;
         }
 
-        if (pendingSameType < matchingExistingSpace) return true;
-        return emptySlotCount > distinctOtherPendingTypes;
+        // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) * 슬롯당
+        // 최대 용량. "빈 슬롯이 있는지"만 보고 계속 승인하면, 같은 종류가 그 빈 슬롯 하나에 이미 몇
+        // 개나 쌓아뒀는지 전혀 빼지 않아 슬롯 용량을 훨씬 초과해서 발사되는 버그가 생긴다.
+        int emptySlotsAvailableToMe = emptySlotCount - distinctOtherPendingTypes;
+        int totalCapacity = matchingExistingSpace;
+        if (emptySlotsAvailableToMe > 0)
+        {
+            totalCapacity += maxItemsPerSlot * emptySlotsAvailableToMe;
+        }
+
+        return pendingSameType < totalCapacity;
     }
 
     private void AddItemByData(ItemData _sourceData, LogState _state)

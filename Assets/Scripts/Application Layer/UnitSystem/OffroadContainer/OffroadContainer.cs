@@ -583,9 +583,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             if (!alreadyCounted) distinctOtherPendingTypes++;
         }
 
-        // 단순 불리언(다른 종류가 하나라도 대기 중이면 무조건 거절) 대신, 물리적으로 남은 빈 슬롯
-        // 수와 이미 다른 종류가 예약 중인 개수를 정확히 비교한다.
-        bool isSuccess = pendingSameType < matchingExistingSpace || emptySlotCount > distinctOtherPendingTypes;
+        // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) * 슬롯당
+        // 최대 용량. "빈 슬롯이 있는지"만 보고 계속 승인하면, 같은 종류가 그 빈 슬롯 하나에 이미 몇
+        // 개나 쌓아뒀는지 전혀 빼지 않아 슬롯 용량을 훨씬 초과해서 발사되는 버그가 생긴다.
+        int emptySlotsAvailableToMe = emptySlotCount - distinctOtherPendingTypes;
+        int totalCapacity = matchingExistingSpace;
+        if (emptySlotsAvailableToMe > 0)
+        {
+            totalCapacity += maxItems * emptySlotsAvailableToMe;
+        }
+
+        bool isSuccess = pendingSameType < totalCapacity;
 
         if (!isSuccess)
         {
@@ -1182,23 +1190,19 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (!alreadyCounted) distinctOtherPendingTypesForCarrier++;
                 }
 
-                bool canAcquireMore;
-                if (pendingSameTypeForCarrier < _carrierInventory.GetMatchingSlotSpaceFor(sourceData))
+                // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) *
+                // 슬롯당 최대 용량. 예전엔 "빈 슬롯이 있는지"만 봐서, 같은 종류가 그 빈 슬롯 하나에
+                // 이미 몇 개나 쌓아뒀는지를 전혀 빼지 않고 계속 승인해버려 슬롯 용량(예: 3개)을 훨씬
+                // 초과해서 발사되는 버그가 있었다(예: 슬롯 하나 x 3개 용량인데 6개가 빠져나감).
+                int matchingExistingSpace = _carrierInventory.GetMatchingSlotSpaceFor(sourceData);
+                int emptySlotsAvailableToMe = _carrierInventory.GetEmptySlotCount() - distinctOtherPendingTypesForCarrier;
+                int totalCapacityForCarrier = matchingExistingSpace;
+                if (emptySlotsAvailableToMe > 0)
                 {
-                    // 이미 확보된(같은 종류) 슬롯에 여유가 있으면 빈 슬롯 쟁탈전과 무관하게 안전하다.
-                    canAcquireMore = true;
-                }
-                else
-                {
-                    // 기존 슬롯 여유로는 부족해서 빈 슬롯이 필요하다. "물리적으로 남은 빈 슬롯 수"가
-                    // "이미 다른 종류가 빈 슬롯을 예약 중인 개수"보다 많을 때만 나에게도 자리가 있다고
-                    // 본다(단순 불리언 판정은 빈 슬롯이 여러 개 있어도 하나만 다른 종류가 써도 전부
-                    // 거절해버려, 캐리어가 그 세션에 하나도 못 받아 상태가 꼬이는 일을 불필요하게
-                    // 유발할 수 있다).
-                    canAcquireMore = _carrierInventory.GetEmptySlotCount() > distinctOtherPendingTypesForCarrier;
+                    totalCapacityForCarrier += _carrierInventory.maxItemCntPerSlot * emptySlotsAvailableToMe;
                 }
 
-                if (!canAcquireMore) break;
+                if (pendingSameTypeForCarrier >= totalCapacityForCarrier) break;
 
                 LogState takenState = slot.TakeOneItem();
 
@@ -1314,8 +1318,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
             if (!alreadyCounted) distinctOtherPendingTypes++;
         }
 
-        if (pendingSameType < matchingExistingSpace) return true;
-        return emptySlotCount > distinctOtherPendingTypes;
+        // 총 여유 용량 = 기존에 확보된(같은 종류) 슬롯 여유 + (나에게 배정 가능한 빈 슬롯 수) * 슬롯당
+        // 최대 용량. "빈 슬롯이 있는지"만 보고 계속 승인하면, 같은 종류가 그 빈 슬롯 하나에 이미 몇
+        // 개나 쌓아뒀는지 전혀 빼지 않아 슬롯 용량을 훨씬 초과해서 발사되는 버그가 생긴다.
+        int emptySlotsAvailableToMe = emptySlotCount - distinctOtherPendingTypes;
+        int totalCapacity = matchingExistingSpace;
+        if (emptySlotsAvailableToMe > 0)
+        {
+            totalCapacity += maxItemsPerSlot * emptySlotsAvailableToMe;
+        }
+
+        return pendingSameType < totalCapacity;
     }
 
     private void AddItemByData(ItemData _sourceData, LogState _state)
