@@ -1702,7 +1702,7 @@ MonoBehaviour:
   bShockWaveEnforcement: 0
   bShockWaveMastery: 0
   boomerangCount: 0
-  boomerangDamage: 1
+  boomerangDamage: 3
   boomerangHitRadius: 0.5
   boomerangMajorAxisRatio: 1
   boomerangCooldown: 2.5

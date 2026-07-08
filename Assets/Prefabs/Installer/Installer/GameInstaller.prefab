@@ -1131,7 +1131,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LumberjackStatComponent
   moveSpeed: 3
-  attackDamage: 10
+  attackDamage: 1
   attackInterval: 1
   bCanUseShockWave: 0
   bCanUseBoomerang: 0
