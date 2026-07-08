@@ -1,7 +1,8 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
-public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
+public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutterCH, ILogEvaluatorCH
 {
     public event Action<bool> LogProcessorIsActiveEvent;
     public event Action<bool> ShopInteracteStateChangedEvent;
@@ -21,10 +22,15 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     private IInventory inventory;
     private InputManager inputManager;
     private LogItemPoolingManager logItemPoolingManager;
-    private LogInBelt logInBelt;
-    private LogInBelt logOutBelt;
-    public LogCutter logCutter { get; private set; }
-    public LogEvaluator logEvaluator { get; private set; }
+
+    // LogInBelt(입고/출고) + LogCutter + LogEvaluator 한 세트. 씬에는 최대 3세트까지 배치되고,
+    // activeLineCount만큼만 활성화되어 실제로 라우팅 대상이 된다.
+    private List<LogProcessLine> allLines = new List<LogProcessLine>(3);
+    private int activeLineCount = 0;
+    private int lastLineIdx = -1;
+
+    // "대표 라인"의 커터 - UI(가공 진행률 표시 등)가 단일 대상을 필요로 하는 곳에서만 사용
+    public LogCutter logCutter => allLines.Count > 0 ? allLines[0].Cutter : null;
 
     public LogContainer logContainer { get; private set; }
 
@@ -56,32 +62,27 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logContainer.Initialize(inputManager, logItemPoolingManager);
         logContainerCol = logContainer.GetComponent<Collider2D>();
 
-        logEvaluator = shopObj.GetComponentInChildren<LogEvaluator>();
-        logEvaluator.Initialize();
-
         shopNPC = shopObj.GetComponentInChildren<ShopNPC>();
         shopNPC.Initialize(inputManager);
         shopNPCCol = shopNPC.GetComponent<Collider2D>();
 
-        LogInBelt[] belts = shopObj.GetComponentsInChildren<LogInBelt>();
-        for (int i = 0; i < belts.Length; i++)
+        allLines.Clear();
+        allLines.AddRange(shopObj.GetComponentsInChildren<LogProcessLine>(true));
+        allLines.Sort((a, b) => a.LineIndex.CompareTo(b.LineIndex));
+
+        if (activeLineCount <= 0) activeLineCount = 1; // 세이브 로드 전 기본값 (LoadSaveData에서 덮어씀)
+        activeLineCount = Mathf.Clamp(activeLineCount, 1, allLines.Count);
+
+        for (int i = 0; i < allLines.Count; i++)
         {
-            if (belts[i].name == "LogInBeltGrid")
+            bool bActive = i < activeLineCount;
+            allLines[i].gameObject.SetActive(bActive);
+            if (bActive)
             {
-                logInBelt = belts[i];
-            }
-            else if (belts[i].name == "LogOutBeltGrid")
-            {
-                logOutBelt = belts[i];
+                allLines[i].Initialize();
+                BindLineEvents(allLines[i]);
             }
         }
-
-        if (logInBelt != null) logInBelt.Initialize();
-        if (logOutBelt != null) logOutBelt.Initialize();
-
-        logCutter = GetComponentInChildren<LogCutter>();
-        logCutter.Initialize();
-
 
         BindEvents();
     }
@@ -117,26 +118,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logContainer.LogOutEvent -= LogOutFromContainer;
         logContainer.LogOutEvent += LogOutFromContainer;
 
-        logInBelt.LogOutEvent -= LogToCutter;
-        logInBelt.LogOutEvent += LogToCutter;
-
-        logCutter.CuttingDoneEvent -= CuttingDone;
-        logCutter.CuttingDoneEvent += CuttingDone;
-
-        logOutBelt.LogOutEvent -= LogToEvaluator;
-        logOutBelt.LogOutEvent += LogToEvaluator;
-
-        logEvaluator.logEvaluatedEvent -= LogEvaluated;
-        logEvaluator.logEvaluatedEvent += LogEvaluated;
-
         shopNPC.EarnMoneyEvent -= EarnMoney;
         shopNPC.EarnMoneyEvent += EarnMoney;
 
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
         logContainer.ContainerSpecChangedEvent += LogContainerSpecChanged;
-
-        logInBelt.BeltStopEvent -= InBeltStop;
-        logInBelt.BeltStopEvent += InBeltStop;
 
         shopNPC.InteractStateEvent -= ShopInteractStateChanged;
         shopNPC.InteractStateEvent += ShopInteractStateChanged;
@@ -153,16 +139,36 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         logContainer.ContainerUpdatedEvent -= ContainerUpdated;
         logContainer.InteractStateEvent -= InteractStateChanged;
         logContainer.LogOutEvent -= LogOutFromContainer;
-        logInBelt.LogOutEvent -= LogToCutter;
-        logCutter.CuttingDoneEvent -= CuttingDone;
-        logOutBelt.LogOutEvent -= LogToEvaluator;
-        logEvaluator.logEvaluatedEvent -= LogEvaluated;
         shopNPC.EarnMoneyEvent -= EarnMoney;
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
-        logInBelt.BeltStopEvent -= InBeltStop;
         shopNPC.InteractStateEvent -= ShopInteractStateChanged;
         logContainer.ItemAddedEvent -= ItemAddedInContainer;
         logContainer.LogContainerIsEmptyEvent -= LogContainerIsEmpty;
+
+        for (int i = 0; i < activeLineCount; i++) ReleaseLineEvents(allLines[i]);
+    }
+
+    private void BindLineEvents(LogProcessLine _line)
+    {
+        _line.LineBusyEvent -= OnLineBusy;
+        _line.LineBusyEvent += OnLineBusy;
+
+        _line.LineFreedEvent -= OnLineFreed;
+        _line.LineFreedEvent += OnLineFreed;
+
+        _line.LogReadyForEvaluationEvent -= LogToEvaluator;
+        _line.LogReadyForEvaluationEvent += LogToEvaluator;
+
+        _line.LineMoneyEarnedEvent -= LogEvaluated;
+        _line.LineMoneyEarnedEvent += LogEvaluated;
+    }
+
+    private void ReleaseLineEvents(LogProcessLine _line)
+    {
+        _line.LineBusyEvent -= OnLineBusy;
+        _line.LineFreedEvent -= OnLineFreed;
+        _line.LogReadyForEvaluationEvent -= LogToEvaluator;
+        _line.LineMoneyEarnedEvent -= LogEvaluated;
     }
 
     public void PopulateSaveData(ref LogProcessingSaveData _saveData)
@@ -188,9 +194,14 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
             _saveData.bFirstTimeEarnMoney = shopNPC.GetbFirstTimeEarnMoney();
         }
 
-        if (logInBelt != null) logInBelt.PopulateSaveData(ref _saveData.logInBeltData);
-        if (logOutBelt != null) logOutBelt.PopulateSaveData(ref _saveData.logOutBeltData);
-        if (logCutter != null) _saveData.cutterData = logCutter.GetSaveData();
+        _saveData.activeLineCount = activeLineCount;
+        for (int i = 0; i < activeLineCount; i++)
+        {
+            LogProcessLineSaveData lineData = new LogProcessLineSaveData();
+            lineData.Initialize();
+            allLines[i].PopulateSaveData(ref lineData);
+            _saveData.lineDatas.Add(lineData);
+        }
 
         _saveData.logProcessingStack = logProcessingStack;
     }
@@ -207,20 +218,48 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
             shopNPC.LoadSaveData(_data.shopMoney, _data.bFirstTimeEarnMoney);
         }
 
-        if (logInBelt != null) logInBelt.LoadSaveData(_data.logInBeltData, logItemPoolingManager);
-        if (logOutBelt != null) logOutBelt.LoadSaveData(_data.logOutBeltData, logItemPoolingManager);
-        if (logCutter != null) logCutter.LoadSaveData(_data.cutterData, logItemPoolingManager);
+        int savedLineCount = Mathf.Clamp(_data.activeLineCount > 0 ? _data.activeLineCount : 1, 1, allLines.Count);
+
+        for (int i = 0; i < allLines.Count; i++)
+        {
+            bool bWasActive = i < activeLineCount;
+            bool bShouldBeActive = i < savedLineCount;
+
+            if (bShouldBeActive && !bWasActive)
+            {
+                allLines[i].gameObject.SetActive(true);
+                allLines[i].Initialize();
+                BindLineEvents(allLines[i]);
+            }
+            else if (!bShouldBeActive && bWasActive)
+            {
+                ReleaseLineEvents(allLines[i]);
+                allLines[i].gameObject.SetActive(false);
+            }
+
+            if (bShouldBeActive && i < _data.lineDatas.Count)
+            {
+                allLines[i].LoadSaveData(_data.lineDatas[i], logItemPoolingManager);
+            }
+        }
+        activeLineCount = savedLineCount;
 
         logProcessingStack = _data.logProcessingStack;
 
-        // 로드 후 현재 가공 전(컨테이너 + 첫 번째 벨트 + 커터)인 아이템 총 개수로 preCutItemCnt 동기화
+        // 로드 후 현재 가공 전(컨테이너 + 활성 라인의 입고벨트 + 커터)인 아이템 총 개수로 preCutItemCnt 동기화
         if (logContainer != null)
         {
             preCutItemCnt = ((IInventory)logContainer).currentItemCount;
-            if (_data.logInBeltData.activeItems != null)
-                preCutItemCnt += _data.logInBeltData.activeItems.Count;
-            if (_data.cutterData.bIsCutting)
-                preCutItemCnt += 1;
+            for (int i = 0; i < activeLineCount && i < _data.lineDatas.Count; i++)
+            {
+                if (_data.lineDatas[i].inBeltData.activeItems != null)
+                    preCutItemCnt += _data.lineDatas[i].inBeltData.activeItems.Count;
+                // 입고벨트 끝단 퇴출대기(커터 투입 직전) 아이템도 아직 가공 전이므로 포함
+                if (_data.lineDatas[i].inBeltData.deactivatingItems != null)
+                    preCutItemCnt += _data.lineDatas[i].inBeltData.deactivatingItems.Count;
+                if (_data.lineDatas[i].cutterData.bIsCutting)
+                    preCutItemCnt += 1;
+            }
 
             UpdateProcessorActiveState();
         }
@@ -242,25 +281,44 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
 
     private void LogOutFromContainer(LogItemData _itemData)
     {
-        logInBelt.LogIn(logItemPoolingManager.GetLogItem(_itemData));
+        LogProcessLine line = GetAvailableLine();
+        if (line == null) return; // bStop이 이미 막아주므로 정상 경로에서는 도달하지 않음
+        line.LogIn(logItemPoolingManager.GetLogItem(_itemData));
     }
 
-    private void LogToCutter(LogItem _item, ILogItemData _itemData)
+    private LogProcessLine GetAvailableLine()
     {
-        logCutter.StartCutting(_item, _itemData);
+        // 라운드로빈으로 다음 라인부터 검사해 첫 유휴 라인을 반환 (부하 분산)
+        for (int i = 1; i <= activeLineCount; i++)
+        {
+            int idx = (lastLineIdx + i) % activeLineCount;
+            if (!allLines[idx].IsBusy)
+            {
+                lastLineIdx = idx;
+                return allLines[idx];
+            }
+        }
+        return null;
     }
 
-    private void CuttingDone()
+    private void OnLineBusy(LogProcessLine _line)
+    {
+        for (int i = 0; i < activeLineCount; i++)
+        {
+            if (!allLines[i].IsBusy) return; // 하나라도 여유 있으면 컨테이너는 계속 공급
+        }
+        logContainer.SetbStop(true);
+    }
+
+    private void OnLineFreed(LogProcessLine _line)
     {
         logContainer.SetbStop(false);
-        logInBelt.StartBelt();
-        logOutBelt.LogIn(logCutter.GetCuttingLogItem());
 
         --preCutItemCnt;
         UpdateProcessorActiveState();
     }
 
-    private void LogToEvaluator(LogItem _item, ILogItemData _itemData)
+    private void LogToEvaluator(LogProcessLine _line, LogItem _item, ILogItemData _itemData)
     {
         ++logProcessingStack;
         if (logProcessingStack >= 10)
@@ -269,7 +327,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         UpdateProcessorSpeed();
 
         logItemPoolingManager.ReturnLogItem(_item);
-        logEvaluator.EvaluateLog(_itemData);
+        _line.Evaluator.EvaluateLog(_itemData);
     }
 
     private void LogEvaluated(int _money)
@@ -287,20 +345,17 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
         LogContainerSpecChangedEvent.Invoke();
     }
 
+    // 영구 스킬 효과는 아직 비활성인 라인까지 포함해 모든 라인에 적용한다.
+    // (증설되어 나중에 활성화될 때 이미 반영돼 있어야 base 스탯으로 돌아가지 않음.
+    //  Initialize()는 이 수치들을 리셋하지 않으므로 미리 적용해 둬도 안전하다.)
     public void IncreaseConveyorSpeed(float _percentage)
     {
-        if (logInBelt != null) logInBelt.IncreaseSpeed(_percentage);
-        if (logOutBelt != null) logOutBelt.IncreaseSpeed(_percentage);
+        for (int i = 0; i < allLines.Count; i++) allLines[i].IncreaseConveyorSpeed(_percentage);
     }
 
     public void SetMapType(MapType _mapType)
     {
-        logCutter.SetMapType(_mapType);
-    }
-
-    private void InBeltStop()
-    {
-        logContainer.SetbStop(true);
+        for (int i = 0; i < allLines.Count; i++) allLines[i].SetMapType(_mapType);
     }
 
     private void ShopInteractStateChanged(bool _boolean)
@@ -331,8 +386,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
             Vector3 targetPos = new Vector3(-99f, -99f, 0f);
             Vector3 offset = targetPos - shopObj.transform.position;
 
-            if (logInBelt != null) logInBelt.ShiftItems(offset);
-            if (logOutBelt != null) logOutBelt.ShiftItems(offset);
+            for (int i = 0; i < activeLineCount; i++) allLines[i].ShiftItems(offset);
 
             shopObj.transform.position = targetPos;
         }
@@ -345,8 +399,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
             Vector3 targetPos = shopSpawnPoint.transform.position;
             Vector3 offset = targetPos - shopObj.transform.position;
 
-            if (logInBelt != null) logInBelt.ShiftItems(offset);
-            if (logOutBelt != null) logOutBelt.ShiftItems(offset);
+            for (int i = 0; i < activeLineCount; i++) allLines[i].ShiftItems(offset);
 
             shopObj.transform.position = targetPos;
         }
@@ -427,9 +480,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
             logProcessorSpeedMul = Mathf.Max(1f, amountMultiplier * logProcessingStack);
         }
 
-        if (logInBelt != null) logInBelt.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
-        if (logOutBelt != null) logOutBelt.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
-        if (logCutter != null) logCutter.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
+        for (int i = 0; i < activeLineCount; i++) allLines[i].SetGlobalSpeedMultiplier(logProcessorSpeedMul);
         if (logContainer != null) logContainer.SetGlobalSpeedMultiplier(logProcessorSpeedMul);
     }
 
@@ -437,5 +488,58 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH
     {
         logProcessingStack = 0;
         UpdateProcessorSpeed();
+    }
+
+    // 세트(입고벨트+출고벨트+커터+평가기) 증설 - 스킬/재화 트리 등에서 호출
+    public void ExpandProcessLineCnt(float _amount)
+    {
+        int previousCount = activeLineCount;
+        int newCount = Mathf.Clamp(activeLineCount + (int)_amount, 1, allLines.Count);
+
+        for (int i = activeLineCount; i < newCount; i++)
+        {
+            allLines[i].gameObject.SetActive(true);
+            allLines[i].Initialize();
+            BindLineEvents(allLines[i]);
+        }
+
+        for (int i = newCount; i < activeLineCount; i++)
+        {
+            ReleaseLineEvents(allLines[i]);
+            allLines[i].gameObject.SetActive(false);
+        }
+
+        activeLineCount = newCount;
+
+        // 라인 수가 바뀌었으니 현재 전역 속도 배율을 새로 활성화된 라인에도 반영
+        UpdateProcessorSpeed();
+
+        // 라인이 늘었다면 유휴 라인이 새로 생긴 것이므로, 컨테이너 공급 정지를 풀어 즉시 가동시킨다.
+        if (newCount > previousCount && logContainer != null)
+        {
+            logContainer.SetbStop(false);
+        }
+    }
+
+    // ICutterCH - 스킬 효과를 (비활성 포함) 모든 라인의 커터에 브로드캐스트
+    public void IncreaseCutSpeed(float _amount)
+    {
+        for (int i = 0; i < allLines.Count; i++) allLines[i].Cutter.IncreaseCutSpeed(_amount);
+    }
+
+    public void SetPowerSupply(bool _bPowerSupply)
+    {
+        for (int i = 0; i < allLines.Count; i++) allLines[i].Cutter.SetPowerSupply(_bPowerSupply);
+    }
+
+    // ILogEvaluatorCH - 스킬 효과를 (비활성 포함) 모든 라인의 평가기에 브로드캐스트
+    public void IncreaseLogValueMultiplier(float _amount)
+    {
+        for (int i = 0; i < allLines.Count; i++) allLines[i].Evaluator.IncreaseLogValueMultiplier(_amount);
+    }
+
+    public void IncreaseTopgradeAssessmentChance(float _amount)
+    {
+        for (int i = 0; i < allLines.Count; i++) allLines[i].Evaluator.IncreaseTopgradeAssessmentChance(_amount);
     }
 }

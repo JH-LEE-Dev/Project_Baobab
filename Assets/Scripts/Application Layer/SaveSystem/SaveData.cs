@@ -50,15 +50,29 @@ public struct BeltItemSaveData
 }
 
 [Serializable]
+public struct DeactivatingItemSaveData
+{
+    public ItemSaveData itemData;
+    public Vector3 position;
+    public float remainingTime;
+}
+
+[Serializable]
 public struct BeltSaveData
 {
     public List<BeltItemSaveData> activeItems;
+    // 벨트 끝단 퇴출 연출 대기 중인 아이템(체크포인트 통과 직후, 다음 단계로 넘어가기 직전).
+    // 저장하지 않으면 저장 순간 이 구간에 걸린 아이템이 유실된다.
+    public List<DeactivatingItemSaveData> deactivatingItems;
     public bool isMoving;
 
     public void Initialize()
     {
         if (activeItems == null) activeItems = new List<BeltItemSaveData>(10);
         else activeItems.Clear();
+
+        if (deactivatingItems == null) deactivatingItems = new List<DeactivatingItemSaveData>(10);
+        else deactivatingItems.Clear();
     }
 }
 
@@ -69,7 +83,19 @@ public struct CutterSaveData
     public ItemSaveData cuttingItemData;
 }
 
+[Serializable]
+public struct LogProcessLineSaveData
+{
+    public BeltSaveData inBeltData;
+    public BeltSaveData outBeltData;
+    public CutterSaveData cutterData;
 
+    public void Initialize()
+    {
+        inBeltData.Initialize();
+        outBeltData.Initialize();
+    }
+}
 
 [Serializable]
 public struct InventorySlotSaveData
@@ -107,18 +133,17 @@ public struct LogProcessingSaveData
     public float lastOutputTimeElapsed;
     public float lastInterval;
 
-    // 벨트, 커터, 평가기 상태
-    public BeltSaveData logInBeltData;
-    public BeltSaveData logOutBeltData;
-    public CutterSaveData cutterData;
+    // 라인(벨트+커터+평가기) 상태 - 세트별로 1개씩
+    public List<LogProcessLineSaveData> lineDatas;
+    public int activeLineCount;
 
     public int logProcessingStack;
 
     public void Initialize()
     {
         containerInventoryData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
-        logInBeltData.Initialize();
-        logOutBeltData.Initialize();
+        if (lineDatas == null) lineDatas = new List<LogProcessLineSaveData>(3);
+        else lineDatas.Clear();
     }
 }
 

@@ -306,6 +306,32 @@ public class LogInBelt : MonoBehaviour
 
             _saveData.activeItems.Add(itemSaveData);
         }
+
+        // 퇴출 연출 대기 중인 아이템도 저장 (이 구간에 걸린 아이템 유실 방지)
+        if (_saveData.deactivatingItems == null)
+            _saveData.deactivatingItems = new List<DeactivatingItemSaveData>(deactivatingItems.Count);
+        else
+            _saveData.deactivatingItems.Clear();
+
+        for (int i = 0; i < deactivatingItems.Count; i++)
+        {
+            DeactivatingItem dItem = deactivatingItems[i];
+            if (dItem.item == null) continue;
+
+            DeactivatingItemSaveData dSaveData = new DeactivatingItemSaveData();
+            dSaveData.position = dItem.item.transform.position;
+            dSaveData.remainingTime = dItem.remainingTime;
+            dSaveData.itemData = new ItemSaveData
+            {
+                itemType = dItem.item.itemType,
+                treeType = dItem.item.treeType,
+                logState = dItem.item.logState,
+                durability = dItem.item.durability,
+                color = dItem.item.color
+            };
+
+            _saveData.deactivatingItems.Add(dSaveData);
+        }
     }
 
     public void LoadSaveData(BeltSaveData _data, LogItemPoolingManager _poolingManager)
@@ -332,6 +358,30 @@ public class LogInBelt : MonoBehaviour
                     newItem.transform.position = itemData.position;
                     newItem.durability = itemData.itemData.durability;
                     activeItems.Add(new BeltItem(newItem, itemData.targetIndex));
+                }
+            }
+        }
+
+        // 퇴출 연출 대기 아이템 복원 - 남은 시간이 지나면 저장 당시와 동일하게 LogOutEvent를 발생시켜
+        // 다음 단계(커터 투입 / 평가)로 이어진다.
+        if (_data.deactivatingItems != null)
+        {
+            foreach (var dItemData in _data.deactivatingItems)
+            {
+                LogItemData data = new LogItemData
+                {
+                    itemType = dItemData.itemData.itemType,
+                    treeType = dItemData.itemData.treeType,
+                    logState = dItemData.itemData.logState,
+                    color = dItemData.itemData.color
+                };
+
+                LogItem newItem = _poolingManager.GetLogItem(data);
+                if (newItem != null)
+                {
+                    newItem.transform.position = dItemData.position;
+                    newItem.durability = dItemData.itemData.durability;
+                    deactivatingItems.Add(new DeactivatingItem(newItem, dItemData.remainingTime));
                 }
             }
         }

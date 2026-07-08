@@ -261,6 +261,7 @@ public enum SkillCommandType
     DroneChainAttack,
     DroneChainAttackRange,
     LumberjackNPCBoomerang,
+    ProcessLineExpand,
 }
 
 public enum AbilityLevelUpRejectReason
