@@ -9,8 +9,15 @@ using UnityEngine.Pool;
 public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
 {
     [SerializeField] private Boomerang boomerangPrefab;
-    [SerializeField] private int defaultCapacity = 2;
-    [SerializeField] private int maxSize = 6;
+    // 캐릭터 혼자 쓸 때는 2~6개면 충분했지만, 이제 럼버잭 NPC들이 별도 인스턴스로 이 풀을 같이
+    // 쓸 수 있다(InDungeonUnitSpawner.sharedBoomerangCreator). NPC가 몇 명이든, "부메랑" 스킬이
+    // 최대 몇 개까지 오르든 여유 있게 감당하도록 기본값을 넉넉히 잡았다 - 정확한 상한을 몰라도
+    // 부족하진 않게, 다만 아이들 상태로 과도하게 남지도 않게 하려는 절충값이다.
+    // 주의: 이미 저장된 프리팹/씬 인스턴스는 여기 기본값이 아니라 직렬화된 값을 그대로 쓰므로,
+    // 기존 캐릭터용 BoomerangCreator나 새로 만드는 NPC 전용 인스턴스는 인스펙터에서 직접
+    // Default Capacity / Max Size를 맞춰줘야 한다.
+    [SerializeField] private int defaultCapacity = 5;
+    [SerializeField] private int maxSize = 20;
 
     // 데미지/범위/공격속도/치명타는 전부 스킬로 갱신되는 StatComponent 값을 그대로 참조한다
     // (Shockwave가 ICharacterStatForNPC를 통해 stat.shockWaveDamage 등을 참조하는 것과 동일한 방식).

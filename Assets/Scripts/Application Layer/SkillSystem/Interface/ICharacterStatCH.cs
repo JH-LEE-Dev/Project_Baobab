@@ -48,4 +48,10 @@ public interface ICharacterStatCH
     public void IncreaseBoomerangCooldownReduction(float _amount);
     public void IncreaseBoomerangAttackSpeed(float _amount);
     public void ActivateBoomerangCritical(bool _boolean);
+    public void IncreaseDroneCount(int _amount);
+    public void IncreaseDroneDamage(float _amount);
+    public void IncreaseDroneRange(float _amount);
+    public void IncreaseDroneAttackSpeed(float _amount);
+    public void IncreaseDroneChainCount(int _amount);
+    public void IncreaseDroneChainRange(float _amount);
 }

@@ -806,6 +806,7 @@ MonoBehaviour:
   droneWingAngleStep: 28
   droneRowDistanceStep: 0.32
   droneArrivalTolerance: 0.15
+  droneCenterHoverHeight: 0.3
   droneSeparationDistance: 0.4
   droneSeparationSpeed: 3
   centerTransform: {fileID: 4602724895061784125}
@@ -902,8 +903,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BoomerangCreator
   boomerangPrefab: {fileID: 4821309571048291004, guid: 3b9aebfd10f712e716b65928db85381b, type: 3}
-  defaultCapacity: 2
-  maxSize: 6
+  defaultCapacity: 5
+  maxSize: 20
 --- !u!114 &8468477139537547128
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1708,11 +1709,13 @@ MonoBehaviour:
   boomerangDamageInterval: 0.3
   bBoomerangCritical: 0
   boomerangCooldownReductionAlpha: 0
-  droneCount: 3
+  droneCount: 0
   droneDamage: 5
   droneAttackRange: 3
   droneActiveDuration: 3
   droneDamageInterval: 1
+  droneChainCount: 0
+  droneChainRange: 1.5
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1

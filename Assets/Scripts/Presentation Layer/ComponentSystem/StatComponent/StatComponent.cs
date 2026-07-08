@@ -108,6 +108,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float droneDurationMultiplier { get; private set; } = 1.0f;
     public float baseDroneDamageInterval { get; private set; }
     public float droneAttackSpeedMultiplier { get; private set; } = 1.0f;
+    public int droneChainCount = 0; // "연쇄공격" - 드론의 공격이 주변 나무로 전이되는 횟수 (0이면 전이 없음)
+    public float droneChainRange = 1.5f; // "연쇄공격 범위" - 전이 대상을 찾는 반경
+    public float baseDroneChainRange { get; private set; }
+    public float droneChainRangeMultiplier { get; private set; } = 1.0f;
 
     [Header("Rifle Settings")]
     public float rifleDamage = 10f;
@@ -194,6 +198,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         baseDroneAttackRange = droneAttackRange;
         baseDroneActiveDuration = droneActiveDuration;
         baseDroneDamageInterval = droneDamageInterval;
+        baseDroneChainRange = droneChainRange;
     }
 
     public void IncreaseAxeDamage(float _amount)
@@ -516,5 +521,16 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     {
         droneAttackSpeedMultiplier += (_amount / 100.0f);
         droneDamageInterval = baseDroneDamageInterval / droneAttackSpeedMultiplier;
+    }
+
+    public void IncreaseDroneChainCount(int _amount)
+    {
+        droneChainCount += _amount;
+    }
+
+    public void IncreaseDroneChainRange(float _amount)
+    {
+        droneChainRangeMultiplier += (_amount / 100.0f);
+        droneChainRange = baseDroneChainRange * droneChainRangeMultiplier;
     }
 }

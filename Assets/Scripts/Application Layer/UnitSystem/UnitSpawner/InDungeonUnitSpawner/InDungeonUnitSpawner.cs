@@ -27,6 +27,18 @@ public class InDungeonUnitSpawner : MonoBehaviour, IInDungeonUnitSpawnerCH
     // SetPlayerStatForShockWave()로 뒤늦게 주입받는다.
     private ICharacterStatForNPC playerStatForShockWave;
 
+    // 부메랑 생성을 담당하는 공용 인스턴스. BoomerangCreator는 데미지/범위/공격속도/치명타를 전부
+    // 자신에게 주입된 StatComponent에서 직접 읽으므로(Character의 BoomerangCreator와 동일한 구조),
+    // 여기에도 캐릭터의 StatComponent를 그대로 주입해두면 럼버잭이 던지는 부메랑도 캐릭터와 완전히
+    // 동일한 스탯을 갖는다.
+    [SerializeField] private BoomerangCreator sharedBoomerangCreator;
+    private IBoomerangCreator boomerangCreator => sharedBoomerangCreator;
+
+    // 부메랑 발사 주기/사거리/개수 판단(boomerangCount, boomerangCooldown, boomerangMajorAxisRatio)에는
+    // BoomerangCreator를 거치지 않고 럼버잭이 직접 읽어야 하는 값도 있어서, ShockWave와 달리 인터페이스로
+    // 좁히지 않고 캐릭터의 StatComponent 실체를 그대로 들고 있는다(BoomerangCreator 자체도 동일한 방식).
+    private StatComponent playerStatForBoomerang;
+
     private IObjectPool<LumberjackNPC> npcPool;
 
     private List<LumberjackNPC> allSpawnedNPCs = new List<LumberjackNPC>(16); // 마스터 리스트 (컬링 그룹용)
@@ -255,6 +267,7 @@ public class InDungeonUnitSpawner : MonoBehaviour, IInDungeonUnitSpawnerCH
             statComponent
         );
         npc.SetShockWaveDependencies(shockWaveCreator, playerStatForShockWave);
+        npc.SetBoomerangDependencies(boomerangCreator, playerStatForBoomerang);
 
         allSpawnedNPCs.Add(npc);
         int index = allSpawnedNPCs.Count - 1;
@@ -421,6 +434,31 @@ public class InDungeonUnitSpawner : MonoBehaviour, IInDungeonUnitSpawnerCH
     public void SetShockWaveEnable(bool _boolean)
     {
         statComponent.SetShockWaveEnabled(_boolean);
+    }
+
+    public void SetBoomerangEnable(bool _boolean)
+    {
+        statComponent.SetBoomerangEnabled(_boolean);
+    }
+
+    /// <summary>
+    /// 캐릭터가 스폰된 뒤(InDungeonUnitSpawner.Initialize() 시점엔 아직 캐릭터가 없으므로) 호출해서
+    /// 럼버잭 NPC들이 부메랑에 사용할 캐릭터 StatComponent를 넘겨준다. SetPlayerStatForShockWave와
+    /// 동일한 시점/방식으로 호출된다. 이미 스폰된 NPC들에게도 즉시 반영된다.
+    /// </summary>
+    public void SetPlayerStatForBoomerang(StatComponent _playerStat)
+    {
+        playerStatForBoomerang = _playerStat;
+
+        if (sharedBoomerangCreator != null)
+        {
+            sharedBoomerangCreator.Initialize(_playerStat);
+        }
+
+        for (int i = 0; i < allSpawnedNPCs.Count; i++)
+        {
+            allSpawnedNPCs[i]?.SetBoomerangDependencies(boomerangCreator, playerStatForBoomerang);
+        }
     }
 
     public void SetOffroadPorterNPCCount(float _amount)

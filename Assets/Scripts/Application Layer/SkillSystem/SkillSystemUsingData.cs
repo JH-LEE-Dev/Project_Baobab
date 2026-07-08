@@ -254,6 +254,13 @@ public enum SkillCommandType
     BoomerangCooldownReduction,
     BoomerangAttackSpeed,
     BoomerangCritical,
+    Drone,
+    DroneDamage,
+    DroneAttackSpeed,
+    DroneRange,
+    DroneChainAttack,
+    DroneChainAttackRange,
+    LumberjackNPCBoomerang,
 }
 
 public enum AbilityLevelUpRejectReason

@@ -62,6 +62,11 @@ public class Drone : MonoBehaviour
     // 다음 프레임까지 기다리지 않고 즉시 오므로 스윙 애니메이션이 끊기지 않는다.
     private System.Func<Drone, ITreeObj> requestRetarget;
 
+    // 주 타겟에 데미지를 입히는 순간(임팩트 프레임) Character에게 통지하는 콜백(Character가 소환 시
+    // 등록). 연쇄공격 전이 대상을 찾는 것도 Character의 공간 검색 책임이므로, Drone은 "누구를
+    // 때렸는지"만 알려주고 실제 전이 판정/데미지 적용은 Character가 전담한다.
+    private System.Action<Drone, ITreeObj> requestChainAttack;
+
     private Vector2 lastFacingDir = Vector2.down;
     private Vector2 characterAimDir = Vector2.down; // 캐릭터의 조준 방향. Character가 매 프레임 갱신해준다.
     private int dirIndex = 6; // CharacterAnimator 규칙상 6 = Down
@@ -150,6 +155,15 @@ public class Drone : MonoBehaviour
     public void SetRetargetCallback(System.Func<Drone, ITreeObj> _callback)
     {
         requestRetarget = _callback;
+    }
+
+    /// <summary>
+    /// 주 타겟에 데미지를 적용하는 순간마다 호출될 콜백. Character가 소환 시 등록하며, 연쇄공격
+    /// 전이 대상 탐색/데미지 적용을 전담한다.
+    /// </summary>
+    public void SetChainAttackCallback(System.Action<Drone, ITreeObj> _callback)
+    {
+        requestChainAttack = _callback;
     }
 
     /// <summary>
@@ -442,6 +456,7 @@ public class Drone : MonoBehaviour
         if (currentTarget == null || currentTarget.bDead) return;
 
         (currentTarget as IDamageable)?.TakeDamage(damage);
+        requestChainAttack?.Invoke(this, currentTarget);
     }
 
     private void UpdateAnimationFrame(float _deltaTime)

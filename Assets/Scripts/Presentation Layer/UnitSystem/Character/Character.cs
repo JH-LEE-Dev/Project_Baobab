@@ -106,6 +106,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly List<Drone> activeDrones = new List<Drone>(4);
     private readonly List<IStaticCollidable> droneScanResults = new List<IStaticCollidable>(16);
     private readonly List<ITreeObj> droneClaimedTargets = new List<ITreeObj>(4); // 한 번의 Activate/재타겟팅 호출 안에서 드론끼리 서로 다른 나무를 고르도록
+    private readonly List<ITreeObj> droneChainHitTrees = new List<ITreeObj>(8); // 한 번의 연쇄공격 전이 동안 이미 맞은 나무(중복 전이 방지)
     private float droneRetargetTimer = 0f;
     private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
 
@@ -581,6 +582,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             drone.SetArrivalTolerance(droneArrivalTolerance);
             drone.SetHoverHeight(i == 0 ? droneCenterHoverHeight : 0f); // 꼭짓점(캐릭터 바로 뒤) 슬롯만 더 높이 띄운다
             drone.SetRetargetCallback(RequestDroneRetarget);
+            drone.SetChainAttackCallback(OnDroneChainAttack);
             activeDrones.Add(drone);
         }
     }
@@ -817,6 +819,72 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             // 방금 죽어서 오브젝트 풀로 반환된 나무(InDungeonObjectManager.OnTreeDead -> OnReleaseTree)는
             // bDead/bIsSapling이 둘 다 다시 false로 리셋되지만 GameObject는 비활성화된다. CollisionSystem은
             // 이때 Unregister되지 않아 여전히 검색에 걸리므로, 비활성 오브젝트는 여기서 반드시 걸러야 한다.
+            Transform treeTransform = treeObj.GetTransform();
+            bool isActiveInScene = treeTransform != null && treeTransform.gameObject.activeInHierarchy;
+
+            if (canApplyDamage && isActiveInScene)
+            {
+                float isoSqr = GetIsometricDistSq(droneScanResults[i].Position, originPos);
+                if (isoSqr < nearestIsoSqr)
+                {
+                    nearestIsoSqr = isoSqr;
+                    nearest = treeObj;
+                }
+            }
+        }
+
+        return nearest;
+    }
+
+    // Drone이 주 타겟에 데미지를 입히는 순간마다(Drone.SetChainAttackCallback으로 등록) 호출된다.
+    // droneChainCount가 0(스킬 미해금)이면 아무 일도 하지 않는다. 방금 맞은 나무를 기점으로
+    // droneChainRange 반경 안에서 아직 맞지 않은 가장 가까운 나무를 찾아 데미지를 입히고, 그
+    // 나무를 다시 기점 삼아 최대 droneChainCount번까지 반복한다(중간에 대상을 못 찾으면 중단).
+    private void OnDroneChainAttack(Drone _drone, ITreeObj _primaryTarget)
+    {
+        if (statComponent == null || statComponent.droneChainCount <= 0 || _primaryTarget == null) return;
+
+        Transform primaryTransform = _primaryTarget.GetTransform();
+        if (primaryTransform == null) return;
+
+        droneChainHitTrees.Clear();
+        droneChainHitTrees.Add(_primaryTarget);
+
+        Vector3 origin = primaryTransform.position;
+
+        for (int i = 0; i < statComponent.droneChainCount; i++)
+        {
+            ITreeObj next = FindNearestChainTarget(origin);
+            if (next == null) break;
+
+            (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
+            droneChainHitTrees.Add(next);
+            origin = next.GetTransform().position;
+        }
+    }
+
+    // droneChainHitTrees(이번 전이 동안 이미 맞은 나무)를 제외하고, origin 기준 droneChainRange
+    // 반경 안에서 가장 가까운 살아있는 나무를 찾는다. FindNearestTreeForDrone과 동일한 유효성
+    // 판정(bCanApplyDamage, activeInHierarchy)을 사용한다.
+    private ITreeObj FindNearestChainTarget(Vector3 _origin)
+    {
+        if (CollisionSystem.Instance == null) return null;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(_origin, statComponent.droneChainRange, treeLayer.value, droneScanResults);
+
+        ITreeObj nearest = null;
+        float nearestIsoSqr = float.MaxValue;
+        Vector2 originPos = _origin;
+
+        for (int i = 0; i < droneScanResults.Count; i++)
+        {
+            if (droneScanResults[i] is not ITreeObj treeObj || treeObj.bDead || droneChainHitTrees.Contains(treeObj))
+            {
+                continue;
+            }
+
+            bool canApplyDamage = (treeObj as IDamageable)?.bCanApplyDamage ?? true;
+
             Transform treeTransform = treeObj.GetTransform();
             bool isActiveInScene = treeTransform != null && treeTransform.gameObject.activeInHierarchy;
 
