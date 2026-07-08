@@ -1475,6 +1475,12 @@ MonoBehaviour:
   visualComponent: {fileID: 6347319552071559647}
   armComponent: {fileID: 3008963349970507585}
   inventoryComponent: {fileID: 1654896444801992708}
+  treeLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  boomerangTreeSensorRadius: 4
+  boomerangTreeDetectionInterval: 0.5
+  boomerangEdgePadding: 0.5
   itemLayer:
     serializedVersion: 2
     m_Bits: 2048

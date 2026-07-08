@@ -299,6 +299,8 @@ public class InDungeonSystem : MonoBehaviour
         // 럼버잭 NPC들이 셰이크웨이브를 쓸 때 캐릭터의 StatComponent를 그대로 참조하도록 뒤늦게 주입.
         // (InDungeonUnitSpawner.Initialize() 시점엔 캐릭터가 아직 스폰되기 전이라 여기서 넘겨줘야 한다)
         inDungeonUnitSpawner.SetPlayerStatForShockWave(character.statComponent);
+        // 부메랑도 동일한 이유로 캐릭터 스폰 이후 뒤늦게 주입한다.
+        inDungeonUnitSpawner.SetPlayerStatForBoomerang(character.statComponent);
     }
 
     private void GameEnd()

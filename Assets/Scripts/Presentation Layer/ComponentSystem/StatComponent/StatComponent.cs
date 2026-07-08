@@ -94,6 +94,25 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float baseBoomerangDamageInterval { get; private set; }
     public float boomerangAttackSpeedMultiplier { get; private set; } = 1.0f;
 
+    [Header("Axe - Drone")]
+    public int droneCount = 0; // "드론" 스킬 레벨 = 던전 입장 시 캐릭터를 따라다니는 드론 개수 (0이면 미해금 상태로 소환되지 않음)
+    public float droneDamage = 5f;
+    public float droneAttackRange = 3f; // "범위" - 드론이 나무를 탐지/공격하는 반경
+    public float droneActiveDuration = 3f; // "지속시간" - 공격 키를 누르면 활성화되는 시간
+    public float droneDamageInterval = 1f; // "공격 속도"가 반영되는 판정 주기
+    public float baseDroneDamage { get; private set; }
+    public float droneDamageMultiplier { get; private set; } = 1.0f;
+    public float baseDroneAttackRange { get; private set; }
+    public float droneRangeMultiplier { get; private set; } = 1.0f;
+    public float baseDroneActiveDuration { get; private set; }
+    public float droneDurationMultiplier { get; private set; } = 1.0f;
+    public float baseDroneDamageInterval { get; private set; }
+    public float droneAttackSpeedMultiplier { get; private set; } = 1.0f;
+    public int droneChainCount = 0; // "연쇄공격" - 드론의 공격이 주변 나무로 전이되는 횟수 (0이면 전이 없음)
+    public float droneChainRange = 1.5f; // "연쇄공격 범위" - 전이 대상을 찾는 반경
+    public float baseDroneChainRange { get; private set; }
+    public float droneChainRangeMultiplier { get; private set; } = 1.0f;
+
     [Header("Rifle Settings")]
     public float rifleDamage = 10f;
     public float rifleReadyTime = 0;
@@ -175,6 +194,11 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         baseBoomerangMajorAxisRatio = boomerangMajorAxisRatio;
         baseBoomerangCooldown = boomerangCooldown;
         baseBoomerangDamageInterval = boomerangDamageInterval;
+        baseDroneDamage = droneDamage;
+        baseDroneAttackRange = droneAttackRange;
+        baseDroneActiveDuration = droneActiveDuration;
+        baseDroneDamageInterval = droneDamageInterval;
+        baseDroneChainRange = droneChainRange;
     }
 
     public void IncreaseAxeDamage(float _amount)
@@ -468,5 +492,45 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public void ActivateBoomerangCritical(bool _boolean)
     {
         bBoomerangCritical = _boolean;
+    }
+
+    public void IncreaseDroneCount(int _amount)
+    {
+        droneCount += _amount;
+    }
+
+    public void IncreaseDroneDamage(float _amount)
+    {
+        droneDamageMultiplier += (_amount / 100.0f);
+        droneDamage = baseDroneDamage * droneDamageMultiplier;
+    }
+
+    public void IncreaseDroneRange(float _amount)
+    {
+        droneRangeMultiplier += (_amount / 100.0f);
+        droneAttackRange = baseDroneAttackRange * droneRangeMultiplier;
+    }
+
+    public void IncreaseDroneDuration(float _amount)
+    {
+        droneDurationMultiplier += (_amount / 100.0f);
+        droneActiveDuration = baseDroneActiveDuration * droneDurationMultiplier;
+    }
+
+    public void IncreaseDroneAttackSpeed(float _amount)
+    {
+        droneAttackSpeedMultiplier += (_amount / 100.0f);
+        droneDamageInterval = baseDroneDamageInterval / droneAttackSpeedMultiplier;
+    }
+
+    public void IncreaseDroneChainCount(int _amount)
+    {
+        droneChainCount += _amount;
+    }
+
+    public void IncreaseDroneChainRange(float _amount)
+    {
+        droneChainRangeMultiplier += (_amount / 100.0f);
+        droneChainRange = baseDroneChainRange * droneChainRangeMultiplier;
     }
 }

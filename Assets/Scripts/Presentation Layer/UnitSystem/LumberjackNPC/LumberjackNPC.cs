@@ -28,6 +28,31 @@ public class LumberjackNPC : MonoBehaviour
         playerStatForShockWave = _playerStat;
     }
 
+    // 부메랑 발사기와, 발사 주기/사거리/개수 판단에 필요한 캐릭터 스탯. 둘 다 InDungeonUnitSpawner가
+    // 공용으로 들고 있다가 SetBoomerangDependencies()로 주입해준다. BoomerangCreator 자체가 데미지 등을
+    // 자신에게 주입된 StatComponent에서 직접 읽으므로, 이 NPC가 던지는 부메랑도 캐릭터와 완전히 동일한
+    // 스탯(데미지/범위/사정거리/쿨타임/치명타)을 갖는다.
+    private IBoomerangCreator boomerangCreator;
+    private StatComponent playerStatForBoomerang;
+
+    public void SetBoomerangDependencies(IBoomerangCreator _boomerangCreator, StatComponent _playerStat)
+    {
+        boomerangCreator = _boomerangCreator;
+        playerStatForBoomerang = _playerStat;
+    }
+
+    [Header("Boomerang Settings")]
+    [SerializeField] private LayerMask treeLayer;
+    [SerializeField] private float boomerangTreeSensorRadius = 4f;
+    [SerializeField] private float boomerangTreeDetectionInterval = 0.5f;
+    [SerializeField] private float boomerangEdgePadding = 0.5f; // 화면 경계에서 안쪽으로 두는 여유 (Character와 동일)
+
+    private readonly List<IStaticCollidable> boomerangTreeScanResults = new List<IStaticCollidable>(16);
+    private readonly List<ITreeObj> activeBoomerangTargets = new List<ITreeObj>(4); // 동시에 날아가는 부메랑들이 서로 다른 나무를 노리도록
+    private readonly List<Boomerang> activeBoomerangs = new List<Boomerang>(4);
+    private float boomerangCooldownTimer = 0f;
+    private float boomerangTreeScanTimer = 0f;
+
     private PathFindComponent pathFindComponent;
     public OffroadContainer offroadContainer { get; private set; }
 
@@ -56,6 +81,12 @@ public class LumberjackNPC : MonoBehaviour
     private bool isMoving = false;
     private bool isPaused = false;
     private Vector2 currentFacingDir = Vector2.down;
+
+    // 던전 시작 직후 대기(LJState_Idle의 스폰 딜레이) 중에는 부메랑도 쏘지 않아야 하므로, "한 번이라도
+    // 움직이기 시작했는지"를 따로 기억해둔다. LJState_Move.Enter()가 SetVisualMoving(true)를 호출하는
+    // 순간(=나무를 찾아 실제로 걷기 시작하는 순간) true가 되고, 이후엔 도끼질/납품 등으로 잠깐씩
+    // 멈춰도 다시 false로 돌아가지 않는다(캐릭터의 부메랑처럼 계속 켜져 있어야 하므로).
+    private bool hasStartedMoving = false;
 
     private CustomSortable customSortable;
 
@@ -158,6 +189,11 @@ public class LumberjackNPC : MonoBehaviour
         SetVisualMoving(false);
         SetVisualFacing(Vector2.down);
         SetArmDirection(Vector2.down);
+
+        ClearActiveBoomerangs();
+        boomerangCooldownTimer = 0f;
+        boomerangTreeScanTimer = 0f;
+        hasStartedMoving = false;
     }
 
     public void PauseNPC()
@@ -166,6 +202,7 @@ public class LumberjackNPC : MonoBehaviour
         LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) PauseNPC() 호출됨. state={stateMachine?.CurrentState?.GetType().Name}");
         isPaused = true;
         SetVisualMoving(false);
+        PauseBoomerangs();
     }
 
     public void ResumeNPC()
@@ -173,6 +210,7 @@ public class LumberjackNPC : MonoBehaviour
         // TEMP DEBUG
         LJDebugLog.Log($"[LJDebug] t={Time.time:F2} npc={name}({GetEntityId()}) ResumeNPC() 호출됨.");
         isPaused = false;
+        ResumeBoomerangs();
     }
 
     private void AddState(LumberjackState _state)
@@ -279,6 +317,8 @@ public class LumberjackNPC : MonoBehaviour
             {
                 itemDetector.Tick(Time.deltaTime, itemDetectionInterval, pickupRadius, OnItemDetected);
             }
+
+            UpdateTreeBoomerang();
         }
 
         if (visualComponent != null)
@@ -335,6 +375,7 @@ public class LumberjackNPC : MonoBehaviour
 
         ReleaseTargetTree();
         stateMachine?.ReleaseAllState();
+        ClearActiveBoomerangs();
     }
 
     // --- State 머신에서 호출할 유틸리티 메서드들 ---
@@ -409,6 +450,7 @@ public class LumberjackNPC : MonoBehaviour
     public void SetVisualMoving(bool _isMoving)
     {
         isMoving = _isMoving;
+        if (_isMoving) hasStartedMoving = true;
     }
 
     public void SetVisualFacing(Vector2 _direction)
@@ -482,6 +524,148 @@ public class LumberjackNPC : MonoBehaviour
         {
             sw.SetDirection(_direction);
             shockWaveCreator.PlayShockWaveVisual(sw);
+        }
+    }
+
+    // statComponent.bCanUseBoomerang가 켜져 있으면, 캐릭터의 Character.UpdateTreeBoomerang와 완전히 동일한
+    // 방식(주기적 스캔 -> 쿨타임 -> 가장 가까운 나무에 발사, 최대 boomerangCount개 동시 유지)으로
+    // 부메랑을 사용한다. 도끼질과는 무관하게 독립적으로 동작한다(캐릭터도 그렇다).
+    private void UpdateTreeBoomerang()
+    {
+        // 던전이 시작되고 스폰 딜레이 동안 가만히 대기하는 구간(LJState_Idle)에는 부메랑도 쏘지 않고,
+        // 나무를 찾아 실제로 걷기 시작한 뒤(LJState_Move.Enter -> SetVisualMoving(true)) 부터 켜진다.
+        if (!hasStartedMoving || !statComponent.bCanUseBoomerang || boomerangCreator == null || playerStatForBoomerang == null) return;
+
+        // "부메랑" 스킬을 찍어 boomerangCount(동시에 존재 가능한 부메랑 개수)가 1 이상이 되기 전에는
+        // 아예 발사되지 않는다.
+        if (playerStatForBoomerang.boomerangCount <= 0) return;
+
+        boomerangCooldownTimer -= Time.deltaTime;
+
+        boomerangTreeScanTimer += Time.deltaTime;
+        if (boomerangTreeScanTimer < boomerangTreeDetectionInterval) return;
+        boomerangTreeScanTimer = 0f;
+
+        if (boomerangCooldownTimer > 0f) return;
+        if (activeBoomerangTargets.Count >= playerStatForBoomerang.boomerangCount) return;
+
+        ITreeObj nearestTree = FindNearestTreeForBoomerang();
+        if (nearestTree == null) return;
+
+        ThrowBoomerangAt(nearestTree);
+        boomerangCooldownTimer = playerStatForBoomerang.boomerangCooldown;
+    }
+
+    private ITreeObj FindNearestTreeForBoomerang()
+    {
+        if (CollisionSystem.Instance == null) return null;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(transform.position, boomerangTreeSensorRadius, treeLayer.value, boomerangTreeScanResults);
+
+        ITreeObj nearest = null;
+        float nearestIsoSqr = float.MaxValue;
+        Vector2 myPos = transform.position;
+
+        for (int i = 0; i < boomerangTreeScanResults.Count; i++)
+        {
+            // 이미 다른 부메랑이 향하고 있는 나무는 제외해서, 동시에 여러 개가 날아갈 때 서로
+            // 다른 나무를 노리도록 한다(Character.FindNearestTree와 동일한 규칙).
+            if (boomerangTreeScanResults[i] is ITreeObj treeObj && !treeObj.bDead && !activeBoomerangTargets.Contains(treeObj))
+            {
+                float isoSqr = GetIsometricDistSq(boomerangTreeScanResults[i].Position, myPos);
+                if (isoSqr < nearestIsoSqr)
+                {
+                    nearestIsoSqr = isoSqr;
+                    nearest = treeObj;
+                }
+            }
+        }
+
+        return nearest;
+    }
+
+    private static float GetIsometricDistSq(Vector2 _a, Vector2 _b)
+    {
+        float dx = _a.x - _b.x;
+        float dy = (_a.y - _b.y) * 2f;
+        return dx * dx + dy * dy;
+    }
+
+    private void ThrowBoomerangAt(ITreeObj _tree)
+    {
+        Vector3 origin = transform.position;
+        Vector3 dir = GetBoomerangTargetPosition(_tree) - origin;
+        if (dir.sqrMagnitude < 0.0001f) return;
+        dir.Normalize();
+
+        // "부메랑 사정거리" 스킬(boomerangMajorAxisRatio)을 캐릭터와 동일하게 타원 장축 비율로 전달한다.
+        float maxDistance = CameraBoundsUtil.GetMaxDistanceToEdge(dir, boomerangEdgePadding, playerStatForBoomerang.boomerangMajorAxisRatio);
+        if (maxDistance <= 0.1f) return;
+
+        activeBoomerangTargets.Add(_tree);
+
+        Boomerang thrownBoomerang = null;
+        System.Action onFinished = () =>
+        {
+            activeBoomerangTargets.Remove(_tree);
+            activeBoomerangs.Remove(thrownBoomerang);
+        };
+
+        thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished);
+
+        if (thrownBoomerang == null)
+        {
+            // Initialize가 아직 안 됐거나 풀 생성에 실패한 경우: 예약해둔 타겟팅을 되돌린다.
+            activeBoomerangTargets.Remove(_tree);
+            return;
+        }
+
+        activeBoomerangs.Add(thrownBoomerang);
+    }
+
+    // 나무 밑동이 아니라 TreeVisualComponent의 topRoot(나무 윗부분) 방향으로 부메랑이 날아가도록 목표
+    // 지점을 구한다. Character.GetBoomerangTargetPosition과 동일한 규칙이다.
+    private Vector3 GetBoomerangTargetPosition(ITreeObj _tree)
+    {
+        if (_tree is TreeObj treeObj && treeObj.treeVisualComponent != null)
+        {
+            return treeObj.treeVisualComponent.GetTopRootPosition();
+        }
+
+        return _tree.GetTransform().position;
+    }
+
+    // 던전을 나가거나(ResetToCleanState) 풀로 반환될 때(OnDestroy), 날아가고 있던 부메랑을 전부 강제로
+    // 회수하고 추적 목록을 비운다. Character.ClearActiveBoomerangs와 동일하다.
+    private void ClearActiveBoomerangs()
+    {
+        if (activeBoomerangs.Count > 0)
+        {
+            foreach (Boomerang boomerang in activeBoomerangs.ToArray())
+            {
+                boomerang?.ForceStop();
+            }
+        }
+
+        activeBoomerangs.Clear();
+        activeBoomerangTargets.Clear();
+    }
+
+    // NPC가 일시정지되는 동안(WarningUI 등, PauseNPC/ResumeNPC과 같은 시점) 날아가던 부메랑도 캐릭터와
+    // 동일하게 그 자리에서 멈췄다가 다시 이어서 움직이게 한다.
+    private void PauseBoomerangs()
+    {
+        for (int i = 0; i < activeBoomerangs.Count; i++)
+        {
+            activeBoomerangs[i]?.Pause();
+        }
+    }
+
+    private void ResumeBoomerangs()
+    {
+        for (int i = 0; i < activeBoomerangs.Count; i++)
+        {
+            activeBoomerangs[i]?.Resume();
         }
     }
 }

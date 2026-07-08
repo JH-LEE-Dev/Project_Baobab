@@ -738,6 +738,7 @@ GameObject:
   - component: {fileID: 2458229477242988497}
   - component: {fileID: 9036442478881247126}
   - component: {fileID: 528576042098378646}
+  - component: {fileID: 8468477139537547128}
   m_Layer: 8
   m_Name: Character
   m_TagString: Player
@@ -800,6 +801,14 @@ MonoBehaviour:
   treeSensorRadius: 4
   treeDetectionInterval: 0.5
   boomerangEdgePadding: 0.5
+  droneCreator: {fileID: 8468477139537547128}
+  droneFollowRadius: 0.8
+  droneWingAngleStep: 28
+  droneRowDistanceStep: 0.32
+  droneArrivalTolerance: 0.15
+  droneCenterHoverHeight: 0.3
+  droneSeparationDistance: 0.4
+  droneSeparationSpeed: 3
   centerTransform: {fileID: 4602724895061784125}
   bRide: 0
 --- !u!50 &1880944115013296388
@@ -894,8 +903,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BoomerangCreator
   boomerangPrefab: {fileID: 4821309571048291004, guid: 3b9aebfd10f712e716b65928db85381b, type: 3}
-  defaultCapacity: 2
-  maxSize: 6
+  defaultCapacity: 5
+  maxSize: 20
+--- !u!114 &8468477139537547128
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3341736304246452574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 547a77060b4fb776b4d0b07288740162, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DroneCreator
+  dronePrefab: {fileID: 9034721650183742004, guid: 0e79947bcebfd59728411dfcb91811af, type: 3}
+  defaultCapacity: 4
+  maxSize: 8
 --- !u!1 &3418504347255478067
 GameObject:
   m_ObjectHideFlags: 0
@@ -1685,6 +1709,13 @@ MonoBehaviour:
   boomerangDamageInterval: 0.3
   bBoomerangCritical: 0
   boomerangCooldownReductionAlpha: 0
+  droneCount: 0
+  droneDamage: 5
+  droneAttackRange: 3
+  droneActiveDuration: 3
+  droneDamageInterval: 1
+  droneChainCount: 0
+  droneChainRange: 1.5
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1

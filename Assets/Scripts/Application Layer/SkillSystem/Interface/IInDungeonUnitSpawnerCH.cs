@@ -7,4 +7,5 @@ public interface IInDungeonUnitSpawnerCH
     public void IncreaseDamage(float _amount);
     public void IncreaseSpeed(float _amount);
     public void SetShockWaveEnable(bool _boolean);
+    public void SetBoomerangEnable(bool _boolean);
 }

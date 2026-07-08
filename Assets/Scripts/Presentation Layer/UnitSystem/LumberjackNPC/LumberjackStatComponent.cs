@@ -17,6 +17,9 @@ public class LumberjackStatComponent : MonoBehaviour
     [Header("Skill")]
     // true면 캐릭터의 StatComponent에 정의된 셰이크웨이브 스탯을 그대로 사용해 셰이크웨이브를 쓸 수 있다.
     public bool bCanUseShockWave = false;
+    // true면 캐릭터의 StatComponent에 정의된 부메랑 스탯(데미지/범위/사정거리/쿨타임/치명타)을 그대로 사용해
+    // 캐릭터와 동일한 방식으로 부메랑을 쓸 수 있다.
+    public bool bCanUseBoomerang = false;
 
     // 원래의 기본 공격 주기를 기억해두기 위한 변수
     private float baseAttackInterval;
@@ -73,6 +76,11 @@ public class LumberjackStatComponent : MonoBehaviour
     public void SetShockWaveEnabled(bool _boolean)
     {
         bCanUseShockWave = _boolean;
+    }
+
+    public void SetBoomerangEnabled(bool _boolean)
+    {
+        bCanUseBoomerang = _boolean;
     }
 
 }
