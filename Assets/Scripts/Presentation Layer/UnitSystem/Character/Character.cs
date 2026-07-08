@@ -90,6 +90,25 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float boomerangCooldownTimer = 0f;
     private bool bBoomerangSystemPaused = false; // WarningUI가 떠 있거나 마을로 돌아가는 동안 새로 발사되지 않도록 막는다
 
+    [Header("Drone Settings")]
+    [SerializeField] private DroneCreator droneCreator;
+    [SerializeField] private float droneFollowRadius = 0.8f; // 타원 궤도의 장축 반지름(드론이 배치되는 타원의 크기)
+    [SerializeField] private float droneWingAngleStep = 30f; // 양옆 드론이 중심(0번) 드론으로부터 벌어지는 각도(도). 캐릭터가 아래를 볼 때 0번=0°, 1번=-30°, 2번=+30°
+    [SerializeField] private float droneRowDistanceStep = 0.32f; // 첫 3대(row 0~1)는 같은 타원, 4대째(row 2)부터 타원 반지름이 이 값씩 늘어난다
+    [SerializeField] private float droneArrivalTolerance = 0.15f; // 슬롯과 이 거리 이내면 도착한 것으로 본다
+    [SerializeField] private float droneCenterHoverHeight = 0.3f; // 대형 꼭짓점(0번, 캐릭터 바로 뒤) 드론만 이만큼 더 높이 띄운다
+    [SerializeField] private float droneSeparationDistance = 0.4f; // 드론끼리 이 거리보다 가까워지면 서로 밀어낸다(안전망)
+    [SerializeField] private float droneSeparationSpeed = 3f; // 밀어내는 속도
+    private const float DroneFormationMinorAxisRatio = 0.5f; // 타원 궤도의 단축/장축 비율(아이소메트릭 2:1 압축). 1.0이면 원, 0.5면 위아래가 절반으로 눌린 타원
+
+    private Vector2 droneBehindDir = Vector2.down; // 조준 방향의 반대("뒤"). 조준 지점을 못 구하면 마지막 방향을 유지한다.
+
+    private readonly List<Drone> activeDrones = new List<Drone>(4);
+    private readonly List<IStaticCollidable> droneScanResults = new List<IStaticCollidable>(16);
+    private readonly List<ITreeObj> droneClaimedTargets = new List<ITreeObj>(4); // 한 번의 Activate/재타겟팅 호출 안에서 드론끼리 서로 다른 나무를 고르도록
+    private float droneRetargetTimer = 0f;
+    private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
+
     private CharacterVisualComponent characterVisualComponent;
 
     public Transform centerTransform;
@@ -128,6 +147,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         customSortable = GetComponent<CustomSortable>();
 
         boomerangCreator?.Initialize(statComponent);
+        droneCreator?.Initialize(statComponent);
 
         if (customSortable != null)
         {
@@ -197,6 +217,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         boomerangCooldownTimer = 0f;
         bBoomerangSystemPaused = false; // 다음 던전 입장 때는 다시 발사 가능해야 하므로 여기서 해제
 
+        ClearActiveDrones();
+
         if (_bInDungeon == false)
         {
             armComponent.ResetWeaponStatus();
@@ -224,6 +246,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         SetFacingDirection(Vector2.down);
 
         statComponent.Reset();
+
+        if (bInDungeon)
+        {
+            SpawnDrones();
+        }
     }
 
     public Transform GetTransform() => transform;
@@ -320,6 +347,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         bWhileSwing = _isAttacking; // 도끼질 등 액션 중일 때 true
         attackComponent.SetbAttack(_isAttacking);
         UpdateFacingByAttackPoint();
+
+        // 공격 키(도끼 스윙 시작)를 감지한 시점에 드론을 활성화한다. 스윙이 연속되면 그때마다
+        // 지속시간이 다시 갱신된다.
+        if (_isAttacking)
+        {
+            ActivateDrones();
+        }
     }
 
     private void SetbCanRotate(bool _bCanRotate)
@@ -528,6 +562,278 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         return _tree.GetTransform().position;
     }
 
+    // 던전에 입장할 때(또는 던전 내 리셋 시) statComponent.droneCount만큼 드론을 소환해 캐릭터 뒤에
+    // 타원 대형으로 배치한다. "드론" 스킬을 찍지 않아 droneCount가 0이면 아무것도 소환되지 않는다.
+    private void SpawnDrones()
+    {
+        if (droneCreator == null || statComponent == null) return;
+
+        droneBehindDir = Vector2.down;
+
+        for (int i = 0; i < statComponent.droneCount; i++)
+        {
+            Vector3 spawnOffset = GetDroneWedgeOffset(i, droneBehindDir);
+            Transform droneCenter = centerTransform != null ? centerTransform : transform;
+            Drone drone = droneCreator.SpawnDrone(droneCenter.position + spawnOffset, droneCenter);
+            if (drone == null) continue;
+
+            drone.SetFollowOffset(spawnOffset);
+            drone.SetArrivalTolerance(droneArrivalTolerance);
+            drone.SetHoverHeight(i == 0 ? droneCenterHoverHeight : 0f); // 꼭짓점(캐릭터 바로 뒤) 슬롯만 더 높이 띄운다
+            drone.SetRetargetCallback(RequestDroneRetarget);
+            activeDrones.Add(drone);
+        }
+    }
+
+    // 캐릭터의 조준 방향(attackComponent의 공격 지점 - UpdateFacingByAttackPoint가 스프라이트 방향을
+    // 갱신할 때 쓰는 것과 동일한 기준)을 추적해서 그 반대쪽("뒤")을 기준으로, 각 드론에게 배정된
+    // 쐐기형 대형 슬롯을 매 프레임 다시 계산해 넘겨준다 - 그래서 캐릭터가 조준 방향을 바꾸면(이동
+    // 여부와 무관하게) 대형 전체가 그 방향에 맞춰 자연스럽게 회전한다(Drone 쪽 SmoothDamp 가감속은
+    // 그대로 유지). 조준 지점을 구할 수 없는 순간에는 마지막으로 유효했던 방향을 그대로 유지한다.
+    private void UpdateDroneFormation()
+    {
+        if (activeDrones.Count == 0) return;
+
+        Transform aimTarget = attackComponent != null ? attackComponent.GetAttackPointTransform() : null;
+        if (aimTarget != null)
+        {
+            Vector2 centerPos = centerTransform != null ? (Vector2)centerTransform.position : (Vector2)transform.position;
+            Vector2 rawAimDir = (Vector2)aimTarget.position - centerPos;
+            if (rawAimDir.sqrMagnitude > 0.0001f)
+            {
+                droneBehindDir = -rawAimDir.normalized;
+            }
+        }
+
+        Vector2 aimDir = -droneBehindDir; // 대형은 "뒤" 기준, 드론 개별 Idle 방향은 "조준" 기준이라 부호가 반대다
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            activeDrones[i].SetFollowOffset(GetDroneWedgeOffset(i, droneBehindDir));
+            activeDrones[i].SetCharacterAimDir(aimDir);
+        }
+    }
+
+    // N번째 드론의 타원 대형 슬롯을 계산한다. 캐릭터를 중심으로 축 정렬된 타원(가로=장축,
+    // 세로=단축=장축×MinorAxisRatio)이 고정되어 있고, 각 드론은 이 타원 곡선 위에 놓인다.
+    // behindDir(조준 반대 방향)의 월드 각도에 드론별 고정 오프셋(0°, ±30°...)을 더한 각도로
+    // 타원을 평가해서 좌표를 구한다 - 조준 방향이 바뀌면 드론들이 타원 곡선 위를 따라
+    // 미끄러지듯 이동하므로 항상 타원 위에 머문다.
+    private Vector3 GetDroneWedgeOffset(int _index, Vector2 _behindDir)
+    {
+        int row = (_index + 1) / 2;
+        int side = _index == 0 ? 0 : (_index % 2 == 1 ? -1 : 1);
+
+        float angleOffsetDeg = side * row * droneWingAngleStep;
+        float ellipseRadius = droneFollowRadius + Mathf.Max(0, row - 1) * droneRowDistanceStep;
+
+        // behindDir의 월드 각도 + 드론별 오프셋 = 타원 위에서의 최종 각도
+        float behindAngleDeg = Mathf.Atan2(_behindDir.y, _behindDir.x) * Mathf.Rad2Deg;
+        float finalAngleRad = (behindAngleDeg + angleOffsetDeg) * Mathf.Deg2Rad;
+
+        // 축 정렬 타원 위의 좌표를 직접 평가한다 (타원은 회전하지 않는다)
+        float x = Mathf.Cos(finalAngleRad) * ellipseRadius;
+        float y = Mathf.Sin(finalAngleRad) * ellipseRadius * DroneFormationMinorAxisRatio;
+
+        return new Vector3(x, y, 0f);
+    }
+
+    private static Vector2 RotateVector(Vector2 _v, float _degrees)
+    {
+        float rad = _degrees * Mathf.Deg2Rad;
+        float cos = Mathf.Cos(rad);
+        float sin = Mathf.Sin(rad);
+        return new Vector2(_v.x * cos - _v.y * sin, _v.x * sin + _v.y * cos);
+    }
+
+    // 대형 슬롯이 있어도, 캐릭터가 급하게 방향을 바꾸는 전환 구간 등에서 드론끼리 일시적으로 너무
+    // 가까워질 수 있다. leash 로직과는 별개로, 드론끼리 너무 가까워지면 살짝 밀어내는 보정을
+    // 안전망으로 매 프레임 추가 적용한다.
+    private void UpdateDroneSeparation(float _deltaTime)
+    {
+        if (activeDrones.Count < 2) return;
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            for (int j = i + 1; j < activeDrones.Count; j++)
+            {
+                Transform a = activeDrones[i].transform;
+                Transform b = activeDrones[j].transform;
+
+                Vector2 diff = (Vector2)a.position - (Vector2)b.position;
+                float dist = diff.magnitude;
+                if (dist >= droneSeparationDistance) continue;
+
+                Vector2 pushDir = dist > 0.0001f ? diff / dist : Vector2.right;
+                float overlap = droneSeparationDistance - dist;
+                Vector2 push = pushDir * overlap * 0.5f * droneSeparationSpeed * _deltaTime;
+
+                a.position += (Vector3)push;
+                b.position -= (Vector3)push;
+            }
+        }
+    }
+
+    // 던전을 나가거나 리셋할 때 소환되어 있던 드론을 전부 풀로 되돌린다.
+    private void ClearActiveDrones()
+    {
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            activeDrones[i]?.Despawn();
+            droneCreator?.DespawnDrone(activeDrones[i]);
+        }
+
+        activeDrones.Clear();
+    }
+
+    // 공격 키를 누른 순간(SetbCanAction에서 호출) 현재 소환된 드론을 전부 지속시간만큼 활성화한다.
+    // 이미 살아있는 나무를 물고 있는 드론은 그 나무를 그대로 유지한다(스윙 도중 더 가까운 나무가
+    // 나타나도 타겟을 바꾸지 않는다) - 첫 타겟이 죽어야 비로소 다음 활성화 때 새 나무를 고른다.
+    // 아직 타겟이 없는 드론끼리만 서로 다른 나무를 새로 나눠 갖도록, 이번 호출 안에서 이미
+    // 배정(또는 유지)된 나무는 다른 드론이 고르지 못하게 막는다.
+    private void ActivateDrones()
+    {
+        if (bInDungeon == false || bDead || bWhileReset || activeDrones.Count == 0) return;
+
+        droneClaimedTargets.Clear();
+
+        // Drone.CurrentTarget은 조회 시점에 즉시 유효성(죽음/묘목 리셋 여부)을 다시 확인하므로,
+        // 여기서 별도로 bDead를 다시 검사할 필요가 없다 - 킬 직후 바로 공격 버튼을 다시 눌러도
+        // 이미 무효해진 타겟을 "아직 살아있다"고 넘겨받는 일이 없다.
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            ITreeObj existingTarget = activeDrones[i].CurrentTarget;
+            if (existingTarget != null)
+            {
+                droneClaimedTargets.Add(existingTarget);
+            }
+        }
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            ITreeObj existingTarget = activeDrones[i].CurrentTarget;
+            ITreeObj target = existingTarget ?? FindNearestTreeForDrone(activeDrones[i].transform.position);
+
+            if (target != null && target != existingTarget)
+            {
+                droneClaimedTargets.Add(target);
+            }
+
+            activeDrones[i].Activate(statComponent.droneDamage, statComponent.droneDamageInterval, statComponent.droneActiveDuration, statComponent.droneAttackRange, target);
+        }
+    }
+
+    // Drone이 스윙 도중 타겟을 잃는 그 프레임에 Drone.SetRetargetCallback으로 등록해둔 콜백을 통해
+    // 동기적으로 호출된다. 다른 활성 드론이 이미 물고 있는 나무는 제외하고 가장 가까운 나무를 그
+    // 자리에서 즉시 돌려준다 - 응답이 같은 프레임에 오므로 Drone은 애니메이션을 끊지 않고 방향만
+    // 새 나무 쪽으로 돌려 공격을 이어간다. 대체할 나무가 없으면 null을 반환하고, 그때만 Drone이
+    // Idle로 취소한다.
+    private ITreeObj RequestDroneRetarget(Drone _drone)
+    {
+        droneClaimedTargets.Clear();
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i] == _drone) continue;
+
+            ITreeObj existingTarget = activeDrones[i].CurrentTarget;
+            if (existingTarget != null)
+            {
+                droneClaimedTargets.Add(existingTarget);
+            }
+        }
+
+        return FindNearestTreeForDrone(_drone.transform.position);
+    }
+
+    // 스윙 도중 타겟이 범위를 벗어나거나 죽어서 Drone이 스스로 타겟을 비웠을 때, 공격 키를 다시
+    // 누르지 않아도 짧은 주기로 주변에 다른 나무가 있는지 확인해 있으면 바로 이어서 공격하게 한다
+    // (공격이 물 흐르듯 끊기지 않도록). RequestDroneRetarget(즉시 콜백)이 대체 타겟을 못 찾았을 때를
+    // 대비한 안전망으로, 이후에 주변에 새 나무가 생기면(캐릭터/드론 이동 등) 여기서 뒤늦게라도
+    // 이어 붙여준다. Activate가 아니라 AssignTarget을 쓰므로 지속시간(activeDuration)은 갱신되지
+    // 않는다 - 원래 정해진 지속시간이 끝나면 여전히 다음 공격 키 입력을 기다려야 한다. 원래 타겟이
+    // 아직 범위 안에 살아있는 드론은 CurrentTarget이 비어있지 않으므로 여기서 건드릴 일이 없다.
+    private void UpdateDroneRetargeting()
+    {
+        if (bInDungeon == false || bDead || bWhileReset || activeDrones.Count == 0) return;
+
+        droneRetargetTimer += Time.fixedDeltaTime;
+        if (droneRetargetTimer < DroneRetargetInterval) return;
+        droneRetargetTimer = 0f;
+
+        bool anyDroneNeedsTarget = false;
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i].IsActive && activeDrones[i].CurrentTarget == null)
+            {
+                anyDroneNeedsTarget = true;
+                break;
+            }
+        }
+        if (!anyDroneNeedsTarget) return;
+
+        droneClaimedTargets.Clear();
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            ITreeObj existingTarget = activeDrones[i].CurrentTarget;
+            if (existingTarget != null)
+            {
+                droneClaimedTargets.Add(existingTarget);
+            }
+        }
+
+        for (int i = 0; i < activeDrones.Count; i++)
+        {
+            if (activeDrones[i].IsActive == false || activeDrones[i].CurrentTarget != null) continue;
+
+            ITreeObj target = FindNearestTreeForDrone(activeDrones[i].transform.position);
+            if (target == null) continue;
+
+            droneClaimedTargets.Add(target);
+            activeDrones[i].AssignTarget(target);
+        }
+    }
+
+    private ITreeObj FindNearestTreeForDrone(Vector3 _origin)
+    {
+        if (CollisionSystem.Instance == null) return null;
+
+        CollisionSystem.Instance.GetCollidablesInRadius(_origin, statComponent.droneAttackRange, treeLayer.value, droneScanResults);
+
+        ITreeObj nearest = null;
+        float nearestIsoSqr = float.MaxValue;
+        Vector2 originPos = _origin;
+
+        for (int i = 0; i < droneScanResults.Count; i++)
+        {
+            if (droneScanResults[i] is not ITreeObj treeObj || treeObj.bDead || droneClaimedTargets.Contains(treeObj))
+            {
+                continue;
+            }
+
+            // 죽었다가 그루터기->묘목으로 리셋된 나무(TreeObj.ResetTree/SetIsSapling)는 bDead가 다시
+            // false로 돌아가지만 아직 공격할 수 없으므로, IDamageable.bCanApplyDamage로 한 번 더 거른다.
+            bool canApplyDamage = (treeObj as IDamageable)?.bCanApplyDamage ?? true;
+
+            // 방금 죽어서 오브젝트 풀로 반환된 나무(InDungeonObjectManager.OnTreeDead -> OnReleaseTree)는
+            // bDead/bIsSapling이 둘 다 다시 false로 리셋되지만 GameObject는 비활성화된다. CollisionSystem은
+            // 이때 Unregister되지 않아 여전히 검색에 걸리므로, 비활성 오브젝트는 여기서 반드시 걸러야 한다.
+            Transform treeTransform = treeObj.GetTransform();
+            bool isActiveInScene = treeTransform != null && treeTransform.gameObject.activeInHierarchy;
+
+            if (canApplyDamage && isActiveInScene)
+            {
+                float isoSqr = GetIsometricDistSq(droneScanResults[i].Position, originPos);
+                if (isoSqr < nearestIsoSqr)
+                {
+                    nearestIsoSqr = isoSqr;
+                    nearest = treeObj;
+                }
+            }
+        }
+
+        return nearest;
+    }
+
     #endregion
 
     #region Unity Event Functions
@@ -535,6 +841,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void Update()
     {
         stateMachine?.Update();
+
+        UpdateDroneFormation(); // 캐릭터 이동 방향에 맞춰 드론 대형 슬롯을 매 프레임 회전/갱신
+        UpdateDroneSeparation(Time.deltaTime); // 드론끼리 겹치지 않도록 매 프레임 살짝 밀어냄(안전망)
 
         // 비주얼 업데이트
         characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon, bDead);
@@ -560,6 +869,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         UpdateItemDetection(); // 내부적으로 itemDetectionInterval마다만 실제 스캔을 수행함
         UpdateTreeBoomerang(); // 내부적으로 treeDetectionInterval마다만 실제 스캔을 수행함
+        UpdateDroneRetargeting(); // 내부적으로 DroneRetargetInterval마다만 실제 재타겟팅을 수행함
 
         // 커스텀 충돌 시스템 격자 정보 갱신
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
@@ -632,6 +942,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         treeScanTimer = 0f;
         boomerangCooldownTimer = 0f;
         bBoomerangSystemPaused = false;
+
+        ClearActiveDrones();
+        SpawnDrones(); // 던전 안에서의 리셋(사망 등)이므로 드론은 그대로 다시 소환해 계속 따라다니게 한다
 
         attackComponent.ResetAttackTransform();
         armComponent.ResetRotation();
