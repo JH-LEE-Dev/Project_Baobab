@@ -157,6 +157,12 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             isHiding = false;
             gameObject.SetActive(true);
 
+            if (null != ghostSlider)
+                ghostSlider.gameObject.SetActive(true);
+                
+            if (null != shieldGhostSlider && true == useShield)
+                shieldGhostSlider.gameObject.SetActive(true);
+
             if (null != motionPlayer)
                 motionPlayer.Play("Show", bReset: true);
         }
@@ -300,6 +306,31 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
             return;
 
         isHiding = true;
+
+        // 페이드아웃(은닉) 시작 시 고스트 바가 천천히 줄어드는 연출을 강제로 멈추고 고스트 바 오브젝트를 즉시 숨김
+        if (null != hpGhostTween && true == hpGhostTween.IsActive())
+        {
+            hpGhostTween.Kill();
+            hpGhostTween = null;
+        }
+        
+        if (null != ghostSlider)
+        {
+            ghostSlider.value = currentHpValue;
+            ghostSlider.gameObject.SetActive(false);
+        }
+
+        if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
+        {
+            shieldGhostTween.Kill();
+            shieldGhostTween = null;
+        }
+        
+        if (null != shieldGhostSlider)
+        {
+            shieldGhostSlider.value = currentShieldValue;
+            shieldGhostSlider.gameObject.SetActive(false);
+        }
 
         if (null != motionPlayer)
         {

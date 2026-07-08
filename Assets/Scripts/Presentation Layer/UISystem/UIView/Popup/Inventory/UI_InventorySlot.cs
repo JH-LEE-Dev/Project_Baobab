@@ -56,18 +56,97 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
 
-        currencyFont = GetComponentInChildren<CurrencyFontHUD>();
+        currencyFont = GetComponentInChildren<CurrencyFontHUD>(true);
 
         if (null != currencyFont)
         {
             currencyFont.Initialize();
             currencyFont.SetMode(CurrencyFontAlignmentMode.Center);
+
+            if (CameraFinder.Instance != null)
+            {
+                CameraFinder.Instance.HandleCameraFindingEvent -= ApplySorting;
+                CameraFinder.Instance.HandleCameraFindingEvent += ApplySorting;
+                
+                // 만약 이미 카메라가 할당되어 있다면 즉시 실행
+                if (CameraFinder.Instance.PPUiCamera != null)
+                {
+                    ApplySorting();
+                }
+            }
         }
 
         UpdateItemCount(0);
         
         if (null != omp)
             omp.Initialize();
+    }
+
+    private bool bNeedSorting = false;
+
+    private void ApplySorting()
+    {
+        if (null == currencyFont) 
+            return;
+
+        if (gameObject.activeInHierarchy)
+        {
+            // 객체가 켜져 있다면 에러 없이 코루틴을 돌릴 수 있으므로 즉시 1프레임 대기 루틴 실행
+            StartCoroutine(ApplySortingRoutine());
+        }
+        else
+        {
+            // 객체가 꺼져 있다면 코루틴 실행 시 에러가 나므로, 나중에 켜질 때 실행하도록 플래그만 저장
+            bNeedSorting = true;
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (bNeedSorting)
+        {
+            StartCoroutine(ApplySortingRoutine());
+        }
+    }
+
+    private System.Collections.IEnumerator ApplySortingRoutine()
+    {
+        bNeedSorting = false; 
+        
+        Canvas _canvas = currencyFont.GetComponent<Canvas>();
+        
+        int retryCount = 0;
+        
+        while (_canvas != null && retryCount < 10)
+        {
+            if (_canvas.rootCanvas != null && _canvas.rootCanvas.worldCamera != null)
+            {
+                _canvas.overrideSorting = true;
+                _canvas.sortingOrder = 10;
+                _canvas.sortingLayerName = "HUD";
+
+                if (_canvas.overrideSorting == true)
+                {
+                    yield break;
+                }
+            }
+            
+            retryCount++;
+            yield return null; 
+        }
+    }
+
+    private void ExecuteSorting()
+    {
+        if (null == currencyFont) return;
+        
+        Canvas _canvas = currencyFont.GetComponent<Canvas>();
+        if (_canvas != null && _canvas.rootCanvas != null && _canvas.rootCanvas.worldCamera != null)
+        {
+            _canvas.overrideSorting = true;
+            _canvas.sortingOrder = 10;
+            _canvas.sortingLayerName = "HUD";
+        }
     }
 
     public void ResetData()
@@ -90,6 +169,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             return;
 
         currencyFont.gameObject.SetActive(0 < _newCnt);
+
+        // 아이템 개수가 1개 이상이 되어 텍스트가 켜지는 순간, 소팅 레이어를 적용합니다.
+        // 코루틴이 포기한 이후에 활성화되더라도 여기서 확실하게 잡아줍니다.
+        if (0 < _newCnt)
+        {
+            ExecuteSorting();
+        }
 
         if (showCnt != _newCnt)
         {
@@ -297,6 +383,11 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void OnDestroy()
     {
+        if (CameraFinder.Instance != null)
+        {
+            CameraFinder.Instance.HandleCameraFindingEvent -= ApplySorting;
+        }
+
         ResetData();
     }
 }
