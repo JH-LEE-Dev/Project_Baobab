@@ -54,6 +54,7 @@ MonoBehaviour:
   bCloseableByESC: 0
   bWorld: 0
   bScreenSpace: 1
+  bOverlay: 0
   uiRoot: {fileID: 1772526790917447411}
   moveHUD: {fileID: 5488935301192403642}
   hudEquipmentPrefab: {fileID: 3602922423060339287, guid: cd342e10fd24dc842b88530280f46250, type: 3}
@@ -61,6 +62,7 @@ MonoBehaviour:
   hudDirectionalIndicatorPrefab: {fileID: 1916422466606343881, guid: 525fc2db4a3590d439ab8eb2c8f7fa09, type: 3}
   hudMessagePrefab: {fileID: 3896767652643787913, guid: 7842cf31a45cee54ba7e7564a83bc5cb, type: 3}
   hudScreenBloodPrefab: {fileID: 1244665093748110384, guid: ffb38f872f5eefe4f8e2729e2b6c405a, type: 3}
+  hudLootPrefab: {fileID: 4422244199143184126, guid: 618a6f8a80b4154408e4f502d03dd8f9, type: 3}
   omp: {fileID: 3133789044350283666}
   mapTransitionMotionTag: GoDown
   dirIndicatorShowDelay: 1

@@ -14,6 +14,7 @@ public class UIView_HUD : UIView
     [SerializeField] private GameObject hudDirectionalIndicatorPrefab;
     [SerializeField] private GameObject hudMessagePrefab;
     [SerializeField] private GameObject hudScreenBloodPrefab;
+    [SerializeField] private GameObject hudLootPrefab;
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private string mapTransitionMotionTag = "GoDown";
 
@@ -22,6 +23,7 @@ public class UIView_HUD : UIView
     private HUD_DirIndicator hudDirIndicator;
     private HUD_Message hudMessage;
     private HUD_ScreenBlood hudScreenBlood;
+    private HUD_Loot hudLoot;
 
     private ICharacter character;
 
@@ -47,6 +49,7 @@ public class UIView_HUD : UIView
         Init_HUDEquipment();
         Init_HUDMessage();
         Init_HUDDirIndicator();
+        Init_HUDLoot();
 
         bool isTown = MapType.Town == currentMapType;
 
@@ -148,6 +151,15 @@ public class UIView_HUD : UIView
             hudMessage.Initialize(viewCtx?.localizationManager);
     }
 
+    private void Init_HUDLoot()
+    {
+        if (null == hudLoot)
+            hudLoot = Instantiate(hudLootPrefab, uiRoot.transform).GetComponent<HUD_Loot>();
+
+        if (null != hudLoot)
+            hudLoot.Initialize();
+    }
+
 
 
     private void UsedSteminaEvent(float _currentStemina, float _maxStemina)
@@ -219,6 +231,8 @@ public class UIView_HUD : UIView
 
         if (null != hudScreenBlood)
             hudScreenBlood.ResetAnimation(false);
+            
+        hudLoot?.OnHUDGoDown();
 
         if (null != omp)
         {
@@ -232,6 +246,8 @@ public class UIView_HUD : UIView
         {
             omp.PlayBackward(mapTransitionMotionTag, bReset: true);
         }
+
+        hudLoot?.OnHUDGoUp();
 
         if (MapType.Town != currentMapType)
         {
