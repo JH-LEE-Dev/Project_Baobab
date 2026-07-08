@@ -176,7 +176,7 @@ public enum SkillCommandType
 {
     None,
     InventoryExpansion,
-    logCapacityIncrease,
+    LogCapacityIncrease,
     SawmillLogStorageExpansion,
     LogProcessingSpeed,
     AxeDamage,
@@ -247,6 +247,13 @@ public enum SkillCommandType
     OffroadPorterNPCSpeed,
     OffroadPorterNPCSlotCapacity,
     OffroadPorterNPCJackpot,
+    Boomerang,
+    BoomerangDamage,
+    BoomerangRange,
+    BoomerangDistance,
+    BoomerangCooldownReduction,
+    BoomerangAttackSpeed,
+    BoomerangCritical,
 }
 
 public enum AbilityLevelUpRejectReason

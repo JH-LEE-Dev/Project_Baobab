@@ -354,6 +354,23 @@
             "enumValue": ""
         },
         {
+            "id": 9003,
+            "key": "Common_ToUnlock",
+            "kr": "능력 개방하기",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 9004,
+            "key": "Common_UnlockComplete",
+            "kr": "능력 개방 완료",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+
+        {
             "id": 9100,
             "key": "AbilityDescription_InventoryExpansion",
             "kr": "<COLOR=8bbeff>인벤토리</COLOR> 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",
@@ -367,7 +384,7 @@
             "kr": "원목의 <COLOR=8bbeff>한 칸당 수납량</COLOR>이 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
-            "enumValue": "logCapacityIncrease"
+            "enumValue": "LogCapacityIncrease"
         },
         {
             "id": 9102,

@@ -737,6 +737,7 @@ GameObject:
   - component: {fileID: 1880944115013296388}
   - component: {fileID: 2458229477242988497}
   - component: {fileID: 9036442478881247126}
+  - component: {fileID: 528576042098378646}
   m_Layer: 8
   m_Name: Character
   m_TagString: Player
@@ -792,6 +793,13 @@ MonoBehaviour:
   itemLayer:
     serializedVersion: 2
     m_Bits: 2048
+  boomerangCreator: {fileID: 528576042098378646}
+  treeLayer:
+    serializedVersion: 2
+    m_Bits: 1024
+  treeSensorRadius: 4
+  treeDetectionInterval: 0.5
+  boomerangEdgePadding: 0.5
   centerTransform: {fileID: 4602724895061784125}
   bRide: 0
 --- !u!50 &1880944115013296388
@@ -873,6 +881,21 @@ MonoBehaviour:
   spriteRenderers: []
   offset: 0
   precision: 100
+--- !u!114 &528576042098378646
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3341736304246452574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dc8b58afa2ce4142a12f73e1b2e462b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BoomerangCreator
+  boomerangPrefab: {fileID: 4821309571048291004, guid: 3b9aebfd10f712e716b65928db85381b, type: 3}
+  defaultCapacity: 2
+  maxSize: 6
 --- !u!1 &3418504347255478067
 GameObject:
   m_ObjectHideFlags: 0
@@ -1631,9 +1654,12 @@ MonoBehaviour:
   money: 1000000
   pickupRangeMultiplier: 1
   originalSpeed: 1
+  sourceOfSpeedAmount: 0
   maxStamina: 10000000
   staminaIncreaseAlpha: 0
   staminaDecreaseAlpha: 0
+  sourceOfStaminaRecoverAmount: 0
+  staminaRecoverAmount: 0
   weaponChangeCoolTime: 0.5
   bCanHunting: 0
   axeDamage: 1
@@ -1651,6 +1677,14 @@ MonoBehaviour:
   bShockWaveCritical: 0
   bShockWaveEnforcement: 0
   bShockWaveMastery: 0
+  boomerangCount: 0
+  boomerangDamage: 1
+  boomerangHitRadius: 0.5
+  boomerangMajorAxisRatio: 1
+  boomerangCooldown: 2.5
+  boomerangDamageInterval: 0.3
+  bBoomerangCritical: 0
+  boomerangCooldownReductionAlpha: 0
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1
