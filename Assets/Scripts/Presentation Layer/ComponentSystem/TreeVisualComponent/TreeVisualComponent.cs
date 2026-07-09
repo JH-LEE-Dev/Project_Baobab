@@ -126,6 +126,8 @@ public class TreeVisualComponent : MonoBehaviour
 
     public int GetTopShieldSortingOrder() => topShieldRenderer != null ? topShieldRenderer.sortingOrder : GetTopSortingOrder();
 
+    public int GetTopHighlightSortingOrder() => topHighlightRenderer != null ? topHighlightRenderer.sortingOrder : GetTopShieldSortingOrder();
+
     public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;
