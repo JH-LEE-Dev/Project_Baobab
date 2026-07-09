@@ -73,4 +73,30 @@ public class InDungeonVFXManager : MonoBehaviour
             null
         ));
     }
+
+    /// <summary>
+    /// 포자막(Shield)이 파괴되었을 때의 VFX를 재생합니다. parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
+    /// 나무 종류별로 이펙트가 다를 수 있어 TreeType에 따라 태그를 분기합니다.
+    /// </summary>
+    public void PlayShieldBrokenVFX(TreeVisualComponent _visual, TreeType _treeType)
+    {
+        if (vfxComponent == null || _visual == null) return;
+
+        // BellpineTree는 전용 이펙트가 아직 제작되지 않아 빈 슬롯(SporeShieldBrokenEffect_Bellpine)만
+        // 만들어둔 상태입니다. 이펙트가 준비되면 vfxPoolDataList에 프리팹만 연결하면 됩니다.
+        string tag = _treeType == TreeType.BellpineTree
+            ? "SporeShieldBrokenEffect_Bellpine"
+            : "SporeShieldBrokenEffect";
+
+        // 나무의 top보다 한 단계 앞에 그려지도록 정렬 순서를 매번 새로 계산해서 덮어쓴다.
+        int sortingOrder = _visual.GetTopSortingOrder() + 1;
+
+        vfxComponent.Play(new VFXPlaySettings(
+            tag,
+            _visual.GetTopRootPosition(),
+            _visual.GetTopRootRotation(),
+            sortingOrder,
+            null
+        ));
+    }
 }

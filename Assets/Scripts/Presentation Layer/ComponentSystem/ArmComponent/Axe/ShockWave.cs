@@ -46,6 +46,10 @@ public class ShockWave : MonoBehaviour
     public Transform VisualOrigin => visualOrigin;
     public float EffectiveExpandSpeed => moveSpeed * (1f + initialMaxDist * scaleFactor);
 
+    // 공격마다 GetComponent를 반복 호출하지 않도록 생성 시 1회 캐싱한다.
+    private ShockWaveVisualComponent visualComponent;
+    public ShockWaveVisualComponent VisualComponent => visualComponent;
+
     public void Initialize()
     {
         angle = 45f; // 각도를 45도로 고정
@@ -55,6 +59,8 @@ public class ShockWave : MonoBehaviour
         initialMaxDist = maxDist;
         initialFindRange = findRange;
         InitialRotation = transform.rotation;
+
+        visualComponent = GetComponent<ShockWaveVisualComponent>();
     }
 
     public void SetValue(float _damage, float _speed, float _duration)

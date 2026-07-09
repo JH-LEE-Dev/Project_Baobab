@@ -262,6 +262,19 @@ public enum SkillCommandType
     DroneChainAttackRange,
     LumberjackNPCBoomerang,
     ProcessLineExpand,
+    SporeShieldRegenBlock,
+    SporeShieldCut,
+    SporeShieldPenetration,
+    ShieldExplosionUnlock,
+    ShieldExplosionDamage,
+    ShieldExplosionRange,
+    ShieldExplosionResearch,
+    ConstellationManifestUnlock,
+    StarMarkDamage,
+    StarPathSpeedBoost,
+    ConstellationDamage,
+    ConstellationAfterimage,
+    ManifestationBrand,
 }
 
 public enum AbilityLevelUpRejectReason

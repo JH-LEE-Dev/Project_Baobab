@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider
+public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider, ISporeShieldStatProvider
 {
     // // 이벤트
     public event Action ActivateWarningUIEvent;
@@ -109,6 +109,47 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private float growthSpeedMul = 0f;
     public float GrowthSpeedMul => growthSpeedMul;
+
+    // 포자막(Shield) 관련 스킬 스탯 - EHealthComponent가 ISporeShieldStatProvider로 읽어감
+    private float shieldDamageMultiplier = 1f;   // 포자 절단
+    private float shieldPenetrationPercent = 0f; // 포자 관통력
+    private float shieldRegenReductionMul = 0f;  // 포자 회복 억제
+
+    public float ShieldDamageMultiplier => shieldDamageMultiplier;
+    public float ShieldPenetrationPercent => shieldPenetrationPercent;
+    public float ShieldRegenReductionMul => shieldRegenReductionMul;
+
+    // 포자막 폭발 관련 스킬 스탯
+    [SerializeField] private LayerMask treeLayerForExplosion;
+    private const float BaseShieldExplosionDamage = 50f;
+    private const float BaseShieldExplosionRange = 8f; // 등각 타원 판정 반경 (8타일 상당)
+
+    private bool bShieldExplosionUnlocked = false;
+    private float shieldExplosionDamageMultiplier = 1f;
+    private float shieldExplosionRangeMultiplier = 1f;
+    private float shieldExplosionResearchChance = 0f;
+
+    // 포자막 폭발 VFX - top/bottom 주변에서 인터벌을 두고 연쇄적으로 재생
+    private const int SporeExplosionVfxMinCount = 4;
+    private const int SporeExplosionVfxMaxCount = 5;
+    private const float SporeExplosionVfxInterval = 0.08f;
+    private const float SporeExplosionVfxSpread = 0.25f;
+    // 코루틴 루프에서 매번 new WaitForSeconds를 생성하면 반복마다 GC 쓰레기가 생기므로 캐싱해서 재사용한다.
+    private static readonly WaitForSeconds sporeExplosionVfxWait = new WaitForSeconds(SporeExplosionVfxInterval);
+
+    // 별자리(Constellation) 관련 스킬 스탯 - StarrootForest 전용
+    private const float BaseConstellationDamage = 5000f;
+    private const float ConstellationBeamHalfThickness = 1f; // 비주얼보다 넉넉한 판정 두께
+    private const float ConstellationHitInterval = 0.2f;
+    private static readonly WaitForSeconds constellationHitWait = new WaitForSeconds(ConstellationHitInterval);
+
+    private bool bConstellationManifestUnlocked = false;
+    private float starMarkDamageMultiplier = 1f;          // 별표식 베기
+    private float constellationDamageMultiplier = 1f;     // 별자리 데미지
+    private int constellationHitCount = 1;                // 별자리 잔상
+    private float manifestationBrandBonusMultiplier = 0f; // 발현 낙인
+
+    public float StarMarkDamageMultiplier => starMarkDamageMultiplier;
 
     // // 퍼블릭 초기화 및 제어 메서드
 
@@ -595,6 +636,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 여기서 걸러서 아이템 중복 지급, 밀도 카운트 오염, 풀 이중 반환 예외를 막는다.
         if (_treeObj.PoolIndex == -1) return;
 
+        // 폭발 연구: 뭉글 포자 숲이 아닌 곳에서도 나무 벌목 시 일정 확률로 포자막 폭발 발생
+        if (bShieldExplosionUnlocked && currentMapType != MapType.FluffySporeForest && shieldExplosionResearchChance > 0f)
+        {
+            if (UnityEngine.Random.value < shieldExplosionResearchChance)
+            {
+                TriggerShieldExplosion(_treeObj);
+            }
+        }
+
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
 
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
@@ -619,7 +669,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         Vector3 deadPos = _treeObj.transform.position;
         if (currentTreeGenerationStrategy != null)
         {
-            currentTreeGenerationStrategy.OnTreeDead(this, deadPos);
+            currentTreeGenerationStrategy.OnTreeDead(this, _treeObj, deadPos);
         }
 
         treePool.Release(_treeObj);
@@ -633,7 +683,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private TreeObj OnCreateTree()
     {
         TreeObj tree = Instantiate(treePrefab, transform);
-        tree.Initialize(environmentProvider);
+        tree.Initialize(environmentProvider, this);
         return tree;
     }
 
@@ -711,6 +761,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeDeadEvent += OnTreeDead;
         _tree.TreeGetHitEvent -= OnTreeHit;
         _tree.TreeGetHitEvent += OnTreeHit;
+        _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
+        _tree.TreeShieldBrokenEvent += OnTreeShieldBroken;
     }
 
     private void OnReleaseTree(TreeObj _tree)
@@ -751,6 +803,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.ResetTree();
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeGetHitEvent -= OnTreeHit;
+        _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
@@ -808,6 +861,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void OnTreeHit(TreeObj _treeObj)
     {
         inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
+
+        // TODO(테스트용, 제거 필요): 포자막 파괴 VFX 확인을 위해 FluffySporeForest 나무는
+        // 스킬/포자막 상태와 무관하게 한 대 맞을 때마다 무조건 VFX를 재생한다.
+        if (currentMapType == MapType.FluffySporeForest)
+        {
+            inDungeonVFXManager.PlayShieldBrokenVFX(_treeObj.treeVisualComponent, _treeObj.GetTreeType());
+        }
 
         if (currentTreeGenerationStrategy != null)
         {
@@ -945,6 +1005,268 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public void IncreaseGrowthSpeed(float _amount)
     {
         growthSpeedMul += (_amount / 100f);
+    }
+
+    public void IncreaseShieldDamageMultiplier(float _amount)
+    {
+        shieldDamageMultiplier += (_amount / 100f);
+    }
+
+    public void IncreaseShieldPenetration(float _amount)
+    {
+        shieldPenetrationPercent += (_amount / 100f);
+    }
+
+    public void IncreaseShieldRegenReduction(float _amount)
+    {
+        shieldRegenReductionMul += (_amount / 100f);
+    }
+
+    public void UnlockShieldExplosion(bool _boolean)
+    {
+        bShieldExplosionUnlocked = _boolean;
+    }
+
+    public void IncreaseShieldExplosionDamage(float _amount)
+    {
+        shieldExplosionDamageMultiplier += (_amount / 100f);
+    }
+
+    public void IncreaseShieldExplosionRange(float _amount)
+    {
+        shieldExplosionRangeMultiplier += (_amount / 100f);
+    }
+
+    public void IncreaseShieldExplosionResearchChance(float _amount)
+    {
+        shieldExplosionResearchChance += (_amount / 100f);
+    }
+
+    private void OnTreeShieldBroken(TreeObj _treeObj)
+    {
+        // 포자막 파괴 VFX는 포자막 폭발 스킬/맵 여부와 무관하게 항상 재생된다.
+        inDungeonVFXManager.PlayShieldBrokenVFX(_treeObj.treeVisualComponent, _treeObj.GetTreeType());
+
+        if (!bShieldExplosionUnlocked) return;
+        if (currentMapType != MapType.FluffySporeForest) return;
+
+        TriggerShieldExplosion(_treeObj);
+    }
+
+    private void TriggerShieldExplosion(TreeObj _source)
+    {
+        StartCoroutine(PlaySporeExplosionVfxRoutine(_source));
+
+        float damage = BaseShieldExplosionDamage * Mathf.Max(0f, shieldExplosionDamageMultiplier);
+        float range = BaseShieldExplosionRange * Mathf.Max(0f, shieldExplosionRangeMultiplier);
+
+        if (CollisionSystem.Instance == null) return;
+
+        // 재귀적인 연쇄 폭발(TakeDamage -> ShieldBrokenEvent -> TriggerShieldExplosion) 도중
+        // 공유 버퍼가 덮어써지는 것을 막기 위해 매 호출마다 로컬 리스트를 사용한다.
+        List<IStaticCollidable> scanResults = new List<IStaticCollidable>(32);
+        CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, treeLayerForExplosion.value, scanResults);
+
+        Vector3 centerPos = _source.transform.position;
+        float rangeSq = range * range;
+
+        for (int i = 0; i < scanResults.Count; i++)
+        {
+            if (scanResults[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
+            {
+                Vector3 targetPos = tree.transform.position;
+                float dx = targetPos.x - centerPos.x;
+                float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정 (ShockWave와 동일 공식)
+                float isoDistSq = dx * dx + dy * dy;
+
+                if (isoDistSq <= rangeSq)
+                {
+                    tree.TakeDamage(damage);
+                }
+            }
+        }
+    }
+
+    private IEnumerator PlaySporeExplosionVfxRoutine(TreeObj _source)
+    {
+        if (_source == null) yield break;
+
+        Vector3 bottomPos = _source.transform.position;
+        Vector3 topPos = _source.treeVisualComponent != null ? _source.treeVisualComponent.GetTopRootPosition() : bottomPos;
+
+        int count = UnityEngine.Random.Range(SporeExplosionVfxMinCount, SporeExplosionVfxMaxCount + 1);
+
+        for (int i = 0; i < count; i++)
+        {
+            Vector3 basePos = (i % 2 == 0) ? topPos : bottomPos;
+            Vector3 randomOffset = new Vector3(
+                UnityEngine.Random.Range(-SporeExplosionVfxSpread, SporeExplosionVfxSpread),
+                UnityEngine.Random.Range(-SporeExplosionVfxSpread, SporeExplosionVfxSpread),
+                0f);
+
+            SporeExplosionVFX.Spawn(basePos + randomOffset);
+
+            yield return sporeExplosionVfxWait;
+        }
+    }
+
+    public void UnlockConstellationManifest(bool _boolean)
+    {
+        bConstellationManifestUnlocked = _boolean;
+    }
+
+    public void IncreaseStarMarkDamage(float _amount)
+    {
+        starMarkDamageMultiplier += (_amount / 100f);
+    }
+
+    public void IncreaseConstellationDamage(float _amount)
+    {
+        constellationDamageMultiplier += (_amount / 100f);
+    }
+
+    public void IncreaseConstellationHitCount(float _amount)
+    {
+        constellationHitCount += Mathf.RoundToInt(_amount);
+    }
+
+    public void IncreaseManifestationBrandBonus(float _amount)
+    {
+        manifestationBrandBonusMultiplier += (_amount / 100f);
+    }
+
+    // 별길 걸음 - 별 표식 나무 벌목 시 Stage3TreeGenerationStrategySO가 호출
+    public void TriggerStarPathSpeedBoost()
+    {
+        character?.statComponent?.ActivateStarPathSpeedBoost();
+    }
+
+    // 별자리 발현 - 그룹의 모든 별 표식 나무가 벌목되면 Stage3TreeGenerationStrategySO가 호출
+    public void TriggerConstellationManifestation(List<Vector3> _starPositions)
+    {
+        if (!bConstellationManifestUnlocked) return;
+        if (_starPositions == null || _starPositions.Count < 2) return;
+
+        List<Vector3> path = BuildNearestNeighborPath(_starPositions);
+        float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
+        int hitCount = Mathf.Max(1, constellationHitCount);
+
+        StartCoroutine(ConstellationBeamRoutine(path, damage, hitCount));
+    }
+
+    private List<Vector3> BuildNearestNeighborPath(List<Vector3> _points)
+    {
+        List<Vector3> remaining = new List<Vector3>(_points);
+        List<Vector3> path = new List<Vector3>(_points.Count);
+
+        Vector3 current = remaining[0];
+        path.Add(current);
+        remaining.RemoveAt(0);
+
+        while (remaining.Count > 0)
+        {
+            int nearestIdx = 0;
+            float nearestDistSq = float.MaxValue;
+
+            for (int i = 0; i < remaining.Count; i++)
+            {
+                // 등각 투영 보정 - 화면상 가까워 보이는 별을 실제로 더 가깝다고 판단하도록 Y축 보정
+                float dx = remaining[i].x - current.x;
+                float dy = (remaining[i].y - current.y) * 2f;
+                float distSq = dx * dx + dy * dy;
+
+                if (distSq < nearestDistSq)
+                {
+                    nearestDistSq = distSq;
+                    nearestIdx = i;
+                }
+            }
+
+            current = remaining[nearestIdx];
+            path.Add(current);
+            remaining.RemoveAt(nearestIdx);
+        }
+
+        return path;
+    }
+
+    private IEnumerator ConstellationBeamRoutine(List<Vector3> _path, float _damagePerHit, int _hitCount)
+    {
+        for (int hit = 0; hit < _hitCount; hit++)
+        {
+            ApplyConstellationBeamDamage(_path, _damagePerHit);
+
+            if (hit < _hitCount - 1)
+            {
+                yield return constellationHitWait;
+            }
+        }
+    }
+
+    private void ApplyConstellationBeamDamage(List<Vector3> _path, float _damage)
+    {
+        if (CollisionSystem.Instance == null) return;
+
+        bool bBrandActive = manifestationBrandBonusMultiplier > 0f;
+
+        // 광선은 나무 8~13그루짜리 국지적 군집에만 영향을 주므로, 던전 전체 activeTrees(최대 2500개)를
+        // 매 타격 틱마다 통째로 복사/순회하지 않도록 경로를 감싸는 반경만 CollisionSystem으로 조회한다.
+        Vector3 center = Vector3.zero;
+        for (int i = 0; i < _path.Count; i++) center += _path[i];
+        center /= _path.Count;
+
+        float maxDistSq = 0f;
+        for (int i = 0; i < _path.Count; i++)
+        {
+            float distSq = (_path[i] - center).sqrMagnitude;
+            if (distSq > maxDistSq) maxDistSq = distSq;
+        }
+        float scanRadius = Mathf.Sqrt(maxDistSq) + ConstellationBeamHalfThickness + 1f;
+
+        List<IStaticCollidable> scanResults = new List<IStaticCollidable>(64);
+        CollisionSystem.Instance.GetCollidablesInRadius(center, scanRadius, treeLayerForExplosion.value, scanResults);
+
+        for (int i = 0; i < scanResults.Count; i++)
+        {
+            if (!(scanResults[i] is TreeObj tree) || !tree.bCanApplyDamage) continue;
+
+            Vector3 rootPos = tree.transform.position;
+            Vector3 topPos = tree.treeVisualComponent != null ? tree.treeVisualComponent.GetTopRootPosition() : rootPos;
+            bool bHit = false;
+
+            // 밑둥/top 둘 중 하나라도 광선(선분) 두께 안에 들어오면 타격으로 처리 (Boomerang과 동일한 판정 방식)
+            for (int seg = 0; seg < _path.Count - 1 && !bHit; seg++)
+            {
+                bHit = DistancePointToSegment(topPos, _path[seg], _path[seg + 1]) <= ConstellationBeamHalfThickness
+                    || DistancePointToSegment(rootPos, _path[seg], _path[seg + 1]) <= ConstellationBeamHalfThickness;
+            }
+
+            if (bHit)
+            {
+                tree.TakeDamage(_damage);
+
+                // TakeDamage로 나무가 죽으면 즉시 풀로 반환되며 ResetTree()가 브랜드 배율을 1로 되돌리므로,
+                // 죽지 않고 살아남은 나무에만 낙인을 적용한다.
+                if (bBrandActive && !tree.bDead)
+                {
+                    tree.health.ApplyDamageBrand(1f + manifestationBrandBonusMultiplier);
+                }
+            }
+        }
+    }
+
+    // 광선은 두 지점을 잇는 고정 폭 캡슐 형태라, 원형 AoE(ShockWave 등)와 달리 등각 보정이 필요 없다.
+    // 보정을 넣으면 오히려 광선 방향에 따라 두께가 달라지는 문제가 생긴다.
+    private static float DistancePointToSegment(Vector3 _point, Vector3 _segA, Vector3 _segB)
+    {
+        Vector3 ab = _segB - _segA;
+        float abLenSq = ab.sqrMagnitude;
+
+        if (abLenSq < 0.0001f) return Vector3.Distance(_point, _segA);
+
+        float t = Mathf.Clamp01(Vector3.Dot(_point - _segA, ab) / abLenSq);
+        Vector3 projection = _segA + ab * t;
+        return Vector3.Distance(_point, projection);
     }
 
     public void IncreaseRepairBoxCount(float _amount)

@@ -38,7 +38,7 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
         }
     }
 
-    public override void OnTreeDead(InDungeonObjectManager _manager, Vector3 _deadPos)
+    public override void OnTreeDead(InDungeonObjectManager _manager, TreeObj _treeObj, Vector3 _deadPos)
     {
         _manager.AddAvailablePosition(_deadPos);
 

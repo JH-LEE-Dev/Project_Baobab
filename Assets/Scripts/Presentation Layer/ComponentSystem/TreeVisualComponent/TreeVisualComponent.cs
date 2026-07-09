@@ -121,6 +121,8 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
+    public int GetTopSortingOrder() => topRenderer != null ? topRenderer.sortingOrder : 0;
+
     public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;

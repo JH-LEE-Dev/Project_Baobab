@@ -30,6 +30,17 @@ public class EHealthComponent : EComponent, IHealthComponent
     private bool bFirstDamage = false;
     public bool bIsFirstDamage => bFirstDamage;
 
+    private ISporeShieldStatProvider shieldStatProvider;
+    private float EffectiveSpRegen => spRegen * Mathf.Max(0f, 1f - (shieldStatProvider?.ShieldRegenReductionMul ?? 0f));
+
+    // 발현 낙인 - 별자리 발현 광선에 맞은 나무에 영구 적용되는 데미지 배율 (나무가 죽어 리셋될 때까지 유지)
+    private float brandedDamageMultiplier = 1f;
+
+    public void ApplyDamageBrand(float _multiplier)
+    {
+        brandedDamageMultiplier = Mathf.Max(brandedDamageMultiplier, _multiplier);
+    }
+
     public void Setup(TreeType _treeType, float _maxHealth, float _maxSP, float _spRegen, SPRegenStrategySO _regenStrategy)
     {
         maxHealth = _maxHealth;
@@ -55,8 +66,10 @@ public class EHealthComponent : EComponent, IHealthComponent
         enabled = (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
 
-    public void Initialize()
+    public void Initialize(ISporeShieldStatProvider _shieldStatProvider = null)
     {
+        shieldStatProvider = _shieldStatProvider;
+
         currentHealth = maxHealth;
         prevHealth = maxHealth;
         currentSP = maxSP;
@@ -78,6 +91,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         disableTimestamp = -1f;
         lastHitTimestamp = -100f;
         bFirstDamage = false;
+        brandedDamageMultiplier = 1f;
 
         enabled = (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null);
     }
@@ -91,20 +105,26 @@ public class EHealthComponent : EComponent, IHealthComponent
         prevHealth = currentHealth;
         lastHitTimestamp = Time.time;
 
+        _damage *= brandedDamageMultiplier;
+
         float remainingDamage = _damage;
 
         if (currentSP > 0f)
         {
-            if (currentSP >= remainingDamage)
-            {
-                currentSP -= remainingDamage;
-                remainingDamage = 0f;
-            }
-            else
-            {
-                currentSP = 0f;
-                remainingDamage = 0f;
-            }
+            // 원래 포자막이 흡수했을 데미지량
+            float shieldPortion = Mathf.Min(currentSP, _damage);
+
+            // 포자 절단 - 흡수분에만 배율 적용 (잘못된 데이터로 음수가 되어 포자막이 역회복되는 것을 방지)
+            float shieldDamageMultiplier = Mathf.Max(0f, shieldStatProvider?.ShieldDamageMultiplier ?? 1f);
+            float amplifiedShieldDamage = shieldPortion * shieldDamageMultiplier;
+
+            // 포자 관통력 - 흡수된 데미지의 일부를 체력에 전달
+            float shieldPenetrationPercent = Mathf.Max(0f, shieldStatProvider?.ShieldPenetrationPercent ?? 0f);
+            float penetrationDamage = amplifiedShieldDamage * shieldPenetrationPercent;
+
+            currentSP = Mathf.Clamp(currentSP - amplifiedShieldDamage, 0f, maxSP);
+            // 오버플로우(shieldPortion을 넘는 원본 데미지)는 기존과 동일하게 버려지고, 관통력으로 인한 데미지만 체력에 전달됨
+            remainingDamage = penetrationDamage;
 
             if (currentSP <= 0f && !isShieldBroken)
             {
@@ -173,7 +193,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         if (!isShieldBroken && disableTimestamp > 0f && regenStrategy != null)
         {
             float enableTime = Time.time;
-            float newSP = regenStrategy.CalculateOnEnableRegen(currentSP, maxSP, spRegen, disableTimestamp, enableTime, lastHitTimestamp);
+            float newSP = regenStrategy.CalculateOnEnableRegen(currentSP, maxSP, EffectiveSpRegen, disableTimestamp, enableTime, lastHitTimestamp);
 
             if (Mathf.Abs(newSP - currentSP) > 0.0001f)
             {
@@ -206,7 +226,7 @@ public class EHealthComponent : EComponent, IHealthComponent
         if (!isShieldBroken && currentSP < maxSP && spRegen > 0f && regenStrategy != null)
         {
             prevSP = currentSP;
-            currentSP = regenStrategy.CalculateRegen(currentSP, maxSP, spRegen, Time.deltaTime, lastHitTimestamp);
+            currentSP = regenStrategy.CalculateRegen(currentSP, maxSP, EffectiveSpRegen, Time.deltaTime, lastHitTimestamp);
 
             if (currentSP > 0f && isShieldBroken)
             {
