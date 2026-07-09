@@ -76,6 +76,15 @@ public static class LocKeys
         public const int abilityDescriptionAxeCriticalDamage = 4203428;
     }
 
+    public static class MainMenuUI
+    {
+        public const int newGame = 16777217;
+        public const int loadGame = 16777218;
+        public const int options = 16777219;
+        public const int credits = 16777220;
+        public const int exit = 16777221;
+    }
+
     public static class MenuPopupUI
     {
         public const int information = 2097153;

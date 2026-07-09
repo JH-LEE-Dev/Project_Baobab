@@ -1353,7 +1353,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: kb_light_all_8
+      name: ESC
       rect:
         serializedVersion: 2
         x: 128
@@ -1375,7 +1375,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: kb_light_all_9
+      name: ESC_Outline
       rect:
         serializedVersion: 2
         x: 144
@@ -1397,7 +1397,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: kb_light_all_10
+      name: ESC_Clicked
       rect:
         serializedVersion: 2
         x: 160
@@ -1419,7 +1419,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: kb_light_all_11
+      name: ESC_Outline_Clicked
       rect:
         serializedVersion: 2
         x: 176
@@ -9169,6 +9169,10 @@ TextureImporter:
       D_Outline: 6722573676383376583
       D_Outline_Clicked: -9075200173453135422
       E: -3468430240258086507
+      ESC: -8017881301916782322
+      ESC_Clicked: -7612208065057235407
+      ESC_Outline: -7170562876106508765
+      ESC_Outline_Clicked: 1242664142103199104
       E_Clicked: -5636659211455234566
       E_Outline: -2318568206816206001
       E_Outline_Clicked: 398461165271328630
@@ -9303,14 +9307,12 @@ TextureImporter:
       Z_Clicked: 9084755388992125647
       Z_Outline: 4788865785323551635
       Z_Outline_Clicked: -4679160976802289346
-      kb_light_all_10: -7612208065057235407
       kb_light_all_104: 990275725236371177
       kb_light_all_105: -3409608878714200390
       kb_light_all_106: 8794978100325521627
       kb_light_all_107: 8720116931173728086
       kb_light_all_108: -8683088888367016398
       kb_light_all_109: -7630348850387180200
-      kb_light_all_11: 1242664142103199104
       kb_light_all_110: -3416825550299327399
       kb_light_all_111: 4533553175607440954
       kb_light_all_12: 1586420507443217632
@@ -9462,10 +9464,8 @@ TextureImporter:
       kb_light_all_77: 1297026211139241011
       kb_light_all_78: -1942564702220318765
       kb_light_all_79: -819977180329475883
-      kb_light_all_8: -8017881301916782322
       kb_light_all_88: -7810998902790688011
       kb_light_all_89: 1884823638763116012
-      kb_light_all_9: -7170562876106508765
       kb_light_all_90: -5331805694515769462
       kb_light_all_91: -555468711064396396
       kb_light_all_92: 3193335298064586811

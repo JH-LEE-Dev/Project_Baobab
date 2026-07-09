@@ -1,0 +1,460 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using TMPro;
+using DG.Tweening;
+using DG.Tweening.Core;
+using Coffee.UIEffects;
+
+/// <summary>
+/// 메인 메뉴 전용 버튼 스크립트입니다.
+/// GC 발생 방지를 위해 람다 및 클로저 사용을 배제하고 델리게이트를 캐싱하여 사용합니다.
+/// </summary>
+public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
+{
+    // 외부 의존성
+    [Header("Targets")]
+    [SerializeField] private Image buttonImage; 
+    [SerializeField] private RectTransform dotTarget;  
+    [SerializeField] private RectTransform textTarget; 
+
+    [Header("UIEffect Targets (그림자 색상 제어용)")]
+    [SerializeField] private UIEffect dotUIEffect;
+    [SerializeField] private UIEffect textUIEffect;
+
+    [Header("Appear Settings (처음 등장)")]
+    [SerializeField] private bool autoStaggerBySiblingIndex = true; // Sibling Index를 기반으로 자동 순차 연출
+    [SerializeField] private float appearStaggerInterval = 0.08f; // 순차 등장 간격
+    [SerializeField] private float appearManualDelay = 0f; // 수동 딜레이 (위 옵션이 false일 때 사용)
+    [SerializeField] private float appearDotDuration = 0.4f;
+    [SerializeField] private float appearTextDuration = 0.3f;
+    [SerializeField] private Vector3 appearDotRotation = new Vector3(0f, 0f, 180f);
+
+    [Header("Hover Settings (뽀잉하는 찰진 느낌)")]
+    [SerializeField] private float hoverDuration = 0.35f;
+    [SerializeField] private Vector3 hoverDotRotation = new Vector3(0f, 0f, 90f); 
+    [SerializeField] private Vector2 textHoverStartScale = new Vector2(1.1f, 1.1f); 
+    [SerializeField] private float textHoverMoveX = 15f; 
+    [ColorUsage(true, true)] [SerializeField] private Color hoverShadowColor = Color.white;
+    [SerializeField] private bool hoverShadowGlow = true;
+
+    [Header("UnHover Settings (무심하게 툭 떨어지는 느낌)")]
+    [SerializeField] private float unhoverDuration = 0.2f;
+    [ColorUsage(true, true)] [SerializeField] private Color unhoverShadowColor = Color.black;
+    [SerializeField] private bool unhoverShadowGlow = false;
+
+    [Header("Click Settings")]
+    [SerializeField] private float clickPunchY = 0.5f; 
+    [SerializeField] private float clickDuration = 0.2f;
+    [ColorUsage(true, true)] [SerializeField] private Color clickShadowColor = Color.yellow;
+    [SerializeField] private bool clickShadowGlow = true;
+
+    [Header("Maintain (Toggled) Settings")]
+    [SerializeField] private bool isToggledButton = false; 
+    [SerializeField] private float maintainRotationDuration = 1.5f; 
+    [SerializeField] private float maintainPulseDuration = 0.5f; 
+    [ColorUsage(true, true)] [SerializeField] private Color maintainPulseColorA = Color.white;
+    [ColorUsage(true, true)] [SerializeField] private Color maintainPulseColorB = Color.red;
+
+    [Header("Disappear Settings")]
+    [SerializeField] private float disappearStaggerInterval = 0.08f; // 여러 버튼이 순차적으로 사라지는 간격 (다다닥)
+    [SerializeField] private float disappearSuckDuration = 0.3f; 
+    [SerializeField] private float disappearDotShrinkDuration = 0.15f; 
+    [SerializeField] private List<UI_MainMenuButton> buttonsToHide = new List<UI_MainMenuButton>(); 
+
+    // 내부 상태
+    private Action onClickAction;
+    private Vector2 textOriginalPos;
+    private Vector3 dotOriginalRot;
+    private TextMeshProUGUI targetTextComponent;
+    
+    private bool isClicked = false;
+    private bool isDisappearing = false;
+    private bool isMaintained = false;
+    private bool isAppearing = false;
+
+    // 델리게이트 캐싱 (GC Alloc 방지)
+    private TweenCallback onAppearCompleteCallback;
+    private TweenCallback onDisappearCompleteCallback;
+    private TweenCallback onClickPunchCompleteCallback;
+    private TweenCallback playAppearTextMotionCallback;
+    private TweenCallback invokeOnClickActionCallback;
+    private TweenCallback playDisappearImmediateCallback;
+
+    private DOGetter<Color> getDotShadowColor;
+    private DOSetter<Color> setDotShadowColor;
+
+    private DOGetter<Color> getTextShadowColor;
+    private DOSetter<Color> setTextShadowColor;
+
+    private void Awake()
+    {
+        if (null != textTarget)
+        {
+            textOriginalPos = textTarget.anchoredPosition;
+            targetTextComponent = textTarget.GetComponent<TextMeshProUGUI>();
+        }
+
+        if (null != dotTarget)
+        {
+            dotOriginalRot = dotTarget.localEulerAngles;
+        }
+
+        // 델리게이트 인스턴스 사전 생성 및 캐싱 (람다/클로저 제거)
+        onAppearCompleteCallback = OnAppearComplete;
+        onDisappearCompleteCallback = OnDisappearComplete;
+        onClickPunchCompleteCallback = OnClickPunchComplete;
+        playAppearTextMotionCallback = PlayAppearTextMotion;
+        invokeOnClickActionCallback = InvokeOnClickAction;
+        playDisappearImmediateCallback = PlayDisappearImmediate;
+
+        getDotShadowColor = GetDotShadowColor;
+        setDotShadowColor = SetDotShadowColor;
+
+        getTextShadowColor = GetTextShadowColor;
+        setTextShadowColor = SetTextShadowColor;
+    }
+
+    private void OnEnable()
+    {
+        ResetAndPlayAppear();
+    }
+
+    /// <summary>
+    /// 외부에서 강제로 버튼을 초기화하고 처음 등장하는 다다닥 모션을 다시 재생할 때 호출합니다.
+    /// </summary>
+    public void ResetAndPlayAppear()
+    {
+        // 꺼져있다면 켜주기만 해도 OnEnable이 불리면서 알아서 연출이 시작됨
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+            return;
+        }
+
+        float _delay = appearManualDelay;
+        if (true == autoStaggerBySiblingIndex)
+        {
+            _delay = transform.GetSiblingIndex() * appearStaggerInterval;
+        }
+        PlayAppearMotion(_delay);
+    }
+
+    // 퍼블릭 초기화 및 제어 메서드
+    public void Initialize(Action _onClickCallback)
+    {
+        onClickAction = _onClickCallback;
+
+        if (null == buttonImage)
+        {
+            buttonImage = GetComponent<Image>();
+        }
+    }
+
+    /// <summary>
+    /// 로컬라이징 등 외부에서 텍스트를 변경할 때 사용합니다.
+    /// </summary>
+    public void SetText(string _text)
+    {
+        if (null != targetTextComponent)
+        {
+            targetTextComponent.text = _text;
+        }
+    }
+
+    public void Release()
+    {
+        onClickAction = null;
+        KillAllTweens();
+    }
+
+    private void KillAllTweens()
+    {
+        transform.DOKill();
+        if (null != dotTarget) dotTarget.DOKill();
+        if (null != textTarget) textTarget.DOKill();
+        if (null != dotUIEffect) DOTween.Kill(dotUIEffect);
+        if (null != textUIEffect) DOTween.Kill(textUIEffect);
+    }
+
+    public void PlayAppearMotion(float _delay = 0f)
+    {
+        isAppearing = true;
+        isClicked = false;
+        isDisappearing = false;
+        isMaintained = false;
+
+        KillAllTweens();
+        
+        transform.localScale = Vector3.one;
+
+        if (null != dotUIEffect)
+        {
+            dotUIEffect.shadowColor = unhoverShadowColor;
+            dotUIEffect.shadowColorGlow = unhoverShadowGlow;
+        }
+        if (null != textUIEffect)
+        {
+            textUIEffect.shadowColor = unhoverShadowColor;
+            textUIEffect.shadowColorGlow = unhoverShadowGlow;
+        }
+
+        if (null != textTarget)
+        {
+            textTarget.localScale = Vector3.zero;
+        }
+
+        if (null != dotTarget)
+        {
+            dotTarget.localScale = Vector3.zero;
+            dotTarget.localEulerAngles = dotOriginalRot - appearDotRotation;
+
+            dotTarget.DOScale(Vector3.one, appearDotDuration).SetEase(Ease.OutBack).SetDelay(_delay);
+            dotTarget.DOLocalRotate(dotOriginalRot, appearDotDuration, RotateMode.FastBeyond360).SetEase(Ease.OutBack).SetDelay(_delay)
+                     .OnComplete(playAppearTextMotionCallback);
+            
+            if (null != textTarget)
+            {
+                textTarget.anchoredPosition = dotTarget.anchoredPosition;
+            }
+        }
+        else if (null != textTarget)
+        {
+            textTarget.DOScale(Vector3.one, appearTextDuration).SetEase(Ease.OutBack).SetDelay(_delay);
+            textTarget.DOAnchorPos(textOriginalPos, appearTextDuration).SetEase(Ease.OutBack).SetDelay(_delay)
+                      .OnComplete(onAppearCompleteCallback);
+        }
+        else
+        {
+            isAppearing = false;
+        }
+    }
+
+    private void PlayAppearTextMotion()
+    {
+        if (null != textTarget)
+        {
+            textTarget.DOScale(Vector3.one, appearTextDuration).SetEase(Ease.OutBack);
+            textTarget.DOAnchorPos(textOriginalPos, appearTextDuration).SetEase(Ease.OutBack)
+                      .OnComplete(onAppearCompleteCallback);
+        }
+        else
+        {
+            isAppearing = false;
+        }
+    }
+
+    // 유니티 이벤트 시스템
+    
+    public void OnPointerEnter(PointerEventData _eventData)
+    {
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        if (null != dotTarget)
+        {
+            dotTarget.DOKill();
+            dotTarget.DOLocalRotate(dotOriginalRot + hoverDotRotation, hoverDuration).SetEase(Ease.OutBack);
+        }
+
+        if (null != textTarget)
+        {
+            textTarget.DOKill();
+            textTarget.localScale = new Vector3(textHoverStartScale.x, textHoverStartScale.y, 1f);
+            textTarget.DOScale(Vector3.one, hoverDuration).SetEase(Ease.OutBack);
+            textTarget.DOAnchorPos(new Vector2(textOriginalPos.x + textHoverMoveX, textOriginalPos.y), hoverDuration).SetEase(Ease.OutBack);
+        }
+
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration);
+    }
+
+    public void OnPointerExit(PointerEventData _eventData)
+    {
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        if (null != dotTarget)
+        {
+            dotTarget.DOKill();
+            dotTarget.DOLocalRotate(dotOriginalRot, unhoverDuration).SetEase(Ease.OutQuad);
+        }
+
+        if (null != textTarget)
+        {
+            textTarget.DOKill();
+            textTarget.DOScale(Vector3.one, unhoverDuration).SetEase(Ease.OutQuad);
+            textTarget.DOAnchorPos(textOriginalPos, unhoverDuration).SetEase(Ease.OutQuad);
+        }
+
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, unhoverShadowColor, unhoverShadowGlow, unhoverDuration);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, unhoverShadowColor, unhoverShadowGlow, unhoverDuration);
+    }
+
+    public void OnPointerClick(PointerEventData _eventData)
+    {
+        if (true == isClicked || true == isDisappearing || true == isAppearing) return;
+        
+        isClicked = true;
+
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, clickShadowColor, clickShadowGlow, clickDuration);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, clickShadowColor, clickShadowGlow, clickDuration);
+
+        float _maxDelay = clickDuration;
+        bool _hasDisappearTargets = false;
+
+        float _currentDisappearDelay = 0f;
+
+        if (null != buttonsToHide)
+        {
+            foreach (UI_MainMenuButton _btn in buttonsToHide)
+            {
+                if (null != _btn && _btn != this)
+                {
+                    _btn.PlayDisappearMotion(_currentDisappearDelay);
+                    _hasDisappearTargets = true;
+                    _currentDisappearDelay += disappearStaggerInterval;
+                }
+            }
+        }
+
+        if (true == _hasDisappearTargets)
+        {
+            // 자신(this)을 가장 마지막에 사라지도록 추가
+            DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
+
+            float _disappearTime = _currentDisappearDelay + disappearSuckDuration + disappearDotShrinkDuration;
+            if (_disappearTime > _maxDelay)
+            {
+                _maxDelay = _disappearTime;
+            }
+        }
+
+        transform.DOKill();
+        
+        Sequence _clickSeq = DOTween.Sequence();
+        
+        _clickSeq.Join(transform.DOPunchScale(new Vector3(0f, clickPunchY, 0f), clickDuration, 5, 1f));
+        
+        if (true == _hasDisappearTargets)
+        {
+            DOVirtual.DelayedCall(_maxDelay, invokeOnClickActionCallback);
+        }
+        else
+        {
+            _clickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
+            _clickSeq.InsertCallback(_maxDelay, invokeOnClickActionCallback);
+        }
+    }
+
+    private void PlayMaintainMotion()
+    {
+        isMaintained = true;
+
+        if (null != dotTarget)
+        {
+            dotTarget.DOKill();
+            dotTarget.DOLocalRotate(new Vector3(0f, 0f, 360f), maintainRotationDuration, RotateMode.FastBeyond360)
+                     .SetEase(Ease.Linear)
+                     .SetLoops(-1, LoopType.Incremental)
+                     .SetRelative();
+        }
+
+        TweenShadowPulse(dotUIEffect, getDotShadowColor, setDotShadowColor);
+        TweenShadowPulse(textUIEffect, getTextShadowColor, setTextShadowColor);
+    }
+
+    public void PlayDisappearMotion(float _delay = 0f)
+    {
+        if (true == isDisappearing) return;
+        
+        isDisappearing = true;
+        isMaintained = false;
+        isAppearing = false;
+        
+        KillAllTweens();
+
+        transform.localScale = Vector3.one;
+        if (null != dotTarget) dotTarget.localScale = Vector3.one;
+        if (null != textTarget) textTarget.localScale = Vector3.one;
+
+        Sequence _disappearSeq = DOTween.Sequence();
+        
+        if (_delay > 0f)
+        {
+            _disappearSeq.AppendInterval(_delay);
+        }
+
+        if (null != textTarget && null != dotTarget)
+        {
+            _disappearSeq.Append(textTarget.DOAnchorPos(dotTarget.anchoredPosition, disappearSuckDuration).SetEase(Ease.InCubic));
+            _disappearSeq.Join(textTarget.DOScale(Vector3.zero, disappearSuckDuration).SetEase(Ease.InCubic));
+            _disappearSeq.Join(dotTarget.DOLocalRotate(dotOriginalRot + new Vector3(0f, 0f, 720f), disappearSuckDuration, RotateMode.FastBeyond360).SetEase(Ease.InCubic));
+            _disappearSeq.Append(dotTarget.DOScale(Vector3.zero, disappearDotShrinkDuration).SetEase(Ease.InBack));
+        }
+
+        _disappearSeq.OnComplete(onDisappearCompleteCallback);
+    }
+
+    private void TweenShadow(UIEffect _effect, DOGetter<Color> _getColor, DOSetter<Color> _setColor, Color _targetColor, bool _glow, float _duration)
+    {
+        if (null == _effect) return;
+        
+        DOTween.Kill(_effect); 
+        _effect.shadowColorGlow = _glow;
+        
+        DOTween.To(_getColor, _setColor, _targetColor, _duration)
+               .SetEase(Ease.OutQuad)
+               .SetTarget(_effect);
+    }
+
+    private void TweenShadowPulse(UIEffect _effect, DOGetter<Color> _getColor, DOSetter<Color> _setColor)
+    {
+        if (null == _effect) return;
+        
+        DOTween.Kill(_effect);
+        _setColor(maintainPulseColorA);
+
+        DOTween.To(_getColor, _setColor, maintainPulseColorB, maintainPulseDuration)
+               .SetEase(Ease.InOutSine)
+               .SetLoops(-1, LoopType.Yoyo)
+               .SetTarget(_effect);
+    }
+
+    // 캐싱용 메서드 모음
+    private void OnAppearComplete() { isAppearing = false; }
+    private void OnDisappearComplete() { gameObject.SetActive(false); }
+    private void OnClickPunchComplete()
+    {
+        if (true == isToggledButton)
+            PlayMaintainMotion();
+        else
+            gameObject.SetActive(false);
+    }
+
+    private void InvokeOnClickAction()
+    {
+        if (this == null) return;
+        if (null != onClickAction)
+        {
+            onClickAction.Invoke();
+        }
+    }
+
+    private void PlayDisappearImmediate()
+    {
+        if (this == null) return;
+        PlayDisappearMotion(0f);
+    }
+
+    private Color GetDotShadowColor() => null != dotUIEffect ? dotUIEffect.shadowColor : Color.white;
+    private void SetDotShadowColor(Color _c) { if (null != dotUIEffect) dotUIEffect.shadowColor = _c; }
+
+    private Color GetTextShadowColor() => null != textUIEffect ? textUIEffect.shadowColor : Color.white;
+    private void SetTextShadowColor(Color _c) { if (null != textUIEffect) textUIEffect.shadowColor = _c; }
+
+    private void OnDestroy()
+    {
+        Release();
+    }
+}
