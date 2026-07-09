@@ -151,6 +151,14 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public float StarMarkDamageMultiplier => starMarkDamageMultiplier;
 
+    // 별의 주시(Star Gaze) - StarrootForest 전용, 화면 범위 내 가장 가까운 나무에 주기적으로 별똥별 낙하
+    private const float StarGazeInterval = 10f;
+    private const float StarGazeDamage = 10000f;
+    private const float StarGazeImpactRange = BaseShieldExplosionRange; // 포자막 폭발과 동일한 범위(고정값, 업그레이드와 무관)
+
+    private bool bStarGazeUnlocked = false;
+    private Coroutine starGazeCoroutine;
+
     // // 퍼블릭 초기화 및 제어 메서드
 
     public void Initialize(IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker, InputManager _inputManager,
@@ -330,6 +338,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 3. 5초 후 성장 루틴 시작
         growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
+
+        // 별의 주시: 맵 전환과 무관하게 매니저 생애주기 동안 한 번만 시작해 계속 순환시킨다
+        // (루틴 내부에서 currentMapType/스킬 해금 여부를 매 주기 확인하므로 재시작할 필요가 없다).
+        if (starGazeCoroutine == null)
+        {
+            starGazeCoroutine = StartCoroutine(StarGazeRoutine());
+        }
     }
 
     private IEnumerator StartGrowthAfterDelay()
@@ -1260,6 +1275,89 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         float t = Mathf.Clamp01(Vector3.Dot(_point - _segA, ab) / abLenSq);
         Vector3 projection = _segA + ab * t;
         return Vector3.Distance(_point, projection);
+    }
+
+    public void UnlockStarGaze(bool _boolean)
+    {
+        bStarGazeUnlocked = _boolean;
+    }
+
+    private IEnumerator StarGazeRoutine()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(StarGazeInterval);
+
+            if (!bStarGazeUnlocked || currentMapType != MapType.StarrootForest) continue;
+            if (character == null) continue;
+
+            TreeObj nearest = FindNearestTreeInScreenEllipse();
+            if (nearest == null) continue;
+
+            Vector3 landingPos = nearest.transform.position;
+            ShootingStarVFX.Spawn(landingPos, () => ApplyStarImpactDamage(landingPos));
+        }
+    }
+
+    // "타원 범위로(화면 전체) 나무가 있다면, 가장 가까운 나무로 별똥별이 떨어진다" -
+    // 화면(카메라 타원) 경계 안에 있는 나무들 중에서만 등각 거리 기준 최근접 나무를 찾는다.
+    private TreeObj FindNearestTreeInScreenEllipse()
+    {
+        Vector3 charPos = character.transform.position;
+        TreeObj nearest = null;
+        float nearestIsoSqr = float.MaxValue;
+
+        for (int i = 0; i < activeTrees.Count; i++)
+        {
+            TreeObj tree = activeTrees[i];
+            if (tree == null || tree.bDead || !tree.bCanApplyDamage) continue;
+
+            Vector3 treePos = tree.transform.position;
+            Vector3 dirToTree = treePos - charPos;
+            float actualDist = dirToTree.magnitude;
+            if (actualDist < 0.001f) continue;
+
+            float maxDist = CameraBoundsUtil.GetMaxDistanceToEdge(dirToTree, 0f, 1f);
+            if (maxDist <= 0.1f || actualDist > maxDist) continue; // 화면 타원 범위 밖
+
+            float dx = treePos.x - charPos.x;
+            float dy = (treePos.y - charPos.y) * 2f; // 등각 보정
+            float isoSqr = dx * dx + dy * dy;
+
+            if (isoSqr < nearestIsoSqr)
+            {
+                nearestIsoSqr = isoSqr;
+                nearest = tree;
+            }
+        }
+
+        return nearest;
+    }
+
+    private void ApplyStarImpactDamage(Vector3 _landingPos)
+    {
+        if (CollisionSystem.Instance == null) return;
+
+        List<IStaticCollidable> scanResults = new List<IStaticCollidable>(32);
+        CollisionSystem.Instance.GetCollidablesInRadius(_landingPos, StarGazeImpactRange, treeLayerForExplosion.value, scanResults);
+
+        float rangeSq = StarGazeImpactRange * StarGazeImpactRange;
+
+        for (int i = 0; i < scanResults.Count; i++)
+        {
+            if (scanResults[i] is TreeObj tree && tree.bCanApplyDamage)
+            {
+                Vector3 targetPos = tree.transform.position;
+                float dx = targetPos.x - _landingPos.x;
+                float dy = (targetPos.y - _landingPos.y) * 2f; // 등각 타원 보정
+                float isoDistSq = dx * dx + dy * dy;
+
+                if (isoDistSq <= rangeSq)
+                {
+                    tree.TakeDamage(StarGazeDamage);
+                }
+            }
+        }
     }
 
     public void IncreaseRepairBoxCount(float _amount)

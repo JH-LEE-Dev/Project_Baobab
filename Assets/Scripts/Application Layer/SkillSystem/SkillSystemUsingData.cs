@@ -275,6 +275,7 @@ public enum SkillCommandType
     ConstellationDamage,
     ConstellationAfterimage,
     ManifestationBrand,
+    StarGazeUnlock,
 }
 
 public enum AbilityLevelUpRejectReason
