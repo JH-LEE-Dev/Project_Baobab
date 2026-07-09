@@ -5,6 +5,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 {
     public event Action<TreeObj> TreeDeadEvent;
     public event Action<TreeObj> TreeGetHitEvent;
+    public event Action<TreeObj> TreeShieldBrokenEvent;
 
     [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
@@ -15,9 +16,22 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     private IEnvironmentProvider environmentProvider;
     private IShadowDataProvider shadowDataProvider;
+    private ISporeShieldStatProvider shieldStatProvider;
     private EHealthComponent healthComponent;
     private SaplingVEComponent saplingVEComponent;
     private Transform cachedTransform;
+
+    // StarrootForest 별 표식 - Stage3TreeGenerationStrategySO가 스폰 시 부여
+    public bool bStarMarked { get; private set; } = false;
+
+    public void SetStarMarked(bool _boolean)
+    {
+        bStarMarked = _boolean;
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.SetConstellationMarkActive(_boolean);
+        }
+    }
 
     public TreeData treeData { get; private set; }
     public IHealthComponent health => healthComponent;
@@ -74,14 +88,15 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         cachedTransform = transform;
     }
 
-    public void Initialize(IEnvironmentProvider _environmentProvider)
+    public void Initialize(IEnvironmentProvider _environmentProvider, ISporeShieldStatProvider _shieldStatProvider = null)
     {
         environmentProvider = _environmentProvider;
         shadowDataProvider = _environmentProvider.shadowDataProvider;
+        shieldStatProvider = _shieldStatProvider;
         cachedTransform = transform;
 
         healthComponent = GetComponent<EHealthComponent>();
-        healthComponent.Initialize();
+        healthComponent.Initialize(_shieldStatProvider);
 
         saplingVEComponent = GetComponentInChildren<SaplingVEComponent>();
         if (saplingVEComponent != null)
@@ -173,6 +188,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         bDead = false;
         bReserved = false;
         bLastHitByPlayer = true;
+        SetStarMarked(false);
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;
@@ -192,6 +208,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         // 죽음 판정 직전 상태를 기억해, 이미 죽은 나무가 정리되기 전 다시 타격당해도
         // TreeDeadEvent가 중복 발생하지 않도록 false->true 전이 시점에만 이벤트를 발생시킨다.
         bool wasAlreadyDead = bDead;
+
+        // 별표식 베기 - 별 표식을 가진 나무에게 배율 적용
+        if (bStarMarked)
+        {
+            _damage *= Mathf.Max(0f, shieldStatProvider?.StarMarkDamageMultiplier ?? 1f);
+        }
 
         healthComponent.DecreaseHealth(_damage);
 
@@ -279,6 +301,14 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         healthComponent.ShieldRegenedEvent -= treeVisualComponent.ShieldRegened;
         healthComponent.ShieldRegenedEvent += treeVisualComponent.ShieldRegened;
+
+        healthComponent.ShieldBrokenEvent -= OnShieldBroken;
+        healthComponent.ShieldBrokenEvent += OnShieldBroken;
+    }
+
+    private void OnShieldBroken()
+    {
+        TreeShieldBrokenEvent?.Invoke(this);
     }
 
     private void ReleaseEvents()
@@ -289,6 +319,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
 
         healthComponent.EnemyIsDeadEvent -= TreeIsDead;
+        healthComponent.ShieldBrokenEvent -= OnShieldBroken;
 
         if (treeVisualComponent != null)
         {

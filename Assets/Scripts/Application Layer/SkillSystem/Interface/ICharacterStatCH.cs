@@ -54,4 +54,5 @@ public interface ICharacterStatCH
     public void IncreaseDroneAttackSpeed(float _amount);
     public void IncreaseDroneChainCount(int _amount);
     public void IncreaseDroneChainRange(float _amount);
+    public void IncreaseStarPathSpeedBoost(float _amount);
 }

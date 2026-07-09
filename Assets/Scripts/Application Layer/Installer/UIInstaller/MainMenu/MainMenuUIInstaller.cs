@@ -20,6 +20,7 @@ public class MainMenuUIInstaller : MonoBehaviour
     {
         bootStrapProvider = _bootStrapProvider;
         inputManager = _inputManager;
+        localizationManager = _localizeManager;
         uiManager = GetComponent<MainMenuUIManager>();
 
         uiManager.Initialize(inputManager, localizationManager, null);

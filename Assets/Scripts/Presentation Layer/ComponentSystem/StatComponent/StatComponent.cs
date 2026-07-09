@@ -447,6 +447,54 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
             currentSourceOfSpeedBonus = 0f;
             sourceOfSpeedCoroutine = null;
         }
+
+        if (starPathSpeedCoroutine != null)
+        {
+            StopCoroutine(starPathSpeedCoroutine);
+            IncreaseMovementSpeed(-currentStarPathSpeedBonus * 100.0f);
+            currentStarPathSpeedBonus = 0f;
+            starPathSpeedCoroutine = null;
+        }
+    }
+
+    // 별길 걸음 - 별 표식 나무 벌목 시 일정 시간 이동속도 증가 (SourceOfSpeed와 별개의 타이머로 관리)
+    public float starPathSpeedBoostAmount = 0f;
+    private float starPathSpeedTimer = 0f;
+    private float currentStarPathSpeedBonus = 0f;
+    private Coroutine starPathSpeedCoroutine;
+
+    public void IncreaseStarPathSpeedBoost(float _amount)
+    {
+        starPathSpeedBoostAmount += (_amount / 100.0f);
+    }
+
+    public void ActivateStarPathSpeedBoost()
+    {
+        if (starPathSpeedBoostAmount <= 0f) return;
+
+        starPathSpeedTimer = 5f;
+
+        if (starPathSpeedCoroutine == null)
+        {
+            starPathSpeedCoroutine = StartCoroutine(StarPathSpeedRoutine());
+        }
+    }
+
+    private System.Collections.IEnumerator StarPathSpeedRoutine()
+    {
+        // 버프가 지속되는 동안 스킬 레벨업으로 amount가 바뀌어도 더한 만큼만 정확히 되돌리도록 스냅샷을 사용한다.
+        currentStarPathSpeedBonus = starPathSpeedBoostAmount;
+        IncreaseMovementSpeed(currentStarPathSpeedBonus * 100.0f);
+
+        while (starPathSpeedTimer > 0f)
+        {
+            starPathSpeedTimer -= Time.deltaTime;
+            yield return null;
+        }
+
+        IncreaseMovementSpeed(-currentStarPathSpeedBonus * 100.0f);
+        currentStarPathSpeedBonus = 0f;
+        starPathSpeedCoroutine = null;
     }
 
     public void IncreaseStaminaRecoverAmount(float _amount)

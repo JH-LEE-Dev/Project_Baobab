@@ -1094,7 +1094,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonUnitSpawner
   npcPrefab: {fileID: 9197713879388921321, guid: 0a673e3ff0ddf2645b1b837f534f144b, type: 3}
-  maxNPCs: 3
+  maxNPCs: 0
   statComponent: {fileID: 845993863184817069}
   sharedShockWaveCreator: {fileID: 4073779457967939185}
   sharedBoomerangCreator: {fileID: 2045248553928531288}
@@ -1491,6 +1491,18 @@ MonoBehaviour:
     initialPoolSize: 20
     allowDynamicExpansion: 0
     maxPoolSize: 50
+    uiParticleScale: 0
+  - vfxTag: SporeShieldBrokenEffect
+    effectPrefab: {fileID: 8961847964968627430, guid: 777138ec1a339ec4f961ba6cc2da8052, type: 3}
+    initialPoolSize: 10
+    allowDynamicExpansion: 1
+    maxPoolSize: 30
+    uiParticleScale: 0
+  - vfxTag: SporeShieldBrokenEffect_Bellpine
+    effectPrefab: {fileID: 8961847964968627430, guid: 9a30a76154b72314ab7f83fad17d635a, type: 3}
+    initialPoolSize: 10
+    allowDynamicExpansion: 1
+    maxPoolSize: 30
     uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
@@ -2692,6 +2704,20 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e2511dc5822f151a10710e9c8b25928d, type: 2}
   - {fileID: 11400000, guid: 4fbf455d60ee37004314c3354480aa50, type: 2}
   - {fileID: 11400000, guid: 4fc742f6a740af242b29f37af0e20179, type: 2}
+  - {fileID: 11400000, guid: a11b2e9a277361d7baae83dfa209250a, type: 2}
+  - {fileID: 11400000, guid: 2b28301abc83c5811a2baa5904d15ab5, type: 2}
+  - {fileID: 11400000, guid: caaad0c6593ce92d7a540f894d2a1e21, type: 2}
+  - {fileID: 11400000, guid: d10e29f08536adbb1866a21f86b87e7a, type: 2}
+  - {fileID: 11400000, guid: d4a8d396e7985cf9c1feddaebf9c7c4d, type: 2}
+  - {fileID: 11400000, guid: 2ef57e6921cfea522a61631bfd2c5a55, type: 2}
+  - {fileID: 11400000, guid: 264ec2cb6685d3760b511073b11ea89a, type: 2}
+  - {fileID: 11400000, guid: be091f4f423656d104e991432ea623fb, type: 2}
+  - {fileID: 11400000, guid: 5fbe680d8f079ba5e3cde97c96c20d27, type: 2}
+  - {fileID: 11400000, guid: 8b5a6de814b5e2a737732824ac06d90d, type: 2}
+  - {fileID: 11400000, guid: 8b1dcfe38eed125c74a3d0a15cc156b9, type: 2}
+  - {fileID: 11400000, guid: 675d5befa06ab012cec0a267b4244221, type: 2}
+  - {fileID: 11400000, guid: 52f1b44a883181c2520b5b9721119a25, type: 2}
+  - {fileID: 11400000, guid: 6eafbb344f43a153a2dfde8cc7227356, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0
@@ -2839,3 +2865,6 @@ MonoBehaviour:
       probability: 25
     - treeGrade: 4
       probability: 5
+  treeLayerForExplosion:
+    serializedVersion: 2
+    m_Bits: 1024

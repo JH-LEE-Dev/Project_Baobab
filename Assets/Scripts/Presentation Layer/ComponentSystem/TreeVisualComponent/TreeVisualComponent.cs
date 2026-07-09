@@ -31,6 +31,7 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private SpriteRenderer bottomOutlineSR;
     [SerializeField] private SpriteRenderer topStencilOutlineSR;
     [SerializeField] private SpriteRenderer bottomStencilOutlineSR;
+    [SerializeField] private SpriteRenderer constellationRenderer;
 
     [Header("Sprite Variations")]
     [SerializeField] private Sprite[] topSprites;
@@ -121,6 +122,10 @@ public class TreeVisualComponent : MonoBehaviour
         }
     }
 
+    public int GetTopSortingOrder() => topRenderer != null ? topRenderer.sortingOrder : 0;
+
+    public int GetTopShieldSortingOrder() => topShieldRenderer != null ? topShieldRenderer.sortingOrder : GetTopSortingOrder();
+
     public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;
@@ -146,6 +151,19 @@ public class TreeVisualComponent : MonoBehaviour
         topShieldRenderer.sortingOrder = topOutlineSR.sortingOrder + 2;
         bottomHighlightRenderer.sortingOrder = topShieldRenderer.sortingOrder + 1;
         topHighlightRenderer.sortingOrder = topShieldRenderer.sortingOrder + 2;
+        // [5단계] 별자리 표식(StarrootForest): topHighlight보다 한 단계 앞에 그려진다.
+        if (constellationRenderer != null) constellationRenderer.sortingOrder = topHighlightRenderer.sortingOrder + 1;
+    }
+
+    /// <summary>
+    /// StarrootForest 별 표식 마커(Constellation)의 표시 여부를 전환한다.
+    /// </summary>
+    public void SetConstellationMarkActive(bool _active)
+    {
+        if (constellationRenderer != null)
+        {
+            constellationRenderer.gameObject.SetActive(_active);
+        }
     }
 
     // 루트 트랜스폼이 틀어졌을 때 위치, 회전, 스케일을 모두 기본값으로 맞춘다.

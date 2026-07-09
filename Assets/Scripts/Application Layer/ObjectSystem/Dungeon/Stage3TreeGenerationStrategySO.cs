@@ -6,12 +6,16 @@ using System.Collections;
 public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
 {
     private Dictionary<TreeObj, int> treeTriggerGroupDict = new Dictionary<TreeObj, int>();
+    private Dictionary<int, List<Vector3>> groupStarPositions = new Dictionary<int, List<Vector3>>();
+    private Dictionary<int, int> groupRemainingStarCount = new Dictionary<int, int>();
     private int nextGroupId = 0;
 
     public override void SpawnInitialTrees(InDungeonObjectManager _manager, List<Vector3> _grassTilePositions)
     {
         _manager.ClearAvailablePositions();
         treeTriggerGroupDict.Clear();
+        groupStarPositions.Clear();
+        groupRemainingStarCount.Clear();
         nextGroupId = 0;
 
         List<Vector3Int> availableList = new List<Vector3Int>();
@@ -208,6 +212,18 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
                     if (actualTriggerAssigned < triggerCount)
                     {
                         treeTriggerGroupDict[spawnedTree] = groupId;
+                        spawnedTree.SetStarMarked(true);
+
+                        if (!groupStarPositions.TryGetValue(groupId, out List<Vector3> positions))
+                        {
+                            positions = new List<Vector3>();
+                            groupStarPositions[groupId] = positions;
+                        }
+                        positions.Add(worldPos);
+
+                        groupRemainingStarCount.TryGetValue(groupId, out int currentCount);
+                        groupRemainingStarCount[groupId] = currentCount + 1;
+
                         actualTriggerAssigned++;
                     }
                 }
@@ -220,9 +236,25 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         yield break;
     }
 
-    public override void OnTreeDead(InDungeonObjectManager _manager, Vector3 _deadPos)
+    public override void OnTreeDead(InDungeonObjectManager _manager, TreeObj _treeObj, Vector3 _deadPos)
     {
-        
+        if (!treeTriggerGroupDict.TryGetValue(_treeObj, out int groupId)) return;
+
+        treeTriggerGroupDict.Remove(_treeObj);
+
+        // 별길 걸음: 별 표식 나무를 벌목할 때마다 발동
+        _manager.TriggerStarPathSpeedBoost();
+
+        if (!groupRemainingStarCount.TryGetValue(groupId, out int remaining)) return;
+
+        remaining--;
+        groupRemainingStarCount[groupId] = remaining;
+
+        if (remaining <= 0 && groupStarPositions.TryGetValue(groupId, out List<Vector3> positions))
+        {
+            // 별자리 발현: 그룹의 모든 별 표식 나무가 벌목됨
+            _manager.TriggerConstellationManifestation(positions);
+        }
     }
 
     public override void OnTreeGetHit(InDungeonObjectManager _manager, TreeObj _treeObj)
