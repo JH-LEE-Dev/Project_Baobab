@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 using System;
 
 
@@ -9,29 +8,18 @@ public class UIView_MainMenu : UIView
     public event Action LoadGameButtonClickedEvent;
     public event Action ExitButtonClickedEvent;
 
-
     [Header("UI References")]
-    [SerializeField] private Transform uiRoot; //일단 에디터에서 자기 자신 넣으면 됨.
-    [SerializeField] private GameObject uiPrefab; //생성할 uiPrefab인데 임의로 추가/제거해서 사용하면 됨.
-    [SerializeField] private Button newGameButton;
-    [SerializeField] private Button loadGameButton;
-    [SerializeField] private Button exitButton;
+    [SerializeField] private UI_MainMenu mainMenuUI; // 씬 내부에 이미 배치된 UI_MainMenu 컴포넌트를 직접 할당
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
 
-        if (uiPrefab != null)
-            Instantiate(uiPrefab, uiRoot);
-
-        if (newGameButton != null)
-            newGameButton.onClick.AddListener(OnNewGameStartButton);
-
-        if (loadGameButton != null)
-            loadGameButton.onClick.AddListener(OnLoadGameButtonClicked);
-
-        if (exitButton != null)
-            exitButton.onClick.AddListener(OnExitButtonClicked);
+        // 프리팹을 인스턴스화하지 않고, 이미 바인딩된 컴포넌트를 바로 초기화
+        if (null != mainMenuUI)
+        {
+            mainMenuUI.Initialize(this, _ctx);
+        }
     }
 
     public override void OnDestroy()

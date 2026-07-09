@@ -1,0 +1,45 @@
+{
+  "jsonId": 8,
+  "entries": [
+    {
+      "id": 1,
+      "key": "NewGame",
+      "kr": "새 게임",
+      "en": "NewGame",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 2,
+      "key": "LoadGame",
+      "kr": "불러오기",
+      "en": "LoadGame",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 3,
+      "key": "Options",
+      "kr": "옵션",
+      "en": "Options",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 4,
+      "key": "Credits",
+      "kr": "크레딧",
+      "en": "Credits",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 5,
+      "key": "Exit",
+      "kr": "종료하기",
+      "en": "Exit",
+      "enumType": "",
+      "enumValue": ""
+    }
+  ]
+}
