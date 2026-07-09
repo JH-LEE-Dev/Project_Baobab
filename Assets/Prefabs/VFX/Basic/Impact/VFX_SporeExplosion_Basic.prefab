@@ -4906,7 +4906,7 @@ GameObject:
   - component: {fileID: 8961847964968627430}
   - component: {fileID: 7374238290876603269}
   m_Layer: 0
-  m_Name: VFX_SporeExplosion(Clone)
+  m_Name: VFX_SporeExplosion_Basic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5630,7 +5630,7 @@ ParticleSystem:
     m_Mesh: {fileID: 0}
     m_MeshRenderer: {fileID: 0}
     m_SkinnedMeshRenderer: {fileID: 0}
-    m_Sprite: {fileID: 21300000, guid: 279d0bb2df950f64fb42f013118944ac, type: 3}
+    m_Sprite: {fileID: 21300000, guid: 9cd6891a7416f8648b171d2f38190320, type: 3}
     m_SpriteRenderer: {fileID: 0}
     m_UseMeshMaterialIndex: 0
     m_UseMeshColors: 1
