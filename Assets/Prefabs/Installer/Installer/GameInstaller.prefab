@@ -1499,7 +1499,7 @@ MonoBehaviour:
     maxPoolSize: 30
     uiParticleScale: 0
   - vfxTag: SporeShieldBrokenEffect_Bellpine
-    effectPrefab: {fileID: 0}
+    effectPrefab: {fileID: 8961847964968627430, guid: 9a30a76154b72314ab7f83fad17d635a, type: 3}
     initialPoolSize: 10
     allowDynamicExpansion: 1
     maxPoolSize: 30
@@ -2811,9 +2811,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 894b348a7e01d364e9c593c2a69222fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonObjectManager
-  treeLayerForExplosion:
-    serializedVersion: 2
-    m_Bits: 1024
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
   enableCulling: 0
   cullingDistance: 25

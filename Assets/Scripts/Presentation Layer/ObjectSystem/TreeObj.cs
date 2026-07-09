@@ -27,6 +27,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public void SetStarMarked(bool _boolean)
     {
         bStarMarked = _boolean;
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.SetConstellationMarkActive(_boolean);
+        }
     }
 
     public TreeData treeData { get; private set; }
@@ -184,7 +188,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         bDead = false;
         bReserved = false;
         bLastHitByPlayer = true;
-        bStarMarked = false;
+        SetStarMarked(false);
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;

@@ -10,6 +10,9 @@ public class InDungeonVFXManager : MonoBehaviour
     // 외부 의존성
     [SerializeField] private VFXComponent vfxComponent;
 
+    // top 기준 위치가 나무 꼭대기보다 한참 위에서 생성되는 것을 보정하기 위한 하향 오프셋 (인스펙터에서 조정 가능)
+    [SerializeField] private float shieldBrokenVfxYOffset = -0.5f;
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -88,12 +91,15 @@ public class InDungeonVFXManager : MonoBehaviour
             ? "SporeShieldBrokenEffect_Bellpine"
             : "SporeShieldBrokenEffect";
 
-        // 나무의 top보다 한 단계 앞에 그려지도록 정렬 순서를 매번 새로 계산해서 덮어쓴다.
-        int sortingOrder = _visual.GetTopSortingOrder() + 1;
+        // 실드가 깨지는 순간의 이펙트이므로, 나무 top이 아니라 실드 스프라이트보다 한 단계 앞에 그려져야 한다.
+        int sortingOrder = _visual.GetTopShieldSortingOrder() + 1;
+
+        // 위치만 밑둥 쪽으로 내리고(정렬 순서는 그대로 top 기준 유지)
+        Vector3 position = _visual.GetTopRootPosition() + new Vector3(0f, shieldBrokenVfxYOffset, 0f);
 
         vfxComponent.Play(new VFXPlaySettings(
             tag,
-            _visual.GetTopRootPosition(),
+            position,
             _visual.GetTopRootRotation(),
             sortingOrder,
             null

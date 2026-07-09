@@ -862,13 +862,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     {
         inDungeonVFXManager.PlayTreeHitVFX(_treeObj.treeVisualComponent);
 
-        // TODO(테스트용, 제거 필요): 포자막 파괴 VFX 확인을 위해 FluffySporeForest 나무는
-        // 스킬/포자막 상태와 무관하게 한 대 맞을 때마다 무조건 VFX를 재생한다.
-        if (currentMapType == MapType.FluffySporeForest)
-        {
-            inDungeonVFXManager.PlayShieldBrokenVFX(_treeObj.treeVisualComponent, _treeObj.GetTreeType());
-        }
-
         if (currentTreeGenerationStrategy != null)
         {
             currentTreeGenerationStrategy.OnTreeGetHit(this, _treeObj);
