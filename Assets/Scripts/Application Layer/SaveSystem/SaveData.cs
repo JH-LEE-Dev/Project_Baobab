@@ -206,3 +206,65 @@ public class GameSaveData
         environmentSaveData.Initialize();
     }
 }
+
+/// <summary>
+/// 저장 시점에 "운반 중(포터 인벤토리/컨테이너 사이를 날아가는 중)"이라 어느 컨테이너 슬롯에도
+/// 아직 커밋되지 않은 로그를, 라이브 게임 상태는 전혀 건드리지 않고 직렬화될 세이브 구조체에만
+/// 가상으로 합산해주는 헬퍼. (저장은 게임을 종료하지 않고 계속 진행하는 경로라, 라이브 상태를
+/// 실제로 이동시키면 재개 시 눈에 보이는 교란이 생기므로 세이브 데이터에만 반영한다.)
+/// </summary>
+public static class SaveDataMerge
+{
+    private static readonly int treeTypeArrayLen = Enum.GetValues(typeof(TreeType)).Length;
+
+    /// <summary>
+    /// 로그 한 개를 이미 채워진 슬롯 저장 데이터(_data.slots)에 병합한다. 같은 (나무종류/등급)
+    /// 슬롯에 자리가 있으면 거기에 합치고, 없으면 빈 슬롯에 새로 넣는다. 넣을 자리가 전혀 없으면
+    /// false를 반환한다(마을 저장 조건에선 발생하지 않아야 함 - 호출부에서 경고 로그 처리).
+    /// </summary>
+    public static bool AddLog(ref InventorySaveData _data, TreeType _treeType, LogState _logState, Color _color, int _maxItemsPerSlot)
+    {
+        if (_data.slots == null) return false;
+
+        // 1. 같은 조합의 기존 슬롯에 자리가 있으면 거기에 합친다.
+        for (int i = 0; i < _data.slots.Count; i++)
+        {
+            InventorySlotSaveData slot = _data.slots[i];
+            if (slot.itemSaveData.itemType == ItemType.Log &&
+                slot.itemSaveData.treeType == _treeType &&
+                slot.itemSaveData.logState == _logState &&
+                slot.totalCount < _maxItemsPerSlot)
+            {
+                slot.totalCount++;
+                if (slot.treeTypeCounts == null || slot.treeTypeCounts.Length != treeTypeArrayLen)
+                    slot.treeTypeCounts = new int[treeTypeArrayLen];
+                slot.treeTypeCounts[(int)_treeType]++;
+                _data.slots[i] = slot;
+                return true;
+            }
+        }
+
+        // 2. 빈 슬롯에 새로 넣는다.
+        for (int i = 0; i < _data.slots.Count; i++)
+        {
+            InventorySlotSaveData slot = _data.slots[i];
+            if (slot.itemSaveData.itemType == ItemType.None && slot.totalCount == 0)
+            {
+                slot.itemSaveData = new ItemSaveData
+                {
+                    itemType = ItemType.Log,
+                    treeType = _treeType,
+                    logState = _logState,
+                    color = _color
+                };
+                slot.totalCount = 1;
+                slot.treeTypeCounts = new int[treeTypeArrayLen];
+                slot.treeTypeCounts[(int)_treeType] = 1;
+                _data.slots[i] = slot;
+                return true;
+            }
+        }
+
+        return false;
+    }
+}

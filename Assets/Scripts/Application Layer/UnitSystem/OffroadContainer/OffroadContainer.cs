@@ -948,6 +948,86 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         }
     }
 
+    /// <summary>
+    /// 저장 시점에 아직 어느 컨테이너 슬롯에도 커밋되지 않은 "운반 중" 로그를 세이브 데이터에만
+    /// 가상으로 정산한다(라이브 상태는 건드리지 않음). 방향 규칙:
+    ///  - 이 컨테이너 -> 캐릭터로 날아가던 것: 캐릭터 세이브로 착지시킨다.
+    ///  - 이 컨테이너 -> 포터로 날아가던 것 / 포터가 인벤토리에 들고 있던 것: 저장되지 않는 포터
+    ///    대신 소스인 이 컨테이너 세이브로 되돌린다(인출 되돌리기).
+    ///  - 이 컨테이너로 납품되던 것: 목적지인 이 컨테이너 세이브로 착지시킨다.
+    ///
+    /// 되돌릴 대상(_offroadSave)이 가득 찬 경우(던전을 왕복하며 포터가 이월 로그를 든 채 컨테이너가
+    /// 다시 채워진 상황 등)에는, 포터가 원래 향하던 목적지인 LogContainer 세이브로 전진 납품해
+    /// 유실을 막는다(fallback). 이 fallback이 정확하려면 반드시 LogContainer의 운반분이 먼저
+    /// 정산된 뒤(_logContainerSave가 최신 상태)에 이 메서드를 호출해야 한다.
+    /// </summary>
+    public void AppendTransitToSaveData(ref InventorySaveData _offroadSave, ref InventorySaveData _characterSave,
+        ref InventorySaveData _logContainerSave, int _characterMaxPerSlot, int _logContainerMaxPerSlot,
+        IReadOnlyList<OffroadPorterNPC> _porters)
+    {
+        // 1. 이 컨테이너와 얽힌 비행 중 로그 정산
+        for (int i = 0; i < flyingItems.Count; i++)
+        {
+            LogItem item = flyingItems[i].item;
+            if (item == null || item.itemType != ItemType.Log) continue;
+
+            if (flyingItems[i].toCarrier != null)
+            {
+                // 포터로 향하던 것 -> 소스인 이 컨테이너로 되돌린다(가득이면 LogContainer로 전진).
+                MergeRollback(ref _offroadSave, maxItemsPerSlot, ref _logContainerSave, _logContainerMaxPerSlot,
+                    item.treeType, item.logState, item.color);
+            }
+            else if (flyingItems[i].toCharacter)
+            {
+                // 캐릭터로 향하던 것 -> 캐릭터 인벤토리로 착지(발사 시점 용량 검사로 자리 보장).
+                if (!SaveDataMerge.AddLog(ref _characterSave, item.treeType, item.logState, item.color, _characterMaxPerSlot))
+                    Debug.LogWarning("[OffroadContainer] 저장 정산: 캐릭터행 비행 로그를 넣을 자리가 없습니다.");
+            }
+            else
+            {
+                // 이 컨테이너로 납품되던 것 -> 목적지인 이 컨테이너로 착지(가득이면 LogContainer로 전진).
+                MergeRollback(ref _offroadSave, maxItemsPerSlot, ref _logContainerSave, _logContainerMaxPerSlot,
+                    item.treeType, item.logState, item.color);
+            }
+        }
+
+        // 2. 포터가 인벤토리에 들고 있던 로그 정산 -> 소스인 이 컨테이너로 되돌린다(가득이면 LogContainer로 전진).
+        if (_porters == null) return;
+        for (int p = 0; p < _porters.Count; p++)
+        {
+            OffroadPorterNPC porter = _porters[p];
+            if (porter == null || porter.inventory == null) continue;
+
+            List<InventorySlot> porterSlots = porter.inventory.GetInventorySlots();
+            int slotCnt = porter.inventory.currentSlotCnt;
+            for (int s = 0; s < slotCnt; s++)
+            {
+                InventorySlot slot = porterSlots[s];
+                if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+
+                // 슬롯은 단일 (나무종류/등급) 조합이라 totalCount만큼 같은 로그를 되돌리면 된다.
+                for (int c = 0; c < slot.totalCount; c++)
+                {
+                    MergeRollback(ref _offroadSave, maxItemsPerSlot, ref _logContainerSave, _logContainerMaxPerSlot,
+                        logData.treeType, logData.logState, logData.color);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 저장 정산용: 로그 1개를 우선 _primary(OffroadContainer) 세이브로 되돌리고, 자리가 없으면
+    /// _fallback(LogContainer) 세이브로 전진 납품한다. 둘 다 가득이면(모든 컨테이너가 꽉 찬 극단
+    /// 상황) 경고만 남긴다.
+    /// </summary>
+    private static void MergeRollback(ref InventorySaveData _primary, int _primaryMax,
+        ref InventorySaveData _fallback, int _fallbackMax, TreeType _treeType, LogState _logState, Color _color)
+    {
+        if (SaveDataMerge.AddLog(ref _primary, _treeType, _logState, _color, _primaryMax)) return;
+        if (SaveDataMerge.AddLog(ref _fallback, _treeType, _logState, _color, _fallbackMax)) return;
+        Debug.LogWarning("[OffroadContainer] 저장 정산: 운반 로그를 넣을 자리가 없습니다(모든 컨테이너 가득 참).");
+    }
+
     public void LoadSaveData(InventorySaveData _data)
     {
         // 기존 슬롯 초기화

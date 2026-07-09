@@ -975,6 +975,23 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         }
     }
 
+    /// <summary>
+    /// 저장 시점에 이 컨테이너로 날아오던(아직 착지=커밋되지 않은) 로그를 세이브 데이터에만 가상으로
+    /// 착지시킨다(라이브 상태는 건드리지 않음). LogContainer의 flyingItems는 전부 "이 컨테이너로
+    /// 들어오는 중"인 항목뿐이라(포터/캐릭터 납품분) 방향 구분 없이 이 컨테이너 세이브로 합산한다.
+    /// </summary>
+    public void AppendTransitToSaveData(ref InventorySaveData _saveData)
+    {
+        for (int i = 0; i < flyingItems.Count; i++)
+        {
+            LogItem item = flyingItems[i];
+            if (item == null || item.itemType != ItemType.Log) continue;
+
+            if (!SaveDataMerge.AddLog(ref _saveData, item.treeType, item.logState, item.color, maxItemsPerSlot))
+                Debug.LogWarning("[LogContainer] 저장 정산: 납품 비행 로그를 넣을 자리가 없습니다.");
+        }
+    }
+
     public void LoadSaveData(LogProcessingSaveData _data)
     {
         bStop = _data.bStop;

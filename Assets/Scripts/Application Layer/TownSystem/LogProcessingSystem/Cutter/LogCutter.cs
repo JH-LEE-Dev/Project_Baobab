@@ -251,9 +251,18 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 cuttingItem.durability = _data.cuttingItemData.durability;
 
                 logToCut = data;
-            }
 
-            cuttingItem.gameObject.SetActive(false);
+                // 가공 재개 전까지 비활성화. SetActive를 null 체크 안으로 넣어, 풀이 아이템을
+                // 반환하지 못하는 경우의 NullReferenceException을 방지한다.
+                cuttingItem.gameObject.SetActive(false);
+            }
+            else
+            {
+                // 풀에서 아이템을 받지 못하면 가공 중 상태를 유지할 수 없으므로 안전하게 비가공 처리.
+                bIsCutting = false;
+                logToCut = null;
+                maxDurability = 0f;
+            }
         }
         else
         {

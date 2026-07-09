@@ -206,6 +206,27 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         _saveData.logProcessingStack = logProcessingStack;
     }
 
+    /// <summary>
+    /// 저장 시점에 LogContainer로 날아오던(아직 커밋 안 된) 로그를 세이브 데이터에만 가상 착지시킨다.
+    /// 반드시 PopulateSaveData 이후에 호출해야 한다(슬롯 리스트가 초기화/구성된 뒤여야 병합 가능).
+    /// </summary>
+    public void AppendTransitToSaveData(ref LogProcessingSaveData _saveData)
+    {
+        if (logContainer != null)
+        {
+            logContainer.AppendTransitToSaveData(ref _saveData.containerInventoryData);
+        }
+    }
+
+    /// <summary>
+    /// OffroadContainer 저장 정산이 되돌릴 자리가 없을 때 LogContainer로 전진 납품(fallback)하기 위해
+    /// LogContainer의 슬롯당 최대 보관 개수를 노출한다.
+    /// </summary>
+    public int GetContainerMaxItemsPerSlot()
+    {
+        return logContainer != null ? logContainer.maxItemCntPerSlot : 0;
+    }
+
     public void LoadSaveData(LogProcessingSaveData _data)
     {
         if (logContainer != null)

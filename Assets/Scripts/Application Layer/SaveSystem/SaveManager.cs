@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.IO;
@@ -14,6 +15,7 @@ public class SaveManager : MonoBehaviour
     private InDungeonObjectManager inDungeonObjectManager;
     private TownObjectManager townObjectManager;
     private OffroadContainer offroadContainer;
+    private TownUnitSpawner townUnitSpawner;
 
     // // 내부 의존성 및 설정
     // 암호화 키 (보안을 위해 실제 서비스 시에는 더 안전한 방식으로 관리 권장)
@@ -24,7 +26,8 @@ public class SaveManager : MonoBehaviour
     private GameSaveData cachedSaveData = new GameSaveData();
 
     public void Initialize(SignalHub _signalHub, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
-    DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager, OffroadContainer _offroadContainer)
+    DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager, OffroadContainer _offroadContainer,
+    TownUnitSpawner _townUnitSpawner)
     {
         signalHub = _signalHub;
         inDungeonObjectManager = _inDungeonObjectManager;
@@ -34,6 +37,7 @@ public class SaveManager : MonoBehaviour
         logProcessingManager = _logProcessingManager;
         townObjectManager = _townObjectManager;
         offroadContainer = _offroadContainer;
+        townUnitSpawner = _townUnitSpawner;
 
         SubscribeSignals();
     }
@@ -93,6 +97,28 @@ public class SaveManager : MonoBehaviour
         if (offroadContainer != null)
         {
             offroadContainer.PopulateSaveData(ref cachedSaveData.offroadContainerSaveData);
+        }
+
+        // 8-1. 운반 중(포터 인벤토리/컨테이너 사이 비행) 로그 정산.
+        //      라이브 상태는 건드리지 않고, 위에서 채운 세이브 데이터에만 가상으로 합산한다.
+        //      - LogContainer로 납품되던 비행분 -> LogContainer 세이브로 착지
+        //      - OffroadContainer<->캐릭터/포터 비행분, 포터가 들고 있던 분 -> 각 규칙대로 정산
+        //      (반드시 모든 Populate 이후에 호출: 슬롯 리스트가 구성된 뒤여야 병합 가능)
+        if (logProcessingManager != null)
+        {
+            logProcessingManager.AppendTransitToSaveData(ref cachedSaveData.logProcessingSaveData);
+        }
+
+        if (offroadContainer != null)
+        {
+            int characterMaxPerSlot = inventoryManager != null ? inventoryManager.GetMaxItemsPerSlot() : 0;
+            int logContainerMaxPerSlot = logProcessingManager != null ? logProcessingManager.GetContainerMaxItemsPerSlot() : 0;
+            IReadOnlyList<OffroadPorterNPC> porters = townUnitSpawner != null ? townUnitSpawner.NPCs : null;
+            // OffroadContainer가 가득이면 포터 로그를 LogContainer 세이브로 전진 납품(fallback)하므로
+            // 그 LogContainer 세이브 데이터도 ref로 넘긴다. (LogContainer 자체 운반분은 위에서 이미 정산됨)
+            offroadContainer.AppendTransitToSaveData(ref cachedSaveData.offroadContainerSaveData,
+                ref cachedSaveData.inventorySaveData, ref cachedSaveData.logProcessingSaveData.containerInventoryData,
+                characterMaxPerSlot, logContainerMaxPerSlot, porters);
         }
 
         // 9. JSON 직렬화 및 바이너리 암호화 저장
