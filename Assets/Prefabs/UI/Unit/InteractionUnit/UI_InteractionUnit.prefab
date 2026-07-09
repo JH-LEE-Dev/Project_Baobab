@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 5224451155267696052, guid: 1ed92aa3e72452f4ea3f346acf29bc2b, type: 3}
+  m_Sprite: {fileID: -3468430240258086507, guid: 958d9b2b7e6a09d40a26c3f973c8561e, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -128,7 +128,7 @@ MonoBehaviour:
   motionPlayer: {fileID: 7605360207726984694}
   iconImage: {fileID: 1748248865866761163}
   interactionIcons:
-  - {fileID: 5224451155267696052, guid: 1ed92aa3e72452f4ea3f346acf29bc2b, type: 3}
+  - {fileID: -3468430240258086507, guid: 958d9b2b7e6a09d40a26c3f973c8561e, type: 3}
   motionTag: Absol
 --- !u!1 &3969127138720448973
 GameObject:
@@ -185,6 +185,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 18
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: -5}
     endOffset: {x: 0, y: 0}

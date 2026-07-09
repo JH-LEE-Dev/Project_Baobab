@@ -169,7 +169,7 @@ ParticleSystem:
     startSpeed:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 5
+      scalar: 0
       minScalar: 0.01
       maxCurve:
         serializedVersion: 2
@@ -226,11 +226,11 @@ ParticleSystem:
       maxColor: {r: 1, g: 1, b: 1, a: 1}
       maxGradient:
         serializedVersion: 2
-        key0: {r: 0.13679248, g: 0.7330286, b: 1, a: 1}
-        key1: {r: 0, g: 0.28593653, b: 0.6603774, a: 1}
-        key2: {r: 0, g: 0.6206888, b: 1, a: 0}
-        key3: {r: 0, g: 1, b: 0.85026246, a: 0}
-        key4: {r: 0.0428469, g: 0.33962262, b: 0, a: 0}
+        key0: {r: 0.7311321, g: 0.91689533, b: 1, a: 1}
+        key1: {r: 0.514151, g: 0.72526395, b: 1, a: 1}
+        key2: {r: 0.3160377, g: 1, b: 0.9930897, a: 0}
+        key3: {r: 0.6933962, g: 1, b: 0.95431, a: 0}
+        key4: {r: 0, g: 1, b: 0.85026246, a: 0}
         key5: {r: 1, g: 0, b: 0.74690974, a: 0}
         key6: {r: 0, g: 0, b: 0, a: 0}
         key7: {r: 0, g: 0, b: 0, a: 0}
@@ -604,7 +604,7 @@ ParticleSystem:
         m_RotationOrder: 4
     randomizeRotationDirection: 0
     gravitySource: 1
-    maxNumParticles: 80
+    maxNumParticles: 120
     customEmitterVelocity: {x: 0, y: 0, z: 0}
     size3D: 0
     rotation3D: 0
@@ -747,11 +747,11 @@ ParticleSystem:
     m_TextureColorAffectsParticles: 1
     m_TextureAlphaAffectsParticles: 1
     m_TextureBilinearFiltering: 0
-    randomDirectionAmount: 1
-    sphericalDirectionAmount: 1
+    randomDirectionAmount: 0
+    sphericalDirectionAmount: 0
     randomPositionAmount: 0
     radius:
-      value: 1
+      value: 0.33
       mode: 0
       spread: 0
       speed:
@@ -980,7 +980,7 @@ ParticleSystem:
       countCurve:
         serializedVersion: 2
         minMaxState: 0
-        scalar: 80
+        scalar: 120
         minScalar: 30
         maxCurve:
           serializedVersion: 2
@@ -2471,7 +2471,7 @@ ParticleSystem:
       m_Bits: 4294967295
     influenceList: []
   ClampVelocityModule:
-    enabled: 1
+    enabled: 0
     x:
       serializedVersion: 2
       minMaxState: 0
@@ -2904,7 +2904,7 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
     separateAxes: 0
-    frequency: 1
+    frequency: 1.5
     damping: 1
     octaves: 1
     octaveMultiplier: 0.5
@@ -4921,7 +4921,7 @@ Transform:
   m_GameObject: {fileID: 7553804792588625955}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.975, y: 32.032, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5121,11 +5121,11 @@ ParticleSystem:
       maxColor: {r: 1, g: 1, b: 1, a: 1}
       maxGradient:
         serializedVersion: 2
-        key0: {r: 0.13679248, g: 0.7330286, b: 1, a: 1}
-        key1: {r: 0, g: 0.28593653, b: 0.6603774, a: 1}
-        key2: {r: 0, g: 0.6206888, b: 1, a: 0}
-        key3: {r: 0, g: 1, b: 0.85026246, a: 0}
-        key4: {r: 0.0428469, g: 0.33962262, b: 0, a: 0}
+        key0: {r: 0.7311321, g: 0.91689533, b: 1, a: 1}
+        key1: {r: 0.514151, g: 0.72526395, b: 1, a: 1}
+        key2: {r: 0.3160377, g: 1, b: 0.9930897, a: 0}
+        key3: {r: 0.6933962, g: 1, b: 0.95431, a: 0}
+        key4: {r: 0, g: 1, b: 0.85026246, a: 0}
         key5: {r: 1, g: 0, b: 0.74690974, a: 0}
         key6: {r: 0, g: 0, b: 0, a: 0}
         key7: {r: 0, g: 0, b: 0, a: 0}
@@ -5642,8 +5642,8 @@ ParticleSystem:
     m_TextureColorAffectsParticles: 1
     m_TextureAlphaAffectsParticles: 1
     m_TextureBilinearFiltering: 0
-    randomDirectionAmount: 1
-    sphericalDirectionAmount: 1
+    randomDirectionAmount: 0.8
+    sphericalDirectionAmount: 0
     randomPositionAmount: 0
     radius:
       value: 1
@@ -7544,7 +7544,7 @@ ParticleSystem:
           inWeight: 0
           outWeight: 0
         - serializedVersion: 3
-          time: 0.2829132
+          time: 0.45049584
           value: 0
           inSlope: -2
           outSlope: -2
@@ -7638,7 +7638,7 @@ ParticleSystem:
         m_PostInfinity: 2
         m_RotationOrder: 4
   NoiseModule:
-    enabled: 1
+    enabled: 0
     strength:
       serializedVersion: 2
       minMaxState: 0
