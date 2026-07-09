@@ -1504,6 +1504,12 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 30
     uiParticleScale: 0
+  - vfxTag: StarImpactExplosionEffect
+    effectPrefab: {fileID: 8318707871092513370, guid: 45faecec6f3e26b419159e50e1679060, type: 3}
+    initialPoolSize: 5
+    allowDynamicExpansion: 1
+    maxPoolSize: 20
+    uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
   m_ObjectHideFlags: 0

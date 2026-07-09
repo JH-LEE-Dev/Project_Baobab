@@ -11,8 +11,8 @@ public class ShootingStarVFX : MonoBehaviour
     private const float FallDuration = 0.6f;
     private const float FallAngleDegrees = 22.5f;
     private const float FallHeight = 6f;
+    private const float FrameRate = 24f; // 프레임 전환(애니메이션) 속도 - 낙하 시간과 별개로 계속 순환한다
     private const string SortingLayerName = "Objects";
-    private const int SortingOrder = 10000; // 하늘에서 떨어지는 연출이라 항상 다른 오브젝트보다 앞에 그려지도록 고정
 
     private static Sprite[] cachedFrames;
 
@@ -22,7 +22,7 @@ public class ShootingStarVFX : MonoBehaviour
     private float elapsed;
     private Action onLanded;
 
-    public static void Spawn(Vector3 _landingPos, Action _onLanded)
+    public static void Spawn(Vector3 _landingPos, int _sortingOrder, Action _onLanded)
     {
         EnsureFramesLoaded();
         if (cachedFrames == null || cachedFrames.Length == 0)
@@ -34,7 +34,7 @@ public class ShootingStarVFX : MonoBehaviour
         GameObject go = new GameObject("ShootingStarVFX");
         ShootingStarVFX instance = go.AddComponent<ShootingStarVFX>();
         instance.spriteRenderer = go.AddComponent<SpriteRenderer>();
-        instance.Begin(_landingPos, _onLanded);
+        instance.Begin(_landingPos, _sortingOrder, _onLanded);
     }
 
     private static void EnsureFramesLoaded()
@@ -56,7 +56,7 @@ public class ShootingStarVFX : MonoBehaviour
         return 0;
     }
 
-    private void Begin(Vector3 _landingPos, Action _onLanded)
+    private void Begin(Vector3 _landingPos, int _sortingOrder, Action _onLanded)
     {
         onLanded = _onLanded;
         elapsed = 0f;
@@ -70,13 +70,18 @@ public class ShootingStarVFX : MonoBehaviour
 
         transform.position = startPos;
 
+        // 스프라이트 기본 방향이 아래를 향하고 있어(위아래가 뒤집힌 채로 보였음) +90으로 보정한다.
         Vector3 dir = (endPos - startPos).normalized;
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0f, 0f, angle - 90f);
+        transform.rotation = Quaternion.Euler(0f, 0f, angle + 90f);
 
         spriteRenderer.sprite = cachedFrames[0];
         spriteRenderer.sortingLayerName = SortingLayerName;
-        spriteRenderer.sortingOrder = SortingOrder;
+
+        // 낙하 중 시각적 높이(하늘 위)는 연출일 뿐이므로 정렬 기준으로 쓰지 않는다.
+        // 착지할 나무 기준으로 미리 계산된 값(topHighlight+1)을 그대로 고정해서 쓰면,
+        // 착지 지점보다 화면 앞/뒤에 있는 다른 나무들과 자연스럽게 깊이가 맞물린다.
+        spriteRenderer.sortingOrder = _sortingOrder;
     }
 
     private void Update()
@@ -86,7 +91,7 @@ public class ShootingStarVFX : MonoBehaviour
 
         transform.position = Vector3.Lerp(startPos, endPos, t);
 
-        int frameIdx = Mathf.Min(cachedFrames.Length - 1, Mathf.FloorToInt(t * cachedFrames.Length));
+        int frameIdx = Mathf.FloorToInt(elapsed * FrameRate) % cachedFrames.Length;
         spriteRenderer.sprite = cachedFrames[frameIdx];
 
         if (t >= 1f)

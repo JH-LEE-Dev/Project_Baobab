@@ -105,4 +105,20 @@ public class InDungeonVFXManager : MonoBehaviour
             null
         ));
     }
+
+    /// <summary>
+    /// 별똥별이 착탄했을 때의 폭발 VFX를 재생합니다. parent는 null로 고정하여 완전히 분리합니다.
+    /// </summary>
+    public void PlayStarImpactExplosionVFX(Vector3 _position, int _sortingOrder)
+    {
+        if (vfxComponent == null) return;
+
+        vfxComponent.Play(new VFXPlaySettings(
+            "StarImpactExplosionEffect",
+            _position,
+            Quaternion.identity,
+            _sortingOrder,
+            null
+        ));
+    }
 }
