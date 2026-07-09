@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8870723574520056898}
   - component: {fileID: 1308031110727379550}
   - component: {fileID: 5514939321083434072}
-  m_Layer: 0
+  m_Layer: 19
   m_Name: VFX_SporeExplosion
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4905,7 +4905,7 @@ GameObject:
   - component: {fileID: 5576875480449929649}
   - component: {fileID: 8961847964968627430}
   - component: {fileID: 7374238290876603269}
-  m_Layer: 0
+  m_Layer: 19
   m_Name: VFX_SporeExplosion_Basic
   m_TagString: Untagged
   m_Icon: {fileID: 0}
