@@ -165,7 +165,6 @@ MonoBehaviour:
   buttonImage: {fileID: 4399130264765692810}
   dotTarget: {fileID: 7054994348241041646}
   textTarget: {fileID: 1199516035136246397}
-  buttonText: {fileID: 0}
   dotUIEffect: {fileID: 2517419502627464056}
   textUIEffect: {fileID: 3891088760371017779}
   autoStaggerBySiblingIndex: 1
@@ -178,7 +177,7 @@ MonoBehaviour:
   hoverDotRotation: {x: 0, y: 0, z: -90}
   textHoverStartScale: {x: 1.25, y: 0.3}
   textHoverMoveX: 5
-  hoverShadowColor: {r: 1, g: 0.5167899, b: 0, a: 1}
+  hoverShadowColor: {r: 0, g: 0.7075472, b: 0.000085695734, a: 1}
   hoverShadowGlow: 0
   unhoverDuration: 0.2
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
@@ -1305,7 +1304,6 @@ MonoBehaviour:
   buttonImage: {fileID: 5184734663022450210}
   dotTarget: {fileID: 1592435927672888130}
   textTarget: {fileID: 8104278274265621445}
-  buttonText: {fileID: 0}
   dotUIEffect: {fileID: 2697634502252019839}
   textUIEffect: {fileID: 2252734627931721102}
   autoStaggerBySiblingIndex: 1
@@ -1318,7 +1316,7 @@ MonoBehaviour:
   hoverDotRotation: {x: 0, y: 0, z: -90}
   textHoverStartScale: {x: 1.25, y: 0.3}
   textHoverMoveX: 5
-  hoverShadowColor: {r: 1, g: 0.5167899, b: 0, a: 1}
+  hoverShadowColor: {r: 0, g: 0.7075472, b: 0.000085695734, a: 1}
   hoverShadowGlow: 0
   unhoverDuration: 0.2
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
@@ -2623,7 +2621,6 @@ MonoBehaviour:
   buttonImage: {fileID: 5991875604697520443}
   dotTarget: {fileID: 6046497701183674064}
   textTarget: {fileID: 8371264093573616747}
-  buttonText: {fileID: 0}
   dotUIEffect: {fileID: 8143037376445558179}
   textUIEffect: {fileID: 4572979707382968882}
   autoStaggerBySiblingIndex: 1
@@ -2636,7 +2633,7 @@ MonoBehaviour:
   hoverDotRotation: {x: 0, y: 0, z: -90}
   textHoverStartScale: {x: 1.25, y: 0.3}
   textHoverMoveX: 5
-  hoverShadowColor: {r: 1, g: 0.5167899, b: 0, a: 1}
+  hoverShadowColor: {r: 0, g: 0.7075472, b: 0.000085695734, a: 1}
   hoverShadowGlow: 0
   unhoverDuration: 0.2
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
@@ -2711,7 +2708,6 @@ MonoBehaviour:
   buttonImage: {fileID: 2154107272205497143}
   dotTarget: {fileID: 2452098752167529511}
   textTarget: {fileID: 6003075653827868177}
-  buttonText: {fileID: 0}
   dotUIEffect: {fileID: 1961798941890216512}
   textUIEffect: {fileID: 570833240162801548}
   autoStaggerBySiblingIndex: 1
@@ -2724,7 +2720,7 @@ MonoBehaviour:
   hoverDotRotation: {x: 0, y: 0, z: -90}
   textHoverStartScale: {x: 1.25, y: 0.3}
   textHoverMoveX: 5
-  hoverShadowColor: {r: 1, g: 0.5167899, b: 0, a: 1}
+  hoverShadowColor: {r: 0, g: 0.7075472, b: 0.000085695734, a: 1}
   hoverShadowGlow: 0
   unhoverDuration: 0.2
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
@@ -3232,7 +3228,6 @@ MonoBehaviour:
   buttonImage: {fileID: 866607101097628106}
   dotTarget: {fileID: 6655604308340127982}
   textTarget: {fileID: 1440460823462806909}
-  buttonText: {fileID: 0}
   dotUIEffect: {fileID: 8251428065167696521}
   textUIEffect: {fileID: 8135886185790885639}
   autoStaggerBySiblingIndex: 1
@@ -3245,7 +3240,7 @@ MonoBehaviour:
   hoverDotRotation: {x: 0, y: 0, z: -90}
   textHoverStartScale: {x: 1.25, y: 0.3}
   textHoverMoveX: 5
-  hoverShadowColor: {r: 1, g: 0.5167899, b: 0, a: 1}
+  hoverShadowColor: {r: 0, g: 0.7075472, b: 0.000085695734, a: 1}
   hoverShadowGlow: 0
   unhoverDuration: 0.2
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
