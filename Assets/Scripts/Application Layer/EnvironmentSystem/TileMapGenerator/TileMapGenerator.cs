@@ -12,12 +12,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private GameObject gridPrefab;
     [SerializeField] private int width = 150;
     [SerializeField] private int height = 150;
-    [SerializeField] private float scale = 25f;
+    [SerializeField] private float scale = 40f;
     [SerializeField] private int seed;
     [SerializeField] private float waterThreshold = 0.38f;
 
     [Header("외부 물 타일 설정")]
     [SerializeField] private int outerWaterDepth = 25;
+    [SerializeField] private float baseMapRadius = 75f;
+    [Range(0f, 1f)]
+    [SerializeField] private float outerWaterObjectDensity = 0.01f;
+    private bool[] isMainland;
 
     [Header("중앙 보호 구역 설정")]
     [SerializeField] private float centerSafeZoneRadius = 15f;
@@ -138,6 +142,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         int size = width * height;
         noiseValues = new float[size];
+        isMainland = new bool[size];
         groundTiles = new TileBase[size];
         collisionTiles = new TileBase[size];
         waterTiles = new TileBase[size];
@@ -374,7 +379,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         float centerX = width * 0.5f;
         float centerY = height * 0.5f;
         float safeRadiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
-        float mapRadius = Mathf.Min(width, height) * 0.5f;
+        float mapRadius = baseMapRadius;
         float mapRadiusSq = mapRadius * mapRadius;
 
         for (int y = 0; y < height; y++)
@@ -386,23 +391,130 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             for (int x = 0; x < width; x++)
             {
                 int i = x + rowOffset;
+                // --- Domain Warping + FBM 기법 (심화 파편화) ---
+                // 1타일 단위의 부자연스러운 노이즈(파편)를 없애고, 
+                // 물감이나 대리석 마블링처럼 유기적이고 부드러운 형태의 작은 지형들을 생성합니다.
+                
+                // 지형이 뭉치지 않고 훨씬 잘게 쪼개지도록 스케일을 2.5배로 크게 올립니다.
                 float xCoord = (x + 0.5f) * invWidth * scale + seed;
-                float val = Mathf.PerlinNoise(xCoord, yCoord);
+
+                float nx = (x + 0.5f) * invWidth * (scale * 2.5f);
+                float ny = (y + 0.5f) * invHeight * (scale * 2.5f);
+                
+                // 좌표계를 구부리기 위한 워프(Warp) 노이즈 추출
+                float warpX = Mathf.PerlinNoise(nx * 0.5f + 11.1f, ny * 0.5f + 11.1f) - 0.5f;
+                float warpY = Mathf.PerlinNoise(nx * 0.5f + 22.2f, ny * 0.5f + 22.2f) - 0.5f;
+                
+                // 워핑된 기본 지형 노이즈
+                float baseVal = Mathf.PerlinNoise(nx + warpX * 1.5f + seed, ny + warpY * 1.5f + seed);
+                
+                // 테두리를 미세하게 깎아내어 뭉침을 방지하기 위한 디테일 노이즈 (약한 FBM)
+                float detailVal = Mathf.PerlinNoise(nx * 2f + seed, ny * 2f + seed);
+                
+                // 최종 지형 (기본 85% + 디테일 15%로 합성하여 부드럽고 촘촘한 파편화 달성)
+                float val = (baseVal * 0.85f) + (detailVal * 0.15f);
 
                 float dx = x - centerX;
+                float distSq = dx * dx + dy * dy;
                 
-                // 타원 밖은 완전한 물로 설정하여, 기존 ApplyTiles에서 자연스럽게 shoreline이 형성되도록 함
-                if (dx * dx + dy * dy > mapRadiusSq)
+                float angle = Mathf.Atan2(dy, dx);
+                // 1. 큰 파동 (해안선의 큼직한 굴곡)
+                float coast1 = (Mathf.PerlinNoise(angle * 4f, seed * 0.01f) - 0.5f) * 20f;
+                // 2. 작은 파동 (해안선의 자잘한 울퉁불퉁함)
+                float coast2 = (Mathf.PerlinNoise(angle * 10f, seed * 0.02f) - 0.5f) * 10f;
+                // 3. 2D 맵 노이즈를 이용한 경계면 파편화 (장식용 섬 생성)
+                float islandNoiseRaw = Mathf.PerlinNoise(xCoord * 2.5f + 100f, yCoord * 2.5f + 100f);
+                float islandNoise = 0f;
+                // 노이즈 값이 0.65 이상일 때만 급격히 확장시켜, 육지와 분리된 장식용 섬들이 흩뿌려지듯 생성되게 함
+                if (islandNoiseRaw > 0.65f)
+                {
+                    islandNoise = (islandNoiseRaw - 0.65f) * 60f; 
+                }
+                
+                float adjustedRadius = mapRadius + coast1 + coast2 + islandNoise;
+                
+                // 배열 바깥으로 너무 튀어나가지 않도록 최대 확장치 제한 (안전 장치)
+                adjustedRadius = Mathf.Min(adjustedRadius, mapRadius + 22f);
+                
+                if (distSq > adjustedRadius * adjustedRadius)
                 {
                     val = 0f;
                 }
-                // 중앙 보호 구역 내에는 물이 생기지 않도록 보정
-                else if (dx * dx + dy * dy < safeRadiusSq)
+                else if (distSq < safeRadiusSq)
                 {
                     val = Mathf.Max(val, waterThreshold + 0.05f);
                 }
 
                 noiseValues[i] = val;
+            }
+        }
+        MarkMainland();
+    }
+
+    private System.Collections.Generic.Queue<int> floodFillQueue = new System.Collections.Generic.Queue<int>(10000);
+
+    private void MarkMainland()
+    {
+        int size = width * height;
+        System.Array.Clear(isMainland, 0, size);
+        
+        int centerX = width / 2;
+        int centerY = height / 2;
+        
+        floodFillQueue.Clear();
+        int startIdx = centerX + centerY * width;
+        
+        if (noiseValues[startIdx] >= waterThreshold)
+        {
+            floodFillQueue.Enqueue(startIdx);
+            isMainland[startIdx] = true;
+        }
+
+        while (floodFillQueue.Count > 0)
+        {
+            int curr = floodFillQueue.Dequeue();
+            int cx = curr % width;
+            int cy = curr / width;
+
+            // Right
+            if (cx < width - 1)
+            {
+                int nIdx = curr + 1;
+                if (!isMainland[nIdx] && noiseValues[nIdx] >= waterThreshold)
+                {
+                    isMainland[nIdx] = true;
+                    floodFillQueue.Enqueue(nIdx);
+                }
+            }
+            // Left
+            if (cx > 0)
+            {
+                int nIdx = curr - 1;
+                if (!isMainland[nIdx] && noiseValues[nIdx] >= waterThreshold)
+                {
+                    isMainland[nIdx] = true;
+                    floodFillQueue.Enqueue(nIdx);
+                }
+            }
+            // Up
+            if (cy < height - 1)
+            {
+                int nIdx = curr + width;
+                if (!isMainland[nIdx] && noiseValues[nIdx] >= waterThreshold)
+                {
+                    isMainland[nIdx] = true;
+                    floodFillQueue.Enqueue(nIdx);
+                }
+            }
+            // Down
+            if (cy > 0)
+            {
+                int nIdx = curr - width;
+                if (!isMainland[nIdx] && noiseValues[nIdx] >= waterThreshold)
+                {
+                    isMainland[nIdx] = true;
+                    floodFillQueue.Enqueue(nIdx);
+                }
             }
         }
     }
@@ -509,8 +621,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         float centerY = height * 0.5f;
         float safeRadiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
         
-        float mapRadius = Mathf.Min(width, height) * 0.5f;
-        float mapRadiusSq = mapRadius * mapRadius;
+        float mapRadius = baseMapRadius;
+        float outerRadius = mapRadius + outerWaterDepth;
+        float outerRadiusSq = outerRadius * outerRadius;
 
         for (int i = 0; i < size; i++)
         {
@@ -518,7 +631,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             int y = i / width;
             float dx = x - centerX;
             float dy = y - centerY;
-            bool inSafeZone = (dx * dx + dy * dy < safeRadiusSq);
+            float distSq = dx * dx + dy * dy;
+
+            // 도화지(Width x Height)의 구석 부분(타원 반경을 벗어나는 곳)은 타일을 아예 생성하지 않음 (사각형 방지)
+            if (distSq > outerRadiusSq) continue;
+
+            bool inSafeZone = (distSq < safeRadiusSq);
 
             float v = noiseValues[i];
 
@@ -570,7 +688,11 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                         }
                     }
 
-                    if (animatedObjGenerator != null && stageTileData != null && UnityEngine.Random.value < stageTileData.WaterAnimatedObjDensity)
+                    float currentDensity = (distSq < mapRadius * mapRadius) ? 
+                        (stageTileData != null ? stageTileData.WaterAnimatedObjDensity : 0f) : 
+                        outerWaterObjectDensity;
+                        
+                    if (animatedObjGenerator != null && UnityEngine.Random.value < currentDensity)
                     {
                         Vector3 pos = GetWorldPos(i);
                         animatedObjGenerator.SpawnWaterAnimatedObj(pos);
@@ -610,7 +732,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                     if (staticPrefabs != null && staticPrefabs.Count > 0 && UnityEngine.Random.value < density)
                     {
-                        if (!inSafeZone)
+                        if (!inSafeZone && isMainland[i])
                         {
                             if (animatedObjGenerator != null)
                             {
@@ -667,7 +789,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                 if (false == _isSand && false == _hasRockDeco)
                 {
-                    if (!inSafeZone)
+                    if (!inSafeZone && isMainland[i])
                     {
                         if ((pos - portalPos).sqrMagnitude > 2.25f && (pos - playerPos).sqrMagnitude > 2.25f)
                         {
@@ -786,7 +908,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         float cX = width * 0.5f;
         float cY = height * 0.5f;
-        float mapRadius = Mathf.Min(width, height) * 0.5f;
+        float mapRadius = baseMapRadius;
         float outerRadius = mapRadius + outerWaterDepth;
         float outerRadiusSq = outerRadius * outerRadius;
 
@@ -848,7 +970,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                         UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
                 }
 
-                if (animatedObjGenerator != null && UnityEngine.Random.value < stageTileData.WaterAnimatedObjDensity)
+                if (animatedObjGenerator != null && UnityEngine.Random.value < outerWaterObjectDensity)
                 {
                     Vector3Int cellPos = new Vector3Int(worldX, worldY, 0);
                     Vector3 pos = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
