@@ -56,6 +56,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private int clickVibrato = 6; // 흔들리는 횟수 (탄성)
     [SerializeField, Range(0f, 1f)] private float clickElasticity = 0.6f; // 늘어나는 정도
     [ColorUsage(true, true)] [SerializeField] private Color clickShadowColor = Color.yellow;
+    [ColorUsage(true, true)] [SerializeField] private Color disabledClickShadowColor = Color.red; // 비활성화 상태 클릭 시 색상
     [SerializeField] private bool clickShadowGlow = true;
     [SerializeField] private Ease clickShadowEase = Ease.OutQuad;
 
@@ -340,8 +341,10 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         
         isClicked = true;
 
-        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, clickShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
-        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, clickShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+        Color targetShadowColor = isInteractable ? clickShadowColor : disabledClickShadowColor;
+
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
 
         if (false == isInteractable)
         {

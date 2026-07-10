@@ -20,7 +20,7 @@ public class UI_MainMenu : MonoBehaviour
     [Header("Localization Settings")]
     [SerializeField] private int mainMenuUIJsonId = 8;
     
-    // 내부 의존성
+    // 내부 상태
     private UIView_MainMenu parentView;
     private UIViewContext viewCtx;
     
