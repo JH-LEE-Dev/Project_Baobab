@@ -1454,6 +1454,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonVFXManager
   vfxComponent: {fileID: 777467232540049004}
+  shieldBrokenVfxYOffset: -0.5
 --- !u!114 &777467232540049004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2195,14 +2196,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TileMapGenerator
   gridPrefab: {fileID: 672702204642318889, guid: 8a3483086f2d1264a966af0fa32945c5, type: 3}
-  width: 100
-  height: 100
+  width: 190
+  height: 190
   scale: 10
   seed: 0
   waterThreshold: 0.25
+  outerWaterDepth: 25
+  baseMapRadius: 75
+  outerWaterObjectDensity: 0.025
   centerSafeZoneRadius: 5
-  sandDensity: 0.125
-  grassDensity: 0.575
+  sandDensity: 0.075
+  grassDensity: 0.625
   stageTileData: {fileID: 11400000, guid: 7f7e6fd6cc9cc7f45acefb152231cf44, type: 2}
   mapTypeTileDatas:
   - mapType: 2

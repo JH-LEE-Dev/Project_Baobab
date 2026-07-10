@@ -25,6 +25,13 @@ public class UIView_MainMenu : UIView
     private UIViewContext context;
     private int mainMenuUIJsonId = 8; // MainMenuUI.json의 ID
 
+    private IMainMenuSaveSystem saveSystem;
+
+    public void DependencyInjection(IMainMenuSaveSystem _saveSystem)
+    {
+        saveSystem = _saveSystem;
+    }
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);

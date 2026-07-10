@@ -104,7 +104,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         if (mainMenuInstaller == null)
         {
             mainMenuInstaller = Instantiate(mainMenuInstallerPrefab);
-            mainMenuInstaller.Initialize(this, inputManager, localizationManager);
+            mainMenuInstaller.Initialize(this, inputManager, localizationManager, saveManager);
         }
     }
 
