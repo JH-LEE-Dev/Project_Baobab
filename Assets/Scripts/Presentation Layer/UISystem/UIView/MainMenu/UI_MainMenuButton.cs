@@ -31,6 +31,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private float appearDotDuration = 0.4f;
     [SerializeField] private float appearTextDuration = 0.3f;
     [SerializeField] private Vector3 appearDotRotation = new Vector3(0f, 0f, 180f);
+    [SerializeField] private Ease appearEase = Ease.OutBack;
+    [SerializeField] private Ease appearRotEase = Ease.OutCubic;
 
     [Header("Hover Settings (뽀잉하는 찰진 느낌)")]
     [SerializeField] private float hoverDuration = 0.35f;
@@ -39,17 +41,21 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private float textHoverMoveX = 15f; 
     [ColorUsage(true, true)] [SerializeField] private Color hoverShadowColor = Color.white;
     [SerializeField] private bool hoverShadowGlow = true;
+    [SerializeField] private Ease hoverEase = Ease.OutBack;
+    [SerializeField] private Ease hoverShadowEase = Ease.OutQuad;
 
     [Header("UnHover Settings (무심하게 툭 떨어지는 느낌)")]
     [SerializeField] private float unhoverDuration = 0.2f;
     [ColorUsage(true, true)] [SerializeField] private Color unhoverShadowColor = Color.black;
     [SerializeField] private bool unhoverShadowGlow = false;
+    [SerializeField] private Ease unhoverEase = Ease.OutQuad;
 
     [Header("Click Settings")]
     [SerializeField] private float clickPunchY = 0.5f; 
     [SerializeField] private float clickDuration = 0.2f;
     [ColorUsage(true, true)] [SerializeField] private Color clickShadowColor = Color.yellow;
     [SerializeField] private bool clickShadowGlow = true;
+    [SerializeField] private Ease clickShadowEase = Ease.OutQuad;
 
     [Header("Maintain (Toggled) Settings")]
     [SerializeField] private bool isToggledButton = false; 
@@ -57,23 +63,36 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private float maintainPulseDuration = 0.5f; 
     [ColorUsage(true, true)] [SerializeField] private Color maintainPulseColorA = Color.white;
     [ColorUsage(true, true)] [SerializeField] private Color maintainPulseColorB = Color.red;
+    [SerializeField] private Ease maintainRotationEase = Ease.Linear;
+    [SerializeField] private Ease maintainPulseEase = Ease.InOutSine;
 
     [Header("Disappear Settings")]
     [SerializeField] private float disappearStaggerInterval = 0.08f; // 여러 버튼이 순차적으로 사라지는 간격 (다다닥)
     [SerializeField] private float disappearSuckDuration = 0.3f; 
     [SerializeField] private float disappearDotShrinkDuration = 0.15f; 
     [SerializeField] private List<UI_MainMenuButton> buttonsToHide = new List<UI_MainMenuButton>(); 
+    [SerializeField] private Ease disappearSuckEase = Ease.InCubic;
+    [SerializeField] private Ease disappearShrinkEase = Ease.InBack;
+
+    [Header("Disabled Settings")]
+    [SerializeField] private bool isInteractable = true; 
+    [ColorUsage(true, true)] [SerializeField] private Color disabledDotColor = Color.gray;
+    [SerializeField] private Color disabledTextColor = Color.gray;
 
     // 내부 상태
     private Action onClickAction;
     private Vector2 textOriginalPos;
     private Vector3 dotOriginalRot;
     private TextMeshProUGUI targetTextComponent;
+    private UnityEngine.UI.Graphic dotGraphicComponent;
+    private Color originalDotColor = Color.white;
+    private Color originalTextColor = Color.white;
     
     private bool isClicked = false;
     private bool isDisappearing = false;
     private bool isMaintained = false;
     private bool isAppearing = false;
+    private bool isHovered = false;
 
     // 델리게이트 캐싱 (GC Alloc 방지)
     private TweenCallback onAppearCompleteCallback;
@@ -95,11 +114,14 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         {
             textOriginalPos = textTarget.anchoredPosition;
             targetTextComponent = textTarget.GetComponent<TextMeshProUGUI>();
+            if (null != targetTextComponent) originalTextColor = targetTextComponent.color;
         }
 
         if (null != dotTarget)
         {
             dotOriginalRot = dotTarget.localEulerAngles;
+            dotGraphicComponent = dotTarget.GetComponentInChildren<UnityEngine.UI.Graphic>(); // 자식까지 탐색하거나 Graphic(Image, Text 등)으로 포괄 탐색
+            if (null != dotGraphicComponent) originalDotColor = dotGraphicComponent.color;
         }
 
         // 델리게이트 인스턴스 사전 생성 및 캐싱 (람다/클로저 제거)
@@ -134,6 +156,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             return;
         }
 
+        SetInteractable(isInteractable); // 초기 컬러 갱신
+
         float _delay = appearManualDelay;
         if (true == autoStaggerBySiblingIndex)
         {
@@ -150,6 +174,21 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         if (null == buttonImage)
         {
             buttonImage = GetComponent<Image>();
+        }
+    }
+
+    public void SetInteractable(bool _isInteractable)
+    {
+        isInteractable = _isInteractable;
+
+        if (null != targetTextComponent)
+        {
+            targetTextComponent.color = isInteractable ? originalTextColor : disabledTextColor;
+        }
+
+        if (null != dotGraphicComponent)
+        {
+            dotGraphicComponent.color = isInteractable ? originalDotColor : disabledDotColor;
         }
     }
 
@@ -236,8 +275,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         if (null != textTarget)
         {
-            textTarget.DOScale(Vector3.one, appearTextDuration).SetEase(Ease.OutBack);
-            textTarget.DOAnchorPos(textOriginalPos, appearTextDuration).SetEase(Ease.OutBack)
+            textTarget.DOScale(Vector3.one, appearTextDuration).SetEase(appearEase);
+            textTarget.DOAnchorPos(textOriginalPos, appearTextDuration).SetEase(appearEase)
                       .OnComplete(onAppearCompleteCallback);
         }
         else
@@ -250,45 +289,47 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        isHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
         if (null != dotTarget)
         {
             dotTarget.DOKill();
-            dotTarget.DOLocalRotate(dotOriginalRot + hoverDotRotation, hoverDuration).SetEase(Ease.OutBack);
+            dotTarget.DOLocalRotate(dotOriginalRot + hoverDotRotation, hoverDuration).SetEase(hoverEase);
         }
 
         if (null != textTarget)
         {
             textTarget.DOKill();
             textTarget.localScale = new Vector3(textHoverStartScale.x, textHoverStartScale.y, 1f);
-            textTarget.DOScale(Vector3.one, hoverDuration).SetEase(Ease.OutBack);
-            textTarget.DOAnchorPos(new Vector2(textOriginalPos.x + textHoverMoveX, textOriginalPos.y), hoverDuration).SetEase(Ease.OutBack);
+            textTarget.DOScale(Vector3.one, hoverDuration).SetEase(hoverEase);
+            textTarget.DOAnchorPos(new Vector2(textOriginalPos.x + textHoverMoveX, textOriginalPos.y), hoverDuration).SetEase(hoverEase);
         }
 
-        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration);
-        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration);
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        isHovered = false;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
         if (null != dotTarget)
         {
             dotTarget.DOKill();
-            dotTarget.DOLocalRotate(dotOriginalRot, unhoverDuration).SetEase(Ease.OutQuad);
+            dotTarget.DOLocalRotate(dotOriginalRot, unhoverDuration).SetEase(unhoverEase);
         }
 
         if (null != textTarget)
         {
             textTarget.DOKill();
-            textTarget.DOScale(Vector3.one, unhoverDuration).SetEase(Ease.OutQuad);
-            textTarget.DOAnchorPos(textOriginalPos, unhoverDuration).SetEase(Ease.OutQuad);
+            textTarget.DOScale(Vector3.one, unhoverDuration).SetEase(unhoverEase);
+            textTarget.DOAnchorPos(textOriginalPos, unhoverDuration).SetEase(unhoverEase);
         }
 
-        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, unhoverShadowColor, unhoverShadowGlow, unhoverDuration);
-        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, unhoverShadowColor, unhoverShadowGlow, unhoverDuration);
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, unhoverShadowColor, unhoverShadowGlow, unhoverDuration, unhoverEase);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, unhoverShadowColor, unhoverShadowGlow, unhoverDuration, unhoverEase);
     }
 
     public void OnPointerClick(PointerEventData _eventData)
@@ -297,8 +338,18 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         
         isClicked = true;
 
-        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, clickShadowColor, clickShadowGlow, clickDuration);
-        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, clickShadowColor, clickShadowGlow, clickDuration);
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, clickShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, clickShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+
+        if (false == isInteractable)
+        {
+            // 비활성 상태면 기능 호출 및 숨김 연출 없이 펀치 모션만 재생
+            transform.DOKill();
+            Sequence _disabledClickSeq = DOTween.Sequence();
+            _disabledClickSeq.Join(transform.DOPunchScale(new Vector3(0f, clickPunchY, 0f), clickDuration, 5, 1f));
+            _disabledClickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
+            return;
+        }
 
         float _maxDelay = clickDuration;
         bool _hasDisappearTargets = false;
@@ -355,7 +406,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         {
             dotTarget.DOKill();
             dotTarget.DOLocalRotate(new Vector3(0f, 0f, 360f), maintainRotationDuration, RotateMode.FastBeyond360)
-                     .SetEase(Ease.Linear)
+                     .SetEase(maintainRotationEase)
                      .SetLoops(-1, LoopType.Incremental)
                      .SetRelative();
         }
@@ -387,16 +438,16 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         if (null != textTarget && null != dotTarget)
         {
-            _disappearSeq.Append(textTarget.DOAnchorPos(dotTarget.anchoredPosition, disappearSuckDuration).SetEase(Ease.InCubic));
-            _disappearSeq.Join(textTarget.DOScale(Vector3.zero, disappearSuckDuration).SetEase(Ease.InCubic));
-            _disappearSeq.Join(dotTarget.DOLocalRotate(dotOriginalRot + new Vector3(0f, 0f, 720f), disappearSuckDuration, RotateMode.FastBeyond360).SetEase(Ease.InCubic));
-            _disappearSeq.Append(dotTarget.DOScale(Vector3.zero, disappearDotShrinkDuration).SetEase(Ease.InBack));
+            _disappearSeq.Append(textTarget.DOAnchorPos(dotTarget.anchoredPosition, disappearSuckDuration).SetEase(disappearSuckEase));
+            _disappearSeq.Join(textTarget.DOScale(Vector3.zero, disappearSuckDuration).SetEase(disappearSuckEase));
+            _disappearSeq.Join(dotTarget.DOLocalRotate(dotOriginalRot + new Vector3(0f, 0f, 720f), disappearSuckDuration, RotateMode.FastBeyond360).SetEase(disappearSuckEase));
+            _disappearSeq.Append(dotTarget.DOScale(Vector3.zero, disappearDotShrinkDuration).SetEase(disappearShrinkEase));
         }
 
         _disappearSeq.OnComplete(onDisappearCompleteCallback);
     }
 
-    private void TweenShadow(UIEffect _effect, DOGetter<Color> _getColor, DOSetter<Color> _setColor, Color _targetColor, bool _glow, float _duration)
+    private void TweenShadow(UIEffect _effect, DOGetter<Color> _getColor, DOSetter<Color> _setColor, Color _targetColor, bool _glow, float _duration, Ease _ease)
     {
         if (null == _effect) return;
         
@@ -404,7 +455,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         _effect.shadowColorGlow = _glow;
         
         DOTween.To(_getColor, _setColor, _targetColor, _duration)
-               .SetEase(Ease.OutQuad)
+               .SetEase(_ease)
                .SetTarget(_effect);
     }
 
@@ -416,7 +467,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         _setColor(maintainPulseColorA);
 
         DOTween.To(_getColor, _setColor, maintainPulseColorB, maintainPulseDuration)
-               .SetEase(Ease.InOutSine)
+               .SetEase(maintainPulseEase)
                .SetLoops(-1, LoopType.Yoyo)
                .SetTarget(_effect);
     }
@@ -426,10 +477,35 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private void OnDisappearComplete() { gameObject.SetActive(false); }
     private void OnClickPunchComplete()
     {
+        if (false == isInteractable)
+        {
+            isClicked = false;
+            RestoreHoverOrExit();
+            return;
+        }
+
         if (true == isToggledButton)
+        {
             PlayMaintainMotion();
+        }
         else
-            gameObject.SetActive(false);
+        {
+            isClicked = false;
+            RestoreHoverOrExit();
+        }
+    }
+
+    private void RestoreHoverOrExit()
+    {
+        if (isHovered)
+        {
+            TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
+            TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
+        }
+        else
+        {
+            OnPointerExit(null);
+        }
     }
 
     private void InvokeOnClickAction()
