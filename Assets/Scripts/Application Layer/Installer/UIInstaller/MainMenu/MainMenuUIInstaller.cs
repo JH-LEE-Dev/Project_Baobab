@@ -16,14 +16,14 @@ public class MainMenuUIInstaller : MonoBehaviour
     private CanvasRoot canvasRoot;
     private Canvas canvas;
 
-    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager)
+    public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager, IMainMenuSaveSystem _saveSystem)
     {
         bootStrapProvider = _bootStrapProvider;
         inputManager = _inputManager;
         localizationManager = _localizeManager;
         uiManager = GetComponent<MainMenuUIManager>();
 
-        uiManager.Initialize(inputManager, localizationManager, null);
+        uiManager.Initialize(inputManager, localizationManager, null, _saveSystem);
     }
 
     public void Release()

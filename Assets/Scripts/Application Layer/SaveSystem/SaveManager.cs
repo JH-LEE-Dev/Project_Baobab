@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.IO;
 
-public class SaveManager : MonoBehaviour
+public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 {
     private SignalHub signalHub;
     private SkillSystem skillSystem;

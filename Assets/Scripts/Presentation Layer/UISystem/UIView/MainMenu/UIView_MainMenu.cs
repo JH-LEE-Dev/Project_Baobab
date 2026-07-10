@@ -11,6 +11,13 @@ public class UIView_MainMenu : UIView
     [Header("UI References")]
     [SerializeField] private UI_MainMenu mainMenuUI; // 씬 내부에 이미 배치된 UI_MainMenu 컴포넌트를 직접 할당
 
+    private IMainMenuSaveSystem saveSystem;
+
+    public void DependencyInjection(IMainMenuSaveSystem _saveSystem)
+    {
+        saveSystem = _saveSystem;
+    }
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
