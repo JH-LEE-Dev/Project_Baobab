@@ -9,7 +9,8 @@ public class UIView_MainMenu : UIView
     public event Action ExitButtonClickedEvent;
 
     [Header("UI References")]
-    [SerializeField] private UI_MainMenu mainMenuUI; // 씬 내부에 이미 배치된 UI_MainMenu 컴포넌트를 직접 할당
+    [SerializeField] private UI_MainMenu mainMenuUI; // 메인 메뉴
+    [SerializeField] private UI_PressAnyKey pressAnyKeyUI; // 아무 키나 누르세요 화면
 
     private IMainMenuSaveSystem saveSystem;
 
@@ -27,6 +28,11 @@ public class UIView_MainMenu : UIView
         {
             mainMenuUI.Initialize(this, _ctx);
         }
+
+        if (null != pressAnyKeyUI)
+        {
+            pressAnyKeyUI.Initialize(this);
+        }
     }
 
     public override void OnDestroy()
@@ -40,6 +46,31 @@ public class UIView_MainMenu : UIView
     {
         base.OnShow();
         gameObject.SetActive(true);
+
+        // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
+        if (null != pressAnyKeyUI)
+        {
+            pressAnyKeyUI.Show();
+            if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
+        }
+        else
+        {
+            if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(true);
+        }
+    }
+
+    /// <summary>
+    /// UI_PressAnyKey에서 아무 키 입력이 감지되었을 때 호출됩니다.
+    /// </summary>
+    public void OnPressAnyKeyCompleted()
+    {
+        if (null != pressAnyKeyUI) pressAnyKeyUI.Hide();
+        
+        if (null != mainMenuUI) 
+        {
+            mainMenuUI.gameObject.SetActive(true);
+            // (선택) 여기서 MainMenu가 나타날 때 DOTween 페이드인 연출을 추가할 수 있습니다.
+        }
     }
 
     protected override void OnHide()
