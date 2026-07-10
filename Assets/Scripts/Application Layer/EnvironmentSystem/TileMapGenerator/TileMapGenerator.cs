@@ -16,6 +16,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [SerializeField] private int seed;
     [SerializeField] private float waterThreshold = 0.38f;
 
+    [Header("외부 물 타일 설정")]
+    [SerializeField] private int outerWaterDepth = 25;
+
     [Header("중앙 보호 구역 설정")]
     [SerializeField] private float centerSafeZoneRadius = 15f;
 
@@ -246,6 +249,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         GenerateNoiseMap();
         DetermineSpawns();
         ApplyTiles();
+        ApplyOuterWaterTiles();
 
         DeclareActiveTilesCntEvent?.Invoke(walkablePositions.Count, grassPositions.Count);
         TilemapGeneratedEvent?.Invoke(grassPositions);
@@ -370,6 +374,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         float centerX = width * 0.5f;
         float centerY = height * 0.5f;
         float safeRadiusSq = centerSafeZoneRadius * centerSafeZoneRadius;
+        float mapRadius = Mathf.Min(width, height) * 0.5f;
+        float mapRadiusSq = mapRadius * mapRadius;
 
         for (int y = 0; y < height; y++)
         {
@@ -383,9 +389,15 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 float xCoord = (x + 0.5f) * invWidth * scale + seed;
                 float val = Mathf.PerlinNoise(xCoord, yCoord);
 
-                // 중앙 보호 구역 내에는 물이 생기지 않도록 보정
                 float dx = x - centerX;
-                if (dx * dx + dy * dy < safeRadiusSq)
+                
+                // 타원 밖은 완전한 물로 설정하여, 기존 ApplyTiles에서 자연스럽게 shoreline이 형성되도록 함
+                if (dx * dx + dy * dy > mapRadiusSq)
+                {
+                    val = 0f;
+                }
+                // 중앙 보호 구역 내에는 물이 생기지 않도록 보정
+                else if (dx * dx + dy * dy < safeRadiusSq)
                 {
                     val = Mathf.Max(val, waterThreshold + 0.05f);
                 }
@@ -506,14 +518,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             int y = i / width;
             float dx = x - centerX;
             float dy = y - centerY;
-
-            if (dx * dx + dy * dy > mapRadiusSq)
-            {
-                continue;
-            }
+            bool inSafeZone = (dx * dx + dy * dy < safeRadiusSq);
 
             float v = noiseValues[i];
-            bool inSafeZone = (dx * dx + dy * dy < safeRadiusSq);
 
             if (v < waterThreshold)
             {
@@ -761,7 +768,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
     private bool IsWater(int _x, int _y)
     {
-        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return false;
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return true; // 맵 밖은 모두 확장된 물 영역
         return noiseValues[_x + _y * width] < waterThreshold;
     }
 
@@ -769,5 +776,106 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     {
         if (_idx < 0 || _idx >= worldPosMap.Length) return Vector3.zero;
         return worldPosMap[_idx];
+    }
+
+    // ── 외부 물 타일 확장 ──
+
+    private void ApplyOuterWaterTiles()
+    {
+        if (stageTileData == null) return;
+
+        float cX = width * 0.5f;
+        float cY = height * 0.5f;
+        float mapRadius = Mathf.Min(width, height) * 0.5f;
+        float outerRadius = mapRadius + outerWaterDepth;
+        float outerRadiusSq = outerRadius * outerRadius;
+
+        int extMinX = Mathf.FloorToInt(cX - outerRadius) - 1;
+        int extMinY = Mathf.FloorToInt(cY - outerRadius) - 1;
+        int extMaxX = Mathf.CeilToInt(cX + outerRadius) + 2;  // exclusive
+        int extMaxY = Mathf.CeilToInt(cY + outerRadius) + 2;  // exclusive
+
+        int extW = extMaxX - extMinX;
+        int extH = extMaxY - extMinY;
+        int extSize = extW * extH;
+
+        // 확장 영역 타일 배열 (Corner 제외, Corner는 원본 범위 150x150에서만 ApplyTiles를 통해 적용됨)
+        TileBase[] extWaterTiles = new TileBase[extSize];
+        TileBase[] extWaterCollisionTiles = new TileBase[extSize];
+        TileBase[] extWaterStencilTiles = new TileBase[extSize];
+        TileBase[] extBloomWaterDecoTiles = new TileBase[extSize];
+        TileBase[] extWaterDecoTiles = new TileBase[extSize];
+
+        TileBase collisionTile = stageTileData.TreeCollisionTile;
+        TileBase stencilTile = stageTileData.StencilTile;
+        TileBase defaultWaterTile = stageTileData.WaterTile;
+
+        for (int ey = 0; ey < extH; ey++)
+        {
+            int worldY = ey + extMinY;
+            for (int ex = 0; ex < extW; ex++)
+            {
+                int worldX = ex + extMinX;
+                int extIdx = ex + ey * extW;
+
+                // 원본 맵 150x150 범위 내는 기존 ApplyTiles가 완벽히 처리했으므로 데이터 복사만 수행
+                if (worldX >= 0 && worldX < width && worldY >= 0 && worldY < height)
+                {
+                    int origIdx = worldX + worldY * width;
+                    extWaterTiles[extIdx] = waterTiles[origIdx];
+                    extWaterCollisionTiles[extIdx] = waterCollisionTiles[origIdx];
+                    extWaterStencilTiles[extIdx] = waterStencilTiles[origIdx];
+                    extWaterDecoTiles[extIdx] = waterDecoTilesToApply[origIdx];
+                    extBloomWaterDecoTiles[extIdx] = bloomWaterDecoTilesToApply[origIdx];
+                    continue;
+                }
+
+                float dx = worldX - cX;
+                float dy = worldY - cY;
+                float distSq = dx * dx + dy * dy;
+
+                if (distSq > outerRadiusSq) continue;
+
+                // 원본 맵 바깥(150x150 밖) 타원 내부는 모두 완전한 깊은 물
+                extWaterTiles[extIdx] = defaultWaterTile;
+                extWaterCollisionTiles[extIdx] = collisionTile;
+                extWaterStencilTiles[extIdx] = stencilTile;
+
+                if (stageTileData.WaterDecoTiles != null && stageTileData.WaterDecoTiles.Count > 0
+                    && UnityEngine.Random.value < stageTileData.WaterDecoDensity)
+                {
+                    extWaterDecoTiles[extIdx] = stageTileData.WaterDecoTiles[
+                        UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
+                }
+
+                if (animatedObjGenerator != null && UnityEngine.Random.value < stageTileData.WaterAnimatedObjDensity)
+                {
+                    Vector3Int cellPos = new Vector3Int(worldX, worldY, 0);
+                    Vector3 pos = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
+                    animatedObjGenerator.SpawnWaterAnimatedObj(pos);
+                }
+
+                if (stageTileData.BloomWaterDecoTiles != null && stageTileData.BloomWaterDecoTiles.Count > 0)
+                {
+                    bool shouldPlaceBloom = true;
+                    if (stageTileData.UseBloomWaterDecoDensity)
+                    {
+                        shouldPlaceBloom = UnityEngine.Random.value < stageTileData.BloomWaterDecoDensity;
+                    }
+                    if (shouldPlaceBloom)
+                    {
+                        extBloomWaterDecoTiles[extIdx] = stageTileData.BloomWaterDecoTiles[
+                            UnityEngine.Random.Range(0, stageTileData.BloomWaterDecoTiles.Count)];
+                    }
+                }
+            }
+        }
+
+        BoundsInt extBounds = new BoundsInt(extMinX, extMinY, 0, extW, extH, 1);
+        if (waterTilemap != null) waterTilemap.SetTilesBlock(extBounds, extWaterTiles);
+        if (waterCollisionTilemap != null) waterCollisionTilemap.SetTilesBlock(extBounds, extWaterCollisionTiles);
+        if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(extBounds, extWaterStencilTiles);
+        if (waterDecoTilemap != null) waterDecoTilemap.SetTilesBlock(extBounds, extWaterDecoTiles);
+        if (bloomWaterDecoTilemap != null) bloomWaterDecoTilemap.SetTilesBlock(extBounds, extBloomWaterDecoTiles);
     }
 }
