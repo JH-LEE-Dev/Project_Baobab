@@ -136,6 +136,18 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     public override void DecreaseDurability()
     {
+        DecreaseDurabilityInternal(true);
+    }
+
+    // ShockWaveMastery로 허공에 충격파만 나갔을 때 사용 - 내구도는 나무를 벨 때와 동일하게 깎이지만,
+    // 실제로 맞춘 대상이 없으므로 공격 리듬 콤보는 쌓이지 않아야 한다.
+    public void DecreaseDurabilityWithoutCombo()
+    {
+        DecreaseDurabilityInternal(false);
+    }
+
+    private void DecreaseDurabilityInternal(bool _bIncrementCombo)
+    {
         if (UnityEngine.Random.Range(0f, 100f) >= ctx.characterStat.axeDurabilityDecIgnoreChance)
             durability -= ctx.characterStat.axeDurabilityDecAmount;
 
@@ -151,9 +163,12 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
         AxeAttackedEvent?.Invoke();
 
-        // 공격 성공 시 콤보 누적 및 타이머 초기화 (최대 10중첩)
-        attackComboStack = Mathf.Min(attackComboStack + 1, 10);
-        comboResetTimer = COMBO_RESET_TIME;
+        if (_bIncrementCombo)
+        {
+            // 공격 성공 시 콤보 누적 및 타이머 초기화 (최대 10중첩)
+            attackComboStack = Mathf.Min(attackComboStack + 1, 10);
+            comboResetTimer = COMBO_RESET_TIME;
+        }
     }
 
     public override void ResetDurability()

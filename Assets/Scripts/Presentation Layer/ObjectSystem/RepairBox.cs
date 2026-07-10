@@ -33,7 +33,6 @@ public class RepairBox : MonoBehaviour
 
     private InputManager inputManager;
     private Character character;
-    private float lastInteractTime = 0f;
 
     private void Awake()
     {
@@ -208,16 +207,12 @@ public class RepairBox : MonoBehaviour
 
         if (repairBoxCount <= 0) return;
 
-        if (Time.time - lastInteractTime < 1f) return;
-
         if (character != null)
         {
             character.RepairWeapon(repairAmount);
             repairBoxCount--;
             UpdateInteractState();
         }
-
-        lastInteractTime = Time.time;
     }
 
     private void OnDestroy()
