@@ -1735,6 +1735,7 @@ MonoBehaviour:
   bWhirlWind: 0
   criticalChance: 0
   ciriticalDamageMul: 2
+  starPathSpeedBoostAmount: 0
 --- !u!1 &5310717925593560820
 GameObject:
   m_ObjectHideFlags: 0

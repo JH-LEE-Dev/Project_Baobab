@@ -151,7 +151,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public float StarMarkDamageMultiplier => starMarkDamageMultiplier;
 
-    // 별의 주시(Star Gaze) - StarrootForest 전용, 화면 범위 내 가장 가까운 나무에 주기적으로 별똥별 낙하
+    // 별의 주시(Star Gaze) - 모든 숲에서 발동, 화면 범위 내 가장 가까운 나무에 주기적으로 별똥별 낙하
     private const float StarGazeInterval = 10f;
     private const float StarGazeDamage = 10000f;
     private const float StarGazeImpactRange = BaseShieldExplosionRange; // 포자막 폭발과 동일한 범위(고정값, 업그레이드와 무관)
@@ -440,7 +440,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
             if (_isGrowing)
             {
-                tree.SetIsSapling(true, treeGrowTime);
+                // speedMul이 1 이상이 되어 시간이 0이 되면 무한루프에 빠질 수 있으므로, 최소 성장 시간(0.1초) 보장
+                float scaledGrowTime = Mathf.Max(0.1f, treeGrowTime * (1f - growthSpeedMul));
+                tree.SetIsSapling(true, scaledGrowTime);
             }
 
             tree.SetSortOrder();
@@ -1288,7 +1290,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             yield return new WaitForSeconds(StarGazeInterval);
 
-            if (!bStarGazeUnlocked || currentMapType != MapType.StarrootForest) continue;
+            if (!bStarGazeUnlocked) continue;
             if (character == null) continue;
 
             TreeObj nearest = FindNearestTreeInScreenEllipse();

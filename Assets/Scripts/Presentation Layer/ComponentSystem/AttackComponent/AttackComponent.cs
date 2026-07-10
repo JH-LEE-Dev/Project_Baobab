@@ -7,6 +7,8 @@ public class AttackComponent : PComponent
     [SerializeField] private GameObject componentCenterPoint;
 
     public event Action AttackSuccessEvent;
+    // ShockWaveMastery로 허공에 충격파만 나갔을 때(실제 타격 없음) - 내구도만 감소시키고 콤보는 쌓지 않기 위해 별도 이벤트로 분리
+    public event Action ShockWaveMissEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
     //외부 의존성
     private Camera mainCamera;
@@ -200,12 +202,14 @@ public class AttackComponent : PComponent
 
         Vector3 centerPos = transform.position;
 
+        bool bShockWaveTriggered = false;
         if (ctx.characterStat.bShockWaveMastery && axeExtraAttackCreator != null)
         {
             if (UnityEngine.Random.Range(0f, 100f) < ctx.characterStat.shockWaveChance)
             {
                 Vector3 direction = (mouseTransform - centerPos).normalized;
                 StartCoroutine(CreateShockWaveRoutine(centerPos, direction));
+                bShockWaveTriggered = true;
             }
         }
 
@@ -215,7 +219,12 @@ public class AttackComponent : PComponent
         CollisionSystem.Instance.GetCollidablesInRadius(transform.position, effectiveEllipseRadius, targetLayer, collisionResults);
 
         int hitCount = collisionResults.Count;
-        if (hitCount <= 0) return;
+        if (hitCount <= 0)
+        {
+            // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
+            if (bShockWaveTriggered) ShockWaveMissEvent?.Invoke();
+            return;
+        }
 
         Vector3 attackDirVec = attackPointTransform.position - centerPos;
         Vector3 isoAttackDir = Vector3.right;
@@ -230,6 +239,11 @@ public class AttackComponent : PComponent
         bool bMultiAttack = ctx.characterStat.bMultiAttack;
         bool bIsWhirlwindStrike = ctx.characterStat.bWhirlWind && (successfulAttackCount % 3 == 2);
         multiAttackResults.Clear();
+
+        if (bIsWhirlwindStrike)
+        {
+            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius);
+        }
 
         IStaticCollidable nearestDamageable = null;
         float minDistanceSqr = float.MaxValue;
@@ -295,6 +309,11 @@ public class AttackComponent : PComponent
                 successfulAttackCount++;
                 AttackSuccessEvent?.Invoke();
             }
+            else if (bShockWaveTriggered)
+            {
+                // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
+                ShockWaveMissEvent?.Invoke();
+            }
         }
         else if (nearestDamageable != null && nearestDamageable is IDamageable damageable && damageable.bCanApplyDamage)
         {
@@ -302,6 +321,11 @@ public class AttackComponent : PComponent
             ProcessAxeHit(damageable, centerPos);
             successfulAttackCount++;
             AttackSuccessEvent?.Invoke();
+        }
+        else if (bShockWaveTriggered)
+        {
+            // 허공을 공격했더라도 마스터리로 충격파가 발생했다면 나무를 타격했을 때와 동일하게 도끼 내구도 감소 (콤보는 미적용)
+            ShockWaveMissEvent?.Invoke();
         }
     }
 
