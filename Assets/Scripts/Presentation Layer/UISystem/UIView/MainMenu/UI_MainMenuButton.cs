@@ -251,7 +251,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             dotTarget.localEulerAngles = dotOriginalRot - appearDotRotation;
 
             dotTarget.DOScale(Vector3.one, appearDotDuration).SetEase(Ease.OutBack).SetDelay(_delay);
-            dotTarget.DOLocalRotate(dotOriginalRot, appearDotDuration, RotateMode.FastBeyond360).SetEase(Ease.OutBack).SetDelay(_delay)
+            dotTarget.DOLocalRotate(dotOriginalRot, appearDotDuration, RotateMode.FastBeyond360).SetEase(appearRotEase).SetDelay(_delay)
                      .OnComplete(playAppearTextMotionCallback);
             
             if (null != textTarget)
