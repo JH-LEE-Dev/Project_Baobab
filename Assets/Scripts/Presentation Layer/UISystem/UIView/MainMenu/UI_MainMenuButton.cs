@@ -50,9 +50,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private bool unhoverShadowGlow = false;
     [SerializeField] private Ease unhoverEase = Ease.OutQuad;
 
-    [Header("Click Settings")]
-    [SerializeField] private float clickPunchY = 0.5f; 
-    [SerializeField] private float clickDuration = 0.2f;
+    [Header("Click Settings (뽀잉 모션)")]
+    [SerializeField] private Vector3 clickPunchScale = new Vector3(0.2f, -0.2f, 0f); // 클릭 시 찌그러지는 스케일 정도
+    [SerializeField] private float clickDuration = 0.35f; // 뽀잉거리는 전체 시간
+    [SerializeField] private int clickVibrato = 6; // 흔들리는 횟수 (탄성)
+    [SerializeField, Range(0f, 1f)] private float clickElasticity = 0.6f; // 늘어나는 정도
     [ColorUsage(true, true)] [SerializeField] private Color clickShadowColor = Color.yellow;
     [SerializeField] private bool clickShadowGlow = true;
     [SerializeField] private Ease clickShadowEase = Ease.OutQuad;
@@ -345,8 +347,9 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         {
             // 비활성 상태면 기능 호출 및 숨김 연출 없이 펀치 모션만 재생
             transform.DOKill();
+            transform.localScale = Vector3.one;
             Sequence _disabledClickSeq = DOTween.Sequence();
-            _disabledClickSeq.Join(transform.DOPunchScale(new Vector3(0f, clickPunchY, 0f), clickDuration, 5, 1f));
+            _disabledClickSeq.Join(transform.DOPunchScale(clickPunchScale, clickDuration, clickVibrato, clickElasticity));
             _disabledClickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
             return;
         }
@@ -382,10 +385,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         }
 
         transform.DOKill();
+        transform.localScale = Vector3.one; // 펀치 모션 시작 전 스케일 정규화
         
         Sequence _clickSeq = DOTween.Sequence();
         
-        _clickSeq.Join(transform.DOPunchScale(new Vector3(0f, clickPunchY, 0f), clickDuration, 5, 1f));
+        _clickSeq.Join(transform.DOPunchScale(clickPunchScale, clickDuration, clickVibrato, clickElasticity));
         
         if (true == _hasDisappearTargets)
         {

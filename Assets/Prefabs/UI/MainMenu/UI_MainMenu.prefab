@@ -187,11 +187,13 @@ MonoBehaviour:
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   unhoverShadowGlow: 0
   unhoverEase: 6
-  clickPunchY: 0.5
-  clickDuration: 0.1
+  clickPunchScale: {x: 0, y: -0.75, z: 0}
+  clickDuration: 0.115
+  clickVibrato: 6
+  clickElasticity: 0.6
   clickShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowGlow: 0
-  clickShadowEase: 18
+  clickShadowEase: 9
   isToggledButton: 1
   maintainRotationDuration: 1.5
   maintainPulseDuration: 0.5
@@ -1339,11 +1341,13 @@ MonoBehaviour:
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   unhoverShadowGlow: 0
   unhoverEase: 6
-  clickPunchY: 0.5
-  clickDuration: 0.1
+  clickPunchScale: {x: 0, y: -0.75, z: 0}
+  clickDuration: 0.115
+  clickVibrato: 6
+  clickElasticity: 0.6
   clickShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowGlow: 0
-  clickShadowEase: 18
+  clickShadowEase: 9
   isToggledButton: 0
   maintainRotationDuration: 1.5
   maintainPulseDuration: 0.5
@@ -2994,11 +2998,13 @@ MonoBehaviour:
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   unhoverShadowGlow: 0
   unhoverEase: 6
-  clickPunchY: 0.5
-  clickDuration: 0.1
+  clickPunchScale: {x: 0, y: -0.75, z: 0}
+  clickDuration: 0.115
+  clickVibrato: 6
+  clickElasticity: 0.6
   clickShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowGlow: 0
-  clickShadowEase: 18
+  clickShadowEase: 9
   isToggledButton: 0
   maintainRotationDuration: 1.5
   maintainPulseDuration: 0.5
@@ -3094,11 +3100,13 @@ MonoBehaviour:
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   unhoverShadowGlow: 0
   unhoverEase: 6
-  clickPunchY: 0.5
-  clickDuration: 0.1
+  clickPunchScale: {x: 0, y: -0.75, z: 0}
+  clickDuration: 0.115
+  clickVibrato: 6
+  clickElasticity: 0.6
   clickShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowGlow: 0
-  clickShadowEase: 18
+  clickShadowEase: 9
   isToggledButton: 0
   maintainRotationDuration: 1.5
   maintainPulseDuration: 0.5
@@ -3627,11 +3635,13 @@ MonoBehaviour:
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   unhoverShadowGlow: 0
   unhoverEase: 6
-  clickPunchY: 0.5
-  clickDuration: 0.1
+  clickPunchScale: {x: 0, y: -0.75, z: 0}
+  clickDuration: 0.115
+  clickVibrato: 6
+  clickElasticity: 0.6
   clickShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowGlow: 0
-  clickShadowEase: 18
+  clickShadowEase: 9
   isToggledButton: 0
   maintainRotationDuration: 1.5
   maintainPulseDuration: 0.5
