@@ -932,6 +932,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                 LogOutEvent?.Invoke(resultData);
 
+                // LogOutEvent는 동기적으로 처리되고(구독자는 resultData의 필드만 읽어 즉시 LogItem을
+                // 생성함) 아무도 참조를 보관하지 않으므로, 디스패치가 끝난 이 시점에 풀로 반납해 재사용한다.
+                // 반납하지 않으면 출고 때마다 새 LogItemData가 할당되어 풀링이 무력화된다.
+                itemDataPool.Release(resultData);
+
                 if (((IInventory)this).currentItemCount == 0)
                 {
                     LogContainerIsEmptyEvent?.Invoke();

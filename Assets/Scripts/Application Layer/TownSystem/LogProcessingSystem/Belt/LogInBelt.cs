@@ -214,14 +214,12 @@ public class LogInBelt : MonoBehaviour
     {
         // _item.gameObject.SetActive(false); // 지연 비활성화를 위해 제거
 
-        // 벨트 위에 남은 아이템이 없을 때만 정지 및 이벤트 발행
-        // (LogOut은 Update 루프에서 activeItems.RemoveAt(i) 직전에 호출되므로,
-        //  현재 아이템을 포함해 1개만 남아있으면 곧 비게 된다.)
-        if (activeItems.Count <= 1)
-        {
-            isMoving = false;
-            BeltStopEvent?.Invoke();
-        }
+        // 커터는 한 번에 하나만 가공하므로, 아이템이 하나 나갈 때마다(뒤에 남은 아이템이 있어도)
+        // 무조건 벨트를 멈춘다. 그렇지 않으면 뒤따르는 아이템이 커터가 비기 전에 끝까지 도달해
+        // LogCutter.StartCutting의 bIsCutting 가드에 막혀 조용히 유실된다.
+        // 벨트는 CuttingDone -> LogProcessLine.CuttingDone()의 inBelt.StartBelt() 호출로 재개된다.
+        isMoving = false;
+        BeltStopEvent?.Invoke();
 
         // 퇴출 연출: 스케일이 작아지는 동안 마지막 이동 방향으로 계속 전진
         _item.transform.DOKill();
