@@ -3,6 +3,7 @@ using System.Collections.Generic;
 public interface ISkillSystemProvider
 {
     AbilityLevelUpRejectReason TryApplySkill(SkillType _type);
+    AbilityLevelUpRejectReason TryApplySkillWithoutCost(SkillType _type);
     AbilityLevelUpRejectReason CanApplySkill(SkillType _type);
     void RequestSkillValuePreviewData(SkillType _type);
     bool IsApplied(SkillType _type, out int _level);

@@ -1408,6 +1408,7 @@ MonoBehaviour:
   skillDataBase: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
   prestigeLevel: 0
   skillExperience: 0
+  experienceToLevelUp: 28000000280000002800000028000000280000002800000028000000280000002800000028000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0

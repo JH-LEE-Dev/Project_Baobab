@@ -71,7 +71,8 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
     private Dictionary<SkillType, SkillNode> skillNodeMap;
     [SerializeField] private int prestigeLevel = 0;
     [SerializeField] private int skillExperience = 0;
-    private const int experienceToLevelUp = 40;
+    [Tooltip("프레스티지 레벨 구간별 필요 경험치 (0-1, 1-2 등). 인덱스 초과 시 마지막 값을 사용합니다.")]
+    [SerializeField] private int[] experienceToLevelUp = new int[] { 40 };
 
     /// <summary>
     /// 스킬 매니저 초기화 및 스킬 트리 구축
@@ -164,7 +165,7 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 
         // 경험치 증가 및 프레스티지 레벨업 처리
         skillExperience++;
-        if (skillExperience >= experienceToLevelUp)
+        if (skillExperience >= GetPrestigeExpLimit())
         {
             skillExperience = 0;
             prestigeLevel++;
@@ -226,6 +227,59 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
         if (inventory.GetCurrentCarrot() < carrotCost)
         {
             return AbilityLevelUpRejectReason.NotEnoughCarrot;
+        }
+
+        return AbilityLevelUpRejectReason.Pass;
+    }
+
+    /// <summary>
+    /// 비용(재화) 소모 없이 스킬을 습득하는 함수 (단, 선행 스킬 및 최대 레벨 조건은 확인합니다)
+    /// </summary>
+    public AbilityLevelUpRejectReason TryApplySkillWithoutCost(SkillType _type)
+    {
+        if (!skillNodeMap.TryGetValue(_type, out SkillNode node))
+            return AbilityLevelUpRejectReason.None;
+
+        // 1. 최대 레벨 체크
+        if (node.currentLevel >= node.maxLevel)
+        {
+            return AbilityLevelUpRejectReason.MaxLevel;
+        }
+
+        // 2. 선행 스킬 습득 체크
+        List<SkillNode> prerequisites = node.prerequisiteNodes;
+        for (int i = 0; i < prerequisites.Count; i++)
+        {
+            if (!prerequisites[i].bApplied)
+            {
+                return AbilityLevelUpRejectReason.None; // 선행 스킬 미습득
+            }
+        }
+
+        // 재화 차감 및 검사 로직 생략 (비용 없이 레벨업 진행)
+
+        // 레벨업
+        node.currentLevel++;
+
+        // 경험치 증가 및 프레스티지 레벨업 처리
+        skillExperience++;
+        if (skillExperience >= GetPrestigeExpLimit())
+        {
+            skillExperience = 0;
+            prestigeLevel++;
+            PrestigeLevelIncreasedEvent?.Invoke(prestigeLevel);
+        }
+
+        // 스킬 적용 이벤트 발생 (등록된 모든 커맨드 발송)
+        if (node.commands != null)
+        {
+            Debug.Log($"특성 적용(무비용) -> 타입 : {_type} (Level: {node.currentLevel})");
+
+            for (int i = 0; i < node.commands.Count; i++)
+            {
+                var info = new SkillDispatchInfo(node.currentLevel, node.commands[i]);
+                DispatchSkillsEvent?.Invoke(info);
+            }
         }
 
         return AbilityLevelUpRejectReason.Pass;
@@ -371,7 +425,9 @@ public class SkillManager : MonoBehaviour, ISkillSystemProvider
 
     public int GetPrestigeExpLimit()
     {
-        return experienceToLevelUp;
+        if (experienceToLevelUp == null || experienceToLevelUp.Length == 0) return 40;
+        int index = Mathf.Min(prestigeLevel, experienceToLevelUp.Length - 1);
+        return experienceToLevelUp[index];
     }
 
     public void RequestSkillValuePreviewData(SkillType _type)
