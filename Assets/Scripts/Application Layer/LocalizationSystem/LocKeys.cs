@@ -83,6 +83,7 @@ public static class LocKeys
         public const int options = 16777219;
         public const int credits = 16777220;
         public const int exit = 16777221;
+        public const int pressAnyKey = 16777315;
     }
 
     public static class MenuPopupUI

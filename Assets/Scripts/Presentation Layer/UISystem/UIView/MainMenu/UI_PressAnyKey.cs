@@ -44,6 +44,17 @@ public class UI_PressAnyKey : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    /// <summary>
+    /// 외부(로컬라이징 매니저 등)에서 문구를 변경할 때 호출합니다.
+    /// </summary>
+    public void SetText(string _localizedText)
+    {
+        if (pressAnyKeyText != null)
+        {
+            pressAnyKeyText.text = _localizedText;
+        }
+    }
+
     private void Update()
     {
         if (!isWaitingForInput) return;
