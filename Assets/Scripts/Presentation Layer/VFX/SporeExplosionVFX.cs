@@ -1,14 +1,16 @@
-using System;
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 /// <summary>
-/// Resources/Spore/SporeExplosion 스프라이트 시트를 프레임 단위로 재생하는 1회성 VFX 오브젝트.
-/// 별도 프리팹 없이 코드에서 직접 GameObject를 생성해 재생하고, 끝나면 풀로 반환된다.
+/// SporeExplosion 스프라이트 시트를 프레임 단위로 재생하는 1회성 VFX 오브젝트.
+/// 프리팹(TreeStarMarkGroundAnimator와 동일한 패턴)으로 존재하며, InDungeonVFXManager가
+/// ObjectPool로 관리한다. 프레임은 인스펙터에서 직접 연결한다 (Resources.LoadAll 사용 안 함).
 /// </summary>
+[RequireComponent(typeof(SpriteRenderer))]
 public class SporeExplosionVFX : MonoBehaviour
 {
-    private const string ResourcePath = "Spore/SporeExplosion";
+    [SerializeField] private Sprite[] frames;
+
     private const float FrameRate = 24f;
     private const int SortingPrecision = 100;
 
@@ -17,58 +19,32 @@ public class SporeExplosionVFX : MonoBehaviour
     // 나무 본체와 동일한 레이어를 써야 화면에 정상적으로 보인다.
     private const string SortingLayerName = "Objects";
 
-    private static Sprite[] cachedFrames;
-    // 폭발마다 4~5개씩 생성/파괴가 반복되면 GC 부담이 커지므로 풀링해서 재사용한다.
-    private static readonly Stack<SporeExplosionVFX> pool = new Stack<SporeExplosionVFX>();
-
     private SpriteRenderer spriteRenderer;
+    private IObjectPool<SporeExplosionVFX> pool;
     private float frameTimer;
     private int currentFrame;
 
-    public static void Spawn(Vector3 _position, int _sortingOrderOffset = 100)
+    private void Awake()
     {
-        EnsureFramesLoaded();
-        if (cachedFrames == null || cachedFrames.Length == 0) return;
-
-        SporeExplosionVFX instance = pool.Count > 0 ? pool.Pop() : CreateInstance();
-
-        instance.gameObject.SetActive(true);
-        instance.transform.position = _position;
-        instance.Play(_sortingOrderOffset);
+        spriteRenderer = GetComponent<SpriteRenderer>();
     }
 
-    private static SporeExplosionVFX CreateInstance()
+    public void SetPool(IObjectPool<SporeExplosionVFX> _pool)
     {
-        GameObject go = new GameObject("SporeExplosionVFX");
-        SporeExplosionVFX instance = go.AddComponent<SporeExplosionVFX>();
-        instance.spriteRenderer = go.AddComponent<SpriteRenderer>();
-        return instance;
+        pool = _pool;
     }
 
-    private static void EnsureFramesLoaded()
+    public void Play(int _sortingOrderOffset)
     {
-        if (cachedFrames != null) return;
-
-        Sprite[] loaded = Resources.LoadAll<Sprite>(ResourcePath);
-        Array.Sort(loaded, (a, b) => ExtractFrameIndex(a.name).CompareTo(ExtractFrameIndex(b.name)));
-        cachedFrames = loaded;
-    }
-
-    private static int ExtractFrameIndex(string _spriteName)
-    {
-        int underscoreIdx = _spriteName.LastIndexOf('_');
-        if (underscoreIdx >= 0 && int.TryParse(_spriteName.Substring(underscoreIdx + 1), out int idx))
+        if (frames == null || frames.Length == 0)
         {
-            return idx;
+            ReturnToPool();
+            return;
         }
-        return 0;
-    }
 
-    private void Play(int _sortingOrderOffset)
-    {
         currentFrame = 0;
         frameTimer = 0f;
-        spriteRenderer.sprite = cachedFrames[0];
+        spriteRenderer.sprite = frames[0];
         spriteRenderer.sortingLayerName = SortingLayerName;
 
         // CustomSortable과 동일한 공식으로 1회성 정렬 순서를 계산한다 (매 프레임 갱신할 필요는 없음).
@@ -77,6 +53,8 @@ public class SporeExplosionVFX : MonoBehaviour
 
     private void Update()
     {
+        if (frames == null || frames.Length == 0) return;
+
         frameTimer += Time.deltaTime;
         float frameDuration = 1f / FrameRate;
 
@@ -85,19 +63,18 @@ public class SporeExplosionVFX : MonoBehaviour
             frameTimer -= frameDuration;
             currentFrame++;
 
-            if (currentFrame >= cachedFrames.Length)
+            if (currentFrame >= frames.Length)
             {
                 ReturnToPool();
                 return;
             }
 
-            spriteRenderer.sprite = cachedFrames[currentFrame];
+            spriteRenderer.sprite = frames[currentFrame];
         }
     }
 
     private void ReturnToPool()
     {
-        gameObject.SetActive(false);
-        pool.Push(this);
+        pool?.Release(this);
     }
 }

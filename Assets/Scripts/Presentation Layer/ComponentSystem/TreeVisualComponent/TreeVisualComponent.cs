@@ -128,6 +128,8 @@ public class TreeVisualComponent : MonoBehaviour
 
     public int GetTopHighlightSortingOrder() => topHighlightRenderer != null ? topHighlightRenderer.sortingOrder : GetTopShieldSortingOrder();
 
+    public float GetConstellationHDRIntensity() => highlightHDRIntensity;
+
     public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;
@@ -747,7 +749,7 @@ public class TreeVisualComponent : MonoBehaviour
         if (topShieldOnWaterSR != null) ApplyHDRToRenderer(topShieldOnWaterSR, isOnWaterActive && isShieldActive && topShieldOnWaterSR.sprite != null, shieldHDRIntensity + 0.25f);
         if (topHighlightOnWaterSR != null) ApplyHDRToRenderer(topHighlightOnWaterSR, isOnWaterActive && topHighlightOnWaterSR.sprite != null, highlightHDRIntensity + 0.25f);
 
-        if (constellationRenderer != null) ApplyHDRToRenderer(constellationRenderer, constellationRenderer.gameObject.activeSelf && constellationRenderer.sprite != null, highlightHDRIntensity+0.5f);
+        if (constellationRenderer != null) ApplyHDRToRenderer(constellationRenderer, constellationRenderer.gameObject.activeSelf && constellationRenderer.sprite != null, highlightHDRIntensity);
     }
 
     #endregion

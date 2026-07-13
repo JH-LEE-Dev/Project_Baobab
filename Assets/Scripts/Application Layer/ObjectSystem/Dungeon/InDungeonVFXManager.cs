@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 /// <summary>
 /// 던전 내 모든 VFX를 중앙에서 관리하는 매니저입니다.
@@ -13,10 +16,207 @@ public class InDungeonVFXManager : MonoBehaviour
     // top 기준 위치가 나무 꼭대기보다 한참 위에서 생성되는 것을 보정하기 위한 하향 오프셋 (인스펙터에서 조정 가능)
     [SerializeField] private float shieldBrokenVfxYOffset = -0.5f;
 
+    [Header("Constellation Ground Mark")]
+    [SerializeField] private TreeStarMarkGroundAnimator treeStarMarkGroundPrefab;
+    [SerializeField] private int treeStarMarkGroundPoolDefaultCapacity = 8;
+    [SerializeField] private int treeStarMarkGroundPoolMaxSize = 64;
+
+    private IObjectPool<TreeStarMarkGroundAnimator> treeStarMarkGroundPool;
+
+    // 그룹(별자리)별로 아직 발현되지 않아 살아있는 그라운드 마크 인스턴스들을 추적한다.
+    private readonly Dictionary<int, List<TreeStarMarkGroundAnimator>> activeGroundMarksByGroup = new Dictionary<int, List<TreeStarMarkGroundAnimator>>();
+
+    [Header("Shooting Star")]
+    [SerializeField] private ShootingStarVFX shootingStarVfxPrefab;
+    [SerializeField] private int shootingStarVfxPoolDefaultCapacity = 4;
+    [SerializeField] private int shootingStarVfxPoolMaxSize = 16;
+
+    private IObjectPool<ShootingStarVFX> shootingStarVfxPool;
+
+    [Header("Spore Explosion")]
+    [SerializeField] private SporeExplosionVFX sporeExplosionVfxPrefab;
+    [SerializeField] private int sporeExplosionVfxPoolDefaultCapacity = 8;
+    [SerializeField] private int sporeExplosionVfxPoolMaxSize = 64;
+
+    private IObjectPool<SporeExplosionVFX> sporeExplosionVfxPool;
+
     public void Initialize()
     {
         if (vfxComponent != null)
             vfxComponent.Initialize();
+
+        if (treeStarMarkGroundPool == null && treeStarMarkGroundPrefab != null)
+        {
+            treeStarMarkGroundPool = new ObjectPool<TreeStarMarkGroundAnimator>(
+                createFunc: CreateTreeStarMarkGround,
+                actionOnGet: OnGetTreeStarMarkGround,
+                actionOnRelease: OnReleaseTreeStarMarkGround,
+                actionOnDestroy: OnDestroyTreeStarMarkGround,
+                collectionCheck: true,
+                defaultCapacity: treeStarMarkGroundPoolDefaultCapacity,
+                maxSize: treeStarMarkGroundPoolMaxSize
+            );
+        }
+
+        if (shootingStarVfxPool == null && shootingStarVfxPrefab != null)
+        {
+            shootingStarVfxPool = new ObjectPool<ShootingStarVFX>(
+                createFunc: CreateShootingStarVfx,
+                actionOnGet: OnGetShootingStarVfx,
+                actionOnRelease: OnReleaseShootingStarVfx,
+                actionOnDestroy: OnDestroyShootingStarVfx,
+                collectionCheck: true,
+                defaultCapacity: shootingStarVfxPoolDefaultCapacity,
+                maxSize: shootingStarVfxPoolMaxSize
+            );
+        }
+
+        if (sporeExplosionVfxPool == null && sporeExplosionVfxPrefab != null)
+        {
+            sporeExplosionVfxPool = new ObjectPool<SporeExplosionVFX>(
+                createFunc: CreateSporeExplosionVfx,
+                actionOnGet: OnGetSporeExplosionVfx,
+                actionOnRelease: OnReleaseSporeExplosionVfx,
+                actionOnDestroy: OnDestroySporeExplosionVfx,
+                collectionCheck: true,
+                defaultCapacity: sporeExplosionVfxPoolDefaultCapacity,
+                maxSize: sporeExplosionVfxPoolMaxSize
+            );
+        }
+    }
+
+    /// <summary>
+    /// 별똥별 VFX를 스폰합니다. 하늘 위에서 낙하 후 착지 시 _onLanded 콜백을 호출합니다.
+    /// Instantiate/Destroy 대신 ObjectPool로 재사용됩니다.
+    /// </summary>
+    public void PlayShootingStarVFX(Vector3 _landingPos, int _sortingOrder, Action _onLanded)
+    {
+        if (shootingStarVfxPool == null)
+        {
+            _onLanded?.Invoke();
+            return;
+        }
+
+        ShootingStarVFX instance = shootingStarVfxPool.Get();
+        instance.Begin(_landingPos, _sortingOrder, _onLanded);
+    }
+
+    private ShootingStarVFX CreateShootingStarVfx()
+    {
+        ShootingStarVFX instance = Instantiate(shootingStarVfxPrefab, transform);
+        instance.SetPool(shootingStarVfxPool);
+        return instance;
+    }
+
+    private void OnGetShootingStarVfx(ShootingStarVFX _instance)
+    {
+        _instance.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseShootingStarVfx(ShootingStarVFX _instance)
+    {
+        _instance.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyShootingStarVfx(ShootingStarVFX _instance)
+    {
+        if (_instance != null) Destroy(_instance.gameObject);
+    }
+
+    /// <summary>
+    /// 포자 폭발 VFX를 스폰합니다. 별도 프리팹 없이 코드에서 직접 생성하던 기존 방식 대신,
+    /// 프리팹을 ObjectPool로 재사용합니다.
+    /// </summary>
+    public void PlaySporeExplosionVFX(Vector3 _position, int _sortingOrderOffset = 100)
+    {
+        if (sporeExplosionVfxPool == null) return;
+
+        SporeExplosionVFX instance = sporeExplosionVfxPool.Get();
+        instance.transform.position = _position;
+        instance.Play(_sortingOrderOffset);
+    }
+
+    private SporeExplosionVFX CreateSporeExplosionVfx()
+    {
+        SporeExplosionVFX instance = Instantiate(sporeExplosionVfxPrefab, transform);
+        instance.SetPool(sporeExplosionVfxPool);
+        return instance;
+    }
+
+    private void OnGetSporeExplosionVfx(SporeExplosionVFX _instance)
+    {
+        _instance.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseSporeExplosionVfx(SporeExplosionVFX _instance)
+    {
+        _instance.gameObject.SetActive(false);
+    }
+
+    private void OnDestroySporeExplosionVfx(SporeExplosionVFX _instance)
+    {
+        if (_instance != null) Destroy(_instance.gameObject);
+    }
+
+    /// <summary>
+    /// 별 표식 나무가 죽은 자리에 TreeStarMark_Ground 마크를 스폰합니다. Instantiate/Destroy 대신
+    /// ObjectPool로 재사용되며, sortingOrder와 HDR 강도는 죽은 나무의 topRenderer/constellationRenderer 값을 그대로 물려받습니다.
+    /// 소속 그룹(_groupId)의 별자리 발현이 트리거되기 전까지는 자동으로 사라지지 않고 Loop 재생됩니다.
+    /// </summary>
+    public void PlayConstellationGroundMarkVFX(Vector3 _position, int _sortingOrder, int _groupId, float _hdrIntensity)
+    {
+        if (treeStarMarkGroundPool == null) return;
+
+        TreeStarMarkGroundAnimator _instance = treeStarMarkGroundPool.Get();
+        _instance.transform.position = _position;
+        _instance.SetSortingOrder(_sortingOrder);
+        _instance.SetGroupId(_groupId);
+        _instance.SetHDRIntensity(_hdrIntensity);
+        _instance.Play();
+
+        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list))
+        {
+            _list = new List<TreeStarMarkGroundAnimator>();
+            activeGroundMarksByGroup[_groupId] = _list;
+        }
+        _list.Add(_instance);
+    }
+
+    /// <summary>
+    /// 그룹의 별자리 발현이 트리거되면 호출되어, 그 그룹에서 아직 표시 중인 그라운드 마크를 전부 즉시 회수합니다.
+    /// </summary>
+    public void ClearConstellationGroundMarks(int _groupId)
+    {
+        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list)) return;
+
+        activeGroundMarksByGroup.Remove(_groupId);
+
+        for (int i = 0; i < _list.Count; i++)
+        {
+            _list[i].ForceReturnToPool();
+        }
+    }
+
+    private TreeStarMarkGroundAnimator CreateTreeStarMarkGround()
+    {
+        TreeStarMarkGroundAnimator _instance = Instantiate(treeStarMarkGroundPrefab, transform);
+        _instance.SetPool(treeStarMarkGroundPool);
+        return _instance;
+    }
+
+    private void OnGetTreeStarMarkGround(TreeStarMarkGroundAnimator _instance)
+    {
+        _instance.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseTreeStarMarkGround(TreeStarMarkGroundAnimator _instance)
+    {
+        _instance.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyTreeStarMarkGround(TreeStarMarkGroundAnimator _instance)
+    {
+        if (_instance != null) Destroy(_instance.gameObject);
     }
 
     /// <summary>

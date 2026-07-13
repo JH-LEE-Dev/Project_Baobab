@@ -808,6 +808,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
 
+        if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null)
+        {
+            inDungeonVFXManager.PlayConstellationGroundMarkVFX(
+                _treeObj.transform.position,
+                _treeObj.treeVisualComponent.GetTopSortingOrder(),
+                _treeObj.StarGroupId,
+                _treeObj.treeVisualComponent.GetConstellationHDRIntensity());
+        }
+
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
         environmentProvider.densityProvider.UpdateTreeCnt(false);
 
@@ -1310,7 +1319,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 UnityEngine.Random.Range(-SporeExplosionVfxSpread, SporeExplosionVfxSpread),
                 0f);
 
-            SporeExplosionVFX.Spawn(basePos + randomOffset);
+            inDungeonVFXManager.PlaySporeExplosionVFX(basePos + randomOffset);
 
             yield return sporeExplosionVfxWait;
         }
@@ -1348,7 +1357,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     // 별자리 발현 - 그룹의 모든 별 표식 나무가 벌목되면 Stage3TreeGenerationStrategySO가 호출
-    public void TriggerConstellationManifestation(List<Vector3> _starPositions)
+    public void TriggerConstellationManifestation(int _groupId, List<Vector3> _starPositions)
     {
         if (!bConstellationManifestUnlocked) return;
         if (_starPositions == null || _starPositions.Count < 2) return;
@@ -1359,6 +1368,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 동기 실행되므로 재귀가 그대로 쌓임). _starPositions(그룹별로 항상 같은 List 인스턴스)를 키로
         // 재진입만 막아서, 같은 그룹의 자기 재트리거는 막되 서로 다른 그룹은 동시에 진행되게 둔다.
         if (activeConstellationGroups.Contains(_starPositions)) return;
+
+        // 발현이 실제로 확정된 시점이므로, 이 그룹에서 아직 살아있던 그라운드 마크를 전부 회수한다.
+        inDungeonVFXManager.ClearConstellationGroundMarks(_groupId);
 
         List<Vector3> path = BuildSimplePolygonPath(_starPositions);
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
@@ -1554,7 +1566,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 ? nearest.treeVisualComponent.GetTopHighlightSortingOrder() + 1
                 : 0;
 
-            ShootingStarVFX.Spawn(landingPos, explosionSortingOrder, () =>
+            inDungeonVFXManager.PlayShootingStarVFX(landingPos, explosionSortingOrder, () =>
             {
                 inDungeonVFXManager.PlayStarImpactExplosionVFX(landingPos, explosionSortingOrder);
                 ApplyStarImpactDamage(landingPos);

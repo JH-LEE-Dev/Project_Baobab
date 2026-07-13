@@ -286,6 +286,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea7ae8f8154537ba95ae4a0f5203903a, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::TreeStarMarkAnimator
+  frames:
+  - {fileID: 2881428413406656926, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: -6775968474402276234, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: 6719675629896757311, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: -3227484461040846414, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: 1329908944906912402, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: -4847814971221794709, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: 2409923708317362613, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: -542496056008151206, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: -763310956152536898, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  - {fileID: -6396488623905115892, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
 --- !u!1 &1680987914026985696
 GameObject:
   m_ObjectHideFlags: 0
