@@ -13,6 +13,7 @@ public class UIView_MainMenu : UIView
     [Header("UI References")]
     [SerializeField] private UI_MainMenu mainMenuUI; // 메인 메뉴
     [SerializeField] private UI_PressAnyKey pressAnyKeyUI; // 아무 키나 누르세요 화면
+    [SerializeField] private UI_SplashScreen splashScreenUI; // 스플래시 스크린
     [SerializeField] private UI_LogoAnim logoAnimUI; // 로고 애니메이션 객체
     [SerializeField] private UI_MainMenuBackground backgroundUI; // 동적 배경 관리 객체
 
@@ -92,24 +93,46 @@ public class UIView_MainMenu : UIView
             backgroundDimmer.gameObject.SetActive(false);
         }
 
-        // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
-        if (null != pressAnyKeyUI)
+        if (null != this.splashScreenUI)
         {
-            pressAnyKeyUI.Show();
-            if (null != mainMenuUI) mainMenuUI.gameObject.SetActive(false);
-            if (null != logoAnimUI) logoAnimUI.gameObject.SetActive(true); // 로고는 항상 먼저 보여야 함
+            this.splashScreenUI.gameObject.SetActive(true);
+            if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
+            if (null != this.mainMenuUI) this.mainMenuUI.gameObject.SetActive(false);
+            if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(false);
+
+            this.splashScreenUI.PlaySequence(this.OnSplashScreenCompleted);
         }
         else
         {
-            ShowDimmer(); // 로고 애니메이션(또는 메인메뉴) 시작 시 딤 처리 실행
+            this.OnSplashScreenCompleted();
+        }
+    }
 
-            if (null != logoAnimUI)
+    private void OnSplashScreenCompleted()
+    {
+        if (null != this.splashScreenUI)
+        {
+            this.splashScreenUI.gameObject.SetActive(false);
+        }
+
+        // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
+        if (null != this.pressAnyKeyUI)
+        {
+            this.pressAnyKeyUI.Show();
+            if (null != this.mainMenuUI) this.mainMenuUI.gameObject.SetActive(false);
+            if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(true); // 로고는 항상 먼저 보여야 함
+        }
+        else
+        {
+            this.ShowDimmer(); // 로고 애니메이션(또는 메인메뉴) 시작 시 딤 처리 실행
+
+            if (null != this.logoAnimUI)
             {
-                logoAnimUI.PlayRevealSequence(ShowMainMenu);
+                this.logoAnimUI.PlayRevealSequence(this.ShowMainMenu);
             }
             else
             {
-                ShowMainMenu();
+                this.ShowMainMenu();
             }
         }
     }
