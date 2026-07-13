@@ -165,6 +165,7 @@ public class TreeVisualComponent : MonoBehaviour
         if (constellationRenderer != null)
         {
             constellationRenderer.gameObject.SetActive(_active);
+            UpdateHDRStates();
         }
     }
 
@@ -745,6 +746,8 @@ public class TreeVisualComponent : MonoBehaviour
 
         if (topShieldOnWaterSR != null) ApplyHDRToRenderer(topShieldOnWaterSR, isOnWaterActive && isShieldActive && topShieldOnWaterSR.sprite != null, shieldHDRIntensity + 0.25f);
         if (topHighlightOnWaterSR != null) ApplyHDRToRenderer(topHighlightOnWaterSR, isOnWaterActive && topHighlightOnWaterSR.sprite != null, highlightHDRIntensity + 0.25f);
+
+        if (constellationRenderer != null) ApplyHDRToRenderer(constellationRenderer, constellationRenderer.gameObject.activeSelf && constellationRenderer.sprite != null, highlightHDRIntensity+0.5f);
     }
 
     #endregion
