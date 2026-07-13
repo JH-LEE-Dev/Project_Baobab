@@ -480,7 +480,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
     public void IncreaseJackPotChance(float _amount)
     {
         //0~1의 값.
-        jackPotChance += (_amount / 100f);
+        jackPotChance = (_amount / 100f);
     }
 
     public void IncreaseJackPotAmount(float _amount)

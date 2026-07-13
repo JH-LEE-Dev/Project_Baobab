@@ -497,8 +497,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         }
         else
         {
-            // 받아온 amount 배수 * stack 적용 (최소 1배 보장)
-            logProcessorSpeedMul = Mathf.Max(1f, amountMultiplier * logProcessingStack);
+            // 기본 1배 + 스택당 amount 배수만큼 가산 (최소 1배 보장)
+            logProcessorSpeedMul = Mathf.Max(1f, 1f + (amountMultiplier * logProcessingStack));
         }
 
         for (int i = 0; i < activeLineCount; i++) allLines[i].SetGlobalSpeedMultiplier(logProcessorSpeedMul);

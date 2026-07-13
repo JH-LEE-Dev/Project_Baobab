@@ -50,6 +50,16 @@ public class Drone : MonoBehaviour
     [Header("Shadow (Boomerang/LogItem과 동일한 방식)")]
     [SerializeField] private SpriteRenderer shadowSpriteRenderer; // Shadow Material을 쓰는 별도 렌더러. 본체와 동일한 프레임/FlipX를 매 프레임 그대로 따라간다.
 
+    [Header("Muzzle Points (연쇄 타격 VFX 시작점)")]
+    [SerializeField] private Transform muzzleRight;
+    [SerializeField] private Transform muzzleRightUp;
+    [SerializeField] private Transform muzzleUp;
+    [SerializeField] private Transform muzzleRightDown;
+    [SerializeField] private Transform muzzleDown;
+
+    [Header("Chain Attack VFX")]
+    [SerializeField] private PresentationLayer.VFX.VFX_LightningZap chainZap; // 드론 전용 인스턴스(풀링 없이 상시 보유) - 연쇄 타격 시 muzzle에서 각 나무 top으로 이어지는 번개 연출
+
     private Transform followTarget;
     private Vector3 followOffset; // 캐릭터 기준 목표 슬롯(타원 대형 위치). Character가 매 프레임 갱신해준다.
     private float arrivalTolerance = 0.15f; // 슬롯과 이 거리 이내면 도착한 것으로 보고 멈춘다.
@@ -167,6 +177,32 @@ public class Drone : MonoBehaviour
     }
 
     /// <summary>
+    /// 현재 dirIndex(공격 대상을 바라보는 방향)에 해당하는 MuzzlePoints 위치를 월드 좌표로 반환한다.
+    /// GetAttackSprites/GetIdleSprite와 동일하게 좌우 반전 방향(3/4/5)은 원본 5방향 Transform의 로컬
+    /// x좌표만 미러링해서 구한다(스프라이트 FlipX가 실제 트랜스폼을 뒤집지 않는 것과 동일한 방식).
+    /// Character가 연쇄 타격 VFX의 시작점을 계산할 때 호출한다.
+    /// </summary>
+    public Vector3 GetMuzzlePosition()
+    {
+        Transform muzzle = GetMuzzleTransform(dirIndex, out bool flipX);
+        if (muzzle == null) return transform.position;
+
+        Vector3 localPos = transform.InverseTransformPoint(muzzle.position);
+        if (flipX) localPos.x = -localPos.x;
+        return transform.TransformPoint(localPos);
+    }
+
+    /// <summary>
+    /// 연쇄 타격 결과로 얻어진 좌표 목록(muzzle → 각 나무 top 위치)을 이 드론 전용 LightningZap으로
+    /// 재생한다. Character.OnDroneChainAttack이 매 임팩트 프레임마다 호출한다.
+    /// </summary>
+    public void PlayChainZap(IReadOnlyList<Vector3> _points, int _count)
+    {
+        if (chainZap == null || _count < 2) return;
+        chainZap.PlayZap(_points, _count);
+    }
+
+    /// <summary>
     /// 목표 슬롯에 얼마나 가까이 있으면 "도착"으로 볼지. Character가 소환 시 지정한다.
     /// </summary>
     public void SetArrivalTolerance(float _tolerance)
@@ -272,6 +308,8 @@ public class Drone : MonoBehaviour
         {
             customSortable.Initialize(transform);
         }
+
+        chainZap?.SetColor(Color.yellow);
     }
 
     private void Update()
@@ -557,6 +595,25 @@ public class Drone : MonoBehaviour
             case 5: _flipX = true; return idleRD;
             case 6: return idleD;
             case 7: return idleRD;
+        }
+        return null;
+    }
+
+    // GetAttackSprites/GetIdleSprite와 동일한 dirIndex 규칙: R/RU/U/RD/D 5개 Transform만 원본으로 갖고
+    // 있고, 나머지(좌상단/좌측/좌하단) 3방향은 GetMuzzlePosition에서 로컬 x좌표를 미러링해서 만든다.
+    private Transform GetMuzzleTransform(int _dirIndex, out bool _flipX)
+    {
+        _flipX = false;
+        switch (_dirIndex)
+        {
+            case 0: return muzzleRight;
+            case 1: return muzzleRightUp;
+            case 2: return muzzleUp;
+            case 3: _flipX = true; return muzzleRightUp;
+            case 4: _flipX = true; return muzzleRight;
+            case 5: _flipX = true; return muzzleRightDown;
+            case 6: return muzzleDown;
+            case 7: return muzzleRightDown;
         }
         return null;
     }

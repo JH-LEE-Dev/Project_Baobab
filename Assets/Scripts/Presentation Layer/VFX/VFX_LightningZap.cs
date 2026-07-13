@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using DG.Tweening;
@@ -7,6 +8,9 @@ namespace PresentationLayer.VFX
     [RequireComponent(typeof(LineRenderer))]
     public class VFX_LightningZap : MonoBehaviour
     {
+        // LightningZapCreator가 구독해서 풀로 되돌리는 용도로만 사용한다 (Boomerang.ReturnToPoolEvent와 동일한 역할).
+        public event Action<VFX_LightningZap> ReturnToPoolEvent;
+
         [Header("번개 연출 세팅")]
         [SerializeField] private float zapDuration = 0.15f;    // 팍! 하고 사라지기까지의 시간
         [SerializeField] private float startThickness = 0.15f; // 처음 터질 때의 최대 굵기
@@ -34,15 +38,31 @@ namespace PresentationLayer.VFX
         private void Awake()
         {
             originalLineRenderer = GetComponent<LineRenderer>();
-            
+
+            // 프리팹에 미리 세팅된 정점 컬러(예: 주황빛 colorGradient)를 중립(흰색)으로 리셋한다.
+            // Lightning2D 셰이더가 "정점 컬러 * _Color"로 가장자리 글로우 색을 계산하는데, 동적으로
+            // 생성되는 나머지 세그먼트는 기본값인 흰색 정점 컬러를 쓰므로, 원본만 흰색이 아니면 SetColor로
+            // 지정한 색이 원본 세그먼트에서만 다른 색과 섞여버린다. 흰색으로 맞춰야 _Color가 그대로 나온다.
+            originalLineRenderer.colorGradient = BuildNeutralGradient();
+
             // 머티리얼을 복제하여 캐싱 (여러 개의 번개가 독립적으로 작동하게 함)
-            instancedMaterial = originalLineRenderer.material; 
+            instancedMaterial = originalLineRenderer.material;
             originalLineRenderer.enabled = false;
-            
+
             lineSegments.Add(originalLineRenderer); // 기본 1개는 자신의 것을 사용
 
             // 델리게이트 미리 생성 (GC Alloc 완전 방지)
             onZapCompleteCallback = OnZapComplete;
+        }
+
+        private static Gradient BuildNeutralGradient()
+        {
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 1f) }
+            );
+            return gradient;
         }
 
         /// <summary>
@@ -107,11 +127,28 @@ namespace PresentationLayer.VFX
         /// <param name="_points">A -> B -> C 순서대로 이어질 좌표 배열</param>
         public void PlayZap(Vector3[] _points)
         {
-            if (_points == null || _points.Length < 2) return;
+            if (_points == null) return;
+            PlayZapInternal(_points, _points.Length);
+        }
+
+        /// <summary>
+        /// N개의 점을 이어주는 체인 라이트닝 연출 재생. 개수가 매번 달라지는 호출부(드론 연쇄공격 등)가
+        /// List&lt;Vector3&gt;를 배열로 변환(ToArray)하지 않고 그대로 넘길 수 있도록 개수를 별도로 받는다.
+        /// </summary>
+        /// <param name="_points">A -> B -> C 순서대로 이어질 좌표 목록(리스트의 실제 Count보다 클 수 있으므로 _count로 유효 구간을 지정)</param>
+        /// <param name="_count">_points 중 실제로 사용할 앞쪽 개수</param>
+        public void PlayZap(IReadOnlyList<Vector3> _points, int _count)
+        {
+            PlayZapInternal(_points, _count);
+        }
+
+        private void PlayZapInternal(IReadOnlyList<Vector3> _points, int _count)
+        {
+            if (_points == null || _count < 2) return;
 
             for (int i = 0; i < lineSegments.Count; i++) lineSegments[i].enabled = false;
 
-            int segmentsCount = _points.Length - 1;
+            int segmentsCount = _count - 1;
             for (int i = 0; i < segmentsCount; i++)
             {
                 LineRenderer lr = GetOrCreateSegment(i);
@@ -120,7 +157,7 @@ namespace PresentationLayer.VFX
                 lr.SetPosition(1, _points[i + 1]);
                 lr.enabled = true;
             }
-            
+
             ExecuteZap();
         }
 
@@ -143,7 +180,7 @@ namespace PresentationLayer.VFX
             lr.sortingOrder = originalLineRenderer.sortingOrder;
             lr.numCapVertices = originalLineRenderer.numCapVertices;
             lr.numCornerVertices = originalLineRenderer.numCornerVertices;
-            
+
             lr.enabled = false;
             lineSegments.Add(lr);
             
@@ -170,12 +207,16 @@ namespace PresentationLayer.VFX
         private void OnZapComplete()
         {
             for (int i = 0; i < lineSegments.Count; i++) lineSegments[i].enabled = false;
-            
+
             // 최적화: 애니메이션이 끝나면 오브젝트 자체를 비활성화
             if (disableObjectOnComplete)
             {
                 gameObject.SetActive(false);
             }
+
+            // 풀에서 꺼내 쓴 경우(구독자가 있는 경우)에만 반환한다. 드론처럼 풀 없이 전용 인스턴스로
+            // 쓰는 경우엔 구독자가 없으므로 이 호출은 아무 영향이 없다.
+            ReturnToPoolEvent?.Invoke(this);
         }
 
         private void OnDestroy()

@@ -97,6 +97,7 @@ public class InDungeonProductionManager : MonoBehaviour
         offroadVehicleObj.PlayShinyEffect();
         if (offroadVehicleObj != null)
         {
+            offroadVehicleObj.SetActiveWheelForStencil(false);
             yield return offroadVehicleObj.CharacterRideLandingImpactSequence(InvokeCharacterRideEndEvent);
         }
 

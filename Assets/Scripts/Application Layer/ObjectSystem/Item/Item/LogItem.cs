@@ -92,6 +92,13 @@ public class LogItem : Item, IStaticCollidable
     [SerializeField] private SpriteRenderer outlineStencilSR;
     [SerializeField] private SpriteRenderer outlineSR;
 
+    [Header("Outline Color By LogState")]
+    [SerializeField] private Color normalOutlineColor = Color.white;
+    [SerializeField] private Color fascinatingOutlineColor = new Color(0f, 1f, 0f, 1f);
+    [SerializeField] private Color advancedOutlineColor = new Color(0f, 0f, 1f, 1f);
+    [SerializeField] private Color perfectOutlineColor = new Color(1f, 0.5f, 0f, 1f);
+    private static readonly int OutlineColorPropertyID = Shader.PropertyToID("_OutlineColor");
+
     private ICharacter character;
 
     private ParticleSystem particleEffect;
@@ -106,6 +113,7 @@ public class LogItem : Item, IStaticCollidable
         character = _character;
         bDisableCustomSortable = _bDisableCustomSortable;
         logState = _logState;
+        ApplyOutlineColorForState(logState);
         treeType = _logItemTypeData.treeType;
         state = ItemMoveState.None;
         suckTarget = null;
@@ -357,6 +365,9 @@ public class LogItem : Item, IStaticCollidable
 
         if (outlineObj != null)
             outlineObj.SetActive(false);
+
+        if (outlineSR != null)
+            outlineSR.SetPropertyBlock(null);
 
         if (spriteRenderer != null)
         {
@@ -1032,8 +1043,29 @@ public class LogItem : Item, IStaticCollidable
     private void SetShaderFloating(bool _enable)
     {
         // GPU 인스턴싱(SRP Batcher) 유지를 위해 MaterialPropertyBlock 사용을 제거하고 셰이더 내부 연산으로 대체함
+        // outlineSR은 logState별 _OutlineColor를 인스턴스 프로퍼티 블록에 유지해야 하므로 여기서 초기화하지 않는다
         if (spriteRenderer != null) spriteRenderer.SetPropertyBlock(null);
         if (outlineStencilSR != null) outlineStencilSR.SetPropertyBlock(null);
-        if (outlineSR != null) outlineSR.SetPropertyBlock(null);
+    }
+
+    private Color GetOutlineColorForState(LogState _state)
+    {
+        switch (_state)
+        {
+            case LogState.Fascinating: return fascinatingOutlineColor;
+            case LogState.Advanced: return advancedOutlineColor;
+            case LogState.Perfect: return perfectOutlineColor;
+            default: return normalOutlineColor;
+        }
+    }
+
+    private void ApplyOutlineColorForState(LogState _state)
+    {
+        if (outlineSR == null) return;
+
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        outlineSR.GetPropertyBlock(mpb);
+        mpb.SetColor(OutlineColorPropertyID, GetOutlineColorForState(_state));
+        outlineSR.SetPropertyBlock(mpb);
     }
 }
