@@ -302,7 +302,9 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (IsDraggedClick(eventData))
             return;
 
-        bool isApproved = owner != null && owner.TryRequestNodeLevelUp(this);
+        bool isApproved = owner != null && (IsControlPressed()
+            ? owner.TryRequestNodeLevelUpWithoutCost(this)
+            : owner.TryRequestNodeLevelUp(this));
         if (true == isApproved)
             PlayClickRequestMotion();
         else
@@ -314,6 +316,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         Keyboard keyboard = Keyboard.current;
         return keyboard != null &&
                (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
+    }
+
+    private bool IsControlPressed()
+    {
+        Keyboard keyboard = Keyboard.current;
+        return keyboard != null &&
+               (keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed);
     }
 
     private bool IsDraggedClick(PointerEventData _eventData)
