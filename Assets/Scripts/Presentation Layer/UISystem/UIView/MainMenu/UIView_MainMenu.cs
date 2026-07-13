@@ -32,6 +32,11 @@ public class UIView_MainMenu : UIView
         saveSystem = _saveSystem;
     }
 
+    public bool HasSaveData()
+    {
+        return saveSystem != null && saveSystem.HasSaveData();
+    }
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);

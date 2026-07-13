@@ -38,6 +38,7 @@ public class UI_MainMenu : MonoBehaviour
         if (null != loadGameButton)
         {
             loadGameButton.Initialize(OnLoadGameClicked);
+            loadGameButton.SetInteractable(parentView.HasSaveData());
         }
         
         if (null != exitButton)
