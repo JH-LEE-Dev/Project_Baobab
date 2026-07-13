@@ -219,7 +219,15 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
                             positions = new List<Vector3>();
                             groupStarPositions[groupId] = positions;
                         }
-                        positions.Add(worldPos);
+
+                        // 밑동(worldPos) 대신 top 위치를 스폰 시점에 딱 한 번 캐싱해서 저장한다. 나무는
+                        // 스폰된 뒤 움직이지 않고 topRoot 오프셋도 성장 단계와 무관하게 고정이므로, 이
+                        // 값은 나무가 나중에 죽어서 풀로 반환/재사용되더라도(TreeObj 참조와 달리) 계속
+                        // 유효하다 - 별자리 발현이 언제(때렸을 때/그룹 전체 벌목 시) 트리거되든 안전하다.
+                        Vector3 topPos = spawnedTree.treeVisualComponent != null
+                            ? spawnedTree.treeVisualComponent.GetTopRootPosition()
+                            : worldPos;
+                        positions.Add(topPos);
 
                         groupRemainingStarCount.TryGetValue(groupId, out int currentCount);
                         groupRemainingStarCount[groupId] = currentCount + 1;

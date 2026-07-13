@@ -41,6 +41,8 @@ public class EHealthComponent : EComponent, IHealthComponent
         brandedDamageMultiplier = Mathf.Max(brandedDamageMultiplier, _multiplier);
     }
 
+    public bool IsBranded => brandedDamageMultiplier > 1f;
+
     public void Setup(TreeType _treeType, float _maxHealth, float _maxSP, float _spRegen, SPRegenStrategySO _regenStrategy)
     {
         maxHealth = _maxHealth;

@@ -107,6 +107,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private readonly List<IStaticCollidable> droneScanResults = new List<IStaticCollidable>(16);
     private readonly List<ITreeObj> droneClaimedTargets = new List<ITreeObj>(4); // 한 번의 Activate/재타겟팅 호출 안에서 드론끼리 서로 다른 나무를 고르도록
     private readonly List<ITreeObj> droneChainHitTrees = new List<ITreeObj>(8); // 한 번의 연쇄공격 전이 동안 이미 맞은 나무(중복 전이 방지)
+    private readonly List<Vector3> droneChainZapPoints = new List<Vector3>(8); // muzzle -> 각 나무 top 위치. 연쇄공격 VFX(LightningZap) 재생용
     private float droneRetargetTimer = 0f;
     private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
 
@@ -472,7 +473,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private void ThrowBoomerangAt(ITreeObj _tree)
     {
         Vector3 origin = transform.position;
-        Vector3 dir = GetBoomerangTargetPosition(_tree) - origin;
+        Vector3 dir = GetTreeTopPosition(_tree) - origin;
         if (dir.sqrMagnitude < 0.0001f) return;
         dir.Normalize();
 
@@ -554,10 +555,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         }
     }
 
-    // 나무 밑동(GetTransform)이 아니라 TreeVisualComponent의 topRoot(나무 윗부분, 잎이 있는 쪽) 방향으로
-    // 부메랑이 날아가도록 목표 지점을 구한다. topRoot가 없는 나무(비주얼 컴포넌트 누락 등)는 기존처럼
-    // 트리 오브젝트 위치로 폴백한다.
-    private Vector3 GetBoomerangTargetPosition(ITreeObj _tree)
+    // 나무 밑동(GetTransform)이 아니라 TreeVisualComponent의 topRoot(나무 윗부분, 잎이 있는 쪽) 방향의
+    // 좌표를 구한다. 부메랑 조준과 드론 연쇄공격 LightningZap 경유점 계산이 함께 사용한다. topRoot가
+    // 없는 나무(비주얼 컴포넌트 누락 등)는 기존처럼 트리 오브젝트 위치로 폴백한다.
+    private Vector3 GetTreeTopPosition(ITreeObj _tree)
     {
         if (_tree is TreeObj treeObj && treeObj.treeVisualComponent != null)
         {
@@ -841,30 +842,42 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     }
 
     // Drone이 주 타겟에 데미지를 입히는 순간마다(Drone.SetChainAttackCallback으로 등록) 호출된다.
-    // droneChainCount가 0(스킬 미해금)이면 아무 일도 하지 않는다. 방금 맞은 나무를 기점으로
-    // droneChainRange 반경 안에서 아직 맞지 않은 가장 가까운 나무를 찾아 데미지를 입히고, 그
-    // 나무를 다시 기점 삼아 최대 droneChainCount번까지 반복한다(중간에 대상을 못 찾으면 중단).
+    // 레이저 이펙트(muzzle -> 주 타겟 top)는 연쇄공격 스킬 해금 여부와 무관하게 항상 나간다.
+    // droneChainCount가 0(스킬 미해금)이면 그 뒤의 실제 "전이"(추가 대상 탐색/데미지)만 일어나지 않는다.
+    // 해금된 경우 방금 맞은 나무를 기점으로 droneChainRange 반경 안에서 아직 맞지 않은 가장 가까운
+    // 나무를 찾아 데미지를 입히고, 그 나무를 다시 기점 삼아 최대 droneChainCount번까지 반복한다
+    // (중간에 대상을 못 찾으면 중단).
     private void OnDroneChainAttack(Drone _drone, ITreeObj _primaryTarget)
     {
-        if (statComponent == null || statComponent.droneChainCount <= 0 || _primaryTarget == null) return;
+        if (statComponent == null || _primaryTarget == null) return;
 
         Transform primaryTransform = _primaryTarget.GetTransform();
         if (primaryTransform == null) return;
 
-        droneChainHitTrees.Clear();
-        droneChainHitTrees.Add(_primaryTarget);
+        droneChainZapPoints.Clear();
+        droneChainZapPoints.Add(_drone.GetMuzzlePosition());
+        droneChainZapPoints.Add(GetTreeTopPosition(_primaryTarget));
 
-        Vector3 origin = primaryTransform.position;
-
-        for (int i = 0; i < statComponent.droneChainCount; i++)
+        if (statComponent.droneChainCount > 0)
         {
-            ITreeObj next = FindNearestChainTarget(origin);
-            if (next == null) break;
+            droneChainHitTrees.Clear();
+            droneChainHitTrees.Add(_primaryTarget);
 
-            (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
-            droneChainHitTrees.Add(next);
-            origin = next.GetTransform().position;
+            Vector3 origin = primaryTransform.position;
+
+            for (int i = 0; i < statComponent.droneChainCount; i++)
+            {
+                ITreeObj next = FindNearestChainTarget(origin);
+                if (next == null) break;
+
+                (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
+                droneChainHitTrees.Add(next);
+                droneChainZapPoints.Add(GetTreeTopPosition(next));
+                origin = next.GetTransform().position;
+            }
         }
+
+        _drone.PlayChainZap(droneChainZapPoints, droneChainZapPoints.Count);
     }
 
     // droneChainHitTrees(이번 전이 동안 이미 맞은 나무)를 제외하고, origin 기준 droneChainRange

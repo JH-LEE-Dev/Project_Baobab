@@ -121,4 +121,23 @@ public class InDungeonVFXManager : MonoBehaviour
             null
         ));
     }
+
+    /// <summary>
+    /// 발현 낙인이 찍힌 나무 위에서 일정 인터벌마다 재생되는 스파크 VFX(VFX_Spark)입니다.
+    /// parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
+    /// </summary>
+    public void PlayManifestationBrandVFX(TreeVisualComponent _visual)
+    {
+        if (vfxComponent == null || _visual == null) return;
+
+        int sortingOrder = _visual.GetTopHighlightSortingOrder() + 1;
+
+        vfxComponent.Play(new VFXPlaySettings(
+            "ManifestationBrandSparkEffect",
+            _visual.GetTopRootPosition(),
+            _visual.GetTopRootRotation(),
+            sortingOrder,
+            null
+        ));
+    }
 }
