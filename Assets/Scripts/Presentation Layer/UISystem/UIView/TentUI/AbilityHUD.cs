@@ -169,16 +169,27 @@ public class AbilityHUD : MonoBehaviour
 
     public void SetFlowerStack(int _flowerStack)
     {
-        flowerStack = Mathf.Max(0, _flowerStack);
-        RefreshFlowerStack();
+        int _targetFlowerStack = Mathf.Max(0, _flowerStack);
+        if (IsResetExperienceEffectPlaying())
+        {
+            resetTargetFlowerStack = _targetFlowerStack;
+            return;
+        }
+
+        SetFlowerStackImmediate(_targetFlowerStack);
     }
 
     public void SetFlowerStack_Effect(int _flowerStack)
     {
-        flowerStack = Mathf.Max(0, _flowerStack);
+        int _targetFlowerStack = Mathf.Max(0, _flowerStack);
+        if (IsResetExperienceEffectPlaying())
+        {
+            resetTargetFlowerStack = _targetFlowerStack;
+            return;
+        }
 
         // TODO: Add flower stack change animation timing here.
-        RefreshFlowerStack();
+        SetFlowerStackImmediate(_targetFlowerStack);
     }
 
     [Button("SetExperience_Effect")]
@@ -473,6 +484,12 @@ public class AbilityHUD : MonoBehaviour
 #endif
     }
 
+    private void SetFlowerStackImmediate(int _flowerStack)
+    {
+        flowerStack = Mathf.Max(0, _flowerStack);
+        RefreshFlowerStack();
+    }
+
 #if UNITY_EDITOR
     private void ScheduleEditorFlowerObjectSync()
     {
@@ -727,7 +744,7 @@ public class AbilityHUD : MonoBehaviour
     {
         int _previousFlowerStack = flowerStack;
         int _targetFlowerStack = Mathf.Max(0, resetTargetFlowerStack);
-        SetFlowerStack(_targetFlowerStack);
+        SetFlowerStackImmediate(_targetFlowerStack);
 
         if (_targetFlowerStack <= _previousFlowerStack)
             return null;
