@@ -6,11 +6,11 @@ public class SC_CriticalDamage : SkillCommand
     public override void Execute(ICommandHandleSystem _system)
     {
         PrintDebug();
-        _system.characterStatCH.SetFinalAttackHealthPercent(amount);
+        _system.characterStatCH.IncreaseCriticalDamage(amount);
     }
 
     public override void Undo(ICommandHandleSystem _system)
     {
-        _system.characterStatCH.SetFinalAttackHealthPercent(1f);
+        _system.characterStatCH.IncreaseCriticalDamage(-amount);
     }
 }

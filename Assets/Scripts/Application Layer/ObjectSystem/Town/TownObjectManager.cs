@@ -95,12 +95,12 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
             offroadVehicle.transform.position = portalSpawnPoint.position;
             offroadVehicle.Initialize(PortalType.ToDungeonPortal, environmentProvider, inputManager, characterInventory, offroadContainer,
             character.centerTransform);
-            offroadVehicle.ResetPortal();
+            offroadVehicle.ResetObject();
             offroadVehicle.SetCanTravel(bCanTravel);
         }
         else
         {
-            offroadVehicle.ResetPortal();
+            offroadVehicle.ResetObject();
             offroadVehicle.SetCanTravel(bCanTravel);
         }
 

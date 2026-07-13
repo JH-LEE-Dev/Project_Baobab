@@ -2122,6 +2122,7 @@ MonoBehaviour:
   wheelStencilSR: {fileID: 3594479015764017572}
   baseOutlineStencilSR: {fileID: 7560987242974663247}
   wheelOutlineStencilSR: {fileID: 767506997055690360}
+  innerSR: {fileID: 5566184336579850035}
   shinyDuration: 0.25
   shinyCurve:
     serializedVersion: 2

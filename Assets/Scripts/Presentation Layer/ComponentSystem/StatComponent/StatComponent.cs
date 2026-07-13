@@ -135,8 +135,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float ricochetDamage = 1f;
 
     [Header("Attack")]
-    public float weakPointDamageMul = 1f;
-    public float helloDamageMul = 1f;
+    public float weakPointDamageMul = 0f;
+    public float helloDamageMul = 0f;
     public bool bMultiAttack = false;
     public float finalAttackHealthPercent = 1f;
     public float attackRythmSpeedMul = 1f;
@@ -345,12 +345,12 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
 
     public void IncreaseWeakPointDamageMul(float _amount)
     {
-        weakPointDamageMul = _amount;
+        weakPointDamageMul += _amount;
     }
 
     public void IncreaseHelloDamage(float _amount)
     {
-        helloDamageMul = _amount;
+        helloDamageMul += _amount;
     }
 
     public void SetMultiAttack(bool _boolean)

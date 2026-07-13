@@ -422,6 +422,10 @@ MonoBehaviour:
   outlineObj: {fileID: 4427381365519987007}
   outlineStencilSR: {fileID: 4172736323387572403}
   outlineSR: {fileID: 163953909001683204}
+  normalOutlineColor: {r: 1, g: 1, b: 1, a: 1}
+  fascinatingOutlineColor: {r: 0, g: 1, b: 0, a: 1}
+  advancedOutlineColor: {r: 0, g: 0, b: 1, a: 1}
+  perfectOutlineColor: {r: 1, g: 0.5, b: 0, a: 1}
 --- !u!114 &1588757393300197106
 MonoBehaviour:
   m_ObjectHideFlags: 0

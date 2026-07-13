@@ -343,15 +343,20 @@ public class AttackComponent : PComponent
             }
             else
             {
+                // N배 추가 데미지 효과는 서로 곱연산되지 않고, 원본 데미지 기준으로 각각 가산된다.
+                float extraDamage = 0f;
+
                 if (!damageable.health.bIsFirstDamage)
                 {
-                    damage *= ctx.characterStat.helloDamageMul;
+                    extraDamage += damage * ctx.characterStat.helloDamageMul;
                 }
 
                 if (maxHp > 0f && (currentHp / maxHp) <= 0.5f)
                 {
-                    damage *= ctx.characterStat.weakPointDamageMul;
+                    extraDamage += damage * ctx.characterStat.weakPointDamageMul;
                 }
+
+                damage += extraDamage;
             }
         }
 

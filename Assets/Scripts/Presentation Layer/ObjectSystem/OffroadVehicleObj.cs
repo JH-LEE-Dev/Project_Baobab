@@ -92,6 +92,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     public SpriteRenderer wheelStencilSR;
     public SpriteRenderer baseOutlineStencilSR;
     public SpriteRenderer wheelOutlineStencilSR;
+    public SpriteRenderer innerSR;
 
     // 내부 상태 변수들
     private int characterLayer;
@@ -220,8 +221,9 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         CalcDistForCanReach();
     }
 
-    public void ResetPortal()
+    public void ResetObject()
     {
+        SetActiveWheelForStencil(true);
         lastActivatedTime = Time.time;
         bPhysicalOverlapped = false;
         UpdateInteractState();
@@ -452,6 +454,16 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     {
         customSortable.ManualLateUpdate();
         customSortable_wheel.ManualLateUpdate();
+
+        if (innerSR != null)
+        {
+            innerSR.sortingOrder = innerSR.sortingOrder - 1;
+        }
+    }
+
+    public void SetActiveWheelForStencil(bool _boolean)
+    {
+        wheelObjectForStencil.SetActive(_boolean);
     }
 
     public void StartDrive(Transform _endPoint)
@@ -459,6 +471,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         offroadContainer.DisableCollision();
         outLineObject.SetActive(false);
         wheelObjectForStencil.SetActive(false);
+
 
         if (driveCoroutine != null)
         {
@@ -858,6 +871,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             _flashMPB.SetFloat(FlashAmountID, flash);
             baseSR?.SetPropertyBlock(_flashMPB);
             wheelSR?.SetPropertyBlock(_flashMPB);
+            innerSR?.SetPropertyBlock(_flashMPB);
 
             elapsed += Time.deltaTime;
             yield return null;
@@ -866,6 +880,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         _flashMPB.SetFloat(FlashAmountID, 0f);
         baseSR?.SetPropertyBlock(_flashMPB);
         wheelSR?.SetPropertyBlock(_flashMPB);
+        innerSR?.SetPropertyBlock(_flashMPB);
     }
 
     public void IncreaseRepairBoxCount(float _amount)
