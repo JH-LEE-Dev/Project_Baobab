@@ -139,15 +139,33 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 별자리(Constellation) 관련 스킬 스탯 - StarrootForest 전용
     private const float BaseConstellationDamage = 5000f;
-    private const float ConstellationBeamHalfThickness = 1f; // 비주얼보다 넉넉한 판정 두께
+    private const float ConstellationBeamHalfThickness = 0.5f; // 선분 중심 기준 좌우 0.5씩(전체 폭 1.0)
     private const float ConstellationHitInterval = 0.2f;
     private static readonly WaitForSeconds constellationHitWait = new WaitForSeconds(ConstellationHitInterval);
+
+    // 별자리 발현 광선 VFX - Drone의 연쇄 타격과 동일한 VFX_LightningZap을 재사용한다. 서로 다른 그룹이
+    // 동시에 발현될 수 있으므로(풀링 없는 전용 인스턴스 하나로는 나중 광선이 먼저 광선을 덮어써버림)
+    // 풀에서 매번 새 인스턴스를 꺼내 쓴다. 색상은 SetColor로 덮어쓰지 않고 프리팹 기본값을 그대로 쓴다.
+    [SerializeField] private LightningZapCreator lightningZapCreator;
 
     private bool bConstellationManifestUnlocked = false;
     private float starMarkDamageMultiplier = 1f;          // 별표식 베기
     private float constellationDamageMultiplier = 1f;     // 별자리 데미지
     private int constellationHitCount = 1;                // 별자리 잔상
     private float manifestationBrandBonusMultiplier = 0f; // 발현 낙인
+
+    // 그룹별 재진입 방지 가드 - groupStarPositions[groupId]와 동일한 List<Vector3> 참조를 키로 쓴다.
+    // 광선 자신의 데미지가 같은 그룹의 다른 별 표식 나무를 맞혀 재귀적으로 재트리거하는 것만 막고,
+    // 서로 다른 그룹(다른 List 인스턴스)은 동시에 진행돼도 서로 막지 않는다.
+    private readonly HashSet<List<Vector3>> activeConstellationGroups = new HashSet<List<Vector3>>();
+
+    // 발현 낙인이 찍힌 나무 위에서 반복 재생되는 스파크 VFX(VFX_Spark) - 낙인은 나무가 죽어 리셋될 때까지
+    // 유지되므로(EHealthComponent.brandedDamageMultiplier), 그동안 인터벌마다 계속 재생한다. 매번 똑같은
+    // 박자로 반짝이면 기계적으로 보이므로 인터벌 자체를 매번 랜덤화한다.
+    private const float ManifestationBrandVfxIntervalMin = 0.5f;
+    private const float ManifestationBrandVfxIntervalMax = 0.75f;
+    // 나무 한 그루에 낙인 코루틴이 중복으로 여러 개 돌지 않도록(같은 나무가 여러 발현/여러 선분에 맞을 수 있음) 추적
+    private readonly HashSet<TreeObj> manifestationBrandVfxTrees = new HashSet<TreeObj>();
 
     public float StarMarkDamageMultiplier => starMarkDamageMultiplier;
 
@@ -180,6 +198,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
+
+        lightningZapCreator?.Initialize();
 
         gridWidth = environmentProvider.tilemapDataProvider.GridWidth;
         int gridHeight = environmentProvider.tilemapDataProvider.GridHeight;
@@ -284,7 +304,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // ResetPortal() 내부에서 발밑 타일 재등록 코루틴(StartCoroutine)을 실행하므로,
         // 코루틴이 비활성 상태의 게임 오브젝트에서 시작 실패하지 않도록 활성화를 먼저 한다.
         offroadVehicle.gameObject.SetActive(true);
-        offroadVehicle.ResetPortal();
+        offroadVehicle.ResetObject();
         offroadVehicle.SetCanTravel(true);
         offroadVehicle.col.enabled = false;
         BindPortalEvents();
@@ -1004,12 +1024,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             return false;
         }
 
-        if (character.IsAxeDurabilityZero() == true && inventoryChecker.bInventoryIsEmpty == true)
-        {
-            return false;
-        }
-
-        return true;
+        return inventoryChecker.bInventoryIsEmpty == false;
     }
 
     public void IncreaseGrowthSpeed(float _amount)
@@ -1157,64 +1172,80 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (!bConstellationManifestUnlocked) return;
         if (_starPositions == null || _starPositions.Count < 2) return;
 
-        List<Vector3> path = BuildNearestNeighborPath(_starPositions);
+        // 광선 자체의 데미지(ApplyConstellationBeamDamage -> TakeDamage)가 같은 그룹의 다른 별 표식
+        // 나무를 맞히면 TreeGetHitEvent가 다시 발생해 OnTreeGetHit -> TriggerConstellationManifestation을
+        // 재귀적으로 다시 호출하는 문제가 있었다(같은 프레임 안에서 StartCoroutine이 첫 yield 전까지
+        // 동기 실행되므로 재귀가 그대로 쌓임). _starPositions(그룹별로 항상 같은 List 인스턴스)를 키로
+        // 재진입만 막아서, 같은 그룹의 자기 재트리거는 막되 서로 다른 그룹은 동시에 진행되게 둔다.
+        if (activeConstellationGroups.Contains(_starPositions)) return;
+
+        List<Vector3> path = BuildSimplePolygonPath(_starPositions);
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
         int hitCount = Mathf.Max(1, constellationHitCount);
 
-        StartCoroutine(ConstellationBeamRoutine(path, damage, hitCount));
+        activeConstellationGroups.Add(_starPositions);
+        StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
     }
 
-    private List<Vector3> BuildNearestNeighborPath(List<Vector3> _points)
+    // 중심점(centroid) 기준 각도 순으로 정렬해서 폐곡선을 만든다. 최근접 이웃(greedy) 방식과 달리,
+    // 각도가 단조 증가하는 순서로만 변을 이으면 두 변이 서로 교차할 수 없다는 성질이 수학적으로
+    // 보장되므로 - 어떤 별 배치에서도 항상 자기교차 없는 단순 다각형(simple polygon)이 나온다.
+    // 최단 경로는 아닐 수 있지만, 별자리 그룹이 2~5개뿐이라 비용도 무시할 만하고 꼬임 방지가 우선이다.
+    private List<Vector3> BuildSimplePolygonPath(List<Vector3> _points)
     {
-        List<Vector3> remaining = new List<Vector3>(_points);
-        List<Vector3> path = new List<Vector3>(_points.Count);
+        List<Vector3> sorted = new List<Vector3>(_points);
 
-        Vector3 current = remaining[0];
-        path.Add(current);
-        remaining.RemoveAt(0);
+        Vector3 centroid = Vector3.zero;
+        for (int i = 0; i < sorted.Count; i++) centroid += sorted[i];
+        centroid /= sorted.Count;
 
-        while (remaining.Count > 0)
+        // 등각 투영 보정 - 기존 최근접 판정과 동일하게 Y축을 2배로 보정해서, 화면상 배치와 일관된
+        // 순서로 각도를 계산한다.
+        sorted.Sort((a, b) =>
         {
-            int nearestIdx = 0;
-            float nearestDistSq = float.MaxValue;
+            float angleA = Mathf.Atan2((a.y - centroid.y) * 2f, a.x - centroid.x);
+            float angleB = Mathf.Atan2((b.y - centroid.y) * 2f, b.x - centroid.x);
+            return angleA.CompareTo(angleB);
+        });
 
-            for (int i = 0; i < remaining.Count; i++)
-            {
-                // 등각 투영 보정 - 화면상 가까워 보이는 별을 실제로 더 가깝다고 판단하도록 Y축 보정
-                float dx = remaining[i].x - current.x;
-                float dy = (remaining[i].y - current.y) * 2f;
-                float distSq = dx * dx + dy * dy;
-
-                if (distSq < nearestDistSq)
-                {
-                    nearestDistSq = distSq;
-                    nearestIdx = i;
-                }
-            }
-
-            current = remaining[nearestIdx];
-            path.Add(current);
-            remaining.RemoveAt(nearestIdx);
+        // 별이 3개 이상이면 마지막 점에서 시작점으로 되돌아가는 구간을 하나 더 추가해서 다각형(폐곡선)을
+        // 이루도록 한다. 별이 2개뿐이면 폐곡선을 만들 수 없으므로(다시 그으면 같은 선분을 중복으로
+        // 왕복하게 됨) 그대로 열린 선 하나만 둔다.
+        if (sorted.Count >= 3)
+        {
+            sorted.Add(sorted[0]);
         }
 
-        return path;
+        return sorted;
     }
 
-    private IEnumerator ConstellationBeamRoutine(List<Vector3> _path, float _damagePerHit, int _hitCount)
+    private IEnumerator ConstellationBeamRoutine(List<Vector3> _groupKey, List<Vector3> _path, float _damagePerHit, int _hitCount)
     {
-        for (int hit = 0; hit < _hitCount; hit++)
+        try
         {
-            ApplyConstellationBeamDamage(_path, _damagePerHit);
-
-            if (hit < _hitCount - 1)
+            for (int hit = 0; hit < _hitCount; hit++)
             {
-                yield return constellationHitWait;
+                ApplyConstellationBeamDamage(_path, _damagePerHit);
+
+                if (hit < _hitCount - 1)
+                {
+                    yield return constellationHitWait;
+                }
             }
+        }
+        finally
+        {
+            activeConstellationGroups.Remove(_groupKey);
         }
     }
 
     private void ApplyConstellationBeamDamage(List<Vector3> _path, float _damage)
     {
+        // 풀에서 매번 새 인스턴스를 꺼낸다 - 서로 다른 그룹(또는 같은 그룹의 다음 펄스)이 동시에 재생
+        // 중이어도 각자 독립된 LineRenderer/트윈을 쓰므로 서로 덮어쓰지 않는다. 재생이 끝나면
+        // VFX_LightningZap이 스스로 ReturnToPoolEvent를 발생시켜 자동으로 풀에 반환된다.
+        lightningZapCreator?.Get()?.PlayZap(_path, _path.Count);
+
         if (CollisionSystem.Instance == null) return;
 
         bool bBrandActive = manifestationBrandBonusMultiplier > 0f;
@@ -1260,8 +1291,49 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 if (bBrandActive && !tree.bDead)
                 {
                     tree.health.ApplyDamageBrand(1f + manifestationBrandBonusMultiplier);
+                    StartManifestationBrandVfx(tree);
                 }
             }
+        }
+    }
+
+    // 낙인이 찍힌 나무에 대해 주기 재생 VFX 루틴을 시작한다(이미 이 나무에 루틴이 돌고 있다면 무시).
+    // HashSet.Add가 처음 추가될 때만 true를 반환하므로 자연스러운 가드가 된다. Stage3TreeGenerationStrategySO
+    // 등 외부에서도(테스트용 강제 낙인 등) 재사용할 수 있도록 public으로 둔다.
+    public void StartManifestationBrandVfx(TreeObj _tree)
+    {
+        if (_tree == null) return;
+
+        if (manifestationBrandVfxTrees.Add(_tree))
+        {
+            StartCoroutine(PlayManifestationBrandVfxRoutine(_tree));
+        }
+    }
+
+    // 낙인이 찍힌 나무 위에서 [ManifestationBrandVfxIntervalMin, Max] 사이로 랜덤화된 인터벌마다
+    // VFX_Spark를 재생한다. 종료 조건은 반드시 health.IsBranded(실제 낙인 배율 상태)로만 판단해야 한다 -
+    // bDead는 나무가 죽는 순간 OnTreeDead -> treePool.Release -> ResetTree()가 같은 프레임 안에서 다시
+    // false로 되돌리고, gameObject.activeInHierarchy도 죽음뿐 아니라 카메라 컬링(UpdateTreeVisibility)으로
+    // 살아있는 동안에도 꺼졌다 켜졌다 하므로 둘 다 "이 나무가 여전히 낙인 상태인지"를 판단하는 데 쓸 수
+    // 없다. 나무가 죽으면 ResetTree()가 브랜드 배율을 1로 되돌리므로 IsBranded가 정확히 false가 되고,
+    // 풀에서 재사용되어 전혀 다른 나무가 되어도(재낙인되지 않는 한) 계속 false를 유지한다.
+    private IEnumerator PlayManifestationBrandVfxRoutine(TreeObj _tree)
+    {
+        try
+        {
+            while (_tree != null && _tree.health != null && _tree.health.IsBranded)
+            {
+                if (_tree.treeVisualComponent != null)
+                {
+                    inDungeonVFXManager.PlayManifestationBrandVFX(_tree.treeVisualComponent);
+                }
+
+                yield return new WaitForSeconds(UnityEngine.Random.Range(ManifestationBrandVfxIntervalMin, ManifestationBrandVfxIntervalMax));
+            }
+        }
+        finally
+        {
+            manifestationBrandVfxTrees.Remove(_tree);
         }
     }
 

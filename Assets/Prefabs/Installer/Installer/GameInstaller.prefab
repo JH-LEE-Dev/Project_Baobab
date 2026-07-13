@@ -1472,44 +1472,50 @@ MonoBehaviour:
   - vfxTag: TreeHitEffect_Top
     effectPrefab: {fileID: 7006864300503741061, guid: e471b86a20e7300478d33f5733d26505, type: 3}
     initialPoolSize: 20
-    allowDynamicExpansion: 0
-    maxPoolSize: 50
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: TreeHitEffect_Bottom
     effectPrefab: {fileID: 7836741438559938216, guid: c5e88873e2106c24d9168cc295f0cac5, type: 3}
     initialPoolSize: 20
-    allowDynamicExpansion: 0
-    maxPoolSize: 50
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: TreeDeadEffect_Top
     effectPrefab: {fileID: 7006864300503741061, guid: 5b55385ff94d83d49a232cf9fe798911, type: 3}
     initialPoolSize: 20
-    allowDynamicExpansion: 0
-    maxPoolSize: 50
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: TreeDeadEffect_Bottom
     effectPrefab: {fileID: 3423223590745634705, guid: e5162976570cc5e48b65f1069e9c193e, type: 3}
     initialPoolSize: 20
-    allowDynamicExpansion: 0
-    maxPoolSize: 50
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: SporeShieldBrokenEffect
     effectPrefab: {fileID: 8961847964968627430, guid: 777138ec1a339ec4f961ba6cc2da8052, type: 3}
-    initialPoolSize: 10
+    initialPoolSize: 40
     allowDynamicExpansion: 1
-    maxPoolSize: 30
+    maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: SporeShieldBrokenEffect_Bellpine
     effectPrefab: {fileID: 8961847964968627430, guid: 9a30a76154b72314ab7f83fad17d635a, type: 3}
-    initialPoolSize: 10
+    initialPoolSize: 40
     allowDynamicExpansion: 1
-    maxPoolSize: 30
+    maxPoolSize: 70
     uiParticleScale: 0
   - vfxTag: StarImpactExplosionEffect
     effectPrefab: {fileID: 8318707871092513370, guid: 45faecec6f3e26b419159e50e1679060, type: 3}
-    initialPoolSize: 5
+    initialPoolSize: 40
     allowDynamicExpansion: 1
-    maxPoolSize: 20
+    maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: ManifestationBrandSparkEffect
+    effectPrefab: {fileID: 4414206344302795060, guid: ae8dfa960fb2f644f89d0e6dd44ea1da, type: 3}
+    initialPoolSize: 40
+    allowDynamicExpansion: 1
+    maxPoolSize: 70
     uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
@@ -2785,6 +2791,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7610549331774678628}
   - component: {fileID: 6203375709117898116}
+  - component: {fileID: 3643444765331575717}
   m_Layer: 0
   m_Name: ObjectManager
   m_TagString: Untagged
@@ -2878,3 +2885,19 @@ MonoBehaviour:
   treeLayerForExplosion:
     serializedVersion: 2
     m_Bits: 1024
+  lightningZapCreator: {fileID: 3643444765331575717}
+--- !u!114 &3643444765331575717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9097579308778333852}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0e4eef7b6783248438bb56cbc56461c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LightningZapCreator
+  lightningZapPrefab: {fileID: -5490508266515913148, guid: 89127e97a29dac040a2b64b12bcec06e, type: 3}
+  defaultCapacity: 2
+  maxSize: 8

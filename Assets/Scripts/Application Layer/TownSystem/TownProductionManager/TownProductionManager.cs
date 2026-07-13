@@ -121,6 +121,7 @@ public class TownProductionManager : MonoBehaviour
         // 캐릭터 도착 시 차량 착륙 임팩트 연출 실행
         if (offroadVehicleObj != null)
         {
+            offroadVehicleObj.SetActiveWheelForStencil(false);
             yield return offroadVehicleObj.CharacterRideLandingImpactSequence(InvokeCharacterRideEndEvent);
         }
 
@@ -159,6 +160,8 @@ public class TownProductionManager : MonoBehaviour
         character.transform.position = originalRidePosition;
         character.bRide = false;
         character.EnableShadow();
+
+        offroadVehicleObj.SetActiveWheelForStencil(true);
 
         // 3. 탑승 위치에서 내리는 위치를 바라보도록 설정
         if (offroadVehicleObj.CharacterRidePoint != null)
