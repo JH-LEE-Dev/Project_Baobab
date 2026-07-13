@@ -148,7 +148,8 @@ public class LootManager : MonoBehaviour
     /// </summary>
     /// <param name="_spawnPos">스폰 시작 위치</param>
     /// <param name="_targetLootType">스폰할 전리품 종류 (기본값 None이면 랜덤)</param>
-    public void SpawnLootItem(Vector3 _spawnPos, LootType _targetLootType = LootType.None)
+    /// <param name="_autoAcquireTarget">지정 시 범위 판정 없이 착지 즉시 이 타겟으로 흡입되어 습득된다</param>
+    public void SpawnLootItem(Vector3 _spawnPos, LootType _targetLootType = LootType.None, Transform _autoAcquireTarget = null)
     {
         // 1~3개 랜덤 스폰
         int spawnCount = UnityEngine.Random.Range(1, 4);
@@ -165,9 +166,14 @@ public class LootManager : MonoBehaviour
             lootItem.transform.position = _spawnPos;
             lootItem.Initialize(typeData);
 
+            if (_autoAcquireTarget != null)
+            {
+                lootItem.SetSuckTarget(_autoAcquireTarget);
+            }
+
             // 포물선 운동 설정
             Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
-            float randomDist = UnityEngine.Random.Range(0.4f, 1.2f); 
+            float randomDist = UnityEngine.Random.Range(0.4f, 1.2f);
             Vector3 endPos = _spawnPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * randomDist;
 
             float height = UnityEngine.Random.Range(0.6f, 1.2f);

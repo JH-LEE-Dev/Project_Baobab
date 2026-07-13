@@ -56,6 +56,7 @@ public class UnitSystem
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.Subscribe<DropAllItemSignal>(DropAllItem);
+        signalHub.Subscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.Subscribe<ActivateCharacterSignal>(ActivateCharacter);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
@@ -74,6 +75,7 @@ public class UnitSystem
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<StartDecreaseStaminaSignal>(StartDecreaseStamina);
         signalHub.UnSubscribe<DropAllItemSignal>(DropAllItem);
+        signalHub.UnSubscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.UnSubscribe<ActivateCharacterSignal>(ActivateCharacter);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
@@ -219,8 +221,15 @@ public class UnitSystem
 
     private void CharacterStaminaIsEmpty()
     {
+        // "분실물 보관함" 효과: 유실 처리(DropAllItem) 전에 먼저 일부를 오프로드 컨테이너로 구제한다.
+        inventoryManager.RescueItemsToOffroadContainer(offroadContainer);
         inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
         signalHub.Publish(new PopupUIDownSignal());
+    }
+
+    private void LostAndFoundBoxAcquired(LostAndFoundBoxAcquiredSignal _signal)
+    {
+        inventoryManager.SetLostAndFoundBoxEffect(true);
     }
 
     private void SpendMoney()

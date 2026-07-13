@@ -16,3 +16,9 @@ MonoBehaviour:
   - itemType: 2
     lootType: 1
     sprite: {fileID: 0}
+  - itemType: 2
+    lootType: 2
+    sprite: {fileID: 0}
+  - itemType: 2
+    lootType: 3
+    sprite: {fileID: 0}

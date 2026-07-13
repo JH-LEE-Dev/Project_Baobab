@@ -31,6 +31,10 @@ public class InDungeonSystem : MonoBehaviour
     private bool bRetryGame = false;
     private MapType selectedMapType;
     private ForestType selectedForestType;
+
+    // "포자 포션" - 던전 입장 후 캐릭터가 실제로 조작 가능해진 시점(ActivateCharacterSignal)부터만
+    // PotionKey를 허용한다. 매 던전 진입마다(StartDungeonSystem) 리셋된다.
+    private bool bCharacterActivated;
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
     InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager,
     InDungeonResultManager _inDungeonResultManager)
@@ -73,14 +77,16 @@ public class InDungeonSystem : MonoBehaviour
     public void StartDungeonSystem(SceneChangeData _sceneChangeData)
     {
         inDungeonResultManager.Reset();
+        bCharacterActivated = false;
 
         currentMapType = _sceneChangeData.mapType;
         currentForestType = _sceneChangeData.forestType;
 
         inDungeonObjectManager.SetDungeonData(dungeonDataBase.GetDungeonData(currentMapType));
         inDungeonObjectManager.SetupForMapType(currentMapType);
+        inDungeonObjectManager.SetupForForestType(currentForestType);
         inDungeonObjectManager.SetupItemManagerCulling();
-        
+
         signalHub.Publish(new DungeonReadySignal(dungeonDataBase.GetDungeonData(currentMapType), currentForestType));
     }
 
@@ -115,6 +121,12 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
         inDungeonObjectManager.DropAllItemEvent += DropAllItem;
+
+        inDungeonObjectManager.LostAndFoundBoxAcquiredEvent -= LostAndFoundBoxAcquired;
+        inDungeonObjectManager.LostAndFoundBoxAcquiredEvent += LostAndFoundBoxAcquired;
+
+        inputManager.inputReader.PotionKeyPressedEvent -= PotionKeyPressed;
+        inputManager.inputReader.PotionKeyPressedEvent += PotionKeyPressed;
 
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         inDungeonProductionManager.CharacterRideEndEvent += CharacterRideEnd;
@@ -156,6 +168,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.RepairBoxInteractStateChangedEvent -= RepairBoxInteractStateChanged;
         inDungeonObjectManager.RideOffroadEvent -= RideOffroad;
         inDungeonObjectManager.DropAllItemEvent -= DropAllItem;
+        inDungeonObjectManager.LostAndFoundBoxAcquiredEvent -= LostAndFoundBoxAcquired;
+        inputManager.inputReader.PotionKeyPressedEvent -= PotionKeyPressed;
         inDungeonProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         inDungeonProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
         inDungeonProductionManager.CameraDownEndEvent -= CameraDownIsEnd;
@@ -175,6 +189,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.Subscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.Subscribe<WarningUIClosedSignal>(WarningUIClosed);
+        signalHub.Subscribe<ActivateCharacterSignal>(CharacterActivated);
+        signalHub.Subscribe<TownStartedSignal>(TownStarted);
     }
 
     private void UnSubscribeSignals()
@@ -185,6 +201,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.UnSubscribe<DungeonSelectedSignal>(DungeonSelected);
         signalHub.UnSubscribe<WarningUIClosedSignal>(WarningUIClosed);
+        signalHub.UnSubscribe<ActivateCharacterSignal>(CharacterActivated);
+        signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
     }
 
     private void PortalActivated()
@@ -336,6 +354,30 @@ public class InDungeonSystem : MonoBehaviour
     private void DropAllItem()
     {
         signalHub.Publish(new DropAllItemSignal());
+    }
+
+    private void LostAndFoundBoxAcquired()
+    {
+        signalHub.Publish(new LostAndFoundBoxAcquiredSignal());
+    }
+
+    // "포자 포션" - 던전에 입장해 캐릭터가 실제로 조작 가능해진 시점부터만 특수 키(PotionKey)로 마실 수 있다.
+    private void PotionKeyPressed()
+    {
+        if (bCurrentlyDungeonScene == false || bCharacterActivated == false) return;
+
+        inDungeonObjectManager.TryDrinkSporePotion();
+    }
+
+    private void CharacterActivated(ActivateCharacterSignal _signal)
+    {
+        bCharacterActivated = true;
+    }
+
+    // "포자 포션" - 실제 Town 씬이 로드된 시점에 이번 원정에서 마시지 않았다면 충전한다.
+    private void TownStarted(TownStartedSignal _signal)
+    {
+        inDungeonObjectManager.RefillSporePotionCharge();
     }
 
     private void CharacterRideEnd()

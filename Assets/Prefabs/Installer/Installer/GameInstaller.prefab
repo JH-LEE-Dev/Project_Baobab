@@ -909,7 +909,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LootManager
   lootProbDatas: []
-  lootItemPrefab: {fileID: 0}
+  lootItemPrefab: {fileID: 5360078145449572901, guid: 9a13c2e4f7b04d1a8c6e2f5b0a3d7e91,
+    type: 3}
   lootItemTypeDataBase: {fileID: 11400000, guid: 3a405593cd27bee44957a785aaf70392, type: 2}
 --- !u!1 &3715956597584213836
 GameObject:

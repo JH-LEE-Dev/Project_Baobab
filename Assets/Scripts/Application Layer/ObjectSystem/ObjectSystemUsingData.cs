@@ -98,6 +98,8 @@ public enum LootType
 {
     None,
     WelcomeNoob,
+    LostAndFoundBox,
+    SporePotion,
     Max,
 }
 

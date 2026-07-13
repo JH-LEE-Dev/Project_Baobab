@@ -99,6 +99,14 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
             offroadContainer.PopulateSaveData(ref cachedSaveData.offroadContainerSaveData);
         }
 
+        // 8-2. "분실물 보관함" 영구 획득 플래그, "포자 포션" 획득 여부/충전량
+        if (inDungeonObjectManager != null)
+        {
+            cachedSaveData.bHasAcquiredLostAndFoundBox = inDungeonObjectManager.bHasAcquiredLostAndFoundBox;
+            cachedSaveData.bHasAcquiredSporePotion = inDungeonObjectManager.bHasAcquiredSporePotion;
+            cachedSaveData.sporePotionCharge = inDungeonObjectManager.sporePotionCharge;
+        }
+
         // 8-1. 운반 중(포터 인벤토리/컨테이너 사이 비행) 로그 정산.
         //      라이브 상태는 건드리지 않고, 위에서 채운 세이브 데이터에만 가상으로 합산한다.
         //      - LogContainer로 납품되던 비행분 -> LogContainer 세이브로 착지
@@ -187,6 +195,14 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         if (offroadContainer != null)
         {
             offroadContainer.LoadSaveData(saveData.offroadContainerSaveData);
+        }
+
+        // 8-2. "분실물 보관함" 영구 획득 플래그, "포자 포션" 획득 여부/충전량 복구
+        if (inDungeonObjectManager != null)
+        {
+            inDungeonObjectManager.bHasAcquiredLostAndFoundBox = saveData.bHasAcquiredLostAndFoundBox;
+            inDungeonObjectManager.bHasAcquiredSporePotion = saveData.bHasAcquiredSporePotion;
+            inDungeonObjectManager.sporePotionCharge = saveData.sporePotionCharge;
         }
 
         Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
