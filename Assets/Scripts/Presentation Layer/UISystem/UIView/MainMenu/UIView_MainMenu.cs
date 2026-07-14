@@ -304,7 +304,7 @@ public class UIView_MainMenu : UIView
 
         if (null != _onSequenceCompleted)
         {
-            _seq.OnComplete(() => _onSequenceCompleted.Invoke()); // 시퀀스 최적화 및 람다 최소화
+            _seq.OnComplete(new TweenCallback(_onSequenceCompleted));
         }
     }
 
