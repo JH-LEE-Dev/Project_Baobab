@@ -57,7 +57,7 @@ public class UIView_MainMenu : UIView
 
     public bool HasSaveData()
     {
-        return saveSystem != null && saveSystem.HasSaveData();
+        return null != saveSystem && saveSystem.HasSaveData();
     }
 
     public override void Initialize(UIViewContext _ctx)
@@ -98,12 +98,12 @@ public class UIView_MainMenu : UIView
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
         
-        if (backgroundDimmer != null)
+        if (null != backgroundDimmer)
         {
             backgroundDimmer.DOKill();
         }
 
-        if (rootRectTransform != null)
+        if (null != rootRectTransform)
         {
             rootRectTransform.DOKill();
         }
@@ -115,7 +115,7 @@ public class UIView_MainMenu : UIView
         gameObject.SetActive(true);
 
         // 초기화 시 딤 처리 초기화 (투명하게 숨김)
-        if (backgroundDimmer != null)
+        if (null != backgroundDimmer)
         {
             Color c = backgroundDimmer.color;
             c.a = 0f;
@@ -274,28 +274,40 @@ public class UIView_MainMenu : UIView
         LoadGameButtonClickedEvent?.Invoke();
     }
 
+    private Action currentExitCompleteAction;
+    private TweenCallback onExitAnimationCompleteCallback;
+
     /// <summary>
     /// Town 카메라 인트로 연출이 시작되는 시점에 맞춰, 메인 메뉴 전체가 위로 이동해 화면 밖으로 빠져나가는 연출을 재생한다.
     /// 페이드가 아니라 카메라가 구름을 뚫고 내려가는 동안 메뉴가 자연스럽게 시야 위쪽으로 벗어나는 느낌을 준다.
     /// </summary>
     public void PlayExitAnimation(Action _onComplete)
     {
-        if (rootRectTransform == null)
+        if (null == rootRectTransform)
         {
             Hide();
             _onComplete?.Invoke();
             return;
         }
 
+        if (null == onExitAnimationCompleteCallback) 
+            onExitAnimationCompleteCallback = OnExitAnimationComplete;
+
+        currentExitCompleteAction = _onComplete;
         rootRectTransform.DOKill();
 
-        Vector2 targetPos = rootRectTransform.anchoredPosition + Vector2.up * exitMoveDistance;
+        Vector2 _targetPos = rootRectTransform.anchoredPosition + Vector2.up * exitMoveDistance;
 
-        rootRectTransform.DOAnchorPos(targetPos, exitMoveDuration).SetEase(Ease.InCubic).OnComplete(() =>
-        {
-            Hide();
-            _onComplete?.Invoke();
-        });
+        rootRectTransform.DOAnchorPos(_targetPos, exitMoveDuration)
+            .SetEase(Ease.InCubic)
+            .OnComplete(onExitAnimationCompleteCallback);
+    }
+
+    private void OnExitAnimationComplete()
+    {
+        Hide();
+        currentExitCompleteAction?.Invoke();
+        currentExitCompleteAction = null;
     }
 
     public void OnExitButtonClicked()

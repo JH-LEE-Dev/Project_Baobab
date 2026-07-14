@@ -22,14 +22,20 @@ public class UI_SplashScreen : MonoBehaviour
     [SerializeField] private SplashSequenceItem[] sequences;
     
     private Action onSequenceComplete;
+    private Action currentBeforeLastFadeOut;
+    private TweenCallback onBeforeLastFadeOutCallback;
     private Sequence currentSequence;
 
     public void PlaySequence(Action _onComplete, Action _onBeforeLastFadeOut = null)
     {
+        if (null == onBeforeLastFadeOutCallback) onBeforeLastFadeOutCallback = InvokeBeforeLastFadeOut;
+        currentBeforeLastFadeOut = _onBeforeLastFadeOut;
+
         this.onSequenceComplete = _onComplete;
         
         if (null == this.sequences || 0 == this.sequences.Length)
         {
+            InvokeBeforeLastFadeOut();
             this.OnSequenceFinished();
             return;
         }
@@ -73,9 +79,9 @@ public class UI_SplashScreen : MonoBehaviour
                     this.currentSequence.Append(fadeOutTween);
                     this.currentSequence.AppendInterval(this.backgroundFadeOutDelay);
 
-                    if (null != _onBeforeLastFadeOut)
+                    if (null != currentBeforeLastFadeOut)
                     {
-                        this.currentSequence.AppendCallback(() => _onBeforeLastFadeOut.Invoke());
+                        this.currentSequence.AppendCallback(onBeforeLastFadeOutCallback);
                     }
                     this.currentSequence.Append(this.splashBackgroundGroup.DOFade(0f, this.backgroundFadeOutDuration).SetEase(Ease.OutQuad));
                 }
@@ -87,6 +93,11 @@ public class UI_SplashScreen : MonoBehaviour
         }
 
         this.currentSequence.OnComplete(this.OnSequenceFinished);
+    }
+
+    private void InvokeBeforeLastFadeOut()
+    {
+        currentBeforeLastFadeOut?.Invoke();
     }
 
     private void OnSequenceFinished()

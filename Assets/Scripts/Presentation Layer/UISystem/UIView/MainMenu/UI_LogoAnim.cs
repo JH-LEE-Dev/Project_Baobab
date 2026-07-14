@@ -22,35 +22,49 @@ public class UI_LogoAnim : MonoBehaviour
 
     private Vector2 initialPosition;
 
+    private Action currentRevealComplete;
+    private TweenCallback onRevealCompleteCallback;
+
     public void Initialize()
     {
-        if (logoTransform != null)
+        if (null == onRevealCompleteCallback) onRevealCompleteCallback = OnRevealComplete;
+        if (null == onFadeOutCompleteCallback) onFadeOutCompleteCallback = OnFadeOutComplete;
+
+        if (null != logoTransform)
         {
             initialPosition = logoTransform.anchoredPosition;
         }
 
-        if (canvasGroup == null)
+        if (null == canvasGroup)
         {
             canvasGroup = GetComponent<CanvasGroup>();
-            if (canvasGroup == null)
+            if (null == canvasGroup)
             {
                 canvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
         }
     }
 
+    private void OnRevealComplete()
+    {
+        currentRevealComplete?.Invoke();
+        currentRevealComplete = null;
+    }
+
     /// <summary>
     /// 로고가 위로 튕겨 올라가는 모션을 실행합니다.
     /// </summary>
     /// <param name="onComplete">모션이 완전히 끝난 뒤 호출될 콜백</param>
-    public void PlayRevealSequence(Action onComplete)
+    public void PlayRevealSequence(Action _onComplete = null)
     {
-        if (logoTransform != null)
+        currentRevealComplete = _onComplete;
+
+        if (null != logoTransform)
         {
             logoTransform.DOKill();
             
             // 초기 위치 저장 및 갱신
-            if (initialPosition == Vector2.zero) 
+            if (Vector2.zero == initialPosition) 
                 initialPosition = logoTransform.anchoredPosition;
             else
                 logoTransform.anchoredPosition = initialPosition;
@@ -61,26 +75,33 @@ public class UI_LogoAnim : MonoBehaviour
             // 부드럽고 찰지게 이동 후 콜백 실행
             logoTransform.DOAnchorPos(targetPos, moveDuration)
                 .SetEase(moveEase)
-                .OnComplete(() => 
-                {
-                    onComplete?.Invoke();
-                });
+                .OnComplete(onRevealCompleteCallback);
         }
         else
         {
             // 로고가 없다면 즉시 콜백 실행
-            onComplete?.Invoke();
+            _onComplete?.Invoke();
         }
     }
 
     /// <summary>
     /// 로고를 서서히 투명하게 만듭니다.
     /// </summary>
+    private Action currentFadeOutComplete;
+    private TweenCallback onFadeOutCompleteCallback;
+
+    private void OnFadeOutComplete()
+    {
+        currentFadeOutComplete?.Invoke();
+        currentFadeOutComplete = null;
+    }
+
     public void PlayFadeOut(float _duration, Action _onComplete = null)
     {
-        if (canvasGroup != null)
+        currentFadeOutComplete = _onComplete;
+        if (null != canvasGroup)
         {
-            canvasGroup.DOFade(0f, _duration).OnComplete(() => _onComplete?.Invoke());
+            canvasGroup.DOFade(0f, _duration).OnComplete(onFadeOutCompleteCallback);
         }
         else
         {
@@ -90,7 +111,7 @@ public class UI_LogoAnim : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (logoTransform != null)
+        if (null != logoTransform)
         {
             logoTransform.DOKill();
         }
