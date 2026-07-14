@@ -477,7 +477,7 @@ public class InDungeonSystem : MonoBehaviour
 
         bGoingToMainMenu = true;
 
-        signalHub.Publish(new StartSkyProductionSignal());
+        signalHub.Publish(new StartSkyProductionSignal(true));
         signalHub.Publish(new PopupUIDownSignal());
 
         inDungeonProductionManager.StartGoToMainMenu();
