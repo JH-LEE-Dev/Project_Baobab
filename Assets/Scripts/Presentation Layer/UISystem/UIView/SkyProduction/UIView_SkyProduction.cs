@@ -18,6 +18,8 @@ public class UIView_SkyProduction : UIView
     [SerializeField] private Ease moveEase = Ease.OutCubic;
     [SerializeField] private float floatingAmplitude = 7.0f;
     [SerializeField] private float floatingDuration = 4.0f;
+    [SerializeField] private Sprite loadingCloudSprite_MainMenu;
+    [SerializeField] private Sprite loadingCloudSprite;
 
     private Sequence moveSequence;
     private Tween skyTween1;
@@ -229,7 +231,7 @@ public class UIView_SkyProduction : UIView
         KillMoveSequence();
         KillFloatingSequence();
 
-        SetSkyAndLoadingCloudActive(false);
+        SetMainMenuMode(true);
 
         isMoved = true;
 
@@ -244,18 +246,27 @@ public class UIView_SkyProduction : UIView
     }
 
     /// <summary>
-    /// 메인 메뉴 연출 등 특정 상황에서 배경 하늘(Sky)과 보조 구름(LoadingSkyCloud) 객체를 끄거나 켤 수 있습니다.
+    /// 메인 메뉴 연출 등 특정 상황에서 배경 하늘(Sky)과 보조 구름(LoadingSkyCloud) 객체를 끄고 켤 수 있으며, 구름 스프라이트를 변경합니다.
     /// </summary>
-    public void SetSkyAndLoadingCloudActive(bool _isActive)
+    public void SetMainMenuMode(bool isMainMenu)
     {
         if (null != skyImage)
         {
-            skyImage.gameObject.SetActive(_isActive);
+            skyImage.gameObject.SetActive(!isMainMenu);
         }
         
         if (null != skyImage2)
         {
-            skyImage2.gameObject.SetActive(_isActive);
+            skyImage2.gameObject.SetActive(!isMainMenu);
+        }
+
+        if (null != cloudImage)
+        {
+            var img = cloudImage.GetComponent<UnityEngine.UI.Image>();
+            if (img != null)
+            {
+                img.sprite = isMainMenu ? loadingCloudSprite_MainMenu : loadingCloudSprite;
+            }
         }
     }
 }
