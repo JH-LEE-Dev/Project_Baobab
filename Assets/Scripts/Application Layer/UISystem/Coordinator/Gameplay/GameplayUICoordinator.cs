@@ -502,15 +502,7 @@ public class GameplayUICoordinator
 
     private void StartSkyProduction(StartSkyProductionSignal _startSkyProductionSignal)
     {
-        if (_startSkyProductionSignal.isMainMenuRelated)
-        {
-            skyProduction.SetSkyAndLoadingCloudActive(false);
-        }
-        else
-        {
-            skyProduction.SetSkyAndLoadingCloudActive(true);
-        }
-
+        skyProduction.SetMainMenuMode(_startSkyProductionSignal.isMainMenuRelated);
         skyProduction.StartSkyProduction();
     }
 

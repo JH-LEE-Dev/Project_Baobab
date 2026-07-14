@@ -137,6 +137,7 @@ public class InDungeonProductionManager : MonoBehaviour
             return;
 
         inputManager.PauseMove(false);
+        inputManager.PauseESCKey(false); // 던전→타운 귀환 연출 종료 (InDungeonSystem.GoHome()에서 걸어둔 PauseESCKey(true) 해제)
 
         CameraDownEndEvent?.Invoke();
     }
@@ -160,6 +161,7 @@ public class InDungeonProductionManager : MonoBehaviour
         }
 
         inputManager.PauseMove(true);
+        inputManager.PauseESCKey(true); // 던전→메인메뉴 이탈 연출 시작 - 종료 시점은 BootStrap.SetupMainMenuScene()
 
         GoToMainMenuCurtainRevealEvent?.Invoke();
 

@@ -410,6 +410,7 @@ public class TownSystem : MonoBehaviour
             return;
 
         inputManager.PauseMove(false);
+        inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (TownProductionManager.CharacterRideRoutine에서 걸어둔 PauseESCKey(true) 해제)
         signalHub.Publish(new ActivateCharacterSignal());
 
         StartCoroutine(PopupUIGoUPCoroutine());
@@ -466,6 +467,7 @@ public class TownSystem : MonoBehaviour
         // ActivateCharacterSignal은 던전 입장 연출 전용(attackComponent.SetEnable(true) 포함)이라 Town에서는 쓰지 않는다.
         // Town 진입 시 공격 인디케이터를 끄는 처리는 이미 GameInstaller.SetupGameInstaller() → unitSystem.SetWhereIsCharacter(false)가 담당한다.
         inputManager.PauseMove(false);
+        inputManager.PauseESCKey(false); // 메인메뉴→타운 인트로 연출 종료 (TownProductionManager.StartMainMenuIntro()에서 걸어둔 PauseESCKey(true) 해제)
 
         StartCoroutine(MainMenuIntroPopupUIUpCoroutine());
     }

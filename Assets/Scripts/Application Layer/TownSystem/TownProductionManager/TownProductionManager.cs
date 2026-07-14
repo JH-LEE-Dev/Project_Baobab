@@ -118,6 +118,7 @@ public class TownProductionManager : MonoBehaviour
         if (character == null || characterRidePoint == null) yield break;
 
         inputManager.PauseMove(true);
+        inputManager.PauseESCKey(true); // 타운→던전 진입 연출(포탈 탑승~씬 전환) 시작 - 종료 시점은 TownSystem.CameraDownIsEnd()
         //character.DisableShadow();
 
         originalRidePosition = character.transform.position;
@@ -224,6 +225,7 @@ public class TownProductionManager : MonoBehaviour
         }
 
         inputManager.PauseMove(true);
+        inputManager.PauseESCKey(true); // 메인메뉴→타운 인트로 연출 시작 - 종료 시점은 TownSystem.MainMenuIntroEnd()
 
         // 카메라 하강 시작과 같은 타이밍에 메인 메뉴 커튼이 걷히도록 먼저 발행한다.
         MainMenuCurtainRollbackEvent?.Invoke();
@@ -254,6 +256,7 @@ public class TownProductionManager : MonoBehaviour
         }
 
         inputManager.PauseMove(true);
+        inputManager.PauseESCKey(true); // 타운→메인메뉴 이탈 연출 시작 - 종료 시점은 BootStrap.SetupMainMenuScene()
 
         // 카메라 상승 시작과 같은 타이밍에 메인 메뉴 패널이 슬라이드 인 되도록 먼저 발행한다 (버튼/딤머/로고는 아직 안 보임).
         GoToMainMenuCurtainRevealEvent?.Invoke();
