@@ -6,7 +6,7 @@ public class TownProductionManager : MonoBehaviour
 {
     public event Action OffroadDriveEndEvent;
     public event Action CharacterRideEndEvent;
-    public event Action StartSkyProductionEvent;
+    public event Action<bool> StartSkyProductionEvent;
     public event Action RollbackSkyProductionEvent;
     public event Action CameraUpIsEndEvent;
     public event Action CameraUpDownEndEvent;
@@ -199,7 +199,7 @@ public class TownProductionManager : MonoBehaviour
         yield return new WaitForSeconds(3.75f);
 
         skyCameraProductionManager.StartCameraMove();
-        StartSkyProductionEvent?.Invoke();
+        StartSkyProductionEvent?.Invoke(false);
     }
 
     public void SetCharacterTransform()
@@ -229,7 +229,7 @@ public class TownProductionManager : MonoBehaviour
         MainMenuCurtainRollbackEvent?.Invoke();
 
         // UIView_SkyProduction(구름)도 카메라 하강과 같은 타이밍에 재생 (기존 StartDrive/RollbackCameraMove와 동일한 배선 재사용)
-        StartSkyProductionEvent?.Invoke();
+        StartSkyProductionEvent?.Invoke(true);
 
         skyCameraProductionManager.PlayIntroDescend(character.transform);
     }
@@ -258,7 +258,7 @@ public class TownProductionManager : MonoBehaviour
         // 카메라 상승 시작과 같은 타이밍에 메인 메뉴 패널이 슬라이드 인 되도록 먼저 발행한다 (버튼/딤머/로고는 아직 안 보임).
         GoToMainMenuCurtainRevealEvent?.Invoke();
 
-        StartSkyProductionEvent?.Invoke();
+        StartSkyProductionEvent?.Invoke(true);
         PopupUIDownEvent?.Invoke();
 
         skyCameraProductionManager.PlayAscendOut(character.transform);

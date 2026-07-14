@@ -381,9 +381,9 @@ public class TownSystem : MonoBehaviour
         townProductionManager.SetbCanGetOff(false);
     }
 
-    private void StartSkyProduction()
+    private void StartSkyProduction(bool isMainMenu)
     {
-        signalHub.Publish(new StartSkyProductionSignal());
+        signalHub.Publish(new StartSkyProductionSignal(isMainMenu));
     }
 
     private void RollbackSkyProduction()
