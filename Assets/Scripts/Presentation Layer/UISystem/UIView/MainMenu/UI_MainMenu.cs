@@ -15,20 +15,25 @@ public class UI_MainMenu : MonoBehaviour
     [Header("Additional Features (Upcoming)")]
     [SerializeField] private UI_MainMenuButton optionButton;
     [SerializeField] private UI_MainMenuButton creditButton;
-    [SerializeField] private UI_MainMenuButton languageButton;
 
     [Header("Localization Settings")]
     [SerializeField] private int mainMenuUIJsonId = 8;
+    
+    [Header("Layout Settings")]
+    [SerializeField, Tooltip("버튼들이 순차적으로 배치될 기준점 (빈 오브젝트)")]
+    private RectTransform startPoint;
+    [SerializeField, Tooltip("버튼 간 간격 (Y축 거리)")]
+    private float buttonSpacingY = 100f;
     
     // 내부 상태
     private UIView_MainMenu parentView;
     private UIViewContext viewCtx;
     
     // 퍼블릭 초기화 및 제어 메서드
-    public void Initialize(UIView_MainMenu _parentView, UIViewContext uIViewContext)
+    public void Initialize(UIView_MainMenu _parentView, UIViewContext _uIViewContext)
     {
         parentView = _parentView;
-        viewCtx = uIViewContext;
+        viewCtx = _uIViewContext;
         
         if (null != newGameButton)
         {
@@ -55,20 +60,73 @@ public class UI_MainMenu : MonoBehaviour
         {
             creditButton.Initialize(OnCreditClicked);
         }
-        
-        if (null != languageButton)
-        {
-            languageButton.Initialize(OnLanguageClicked);
-        }
 
         SetLocalization();
     }
 
     public void UpdateLoadGameButtonState()
     {
-        if (null != loadGameButton && null != parentView)
+        if (null != parentView)
         {
-            loadGameButton.SetInteractable(parentView.HasSaveData());
+            bool _hasSaveData = parentView.HasSaveData();
+            
+            if (null != loadGameButton)
+            {
+                // 세이브 데이터가 없으면 버튼 자체를 비활성화(숨김) 처리하고, 있으면 상호작용 가능 상태로 만듦
+                loadGameButton.gameObject.SetActive(_hasSaveData);
+                loadGameButton.SetInteractable(_hasSaveData);
+            }
+
+            UpdateButtonLayout();
+        }
+    }
+
+    private void UpdateButtonLayout()
+    {
+        if (null == startPoint) return;
+
+        float _startY = startPoint.anchoredPosition.y;
+        int _activeIndex = 0;
+
+        // 사용자가 요청한 배치 순서
+        UI_MainMenuButton[] _buttonsInOrder = new UI_MainMenuButton[]
+        {
+            loadGameButton,
+            newGameButton,
+            optionButton,
+            creditButton,
+            exitButton
+        };
+
+        // 버튼들이 기존에 하이어라키에서 가지고 있던 최소 Sibling Index를 찾습니다 (다른 배경 이미지 뒤로 숨지 않도록 방지)
+        int _minSiblingIndex = int.MaxValue;
+        for (int i = 0; i < _buttonsInOrder.Length; i++)
+        {
+            if (null != _buttonsInOrder[i])
+            {
+                int _idx = _buttonsInOrder[i].transform.GetSiblingIndex();
+                if (_idx < _minSiblingIndex) _minSiblingIndex = _idx;
+            }
+        }
+
+        for (int i = 0; i < _buttonsInOrder.Length; i++)
+        {
+            UI_MainMenuButton _btn = _buttonsInOrder[i];
+            
+            if (null != _btn && _btn.gameObject.activeSelf)
+            {
+                RectTransform _rect = _btn.GetComponent<RectTransform>();
+                if (null != _rect)
+                {
+                    // 시작점 Y에서 간격만큼 빼면서 아래로 배치
+                    _rect.anchoredPosition = new Vector2(_rect.anchoredPosition.x, _startY - (_activeIndex * buttonSpacingY));
+                    
+                    // Sibling Index를 기존 최소값부터 1씩 더해가며 갱신하여 순차 애니메이션은 살리고 뎁스(Depth) 꼬임은 방지
+                    _btn.transform.SetSiblingIndex(_minSiblingIndex + _activeIndex);
+                    
+                    _activeIndex++;
+                }
+            }
         }
     }
 
@@ -139,12 +197,6 @@ public class UI_MainMenu : MonoBehaviour
         Debug.Log("Credit Button Clicked - 기능 연결 필요");
     }
     
-    private void OnLanguageClicked()
-    {
-        // TODO: 언어설정 기능 연결
-        Debug.Log("Language Button Clicked - 기능 연결 필요");
-    }
-    
     // 유니티 이벤트 함수
     private void OnDestroy()
     {
@@ -171,11 +223,6 @@ public class UI_MainMenu : MonoBehaviour
         if (null != creditButton)
         {
             creditButton.Release();
-        }
-        
-        if (null != languageButton)
-        {
-            languageButton.Release();
         }
     }
 }

@@ -73,7 +73,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private float disappearStaggerInterval = 0.08f; // 여러 버튼이 순차적으로 사라지는 간격 (다다닥)
     [SerializeField] private float disappearSuckDuration = 0.3f; 
     [SerializeField] private float disappearDotShrinkDuration = 0.15f; 
-    [SerializeField] private List<UI_MainMenuButton> buttonsToHide = new List<UI_MainMenuButton>(); 
     [SerializeField] private Ease disappearSuckEase = Ease.InCubic;
     [SerializeField] private Ease disappearShrinkEase = Ease.InBack;
 
@@ -153,7 +152,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public void ResetAndPlayAppear()
     {
         // 꺼져있다면 켜주기만 해도 OnEnable이 불리면서 알아서 연출이 시작됨
-        if (!gameObject.activeSelf)
+        if (false == gameObject.activeSelf)
         {
             gameObject.SetActive(true);
             return;
@@ -362,15 +361,41 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         float _currentDisappearDelay = 0f;
 
-        if (null != buttonsToHide)
+        // 부모 하위에 있는 활성화된 모든 버튼을 찾음 (GetComponentsInChildren은 자신의 자식도 찾지만, 보통 형제 노드 탐색에 유용함)
+        // 여기서는 부모 객체의 자식들을 탐색하여 형제 버튼들을 수집
+        UI_MainMenuButton[] _siblingButtons = null;
+        if (null != transform.parent)
         {
-            foreach (UI_MainMenuButton _btn in buttonsToHide)
+            _siblingButtons = transform.parent.GetComponentsInChildren<UI_MainMenuButton>(false);
+            
+            // GC 할당을 피하기 위해 간단한 삽입 정렬(Insertion Sort)을 사용하여 Sibling Index 기준으로 정렬
+            if (null != _siblingButtons && _siblingButtons.Length > 1)
             {
-                if (null != _btn && _btn != this)
+                for (int i = 1; i < _siblingButtons.Length; i++)
                 {
-                    _btn.PlayDisappearMotion(_currentDisappearDelay);
-                    _hasDisappearTargets = true;
-                    _currentDisappearDelay += disappearStaggerInterval;
+                    UI_MainMenuButton _key = _siblingButtons[i];
+                    int _j = i - 1;
+                    while (_j >= 0 && _siblingButtons[_j].transform.GetSiblingIndex() > _key.transform.GetSiblingIndex())
+                    {
+                        _siblingButtons[_j + 1] = _siblingButtons[_j];
+                        _j = _j - 1;
+                    }
+                    _siblingButtons[_j + 1] = _key;
+                }
+            }
+
+            // 정렬된 순서대로 사라지는 모션 재생
+            if (null != _siblingButtons)
+            {
+                for (int i = 0; i < _siblingButtons.Length; i++)
+                {
+                    UI_MainMenuButton _btn = _siblingButtons[i];
+                    if (null != _btn && _btn != this)
+                    {
+                        _btn.PlayDisappearMotion(_currentDisappearDelay);
+                        _hasDisappearTargets = true;
+                        _currentDisappearDelay += disappearStaggerInterval;
+                    }
                 }
             }
         }
@@ -504,7 +529,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void RestoreHoverOrExit()
     {
-        if (isHovered)
+        if (true == isHovered)
         {
             TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
             TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
@@ -517,7 +542,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void InvokeOnClickAction()
     {
-        if (this == null) return;
+        if (null == this) return;
         if (null != onClickAction)
         {
             onClickAction.Invoke();
@@ -526,7 +551,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void PlayDisappearImmediate()
     {
-        if (this == null) return;
+        if (null == this) return;
         PlayDisappearMotion(0f);
     }
 
