@@ -144,7 +144,7 @@ public class UIView_MainMenu : UIView
         }
 #endif
 
-        if (null != this.splashScreenUI)
+        if (null != this.splashScreenUI && false == CameFromEscMenu)
         {
             this.splashScreenUI.gameObject.SetActive(true);
             if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
@@ -156,6 +156,7 @@ public class UIView_MainMenu : UIView
         }
         else
         {
+            if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
             this.PrepareNextUIAfterSplash();
             this.OnSplashScreenCompleted();
         }
@@ -262,16 +263,70 @@ public class UIView_MainMenu : UIView
         gameObject.SetActive(false);
     }
 
+    private Action invokeNewGameEventCallback;
+    private Action invokeLoadGameEventCallback;
+
     public void OnNewGameStartButton()
     {
-        // Town 씬이 뒤에서 셋업을 마치고 카메라 인트로를 시작할 때까지 메인 메뉴는 화면에 그대로 떠 있어야 하므로,
-        // 페이드 없이 즉시 이벤트를 발행한다. 실제 퇴장 연출은 PlayExitAnimation()에서 별도로 트리거된다.
+        // 버튼 텍스트 연출이 끝난 뒤 호출되며, 딤머와 로고를 페이드아웃한 뒤 최종 이벤트를 발생시킵니다.
+        if (null == invokeNewGameEventCallback) invokeNewGameEventCallback = InvokeNewGameEvent;
+        PlayGameStartSequence(invokeNewGameEventCallback);
+    }
+
+    private void InvokeNewGameEvent()
+    {
         NewGameButtonClickedEvent?.Invoke();
     }
 
     public void OnLoadGameButtonClicked()
     {
+        if (null == invokeLoadGameEventCallback) invokeLoadGameEventCallback = InvokeLoadGameEvent;
+        PlayGameStartSequence(invokeLoadGameEventCallback);
+    }
+
+    private void InvokeLoadGameEvent()
+    {
         LoadGameButtonClickedEvent?.Invoke();
+    }
+
+    private Action currentGameStartAction;
+    private TweenCallback onGameStartSequenceComplete;
+    private TweenCallback playLogoFadeOutCallback;
+
+    private void PlayGameStartSequence(Action _onComplete)
+    {
+        currentGameStartAction = _onComplete;
+        if (null == playLogoFadeOutCallback) playLogoFadeOutCallback = PlayLogoFadeOut;
+        if (null == onGameStartSequenceComplete) onGameStartSequenceComplete = OnGameStartSequenceComplete;
+
+        Sequence _seq = DOTween.Sequence();
+
+        // 1. 딤머를 알파 0으로 서서히 없앰 (속도는 설정된 dimmerFadeDuration 값 활용)
+        if (null != backgroundDimmer)
+        {
+            _seq.Append(backgroundDimmer.DOFade(0f, dimmerFadeDuration));
+        }
+
+        // 2. 딤머 페이드 아웃 완료 후 로고도 0.5초 동안 알파 0으로 페이드 아웃
+        if (null != logoAnimUI)
+        {
+            _seq.AppendCallback(playLogoFadeOutCallback);
+            _seq.AppendInterval(0.5f);
+        }
+
+        // 3. 연출이 모두 끝나면 게임 시작(이벤트 발생)
+        _seq.OnComplete(onGameStartSequenceComplete);
+    }
+
+    private void PlayLogoFadeOut()
+    {
+        logoAnimUI.PlayFadeOut(0.5f);
+    }
+
+    private void OnGameStartSequenceComplete()
+    {
+        currentGameStartAction?.Invoke();
+        currentGameStartAction = null;
     }
 
     private Action currentExitCompleteAction;

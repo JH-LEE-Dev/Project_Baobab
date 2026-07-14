@@ -152,7 +152,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public void ResetAndPlayAppear()
     {
         // 꺼져있다면 켜주기만 해도 OnEnable이 불리면서 알아서 연출이 시작됨
-        if (!gameObject.activeSelf)
+        if (false == gameObject.activeSelf)
         {
             gameObject.SetActive(true);
             return;
@@ -529,7 +529,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void RestoreHoverOrExit()
     {
-        if (isHovered)
+        if (true == isHovered)
         {
             TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
             TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
