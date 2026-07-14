@@ -93,6 +93,11 @@ public class UIView_MainMenu : UIView
         {
             backgroundUI.Initialize();
         }
+
+        if (null != optionUI)
+        {
+            optionUI.Initialize(_ctx);
+        }
     }
 
     public override void OnDestroy()

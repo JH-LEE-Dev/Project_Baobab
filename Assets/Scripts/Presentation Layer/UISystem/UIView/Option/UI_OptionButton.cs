@@ -27,6 +27,9 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     
     private Action onClickAction;
     private bool isInteractable = true;
+    
+    private bool isHovered = false;
+    private bool isPointerDown = false;
 
     // 초기 상태 캐싱
     private Vector3 originalScale;
@@ -55,26 +58,35 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
+        isHovered = true;
         if (false == isInteractable || false == enableMotion) return;
         
-        KillTween();
-        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-        _scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
-        if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
+        if (false == isPointerDown)
+        {
+            KillTween();
+            Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
+            _scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
+            if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
+        }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
+        isHovered = false;
         if (false == isInteractable || false == enableMotion) return;
         
-        KillTween();
-        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-        _scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
-        if (null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
+        if (false == isPointerDown)
+        {
+            KillTween();
+            Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
+            _scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
+            if (null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
+        }
     }
 
     public void OnPointerDown(PointerEventData _eventData)
     {
+        isPointerDown = true;
         if (false == isInteractable || false == enableMotion) return;
         
         KillTween();
@@ -85,12 +97,22 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     public void OnPointerUp(PointerEventData _eventData)
     {
+        isPointerDown = false;
         if (false == isInteractable || false == enableMotion) return;
         
         KillTween();
         Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-        _scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
-        if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
+        
+        if (true == isHovered)
+        {
+            _scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
+            if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
+        }
+        else
+        {
+            _scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
+            if (null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
+        }
     }
 
     public void OnPointerClick(PointerEventData _eventData)
@@ -108,6 +130,24 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
         _scaleTarget.DOKill();
         if (null != targetGraphic) targetGraphic.DOKill();
+    }
+
+    private void OnDisable()
+    {
+        isHovered = false;
+        isPointerDown = false;
+
+        KillTween();
+        
+        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
+        _scaleTarget.localScale = originalScale;
+        
+        if (null != targetGraphic)
+        {
+            Color _c = normalColor;
+            _c.a = true == isInteractable ? 1f : 0.5f;
+            targetGraphic.color = _c;
+        }
     }
 
     private void OnDestroy()
