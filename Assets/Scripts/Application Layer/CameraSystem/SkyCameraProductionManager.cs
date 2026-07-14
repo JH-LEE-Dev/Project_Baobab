@@ -9,6 +9,7 @@ public class SkyCameraProductionManager : MonoBehaviour
     public event Action SkyProductionEndEvent;
     public event Action SkyProductionRollbackEndEvent;
     public event Action IntroRevealEndEvent;
+    public event Action AscendOutEndEvent;
 
     // //외부 의존성
     [SerializeField] private CinemachineCamera virtualCamera = null;
@@ -215,6 +216,56 @@ public class SkyCameraProductionManager : MonoBehaviour
         }
 
         IntroRevealEndEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// Town/Dungeon → MainMenu 전용 연출. isMoved/cameraStartPos(Town↔Dungeon 왕복 상태)는 건드리지 않는다.
+    /// 캐릭터 위치에서 yOffset만큼 카메라가 올라간다. 이 호출 직후 씬 자체가 통째로 파괴되므로
+    /// Follow/LookAt을 원래대로 복원할 필요가 없다.
+    /// </summary>
+    public void PlayAscendOut(Transform _characterTransform)
+    {
+        if (virtualCamera == null)
+        {
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        }
+
+        if (virtualCamera == null || _characterTransform == null || dummyTarget == null)
+        {
+            Debug.LogWarning($"[SkyCameraProductionManager] PlayAscendOut 실패로 카메라 상승 연출을 건너뜁니다. " +
+                $"(virtualCamera={virtualCamera != null}, character={_characterTransform != null}, dummyTarget={dummyTarget != null}) 즉시 완료 처리합니다.");
+            AscendOutEndEvent?.Invoke();
+            return;
+        }
+
+        KillCameraMoveTween();
+
+        dummyTarget.position = _characterTransform.position;
+        virtualCamera.Follow = dummyTarget;
+        virtualCamera.LookAt = dummyTarget;
+
+        Vector3 targetPos = _characterTransform.position;
+        targetPos.y += yOffset;
+
+        Sequence seq = DOTween.Sequence();
+        seq.Append(dummyTarget.DOMove(targetPos, moveDuration));
+        seq.AppendCallback(OnAscendOutComplete);
+
+        if (useCustomCurve)
+        {
+            seq.SetEase(moveCurve);
+        }
+        else
+        {
+            seq.SetEase(moveEase);
+        }
+
+        cameraMoveTween = seq;
+    }
+
+    private void OnAscendOutComplete()
+    {
+        AscendOutEndEvent?.Invoke();
     }
 
     public void SetCharacterTransform(Transform _characterTransform)

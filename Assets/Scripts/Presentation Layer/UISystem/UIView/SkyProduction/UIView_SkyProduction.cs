@@ -229,6 +229,8 @@ public class UIView_SkyProduction : UIView
         KillMoveSequence();
         KillFloatingSequence();
 
+        SetSkyAndLoadingCloudActive(false);
+
         isMoved = true;
 
         if (cloudImage != null)
@@ -239,5 +241,21 @@ public class UIView_SkyProduction : UIView
 
         if (skyImage2 != null)
             skyImage2.anchoredPosition = skyTargetTransform != null ? skyTargetTransform.anchoredPosition : skyStartPos2;
+    }
+
+    /// <summary>
+    /// 메인 메뉴 연출 등 특정 상황에서 배경 하늘(Sky)과 보조 구름(LoadingSkyCloud) 객체를 끄거나 켤 수 있습니다.
+    /// </summary>
+    public void SetSkyAndLoadingCloudActive(bool _isActive)
+    {
+        if (null != skyImage)
+        {
+            skyImage.gameObject.SetActive(_isActive);
+        }
+        
+        if (null != skyImage2)
+        {
+            skyImage2.gameObject.SetActive(_isActive);
+        }
     }
 }

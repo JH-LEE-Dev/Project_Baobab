@@ -55,3 +55,6 @@ public struct PopupUIDownSignal { }
 public struct PopupUIUpSignal { }
 
 public struct ActivateCharacterSignal { }
+
+public struct GoToMainMenuRequestedSignal { }
+public struct GoToMainMenuSignal { }
