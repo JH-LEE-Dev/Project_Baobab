@@ -113,6 +113,18 @@ MonoBehaviour:
     enumValueName: AxeCriticalDamage
     enumIntValue: 46
     compositeKey: 4203428
+  - enumTypeName: SkillCommandType
+    enumValueName: SourceOfSpeed
+    enumIntValue: 61
+    compositeKey: 4203429
+  - enumTypeName: SkillCommandType
+    enumValueName: SporeShieldRegenBlock
+    enumIntValue: 88
+    compositeKey: 4203430
+  - enumTypeName: SkillCommandType
+    enumValueName: ShockWaveEnforcement
+    enumIntValue: 48
+    compositeKey: 4203431
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0

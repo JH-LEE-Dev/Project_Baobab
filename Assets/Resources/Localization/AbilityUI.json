@@ -369,7 +369,6 @@
             "enumType": "",
             "enumValue": ""
         },
-
         {
             "id": 9100,
             "key": "AbilityDescription_InventoryExpansion",
@@ -569,6 +568,30 @@
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeCriticalDamage"
+        },
+        {
+            "id": 9125,
+            "key": "AbilityDescription_SourceOfSpeed",
+            "kr": "나무를 벌목하면 3초간 <COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "SourceOfSpeed"
+        },
+        {
+            "id": 9126,
+            "key": "AbilityDescription_SporeShieldRegenBlock",
+            "kr": "포자막을 가진 나무들의 <COLOR=ff5d8f>포자막 회복속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 감소합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "SporeShieldRegenBlock"
+        },
+        {
+            "id": 9127,
+            "key": "AbilityDescription_ShockWaveEnforcement",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> 발생지와 가까울수록, 최대 <COLOR=54D86A>1.5배</COLOR> 데미지를 줍니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShockWaveEnforcement"
         }
     ]
 }

@@ -74,6 +74,9 @@ public static class LocKeys
         public const int abilityDescriptionWoodenTransportBox = 4203426;
         public const int abilityDescriptionAxeCriticalChance = 4203427;
         public const int abilityDescriptionAxeCriticalDamage = 4203428;
+        public const int abilityDescriptionSourceOfSpeed = 4203429;
+        public const int abilityDescriptionSporeShieldRegenBlock = 4203430;
+        public const int abilityDescriptionShockWaveEnforcement = 4203431;
     }
 
     public static class MainMenuUI
