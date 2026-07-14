@@ -32,9 +32,13 @@ public class UIView_MainMenu : UIView
 
     private IMainMenuSaveSystem saveSystem;
 
-    public void DependencyInjection(IMainMenuSaveSystem _saveSystem)
+    // 게임 플레이 도중 ESC 메뉴를 통해 메인 메뉴로 돌아온 경우 true
+    public bool CameFromEscMenu { get; private set; }
+
+    public void DependencyInjection(IMainMenuSaveSystem _saveSystem, bool _cameFromEscMenu)
     {
         saveSystem = _saveSystem;
+        CameFromEscMenu = _cameFromEscMenu;
 
         if (null != mainMenuUI)
         {
