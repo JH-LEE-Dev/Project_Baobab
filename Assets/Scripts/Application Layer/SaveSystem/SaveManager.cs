@@ -115,6 +115,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
             cachedSaveData.bHasAcquiredLostAndFoundBox = inDungeonObjectManager.bHasAcquiredLostAndFoundBox;
             cachedSaveData.bHasAcquiredSporePotion = inDungeonObjectManager.bHasAcquiredSporePotion;
             cachedSaveData.sporePotionCharge = inDungeonObjectManager.sporePotionCharge;
+            cachedSaveData.bHasAcquiredStarCompass = inDungeonObjectManager.bHasAcquiredStarCompass;
         }
 
         // 8-1. 운반 중(포터 인벤토리/컨테이너 사이 비행) 로그 정산.
@@ -213,6 +214,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
             inDungeonObjectManager.bHasAcquiredLostAndFoundBox = saveData.bHasAcquiredLostAndFoundBox;
             inDungeonObjectManager.bHasAcquiredSporePotion = saveData.bHasAcquiredSporePotion;
             inDungeonObjectManager.sporePotionCharge = saveData.sporePotionCharge;
+            inDungeonObjectManager.bHasAcquiredStarCompass = saveData.bHasAcquiredStarCompass;
         }
 
         Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
