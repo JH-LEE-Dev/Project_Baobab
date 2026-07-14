@@ -17,6 +17,9 @@ public class UIView_MainMenu : UIView
     [SerializeField] private UI_LogoAnim logoAnimUI; // 로고 애니메이션 객체
     [SerializeField] private UI_MainMenuBackground backgroundUI; // 동적 배경 관리 객체
 
+    [Header("Sub Views")]
+    [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
+
     [Header("Background Overlay")]
     [SerializeField, Tooltip("메인 메뉴 뒤에 깔릴 검은색 셀로판지(Dimmer)")] 
     private Image backgroundDimmer; 
@@ -27,12 +30,12 @@ public class UIView_MainMenu : UIView
     [SerializeField, Tooltip("체크하면 에디터 환경에서 스플래시와 로고 연출을 건너뛰고 바로 메인 메뉴를 출력합니다.")]
     private bool skipIntroInEditor = true;
 
-    [Header("Exit(Curtain Rollback) Animation")]
-    [SerializeField, Tooltip("MainMenu → Town 진입 시, Town 카메라 인트로와 동시에 메인 메뉴 전체가 위로 이동해 화면 밖으로 사라지는 데 걸리는 시간. " +
-        "GameInstaller.prefab의 SkyCameraProductionManager.moveDuration(=1.8)과 동일한 값 — 카메라 하강이 전체 yOffset 거리를 그 시간 동안 내려오므로 여기도 같은 값을 써야 한다. moveDuration이 바뀌면 같이 맞춰야 한다.")]
-    private float exitMoveDuration = 1.8f;
-    [SerializeField, Tooltip("메인 메뉴가 위로 이동해 사라질 거리(px). 화면 높이보다 넉넉하게 잡는다.")]
-    private float exitMoveDistance = 1500f;
+    [Header("Exit Animation")]
+    [SerializeField] private float exitMoveDuration = 1.8f;
+    // SkyProduction.prefab의 cloudImage 이동 거리(410 → -1890)와 동일한 2300으로 맞춤
+    [SerializeField] private float exitMoveDistance = 2300f;
+    // GameInstaller.prefab의 SkyCameraProductionManager.moveEase 직렬화 값(10)과 동일
+    [SerializeField] private Ease exitMoveEase = (Ease)10;
 
     private RectTransform rootRectTransform;
 
@@ -41,7 +44,6 @@ public class UIView_MainMenu : UIView
 
     private IMainMenuSaveSystem saveSystem;
 
-    // 게임 플레이 도중 ESC 메뉴를 통해 메인 메뉴로 돌아온 경우 true
     public bool CameFromEscMenu { get; private set; }
 
     public void DependencyInjection(IMainMenuSaveSystem _saveSystem, bool _cameFromEscMenu)
@@ -66,7 +68,6 @@ public class UIView_MainMenu : UIView
 
         context = _ctx;
 
-        // 커튼 롤백(위로 슬라이드 아웃) 연출용
         rootRectTransform = GetComponent<RectTransform>();
 
         // 프리팹을 인스턴스화하지 않고, 이미 바인딩된 컴포넌트를 바로 초기화
@@ -144,7 +145,7 @@ public class UIView_MainMenu : UIView
         }
 #endif
 
-        if (null != this.splashScreenUI)
+        if (null != this.splashScreenUI && false == CameFromEscMenu)
         {
             this.splashScreenUI.gameObject.SetActive(true);
             if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
@@ -156,6 +157,7 @@ public class UIView_MainMenu : UIView
         }
         else
         {
+            if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
             this.PrepareNextUIAfterSplash();
             this.OnSplashScreenCompleted();
         }
@@ -262,14 +264,76 @@ public class UIView_MainMenu : UIView
         gameObject.SetActive(false);
     }
 
+    private TweenCallback invokeNewGameEventCallback;
+    private TweenCallback invokeLoadGameEventCallback;
+
     public void OnNewGameStartButton()
     {
-        // Town 씬이 뒤에서 셋업을 마치고 카메라 인트로를 시작할 때까지 메인 메뉴는 화면에 그대로 떠 있어야 하므로,
-        // 페이드 없이 즉시 이벤트를 발행한다. 실제 퇴장 연출은 PlayExitAnimation()에서 별도로 트리거된다.
-        NewGameButtonClickedEvent?.Invoke();
+        if (null == invokeNewGameEventCallback) invokeNewGameEventCallback = InvokeNewGameEvent;
+        PlayGameStartSequence(invokeNewGameEventCallback);
     }
 
     public void OnLoadGameButtonClicked()
+    {
+        if (null == invokeLoadGameEventCallback) invokeLoadGameEventCallback = InvokeLoadGameEvent;
+        PlayGameStartSequence(invokeLoadGameEventCallback);
+    }
+
+    private void PlayGameStartSequence(TweenCallback _onSequenceCompleted)
+    {
+        if (null != mainMenuUI)
+        {
+            mainMenuUI.gameObject.SetActive(false);
+        }
+
+        Sequence _seq = DOTween.Sequence();
+        
+        if (null != backgroundDimmer)
+        {
+            _seq.Append(backgroundDimmer.DOFade(0f, dimmerFadeDuration));
+        }
+
+        if (null != logoAnimUI)
+        {
+            CanvasGroup _logoCanvas = logoAnimUI.GetComponent<CanvasGroup>();
+            if (null != _logoCanvas)
+            {
+                _seq.Append(_logoCanvas.DOFade(0f, 0.5f));
+            }
+        }
+
+        if (null != _onSequenceCompleted)
+        {
+            _seq.OnComplete(_onSequenceCompleted);
+        }
+    }
+
+    private Action onOptionUIClosedCallback;
+
+    public void OnOptionButtonClicked()
+    {
+        if (null == onOptionUIClosedCallback) onOptionUIClosedCallback = OnOptionUIClosed;
+
+        if (null != optionUI)
+        {
+            optionUI.Show(onOptionUIClosedCallback);
+        }
+    }
+
+    private void OnOptionUIClosed()
+    {
+        if (null != mainMenuUI)
+        {
+            mainMenuUI.ReleaseOptionButtonState();
+        }
+    }
+
+    private void InvokeNewGameEvent()
+    {
+        NewGameButtonClickedEvent?.Invoke();
+    }
+
+    private void InvokeLoadGameEvent()
     {
         LoadGameButtonClickedEvent?.Invoke();
     }
@@ -277,10 +341,6 @@ public class UIView_MainMenu : UIView
     private Action currentExitCompleteAction;
     private TweenCallback onExitAnimationCompleteCallback;
 
-    /// <summary>
-    /// Town 카메라 인트로 연출이 시작되는 시점에 맞춰, 메인 메뉴 전체가 위로 이동해 화면 밖으로 빠져나가는 연출을 재생한다.
-    /// 페이드가 아니라 카메라가 구름을 뚫고 내려가는 동안 메뉴가 자연스럽게 시야 위쪽으로 벗어나는 느낌을 준다.
-    /// </summary>
     public void PlayExitAnimation(Action _onComplete)
     {
         if (null == rootRectTransform)
@@ -290,7 +350,7 @@ public class UIView_MainMenu : UIView
             return;
         }
 
-        if (null == onExitAnimationCompleteCallback) 
+        if (null == onExitAnimationCompleteCallback)
             onExitAnimationCompleteCallback = OnExitAnimationComplete;
 
         currentExitCompleteAction = _onComplete;
@@ -299,7 +359,7 @@ public class UIView_MainMenu : UIView
         Vector2 _targetPos = rootRectTransform.anchoredPosition + Vector2.up * exitMoveDistance;
 
         rootRectTransform.DOAnchorPos(_targetPos, exitMoveDuration)
-            .SetEase(Ease.InCubic)
+            .SetEase(exitMoveEase)
             .OnComplete(onExitAnimationCompleteCallback);
     }
 

@@ -350,7 +350,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DensityManager
   densityDataBase: {fileID: 11400000, guid: cb0b8bab5590ad8409bd563dc6f3cb61, type: 2}
-  debugUnlockAllMaps: 0
+  debugUnlockAllMaps: 1
   applyToStartCnt: 1
   animalHiddenGaugeAmounts:
   - animalType: 1

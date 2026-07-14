@@ -23,7 +23,7 @@ public class UI_PressAnyKey : MonoBehaviour
     {
         parentView = _parentView;
         
-        if (pressAnyKeyText != null)
+        if (null != pressAnyKeyText)
         {
             // 텍스트 깜빡임(Pulse) 애니메이션 무한 반복
             pressAnyKeyText.DOFade(minAlpha, fadeDuration)
@@ -49,7 +49,7 @@ public class UI_PressAnyKey : MonoBehaviour
     /// </summary>
     public void SetText(string _localizedText)
     {
-        if (pressAnyKeyText != null)
+        if (null != pressAnyKeyText)
         {
             pressAnyKeyText.text = _localizedText;
         }
@@ -57,26 +57,27 @@ public class UI_PressAnyKey : MonoBehaviour
 
     private void Update()
     {
-        if (!isWaitingForInput) return;
+        if (false == isWaitingForInput) return;
 
         bool anyInputReceived = false;
 
         // 키보드 아무 키 입력 감지 (New Input System)
-        if (Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame)
+        if (null != Keyboard.current && Keyboard.current.anyKey.wasPressedThisFrame)
         {
             anyInputReceived = true;
         }
         // 마우스 클릭 감지
-        else if (Mouse.current != null && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame))
+        else if (null != Mouse.current && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame))
         {
             anyInputReceived = true;
         }
         // 게임패드 아무 버튼 감지
-        else if (Gamepad.current != null)
+        else if (null != Gamepad.current)
         {
-            foreach (var control in Gamepad.current.allControls)
+            var _controls = Gamepad.current.allControls;
+            for (int i = 0; i < _controls.Count; i++)
             {
-                if (control is UnityEngine.InputSystem.Controls.ButtonControl button && button.wasPressedThisFrame)
+                if (_controls[i] is UnityEngine.InputSystem.Controls.ButtonControl _button && _button.wasPressedThisFrame)
                 {
                     anyInputReceived = true;
                     break;
@@ -88,7 +89,7 @@ public class UI_PressAnyKey : MonoBehaviour
         if (anyInputReceived)
         {
             isWaitingForInput = false;
-            if (parentView != null)
+            if (null != parentView)
             {
                 parentView.OnPressAnyKeyCompleted();
             }
@@ -98,7 +99,7 @@ public class UI_PressAnyKey : MonoBehaviour
     private void OnDestroy()
     {
         // 텍스트 애니메이션 메모리 누수 방지
-        if (pressAnyKeyText != null)
+        if (null != pressAnyKeyText)
         {
             pressAnyKeyText.DOKill();
         }

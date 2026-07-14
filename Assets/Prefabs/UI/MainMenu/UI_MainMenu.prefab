@@ -130,7 +130,6 @@ MonoBehaviour:
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
-  buttonsToHide: []
   disappearSuckEase: 8
   disappearShrinkEase: 26
   isInteractable: 1
@@ -460,7 +459,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -45, y: 0}
-  m_SizeDelta: {x: 120, y: 25}
+  m_SizeDelta: {x: 120, y: 22}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4588133804538947149
 CanvasRenderer:
@@ -572,7 +571,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -45, y: 0}
-  m_SizeDelta: {x: 120, y: 25}
+  m_SizeDelta: {x: 120, y: 22}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8785333930753296105
 CanvasRenderer:
@@ -1285,11 +1284,6 @@ MonoBehaviour:
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
-  buttonsToHide:
-  - {fileID: 8186275927953483990}
-  - {fileID: 4729407521023883424}
-  - {fileID: 1366216819725002085}
-  - {fileID: 5869770144812342062}
   disappearSuckEase: 8
   disappearShrinkEase: 26
   isInteractable: 1
@@ -2618,11 +2612,6 @@ MonoBehaviour:
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
-  buttonsToHide:
-  - {fileID: 4729407521023883424}
-  - {fileID: 1366216819725002085}
-  - {fileID: 5869770144812342062}
-  - {fileID: 6252450808567929106}
   disappearSuckEase: 8
   disappearShrinkEase: 26
   isInteractable: 1
@@ -2721,11 +2710,6 @@ MonoBehaviour:
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
-  buttonsToHide:
-  - {fileID: 8186275927953483990}
-  - {fileID: 1366216819725002085}
-  - {fileID: 5869770144812342062}
-  - {fileID: 6252450808567929106}
   disappearSuckEase: 8
   disappearShrinkEase: 26
   isInteractable: 0
@@ -3097,7 +3081,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -45, y: 0}
-  m_SizeDelta: {x: 120, y: 25}
+  m_SizeDelta: {x: 120, y: 22}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5525768497875144249
 CanvasRenderer:
@@ -3230,11 +3214,6 @@ MonoBehaviour:
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
-  buttonsToHide:
-  - {fileID: 8186275927953483990}
-  - {fileID: 4729407521023883424}
-  - {fileID: 1366216819725002085}
-  - {fileID: 6252450808567929106}
   disappearSuckEase: 8
   disappearShrinkEase: 26
   isInteractable: 1
@@ -3332,7 +3311,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -45, y: 0}
-  m_SizeDelta: {x: 120, y: 25}
+  m_SizeDelta: {x: 120, y: 22}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5922305484826698848
 CanvasRenderer:
@@ -3696,7 +3675,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -45, y: 0}
-  m_SizeDelta: {x: 120, y: 25}
+  m_SizeDelta: {x: 120, y: 22}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7430473737096728976
 CanvasRenderer:

@@ -199,6 +199,7 @@ public class GameSaveData
     public bool bHasAcquiredLostAndFoundBox;
     public bool bHasAcquiredSporePotion;
     public float sporePotionCharge;
+    public bool bHasAcquiredStarCompass;
 
     public void Clear()
     {
