@@ -17,6 +17,9 @@ public class UIView_MainMenu : UIView
     [SerializeField] private UI_LogoAnim logoAnimUI; // 로고 애니메이션 객체
     [SerializeField] private UI_MainMenuBackground backgroundUI; // 동적 배경 관리 객체
 
+    [Header("Sub Views")]
+    [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
+
     [Header("Background Overlay")]
     [SerializeField, Tooltip("메인 메뉴 뒤에 깔릴 검은색 셀로판지(Dimmer)")] 
     private Image backgroundDimmer; 
@@ -282,6 +285,26 @@ public class UIView_MainMenu : UIView
     {
         if (null == invokeLoadGameEventCallback) invokeLoadGameEventCallback = InvokeLoadGameEvent;
         PlayGameStartSequence(invokeLoadGameEventCallback);
+    }
+
+    private Action onOptionUIClosedCallback;
+
+    public void OnOptionButtonClicked()
+    {
+        if (null == onOptionUIClosedCallback) onOptionUIClosedCallback = OnOptionUIClosed;
+
+        if (null != optionUI)
+        {
+            optionUI.Show(onOptionUIClosedCallback);
+        }
+    }
+
+    private void OnOptionUIClosed()
+    {
+        if (null != mainMenuUI)
+        {
+            mainMenuUI.ReleaseOptionButtonState();
+        }
     }
 
     private void InvokeLoadGameEvent()

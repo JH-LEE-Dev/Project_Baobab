@@ -187,8 +187,18 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnOptionClicked()
     {
-        // TODO: 설정(Option) 기능 연결
-        Debug.Log("Option Button Clicked - 기능 연결 필요");
+        if (null != parentView)
+        {
+            parentView.OnOptionButtonClicked();
+        }
+    }
+    
+    public void ReleaseOptionButtonState()
+    {
+        if (null != optionButton)
+        {
+            optionButton.ReleaseMaintainState();
+        }
     }
     
     private void OnCreditClicked()

@@ -447,6 +447,21 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         TweenShadowPulse(textUIEffect, getTextShadowColor, setTextShadowColor);
     }
 
+    public void ReleaseMaintainState()
+    {
+        if (false == isMaintained) return;
+        
+        isMaintained = false;
+        isClicked = false;
+        
+        KillAllTweens();
+        
+        if (null != dotTarget) dotTarget.localEulerAngles = dotOriginalRot;
+        if (null != textTarget) textTarget.localScale = Vector3.one;
+        
+        RestoreHoverOrExit();
+    }
+
     public void PlayDisappearMotion(float _delay = 0f)
     {
         if (true == isDisappearing) return;
