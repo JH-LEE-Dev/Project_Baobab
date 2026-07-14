@@ -1,0 +1,189 @@
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+/// <summary>
+/// 유니티 기본 Scroll Rect를 사용하지 않고 개별 커스텀 로직으로 상하 드래그 스크롤을 구현한 컴포넌트입니다.
+/// 가비지 컬렉션(GC) 할당을 0으로 유지하며 Yoda 표기법을 준수합니다.
+/// </summary>
+public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, IScrollHandler
+{
+    [Header("References")]
+    [SerializeField, Tooltip("스크롤될 내용물 (예: Content)")] 
+    private RectTransform content;
+    [SerializeField, Tooltip("내용물이 보여지는 부모 뷰포트 (보통 이 스크립트가 달린 패널)")] 
+    private RectTransform viewport;
+
+    [Header("Settings")]
+    [SerializeField, Tooltip("마우스 휠 스크롤 감도")] 
+    private float scrollSensitivity = 25f;
+    [SerializeField, Tooltip("드래그 이동 감도")] 
+    private float dragSensitivity = 1f;
+
+    [Header("Scrollbar (Optional)")]
+    [SerializeField, Tooltip("연동할 수직 스크롤바")]
+    private Scrollbar verticalScrollbar;
+
+    // 내부 상태
+    private Vector2 lastPointerPosition;
+    private bool isSyncingScrollbar = false;
+
+    private void Awake()
+    {
+        if (null == viewport)
+        {
+            viewport = GetComponent<RectTransform>();
+        }
+
+        if (null != verticalScrollbar)
+        {
+            verticalScrollbar.onValueChanged.AddListener(OnScrollbarValueChanged);
+        }
+    }
+
+    private void Start()
+    {
+        UpdateScrollbarSize();
+        SyncScrollbarFromContent();
+    }
+
+    public void OnBeginDrag(PointerEventData _eventData)
+    {
+        if (null == viewport) return;
+
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            viewport, 
+            _eventData.position, 
+            _eventData.pressEventCamera, 
+            out lastPointerPosition
+        );
+    }
+
+    public void OnDrag(PointerEventData _eventData)
+    {
+        if (null == content || null == viewport) return;
+
+        Vector2 _localPointerPosition;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            viewport, 
+            _eventData.position, 
+            _eventData.pressEventCamera, 
+            out _localPointerPosition))
+        {
+            Vector2 _delta = _localPointerPosition - lastPointerPosition;
+            
+            // 상하 스크롤만 적용
+            float _newY = content.anchoredPosition.y + (_delta.y * dragSensitivity);
+            
+            // 위아래 경계 제한 계산
+            _newY = ClampYPosition(_newY);
+            
+            // 구조체(Vector2) 할당은 스택에 생성되므로 GC가 발생하지 않음
+            content.anchoredPosition = new Vector2(content.anchoredPosition.x, _newY);
+            lastPointerPosition = _localPointerPosition;
+
+            SyncScrollbarFromContent();
+        }
+    }
+
+    public void OnScroll(PointerEventData _eventData)
+    {
+        if (null == content || null == viewport) return;
+
+        // 휠을 내리면 scrollDelta.y는 음수가 나오므로 이동 방향에 맞게 빼줌
+        float _newY = content.anchoredPosition.y - (_eventData.scrollDelta.y * scrollSensitivity);
+        
+        _newY = ClampYPosition(_newY);
+        
+        content.anchoredPosition = new Vector2(content.anchoredPosition.x, _newY);
+
+        SyncScrollbarFromContent();
+    }
+
+    private float ClampYPosition(float _targetY)
+    {
+        // ※ 주의: 이 로직은 Content의 Pivot이 Y=1 (Top)일 때 완벽히 작동합니다.
+        float _contentHeight = content.rect.height;
+        float _viewportHeight = viewport.rect.height;
+
+        // 컨텐츠가 뷰포트보다 작거나 같으면 스크롤 불필요 (맨 위 고정)
+        if (_contentHeight <= _viewportHeight)
+        {
+            return 0f;
+        }
+
+        // 최대 이동 가능 거리는 (컨텐츠 전체 높이 - 보이는 뷰포트 높이)
+        float _maxY = _contentHeight - _viewportHeight;
+        
+        // 범위 밖으로 넘어가지 않도록 클램핑
+        if (_targetY < 0f) return 0f;
+        if (_targetY > _maxY) return _maxY;
+
+        return _targetY;
+    }
+
+    private void OnScrollbarValueChanged(float _value)
+    {
+        if (true == isSyncingScrollbar || null == content || null == viewport) return;
+
+        float _contentHeight = content.rect.height;
+        float _viewportHeight = viewport.rect.height;
+        float _maxY = _contentHeight - _viewportHeight;
+
+        if (_maxY <= 0f) return;
+
+        // 스크롤바 value 1이 맨 위(Y=0), value 0이 맨 아래(Y=_maxY) 라고 가정
+        float _targetY = (1f - _value) * _maxY;
+        content.anchoredPosition = new Vector2(content.anchoredPosition.x, _targetY);
+    }
+
+    private void SyncScrollbarFromContent()
+    {
+        if (null == verticalScrollbar || null == content || null == viewport) return;
+
+        float _contentHeight = content.rect.height;
+        float _viewportHeight = viewport.rect.height;
+        float _maxY = _contentHeight - _viewportHeight;
+
+        isSyncingScrollbar = true;
+
+        if (_maxY <= 0f)
+        {
+            verticalScrollbar.value = 1f;
+        }
+        else
+        {
+            float _currentY = content.anchoredPosition.y;
+            // Y=0일때 value 1, Y=_maxY일때 value 0
+            verticalScrollbar.value = 1f - Mathf.Clamp01(_currentY / _maxY);
+        }
+
+        isSyncingScrollbar = false;
+    }
+
+    public void UpdateScrollbarSize()
+    {
+        if (null == verticalScrollbar || null == content || null == viewport) return;
+
+        float _contentHeight = content.rect.height;
+        float _viewportHeight = viewport.rect.height;
+
+        if (_contentHeight <= 0f) return;
+
+        float _sizeRatio = _viewportHeight / _contentHeight;
+        
+        // 뷰포트가 컨텐츠보다 크면 사이즈는 1 (스크롤 불필요)
+        verticalScrollbar.size = Mathf.Clamp01(_sizeRatio);
+        
+        // 스크롤이 불필요할 때 스크롤바 자체를 비활성화할 수도 있음
+        verticalScrollbar.interactable = _sizeRatio < 1f;
+    }
+
+    private void OnDestroy()
+    {
+        if (null != verticalScrollbar)
+        {
+            verticalScrollbar.onValueChanged.RemoveListener(OnScrollbarValueChanged);
+        }
+    }
+}

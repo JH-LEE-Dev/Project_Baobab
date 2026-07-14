@@ -13,8 +13,8 @@ public class UI_OptionSlider : MonoBehaviour
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private TextMeshProUGUI valueText;
     [SerializeField] private Slider slider;
-    [SerializeField] private Button leftArrowButton;
-    [SerializeField] private Button rightArrowButton;
+    [SerializeField] private UI_OptionButton leftArrowButton;
+    [SerializeField] private UI_OptionButton rightArrowButton;
 
     [Header("Settings")]
     [SerializeField] private float stepValue = 5f; // 좌우 버튼 클릭 시 변하는 양
@@ -22,11 +22,19 @@ public class UI_OptionSlider : MonoBehaviour
 
     // 내부 상태
     private Action<float> onValueChanged;
+    private Action onLeftClicked;
+    private Action onRightClicked;
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(string _title, float _initialValue, float _minValue, float _maxValue, Action<float> _onValueChanged)
     {
         onValueChanged = _onValueChanged;
+        
+        if (null == onLeftClicked) onLeftClicked = OnLeftButtonClicked;
+        if (null == onRightClicked) onRightClicked = OnRightButtonClicked;
+
+        if (null != leftArrowButton) leftArrowButton.Initialize(onLeftClicked);
+        if (null != rightArrowButton) rightArrowButton.Initialize(onRightClicked);
 
         if (null != titleText)
         {
@@ -68,8 +76,8 @@ public class UI_OptionSlider : MonoBehaviour
     public void SetInteractable(bool _isInteractable)
     {
         if (null != slider) slider.interactable = _isInteractable;
-        if (null != leftArrowButton) leftArrowButton.interactable = _isInteractable;
-        if (null != rightArrowButton) rightArrowButton.interactable = _isInteractable;
+        if (null != leftArrowButton) leftArrowButton.SetInteractable(_isInteractable);
+        if (null != rightArrowButton) rightArrowButton.SetInteractable(_isInteractable);
 
         if (null != valueText)
         {
@@ -85,14 +93,6 @@ public class UI_OptionSlider : MonoBehaviour
         if (null != slider)
         {
             slider.onValueChanged.AddListener(OnSliderValueChanged);
-        }
-        if (null != leftArrowButton)
-        {
-            leftArrowButton.onClick.AddListener(OnLeftButtonClicked);
-        }
-        if (null != rightArrowButton)
-        {
-            rightArrowButton.onClick.AddListener(OnRightButtonClicked);
         }
     }
 
@@ -130,14 +130,8 @@ public class UI_OptionSlider : MonoBehaviour
         {
             slider.onValueChanged.RemoveListener(OnSliderValueChanged);
         }
-        if (null != leftArrowButton)
-        {
-            leftArrowButton.onClick.RemoveListener(OnLeftButtonClicked);
-        }
-        if (null != rightArrowButton)
-        {
-            rightArrowButton.onClick.RemoveListener(OnRightButtonClicked);
-        }
         onValueChanged = null;
+        onLeftClicked = null;
+        onRightClicked = null;
     }
 }

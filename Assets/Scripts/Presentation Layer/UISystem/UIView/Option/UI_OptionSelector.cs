@@ -12,8 +12,8 @@ public class UI_OptionSelector : MonoBehaviour
     [Header("UI Components")]
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private TextMeshProUGUI valueText;
-    [SerializeField] private Button leftArrowButton;
-    [SerializeField] private Button rightArrowButton;
+    [SerializeField] private UI_OptionButton leftArrowButton;
+    [SerializeField] private UI_OptionButton rightArrowButton;
 
     // 내부 상태
     private Action onLeftClicked;
@@ -24,6 +24,9 @@ public class UI_OptionSelector : MonoBehaviour
     {
         onLeftClicked = _onLeft;
         onRightClicked = _onRight;
+
+        if (null != leftArrowButton) leftArrowButton.Initialize(onLeftClicked);
+        if (null != rightArrowButton) rightArrowButton.Initialize(onRightClicked);
 
         if (null != titleText)
         {
@@ -43,8 +46,9 @@ public class UI_OptionSelector : MonoBehaviour
 
     public void SetInteractable(bool _isInteractable)
     {
-        if (null != leftArrowButton) leftArrowButton.interactable = _isInteractable;
-        if (null != rightArrowButton) rightArrowButton.interactable = _isInteractable;
+        // UI_OptionButton 내부에 구현된 SetInteractable 호출로 시각적 피드백과 로직 동시 처리
+        if (null != leftArrowButton) leftArrowButton.SetInteractable(_isInteractable);
+        if (null != rightArrowButton) rightArrowButton.SetInteractable(_isInteractable);
         
         // 시각적 피드백 처리 (알파값 조절 등)
         if (null != valueText)
@@ -55,45 +59,8 @@ public class UI_OptionSelector : MonoBehaviour
         }
     }
 
-    // 유니티 이벤트 함수
-    private void Awake()
-    {
-        if (null != leftArrowButton)
-        {
-            leftArrowButton.onClick.AddListener(OnLeftButtonClicked);
-        }
-        if (null != rightArrowButton)
-        {
-            rightArrowButton.onClick.AddListener(OnRightButtonClicked);
-        }
-    }
-
-    private void OnLeftButtonClicked()
-    {
-        if (null != onLeftClicked)
-        {
-            onLeftClicked.Invoke();
-        }
-    }
-
-    private void OnRightButtonClicked()
-    {
-        if (null != onRightClicked)
-        {
-            onRightClicked.Invoke();
-        }
-    }
-
     private void OnDestroy()
     {
-        if (null != leftArrowButton)
-        {
-            leftArrowButton.onClick.RemoveListener(OnLeftButtonClicked);
-        }
-        if (null != rightArrowButton)
-        {
-            rightArrowButton.onClick.RemoveListener(OnRightButtonClicked);
-        }
         onLeftClicked = null;
         onRightClicked = null;
     }

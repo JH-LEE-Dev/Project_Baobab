@@ -11,7 +11,7 @@ public class UI_Option : MonoBehaviour
     [Header("Core System")]
     [SerializeField] private UI_OptionTabGroup tabGroup;
     [SerializeField] private GameObject optionPanelRoot;
-    [SerializeField] private UnityEngine.UI.Button closeButton;
+    [SerializeField] private UI_OptionButton closeButton;
 
     [Header("Gameplay Options")]
     [SerializeField] private UI_OptionSelector languageSelector;
@@ -61,6 +61,7 @@ public class UI_Option : MonoBehaviour
     private readonly string[] offOnOptions = { "Off", "On" };
 
     private Action onCloseAction;
+    private Action hideAction;
 
     // 델리게이트 캐싱 (클로저 할당 원천 차단)
     private Action onLanguageLeft;
@@ -93,6 +94,8 @@ public class UI_Option : MonoBehaviour
         LoadMockData();
         CacheDelegates();
 
+        if (null == hideAction) hideAction = Hide;
+
         if (null != tabGroup)
         {
             tabGroup.Initialize();
@@ -100,7 +103,7 @@ public class UI_Option : MonoBehaviour
 
         if (null != closeButton)
         {
-            closeButton.onClick.AddListener(Hide);
+            closeButton.Initialize(hideAction);
         }
 
         InitializeSelectors();
