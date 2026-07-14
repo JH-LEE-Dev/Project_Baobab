@@ -8,6 +8,8 @@ public class InDungeonProductionManager : MonoBehaviour
     public event Action CameraUpIsEndEvent;
     public event Action CameraDownEndEvent;
     public event Action RollbackSkyProductionEvent;
+    public event Action GoToMainMenuReadyEvent;
+    public event Action GoToMainMenuCurtainRevealEvent;
 
     //외부 의존성
     private InputManager inputManager;
@@ -40,12 +42,16 @@ public class InDungeonProductionManager : MonoBehaviour
 
         skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
         skyCameraProductionManager.SkyProductionRollbackEndEvent += CameraDownIsEnd;
+
+        skyCameraProductionManager.AscendOutEndEvent -= GoToMainMenuAscendComplete;
+        skyCameraProductionManager.AscendOutEndEvent += GoToMainMenuAscendComplete;
     }
 
     private void ReleaseEvents()
     {
         skyCameraProductionManager.SkyProductionEndEvent -= CameraUpIsEnd;
         skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
+        skyCameraProductionManager.AscendOutEndEvent -= GoToMainMenuAscendComplete;
     }
 
     public void Release()
@@ -138,6 +144,31 @@ public class InDungeonProductionManager : MonoBehaviour
     public void StartSkyProduction()
     {
         skyCameraProductionManager.StartCameraMove();
+    }
+
+    /// <summary>
+    /// Dungeon → MainMenu 전용 연출. 기존 왕복용 isMoved/StartCameraMove()/SkyProductionEndEvent는 건드리지 않는다.
+    /// </summary>
+    public void StartGoToMainMenu()
+    {
+        if (character == null)
+        {
+            Debug.LogWarning("[InDungeonProductionManager] StartGoToMainMenu: character가 null이라 카메라 연출을 건너뜁니다.");
+            GoToMainMenuCurtainRevealEvent?.Invoke();
+            GoToMainMenuReadyEvent?.Invoke();
+            return;
+        }
+
+        inputManager.PauseMove(true);
+
+        GoToMainMenuCurtainRevealEvent?.Invoke();
+
+        skyCameraProductionManager.PlayAscendOut(character.transform);
+    }
+
+    private void GoToMainMenuAscendComplete()
+    {
+        GoToMainMenuReadyEvent?.Invoke();
     }
 
     private IEnumerator RollbackCameraMoveRoutine()

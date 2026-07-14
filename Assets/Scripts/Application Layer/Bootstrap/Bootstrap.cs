@@ -32,9 +32,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private MapType currentMapType = MapType.Town;
     private ForestType currentForestType = ForestType.InTown;
 
-    // 게임 플레이 도중 ESC 메뉴를 통해 메인 메뉴로 돌아온 경우 true (앱을 처음 켜서 메인 메뉴로 진입한 경우는 false)
-    public bool CameFromEscMenu { get; private set; } = false;
-
     // 유니티 이벤트 함수
     private void Awake()
     {
@@ -89,6 +86,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                 gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
                 gameInstaller.TownIntroCurtainRollbackEvent += OnTownIntroCurtainRollback;
 
+                gameInstaller.GoToMainMenuCurtainRevealEvent -= OnGoToMainMenuCurtainReveal;
+                gameInstaller.GoToMainMenuCurtainRevealEvent += OnGoToMainMenuCurtainReveal;
+
                 if (bNewGame == false)
                     gameInstaller.LoadGame();
             }
@@ -106,15 +106,21 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void SetupMainMenuScene()
     {
-        // 앱을 처음 켰을 때는 씬 전환(TransitionToScene) 없이 바로 로드되므로 prevSceneType이 None으로 유지됨
-        CameFromEscMenu = prevSceneType != SceneType.None;
-
         currentSceneType = SceneType.MainMenu;
 
         if (mainMenuInstaller == null)
         {
+            // 최초 1회(앱 부팅)만 생성한다. 이후로는 절대 파괴하지 않고 같은 인스턴스를 계속 재사용한다.
             mainMenuInstaller = Instantiate(mainMenuInstallerPrefab);
             mainMenuInstaller.Initialize(this, inputManager, localizationManager, saveManager);
+            mainMenuInstaller.StartMainMenuScene();
+        }
+        else
+        {
+            // Town/Dungeon에서 돌아온 경우: 씬 전환이 실제로 완료된 이 시점에야 딤머/로고/버튼을 다시 보여준다.
+            // StartGoToMainMenu()에서 걸어둔 PauseMove(true)를 여기서 풀어준다(캐릭터가 없는 씬이라 위험은 없지만 위생 차원).
+            inputManager.PauseMove(false);
+            mainMenuInstaller.PlayButtonsRevealAnimation();
         }
     }
 
@@ -146,19 +152,17 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         // 1. 전환 로직 시작
         prevSceneType = currentSceneType;
 
-        // 기존 인스톨러 해제
+        // 기존 인스톨러 해제 (mainMenuInstaller는 절대 파괴하지 않으므로 여기서 다루지 않는다)
         if (_sceneType == SceneType.MainMenu)
         {
             if (gameInstaller != null)
             {
                 gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
+                gameInstaller.GoToMainMenuCurtainRevealEvent -= OnGoToMainMenuCurtainReveal;
                 gameInstaller.Release();
                 gameInstaller = null;
             }
         }
-        // Town, DungeonScene 등 게임플레이 관련 씬으로 이동할 때: mainMenuInstaller는 씬 전환 시점이 아니라
-        // Town 카메라 인트로 연출이 시작되는 시점(OnTownIntroCurtainRollback → PlayExitAnimation 완료 후)에 정리한다.
-        // (mainMenuInstaller는 DontDestroyOnLoad라 씬 로드에도 자동으로 파괴되지 않음)
 
         // 2. 비동기 씬 로드
         AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
@@ -210,17 +214,16 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     {
         if (mainMenuInstaller != null)
         {
-            mainMenuInstaller.PlayExitAnimation(OnMainMenuExitComplete);
+            // 파괴하지 않는다 - 화면 밖(위)에 그대로 둔 채 다음 ESC 복귀 때 같은 인스턴스를 재사용한다.
+            mainMenuInstaller.PlayExitAnimation(null);
         }
     }
 
-    private void OnMainMenuExitComplete()
+    private void OnGoToMainMenuCurtainReveal()
     {
         if (mainMenuInstaller != null)
         {
-            mainMenuInstaller.Release();
-            Destroy(mainMenuInstaller.gameObject);
-            mainMenuInstaller = null;
+            mainMenuInstaller.PlayEnterAnimation(null);
         }
     }
 
@@ -241,10 +244,6 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         else
         {
             SetupMainMenuScene();
-            if (mainMenuInstaller != null)
-            {
-                mainMenuInstaller.StartMainMenuScene();
-            }
         }
     }
 

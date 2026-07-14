@@ -5,6 +5,8 @@ public class GameInstaller : MonoBehaviour
 {
     // BootStrap이 SignalHub에 접근할 수 없으므로, MainMenu 커튼 롤백 시점을 plain event로 한 번 더 감싸 노출한다.
     public event Action TownIntroCurtainRollbackEvent;
+    // Town/Dungeon → MainMenu 카메라 상승 시작 시점. Town/Dungeon 둘 중 활성화된 쪽만 실제로 발행한다.
+    public event Action GoToMainMenuCurtainRevealEvent;
 
     //외부 의존성
     private InputManager inputManager;
@@ -179,16 +181,29 @@ public class GameInstaller : MonoBehaviour
 
         townSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
         townSystem.MainMenuCurtainRollbackEvent += TownIntroCurtainRollback;
+
+        townSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        townSystem.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
+
+        inDungeonSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        inDungeonSystem.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
     }
 
     private void ReleaseEvents()
     {
         gameplayUIInstaller.SaveGameEvent -= SaveGame;
         townSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
+        townSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        inDungeonSystem.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
     }
 
     private void TownIntroCurtainRollback()
     {
         TownIntroCurtainRollbackEvent?.Invoke();
+    }
+
+    private void GoToMainMenuCurtainReveal()
+    {
+        GoToMainMenuCurtainRevealEvent?.Invoke();
     }
 }

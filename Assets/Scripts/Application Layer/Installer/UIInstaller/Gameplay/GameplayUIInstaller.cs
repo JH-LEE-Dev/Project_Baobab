@@ -237,7 +237,9 @@ public class GameplayUIInstaller : MonoBehaviour
 
     private void GoToMainMenu()
     {
-        bootStrapProvider.GoToMainMenuScene();
+        // 카메라 상승 연출이 끝난 뒤(TownSystem/InDungeonSystem → GoToMainMenuSignal → TeleportManager)에야
+        // 실제 씬 전환이 일어나도록, 여기서 bootStrapProvider를 직접 부르지 않고 시그널만 발행한다.
+        signalHub.Publish(new GoToMainMenuRequestedSignal());
     }
 
     private void SaveGame()
