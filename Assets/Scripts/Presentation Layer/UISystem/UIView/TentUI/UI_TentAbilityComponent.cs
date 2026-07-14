@@ -1652,6 +1652,19 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return OnAbilityLevelUpRequested(requestedSkillType);
     }
 
+    public bool TryRequestNodeLevelUpWithoutCost(AbilityNode _node)
+    {
+        if (isOpeningZoomReveal || isCloseFading)
+            return false;
+
+        if (_node == null)
+            return false;
+
+        SkillType requestedSkillType = _node.SkillType;
+
+        return OnAbilityLevelUpWithoutCostRequested(requestedSkillType);
+    }
+
     private class AutoLevelUpRequest
     {
         public AbilityNode Node { get; }
@@ -1756,6 +1769,29 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 상위 시스템의 세부 실패 사유를 UI에서 사용할 공통 사유로 정리한다.
+    private bool OnAbilityLevelUpWithoutCostRequested(SkillType _skillType)
+    {
+        if (skillSystemProvider == null)
+        {
+            Debug.LogWarning($"SkillSystemProvider is null. Request skipped: {_skillType}");
+            return false;
+        }
+
+        PrestigeHUDState _previousHUDState = GetPrestigeHUDState();
+        AbilityLevelUpRejectReason reason = skillSystemProvider.TryApplySkillWithoutCost(_skillType);
+
+        if (reason == AbilityLevelUpRejectReason.Pass)
+        {
+            OnAbilityLevelUpApproved(_skillType, _previousHUDState, GetPrestigeHUDState());
+            return true;
+        }
+        else
+        {
+            OnAbilityLevelUpRejected(_skillType, NormalizeRejectReason(reason));
+            return false;
+        }
+    }
+
     private AbilityLevelUpRejectReason NormalizeRejectReason(AbilityLevelUpRejectReason _reason)
     {
         switch (_reason)
