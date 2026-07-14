@@ -213,6 +213,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
                     {
                         treeTriggerGroupDict[spawnedTree] = groupId;
                         spawnedTree.SetStarMarked(true);
+                        spawnedTree.SetStarGroupId(groupId);
 
                         if (!groupStarPositions.TryGetValue(groupId, out List<Vector3> positions))
                         {
@@ -261,7 +262,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         if (remaining <= 0 && groupStarPositions.TryGetValue(groupId, out List<Vector3> positions))
         {
             // 별자리 발현: 그룹의 모든 별 표식 나무가 벌목됨
-            _manager.TriggerConstellationManifestation(positions);
+            _manager.TriggerConstellationManifestation(groupId, positions);
         }
     }
 

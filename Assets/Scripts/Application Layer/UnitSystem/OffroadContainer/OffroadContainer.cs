@@ -1118,6 +1118,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     }
 
     /// <summary>
+    /// 날아가는 연출 없이, 여유 슬롯이 있으면 즉시 데이터를 커밋한다(캐릭터 사망 등 연출이 무의미한 상황용).
+    /// </summary>
+    public bool TryAddLogItemDataDirect(LogItemData _sourceData, LogState _state)
+    {
+        if (!CanAddItemByData(_sourceData)) return false;
+
+        AddItemByData(_sourceData, _state);
+        return true;
+    }
+
+    /// <summary>
     /// 럼버잭 NPC 등 플레이어가 아닌 소비자가 로그를 컨테이너에 직접 납품할 때 사용하는 공개 API.
     /// 플레이어가 TransferOneSlotVisualRoutine으로 넣을 때와 동일하게 로그가 날아가는 연출(flyingItems)을
     /// 거치며, 슬롯 데이터는 착지 시점(UpdateFlyingItems)에 실제로 커밋된다.

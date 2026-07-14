@@ -2193,6 +2193,15 @@ MonoBehaviour:
     m_Bits: 0
   attackPointTransform: {fileID: 5107539740188412055}
   ellipseRadiusIndicator: {fileID: 1626089898589853428}
+  whirlwindFrames:
+  - {fileID: -5408193984500294317, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+  - {fileID: -7408280920834179055, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+  - {fileID: 1757503365097481093, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+  - {fileID: 8909519306989496007, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+  - {fileID: -6337279227023466627, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+  - {fileID: -629048883709668978, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+  - {fileID: 7538441034235752720, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
+  - {fileID: -5038717723868688837, guid: e0e7bc20a5743aa4287a64278579a07a, type: 3}
 --- !u!114 &5688827743639564748
 MonoBehaviour:
   m_ObjectHideFlags: 0

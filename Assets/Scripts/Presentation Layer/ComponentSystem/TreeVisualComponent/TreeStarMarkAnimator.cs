@@ -3,14 +3,14 @@ using UnityEngine;
 /// <summary>
 /// StarrootForest에서 별자리를 구성하는(별 표식) 나무에 붙어, TreeStarMark 스프라이트 시트를
 /// 반복 재생하는 마커 애니메이션. 나무가 별 표식일 때만 활성화된다 (TreeVisualComponent.SetConstellationMarkActive).
+/// 프레임은 인스펙터에서 직접 연결한다 (Resources.LoadAll 사용 안 함).
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public class TreeStarMarkAnimator : MonoBehaviour
 {
-    private const string ResourcePath = "TreeStarMark/TreeStarMark";
-    private const float FrameRate = 12f;
+    [SerializeField] private Sprite[] frames;
 
-    private static Sprite[] cachedFrames;
+    private const float FrameRate = 12f;
 
     private SpriteRenderer spriteRenderer;
     private float frameTimer;
@@ -19,7 +19,6 @@ public class TreeStarMarkAnimator : MonoBehaviour
     private void Awake()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-        EnsureFramesLoaded();
     }
 
     private void OnEnable()
@@ -27,34 +26,15 @@ public class TreeStarMarkAnimator : MonoBehaviour
         frameTimer = 0f;
         currentFrame = 0;
 
-        if (cachedFrames != null && cachedFrames.Length > 0 && spriteRenderer != null)
+        if (frames != null && frames.Length > 0 && spriteRenderer != null)
         {
-            spriteRenderer.sprite = cachedFrames[0];
+            spriteRenderer.sprite = frames[0];
         }
-    }
-
-    private static void EnsureFramesLoaded()
-    {
-        if (cachedFrames != null) return;
-
-        Sprite[] loaded = Resources.LoadAll<Sprite>(ResourcePath);
-        System.Array.Sort(loaded, (a, b) => ExtractFrameIndex(a.name).CompareTo(ExtractFrameIndex(b.name)));
-        cachedFrames = loaded;
-    }
-
-    private static int ExtractFrameIndex(string _spriteName)
-    {
-        int underscoreIdx = _spriteName.LastIndexOf('_');
-        if (underscoreIdx >= 0 && int.TryParse(_spriteName.Substring(underscoreIdx + 1), out int idx))
-        {
-            return idx;
-        }
-        return 0;
     }
 
     private void Update()
     {
-        if (cachedFrames == null || cachedFrames.Length == 0) return;
+        if (frames == null || frames.Length == 0) return;
 
         frameTimer += Time.deltaTime;
         float frameDuration = 1f / FrameRate;
@@ -62,8 +42,8 @@ public class TreeStarMarkAnimator : MonoBehaviour
         while (frameTimer >= frameDuration)
         {
             frameTimer -= frameDuration;
-            currentFrame = (currentFrame + 1) % cachedFrames.Length; // 별 표식이 유지되는 동안 계속 루프
-            spriteRenderer.sprite = cachedFrames[currentFrame];
+            currentFrame = (currentFrame + 1) % frames.Length; // 별 표식이 유지되는 동안 계속 루프
+            spriteRenderer.sprite = frames[currentFrame];
         }
     }
 }

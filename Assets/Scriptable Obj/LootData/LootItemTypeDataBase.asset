@@ -16,3 +16,9 @@ MonoBehaviour:
   - itemType: 2
     lootType: 1
     sprite: {fileID: 0}
+  - itemType: 2
+    lootType: 2
+    sprite: {fileID: -5931985335208768119, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+  - itemType: 2
+    lootType: 3
+    sprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}

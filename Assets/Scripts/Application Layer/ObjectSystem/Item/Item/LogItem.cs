@@ -77,6 +77,7 @@ public class LogItem : Item, IStaticCollidable
     private float inventoryCheckTimer = 0f;
     private static readonly int UseFloatingPropertyID = Shader.PropertyToID("_UseFloating");
     private static readonly int FloatingOffsetPropertyID = Shader.PropertyToID("_FloatingOffset");
+    private static readonly int ShinyEnabledPropertyID = Shader.PropertyToID("_ShinyEnabled");
 
     [SerializeField] private GameObject shadow;
     private Transform shadowTransform;
@@ -1044,7 +1045,16 @@ public class LogItem : Item, IStaticCollidable
     {
         // GPU 인스턴싱(SRP Batcher) 유지를 위해 MaterialPropertyBlock 사용을 제거하고 셰이더 내부 연산으로 대체함
         // outlineSR은 logState별 _OutlineColor를 인스턴스 프로퍼티 블록에 유지해야 하므로 여기서 초기화하지 않는다
-        if (spriteRenderer != null) spriteRenderer.SetPropertyBlock(null);
+        // 샤이니 효과는 Dropped 상태이면서 logState가 Normal보다 높을 때만 노출되어야 하므로 인스턴스 프로퍼티 블록으로 제어한다
+        bool shinyEnabled = _enable && logState > LogState.Normal;
+
+        if (spriteRenderer != null)
+        {
+            if (mpb == null) mpb = new MaterialPropertyBlock();
+            spriteRenderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ShinyEnabledPropertyID, shinyEnabled ? 1f : 0f);
+            spriteRenderer.SetPropertyBlock(mpb);
+        }
         if (outlineStencilSR != null) outlineStencilSR.SetPropertyBlock(null);
     }
 

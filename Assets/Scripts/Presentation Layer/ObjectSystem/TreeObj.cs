@@ -23,6 +23,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     // StarrootForest 별 표식 - Stage3TreeGenerationStrategySO가 스폰 시 부여
     public bool bStarMarked { get; private set; } = false;
+    public int StarGroupId { get; private set; } = -1;
 
     public void SetStarMarked(bool _boolean)
     {
@@ -31,6 +32,11 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             treeVisualComponent.SetConstellationMarkActive(_boolean);
         }
+    }
+
+    public void SetStarGroupId(int _groupId)
+    {
+        StarGroupId = _groupId;
     }
 
     public TreeData treeData { get; private set; }
@@ -189,6 +195,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         bReserved = false;
         bLastHitByPlayer = true;
         SetStarMarked(false);
+        SetStarGroupId(-1);
         healthComponent.Reset();
         bIsSapling = false;
         growTime = 0f;

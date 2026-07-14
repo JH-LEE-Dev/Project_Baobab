@@ -909,7 +909,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LootManager
   lootProbDatas: []
-  lootItemPrefab: {fileID: 0}
+  lootItemPrefab: {fileID: 5360078145449572901, guid: 9a13c2e4f7b04d1a8c6e2f5b0a3d7e91, type: 3}
   lootItemTypeDataBase: {fileID: 11400000, guid: 3a405593cd27bee44957a785aaf70392, type: 2}
 --- !u!1 &3715956597584213836
 GameObject:
@@ -1408,6 +1408,7 @@ MonoBehaviour:
   skillDataBase: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
   prestigeLevel: 0
   skillExperience: 0
+  experienceToLevelUp: 28000000280000002800000028000000280000002800000028000000280000002800000028000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -1455,6 +1456,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonVFXManager
   vfxComponent: {fileID: 777467232540049004}
   shieldBrokenVfxYOffset: -0.5
+  treeStarMarkGroundPrefab: {fileID: 114000001, guid: 7d2b9f4a1c6e48b3a5d9e0f1b2c3d4e5, type: 3}
+  treeStarMarkGroundPoolDefaultCapacity: 50
+  treeStarMarkGroundPoolMaxSize: 200
+  shootingStarVfxPrefab: {fileID: 114000001, guid: bf3f757d5c97d6270249f5019d78d46f, type: 3}
+  shootingStarVfxPoolDefaultCapacity: 4
+  shootingStarVfxPoolMaxSize: 16
+  sporeExplosionVfxPrefab: {fileID: 114000001, guid: 76a82539148a5da39264cf6082f3ad74, type: 3}
+  sporeExplosionVfxPoolDefaultCapacity: 50
+  sporeExplosionVfxPoolMaxSize: 200
 --- !u!114 &777467232540049004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2829,6 +2839,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 894b348a7e01d364e9c593c2a69222fb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InDungeonObjectManager
+  lostAndFoundBoxDropChance: 0.1
+  lostAndFoundBoxDropChanceIncreasePerKill: 0.005
+  lostAndFoundBoxPityMinKills: 4
+  lostAndFoundBoxPityMaxKills: 5
+  sporePotionDropChance: 0.05
+  sporePotionDropChanceIncreasePerKill: 0.005
+  sporePotionPityMinKills: 4
+  sporePotionPityMaxKills: 5
+  sporePotionMaxCharge: 30
+  sporePotionRefillMin: 3
+  sporePotionRefillMax: 5
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
   enableCulling: 0
   cullingDistance: 25

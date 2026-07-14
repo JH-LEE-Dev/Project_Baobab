@@ -20,6 +20,7 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
         _ShinyAngle("Shiny Angle", Range(0, 360)) = 45.0
         _ShinyDuration("Shiny Duration", Float) = 1.0
         _ShinyDelay("Shiny Delay", Float) = 0.5
+        [MaterialToggle] _ShinyEnabled("Shiny Enabled", Float) = 1
     }
 
     SubShader
@@ -80,6 +81,7 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShinyAngle)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDuration)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDelay)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyEnabled)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings LitVertex(Attributes input)
@@ -146,7 +148,8 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
                 float shinySoftness = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinySoftness);
                 float glow = smoothstep(shinyWidth, shinyWidth - shinySoftness, dist);
                 half4 shinyColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyColor);
-                color.rgb += shinyColor.rgb * glow * shinyColor.a * color.a;
+                float shinyEnabled = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyEnabled);
+                color.rgb += shinyColor.rgb * glow * shinyColor.a * color.a * shinyEnabled;
 
                 return color;
             }
@@ -280,6 +283,7 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShinyAngle)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDuration)
                 UNITY_DEFINE_INSTANCED_PROP(float, _ShinyDelay)
+                UNITY_DEFINE_INSTANCED_PROP(float, _ShinyEnabled)
             UNITY_INSTANCING_BUFFER_END(UnityPerMaterial)
 
             Varyings UnlitVertex(Attributes input)
@@ -344,7 +348,8 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
                 float shinySoftness = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinySoftness);
                 float glow = smoothstep(shinyWidth, shinyWidth - shinySoftness, dist);
                 half4 shinyColor = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyColor);
-                color.rgb += shinyColor.rgb * glow * shinyColor.a * color.a;
+                float shinyEnabled = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShinyEnabled);
+                color.rgb += shinyColor.rgb * glow * shinyColor.a * color.a * shinyEnabled;
 
                 return color;
             }

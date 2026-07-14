@@ -26,6 +26,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private ItemDataPool itemDataPool;
 
+    // "분실물 보관함" 루트 아이템 효과 보유 상태 (세션 한정, 리타이어 1회 소모)
+    private bool hasLostAndFoundBoxEffect;
+
     public bool bInventoryIsEmpty { get; private set; }
 
     IReadOnlyList<IInventorySlot> IInventory.inventorySlots => inventorySlots;
@@ -512,6 +515,73 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         InventorySpecChangedEvent?.Invoke();
         UpdateInventoryEmptyState();
         Debug.Log("[InventoryManager] Inventory Save Data Loaded.");
+    }
+
+    public void SetLostAndFoundBoxEffect(bool _value)
+    {
+        hasLostAndFoundBoxEffect = _value;
+    }
+
+    /// <summary>
+    /// "분실물 보관함" 효과: 리타이어로 유실되기 직전, 유실 예정 원목의 20~30%를 오프로드 컨테이너로
+    /// 미리 빼낸다(연출 없이 즉시 커밋). 반드시 DropAllItem보다 먼저 호출해야 한다 - 여기서 미리 빼낸
+    /// 만큼 슬롯 수량이 줄어든 상태로 DropAllItem이 나머지만 정상 유실 처리하게 된다. 1회성 효과이므로
+    /// 호출 시점에 성공 여부와 무관하게 플래그를 소모한다.
+    /// </summary>
+    public int RescueItemsToOffroadContainer(OffroadContainer _container)
+    {
+        if (!hasLostAndFoundBoxEffect)
+        {
+            return 0;
+        }
+
+        hasLostAndFoundBoxEffect = false;
+
+        if (_container == null) return 0;
+
+        int totalLogsAtRisk = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (slot.itemData is LogItemData && slot.totalCount > 0)
+            {
+                totalLogsAtRisk += slot.totalCount;
+            }
+        }
+
+        if (totalLogsAtRisk <= 0) return 0;
+
+        int rescueTarget = Mathf.RoundToInt(totalLogsAtRisk * UnityEngine.Random.Range(0.2f, 0.3f));
+        int rescuedCount = 0;
+        bool containerFull = false;
+
+        for (int i = 0; i < currentSlotCount && rescuedCount < rescueTarget && !containerFull; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+
+            while (rescuedCount < rescueTarget && slot.totalCount > 0)
+            {
+                // 컨테이너 쪽에 자리가 있는지 먼저 확인 후 성공했을 때만 캐릭터 슬롯에서 차감한다.
+                // 순서를 반대로 하면(먼저 차감 후 실패 시 롤백) 데이터가 증발할 위험이 있다.
+                if (!_container.TryAddLogItemDataDirect(logData, logData.logState))
+                {
+                    containerFull = true;
+                    break;
+                }
+
+                slot.TakeOneItem();
+                rescuedCount++;
+                ItemRemoved();
+            }
+
+            if (slot.totalCount <= 0)
+            {
+                ItemDeleted(slot);
+            }
+        }
+
+        return rescuedCount;
     }
 
     public int DropAllItem(Transform _charTransform)

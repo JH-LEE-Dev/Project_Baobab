@@ -60,6 +60,9 @@ public class AttackComponent : PComponent
     private static readonly int EllipseRadiusID = Shader.PropertyToID("_EllipseRadius");
     private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
 
+    [Header("Whirlwind VFX")]
+    [SerializeField] private Sprite[] whirlwindFrames; // Whirlwind 스프라이트 시트의 프레임들 (인스펙터에서 직접 연결)
+
     private bool bCursorEnable = false;
     private bool bCanAttack = false;
     private int successfulAttackCount = 0;
@@ -242,7 +245,7 @@ public class AttackComponent : PComponent
 
         if (bIsWhirlwindStrike)
         {
-            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius);
+            WhirlwindVFX.Spawn(centerPos, effectiveEllipseRadius, whirlwindFrames);
         }
 
         IStaticCollidable nearestDamageable = null;

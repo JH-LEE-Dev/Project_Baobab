@@ -17,6 +17,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action PortalActivatedEvent;
     public event Action<Item> ItemAcquiredEvent;
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
+    public event Action LostAndFoundBoxAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
     public event Action<bool> NPCPauseRequestedEvent;
     public event Action FlyingItemPauseRequestedEvent;
@@ -30,6 +31,47 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private LootManager lootManager;
     private InputManager inputManager;
     private IInventory characterInventory;
+
+    // "1-3"(WideGreenForest_3) 보장 드랍용 - 세이브 데이터와 연동되는 영구 획득 플래그.
+    // 실제로 습득(OnLootItemAcquired)했을 때만 true로 세팅한다 - 스폰 시점에 세팅하면, 스폰 후
+    // 습득이 끝나기 전(포물선 낙하 + 흡입 이동 중) 캐릭터가 죽는 경우 실제로는 효과를 못 받았는데도
+    // 영구히 재도전 기회를 잃게 된다.
+    public bool bHasAcquiredLostAndFoundBox { get; set; }
+    // 같은 던전 진행(run) 동안 이미 스폰을 시도했는지 - 습득 완료 전까지 중복 스폰을 막는 런타임 전용
+    // 플래그. 매 던전 진입마다(SetupForForestType) 리셋된다.
+    private bool bLostAndFoundBoxSpawnedThisRun;
+    private ForestType currentForestType;
+    // "1-3" 드랍 확률 - 기본값에서 시작해, 이 스테이지에서 나무를 벨 때마다(못 얻은 채로) 한 그루당
+    // lostAndFoundBoxDropChanceIncreasePerKill만큼 계속 올라간다. 스테이지 진입마다 리셋된다.
+    [SerializeField] private float lostAndFoundBoxDropChance = 0.1f;
+    [SerializeField] private float lostAndFoundBoxDropChanceIncreasePerKill = 0.005f;
+    private int lostAndFoundBoxWideGreenTreeKillCount;
+
+    // "2-1"(FluffySporeForest_1) 구제(pity) 드랍 - "1-3"에서 못 얻었을 경우를 대비해, 이 스테이지에서
+    // 나무를 min~max그루 베면 확률과 무관하게 무조건 드랍시킨다. 임계값은 스테이지 진입마다 다시 뽑는다.
+    [SerializeField] private int lostAndFoundBoxPityMinKills = 4;
+    [SerializeField] private int lostAndFoundBoxPityMaxKills = 5;
+    private int lostAndFoundBoxPityThreshold;
+    private int lostAndFoundBoxPityTreeKillCount;
+
+    // "포자 포션" - "2-1,2-2,2-3"(FluffySporeForest_1/2/3)에서 확률 드랍, "3-1"(StarrootForest_1)에서
+    // 구제 보장. 한 번 획득하면 영구 소지하는 충전식 소비 아이템(세이브 데이터와 연동).
+    public bool bHasAcquiredSporePotion { get; set; }
+    public float sporePotionCharge { get; set; }
+    private bool bSporePotionSpawnedThisRun;
+    // 이번 던전 진행(run) 동안 마셨는지 - RefillSporePotionCharge(TownStartedSignal 시점)에서
+    // 원정 종료 충전 여부를 결정한다. 매 던전 진입마다(SetupForForestType) 리셋된다.
+    private bool bDrankSporePotionThisRun;
+    [SerializeField] private float sporePotionDropChance = 0.05f;
+    [SerializeField] private float sporePotionDropChanceIncreasePerKill = 0.005f;
+    private int sporePotionFluffyTreeKillCount;
+    [SerializeField] private int sporePotionPityMinKills = 4;
+    [SerializeField] private int sporePotionPityMaxKills = 5;
+    private int sporePotionPityThreshold;
+    private int sporePotionPityTreeKillCount;
+    [SerializeField] private float sporePotionMaxCharge = 30f;
+    [SerializeField] private float sporePotionRefillMin = 3f;
+    [SerializeField] private float sporePotionRefillMax = 5f;
 
     // // 내부 의존성
     [Header("Tree Settings")]
@@ -195,6 +237,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         lootManager = GetComponentInChildren<LootManager>();
         lootManager.Initialize();
+        lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
+        lootManager.LootItemAcquiredEvent += OnLootItemAcquired;
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
@@ -249,6 +293,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         itemManager.LogItemAcquiredEvent -= OnItemAcquired;
 
         itemManager.CarrotItemAcquiredEvent -= CarrotItemAcquired;
+
+        if (lootManager != null)
+        {
+            lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
+        }
     }
 
     public void SetupItemManagerCulling()
@@ -274,6 +323,76 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// 현재 던전의 ForestType을 기록한다. "분실물 보관함"이 "1-3"(WideGreenForest_3, 확률)과
+    /// "2-1"(FluffySporeForest_1, 구제 보장)에서, "포자 포션"이 "2-1,2-2,2-3"(확률)과 "3-1"(구제 보장)에서
+    /// 드랍되도록 OnTreeDead에서 이 값을 참조한다. 또한 매 던전 진입마다 런 단위 상태를 리셋한다.
+    /// </summary>
+    public void SetupForForestType(ForestType _forestType)
+    {
+        currentForestType = _forestType;
+        bLostAndFoundBoxSpawnedThisRun = false;
+        lostAndFoundBoxPityTreeKillCount = 0;
+        lostAndFoundBoxWideGreenTreeKillCount = 0;
+
+        if (_forestType == ForestType.FluffySporeForest_1)
+        {
+            lostAndFoundBoxPityThreshold = UnityEngine.Random.Range(lostAndFoundBoxPityMinKills, lostAndFoundBoxPityMaxKills + 1);
+        }
+
+        bSporePotionSpawnedThisRun = false;
+        bDrankSporePotionThisRun = false;
+        sporePotionFluffyTreeKillCount = 0;
+        sporePotionPityTreeKillCount = 0;
+
+        if (_forestType == ForestType.StarrootForest_1)
+        {
+            sporePotionPityThreshold = UnityEngine.Random.Range(sporePotionPityMinKills, sporePotionPityMaxKills + 1);
+        }
+    }
+
+    private void OnLootItemAcquired(LootItem _item)
+    {
+        if (_item.LootType == LootType.LostAndFoundBox)
+        {
+            bHasAcquiredLostAndFoundBox = true;
+            LostAndFoundBoxAcquiredEvent?.Invoke();
+        }
+        else if (_item.LootType == LootType.SporePotion)
+        {
+            bHasAcquiredSporePotion = true;
+        }
+    }
+
+    /// <summary>
+    /// "포자 포션"을 사용해 충전된 %만큼 스태미나를 즉시 회복한다. 성공 시 충전량은 0으로 소진되고,
+    /// 이번 던전 진행에서 마셨다는 표시(bDrankSporePotionThisRun)를 남겨 RefillSporePotionCharge의
+    /// 원정 종료 충전을 막는다.
+    /// </summary>
+    public bool TryDrinkSporePotion()
+    {
+        if (!bHasAcquiredSporePotion || sporePotionCharge <= 0f) return false;
+        if (character == null) return false;
+
+        character.pHealthComponent.RestoreStaminaByPercent(sporePotionCharge);
+        sporePotionCharge = 0f;
+        bDrankSporePotionThisRun = true;
+        return true;
+    }
+
+    /// <summary>
+    /// "포자 포션" - 실제 Town 씬이 로드된 시점(TownStartedSignal)에 호출된다. 이번 원정에서 마시지
+    /// 않았다면 3~5% 랜덤 충전(최대치까지). TownStartedSignal은 정상 귀환/리타이어 귀환 모두에서 발생하므로,
+    /// "마셨는지" 여부만으로 충전 여부를 가르는 이 로직은 두 경로 모두에 동일하게 적용된다.
+    /// </summary>
+    public void RefillSporePotionCharge()
+    {
+        if (!bHasAcquiredSporePotion || bDrankSporePotionThisRun) return;
+
+        sporePotionCharge = Mathf.Min(sporePotionMaxCharge,
+            sporePotionCharge + UnityEngine.Random.Range(sporePotionRefillMin, sporePotionRefillMax));
     }
 
     public void SetDungeonData(DungeonData _dungeonData)
@@ -334,6 +453,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (itemManager != null)
             itemManager.ReleaseAllItems();
+
+        // LogItem/CarrotItem과 달리 이 호출이 빠져 있으면, 흡입 중이던 LootItem(예: 분실물 보관함)이
+        // 씬 전환 후에도 영속 오브젝트 하위에 그대로 남아 계속 움직이는 버그가 생긴다.
+        if (lootManager != null)
+            lootManager.ClearAll();
 
         StopGrowth();
         ClearTrees();
@@ -684,6 +808,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
 
+        if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null)
+        {
+            inDungeonVFXManager.PlayConstellationGroundMarkVFX(
+                _treeObj.transform.position,
+                _treeObj.treeVisualComponent.GetTopSortingOrder(),
+                _treeObj.StarGroupId,
+                _treeObj.treeVisualComponent.GetConstellationHDRIntensity());
+        }
+
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
         environmentProvider.densityProvider.UpdateTreeCnt(false);
 
@@ -704,6 +837,63 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 죽은 위치 재사용 준비
         Vector3 deadPos = _treeObj.transform.position;
+
+        // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
+        // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)
+        // 더 이상 시도하지 않는다. 영구 플래그는 실제 습득 시점(OnLootItemAcquired)에만 세팅된다.
+        if (!bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
+        {
+            bool bShouldSpawnLostAndFoundBox = false;
+
+            if (currentForestType == ForestType.WideGreenForest_3)
+            {
+                // "1-3" - 확률적으로 드랍. 못 얻은 채로 나무를 벨 때마다 확률이 계속 누적 상승한다.
+                float effectiveChance = lostAndFoundBoxDropChance
+                    + lostAndFoundBoxWideGreenTreeKillCount * lostAndFoundBoxDropChanceIncreasePerKill;
+                bShouldSpawnLostAndFoundBox = UnityEngine.Random.value < effectiveChance;
+                lostAndFoundBoxWideGreenTreeKillCount++;
+            }
+            else if (currentForestType == ForestType.FluffySporeForest_1)
+            {
+                // "2-1" - "1-3"에서 못 얻었을 경우의 구제책. 나무 min~max그루째에 확률과 무관하게 보장 드랍.
+                lostAndFoundBoxPityTreeKillCount++;
+                bShouldSpawnLostAndFoundBox = lostAndFoundBoxPityTreeKillCount >= lostAndFoundBoxPityThreshold;
+            }
+
+            if (bShouldSpawnLostAndFoundBox)
+            {
+                lootManager.SpawnLootItem(deadPos, LootType.LostAndFoundBox, character.centerTransform);
+                bLostAndFoundBoxSpawnedThisRun = true;
+            }
+        }
+
+        // "포자 포션" - "2-1,2-2,2-3"에서 확률적으로 드랍(못 얻은 채로 벨 때마다 누적 상승), "3-1"에서 구제 보장.
+        if (!bHasAcquiredSporePotion && !bSporePotionSpawnedThisRun && lootManager != null && character != null)
+        {
+            bool bShouldSpawnSporePotion = false;
+
+            if (currentForestType == ForestType.FluffySporeForest_1 || currentForestType == ForestType.FluffySporeForest_2
+                || currentForestType == ForestType.FluffySporeForest_3)
+            {
+                float effectiveChance = sporePotionDropChance
+                    + sporePotionFluffyTreeKillCount * sporePotionDropChanceIncreasePerKill;
+                bShouldSpawnSporePotion = UnityEngine.Random.value < effectiveChance;
+                sporePotionFluffyTreeKillCount++;
+            }
+            else if (currentForestType == ForestType.StarrootForest_1)
+            {
+                // "3-1" - "2-1,2-2,2-3"에서 못 얻었을 경우의 구제책. 나무 min~max그루째에 확률과 무관하게 보장 드랍.
+                sporePotionPityTreeKillCount++;
+                bShouldSpawnSporePotion = sporePotionPityTreeKillCount >= sporePotionPityThreshold;
+            }
+
+            if (bShouldSpawnSporePotion)
+            {
+                lootManager.SpawnLootItem(deadPos, LootType.SporePotion, character.centerTransform);
+                bSporePotionSpawnedThisRun = true;
+            }
+        }
+
         if (currentTreeGenerationStrategy != null)
         {
             currentTreeGenerationStrategy.OnTreeDead(this, _treeObj, deadPos);
@@ -1129,7 +1319,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 UnityEngine.Random.Range(-SporeExplosionVfxSpread, SporeExplosionVfxSpread),
                 0f);
 
-            SporeExplosionVFX.Spawn(basePos + randomOffset);
+            inDungeonVFXManager.PlaySporeExplosionVFX(basePos + randomOffset);
 
             yield return sporeExplosionVfxWait;
         }
@@ -1167,7 +1357,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     // 별자리 발현 - 그룹의 모든 별 표식 나무가 벌목되면 Stage3TreeGenerationStrategySO가 호출
-    public void TriggerConstellationManifestation(List<Vector3> _starPositions)
+    public void TriggerConstellationManifestation(int _groupId, List<Vector3> _starPositions)
     {
         if (!bConstellationManifestUnlocked) return;
         if (_starPositions == null || _starPositions.Count < 2) return;
@@ -1178,6 +1368,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 동기 실행되므로 재귀가 그대로 쌓임). _starPositions(그룹별로 항상 같은 List 인스턴스)를 키로
         // 재진입만 막아서, 같은 그룹의 자기 재트리거는 막되 서로 다른 그룹은 동시에 진행되게 둔다.
         if (activeConstellationGroups.Contains(_starPositions)) return;
+
+        // 발현이 실제로 확정된 시점이므로, 이 그룹에서 아직 살아있던 그라운드 마크를 전부 회수한다.
+        inDungeonVFXManager.ClearConstellationGroundMarks(_groupId);
 
         List<Vector3> path = BuildSimplePolygonPath(_starPositions);
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
@@ -1373,7 +1566,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 ? nearest.treeVisualComponent.GetTopHighlightSortingOrder() + 1
                 : 0;
 
-            ShootingStarVFX.Spawn(landingPos, explosionSortingOrder, () =>
+            inDungeonVFXManager.PlayShootingStarVFX(landingPos, explosionSortingOrder, () =>
             {
                 inDungeonVFXManager.PlayStarImpactExplosionVFX(landingPos, explosionSortingOrder);
                 ApplyStarImpactDamage(landingPos);

@@ -1,63 +1,50 @@
 using System;
 using UnityEngine;
+using UnityEngine.Pool;
 
 /// <summary>
-/// Resources/ShootingStar/ShootingStar 스프라이트 시트를 재생하며, 하늘 높은 곳에서
-/// 22.5도 경사(좌우 랜덤)로 목표 지점까지 낙하하는 1회성 VFX. 착지 시 콜백을 호출한다.
+/// ShootingStar 스프라이트 시트를 재생하며, 하늘 높은 곳에서 22.5도 경사(좌우 랜덤)로
+/// 목표 지점까지 낙하하는 1회성 VFX. 착지 시 콜백을 호출한다.
+/// 프리팹(TreeStarMarkGroundAnimator와 동일한 패턴)으로 존재하며, InDungeonVFXManager가
+/// ObjectPool로 관리한다. 프레임은 인스펙터에서 직접 연결한다 (Resources.LoadAll 사용 안 함).
 /// </summary>
+[RequireComponent(typeof(SpriteRenderer))]
 public class ShootingStarVFX : MonoBehaviour
 {
-    private const string ResourcePath = "ShootingStar/ShootingStar";
+    [SerializeField] private Sprite[] frames;
+
     private const float FallDuration = 0.6f;
     private const float FallAngleDegrees = 22.5f;
     private const float FallHeight = 6f;
     private const float FrameRate = 24f; // 프레임 전환(애니메이션) 속도 - 낙하 시간과 별개로 계속 순환한다
     private const string SortingLayerName = "Objects";
 
-    private static Sprite[] cachedFrames;
-
     private SpriteRenderer spriteRenderer;
+    private IObjectPool<ShootingStarVFX> pool;
     private Vector3 startPos;
     private Vector3 endPos;
     private float elapsed;
     private Action onLanded;
 
-    public static void Spawn(Vector3 _landingPos, int _sortingOrder, Action _onLanded)
+    private void Awake()
     {
-        EnsureFramesLoaded();
-        if (cachedFrames == null || cachedFrames.Length == 0)
+        spriteRenderer = GetComponent<SpriteRenderer>();
+    }
+
+    public void SetPool(IObjectPool<ShootingStarVFX> _pool)
+    {
+        pool = _pool;
+    }
+
+    public void Begin(Vector3 _landingPos, int _sortingOrder, Action _onLanded)
+    {
+        if (frames == null || frames.Length == 0)
         {
             _onLanded?.Invoke();
+            ReturnToPool();
             return;
         }
 
-        GameObject go = new GameObject("ShootingStarVFX");
-        ShootingStarVFX instance = go.AddComponent<ShootingStarVFX>();
-        instance.spriteRenderer = go.AddComponent<SpriteRenderer>();
-        instance.Begin(_landingPos, _sortingOrder, _onLanded);
-    }
-
-    private static void EnsureFramesLoaded()
-    {
-        if (cachedFrames != null) return;
-
-        Sprite[] loaded = Resources.LoadAll<Sprite>(ResourcePath);
-        Array.Sort(loaded, (a, b) => ExtractFrameIndex(a.name).CompareTo(ExtractFrameIndex(b.name)));
-        cachedFrames = loaded;
-    }
-
-    private static int ExtractFrameIndex(string _spriteName)
-    {
-        int underscoreIdx = _spriteName.LastIndexOf('_');
-        if (underscoreIdx >= 0 && int.TryParse(_spriteName.Substring(underscoreIdx + 1), out int idx))
-        {
-            return idx;
-        }
-        return 0;
-    }
-
-    private void Begin(Vector3 _landingPos, int _sortingOrder, Action _onLanded)
-    {
         onLanded = _onLanded;
         elapsed = 0f;
 
@@ -75,7 +62,7 @@ public class ShootingStarVFX : MonoBehaviour
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle + 90f);
 
-        spriteRenderer.sprite = cachedFrames[0];
+        spriteRenderer.sprite = frames[0];
         spriteRenderer.sortingLayerName = SortingLayerName;
 
         // 낙하 중 시각적 높이(하늘 위)는 연출일 뿐이므로 정렬 기준으로 쓰지 않는다.
@@ -86,18 +73,27 @@ public class ShootingStarVFX : MonoBehaviour
 
     private void Update()
     {
+        if (frames == null || frames.Length == 0) return;
+
         elapsed += Time.deltaTime;
         float t = Mathf.Clamp01(elapsed / FallDuration);
 
         transform.position = Vector3.Lerp(startPos, endPos, t);
 
-        int frameIdx = Mathf.FloorToInt(elapsed * FrameRate) % cachedFrames.Length;
-        spriteRenderer.sprite = cachedFrames[frameIdx];
+        int frameIdx = Mathf.FloorToInt(elapsed * FrameRate) % frames.Length;
+        spriteRenderer.sprite = frames[frameIdx];
 
         if (t >= 1f)
         {
-            onLanded?.Invoke();
-            Destroy(gameObject);
+            Action callback = onLanded;
+            onLanded = null;
+            ReturnToPool();
+            callback?.Invoke();
         }
+    }
+
+    private void ReturnToPool()
+    {
+        pool?.Release(this);
     }
 }

@@ -196,6 +196,9 @@ public class GameSaveData
     public LogProcessingSaveData logProcessingSaveData;
     public EnvironmentSaveData environmentSaveData;
     public InventorySaveData offroadContainerSaveData;
+    public bool bHasAcquiredLostAndFoundBox;
+    public bool bHasAcquiredSporePotion;
+    public float sporePotionCharge;
 
     public void Clear()
     {

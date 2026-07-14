@@ -52,6 +52,14 @@ public class LootItem : Item
         bDrop = _boolean;
     }
 
+    /// <summary>
+    /// 범위 판정(OnTriggerEnter2D) 없이, Dropped 상태가 되는 즉시 이 타겟으로 흡입되도록 미리 지정한다.
+    /// </summary>
+    public override void SetSuckTarget(Transform _target)
+    {
+        suckTarget = _target;
+    }
+
     public void Launch(Vector3 _start, Vector3 _end, float _height, float _duration)
     {
         startPos = _start;

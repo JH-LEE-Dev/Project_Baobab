@@ -190,6 +190,15 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PotionKey"",
+                    ""type"": ""Button"",
+                    ""id"": ""ebe98831-37f9-41e8-83b4-1007f5eeb116"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -357,6 +366,17 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
                     ""action"": ""AimCorrection"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""5b64aba9-6d27-48d8-a40f-7a0a3119d743"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PotionKey"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -376,6 +396,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         m_Normal_RifleMode = m_Normal.FindAction("RifleMode", throwIfNotFound: true);
         m_Normal_Reload = m_Normal.FindAction("Reload", throwIfNotFound: true);
         m_Normal_AimCorrection = m_Normal.FindAction("AimCorrection", throwIfNotFound: true);
+        m_Normal_PotionKey = m_Normal.FindAction("PotionKey", throwIfNotFound: true);
     }
 
     ~@InputActionSystem()
@@ -467,6 +488,7 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_Normal_RifleMode;
     private readonly InputAction m_Normal_Reload;
     private readonly InputAction m_Normal_AimCorrection;
+    private readonly InputAction m_Normal_PotionKey;
     /// <summary>
     /// Provides access to input actions defined in input action map "Normal".
     /// </summary>
@@ -522,6 +544,10 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Normal/AimCorrection".
         /// </summary>
         public InputAction @AimCorrection => m_Wrapper.m_Normal_AimCorrection;
+        /// <summary>
+        /// Provides access to the underlying input action "Normal/PotionKey".
+        /// </summary>
+        public InputAction @PotionKey => m_Wrapper.m_Normal_PotionKey;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -581,6 +607,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @AimCorrection.started += instance.OnAimCorrection;
             @AimCorrection.performed += instance.OnAimCorrection;
             @AimCorrection.canceled += instance.OnAimCorrection;
+            @PotionKey.started += instance.OnPotionKey;
+            @PotionKey.performed += instance.OnPotionKey;
+            @PotionKey.canceled += instance.OnPotionKey;
         }
 
         /// <summary>
@@ -625,6 +654,9 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
             @AimCorrection.started -= instance.OnAimCorrection;
             @AimCorrection.performed -= instance.OnAimCorrection;
             @AimCorrection.canceled -= instance.OnAimCorrection;
+            @PotionKey.started -= instance.OnPotionKey;
+            @PotionKey.performed -= instance.OnPotionKey;
+            @PotionKey.canceled -= instance.OnPotionKey;
         }
 
         /// <summary>
@@ -742,5 +774,12 @@ public partial class @InputActionSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnAimCorrection(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "PotionKey" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPotionKey(InputAction.CallbackContext context);
     }
 }

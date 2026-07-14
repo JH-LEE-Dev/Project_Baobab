@@ -18,6 +18,8 @@ public class InputReader
     public event Action ReloadButtonPressedEvent;
     public event Action AimCorrectionKeyPressedEvent;
     public event Action AimCorrectionKeyCanceledEvent;
+    public event Action PotionKeyPressedEvent;
+
     //내부 의존성
     private InputActionSystem actions;
 
@@ -44,6 +46,7 @@ public class InputReader
             actions.Normal.Inventory.performed += OnInventoryKeyPressed;
             actions.Normal.Interaction.performed += InteractionKeyPressed;
             actions.Normal.Interaction.canceled += InteractionKeyCanceled;
+            actions.Normal.PotionKey.performed += PotionKeyPressed;
         }
 
         actions.Normal.Enable();
@@ -64,6 +67,7 @@ public class InputReader
         actions.Normal.Inventory.performed -= OnInventoryKeyPressed;
         actions.Normal.Interaction.performed -= InteractionKeyPressed;
         actions.Normal.Interaction.canceled -= InteractionKeyCanceled;
+        actions.Normal.PotionKey.performed -= PotionKeyPressed;
     }
 
     public void PauseMove(bool _bPause)
@@ -183,5 +187,10 @@ public class InputReader
     public void PauseInteractKey(bool _boolean)
     {
         bPauseInteract = _boolean;
+    }
+
+    public void PotionKeyPressed(InputAction.CallbackContext context)
+    {
+        PotionKeyPressedEvent?.Invoke();
     }
 }

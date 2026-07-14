@@ -76,6 +76,14 @@ public class PHealthComponent : PComponent, IPHealthComponent
         currentStamina = Mathf.Min(maxStamina, currentStamina + amount);
     }
 
+    /// <summary>
+    /// 초당 변화량과 무관하게 최대 스태미나의 _percent(%)만큼 즉시 회복시킨다("포자 포션" 등 소비 아이템용).
+    /// </summary>
+    public void RestoreStaminaByPercent(float _percent)
+    {
+        currentStamina = Mathf.Min(maxStamina, currentStamina + maxStamina * (_percent / 100f));
+    }
+
     public void SetStaminaIncreaseAmount(float _staminaIncAmount)
     {
         staminaIncAmount = _staminaIncAmount;

@@ -150,6 +150,8 @@ public struct GameEndSignal { }
 
 public struct DropAllItemSignal { }
 
+public struct LostAndFoundBoxAcquiredSignal { }
+
 public struct InventoryItemTransferToOffroadContainerSignal { }
 
 public struct DeclareDungeonStateSignal
