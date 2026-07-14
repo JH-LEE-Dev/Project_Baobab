@@ -264,8 +264,8 @@ public class UIView_MainMenu : UIView
         gameObject.SetActive(false);
     }
 
-    private Action invokeNewGameEventCallback;
-    private Action invokeLoadGameEventCallback;
+    private TweenCallback invokeNewGameEventCallback;
+    private TweenCallback invokeLoadGameEventCallback;
 
     public void OnNewGameStartButton()
     {
@@ -279,7 +279,7 @@ public class UIView_MainMenu : UIView
         PlayGameStartSequence(invokeLoadGameEventCallback);
     }
 
-    private void PlayGameStartSequence(Action _onSequenceCompleted)
+    private void PlayGameStartSequence(TweenCallback _onSequenceCompleted)
     {
         if (null != mainMenuUI)
         {
@@ -304,7 +304,7 @@ public class UIView_MainMenu : UIView
 
         if (null != _onSequenceCompleted)
         {
-            _seq.OnComplete(new TweenCallback(_onSequenceCompleted));
+            _seq.OnComplete(_onSequenceCompleted);
         }
     }
 

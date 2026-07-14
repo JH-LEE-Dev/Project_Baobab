@@ -64,8 +64,22 @@ public class UI_MainMenu : MonoBehaviour
         SetLocalization();
     }
 
+    private UI_MainMenuButton[] buttonsInOrder;
+
     public void UpdateLoadGameButtonState()
     {
+        if (null == buttonsInOrder)
+        {
+            buttonsInOrder = new UI_MainMenuButton[]
+            {
+                loadGameButton,
+                newGameButton,
+                optionButton,
+                creditButton,
+                exitButton
+            };
+        }
+
         if (null != parentView)
         {
             bool _hasSaveData = parentView.HasSaveData();
@@ -84,34 +98,25 @@ public class UI_MainMenu : MonoBehaviour
     private void UpdateButtonLayout()
     {
         if (null == startPoint) return;
+        if (null == buttonsInOrder) return;
 
         float _startY = startPoint.anchoredPosition.y;
         int _activeIndex = 0;
 
-        // 사용자가 요청한 배치 순서
-        UI_MainMenuButton[] _buttonsInOrder = new UI_MainMenuButton[]
-        {
-            loadGameButton,
-            newGameButton,
-            optionButton,
-            creditButton,
-            exitButton
-        };
-
         // 버튼들이 기존에 하이어라키에서 가지고 있던 최소 Sibling Index를 찾습니다 (다른 배경 이미지 뒤로 숨지 않도록 방지)
         int _minSiblingIndex = int.MaxValue;
-        for (int i = 0; i < _buttonsInOrder.Length; i++)
+        for (int i = 0; i < buttonsInOrder.Length; i++)
         {
-            if (null != _buttonsInOrder[i])
+            if (null != buttonsInOrder[i])
             {
-                int _idx = _buttonsInOrder[i].transform.GetSiblingIndex();
+                int _idx = buttonsInOrder[i].transform.GetSiblingIndex();
                 if (_idx < _minSiblingIndex) _minSiblingIndex = _idx;
             }
         }
 
-        for (int i = 0; i < _buttonsInOrder.Length; i++)
+        for (int i = 0; i < buttonsInOrder.Length; i++)
         {
-            UI_MainMenuButton _btn = _buttonsInOrder[i];
+            UI_MainMenuButton _btn = buttonsInOrder[i];
             
             if (null != _btn && _btn.gameObject.activeSelf)
             {
