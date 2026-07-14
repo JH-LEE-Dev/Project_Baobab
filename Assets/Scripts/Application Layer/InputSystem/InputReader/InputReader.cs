@@ -29,6 +29,8 @@ public class InputReader
 
     private bool bPauseInteract = false;
 
+    private bool bPauseESC = false;
+
     public void Initialize()
     {
         if (actions == null)
@@ -106,6 +108,9 @@ public class InputReader
     private void OnESCButtonPressed(InputAction.CallbackContext context)
     {
         if (LoadingManager.Instance != null && LoadingManager.Instance.IsLoading)
+            return;
+
+        if (bPauseESC)
             return;
 
         ESCButtonPressedEvent?.Invoke();
@@ -187,6 +192,11 @@ public class InputReader
     public void PauseInteractKey(bool _boolean)
     {
         bPauseInteract = _boolean;
+    }
+
+    public void PauseESCKey(bool _boolean)
+    {
+        bPauseESC = _boolean;
     }
 
     public void PotionKeyPressed(InputAction.CallbackContext context)

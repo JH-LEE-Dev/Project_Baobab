@@ -354,6 +354,8 @@ MonoBehaviour:
   moveEase: 10
   floatingAmplitude: 8
   floatingDuration: 4
+  loadingCloudSprite_MainMenu: {fileID: 21300000, guid: 8a6675ffa3d61074a98160c44c6f445f, type: 3}
+  loadingCloudSprite: {fileID: 21300000, guid: 0478b4b4a6a44e249a33bfe7710bf07d, type: 3}
 --- !u!223 &8034429127669148663
 Canvas:
   m_ObjectHideFlags: 0
