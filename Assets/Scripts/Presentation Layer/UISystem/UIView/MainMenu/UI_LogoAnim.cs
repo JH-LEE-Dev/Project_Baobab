@@ -11,6 +11,10 @@ public class UI_LogoAnim : MonoBehaviour
     [SerializeField, Tooltip("애니메이션을 적용할 로고의 RectTransform")] 
     private RectTransform logoTransform;
 
+    [Header("Fade Settings")]
+    [SerializeField, Tooltip("로고 페이드아웃을 위한 CanvasGroup (없으면 자동 추가됨)")]
+    private CanvasGroup canvasGroup;
+
     [Header("Animation Settings")]
     [SerializeField] private float moveDistanceY = 200f; // 위로 이동할 거리
     [SerializeField] private float moveDuration = 1f;
@@ -23,6 +27,15 @@ public class UI_LogoAnim : MonoBehaviour
         if (logoTransform != null)
         {
             initialPosition = logoTransform.anchoredPosition;
+        }
+
+        if (canvasGroup == null)
+        {
+            canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+            {
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            }
         }
     }
 
@@ -57,6 +70,21 @@ public class UI_LogoAnim : MonoBehaviour
         {
             // 로고가 없다면 즉시 콜백 실행
             onComplete?.Invoke();
+        }
+    }
+
+    /// <summary>
+    /// 로고를 서서히 투명하게 만듭니다.
+    /// </summary>
+    public void PlayFadeOut(float _duration, Action _onComplete = null)
+    {
+        if (canvasGroup != null)
+        {
+            canvasGroup.DOFade(0f, _duration).OnComplete(() => _onComplete?.Invoke());
+        }
+        else
+        {
+            _onComplete?.Invoke();
         }
     }
 

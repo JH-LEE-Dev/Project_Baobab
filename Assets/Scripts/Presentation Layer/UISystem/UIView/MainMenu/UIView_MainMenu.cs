@@ -107,10 +107,18 @@ public class UIView_MainMenu : UIView
         {
             if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
             if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
-            if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(false);
             
             this.ShowDimmer();
-            this.ShowMainMenu();
+
+            if (null != this.logoAnimUI)
+            {
+                this.logoAnimUI.gameObject.SetActive(true);
+                this.logoAnimUI.PlayRevealSequence(this.ShowMainMenu);
+            }
+            else
+            {
+                this.ShowMainMenu();
+            }
             return;
         }
 #endif
@@ -235,12 +243,33 @@ public class UIView_MainMenu : UIView
 
     public void OnNewGameStartButton()
     {
-        NewGameButtonClickedEvent?.Invoke();
+        PlayGameStartSequence(() => NewGameButtonClickedEvent?.Invoke());
     }
 
     public void OnLoadGameButtonClicked()
     {
-        LoadGameButtonClickedEvent?.Invoke();
+        PlayGameStartSequence(() => LoadGameButtonClickedEvent?.Invoke());
+    }
+
+    private void PlayGameStartSequence(Action _onComplete)
+    {
+        Sequence _seq = DOTween.Sequence();
+
+        // 1. 딤머를 알파 0으로 서서히 없앰 (속도는 설정된 dimmerFadeDuration 값 활용)
+        if (backgroundDimmer != null)
+        {
+            _seq.Append(backgroundDimmer.DOFade(0f, dimmerFadeDuration));
+        }
+
+        // 2. 딤머 페이드 아웃 완료 후 로고도 0.5초 동안 알파 0으로 페이드 아웃
+        if (logoAnimUI != null)
+        {
+            _seq.AppendCallback(() => logoAnimUI.PlayFadeOut(0.5f));
+            _seq.AppendInterval(0.5f);
+        }
+
+        // 3. 연출이 모두 끝나면 게임 시작(이벤트 발생)
+        _seq.OnComplete(() => _onComplete?.Invoke());
     }
 
     public void OnExitButtonClicked()
