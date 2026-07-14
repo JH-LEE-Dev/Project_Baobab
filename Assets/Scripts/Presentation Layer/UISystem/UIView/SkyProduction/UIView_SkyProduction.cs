@@ -217,4 +217,27 @@ public class UIView_SkyProduction : UIView
     {
         PlayMoveSequence();
     }
+
+    /// <summary>
+    /// 애니메이션 없이 즉시 "구름이 덮인" 상태로 스냅한다. MainMenu → Town 최초 진입 시,
+    /// 화면이 메인 메뉴에 가려져 있는 동안 미리 덮인 상태로 세팅해두고, 이후 StartSkyProduction()
+    /// 한 번으로 카메라 하강과 같은 타이밍에 "걷히는" 연출만 재생하기 위한 용도.
+    /// </summary>
+    public void SnapToCoveredState()
+    {
+        CacheStartPositions();
+        KillMoveSequence();
+        KillFloatingSequence();
+
+        isMoved = true;
+
+        if (cloudImage != null)
+            cloudImage.anchoredPosition = cloudTargetTransform != null ? cloudTargetTransform.anchoredPosition : cloudStartPos;
+
+        if (skyImage != null)
+            skyImage.anchoredPosition = skyTargetTransform != null ? skyTargetTransform.anchoredPosition : skyStartPos;
+
+        if (skyImage2 != null)
+            skyImage2.anchoredPosition = skyTargetTransform != null ? skyTargetTransform.anchoredPosition : skyStartPos2;
+    }
 }

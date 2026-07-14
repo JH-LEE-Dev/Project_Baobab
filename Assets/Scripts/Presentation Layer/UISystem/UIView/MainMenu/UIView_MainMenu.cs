@@ -27,6 +27,15 @@ public class UIView_MainMenu : UIView
     [SerializeField, Tooltip("체크하면 에디터 환경에서 스플래시와 로고 연출을 건너뛰고 바로 메인 메뉴를 출력합니다.")]
     private bool skipIntroInEditor = true;
 
+    [Header("Exit(Curtain Rollback) Animation")]
+    [SerializeField, Tooltip("MainMenu → Town 진입 시, Town 카메라 인트로와 동시에 메인 메뉴 전체가 위로 이동해 화면 밖으로 사라지는 데 걸리는 시간. " +
+        "GameInstaller.prefab의 SkyCameraProductionManager.moveDuration(=1.8)과 동일한 값 — 카메라 하강이 전체 yOffset 거리를 그 시간 동안 내려오므로 여기도 같은 값을 써야 한다. moveDuration이 바뀌면 같이 맞춰야 한다.")]
+    private float exitMoveDuration = 1.8f;
+    [SerializeField, Tooltip("메인 메뉴가 위로 이동해 사라질 거리(px). 화면 높이보다 넉넉하게 잡는다.")]
+    private float exitMoveDistance = 1500f;
+
+    private RectTransform rootRectTransform;
+
     private UIViewContext context;
     private int mainMenuUIJsonId = 8; // MainMenuUI.json의 ID
 
@@ -56,6 +65,9 @@ public class UIView_MainMenu : UIView
         base.Initialize(_ctx);
 
         context = _ctx;
+
+        // 커튼 롤백(위로 슬라이드 아웃) 연출용
+        rootRectTransform = GetComponent<RectTransform>();
 
         // 프리팹을 인스턴스화하지 않고, 이미 바인딩된 컴포넌트를 바로 초기화
         if (null != mainMenuUI)
@@ -89,6 +101,11 @@ public class UIView_MainMenu : UIView
         if (backgroundDimmer != null)
         {
             backgroundDimmer.DOKill();
+        }
+
+        if (rootRectTransform != null)
+        {
+            rootRectTransform.DOKill();
         }
     }
 
@@ -247,33 +264,38 @@ public class UIView_MainMenu : UIView
 
     public void OnNewGameStartButton()
     {
-        PlayGameStartSequence(() => NewGameButtonClickedEvent?.Invoke());
+        // Town 씬이 뒤에서 셋업을 마치고 카메라 인트로를 시작할 때까지 메인 메뉴는 화면에 그대로 떠 있어야 하므로,
+        // 페이드 없이 즉시 이벤트를 발행한다. 실제 퇴장 연출은 PlayExitAnimation()에서 별도로 트리거된다.
+        NewGameButtonClickedEvent?.Invoke();
     }
 
     public void OnLoadGameButtonClicked()
     {
-        PlayGameStartSequence(() => LoadGameButtonClickedEvent?.Invoke());
+        LoadGameButtonClickedEvent?.Invoke();
     }
 
-    private void PlayGameStartSequence(Action _onComplete)
+    /// <summary>
+    /// Town 카메라 인트로 연출이 시작되는 시점에 맞춰, 메인 메뉴 전체가 위로 이동해 화면 밖으로 빠져나가는 연출을 재생한다.
+    /// 페이드가 아니라 카메라가 구름을 뚫고 내려가는 동안 메뉴가 자연스럽게 시야 위쪽으로 벗어나는 느낌을 준다.
+    /// </summary>
+    public void PlayExitAnimation(Action _onComplete)
     {
-        Sequence _seq = DOTween.Sequence();
-
-        // 1. 딤머를 알파 0으로 서서히 없앰 (속도는 설정된 dimmerFadeDuration 값 활용)
-        if (backgroundDimmer != null)
+        if (rootRectTransform == null)
         {
-            _seq.Append(backgroundDimmer.DOFade(0f, dimmerFadeDuration));
+            Hide();
+            _onComplete?.Invoke();
+            return;
         }
 
-        // 2. 딤머 페이드 아웃 완료 후 로고도 0.5초 동안 알파 0으로 페이드 아웃
-        if (logoAnimUI != null)
-        {
-            _seq.AppendCallback(() => logoAnimUI.PlayFadeOut(0.5f));
-            _seq.AppendInterval(0.5f);
-        }
+        rootRectTransform.DOKill();
 
-        // 3. 연출이 모두 끝나면 게임 시작(이벤트 발생)
-        _seq.OnComplete(() => _onComplete?.Invoke());
+        Vector2 targetPos = rootRectTransform.anchoredPosition + Vector2.up * exitMoveDistance;
+
+        rootRectTransform.DOAnchorPos(targetPos, exitMoveDuration).SetEase(Ease.InCubic).OnComplete(() =>
+        {
+            Hide();
+            _onComplete?.Invoke();
+        });
     }
 
     public void OnExitButtonClicked()

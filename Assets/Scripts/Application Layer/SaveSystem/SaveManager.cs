@@ -62,6 +62,16 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         character = _signal.character;
     }
 
+    private string GetSaveFilePath()
+    {
+        string folderPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments), "Project_Baobab");
+        if (!Directory.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
+        return Path.Combine(folderPath, "SaveData.dat");
+    }
+
     public void SaveGameData()
     {
         if (character == null || character.statComponent == null) return;
@@ -133,7 +143,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         string json = JsonUtility.ToJson(cachedSaveData);
         byte[] encryptedData = Encrypt(json);
 
-        string path = Path.Combine(Application.persistentDataPath, "SaveData.dat");
+        string path = GetSaveFilePath();
         File.WriteAllBytes(path, encryptedData);
 
         Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {path} (Alloc-minimized)");
@@ -141,13 +151,13 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
     public bool HasSaveData()
     {
-        string path = Path.Combine(Application.persistentDataPath, "SaveData.dat");
+        string path = GetSaveFilePath();
         return File.Exists(path);
     }
 
     public void LoadGameData()
     {
-        string path = Path.Combine(Application.persistentDataPath, "SaveData.dat");
+        string path = GetSaveFilePath();
         if (!File.Exists(path))
         {
             Debug.LogWarning("[SaveManager] Save file not found.");

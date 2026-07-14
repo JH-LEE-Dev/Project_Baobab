@@ -183,6 +183,10 @@ public class GameplayUIInstaller : MonoBehaviour
         escUI.Hide();
 
         UIView_SkyProduction skyProductionUI = uiManager.Open<UIView_SkyProduction>();
+        // GameplayUIInstaller는 GameInstaller 세션당 한 번만 초기화되므로(Town↔Dungeon 왕복 시 재사용됨),
+        // 이 시점은 항상 MainMenu → Town 최초 진입 직후다. 화면이 아직 메인 메뉴에 가려져 있는 동안
+        // 애니메이션 없이 "구름이 덮인" 상태로 미리 세팅해두고, StartMainMenuIntro()가 걷히는 연출만 재생하게 한다.
+        skyProductionUI.SnapToCoveredState();
 
         UIView_Result resultUI = uiManager.Open<UIView_Result>();
 

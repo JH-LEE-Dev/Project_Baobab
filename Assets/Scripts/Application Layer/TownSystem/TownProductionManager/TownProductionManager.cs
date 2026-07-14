@@ -11,6 +11,8 @@ public class TownProductionManager : MonoBehaviour
     public event Action CameraUpIsEndEvent;
     public event Action CameraUpDownEndEvent;
     public event Action PopupUIDownEvent;
+    public event Action MainMenuCurtainRollbackEvent;
+    public event Action MainMenuIntroEndEvent;
 
     private InputManager inputManager;
 
@@ -43,12 +45,16 @@ public class TownProductionManager : MonoBehaviour
 
         skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
         skyCameraProductionManager.SkyProductionRollbackEndEvent += CameraDownIsEnd;
+
+        skyCameraProductionManager.IntroRevealEndEvent -= MainMenuIntroEnd;
+        skyCameraProductionManager.IntroRevealEndEvent += MainMenuIntroEnd;
     }
 
     private void ReleaseEvents()
     {
         skyCameraProductionManager.SkyProductionEndEvent -= CameraUpIsEnd;
         skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
+        skyCameraProductionManager.IntroRevealEndEvent -= MainMenuIntroEnd;
     }
 
     public void Release()
@@ -193,6 +199,38 @@ public class TownProductionManager : MonoBehaviour
     public void SetCharacterTransform()
     {
         skyCameraProductionManager.SetCharacterTransform(character.transform);
+    }
+
+    /// <summary>
+    /// MainMenu → Town 최초 진입 전용 연출. Town↔Dungeon 왕복에 쓰이는 isMoved/bCurrentlyTownScene 상태는 건드리지 않는다.
+    /// </summary>
+    public void StartMainMenuIntro()
+    {
+        if (character == null)
+        {
+            // 정상 흐름에선 unitSystem.CreateCharacter()가 SetupGameInstaller()보다 먼저 실행되어 항상 존재하지만,
+            // 방어적으로: character가 없으면 카메라 연출을 못 하므로, 메인 메뉴 커튼만 즉시 걷어내고 인트로 종료 처리까지 흘려보내
+            // 메인 메뉴가 화면에 영구히 남거나 입력이 잠기는 상황을 방지한다.
+            Debug.LogWarning("[TownProductionManager] StartMainMenuIntro: character가 null이라 카메라 인트로를 건너뜁니다. 메인 메뉴 커튼만 즉시 걷고 종료 처리합니다.");
+            MainMenuCurtainRollbackEvent?.Invoke();
+            MainMenuIntroEndEvent?.Invoke();
+            return;
+        }
+
+        inputManager.PauseMove(true);
+
+        // 카메라 하강 시작과 같은 타이밍에 메인 메뉴 커튼이 걷히도록 먼저 발행한다.
+        MainMenuCurtainRollbackEvent?.Invoke();
+
+        // UIView_SkyProduction(구름)도 카메라 하강과 같은 타이밍에 재생 (기존 StartDrive/RollbackCameraMove와 동일한 배선 재사용)
+        StartSkyProductionEvent?.Invoke();
+
+        skyCameraProductionManager.PlayIntroDescend(character.transform);
+    }
+
+    private void MainMenuIntroEnd()
+    {
+        MainMenuIntroEndEvent?.Invoke();
     }
 
     public void RollbackCameraMove()

@@ -5,6 +5,7 @@ using System;
 public class TownSystem : MonoBehaviour
 {
     public event Action ActivatePortalEvent;
+    public event Action MainMenuCurtainRollbackEvent;
     //외부 의존성
     private InputManager inputManager;
 
@@ -91,9 +92,17 @@ public class TownSystem : MonoBehaviour
             logProcessingManager.logContainer, tentManager.TentSpawnPoint, townStartPoint);
 
         if (_sceneChangeData.prevScene == SceneType.DungeonScene)
+        {
             signalHub.Publish(new TownStartedSignal(townObjectManager.GetTownReturnPoint()));
-        else
+        }
+        else // MainMenu에서 온 New Game / Load Game
+        {
             signalHub.Publish(new TownStartedSignal(townStartPoint));
+            signalHub.Publish(new PopupUIDownSignal());
+
+            townProductionManager.SetCharacterTransform();
+            townProductionManager.StartMainMenuIntro();
+        }
 
         logProcessingManager.SetMapType(MapType.Town);
 
@@ -158,6 +167,12 @@ public class TownSystem : MonoBehaviour
 
         townProductionManager.PopupUIDownEvent -= PopupUIDown;
         townProductionManager.PopupUIDownEvent += PopupUIDown;
+
+        townProductionManager.MainMenuCurtainRollbackEvent -= MainMenuCurtainRollback;
+        townProductionManager.MainMenuCurtainRollbackEvent += MainMenuCurtainRollback;
+
+        townProductionManager.MainMenuIntroEndEvent -= MainMenuIntroEnd;
+        townProductionManager.MainMenuIntroEndEvent += MainMenuIntroEnd;
     }
 
     private void ReleaseEvents()
@@ -180,6 +195,8 @@ public class TownSystem : MonoBehaviour
         townProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
         townProductionManager.CameraUpDownEndEvent -= CameraDownIsEnd;
         townProductionManager.PopupUIDownEvent -= PopupUIDown;
+        townProductionManager.MainMenuCurtainRollbackEvent -= MainMenuCurtainRollback;
+        townProductionManager.MainMenuIntroEndEvent -= MainMenuIntroEnd;
     }
 
     private void SubscribeSignals()
@@ -425,6 +442,27 @@ public class TownSystem : MonoBehaviour
     private void PopupUIDown()
     {
         signalHub.Publish(new PopupUIDownSignal());
+    }
+
+    private void MainMenuCurtainRollback()
+    {
+        MainMenuCurtainRollbackEvent?.Invoke();
+    }
+
+    private void MainMenuIntroEnd()
+    {
+        // ActivateCharacterSignal은 던전 입장 연출 전용(attackComponent.SetEnable(true) 포함)이라 Town에서는 쓰지 않는다.
+        // Town 진입 시 공격 인디케이터를 끄는 처리는 이미 GameInstaller.SetupGameInstaller() → unitSystem.SetWhereIsCharacter(false)가 담당한다.
+        inputManager.PauseMove(false);
+
+        StartCoroutine(MainMenuIntroPopupUIUpCoroutine());
+    }
+
+    private IEnumerator MainMenuIntroPopupUIUpCoroutine()
+    {
+        yield return new WaitForSeconds(0.7f);
+
+        signalHub.Publish(new PopupUIUpSignal());
     }
 
     private void RetryButtonClicked(RetryButtonClickedSignal _retryButtonClickedSignal)

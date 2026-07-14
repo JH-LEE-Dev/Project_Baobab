@@ -8,6 +8,7 @@ public class SkyCameraProductionManager : MonoBehaviour
 {
     public event Action SkyProductionEndEvent;
     public event Action SkyProductionRollbackEndEvent;
+    public event Action IntroRevealEndEvent;
 
     // //외부 의존성
     [SerializeField] private CinemachineCamera virtualCamera = null;
@@ -147,6 +148,73 @@ public class SkyCameraProductionManager : MonoBehaviour
     public void StartCameraMove()
     {
         PlayCameraMove();
+    }
+
+    /// <summary>
+    /// Town↔Dungeon 왕복에 쓰이는 isMoved/cameraStartPos 상태와 무관하게 동작하는 독립 연출.
+    /// MainMenu→Town 최초 진입 시, 캐릭터 상공에서 캐릭터 위치까지 카메라가 내려오는 연출만 재생한다.
+    /// </summary>
+    public void PlayIntroDescend(Transform _characterTransform)
+    {
+        if (virtualCamera == null)
+        {
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        }
+
+        if (virtualCamera == null || _characterTransform == null || dummyTarget == null)
+        {
+            // 연출을 못 하더라도 완료 이벤트는 반드시 발행해, 이 이벤트에 물려 있는 입력 재개/HUD 복귀/메인 메뉴 정리가
+            // 실행되도록 한다(안 그러면 입력이 잠기고 메인 메뉴가 화면에 남는다).
+            Debug.LogWarning($"[SkyCameraProductionManager] PlayIntroDescend 실패로 카메라 하강 연출을 건너뜁니다. " +
+                $"(virtualCamera={virtualCamera != null}, character={_characterTransform != null}, dummyTarget={dummyTarget != null}) 즉시 완료 처리합니다.");
+            IntroRevealEndEvent?.Invoke();
+            return;
+        }
+
+        KillCameraMoveTween();
+
+        cachedFollowTarget = virtualCamera.Follow;
+        cachedLookAtTarget = virtualCamera.LookAt;
+
+        // "위로 올라가는 연출(up 분기)"의 종착 높이(character.position + yOffset)에서 시작해서, 그 연출과
+        // 똑같은 moveDuration으로 캐릭터 위치까지 전부 내려온다. 던전 귀환용 rollback(40만 내려가는 짧은 버전)은
+        // "이미 위에 가 있던" 상태를 마무리하는 것뿐이라 여기서 재사용하면 안 된다 — MainMenu→Town은 사전에
+        // "올라가는" 연출이 없었으므로, 올라간 높이 전체(yOffset)를 내려와야 같은 속도(yOffset/moveDuration)로
+        // 제대로 된 하강처럼 보인다.
+        Vector3 startPos = _characterTransform.position;
+        startPos.y += yOffset;
+
+        dummyTarget.position = startPos;
+        virtualCamera.Follow = dummyTarget;
+        virtualCamera.LookAt = dummyTarget;
+        virtualCamera.transform.position = startPos;
+        virtualCamera.ForceCameraPosition(startPos, virtualCamera.transform.rotation);
+
+        Sequence seq = DOTween.Sequence();
+        seq.Append(dummyTarget.DOMove(_characterTransform.position, moveDuration));
+        seq.AppendCallback(OnIntroDescendComplete);
+
+        if (useCustomCurve)
+        {
+            seq.SetEase(moveCurve);
+        }
+        else
+        {
+            seq.SetEase(moveEase);
+        }
+
+        cameraMoveTween = seq;
+    }
+
+    private void OnIntroDescendComplete()
+    {
+        if (virtualCamera != null)
+        {
+            virtualCamera.Follow = cachedFollowTarget;
+            virtualCamera.LookAt = cachedLookAtTarget;
+        }
+
+        IntroRevealEndEvent?.Invoke();
     }
 
     public void SetCharacterTransform(Transform _characterTransform)

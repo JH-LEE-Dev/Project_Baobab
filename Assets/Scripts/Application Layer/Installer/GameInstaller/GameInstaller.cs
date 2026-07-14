@@ -1,7 +1,11 @@
+using System;
 using UnityEngine;
 
 public class GameInstaller : MonoBehaviour
 {
+    // BootStrap이 SignalHub에 접근할 수 없으므로, MainMenu 커튼 롤백 시점을 plain event로 한 번 더 감싸 노출한다.
+    public event Action TownIntroCurtainRollbackEvent;
+
     //외부 의존성
     private InputManager inputManager;
     private IBootStrapProvider bootStrapProvider;
@@ -172,10 +176,19 @@ public class GameInstaller : MonoBehaviour
     {
         gameplayUIInstaller.SaveGameEvent -= SaveGame;
         gameplayUIInstaller.SaveGameEvent += SaveGame;
+
+        townSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
+        townSystem.MainMenuCurtainRollbackEvent += TownIntroCurtainRollback;
     }
 
     private void ReleaseEvents()
     {
         gameplayUIInstaller.SaveGameEvent -= SaveGame;
+        townSystem.MainMenuCurtainRollbackEvent -= TownIntroCurtainRollback;
+    }
+
+    private void TownIntroCurtainRollback()
+    {
+        TownIntroCurtainRollbackEvent?.Invoke();
     }
 }

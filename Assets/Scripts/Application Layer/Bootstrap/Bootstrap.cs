@@ -85,6 +85,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                 gameInstaller = Instantiate(gameInstallerPrefab);
                 gameInstaller.Initialize(this, inputManager, localizationManager, saveManager);
 
+                // MainMenu → Town 최초 진입 시에만 발생 (Town↔Dungeon 왕복 시엔 gameInstaller가 재사용되어 여기로 오지 않음)
+                gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
+                gameInstaller.TownIntroCurtainRollbackEvent += OnTownIntroCurtainRollback;
+
                 if (bNewGame == false)
                     gameInstaller.LoadGame();
             }
@@ -147,18 +151,14 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         {
             if (gameInstaller != null)
             {
+                gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
                 gameInstaller.Release();
                 gameInstaller = null;
             }
         }
-        else // Town, DungeonScene 등 게임플레이 관련 씬으로 이동할 때
-        {
-            if (mainMenuInstaller != null)
-            {
-                mainMenuInstaller.Release();
-                mainMenuInstaller = null;
-            }
-        }
+        // Town, DungeonScene 등 게임플레이 관련 씬으로 이동할 때: mainMenuInstaller는 씬 전환 시점이 아니라
+        // Town 카메라 인트로 연출이 시작되는 시점(OnTownIntroCurtainRollback → PlayExitAnimation 완료 후)에 정리한다.
+        // (mainMenuInstaller는 DontDestroyOnLoad라 씬 로드에도 자동으로 파괴되지 않음)
 
         // 2. 비동기 씬 로드
         AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
@@ -204,6 +204,24 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private void BindEvent()
     {
 
+    }
+
+    private void OnTownIntroCurtainRollback()
+    {
+        if (mainMenuInstaller != null)
+        {
+            mainMenuInstaller.PlayExitAnimation(OnMainMenuExitComplete);
+        }
+    }
+
+    private void OnMainMenuExitComplete()
+    {
+        if (mainMenuInstaller != null)
+        {
+            mainMenuInstaller.Release();
+            Destroy(mainMenuInstaller.gameObject);
+            mainMenuInstaller = null;
+        }
     }
 
     private void ReleaseEvent()

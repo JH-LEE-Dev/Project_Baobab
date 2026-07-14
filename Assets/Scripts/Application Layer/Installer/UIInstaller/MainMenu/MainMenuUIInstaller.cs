@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class MainMenuUIInstaller : MonoBehaviour
@@ -31,6 +32,20 @@ public class MainMenuUIInstaller : MonoBehaviour
         ReleaseEvent();
     }
 
+    public void PlayExitAnimation(Action _onComplete)
+    {
+        UIView_MainMenu mainMenuUIView = uiManager.GetView<UIView_MainMenu>();
+
+        if (mainMenuUIView != null)
+        {
+            mainMenuUIView.PlayExitAnimation(_onComplete);
+        }
+        else
+        {
+            _onComplete?.Invoke();
+        }
+    }
+
     public void MainMenuLevelStarted()
     {
         SetupCanvas();
@@ -54,7 +69,9 @@ public class MainMenuUIInstaller : MonoBehaviour
 
     public void SetupCanvas()
     {
-        canvas = Instantiate(canvasPrefab);
+        // 부모 없이 Instantiate하면 MainMenuScene 소속 루트 오브젝트가 되어, mainMenuInstaller의
+        // DontDestroyOnLoad가 적용되지 않고 Town 씬 로드 시 그대로 파괴돼버린다(GameplayUIInstaller.SetupCanvas()와 동일 패턴으로 맞춤).
+        canvas = Instantiate(canvasPrefab, transform);
     }
 
     private void SetupCanvasChilds()
@@ -99,7 +116,10 @@ public class MainMenuUIInstaller : MonoBehaviour
 
     public void ReleaseEvent()
     {
-        UIView_MainMenu mainMenuUIView = uiManager.Open<UIView_MainMenu>();
+        // Open()은 뷰가 없으면 새로 열어(다시 보이게) 버리므로, 이미 열려 있는 인스턴스만 가져오는 GetView()를 쓴다.
+        // (Release는 이미 열린 뒤에만 호출되므로 정상 흐름에선 항상 인스턴스가 존재한다.)
+        UIView_MainMenu mainMenuUIView = uiManager.GetView<UIView_MainMenu>();
+        if (mainMenuUIView == null) return;
 
         mainMenuUIView.NewGameButtonClickedEvent -= NewGameStart;
         mainMenuUIView.LoadGameButtonClickedEvent -= LoadGame;
