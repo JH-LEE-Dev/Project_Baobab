@@ -215,6 +215,12 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
                         spawnedTree.SetStarMarked(true);
                         spawnedTree.SetStarGroupId(groupId);
 
+                        // 별빛 나침반 미획득 시 별 표식은 데이터만 설정하고 시각적 표시는 끈다
+                        if (!_manager.bHasAcquiredStarCompass)
+                        {
+                            spawnedTree.treeVisualComponent?.SetConstellationMarkActive(false);
+                        }
+
                         if (!groupStarPositions.TryGetValue(groupId, out List<Vector3> positions))
                         {
                             positions = new List<Vector3>();

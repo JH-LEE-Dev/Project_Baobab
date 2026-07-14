@@ -100,6 +100,7 @@ public enum LootType
     WelcomeNoob,
     LostAndFoundBox,
     SporePotion,
+    StarCompass,
     Max,
 }
 
