@@ -401,14 +401,17 @@ public class UIView_MainMenu : UIView
         currentEnterCompleteAction = null;
     }
 
-    // PlayGameStartSequence()의 반대 방향: 딤머/로고를 다시 페이드 인 하고 마지막에 버튼을 보여준다.
+    // PlayGameStartSequence()의 반대 방향: 씬 진입 후 스플래시 연출(팀 로고) 직후의 연출부터 다시 시작합니다.
     public void PlayButtonsRevealAnimation(Action _onComplete = null)
     {
-        Sequence _seq = DOTween.Sequence();
-
+        // 1. PlayGameStartSequence에서 페이드 아웃 시켰던 상태를 리셋합니다.
         if (null != backgroundDimmer)
         {
-            _seq.Append(backgroundDimmer.DOFade(dimmerTargetAlpha, dimmerFadeDuration));
+            backgroundDimmer.DOKill();
+            Color color = backgroundDimmer.color;
+            color.a = 0f;
+            backgroundDimmer.color = color;
+            backgroundDimmer.gameObject.SetActive(false);
         }
 
         if (null != logoAnimUI)
@@ -416,15 +419,36 @@ public class UIView_MainMenu : UIView
             CanvasGroup _logoCanvas = logoAnimUI.GetComponent<CanvasGroup>();
             if (null != _logoCanvas)
             {
-                _seq.Append(_logoCanvas.DOFade(1f, 0.5f));
+                _logoCanvas.DOKill();
+                _logoCanvas.alpha = 1f;
             }
         }
 
-        _seq.OnComplete(() =>
+        // 2. 스플래시 스크린(팀 로고) 이후의 초기 시작 연출을 그대로 다시 트리거합니다.
+        PrepareNextUIAfterSplash();
+
+        if (null == this.pressAnyKeyUI)
         {
-            ShowMainMenu();
+            if (null != this.logoAnimUI)
+            {
+                this.logoAnimUI.PlayRevealSequence(() =>
+                {
+                    ShowMainMenu();
+                    _onComplete?.Invoke();
+                });
+            }
+            else
+            {
+                ShowMainMenu();
+                _onComplete?.Invoke();
+            }
+        }
+        else
+        {
+            // pressAnyKeyUI가 활성화되면 사용자가 키를 입력할 때 OnPressAnyKeyCompleted()에서 
+            // logoAnimUI.PlayRevealSequence(ShowMainMenu)가 진행되므로 여기선 콜백만 호출합니다.
             _onComplete?.Invoke();
-        });
+        }
     }
 
     public void OnExitButtonClicked()
