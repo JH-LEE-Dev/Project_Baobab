@@ -264,15 +264,48 @@ public class UIView_MainMenu : UIView
         gameObject.SetActive(false);
     }
 
+    private Action invokeNewGameEventCallback;
+    private Action invokeLoadGameEventCallback;
+
     public void OnNewGameStartButton()
     {
-        NewGameButtonClickedEvent?.Invoke();
+        if (null == invokeNewGameEventCallback) invokeNewGameEventCallback = InvokeNewGameEvent;
+        PlayGameStartSequence(invokeNewGameEventCallback);
     }
 
     public void OnLoadGameButtonClicked()
     {
         if (null == invokeLoadGameEventCallback) invokeLoadGameEventCallback = InvokeLoadGameEvent;
         PlayGameStartSequence(invokeLoadGameEventCallback);
+    }
+
+    private void PlayGameStartSequence(Action _onSequenceCompleted)
+    {
+        if (null != mainMenuUI)
+        {
+            mainMenuUI.gameObject.SetActive(false);
+        }
+
+        Sequence _seq = DOTween.Sequence();
+        
+        if (null != backgroundDimmer)
+        {
+            _seq.Append(backgroundDimmer.DOFade(0f, dimmerFadeDuration));
+        }
+
+        if (null != logoAnimUI)
+        {
+            CanvasGroup _logoCanvas = logoAnimUI.GetComponent<CanvasGroup>();
+            if (null != _logoCanvas)
+            {
+                _seq.Append(_logoCanvas.DOFade(0f, 0.5f));
+            }
+        }
+
+        if (null != _onSequenceCompleted)
+        {
+            _seq.OnComplete(() => _onSequenceCompleted.Invoke()); // 시퀀스 최적화 및 람다 최소화
+        }
     }
 
     private Action onOptionUIClosedCallback;
@@ -293,6 +326,11 @@ public class UIView_MainMenu : UIView
         {
             mainMenuUI.ReleaseOptionButtonState();
         }
+    }
+
+    private void InvokeNewGameEvent()
+    {
+        NewGameButtonClickedEvent?.Invoke();
     }
 
     private void InvokeLoadGameEvent()
