@@ -657,6 +657,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         activeTreesForUpdate.Clear();
         System.Array.Clear(treeGridMap, 0, treeGridMap.Length);
         if (enableCulling && cullingGroup != null) cullingGroup.SetBoundingSphereCount(0);
+
+        // 아직 발현되지 않은 별자리 그라운드 마크가 남아있다면 여기서 정리한다. 이 시점 이후
+        // Stage3TreeGenerationStrategySO의 groupId 카운터가 0부터 다시 시작되므로, 정리하지 않으면
+        // 이전 런의 미발현 마크가 다음 런의 같은 groupId 그룹과 뒤섞인다.
+        if (inDungeonVFXManager != null) inDungeonVFXManager.ClearAllConstellationGroundMarks();
     }
 
     private void StopGrowth()

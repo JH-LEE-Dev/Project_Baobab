@@ -197,6 +197,25 @@ public class InDungeonVFXManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 그룹 구분 없이 현재 살아있는 그라운드 마크를 전부 즉시 회수합니다. 던전을 나가거나(ClearObjManager)
+    /// 새 스테이지로 나무를 재생성(SpawnInitialTrees)할 때 호출되어야 합니다 - Stage3TreeGenerationStrategySO의
+    /// groupId 카운터가 매번 0부터 다시 시작되므로, 이전 런에서 미발현 상태로 남은 마크를 여기서 정리해두지
+    /// 않으면 다음 런의 그룹이 같은 groupId를 받았을 때 서로 다른 런의 마크가 뒤섞이게 된다.
+    /// </summary>
+    public void ClearAllConstellationGroundMarks()
+    {
+        foreach (List<TreeStarMarkGroundAnimator> _list in activeGroundMarksByGroup.Values)
+        {
+            for (int i = 0; i < _list.Count; i++)
+            {
+                _list[i].ForceReturnToPool();
+            }
+        }
+
+        activeGroundMarksByGroup.Clear();
+    }
+
     private TreeStarMarkGroundAnimator CreateTreeStarMarkGround()
     {
         TreeStarMarkGroundAnimator _instance = Instantiate(treeStarMarkGroundPrefab, transform);

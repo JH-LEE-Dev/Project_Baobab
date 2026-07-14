@@ -77,7 +77,7 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         if (frames == null || frames.Length == 0) return;
 
         frameTimer += Time.deltaTime;
-        float frameDuration = 1f / frameRate;
+        float frameDuration = 1f / Mathf.Max(0.01f, frameRate); // 0 이하 값이 들어와도 무한루프/정지되지 않도록 방어
 
         while (frameTimer >= frameDuration)
         {

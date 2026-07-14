@@ -1727,8 +1727,8 @@ MonoBehaviour:
   ricochetAngle: 90
   ricochetDist: 1.25
   ricochetDamage: 1
-  weakPointDamageMul: 1
-  helloDamageMul: 1
+  weakPointDamageMul: 0
+  helloDamageMul: 0
   bMultiAttack: 0
   finalAttackHealthPercent: 0
   attackRythmSpeedMul: 0

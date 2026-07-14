@@ -23,7 +23,7 @@ public class MainMenuUIInstaller : MonoBehaviour
         localizationManager = _localizeManager;
         uiManager = GetComponent<MainMenuUIManager>();
 
-        uiManager.Initialize(inputManager, localizationManager, null, _saveSystem);
+        uiManager.Initialize(inputManager, localizationManager, null, _saveSystem, bootStrapProvider.CameFromEscMenu);
     }
 
     public void Release()

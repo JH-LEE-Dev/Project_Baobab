@@ -5,4 +5,6 @@ public interface IBootStrapProvider
 
     void GoToTownScene(bool _bNewGame);
     public void GoToOtherScene(MapType _mapType, ForestType _forestType);
+
+    bool CameFromEscMenu { get; }
 }

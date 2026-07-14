@@ -32,6 +32,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private MapType currentMapType = MapType.Town;
     private ForestType currentForestType = ForestType.InTown;
 
+    // 게임 플레이 도중 ESC 메뉴를 통해 메인 메뉴로 돌아온 경우 true (앱을 처음 켜서 메인 메뉴로 진입한 경우는 false)
+    public bool CameFromEscMenu { get; private set; } = false;
+
     // 유니티 이벤트 함수
     private void Awake()
     {
@@ -99,6 +102,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void SetupMainMenuScene()
     {
+        // 앱을 처음 켰을 때는 씬 전환(TransitionToScene) 없이 바로 로드되므로 prevSceneType이 None으로 유지됨
+        CameFromEscMenu = prevSceneType != SceneType.None;
+
         currentSceneType = SceneType.MainMenu;
 
         if (mainMenuInstaller == null)

@@ -138,8 +138,8 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float weakPointDamageMul = 0f;
     public float helloDamageMul = 0f;
     public bool bMultiAttack = false;
-    public float finalAttackHealthPercent = 1f;
-    public float attackRythmSpeedMul = 1f;
+    public float finalAttackHealthPercent = 0f;
+    public float attackRythmSpeedMul = 0f;
     public bool bWhirlWind = false;
 
     [Header("Critical")]
