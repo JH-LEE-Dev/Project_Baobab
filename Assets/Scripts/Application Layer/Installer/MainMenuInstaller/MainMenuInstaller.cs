@@ -21,14 +21,19 @@ public class MainMenuInstaller : MonoBehaviour
         uiInstaller.Initialize(bootStrapProvider, inputManager, localizationManager, _saveSystem);
     }
 
-    public void Release()
-    {
-        uiInstaller.Release();
-    }
-
     public void PlayExitAnimation(Action _onComplete)
     {
         uiInstaller.PlayExitAnimation(_onComplete);
+    }
+
+    public void PlayEnterAnimation(Action _onComplete)
+    {
+        uiInstaller.PlayEnterAnimation(_onComplete);
+    }
+
+    public void PlayButtonsRevealAnimation(Action _onComplete = null)
+    {
+        uiInstaller.PlayButtonsRevealAnimation(_onComplete);
     }
 
     public void StartMainMenuScene()

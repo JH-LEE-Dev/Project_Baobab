@@ -38,18 +38,16 @@ public class UIView_MainMenu : UIView
     [SerializeField] private Ease exitMoveEase = (Ease)10;
 
     private RectTransform rootRectTransform;
+    private Vector2 restAnchoredPosition;
 
     private UIViewContext context;
     private int mainMenuUIJsonId = 8; // MainMenuUI.json의 ID
 
     private IMainMenuSaveSystem saveSystem;
 
-    public bool CameFromEscMenu { get; private set; }
-
-    public void DependencyInjection(IMainMenuSaveSystem _saveSystem, bool _cameFromEscMenu)
+    public void DependencyInjection(IMainMenuSaveSystem _saveSystem)
     {
         saveSystem = _saveSystem;
-        CameFromEscMenu = _cameFromEscMenu;
 
         if (null != mainMenuUI)
         {
@@ -69,6 +67,10 @@ public class UIView_MainMenu : UIView
         context = _ctx;
 
         rootRectTransform = GetComponent<RectTransform>();
+        if (null != rootRectTransform)
+        {
+            restAnchoredPosition = rootRectTransform.anchoredPosition;
+        }
 
         // 프리팹을 인스턴스화하지 않고, 이미 바인딩된 컴포넌트를 바로 초기화
         if (null != mainMenuUI)
@@ -145,7 +147,7 @@ public class UIView_MainMenu : UIView
         }
 #endif
 
-        if (null != this.splashScreenUI && false == CameFromEscMenu)
+        if (null != this.splashScreenUI)
         {
             this.splashScreenUI.gameObject.SetActive(true);
             if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
@@ -252,7 +254,7 @@ public class UIView_MainMenu : UIView
 
     private void ShowMainMenu()
     {
-        if (null != mainMenuUI) 
+        if (null != mainMenuUI)
         {
             mainMenuUI.gameObject.SetActive(true);
         }
@@ -365,9 +367,64 @@ public class UIView_MainMenu : UIView
 
     private void OnExitAnimationComplete()
     {
-        Hide();
+        // 파괴하지 않고 화면 밖(위)에 그대로 둔다 - 다음에 PlayEnterAnimation()으로 같은 인스턴스를 재사용한다.
         currentExitCompleteAction?.Invoke();
         currentExitCompleteAction = null;
+    }
+
+    private Action currentEnterCompleteAction;
+    private TweenCallback onEnterAnimationCompleteCallback;
+
+    // PlayExitAnimation()의 반대 방향: 화면 밖(위)에서 원래 위치로 슬라이드 인 (버튼/딤머/로고는 아직 안 건드림)
+    public void PlayEnterAnimation(Action _onComplete)
+    {
+        if (null == rootRectTransform)
+        {
+            _onComplete?.Invoke();
+            return;
+        }
+
+        if (null == onEnterAnimationCompleteCallback)
+            onEnterAnimationCompleteCallback = OnEnterAnimationComplete;
+
+        currentEnterCompleteAction = _onComplete;
+        rootRectTransform.DOKill();
+
+        rootRectTransform.DOAnchorPos(restAnchoredPosition, exitMoveDuration)
+            .SetEase(exitMoveEase)
+            .OnComplete(onEnterAnimationCompleteCallback);
+    }
+
+    private void OnEnterAnimationComplete()
+    {
+        currentEnterCompleteAction?.Invoke();
+        currentEnterCompleteAction = null;
+    }
+
+    // PlayGameStartSequence()의 반대 방향: 딤머/로고를 다시 페이드 인 하고 마지막에 버튼을 보여준다.
+    public void PlayButtonsRevealAnimation(Action _onComplete = null)
+    {
+        Sequence _seq = DOTween.Sequence();
+
+        if (null != backgroundDimmer)
+        {
+            _seq.Append(backgroundDimmer.DOFade(dimmerTargetAlpha, dimmerFadeDuration));
+        }
+
+        if (null != logoAnimUI)
+        {
+            CanvasGroup _logoCanvas = logoAnimUI.GetComponent<CanvasGroup>();
+            if (null != _logoCanvas)
+            {
+                _seq.Append(_logoCanvas.DOFade(1f, 0.5f));
+            }
+        }
+
+        _seq.OnComplete(() =>
+        {
+            ShowMainMenu();
+            _onComplete?.Invoke();
+        });
     }
 
     public void OnExitButtonClicked()

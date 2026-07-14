@@ -13,6 +13,8 @@ public class TownProductionManager : MonoBehaviour
     public event Action PopupUIDownEvent;
     public event Action MainMenuCurtainRollbackEvent;
     public event Action MainMenuIntroEndEvent;
+    public event Action GoToMainMenuReadyEvent;
+    public event Action GoToMainMenuCurtainRevealEvent;
 
     private InputManager inputManager;
 
@@ -48,6 +50,9 @@ public class TownProductionManager : MonoBehaviour
 
         skyCameraProductionManager.IntroRevealEndEvent -= MainMenuIntroEnd;
         skyCameraProductionManager.IntroRevealEndEvent += MainMenuIntroEnd;
+
+        skyCameraProductionManager.AscendOutEndEvent -= GoToMainMenuAscendComplete;
+        skyCameraProductionManager.AscendOutEndEvent += GoToMainMenuAscendComplete;
     }
 
     private void ReleaseEvents()
@@ -55,6 +60,7 @@ public class TownProductionManager : MonoBehaviour
         skyCameraProductionManager.SkyProductionEndEvent -= CameraUpIsEnd;
         skyCameraProductionManager.SkyProductionRollbackEndEvent -= CameraDownIsEnd;
         skyCameraProductionManager.IntroRevealEndEvent -= MainMenuIntroEnd;
+        skyCameraProductionManager.AscendOutEndEvent -= GoToMainMenuAscendComplete;
     }
 
     public void Release()
@@ -231,6 +237,36 @@ public class TownProductionManager : MonoBehaviour
     private void MainMenuIntroEnd()
     {
         MainMenuIntroEndEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// Town → MainMenu 전용 연출. StartMainMenuIntro()의 반대 방향이며, 기존 왕복용
+    /// isMoved/StartCameraMove()/SkyProductionEndEvent는 전혀 건드리지 않는다.
+    /// </summary>
+    public void StartGoToMainMenu()
+    {
+        if (character == null)
+        {
+            Debug.LogWarning("[TownProductionManager] StartGoToMainMenu: character가 null이라 카메라 연출을 건너뜁니다.");
+            GoToMainMenuCurtainRevealEvent?.Invoke();
+            GoToMainMenuReadyEvent?.Invoke();
+            return;
+        }
+
+        inputManager.PauseMove(true);
+
+        // 카메라 상승 시작과 같은 타이밍에 메인 메뉴 패널이 슬라이드 인 되도록 먼저 발행한다 (버튼/딤머/로고는 아직 안 보임).
+        GoToMainMenuCurtainRevealEvent?.Invoke();
+
+        StartSkyProductionEvent?.Invoke();
+        PopupUIDownEvent?.Invoke();
+
+        skyCameraProductionManager.PlayAscendOut(character.transform);
+    }
+
+    private void GoToMainMenuAscendComplete()
+    {
+        GoToMainMenuReadyEvent?.Invoke();
     }
 
     public void RollbackCameraMove()

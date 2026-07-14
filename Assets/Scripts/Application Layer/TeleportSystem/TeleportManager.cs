@@ -25,12 +25,14 @@ public class TeleportManager : MonoBehaviour
     {
         signalHub.Subscribe<GoToDungeonSignal>(GoToDungeon);
         signalHub.Subscribe<GoToHomeSignal>(GoToHome);
+        signalHub.Subscribe<GoToMainMenuSignal>(GoToMainMenu);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<GoToDungeonSignal>(GoToDungeon);
         signalHub.UnSubscribe<GoToHomeSignal>(GoToHome);
+        signalHub.UnSubscribe<GoToMainMenuSignal>(GoToMainMenu);
     }
 
     private void GoToDungeon(GoToDungeonSignal goToDungeonSignal)
@@ -101,5 +103,10 @@ public class TeleportManager : MonoBehaviour
     {
         inputManager.PauseMove(true);
         bootStrapProvider.GoToTownScene(true);
+    }
+
+    private void GoToMainMenu(GoToMainMenuSignal goToMainMenuSignal)
+    {
+        bootStrapProvider.GoToMainMenuScene();
     }
 }

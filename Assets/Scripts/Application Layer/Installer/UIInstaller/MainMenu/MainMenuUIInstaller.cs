@@ -24,12 +24,7 @@ public class MainMenuUIInstaller : MonoBehaviour
         localizationManager = _localizeManager;
         uiManager = GetComponent<MainMenuUIManager>();
 
-        uiManager.Initialize(inputManager, localizationManager, null, _saveSystem, bootStrapProvider.CameFromEscMenu);
-    }
-
-    public void Release()
-    {
-        ReleaseEvent();
+        uiManager.Initialize(inputManager, localizationManager, null, _saveSystem);
     }
 
     public void PlayExitAnimation(Action _onComplete)
@@ -39,6 +34,34 @@ public class MainMenuUIInstaller : MonoBehaviour
         if (mainMenuUIView != null)
         {
             mainMenuUIView.PlayExitAnimation(_onComplete);
+        }
+        else
+        {
+            _onComplete?.Invoke();
+        }
+    }
+
+    public void PlayEnterAnimation(Action _onComplete)
+    {
+        UIView_MainMenu mainMenuUIView = uiManager.GetView<UIView_MainMenu>();
+
+        if (mainMenuUIView != null)
+        {
+            mainMenuUIView.PlayEnterAnimation(_onComplete);
+        }
+        else
+        {
+            _onComplete?.Invoke();
+        }
+    }
+
+    public void PlayButtonsRevealAnimation(Action _onComplete = null)
+    {
+        UIView_MainMenu mainMenuUIView = uiManager.GetView<UIView_MainMenu>();
+
+        if (mainMenuUIView != null)
+        {
+            mainMenuUIView.PlayButtonsRevealAnimation(_onComplete);
         }
         else
         {
@@ -112,20 +135,6 @@ public class MainMenuUIInstaller : MonoBehaviour
 
         rt.offsetMin = Vector2.zero;   // Left, Bottom
         rt.offsetMax = Vector2.zero;   // Right, Top
-    }
-
-    public void ReleaseEvent()
-    {
-        // Open()은 뷰가 없으면 새로 열어(다시 보이게) 버리므로, 이미 열려 있는 인스턴스만 가져오는 GetView()를 쓴다.
-        // (Release는 이미 열린 뒤에만 호출되므로 정상 흐름에선 항상 인스턴스가 존재한다.)
-        UIView_MainMenu mainMenuUIView = uiManager.GetView<UIView_MainMenu>();
-        if (mainMenuUIView == null) return;
-
-        mainMenuUIView.NewGameButtonClickedEvent -= NewGameStart;
-        mainMenuUIView.LoadGameButtonClickedEvent -= LoadGame;
-        mainMenuUIView.ExitButtonClickedEvent -= ExitGame;
-
-        mainMenuUIView.Hide();
     }
 
     private void NewGameStart()

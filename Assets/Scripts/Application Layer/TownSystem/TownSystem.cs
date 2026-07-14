@@ -6,6 +6,7 @@ public class TownSystem : MonoBehaviour
 {
     public event Action ActivatePortalEvent;
     public event Action MainMenuCurtainRollbackEvent;
+    public event Action GoToMainMenuCurtainRevealEvent;
     //외부 의존성
     private InputManager inputManager;
 
@@ -34,6 +35,7 @@ public class TownSystem : MonoBehaviour
 
     private bool bCurrentlyTownScene = true;
     private bool bRetryGame = false;
+    private bool bGoingToMainMenu = false;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
@@ -173,6 +175,12 @@ public class TownSystem : MonoBehaviour
 
         townProductionManager.MainMenuIntroEndEvent -= MainMenuIntroEnd;
         townProductionManager.MainMenuIntroEndEvent += MainMenuIntroEnd;
+
+        townProductionManager.GoToMainMenuReadyEvent -= GoToMainMenuReady;
+        townProductionManager.GoToMainMenuReadyEvent += GoToMainMenuReady;
+
+        townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        townProductionManager.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
     }
 
     private void ReleaseEvents()
@@ -197,6 +205,8 @@ public class TownSystem : MonoBehaviour
         townProductionManager.PopupUIDownEvent -= PopupUIDown;
         townProductionManager.MainMenuCurtainRollbackEvent -= MainMenuCurtainRollback;
         townProductionManager.MainMenuIntroEndEvent -= MainMenuIntroEnd;
+        townProductionManager.GoToMainMenuReadyEvent -= GoToMainMenuReady;
+        townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
     }
 
     private void SubscribeSignals()
@@ -209,6 +219,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.Subscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
+        signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
     }
 
     private void UnSubscribeSignals()
@@ -221,6 +232,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<DungeonStartSignal>(DungeonStarted);
         signalHub.UnSubscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
+        signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
     }
 
     private void PortalActivated()
@@ -463,6 +475,26 @@ public class TownSystem : MonoBehaviour
         yield return new WaitForSeconds(0.7f);
 
         signalHub.Publish(new PopupUIUpSignal());
+    }
+
+    private void GoToMainMenuRequested(GoToMainMenuRequestedSignal _signal)
+    {
+        // 던전에 있을 때는 InDungeonSystem이 처리하고, 여기선 Town이 실제로 활성화된 상태일 때만 처리한다.
+        if (bCurrentlyTownScene == false || bGoingToMainMenu == true)
+            return;
+
+        bGoingToMainMenu = true;
+        townProductionManager.StartGoToMainMenu();
+    }
+
+    private void GoToMainMenuReady()
+    {
+        signalHub.Publish(new GoToMainMenuSignal());
+    }
+
+    private void GoToMainMenuCurtainReveal()
+    {
+        GoToMainMenuCurtainRevealEvent?.Invoke();
     }
 
     private void RetryButtonClicked(RetryButtonClickedSignal _retryButtonClickedSignal)

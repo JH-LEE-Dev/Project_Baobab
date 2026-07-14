@@ -5,6 +5,7 @@ using UnityEngine;
 public class InDungeonSystem : MonoBehaviour
 {
     public event Action ActivatePortalEvent;
+    public event Action GoToMainMenuCurtainRevealEvent;
 
     private SignalHub signalHub;
     public InDungeonObjectManager inDungeonObjectManager { get; private set; }
@@ -29,6 +30,7 @@ public class InDungeonSystem : MonoBehaviour
     private bool bCurrentlyDungeonScene = false;
     private bool prevbCurrentlyDungeonScene = false;
     private bool bRetryGame = false;
+    private bool bGoingToMainMenu = false;
     private MapType selectedMapType;
     private ForestType selectedForestType;
 
@@ -140,6 +142,12 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
         inDungeonProductionManager.RollbackSkyProductionEvent += RollbackSkyProduction;
 
+        inDungeonProductionManager.GoToMainMenuReadyEvent -= GoToMainMenuReady;
+        inDungeonProductionManager.GoToMainMenuReadyEvent += GoToMainMenuReady;
+
+        inDungeonProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+        inDungeonProductionManager.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
+
         inDungeonObjectManager.ActivateWarningUIEvent -= ActivateWarningUI;
         inDungeonObjectManager.ActivateWarningUIEvent += ActivateWarningUI;
 
@@ -174,6 +182,8 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonProductionManager.CameraUpIsEndEvent -= CameraUpIsEnd;
         inDungeonProductionManager.CameraDownEndEvent -= CameraDownIsEnd;
         inDungeonProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
+        inDungeonProductionManager.GoToMainMenuReadyEvent -= GoToMainMenuReady;
+        inDungeonProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         inDungeonObjectManager.ActivateWarningUIEvent -= ActivateWarningUI;
         inDungeonObjectManager.NPCPauseRequestedEvent -= NPCPauseRequested;
         inDungeonObjectManager.FlyingItemPauseRequestedEvent -= FlyingItemPauseRequested;
@@ -191,6 +201,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<WarningUIClosedSignal>(WarningUIClosed);
         signalHub.Subscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
+        signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
     }
 
     private void UnSubscribeSignals()
@@ -203,6 +214,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<WarningUIClosedSignal>(WarningUIClosed);
         signalHub.UnSubscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
+        signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
     }
 
     private void PortalActivated()
@@ -455,6 +467,30 @@ public class InDungeonSystem : MonoBehaviour
     private void RollbackSkyProduction()
     {
         signalHub.Publish(new RollbackSkyProductionSignal());
+    }
+
+    private void GoToMainMenuRequested(GoToMainMenuRequestedSignal _signal)
+    {
+        // Town에 있을 때는 TownSystem이 처리하고, 여기선 Dungeon이 실제로 활성화된 상태일 때만 처리한다.
+        if (bCurrentlyDungeonScene == false || bGoingToMainMenu == true)
+            return;
+
+        bGoingToMainMenu = true;
+
+        signalHub.Publish(new StartSkyProductionSignal());
+        signalHub.Publish(new PopupUIDownSignal());
+
+        inDungeonProductionManager.StartGoToMainMenu();
+    }
+
+    private void GoToMainMenuReady()
+    {
+        signalHub.Publish(new GoToMainMenuSignal());
+    }
+
+    private void GoToMainMenuCurtainReveal()
+    {
+        GoToMainMenuCurtainRevealEvent?.Invoke();
     }
 
     private void RetryButtonClicked(RetryButtonClickedSignal _retryButtonClickedSignal)
