@@ -257,6 +257,7 @@ public class UIView_MainMenu : UIView
         if (null != mainMenuUI)
         {
             mainMenuUI.gameObject.SetActive(true);
+            mainMenuUI.ResetAndShowButtons();
         }
     }
 
@@ -416,6 +417,8 @@ public class UIView_MainMenu : UIView
 
         if (null != logoAnimUI)
         {
+            logoAnimUI.ResetToInitialState();
+            
             CanvasGroup _logoCanvas = logoAnimUI.GetComponent<CanvasGroup>();
             if (null != _logoCanvas)
             {

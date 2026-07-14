@@ -25,14 +25,17 @@ public class UI_LogoAnim : MonoBehaviour
     private Action currentRevealComplete;
     private TweenCallback onRevealCompleteCallback;
 
+    private bool isInitialPositionSet = false;
+
     public void Initialize()
     {
         if (null == onRevealCompleteCallback) onRevealCompleteCallback = OnRevealComplete;
         if (null == onFadeOutCompleteCallback) onFadeOutCompleteCallback = OnFadeOutComplete;
 
-        if (null != logoTransform)
+        if (null != logoTransform && !isInitialPositionSet)
         {
             initialPosition = logoTransform.anchoredPosition;
+            isInitialPositionSet = true;
         }
 
         if (null == canvasGroup)
@@ -52,6 +55,21 @@ public class UI_LogoAnim : MonoBehaviour
     }
 
     /// <summary>
+    /// 로고를 원래 시작 위치로 즉시 되돌립니다.
+    /// </summary>
+    public void ResetToInitialState()
+    {
+        if (null != logoTransform)
+        {
+            logoTransform.DOKill();
+            if (isInitialPositionSet)
+            {
+                logoTransform.anchoredPosition = initialPosition;
+            }
+        }
+    }
+
+    /// <summary>
     /// 로고가 위로 튕겨 올라가는 모션을 실행합니다.
     /// </summary>
     /// <param name="onComplete">모션이 완전히 끝난 뒤 호출될 콜백</param>
@@ -63,11 +81,15 @@ public class UI_LogoAnim : MonoBehaviour
         {
             logoTransform.DOKill();
             
-            // 초기 위치 저장 및 갱신
-            if (Vector2.zero == initialPosition) 
+            if (!isInitialPositionSet)
+            {
                 initialPosition = logoTransform.anchoredPosition;
+                isInitialPositionSet = true;
+            }
             else
+            {
                 logoTransform.anchoredPosition = initialPosition;
+            }
 
             // 목표 위치 설정
             Vector2 targetPos = initialPosition + new Vector2(0f, moveDistanceY);

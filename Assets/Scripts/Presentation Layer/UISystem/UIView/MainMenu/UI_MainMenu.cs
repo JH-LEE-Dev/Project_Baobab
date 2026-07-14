@@ -135,6 +135,38 @@ public class UI_MainMenu : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 게임 씬에서 다시 돌아왔을 때, 이전에 꺼진 버튼들을 다시 활성화하고 등장 연출을 재생합니다.
+    /// </summary>
+    public void ResetAndShowButtons()
+    {
+        if (null == buttonsInOrder) return;
+
+        bool _hasSaveData = false;
+        if (null != parentView)
+        {
+            _hasSaveData = parentView.HasSaveData();
+        }
+
+        for (int i = 0; i < buttonsInOrder.Length; i++)
+        {
+            UI_MainMenuButton _btn = buttonsInOrder[i];
+            if (null != _btn)
+            {
+                // LoadGame 버튼은 세이브 데이터가 없으면 활성화하지 않음
+                if (_btn == loadGameButton && false == _hasSaveData)
+                {
+                    _btn.gameObject.SetActive(false);
+                    continue;
+                }
+
+                _btn.ResetAndPlayAppear();
+            }
+        }
+
+        UpdateButtonLayout();
+    }
+
     public void SetLocalization()
     {
         if (null == viewCtx || null == viewCtx.localizationManager)
