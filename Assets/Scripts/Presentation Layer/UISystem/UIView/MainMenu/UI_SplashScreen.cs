@@ -16,12 +16,15 @@ public struct SplashSequenceItem
 public class UI_SplashScreen : MonoBehaviour
 {
     //내부 의존성
+    [SerializeField] private CanvasGroup splashBackgroundGroup; // 스플래시 스크린 전용 배경
+    [SerializeField] private float backgroundFadeOutDelay = 0.5f; // 마지막 시퀀스 페이드아웃 후 대기 시간 (N초)
+    [SerializeField] private float backgroundFadeOutDuration = 1f; // 배경 페이드아웃 소요 시간
     [SerializeField] private SplashSequenceItem[] sequences;
     
     private Action onSequenceComplete;
     private Sequence currentSequence;
 
-    public void PlaySequence(Action _onComplete)
+    public void PlaySequence(Action _onComplete, Action _onBeforeLastFadeOut = null)
     {
         this.onSequenceComplete = _onComplete;
         
@@ -29,6 +32,13 @@ public class UI_SplashScreen : MonoBehaviour
         {
             this.OnSequenceFinished();
             return;
+        }
+
+        // 스플래시 전용 배경이 있다면 검은색(알파 1)으로 초기화 후 활성화
+        if (null != this.splashBackgroundGroup)
+        {
+            this.splashBackgroundGroup.alpha = 1f;
+            this.splashBackgroundGroup.gameObject.SetActive(true);
         }
 
         // 모든 타겟을 우선 투명하게 초기화 및 활성화
@@ -54,7 +64,25 @@ public class UI_SplashScreen : MonoBehaviour
             {
                 this.currentSequence.Append(item.targetGroup.DOFade(1f, item.fadeInDuration).SetEase(item.fadeInEase));
                 this.currentSequence.AppendInterval(item.holdDuration);
-                this.currentSequence.Append(item.targetGroup.DOFade(0f, item.fadeOutDuration).SetEase(item.fadeOutEase));
+                
+                var fadeOutTween = item.targetGroup.DOFade(0f, item.fadeOutDuration).SetEase(item.fadeOutEase);
+
+                // 마지막 시퀀스 요소인 경우, 객체 페이드아웃 완료 후 설정한 시간(N초) 대기 후 배경 페이드 아웃
+                if (i == this.sequences.Length - 1 && null != this.splashBackgroundGroup)
+                {
+                    this.currentSequence.Append(fadeOutTween);
+                    this.currentSequence.AppendInterval(this.backgroundFadeOutDelay);
+
+                    if (null != _onBeforeLastFadeOut)
+                    {
+                        this.currentSequence.AppendCallback(() => _onBeforeLastFadeOut.Invoke());
+                    }
+                    this.currentSequence.Append(this.splashBackgroundGroup.DOFade(0f, this.backgroundFadeOutDuration).SetEase(Ease.OutQuad));
+                }
+                else
+                {
+                    this.currentSequence.Append(fadeOutTween);
+                }
             }
         }
 
@@ -73,6 +101,11 @@ public class UI_SplashScreen : MonoBehaviour
                     this.sequences[i].targetGroup.gameObject.SetActive(false);
                 }
             }
+        }
+
+        if (null != this.splashBackgroundGroup)
+        {
+            this.splashBackgroundGroup.gameObject.SetActive(false);
         }
 
         if (null != this.onSequenceComplete)

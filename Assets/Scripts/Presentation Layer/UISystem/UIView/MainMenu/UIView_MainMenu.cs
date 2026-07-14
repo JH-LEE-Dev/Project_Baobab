@@ -23,6 +23,10 @@ public class UIView_MainMenu : UIView
     [SerializeField] private float dimmerTargetAlpha = 0.3f;
     [SerializeField] private float dimmerFadeDuration = 1f;
 
+    [Header("Debug")]
+    [SerializeField, Tooltip("체크하면 에디터 환경에서 스플래시와 로고 연출을 건너뛰고 바로 메인 메뉴를 출력합니다.")]
+    private bool skipIntroInEditor = true;
+
     private UIViewContext context;
     private int mainMenuUIJsonId = 8; // MainMenuUI.json의 ID
 
@@ -31,6 +35,11 @@ public class UIView_MainMenu : UIView
     public void DependencyInjection(IMainMenuSaveSystem _saveSystem)
     {
         saveSystem = _saveSystem;
+
+        if (null != mainMenuUI)
+        {
+            mainMenuUI.UpdateLoadGameButtonState();
+        }
     }
 
     public bool HasSaveData()
@@ -93,6 +102,19 @@ public class UIView_MainMenu : UIView
             backgroundDimmer.gameObject.SetActive(false);
         }
 
+#if UNITY_EDITOR
+        if (this.skipIntroInEditor)
+        {
+            if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
+            if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
+            if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(false);
+            
+            this.ShowDimmer();
+            this.ShowMainMenu();
+            return;
+        }
+#endif
+
         if (null != this.splashScreenUI)
         {
             this.splashScreenUI.gameObject.SetActive(true);
@@ -100,21 +122,18 @@ public class UIView_MainMenu : UIView
             if (null != this.mainMenuUI) this.mainMenuUI.gameObject.SetActive(false);
             if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(false);
 
-            this.splashScreenUI.PlaySequence(this.OnSplashScreenCompleted);
+            // 마지막 페이드아웃 직전에 UI를 미리 켜고, 완료 시 스플래시 자체를 끕니다.
+            this.splashScreenUI.PlaySequence(this.OnSplashScreenCompleted, this.PrepareNextUIAfterSplash);
         }
         else
         {
+            this.PrepareNextUIAfterSplash();
             this.OnSplashScreenCompleted();
         }
     }
 
-    private void OnSplashScreenCompleted()
+    private void PrepareNextUIAfterSplash()
     {
-        if (null != this.splashScreenUI)
-        {
-            this.splashScreenUI.gameObject.SetActive(false);
-        }
-
         // 시작 시 분기: Press Any Key 화면이 있으면 먼저 띄우고 메인 메뉴 숨김
         if (null != this.pressAnyKeyUI)
         {
@@ -126,6 +145,22 @@ public class UIView_MainMenu : UIView
         {
             this.ShowDimmer(); // 로고 애니메이션(또는 메인메뉴) 시작 시 딤 처리 실행
 
+            if (null != this.logoAnimUI)
+            {
+                this.logoAnimUI.gameObject.SetActive(true);
+            }
+        }
+    }
+
+    private void OnSplashScreenCompleted()
+    {
+        if (null != this.splashScreenUI)
+        {
+            this.splashScreenUI.gameObject.SetActive(false);
+        }
+
+        if (null == this.pressAnyKeyUI)
+        {
             if (null != this.logoAnimUI)
             {
                 this.logoAnimUI.PlayRevealSequence(this.ShowMainMenu);

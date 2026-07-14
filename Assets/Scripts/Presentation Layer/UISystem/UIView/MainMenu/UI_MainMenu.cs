@@ -38,7 +38,7 @@ public class UI_MainMenu : MonoBehaviour
         if (null != loadGameButton)
         {
             loadGameButton.Initialize(OnLoadGameClicked);
-            loadGameButton.SetInteractable(parentView.HasSaveData());
+            // 이곳에서의 초기 판단은 saveSystem 주입 전일 수 있으므로 제거하거나 둡니다. (안전하게 의존성 주입 후 다시 업데이트함)
         }
         
         if (null != exitButton)
@@ -62,6 +62,14 @@ public class UI_MainMenu : MonoBehaviour
         }
 
         SetLocalization();
+    }
+
+    public void UpdateLoadGameButtonState()
+    {
+        if (null != loadGameButton && null != parentView)
+        {
+            loadGameButton.SetInteractable(parentView.HasSaveData());
+        }
     }
 
     public void SetLocalization()
