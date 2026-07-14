@@ -263,6 +263,8 @@ public class InDungeonSystem : MonoBehaviour
 
     private void GoHome(GoHomeButtonClickedSignal goHomeButtonClickedSignal)
     {
+        inputManager.PauseESCKey(true); // 던전→타운(귀환) 연출 시작 - 종료 시점은 InDungeonProductionManager.CameraDownIsEnd()
+
         inDungeonProductionManager.StartSkyProduction();
 
         offroadContainer.col.enabled = false;

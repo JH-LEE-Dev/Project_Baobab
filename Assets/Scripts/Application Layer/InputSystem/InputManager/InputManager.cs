@@ -53,4 +53,9 @@ public class InputManager : MonoBehaviour
     {
         inputReader.PauseInteractKey(_boolean);
     }
+
+    public void PauseESCKey(bool _boolean)
+    {
+        inputReader.PauseESCKey(_boolean);
+    }
 }
