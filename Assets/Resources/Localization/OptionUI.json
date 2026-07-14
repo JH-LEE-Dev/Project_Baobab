@@ -3,9 +3,9 @@
   "entries": [
     {
       "id": 101,
-      "key": "Window",
+      "key": "Windowed",
       "kr": "창모드",
-      "en": "Window",
+      "en": "Windowed",
       "enumType": "",
       "enumValue": ""
     },
@@ -140,7 +140,7 @@
     {
       "id": 212,
       "key": "BGMVolume",
-      "kr": "배경음 볼륨",
+      "kr": "배경음",
       "en": "BGM Volume",
       "enumType": "",
       "enumValue": ""
@@ -148,8 +148,40 @@
     {
       "id": 213,
       "key": "SFXVolume",
-      "kr": "효과음 볼륨",
+      "kr": "효과음",
       "en": "SFX Volume",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 301,
+      "key": "tabGameplay",
+      "kr": "게임플레이",
+      "en": "Gameplay",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 302,
+      "key": "tabSound",
+      "kr": "사운드",
+      "en": "Sound",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 303,
+      "key": "tabGraphic",
+      "kr": "그래픽",
+      "en": "Graphic",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 304,
+      "key": "tabControl",
+      "kr": "컨트롤",
+      "en": "Control",
       "enumType": "",
       "enumValue": ""
     }

@@ -13,6 +13,8 @@ public enum EFPS { FPS60, FPS75, FPS120, FPS144, FPS165, FPS240, VSync, Unlimite
 /// </summary>
 public class UI_Option : MonoBehaviour
 {
+    public event Action<EOptionLanguage> OnLanguageOptionChangedEvent;
+
     // 외부 컴포넌트 참조
     [Header("Core System")]
     [SerializeField] private UI_OptionTabGroup tabGroup;
@@ -21,7 +23,7 @@ public class UI_Option : MonoBehaviour
 
     [Header("Tab Localization Keys")]
     [SerializeField, Tooltip("탭 이름으로 쓸 LocKeys.OptionUI 변수명 (예: tabGameplay)")]
-    private string[] tabLocalizeKeys = { "tabGameplay", "tabSound", "tabGraphic" };
+    private string[] tabLocalizeKeys = { "tabGameplay", "tabSound", "tabGraphic", "tabControl" };
 
     [Header("Gameplay Options")]
     [SerializeField] private UI_OptionSelector languageSelector;
@@ -359,7 +361,7 @@ public class UI_Option : MonoBehaviour
     {
         switch (_mode)
         {
-            case EWindowMode.Windowed: return GetText(LocKeys.OptionUI.window, "Windowed");
+            case EWindowMode.Windowed: return GetText(LocKeys.OptionUI.windowed, "Windowed");
             case EWindowMode.Fullscreen: return GetText(LocKeys.OptionUI.fullscreen, "Fullscreen");
         }
         return _mode.ToString();
@@ -447,6 +449,8 @@ public class UI_Option : MonoBehaviour
             }
             tabGroup.RefreshTabTexts(_tabTexts);
         }
+
+        OnLanguageOptionChangedEvent?.Invoke(currentOptions.language);
     }
 
     // 명시적 델리게이트 바인딩 메서드들 (GC 할당 방지)
@@ -525,6 +529,8 @@ public class UI_Option : MonoBehaviour
     // 유니티 이벤트 함수
     private void OnDestroy()
     {
+        OnLanguageOptionChangedEvent = null;
+
         onLanguageLeft = null; onLanguageRight = null;
         onResolutionLeft = null; onResolutionRight = null;
         onWindowModeLeft = null; onWindowModeRight = null;

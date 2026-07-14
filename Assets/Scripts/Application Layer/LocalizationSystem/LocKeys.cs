@@ -146,7 +146,7 @@ public static class LocKeys
 
     public static class OptionUI
     {
-        public const int window = 8388709;
+        public const int windowed = 8388709;
         public const int fullscreen = 8388710;
         public const int on = 8388711;
         public const int off = 8388712;
@@ -165,6 +165,10 @@ public static class LocKeys
         public const int masterVolume = 8388819;
         public const int bGMVolume = 8388820;
         public const int sFXVolume = 8388821;
+        public const int tabGameplay = 8388909;
+        public const int tabSound = 8388910;
+        public const int tabGraphic = 8388911;
+        public const int tabControl = 8388912;
     }
 
     public static class ResultUI
