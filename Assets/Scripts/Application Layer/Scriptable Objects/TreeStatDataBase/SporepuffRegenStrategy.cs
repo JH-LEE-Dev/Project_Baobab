@@ -3,7 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "SporepuffRegenStrategy", menuName = "Game/Regen/SporepuffRegenStrategy")]
 public class SporepuffRegenStrategy : SPRegenStrategySO
 {
-    private const float delayTime = 3.0f;
+    private const float delayTime = 0f;
 
     public override float CalculateRegen(float _currentSP, float _maxSP, float _spRegen, float _deltaTime, float _lastHitTimestamp)
     {
