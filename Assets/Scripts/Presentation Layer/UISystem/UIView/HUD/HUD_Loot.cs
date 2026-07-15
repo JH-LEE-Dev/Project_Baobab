@@ -121,7 +121,7 @@ public class HUD_Loot : MonoBehaviour
     /// <summary>
     /// 전리품을 획득했을 때 호출되어 이미지를 교체하고 모션을 재생합니다.
     /// </summary>
-    public void AcquireLoot(LootType _acquiredType)
+    public void AcquireLoot(LootType _acquiredType, bool _playAnimation = true)
     {
         if (null == lootSpritePairs || 0 == lootImages.Count)
         {
@@ -149,8 +149,11 @@ public class HUD_Loot : MonoBehaviour
             if (true == lootImages[i].gameObject.activeInHierarchy && _lootSprite == lootImages[i].sprite)
             {
                 // 동일한 전리품이 이미 있다면 새로 슬롯을 차지하지 않고, 기존 슬롯의 애니메이션만 다시 튕겨줍니다.
-                Image _existingOverlay = lootImages[i].transform.GetChild(0).GetComponent<Image>();
-                PlayAcquireMotion(lootImages[i], _existingOverlay);
+                if (true == _playAnimation)
+                {
+                    Image _existingOverlay = lootImages[i].transform.GetChild(0).GetComponent<Image>();
+                    PlayAcquireMotion(lootImages[i], _existingOverlay);
+                }
                 return;
             }
         }
@@ -185,7 +188,10 @@ public class HUD_Loot : MonoBehaviour
                 _overlayImage.sprite = _lootSprite;
             }
             
-            PlayAcquireMotion(_targetImage, _overlayImage);
+            if (true == _playAnimation)
+            {
+                PlayAcquireMotion(_targetImage, _overlayImage);
+            }
         }
 
         currentLootIndex++;

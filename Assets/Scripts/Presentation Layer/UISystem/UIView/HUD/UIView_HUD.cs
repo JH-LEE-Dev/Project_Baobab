@@ -209,6 +209,18 @@ public class UIView_HUD : UIView
         {
             hudEquipment.UpdateAxeDurability();
         }
+
+        if (null != lootDataProvider && null != hudLoot)
+        {
+            var _ownedLoots = lootDataProvider.CurrentOwnedLoots;
+            if (null != _ownedLoots)
+            {
+                for (int i = 0; i < _ownedLoots.Count; i++)
+                {
+                    hudLoot.AcquireLoot(_ownedLoots[i], false);
+                }
+            }
+        }
     }
 
     public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)
