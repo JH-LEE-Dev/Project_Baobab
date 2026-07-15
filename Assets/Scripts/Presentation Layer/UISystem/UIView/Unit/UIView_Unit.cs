@@ -90,14 +90,14 @@ public class UIView_Unit : UIView
     }
 
     /// <summary>
-    /// 쉴드 회복 중 지속적으로 호출하여 HP Bar를 갱신하고 노출 시간을 유지시킵니다.
+    /// 나무의 쉴드 회복 중 지속적으로 호출하여 HP Bar를 갱신하고 노출 시간을 유지시킵니다.
     /// </summary>
-    public void UnitShieldRecovering(object _owner, IHealthComponent _health, Transform _tf, float _yOffset)
+    public void TreeShieldRecovering(ITreeObj _treeObj)
     {
-        if (null == _owner || null == _health || null == _tf)
+        if (null == _treeObj)
             return;
 
-        ProcessUnitHit(_owner, _health, false, _tf, _yOffset);
+        ProcessUnitHit(_treeObj, _treeObj.health, false, _treeObj.GetTransform(), treesYOffset);
     }
 
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
