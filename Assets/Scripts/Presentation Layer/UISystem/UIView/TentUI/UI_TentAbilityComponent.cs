@@ -1203,6 +1203,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.ShockWaveEnforcement:
             case SkillCommandType.ShockWaveCritical:
             case SkillCommandType.MultiAttack:
+            case SkillCommandType.ShieldExplosionUnlock:
                 return true;
             default:
                 return false;
