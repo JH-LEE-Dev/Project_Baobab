@@ -181,6 +181,18 @@ MonoBehaviour:
     enumValueName: ItemTransferSpeedUP
     enumIntValue: 56
     compositeKey: 4203445
+  - enumTypeName: SkillCommandType
+    enumValueName: ShieldExplosionUnlock
+    enumIntValue: 91
+    compositeKey: 4203446
+  - enumTypeName: SkillCommandType
+    enumValueName: ShieldExplosionDamage
+    enumIntValue: 92
+    compositeKey: 4203447
+  - enumTypeName: SkillCommandType
+    enumValueName: ShieldExplosionRange
+    enumIntValue: 93
+    compositeKey: 4203448
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0

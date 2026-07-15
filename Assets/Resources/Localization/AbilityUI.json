@@ -570,6 +570,46 @@
             "enumValue": ""
         },
         {
+            "id": 211,
+            "key": "SporeShieldCut2_Name",
+            "kr": "포자 절단 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 212,
+            "key": "SporeShieldPenetration2_Name",
+            "kr": "포자 관통력 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 213,
+            "key": "ShieldExplosionUnlock_Name",
+            "kr": "포자막 폭발",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 214,
+            "key": "ShieldExplosionDamage1_Name",
+            "kr": "포자막 폭발 데미지 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 215,
+            "key": "ShieldExplosionRange1_Name",
+            "kr": "포자막 폭발 범위 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
             "id": 9000,
             "key": "Common_Level",
             "kr": "레벨",
@@ -924,7 +964,7 @@
         {
             "id": 9139,
             "key": "AbilityDescription_SporeShieldCut",
-            "kr": "<COLOR=ff5d8f>포자막</COLOR>에 대한 추가 데미지 배율이 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
+            "kr": "<COLOR=ff5d8f>포자막</COLOR>에 대한\n추가 데미지 배율이 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldCut"
@@ -932,7 +972,7 @@
         {
             "id": 9140,
             "key": "AbilityDescription_SporeShieldPenetration",
-            "kr": "<COLOR=ff5d8f>포자막</COLOR>에 주는 최종 데미지의 <COLOR=54D86A>{0}%</COLOR>를 나무 체력에 전달합니다.",
+            "kr": "<COLOR=ff5d8f>포자막</COLOR>에 준 피해 중\n체력에 추가로 데미지를 주는 비율이\n<COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldPenetration"
@@ -940,10 +980,34 @@
         {
             "id": 9141,
             "key": "AbilityDescription_ItemTransferSpeedUP",
-            "kr": "원목을<COLOR=8bbeff>넣고 꺼내는 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
+            "kr": "원목을 <COLOR=8bbeff>넣고 꺼내는 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "ItemTransferSpeedUP"
+        },
+        {
+            "id": 9142,
+            "key": "AbilityDescription_ShieldExplosionUnlock",
+            "kr": "<COLOR=ff5d8f>포자막</COLOR>을 제거하면\n주변 나무에게 데미지를 줍니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShieldExplosionUnlock"
+        },
+        {
+            "id": 9143,
+            "key": "AbilityDescription_ShieldExplosionDamage",
+            "kr": "<COLOR=ff5d8f>포자막 폭발</COLOR> 데미지가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShieldExplosionDamage"
+        },
+        {
+            "id": 9144,
+            "key": "AbilityDescription_ShieldExplosionRange",
+            "kr": "<COLOR=ff5d8f>포자막 폭발</COLOR> 범위가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShieldExplosionRange"
         }
     ]
 }

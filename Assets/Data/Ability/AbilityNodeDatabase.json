@@ -1022,8 +1022,8 @@
             "skillType": "SporeShieldCut1",
             "nameLocId": 208,
             "levelBadge": "I",
-            "gridX": -3,
-            "gridY": -6,
+            "gridX": -2,
+            "gridY": -5,
             "parents": [
                 {
                     "skillType": "SporeShieldRegenBlock1",
@@ -1038,7 +1038,7 @@
             "nameLocId": 209,
             "levelBadge": "II",
             "gridX": 0,
-            "gridY": -8,
+            "gridY": -7,
             "parents": [
                 {
                     "skillType": "SporeShieldRegenBlock1",
@@ -1052,11 +1052,98 @@
             "skillType": "SporeShieldPenetration1",
             "nameLocId": 210,
             "levelBadge": "I",
-            "gridX": 3,
-            "gridY": -6,
+            "gridX": 2,
+            "gridY": -5,
             "parents": [
                 {
                     "skillType": "SporeShieldRegenBlock1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SporeShieldCut2",
+            "nameLocId": 211,
+            "levelBadge": "II",
+            "gridX": -2,
+            "gridY": -7,
+            "parents": [
+                {
+                    "skillType": "SporeShieldCut1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SporeShieldPenetration2",
+            "nameLocId": 212,
+            "levelBadge": "II",
+            "gridX": 2,
+            "gridY": -7,
+            "parents": [
+                {
+                    "skillType": "SporeShieldPenetration1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ShieldExplosionUnlock",
+            "nameLocId": 213,
+            "levelBadge": "M",
+            "gridX": 0,
+            "gridY": -9,
+            "parents": [
+                {
+                    "skillType": "SporeShieldCut2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "SporeShieldRegenBlock2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "SporeShieldPenetration2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ShieldExplosionDamage1",
+            "nameLocId": 214,
+            "levelBadge": "I",
+            "gridX": -2,
+            "gridY": -11,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ShieldExplosionRange1",
+            "nameLocId": 215,
+            "levelBadge": "I",
+            "gridX": 2,
+            "gridY": -11,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionUnlock",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0

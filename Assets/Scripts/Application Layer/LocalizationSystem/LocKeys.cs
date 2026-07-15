@@ -74,6 +74,11 @@ public static class LocKeys
         public const int sporeShieldCut1Name = 4194512;
         public const int sporeShieldRegenBlock2Name = 4194513;
         public const int sporeShieldPenetration1Name = 4194514;
+        public const int sporeShieldCut2Name = 4194515;
+        public const int sporeShieldPenetration2Name = 4194516;
+        public const int shieldExplosionUnlockName = 4194517;
+        public const int shieldExplosionDamage1Name = 4194518;
+        public const int shieldExplosionRange1Name = 4194519;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
@@ -121,6 +126,9 @@ public static class LocKeys
         public const int abilityDescriptionSporeShieldCut = 4203443;
         public const int abilityDescriptionSporeShieldPenetration = 4203444;
         public const int abilityDescriptionItemTransferSpeedUP = 4203445;
+        public const int abilityDescriptionShieldExplosionUnlock = 4203446;
+        public const int abilityDescriptionShieldExplosionDamage = 4203447;
+        public const int abilityDescriptionShieldExplosionRange = 4203448;
     }
 
     public static class LootTooltipUI
