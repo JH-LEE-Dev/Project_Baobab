@@ -27,11 +27,11 @@
             "skillType": "Stamina1",
             "nameLocId": 105,
             "levelBadge": "I",
-            "gridX": -3,
-            "gridY": 0,
+            "gridX": -5,
+            "gridY": 2,
             "parents": [
                 {
-                    "skillType": "AxeDamage1",
+                    "skillType": "FatigueMaxIncrease1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -58,10 +58,10 @@
             "nameLocId": 109,
             "levelBadge": "I",
             "gridX": -7,
-            "gridY": -4,
+            "gridY": -2,
             "parents": [
                 {
-                    "skillType": "FatigueMaxIncrease1",
+                    "skillType": "FatigueMaxIncrease2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -72,8 +72,8 @@
             "skillType": "Stamina2",
             "nameLocId": 111,
             "levelBadge": "II",
-            "gridX": -5,
-            "gridY": 0,
+            "gridX": -7,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "Stamina1",
@@ -87,11 +87,11 @@
             "skillType": "FatigueMaxIncrease1",
             "nameLocId": 113,
             "levelBadge": "I",
-            "gridX": -5,
-            "gridY": -2,
+            "gridX": -3,
+            "gridY": 0,
             "parents": [
                 {
-                    "skillType": "Stamina1",
+                    "skillType": "AxeDamage1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -102,8 +102,8 @@
             "skillType": "FatigueMaxIncrease2",
             "nameLocId": 115,
             "levelBadge": "II",
-            "gridX": -7,
-            "gridY": -2,
+            "gridX": -5,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "FatigueMaxIncrease1",
@@ -117,8 +117,8 @@
             "skillType": "FatigueMaxIncrease3",
             "nameLocId": 117,
             "levelBadge": "III",
-            "gridX": -9,
-            "gridY": -2,
+            "gridX": -7,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "FatigueMaxIncrease2",
@@ -136,7 +136,7 @@
             "gridY": -4,
             "parents": [
                 {
-                    "skillType": "FatigueMaxIncrease2",
+                    "skillType": "MovementSpeed",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -162,8 +162,8 @@
             "skillType": "WoodenTransportBoxExpansion1",
             "nameLocId": 123,
             "levelBadge": "I",
-            "gridX": 7,
-            "gridY": 0,
+            "gridX": 5,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "LogValue1",
@@ -177,8 +177,8 @@
             "skillType": "InventoryExpansion1",
             "nameLocId": 125,
             "levelBadge": "I",
-            "gridX": 11,
-            "gridY": -2,
+            "gridX": 9,
+            "gridY": 4,
             "parents": [
                 {
                     "skillType": "WoodenTransportBoxExpansion2",
@@ -192,8 +192,8 @@
             "skillType": "WoodenTransportBoxExpansion2",
             "nameLocId": 127,
             "levelBadge": "II",
-            "gridX": 9,
-            "gridY": 0,
+            "gridX": 7,
+            "gridY": 4,
             "parents": [
                 {
                     "skillType": "WoodenTransportBoxExpansion1",
@@ -207,8 +207,8 @@
             "skillType": "LogCapacityIncrease1",
             "nameLocId": 129,
             "levelBadge": "I",
-            "gridX": 9,
-            "gridY": 2,
+            "gridX": 5,
+            "gridY": 4,
             "parents": [
                 {
                     "skillType": "WoodenTransportBoxExpansion1",
@@ -222,8 +222,8 @@
             "skillType": "LogCapacityIncrease2",
             "nameLocId": 131,
             "levelBadge": "II",
-            "gridX": 11,
-            "gridY": 4,
+            "gridX": 7,
+            "gridY": 6,
             "parents": [
                 {
                     "skillType": "LogCapacityIncrease1",
@@ -313,7 +313,7 @@
             "nameLocId": 143,
             "levelBadge": "I",
             "gridX": 5,
-            "gridY": 2,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "LogValue1",
@@ -328,7 +328,7 @@
             "nameLocId": 145,
             "levelBadge": "I",
             "gridX": 9,
-            "gridY": 4,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "LogValue2",
@@ -343,10 +343,10 @@
             "nameLocId": 147,
             "levelBadge": "I",
             "gridX": -5,
-            "gridY": 2,
+            "gridY": -2,
             "parents": [
                 {
-                    "skillType": "Stamina1",
+                    "skillType": "FatigueMaxIncrease1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -358,7 +358,7 @@
             "nameLocId": 149,
             "levelBadge": "II",
             "gridX": 7,
-            "gridY": 4,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "BountifulTree1",
@@ -373,7 +373,7 @@
             "nameLocId": 151,
             "levelBadge": "II",
             "gridX": 9,
-            "gridY": 6,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "LogValue2",
@@ -552,8 +552,8 @@
             "skillType": "EfficientMovement1",
             "nameLocId": 175,
             "levelBadge": "I",
-            "gridX": -9,
-            "gridY": -6,
+            "gridX": -7,
+            "gridY": -4,
             "parents": [
                 {
                     "skillType": "MovementSpeed",
@@ -592,14 +592,6 @@
                     "pivotY": 0
                 }
             ]
-        },
-        {
-            "skillType": "TestNode",
-            "nameLocId": 180,
-            "levelBadge": "M",
-            "gridX": 2,
-            "gridY": 2,
-            "parents": []
         },
         {
             "skillType": "ShockwaveDamage3",
@@ -858,7 +850,7 @@
             "nameLocId": 197,
             "levelBadge": "III",
             "gridX": 11,
-            "gridY": 8,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "BountifulTree2",
@@ -873,7 +865,7 @@
             "nameLocId": 198,
             "levelBadge": "III",
             "gridX": 13,
-            "gridY": 10,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "LogValue3",
@@ -888,7 +880,7 @@
             "nameLocId": 199,
             "levelBadge": "M",
             "gridX": 11,
-            "gridY": 6,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "BountifulTree2",
@@ -903,7 +895,7 @@
             "nameLocId": 200,
             "levelBadge": "II",
             "gridX": 13,
-            "gridY": 8,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "LogValue3",
@@ -918,7 +910,7 @@
             "nameLocId": 201,
             "levelBadge": "I",
             "gridX": 15,
-            "gridY": 10,
+            "gridY": 2,
             "parents": [
                 {
                     "skillType": "BountifulTree3",
@@ -978,10 +970,10 @@
             "nameLocId": 205,
             "levelBadge": "I",
             "gridX": 11,
-            "gridY": 2,
+            "gridY": -2,
             "parents": [
                 {
-                    "skillType": "WoodenTransportBoxExpansion2",
+                    "skillType": "BountifulTree2",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
@@ -992,8 +984,8 @@
             "skillType": "FatigueMaxIncrease4",
             "nameLocId": 206,
             "levelBadge": "IV",
-            "gridX": -11,
-            "gridY": -2,
+            "gridX": -9,
+            "gridY": 0,
             "parents": [
                 {
                     "skillType": "FatigueMaxIncrease3",
@@ -1007,8 +999,8 @@
             "skillType": "SourceOfStamina1",
             "nameLocId": 207,
             "levelBadge": "I",
-            "gridX": -11,
-            "gridY": -4,
+            "gridX": -9,
+            "gridY": -2,
             "parents": [
                 {
                     "skillType": "FatigueMaxIncrease3",
@@ -1123,23 +1115,8 @@
         {
             "skillType": "ShieldExplosionDamage1",
             "nameLocId": 214,
-            "levelBadge": "I",
-            "gridX": -2,
-            "gridY": -11,
-            "parents": [
-                {
-                    "skillType": "ShieldExplosionUnlock",
-                    "usePivot": false,
-                    "pivotX": 0,
-                    "pivotY": 0
-                }
-            ]
-        },
-        {
-            "skillType": "ShieldExplosionRange1",
-            "nameLocId": 215,
-            "levelBadge": "I",
-            "gridX": 2,
+            "levelBadge": "M",
+            "gridX": 0,
             "gridY": -11,
             "parents": [
                 {

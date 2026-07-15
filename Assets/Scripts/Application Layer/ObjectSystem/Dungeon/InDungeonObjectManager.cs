@@ -177,7 +177,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 포자막 폭발 관련 스킬 스탯
     [SerializeField] private LayerMask treeLayerForExplosion;
-    private const float BaseShieldExplosionDamage = 50f;
+    private const float BaseShieldExplosionDamage = 20f;
     private const float BaseShieldExplosionRange = 1.5f; // 맞은 타일 주변 8개 이웃 타일(대각선 포함 3x3)이 포함되는 반경
 
     private bool bShieldExplosionUnlocked = false;

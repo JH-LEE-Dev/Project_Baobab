@@ -34,9 +34,9 @@ MonoBehaviour:
     spRegen: 15
     regenStrategy: {fileID: 11400000, guid: 7b249828b7ce57f419bb06c7ae2b983e, type: 2}
   - treeType: 5
-    hp: 500
-    sp: 500
-    spRegen: 25
+    hp: 600
+    sp: 600
+    spRegen: 30
     regenStrategy: {fileID: 11400000, guid: 9e46b28f810a621459f0a36efd75105e, type: 2}
   - treeType: 6
     hp: 2000
