@@ -65,6 +65,7 @@ MonoBehaviour:
   hudLootPrefab: {fileID: 4422244199143184126, guid: 618a6f8a80b4154408e4f502d03dd8f9, type: 3}
   omp: {fileID: 3133789044350283666}
   mapTransitionMotionTag: GoDown
+  lootItemTypeDataBase: {fileID: 11400000, guid: 3a405593cd27bee44957a785aaf70392, type: 2}
   dirIndicatorShowDelay: 1
 --- !u!1 &5488935301192403642
 GameObject:

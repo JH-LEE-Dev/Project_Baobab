@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// 옵션 창의 개별 탭 버튼을 담당합니다. 클로저 할당 방지를 위해 IPointerClickHandler를 직접 구현합니다.
@@ -10,6 +11,7 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler
     // 외부 컴포넌트 참조
     [Header("Visual Settings")]
     [SerializeField] private Graphic targetGraphic;
+    [SerializeField] private TextMeshProUGUI tabText;
     [SerializeField] private Color normalColor = Color.gray;
     [SerializeField] private Color selectedColor = Color.white;
 
@@ -29,6 +31,14 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler
         if (null != targetGraphic)
         {
             targetGraphic.color = true == _isSelected ? selectedColor : normalColor;
+        }
+    }
+
+    public void SetText(string _text)
+    {
+        if (null != tabText)
+        {
+            tabText.text = _text;
         }
     }
 

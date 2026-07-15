@@ -200,6 +200,7 @@ public class GameSaveData
     public bool bHasAcquiredSporePotion;
     public float sporePotionCharge;
     public bool bHasAcquiredStarCompass;
+    public List<LootType> currentOwnedLoots;
 
     public void Clear()
     {
@@ -208,6 +209,9 @@ public class GameSaveData
         offroadContainerSaveData.Initialize(SYSTEM_VAR.MAX_INVENTORY_CNT);
         logProcessingSaveData.Initialize();
         environmentSaveData.Initialize();
+
+        if (currentOwnedLoots == null) currentOwnedLoots = new List<LootType>(10);
+        else currentOwnedLoots.Clear();
     }
 }
 

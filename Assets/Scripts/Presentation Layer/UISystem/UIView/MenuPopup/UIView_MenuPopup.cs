@@ -10,6 +10,7 @@ public class UIView_MenuPopup : UIView
     public event Action TeleportUIClosedEvent;
     public event Action PrevButtonClickedEvent;
     public event Action HomeButtonClickedEvent;
+    public event Action CancelButtonClickedEvent;
 
     //외부 의존성
     private IMapDataProvider mapDataProvider;
@@ -55,7 +56,7 @@ public class UIView_MenuPopup : UIView
 
         if (null != vehicle)
         {
-            vehicle.Initialize(mapDataProvider, HandlePrev, HandleHome, OnHide, viewCtx.localizationManager);
+            vehicle.Initialize(mapDataProvider, HandlePrev, HandleHome, HandleCancelClicked, viewCtx.localizationManager);
             vehicle.mapSelectedEvent -= HandleEnterDungeon;
             vehicle.mapSelectedEvent += HandleEnterDungeon;
             vehicle.Close(true);
@@ -72,14 +73,27 @@ public class UIView_MenuPopup : UIView
         HomeButtonClickedEvent?.Invoke();
     }
 
+    private void HandleCancelClicked()
+    {
+        CancelButtonClickedEvent?.Invoke();
+    }
+
     private void HandleEnterDungeon(MapType _type, ForestType _forestType)
     {
         if (MapType.None == _type)
             return;
 
-        // 통신 및 던전 진입 로직 배치
+        // 실제로 닫는 시점은 이 뷰가 스스로 정하지 않고, 이벤트를 구독하는 GameplayUICoordinator가
+        // 게임 상태 처리(신호 발행 등)와 함께 ForceHide()를 호출해 결정한다.
         DungeonSelectedEvent?.Invoke(_type, _forestType);
-        OnHide();
+    }
+
+    // 취소 버튼/던전 선택은 언락 연출 중에도 항상 닫혀야 하므로 Hide()의 vehicle.IsUnlockingProductionActive
+    // 가드를 우회한다. 다만 OnHide()를 직접 호출하면 bVisible/depthController 등록 해제가 되지 않아
+    // TeleportUIClosedEvent가 재진입 시 중복 발행되므로, base.Hide()를 통해 상태 정리는 항상 거치게 한다.
+    public void ForceHide()
+    {
+        base.Hide();
     }
 
     protected override void OnShow()

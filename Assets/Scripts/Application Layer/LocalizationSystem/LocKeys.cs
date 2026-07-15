@@ -191,6 +191,33 @@ public static class LocKeys
         public const int obsidianTree = 14680076;
     }
 
+    public static class OptionUI
+    {
+        public const int windowed = 8388709;
+        public const int fullscreen = 8388710;
+        public const int on = 8388711;
+        public const int off = 8388712;
+        public const int vSync = 8388713;
+        public const int unlimited = 8388714;
+        public const int language = 8388809;
+        public const int resolution = 8388810;
+        public const int windowMode = 8388811;
+        public const int fPS = 8388812;
+        public const int pauseOnUnfocus = 8388813;
+        public const int cameraShake = 8388814;
+        public const int crosshairBrightness = 8388815;
+        public const int chromaticAberration = 8388816;
+        public const int screenBrightness = 8388817;
+        public const int screenSaturation = 8388818;
+        public const int masterVolume = 8388819;
+        public const int bGMVolume = 8388820;
+        public const int sFXVolume = 8388821;
+        public const int tabGameplay = 8388909;
+        public const int tabSound = 8388910;
+        public const int tabGraphic = 8388911;
+        public const int tabControl = 8388912;
+    }
+
     public static class ResultUI
     {
         public const int resultTitle = 6291457;

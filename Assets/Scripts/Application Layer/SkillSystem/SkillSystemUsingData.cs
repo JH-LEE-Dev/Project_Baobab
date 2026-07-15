@@ -308,6 +308,8 @@ public enum SkillCommandType
     ConstellationAfterimage,
     ManifestationBrand,
     StarGazeUnlock,
+    AdvancedLogChance,
+    PerfectLogChance,
 }
 
 public enum AbilityLevelUpRejectReason

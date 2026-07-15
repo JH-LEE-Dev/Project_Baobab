@@ -1,0 +1,189 @@
+{
+  "jsonId": 4,
+  "entries": [
+    {
+      "id": 101,
+      "key": "Windowed",
+      "kr": "창모드",
+      "en": "Windowed",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 102,
+      "key": "Fullscreen",
+      "kr": "전체화면",
+      "en": "Fullscreen",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 103,
+      "key": "On",
+      "kr": "켬",
+      "en": "On",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 104,
+      "key": "Off",
+      "kr": "끔",
+      "en": "Off",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 105,
+      "key": "VSync",
+      "kr": "V-Sync",
+      "en": "V-Sync",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 106,
+      "key": "Unlimited",
+      "kr": "무제한",
+      "en": "Unlimited",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 201,
+      "key": "Language",
+      "kr": "언어",
+      "en": "Language",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 202,
+      "key": "Resolution",
+      "kr": "해상도",
+      "en": "Resolution",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 203,
+      "key": "WindowMode",
+      "kr": "화면모드",
+      "en": "Window Mode",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 204,
+      "key": "FPS",
+      "kr": "FPS",
+      "en": "FPS",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 205,
+      "key": "PauseOnUnfocus",
+      "kr": "비활성화 중 게임 일시정지",
+      "en": "Pause On Unfocus",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 206,
+      "key": "CameraShake",
+      "kr": "카메라 흔들림",
+      "en": "Camera Shake",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 207,
+      "key": "CrosshairBrightness",
+      "kr": "크로스헤어 밝기",
+      "en": "Crosshair Brightness",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 208,
+      "key": "ChromaticAberration",
+      "kr": "색수차 효과",
+      "en": "Chromatic Aberration",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 209,
+      "key": "ScreenBrightness",
+      "kr": "화면 명도",
+      "en": "Screen Brightness",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 210,
+      "key": "ScreenSaturation",
+      "kr": "화면 채도",
+      "en": "Screen Saturation",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 211,
+      "key": "MasterVolume",
+      "kr": "마스터 볼륨",
+      "en": "Master Volume",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 212,
+      "key": "BGMVolume",
+      "kr": "배경음",
+      "en": "BGM Volume",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 213,
+      "key": "SFXVolume",
+      "kr": "효과음",
+      "en": "SFX Volume",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 301,
+      "key": "tabGameplay",
+      "kr": "게임플레이",
+      "en": "Gameplay",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 302,
+      "key": "tabSound",
+      "kr": "사운드",
+      "en": "Sound",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 303,
+      "key": "tabGraphic",
+      "kr": "그래픽",
+      "en": "Graphic",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 304,
+      "key": "tabControl",
+      "kr": "컨트롤",
+      "en": "Control",
+      "enumType": "",
+      "enumValue": ""
+    }
+  ]
+}

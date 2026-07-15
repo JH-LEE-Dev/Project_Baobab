@@ -118,7 +118,6 @@ public class TownProductionManager : MonoBehaviour
         if (character == null || characterRidePoint == null) yield break;
 
         inputManager.PauseMove(true);
-        inputManager.PauseESCKey(true); // 타운→던전 진입 연출(포탈 탑승~씬 전환) 시작 - 종료 시점은 TownSystem.CameraDownIsEnd()
         //character.DisableShadow();
 
         originalRidePosition = character.transform.position;

@@ -276,6 +276,10 @@ public class TownSystem : MonoBehaviour
         if (bRetryGame == true)
             return;
 
+        // 던전이 실제로 선택되어 확정되는 시점 - 여기서부터는 취소 불가능한 씬 전환 연출이므로 ESC 재입력을 막는다.
+        // (차량 탑승~던전 선택 팝업 단계는 ESC로 팝업을 취소할 수 있어야 하므로 여기서 막으면 안 된다)
+        inputManager.PauseESCKey(true); // 종료 시점은 TownSystem.CameraDownIsEnd()
+
         // 상자에서 인출 중이던 NPC는 이미 날아온 것만 습득하고 그만두게 하고,
         // 상점으로 납품하러 가던 NPC는 곧바로 Idle로 되돌린 뒤, 그대로 멈춰서 다시 새 작업을
         // 찾아 나서지 않게 한다(원래 CameraUpIsEnd에서만 Pause했는데, 그 사이 텀에 Idle이 스스로
@@ -410,7 +414,7 @@ public class TownSystem : MonoBehaviour
             return;
 
         inputManager.PauseMove(false);
-        inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (TownProductionManager.CharacterRideRoutine에서 걸어둔 PauseESCKey(true) 해제)
+        inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (DungeonSelected()에서 걸어둔 PauseESCKey(true) 해제)
         signalHub.Publish(new ActivateCharacterSignal());
 
         StartCoroutine(PopupUIGoUPCoroutine());
