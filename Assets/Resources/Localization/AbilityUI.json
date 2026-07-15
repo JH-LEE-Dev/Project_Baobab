@@ -330,6 +330,246 @@
             "enumValue": ""
         },
         {
+            "id": 181,
+            "key": "ShockwaveDamage3_Name",
+            "kr": "충격파 데미지 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 182,
+            "key": "ShockWaveEnforcement_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 파동 강화</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 183,
+            "key": "ShockWaveCritical_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 치명타 적용</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 184,
+            "key": "Shockwave3_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 M</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 185,
+            "key": "ShockWaveMastery_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파 경지</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 186,
+            "key": "ShockwaveRange3_Name",
+            "kr": "충격파 범위 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 187,
+            "key": "AxeDurability2_Name",
+            "kr": "도끼 내구도 II ",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 188,
+            "key": "SteelAxe2_Name",
+            "kr": "강철 도끼 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 189,
+            "key": "AxeRange1_Name",
+            "kr": "도끼 공격 범위 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 190,
+            "key": "MultiAttack_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>도끼 다중 공격</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 191,
+            "key": "AxeDamage4_Name",
+            "kr": "도끼 데미지 IV",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 192,
+            "key": "AxeCriticalChance2_Name",
+            "kr": "도끼 치명타 확률 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 193,
+            "key": "AxeCriticalDamage2_Name",
+            "kr": "도끼 치명타 데미지 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 194,
+            "key": "Boomerang1_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 195,
+            "key": "BoomerangDamage1_Name",
+            "kr": "부메랑 데미지 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 196,
+            "key": "BoomerangRange1_Name",
+            "kr": "부메랑 범위 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 197,
+            "key": "LogValue3_Name",
+            "kr": "원목 가치 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 198,
+            "key": "BountifulTree3_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 III</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 199,
+            "key": "FluffySporeForestOverGrowth_Name",
+            "kr": "몽글포자숲 과성장",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 200,
+            "key": "FascinatingLogChance2_Name",
+            "kr": "희귀 원목 확률 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 201,
+            "key": "TreeVitamin1_Name",
+            "kr": "나무 영양제 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 202,
+            "key": "LogProcessingSpeed3_Name",
+            "kr": "원목 가공 속도 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 203,
+            "key": "ProcessLineExpand1_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>제재소 증설 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 204,
+            "key": "ConveyorSpeed1_Name",
+            "kr": "레일 속도 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 205,
+            "key": "ItemTransferSpeedUP1_Name",
+            "kr": "숙련된 손놀림 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 206,
+            "key": "FatigueMaxIncrease4_Name",
+            "kr": "피로도 최대치 증가 IV",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 207,
+            "key": "SourceOfStamina1_Name",
+            "kr": "체력의 원천 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 208,
+            "key": "SporeShieldCut1_Name",
+            "kr": "포자 절단 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 209,
+            "key": "SporeShieldRegenBlock2_Name",
+            "kr": "포자 회복 억제 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 210,
+            "key": "SporeShieldPenetration1_Name",
+            "kr": "포자 관통력 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
             "id": 9000,
             "key": "Common_Level",
             "kr": "레벨",
@@ -369,7 +609,6 @@
             "enumType": "",
             "enumValue": ""
         },
-
         {
             "id": 9100,
             "key": "AbilityDescription_InventoryExpansion",
@@ -469,7 +708,7 @@
         {
             "id": 9112,
             "key": "AbilityDescription_AxeRange",
-            "kr": "",
+            "kr": "<COLOR=fca311>도끼 공격 범위</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeRange"
@@ -485,7 +724,7 @@
         {
             "id": 9114,
             "key": "AbilityDescription_SteelAxe",
-            "kr": "<COLOR=fca311>도끼 내구도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 확률로 닳지 않습니다.",
+            "kr": "<COLOR=fca311>도끼 내구도</COLOR>가 닳지 않을 확률이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "SteelAxe"
@@ -569,6 +808,142 @@
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "AxeCriticalDamage"
+        },
+        {
+            "id": 9125,
+            "key": "AbilityDescription_SourceOfSpeed",
+            "kr": "나무를 벌목하면\n3초간 <COLOR=ff5d8f>이동속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "SourceOfSpeed"
+        },
+        {
+            "id": 9126,
+            "key": "AbilityDescription_SporeShieldRegenBlock",
+            "kr": "포자막을 가진 나무들의\n<COLOR=ff5d8f>포자막 회복속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 감소합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "SporeShieldRegenBlock"
+        },
+        {
+            "id": 9127,
+            "key": "AbilityDescription_ShockWaveEnforcement",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR> 발생지와 가까울수록,\n최대 <COLOR=54D86A>1.5배</COLOR> 데미지를 줍니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShockWaveEnforcement"
+        },
+        {
+            "id": 9128,
+            "key": "AbilityDescription_ShockWaveCritical",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>에 이제 치명타가 적용됩니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShockWaveCritical"
+        },
+        {
+            "id": 9129,
+            "key": "AbilityDescription_ShockWaveMastery",
+            "kr": "이제 나무를 직접 타격하지 않아도, <COLOR=7EEDBE,EDD87E><Wave>충격파</Wave></COLOR>가 발생합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShockWaveMastery"
+        },
+        {
+            "id": 9130,
+            "key": "AbilityDescription_MultiAttack",
+            "kr": "이제 <COLOR=fca311>도끼</COLOR>로 여러 나무를 동시에 공격 할 수 있습니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "MultiAttack"
+        },
+        {
+            "id": 9131,
+            "key": "AbilityDescription_Boomerang",
+            "kr": "주변을 공격하는 <COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>이\n<COLOR=54D86A>{0}개</COLOR> 추가됩니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "Boomerang"
+        },
+        {
+            "id": 9132,
+            "key": "AbilityDescription_BoomerangDamage",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR> <COLOR=fca311>데미지</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "BoomerangDamage"
+        },
+        {
+            "id": 9133,
+            "key": "AbilityDescription_BoomerangRange",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 <COLOR=fca311>범위</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "BoomerangRange"
+        },
+        {
+            "id": 9134,
+            "key": "AbilityDescription_FluffySporeForestOverGrowth",
+            "kr": "몽글포자숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "FluffySporeForestOverGrowth"
+        },
+        {
+            "id": 9135,
+            "key": "AbilityDescription_TreeVitamin",
+            "kr": "나무의 <COLOR=8bbeff>성장 주기, 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 빨라집니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "TreeVitamin"
+        },
+        {
+            "id": 9136,
+            "key": "AbilityDescription_ProcessLineExpand",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>제재소</Wave></COLOR>가 <COLOR=54D86A>{0}개</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ProcessLineExpand"
+        },
+        {
+            "id": 9137,
+            "key": "AbilityDescription_LogProcessorSpeedUp",
+            "kr": "<COLOR=8bbeff>미입력</COLOR>",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "LogProcessorSpeedUp"
+        },
+        {
+            "id": 9138,
+            "key": "AbilityDescription_SourceOfStamina",
+            "kr": "나무를 벌목할 때마다, <COLOR=ff5d8f>피로도</COLOR>를 <COLOR=54D86A>{0}</COLOR> 회복합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "SourceOfStamina"
+        },
+        {
+            "id": 9139,
+            "key": "AbilityDescription_SporeShieldCut",
+            "kr": "<COLOR=ff5d8f>포자막</COLOR>에 대한 추가 데미지 배율이 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "SporeShieldCut"
+        },
+        {
+            "id": 9140,
+            "key": "AbilityDescription_SporeShieldPenetration",
+            "kr": "<COLOR=ff5d8f>포자막</COLOR>에 주는 최종 데미지의 <COLOR=54D86A>{0}%</COLOR>를 나무 체력에 전달합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "SporeShieldPenetration"
+        },
+        {
+            "id": 9141,
+            "key": "AbilityDescription_ItemTransferSpeedUP",
+            "kr": "원목을<COLOR=8bbeff>넣고 꺼내는 속도</COLOR>가 <COLOR=54D86A>{0}%</COLOR>증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ItemTransferSpeedUP"
         }
     ]
 }

@@ -1143,8 +1143,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 return 2f;
             case SkillCommandType.LogCapacityIncrease:
                 return 5f;
-            //case SkillCommandType.제재소증설:
-                //return 1f;
+            case SkillCommandType.ProcessLineExpand:
+                return 1f;
             case SkillCommandType.StaminaMaxIncrease:
                 return 100f;
             default:
@@ -1202,7 +1202,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.ShockWaveMastery:
             case SkillCommandType.ShockWaveEnforcement:
             case SkillCommandType.ShockWaveCritical:
-            //case SkillCommandType.
+            case SkillCommandType.MultiAttack:
                 return true;
             default:
                 return false;
