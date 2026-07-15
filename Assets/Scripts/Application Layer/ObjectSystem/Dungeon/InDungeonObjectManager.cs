@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Collections;
 using System;
 
-public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider, ISporeShieldStatProvider
+public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInDungeonObjManagerCH, IPathfindTreeProvider, ISporeShieldStatProvider, ILootDataProvider
 {
     // // 이벤트
     public event Action ActivateWarningUIEvent;
@@ -23,6 +23,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action FlyingItemPauseRequestedEvent;
     public event Action FlyingItemResumeRequestedEvent;
     public event Action FlyingItemDismissRequestedEvent;
+    public event Action<LootType> LootAcquiredEvent;
 
     // // 외부 의존성
     private IEnvironmentProvider environmentProvider;
@@ -98,6 +99,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private List<Vector3> grassTileWorldPositions;
     private List<Vector3> availablePositions = new List<Vector3>(2500);
     private List<TreeObj> activeTrees = new List<TreeObj>(2500);
+    private List<LootType> currentOwnedLoots = new List<LootType>();
+    
+    public IReadOnlyList<LootType> CurrentOwnedLoots => currentOwnedLoots;
 
     // 최적화: 인덱스 기반 관리로 HashSet 제거
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
@@ -374,6 +378,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private void OnLootItemAcquired(LootItem _item)
     {
+        if (!currentOwnedLoots.Contains(_item.LootType))
+        {
+            currentOwnedLoots.Add(_item.LootType);
+        }
+
+        LootAcquiredEvent?.Invoke(_item.LootType);
+
         if (_item.LootType == LootType.LostAndFoundBox)
         {
             bHasAcquiredLostAndFoundBox = true;
@@ -499,6 +510,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 씬 전환 후에도 영속 오브젝트 하위에 그대로 남아 계속 움직이는 버그가 생긴다.
         if (lootManager != null)
             lootManager.ClearAll();
+
+        currentOwnedLoots.Clear();
 
         StopGrowth();
         ClearTrees();

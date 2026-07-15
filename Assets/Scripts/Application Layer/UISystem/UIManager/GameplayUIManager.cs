@@ -52,7 +52,7 @@ public class GameplayUIManager : UIManager
             tentUI.DependencyInjection(skillSystemProvider, moneyData);
 
         if (view is UIView_HUD hudUI)
-            hudUI.DependencyInjection();
+            hudUI.DependencyInjection(inDungeonObjProvider as ILootDataProvider);
 
         if (view is UIView_MenuPopup menuPopupUI)
             menuPopupUI.DependencyInjection(mapDataProvider, weatherProvider, timeDataProvider);

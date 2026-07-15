@@ -25,6 +25,10 @@ public class UIView_HUD : UIView
     private HUD_ScreenBlood hudScreenBlood;
     private HUD_Loot hudLoot;
 
+    private ILootDataProvider lootDataProvider;
+    [Header("Loot Data")]
+    [SerializeField] private LootItemTypeDataBase lootItemTypeDataBase;
+
     private ICharacter character;
 
     private MapType currentMapType;
@@ -60,6 +64,11 @@ public class UIView_HUD : UIView
     {
         hudEquipment?.OnDestroy();
         hudMessage?.Release();
+
+        if (lootDataProvider != null)
+        {
+            lootDataProvider.LootAcquiredEvent -= OnLootAcquired;
+        }
     }
 
     protected override void OnShow() //이 UI가 켜졌을 때 호출 됨.
@@ -79,9 +88,23 @@ public class UIView_HUD : UIView
         hudEquipment?.BindingRef(character);
     }
 
-    public void DependencyInjection()
+    public void DependencyInjection(ILootDataProvider _lootDataProvider)
     {
+        if (lootDataProvider != null)
+        {
+            lootDataProvider.LootAcquiredEvent -= OnLootAcquired;
+        }
 
+        lootDataProvider = _lootDataProvider;
+        
+        if (lootDataProvider != null)
+        {
+            lootDataProvider.LootAcquiredEvent += OnLootAcquired;
+        }
+    }
+
+    private void OnLootAcquired(LootType newlyAcquiredType)
+    {
     }
 
     public override void Update()
