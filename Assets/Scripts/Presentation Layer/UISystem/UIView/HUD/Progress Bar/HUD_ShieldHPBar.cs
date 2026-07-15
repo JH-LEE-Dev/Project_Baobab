@@ -36,6 +36,7 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
     private UnityAction onHideCompleteAction;
     private Tween hpGhostTween;
     private Tween shieldGhostTween;
+    private Tween shieldRecoveryTween;
     
     private float currentHpValue = 0.0f;
     private float currentShieldValue = 0.0f;
@@ -106,6 +107,12 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
         {
             shieldFadeTween.Kill();
             shieldFadeTween = null;
+        }
+
+        if (null != shieldRecoveryTween && true == shieldRecoveryTween.IsActive())
+        {
+            shieldRecoveryTween.Kill();
+            shieldRecoveryTween = null;
         }
 
         if (null != shieldSlider)
@@ -212,21 +219,21 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
 
         if (true == useShield)
         {
-            if (null != shieldSlider)
-                shieldSlider.value = _shieldRatio;
-
-            if (null != shieldGhostSlider)
+            if (_shieldRatio < _prevShield) // 쉴드 감소 (데미지)
             {
-                if (_shieldRatio > _prevShield)
+                // 실제 쉴드 바는 즉시 깎임
+                if (null != shieldSlider)
                 {
-                    if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
+                    if (null != shieldRecoveryTween && true == shieldRecoveryTween.IsActive())
                     {
-                        shieldGhostTween.Kill();
-                        shieldGhostTween = null;
+                        shieldRecoveryTween.Kill();
+                        shieldRecoveryTween = null;
                     }
-                    shieldGhostSlider.value = _shieldRatio;
+                    shieldSlider.value = _shieldRatio;
                 }
-                else if (_shieldRatio < _prevShield)
+
+                // 고스트 바는 딜레이 후 천천히 깎임
+                if (null != shieldGhostSlider)
                 {
                     float _nextShieldDelay = ghostDelay;
                     if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
@@ -244,6 +251,47 @@ public class HUD_ShieldHPBar : HUD_ProgressBar
                         .SetDelay(_nextShieldDelay)
                         .SetEase(Ease.OutQuad);
                 }
+            }
+            else if (_shieldRatio > _prevShield) // 쉴드 회복
+            {
+                // 고스트 바는 즉시 목표치로 증가 (회복 예정량 시각화)
+                if (null != shieldGhostSlider)
+                {
+                    if (null != shieldGhostTween && true == shieldGhostTween.IsActive())
+                    {
+                        shieldGhostTween.Kill();
+                        shieldGhostTween = null;
+                    }
+                    shieldGhostSlider.value = _shieldRatio;
+                }
+
+                // 실제 쉴드 바는 딜레이 후 천천히 증가 (역방향 고스트 연출)
+                if (null != shieldSlider)
+                {
+                    float _nextShieldDelay = ghostDelay;
+                    if (null != shieldRecoveryTween && true == shieldRecoveryTween.IsActive())
+                    {
+                        if (true == useAccumulatedGhost && false == resetDelayOnHit)
+                        {
+                            if (0.0f < shieldRecoveryTween.Elapsed(false))
+                                _nextShieldDelay = 0.0f;
+                        }
+                        shieldRecoveryTween.Kill();
+                        shieldRecoveryTween = null;
+                    }
+
+                    shieldRecoveryTween = shieldSlider.DOValue(_shieldRatio, ghostFollowDuration)
+                        .SetDelay(_nextShieldDelay)
+                        .SetEase(Ease.OutQuad);
+                }
+            }
+            else // 변화 없음
+            {
+                if (null != shieldSlider)
+                    shieldSlider.value = _shieldRatio;
+
+                if (null != shieldGhostSlider)
+                    shieldGhostSlider.value = _shieldRatio;
             }
 
             if (0.0f >= _shieldRatio)

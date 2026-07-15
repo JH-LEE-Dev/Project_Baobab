@@ -89,6 +89,17 @@ public class UIView_Unit : UIView
         ProcessUnitHit(_animalObj, _animalObj.health, _animalObj.bDead, _animalObj.GetTransform(), animalsYOffset);
     }
 
+    /// <summary>
+    /// 쉴드 회복 중 지속적으로 호출하여 HP Bar를 갱신하고 노출 시간을 유지시킵니다.
+    /// </summary>
+    public void UnitShieldRecovering(object _owner, IHealthComponent _health, Transform _tf, float _yOffset)
+    {
+        if (null == _owner || null == _health || null == _tf)
+            return;
+
+        ProcessUnitHit(_owner, _health, false, _tf, _yOffset);
+    }
+
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
     {
     }
