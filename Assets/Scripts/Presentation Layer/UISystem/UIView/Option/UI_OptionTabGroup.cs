@@ -18,7 +18,7 @@ public class UI_OptionTabGroup : MonoBehaviour
     [SerializeField] private OptionTabPair[] tabs;
 
     // 퍼블릭 초기화 및 제어 메서드
-    public void Initialize()
+    public void Initialize(string[] _tabTexts = null)
     {
         if (null == tabs) return;
 
@@ -27,6 +27,11 @@ public class UI_OptionTabGroup : MonoBehaviour
             if (null != tabs[i].tabButton)
             {
                 tabs[i].tabButton.Initialize(this, i);
+                
+                if (null != _tabTexts && i < _tabTexts.Length)
+                {
+                    tabs[i].tabButton.SetText(_tabTexts[i]);
+                }
             }
         }
 
@@ -34,6 +39,19 @@ public class UI_OptionTabGroup : MonoBehaviour
         if (tabs.Length > 0)
         {
             SelectTab(0);
+        }
+    }
+
+    public void RefreshTabTexts(string[] _tabTexts)
+    {
+        if (null == tabs || null == _tabTexts) return;
+
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            if (null != tabs[i].tabButton && i < _tabTexts.Length)
+            {
+                tabs[i].tabButton.SetText(_tabTexts[i]);
+            }
         }
     }
 

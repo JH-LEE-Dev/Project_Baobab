@@ -236,6 +236,9 @@ public class UI_MainMenu : MonoBehaviour
         {
             optionButton.ReleaseMaintainState();
         }
+        
+        // 옵션 창이 닫히면 모든 메인 메뉴 버튼을 다시 활성화하고 등장 연출을 재생
+        ResetAndShowButtons();
     }
     
     private void OnCreditClicked()

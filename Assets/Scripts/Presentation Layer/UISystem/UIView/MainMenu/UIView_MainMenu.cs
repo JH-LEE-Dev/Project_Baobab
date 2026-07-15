@@ -9,6 +9,7 @@ public class UIView_MainMenu : UIView
     public event Action NewGameButtonClickedEvent;
     public event Action LoadGameButtonClickedEvent;
     public event Action ExitButtonClickedEvent;
+    public event Action<EOptionLanguage> OnLanguageOptionChangedEvent;
 
     [Header("UI References")]
     [SerializeField] private UI_MainMenu mainMenuUI; // 메인 메뉴
@@ -16,6 +17,7 @@ public class UIView_MainMenu : UIView
     [SerializeField] private UI_SplashScreen splashScreenUI; // 스플래시 스크린
     [SerializeField] private UI_LogoAnim logoAnimUI; // 로고 애니메이션 객체
     [SerializeField] private UI_MainMenuBackground backgroundUI; // 동적 배경 관리 객체
+    [SerializeField] private CanvasGroup gameVersionCanvasGroup; // 게임 버전 표시 UI (페이드 아웃 연출용)
 
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
@@ -93,6 +95,18 @@ public class UIView_MainMenu : UIView
         {
             backgroundUI.Initialize();
         }
+
+        if (null != optionUI)
+        {
+            optionUI.Initialize(_ctx);
+            optionUI.OnLanguageOptionChangedEvent -= HandleLanguageOptionChanged;
+            optionUI.OnLanguageOptionChangedEvent += HandleLanguageOptionChanged;
+        }
+    }
+
+    private void HandleLanguageOptionChanged(EOptionLanguage _lang)
+    {
+        OnLanguageOptionChangedEvent?.Invoke(_lang);
     }
 
     public override void OnDestroy()
@@ -100,7 +114,13 @@ public class UIView_MainMenu : UIView
         NewGameButtonClickedEvent = null;
         LoadGameButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
+        OnLanguageOptionChangedEvent = null;
         
+        if (null != optionUI)
+        {
+            optionUI.OnLanguageOptionChangedEvent -= HandleLanguageOptionChanged;
+        }
+
         if (null != backgroundDimmer)
         {
             backgroundDimmer.DOKill();
@@ -303,6 +323,11 @@ public class UIView_MainMenu : UIView
             {
                 _seq.Append(_logoCanvas.DOFade(0f, 0.5f));
             }
+        }
+
+        if (null != gameVersionCanvasGroup)
+        {
+            _seq.Join(gameVersionCanvasGroup.DOFade(0f, 0.5f));
         }
 
         if (null != _onSequenceCompleted)
