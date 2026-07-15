@@ -376,6 +376,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
+    public void RestoreOwnedLoots(List<LootType> _loots)
+    {
+        currentOwnedLoots.Clear();
+        if (_loots != null)
+        {
+            currentOwnedLoots.AddRange(_loots);
+        }
+    }
+
     private void OnLootItemAcquired(LootItem _item)
     {
         if (!currentOwnedLoots.Contains(_item.LootType))
