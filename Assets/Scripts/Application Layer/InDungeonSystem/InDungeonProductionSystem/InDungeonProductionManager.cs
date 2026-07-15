@@ -92,6 +92,9 @@ public class InDungeonProductionManager : MonoBehaviour
         if (character == null || characterRidePoint == null) yield break;
 
         inputManager.PauseMove(true);
+        // 던전 탈출(귀환) 확정 후 차량 탑승 시작 - 취소 가능한 UI 없이 곧장 결과창/귀환으로 이어지므로 여기서부터 막아도 안전하다.
+        // 종료 시점은 InDungeonProductionManager.CameraDownIsEnd()(타운 도착) 또는 재시도 시 같은 지점.
+        inputManager.PauseESCKey(true);
         //character.DisableShadow();
 
         Vector3 startPos = character.transform.position;

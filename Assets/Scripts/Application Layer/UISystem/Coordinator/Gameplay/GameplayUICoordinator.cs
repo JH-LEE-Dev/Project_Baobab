@@ -149,6 +149,9 @@ public class GameplayUICoordinator
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.DungeonSelectedEvent += DungeonSelected;
 
+        menuPopupUI.CancelButtonClickedEvent -= CancelMenuPopup;
+        menuPopupUI.CancelButtonClickedEvent += CancelMenuPopup;
+
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         inputManager.inputReader.ESCButtonPressedEvent += EscButtonPressed;
 
@@ -182,6 +185,7 @@ public class GameplayUICoordinator
         inputManager.inputReader.InventoryKeyEvent -= OnInventoryKeyPressed;
         popUpUI.sendDeleteItemEvent -= SendDeleteItem;
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
+        menuPopupUI.CancelButtonClickedEvent -= CancelMenuPopup;
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         escUI.ExitButtonClickedEvent -= ExitGame;
         escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
@@ -302,9 +306,16 @@ public class GameplayUICoordinator
     {
         mapType = _type;
         forestType = _forestType;
-        
+
         signalHub.Publish(new TeleportUIClosedWhileTeleportSignal());
         signalHub.Publish(new DungeonSelectedSignal(_type, _forestType));
+
+        menuPopupUI.ForceHide();
+    }
+
+    private void CancelMenuPopup()
+    {
+        menuPopupUI.ForceHide();
     }
 
     private void InventorySpecChanged(InventorySpecChangedSignal _inventorySpecChangedSignal)
@@ -409,7 +420,9 @@ public class GameplayUICoordinator
 
     private void TeleportUIClosed()
     {
-        menuPopupUI.Hide();
+        // 뷰를 닫는 호출(ForceHide/Hide)은 항상 이 이벤트를 발행하는 쪽(ESC의 UIDepthController,
+        // PortalDeActivated, DungeonSelected, CancelMenuPopup)에서 이미 끝낸 뒤이므로 여기서는
+        // 후속 신호만 발행한다.
         signalHub.Publish(new TeleportUIClosedSignal());
     }
 
