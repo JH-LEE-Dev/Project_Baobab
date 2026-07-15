@@ -89,6 +89,17 @@ public class UIView_Unit : UIView
         ProcessUnitHit(_animalObj, _animalObj.health, _animalObj.bDead, _animalObj.GetTransform(), animalsYOffset);
     }
 
+    /// <summary>
+    /// 나무의 쉴드 회복 중 지속적으로 호출하여 HP Bar를 갱신하고 노출 시간을 유지시킵니다.
+    /// </summary>
+    public void TreeShieldRecovering(ITreeObj _treeObj)
+    {
+        if (null == _treeObj)
+            return;
+
+        ProcessUnitHit(_treeObj, _treeObj.health, false, _treeObj.GetTransform(), treesYOffset);
+    }
+
     public void WeaponModeChanged(WeaponMode _currentWeaponMode)
     {
     }

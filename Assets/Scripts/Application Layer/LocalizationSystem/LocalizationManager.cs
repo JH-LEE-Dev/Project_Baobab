@@ -5,9 +5,9 @@ using UnityEngine;
 
 public class LocalizationManager : MonoBehaviour
 {
-    // //내부 의존성
     private Dictionary<int, string> masterTable;
     private Dictionary<long, int> enumToKeyMap;
+    private Dictionary<string, int> stringToKeyMap; // 문자열 키 검색용 추가
     private List<string> loadedJsons;
     private StringBuilder stringBuilder;
     private Language currentLanguage = Language.KR;
@@ -27,6 +27,7 @@ public class LocalizationManager : MonoBehaviour
     {
         masterTable = new Dictionary<int, string>(_initialCapacity);
         enumToKeyMap = new Dictionary<long, int>(128);
+        stringToKeyMap = new Dictionary<string, int>(128, StringComparer.OrdinalIgnoreCase);
         loadedJsons = new List<string>(4);
         stringBuilder = new StringBuilder(128);
 
@@ -110,12 +111,27 @@ public class LocalizationManager : MonoBehaviour
 
             int compositeKey = GenerateKey(jsonId, entry.id);
             masterTable[compositeKey] = (currentLanguage == Language.KR) ? entry.kr : entry.en;
+
+            if (false == string.IsNullOrEmpty(entry.key))
+            {
+                stringToKeyMap[entry.key] = compositeKey;
+            }
         }
     }
 
     public string GetText(int _compositeKey)
     {
         if (masterTable.TryGetValue(_compositeKey, out string _value)) return _value;
+        return string.Empty;
+    }
+
+    public string GetText(string _stringKey)
+    {
+        if (string.IsNullOrEmpty(_stringKey)) return string.Empty;
+        if (stringToKeyMap.TryGetValue(_stringKey, out int compositeKey))
+        {
+            return GetText(compositeKey);
+        }
         return string.Empty;
     }
 

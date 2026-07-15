@@ -165,7 +165,39 @@ public enum SkillType
     ShockwaveDamage2, //충격파데미지2
     ShockwaveRange2, // 충격파 범위2
 
+    ShockWaveEnforcement,  // 충격파 파동 강화 M
+    ShockWaveCritical,  // 충격파 치명타 적용 M
+    ShockwaveDamage3, // 충격파데미지3
+    Shockwave3, //충격파 M
+    ShockWaveMastery, // 충격파 경지
+    ShockwaveRange3, // 충격파 범위3
 
+    SteelAxe2, // 강철도끼2
+    AxeDurability2, // 도끼내구도2
+    MultiAttack, //도끼 다중 공격
+    AxeDamage4, // 도끼 공격력 4
+    AxeCriticalChance2, // 도끼 치명타 확률2
+    AxeCriticalDamage2, // 도끼 치명타 데미지2
+
+
+    Boomerang1, //부메랑1
+    BoomerangDamage1, //부메랑데미지1
+    BoomerangRange1, //부메랑 범위1
+
+    LogValue3, // 원목가치 3
+    BountifulTree3, // 아낌없나무 3
+    FluffySporeForestOverGrowth, // 몽글포자과성장
+    FascinatingLogChance2, // 희귀 원목 확률2
+    TreeVitamin1, //나무 영양제1
+    LogProcessingSpeed3, // 원목 가공 속도 3
+    ProcessLineExpand1, // 제재소 증설 1
+    ItemTransferSpeedUP1, // 상자 넣기 속도 1
+    FatigueMaxIncrease4, //피로도 최대치 증가4
+    SourceOfStamina1, // 체력의 원천
+
+    SporeShieldRegenBlock2, // 포자막 회복 억제2
+    SporeShieldCut1, // 포자 절단
+    SporeShieldPenetration1, // 포자 관통력
 
 
     TestNode,  // TestNode

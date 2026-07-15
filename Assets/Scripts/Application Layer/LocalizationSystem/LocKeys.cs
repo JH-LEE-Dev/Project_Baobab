@@ -44,6 +44,36 @@ public static class LocKeys
         public const int sporeShieldRegenBlock1Name = 4194481;
         public const int steelAxe1Name = 4194483;
         public const int testNodeName = 4194484;
+        public const int shockwaveDamage3Name = 4194485;
+        public const int shockWaveEnforcementName = 4194486;
+        public const int shockWaveCriticalName = 4194487;
+        public const int shockwave3Name = 4194488;
+        public const int shockWaveMasteryName = 4194489;
+        public const int shockwaveRange3Name = 4194490;
+        public const int axeDurability2Name = 4194491;
+        public const int steelAxe2Name = 4194492;
+        public const int axeRange1Name = 4194493;
+        public const int multiAttackName = 4194494;
+        public const int axeDamage4Name = 4194495;
+        public const int axeCriticalChance2Name = 4194496;
+        public const int axeCriticalDamage2Name = 4194497;
+        public const int boomerang1Name = 4194498;
+        public const int boomerangDamage1Name = 4194499;
+        public const int boomerangRange1Name = 4194500;
+        public const int logValue3Name = 4194501;
+        public const int bountifulTree3Name = 4194502;
+        public const int fluffySporeForestOverGrowthName = 4194503;
+        public const int fascinatingLogChance2Name = 4194504;
+        public const int treeVitamin1Name = 4194505;
+        public const int logProcessingSpeed3Name = 4194506;
+        public const int processLineExpand1Name = 4194507;
+        public const int conveyorSpeed1Name = 4194508;
+        public const int itemTransferSpeedUP1Name = 4194509;
+        public const int fatigueMaxIncrease4Name = 4194510;
+        public const int sourceOfStamina1Name = 4194511;
+        public const int sporeShieldCut1Name = 4194512;
+        public const int sporeShieldRegenBlock2Name = 4194513;
+        public const int sporeShieldPenetration1Name = 4194514;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
@@ -74,6 +104,30 @@ public static class LocKeys
         public const int abilityDescriptionWoodenTransportBox = 4203426;
         public const int abilityDescriptionAxeCriticalChance = 4203427;
         public const int abilityDescriptionAxeCriticalDamage = 4203428;
+        public const int abilityDescriptionSourceOfSpeed = 4203429;
+        public const int abilityDescriptionSporeShieldRegenBlock = 4203430;
+        public const int abilityDescriptionShockWaveEnforcement = 4203431;
+        public const int abilityDescriptionShockWaveCritical = 4203432;
+        public const int abilityDescriptionShockWaveMastery = 4203433;
+        public const int abilityDescriptionMultiAttack = 4203434;
+        public const int abilityDescriptionBoomerang = 4203435;
+        public const int abilityDescriptionBoomerangDamage = 4203436;
+        public const int abilityDescriptionBoomerangRange = 4203437;
+        public const int abilityDescriptionFluffySporeForestOverGrowth = 4203438;
+        public const int abilityDescriptionTreeVitamin = 4203439;
+        public const int abilityDescriptionProcessLineExpand = 4203440;
+        public const int abilityDescriptionLogProcessorSpeedUp = 4203441;
+        public const int abilityDescriptionSourceOfStamina = 4203442;
+        public const int abilityDescriptionSporeShieldCut = 4203443;
+        public const int abilityDescriptionSporeShieldPenetration = 4203444;
+        public const int abilityDescriptionItemTransferSpeedUP = 4203445;
+    }
+
+    public static class LootTooltipUI
+    {
+        public const int foundbox = 20971521;
+        public const int sporepotion = 20971522;
+        public const int starcompass = 20971523;
     }
 
     public static class MainMenuUI

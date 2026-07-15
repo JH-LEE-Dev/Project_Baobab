@@ -113,6 +113,74 @@ MonoBehaviour:
     enumValueName: AxeCriticalDamage
     enumIntValue: 46
     compositeKey: 4203428
+  - enumTypeName: SkillCommandType
+    enumValueName: SourceOfSpeed
+    enumIntValue: 61
+    compositeKey: 4203429
+  - enumTypeName: SkillCommandType
+    enumValueName: SporeShieldRegenBlock
+    enumIntValue: 88
+    compositeKey: 4203430
+  - enumTypeName: SkillCommandType
+    enumValueName: ShockWaveEnforcement
+    enumIntValue: 48
+    compositeKey: 4203431
+  - enumTypeName: SkillCommandType
+    enumValueName: ShockWaveCritical
+    enumIntValue: 47
+    compositeKey: 4203432
+  - enumTypeName: SkillCommandType
+    enumValueName: ShockWaveMastery
+    enumIntValue: 49
+    compositeKey: 4203433
+  - enumTypeName: SkillCommandType
+    enumValueName: MultiAttack
+    enumIntValue: 41
+    compositeKey: 4203434
+  - enumTypeName: SkillCommandType
+    enumValueName: Boomerang
+    enumIntValue: 73
+    compositeKey: 4203435
+  - enumTypeName: SkillCommandType
+    enumValueName: BoomerangDamage
+    enumIntValue: 74
+    compositeKey: 4203436
+  - enumTypeName: SkillCommandType
+    enumValueName: BoomerangRange
+    enumIntValue: 75
+    compositeKey: 4203437
+  - enumTypeName: SkillCommandType
+    enumValueName: FluffySporeForestOverGrowth
+    enumIntValue: 53
+    compositeKey: 4203438
+  - enumTypeName: SkillCommandType
+    enumValueName: TreeVitamin
+    enumIntValue: 52
+    compositeKey: 4203439
+  - enumTypeName: SkillCommandType
+    enumValueName: ProcessLineExpand
+    enumIntValue: 87
+    compositeKey: 4203440
+  - enumTypeName: SkillCommandType
+    enumValueName: LogProcessorSpeedUp
+    enumIntValue: 58
+    compositeKey: 4203441
+  - enumTypeName: SkillCommandType
+    enumValueName: SourceOfStamina
+    enumIntValue: 60
+    compositeKey: 4203442
+  - enumTypeName: SkillCommandType
+    enumValueName: SporeShieldCut
+    enumIntValue: 89
+    compositeKey: 4203443
+  - enumTypeName: SkillCommandType
+    enumValueName: SporeShieldPenetration
+    enumIntValue: 90
+    compositeKey: 4203444
+  - enumTypeName: SkillCommandType
+    enumValueName: ItemTransferSpeedUP
+    enumIntValue: 56
+    compositeKey: 4203445
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0

@@ -1408,7 +1408,7 @@ MonoBehaviour:
   skillDataBase: {fileID: 11400000, guid: 18be1f05450331f449f0cd45a143e686, type: 2}
   prestigeLevel: 0
   skillExperience: 0
-  experienceToLevelUp: 28000000280000002800000028000000280000002800000028000000280000002800000028000000
+  experienceToLevelUp: 2800000032000000460000003c0000003c0000003c00000028000000280000002800000028000000
 --- !u!1 &5075027738427714103
 GameObject:
   m_ObjectHideFlags: 0
@@ -2502,9 +2502,9 @@ MonoBehaviour:
   - forestType: 4
     decAmount: 12
   - forestType: 5
-    decAmount: 30
+    decAmount: 35
   - forestType: 6
-    decAmount: 60
+    decAmount: 70
   - forestType: 7
     decAmount: 150
   - forestType: 8
