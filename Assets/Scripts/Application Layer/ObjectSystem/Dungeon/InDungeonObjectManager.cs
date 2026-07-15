@@ -19,6 +19,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     public event Action<CarrotItem> CarrotItemAcquiredEvent;
     public event Action LostAndFoundBoxAcquiredEvent;
     public event Action<TreeObj> TreeGetHitEvent;
+    public event Action<TreeObj> TreeShieldRecoveringEvent;
     public event Action<bool> NPCPauseRequestedEvent;
     public event Action FlyingItemPauseRequestedEvent;
     public event Action FlyingItemResumeRequestedEvent;
@@ -1078,6 +1079,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeGetHitEvent += OnTreeHit;
         _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
         _tree.TreeShieldBrokenEvent += OnTreeShieldBroken;
+        _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
+        _tree.TreeShieldRecoveringEvent += OnTreeShieldRecovering;
     }
 
     private void OnReleaseTree(TreeObj _tree)
@@ -1119,6 +1122,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeDeadEvent -= OnTreeDead;
         _tree.TreeGetHitEvent -= OnTreeHit;
         _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
+        _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
@@ -1354,6 +1358,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (currentMapType != MapType.FluffySporeForest) return;
 
         TriggerShieldExplosion(_treeObj);
+    }
+
+    private void OnTreeShieldRecovering(TreeObj _treeObj)
+    {
+        TreeShieldRecoveringEvent?.Invoke(_treeObj);
     }
 
     private void TriggerShieldExplosion(TreeObj _source)

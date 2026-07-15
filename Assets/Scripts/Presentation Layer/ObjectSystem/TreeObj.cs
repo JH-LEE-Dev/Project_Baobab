@@ -6,6 +6,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public event Action<TreeObj> TreeDeadEvent;
     public event Action<TreeObj> TreeGetHitEvent;
     public event Action<TreeObj> TreeShieldBrokenEvent;
+    public event Action<TreeObj> TreeShieldRecoveringEvent;
 
     [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
@@ -313,11 +314,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         healthComponent.ShieldBrokenEvent -= OnShieldBroken;
         healthComponent.ShieldBrokenEvent += OnShieldBroken;
+
+        healthComponent.ShieldRecoveringEvent -= OnShieldRecovering;
+        healthComponent.ShieldRecoveringEvent += OnShieldRecovering;
     }
 
     private void OnShieldBroken()
     {
         TreeShieldBrokenEvent?.Invoke(this);
+    }
+
+    private void OnShieldRecovering()
+    {
+        TreeShieldRecoveringEvent?.Invoke(this);
     }
 
     private void ReleaseEvents()
@@ -329,6 +338,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         healthComponent.EnemyIsDeadEvent -= TreeIsDead;
         healthComponent.ShieldBrokenEvent -= OnShieldBroken;
+        healthComponent.ShieldRecoveringEvent -= OnShieldRecovering;
 
         if (treeVisualComponent != null)
         {

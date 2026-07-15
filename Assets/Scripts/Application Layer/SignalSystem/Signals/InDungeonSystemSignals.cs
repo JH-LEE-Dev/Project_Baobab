@@ -50,6 +50,15 @@ public struct TreeGetHitSignal
     }
 }
 
+public struct TreeShieldRecoveringSignal
+{
+    public TreeObj treeObj;
+    public TreeShieldRecoveringSignal(TreeObj _treeObj)
+    {
+        treeObj = _treeObj;
+    }
+}
+
 public struct GoToHomeSignal { }
 
 public struct CarrotItemAcquiredSignal

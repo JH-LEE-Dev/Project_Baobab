@@ -5,7 +5,12 @@ public class EHealthComponent : EComponent, IHealthComponent
 {
     public event Action ShieldBrokenEvent;
     public event Action ShieldRegenedEvent;
+    public event Action ShieldRecoveringEvent;
     public event Action EnemyIsDeadEvent;
+
+    // 실드 회복 중 프레임마다 이벤트를 쏘면 UI/Signal 체인에 과도한 부하가 걸리므로 일정 간격으로만 알림
+    private const float shieldRecoverNotifyInterval = 0.15f;
+    private float lastShieldRecoverNotifyTime = -100f;
 
     //외부 의존성
     [SerializeField] private float maxHealth;
@@ -237,10 +242,21 @@ public class EHealthComponent : EComponent, IHealthComponent
             }
 
             // 리젠 완료 시 Update 비활성화
-            if (currentSP >= maxSP)
+            bool regenCompleted = currentSP >= maxSP;
+            if (regenCompleted)
             {
                 currentSP = maxSP;
                 enabled = false;
+            }
+
+            if (currentSP > prevSP)
+            {
+                // 회복 완료 시점은 간격과 무관하게 항상 알려 마지막 갱신이 누락되지 않게 한다
+                if (regenCompleted || Time.time - lastShieldRecoverNotifyTime >= shieldRecoverNotifyInterval)
+                {
+                    lastShieldRecoverNotifyTime = Time.time;
+                    ShieldRecoveringEvent?.Invoke();
+                }
             }
         }
         else
