@@ -376,6 +376,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
     }
 
+    public void RestoreOwnedLoots(List<LootType> _loots)
+    {
+        currentOwnedLoots.Clear();
+        if (_loots != null)
+        {
+            currentOwnedLoots.AddRange(_loots);
+        }
+    }
+
     private void OnLootItemAcquired(LootItem _item)
     {
         if (!currentOwnedLoots.Contains(_item.LootType))
@@ -508,8 +517,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // LogItem/CarrotItem과 달리 이 호출이 빠져 있으면, 흡입 중이던 LootItem(예: 분실물 보관함)이
         // 씬 전환 후에도 영속 오브젝트 하위에 그대로 남아 계속 움직이는 버그가 생긴다.
+        // 단순 소멸(ClearAll) 대신 강제 습득(ForceAcquireAllActive) 처리하여, 확정 드랍된 전리품이
+        // 흡입 애니메이션 도중 던전 종료로 유실되지 않고 반드시 인벤토리에 반영되도록 한다.
         if (lootManager != null)
-            lootManager.ClearAll();
+            lootManager.ForceAcquireAllActive();
 
         currentOwnedLoots.Clear();
 
