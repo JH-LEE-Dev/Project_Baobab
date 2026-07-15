@@ -138,8 +138,28 @@ public class LootManager : MonoBehaviour
         {
             lootPool.Release(cleanupList[i]);
         }
-        
+
         activeItemsList.Clear();
+        cleanupList.Clear();
+    }
+
+    /// <summary>
+    /// 흡입(습득)이 끝나기 전에 던전이 종료되는 경우, 아직 활성 상태인 전리품을 전부 강제 습득 처리한다.
+    /// 착지/흡입 애니메이션 도중 씬 전환 등으로 소멸되어 확정 드랍이 유실되는 것을 방지한다.
+    /// </summary>
+    public void ForceAcquireAllActive()
+    {
+        int count = activeItemsList.Count;
+        if (count == 0) return;
+
+        cleanupList.Clear();
+        cleanupList.AddRange(activeItemsList);
+
+        for (int i = 0; i < cleanupList.Count; i++)
+        {
+            OnLootItemAcquired(cleanupList[i]);
+        }
+
         cleanupList.Clear();
     }
 
@@ -151,8 +171,7 @@ public class LootManager : MonoBehaviour
     /// <param name="_autoAcquireTarget">지정 시 범위 판정 없이 착지 즉시 이 타겟으로 흡입되어 습득된다</param>
     public void SpawnLootItem(Vector3 _spawnPos, LootType _targetLootType = LootType.None, Transform _autoAcquireTarget = null)
     {
-        // 1~3개 랜덤 스폰
-        int spawnCount = UnityEngine.Random.Range(1, 4);
+        int spawnCount = 1;
 
         for (int i = 0; i < spawnCount; i++)
         {
