@@ -76,6 +76,13 @@ public static class LocKeys
         public const int abilityDescriptionAxeCriticalDamage = 4203428;
     }
 
+    public static class LootTooltipUI
+    {
+        public const int foundbox = 20971521;
+        public const int sporepotion = 20971522;
+        public const int starcompass = 20971523;
+    }
+
     public static class MainMenuUI
     {
         public const int newGame = 16777217;

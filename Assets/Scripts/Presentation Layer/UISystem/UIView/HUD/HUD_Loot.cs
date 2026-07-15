@@ -11,24 +11,43 @@ public class HUD_Loot : MonoBehaviour
     [Header("References")]
     [SerializeField] private Transform container;      // Horizontal Layout Group이 적용된 부모 객체
     [SerializeField] private CanvasGroup rootCanvasGroup; // 트랜지션 페이드(Fade) 처리를 위한 캔버스 그룹
+    [SerializeField] private HUD_LootTooltip tooltipUI; // 툴팁 UI 컴포넌트 (마우스 오버 시 설명 텍스트 표시)
     
     [Header("Settings")]
     [SerializeField] private int maxLootCount = 5;
     [SerializeField] private Vector2 imageSize = new Vector2(100f, 100f); // 생성될 이미지의 크기
+
+    [System.Serializable]
+    public struct LootSpritePair
+    {
+        public LootType lootType;
+        public Sprite sprite;
+        public string tooltipLocKey; // 로컬라이징 텍스트 식별자 키 (예: "ITEM_WOOD_DESC")
+    }
+
+    [Header("Loot Sprite Binding")]
+    [SerializeField] private LootSpritePair[] lootSpritePairs;
     
     [Header("Acquire Motion Settings")]
     [SerializeField] private float motionDuration = 0.6f;
     [SerializeField] private Vector3 maxScale = new Vector3(1.4f, 1.4f, 1f);
     [SerializeField] private Color flashColor = Color.white;
-
+    
     private List<Image> lootImages = new List<Image>();
+    private List<HUD_LootSlotTrigger> lootTriggers = new List<HUD_LootSlotTrigger>();
     private Material flashMaterial;
     private int currentLootIndex = 0;
-    
     private Tween transitionTween;
+    private LocalizationManager locManager;
 
-    public void Initialize()
+    public void Initialize(LocalizationManager _locManager = null)
     {
+        locManager = _locManager;
+        
+        if (null != tooltipUI)
+        {
+            tooltipUI.Initialize();
+        }
         if (null == container)
         {
             return;
@@ -58,7 +77,7 @@ public class HUD_Loot : MonoBehaviour
             _newObj.transform.SetParent(container, false);
             
             Image _newImage = _newObj.AddComponent<Image>();
-            _newImage.raycastTarget = false; 
+            _newImage.raycastTarget = true; // 툴팁 마우스 이벤트를 받기 위해 true로 설정
             
             RectTransform _rect = _newObj.GetComponent<RectTransform>();
             if (null != _rect)
@@ -89,27 +108,75 @@ public class HUD_Loot : MonoBehaviour
             _clearColor.a = 0f;
             _overlayImage.color = _clearColor;
             
+            // 툴팁 호버 이벤트용 트리거 스크립트 자동 부착
+            HUD_LootSlotTrigger _trigger = _newObj.AddComponent<HUD_LootSlotTrigger>();
+            _trigger.Initialize(tooltipUI);
+
             _newObj.SetActive(false);
             lootImages.Add(_newImage);
+            lootTriggers.Add(_trigger);
         }
     }
 
     /// <summary>
     /// 전리품을 획득했을 때 호출되어 이미지를 교체하고 모션을 재생합니다.
     /// </summary>
-    public void AcquireLoot(Sprite _lootSprite)
+    public void AcquireLoot(LootType _acquiredType)
     {
-        if (null == _lootSprite || 0 == lootImages.Count)
+        if (null == lootSpritePairs || 0 == lootImages.Count)
         {
             return;
         }
 
+        // 바인딩된 배열에서 매칭되는 스프라이트 및 설명 ID 찾기
+        Sprite _lootSprite = null;
+        string _locKey = string.Empty;
+        for (int i = 0; i < lootSpritePairs.Length; i++)
+        {
+            if (lootSpritePairs[i].lootType == _acquiredType)
+            {
+                _lootSprite = lootSpritePairs[i].sprite;
+                _locKey = lootSpritePairs[i].tooltipLocKey;
+                break;
+            }
+        }
+
+        if (null == _lootSprite) return;
+
+        // 중복 검사: 이미 화면에 켜져 있는 동일한 전리품이 있는지 확인
+        for (int i = 0; i < lootImages.Count; i++)
+        {
+            if (true == lootImages[i].gameObject.activeInHierarchy && _lootSprite == lootImages[i].sprite)
+            {
+                // 동일한 전리품이 이미 있다면 새로 슬롯을 차지하지 않고, 기존 슬롯의 애니메이션만 다시 튕겨줍니다.
+                Image _existingOverlay = lootImages[i].transform.GetChild(0).GetComponent<Image>();
+                PlayAcquireMotion(lootImages[i], _existingOverlay);
+                return;
+            }
+        }
+
         Image _targetImage = lootImages[currentLootIndex];
+        HUD_LootSlotTrigger _targetTrigger = lootTriggers[currentLootIndex];
         
         if (null != _targetImage)
         {
             _targetImage.sprite = _lootSprite;
             _targetImage.gameObject.SetActive(true);
+
+            // 로컬라이징 텍스트 조회 및 트리거 갱신
+            string _descText = string.Empty;
+            if (null != locManager && false == string.IsNullOrEmpty(_locKey))
+            {
+                _descText = locManager.GetText(_locKey);
+            }
+            
+            // 텍스트를 못 찾았을 경우 키값 자체를 띄워 로컬라이징 문제인지 마우스 이벤트 문제인지 구분
+            if (string.IsNullOrEmpty(_descText))
+            {
+                _descText = string.IsNullOrEmpty(_locKey) ? "No Loc Key" : _locKey;
+            }
+            
+            _targetTrigger.SetDescription(_descText);
 
             // 오버레이 이미지에도 똑같은 스프라이트를 넣어주어 뼈대를 맞춤
             Image _overlayImage = _targetImage.transform.GetChild(0).GetComponent<Image>();
@@ -199,27 +266,26 @@ public class HUD_Loot : MonoBehaviour
 
     #region Editor Test Logic
     [Header("Test Mode")]
-    [SerializeField] private Sprite[] testSprites;
-    private int testSpriteIndex = 0;
+    private int testLootIndex = 0;
 
     [NaughtyAttributes.Button("Test Acquire Loot (순차 획득)")]
     private void TestAcquireLootSequence()
     {
-        if (null == testSprites || 0 == testSprites.Length)
+        if (null == lootSpritePairs || 0 == lootSpritePairs.Length)
         {
-            Debug.LogWarning("테스트용 스프라이트(testSprites)를 인스펙터에 하나 이상 등록해주세요.");
+            Debug.LogWarning("바인딩된 Loot Type이 없습니다.");
             return;
         }
 
-        // 등록된 스프라이트를 순차적으로 넘겨줍니다.
-        Sprite _sprite = testSprites[testSpriteIndex];
-        AcquireLoot(_sprite);
+        // 등록된 LootType을 순차적으로 넘겨줍니다.
+        LootType _type = lootSpritePairs[testLootIndex].lootType;
+        AcquireLoot(_type);
 
-        testSpriteIndex++;
+        testLootIndex++;
         
-        if (testSprites.Length <= testSpriteIndex)
+        if (lootSpritePairs.Length <= testLootIndex)
         {
-            testSpriteIndex = 0;
+            testLootIndex = 0;
         }
     }
     #endregion

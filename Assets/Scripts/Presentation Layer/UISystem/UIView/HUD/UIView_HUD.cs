@@ -105,6 +105,10 @@ public class UIView_HUD : UIView
 
     private void OnLootAcquired(LootType newlyAcquiredType)
     {
+        if (null != hudLoot)
+        {
+            hudLoot.AcquireLoot(newlyAcquiredType);
+        }
     }
 
     public override void Update()
@@ -180,7 +184,7 @@ public class UIView_HUD : UIView
             hudLoot = Instantiate(hudLootPrefab, uiRoot.transform).GetComponent<HUD_Loot>();
 
         if (null != hudLoot)
-            hudLoot.Initialize();
+            hudLoot.Initialize(viewCtx?.localizationManager);
     }
 
 
