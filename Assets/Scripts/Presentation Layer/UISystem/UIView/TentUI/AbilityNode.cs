@@ -13,6 +13,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private string displayName;
     [SerializeField] private AbilityLevelBadgeType levelBadge = AbilityLevelBadgeType.None;
+    [SerializeField] private int requiredPrestigeLevel;
     [SerializeField] private int currentLevel;
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private SkillType[] parentSkillTypes;
@@ -58,6 +59,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
     public AbilityLevelBadgeType LevelBadge => levelBadge;
+    public int RequiredPrestigeLevel => Mathf.Max(requiredPrestigeLevel, 0);
     public int CurrentLevel => currentLevel;
     public Vector2Int GridPosition => gridPosition;
     public SkillType[] ParentSkillTypes => parentSkillTypes;
@@ -123,6 +125,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         skillType = _skillType;
         displayName = _displayName;
         levelBadge = ParseLevelBadge(_definition.levelBadge);
+        requiredPrestigeLevel = Mathf.Max(_definition.requiredPrestigeLevel, 0);
         currentLevel = 0;
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentSkillTypes = ConvertParentSkillTypes(_definition.GetParentSkillTypeNames());

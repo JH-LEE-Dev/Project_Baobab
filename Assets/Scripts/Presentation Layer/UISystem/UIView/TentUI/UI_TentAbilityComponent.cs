@@ -1820,9 +1820,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         bool wasLockedByLevel = node.IsUnlockedByLevel() == false;
         SyncNodeLevelsFromProvider();
+        bool prestigeIncreased = _currentHUDState.IsValid &&
+            _previousHUDState.IsValid &&
+            _currentHUDState.PrestigeLevel > _previousHUDState.PrestigeLevel;
 
         // 해금되는 순간임
-        if (wasLockedByLevel && node.IsUnlockedByLevel())
+        if ((wasLockedByLevel && node.IsUnlockedByLevel()) || prestigeIncreased)
             RefreshNodeVisibility(true);
         else
             RefreshLines();
@@ -2084,10 +2087,27 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (_node == null)
             return false;
 
+        if (SatisfiesPrestigeRequirement(_node) == false)
+            return false;
+
         if (skillSystemProvider != null)
             return ShouldShowNodeByProvider(_node);
 
         return ShouldShowNodeByVisualConnection(_node);
+    }
+
+    private bool SatisfiesPrestigeRequirement(AbilityNode _node)
+    {
+        if (_node == null)
+            return false;
+
+        if (_node.RequiredPrestigeLevel <= 0)
+            return true;
+
+        if (skillSystemProvider == null)
+            return false;
+
+        return skillSystemProvider.GetCurrentPrestigeLevel() >= _node.RequiredPrestigeLevel;
     }
 
     // 상위 스킬 시스템의 선행 조건 상태를 기준으로 노드 노출 여부를 판단한다.

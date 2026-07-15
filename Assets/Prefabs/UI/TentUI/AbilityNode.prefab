@@ -841,6 +841,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AbilityNode
   skillType: 0
   displayName: 
+  levelBadge: 0
+  requiredPrestigeLevel: 0
   currentLevel: 0
   gridPosition: {x: 0, y: 0}
   parentSkillTypes: 
@@ -849,6 +851,7 @@ MonoBehaviour:
   abilityBaseImage: {fileID: 3304097743168148013}
   abilityBackgroundImage: {fileID: 1363425424598749706}
   abilityPictureImage: {fileID: 6666146036124203983}
+  abilityLevelImage: {fileID: 1182543981634824514}
   abilityBarImage: {fileID: 6541639837274626401}
   defaultPictureSprite: {fileID: 21300000, guid: e5298198a64592941849ea8b38428bab, type: 3}
   vfxComponent: {fileID: 6061039416078355049}

@@ -4,6 +4,7 @@
             "skillType": "AxeDamage1",
             "nameLocId": 101,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": 0,
             "parents": []
@@ -12,6 +13,7 @@
             "skillType": "AxeDurability1",
             "nameLocId": 103,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": 3,
             "parents": [
@@ -27,6 +29,7 @@
             "skillType": "Stamina1",
             "nameLocId": 105,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -5,
             "gridY": 2,
             "parents": [
@@ -42,6 +45,7 @@
             "skillType": "LogValue1",
             "nameLocId": 107,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 3,
             "gridY": 0,
             "parents": [
@@ -57,6 +61,7 @@
             "skillType": "MovementSpeed",
             "nameLocId": 109,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -7,
             "gridY": -2,
             "parents": [
@@ -72,6 +77,7 @@
             "skillType": "Stamina2",
             "nameLocId": 111,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -7,
             "gridY": 2,
             "parents": [
@@ -87,6 +93,7 @@
             "skillType": "FatigueMaxIncrease1",
             "nameLocId": 113,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -3,
             "gridY": 0,
             "parents": [
@@ -102,6 +109,7 @@
             "skillType": "FatigueMaxIncrease2",
             "nameLocId": 115,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -5,
             "gridY": 0,
             "parents": [
@@ -117,6 +125,7 @@
             "skillType": "FatigueMaxIncrease3",
             "nameLocId": 117,
             "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
             "gridX": -7,
             "gridY": 0,
             "parents": [
@@ -132,6 +141,7 @@
             "skillType": "SourceOfSpeed1",
             "nameLocId": 119,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -9,
             "gridY": -4,
             "parents": [
@@ -147,6 +157,7 @@
             "skillType": "WideGreenForestOvergrowth",
             "nameLocId": 121,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": 2,
             "parents": [
@@ -162,6 +173,7 @@
             "skillType": "WoodenTransportBoxExpansion1",
             "nameLocId": 123,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 5,
             "gridY": 2,
             "parents": [
@@ -177,6 +189,7 @@
             "skillType": "InventoryExpansion1",
             "nameLocId": 125,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": 4,
             "parents": [
@@ -192,6 +205,7 @@
             "skillType": "WoodenTransportBoxExpansion2",
             "nameLocId": 127,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": 4,
             "parents": [
@@ -207,6 +221,7 @@
             "skillType": "LogCapacityIncrease1",
             "nameLocId": 129,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 5,
             "gridY": 4,
             "parents": [
@@ -222,6 +237,7 @@
             "skillType": "LogCapacityIncrease2",
             "nameLocId": 131,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": 6,
             "parents": [
@@ -237,6 +253,7 @@
             "skillType": "SawmillLogStorageExpansion1",
             "nameLocId": 133,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 5,
             "gridY": -2,
             "parents": [
@@ -252,6 +269,7 @@
             "skillType": "LogProcessingSpeed1",
             "nameLocId": 135,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": -2,
             "parents": [
@@ -267,6 +285,7 @@
             "skillType": "SawmillLogStorageExpansion2",
             "nameLocId": 137,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": -4,
             "parents": [
@@ -282,6 +301,7 @@
             "skillType": "PowerSupply",
             "nameLocId": 139,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": -2,
             "parents": [
@@ -297,6 +317,7 @@
             "skillType": "LogProcessingSpeed2",
             "nameLocId": 141,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": -4,
             "parents": [
@@ -312,6 +333,7 @@
             "skillType": "BountifulTree1",
             "nameLocId": 143,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 5,
             "gridY": 0,
             "parents": [
@@ -327,6 +349,7 @@
             "skillType": "FascinatingLogChance1",
             "nameLocId": 145,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": 2,
             "parents": [
@@ -342,6 +365,7 @@
             "skillType": "PickupRange1",
             "nameLocId": 147,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -5,
             "gridY": -2,
             "parents": [
@@ -357,6 +381,7 @@
             "skillType": "LogValue2",
             "nameLocId": 149,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 7,
             "gridY": 0,
             "parents": [
@@ -372,6 +397,7 @@
             "skillType": "BountifulTree2",
             "nameLocId": 151,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": 0,
             "parents": [
@@ -387,6 +413,7 @@
             "skillType": "Shockwave1",
             "nameLocId": 153,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -2,
             "gridY": 7,
             "parents": [
@@ -402,6 +429,7 @@
             "skillType": "AxeDamage2",
             "nameLocId": 155,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": 5,
             "parents": [
@@ -417,6 +445,7 @@
             "skillType": "AxeAttackSpeed1",
             "nameLocId": 157,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 2,
             "gridY": 5,
             "parents": [
@@ -432,6 +461,7 @@
             "skillType": "AxeDamage3",
             "nameLocId": 159,
             "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": 9,
             "parents": [
@@ -447,6 +477,7 @@
             "skillType": "AxeCriticalChance1",
             "nameLocId": 161,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 2,
             "gridY": 7,
             "parents": [
@@ -462,6 +493,7 @@
             "skillType": "ShockwaveDamage1",
             "nameLocId": 163,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -4,
             "gridY": 9,
             "parents": [
@@ -477,6 +509,7 @@
             "skillType": "ShockwaveRange1",
             "nameLocId": 165,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -4,
             "gridY": 5,
             "parents": [
@@ -492,6 +525,7 @@
             "skillType": "AxeCriticalDamage1",
             "nameLocId": 167,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 4,
             "gridY": 7,
             "parents": [
@@ -507,6 +541,7 @@
             "skillType": "Shockwave2",
             "nameLocId": 169,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -4,
             "gridY": 7,
             "parents": [
@@ -522,6 +557,7 @@
             "skillType": "ShockwaveDamage2",
             "nameLocId": 171,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -6,
             "gridY": 9,
             "parents": [
@@ -537,6 +573,7 @@
             "skillType": "ShockwaveRange2",
             "nameLocId": 173,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -6,
             "gridY": 5,
             "parents": [
@@ -552,6 +589,7 @@
             "skillType": "EfficientMovement1",
             "nameLocId": 175,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -7,
             "gridY": -4,
             "parents": [
@@ -567,6 +605,7 @@
             "skillType": "SporeShieldRegenBlock1",
             "nameLocId": 177,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 3,
             "gridX": 0,
             "gridY": -3,
             "parents": [
@@ -582,6 +621,7 @@
             "skillType": "SteelAxe1",
             "nameLocId": 179,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -2,
             "gridY": 5,
             "parents": [
@@ -597,6 +637,7 @@
             "skillType": "ShockwaveDamage3",
             "nameLocId": 181,
             "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
             "gridX": -8,
             "gridY": 9,
             "parents": [
@@ -612,6 +653,7 @@
             "skillType": "ShockWaveEnforcement",
             "nameLocId": 182,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": -8,
             "gridY": 11,
             "parents": [
@@ -627,6 +669,7 @@
             "skillType": "ShockWaveCritical",
             "nameLocId": 183,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": -6,
             "gridY": 11,
             "parents": [
@@ -642,6 +685,7 @@
             "skillType": "Shockwave3",
             "nameLocId": 184,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": -8,
             "gridY": 7,
             "parents": [
@@ -657,6 +701,7 @@
             "skillType": "ShockWaveMastery",
             "nameLocId": 185,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": -10,
             "gridY": 7,
             "parents": [
@@ -684,6 +729,7 @@
             "skillType": "ShockwaveRange3",
             "nameLocId": 186,
             "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
             "gridX": -8,
             "gridY": 5,
             "parents": [
@@ -699,6 +745,7 @@
             "skillType": "AxeDurability2",
             "nameLocId": 187,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -2,
             "gridY": 11,
             "parents": [
@@ -714,6 +761,7 @@
             "skillType": "SteelAxe2",
             "nameLocId": 188,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -4,
             "gridY": 11,
             "parents": [
@@ -729,6 +777,7 @@
             "skillType": "AxeRange1",
             "nameLocId": 189,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 2,
             "gridY": 11,
             "parents": [
@@ -744,6 +793,7 @@
             "skillType": "MultiAttack",
             "nameLocId": 190,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": 4,
             "gridY": 11,
             "parents": [
@@ -759,6 +809,7 @@
             "skillType": "AxeDamage4",
             "nameLocId": 191,
             "levelBadge": "IV",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": 13,
             "parents": [
@@ -774,6 +825,7 @@
             "skillType": "AxeCriticalChance2",
             "nameLocId": 192,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 2,
             "gridY": 15,
             "parents": [
@@ -789,6 +841,7 @@
             "skillType": "AxeCriticalDamage2",
             "nameLocId": 193,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 4,
             "gridY": 15,
             "parents": [
@@ -804,6 +857,7 @@
             "skillType": "Boomerang1",
             "nameLocId": 194,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -2,
             "gridY": 15,
             "parents": [
@@ -819,6 +873,7 @@
             "skillType": "BoomerangDamage1",
             "nameLocId": 195,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -4,
             "gridY": 17,
             "parents": [
@@ -834,6 +889,7 @@
             "skillType": "BoomerangRange1",
             "nameLocId": 196,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -4,
             "gridY": 13,
             "parents": [
@@ -849,6 +905,7 @@
             "skillType": "LogValue3",
             "nameLocId": 197,
             "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
             "gridX": 11,
             "gridY": 0,
             "parents": [
@@ -864,6 +921,7 @@
             "skillType": "BountifulTree3",
             "nameLocId": 198,
             "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
             "gridX": 13,
             "gridY": 0,
             "parents": [
@@ -879,6 +937,7 @@
             "skillType": "FluffySporeForestOverGrowth",
             "nameLocId": 199,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": 11,
             "gridY": 2,
             "parents": [
@@ -894,6 +953,7 @@
             "skillType": "FascinatingLogChance2",
             "nameLocId": 200,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 13,
             "gridY": 2,
             "parents": [
@@ -909,6 +969,7 @@
             "skillType": "TreeVitamin1",
             "nameLocId": 201,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 15,
             "gridY": 2,
             "parents": [
@@ -924,6 +985,7 @@
             "skillType": "LogProcessingSpeed3",
             "nameLocId": 202,
             "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
             "gridX": 11,
             "gridY": -6,
             "parents": [
@@ -939,6 +1001,7 @@
             "skillType": "ProcessLineExpand1",
             "nameLocId": 203,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 9,
             "gridY": -6,
             "parents": [
@@ -954,6 +1017,7 @@
             "skillType": "ConveyorSpeed1",
             "nameLocId": 204,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 11,
             "gridY": -4,
             "parents": [
@@ -969,6 +1033,7 @@
             "skillType": "ItemTransferSpeedUP1",
             "nameLocId": 205,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 11,
             "gridY": -2,
             "parents": [
@@ -984,6 +1049,7 @@
             "skillType": "FatigueMaxIncrease4",
             "nameLocId": 206,
             "levelBadge": "IV",
+            "requiredPrestigeLevel": 0,
             "gridX": -9,
             "gridY": 0,
             "parents": [
@@ -999,6 +1065,7 @@
             "skillType": "SourceOfStamina1",
             "nameLocId": 207,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -9,
             "gridY": -2,
             "parents": [
@@ -1014,6 +1081,7 @@
             "skillType": "SporeShieldCut1",
             "nameLocId": 208,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": -2,
             "gridY": -5,
             "parents": [
@@ -1029,6 +1097,7 @@
             "skillType": "SporeShieldRegenBlock2",
             "nameLocId": 209,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": -7,
             "parents": [
@@ -1044,6 +1113,7 @@
             "skillType": "SporeShieldPenetration1",
             "nameLocId": 210,
             "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
             "gridX": 2,
             "gridY": -5,
             "parents": [
@@ -1059,6 +1129,7 @@
             "skillType": "SporeShieldCut2",
             "nameLocId": 211,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": -2,
             "gridY": -7,
             "parents": [
@@ -1074,6 +1145,7 @@
             "skillType": "SporeShieldPenetration2",
             "nameLocId": 212,
             "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
             "gridX": 2,
             "gridY": -7,
             "parents": [
@@ -1089,6 +1161,7 @@
             "skillType": "ShieldExplosionUnlock",
             "nameLocId": 213,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": -9,
             "parents": [
@@ -1116,6 +1189,7 @@
             "skillType": "ShieldExplosionDamage1",
             "nameLocId": 214,
             "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
             "gridX": 0,
             "gridY": -11,
             "parents": [

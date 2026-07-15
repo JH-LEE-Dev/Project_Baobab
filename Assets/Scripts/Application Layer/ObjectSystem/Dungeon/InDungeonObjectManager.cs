@@ -187,8 +187,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 포자막 폭발 VFX - top/bottom 주변에서 인터벌을 두고 연쇄적으로 재생
     private const int SporeExplosionVfxMinCount = 4;
-    private const int SporeExplosionVfxMaxCount = 5;
-    private const float SporeExplosionVfxInterval = 0.08f;
+    private const int SporeExplosionVfxMaxCount = 4;
+    private const float SporeExplosionVfxInterval = 0.15f;
     private const float SporeExplosionVfxSpread = 0.25f;
     // 코루틴 루프에서 매번 new WaitForSeconds를 생성하면 반복마다 GC 쓰레기가 생기므로 캐싱해서 재사용한다.
     private static readonly WaitForSeconds sporeExplosionVfxWait = new WaitForSeconds(SporeExplosionVfxInterval);
@@ -1407,16 +1407,27 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         Vector3 topPos = _source.treeVisualComponent != null ? _source.treeVisualComponent.GetTopRootPosition() : bottomPos;
 
         int count = UnityEngine.Random.Range(SporeExplosionVfxMinCount, SporeExplosionVfxMaxCount + 1);
+        bool nextTopLeft = UnityEngine.Random.value < 0.5f;
+        bool nextBottomLeft = UnityEngine.Random.value < 0.5f;
 
         for (int i = 0; i < count; i++)
         {
-            Vector3 basePos = (i % 2 == 0) ? topPos : bottomPos;
+            bool useTop = i % 2 == 0;
+            Vector3 basePos = useTop ? topPos : bottomPos;
+            bool useLeft = useTop ? nextTopLeft : nextBottomLeft;
+
+            if (useTop)
+                nextTopLeft = !nextTopLeft;
+            else
+                nextBottomLeft = !nextBottomLeft;
+
+            float horizontalOffset = UnityEngine.Random.Range(0f, SporeExplosionVfxSpread);
             Vector3 randomOffset = new Vector3(
-                UnityEngine.Random.Range(-SporeExplosionVfxSpread, SporeExplosionVfxSpread),
+                useLeft ? -horizontalOffset : horizontalOffset,
                 UnityEngine.Random.Range(-SporeExplosionVfxSpread, SporeExplosionVfxSpread),
                 0f);
 
-            inDungeonVFXManager.PlaySporeExplosionVFX(basePos + randomOffset);
+            inDungeonVFXManager.PlaySporeExplosionVFX(basePos + randomOffset, randomOffset);
 
             yield return sporeExplosionVfxWait;
         }

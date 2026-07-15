@@ -30,6 +30,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     [SerializeField] private int nameLocId;
     [SerializeField] private string displayName;
     [SerializeField] private AbilityLevelBadgeType levelBadge = AbilityLevelBadgeType.None;
+    [SerializeField] private int requiredPrestigeLevel;
     [SerializeField] private int maxLevel = 1;
     [SerializeField] private Vector2Int gridPosition;
     [SerializeField] private List<AbilityToolParentLink> parentLinks = new List<AbilityToolParentLink>();
@@ -55,6 +56,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public int NameLocId => nameLocId;
     public string DisplayName => displayName;
     public AbilityLevelBadgeType LevelBadge => levelBadge;
+    public int RequiredPrestigeLevel => Mathf.Max(requiredPrestigeLevel, 0);
     public int MaxLevel => maxLevel;
     public ProgressionCurve MoneyCurve => moneyCurve;
     public ProgressionCurve CarrotCurve => carrotCurve;
@@ -77,6 +79,7 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
         nameLocId = _definition.nameLocId;
         displayName = _displayName;
         levelBadge = ParseLevelBadge(_definition.levelBadge);
+        requiredPrestigeLevel = Mathf.Max(_definition.requiredPrestigeLevel, 0);
         gridPosition = new Vector2Int(_definition.gridX, _definition.gridY);
         parentLinks.Clear();
 
@@ -93,6 +96,11 @@ public class AbilityToolNode : MonoBehaviour, IPointerEnterHandler, IPointerExit
     {
         levelBadge = _levelBadge;
         owner?.RefreshNodeLevelBadge(this);
+    }
+
+    public void ApplyRequiredPrestigeLevel(int _requiredPrestigeLevel)
+    {
+        requiredPrestigeLevel = Mathf.Max(_requiredPrestigeLevel, 0);
     }
 
     public void ApplyLogicData(int _maxLevel, ProgressionCurve _moneyCurve, ProgressionCurve _carrotCurve, List<AbilityToolSkillCommandEntry> _skillCommands)

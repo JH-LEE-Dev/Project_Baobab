@@ -1083,6 +1083,7 @@ public class AbilityToolManager : MonoBehaviour
                 skillType = node.SkillType.ToString(),
                 nameLocId = nameLocId,
                 levelBadge = node.LevelBadge.ToString(),
+                requiredPrestigeLevel = node.RequiredPrestigeLevel,
                 gridX = node.GridPosition.x,
                 gridY = node.GridPosition.y,
                 parents = BuildExportParents(node.ParentLinks)
@@ -1540,6 +1541,7 @@ public class AbilityToolManager : MonoBehaviour
         public string skillType;
         public int nameLocId;
         public string levelBadge;
+        public int requiredPrestigeLevel;
         public int gridX;
         public int gridY;
         public AbilityParentJson[] parents;

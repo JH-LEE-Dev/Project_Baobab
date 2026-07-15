@@ -12,6 +12,7 @@ public class AbilityNodeDefinitionJson
     public string skillType;
     public int nameLocId;
     public string levelBadge;
+    public int requiredPrestigeLevel;
     public int gridX;
     public int gridY;
     public AbilityParentJson[] parents;

@@ -127,13 +127,13 @@ public class InDungeonVFXManager : MonoBehaviour
     /// 포자 폭발 VFX를 스폰합니다. 별도 프리팹 없이 코드에서 직접 생성하던 기존 방식 대신,
     /// 프리팹을 ObjectPool로 재사용합니다.
     /// </summary>
-    public void PlaySporeExplosionVFX(Vector3 _position, int _sortingOrderOffset = 100)
+    public void PlaySporeExplosionVFX(Vector3 _position, Vector2 _outwardDirection, int _sortingOrderOffset = 100)
     {
         if (sporeExplosionVfxPool == null) return;
 
         SporeExplosionVFX instance = sporeExplosionVfxPool.Get();
         instance.transform.position = _position;
-        instance.Play(_sortingOrderOffset);
+        instance.Play(_sortingOrderOffset, _outwardDirection);
     }
 
     private SporeExplosionVFX CreateSporeExplosionVfx()

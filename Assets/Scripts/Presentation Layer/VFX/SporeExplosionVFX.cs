@@ -13,6 +13,10 @@ public class SporeExplosionVFX : MonoBehaviour
 
     private const float FrameRate = 24f;
     private const int SortingPrecision = 100;
+    private const float MinStartScale = 0.5f;
+    private const float MaxStartScale = 0.8f;
+    private const float MinDriftPixels = 3f;
+    private const float MaxDriftPixels = 4f;
 
     // 새로 생성되는 GameObject는 기본적으로 "Default" 정렬 레이어를 쓰는데, 이 프로젝트는
     // Default를 정렬 레이어 목록 맨 뒤(가장 안쪽)에만 두고 있어 다른 오브젝트에 전부 가려진다.
@@ -22,7 +26,11 @@ public class SporeExplosionVFX : MonoBehaviour
     private SpriteRenderer spriteRenderer;
     private IObjectPool<SporeExplosionVFX> pool;
     private float frameTimer;
+    private float elapsedTime;
+    private float animationDuration;
     private int currentFrame;
+    private Vector3 startPosition;
+    private Vector3 endPosition;
 
     private void Awake()
     {
@@ -34,7 +42,7 @@ public class SporeExplosionVFX : MonoBehaviour
         pool = _pool;
     }
 
-    public void Play(int _sortingOrderOffset)
+    public void Play(int _sortingOrderOffset, Vector2 _outwardDirection)
     {
         if (frames == null || frames.Length == 0)
         {
@@ -44,6 +52,21 @@ public class SporeExplosionVFX : MonoBehaviour
 
         currentFrame = 0;
         frameTimer = 0f;
+        elapsedTime = 0f;
+        animationDuration = frames.Length / FrameRate;
+
+        float randomScale = Random.Range(MinStartScale, MaxStartScale);
+        transform.localScale = Vector3.one * randomScale;
+        transform.localRotation = Quaternion.Euler(0f, 0f, Random.Range(0f, 360f));
+
+        Vector2 driftDirection = _outwardDirection.sqrMagnitude > 0f
+            ? _outwardDirection.normalized
+            : Random.insideUnitCircle.normalized;
+        float pixelsPerUnit = Mathf.Max(1f, frames[0].pixelsPerUnit);
+        float driftDistance = Random.Range(MinDriftPixels, MaxDriftPixels) / pixelsPerUnit;
+        startPosition = transform.position;
+        endPosition = startPosition + (Vector3)(driftDirection * driftDistance);
+
         spriteRenderer.sprite = frames[0];
         spriteRenderer.sortingLayerName = SortingLayerName;
 
@@ -55,7 +78,16 @@ public class SporeExplosionVFX : MonoBehaviour
     {
         if (frames == null || frames.Length == 0) return;
 
-        frameTimer += Time.deltaTime;
+        float deltaTime = Time.deltaTime;
+        frameTimer += deltaTime;
+        elapsedTime += deltaTime;
+
+        float normalizedTime = animationDuration > 0f
+            ? Mathf.Clamp01(elapsedTime / animationDuration)
+            : 1f;
+        float easedTime = 1f - Mathf.Pow(1f - normalizedTime, 3f);
+        transform.position = Vector3.LerpUnclamped(startPosition, endPosition, easedTime);
+
         float frameDuration = 1f / FrameRate;
 
         while (frameTimer >= frameDuration)
