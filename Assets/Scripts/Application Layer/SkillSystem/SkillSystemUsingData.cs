@@ -316,6 +316,7 @@ public enum SkillCommandType
     StarGazeUnlock,
     AdvancedLogChance,
     PerfectLogChance,
+    LumberjackNPCSpeed,
 }
 
 public enum AbilityLevelUpRejectReason

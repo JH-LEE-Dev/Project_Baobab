@@ -1316,7 +1316,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseShieldDamageMultiplier(float _amount)
     {
-        shieldDamageMultiplier += (_amount / 100f);
+        shieldDamageMultiplier += _amount;
     }
 
     public void IncreaseShieldPenetration(float _amount)
@@ -1440,7 +1440,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseStarMarkDamage(float _amount)
     {
-        starMarkDamageMultiplier += (_amount / 100f);
+        starMarkDamageMultiplier += _amount;
     }
 
     public void IncreaseConstellationDamage(float _amount)
@@ -1455,7 +1455,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     public void IncreaseManifestationBrandBonus(float _amount)
     {
-        manifestationBrandBonusMultiplier += (_amount / 100f);
+        manifestationBrandBonusMultiplier += _amount;
     }
 
     // 별길 걸음 - 별 표식 나무 벌목 시 Stage3TreeGenerationStrategySO가 호출

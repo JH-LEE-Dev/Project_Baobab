@@ -227,7 +227,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         }
     }
 
-    private const float StarrootForestMaxDensityMultiplier = 7.5f;
+    private const float StarrootForestMaxDensityMultiplier = 1.075f;
 
     public void IncreaseTreeDensity(MapType _mapType, float _amount)
     {
@@ -235,7 +235,7 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         float currentMultiplier = GetTreeDensityMultiplier(_mapType);
         float newMultiplier = currentMultiplier + (_amount / 100.0f);
 
-        // 별뿌리 숲 과성장은 기획상 최대 7.5배로 상한이 걸려 있다.
+        // 별뿌리 숲 과성장은 기획상 최대 7.5%로 상한이 걸려 있다.
         if (_mapType == MapType.StarrootForest)
         {
             newMultiplier = Mathf.Min(newMultiplier, StarrootForestMaxDensityMultiplier);
