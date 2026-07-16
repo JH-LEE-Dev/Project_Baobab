@@ -485,6 +485,6 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     public void IncreaseJackPotAmount(float _amount)
     {
-        jackPotAmount += _amount;
+        jackPotAmount = _amount;
     }
 }
