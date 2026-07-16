@@ -964,7 +964,7 @@
         {
             "id": 9139,
             "key": "AbilityDescription_SporeShieldCut",
-            "kr": "<COLOR=ff5d8f>포자막</COLOR> 추가 피해율이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "kr": "<COLOR=ff5d8f>포자막</COLOR> 추가 피해 배수가 <COLOR=54D86A>{0}</COLOR> 증가합니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "SporeShieldCut"
