@@ -198,7 +198,13 @@ public enum SkillType
     SporeShieldRegenBlock2, // 포자막 회복 억제2
     SporeShieldCut1, // 포자 절단
     SporeShieldPenetration1, // 포자 관통력
+    SporeShieldCut2, // 포자 절단2
+    SporeShieldPenetration2, // 포자 관통력2
 
+    ShieldExplosionUnlock, // 포자막 폭발
+
+    ShieldExplosionDamage1, // 포자막 폭발 데미지1
+    ShieldExplosionRange1, // 포자막 폭발 범위1
 
     TestNode,  // TestNode
     MAX
