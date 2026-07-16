@@ -113,6 +113,9 @@ public class UnitSystem
         inventoryManager.ItemAddedEvent -= ItemAdded;
         inventoryManager.ItemAddedEvent += ItemAdded;
 
+        inventoryManager.ItemRemovedEvent -= ItemRemoved;
+        inventoryManager.ItemRemovedEvent += ItemRemoved;
+
         inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
         inventoryManager.ItemCantAcquiedEvent += ItemCantAcquied;
 
@@ -135,6 +138,7 @@ public class UnitSystem
         offroadContainer.ContainerUpdatedEvent -= OffroadContainerUpdated;
         inventoryManager.InventoryIsFullEvent -= InventoryIsFull;
         inventoryManager.ItemAddedEvent -= ItemAdded;
+        inventoryManager.ItemRemovedEvent -= ItemRemoved;
         inventoryManager.ItemCantAcquiedEvent -= ItemCantAcquied;
         unitLogicManager.GameEndEvent -= GameEnd;
         offroadContainer.ItemTransferToContainerEvent -= InventoryItemTransferToOffroadContainer;

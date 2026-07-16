@@ -78,9 +78,11 @@ public class EnvironmentSystem : MonoBehaviour, IEnvironmentProvider
 
     public void DI(IEnvironmentProvider _environmentProvider,
         TownObjectManager _townObjectManager,
-        InDungeonObjectManager _inDungeonObjectManager)
+        InDungeonObjectManager _inDungeonObjectManager,
+        InDungeonUnitSpawner _inDungeonUnitSpawner,
+        TownUnitSpawner _townUnitSpawner)
     {
-        environmentInteractionManager.DI(_environmentProvider, _townObjectManager, _inDungeonObjectManager);
+        environmentInteractionManager.DI(_environmentProvider, _townObjectManager, _inDungeonObjectManager, _inDungeonUnitSpawner, _townUnitSpawner);
     }
 
     public void Release()

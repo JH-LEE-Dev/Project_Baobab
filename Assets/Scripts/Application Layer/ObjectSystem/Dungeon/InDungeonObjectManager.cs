@@ -106,7 +106,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // 최적화: 인덱스 기반 관리로 HashSet 제거
     private List<TreeObj> activeTreesForUpdate = new List<TreeObj>(2500);
-    public IReadOnlyList<TreeObj> ActiveTrees => activeTreesForUpdate;
+    public IReadOnlyList<TreeObj> ActiveTrees => activeTrees;
 
     private IObjectPool<TreeObj> treePool;
     private Coroutine growthCoroutine;
@@ -1105,7 +1105,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 TreeObj lastTree = activeTrees[lastIdx];
                 activeTrees[index] = lastTree;
                 lastTree.PoolIndex = index;
-                if (spheres != null) spheres[index] = spheres[lastIdx];
+                if (enableCulling && spheres != null) spheres[index] = spheres[lastIdx];
             }
             activeTrees.RemoveAt(lastIdx);
 
