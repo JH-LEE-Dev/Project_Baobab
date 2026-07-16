@@ -108,7 +108,8 @@ public class GameInstaller : MonoBehaviour
         townSystem.townUnitSpawner);
 
         unitSystem.CreateCharacter();
-        environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager);
+        environmentSystem.DI(environmentSystem, townSystem.townObjectManager, inDungeonSystem.inDungeonObjectManager,
+        inDungeonSystem.inDungeonUnitSpawner, townSystem.townUnitSpawner);
 
         gameSystem.Initialize(inDungeonSystem, townSystem);
 

@@ -470,6 +470,14 @@ public class LumberjackNPC : MonoBehaviour
         }
     }
 
+    public void SetInShadow(bool _isInShadow, float _duration)
+    {
+        if (visualComponent != null)
+        {
+            visualComponent.SetInShadow(_isInShadow, _duration);
+        }
+    }
+
     // OnAxeImpact 메서드 그룹을 델리게이트로 변환할 때마다(=매 SwingAxe 호출마다) 새 힙 할당이
     // 발생하므로, 한 번만 만들어 재사용한다 (chopInterval마다 반복 호출되는 핫 패스).
     private System.Action cachedOnAxeImpact;

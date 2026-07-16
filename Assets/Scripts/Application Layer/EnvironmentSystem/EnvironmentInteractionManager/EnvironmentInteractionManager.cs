@@ -8,7 +8,8 @@ public class EnvironmentInteractionManager : MonoBehaviour
     private Character character;
     private TownObjectManager townObjectManager;
     private InDungeonObjectManager inDungeonObjectManager;
-    //private InDungeonUnitSpawner inDungeonUnitSpawner;
+    private InDungeonUnitSpawner inDungeonUnitSpawner;
+    private TownUnitSpawner townUnitSpawner;
 
     [SerializeField] private LayerMask treeLayer;
     [SerializeField] private float fadeDuration = 0.3f;
@@ -36,11 +37,15 @@ public class EnvironmentInteractionManager : MonoBehaviour
 
     public void DI(IEnvironmentProvider _environmentProvider,
         TownObjectManager _townObjectManager,
-        InDungeonObjectManager _inDungeonObjectManager)
+        InDungeonObjectManager _inDungeonObjectManager,
+        InDungeonUnitSpawner _inDungeonUnitSpawner,
+        TownUnitSpawner _townUnitSpawner)
     {
         environmentProvider = _environmentProvider;
         townObjectManager = _townObjectManager;
         inDungeonObjectManager = _inDungeonObjectManager;
+        inDungeonUnitSpawner = _inDungeonUnitSpawner;
+        townUnitSpawner = _townUnitSpawner;
     }
 
     [Header("Optimization Settings")]
@@ -139,6 +144,26 @@ public class EnvironmentInteractionManager : MonoBehaviour
         //         CheckUnitShadow(_activeAnimals[i], _invShadowRot, _shadowScaleY);
         //     }
         // }
+
+        // 3. 던전 럼버잭 NPC 체크
+        if (inDungeonUnitSpawner != null)
+        {
+            var _lumberjacks = inDungeonUnitSpawner.NPCs;
+            for (int i = 0; i < _lumberjacks.Count; i++)
+            {
+                if (_lumberjacks[i] != null) CheckUnitShadow(_lumberjacks[i], _invShadowRot, _shadowScaleY);
+            }
+        }
+
+        // 4. 마을 오프로드 포터 NPC 체크
+        if (townUnitSpawner != null)
+        {
+            var _porters = townUnitSpawner.NPCs;
+            for (int i = 0; i < _porters.Count; i++)
+            {
+                if (_porters[i] != null) CheckUnitShadow(_porters[i], _invShadowRot, _shadowScaleY);
+            }
+        }
     }
 
     private void CheckUnitShadow(MonoBehaviour _unit, Quaternion _invShadowRot, float _shadowScaleY)
@@ -180,6 +205,8 @@ public class EnvironmentInteractionManager : MonoBehaviour
 
         if (_unit is Character _c) _c.SetInShadow(_isInShadow, shadowFadeDuration);
         else if (_unit is Animal _a) _a.SetInShadow(_isInShadow, shadowFadeDuration);
+        else if (_unit is LumberjackNPC _l) _l.SetInShadow(_isInShadow, shadowFadeDuration);
+        else if (_unit is OffroadPorterNPC _p) _p.SetInShadow(_isInShadow, shadowFadeDuration);
     }
 
     private bool IsUnderTreeShadow(Vector2 _unitPos, TreeObj _tree, Quaternion _invShadowRot, float _shadowScaleY)

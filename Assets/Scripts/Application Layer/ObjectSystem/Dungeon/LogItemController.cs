@@ -255,7 +255,7 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
                 LogItem lastItem = activeItemsList[lastIdx];
                 activeItemsList[idx] = lastItem;
                 lastItem.PoolIndex = idx;
-                if (spheres != null) spheres[idx] = spheres[lastIdx];
+                if (enableCulling && spheres != null) spheres[idx] = spheres[lastIdx];
             }
             activeItemsList.RemoveAt(lastIdx);
             _item.PoolIndex = -1;

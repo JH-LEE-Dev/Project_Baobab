@@ -188,6 +188,14 @@ public class OffroadPorterNPC : MonoBehaviour
         }
     }
 
+    public void SetInShadow(bool _isInShadow, float _duration)
+    {
+        if (visualComponent != null)
+        {
+            visualComponent.SetInShadow(_isInShadow, _duration);
+        }
+    }
+
     public bool FindPathTo(Vector3 _targetWorldPos)
     {
         if (pathFindComponent == null) return false;
