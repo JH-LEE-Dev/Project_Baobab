@@ -1270,6 +1270,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         character.DisableAttackComponent();
         character.SetStaminaDecrease(false);
 
+        // 흡입 중이거나 흡입 대기 중이던 주변 아이템은 더 이상 습득되지 않도록 차단한다.
+        // (DisableAttackComponent가 끄는 bCanAcquiredItem은 새로운 감지만 막을 뿐, 이미 캐릭터를
+        // 향해 날아가고 있던 아이템은 그대로 도착해 습득되어 버리는 문제가 있었다.)
+        itemManager?.CancelActiveSucking();
+
         inputManager.PauseMove(true);
         inputManager.PauseInteractKey(true);
 
