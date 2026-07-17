@@ -17,10 +17,11 @@ public class UI_Inventory : MonoBehaviour
     [Header("Binding Obj")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
-    [SerializeField] private UI_Homing uiHoming;
+    // [SerializeField] private UI_Homing uiHoming;
     [SerializeField] private CurrencyCounterHUD uiCoin;
     [SerializeField] private UI_Backpack uiBackpack;
-    [SerializeField] private HUD_NotificationBadge notificationBadge;
+    // [SerializeField] private HUD_NotificationBadge notificationBadge;
+    [SerializeField] private UI_InventoryCapacityBar capacityBar;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
@@ -35,7 +36,7 @@ public class UI_Inventory : MonoBehaviour
     private const string backpackTag = "Backpack";
     private const string coinsTag = "Coins";
     private const string popupTag = "Popup";
-    private const string homingTag = "Homing";
+    // private const string homingTag = "Homing";
 
     private IInventory inventory;
     private IMoneyData moneyData;
@@ -53,16 +54,17 @@ public class UI_Inventory : MonoBehaviour
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(Transform _uiRoot, Action _clickedHomingEvent, Action _hoverEvent, Action _unHoverEvent)
+    public void Initialize(Transform _uiRoot, Action _hoverEvent, Action _unHoverEvent)
     {
         if (null != omp)
             omp.Initialize();
 
-        InitHoning(_clickedHomingEvent);
+        // InitHoning(_clickedHomingEvent);
         InitInventoryPopup();
         InitCoins();
         InitBackpack();
-        InitNotificationBadge();
+        // InitNotificationBadge();
+        InitCapacityBar();
 
         inventoryHoverEvent = _hoverEvent;
         inventoryUnHoverEvent = _unHoverEvent;
@@ -146,6 +148,28 @@ public class UI_Inventory : MonoBehaviour
             _slot.gameObject.SetActive(_i < _itemCount);
             _slot.UpdateBindSlotData(_item, inventory.maxItemCntPerSlot);
         }
+
+        UpdateCapacityBar();
+    }
+
+    private void UpdateCapacityBar()
+    {
+        if (null == capacityBar || null == inventory)
+            return;
+
+        capacityBar.UpdateCapacity(inventory.currentItemCount, inventory.maxCapacity);
+    }
+
+    public void PlayCapacityFeedback()
+    {
+        if (null != capacityBar)
+            capacityBar.PlayFeedbackAnimation();
+    }
+
+    public void PlayCapacityRemoveFeedback()
+    {
+        if (null != capacityBar)
+            capacityBar.PlayRemoveFeedbackAnimation();
     }
 
     private void InitInventoryPopup()
@@ -169,14 +193,14 @@ public class UI_Inventory : MonoBehaviour
             invPopup.OnHide();
     }
 
-    private void InitHoning(Action _clickedHomingEvent)
-    {
-        if (null == uiHoming)
-            return;
-
-        uiHoming.Initialize();
-        uiHoming.clickedEvent = _clickedHomingEvent;
-    }
+    // private void InitHoning(Action _clickedHomingEvent)
+    // {
+    //     if (null == uiHoming)
+    //         return;
+    //
+    //     uiHoming.Initialize();
+    //     uiHoming.clickedEvent = _clickedHomingEvent;
+    // }
 
     private void InitCoins()
     {
@@ -190,10 +214,16 @@ public class UI_Inventory : MonoBehaviour
             uiBackpack.Initialize();
     }
 
-    private void InitNotificationBadge()
+    // private void InitNotificationBadge()
+    // {
+    //     if (null != notificationBadge)
+    //         notificationBadge.Initialize();
+    // }
+
+    private void InitCapacityBar()
     {
-        if (null != notificationBadge)
-            notificationBadge.Initialize();
+        if (null != capacityBar)
+            capacityBar.Initialize();
     }
 
     public void CharacterEarnMoney(MoneyType _moneyType)
@@ -218,15 +248,18 @@ public class UI_Inventory : MonoBehaviour
         if (null != inventory)
             UpdateSlots(inventory.inventorySlots);
 
-        UpdateNotification();
+        if (null != capacityBar)
+            capacityBar.transform.localScale = Vector3.one;
+
+        UpdateCapacityBar();
     }
 
     public void MapChanged(MapType _currentMap)
     {
         CurrentMapType = _currentMap;
 
-        if (null != uiHoming)
-            uiHoming.currentMapType = _currentMap;
+        // if (null != uiHoming)
+        //     uiHoming.currentMapType = _currentMap;
 
         CloseInvAndAnimSkip();
     }
@@ -242,16 +275,16 @@ public class UI_Inventory : MonoBehaviour
         omp.PlayBackward(backpackTag, bReset: true, _skip: true);
         omp.PlayBackward(coinsTag, bReset: true, _skip: true);
         omp.PlayBackward(popupTag, bReset: true, _skip: true);
-        omp.PlayBackward(homingTag, bReset: true, _skip: true);
+        // omp.PlayBackward(homingTag, bReset: true, _skip: true);
     }
 
-    public void UpdateNotification()
-    {
-        if (null == notificationBadge)
-            return;
-
-        notificationBadge.UpdateAndInteraction(!IsOpening ? ++hideAccCount : 0); 
-    }
+    // public void UpdateNotification()
+    // {
+    //     if (null == notificationBadge)
+    //         return;
+    //
+    //     notificationBadge.UpdateAndInteraction(!IsOpening ? ++hideAccCount : 0); 
+    // }
 
     public void OnHide()
     {
@@ -271,7 +304,7 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != omp)
         {
-            omp.PlayBackward(homingTag, bReset: true);
+            // omp.PlayBackward(homingTag, bReset: true);
             omp.PlayBackward(coinsTag, bReset: true);
         }
     }
@@ -298,7 +331,7 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != omp)
         {
-            omp.Play(homingTag, bReset: true);
+            // omp.Play(homingTag, bReset: true);
             omp.Play(coinsTag, bReset: true);
         }
     }
@@ -323,7 +356,7 @@ public class UI_Inventory : MonoBehaviour
         inventorySlots.Clear();
     }
 
-    public void ClearNotification() => notificationBadge?.UpdateAndInteraction(0);
+    // public void ClearNotification() => notificationBadge?.UpdateAndInteraction(0);
 
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
