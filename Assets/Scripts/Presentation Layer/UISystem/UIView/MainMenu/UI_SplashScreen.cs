@@ -64,19 +64,19 @@ public class UI_SplashScreen : MonoBehaviour
         for (int i = 0; i < this.sequences.Length; ++i)
         {
             // 구조체를 ref나 in으로 받거나 단순 복사 사용 (여기서는 구조체 복사지만 참조형인 CanvasGroup이 있으므로 괜찮음)
-            SplashSequenceItem item = this.sequences[i];
+            SplashSequenceItem _item = this.sequences[i];
             
-            if (null != item.targetGroup)
+            if (null != _item.targetGroup)
             {
-                this.currentSequence.Append(item.targetGroup.DOFade(1f, item.fadeInDuration).SetEase(item.fadeInEase));
-                this.currentSequence.AppendInterval(item.holdDuration);
+                this.currentSequence.Append(_item.targetGroup.DOFade(1f, _item.fadeInDuration).SetEase(_item.fadeInEase));
+                this.currentSequence.AppendInterval(_item.holdDuration);
                 
-                var fadeOutTween = item.targetGroup.DOFade(0f, item.fadeOutDuration).SetEase(item.fadeOutEase);
+                var _fadeOutTween = _item.targetGroup.DOFade(0f, _item.fadeOutDuration).SetEase(_item.fadeOutEase);
 
                 // 마지막 시퀀스 요소인 경우, 객체 페이드아웃 완료 후 설정한 시간(N초) 대기 후 배경 페이드 아웃
-                if (i == this.sequences.Length - 1 && null != this.splashBackgroundGroup)
+                if (this.sequences.Length - 1 == i && null != this.splashBackgroundGroup)
                 {
-                    this.currentSequence.Append(fadeOutTween);
+                    this.currentSequence.Append(_fadeOutTween);
                     this.currentSequence.AppendInterval(this.backgroundFadeOutDelay);
 
                     if (null != currentBeforeLastFadeOut)
@@ -87,7 +87,7 @@ public class UI_SplashScreen : MonoBehaviour
                 }
                 else
                 {
-                    this.currentSequence.Append(fadeOutTween);
+                    this.currentSequence.Append(_fadeOutTween);
                 }
             }
         }

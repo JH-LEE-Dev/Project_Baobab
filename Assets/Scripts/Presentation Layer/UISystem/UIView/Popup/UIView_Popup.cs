@@ -9,7 +9,6 @@ public class UIView_Popup : UIView
 {
     // //이벤트
     public event Action<bool> InventoryUIOpendEvent;
-    public event Action goHomeButtonClickedEvent;
     public event Action<IInventorySlot> sendDeleteItemEvent;
 
     // //외부 의존성

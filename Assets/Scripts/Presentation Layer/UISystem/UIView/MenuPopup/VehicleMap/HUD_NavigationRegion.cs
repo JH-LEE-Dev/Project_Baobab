@@ -822,20 +822,7 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     private void CleanupOnHide()
     {
-        if (null != appearDelayTween && true == appearDelayTween.IsActive())
-            appearDelayTween.Kill();
-
-        if (null != scaleTween && true == scaleTween.IsActive())
-            scaleTween.Kill();
-
-        if (null != colorTween && true == colorTween.IsActive())
-            colorTween.Kill();
-
-        if (null != outlineColorTween && true == outlineColorTween.IsActive())
-            outlineColorTween.Kill();
-
-        if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
-            shadowAlphaTween.Kill();
+        KillAllTweens();
 
         if (null != vfxComponent && null != unlockVfx)
         {
@@ -858,6 +845,17 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
     private void OnDestroy()
     {
+        KillAllTweens();
+
+        if (null != vfxComponent && null != unlockVfx)
+        {
+            vfxComponent.Stop(unlockVfx, true);
+            unlockVfx = null;
+        }
+    }
+
+    private void KillAllTweens()
+    {
         if (null != appearDelayTween && true == appearDelayTween.IsActive())
             appearDelayTween.Kill();
 
@@ -872,12 +870,6 @@ public class HUD_NavigationRegion : MonoBehaviour, IPointerEnterHandler, IPointe
 
         if (null != shadowAlphaTween && true == shadowAlphaTween.IsActive())
             shadowAlphaTween.Kill();
-
-        if (null != vfxComponent && null != unlockVfx)
-        {
-            vfxComponent.Stop(unlockVfx, true);
-            unlockVfx = null;
-        }
     }
 }
 

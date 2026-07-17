@@ -42,7 +42,7 @@ public class UI_Inventory : MonoBehaviour
     private IMoneyData moneyData;
     private UI_InventoryPopup invPopup;
 
-    private int hideAccCount = 0;
+
 
     public MapType CurrentMapType { get; set; } = MapType.Town;
     public bool IsOpening { get; private set; } = false;
@@ -315,7 +315,7 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         IsOpening = isOpenAnimated = true;
-        hideAccCount = 0;
+        // hideAccCount = 0;
 
         if (null != omp)
         {

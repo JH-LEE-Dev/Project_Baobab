@@ -7,6 +7,7 @@ using TMPro;
 using DG.Tweening;
 using DG.Tweening.Core;
 using Coffee.UIEffects;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 메인 메뉴 전용 버튼 스크립트입니다.
@@ -89,6 +90,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private UnityEngine.UI.Graphic dotGraphicComponent;
     private Color originalDotColor = Color.white;
     private Color originalTextColor = Color.white;
+
+    // 캐싱된 UI 컴포넌트
+    private RectTransform cachedRectTransform;
+    private Canvas cachedCanvas;
+    private static List<RaycastResult> raycastResults = new List<RaycastResult>();
     
     private bool isClicked = false;
     private bool isDisappearing = false;
@@ -139,6 +145,9 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         getTextShadowColor = GetTextShadowColor;
         setTextShadowColor = SetTextShadowColor;
+
+        cachedRectTransform = GetComponent<RectTransform>();
+        cachedCanvas = GetComponentInParent<Canvas>();
     }
 
     private void OnEnable()
@@ -560,27 +569,46 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         if (false == gameObject.activeInHierarchy) return;
 
-        RectTransform _rect = GetComponent<RectTransform>();
-        if (null != _rect)
+        bool _isOver = isHovered; // 기본적으로 OnPointerEnter로 들어온 값을 신뢰
+
+        // OnPointerEnter가 안 불렸을 가능성을 대비해 레이캐스트 수동 검사
+        if (false == _isOver && null != EventSystem.current)
         {
-            Canvas _canvas = GetComponentInParent<Canvas>();
-            Camera _cam = null;
-            if (_canvas != null && _canvas.renderMode == RenderMode.ScreenSpaceCamera)
-                _cam = _canvas.worldCamera;
-
-            bool _isOver = RectTransformUtility.RectangleContainsScreenPoint(_rect, Input.mousePosition, _cam);
-            isHovered = _isOver;
-
-            if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
-
-            if (true == _isOver)
+            Vector2 _mousePos = Vector2.zero;
+            if (null != Mouse.current)
             {
-                PlayHoverMotion();
+                _mousePos = Mouse.current.position.ReadValue();
             }
-            else
+
+            PointerEventData _pointerData = new PointerEventData(EventSystem.current)
             {
-                PlayUnhoverMotion();
+                position = _mousePos
+            };
+            
+            raycastResults.Clear();
+            EventSystem.current.RaycastAll(_pointerData, raycastResults);
+            
+            if (raycastResults.Count > 0)
+            {
+                GameObject _topHit = raycastResults[0].gameObject;
+                if (_topHit == gameObject || _topHit.transform.IsChildOf(transform))
+                {
+                    _isOver = true;
+                }
             }
+        }
+
+        isHovered = _isOver;
+
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        if (true == _isOver)
+        {
+            PlayHoverMotion();
+        }
+        else
+        {
+            PlayUnhoverMotion();
         }
     }
 

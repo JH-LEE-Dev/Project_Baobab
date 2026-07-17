@@ -59,17 +59,17 @@ public class UI_PressAnyKey : MonoBehaviour
     {
         if (false == isWaitingForInput) return;
 
-        bool anyInputReceived = false;
+        bool _anyInputReceived = false;
 
         // 키보드 아무 키 입력 감지 (New Input System)
         if (null != Keyboard.current && Keyboard.current.anyKey.wasPressedThisFrame)
         {
-            anyInputReceived = true;
+            _anyInputReceived = true;
         }
         // 마우스 클릭 감지
         else if (null != Mouse.current && (Mouse.current.leftButton.wasPressedThisFrame || Mouse.current.rightButton.wasPressedThisFrame))
         {
-            anyInputReceived = true;
+            _anyInputReceived = true;
         }
         // 게임패드 아무 버튼 감지
         else if (null != Gamepad.current)
@@ -79,14 +79,14 @@ public class UI_PressAnyKey : MonoBehaviour
             {
                 if (_controls[i] is UnityEngine.InputSystem.Controls.ButtonControl _button && _button.wasPressedThisFrame)
                 {
-                    anyInputReceived = true;
+                    _anyInputReceived = true;
                     break;
                 }
             }
         }
 
         // 입력이 감지되면 메인 메뉴로 전환
-        if (anyInputReceived)
+        if (_anyInputReceived)
         {
             isWaitingForInput = false;
             if (null != parentView)
