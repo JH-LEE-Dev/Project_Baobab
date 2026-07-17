@@ -294,6 +294,19 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         isHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
+        PlayHoverMotion();
+    }
+
+    public void OnPointerExit(PointerEventData _eventData)
+    {
+        isHovered = false;
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        PlayUnhoverMotion();
+    }
+
+    private void PlayHoverMotion()
+    {
         if (null != dotTarget)
         {
             dotTarget.DOKill();
@@ -312,11 +325,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
     }
 
-    public void OnPointerExit(PointerEventData _eventData)
+    private void PlayUnhoverMotion()
     {
-        isHovered = false;
-        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
-
         if (null != dotTarget)
         {
             dotTarget.DOKill();
@@ -459,7 +469,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         if (null != dotTarget) dotTarget.localEulerAngles = dotOriginalRot;
         if (null != textTarget) textTarget.localScale = Vector3.one;
         
-        RestoreHoverOrExit();
+        EvaluatePointerState();
     }
 
     public void PlayDisappearMotion(float _delay = 0f)
@@ -520,14 +530,18 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     }
 
     // 캐싱용 메서드 모음
-    private void OnAppearComplete() { isAppearing = false; }
+    private void OnAppearComplete() 
+    { 
+        isAppearing = false; 
+        EvaluatePointerState();
+    }
     private void OnDisappearComplete() { gameObject.SetActive(false); }
     private void OnClickPunchComplete()
     {
         if (false == isInteractable)
         {
             isClicked = false;
-            RestoreHoverOrExit();
+            EvaluatePointerState();
             return;
         }
 
@@ -538,20 +552,35 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         else
         {
             isClicked = false;
-            RestoreHoverOrExit();
+            EvaluatePointerState();
         }
     }
 
-    private void RestoreHoverOrExit()
+    private void EvaluatePointerState()
     {
-        if (true == isHovered)
+        if (false == gameObject.activeInHierarchy) return;
+
+        RectTransform _rect = GetComponent<RectTransform>();
+        if (null != _rect)
         {
-            TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
-            TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
-        }
-        else
-        {
-            OnPointerExit(null);
+            Canvas _canvas = GetComponentInParent<Canvas>();
+            Camera _cam = null;
+            if (_canvas != null && _canvas.renderMode == RenderMode.ScreenSpaceCamera)
+                _cam = _canvas.worldCamera;
+
+            bool _isOver = RectTransformUtility.RectangleContainsScreenPoint(_rect, Input.mousePosition, _cam);
+            isHovered = _isOver;
+
+            if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+            if (true == _isOver)
+            {
+                PlayHoverMotion();
+            }
+            else
+            {
+                PlayUnhoverMotion();
+            }
         }
     }
 
