@@ -92,4 +92,9 @@ public class ItemManager : MonoBehaviour
         //carrrotItemController.ClearAll();
         logItemController.ClearAll();
     }
+
+    public void CancelActiveSucking()
+    {
+        logItemController?.CancelActiveSucking();
+    }
 }

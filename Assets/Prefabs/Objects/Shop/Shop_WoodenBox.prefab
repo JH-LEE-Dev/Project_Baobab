@@ -142,6 +142,7 @@ MonoBehaviour:
   maxItemsPerSlot: 5
   containerSlots: []
   transferInterval: 2
+  transferSlotInterval: 1
   bDebug: 0
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
 --- !u!58 &4736532202720822695

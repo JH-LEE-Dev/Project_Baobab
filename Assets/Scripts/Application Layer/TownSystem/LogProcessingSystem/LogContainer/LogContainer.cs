@@ -35,6 +35,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private int maxItemsPerSlot = 5; // 슬롯당 최대 보관 개수
     [SerializeField] private List<InventorySlot> containerSlots = new List<InventorySlot>(SYSTEM_VAR.MAX_INVENTORY_CNT);
     [SerializeField] private float transferInterval = 2f;
+    // 캐릭터가 자기 인벤토리를 이 컨테이너로 납품할 때 슬롯 하나를 다 발사한 뒤 다음 슬롯을
+    // 시작하기까지의 대기(TransferRoutine 전용). transferInterval은 자동 출고(TakeFirstItem)
+    // 주기와 공유되므로, 전송 간격만 OffroadContainer(1초)와 맞추기 위해 별도 필드로 분리한다.
+    [SerializeField] private float transferSlotInterval = 1f;
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private ItemDataPool itemDataPool;
 
@@ -170,6 +174,17 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     public void Release()
     {
         ReleaseEvents();
+    }
+
+    private void OnDisable()
+    {
+        // GameObject 비활성화 시 진행 중이던 슬롯 코루틴(TransferOneSlotVisualRoutine)은 finally
+        // 없이 중단되어 transferringSlots에 유령 항목이 남을 수 있다. 재활성화 후 TransferRoutine의
+        // 직렬화 대기(while transferringSlots.Count > 0)가 영구 정지하거나, 스테일 transferCoroutine
+        // 핸들 때문에 전송이 아예 재시작되지 않는 것을 방지하기 위해 여기서 정리한다.
+        // (OffroadContainer.ResetState의 transferringSlots.Clear()와 동일한 방어.)
+        transferringSlots.Clear();
+        transferCoroutine = null;
     }
 
     public void DI_Inventory(IInventory _inventory)
@@ -309,7 +324,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         while (true)
         {
             // 이전 전송으로부터 인터벌이 지날 때까지 대기 (연타 대응)
-            while (Time.time - lastTransferTime < (transferInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
+            while (Time.time - lastTransferTime < (transferSlotInterval / Mathf.Max(0.01f, itemTransferSpeedMul)))
+            {
+                yield return null;
+            }
+
+            // 현재 전송 중인 슬롯이 있다면 완료될 때까지 대기 (OffroadContainer.TransferAllItemsRoutine과
+            // 동일하게, 슬롯 하나의 전송이 모두 끝나야 다음 슬롯을 시작하도록 직렬화)
+            while (transferringSlots.Count > 0)
             {
                 yield return null;
             }
@@ -317,6 +339,12 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             if (!TryTransferOneItem())
             {
                 break;
+            }
+
+            // 방금 시작한 슬롯의 전송이 끝날 때까지 대기
+            while (transferringSlots.Count > 0)
+            {
+                yield return null;
             }
         }
 
@@ -395,7 +423,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 flyingItem.transform.position = start;
 
                 // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
-                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter, rotationSpeed);
+                // 비행 시간은 OffroadContainer와 동일하게 0.5초 고정.
+                flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
                 flyingItems.Add(flyingItem);
 
                 ContainerUpdatedEvent?.Invoke();
