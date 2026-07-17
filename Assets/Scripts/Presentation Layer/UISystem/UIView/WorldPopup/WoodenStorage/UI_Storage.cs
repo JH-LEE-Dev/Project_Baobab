@@ -106,6 +106,10 @@ public class UI_Storage : MonoBehaviour
         UpdateMaxSlotCount(storage.inventorySlots.Count);
         UpdateSlots(storage.inventorySlots);
 
+        // 슬롯 구성이 바뀌면서 가로폭이 변경되었을 수 있으므로, 현재 노출 중이면 위치를 재계산한다.
+        if (true == isOnShow && true == useDynamicPositioning && null != rect)
+            rect.position = GetTargetWorldPosition();
+
         SnapToPerfectPixel();
     }
 
@@ -212,6 +216,7 @@ public class UI_Storage : MonoBehaviour
 
     /// <summary>
     /// 캐릭터의 실시간 X축 위치를 분석하여, 보관함의 좌우 반대편에 대응하는 UI 타겟 월드 좌표를 산출합니다.
+    /// 슬롯이 가변적으로 늘어나도 UI의 끝점(edge) 기준으로 밀려나도록 반폭을 반영합니다.
     /// </summary>
     private Vector3 GetTargetWorldPosition()
     {
@@ -223,8 +228,22 @@ public class UI_Storage : MonoBehaviour
 
         if (true == useDynamicPositioning && null != playerTransform)
         {
+            // 슬롯 변경 직후에도 정확한 가로폭을 얻기 위해 레이아웃을 강제 갱신한다.
+            Canvas.ForceUpdateCanvases();
+
             float _absX = Mathf.Abs(offset.x);
-            _targetOffsetX = (playerTransform.position.x < _storagePos.x) ? _absX : -_absX;
+
+            // UI의 실제 가로 반폭(월드 단위)을 계산하여 끝점(edge) 기준으로 오프셋 적용
+            float _halfWorldWidth = 0f;
+            if (null != slotBackground)
+            {
+                RectTransform _bgRect = slotBackground.GetComponent<RectTransform>();
+                if (null != _bgRect)
+                    _halfWorldWidth = _bgRect.rect.width * _bgRect.lossyScale.x * 0.5f;
+            }
+
+            float _totalOffset = _absX + _halfWorldWidth;
+            _targetOffsetX = (_storagePos.x > playerTransform.position.x) ? _totalOffset : -_totalOffset;
         }
 
         Vector3 _targetPos = _storagePos;
