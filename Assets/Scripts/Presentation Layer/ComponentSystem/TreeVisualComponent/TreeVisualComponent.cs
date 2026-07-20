@@ -590,8 +590,17 @@ public class TreeVisualComponent : MonoBehaviour
             return;
         }
 
+        // 1. 기존 비주얼 루트(전체 쉐이킹 등) 초기화
         visualRoot.DOKill();
         visualRoot.localPosition = Vector3.zero;
+        visualRoot.localScale = Vector3.one;
+
+        // 2. 묘목(Sapling) 애니메이션이 사용했던 Transform 크기 초기화
+        transform.DOKill();
+        transform.localScale = Vector3.one;
+
+        // 3. 투명도(Alpha)를 완전한 불투명(1.0f) 상태로 복구
+        SetAlpha(1.0f);
     }
 
 

@@ -38,6 +38,7 @@ public interface ICharacterStatCH
     public void ActivateShockWaveCritical(bool _boolean);
     public void ActivateShockWaveEnforcement(bool _boolean);
     public void ShockWaveMastery(bool _boolean);
+    public void ActivateShockWaveOverheatBoost(bool _boolean);
     public void IncreaseSourceOfStaminaRecoverAmount(float _amount);
     public void IncreaseSourceOfSpeedAmount(float _amount);
     public void IncreaseStaminaRecoverAmount(float _amount);
@@ -48,12 +49,20 @@ public interface ICharacterStatCH
     public void IncreaseBoomerangCooldownReduction(float _amount);
     public void IncreaseBoomerangAttackSpeed(float _amount);
     public void ActivateBoomerangCritical(bool _boolean);
+    public void ActivateBoomerangOverheatBoost(bool _boolean);
     public void IncreaseDroneCount(int _amount);
     public void IncreaseDroneDamage(float _amount);
     public void IncreaseDroneRange(float _amount);
     public void IncreaseDroneAttackSpeed(float _amount);
     public void IncreaseDroneChainCount(int _amount);
     public void IncreaseDroneChainRange(float _amount);
+    public void ActivateDroneOverheatBoost(bool _boolean);
     public void IncreaseStarPathSpeedBoost(float _amount);
     public void ActivateOverheat(bool _boolean);
+    public void IncreaseOverheatEfficiency(float _amount);
+    public void IncreaseOverheatConsumptionReduction(float _amount);
+    public void IncreaseOverheatGainBonus(float _amount);
+    public void IncreaseHeatRecoveryAmount(float _amount);
+    public void ActivateOverheatPermanent(bool _boolean);
+    public void IncreaseRecoveryPower(float _amount);
 }

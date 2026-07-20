@@ -9,6 +9,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public event Action<TreeObj> TreeShieldBrokenEvent;
     public event Action<TreeObj> TreeShieldRecoveringEvent;
     public event Action<TreeObj> TreeHeatEmitEvent;
+    // 과열 강화된 ShockWave에 맞았을 때 발생. 실제 폭발 이펙트 생성은 InDungeonObjectManager가
+    // 이 이벤트를 구독해서 처리한다(포자막 폭발과 동일한 신호 흐름).
+    public event Action<TreeObj> TreeOverheatExplosionEvent;
 
     [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
@@ -96,6 +99,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
     private Coroutine overheatDotCoroutine;
 
+    // 과열 버프 중 드론 전이에 맞았을 때의 지속 피해 (평타와 중첩 가능)
+    private Coroutine droneOverheatDotCoroutine;
+
     public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
     {
         // 이 타격 자체가 치명타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
@@ -106,10 +112,21 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             StopCoroutine(overheatDotCoroutine); // 같은 나무 재타격 시 리셋
         }
-        overheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval));
+        overheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval, false));
     }
 
-    private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval)
+    public void ApplyDroneOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
+    {
+        if (bDead) return;
+
+        if (droneOverheatDotCoroutine != null)
+        {
+            StopCoroutine(droneOverheatDotCoroutine); // 같은 나무 드론 재타격 시 리셋
+        }
+        droneOverheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval, true));
+    }
+
+    private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval, bool _isDrone)
     {
         for (int i = 0; i < _tickCount; i++)
         {
@@ -117,7 +134,14 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             if (!bCanApplyDamage) break;
             TakeDamage(_damagePerTick);
         }
-        overheatDotCoroutine = null;
+        if (_isDrone)
+        {
+            droneOverheatDotCoroutine = null;
+        }
+        else
+        {
+            overheatDotCoroutine = null;
+        }
     }
 
     public void SetCellPos(Vector3Int _cellPos)
@@ -267,6 +291,12 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             overheatDotCoroutine = null;
         }
 
+        if (droneOverheatDotCoroutine != null)
+        {
+            StopCoroutine(droneOverheatDotCoroutine);
+            droneOverheatDotCoroutine = null;
+        }
+
         if (treeVisualComponent != null)
         {
             SetOutline(false);
@@ -407,6 +437,13 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     private void OnShieldBroken()
     {
         TreeShieldBrokenEvent?.Invoke(this);
+    }
+
+    // 과열 강화된 ShockWave가 이 나무를 때렸을 때 ShockWave가 호출한다. 폭발 이펙트 생성은
+    // InDungeonObjectManager가 TreeOverheatExplosionEvent를 받아 처리한다(포자막 폭발과 동일한 방식).
+    public void RaiseOverheatExplosion()
+    {
+        TreeOverheatExplosionEvent?.Invoke(this);
     }
 
     private void OnShieldRecovering()

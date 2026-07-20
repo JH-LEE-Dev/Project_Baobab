@@ -65,6 +65,7 @@ public class UIView_WorldPopup : UIView
         if (null != shopNPC)
         {
             shopNPC.ShopMoneyChangedEvent -= UpdateTraderMoneyText;
+            shopNPC.RemoteDepositModeChangedEvent -= RemoteDepositModeChanged;
         }
     }
 
@@ -142,6 +143,9 @@ public class UIView_WorldPopup : UIView
 
         shopNPC.ShopMoneyChangedEvent -= UpdateTraderMoneyText;
         shopNPC.ShopMoneyChangedEvent += UpdateTraderMoneyText;
+
+        shopNPC.RemoteDepositModeChangedEvent -= RemoteDepositModeChanged;
+        shopNPC.RemoteDepositModeChangedEvent += RemoteDepositModeChanged;
     }
 
     private void UpdateTraderMoneyText()
@@ -156,6 +160,21 @@ public class UIView_WorldPopup : UIView
         }
 
         ui_TraderCoin.UpdateMoneyText(shopNPC.currentMoney);
+    }
+
+    private void RemoteDepositModeChanged(bool _bLocked)
+    {
+        if (null == ui_TraderCoin)
+            return;
+
+        if (_bLocked)
+        {
+            ui_TraderCoin.gameObject.SetActive(false);
+        }
+        else if (MapType.Town == currentMapType)
+        {
+            ui_TraderCoin.gameObject.SetActive(true);
+        }
     }
 
     public void DependencyInjection(IInventory _container, ILogCutter _logCutter, IShopNPC _shopNPC, IInventory _offroadContainer)

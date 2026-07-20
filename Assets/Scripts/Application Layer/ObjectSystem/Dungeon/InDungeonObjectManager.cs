@@ -84,6 +84,17 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private int starCompassPityThreshold;
     private int starCompassPityTreeKillCount;
 
+    // "흑요 부적"
+    public bool bHasAcquiredObsidianCharm { get; set; }
+    private bool bObsidianCharmSpawnedThisRun;
+    [SerializeField] private float obsidianCharmDropChance = 0.05f;
+    [SerializeField] private float obsidianCharmDropChanceIncreasePerKill = 0.005f;
+    private int obsidianCharmTreeKillCount;
+    [SerializeField] private int obsidianCharmPityMinKills = 4;
+    [SerializeField] private int obsidianCharmPityMaxKills = 5;
+    private int obsidianCharmPityThreshold;
+    private int obsidianCharmPityTreeKillCount;
+
     // // 내부 의존성
     [Header("Tree Settings")]
     [SerializeField] private TreeObj treePrefab;
@@ -192,6 +203,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private const float SporeExplosionVfxSpread = 0.25f;
     // 코루틴 루프에서 매번 new WaitForSeconds를 생성하면 반복마다 GC 쓰레기가 생기므로 캐싱해서 재사용한다.
     private static readonly WaitForSeconds sporeExplosionVfxWait = new WaitForSeconds(SporeExplosionVfxInterval);
+
+    // 과열 강화 ShockWave 폭발 VFX - 포자막 폭발과 완전히 동일한 방식으로 top/bottom 주변에서 연쇄 재생
+    private const int FireExplosionVfxMinCount = 4;
+    private const int FireExplosionVfxMaxCount = 4;
+    private const float FireExplosionVfxInterval = 0.15f;
+    private const float FireExplosionVfxSpread = 0.25f;
+    private static readonly WaitForSeconds fireExplosionVfxWait = new WaitForSeconds(FireExplosionVfxInterval);
 
     // 별자리(Constellation) 관련 스킬 스탯 - StarrootForest 전용
     private const float BaseConstellationDamage = 5000f;
@@ -375,6 +393,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         {
             starCompassPityThreshold = UnityEngine.Random.Range(starCompassPityMinKills, starCompassPityMaxKills + 1);
         }
+
+        // "흑요 부적" - MagmaForest_2/3 진입 시 리셋 및 임계값 설정
+        bObsidianCharmSpawnedThisRun = false;
+        obsidianCharmTreeKillCount = 0;
+        obsidianCharmPityTreeKillCount = 0;
+        if (_forestType == ForestType.MagmaForest_2 || _forestType == ForestType.MagmaForest_3)
+        {
+            obsidianCharmPityThreshold = UnityEngine.Random.Range(obsidianCharmPityMinKills, obsidianCharmPityMaxKills + 1);
+        }
     }
 
     public void RestoreOwnedLoots(List<LootType> _loots)
@@ -409,6 +436,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             bHasAcquiredStarCompass = true;
             // 효과 발동: 현재 활성 나무 중 별 표식 나무의 constellationRenderer를 즉시 켠다
             ApplyStarCompassEffect();
+        }
+        else if (_item.LootType == LootType.ObsidianCharm)
+        {
+            bHasAcquiredObsidianCharm = true;
         }
     }
 
@@ -871,6 +902,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 여기서 걸러서 아이템 중복 지급, 밀도 카운트 오염, 풀 이중 반환 예외를 막는다.
         if (_treeObj.PoolIndex == -1) return;
 
+        // "열기 회수" 특성 - 과열 상태에서 나무를 벌목하면 과열 지속시간이 회복된다.
+        character?.OnTreeFelled();
+
         // 폭발 연구: 뭉글 포자 숲이 아닌 곳에서도 나무 벌목 시 일정 확률로 포자막 폭발 발생
         if (bShieldExplosionUnlocked && currentMapType != MapType.FluffySporeForest && shieldExplosionResearchChance > 0f)
         {
@@ -986,6 +1020,30 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             }
         }
 
+        // "흑요 부적"
+        if (!bHasAcquiredObsidianCharm && !bObsidianCharmSpawnedThisRun && lootManager != null && character != null)
+        {
+            if (currentForestType == ForestType.MagmaForest_2)
+            {
+                float effectiveChance = obsidianCharmDropChance + obsidianCharmTreeKillCount * obsidianCharmDropChanceIncreasePerKill;
+                if (UnityEngine.Random.value < effectiveChance)
+                {
+                    lootManager.SpawnLootItem(deadPos, LootType.ObsidianCharm, character.centerTransform);
+                    bObsidianCharmSpawnedThisRun = true;
+                }
+                obsidianCharmTreeKillCount++;
+            }
+            else if (currentForestType == ForestType.MagmaForest_3)
+            {
+                obsidianCharmPityTreeKillCount++;
+                if (obsidianCharmPityTreeKillCount >= obsidianCharmPityThreshold)
+                {
+                    lootManager.SpawnLootItem(deadPos, LootType.ObsidianCharm, character.centerTransform);
+                    bObsidianCharmSpawnedThisRun = true;
+                }
+            }
+        }
+
         if (currentTreeGenerationStrategy != null)
         {
             currentTreeGenerationStrategy.OnTreeDead(this, _treeObj, deadPos);
@@ -1086,6 +1144,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeShieldRecoveringEvent += OnTreeShieldRecovering;
         _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
         _tree.TreeHeatEmitEvent += OnTreeHeatEmit;
+        _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
+        _tree.TreeOverheatExplosionEvent += OnTreeOverheatExplosion;
     }
 
     private void OnReleaseTree(TreeObj _tree)
@@ -1129,6 +1189,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
         _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
         _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
+        _tree.TreeOverheatExplosionEvent -= OnTreeOverheatExplosion;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
@@ -1207,7 +1268,13 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     private void OnTreeHeatEmit(TreeObj _tree)
     {
         if (character == null || _tree == null) return;
-        if (character.bTreeHeatImmune) return; // 넉백/경직 중엔 열기 영향 없음
+
+        if (inDungeonVFXManager != null && _tree.treeVisualComponent != null)
+        {
+            inDungeonVFXManager.PlayTreeHeatEmitVFX(_tree.treeVisualComponent);
+        }
+
+        if (character.bTreeHeatImmune || bHasAcquiredObsidianCharm) return; // 넉백/경직 중엔 열기 영향 없음 + 흑요 부적 획득 시 면역
 
         Vector3Int treeCell = _tree.CellPos;
         Vector3Int characterCell = character.CurrentCell;
@@ -1489,6 +1556,47 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             inDungeonVFXManager.PlaySporeExplosionVFX(basePos + randomOffset, randomOffset);
 
             yield return sporeExplosionVfxWait;
+        }
+    }
+
+    // 과열 강화된 ShockWave가 나무를 때리면 TreeObj.TreeOverheatExplosionEvent를 통해 호출된다.
+    // 포자막 폭발과 동일하게, 맞은 나무(인접 8타일의 중심)에 FireExplosionVFX를 재생한다.
+    private void OnTreeOverheatExplosion(TreeObj _tree)
+    {
+        StartCoroutine(PlayFireExplosionVfxRoutine(_tree));
+    }
+
+    private IEnumerator PlayFireExplosionVfxRoutine(TreeObj _source)
+    {
+        if (_source == null) yield break;
+
+        Vector3 bottomPos = _source.transform.position;
+        Vector3 topPos = _source.treeVisualComponent != null ? _source.treeVisualComponent.GetTopRootPosition() : bottomPos;
+
+        int count = UnityEngine.Random.Range(FireExplosionVfxMinCount, FireExplosionVfxMaxCount + 1);
+        bool nextTopLeft = UnityEngine.Random.value < 0.5f;
+        bool nextBottomLeft = UnityEngine.Random.value < 0.5f;
+
+        for (int i = 0; i < count; i++)
+        {
+            bool useTop = i % 2 == 0;
+            Vector3 basePos = useTop ? topPos : bottomPos;
+            bool useLeft = useTop ? nextTopLeft : nextBottomLeft;
+
+            if (useTop)
+                nextTopLeft = !nextTopLeft;
+            else
+                nextBottomLeft = !nextBottomLeft;
+
+            float horizontalOffset = UnityEngine.Random.Range(0f, FireExplosionVfxSpread);
+            Vector3 randomOffset = new Vector3(
+                useLeft ? -horizontalOffset : horizontalOffset,
+                UnityEngine.Random.Range(-FireExplosionVfxSpread, FireExplosionVfxSpread),
+                0f);
+
+            inDungeonVFXManager.PlayFireExplosionVFX(basePos + randomOffset, randomOffset);
+
+            yield return fireExplosionVfxWait;
         }
     }
 

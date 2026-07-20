@@ -33,6 +33,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     public event Action ShopMoneyChangedEvent;
     public event Action<bool> InteractStateEvent;
     public event Action<int> EarnMoneyEvent;
+    public event Action<bool> RemoteDepositModeChangedEvent;
 
     // 외부 의존성
     [SerializeField] private Transform npcTransform;
@@ -45,6 +46,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private bool bPhysicalOverlapped = false;
     private bool bCanReach = true;
     private bool bLastInteractState = false;
+    private bool bRemoteDepositLocked = false;
 
     public bool isPhysicalOverlapped => bPhysicalOverlapped;
     private InputManager inputManager;
@@ -140,7 +142,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
     private void UpdateInteractState()
     {
-        bool currentState = bCanReach && bPhysicalOverlapped;
+        bool currentState = !bRemoteDepositLocked && bCanReach && bPhysicalOverlapped;
         if (currentState != bLastInteractState)
         {
             bLastInteractState = currentState;
@@ -155,6 +157,25 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     {
         bCanReach = _bCanReach;
         UpdateInteractState();
+    }
+
+    public void SetRemoteDepositLock(bool _bLocked)
+    {
+        bRemoteDepositLocked = _bLocked;
+        UpdateInteractState();
+        RemoteDepositModeChangedEvent?.Invoke(_bLocked);
+    }
+
+    public void ClearMoneyToPlayer()
+    {
+        int leftover = money;
+        money = 0;
+        ShopMoneyChangedEvent?.Invoke();
+
+        if (leftover > 0)
+        {
+            EarnMoneyEvent?.Invoke(leftover);
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D _other)

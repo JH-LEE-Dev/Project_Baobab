@@ -13,9 +13,11 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
     // 캐릭터의 AttackComponent(Initialize(ComponentCtx))든 럼버잭 NPC(Initialize(ICharacterStatForNPC))든
     // 이 인터페이스만 만족하면 동일하게 동작한다.
     private ICharacterStatForNPC stat;
+    private OverheatComponent overheatComponent;
 
     public void Initialize(ComponentCtx _ctx)
     {
+        overheatComponent = _ctx.overheatComponent;
         Initialize((ICharacterStatForNPC)_ctx.characterStat);
     }
 
@@ -77,14 +79,24 @@ public class AxeExtraAttackCreator : MonoBehaviour, IShockWaveCreator
     private void OnGetShockWave(ShockWave _shockWave)
     {
         float finalDamage = stat.shockWaveDamage;
+        float finalDuration = stat.shockWaveDuration;
+        // "화염 참격" 특성을 찍어야만 과열 상태의 충격파 강화 효과가 적용된다.
+        bool bIsOverheat = (overheatComponent != null && overheatComponent.IsActive && stat.bShockWaveOverheatBoost);
+
+        if (bIsOverheat)
+        {
+            finalDamage *= 101f;
+            finalDuration *= 4f;
+        }
 
         if (stat.bShockWaveCritical && UnityEngine.Random.value < stat.criticalChance)
         {
             finalDamage *= stat.ciriticalDamageMul;
         }
 
-        _shockWave.SetValue(finalDamage, stat.shockWaveSpeed, stat.shockWaveDuration);
+        _shockWave.SetValue(finalDamage, stat.shockWaveSpeed, finalDuration);
         _shockWave.SetEnforced(stat.bShockWaveEnforcement);
+        _shockWave.SetOverheat(bIsOverheat);
         _shockWave.gameObject.SetActive(true);
     }
 

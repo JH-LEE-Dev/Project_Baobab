@@ -75,6 +75,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public bool bShockWaveEnforcement = false;
     public bool bShockWaveMastery = false;
     public bool bOverheat = false;
+    public bool bShockWaveOverheatBoost = false; // "화염 참격" 특성 - 과열 상태에서 충격파 폭발 효과 적용 여부
 
     [Header("Axe - Boomerang")]
     public int boomerangCount = 0; // "부메랑" 스킬 레벨 = 동시에 존재 가능한 부메랑 개수 (0이면 미해금 상태로 발사되지 않음)
@@ -84,6 +85,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float boomerangCooldown = 2.5f; // "쿨타임"
     public float boomerangDamageInterval = 0.3f; // "공격 속도"가 반영되는 판정 주기
     public bool bBoomerangCritical = false;
+    public bool bBoomerangOverheatBoost = false; // "화염 부메랑" 특성 - 과열 상태에서 부메랑 강화 적용 여부
     public float baseBoomerangDamage { get; private set; }
     public float boomerangDamageMultiplier { get; private set; } = 1.0f;
     public float baseBoomerangHitRadius { get; private set; }
@@ -113,6 +115,17 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public float droneChainRange = 1.5f; // "연쇄공격 범위" - 전이 대상을 찾는 반경
     public float baseDroneChainRange { get; private set; }
     public float droneChainRangeMultiplier { get; private set; } = 1.0f;
+    public bool bDroneOverheatBoost = false; // "드론 과부하" 특성 - 과열 상태에서 드론 강화 적용 여부
+
+    [Header("Overheat")]
+    public float overheatEfficiencyBonus = 0f; // "과열 강화" - 과열 버프(이동속도/공격속도/공격력) 효율 증가율(%). 100이면 기본 20%가 40%가 된다.
+    public float overheatConsumptionReductionAlpha = 0f; // "과열 유지" - 과열 지속시간 소모 속도 감소율(%)
+    public float overheatGainBonusAlpha = 0f; // "열기 포집" - 열기 접촉으로 얻는 과열 획득량 증가율(%)
+    public float heatRecoveryAmount = 0f; // "열기 회수" - 과열 상태에서 나무 벌목 시 회복되는 과열 지속시간(초). 0이면 미해금
+    public bool bOverheatPermanent = false; // "화신" - 항상 과열 상태를 유지
+
+    [Header("Stamina Recovery")]
+    public float recoveryPowerBonus = 0f; // "회복력" - 모든 피로도 회복 효과(전리품 포션, 체력의 원천, 휴식) 증가율(%)
 
     [Header("Rifle Settings")]
     public float rifleDamage = 10f;
@@ -174,6 +187,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     bool ICharacterStatForNPC.bShockWaveMastery => bShockWaveMastery;
     bool ICharacterStatForNPC.bShockWaveCritical => bShockWaveCritical;
     bool ICharacterStatForNPC.bShockWaveEnforcement => bShockWaveEnforcement;
+    bool ICharacterStatForNPC.bShockWaveOverheatBoost => bShockWaveOverheatBoost;
     float ICharacterStatForNPC.criticalChance => criticalChance;
     float ICharacterStatForNPC.ciriticalDamageMul => ciriticalDamageMul;
 
@@ -404,6 +418,41 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         bOverheat = _boolean;
     }
 
+    public void ActivateShockWaveOverheatBoost(bool _boolean)
+    {
+        bShockWaveOverheatBoost = _boolean;
+    }
+
+    public void IncreaseOverheatEfficiency(float _amount)
+    {
+        overheatEfficiencyBonus += _amount;
+    }
+
+    public void IncreaseOverheatConsumptionReduction(float _amount)
+    {
+        overheatConsumptionReductionAlpha += _amount;
+    }
+
+    public void IncreaseOverheatGainBonus(float _amount)
+    {
+        overheatGainBonusAlpha += _amount;
+    }
+
+    public void IncreaseHeatRecoveryAmount(float _amount)
+    {
+        heatRecoveryAmount += _amount;
+    }
+
+    public void ActivateOverheatPermanent(bool _boolean)
+    {
+        bOverheatPermanent = _boolean;
+    }
+
+    public void IncreaseRecoveryPower(float _amount)
+    {
+        recoveryPowerBonus += _amount;
+    }
+
     public void IncreaseSourceOfStaminaRecoverAmount(float _amount)
     {
         sourceOfStaminaRecoverAmount += _amount;
@@ -548,6 +597,11 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
         bBoomerangCritical = _boolean;
     }
 
+    public void ActivateBoomerangOverheatBoost(bool _boolean)
+    {
+        bBoomerangOverheatBoost = _boolean;
+    }
+
     public void IncreaseDroneCount(int _amount)
     {
         droneCount += _amount;
@@ -586,5 +640,10 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     {
         droneChainRangeMultiplier += (_amount / 100.0f);
         droneChainRange = baseDroneChainRange * droneChainRangeMultiplier;
+    }
+
+    public void ActivateDroneOverheatBoost(bool _boolean)
+    {
+        bDroneOverheatBoost = _boolean;
     }
 }

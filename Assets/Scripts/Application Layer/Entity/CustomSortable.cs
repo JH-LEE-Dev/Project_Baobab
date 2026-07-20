@@ -14,6 +14,8 @@ public class CustomSortable : MonoBehaviour
     [SerializeField] private int offset;
     [SerializeField] private int precision = 100;
     protected float height = 0;
+    
+    public int CurrentSortingOrder { get; private set; }
 
     public void Initialize(Transform _sortAnchor, SpriteRenderer[] _initialRenderers = null, SortingGroup _sortingGroup = null)
     {
@@ -85,6 +87,7 @@ public class CustomSortable : MonoBehaviour
         // height는 캐릭터가 공중에 떠 있는 높이를 의미하므로, 실제 정렬의 기준이 되는 지면 위치는 (현재 Y - height)입니다.
         float groundY = anchor.position.y - height;
         int order = -Mathf.RoundToInt(groundY * precision) + offset;
+        CurrentSortingOrder = order;
 
         if (sortingGroup != null)
         {

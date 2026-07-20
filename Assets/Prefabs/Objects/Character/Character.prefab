@@ -114,6 +114,74 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!1 &417468238292699764
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 633398789818063020}
+  - component: {fileID: 8473696146226771624}
+  - component: {fileID: 169558516840733384}
+  m_Layer: 8
+  m_Name: OverheatComponent
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &633398789818063020
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417468238292699764}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1389021518043769419}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8473696146226771624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417468238292699764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33609e2c5ecf93944941873d245173ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OverheatComponent
+  vfxComponent: {fileID: 169558516840733384}
+  overheatVfxTag: OverheatLoopEffect
+  vfxOffset: {x: 0, y: 0, z: 0}
+--- !u!114 &169558516840733384
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 417468238292699764}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  vfxPoolDataList:
+  - vfxTag: OverheatLoopEffect
+    effectPrefab: {fileID: 7006864300503741061, guid: b9f6f8f30a201c84688f5a455ed86d3e, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 0
+    maxPoolSize: 1
+    uiParticleScale: 0
 --- !u!1 &1064555885346698272
 GameObject:
   m_ObjectHideFlags: 0
@@ -881,6 +949,7 @@ Transform:
   - {fileID: 5687516621767501310}
   - {fileID: 1403481030741538988}
   - {fileID: 4602724895061784125}
+  - {fileID: 633398789818063020}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8662941010871122232
@@ -1790,7 +1859,7 @@ MonoBehaviour:
   pickupRangeMultiplier: 1
   originalSpeed: 1
   sourceOfSpeedAmount: 0
-  maxStamina: 10000000
+  maxStamina: 100
   staminaIncreaseAlpha: 0
   staminaDecreaseAlpha: 0
   sourceOfStaminaRecoverAmount: 0
@@ -1812,6 +1881,8 @@ MonoBehaviour:
   bShockWaveCritical: 0
   bShockWaveEnforcement: 0
   bShockWaveMastery: 0
+  bOverheat: 0
+  bShockWaveOverheatBoost: 0
   boomerangCount: 0
   boomerangDamage: 3
   boomerangHitRadius: 0.5
@@ -1819,6 +1890,7 @@ MonoBehaviour:
   boomerangCooldown: 2.5
   boomerangDamageInterval: 0.3
   bBoomerangCritical: 0
+  bBoomerangOverheatBoost: 0
   boomerangCooldownReductionAlpha: 0
   droneCount: 0
   droneDamage: 5
@@ -1827,6 +1899,13 @@ MonoBehaviour:
   droneDamageInterval: 1
   droneChainCount: 0
   droneChainRange: 1.5
+  bDroneOverheatBoost: 0
+  overheatEfficiencyBonus: 0
+  overheatConsumptionReductionAlpha: 0
+  overheatGainBonusAlpha: 0
+  heatRecoveryAmount: 0
+  bOverheatPermanent: 0
+  recoveryPowerBonus: 0
   rifleDamage: 1
   rifleReadyTime: 0.25
   shotDelay: 1

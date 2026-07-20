@@ -60,6 +60,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     public void TakeEnvironmentalStaminaDamage(float _amount) => healthComponent.DecreaseStaminaFlat(_amount);
     public void AddOverheatDuration(float _seconds) => overheatComponent?.AddOverheatDuration(_seconds);
+    public void EndOverheatBuff() => overheatComponent?.ForceEnd();
+
+    // "열기 회수" 특성 - 과열 상태에서 나무를 벌목하면 과열 지속시간이 회복된다.
+    public void OnTreeFelled()
+    {
+        if (overheatComponent == null || !overheatComponent.IsActive) return;
+        if (statComponent.heatRecoveryAmount <= 0f) return;
+
+        overheatComponent.AddOverheatDurationRaw(statComponent.heatRecoveryAmount);
+    }
 
     // 넉백/경직 중에는 나무 열기 발산의 영향(데미지+넉백)을 받지 않는다.
     public bool bTreeHeatImmune { get; private set; }
@@ -268,6 +278,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             stateMachine.ChangeState<IdleState>();
             attackComponent.SetEnable(false);
             attackComponent.SetCursorEnable(false);
+            EndOverheatBuff(); // 던전을 나가면 과열 버프도 강제 종료 (MagmaForest 전용 효과가 다른 곳까지 이어지지 않도록)
         }
         else
         {
@@ -288,6 +299,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bInDungeon)
         {
             SpawnDrones();
+            overheatComponent?.TryActivatePermanent(); // "화신" 특성이 있으면 던전 입장과 동시에 과열 상태로 진입
         }
     }
 
@@ -521,14 +533,18 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         activeBoomerangTargets.Add(_tree);
 
         Boomerang thrownBoomerang = null;
+        // "화염 부메랑" 특성을 찍어야만 과열 상태의 부메랑 강화 효과가 적용된다.
+        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bBoomerangOverheatBoost;
+
         Action onFinished = () =>
         {
             activeBoomerangTargets.Remove(_tree);
             activeBoomerangs.Remove(thrownBoomerang);
-            boomerangCooldownTimer = statComponent.boomerangCooldown;
+            // 과열 상태에서 발사되었다면 쿨타임 50% 감소
+            boomerangCooldownTimer = bIsOverheat ? statComponent.boomerangCooldown * 0.5f : statComponent.boomerangCooldown;
         };
 
-        thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished);
+        thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished, bIsOverheat);
 
         if (thrownBoomerang == null)
         {
@@ -892,23 +908,46 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         Transform primaryTransform = _primaryTarget.GetTransform();
         if (primaryTransform == null) return;
 
+        // "드론 과부하" 특성을 찍어야만 과열 상태의 드론 강화 효과가 적용된다.
+        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bDroneOverheatBoost;
+
+        if (bIsOverheat && _primaryTarget is TreeObj primaryTree)
+        {
+            primaryTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
+        }
+
         droneChainZapPoints.Clear();
         droneChainZapPoints.Add(_drone.GetMuzzlePosition());
         droneChainZapPoints.Add(GetTreeTopPosition(_primaryTarget));
 
-        if (statComponent.droneChainCount > 0)
+        int finalChainCount = statComponent.droneChainCount;
+        float finalChainRange = statComponent.droneChainRange;
+
+        if (bIsOverheat)
+        {
+            finalChainCount *= 2;
+            finalChainRange *= 5f;
+        }
+
+        if (finalChainCount > 0)
         {
             droneChainHitTrees.Clear();
             droneChainHitTrees.Add(_primaryTarget);
 
             Vector3 origin = primaryTransform.position;
 
-            for (int i = 0; i < statComponent.droneChainCount; i++)
+            for (int i = 0; i < finalChainCount; i++)
             {
-                ITreeObj next = FindNearestChainTarget(origin);
+                ITreeObj next = FindNearestChainTarget(origin, finalChainRange);
                 if (next == null) break;
 
                 (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
+                
+                if (bIsOverheat && next is TreeObj nextTree)
+                {
+                    nextTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
+                }
+
                 droneChainHitTrees.Add(next);
                 droneChainZapPoints.Add(GetTreeTopPosition(next));
                 origin = next.GetTransform().position;
@@ -918,14 +957,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         _drone.PlayChainZap(droneChainZapPoints, droneChainZapPoints.Count);
     }
 
-    // droneChainHitTrees(이번 전이 동안 이미 맞은 나무)를 제외하고, origin 기준 droneChainRange
-    // 반경 안에서 가장 가까운 살아있는 나무를 찾는다. FindNearestTreeForDrone과 동일한 유효성
+    // droneChainHitTrees(이번 전이 동안 이미 맞은 나무)를 제외하고, origin 기준 지정된 반경(_chainRange)
+    // 안에서 가장 가까운 살아있는 나무를 찾는다. FindNearestTreeForDrone과 동일한 유효성
     // 판정(bCanApplyDamage, activeInHierarchy)을 사용한다.
-    private ITreeObj FindNearestChainTarget(Vector3 _origin)
+    private ITreeObj FindNearestChainTarget(Vector3 _origin, float _chainRange)
     {
         if (CollisionSystem.Instance == null) return null;
 
-        CollisionSystem.Instance.GetCollidablesInRadius(_origin, statComponent.droneChainRange, treeLayer.value, droneScanResults);
+        CollisionSystem.Instance.GetCollidablesInRadius(_origin, _chainRange, treeLayer.value, droneScanResults);
 
         ITreeObj nearest = null;
         float nearestIsoSqr = float.MaxValue;

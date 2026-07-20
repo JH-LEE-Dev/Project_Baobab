@@ -557,8 +557,8 @@ MonoBehaviour:
   gridCount: {x: 60, y: 60}
   gridOrigin: {x: -60, y: -25}
   maxEntities: 10000
-  showDebug: 1
-  showFullGrid: 1
+  showDebug: 0
+  showFullGrid: 0
   objectColor: {r: 0, g: 1, b: 1, a: 1}
   activeGridColor: {r: 0, g: 1, b: 0, a: 0.2}
 --- !u!1 &2554595008635905786
@@ -1465,6 +1465,9 @@ MonoBehaviour:
   sporeExplosionVfxPrefab: {fileID: 114000001, guid: 76a82539148a5da39264cf6082f3ad74, type: 3}
   sporeExplosionVfxPoolDefaultCapacity: 50
   sporeExplosionVfxPoolMaxSize: 200
+  fireExplosionVfxPrefab: {fileID: 114000001, guid: 78c4367b9868445483fb67da0533cbaf, type: 3}
+  fireExplosionVfxPoolDefaultCapacity: 200
+  fireExplosionVfxPoolMaxSize: 500
 --- !u!114 &777467232540049004
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1526,6 +1529,12 @@ MonoBehaviour:
     initialPoolSize: 40
     allowDynamicExpansion: 1
     maxPoolSize: 70
+    uiParticleScale: 0
+  - vfxTag: TreeHeatEmitEffect
+    effectPrefab: {fileID: 8248180672793769683, guid: cede68a0b11b75141b13e1c24e9e404f, type: 3}
+    initialPoolSize: 40
+    allowDynamicExpansion: 1
+    maxPoolSize: 100
     uiParticleScale: 0
 --- !u!1 &5766810988037463456
 GameObject:
@@ -2748,6 +2757,16 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 53119eddf89a95759b4a3a1f19f6f0c7, type: 2}
   - {fileID: 11400000, guid: 25e359ca23a8352f5bdc475f9926b5f2, type: 2}
   - {fileID: 11400000, guid: 979c04f910352cec20abd55c2f0aa32a, type: 2}
+  - {fileID: 11400000, guid: 69b4bc697df544f4920de0713f7be2d0, type: 2}
+  - {fileID: 11400000, guid: 30c5cd2cff284f5592d4247a19bd7c05, type: 2}
+  - {fileID: 11400000, guid: b4cdeff9b1b540de9f19c1d33b43fd34, type: 2}
+  - {fileID: 11400000, guid: 28530b7f7bac4bfcbbe03302d2079ba4, type: 2}
+  - {fileID: 11400000, guid: 6cc84bb6636144bd9a9ffc993994700d, type: 2}
+  - {fileID: 11400000, guid: 97413b3619d843df909e4b6b7cc7e6b2, type: 2}
+  - {fileID: 11400000, guid: 657b6ce0953e4db595c62e5bae1f1672, type: 2}
+  - {fileID: 11400000, guid: 3b6e1e574bc04fd382a462165559c487, type: 2}
+  - {fileID: 11400000, guid: 8f41ed9331c14045842f319417aa182b, type: 2}
+  - {fileID: 11400000, guid: f8726d6fea6c49c6880542e0e29b713b, type: 2}
 --- !u!1 &8962706255023184329
 GameObject:
   m_ObjectHideFlags: 0
@@ -2856,6 +2875,10 @@ MonoBehaviour:
   sporePotionRefillMax: 5
   starCompassPityMinKills: 4
   starCompassPityMaxKills: 5
+  obsidianCharmDropChance: 0.05
+  obsidianCharmDropChanceIncreasePerKill: 0.005
+  obsidianCharmPityMinKills: 4
+  obsidianCharmPityMaxKills: 5
   treePrefab: {fileID: 5272385284174554040, guid: 3224048e2842e2c48bc93158251200d2, type: 3}
   enableCulling: 0
   cullingDistance: 25

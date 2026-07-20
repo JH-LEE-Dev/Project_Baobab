@@ -101,6 +101,7 @@ public enum LootType
     LostAndFoundBox,
     SporePotion,
     StarCompass,
+    ObsidianCharm,
     Max,
 }
 
