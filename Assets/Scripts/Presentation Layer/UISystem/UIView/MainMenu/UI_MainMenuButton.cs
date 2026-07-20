@@ -7,6 +7,7 @@ using TMPro;
 using DG.Tweening;
 using DG.Tweening.Core;
 using Coffee.UIEffects;
+using UnityEngine.InputSystem;
 
 /// <summary>
 /// 메인 메뉴 전용 버튼 스크립트입니다.
@@ -89,6 +90,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private UnityEngine.UI.Graphic dotGraphicComponent;
     private Color originalDotColor = Color.white;
     private Color originalTextColor = Color.white;
+
+    // 캐싱된 UI 컴포넌트
+    private RectTransform cachedRectTransform;
+    private Canvas cachedCanvas;
+    private static List<RaycastResult> raycastResults = new List<RaycastResult>();
     
     private bool isClicked = false;
     private bool isDisappearing = false;
@@ -139,6 +145,9 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         getTextShadowColor = GetTextShadowColor;
         setTextShadowColor = SetTextShadowColor;
+
+        cachedRectTransform = GetComponent<RectTransform>();
+        cachedCanvas = GetComponentInParent<Canvas>();
     }
 
     private void OnEnable()
@@ -294,6 +303,19 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         isHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
+        PlayHoverMotion();
+    }
+
+    public void OnPointerExit(PointerEventData _eventData)
+    {
+        isHovered = false;
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        PlayUnhoverMotion();
+    }
+
+    private void PlayHoverMotion()
+    {
         if (null != dotTarget)
         {
             dotTarget.DOKill();
@@ -312,11 +334,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
     }
 
-    public void OnPointerExit(PointerEventData _eventData)
+    private void PlayUnhoverMotion()
     {
-        isHovered = false;
-        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
-
         if (null != dotTarget)
         {
             dotTarget.DOKill();
@@ -459,7 +478,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         if (null != dotTarget) dotTarget.localEulerAngles = dotOriginalRot;
         if (null != textTarget) textTarget.localScale = Vector3.one;
         
-        RestoreHoverOrExit();
+        EvaluatePointerState();
     }
 
     public void PlayDisappearMotion(float _delay = 0f)
@@ -520,14 +539,18 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     }
 
     // 캐싱용 메서드 모음
-    private void OnAppearComplete() { isAppearing = false; }
+    private void OnAppearComplete() 
+    { 
+        isAppearing = false; 
+        EvaluatePointerState();
+    }
     private void OnDisappearComplete() { gameObject.SetActive(false); }
     private void OnClickPunchComplete()
     {
         if (false == isInteractable)
         {
             isClicked = false;
-            RestoreHoverOrExit();
+            EvaluatePointerState();
             return;
         }
 
@@ -538,20 +561,54 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         else
         {
             isClicked = false;
-            RestoreHoverOrExit();
+            EvaluatePointerState();
         }
     }
 
-    private void RestoreHoverOrExit()
+    private void EvaluatePointerState()
     {
-        if (true == isHovered)
+        if (false == gameObject.activeInHierarchy) return;
+
+        bool _isOver = isHovered; // 기본적으로 OnPointerEnter로 들어온 값을 신뢰
+
+        // OnPointerEnter가 안 불렸을 가능성을 대비해 레이캐스트 수동 검사
+        if (false == _isOver && null != EventSystem.current)
         {
-            TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
-            TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, hoverShadowColor, hoverShadowGlow, hoverDuration, hoverShadowEase);
+            Vector2 _mousePos = Vector2.zero;
+            if (null != Mouse.current)
+            {
+                _mousePos = Mouse.current.position.ReadValue();
+            }
+
+            PointerEventData _pointerData = new PointerEventData(EventSystem.current)
+            {
+                position = _mousePos
+            };
+            
+            raycastResults.Clear();
+            EventSystem.current.RaycastAll(_pointerData, raycastResults);
+            
+            if (raycastResults.Count > 0)
+            {
+                GameObject _topHit = raycastResults[0].gameObject;
+                if (_topHit == gameObject || _topHit.transform.IsChildOf(transform))
+                {
+                    _isOver = true;
+                }
+            }
+        }
+
+        isHovered = _isOver;
+
+        if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
+
+        if (true == _isOver)
+        {
+            PlayHoverMotion();
         }
         else
         {
-            OnPointerExit(null);
+            PlayUnhoverMotion();
         }
     }
 

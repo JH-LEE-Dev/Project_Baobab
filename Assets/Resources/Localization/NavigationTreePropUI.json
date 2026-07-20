@@ -36,7 +36,7 @@
     {
       "id": 5,
       "key": "FluffyMyceliumTree",
-      "kr": "솜균사나무",
+      "kr": "둥둥포자나무",
       "en": "FluffyMyceliumTree",
       "enumType": "TreeType",
       "enumValue": "FluffyMyceliumTree"
@@ -44,7 +44,7 @@
     {
       "id": 6,
       "key": "BellpineTree",
-      "kr": "방울갓나무",
+      "kr": "포자솜나무",
       "en": "BellpineTree",
       "enumType": "TreeType",
       "enumValue": "BellpineTree"
