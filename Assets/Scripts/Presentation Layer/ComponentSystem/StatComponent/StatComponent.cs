@@ -74,6 +74,7 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public bool bShockWaveCritical = false;
     public bool bShockWaveEnforcement = false;
     public bool bShockWaveMastery = false;
+    public bool bOverheat = false;
 
     [Header("Axe - Boomerang")]
     public int boomerangCount = 0; // "부메랑" 스킬 레벨 = 동시에 존재 가능한 부메랑 개수 (0이면 미해금 상태로 발사되지 않음)
@@ -396,6 +397,11 @@ public class StatComponent : PComponent, IStatComponent, ICharacterStatCH, IChar
     public void ShockWaveMastery(bool _boolean)
     {
         bShockWaveMastery = _boolean;
+    }
+
+    public void ActivateOverheat(bool _boolean)
+    {
+        bOverheat = _boolean;
     }
 
     public void IncreaseSourceOfStaminaRecoverAmount(float _amount)

@@ -22,6 +22,11 @@ public class AttackComponent : PComponent
     [SerializeField] private LayerMask targetLayer; // 공격 대상 레이어 (도끼용)
     [SerializeField] private float shockWaveSpawnOffset = 0.35f; // 충격파 생성 시 공격 지점으로부터의 오프셋
 
+    // 과열 버프 - 도끼 평타로 맞은 나무에게 부여하는 지속 피해 수치
+    private const float OverheatDotDamagePerTick = 10000f;
+    private const int OverheatDotTickCount = 6;
+    private const float OverheatDotTickInterval = 0.5f;
+
     [Header("Aim Correction")]
     [SerializeField] private float aimCorrectionRadius = 1.0f; // 조준 보정 탐색 반경
     [SerializeField] private LayerMask aimCorrectionLayer; // 조준 보정 대상 레이어
@@ -66,6 +71,13 @@ public class AttackComponent : PComponent
     private bool bCursorEnable = false;
     private bool bCanAttack = false;
     private int successfulAttackCount = 0;
+
+    // 넉백 등으로 공격 범위 인디케이터가 조준 방향을 따라 도는 것을 일시적으로 막아야 할 때 사용
+    private bool bIndicatorRotationLocked = false;
+    public void SetRotationLocked(bool _locked)
+    {
+        bIndicatorRotationLocked = _locked;
+    }
 
     public override void Initialize(ComponentCtx _ctx)
     {
@@ -370,6 +382,12 @@ public class AttackComponent : PComponent
 
         damageable.TakeDamage(damage);
 
+        // 과열 버프 활성 중 도끼 평타로 나무를 맞히면 지속 피해 부여 (충격파/드론/부메랑 제외, 도끼 평타만)
+        if (ctx.overheatComponent != null && ctx.overheatComponent.IsActive && damageable is TreeObj overheatTarget)
+        {
+            overheatTarget.ApplyOverheatDot(OverheatDotDamagePerTick, OverheatDotTickCount, OverheatDotTickInterval);
+        }
+
         // 나무 타격 시 (마스터리가 없을 때만) 확률적으로 충격파 생성
         if (!ctx.characterStat.bShockWaveMastery && damageable is TreeObj && axeExtraAttackCreator != null)
         {
@@ -399,6 +417,7 @@ public class AttackComponent : PComponent
 
     private void UpdateIndicator()
     {
+        if (bIndicatorRotationLocked) return;
         if (ellipseRadiusIndicator == null || ellipseIndicatorMat == null) return;
 
         // 도끼 모드일 때 항상 표시

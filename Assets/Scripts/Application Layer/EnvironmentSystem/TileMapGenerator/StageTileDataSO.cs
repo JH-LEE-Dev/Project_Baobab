@@ -92,6 +92,7 @@ public class StageTileDataSO : ScriptableObject
 
     [Header("위험 지형 설정")]
     [SerializeField] private float waterHazardStaminaDrainPerSecond = 0f;
+    [SerializeField] private float treeHeatStaminaDamage = 0f;
 
     // // 퍼블릭 초기화 및 제어 메서드
     public float GrassStaticObjDensity => grassStaticObjDensity;
@@ -112,6 +113,7 @@ public class StageTileDataSO : ScriptableObject
     public bool UseWaterTileBloom => useWaterTileBloom;
     public float WaterTileHDRIntensity => waterTileHDRIntensity;
     public float WaterHazardStaminaDrainPerSecond => waterHazardStaminaDrainPerSecond;
+    public float TreeHeatStaminaDamage => treeHeatStaminaDamage;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
     public List<StaticObj> GrassStaticObjPrefabs => grassStaticObjPrefabs;

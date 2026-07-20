@@ -55,4 +55,5 @@ public interface ICharacterStatCH
     public void IncreaseDroneChainCount(int _amount);
     public void IncreaseDroneChainRange(float _amount);
     public void IncreaseStarPathSpeedBoost(float _amount);
+    public void ActivateOverheat(bool _boolean);
 }

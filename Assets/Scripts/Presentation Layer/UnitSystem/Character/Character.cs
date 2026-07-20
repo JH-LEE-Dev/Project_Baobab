@@ -55,6 +55,34 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public IPHealthComponent pHealthComponent => healthComponent;
     IBaseHealthComponent IDamageable.health => healthComponent;
 
+    // 매 프레임 갱신되는 현재 셀 좌표 (외부 시스템이 재계산 없이 재사용)
+    public Vector3Int CurrentCell { get; private set; }
+
+    public void TakeEnvironmentalStaminaDamage(float _amount) => healthComponent.DecreaseStaminaFlat(_amount);
+    public void AddOverheatDuration(float _seconds) => overheatComponent?.AddOverheatDuration(_seconds);
+
+    // 넉백/경직 중에는 나무 열기 발산의 영향(데미지+넉백)을 받지 않는다.
+    public bool bTreeHeatImmune { get; private set; }
+    public void SetTreeHeatImmune(bool _immune) => bTreeHeatImmune = _immune;
+
+    public void SetArmRotationLocked(bool _locked) => armComponent.SetRotationLocked(_locked);
+    public void SetAttackIndicatorLocked(bool _locked) => attackComponent.SetRotationLocked(_locked);
+
+    // 넉백 중에는 캐릭터 스프라이트가 조준 방향을 따라 좌우로 도는 것도 막아야 한다.
+    private bool bFacingLocked = false;
+    public void SetFacingLocked(bool _locked) => bFacingLocked = _locked;
+
+    public void PlayStunVisual() => stunVisualComponent?.Play();
+    public void StopStunVisual() => stunVisualComponent?.Stop();
+
+    public void ApplyTreeHeatKnockback(Vector3Int _cellOffset)
+    {
+        if (bDead) return;
+
+        stateMachine.GetState<KnockBackState>().SetKnockbackDirection(_cellOffset);
+        stateMachine.ChangeState<KnockBackState>();
+    }
+
     IStatComponent ICharacter.statComponent => statComponent;
 
     IArmComponent ICharacter.armComponent => armComponent;
@@ -112,6 +140,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private const float DroneRetargetInterval = 0.15f; // 타겟을 잃은 드론에게 새 나무를 물 흐르듯 이어서 배정하는 주기
 
     private CharacterVisualComponent characterVisualComponent;
+    private StunVisualComponent stunVisualComponent;
+    private OverheatComponent overheatComponent;
 
     public Transform centerTransform;
 
@@ -140,12 +170,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         // 컴포넌트 할당
         characterVisualComponent = animatorObject.GetComponent<CharacterVisualComponent>();
+        // StunVisual은 animatorObject(Animator)의 형제(Visuals의 자식)라 그 아래에서는 못 찾으므로,
+        // 계층 전체를 아우르는 Character 루트에서 직접 찾는다. 평소 꺼져있으므로 비활성 자식도 포함.
+        stunVisualComponent = GetComponentInChildren<StunVisualComponent>(true);
         rb = GetComponent<Rigidbody2D>();
         col = GetComponent<CircleCollider2D>();
         attackComponent = GetComponentInChildren<AttackComponent>();
         healthComponent = GetComponentInChildren<PHealthComponent>();
         armComponent = GetComponentInChildren<ArmComponent>();
         statComponent = GetComponentInChildren<StatComponent>();
+        overheatComponent = GetComponentInChildren<OverheatComponent>();
         customSortable = GetComponent<CustomSortable>();
 
         boomerangCreator?.Initialize(statComponent);
@@ -159,6 +193,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         stateMachine = new StateMachine();
         ctx = new ComponentCtx();
         ctx.Initialize(inputManager, statComponent, environmentProvider.pathfindGridProvider, environmentProvider.tilemapDataProvider);
+        ctx.overheatComponent = overheatComponent;
 
         // 컴포넌트 초기화
         characterVisualComponent.Initialize(environmentProvider, onWaterAnimatorObject, shadowObject, customSortable);
@@ -166,6 +201,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.Initialize(ctx);
         armComponent.Initialize(ctx);
         statComponent.Initialize(ctx);
+        overheatComponent?.Initialize(ctx);
 
         attackComponent.SetCursorEnable(false);
 
@@ -276,6 +312,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         AddState(new IdleState());
         AddState(new RunState());
         AddState(new DeadState());
+        AddState(new KnockBackState());
         stateMachine.ChangeState<IdleState>();
     }
 
@@ -323,6 +360,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateFacingByAttackPoint()
     {
+        if (bFacingLocked) return;
         if (attackComponent == null || bInDungeon == false || bWhileReset == true) return;
 
         Transform attackTarget = attackComponent.GetAttackPointTransform();
@@ -939,9 +977,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         else healthComponent.DecreaseStamina();
 
         // 용암 등 위험 지형 인접 시 추가 소모 (증감 상태와 무관하게 항상 적용)
-        Vector3Int currentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
-        float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(currentCell);
-        if (hazardDrain > 0f) healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
+        CurrentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
+        float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
+        if (hazardDrain > 0f)
+        {
+            healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
+            overheatComponent?.AddOverheatDuration(2f * Time.deltaTime); // 용암 열기 노출 1초당 2초 비율로 연속 적립
+        }
 
         UpdateFacingByAttackPoint();
         ConnectAttackToArm();

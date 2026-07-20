@@ -85,6 +85,22 @@ public class PHealthComponent : PComponent, IPHealthComponent
     }
 
     /// <summary>
+    /// 단발성 스태미나 피해 (나무 열기 발산 등). Time.deltaTime과 무관하게 고정값을 즉시 차감한다.
+    /// </summary>
+    public void DecreaseStaminaFlat(float _damage)
+    {
+        if (currentStamina <= 0 || _damage <= 0f)
+            return;
+
+        currentStamina = Mathf.Max(0, currentStamina - _damage);
+
+        if (currentStamina <= 0)
+        {
+            StaminaIsEmptyEvent?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// 스태미나 회복 (초당 변화량 적용)
     /// </summary>
     public void IncreaseStamina()

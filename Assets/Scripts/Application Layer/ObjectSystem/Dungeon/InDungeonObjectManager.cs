@@ -607,6 +607,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                                  environmentProvider.tilemapDataProvider.IsWaterTile(cellPos + new Vector3Int(-2, -2, 0));
             tree.SetOnWaterObjectState(isWaterNearby);
 
+            tree.SetCellPos(cellPos);
+            tree.SetHeatDamageAmount(environmentProvider.tilemapDataProvider.TreeHeatStaminaDamage);
+
             tree.PoolIndex = activeTrees.Count;
             activeTrees.Add(tree);
 
@@ -1081,6 +1084,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeShieldBrokenEvent += OnTreeShieldBroken;
         _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
         _tree.TreeShieldRecoveringEvent += OnTreeShieldRecovering;
+        _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
+        _tree.TreeHeatEmitEvent += OnTreeHeatEmit;
     }
 
     private void OnReleaseTree(TreeObj _tree)
@@ -1123,6 +1128,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         _tree.TreeGetHitEvent -= OnTreeHit;
         _tree.TreeShieldBrokenEvent -= OnTreeShieldBroken;
         _tree.TreeShieldRecoveringEvent -= OnTreeShieldRecovering;
+        _tree.TreeHeatEmitEvent -= OnTreeHeatEmit;
         //_tree.transform.position = new Vector2(-10000f, -10000f);
         _tree.gameObject.SetActive(false);
     }
@@ -1186,6 +1192,36 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             currentTreeGenerationStrategy.OnTreeGetHit(this, _treeObj);
         }
         TreeGetHitEvent?.Invoke(_treeObj);
+    }
+
+    // 상하좌우+대각선 8방향 오프셋. 매번 새로 할당하지 않도록 static readonly로 한 번만 생성한다.
+    private static readonly Vector3Int[] TreeHeatOffsets = new Vector3Int[]
+    {
+        new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0), new Vector3Int(1, -1, 0),
+        new Vector3Int(-1, 0, 0), new Vector3Int(1, 0, 0),
+        new Vector3Int(-1, 1, 0), new Vector3Int(0, 1, 0), new Vector3Int(1, 1, 0),
+    };
+
+    // 나무의 열기 타이머가 만료된 순간 호출된다. 나무 자신의 타일은 제외하고 8방향 인접 타일에
+    // 캐릭터가 있을 때만 스태미나 피해를 준다.
+    private void OnTreeHeatEmit(TreeObj _tree)
+    {
+        if (character == null || _tree == null) return;
+        if (character.bTreeHeatImmune) return; // 넉백/경직 중엔 열기 영향 없음
+
+        Vector3Int treeCell = _tree.CellPos;
+        Vector3Int characterCell = character.CurrentCell;
+
+        for (int i = 0; i < TreeHeatOffsets.Length; i++)
+        {
+            if (treeCell + TreeHeatOffsets[i] == characterCell)
+            {
+                character.TakeEnvironmentalStaminaDamage(_tree.HeatDamageAmount);
+                character.ApplyTreeHeatKnockback(TreeHeatOffsets[i]);
+                character.AddOverheatDuration(15f);
+                return;
+            }
+        }
     }
 
     public void CreateWelcomeNoobLoot()

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
@@ -7,6 +8,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public event Action<TreeObj> TreeGetHitEvent;
     public event Action<TreeObj> TreeShieldBrokenEvent;
     public event Action<TreeObj> TreeShieldRecoveringEvent;
+    public event Action<TreeObj> TreeHeatEmitEvent;
 
     [SerializeField] private Shadow topShadowObject;
     [SerializeField] private Shadow bottomShadowObject;
@@ -82,6 +84,53 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
     private bool bWaterNearBy = false;
     private bool bTreeShadowSet = false;
+
+    // 열기 발산 - 피격 시에만 3~5초 랜덤 타이머가 시작된다. 타이머가 도는 중에 다시 피격되어도
+    // 기존 타이머는 그대로 유지되고, 발산이 끝나면 다시 피격 시 재발동 가능한 상태로 돌아간다.
+    public Vector3Int CellPos { get; private set; }
+    private float heatDamageAmount = 0f;
+    private bool bHeatCounting = false;
+    private Coroutine heatCoroutine;
+
+    // 과열 버프 중 도끼 평타에 맞았을 때의 지속 피해. 이 나무 자신이 코루틴을 들고 있어야,
+    // 나무가 죽어 풀에서 재사용되어도(ResetTree) 엉뚱한 새 나무에 데미지가 잘못 들어가지 않는다.
+    private Coroutine overheatDotCoroutine;
+
+    public void ApplyOverheatDot(float _damagePerTick, int _tickCount, float _tickInterval)
+    {
+        // 이 타격 자체가 치명타였다면 TakeDamage 안에서 이미 죽어 풀로 반환되어 비활성화된 뒤이므로,
+        // 그 상태에서 StartCoroutine을 시도하면 안 된다.
+        if (bDead) return;
+
+        if (overheatDotCoroutine != null)
+        {
+            StopCoroutine(overheatDotCoroutine); // 같은 나무 재타격 시 리셋
+        }
+        overheatDotCoroutine = StartCoroutine(OverheatDotRoutine(_damagePerTick, _tickCount, _tickInterval));
+    }
+
+    private IEnumerator OverheatDotRoutine(float _damagePerTick, int _tickCount, float _tickInterval)
+    {
+        for (int i = 0; i < _tickCount; i++)
+        {
+            yield return new WaitForSeconds(_tickInterval);
+            if (!bCanApplyDamage) break;
+            TakeDamage(_damagePerTick);
+        }
+        overheatDotCoroutine = null;
+    }
+
+    public void SetCellPos(Vector3Int _cellPos)
+    {
+        CellPos = _cellPos;
+    }
+
+    public float HeatDamageAmount => heatDamageAmount;
+
+    public void SetHeatDamageAmount(float _amount)
+    {
+        heatDamageAmount = _amount;
+    }
 
     private CustomSortable customSortable;
 
@@ -204,6 +253,20 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         bWaterNearBy = false;
         bTreeShadowSet = false;
 
+        // 카운트다운 도중 사망/재사용되는 경우를 포함해 항상 정리한다 (ResetTree는 스폰 시/사망 시 모두 호출됨).
+        if (heatCoroutine != null)
+        {
+            StopCoroutine(heatCoroutine);
+            heatCoroutine = null;
+        }
+        bHeatCounting = false;
+
+        if (overheatDotCoroutine != null)
+        {
+            StopCoroutine(overheatDotCoroutine);
+            overheatDotCoroutine = null;
+        }
+
         if (treeVisualComponent != null)
         {
             SetOutline(false);
@@ -239,7 +302,29 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             TreeDeadEvent?.Invoke(this);
         }
 
+        // bDead 가드 필수: 이 히트로 나무가 죽었다면 TreeDeadEvent 처리 과정에서 이미 풀로 반환되어
+        // gameObject.SetActive(false) 상태이므로, 그 뒤에 StartCoroutine을 시도하면 안 된다.
+        TryStartHeatTimer();
+
         bLastHitByPlayer = true;
+    }
+
+    private void TryStartHeatTimer()
+    {
+        if (bDead || bHeatCounting || heatDamageAmount <= 0f) return;
+
+        bHeatCounting = true;
+        heatCoroutine = StartCoroutine(HeatEmitRoutine());
+    }
+
+    private IEnumerator HeatEmitRoutine()
+    {
+        yield return new WaitForSeconds(UnityEngine.Random.Range(3f, 5f));
+
+        TreeHeatEmitEvent?.Invoke(this);
+
+        bHeatCounting = false;
+        heatCoroutine = null;
     }
 
     public bool ManualUpdate()

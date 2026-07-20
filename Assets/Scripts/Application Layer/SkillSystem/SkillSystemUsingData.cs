@@ -317,6 +317,7 @@ public enum SkillCommandType
     AdvancedLogChance,
     PerfectLogChance,
     LumberjackNPCSpeed,
+    Overheat,
 }
 
 public enum AbilityLevelUpRejectReason
