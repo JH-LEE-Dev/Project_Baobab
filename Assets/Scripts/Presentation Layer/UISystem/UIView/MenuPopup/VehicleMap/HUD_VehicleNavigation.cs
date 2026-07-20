@@ -462,17 +462,11 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
                 HUD_NavigationRegion region = spawnedRegions[activeIndex];
                 if (null != region)
                 {
-                    bool isMapLocked = !info.bCanAccess;
-                    string regionKey = string.Format("UnLock_Region_{0}", info.mapType);
-                    if (false == isMapLocked && PlayerPrefs.GetInt(regionKey, 0) == 0)
-                    {
-                        isMapLocked = true;
-                    }
+                    bool isMapLocked = !info.bCanAccess || !info.isUnlocked;
 
                     region.SetLock(isMapLocked);
 
-                    string regionNewKey = string.Format("New_Region_{0}", info.mapType);
-                    region.SetNewIndicator(PlayerPrefs.GetInt(regionNewKey, 0) == 1);
+                    region.SetNewIndicator(info.isNew);
                 }
                 activeIndex++;
             }
@@ -487,15 +481,10 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             if (null != region && true == region.gameObject.activeSelf)
             {
                 MapType type = region.GetMapType();
-                string key = string.Format("New_Region_{0}", type);
-                if (1 == PlayerPrefs.GetInt(key, 0))
-                {
-                    PlayerPrefs.SetInt(key, 0);
-                    region.SetNewIndicator(false);
-                }
+                mapDataProvider.MarkMapLevelAsRead(type);
+                region.SetNewIndicator(false);
             }
         }
-        PlayerPrefs.Save();
     }
 
     public MapType GetSelectedMapType()
@@ -661,18 +650,11 @@ public class HUD_VehicleNavigation : MonoBehaviour, IBeginDragHandler, IDragHand
             {
                 region.Initialize(info.mapType, onRegionSelectedCallback, localizationManager, this);
 
-                bool isMapLocked = !info.bCanAccess;
-
-                string regionKey = string.Format("UnLock_Region_{0}", info.mapType);
-                if (false == isMapLocked && PlayerPrefs.GetInt(regionKey, 0) == 0)
-                {
-                    isMapLocked = true;
-                }
+                bool isMapLocked = !info.bCanAccess || !info.isUnlocked;
 
                 region.SetLock(isMapLocked);
 
-                string regionNewKey = string.Format("New_Region_{0}", info.mapType);
-                region.SetNewIndicator(PlayerPrefs.GetInt(regionNewKey, 0) == 1);
+                region.SetNewIndicator(info.isNew);
 
                 spawnedRegions.Add(region);
             }

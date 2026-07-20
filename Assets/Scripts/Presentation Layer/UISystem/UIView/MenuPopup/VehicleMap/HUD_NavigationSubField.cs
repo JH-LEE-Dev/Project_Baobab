@@ -22,6 +22,7 @@ public class HUD_NavigationSubField : MonoBehaviour
     // 내부 의존성
     private readonly List<HUD_NavigationSubRegion> spawnedSubRegions = new List<HUD_NavigationSubRegion>(maxSubRegionCount);
     private Action<int> onSubRegionSelectedCallback;
+    private MapType currentMapType = MapType.None;
     private int currentSelectedNumber = -1;
     private bool isInitialized = false;
     private TweenCallback onSubRegionDisappearCompleteCallback;
@@ -83,6 +84,7 @@ public class HUD_NavigationSubField : MonoBehaviour
             Initialize(null);
         }
 
+        currentMapType = _mapType;
         currentSelectedNumber = -1;
 
         if (null == subRegionPrefab || null == subRegionContainer || null == _forestDatas)
@@ -151,21 +153,21 @@ public class HUD_NavigationSubField : MonoBehaviour
 
     public void ClearAllNewIndicators()
     {
+        if (null == vehicle || null == vehicle.MapDataProvider || MapType.None == currentMapType)
+        {
+            return;
+        }
+
         for (int i = 0; i < spawnedSubRegions.Count; i++)
         {
             HUD_NavigationSubRegion sub = spawnedSubRegions[i];
             if (null != sub && true == sub.gameObject.activeSelf)
             {
-                ForestType type = sub.GetForestType();
-                string key = string.Format("New_SubRegion_{0}", type);
-                if (1 == PlayerPrefs.GetInt(key, 0))
-                {
-                    PlayerPrefs.SetInt(key, 0);
-                    sub.SetNewIndicator(false);
-                }
+                ForestEnvironmentInfo info = sub.GetForestInfo();
+                vehicle.MapDataProvider.MarkMapAsRead(currentMapType, info.forestType);
+                sub.SetNewIndicator(false);
             }
         }
-        PlayerPrefs.Save();
     }
 
     public ForestType GetSelectedForestType()

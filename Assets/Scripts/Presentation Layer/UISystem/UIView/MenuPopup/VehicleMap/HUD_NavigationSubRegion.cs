@@ -117,13 +117,10 @@ public class HUD_NavigationSubRegion : MonoBehaviour, IPointerEnterHandler, IPoi
         SetSelect(false);
         SetNumber(_number);
 
-        string subKey = string.Format("UnLock_SubRegion_{0}", _info.forestType);
-        string subNewKey = string.Format("New_SubRegion_{0}", _info.forestType);
-
-        bool isSubLocked = !_info.bCanAccess || (PlayerPrefs.GetInt(subKey, 0) == 0);
+        bool isSubLocked = !_info.bCanAccess || !_info.isUnlocked;
         SetLock(isSubLocked);
 
-        SetNewIndicator(PlayerPrefs.GetInt(subNewKey, 0) == 1);
+        SetNewIndicator(_info.isNew);
 
         onHoverEnterEvent = _onHoverEnter;
         onHoverExitEvent = _onHoverExit;
