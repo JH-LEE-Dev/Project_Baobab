@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
@@ -66,6 +67,28 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     {
         // 경로 규칙은 GamePaths에서 단일 관리한다. (환경설정 파일과 같은 폴더, 다른 파일)
         return GamePaths.GameSaveFile;
+    }
+
+    // BootStrap이 메인 메뉴 UI(이어하기 버튼 등)를 만들기 직전에 명시적으로 호출한다.
+    // Unity의 Start()에 맡기면 sceneLoaded 이벤트(메인 메뉴 UI 생성 시점)보다 늦게 실행되어
+    // 클라우드 복원 전에 버튼 상태가 이미 결정돼버리는 경합이 생긴다.
+    // 이후 HasSaveData()/LoadGameData()는 그대로 로컬 파일만 보면 되므로 별도 수정이 필요 없다.
+    public void SyncCloudSaveIfNewer()
+    {
+        if (!SteamCloudSaveService.IsAvailable) return;
+        if (!SteamCloudSaveService.TryGetCloudTimestampUtc(out DateTime cloudTimeUtc)) return;
+
+        string path = GetSaveFilePath();
+        bool localExists = File.Exists(path);
+        bool cloudIsNewer = !localExists || cloudTimeUtc > File.GetLastWriteTimeUtc(path);
+
+        if (!cloudIsNewer) return;
+
+        if (SteamCloudSaveService.TryDownload(out byte[] cloudData))
+        {
+            File.WriteAllBytes(path, cloudData);
+            Debug.Log("[SaveManager] Cloud save applied to local (newer than local copy).");
+        }
     }
 
     public void SaveGameData()
@@ -148,6 +171,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
         string path = GetSaveFilePath();
         File.WriteAllBytes(path, encryptedData);
+        SteamCloudSaveService.Upload(encryptedData);
 
         Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {path} (Alloc-minimized)");
     }
