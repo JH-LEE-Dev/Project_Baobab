@@ -237,6 +237,7 @@ GameObject:
   - component: {fileID: 209871258}
   - component: {fileID: 209871259}
   - component: {fileID: 209871260}
+  - component: {fileID: 209871261}
   m_Layer: 0
   m_Name: Bootstrap
   m_TagString: Untagged
@@ -314,6 +315,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 323ba7b7a0a844e40b74f836f5b05840, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FPSCounter
+  showFPS: 1
 --- !u!114 &209871259
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -340,6 +342,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46528433298c00a49a403f4c4f735e97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SaveManager
+--- !u!114 &209871261
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 209871253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ef4bffeda13d7a748973ff9204401c07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SteamManager
 --- !u!1 &485436092
 GameObject:
   m_ObjectHideFlags: 0
