@@ -19,6 +19,13 @@ public class ArmComponent : PComponent, IArmComponent
 
     public WeaponComponent currentWeapon { get; private set; }
 
+    // 넉백 등으로 조준 회전/방향 전환을 일시적으로 막아야 할 때 사용
+    private bool bRotationLocked = false;
+    public void SetRotationLocked(bool _locked)
+    {
+        bRotationLocked = _locked;
+    }
+
     IAxeComponent IArmComponent.axeComponent => axeComponent;
 
     IRifleComponent IArmComponent.rifleComponent => rifleComponent;
@@ -63,6 +70,8 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void Update()
     {
+        if (bRotationLocked) return;
+
         UpdateRotation();
         UpdateFacingDirection();
         UpdatePositionOffset();

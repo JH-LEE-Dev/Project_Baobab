@@ -34,8 +34,9 @@ public class UIView_MainMenu : UIView
 
     [Header("Exit Animation")]
     [SerializeField] private float exitMoveDuration = 1.8f;
-    // SkyProduction.prefab의 cloudImage 이동 거리(410 → -1890)와 동일한 2300으로 맞춤
-    [SerializeField] private float exitMoveDistance = 2300f;
+    // MainMenu 모드에서 꺼지는 SkyProduction.prefab의 skyImage 이동 거리(635 → 135)와 동일한 500으로 맞춤
+    // (MainMenu가 Sky의 자리를 대신하므로 cloudImage가 아닌 skyImage 기준)
+    [SerializeField] private float exitMoveDistance = 500f;
     // GameInstaller.prefab의 SkyCameraProductionManager.moveEase 직렬화 값(10)과 동일
     [SerializeField] private Ease exitMoveEase = (Ease)10;
 

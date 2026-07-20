@@ -16,6 +16,9 @@ public class DensityData
     public float animalRegenMaxTime;
     public float limitHiddenGauge;
     public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
 }
 
 [System.Serializable]
@@ -24,6 +27,9 @@ public class MapDensityData
     public MapType mapType;
     public List<DensityData> densityData;
     public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
 }
 
 [System.Serializable]
@@ -72,6 +78,9 @@ public struct ForestEnvironmentInfo
     public float limitHiddenGauge;
     public float currentHiddenGauge;
     public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
 }
 
 [System.Serializable]
@@ -80,6 +89,9 @@ public struct MapEnvironmentDataInfo
     public MapType mapType;
     public List<ForestEnvironmentInfo> forestDatas;
     public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
 }
 
 [System.Serializable]

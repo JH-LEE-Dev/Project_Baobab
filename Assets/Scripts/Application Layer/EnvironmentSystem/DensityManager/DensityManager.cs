@@ -260,11 +260,20 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
 
         // bCanAccess 정보 수집
         _data.mapAccessDatas.Clear();
+        _data.mapLevelAccessDatas.Clear();
         if (densityDataBase != null && densityDataBase.densityDatas != null)
         {
             for (int i = 0; i < densityDataBase.densityDatas.Count; i++)
             {
                 var mapData = densityDataBase.densityDatas[i];
+                _data.mapLevelAccessDatas.Add(new MapLevelAccessSaveData
+                {
+                    mapType = mapData.mapType,
+                    bCanAccess = mapData.bCanAccess,
+                    isUnlocked = mapData.isUnlocked,
+                    isNew = mapData.isNew,
+                    hasPlayedUnlock = mapData.hasPlayedUnlock
+                });
                 for (int j = 0; j < mapData.densityData.Count; j++)
                 {
                     var density = mapData.densityData[j];
@@ -272,7 +281,10 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                     {
                         mapType = mapData.mapType,
                         forestType = density.forestType,
-                        bCanAccess = density.bCanAccess
+                        bCanAccess = density.bCanAccess,
+                        isUnlocked = density.isUnlocked,
+                        isNew = density.isNew,
+                        hasPlayedUnlock = density.hasPlayedUnlock
                     });
                 }
             }
@@ -292,6 +304,22 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         }
 
         // bCanAccess 정보 복구
+        if (_data.mapLevelAccessDatas != null && densityDataBase != null && densityDataBase.densityDatas != null)
+        {
+            for (int i = 0; i < _data.mapLevelAccessDatas.Count; i++)
+            {
+                var saved = _data.mapLevelAccessDatas[i];
+                var mapData = densityDataBase.densityDatas.Find(m => m.mapType == saved.mapType);
+                if (mapData != null)
+                {
+                    mapData.bCanAccess = saved.bCanAccess;
+                    mapData.isUnlocked = saved.isUnlocked;
+                    mapData.isNew = saved.isNew;
+                    mapData.hasPlayedUnlock = saved.hasPlayedUnlock;
+                }
+            }
+        }
+
         if (_data.mapAccessDatas != null)
         {
             for (int i = 0; i < _data.mapAccessDatas.Count; i++)
@@ -301,6 +329,9 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 if (density != null)
                 {
                     density.bCanAccess = saved.bCanAccess;
+                    density.isUnlocked = saved.isUnlocked;
+                    density.isNew = saved.isNew;
+                    density.hasPlayedUnlock = saved.hasPlayedUnlock;
                 }
             }
         }
@@ -342,6 +373,10 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
             var mapData = densityDataBase.densityDatas[i];
             var mapInfo = new MapEnvironmentDataInfo();
             mapInfo.mapType = mapData.mapType;
+            mapInfo.bCanAccess = mapData.bCanAccess;
+            mapInfo.isUnlocked = mapData.isUnlocked;
+            mapInfo.isNew = mapData.isNew;
+            mapInfo.hasPlayedUnlock = mapData.hasPlayedUnlock;
             mapInfo.forestDatas = new List<ForestEnvironmentInfo>(mapData.densityData.Count);
 
             for (int j = 0; j < mapData.densityData.Count; j++)
@@ -354,7 +389,10 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                     spawnAnimalTypes = density.spawnAnimalTypes,
                     limitHiddenGauge = density.limitHiddenGauge,
                     currentHiddenGauge = 0f,
-                    bCanAccess = density.bCanAccess
+                    bCanAccess = density.bCanAccess,
+                    isUnlocked = density.isUnlocked,
+                    isNew = density.isNew,
+                    hasPlayedUnlock = density.hasPlayedUnlock
                 };
                 mapInfo.forestDatas.Add(forestInfo);
             }
@@ -381,6 +419,15 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         {
             var mapInfo = cachedDatabase.mapDatas[i];
 
+            var originalMapData = densityDataBase.densityDatas.Find(m => m.mapType == mapInfo.mapType);
+            if (originalMapData != null)
+            {
+                mapInfo.bCanAccess = originalMapData.bCanAccess;
+                mapInfo.isUnlocked = originalMapData.isUnlocked;
+                mapInfo.isNew = originalMapData.isNew;
+                mapInfo.hasPlayedUnlock = originalMapData.hasPlayedUnlock;
+            }
+
             for (int j = 0; j < mapInfo.forestDatas.Count; j++)
             {
                 var forestInfo = mapInfo.forestDatas[j];
@@ -400,6 +447,9 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
                 if (originalData != null)
                 {
                     forestInfo.bCanAccess = originalData.bCanAccess;
+                    forestInfo.isUnlocked = originalData.isUnlocked;
+                    forestInfo.isNew = originalData.isNew;
+                    forestInfo.hasPlayedUnlock = originalData.hasPlayedUnlock;
                 }
 
                 // 구조체 업데이트 (Write back to list)
@@ -616,5 +666,150 @@ public class DensityManager : MonoBehaviour, IDensityProvider, IDensityCH, IMapD
         }
 
         Debug.Log("[DensityManager] Debug: All Maps Unlocked.");
+    }
+
+    public void MarkUnlocked(MapType mapType, ForestType forestType)
+    {
+        var density = densityDataBase.Get(mapType, forestType);
+        if (density != null)
+        {
+            density.isUnlocked = true;
+        }
+
+        if (isDatabaseInitialized)
+        {
+            int mapIndex = cachedDatabase.mapDatas.FindIndex(m => m.mapType == mapType);
+            if (mapIndex != -1)
+            {
+                var mapInfo = cachedDatabase.mapDatas[mapIndex];
+                if (mapInfo.forestDatas != null)
+                {
+                    int forestIndex = mapInfo.forestDatas.FindIndex(f => f.forestType == forestType);
+                    if (forestIndex != -1)
+                    {
+                        var forestInfo = mapInfo.forestDatas[forestIndex];
+                        forestInfo.isUnlocked = true;
+                        mapInfo.forestDatas[forestIndex] = forestInfo;
+                    }
+                }
+                cachedDatabase.mapDatas[mapIndex] = mapInfo;
+            }
+        }
+    }
+
+    public void MarkUnlockAnimationPlayed(MapType mapType, ForestType forestType)
+    {
+        var density = densityDataBase.Get(mapType, forestType);
+        if (density != null)
+        {
+            density.hasPlayedUnlock = true;
+            density.isNew = true;
+        }
+
+        if (isDatabaseInitialized)
+        {
+            int mapIndex = cachedDatabase.mapDatas.FindIndex(m => m.mapType == mapType);
+            if (mapIndex != -1)
+            {
+                var mapInfo = cachedDatabase.mapDatas[mapIndex];
+                if (mapInfo.forestDatas != null)
+                {
+                    int forestIndex = mapInfo.forestDatas.FindIndex(f => f.forestType == forestType);
+                    if (forestIndex != -1)
+                    {
+                        var forestInfo = mapInfo.forestDatas[forestIndex];
+                        forestInfo.hasPlayedUnlock = true;
+                        forestInfo.isNew = true;
+                        mapInfo.forestDatas[forestIndex] = forestInfo;
+                    }
+                }
+                cachedDatabase.mapDatas[mapIndex] = mapInfo;
+            }
+        }
+    }
+
+    public void MarkMapAsRead(MapType mapType, ForestType forestType)
+    {
+        var density = densityDataBase.Get(mapType, forestType);
+        if (density != null)
+        {
+            density.isNew = false;
+        }
+
+        if (isDatabaseInitialized)
+        {
+            int mapIndex = cachedDatabase.mapDatas.FindIndex(m => m.mapType == mapType);
+            if (mapIndex != -1)
+            {
+                var mapInfo = cachedDatabase.mapDatas[mapIndex];
+                if (mapInfo.forestDatas != null)
+                {
+                    int forestIndex = mapInfo.forestDatas.FindIndex(f => f.forestType == forestType);
+                    if (forestIndex != -1)
+                    {
+                        var forestInfo = mapInfo.forestDatas[forestIndex];
+                        forestInfo.isNew = false;
+                        mapInfo.forestDatas[forestIndex] = forestInfo;
+                    }
+                }
+                cachedDatabase.mapDatas[mapIndex] = mapInfo;
+            }
+        }
+    }
+
+    public void MarkMapUnlocked(MapType mapType)
+    {
+        var mapData = densityDataBase.densityDatas.Find(m => m.mapType == mapType);
+        if (mapData != null) mapData.isUnlocked = true;
+
+        if (isDatabaseInitialized)
+        {
+            int mapIndex = cachedDatabase.mapDatas.FindIndex(m => m.mapType == mapType);
+            if (mapIndex != -1)
+            {
+                var mapInfo = cachedDatabase.mapDatas[mapIndex];
+                mapInfo.isUnlocked = true;
+                cachedDatabase.mapDatas[mapIndex] = mapInfo;
+            }
+        }
+    }
+
+    public void MarkMapUnlockAnimationPlayed(MapType mapType)
+    {
+        var mapData = densityDataBase.densityDatas.Find(m => m.mapType == mapType);
+        if (mapData != null)
+        {
+            mapData.hasPlayedUnlock = true;
+            mapData.isNew = true;
+        }
+
+        if (isDatabaseInitialized)
+        {
+            int mapIndex = cachedDatabase.mapDatas.FindIndex(m => m.mapType == mapType);
+            if (mapIndex != -1)
+            {
+                var mapInfo = cachedDatabase.mapDatas[mapIndex];
+                mapInfo.hasPlayedUnlock = true;
+                mapInfo.isNew = true;
+                cachedDatabase.mapDatas[mapIndex] = mapInfo;
+            }
+        }
+    }
+
+    public void MarkMapLevelAsRead(MapType mapType)
+    {
+        var mapData = densityDataBase.densityDatas.Find(m => m.mapType == mapType);
+        if (mapData != null) mapData.isNew = false;
+
+        if (isDatabaseInitialized)
+        {
+            int mapIndex = cachedDatabase.mapDatas.FindIndex(m => m.mapType == mapType);
+            if (mapIndex != -1)
+            {
+                var mapInfo = cachedDatabase.mapDatas[mapIndex];
+                mapInfo.isNew = false;
+                cachedDatabase.mapDatas[mapIndex] = mapInfo;
+            }
+        }
     }
 }

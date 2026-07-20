@@ -5,6 +5,7 @@ public class ComponentCtx
     public InputManager inputManager;
     public Vector2 moveInput;
     public StatComponent characterStat;
+    public OverheatComponent overheatComponent;
     public bool bWhileChangingWeapon = false;
     public IPathfindGridProvider pathfindGridProvider;
     public ITilemapDataProvider tilemapDataProvider;

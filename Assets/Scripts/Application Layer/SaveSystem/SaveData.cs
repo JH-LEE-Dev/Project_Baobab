@@ -90,6 +90,9 @@ public struct LogProcessLineSaveData
     public BeltSaveData outBeltData;
     public CutterSaveData cutterData;
 
+    // 이 라인이 컨테이너에서 마지막으로 원목을 꺼내온 뒤 경과한 시간(라인별 독립 출고 타이머).
+    public float lastOutputTimeElapsed;
+
     public void Initialize()
     {
         inBeltData.Initialize();
@@ -161,6 +164,19 @@ public struct MapAccessSaveData
     public MapType mapType;
     public ForestType forestType;
     public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
+}
+
+[Serializable]
+public struct MapLevelAccessSaveData
+{
+    public MapType mapType;
+    public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
 }
 
 [Serializable]
@@ -175,6 +191,7 @@ public struct EnvironmentSaveData
 {
     public List<MapHiddenGaugeSaveData> hiddenGaugeDatas;
     public List<MapAccessSaveData> mapAccessDatas;
+    public List<MapLevelAccessSaveData> mapLevelAccessDatas;
 
     public void Initialize()
     {
@@ -183,6 +200,9 @@ public struct EnvironmentSaveData
 
         if (mapAccessDatas == null) mapAccessDatas = new List<MapAccessSaveData>(8);
         else mapAccessDatas.Clear();
+
+        if (mapLevelAccessDatas == null) mapLevelAccessDatas = new List<MapLevelAccessSaveData>(8);
+        else mapLevelAccessDatas.Clear();
     }
 }
 
@@ -200,6 +220,7 @@ public class GameSaveData
     public bool bHasAcquiredSporePotion;
     public float sporePotionCharge;
     public bool bHasAcquiredStarCompass;
+    public bool bHasAcquiredObsidianCharm;
     public List<LootType> currentOwnedLoots;
 
     public void Clear()

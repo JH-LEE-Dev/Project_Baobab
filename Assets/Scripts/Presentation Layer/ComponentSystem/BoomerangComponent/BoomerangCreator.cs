@@ -42,11 +42,37 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
         );
     }
 
-    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished)
+    public Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false)
     {
         if (boomerangPool == null || statComponent == null) return null;
 
         Boomerang boomerang = boomerangPool.Get();
+
+        // 데미지, 범위, 속도 스탯 계산
+        float finalDamage = statComponent.boomerangDamage;
+        float finalHitRadius = statComponent.boomerangHitRadius;
+        float finalSpeedMul = 1f;
+
+        if (_bIsOverheat)
+        {
+            // 과열 효과: 기본 데미지 10000% 추가 증가 (x101), 범위 300% 추가 증가 (x4), 속도 200% 증가 (x3)
+            finalDamage *= 101f;
+            finalHitRadius *= 4f;
+            finalSpeedMul = 3f;
+        }
+
+        // 치명타는 최종적으로 증폭된 기본 데미지를 바탕으로 계산됨
+        if (statComponent.bBoomerangCritical && UnityEngine.Random.value < statComponent.criticalChance)
+        {
+            finalDamage *= statComponent.ciriticalDamageMul;
+        }
+
+        boomerang.SetDamage(finalDamage);
+        boomerang.SetHitRadius(finalHitRadius);
+        boomerang.SetSpeedMultiplier(finalSpeedMul);
+        // damageInterval은 변동 없음
+        boomerang.SetDamageInterval(statComponent.boomerangDamageInterval);
+
         boomerang.Launch(_origin, _direction, _maxDistance, _returnTarget, _onFinished);
         return boomerang;
     }
@@ -67,17 +93,7 @@ public class BoomerangCreator : MonoBehaviour, IBoomerangCreator
 
     private void OnGetBoomerang(Boomerang _boomerang)
     {
-        // AxeExtraAttackCreator.OnGetShockWave와 동일한 방식: 치명타 적용 스킬이 켜져 있을 때만
-        // 공용 치명타 확률/배율(criticalChance, ciriticalDamageMul)로 판정한다.
-        float finalDamage = statComponent.boomerangDamage;
-        if (statComponent.bBoomerangCritical && UnityEngine.Random.value < statComponent.criticalChance)
-        {
-            finalDamage *= statComponent.ciriticalDamageMul;
-        }
-
-        _boomerang.SetDamage(finalDamage);
-        _boomerang.SetHitRadius(statComponent.boomerangHitRadius);
-        _boomerang.SetDamageInterval(statComponent.boomerangDamageInterval);
+        // 스탯 세팅은 _bIsOverheat 상태를 알 수 있는 ThrowBoomerang 내부로 이동됨.
         _boomerang.gameObject.SetActive(true);
     }
 

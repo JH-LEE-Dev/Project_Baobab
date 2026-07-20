@@ -40,6 +40,13 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private IObjectPool<SporeExplosionVFX> sporeExplosionVfxPool;
 
+    [Header("Fire Explosion")]
+    [SerializeField] private FireExplosionVFX fireExplosionVfxPrefab;
+    [SerializeField] private int fireExplosionVfxPoolDefaultCapacity = 8;
+    [SerializeField] private int fireExplosionVfxPoolMaxSize = 64;
+
+    private IObjectPool<FireExplosionVFX> fireExplosionVfxPool;
+
     public void Initialize()
     {
         if (vfxComponent != null)
@@ -81,6 +88,19 @@ public class InDungeonVFXManager : MonoBehaviour
                 collectionCheck: true,
                 defaultCapacity: sporeExplosionVfxPoolDefaultCapacity,
                 maxSize: sporeExplosionVfxPoolMaxSize
+            );
+        }
+
+        if (fireExplosionVfxPool == null && fireExplosionVfxPrefab != null)
+        {
+            fireExplosionVfxPool = new ObjectPool<FireExplosionVFX>(
+                createFunc: CreateFireExplosionVfx,
+                actionOnGet: OnGetFireExplosionVfx,
+                actionOnRelease: OnReleaseFireExplosionVfx,
+                actionOnDestroy: OnDestroyFireExplosionVfx,
+                collectionCheck: true,
+                defaultCapacity: fireExplosionVfxPoolDefaultCapacity,
+                maxSize: fireExplosionVfxPoolMaxSize
             );
         }
     }
@@ -154,6 +174,40 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     private void OnDestroySporeExplosionVfx(SporeExplosionVFX _instance)
+    {
+        if (_instance != null) Destroy(_instance.gameObject);
+    }
+
+    /// <summary>
+    /// 과열 강화 ShockWave 폭발 VFX를 스폰합니다. 포자 폭발 VFX와 완전히 동일한 방식(프리팹 + ObjectPool)입니다.
+    /// </summary>
+    public void PlayFireExplosionVFX(Vector3 _position, Vector2 _outwardDirection, int _sortingOrderOffset = 100)
+    {
+        if (fireExplosionVfxPool == null) return;
+
+        FireExplosionVFX instance = fireExplosionVfxPool.Get();
+        instance.transform.position = _position;
+        instance.Play(_sortingOrderOffset, _outwardDirection);
+    }
+
+    private FireExplosionVFX CreateFireExplosionVfx()
+    {
+        FireExplosionVFX instance = Instantiate(fireExplosionVfxPrefab, transform);
+        instance.SetPool(fireExplosionVfxPool);
+        return instance;
+    }
+
+    private void OnGetFireExplosionVfx(FireExplosionVFX _instance)
+    {
+        _instance.gameObject.SetActive(true);
+    }
+
+    private void OnReleaseFireExplosionVfx(FireExplosionVFX _instance)
+    {
+        _instance.gameObject.SetActive(false);
+    }
+
+    private void OnDestroyFireExplosionVfx(FireExplosionVFX _instance)
     {
         if (_instance != null) Destroy(_instance.gameObject);
     }
@@ -355,6 +409,27 @@ public class InDungeonVFXManager : MonoBehaviour
             "ManifestationBrandSparkEffect",
             _visual.GetTopRootPosition(),
             _visual.GetTopRootRotation(),
+            sortingOrder,
+            null
+        ));
+    }
+
+    /// <summary>
+    /// MagmaForest 등에서 나무가 열기를 방출할 때의 VFX를 재생합니다.
+    /// parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
+    /// </summary>
+    public void PlayTreeHeatEmitVFX(TreeVisualComponent _visual)
+    {
+        if (vfxComponent == null || _visual == null) return;
+
+        // 나무 하단(위치) 기준으로 y축 0.5 위로 오프셋
+        Vector3 position = _visual.GetBottomRootPosition() + new Vector3(0f, 0.5f, 0f);
+        int sortingOrder = _visual.GetTopHighlightSortingOrder() + 1;
+
+        vfxComponent.Play(new VFXPlaySettings(
+            "TreeHeatEmitEffect",
+            position,
+            _visual.GetBottomRootRotation(),
             sortingOrder,
             null
         ));

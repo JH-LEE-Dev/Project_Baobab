@@ -410,7 +410,7 @@ MonoBehaviour:
   dimmerFadeDuration: 0.5
   skipIntroInEditor: 0
   exitMoveDuration: 1.8
-  exitMoveDistance: 2300
+  exitMoveDistance: 500
   exitMoveEase: 10
 --- !u!1001 &662564832808079972
 PrefabInstance:

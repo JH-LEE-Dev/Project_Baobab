@@ -198,22 +198,33 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         UpdateFlyingItems(Time.deltaTime);
         UpdateBounce(Time.deltaTime);
 
-        if (bStop == true)
-        {
-            lastOutputTime = Time.time - lastInterval;
-            return;
-        }
-
-        lastInterval = Time.time - lastOutputTime;
-        if (lastInterval >= (transferInterval / (Mathf.Max(0.01f, itemTransferSpeedMul) * Mathf.Max(0.01f, globalSpeedMultiplier))))
-        {
-            TakeFirstItem();
-            lastOutputTime = Time.time;
-            lastInterval = 0f;
-        }
-
+        // 자동 출고 타이머는 더 이상 여기서 돌리지 않는다. 각 LogProcessLine이
+        // LogProcessingManager를 통해 자기만의 타이머로 독립적으로 TakeFirstItem()을
+        // 호출해 원목을 가져간다(라인별 진입 간격이 다른 라인 상태에 영향받지 않도록).
         if (customSortable != null)
             customSortable.SetHeight(0f);
+    }
+
+    /// <summary>
+    /// 라인이 하나라도 꺼내갈 수 있는 원목이 남아있는지 확인합니다(실제로 꺼내지는 않음).
+    /// </summary>
+    public bool HasAvailableItem()
+    {
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (containerSlots[i].itemData != null && containerSlots[i].count > 0)
+                return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// 속도 배율이 반영된 실제 출고 간격. 각 라인이 자기 타이머를 이 간격과 비교해
+    /// TakeFirstItem() 호출 시점을 판단한다.
+    /// </summary>
+    public float GetEffectiveTransferInterval()
+    {
+        return transferInterval / (Mathf.Max(0.01f, itemTransferSpeedMul) * Mathf.Max(0.01f, globalSpeedMultiplier));
     }
 
     private void LateUpdate()

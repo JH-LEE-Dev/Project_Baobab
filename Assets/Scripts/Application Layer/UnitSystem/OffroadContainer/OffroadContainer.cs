@@ -1415,7 +1415,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     // 하면 빈 슬롯이 2개 있는데 서로 다른 종류 2개가 동시에 들어와도 하나가 불필요하게 거절당해,
     // 럼버잭 NPC가 그 세션에 하나도 못 넣어서 재시도 없이 영구 정지(bPermanentlyStuck)하는 상황을
     // 실제보다 더 자주 유발할 수 있었다.
-    private bool CanAddItemByData(ItemData _sourceData)
+    public bool CanAddItemByData(ItemData _sourceData)
     {
         if (!(_sourceData is LogItemData logSource)) return false;
 

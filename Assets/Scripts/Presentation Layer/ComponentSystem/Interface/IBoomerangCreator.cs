@@ -7,5 +7,5 @@ using UnityEngine;
 /// </summary>
 public interface IBoomerangCreator
 {
-    Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished);
+    Boomerang ThrowBoomerang(Vector3 _origin, Vector3 _direction, float _maxDistance, Transform _returnTarget, Action _onFinished, bool _bIsOverheat = false);
 }
