@@ -428,7 +428,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (nearestTree == null) return;
 
         ThrowBoomerangAt(nearestTree);
-        boomerangCooldownTimer = statComponent.boomerangCooldown;
     }
 
     private ITreeObj FindNearestTree()
@@ -488,6 +487,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             activeBoomerangTargets.Remove(_tree);
             activeBoomerangs.Remove(thrownBoomerang);
+            boomerangCooldownTimer = statComponent.boomerangCooldown;
         };
 
         thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished);
