@@ -319,7 +319,7 @@ MonoBehaviour:
   uiSlotPrefab: {fileID: 579466836129025464, guid: fb43f9e42a2b2fd4999daf76b9e7d5e0, type: 3}
   slotBackground: {fileID: 1415042115427916999}
   omp: {fileID: 7013793298929853146}
-  offset: {x: 0, y: 0}
+  offset: {x: 0.5, y: 0.15}
   useDynamicPositioning: 1
   tweenDuration: 0.3
   easeType: 12
@@ -396,6 +396,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     squashScale: {x: 1.4, y: 0.7}
     recoilScale: {x: 0.8, y: 1.3}
@@ -461,6 +462,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: -5, y: 0}
@@ -523,6 +525,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     startOffset: {x: 0, y: 0}
     endOffset: {x: 5, y: 0}

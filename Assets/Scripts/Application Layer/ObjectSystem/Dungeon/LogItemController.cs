@@ -279,6 +279,28 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
         Destroy(_item.gameObject);
     }
 
+    /// <summary>
+    /// 타운 귀환(DropAllItem/Off로드 탑승) 확정 시점에 호출한다. 이미 캐릭터를 향해 흡입(Sucking) 중이던
+    /// 아이템은 습득 처리 없이 그대로 풀로 반환해 자연스럽게 사라지게 하고, 아직 흡입을 시작하지 않은
+    /// 아이템(흡입 대상으로 예약만 된 상태 포함)은 bCanAcquired를 꺼서 더 이상 습득되지 않도록 막는다.
+    /// </summary>
+    public void CancelActiveSucking()
+    {
+        for (int i = activeItemsList.Count - 1; i >= 0; i--)
+        {
+            LogItem item = activeItemsList[i];
+
+            if (item.MoveState == ItemMoveState.Sucking)
+            {
+                logPool.Release(item);
+            }
+            else
+            {
+                item.SetbCanAcquired(false);
+            }
+        }
+    }
+
     public void ClearAll()
     {
         int count = activeItemsList.Count;

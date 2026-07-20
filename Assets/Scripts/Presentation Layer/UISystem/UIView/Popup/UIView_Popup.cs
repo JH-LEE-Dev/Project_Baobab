@@ -9,7 +9,6 @@ public class UIView_Popup : UIView
 {
     // //이벤트
     public event Action<bool> InventoryUIOpendEvent;
-    public event Action goHomeButtonClickedEvent;
     public event Action<IInventorySlot> sendDeleteItemEvent;
 
     // //외부 의존성
@@ -121,7 +120,8 @@ public class UIView_Popup : UIView
         if (null == uiInventory)
             return;
 
-        uiInventory.Initialize(uiRoot, HandleHomingButtonClicked, HandleInventoryHover, HandleInventoryUnHover);
+        // uiInventory.Initialize(uiRoot, HandleHomingButtonClicked, HandleInventoryHover, HandleInventoryUnHover);
+        uiInventory.Initialize(uiRoot, HandleInventoryHover, HandleInventoryUnHover);
         uiInventory.OnHide();
     }
 
@@ -149,10 +149,10 @@ public class UIView_Popup : UIView
         sendDeleteItemEvent?.Invoke(_inData);
     }
 
-    private void HandleHomingButtonClicked()
-    {
-        goHomeButtonClickedEvent?.Invoke();
-    }
+    // private void HandleHomingButtonClicked()
+    // {
+    //     goHomeButtonClickedEvent?.Invoke();
+    // }
 
     private void HandleInventoryHover()
     {
@@ -200,19 +200,21 @@ public class UIView_Popup : UIView
 
     public void LoosAllInventoryItems()
     {
-        uiInventory?.ClearNotification();
+        // uiInventory?.ClearNotification();
     }
 
     public void ItemAddedToInventory()
     {
         InventoryShowEvent();
-        uiInventory?.UpdateNotification();
+        // uiInventory?.UpdateNotification();
+        uiInventory?.PlayCapacityFeedback();
     }
 
     public void ItemRemovedFromInventory()
     {
         InventoryShowEvent();
-        uiInventory?.ClearNotification();
+        // uiInventory?.ClearNotification();
+        uiInventory?.PlayCapacityRemoveFeedback();
     }
 
     public void InventoryIsFull()

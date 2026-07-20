@@ -64,12 +64,8 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
     private string GetSaveFilePath()
     {
-        string folderPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments), "Project_Baobab");
-        if (!Directory.Exists(folderPath))
-        {
-            Directory.CreateDirectory(folderPath);
-        }
-        return Path.Combine(folderPath, "SaveData.dat");
+        // 경로 규칙은 GamePaths에서 단일 관리한다. (환경설정 파일과 같은 폴더, 다른 파일)
+        return GamePaths.GameSaveFile;
     }
 
     public void SaveGameData()

@@ -338,6 +338,12 @@ public class UIView_WorldPopup : UIView
     {
         if (MapType.Town == currentMapType)
             ui_TraderCoin?.OnShow();
+
+        // GoDown으로 UI가 강제로 꺼진 뒤, 제재소가 여전히 가동 중이라면 다시 노출시킨다.
+        // 이 처리가 없으면 isLogProcesserActive가 true인 채로 남아 있어
+        // LogContainerInteractStateChanged에서 ShowLogProcessor 호출을 건너뛰게 된다.
+        if (true == isLogProcesserActive)
+            ShowLogProcessor(true);
     }
 
     public void SetCurrentMapType(MapType _currentMapType, ForestType _currentForestType)

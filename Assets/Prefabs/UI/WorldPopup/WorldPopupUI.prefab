@@ -49,10 +49,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIView_WorldPopup
   layer: 2
-  startHidden: 1
+  bCloseableByESC: 0
   bWorld: 1
+  bScreenSpace: 0
+  bOverlay: 0
   storageOffset: {x: -1.5, y: 2.5}
-  carStorageOffset: {x: 1.5, y: 0.15}
+  carStorageOffset: {x: 0.5, y: 0.15}
   cutterOffset: {x: -1.5, y: 0}
   bTraderCoinAnim: 1
   traderCoinOffset: {x: 0, y: 0.75}

@@ -76,7 +76,7 @@ public class UI_MainMenuBackground : MonoBehaviour
                     for (int j = 0; j < _childCount; j++)
                     {
                         RectTransform _childRt = backgroundLayers[i].layerTransform.GetChild(j) as RectTransform;
-                        if (_childRt != null)
+                        if (null != _childRt)
                         {
                             backgroundLayers[i].childrenData[j] = new FloatingChild
                             {
@@ -153,7 +153,7 @@ public class UI_MainMenuBackground : MonoBehaviour
             // 2 & 3. Floating 연산 및 적용
             if (backgroundLayers[i].enableFloating)
             {
-                if (backgroundLayers[i].independentChildrenFloating && backgroundLayers[i].childrenData != null)
+                if (backgroundLayers[i].independentChildrenFloating && null != backgroundLayers[i].childrenData)
                 {
                     // 부모는 패럴랙스(카메라 이동 효과)만 적용
                     backgroundLayers[i].layerTransform.anchoredPosition = backgroundLayers[i].initialPosition + _layerParallax;
