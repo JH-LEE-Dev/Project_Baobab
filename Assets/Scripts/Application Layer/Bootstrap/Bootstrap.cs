@@ -244,6 +244,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
         else
         {
+            // 이어하기 버튼 상태(HasSaveData)를 UI가 확인하기 전에 클라우드 세이브를 로컬로 먼저 반영한다.
+            saveManager?.SyncCloudSaveIfNewer();
             SetupMainMenuScene();
         }
     }

@@ -561,7 +561,6 @@ public class LumberjackNPC : MonoBehaviour
         if (nearestTree == null) return;
 
         ThrowBoomerangAt(nearestTree);
-        boomerangCooldownTimer = playerStatForBoomerang.boomerangCooldown;
     }
 
     private ITreeObj FindNearestTreeForBoomerang()
@@ -617,6 +616,7 @@ public class LumberjackNPC : MonoBehaviour
         {
             activeBoomerangTargets.Remove(_tree);
             activeBoomerangs.Remove(thrownBoomerang);
+            boomerangCooldownTimer = playerStatForBoomerang.boomerangCooldown;
         };
 
         thrownBoomerang = boomerangCreator.ThrowBoomerang(origin, dir, maxDistance, transform, onFinished);
