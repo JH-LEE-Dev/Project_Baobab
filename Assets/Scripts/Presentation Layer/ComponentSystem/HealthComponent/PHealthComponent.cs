@@ -67,6 +67,24 @@ public class PHealthComponent : PComponent, IPHealthComponent
     }
 
     /// <summary>
+    /// 환경 위험 지형(용암 등)으로 인한 스태미나 추가 소모. 캐릭터 스탯 보정(staminaDecreaseAlpha)의
+    /// 영향을 받지 않는 고정값으로, 최종 소모량에 그대로 더해진다.
+    /// </summary>
+    public void ApplyEnvironmentalStaminaDrain(float _drainPerSecond)
+    {
+        if (currentStamina <= 0 || _drainPerSecond <= 0f)
+            return;
+
+        float amount = _drainPerSecond * Time.deltaTime;
+        currentStamina = Mathf.Max(0, currentStamina - amount);
+
+        if (currentStamina <= 0)
+        {
+            StaminaIsEmptyEvent?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// 스태미나 회복 (초당 변화량 적용)
     /// </summary>
     public void IncreaseStamina()

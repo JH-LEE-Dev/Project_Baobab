@@ -296,6 +296,37 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         return IsWater(_cellPos.x, _cellPos.y);
     }
 
+    // 상하좌우+대각선 8방향 오프셋. 매 프레임 새로 할당하지 않도록 static readonly로 한 번만 생성한다.
+    private static readonly Vector3Int[] EightDirectionOffsets = new Vector3Int[]
+    {
+        new Vector3Int(-1, -1, 0), new Vector3Int(0, -1, 0), new Vector3Int(1, -1, 0),
+        new Vector3Int(-1, 0, 0), new Vector3Int(1, 0, 0),
+        new Vector3Int(-1, 1, 0), new Vector3Int(0, 1, 0), new Vector3Int(1, 1, 0),
+    };
+
+    /// <summary>
+    /// _cellPos의 8방향 이웃 중 물(용암 재스킨 포함) 타일이 있으면 stageTileData에 설정된
+    /// 초당 스태미나 추가 소모량을 반환한다. 해당 스테이지에 설정값이 없으면(0) 검사 자체를 생략한다.
+    /// </summary>
+    public float GetHazardStaminaDrainPerSecond(Vector3Int _cellPos)
+    {
+        if (stageTileData == null) return 0f;
+
+        float drainPerSecond = stageTileData.WaterHazardStaminaDrainPerSecond;
+        if (drainPerSecond <= 0f) return 0f;
+
+        for (int i = 0; i < EightDirectionOffsets.Length; i++)
+        {
+            Vector3Int neighborCell = _cellPos + EightDirectionOffsets[i];
+            if (IsWater(neighborCell.x, neighborCell.y))
+            {
+                return drainPerSecond;
+            }
+        }
+
+        return 0f;
+    }
+
     public bool HasRockDeco(Vector3Int _cellPos)
     {
         if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;

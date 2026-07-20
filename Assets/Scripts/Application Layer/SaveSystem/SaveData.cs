@@ -161,6 +161,19 @@ public struct MapAccessSaveData
     public MapType mapType;
     public ForestType forestType;
     public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
+}
+
+[Serializable]
+public struct MapLevelAccessSaveData
+{
+    public MapType mapType;
+    public bool bCanAccess;
+    public bool isUnlocked;
+    public bool isNew;
+    public bool hasPlayedUnlock;
 }
 
 [Serializable]
@@ -175,6 +188,7 @@ public struct EnvironmentSaveData
 {
     public List<MapHiddenGaugeSaveData> hiddenGaugeDatas;
     public List<MapAccessSaveData> mapAccessDatas;
+    public List<MapLevelAccessSaveData> mapLevelAccessDatas;
 
     public void Initialize()
     {
@@ -183,6 +197,9 @@ public struct EnvironmentSaveData
 
         if (mapAccessDatas == null) mapAccessDatas = new List<MapAccessSaveData>(8);
         else mapAccessDatas.Clear();
+
+        if (mapLevelAccessDatas == null) mapLevelAccessDatas = new List<MapLevelAccessSaveData>(8);
+        else mapLevelAccessDatas.Clear();
     }
 }
 

@@ -92,3 +92,4 @@ MonoBehaviour:
   bloomGrassDecoDensity: 0.07
   useBloomWaterDecoDensity: 0
   bloomWaterDecoDensity: 0.1
+  waterHazardStaminaDrainPerSecond: 100

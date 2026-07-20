@@ -74,6 +74,9 @@ public class TownTilemapDataProvider : ITilemapDataProvider
     // 록 데코를 포함한 모든 콜라이더 타일이 이미 IsWalkable에서 제외되므로 별도 처리가 필요 없다.
     public bool HasRockDeco(Vector3Int _cellPos) => false;
 
+    // 마을에는 위험 지형(용암 등)이 없으므로 항상 0을 반환한다.
+    public float GetHazardStaminaDrainPerSecond(Vector3Int _cellPos) => 0f;
+
     public bool IsWaterTile(Vector3Int _cellPos)
     {
         if (townTileManager == null || townTileManager.WaterColliderTilemap == null) return false;

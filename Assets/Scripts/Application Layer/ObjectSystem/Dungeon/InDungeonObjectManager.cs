@@ -1311,7 +1311,25 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
             return false;
         }
 
-        return inventoryChecker.bInventoryIsEmpty == false;
+        if (characterInventory == null || characterInventory.inventorySlots == null)
+        {
+            return false;
+        }
+
+        int slotCount = characterInventory.currentSlotCnt;
+        for (int i = 0; i < slotCount; i++)
+        {
+            var slot = characterInventory.inventorySlots[i];
+            if (slot != null && slot.itemData is ItemData itemData && slot.count > 0)
+            {
+                if (offroadContainer.CanAddItemByData(itemData))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public void IncreaseGrowthSpeed(float _amount)

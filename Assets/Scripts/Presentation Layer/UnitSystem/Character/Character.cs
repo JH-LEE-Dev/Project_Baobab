@@ -938,6 +938,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bStaminaUpDown) healthComponent.IncreaseStamina();
         else healthComponent.DecreaseStamina();
 
+        // 용암 등 위험 지형 인접 시 추가 소모 (증감 상태와 무관하게 항상 적용)
+        Vector3Int currentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
+        float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(currentCell);
+        if (hazardDrain > 0f) healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
+
         UpdateFacingByAttackPoint();
         ConnectAttackToArm();
     }
