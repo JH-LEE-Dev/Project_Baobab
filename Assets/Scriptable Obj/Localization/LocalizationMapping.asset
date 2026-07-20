@@ -193,6 +193,38 @@ MonoBehaviour:
     enumValueName: ShieldExplosionRange
     enumIntValue: 93
     compositeKey: 4203448
+  - enumTypeName: SkillCommandType
+    enumValueName: WeakPointHit
+    enumIntValue: 39
+    compositeKey: 4203449
+  - enumTypeName: SkillCommandType
+    enumValueName: BoomerangCritical
+    enumIntValue: 79
+    compositeKey: 4203450
+  - enumTypeName: SkillCommandType
+    enumValueName: BoomerangAttackSpeed
+    enumIntValue: 78
+    compositeKey: 4203451
+  - enumTypeName: SkillCommandType
+    enumValueName: StaminaRecover
+    enumIntValue: 62
+    compositeKey: 4203452
+  - enumTypeName: SkillCommandType
+    enumValueName: BoomerangDistance
+    enumIntValue: 76
+    compositeKey: 4203453
+  - enumTypeName: SkillCommandType
+    enumValueName: BoomerangCooldownReduction
+    enumIntValue: 77
+    compositeKey: 4203454
+  - enumTypeName: SkillCommandType
+    enumValueName: ShieldExplosionResearch
+    enumIntValue: 94
+    compositeKey: 4203455
+  - enumTypeName: SkillCommandType
+    enumValueName: StarrootForestOverGrowth
+    enumIntValue: 54
+    compositeKey: 4203456
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0

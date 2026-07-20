@@ -1204,6 +1204,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.ShockWaveCritical:
             case SkillCommandType.MultiAttack:
             case SkillCommandType.ShieldExplosionUnlock:
+            case SkillCommandType.BoomerangCritical:
                 return true;
             default:
                 return false;
@@ -1669,21 +1670,23 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private class AutoLevelUpRequest
     {
         public AbilityNode Node { get; }
+        public bool WithoutCost { get; set; }
         public float Elapsed { get; set; }
 
-        public AutoLevelUpRequest(AbilityNode _node)
+        public AutoLevelUpRequest(AbilityNode _node, bool _withoutCost)
         {
             Node = _node;
+            WithoutCost = _withoutCost;
             Elapsed = AutoLevelUpInterval;
         }
     }
 
-    public void StartAutoNodeLevelUp(AbilityNode _node)
+    public void StartAutoNodeLevelUp(AbilityNode _node, bool _withoutCost = false)
     {
         if (isOpeningZoomReveal || isCloseFading || _node == null || skillSystemProvider == null)
             return;
 
-        if (CanRequestNodeLevelUp(_node) == false)
+        if (CanRequestAutoNodeLevelUp(_node, _withoutCost) == false)
             return;
 
         for (int i = 0; i < activeAutoLevelUps.Count; i++)
@@ -1691,12 +1694,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
             AutoLevelUpRequest request = activeAutoLevelUps[i];
             if (request != null && request.Node == _node)
             {
+                request.WithoutCost = _withoutCost;
                 request.Elapsed = AutoLevelUpInterval;
                 return;
             }
         }
 
-        activeAutoLevelUps.Add(new AutoLevelUpRequest(_node));
+        activeAutoLevelUps.Add(new AutoLevelUpRequest(_node, _withoutCost));
     }
 
     private void UpdateAutoLevelUps()
@@ -1709,7 +1713,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         {
             AutoLevelUpRequest request = activeAutoLevelUps[i];
             AbilityNode node = request?.Node;
-            if (node == null || node.gameObject.activeInHierarchy == false || CanRequestNodeLevelUp(node) == false)
+            if (node == null || node.gameObject.activeInHierarchy == false || CanRequestAutoNodeLevelUp(node, request.WithoutCost) == false)
             {
                 activeAutoLevelUps.RemoveAt(i);
                 continue;
@@ -1720,7 +1724,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 continue;
 
             request.Elapsed = 0f;
-            if (TryRequestNodeLevelUp(node))
+            if (TryRequestAutoNodeLevelUp(request))
             {
                 node.PlayClickRequestMotion();
                 continue;
@@ -1729,6 +1733,24 @@ public class UI_TentAbilityComponent : MonoBehaviour
             node.PlayRejectedRequestMotion();
             activeAutoLevelUps.RemoveAt(i);
         }
+    }
+
+    private bool TryRequestAutoNodeLevelUp(AutoLevelUpRequest _request)
+    {
+        if (_request == null)
+            return false;
+
+        return _request.WithoutCost
+            ? TryRequestNodeLevelUpWithoutCost(_request.Node)
+            : TryRequestNodeLevelUp(_request.Node);
+    }
+
+    private bool CanRequestAutoNodeLevelUp(AbilityNode _node, bool _withoutCost)
+    {
+        if (_withoutCost)
+            return _node != null && skillSystemProvider != null;
+
+        return CanRequestNodeLevelUp(_node);
     }
 
     private bool CanRequestNodeLevelUp(AbilityNode _node)

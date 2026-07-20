@@ -588,7 +588,7 @@
         {
             "id": 213,
             "key": "ShieldExplosionUnlock_Name",
-            "kr": "포자막 폭발",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>포자막 폭발</Wave></COLOR>",
             "en": "",
             "enumType": "",
             "enumValue": ""
@@ -605,6 +605,198 @@
             "id": 215,
             "key": "ShieldExplosionRange1_Name",
             "kr": "포자막 폭발 범위 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 216,
+            "key": "LogProcessingSpeed4_Name",
+            "kr": "원목 가공 속도 IV",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 217,
+            "key": "SporeShieldCut3_Name",
+            "kr": "포자 절단 M",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 218,
+            "key": "SporeShieldPenetration3_Name",
+            "kr": "포자 관통력 M",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 219,
+            "key": "SporeShieldRegenBlock3_Name",
+            "kr": "포자막 회복 억제 M",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 220,
+            "key": "WeakPointHit1_Name",
+            "kr": "약점 타격 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 221,
+            "key": "BoomerangDamage2_Name",
+            "kr": "부메랑 데미지 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 222,
+            "key": "BoomerangRange2_Name",
+            "kr": "부메랑 범위 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 223,
+            "key": "Boomerang2_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 II</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 224,
+            "key": "BoomerangCritical_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 치명타 적용</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 225,
+            "key": "BoomerangAttackSpeed1_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 공격 속도 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 226,
+            "key": "FatigueMaxIncrease5_Name",
+            "kr": "피로도 최대치 증가 V",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 227,
+            "key": "Stamina3_Name",
+            "kr": "지구력 M",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 228,
+            "key": "StaminaRecover_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>휴식 M</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 229,
+            "key": "BoomerangDamage3_Name",
+            "kr": "부메랑 데미지 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 230,
+            "key": "BoomerangRange3_Name",
+            "kr": "부메랑 범위 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 231,
+            "key": "BoomerangDistance_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 비행거리 증가</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 232,
+            "key": "BoomerangCooldownReduction_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 쿨타임 감소</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 233,
+            "key": "BoomerangAttackSpeed2_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 공격 속도 M</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 234,
+            "key": "ShieldExplosionResearch_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>포자막 폭발</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 235,
+            "key": "LogValue4_Name",
+            "kr": "원목 가치 IV",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 236,
+            "key": "BountifulTree4_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>아낌없이 주는 나무 IV</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 237,
+            "key": "StarrootForestOverGrowth_Name",
+            "kr": "별뿌리숲 과성장",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 238,
+            "key": "AxeDamage5_Name",
+            "kr": "도끼 데미지 V",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 239,
+            "key": "Boomerang3_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑 M</Wave></COLOR>",
             "en": "",
             "enumType": "",
             "enumValue": ""
@@ -1008,6 +1200,70 @@
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "ShieldExplosionRange"
+        },
+        {
+            "id": 9145,
+            "key": "AbilityDescription_WeakPointHit",
+            "kr": "체력이 <COLOR=fca311>50% 이하인 나무에게 주는 데미지</COLOR>가\n<COLOR=54D86A>{0}배</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "WeakPointHit"
+        },
+        {
+            "id": 9146,
+            "key": "AbilityDescription_BoomerangCritical",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>에 이제 치명타가 적용됩니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "BoomerangCritical"
+        },
+        {
+            "id": 9147,
+            "key": "AbilityDescription_BoomerangAttackSpeed",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 공격 속도가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "BoomerangAttackSpeed"
+        },
+        {
+            "id": 9148,
+            "key": "AbilityDescription_StaminaRecover",
+            "kr": "<COLOR=ff5d8f>오프로드 차량</COLOR> 근처에 있을 때 <COLOR=54D86A>{0}피로도</COLOR>씩 지속 회복합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "StaminaRecover"
+        },
+        {
+            "id": 9149,
+            "key": "AbilityDescription_BoomerangDistance",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 사정거리가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "BoomerangDistance"
+        },
+        {
+            "id": 9150,
+            "key": "AbilityDescription_BoomerangCooldownReduction",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>부메랑</Wave></COLOR>의 쿨타임이 <COLOR=54D86A>{0}%</COLOR> 감소합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "BoomerangCooldownReduction"
+        },
+        {
+            "id": 9151,
+            "key": "AbilityDescription_ShieldExplosionResearch",
+            "kr": "<COLOR=ff5d8f>몽글포자숲</COLOR>을 제외한 다른 숲에서도\n종종 <COLOR=54D86A>포자막 폭발</COLOR>이 발생합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ShieldExplosionResearch"
+        },
+        {
+            "id": 9152,
+            "key": "AbilityDescription_StarrootForestOverGrowth",
+            "kr": "별뿌리숲의 <COLOR=8bbeff>나무 밀도</COLOR>가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "StarrootForestOverGrowth"
         }
     ]
 }

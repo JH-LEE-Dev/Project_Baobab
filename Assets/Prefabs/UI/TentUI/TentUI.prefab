@@ -307,6 +307,80 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: 9ffb3812930a57247b0f2c034c7792c3, type: 3}
   - skillType: 75
     sprite: {fileID: 21300000, guid: 68c687278582f7b4dad6d3ff7bbef09d, type: 3}
+  - skillType: 76
+    sprite: {fileID: 21300000, guid: c332136eb1a0ce945b2084e0d911a5b5, type: 3}
+  - skillType: 77
+    sprite: {fileID: 21300000, guid: 79a28a0ded9ea664dad19f409f664d98, type: 3}
+  - skillType: 78
+    sprite: {fileID: 21300000, guid: 996e6464b6654d84289391d8f91fcaa0, type: 3}
+  - skillType: 79
+    sprite: {fileID: 21300000, guid: 71e0abfe2e9939d4a9a053c568a9683a, type: 3}
+  - skillType: 80
+    sprite: {fileID: 21300000, guid: 04f252d37daa87c47b977af44b3063d6, type: 3}
+  - skillType: 81
+    sprite: {fileID: 21300000, guid: 04f252d37daa87c47b977af44b3063d6, type: 3}
+  - skillType: 82
+    sprite: {fileID: 21300000, guid: 3a8488dba7c68094e9cb7dfe906e12df, type: 3}
+  - skillType: 83
+    sprite: {fileID: 21300000, guid: 3a8488dba7c68094e9cb7dfe906e12df, type: 3}
+  - skillType: 84
+    sprite: {fileID: 21300000, guid: 6abeb05609f668441ba5390845c5b806, type: 3}
+  - skillType: 85
+    sprite: {fileID: 21300000, guid: 6abeb05609f668441ba5390845c5b806, type: 3}
+  - skillType: 86
+    sprite: {fileID: 21300000, guid: c3c8e801e68cef44c96596a59a309b3e, type: 3}
+  - skillType: 87
+    sprite: {fileID: 21300000, guid: 4316160308314eb4994ef2cb518a1a2f, type: 3}
+  - skillType: 88
+    sprite: {fileID: 21300000, guid: 6b0e5cd97f3ae3c48ac25ac11b199507, type: 3}
+  - skillType: 89
+    sprite: {fileID: 21300000, guid: 6b0e5cd97f3ae3c48ac25ac11b199507, type: 3}
+  - skillType: 90
+    sprite: {fileID: 21300000, guid: f422e0bbd929d6e47b39ee274d08cedd, type: 3}
+  - skillType: 91
+    sprite: {fileID: 21300000, guid: 55c14bdef41d05744937185e55a3baae, type: 3}
+  - skillType: 92
+    sprite: {fileID: 21300000, guid: b9ffe03caa65b0540812217fbed3f224, type: 3}
+  - skillType: 93
+    sprite: {fileID: 21300000, guid: 2d31554b92160c646adedcdd196f735d, type: 3}
+  - skillType: 94
+    sprite: {fileID: 21300000, guid: 3d2e42a6062ae88419d2020d20b08e3d, type: 3}
+  - skillType: 95
+    sprite: {fileID: 21300000, guid: 89113d53c92188d4797054681984eee1, type: 3}
+  - skillType: 96
+    sprite: {fileID: 21300000, guid: 57589cbefec41b94589094e99b38e086, type: 3}
+  - skillType: 97
+    sprite: {fileID: 21300000, guid: 9aa9fc933d9728f49bdcc5277ae77d3f, type: 3}
+  - skillType: 98
+    sprite: {fileID: 21300000, guid: 07daae997c278fd4cba4ddda33783c4c, type: 3}
+  - skillType: 99
+    sprite: {fileID: 21300000, guid: e1e6156fb4b6fd14a8ea6ec1c896675c, type: 3}
+  - skillType: 100
+    sprite: {fileID: 21300000, guid: 9f6a4cc4a2425804a8815126f2edd6c2, type: 3}
+  - skillType: 101
+    sprite: {fileID: 21300000, guid: a5c5c800305596341aa48b1546aa66b8, type: 3}
+  - skillType: 102
+    sprite: {fileID: 21300000, guid: b02535aa290842042bd71575dbad3aa0, type: 3}
+  - skillType: 103
+    sprite: {fileID: 21300000, guid: d5a4d48deee32a941903fa324a9f4f67, type: 3}
+  - skillType: 104
+    sprite: {fileID: 21300000, guid: c4859921f6cf0684bb1c49898fd03ba2, type: 3}
+  - skillType: 105
+    sprite: {fileID: 21300000, guid: 60ccea5da9193104ebe57a3d503cb82a, type: 3}
+  - skillType: 106
+    sprite: {fileID: 21300000, guid: 0c2529f567d04374795984b0f123ca53, type: 3}
+  - skillType: 107
+    sprite: {fileID: 21300000, guid: 4ebae63d72b2fe148b50b38bf8d9e40a, type: 3}
+  - skillType: 108
+    sprite: {fileID: 21300000, guid: f293f5ad921a71b4d8d6be42e73854e6, type: 3}
+  - skillType: 109
+    sprite: {fileID: 21300000, guid: bd0798c08445ac349aa05b45ddf071d4, type: 3}
+  - skillType: 110
+    sprite: {fileID: 21300000, guid: 5f908f0269a014648ada813438d07314, type: 3}
+  - skillType: 111
+    sprite: {fileID: 21300000, guid: 1e399d3395d2bf44583ab59ae1a9d1ef, type: 3}
+  - skillType: 112
+    sprite: {fileID: 21300000, guid: fcf1d2a586597a84eac0e232b2aa9c50, type: 3}
   levelBadgeBindings:
   - levelBadge: 1
     sprite: {fileID: 8086268826789988410, guid: 914ac703c90021144a8a7973a041eeff, type: 3}
@@ -1675,7 +1749,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1691,7 +1765,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6519470873578380521, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 0
+      value: 23
       objectReference: {fileID: 0}
     - target: {fileID: 6811739450326591716, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Layer

@@ -286,7 +286,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (IsShiftPressed())
         {
             consumedRapidClick = true;
-            owner?.StartAutoNodeLevelUp(this);
+            owner?.StartAutoNodeLevelUp(this, IsControlPressed());
             return;
         }
     }

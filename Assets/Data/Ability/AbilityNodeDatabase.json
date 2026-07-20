@@ -1002,7 +1002,7 @@
             "nameLocId": 203,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 9,
+            "gridX": 7,
             "gridY": -6,
             "parents": [
                 {
@@ -1099,7 +1099,7 @@
             "levelBadge": "II",
             "requiredPrestigeLevel": 0,
             "gridX": 0,
-            "gridY": -7,
+            "gridY": -5,
             "parents": [
                 {
                     "skillType": "SporeShieldRegenBlock1",
@@ -1195,6 +1195,438 @@
             "parents": [
                 {
                     "skillType": "ShieldExplosionUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogProcessingSpeed4",
+            "nameLocId": 216,
+            "levelBadge": "IV",
+            "requiredPrestigeLevel": 0,
+            "gridX": 13,
+            "gridY": -8,
+            "parents": [
+                {
+                    "skillType": "LogProcessingSpeed3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SporeShieldCut3",
+            "nameLocId": 217,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -2,
+            "gridY": -11,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SporeShieldPenetration3",
+            "nameLocId": 218,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 2,
+            "gridY": -11,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SporeShieldRegenBlock3",
+            "nameLocId": 219,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 0,
+            "gridY": -7,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "WeakPointHit1",
+            "nameLocId": 220,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": 4,
+            "gridY": 13,
+            "parents": [
+                {
+                    "skillType": "AxeCriticalDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "MultiAttack",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangDamage2",
+            "nameLocId": 221,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -6,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "BoomerangDamage1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangRange2",
+            "nameLocId": 222,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -6,
+            "gridY": 13,
+            "parents": [
+                {
+                    "skillType": "BoomerangRange1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "Boomerang2",
+            "nameLocId": 223,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -4,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "Boomerang1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangCritical",
+            "nameLocId": 224,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -6,
+            "gridY": 19,
+            "parents": [
+                {
+                    "skillType": "BoomerangDamage1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangAttackSpeed1",
+            "nameLocId": 225,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": -6,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "BoomerangDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "Boomerang2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "BoomerangRange2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "FatigueMaxIncrease5",
+            "nameLocId": 226,
+            "levelBadge": "V",
+            "requiredPrestigeLevel": 0,
+            "gridX": -11,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "FatigueMaxIncrease4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "Stamina3",
+            "nameLocId": 227,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -9,
+            "gridY": 2,
+            "parents": [
+                {
+                    "skillType": "Stamina2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "StaminaRecover",
+            "nameLocId": 228,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -11,
+            "gridY": -2,
+            "parents": [
+                {
+                    "skillType": "FatigueMaxIncrease5",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "SourceOfStamina1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangDamage3",
+            "nameLocId": 229,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": -8,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "BoomerangDamage2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangRange3",
+            "nameLocId": 230,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": -8,
+            "gridY": 13,
+            "parents": [
+                {
+                    "skillType": "BoomerangRange2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangDistance",
+            "nameLocId": 231,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -10,
+            "gridY": 13,
+            "parents": [
+                {
+                    "skillType": "BoomerangRange3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangCooldownReduction",
+            "nameLocId": 232,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -10,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "BoomerangDamage3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "BoomerangRange3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "Boomerang3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BoomerangAttackSpeed2",
+            "nameLocId": 233,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -12,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "BoomerangDistance",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "BoomerangCooldownReduction",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ShieldExplosionResearch",
+            "nameLocId": 234,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 6,
+            "gridX": 0,
+            "gridY": -13,
+            "parents": [
+                {
+                    "skillType": "SporeShieldCut3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "SporeShieldPenetration3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "LogValue4",
+            "nameLocId": 235,
+            "levelBadge": "IV",
+            "requiredPrestigeLevel": 0,
+            "gridX": 15,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "BountifulTree3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "BountifulTree4",
+            "nameLocId": 236,
+            "levelBadge": "VI",
+            "requiredPrestigeLevel": 0,
+            "gridX": 17,
+            "gridY": 0,
+            "parents": [
+                {
+                    "skillType": "LogValue4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "StarrootForestOverGrowth",
+            "nameLocId": 237,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": 17,
+            "gridY": 2,
+            "parents": [
+                {
+                    "skillType": "LogValue4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AxeDamage5",
+            "nameLocId": 238,
+            "levelBadge": "V",
+            "requiredPrestigeLevel": 0,
+            "gridX": 0,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "AxeDamage4",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "Boomerang3",
+            "nameLocId": 239,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -8,
+            "gridY": 15,
+            "parents": [
+                {
+                    "skillType": "BoomerangAttackSpeed1",
                     "usePivot": false,
                     "pivotX": 0,
                     "pivotY": 0
