@@ -12,6 +12,7 @@ public interface ICharacterStatForNPC
     public bool bShockWaveMastery { get; }
     public bool bShockWaveCritical { get; }
     public bool bShockWaveEnforcement { get; }
+    public bool bShockWaveOverheatBoost { get; }
     public float criticalChance { get; }
     public float ciriticalDamageMul { get; }
 }

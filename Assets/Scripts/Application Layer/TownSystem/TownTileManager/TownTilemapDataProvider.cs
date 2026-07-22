@@ -77,6 +77,9 @@ public class TownTilemapDataProvider : ITilemapDataProvider
     // 마을에는 위험 지형(용암 등)이 없으므로 항상 0을 반환한다.
     public float GetHazardStaminaDrainPerSecond(Vector3Int _cellPos) => 0f;
 
+    // 마을에는 열기를 내뿜는 나무가 없으므로 항상 0을 반환한다.
+    public float TreeHeatStaminaDamage => 0f;
+
     public bool IsWaterTile(Vector3Int _cellPos)
     {
         if (townTileManager == null || townTileManager.WaterColliderTilemap == null) return false;

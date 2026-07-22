@@ -85,6 +85,22 @@ public class PHealthComponent : PComponent, IPHealthComponent
     }
 
     /// <summary>
+    /// 단발성 스태미나 피해 (나무 열기 발산 등). Time.deltaTime과 무관하게 고정값을 즉시 차감한다.
+    /// </summary>
+    public void DecreaseStaminaFlat(float _damage)
+    {
+        if (currentStamina <= 0 || _damage <= 0f)
+            return;
+
+        currentStamina = Mathf.Max(0, currentStamina - _damage);
+
+        if (currentStamina <= 0)
+        {
+            StaminaIsEmptyEvent?.Invoke();
+        }
+    }
+
+    /// <summary>
     /// 스태미나 회복 (초당 변화량 적용)
     /// </summary>
     public void IncreaseStamina()
@@ -96,10 +112,12 @@ public class PHealthComponent : PComponent, IPHealthComponent
 
     /// <summary>
     /// 초당 변화량과 무관하게 최대 스태미나의 _percent(%)만큼 즉시 회복시킨다("포자 포션" 등 소비 아이템용).
+    /// "회복력" 특성만큼 회복량이 증가한다.
     /// </summary>
     public void RestoreStaminaByPercent(float _percent)
     {
-        currentStamina = Mathf.Min(maxStamina, currentStamina + maxStamina * (_percent / 100f));
+        float finalPercent = _percent * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
+        currentStamina = Mathf.Min(maxStamina, currentStamina + maxStamina * (finalPercent / 100f));
     }
 
     public void SetStaminaIncreaseAmount(float _staminaIncAmount)
@@ -161,8 +179,10 @@ public class PHealthComponent : PComponent, IPHealthComponent
         bStaminaDecrease = _boolean;
     }
 
+    // "체력의 원천", "휴식"(StaminaRecoverCircle)이 사용한다. "회복력" 특성만큼 회복량이 증가한다.
     public void StaminaRecover(float _amount)
     {
-        currentStamina = Mathf.Min(maxStamina, currentStamina + _amount);
+        float finalAmount = _amount * (1f + ctx.characterStat.recoveryPowerBonus / 100f);
+        currentStamina = Mathf.Min(maxStamina, currentStamina + finalAmount);
     }
 }

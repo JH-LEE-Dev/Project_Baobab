@@ -327,6 +327,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         return 0f;
     }
 
+    public float TreeHeatStaminaDamage => stageTileData != null ? stageTileData.TreeHeatStaminaDamage : 0f;
+
     public bool HasRockDeco(Vector3Int _cellPos)
     {
         if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;

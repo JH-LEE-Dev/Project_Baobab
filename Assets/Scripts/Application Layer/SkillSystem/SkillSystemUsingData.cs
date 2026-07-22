@@ -317,6 +317,17 @@ public enum SkillCommandType
     AdvancedLogChance,
     PerfectLogChance,
     LumberjackNPCSpeed,
+    Overheat,
+    ShockWaveOverheatBoost,
+    BoomerangOverheatBoost,
+    DroneOverheatBoost,
+    OverheatEfficiency,
+    OverheatConsumptionReduction,
+    OverheatGainBonus,
+    HeatRecovery,
+    OverheatPermanent,
+    RecoveryPower,
+    RemoteDeposit,
 }
 
 public enum AbilityLevelUpRejectReason

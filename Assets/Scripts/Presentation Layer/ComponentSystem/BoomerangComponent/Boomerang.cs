@@ -68,7 +68,17 @@ public class Boomerang : MonoBehaviour
     private bool isDismissing; // 마을로 돌아가기 확정 시 축소 애니메이션 재생 중 (Update의 나머지 로직과 무관하게 별도 코루틴으로 처리)
     private Coroutine dismissRoutine;
 
+    private float currentThrowSpeed;
+
     public bool IsActive { get; private set; }
+
+    /// <summary>
+    /// 속도 배율을 설정한다. (과열 시 3배)
+    /// </summary>
+    public void SetSpeedMultiplier(float _multiplier)
+    {
+        currentThrowSpeed = throwSpeed * _multiplier;
+    }
 
     /// <summary>
     /// BoomerangCreator가 풀에서 꺼낼 때(OnGet) 설정하는 공격력. 도끼 스탯과 무관한 부메랑 전용 값이다.
@@ -107,9 +117,11 @@ public class Boomerang : MonoBehaviour
         returnTarget = _returnTarget;
         onFinished = _onFinished;
 
+        if (currentThrowSpeed <= 0f) currentThrowSpeed = throwSpeed;
+
         // 등감속 운동 공식(d = v0*t - 0.5*a*t^2, v = v0 - a*t)에서 유도되는 총 소요 시간(t = 2d/v0).
         // ease-out 곡선 1-(1-t)^2 의 t=0 기울기가 throwSpeed와 정확히 일치하도록 이 값으로 정규화한다.
-        outboundDuration = Mathf.Max(2f * maxDistance / Mathf.Max(throwSpeed, 0.01f), 0.01f);
+        outboundDuration = Mathf.Max(2f * maxDistance / Mathf.Max(currentThrowSpeed, 0.01f), 0.01f);
         outboundTimer = 0f;
         holdTimer = 0f;
         returnTimer = 0f;
@@ -352,7 +364,7 @@ public class Boomerang : MonoBehaviour
         returnTimer += Time.deltaTime;
 
         float t = outboundDuration > 0f ? Mathf.Clamp01(returnTimer / outboundDuration) : 1f;
-        float velocity = throwSpeed * t;
+        float velocity = currentThrowSpeed * t;
 
         float step = Mathf.Min(velocity * Time.deltaTime, dist);
         transform.position += (toTarget / Mathf.Max(dist, 0.0001f)) * step;

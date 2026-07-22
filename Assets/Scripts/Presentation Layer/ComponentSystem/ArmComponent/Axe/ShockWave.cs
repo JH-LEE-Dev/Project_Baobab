@@ -17,6 +17,7 @@ public class ShockWave : MonoBehaviour
     private float damage;
     private Vector3 moveDirection = Vector3.right;
     private bool bIsEnforced = false;
+    private bool bIsOverheat = false;
     private float maxEffectiveDistance = 0f;
 
     [Header("Sector Ring Settings")]
@@ -37,6 +38,7 @@ public class ShockWave : MonoBehaviour
     private const float DAMAGE_CHECK_INTERVAL = 0.04f; // 약 25FPS 판정 (나무는 정적이므로 충분)
     private List<IStaticCollidable> targetsInRange = new List<IStaticCollidable>(128);
     private HashSet<IStaticCollidable> hitTargets = new HashSet<IStaticCollidable>();
+    private List<IStaticCollidable> explosionTargets = new List<IStaticCollidable>(32);
     
     // 빠른 확장 시 충돌 누락(터널링) 방지용 (Sweep 처리)
     private float lastMinDist;
@@ -78,6 +80,11 @@ public class ShockWave : MonoBehaviour
         bIsEnforced = _isEnforced;
     }
 
+    public void SetOverheat(bool _bIsOverheat)
+    {
+        bIsOverheat = _bIsOverheat;
+    }
+
     public void SetDirection(Vector3 _dir)
     {
         moveDirection = _dir.normalized;
@@ -92,8 +99,10 @@ public class ShockWave : MonoBehaviour
         startPosition = transform.position;
         targetsInRange.Clear();
         hitTargets.Clear();
+        explosionTargets.Clear();
         moveDirection = Vector3.right;
         bIsEnforced = false;
+        bIsOverheat = false;
 
         // 리셋 시 스케일과 범위를 초기 상태로 복구
         transform.localScale = initialScale;
@@ -163,8 +172,49 @@ public class ShockWave : MonoBehaviour
                         finalDamage *= damageMultiplier;
                     }
 
+                    // 과열 폭발은 데미지 적용보다 먼저 처리한다. 강화된 셰이크웨이브(데미지 x101)는 맞은
+                    // 나무를 그 즉시 죽여 풀로 반환(TreeOverheatExplosionEvent 구독 해제)시킬 수 있어,
+                    // TakeDamage 이후에 신호를 보내면 폭발 이펙트가 유실될 수 있다. _source는 이웃 데미지
+                    // 대상에서 제외되므로 순서를 바꿔도 판정 결과는 동일하다.
+                    if (bIsOverheat)
+                    {
+                        TriggerOverheatExplosion(treeObj);
+                    }
+
                     treeObj.TakeDamage(finalDamage);
                     hitTargets.Add(target);
+                }
+            }
+        }
+    }
+
+    private void TriggerOverheatExplosion(TreeObj _source)
+    {
+        // 폭발 이펙트 생성은 ShockWave가 직접 하지 않는다. 맞은 나무로 신호를 보내면
+        // InDungeonObjectManager가 받아서 나무 중앙(인접 8타일의 중심)에 FireExplosionVFX를 재생한다.
+        _source.RaiseOverheatExplosion();
+
+        float range = 1.5f; // BaseShieldExplosionRange
+        if (CollisionSystem.Instance == null) return;
+
+        explosionTargets.Clear();
+        CollisionSystem.Instance.GetCollidablesInRadius(_source.Position, range, targetLayer.value, explosionTargets);
+
+        Vector3 centerPos = _source.transform.position;
+        float rangeSq = range * range;
+
+        for (int i = 0; i < explosionTargets.Count; i++)
+        {
+            if (explosionTargets[i] is TreeObj tree && tree != _source && tree.bCanApplyDamage)
+            {
+                Vector3 targetPos = tree.transform.position;
+                float dx = targetPos.x - centerPos.x;
+                float dy = (targetPos.y - centerPos.y) * 2f; // 등각 타원 보정
+                float isoDistSq = dx * dx + dy * dy;
+
+                if (isoDistSq <= rangeSq)
+                {
+                    tree.TakeDamage(10000f);
                 }
             }
         }

@@ -90,6 +90,9 @@ public struct LogProcessLineSaveData
     public BeltSaveData outBeltData;
     public CutterSaveData cutterData;
 
+    // 이 라인이 컨테이너에서 마지막으로 원목을 꺼내온 뒤 경과한 시간(라인별 독립 출고 타이머).
+    public float lastOutputTimeElapsed;
+
     public void Initialize()
     {
         inBeltData.Initialize();
@@ -217,6 +220,7 @@ public class GameSaveData
     public bool bHasAcquiredSporePotion;
     public float sporePotionCharge;
     public bool bHasAcquiredStarCompass;
+    public bool bHasAcquiredObsidianCharm;
     public List<LootType> currentOwnedLoots;
 
     public void Clear()
