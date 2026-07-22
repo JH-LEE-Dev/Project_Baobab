@@ -24,7 +24,6 @@ public class UI_TreeCutter : MonoBehaviour
     private MotionEntry popdown;
     private RectTransform rect;
     private bool bOpen = false;
-    public bool IsCollShow { get; set; } = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -128,7 +127,7 @@ public class UI_TreeCutter : MonoBehaviour
 
     public void OnHide(bool _bSkip = false)
     {
-        if (null == omp || true == IsCollShow)
+        if (null == omp)
             return;
         
         bOpen = false;

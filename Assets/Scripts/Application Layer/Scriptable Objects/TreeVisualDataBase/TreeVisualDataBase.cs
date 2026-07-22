@@ -9,7 +9,17 @@ public class TreeVisualDataBase : ScriptableObject
 
     public TreeVisualData Get(TreeType _type)
     {
-        return treeVisualDatas.Find(x => x.treeType == _type);
+        if (null != treeVisualDatas)
+        {
+            for (int i = 0; i < treeVisualDatas.Count; i++)
+            {
+                if (_type == treeVisualDatas[i].treeType)
+                {
+                    return treeVisualDatas[i];
+                }
+            }
+        }
+        return default;
     }
 }
 

@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.UI;
 using DG.Tweening;
 using PresentationLayer.DOTweenAnimationSystem;
 
@@ -13,86 +12,55 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
     [Header("UI References")]
     [Tooltip("팝업 위치의 기준점이 될 자기 자신의 RectTransform")]
     [SerializeField] private RectTransform rectTransform;
-    [Tooltip("나무 잎 이미지")]
-    [SerializeField] private Image leafImage;
-    [Tooltip("나무 기둥 이미지")]
-    [SerializeField] private Image trunkImage;
-    [Tooltip("실드 잎 이미지")]
-    [SerializeField] private Image shieldLeafImage;
-    [Tooltip("실드 기둥 이미지")]
-    [SerializeField] private Image shieldTrunkImage;
-    [Tooltip("하이라이트 잎 이미지")]
-    [SerializeField] private Image highlightLeafImage;
-    [Tooltip("하이라이트 기둥 이미지")]
-    [SerializeField] private Image highlightTrunkImage;
+    [Tooltip("나무 비주얼 슬롯 스크립트 목록 (1번 나무, 2번 나무)")]
+    [SerializeField] private HUD_PopupNav_TreeProp[] treeProps;
 
-    [Header("DOTween Settings (Placeholders)")]
-    [Tooltip("추후 트위닝 연출에 사용될 설정값 자리")]
-    [SerializeField] private float appearDuration = 0.3f;
-    [SerializeField] private float disappearDuration = 0.3f;
 
-    private Tween appearTween;
-    private Tween disappearTween;
+    private bool isVisible = false;
+
+    private void Awake()
+    {
+        gameObject.SetActive(false);
+    }
+
+    public void Initialize()
+    {
+        gameObject.SetActive(false);
+        isVisible = false;
+
+        // 인스펙터 연결이 누락되었거나, 씬 오브젝트가 아닌 프리팹(프로젝트 에셋)이 잘못 연결된 경우를 대비한 자동 복구
+        bool _needsAutoFind = (null == treeProps || 0 == treeProps.Length);
+        if (false == _needsAutoFind && null != treeProps[0] && null == treeProps[0].gameObject.scene.name)
+        {
+            _needsAutoFind = true;
+        }
+
+        if (true == _needsAutoFind)
+        {
+            treeProps = GetComponentsInChildren<HUD_PopupNav_TreeProp>(true);
+            Debug.Log($"[TreeInfoView] TreeProps 인스펙터 연결이 잘못되어 자식 오브젝트에서 자동으로 {treeProps.Length}개를 찾아서 복구했습니다!");
+        }
+
+        if (null != treeProps)
+        {
+            for (int i = 0; i < treeProps.Length; i++)
+            {
+                if (null != treeProps[i])
+                {
+                    treeProps[i].Initialize();
+                    treeProps[i].gameObject.SetActive(false);
+                }
+            }
+        }
+    }
 
     [Header("Settings")]
     [Tooltip("서브지역 버튼에서 떨어질 간격 오프셋")]
     [SerializeField] private Vector2 anchorOffset = new Vector2(0f, 150f);
 
-    [Header("HDR Material Support")]
-    [SerializeField] private float shieldHdrIntensityMultiplier = 1.0f;
-    [SerializeField] private float highlightHdrIntensityMultiplier = 1.0f;
-
-    private Material shieldLeafMat;
-    private Material shieldTrunkMat;
-    private Material highlightLeafMat;
-    private Material highlightTrunkMat;
-    
-    private Color originalShieldLeafColor = Color.white;
-    private Color originalShieldTrunkColor = Color.white;
-    private Color originalHighlightLeafColor = Color.white;
-    private Color originalHighlightTrunkColor = Color.white;
-
-    private bool isVisible = false;
-
-    public void Initialize()
-    {
-        CacheOriginalMaterialsAndColors();
-    }
-
-    private void CacheOriginalMaterialsAndColors()
-    {
-        if (null != shieldLeafImage)
-        {
-            shieldLeafMat = Instantiate(shieldLeafImage.material);
-            shieldLeafImage.material = shieldLeafMat;
-            originalShieldLeafColor = shieldLeafImage.color;
-        }
-
-        if (null != shieldTrunkImage)
-        {
-            shieldTrunkMat = Instantiate(shieldTrunkImage.material);
-            shieldTrunkImage.material = shieldTrunkMat;
-            originalShieldTrunkColor = shieldTrunkImage.color;
-        }
-
-        if (null != highlightLeafImage)
-        {
-            highlightLeafMat = Instantiate(highlightLeafImage.material);
-            highlightLeafImage.material = highlightLeafMat;
-            originalHighlightLeafColor = highlightLeafImage.color;
-        }
-
-        if (null != highlightTrunkImage)
-        {
-            highlightTrunkMat = Instantiate(highlightTrunkImage.material);
-            highlightTrunkImage.material = highlightTrunkMat;
-            originalHighlightTrunkColor = highlightTrunkImage.color;
-        }
-    }
-
     public void SetVisibility(bool _isVisible)
     {
-        if (isVisible == _isVisible)
+        if (isVisible == _isVisible && _isVisible == gameObject.activeSelf)
         {
             return;
         }
@@ -102,26 +70,9 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
         if (true == _isVisible)
         {
             gameObject.SetActive(true);
-            
-            if (null != appearTween && true == appearTween.IsActive())
-            {
-                appearTween.Kill();
-            }
-
-            // [TODO] 추후 DOTween 연출 작성
-            // appearTween = ...
         }
         else
         {
-            if (null != disappearTween && true == disappearTween.IsActive())
-            {
-                disappearTween.Kill();
-            }
-
-            // [TODO] 추후 DOTween 연출 작성
-            // disappearTween = ...
-
-            // 임시 즉시 완료
             OnDisappearMotionComplete();
         }
     }
@@ -133,17 +84,19 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
 
     public void ShowTreeInfo(ForestEnvironmentInfo _info, Transform _subRegionTransform)
     {
+        Debug.Log($"[TreeInfoView] ShowTreeInfo 호출됨. 설정된 나무 종류 개수: {(_info.spawnTreeTypes != null ? _info.spawnTreeTypes.Count.ToString() : "null")}");
+
         if (null == treeVisualDataBase)
         {
+            Debug.LogWarning("[TreeInfoView] TreeVisualDataBase가 인스펙터에 연결되지 않았습니다!");
             return;
         }
 
         if (null == _info.spawnTreeTypes || 0 == _info.spawnTreeTypes.Count)
         {
+            Debug.LogWarning("[TreeInfoView] 해당 서브지역의 spawnTreeTypes 정보가 없습니다!");
             return;
         }
-
-        TreeVisualData _visualData = treeVisualDataBase.Get(_info.spawnTreeTypes[0].treeType);
 
         if (null != rectTransform && null != _subRegionTransform)
         {
@@ -151,88 +104,42 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
             rectTransform.anchoredPosition += anchorOffset;
         }
 
-        UpdateVisuals(_visualData);
+        UpdateVisuals(_info);
         SetVisibility(true);
     }
 
-    private void UpdateVisuals(TreeVisualData _visualData)
+    private void UpdateVisuals(ForestEnvironmentInfo _info)
     {
-        if (null != leafImage)
-        {
-            bool _hasLeaf = (null != _visualData.topSprites && 0 < _visualData.topSprites.Count);
-            leafImage.gameObject.SetActive(_hasLeaf);
-            if (true == _hasLeaf)
-            {
-                leafImage.sprite = _visualData.topSprites[0];
-            }
-        }
-
-        if (null != trunkImage)
-        {
-            bool _hasTrunk = (null != _visualData.bottomSprites && 0 < _visualData.bottomSprites.Count);
-            trunkImage.gameObject.SetActive(_hasTrunk);
-            if (true == _hasTrunk)
-            {
-                trunkImage.sprite = _visualData.bottomSprites[0];
-            }
-        }
-
-        if (null != shieldLeafImage)
-        {
-            bool _hasShieldLeaf = (null != _visualData.shieldTopSprites && 0 < _visualData.shieldTopSprites.Count);
-            shieldLeafImage.gameObject.SetActive(_hasShieldLeaf);
-            if (true == _hasShieldLeaf)
-            {
-                shieldLeafImage.sprite = _visualData.shieldTopSprites[0];
-            }
-        }
-
-        if (null != shieldTrunkImage)
-        {
-            bool _hasShieldTrunk = (null != _visualData.shieldBottomSprites && 0 < _visualData.shieldBottomSprites.Count);
-            shieldTrunkImage.gameObject.SetActive(_hasShieldTrunk);
-            if (true == _hasShieldTrunk)
-            {
-                shieldTrunkImage.sprite = _visualData.shieldBottomSprites[0];
-            }
-        }
-
-        if (null != highlightLeafImage)
-        {
-            bool _hasHighlightLeaf = (null != _visualData.highlightTopSprites && 0 < _visualData.highlightTopSprites.Count);
-            highlightLeafImage.gameObject.SetActive(_hasHighlightLeaf);
-            if (true == _hasHighlightLeaf)
-            {
-                highlightLeafImage.sprite = _visualData.highlightTopSprites[0];
-            }
-        }
-
-        if (null != highlightTrunkImage)
-        {
-            bool _hasHighlightTrunk = (null != _visualData.highlightBottomSprites && 0 < _visualData.highlightBottomSprites.Count);
-            highlightTrunkImage.gameObject.SetActive(_hasHighlightTrunk);
-            if (true == _hasHighlightTrunk)
-            {
-                highlightTrunkImage.sprite = _visualData.highlightBottomSprites[0];
-            }
-        }
-
-        ApplyHdrIntensity(shieldLeafImage, ref shieldLeafMat, ref originalShieldLeafColor, _visualData.shieldHDRIntensity * shieldHdrIntensityMultiplier);
-        ApplyHdrIntensity(shieldTrunkImage, ref shieldTrunkMat, ref originalShieldTrunkColor, _visualData.shieldHDRIntensity * shieldHdrIntensityMultiplier);
-        ApplyHdrIntensity(highlightLeafImage, ref highlightLeafMat, ref originalHighlightLeafColor, _visualData.highlightHDRIntensity * highlightHdrIntensityMultiplier);
-        ApplyHdrIntensity(highlightTrunkImage, ref highlightTrunkMat, ref originalHighlightTrunkColor, _visualData.highlightHDRIntensity * highlightHdrIntensityMultiplier);
-    }
-
-    private void ApplyHdrIntensity(Image _image, ref Material _mat, ref Color _originalColor, float _intensity)
-    {
-        if (null == _image || false == _image.gameObject.activeSelf || null == _mat)
+        if (null == treeProps)
         {
             return;
         }
 
-        float _factor = Mathf.Pow(2f, _intensity);
-        Color _hdrColor = new Color(_originalColor.r * _factor, _originalColor.g * _factor, _originalColor.b * _factor, _originalColor.a);
-        _mat.SetColor("_Color", _hdrColor);
-        _image.color = _hdrColor;
+        int _dataCount = _info.spawnTreeTypes.Count;
+        for (int i = 0; i < treeProps.Length; i++)
+        {
+            HUD_PopupNav_TreeProp _prop = treeProps[i];
+            if (null == _prop)
+            {
+                continue;
+            }
+
+            if (i < _dataCount)
+            {
+                TreeType _targetTreeType = _info.spawnTreeTypes[i].treeType;
+                TreeVisualData _visualData = treeVisualDataBase.Get(_targetTreeType);
+                
+                if (TreeType.None == _visualData.treeType)
+                {
+                    Debug.LogWarning($"[TreeInfoView] '{_targetTreeType}' 타입의 나무 비주얼 데이터를 TreeVisualDataBase에서 찾을 수 없습니다! 데이터베이스를 확인해주세요.");
+                }
+
+                _prop.Setup(_visualData);
+            }
+            else
+            {
+                _prop.gameObject.SetActive(false);
+            }
+        }
     }
 }

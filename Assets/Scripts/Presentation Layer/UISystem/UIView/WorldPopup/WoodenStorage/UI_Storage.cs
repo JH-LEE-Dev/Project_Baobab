@@ -44,7 +44,6 @@ public class UI_Storage : MonoBehaviour
     private bool isPendingHide = false;
 
     private bool isOnShow = false;
-    public bool IsCollShow { get; set; } = false;
 
 
     // //퍼블릭 초기화 및 제어 메서드
@@ -173,8 +172,7 @@ public class UI_Storage : MonoBehaviour
             return;
         }
 
-        if (false == IsCollShow)
-            StartHideMotion();
+        StartHideMotion();
     }
 
     // //내부 로직

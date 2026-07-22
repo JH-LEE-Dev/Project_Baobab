@@ -53,5 +53,5 @@ MonoBehaviour:
   bWorld: 0
   bScreenSpace: 1
   bOverlay: 0
-  vehiclePrefab: {fileID: 6760078267873237850, guid: 7cd29aa4a8b6bb04191a53cbf4d6aa7b, type: 3}
+  popupNavPrefab: {fileID: 4069216891298236326, guid: 9e70dd265ec476441b020914870499a9, type: 3}
   vehicleOpenDelay: 0
