@@ -78,6 +78,18 @@ public class CustomSortable : MonoBehaviour
         height = _height;
     }
 
+    /// <summary>
+    /// UpdateSortingOrder와 동일한 규칙(precision/offset)을 이 오브젝트 자신이 아닌 임의의 월드 Y좌표에
+    /// 적용해 정렬 순서를 계산한다. 발사 위치가 본체와 다른 이펙트(예: Muzzle에서 나가는 파티클)를
+    /// 본체와 같은 정렬 규칙으로 맞추고 싶을 때 쓴다. height는 이 오브젝트의 공중 높이를 그대로
+    /// 재사용하므로, 호출하는 쪽에서 이미 그 높이만큼 보정된 Y좌표를 넘겨야 한다.
+    /// </summary>
+    public int ComputeSortingOrder(float _worldY)
+    {
+        float groundY = _worldY - height;
+        return -Mathf.RoundToInt(groundY * precision) + offset;
+    }
+
     private void UpdateSortingOrder()
     {
         Transform anchor = sortAnchor != null ? sortAnchor : transform;
