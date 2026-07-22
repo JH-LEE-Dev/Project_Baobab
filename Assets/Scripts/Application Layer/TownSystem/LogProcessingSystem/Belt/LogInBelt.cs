@@ -50,9 +50,19 @@ public class LogInBelt : MonoBehaviour
     private float slideSpeed = 1f;
     private float globalSpeedMultiplier = 1f;
 
+    // 커터 투입용 벨트(inBelt)는 커터가 한 번에 하나만 받을 수 있어 아이템 배출 시 벨트를 멈춰야 하지만,
+    // 평가기로 향하는 벨트(outBelt)는 평가기가 용량 제약 없이 즉시 아이템을 받으므로 멈출 필요가 없다.
+    // activeItems가 비면 Update()의 속도 계산에서 자연히 멈추므로 별도 강제 정지가 없어도 된다.
+    private bool stopsOnLogOut = true;
+
     public void SetGlobalSpeedMultiplier(float _mul)
     {
         globalSpeedMultiplier = _mul;
+    }
+
+    public void SetStopsOnLogOut(bool _value)
+    {
+        stopsOnLogOut = _value;
     }
 
     public void Initialize()
@@ -214,12 +224,15 @@ public class LogInBelt : MonoBehaviour
     {
         // _item.gameObject.SetActive(false); // 지연 비활성화를 위해 제거
 
-        // 커터는 한 번에 하나만 가공하므로, 아이템이 하나 나갈 때마다(뒤에 남은 아이템이 있어도)
-        // 무조건 벨트를 멈춘다. 그렇지 않으면 뒤따르는 아이템이 커터가 비기 전에 끝까지 도달해
-        // LogCutter.StartCutting의 bIsCutting 가드에 막혀 조용히 유실된다.
-        // 벨트는 CuttingDone -> LogProcessLine.CuttingDone()의 inBelt.StartBelt() 호출로 재개된다.
-        isMoving = false;
-        BeltStopEvent?.Invoke();
+        if (stopsOnLogOut)
+        {
+            // 커터는 한 번에 하나만 가공하므로, 아이템이 하나 나갈 때마다(뒤에 남은 아이템이 있어도)
+            // 무조건 벨트를 멈춘다. 그렇지 않으면 뒤따르는 아이템이 커터가 비기 전에 끝까지 도달해
+            // LogCutter.StartCutting의 bIsCutting 가드에 막혀 조용히 유실된다.
+            // 벨트는 CuttingDone -> LogProcessLine.CuttingDone()의 inBelt.StartBelt() 호출로 재개된다.
+            isMoving = false;
+            BeltStopEvent?.Invoke();
+        }
 
         // 퇴출 연출: 스케일이 작아지는 동안 마지막 이동 방향으로 계속 전진
         _item.transform.DOKill();

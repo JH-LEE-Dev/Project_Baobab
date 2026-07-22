@@ -32,6 +32,7 @@ public class LogProcessLine : MonoBehaviour
         isBusy = false;
         inBelt.Initialize();
         outBelt.Initialize();
+        outBelt.SetStopsOnLogOut(false); // 평가기는 용량 제약이 없으므로 outBelt는 배출 시 멈추지 않는다.
         cutter.Initialize();
         evaluator.Initialize();
         BindEvents();
