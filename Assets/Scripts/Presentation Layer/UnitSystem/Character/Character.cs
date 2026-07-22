@@ -668,10 +668,15 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         Vector2 aimDir = -droneBehindDir; // 대형은 "뒤" 기준, 드론 개별 Idle 방향은 "조준" 기준이라 부호가 반대다
 
+        // OnDroneChainAttack의 bIsOverheat 판정과 동일한 조건: 과열 버프 + "드론 과부하" 특성을
+        // 둘 다 갖췄을 때만 스프라이트가 6~10행(Overheat 세트)으로 바뀐다.
+        bool bIsOverheat = overheatComponent != null && overheatComponent.IsActive && statComponent.bDroneOverheatBoost;
+
         for (int i = 0; i < activeDrones.Count; i++)
         {
             activeDrones[i].SetFollowOffset(GetDroneWedgeOffset(i, droneBehindDir));
             activeDrones[i].SetCharacterAimDir(aimDir);
+            activeDrones[i].SetOverheatState(bIsOverheat);
         }
     }
 
@@ -916,9 +921,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             primaryTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
         }
 
+        Vector3 primaryTopPos = GetTreeTopPosition(_primaryTarget);
+
         droneChainZapPoints.Clear();
         droneChainZapPoints.Add(_drone.GetMuzzlePosition());
-        droneChainZapPoints.Add(GetTreeTopPosition(_primaryTarget));
+        droneChainZapPoints.Add(primaryTopPos);
+        _drone.PlayAtkHitVfx(primaryTopPos);
 
         int finalChainCount = statComponent.droneChainCount;
         float finalChainRange = statComponent.droneChainRange;
@@ -942,14 +950,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
                 if (next == null) break;
 
                 (next as IDamageable)?.TakeDamage(statComponent.droneDamage);
-                
+
                 if (bIsOverheat && next is TreeObj nextTree)
                 {
                     nextTree.ApplyDroneOverheatDot(10000f, 6, 0.5f);
                 }
 
+                Vector3 nextTopPos = GetTreeTopPosition(next);
                 droneChainHitTrees.Add(next);
-                droneChainZapPoints.Add(GetTreeTopPosition(next));
+                droneChainZapPoints.Add(nextTopPos);
+                _drone.PlayAtkHitVfx(nextTopPos);
                 origin = next.GetTransform().position;
             }
         }
