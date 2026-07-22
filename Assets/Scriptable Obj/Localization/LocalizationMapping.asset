@@ -225,6 +225,26 @@ MonoBehaviour:
     enumValueName: StarrootForestOverGrowth
     enumIntValue: 54
     compositeKey: 4203456
+  - enumTypeName: SkillCommandType
+    enumValueName: AttackRythm
+    enumIntValue: 43
+    compositeKey: 4203457
+  - enumTypeName: SkillCommandType
+    enumValueName: ConstellationManifestUnlock
+    enumIntValue: 95
+    compositeKey: 4203458
+  - enumTypeName: SkillCommandType
+    enumValueName: StarPathSpeedBoost
+    enumIntValue: 97
+    compositeKey: 4203459
+  - enumTypeName: SkillCommandType
+    enumValueName: StarMarkDamage
+    enumIntValue: 96
+    compositeKey: 4203460
+  - enumTypeName: SkillCommandType
+    enumValueName: ConstellationDamage
+    enumIntValue: 98
+    compositeKey: 4203461
   - enumTypeName: MapType
     enumValueName: None
     enumIntValue: 0

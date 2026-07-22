@@ -103,6 +103,17 @@ public static class LocKeys
         public const int starrootForestOverGrowthName = 4194541;
         public const int axeDamage5Name = 4194542;
         public const int boomerang3Name = 4194543;
+        public const int axeAttackSpeed2Name = 4194544;
+        public const int attackRythm1Name = 4194545;
+        public const int axeDurability3Name = 4194546;
+        public const int steelAxe3Name = 4194547;
+        public const int movementSpeed2Name = 4194548;
+        public const int efficientMovement2Name = 4194549;
+        public const int pickupRange2Name = 4194550;
+        public const int constellationManifestUnlockName = 4194551;
+        public const int starPathSpeedBoost1Name = 4194552;
+        public const int starMarkDamage1Name = 4194553;
+        public const int constellationDamage1Name = 4194554;
         public const int commonLevel = 4203304;
         public const int commonFree = 4203305;
         public const int commonMaxLevel = 4203306;
@@ -161,6 +172,11 @@ public static class LocKeys
         public const int abilityDescriptionBoomerangCooldownReduction = 4203454;
         public const int abilityDescriptionShieldExplosionResearch = 4203455;
         public const int abilityDescriptionStarrootForestOverGrowth = 4203456;
+        public const int abilityDescriptionAttackRythm = 4203457;
+        public const int abilityDescriptionConstellationManifestUnlock = 4203458;
+        public const int abilityDescriptionStarPathSpeedBoost = 4203459;
+        public const int abilityDescriptionStarMarkDamage = 4203460;
+        public const int abilityDescriptionConstellationDamage = 4203461;
     }
 
     public static class LootTooltipUI

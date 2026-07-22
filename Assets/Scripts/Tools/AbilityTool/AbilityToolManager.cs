@@ -24,6 +24,8 @@ public class AbilityToolManager : MonoBehaviour
     private const float ZoomFollowSpeed = 18f;
     private const float DragThreshold = 4f;
     private const float ToolTipSpacing = 32f;
+    private const float RadiusGuideGridRadius = 25f;
+    private static readonly Color32 RadiusGuideColor = new Color32(40, 40, 40, 255);
 
     private readonly Dictionary<Vector2Int, AbilityToolNode> nodeMap = new Dictionary<Vector2Int, AbilityToolNode>();
     private readonly Dictionary<SkillType, Sprite> pictureSpriteMap = new Dictionary<SkillType, Sprite>();
@@ -51,6 +53,7 @@ public class AbilityToolManager : MonoBehaviour
     private AbilityToolNode selectedMoveNode;
     private AbilityToolNode currentToolTipNode;
     private AbilityToolTip toolTipInstance;
+    private AbilityToolRadiusGuide radiusGuide;
     private bool allowEmptyExport;
 
     [Header("UI References")]
@@ -99,6 +102,7 @@ public class AbilityToolManager : MonoBehaviour
         CacheLevelBadgeBindings();
         EnsureGridCursorFollowsMoveTarget();
         EnsurePivotMarkerFollowsMoveTarget();
+        EnsureRadiusGuide();
         lineRenderer.Initialize(
             abilityBackground,
             moveTarget,
@@ -123,6 +127,7 @@ public class AbilityToolManager : MonoBehaviour
         HandlePan();
         HandleZoom();
         UpdateZoomAnimation();
+        UpdateRadiusGuideTransform();
         UpdateGridCursor();
         UpdatePivotMarker();
         UpdateGridCoordinateText();
@@ -184,6 +189,39 @@ public class AbilityToolManager : MonoBehaviour
         targetZoom = DefaultZoom;
         moveTarget.anchoredPosition = Vector2.zero;
         moveTarget.localScale = Vector3.one * currentZoom;
+    }
+
+    private void EnsureRadiusGuide()
+    {
+        if (abilityBackground == null || moveTarget == null)
+            return;
+
+        radiusGuide = abilityBackground.GetComponentInChildren<AbilityToolRadiusGuide>(true);
+        if (radiusGuide == null)
+        {
+            GameObject guideObject = new GameObject(
+                "AbilityToolRadiusGuide",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(AbilityToolRadiusGuide));
+            guideObject.layer = abilityBackground.gameObject.layer;
+            guideObject.transform.SetParent(abilityBackground, false);
+            radiusGuide = guideObject.GetComponent<AbilityToolRadiusGuide>();
+        }
+
+        radiusGuide.Configure(gridCellSize * RadiusGuideGridRadius, RadiusGuideColor);
+        radiusGuide.rectTransform.SetSiblingIndex(0);
+        UpdateRadiusGuideTransform();
+    }
+
+    private void UpdateRadiusGuideTransform()
+    {
+        if (radiusGuide == null || moveTarget == null)
+            return;
+
+        RectTransform guideRect = radiusGuide.rectTransform;
+        guideRect.anchoredPosition = moveTarget.anchoredPosition;
+        guideRect.localScale = moveTarget.localScale;
     }
 
     // 씬에 이미 배치된 툴 노드들을 읽어 좌표 맵으로 등록한다.

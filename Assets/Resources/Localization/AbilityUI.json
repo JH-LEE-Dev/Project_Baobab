@@ -380,7 +380,7 @@
         {
             "id": 187,
             "key": "AxeDurability2_Name",
-            "kr": "도끼 내구도 II ",
+            "kr": "도끼 내구도 II",
             "en": "",
             "enumType": "",
             "enumValue": ""
@@ -802,6 +802,94 @@
             "enumValue": ""
         },
         {
+            "id": 240,
+            "key": "AxeAttackSpeed2_Name",
+            "kr": "도끼 공격 속도 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 241,
+            "key": "AttackRythm1_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>벌목 리듬 I</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 242,
+            "key": "AxeDurability3_Name",
+            "kr": "도끼 내구도 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 243,
+            "key": "SteelAxe3_Name",
+            "kr": "강철 도끼 III",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 244,
+            "key": "MovementSpeed2_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>이동속도 II</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 245,
+            "key": "EfficientMovement2_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>효율적인 이동 II</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 246,
+            "key": "PickupRange2_Name",
+            "kr": "획득 범위 II",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 247,
+            "key": "ConstellationManifestUnlock_Name",
+            "kr": "<COLOR=7EEDBE,EDD87E><Wave>별자리 발현</Wave></COLOR>",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 248,
+            "key": "StarPathSpeedBoost1_Name",
+            "kr": "별길 걸음 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 249,
+            "key": "StarMarkDamage1_Name",
+            "kr": "별표식 베기 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 250,
+            "key": "ConstellationDamage1_Name",
+            "kr": "별자리 데미지 I",
+            "en": "",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
             "id": 9000,
             "key": "Common_Level",
             "kr": "레벨",
@@ -1084,7 +1172,7 @@
         {
             "id": 9130,
             "key": "AbilityDescription_MultiAttack",
-            "kr": "이제 <COLOR=fca311>도끼</COLOR>로 여러 나무를 동시에 공격 할 수 있습니다.",
+            "kr": "이제 <COLOR=fca311>도끼</COLOR>로\n여러 나무를 동시에 공격 할 수 있습니다.",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "MultiAttack"
@@ -1264,6 +1352,46 @@
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "StarrootForestOverGrowth"
+        },
+        {
+            "id": 9153,
+            "key": "AbilityDescription_AttackRythm",
+            "kr": "타격할수록 중첩되는 <COLOR=fca311>공격속도 버프</COLOR>를 얻습니다.\n중첩되는 공격속도가 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "AttackRythm"
+        },
+        {
+            "id": 9154,
+            "key": "AbilityDescription_ConstellationManifestUnlock",
+            "kr": "별자리를 완성하면 <COLOR=ff5d8f>별자리가 발현</COLOR>됩니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ConstellationManifestUnlock"
+        },
+        {
+            "id": 9155,
+            "key": "AbilityDescription_StarPathSpeedBoost",
+            "kr": "<COLOR=ff5d8f>별 표식</COLOR>을 가진 나무를 벌목하면\n5초간 이동속도 배수가 <COLOR=54D86A>{0}배</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "StarPathSpeedBoost"
+        },
+        {
+            "id": 9156,
+            "key": "AbilityDescription_StarMarkDamage",
+            "kr": "<COLOR=ff5d8f>별 표식</COLOR>을 가진 나무에 대한 피해 배수가\n<COLOR=54D86A>{0}배</COLOR> 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "StarMarkDamage"
+        },
+        {
+            "id": 9157,
+            "key": "AbilityDescription_ConstellationDamage",
+            "kr": "<COLOR=ff5d8f>별자리 발현</COLOR> 데미지가 <COLOR=54D86A>{0}% 증가합니다.",
+            "en": "",
+            "enumType": "SkillCommandType",
+            "enumValue": "ConstellationDamage"
         }
     ]
 }

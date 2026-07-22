@@ -1887,7 +1887,7 @@ MonoBehaviour:
   boomerangDamage: 3
   boomerangHitRadius: 0.5
   boomerangMajorAxisRatio: 1
-  boomerangCooldown: 2.5
+  boomerangCooldown: 5
   boomerangDamageInterval: 0.3
   bBoomerangCritical: 0
   bBoomerangOverheatBoost: 0

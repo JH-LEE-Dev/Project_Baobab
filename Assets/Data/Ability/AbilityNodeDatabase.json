@@ -1632,6 +1632,194 @@
                     "pivotY": 0
                 }
             ]
+        },
+        {
+            "skillType": "AxeAttackSpeed2",
+            "nameLocId": 240,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -2,
+            "gridY": 19,
+            "parents": [
+                {
+                    "skillType": "AxeDamage5",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AttackRythm1",
+            "nameLocId": 241,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": -4,
+            "gridY": 19,
+            "parents": [
+                {
+                    "skillType": "AxeAttackSpeed2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "AxeDurability3",
+            "nameLocId": 242,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": 2,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "AxeDamage5",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "SteelAxe3",
+            "nameLocId": 243,
+            "levelBadge": "III",
+            "requiredPrestigeLevel": 0,
+            "gridX": 4,
+            "gridY": 17,
+            "parents": [
+                {
+                    "skillType": "AxeDurability3",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "MovementSpeed2",
+            "nameLocId": 244,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -11,
+            "gridY": -6,
+            "parents": [
+                {
+                    "skillType": "SourceOfSpeed1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "StaminaRecover",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "EfficientMovement2",
+            "nameLocId": 245,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -11,
+            "gridY": -8,
+            "parents": [
+                {
+                    "skillType": "MovementSpeed2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "PickupRange2",
+            "nameLocId": 246,
+            "levelBadge": "II",
+            "requiredPrestigeLevel": 0,
+            "gridX": -9,
+            "gridY": -6,
+            "parents": [
+                {
+                    "skillType": "PickupRange1",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                },
+                {
+                    "skillType": "MovementSpeed2",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ConstellationManifestUnlock",
+            "nameLocId": 247,
+            "levelBadge": "M",
+            "requiredPrestigeLevel": 0,
+            "gridX": -6,
+            "gridY": -13,
+            "parents": [
+                {
+                    "skillType": "ShieldExplosionResearch",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "StarPathSpeedBoost1",
+            "nameLocId": 248,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": -6,
+            "gridY": -11,
+            "parents": [
+                {
+                    "skillType": "ConstellationManifestUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "StarMarkDamage1",
+            "nameLocId": 249,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": -8,
+            "gridY": -13,
+            "parents": [
+                {
+                    "skillType": "ConstellationManifestUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
+        },
+        {
+            "skillType": "ConstellationDamage1",
+            "nameLocId": 250,
+            "levelBadge": "I",
+            "requiredPrestigeLevel": 0,
+            "gridX": -6,
+            "gridY": -15,
+            "parents": [
+                {
+                    "skillType": "ConstellationManifestUnlock",
+                    "usePivot": false,
+                    "pivotX": 0,
+                    "pivotY": 0
+                }
+            ]
         }
     ]
 }

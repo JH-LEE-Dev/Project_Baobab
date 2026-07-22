@@ -13,6 +13,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
     private const float ToolTipSpacing = 32f;
+    private const float ToolTipVerticalScreenPadding = 16f;
     private const float UnlockRevealDuration = 0.1f;
     private const float UnlockRevealStaggerDelay = 0.025f;
     private const float AutoLevelUpInterval = 0.1f;
@@ -45,11 +46,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private bool isCloseFading;
     private bool isOpeningZoomReveal;
     private bool isCircleRevealPlaying;
-    private bool hasSavedZoom;
+    private bool hasOpenedView;
+    private bool hasSavedView;
     private float savedZoom = DefaultZoom;
-    private bool hasLastApprovedFocusSkill;
-    private SkillType lastApprovedFocusSkillType = SkillType.None;
-    private AbilityNode openingZoomFocusNode;
+    private Vector2 savedViewPosition = Vector2.zero;
+    private Vector2 openingZoomFocusPoint = Vector2.zero;
     private CanvasGroup abilityCanvasGroup;
     private TentUICircleRevealStencil circleRevealStencilMask;
 
@@ -303,6 +304,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (abilityBackground == null)
             return;
 
+        hasOpenedView = true;
         isCloseFading = false;
         isCircleRevealPlaying = false;
         toolTipPlacementMode = ToolTipPlacementMode.Right;
@@ -480,27 +482,23 @@ public class UI_TentAbilityComponent : MonoBehaviour
         isDragging = false;
         hasZoomFocus = false;
         StopViewShake();
-        bool canFocusLastApprovedNode = TryGetLastApprovedFocusNode(out AbilityNode focusNode);
-        float finalZoom = canFocusLastApprovedNode && hasSavedZoom ? savedZoom : DefaultZoom;
+        float finalZoom = hasSavedView ? savedZoom : DefaultZoom;
+        Vector2 finalViewPosition = hasSavedView ? savedViewPosition : Vector2.zero;
         currentZoom = finalZoom;
         targetZoom = finalZoom;
         moveTarget.localScale = Vector3.one * currentZoom;
+        moveTarget.anchoredPosition = finalViewPosition;
 
-        if (canFocusLastApprovedNode)
-            moveTarget.anchoredPosition = CalculateFocusedViewPosition(focusNode, currentZoom);
-        else
-            moveTarget.anchoredPosition = Vector2.zero;
-
-        BeginOpenZoomReveal(focusNode, canFocusLastApprovedNode, finalZoom);
+        BeginOpenZoomReveal(finalViewPosition, finalZoom);
         MarkViewLayoutDirty();
     }
 
-    private void BeginOpenZoomReveal(AbilityNode _focusNode, bool _hasFocusNode, float _finalZoom)
+    private void BeginOpenZoomReveal(Vector2 _finalViewPosition, float _finalZoom)
     {
         openingZoomElapsed = 0f;
         openingZoomTarget = Mathf.Clamp(_finalZoom, MinZoom, MaxZoom);
         openingZoomStart = Mathf.Max(openingZoomTarget * Mathf.Max(openZoomRevealMultiplier, 1f), openingZoomTarget);
-        openingZoomFocusNode = _hasFocusNode ? _focusNode : null;
+        openingZoomFocusPoint = -_finalViewPosition / Mathf.Max(openingZoomTarget, 0.0001f);
         isOpeningZoomReveal = openZoomRevealDuration > 0f && Mathf.Approximately(openingZoomStart, openingZoomTarget) == false;
 
         if (isOpeningZoomReveal == false)
@@ -513,36 +511,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
         ApplyViewZoomForReveal(currentZoom);
     }
 
-    private bool TryGetLastApprovedFocusNode(out AbilityNode _focusNode)
-    {
-        _focusNode = null;
-        if (hasLastApprovedFocusSkill == false)
-            return false;
-
-        if (spawnedNodeMap.TryGetValue(lastApprovedFocusSkillType, out _focusNode) == false)
-            return false;
-
-        return _focusNode != null && _focusNode.gameObject.activeSelf;
-    }
-
-    private Vector2 CalculateFocusedViewPosition(AbilityNode _focusNode, float _zoom)
-    {
-        if (_focusNode == null || _focusNode.RectTransform == null)
-            return Vector2.zero;
-
-        Vector2 targetPosition = -_focusNode.RectTransform.anchoredPosition * _zoom;
-        return new Vector2(Mathf.Round(targetPosition.x), Mathf.Round(targetPosition.y));
-    }
-
     private void ApplyViewZoomForReveal(float _zoom)
     {
         currentZoom = Mathf.Max(_zoom, MinZoom);
         moveTarget.localScale = Vector3.one * currentZoom;
-
-        if (openingZoomFocusNode != null && openingZoomFocusNode.gameObject.activeSelf)
-            moveTarget.anchoredPosition = CalculateFocusedViewPosition(openingZoomFocusNode, currentZoom);
-        else
-            moveTarget.anchoredPosition = Vector2.zero;
+        moveTarget.anchoredPosition = -openingZoomFocusPoint * currentZoom;
     }
 
     private void EnsureAbilityCanvasGroup()
@@ -846,29 +819,32 @@ public class UI_TentAbilityComponent : MonoBehaviour
         SetAbilityInputEnabled(isOpeningZoomReveal == false && isCircleRevealPlaying == false && isCloseFading == false);
     }
 
-    private void SaveCurrentZoom()
+    private void SaveCurrentView()
     {
-        savedZoom = Mathf.Clamp(targetZoom, MinZoom, MaxZoom);
-        hasSavedZoom = true;
-    }
+        if (moveTarget == null)
+            return;
 
-    private void SaveLastApprovedFocusSkill(SkillType _skillType)
-    {
-        lastApprovedFocusSkillType = _skillType;
-        hasLastApprovedFocusSkill = _skillType != SkillType.None;
+        Vector2 currentViewPosition = moveTarget.anchoredPosition - currentViewShakeOffset;
+        float sourceZoom = Mathf.Max(currentZoom, 0.0001f);
+        Vector2 currentViewCenter = -currentViewPosition / sourceZoom;
+
+        savedZoom = Mathf.Clamp(currentZoom, MinZoom, MaxZoom);
+        savedViewPosition = -currentViewCenter * savedZoom;
+        hasSavedView = true;
     }
 
     // 능력 화면을 닫고 입력 상태와 툴팁을 정리한다.
     public void Close()
     {
-        if (abilityBackground != null && abilityBackground.gameObject.activeSelf)
-            SaveCurrentZoom();
+        if (hasOpenedView && abilityBackground != null && abilityBackground.gameObject.activeSelf)
+            SaveCurrentView();
 
         isDragging = false;
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
-        openingZoomFocusNode = null;
+        openingZoomFocusPoint = Vector2.zero;
         StopAllAutoLevelUps();
+        StopAllNodeEffects();
         EndCircleRevealImmediately();
         StopViewShake();
         currentToolTipNode = null;
@@ -999,7 +975,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         float direction = placeOnRight ? 1f : -1f;
 
         float x = nodeCenter.x + direction * ((nodeWidth * 0.5f) + ToolTipSpacing + (toolTipSize.x * 0.5f));
-        float y = nodeCenter.y;
+        float y = ClampToolTipYToScreen(nodeCenter.y, toolTipSize.y);
 
         toolTipInstance.SetAnchoredPosition(new Vector2(x, y));
 
@@ -1007,7 +983,24 @@ public class UI_TentAbilityComponent : MonoBehaviour
             toolTipInstance.PlayShowMotion();
     }
 
-    // 상위 스킬 시스템에서 툴팁에 필요한 레벨/비용 정보를 가져온다.
+    // 툴팁의 실제 높이를 기준으로 화면 상하 경계 안에 위치를 제한한다.
+    private float ClampToolTipYToScreen(float _requestedY, float _toolTipHeight)
+    {
+        if (abilityBackground == null)
+            return _requestedY;
+
+        Rect screenRect = abilityBackground.rect;
+        float halfToolTipHeight = Mathf.Max(_toolTipHeight, 0f) * 0.5f;
+        float padding = Mathf.Max(ToolTipVerticalScreenPadding, 0f);
+        float minY = screenRect.yMin + halfToolTipHeight + padding;
+        float maxY = screenRect.yMax - halfToolTipHeight - padding;
+
+        if (minY > maxY)
+            return screenRect.center.y;
+
+        return Mathf.Clamp(_requestedY, minY, maxY);
+    }
+
     private bool ResolveToolTipPlaceOnRight(float _nodeCenterX)
     {
         float centerX = abilityBackground != null ? abilityBackground.rect.center.x : 0f;
@@ -1205,6 +1198,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
             case SkillCommandType.MultiAttack:
             case SkillCommandType.ShieldExplosionUnlock:
             case SkillCommandType.BoomerangCritical:
+            case SkillCommandType.ShieldExplosionResearch:
+            case SkillCommandType.ConstellationManifestUnlock:
                 return true;
             default:
                 return false;
@@ -1385,7 +1380,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             targetZoom = openingZoomTarget;
             ApplyViewZoomForReveal(currentZoom);
             RefreshOpenTransitionInput();
-            openingZoomFocusNode = null;
+            openingZoomFocusPoint = Vector2.zero;
         }
 
         return Mathf.Approximately(previousZoom, currentZoom) == false;
@@ -1522,8 +1517,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (isViewShaking == false || moveTarget == null)
             return;
 
-        RemoveViewShakeOffset();
-
         viewShakeElapsed += Time.unscaledDeltaTime;
         float duration = Mathf.Max(viewShakeDuration, 0.0001f);
         float progress = Mathf.Clamp01(viewShakeElapsed / duration);
@@ -1532,8 +1525,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         float x = Mathf.Sin(time) * strength;
         float y = Mathf.Sin(time * 1.7f + 0.8f) * strength * viewShakeVerticalRatio;
 
-        currentViewShakeOffset = new Vector2(Mathf.Round(x), Mathf.Round(y));
-        ApplyViewShakeOffset(currentViewShakeOffset);
+        SetViewShakeOffset(new Vector2(Mathf.Round(x), Mathf.Round(y)));
 
         if (progress >= 1f)
             StopViewShake();
@@ -1542,29 +1534,32 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private void StopViewShake()
     {
         if (moveTarget != null)
-            RemoveViewShakeOffset();
+            SetViewShakeOffset(Vector2.zero);
 
         isViewShaking = false;
         viewShakeElapsed = 0f;
     }
 
-    private void RemoveViewShakeOffset()
+    private void SetViewShakeOffset(Vector2 _offset)
     {
-        if (currentViewShakeOffset == Vector2.zero || moveTarget == null)
+        if (moveTarget == null)
             return;
 
-        ApplyViewShakeOffset(-currentViewShakeOffset);
-        currentViewShakeOffset = Vector2.zero;
-    }
-
-    private void ApplyViewShakeOffset(Vector2 _offset)
-    {
-        if (moveTarget != null)
-            moveTarget.anchoredPosition += _offset;
+        Vector2 offsetDelta = _offset - currentViewShakeOffset;
+        moveTarget.anchoredPosition += offsetDelta;
+        currentViewShakeOffset = _offset;
 
         RectTransform lineShakeTarget = GetLineShakeTarget();
         if (lineShakeTarget != null)
-            lineShakeTarget.anchoredPosition += _offset;
+            lineShakeTarget.anchoredPosition += offsetDelta;
+
+        Vector2 interactionCompensation = -_offset / Mathf.Max(currentZoom, 0.0001f);
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node != null)
+                node.SetInteractionShakeCompensation(interactionCompensation);
+        }
     }
 
     private RectTransform GetLineShakeTarget()
@@ -1766,6 +1761,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
         activeAutoLevelUps.Clear();
     }
 
+    private void StopAllNodeEffects()
+    {
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node != null)
+                node.StopAllEffectsImmediately();
+        }
+    }
+
 
     // 상위 로직에 어떤 스킬을 찍으려는지 전달하는 자리다.
     private bool OnAbilityLevelUpRequested(SkillType _skillType)
@@ -1837,8 +1842,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         if (spawnedNodeMap.TryGetValue(_skillType, out AbilityNode node) == false)
             return;
-
-        SaveLastApprovedFocusSkill(_skillType);
 
         bool wasLockedByLevel = node.IsUnlockedByLevel() == false;
         SyncNodeLevelsFromProvider();
