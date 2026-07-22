@@ -795,7 +795,7 @@
             "levelBadge": "M",
             "requiredPrestigeLevel": 0,
             "gridX": 4,
-            "gridY": 11,
+            "gridY": 13,
             "parents": [
                 {
                     "skillType": "AxeRange1",
@@ -1270,7 +1270,7 @@
             "nameLocId": 220,
             "levelBadge": "I",
             "requiredPrestigeLevel": 0,
-            "gridX": 4,
+            "gridX": 6,
             "gridY": 13,
             "parents": [
                 {

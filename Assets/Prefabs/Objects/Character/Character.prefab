@@ -1884,7 +1884,7 @@ MonoBehaviour:
   bOverheat: 0
   bShockWaveOverheatBoost: 0
   boomerangCount: 0
-  boomerangDamage: 3
+  boomerangDamage: 10
   boomerangHitRadius: 0.5
   boomerangMajorAxisRatio: 1
   boomerangCooldown: 5
