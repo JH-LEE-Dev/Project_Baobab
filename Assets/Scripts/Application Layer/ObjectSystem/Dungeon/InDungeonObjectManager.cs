@@ -77,6 +77,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // "별빛 나침반" - StarrootForest_1/2/3 중 어디서든 나무 4~5그루를 벤 시점에 보장 드랍.
     // 세 맵 중 한 곳에서 획득하면 다른 맵에서는 더 이상 드랍되지 않는다(영구 플래그).
+    // 별자리 표식은 이제 기본으로 항상 표시되므로, 이 아이템은 드랍만 되고 획득해도 아무 효과가 없다.
     public bool bHasAcquiredStarCompass { get; set; }
     private bool bStarCompassSpawnedThisRun;
     [SerializeField] private int starCompassPityMinKills = 4;
@@ -233,6 +234,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 서로 다른 그룹(다른 List 인스턴스)은 동시에 진행돼도 서로 막지 않는다.
     private readonly HashSet<List<Vector3>> activeConstellationGroups = new HashSet<List<Vector3>>();
 
+    // 그룹의 그라운드 마크 소멸 연출이 전부 끝나 InDungeonVFXManager.ConstellationManifestReadyEvent가
+    // 발생할 때까지, 실제 광선 발현에 필요한 별 위치 목록을 groupId 기준으로 보관해둔다.
+    private readonly Dictionary<int, List<Vector3>> pendingConstellationStarPositions = new Dictionary<int, List<Vector3>>();
+
     // 발현 낙인이 찍힌 나무 위에서 반복 재생되는 스파크 VFX(VFX_Spark) - 낙인은 나무가 죽어 리셋될 때까지
     // 유지되므로(EHealthComponent.brandedDamageMultiplier), 그동안 인터벌마다 계속 재생한다. 매번 똑같은
     // 박자로 반짝이면 기계적으로 보이므로 인터벌 자체를 매번 랜덤화한다.
@@ -274,6 +279,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
+        inDungeonVFXManager.ConstellationManifestReadyEvent -= OnConstellationManifestReady;
+        inDungeonVFXManager.ConstellationManifestReadyEvent += OnConstellationManifestReady;
 
         lightningZapCreator?.Initialize();
 
@@ -329,6 +336,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (lootManager != null)
         {
             lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
+        }
+
+        if (inDungeonVFXManager != null)
+        {
+            inDungeonVFXManager.ConstellationManifestReadyEvent -= OnConstellationManifestReady;
         }
     }
 
@@ -433,29 +445,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         else if (_item.LootType == LootType.StarCompass)
         {
+            // 별자리 표식은 이제 항상 기본으로 표시되므로, 이 아이템은 획득해도 별도 효과가 없다.
             bHasAcquiredStarCompass = true;
-            // 효과 발동: 현재 활성 나무 중 별 표식 나무의 constellationRenderer를 즉시 켠다
-            ApplyStarCompassEffect();
         }
         else if (_item.LootType == LootType.ObsidianCharm)
         {
             bHasAcquiredObsidianCharm = true;
-        }
-    }
-
-    /// <summary>
-    /// "별빛 나침반" 획득 효과: 현재 활성 상태인 모든 별 표식 나무의 constellationRenderer를 켠다.
-    /// 별뿌리 숲에서 별자리, 표식을 볼 수 있게 된다.
-    /// </summary>
-    private void ApplyStarCompassEffect()
-    {
-        for (int i = 0; i < activeTreesForUpdate.Count; i++)
-        {
-            TreeObj tree = activeTreesForUpdate[i];
-            if (tree.bStarMarked && tree.treeVisualComponent != null)
-            {
-                tree.treeVisualComponent.SetConstellationMarkActive(true);
-            }
         }
     }
 
@@ -916,14 +911,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
 
-        // 별빛 나침반 획득 전에는 TreeStarMarkGroundAnimator(ConstellationGroundMarkVFX)를 생성하지 않는다
-        if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null && bHasAcquiredStarCompass)
+        if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null && bConstellationManifestUnlocked)
         {
             inDungeonVFXManager.PlayConstellationGroundMarkVFX(
                 _treeObj.transform.position,
                 _treeObj.treeVisualComponent.GetTopSortingOrder(),
-                _treeObj.StarGroupId,
-                _treeObj.treeVisualComponent.GetConstellationHDRIntensity());
+                _treeObj.StarGroupId);
         }
 
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);
@@ -1643,15 +1636,26 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 동기 실행되므로 재귀가 그대로 쌓임). _starPositions(그룹별로 항상 같은 List 인스턴스)를 키로
         // 재진입만 막아서, 같은 그룹의 자기 재트리거는 막되 서로 다른 그룹은 동시에 진행되게 둔다.
         if (activeConstellationGroups.Contains(_starPositions)) return;
+        activeConstellationGroups.Add(_starPositions);
 
-        // 발현이 실제로 확정된 시점이므로, 이 그룹에서 아직 살아있던 그라운드 마크를 전부 회수한다.
+        pendingConstellationStarPositions[_groupId] = _starPositions;
+
+        // 발현이 실제로 확정된 시점이므로, 이 그룹에서 아직 살아있던 그라운드 마크에 소멸 연출을 재생시킨다.
+        // 그룹에 속한 모든 마크의 연출이 끝나 VFXManager가 ConstellationManifestReadyEvent를 발생시키면
+        // OnConstellationManifestReady에서 실제 광선 발현을 시작한다.
         inDungeonVFXManager.ClearConstellationGroundMarks(_groupId);
+    }
+
+    // 그룹에 속한 모든 그라운드 마크의 소멸 연출이 끝났을 때 InDungeonVFXManager가 호출한다.
+    private void OnConstellationManifestReady(int _groupId)
+    {
+        if (!pendingConstellationStarPositions.TryGetValue(_groupId, out List<Vector3> _starPositions)) return;
+        pendingConstellationStarPositions.Remove(_groupId);
 
         List<Vector3> path = BuildSimplePolygonPath(_starPositions);
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
         int hitCount = Mathf.Max(1, constellationHitCount);
 
-        activeConstellationGroups.Add(_starPositions);
         StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
     }
 

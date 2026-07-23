@@ -38,6 +38,14 @@ public class SettingsManager : MonoBehaviour
     /// <summary>포스트프로세싱·카메라 등 그래픽 관련 설정이 적용될 때 발생합니다.</summary>
     public event Action<SettingsData> OnGraphicsSettingsAppliedEvent;
 
+    /// <summary>
+    /// 실제 화면 크기(_width, _height)가 정해질 때(부팅 시 포함) 발생합니다.
+    /// OnGraphicsSettingsAppliedEvent와 달리 Bootstrap에서도 발생하므로,
+    /// PixelPerfectCamera의 기준 해상도처럼 게임 시작부터 맞아 있어야 하는
+    /// 화면 크기 의존 로직은 이 이벤트를 구독해야 합니다.
+    /// </summary>
+    public event Action<int, int> OnScreenTargetResolvedEvent;
+
     // 로컬라이징이 필요 없는 고정 표기 (언어명은 해당 언어 자체로 표기)
     // 실제로 지원하는 언어만 담는다. (길이가 SettingsData.SUPPORTED_LANGUAGE_COUNT와 일치해야 함)
     //
@@ -364,14 +372,17 @@ public class SettingsManager : MonoBehaviour
         Application.runInBackground = (EOnOff.Off == current.pauseOnUnfocus);
     }
 
-    private void ApplyScreen()
+    /// <summary>
+    /// 지금 설정대로라면 실제 적용될(또는 이미 적용되어 있는) 화면 크기를 계산만 합니다.
+    /// Screen.SetResolution을 호출하지 않으므로, 화면을 실제로 바꾸지 않고도
+    /// "지금 화면이 어떤 크기일지" 미리 알아야 하는 곳(PixelPerfectCamera 기준 해상도
+    /// 계산 등)에서 안전하게 쓸 수 있습니다. ApplyScreen과 로직을 공유합니다.
+    /// </summary>
+    public void GetCurrentScreenTarget(out int _width, out int _height)
     {
-        bool _isFullscreen = (EWindowMode.Fullscreen == current.windowMode);
+        EnsureLoaded();
 
-        int _width;
-        int _height;
-
-        if (true == _isFullscreen)
+        if (EWindowMode.Fullscreen == current.windowMode)
         {
             // 전체화면 시 현재 모니터 해상도로 덮어쓰기 (기획 의도에 따라 다를 수 있음)
             DisplayUtil.GetMainDisplaySize(out _width, out _height);
@@ -381,6 +392,13 @@ public class SettingsManager : MonoBehaviour
             // 저장된 값은 그대로 두고, 표시 불가능한 경우에만 적용 시점에 낮춘다.
             SettingsData.GetResolutionSize(EffectiveResolution, out _width, out _height);
         }
+    }
+
+    private void ApplyScreen()
+    {
+        bool _isFullscreen = (EWindowMode.Fullscreen == current.windowMode);
+
+        GetCurrentScreenTarget(out int _width, out int _height);
 
         if (_width <= 0 || _height <= 0)
         {
@@ -391,6 +409,7 @@ public class SettingsManager : MonoBehaviour
         }
 
         Screen.SetResolution(_width, _height, _isFullscreen);
+        OnScreenTargetResolvedEvent?.Invoke(_width, _height);
     }
 
     private void ApplyFrameRate()
@@ -530,6 +549,7 @@ public class SettingsManager : MonoBehaviour
         OnWindowModeChangedEvent = null;
         OnAudioSettingsAppliedEvent = null;
         OnGraphicsSettingsAppliedEvent = null;
+        OnScreenTargetResolvedEvent = null;
 
         if (instance == this)
         {
