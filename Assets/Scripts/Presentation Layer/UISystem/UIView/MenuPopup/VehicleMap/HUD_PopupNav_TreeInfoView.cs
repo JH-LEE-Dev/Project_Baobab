@@ -17,6 +17,8 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
 
 
     private bool isVisible = false;
+    public bool IsVisible => isVisible;
+    private Tween disappearTween;
 
     private void Awake()
     {
@@ -79,6 +81,35 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
         }
     }
 
+    public void PlayDisappearMotion(Action _onComplete)
+    {
+        if (false == isVisible)
+        {
+            _onComplete?.Invoke();
+            return;
+        }
+
+        isVisible = false;
+
+        if (null != disappearTween && true == disappearTween.IsActive())
+        {
+            disappearTween.Kill();
+        }
+
+        if (null != rectTransform)
+        {
+            disappearTween = rectTransform.DOScale(Vector3.zero, 0.15f).SetEase(Ease.InBack).OnComplete(() => {
+                OnDisappearMotionComplete();
+                _onComplete?.Invoke();
+            });
+        }
+        else
+        {
+            OnDisappearMotionComplete();
+            _onComplete?.Invoke();
+        }
+    }
+
     private void OnDisappearMotionComplete()
     {
         gameObject.SetActive(false);
@@ -105,6 +136,12 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
             rectTransform.position = _subRegionTransform.position;
             rectTransform.anchoredPosition += anchorOffset;
         }
+
+        if (null != disappearTween && true == disappearTween.IsActive())
+        {
+            disappearTween.Kill();
+        }
+        rectTransform.localScale = Vector3.one;
 
         UpdateVisuals(_info);
         SetVisibility(true);

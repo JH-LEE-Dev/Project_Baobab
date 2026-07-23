@@ -66,6 +66,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     
     private MapType pendingMapType;
     private Transform pendingRegionTransform;
+    private Action pendingOnComplete;
 
     public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager)
     {
@@ -92,7 +93,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         cachedSequenceWait = new WaitForSeconds(appearSequenceDelay);
     }
 
-    public void ShowSubRegionsForMap(MapType _mapType, Transform _regionBtnTransform, IMapDataProvider _provider)
+    public void ShowSubRegionsForMap(MapType _mapType, Transform _regionBtnTransform, IMapDataProvider _provider, Action _onComplete = null)
     {
         mapDataProvider = _provider;
         
@@ -100,20 +101,22 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         {
             pendingMapType = _mapType;
             pendingRegionTransform = _regionBtnTransform;
+            pendingOnComplete = _onComplete;
             PlayDisappearSequence(OnDisappearSequenceCompleteForToggle);
         }
         else
         {
-            SetupAndPlayAppearSequence(_mapType, _regionBtnTransform);
+            SetupAndPlayAppearSequence(_mapType, _regionBtnTransform, _onComplete);
         }
     }
 
     private void OnDisappearSequenceCompleteForToggle()
     {
-        SetupAndPlayAppearSequence(pendingMapType, pendingRegionTransform);
+        SetupAndPlayAppearSequence(pendingMapType, pendingRegionTransform, pendingOnComplete);
+        pendingOnComplete = null;
     }
 
-    private void SetupAndPlayAppearSequence(MapType _mapType, Transform _regionBtnTransform)
+    private void SetupAndPlayAppearSequence(MapType _mapType, Transform _regionBtnTransform, Action _onComplete)
     {
         if (null == mapDataProvider)
         {
@@ -167,7 +170,15 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
 
         // 세팅이 끝난 후 자체적으로 등장 시퀀스를 재생합니다.
-        PlayAppearSequence().Play();
+        Sequence _seq = PlayAppearSequence();
+        if (null != _seq)
+        {
+            _seq.OnComplete(() => _onComplete?.Invoke());
+        }
+        else
+        {
+            _onComplete?.Invoke();
+        }
     }
 
     private HUD_PopupNav_SubRegionBtn GetOrCreateSubRegionButton(int _index)
@@ -367,6 +378,18 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
     }
 
+    public HUD_PopupNav_SubRegionBtn GetSubRegionButton(ForestType _forestType)
+    {
+        for (int i = 0; i < activeSubRegionButtons.Count; i++)
+        {
+            if (activeSubRegionButtons[i].GetForestType() == _forestType)
+            {
+                return activeSubRegionButtons[i];
+            }
+        }
+        return null;
+    }
+
     public void ClearAllNewIndicators()
     {
         for (int i = 0; i < subRegionButtons.Count; i++)
@@ -396,5 +419,16 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         activeSubRegionButtons.Clear();
         pendingMapType = MapType.None;
         pendingRegionTransform = null;
+    }
+
+    public void EvaluateAllHoverStates()
+    {
+        for (int i = 0; i < activeSubRegionButtons.Count; i++)
+        {
+            if (null != activeSubRegionButtons[i])
+            {
+                activeSubRegionButtons[i].EvaluateHoverState();
+            }
+        }
     }
 }

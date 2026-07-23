@@ -432,8 +432,11 @@ MonoBehaviour:
   clickImage: {fileID: 2337216021500169027}
   lockColorTargetImage: {fileID: 8033886740915779442}
   newIndicatorObj: {fileID: 1704490436478468864}
-  unlockedColor: {r: 1, g: 1, b: 1, a: 1}
+  unlockedColor: {r: 0.38203096, g: 0.53453535, b: 0.8018868, a: 1}
   lockedColor: {r: 0.764151, g: 0.051803943, b: 0, a: 1}
+  hoverColor: {r: 0.4198113, g: 0.7230559, b: 1, a: 1}
+  clickColor: {r: 0.6745283, g: 0.91483676, b: 1, a: 1}
+  colorTransitionDuration: 0.2
   unlockDuration: 0.5
   selectDuration: 0.2
   hoverScaleX: 1.15

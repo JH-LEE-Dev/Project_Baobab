@@ -257,4 +257,15 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
             }
         }
     }
+
+    public void EvaluateAllHoverStates()
+    {
+        for (int i = 0; i < regionButtons.Count; i++)
+        {
+            if (null != regionButtons[i] && true == regionButtons[i].gameObject.activeSelf)
+            {
+                regionButtons[i].EvaluateHoverState();
+            }
+        }
+    }
 }

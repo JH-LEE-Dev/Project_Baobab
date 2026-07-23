@@ -17,10 +17,15 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [SerializeField] private GameObject newIndicatorObj;
 
     [Header("Visual Settings")]
-    [Tooltip("해금된 상태일 때의 버튼(Image) 색상")]
+    [Tooltip("해금된 상태일 때의 버튼(Image) 색상 (기본)")]
     [SerializeField] private Color unlockedColor = Color.white;
     [Tooltip("잠긴 상태일 때의 버튼(Image) 색상")]
     [SerializeField] private Color lockedColor = Color.gray;
+
+    [Header("Hover & Click Colors")]
+    [SerializeField] private Color hoverColor = Color.white;
+    [SerializeField] private Color clickColor = Color.white;
+    [SerializeField] private float colorTransitionDuration = 0.2f;
 
     [Header("DOTween Settings")]
     [Tooltip("해금 연출 시간")]
@@ -53,6 +58,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private Tween selectTween;
     private Tween hoverTween;
     private Tween clearNewTween;
+    private Tween colorTween;
     
     // 비주얼 연출을 적용할 자식 트랜스폼 목록 (clickImage 제외)
     private System.Collections.Generic.List<Transform> visualChildren = new System.Collections.Generic.List<Transform>();
@@ -66,8 +72,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     public TweenCallback CachedActivate { get; private set; }
     private TweenCallback cachedPlayParticle;
     private TweenCallback cachedClearNewComplete;
+    private bool isPointerOver = false;
+    private bool isSelected = false;
 
     public ForestType GetForestType() => myInfo.forestType;
+    public ForestEnvironmentInfo GetInfo() => myInfo;
 
     public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType)
     {
@@ -119,7 +128,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (null == mainController || true == mainController.IsInputBlocked)
+        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
         }
@@ -129,24 +138,45 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             return;
         }
 
+        TweenColor(clickColor);
         mainController.HandleSubRegionSelected(myInfo.forestType);
     }
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (null == mainController || true == mainController.IsInputBlocked)
+        isPointerOver = true;
+
+        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
         }
 
+        TriggerHover();
+    }
+
+    public void EvaluateHoverState()
+    {
+        if (true == isPointerOver && false == mainController.IsInputBlocked && false == mainController.IsTransitioning)
+        {
+            TriggerHover();
+        }
+    }
+
+    private void TriggerHover()
+    {
         if (true == myInfo.isUnlocked)
         {
+            if (false == isSelected)
+            {
+                TweenColor(hoverColor);
+            }
+
             bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
             
             if (_hasNew)
             {
                 ClearNewIndicator(() => {
-                    if (null != mainController && false == mainController.IsInputBlocked)
+                    if (null != mainController && false == mainController.IsInputBlocked && false == mainController.IsTransitioning)
                     {
                         mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
                     }
@@ -158,28 +188,38 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
                 mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
             }
 
-            if (null != hoverTween && true == hoverTween.IsActive())
+            if (false == isSelected)
             {
-                hoverTween.Kill();
+                if (null != hoverTween && true == hoverTween.IsActive())
+                {
+                    hoverTween.Kill();
+                }
+                // clickImage(Raycast) 영역은 찌그러지지 않도록 루트 대신 비주얼 자식들만 연출
+                Sequence _seq = DOTween.Sequence();
+                for (int i = 0; i < visualChildren.Count; i++)
+                {
+                    _seq.Join(visualChildren[i].DOScale(new Vector3(hoverScaleX, hoverScaleY, 1f), hoverDuration).SetEase(hoverEase));
+                }
+                hoverTween = _seq;
             }
-            // clickImage(Raycast) 영역이 찌그러지지 않도록 루트 대신 비주얼 자식들만 연출
-            Sequence _seq = DOTween.Sequence();
-            for (int i = 0; i < visualChildren.Count; i++)
-            {
-                _seq.Join(visualChildren[i].DOScale(new Vector3(hoverScaleX, hoverScaleY, 1f), hoverDuration).SetEase(hoverEase));
-            }
-            hoverTween = _seq;
         }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (null == mainController || true == mainController.IsInputBlocked)
+        isPointerOver = false;
+
+        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
         }
 
         mainController.HandleSubRegionUnhovered();
+
+        if (true == myInfo.isUnlocked && false == isSelected)
+        {
+            TweenColor(unlockedColor);
+        }
 
         if (null != hoverTween && true == hoverTween.IsActive())
         {
@@ -194,14 +234,37 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         hoverTween = _seq;
     }
 
+    private void TweenColor(Color _targetColor)
+    {
+        if (null == lockColorTargetImage)
+        {
+            return;
+        }
+
+        if (null != colorTween && colorTween.IsActive())
+        {
+            colorTween.Kill();
+        }
+
+        colorTween = lockColorTargetImage.DOColor(_targetColor, colorTransitionDuration).SetEase(Ease.OutQuad);
+    }
+
     public void ResetState()
     {
+        isSelected = false;
+        
         if (null != hoverTween && hoverTween.IsActive()) hoverTween.Kill();
         if (null != appearTween && appearTween.IsActive()) appearTween.Kill();
         if (null != disappearTween && disappearTween.IsActive()) disappearTween.Kill();
         if (null != clearNewTween && clearNewTween.IsActive()) clearNewTween.Kill();
         if (null != unlockTween && unlockTween.IsActive()) unlockTween.Kill();
         if (null != selectTween && selectTween.IsActive()) selectTween.Kill();
+        if (null != colorTween && colorTween.IsActive()) colorTween.Kill();
+
+        if (null != lockColorTargetImage)
+        {
+            lockColorTargetImage.color = unlockedColor;
+        }
 
         for (int i = 0; i < visualChildren.Count; i++)
         {
@@ -294,6 +357,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void SetSelectedState(bool _isSelected)
     {
+        isSelected = _isSelected;
+
         if (null != selectTween && true == selectTween.IsActive())
         {
             selectTween.Kill();
@@ -301,6 +366,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (true == _isSelected)
         {
+            TweenColor(clickColor);
+
             Sequence _seq = DOTween.Sequence();
             for (int i = 0; i < visualChildren.Count; i++)
             {
@@ -310,6 +377,15 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
         else
         {
+            if (true == isPointerOver)
+            {
+                TweenColor(hoverColor);
+            }
+            else
+            {
+                TweenColor(unlockedColor);
+            }
+
             for (int i = 0; i < visualChildren.Count; i++)
             {
                 visualChildren[i].localScale = Vector3.one;

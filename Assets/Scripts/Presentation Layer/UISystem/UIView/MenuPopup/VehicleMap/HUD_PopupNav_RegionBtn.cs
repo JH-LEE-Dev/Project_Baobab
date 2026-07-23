@@ -66,6 +66,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     public TweenCallback CachedActivate { get; private set; }
     private TweenCallback cachedPlayParticle;
     private TweenCallback cachedClearNewComplete;
+    private bool isPointerOver = false;
 
     public MapType GetMapType() => myInfo.mapType;
 
@@ -125,7 +126,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (null == mainController || true == mainController.IsInputBlocked)
+        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
         }
@@ -162,11 +163,31 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        if (null == mainController || true == mainController.IsInputBlocked)
+        isPointerOver = true;
+
+        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
         }
         
+        TriggerHover();
+    }
+
+    public void EvaluateHoverState()
+    {
+        if (true == isPointerOver && false == mainController.IsInputBlocked && false == mainController.IsTransitioning)
+        {
+            TriggerHover();
+        }
+    }
+
+    private void TriggerHover()
+    {
+        if (true == isSelected)
+        {
+            return;
+        }
+
         TweenColors(hoverShadowColor, hoverBgColor);
         
         ClearNewIndicator();
@@ -176,7 +197,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             hoverTween.Kill();
         }
         
-        // clickImage(Raycast) 영역이 찌그러지지 않도록 루트 대신 비주얼 자식들만 연출
+        // clickImage(Raycast) 영역은 찌그러지지 않도록 루트 대신 비주얼 자식들만 연출
         Sequence _seq = DOTween.Sequence();
         for (int i = 0; i < visualChildren.Count; i++)
         {
@@ -188,7 +209,9 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerExit(PointerEventData _eventData)
     {
-        if (null == mainController || true == mainController.IsInputBlocked)
+        isPointerOver = false;
+
+        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
         {
             return;
         }

@@ -98,6 +98,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private bool isClosing = false;
     private bool isInputBlocked = false;
     private ForestType currentSelectedForestType = ForestType.None;
+    private ForestType currentShowingTreeInfoType = ForestType.None;
     private MapType currentSelectedMapType = MapType.None;
 
     // 언락 큐 구조체
@@ -126,6 +127,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     public bool IsInputBlocked => isInputBlocked || isUnlockingProductionActive || isClosing;
     public bool IsUnlockingProductionActive => isUnlockingProductionActive;
+    public bool IsTransitioning { get; private set; }
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(IMapDataProvider _provider, LocalizationManager _localizer, Action _onClose, Action<MapType, ForestType> _onConfirm)
@@ -205,6 +207,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         isUnlockingProductionActive = false;
         currentSelectedMapType = MapType.None;
         currentSelectedForestType = ForestType.None;
+        currentShowingTreeInfoType = ForestType.None;
         
         if (null != confirmCheckImage)
         {
@@ -735,26 +738,29 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
+        if (true == IsTransitioning)
+        {
+            return;
+        }
+
         if (currentSelectedMapType == _mapType)
         {
             // 동일한 대지역 재클릭 무시 (토글 안함)
             return;
         }
 
+        IsTransitioning = true;
+
         MarkCurrentRegionAsRead();
 
         currentSelectedMapType = _mapType;
         runtimeLastSelectedMapType = _mapType;
         currentSelectedForestType = ForestType.None;
+        currentShowingTreeInfoType = ForestType.None;
 
         if (null != confirmCheckImage)
         {
             confirmCheckImage.gameObject.SetActive(false);
-        }
-
-        if (null != treeInfoView)
-        {
-            treeInfoView.SetVisibility(false);
         }
 
         if (null != currentRegionNameText && null != localizationManager)
@@ -784,10 +790,33 @@ public class HUD_PopupNav_Main : MonoBehaviour
             regionGroup.SetSelectRegion(_mapType, _playClickAnim);
             Transform _regionBtnTransform = regionGroup.GetRegionTransform(_mapType);
             
-            if (null != subRegionGroup)
+            Action _onShowSubRegions = () => {
+                if (null != subRegionGroup)
+                {
+                    subRegionGroup.ShowSubRegionsForMap(_mapType, _regionBtnTransform, mapDataProvider, () => {
+                        IsTransitioning = false;
+                        if (null != regionGroup) regionGroup.EvaluateAllHoverStates();
+                        if (null != subRegionGroup) subRegionGroup.EvaluateAllHoverStates();
+                    });
+                }
+                else
+                {
+                    IsTransitioning = false;
+                }
+            };
+
+            if (null != treeInfoView && true == treeInfoView.IsVisible)
             {
-                subRegionGroup.ShowSubRegionsForMap(_mapType, _regionBtnTransform, mapDataProvider);
+                treeInfoView.PlayDisappearMotion(_onShowSubRegions);
             }
+            else
+            {
+                _onShowSubRegions();
+            }
+        }
+        else
+        {
+            IsTransitioning = false;
         }
     }
 
@@ -798,11 +827,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[HUD_PopupNav_Main] 서브지역 호버 감지됨: {_forestType}");
-
-        if (null != treeInfoView)
+        if (currentShowingTreeInfoType != _forestType)
         {
-            treeInfoView.ShowTreeInfo(_info, _subRegionTransform);
+            currentShowingTreeInfoType = _forestType;
+            if (null != treeInfoView)
+            {
+                treeInfoView.ShowTreeInfo(_info, _subRegionTransform);
+            }
         }
     }
 
@@ -813,6 +844,24 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
+        if (ForestType.None != currentSelectedForestType && null != subRegionGroup)
+        {
+            if (currentShowingTreeInfoType != currentSelectedForestType)
+            {
+                HUD_PopupNav_SubRegionBtn _selectedBtn = subRegionGroup.GetSubRegionButton(currentSelectedForestType);
+                if (null != _selectedBtn)
+                {
+                    currentShowingTreeInfoType = currentSelectedForestType;
+                    if (null != treeInfoView)
+                    {
+                        treeInfoView.ShowTreeInfo(_selectedBtn.GetInfo(), _selectedBtn.transform);
+                    }
+                }
+            }
+            return;
+        }
+
+        currentShowingTreeInfoType = ForestType.None;
         if (null != treeInfoView)
         {
             treeInfoView.SetVisibility(false);
