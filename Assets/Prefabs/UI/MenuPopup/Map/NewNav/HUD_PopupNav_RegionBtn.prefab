@@ -490,7 +490,7 @@ MonoBehaviour:
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 5
   m_ShadowColor: {r: 0, g: 0.5350682, b: 1.3041189, a: 1}
-  m_ShadowColorGlow: 0
+  m_ShadowColorGlow: 1
   m_GradationMode: 0
   m_GradationIntensity: 1
   m_GradationColorFilter: 1
@@ -534,14 +534,14 @@ MonoBehaviour:
   m_GradationWrapMode: 0
   m_GradationReverse: 0
   m_AllowToModifyMeshShape: 1
-  m_EdgeMode: 0
+  m_EdgeMode: 2
   m_EdgeWidth: 0.5
   m_EdgeColorFilter: 4
-  m_EdgeColor: {r: 1, g: 1, b: 1, a: 1}
+  m_EdgeColor: {r: 0, g: 0.4423927, b: 1, a: 1}
   m_EdgeColorGlow: 0
   m_EdgeShinyRate: 0.5
   m_EdgeShinyWidth: 0.5
-  m_EdgeShinyAutoPlaySpeed: 1
+  m_EdgeShinyAutoPlaySpeed: 0.75
   m_PatternArea: 1
   m_DetailFilter: 0
   m_DetailIntensity: 1
@@ -701,7 +701,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0, g: 0, b: 0, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -780,14 +780,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_PopupNav_RegionBtn
   clickImage: {fileID: 5478284556487052560}
   bgImage: {fileID: 7487641036632318457}
-  nameText: {fileID: 0}
   newIndicatorObj: {fileID: 2152213400124138834}
   lockVisualObj: {fileID: 7682306616101199194}
-  unlockDuration: 0.5
   selectDuration: 0.2
-  hoverStartYScale: 0.8
-  hoverSnapDuration: 0.15
-  hoverSnapEase: 27
+  uiEffect: {fileID: 1356311456841564540}
+  colorTransitionDuration: 0.2
+  colorTransitionEase: 1
+  normalShadowColor: {r: 0.29803923, g: 0.29803923, b: 0.29803923, a: 1}
+  hoverShadowColor: {r: 0, g: 0.39359438, b: 1, a: 1}
+  clickShadowColor: {r: 0.013602853, g: 0, b: 1, a: 1}
+  normalBgColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+  hoverBgColor: {r: 1, g: 1, b: 1, a: 1}
+  clickBgColor: {r: 1, g: 1, b: 1, a: 1}
+  hoverStartYScale: 0.7
+  hoverSnapDuration: 0.25
+  hoverSnapEase: 9
   selectPunchStrength: 1.1
 --- !u!1 &6267079760275135465
 GameObject:

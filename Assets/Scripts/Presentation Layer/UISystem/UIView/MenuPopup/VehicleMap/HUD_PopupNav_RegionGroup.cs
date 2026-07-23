@@ -245,4 +245,16 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
             }
         }
     }
+
+    public void ClearNewIndicator(MapType _mapType)
+    {
+        for (int i = 0; i < regionButtons.Count; i++)
+        {
+            if (_mapType == regionButtons[i].GetMapType())
+            {
+                regionButtons[i].ClearNewIndicator();
+                break;
+            }
+        }
+    }
 }

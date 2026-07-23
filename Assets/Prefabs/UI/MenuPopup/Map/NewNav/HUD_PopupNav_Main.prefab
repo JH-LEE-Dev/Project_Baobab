@@ -746,11 +746,14 @@ MonoBehaviour:
   closeImage: {fileID: 4097587636143686435}
   extraUIAnimDuration: 0.2
   extraUIAnimEase: 27
+  currentRegionNameText: {fileID: 676121053115878111}
+  regionNamePunchScaleY: 0.5
+  regionNameAnimDuration: 0.125
+  regionNameAnimVibrato: 5
+  regionNameAnimElasticity: 1
   regionGroup: {fileID: 601848054331804714}
   subRegionGroup: {fileID: 1475508615062793256}
   treeInfoView: {fileID: 6280301852639903653}
-  appearDuration: 0.25
-  disappearDuration: 0.25
   defaultUnlockDelay: 1
   multiRegionUnlockSpeedRate: 2
   debugForceUnlockAll: 1
@@ -1585,9 +1588,8 @@ MonoBehaviour:
   treeProps:
   - {fileID: 5868500825611714497}
   - {fileID: 1961123629891266048}
-  appearDuration: 0.3
-  disappearDuration: 0.3
-  anchorOffset: {x: 0, y: 50}
+  anchorOffset: {x: 0, y: 60}
+  treeAppearDelayGap: 0.05
 --- !u!1 &6107967004121450145
 GameObject:
   m_ObjectHideFlags: 0
@@ -1653,7 +1655,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 0.29803923}
-  m_RaycastTarget: 0
+  m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -2136,6 +2138,7 @@ MonoBehaviour:
   useDynamicAnchoring: 0
   anchorOffsetX: 80
   appearSequenceDelay: 0.1
+  transitionDelay: 0.15
   baseOffsetY: -50
   archHeightY: 30
   randomScatterRatioX: 0.25
@@ -2147,7 +2150,6 @@ MonoBehaviour:
   paddingLeft: 80
   paddingRight: 80
   subRegionBtnPrefab: {fileID: 0}
-  startScale: 0.7
   appearAnimDuration: 0.15
   appearAnimEase: 27
   shakeDuration: 0.2
@@ -2207,6 +2209,7 @@ MonoBehaviour:
   useDynamicAnchoring: 0
   anchorOffsetX: 80
   appearSequenceDelay: 0.1
+  transitionDelay: 0.15
   baseOffsetY: -50
   archHeightY: 30
   randomScatterRatioX: 0.25
@@ -2218,7 +2221,6 @@ MonoBehaviour:
   paddingLeft: 30
   paddingRight: 30
   subRegionBtnPrefab: {fileID: 7517307680413845945, guid: 57557c005e0483a4dbaf64dda4250ca2, type: 3}
-  startScale: 0.4
   appearAnimDuration: 0.15
   appearAnimEase: 27
   shakeDuration: 0.2

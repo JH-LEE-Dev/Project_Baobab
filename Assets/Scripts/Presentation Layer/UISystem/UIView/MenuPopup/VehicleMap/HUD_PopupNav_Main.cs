@@ -51,6 +51,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [Header("Region Name UI")]
     [Tooltip("현재 선택된 대지역 이름을 표시할 텍스트")]
     [SerializeField] private TextMeshProUGUI currentRegionNameText;
+    [Tooltip("이름 변경 시 Y 스케일 축소(뽀잉) 연출 강도 (예: 0.5)")]
+    [SerializeField] private float regionNamePunchScaleY = 0.5f;
+    [Tooltip("이름 변경 연출 시간")]
+    [SerializeField] private float regionNameAnimDuration = 0.25f;
+    [Tooltip("이름 변경 연출 진동수 (Vibrato)")]
+    [SerializeField] private int regionNameAnimVibrato = 5;
+    [Tooltip("이름 변경 연출 탄성 (Elasticity)")]
+    [SerializeField] private float regionNameAnimElasticity = 1f;
+
+    private Tween regionNameTween;
 
     [Header("Navigation Groups")]
     [Tooltip("대지역 관리 그룹")]
@@ -59,12 +69,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [SerializeField] private HUD_PopupNav_SubRegionGroup subRegionGroup;
     [Tooltip("식생 정보 관리 팝업")]
     [SerializeField] private HUD_PopupNav_TreeInfoView treeInfoView;
-
-    [Header("Popup Lifecycle Animation")]
-    [Tooltip("팝업 등장 트위닝 소요 시간 (기존)")]
-    [SerializeField] private float appearDuration = 0.5f;
-    [Tooltip("팝업 퇴장 트위닝 소요 시간 (기존)")]
-    [SerializeField] private float disappearDuration = 0.5f;
 
     private Tween appearTween;
     private Tween disappearTween;
@@ -219,14 +223,21 @@ public class HUD_PopupNav_Main : MonoBehaviour
             {
                 for (int i = 0; i < _db.mapDatas.Count; i++)
                 {
-                    mapDataProvider.MarkMapUnlocked(_db.mapDatas[i].mapType);
-                    mapDataProvider.MarkMapUnlockAnimationPlayed(_db.mapDatas[i].mapType);
+                    if (false == _db.mapDatas[i].isUnlocked)
+                    {
+                        mapDataProvider.MarkMapUnlocked(_db.mapDatas[i].mapType);
+                        mapDataProvider.MarkMapUnlockAnimationPlayed(_db.mapDatas[i].mapType);
+                    }
+                    
                     if (null != _db.mapDatas[i].forestDatas)
                     {
                         for (int j = 0; j < _db.mapDatas[i].forestDatas.Count; j++)
                         {
-                            mapDataProvider.MarkUnlocked(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
-                            mapDataProvider.MarkUnlockAnimationPlayed(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
+                            if (false == _db.mapDatas[i].forestDatas[j].isUnlocked)
+                            {
+                                mapDataProvider.MarkUnlocked(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
+                                mapDataProvider.MarkUnlockAnimationPlayed(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
+                            }
                         }
                     }
                 }
@@ -335,12 +346,19 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
-    public void Close()
+    public void Close(bool _isInstant = false)
     {
         if (true == isClosing)
         {
             return;
         }
+
+        CloseMainPopup(_isInstant);
+    }
+
+    private void CloseMainPopup(bool _isInstant = false)
+    {
+        MarkCurrentRegionAsRead();
 
         isClosing = true;
         isInputBlocked = true;
@@ -354,7 +372,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != subRegionGroup)
         {
             subRegionGroup.ClearAllNewIndicators();
-            subRegionGroup.ResetState();
         }
 
         if (null != regionGroup)
@@ -367,11 +384,45 @@ public class HUD_PopupNav_Main : MonoBehaviour
             disappearTween.Kill();
         }
 
-        // [TODO] 추후 전체 팝업 DOTween 퇴장 연출 작성
-        // disappearTween = ...
+        if (true == _isInstant)
+        {
+            OnMainPopupDisappearComplete();
+            return;
+        }
 
-        // 임시 즉시 완료
-        OnMainPopupDisappearComplete();
+        Sequence _seq = DOTween.Sequence();
+        float _currentTime = 0f;
+
+        // 1. 추가 UI 버튼(닫기/확인) 축소 및 패널 Y스케일 축소 (동시 진행)
+        if (null != closeImage) _seq.Insert(_currentTime, closeImage.transform.DOScale(0f, extraUIAnimDuration).SetEase(Ease.InBack));
+        if (null != confirmCheckImage) _seq.Insert(_currentTime, confirmCheckImage.transform.DOScale(0f, extraUIAnimDuration).SetEase(Ease.InBack));
+        
+        if (null != interactiveUIPanel)
+        {
+            _seq.Insert(_currentTime, interactiveUIPanel.DOScaleY(0f, panelScaleDuration).SetEase(Ease.InBack));
+        }
+
+        _currentTime += panelScaleDuration;
+
+        // 2. Dim 배경 알파 감소
+        if (null != dimBackgroundCanvasGroup)
+        {
+            _seq.Insert(_currentTime, dimBackgroundCanvasGroup.DOFade(0f, dimFadeDuration).SetEase(Ease.OutQuad));
+        }
+
+        _currentTime += dimFadeDuration;
+
+        // 3. 내비게이션 이미지가 아래로 내려가며 퇴장
+        if (null != navImageContainer)
+        {
+            _seq.Insert(_currentTime, navImageContainer.DOAnchorPosY(-200f, navImageBounceDuration).SetEase(Ease.InBack));
+        }
+
+        _seq.OnComplete(() => {
+            OnMainPopupDisappearComplete();
+        });
+
+        disappearTween = _seq;
     }
 
     // 내부 이벤트 핸들러
@@ -414,6 +465,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void OnMainPopupDisappearComplete()
     {
+        if (null != subRegionGroup)
+        {
+            subRegionGroup.ResetState();
+        }
+        
         gameObject.SetActive(false);
         onNavigationClosedCallback?.Invoke();
     }
@@ -638,6 +694,39 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
+    private void MarkCurrentRegionAsRead()
+    {
+        if (MapType.None != currentSelectedMapType && null != mapDataProvider)
+        {
+            mapDataProvider.MarkMapLevelAsRead(currentSelectedMapType);
+            
+            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+            if (null != _db.mapDatas)
+            {
+                for (int i = 0; i < _db.mapDatas.Count; i++)
+                {
+                    if (currentSelectedMapType == _db.mapDatas[i].mapType)
+                    {
+                        var _forestDatas = _db.mapDatas[i].forestDatas;
+                        if (null != _forestDatas)
+                        {
+                            for (int j = 0; j < _forestDatas.Count; j++)
+                            {
+                                mapDataProvider.MarkMapAsRead(currentSelectedMapType, _forestDatas[j].forestType);
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+
+            if (null != regionGroup)
+            {
+                regionGroup.ClearNewIndicator(currentSelectedMapType);
+            }
+        }
+    }
+
     // 퍼블릭 콜백 핸들러 (버튼들에서 호출)
     public void HandleRegionSelected(MapType _mapType, bool _force = false, bool _playClickAnim = true)
     {
@@ -651,6 +740,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
             // 동일한 대지역 재클릭 무시 (토글 안함)
             return;
         }
+
+        MarkCurrentRegionAsRead();
 
         currentSelectedMapType = _mapType;
         runtimeLastSelectedMapType = _mapType;
@@ -672,6 +763,19 @@ public class HUD_PopupNav_Main : MonoBehaviour
             if (false == string.IsNullOrEmpty(_localizedName))
             {
                 currentRegionNameText.text = _localizedName;
+
+                if (null != regionNameTween && true == regionNameTween.IsActive())
+                {
+                    regionNameTween.Kill();
+                    currentRegionNameText.transform.localScale = Vector3.one;
+                }
+
+                regionNameTween = currentRegionNameText.transform.DOPunchScale(
+                    new Vector3(0f, -regionNamePunchScaleY, 0f), 
+                    regionNameAnimDuration, 
+                    regionNameAnimVibrato, 
+                    regionNameAnimElasticity
+                );
             }
         }
 
@@ -683,9 +787,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             if (null != subRegionGroup)
             {
                 subRegionGroup.ShowSubRegionsForMap(_mapType, _regionBtnTransform, mapDataProvider);
-                // 탭 전환 시에도 자연스러운 순차 등장을 위해 시퀀스 재생
-                Sequence _subSeq = subRegionGroup.PlayAppearSequence();
-                _subSeq.Play();
             }
         }
     }

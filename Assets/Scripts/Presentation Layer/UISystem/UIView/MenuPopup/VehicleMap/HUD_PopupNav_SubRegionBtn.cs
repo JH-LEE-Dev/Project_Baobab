@@ -23,10 +23,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [SerializeField] private Color lockedColor = Color.gray;
 
     [Header("DOTween Settings")]
-    [Tooltip("기본 등장 연출 시간 (현재는 Group에서 제어)")]
-    [SerializeField] private float appearDuration = 0.3f;
-    [Tooltip("기본 퇴장 연출 시간 (현재는 Group에서 제어)")]
-    [SerializeField] private float disappearDuration = 0.3f;
     [Tooltip("해금 연출 시간")]
     [SerializeField] private float unlockDuration = 0.5f;
     [Tooltip("선택 시 연출 시간")]
@@ -145,8 +141,22 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (true == myInfo.isUnlocked)
         {
-            ClearNewIndicator();
-            mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
+            bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
+            
+            if (_hasNew)
+            {
+                ClearNewIndicator(() => {
+                    if (null != mainController && false == mainController.IsInputBlocked)
+                    {
+                        mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
+                    }
+                });
+            }
+            else
+            {
+                ClearNewIndicator();
+                mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
+            }
 
             if (null != hoverTween && true == hoverTween.IsActive())
             {
@@ -184,6 +194,23 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         hoverTween = _seq;
     }
 
+    public void ResetState()
+    {
+        if (null != hoverTween && hoverTween.IsActive()) hoverTween.Kill();
+        if (null != appearTween && appearTween.IsActive()) appearTween.Kill();
+        if (null != disappearTween && disappearTween.IsActive()) disappearTween.Kill();
+        if (null != clearNewTween && clearNewTween.IsActive()) clearNewTween.Kill();
+        if (null != unlockTween && unlockTween.IsActive()) unlockTween.Kill();
+        if (null != selectTween && selectTween.IsActive()) selectTween.Kill();
+
+        for (int i = 0; i < visualChildren.Count; i++)
+        {
+            visualChildren[i].localScale = Vector3.one;
+        }
+        
+        gameObject.SetActive(false);
+    }
+
     public void PlayAppearMotion()
     {
         if (null != appearTween && true == appearTween.IsActive())
@@ -197,16 +224,38 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void PlayDisappearMotion(Action _onComplete)
     {
+        bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
+        
+        if (true == _hasNew)
+        {
+            ClearNewIndicator(() => {
+                ExecuteDisappearMotion(_onComplete);
+            });
+        }
+        else
+        {
+            ExecuteDisappearMotion(_onComplete);
+        }
+    }
+
+    private void ExecuteDisappearMotion(Action _onComplete)
+    {
         if (null != disappearTween && true == disappearTween.IsActive())
         {
             disappearTween.Kill();
         }
 
-        // [TODO] 추후 DOTween 연출 작성
-        // disappearTween = ...
+        Sequence _seq = DOTween.Sequence();
+        
+        // 역재생 느낌으로 원래대로 작아짐 (Y축 0.01로 축소)
+        _seq.Append(transform.DOScaleY(0.01f, 0.15f).SetEase(Ease.InBack));
+        
+        _seq.OnComplete(() => {
+            gameObject.SetActive(false);
+            _onComplete?.Invoke();
+        });
 
-        // 임시 즉시 완료
-        _onComplete?.Invoke();
+        disappearTween = _seq;
     }
 
     private Action pendingUnlockCompleteAction;
@@ -268,12 +317,16 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
     }
 
-    public void ClearNewIndicator()
+    public void ClearNewIndicator(Action _onComplete = null)
     {
         if (null != newIndicatorObj && true == newIndicatorObj.activeSelf)
         {
             if (null != clearNewTween && true == clearNewTween.IsActive())
             {
+                clearNewTween.OnComplete(() => {
+                    OnClearNewComplete();
+                    _onComplete?.Invoke();
+                });
                 return;
             }
 
@@ -294,9 +347,16 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             _seq.AppendCallback(cachedPlayParticle);
             _seq.Append(_newTr.DOScale(new Vector3(0f, 1f, 1f), 0.15f).SetEase(Ease.InQuad));
 
-            _seq.OnComplete(cachedClearNewComplete);
+            _seq.OnComplete(() => {
+                OnClearNewComplete();
+                _onComplete?.Invoke();
+            });
 
             clearNewTween = _seq;
+        }
+        else
+        {
+            _onComplete?.Invoke();
         }
     }
 

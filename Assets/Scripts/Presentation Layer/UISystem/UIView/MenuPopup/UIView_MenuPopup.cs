@@ -85,7 +85,7 @@ public class UIView_MenuPopup : UIView
         if (null != popupNavMain)
         {
             popupNavMain.Initialize(mapDataProvider, viewCtx.localizationManager, HandlePopupNavClosed, HandleEnterDungeon);
-            popupNavMain.Close();
+            popupNavMain.Close(true);
         }
     }
 

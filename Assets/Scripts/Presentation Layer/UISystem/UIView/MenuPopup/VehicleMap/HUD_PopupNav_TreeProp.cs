@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using DG.Tweening;
 
 public class HUD_PopupNav_TreeProp : MonoBehaviour
 {
@@ -19,8 +20,14 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
     [SerializeField] private Image highlightTrunkImage;
 
     [Header("HDR Material Support")]
+    [Tooltip("실드 잎/기둥에 적용할 고정 인텐시티 값 (DB 값 무시하고 이 값으로 덮어씀)")]
     [SerializeField] private float shieldHdrIntensityMultiplier = 1.0f;
+    [Tooltip("하이라이트 잎/기둥에 적용할 고정 인텐시티 값 (DB 값 무시하고 이 값으로 덮어씀)")]
     [SerializeField] private float highlightHdrIntensityMultiplier = 1.0f;
+
+    [Header("Appear Animation")]
+    [SerializeField] private float appearDuration = 0.3f;
+    [SerializeField] private Ease appearEase = Ease.OutBack;
 
     private Material shieldLeafMat;
     private Material shieldTrunkMat;
@@ -32,6 +39,11 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
     private Color originalHighlightLeafColor = Color.white;
     private Color originalHighlightTrunkColor = Color.white;
 
+    private static readonly int HdrColorPropertyId = Shader.PropertyToID("_HDRColor");
+
+    private ParticleSystem[] childParticles;
+    private Tween appearTween;
+
     private bool isInitialized = false;
 
     public void Initialize()
@@ -41,38 +53,39 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
             return;
         }
 
+        childParticles = GetComponentsInChildren<ParticleSystem>(true);
         CacheOriginalMaterialsAndColors();
         isInitialized = true;
     }
 
     private void CacheOriginalMaterialsAndColors()
     {
-        if (null != shieldLeafImage)
+        if (null != shieldLeafImage && null != shieldLeafImage.material)
         {
             shieldLeafMat = Instantiate(shieldLeafImage.material);
             shieldLeafImage.material = shieldLeafMat;
-            originalShieldLeafColor = shieldLeafImage.color;
+            originalShieldLeafColor = shieldLeafMat.HasProperty(HdrColorPropertyId) ? shieldLeafMat.GetColor(HdrColorPropertyId) : shieldLeafImage.color;
         }
 
-        if (null != shieldTrunkImage)
+        if (null != shieldTrunkImage && null != shieldTrunkImage.material)
         {
             shieldTrunkMat = Instantiate(shieldTrunkImage.material);
             shieldTrunkImage.material = shieldTrunkMat;
-            originalShieldTrunkColor = shieldTrunkImage.color;
+            originalShieldTrunkColor = shieldTrunkMat.HasProperty(HdrColorPropertyId) ? shieldTrunkMat.GetColor(HdrColorPropertyId) : shieldTrunkImage.color;
         }
 
-        if (null != highlightLeafImage)
+        if (null != highlightLeafImage && null != highlightLeafImage.material)
         {
             highlightLeafMat = Instantiate(highlightLeafImage.material);
             highlightLeafImage.material = highlightLeafMat;
-            originalHighlightLeafColor = highlightLeafImage.color;
+            originalHighlightLeafColor = highlightLeafMat.HasProperty(HdrColorPropertyId) ? highlightLeafMat.GetColor(HdrColorPropertyId) : highlightLeafImage.color;
         }
 
-        if (null != highlightTrunkImage)
+        if (null != highlightTrunkImage && null != highlightTrunkImage.material)
         {
             highlightTrunkMat = Instantiate(highlightTrunkImage.material);
             highlightTrunkImage.material = highlightTrunkMat;
-            originalHighlightTrunkColor = highlightTrunkImage.color;
+            originalHighlightTrunkColor = highlightTrunkMat.HasProperty(HdrColorPropertyId) ? highlightTrunkMat.GetColor(HdrColorPropertyId) : highlightTrunkImage.color;
         }
     }
 
@@ -155,10 +168,40 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
             }
         }
 
-        ApplyHdrIntensity(shieldLeafImage, ref shieldLeafMat, ref originalShieldLeafColor, _visualData.shieldHDRIntensity * shieldHdrIntensityMultiplier);
-        ApplyHdrIntensity(shieldTrunkImage, ref shieldTrunkMat, ref originalShieldTrunkColor, _visualData.shieldHDRIntensity * shieldHdrIntensityMultiplier);
-        ApplyHdrIntensity(highlightLeafImage, ref highlightLeafMat, ref originalHighlightLeafColor, _visualData.highlightHDRIntensity * highlightHdrIntensityMultiplier);
-        ApplyHdrIntensity(highlightTrunkImage, ref highlightTrunkMat, ref originalHighlightTrunkColor, _visualData.highlightHDRIntensity * highlightHdrIntensityMultiplier);
+        ApplyHdrIntensity(shieldLeafImage, ref shieldLeafMat, ref originalShieldLeafColor, shieldHdrIntensityMultiplier);
+        ApplyHdrIntensity(shieldTrunkImage, ref shieldTrunkMat, ref originalShieldTrunkColor, shieldHdrIntensityMultiplier);
+        ApplyHdrIntensity(highlightLeafImage, ref highlightLeafMat, ref originalHighlightLeafColor, highlightHdrIntensityMultiplier);
+        ApplyHdrIntensity(highlightTrunkImage, ref highlightTrunkMat, ref originalHighlightTrunkColor, highlightHdrIntensityMultiplier);
+    }
+
+    public void PlayAppearAnimation(float _delay)
+    {
+        if (null != appearTween && true == appearTween.IsActive())
+        {
+            appearTween.Kill();
+        }
+
+        transform.localScale = new Vector3(1f, 0.01f, 1f);
+
+        Sequence _seq = DOTween.Sequence();
+        if (_delay > 0f)
+        {
+            _seq.SetDelay(_delay);
+        }
+
+        _seq.Append(transform.DOScaleY(1f, appearDuration).SetEase(appearEase));
+
+        _seq.AppendCallback(() => {
+            if (null != childParticles)
+            {
+                for (int i = 0; i < childParticles.Length; i++)
+                {
+                    childParticles[i].Play();
+                }
+            }
+        });
+
+        appearTween = _seq;
     }
 
     private void ApplyHdrIntensity(Image _image, ref Material _mat, ref Color _originalColor, float _intensity)
@@ -168,12 +211,22 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
             return;
         }
 
-        // 빛 번짐이 너무 강해서 하얀 네모로 타버리는 현상(Blowout) 방지 (최대 3까지만 허용)
-        float _safeIntensity = Mathf.Clamp(_intensity, 0f, 3f);
-        float _factor = Mathf.Pow(2f, _safeIntensity);
-        Color _hdrColor = new Color(_originalColor.r * _factor, _originalColor.g * _factor, _originalColor.b * _factor, _originalColor.a);
-        _mat.SetColor("_Color", _hdrColor);
-        _image.color = _hdrColor;
+        Color _hdrColor = new Color(
+            _originalColor.r * _intensity, 
+            _originalColor.g * _intensity, 
+            _originalColor.b * _intensity, 
+            _originalColor.a
+        );
+        
+        if (_mat.HasProperty(HdrColorPropertyId))
+        {
+            _mat.SetColor(HdrColorPropertyId, _hdrColor);
+        }
+        else
+        {
+            _mat.SetColor("_Color", _hdrColor);
+            _image.color = _hdrColor;
+        }
     }
 
     private void OnDestroy()

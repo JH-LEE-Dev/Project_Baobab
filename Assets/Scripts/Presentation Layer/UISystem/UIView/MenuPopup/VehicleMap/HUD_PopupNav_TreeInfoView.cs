@@ -57,6 +57,8 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
     [Header("Settings")]
     [Tooltip("서브지역 버튼에서 떨어질 간격 오프셋")]
     [SerializeField] private Vector2 anchorOffset = new Vector2(0f, 150f);
+    [Tooltip("나무 등장 연출 딜레이 간격")]
+    [SerializeField] private float treeAppearDelayGap = 0.1f;
 
     public void SetVisibility(bool _isVisible)
     {
@@ -135,6 +137,7 @@ public class HUD_PopupNav_TreeInfoView : MonoBehaviour
                 }
 
                 _prop.Setup(_visualData);
+                _prop.PlayAppearAnimation(i * treeAppearDelayGap);
             }
             else
             {

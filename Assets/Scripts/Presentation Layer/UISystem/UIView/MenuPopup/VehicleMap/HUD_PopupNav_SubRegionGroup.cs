@@ -14,6 +14,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     [SerializeField] private float anchorOffsetX = 200f;
     [Tooltip("서브지역 노출 시 요소간 딜레이(순차 등장)")]
     [SerializeField] private float appearSequenceDelay = 0.1f;
+    [Tooltip("다른 지역으로 전환 시 모든 버튼이 사라진 후 다음 버튼들이 나타나기 전 대기 시간")]
+    [SerializeField] private float transitionDelay = 0.15f;
 
     [Header("Layout & Distribution")]
     [Tooltip("전체 버튼들의 기본 Y축 오프셋 (아랫쪽 배치를 위해 음수 권장)")]
@@ -40,8 +42,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     [Header("SubRegion Button Setup & Animation")]
     [Tooltip("기본 프리팹 (초기화 후 비활성화됨)")]
     [SerializeField] private HUD_PopupNav_SubRegionBtn subRegionBtnPrefab;
-    [Tooltip("버튼 등장 시 초기 스케일 시작 값")]
-    [SerializeField] private float startScale = 0.7f;
     [Tooltip("각 서브지역 버튼 등장(스케일 업) 연출 시간")]
     [SerializeField] private float appearAnimDuration = 0.15f;
     [Tooltip("각 서브지역 버튼 등장(스케일 업) 연출 이즈(Ease)")]
@@ -166,8 +166,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             container.anchoredPosition += new Vector2(anchorOffsetX, 0f);
         }
 
-        // 순차 노출 애니메이션은 MainController에서 직접 호출하여 시퀀스에 연결하므로 여기서 재생하지 않음
-        // (기존에는 여기서 PlayAppearSequence() 를 호출했음)
+        // 세팅이 끝난 후 자체적으로 등장 시퀀스를 재생합니다.
+        PlayAppearSequence().Play();
     }
 
     private HUD_PopupNav_SubRegionBtn GetOrCreateSubRegionButton(int _index)
@@ -281,18 +281,34 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     private System.Collections.IEnumerator CoPlayDisappearSequence(Action _onComplete)
     {
-        for (int i = 0; i < activeSubRegionButtons.Count; i++)
+        int _completedCount = 0;
+        int _totalCount = activeSubRegionButtons.Count;
+
+        if (0 == _totalCount)
         {
-            activeSubRegionButtons[i].PlayDisappearMotion(null);
+            _onComplete?.Invoke();
+            yield break;
+        }
+
+        for (int i = _totalCount - 1; i >= 0; i--)
+        {
+            activeSubRegionButtons[i].PlayDisappearMotion(() => {
+                _completedCount++;
+            });
             yield return cachedSequenceWait;
         }
 
-        // 마지막 애니메이션 종료 대기용 고정 딜레이 (애니메이션 길이에 맞춰 적절히)
-        yield return new WaitForSeconds(0.3f);
-
-        for (int i = 0; i < activeSubRegionButtons.Count; i++)
+        float _timeout = 2f; // 무한 대기 방지
+        while (_completedCount < _totalCount && 0f < _timeout)
         {
-            activeSubRegionButtons[i].gameObject.SetActive(false);
+            _timeout -= Time.deltaTime;
+            yield return null;
+        }
+
+        // 버튼이 사라졌다 나온 느낌(여운)을 주기 위한 짧은 딜레이
+        if (0f < transitionDelay)
+        {
+            yield return new WaitForSeconds(transitionDelay);
         }
 
         _onComplete?.Invoke();
@@ -372,7 +388,10 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
-            activeSubRegionButtons[i].gameObject.SetActive(false);
+            if (null != activeSubRegionButtons[i])
+            {
+                activeSubRegionButtons[i].ResetState();
+            }
         }
         activeSubRegionButtons.Clear();
         pendingMapType = MapType.None;
