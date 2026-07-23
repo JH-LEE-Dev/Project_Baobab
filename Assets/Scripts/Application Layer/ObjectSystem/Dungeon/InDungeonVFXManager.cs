@@ -26,6 +26,19 @@ public class InDungeonVFXManager : MonoBehaviour
     // 그룹(별자리)별로 아직 발현되지 않아 살아있는 그라운드 마크 인스턴스들을 추적한다.
     private readonly Dictionary<int, List<TreeStarMarkGroundAnimator>> activeGroundMarksByGroup = new Dictionary<int, List<TreeStarMarkGroundAnimator>>();
 
+    // 발현이 트리거되어 소멸 연출 중이지만 아직 NotifyManifestFinished가 호출되지 않은 인스턴스들.
+    // activeGroundMarksByGroup에서는 이미 제거된 상태이므로, ClearAllConstellationGroundMarks가
+    // 이 목록도 함께 정리해야 던전 이탈 시 연출 도중이던 마크가 풀로 반환되지 않고 고아로 남는 것을 막는다.
+    private readonly List<TreeStarMarkGroundAnimator> pendingManifestInstances = new List<TreeStarMarkGroundAnimator>();
+
+    // 그룹별로 아직 소멸 연출이 끝나지 않은 그라운드 마크 개수. 0이 되면(그룹의 모든 마크가 연출을
+    // 마치면) ConstellationManifestReadyEvent를 발생시켜 실제 별자리 발현(광선)을 시작할 수 있게 한다.
+    private readonly Dictionary<int, int> pendingManifestCountByGroup = new Dictionary<int, int>();
+
+    // 그룹에 속한 모든 그라운드 마크의 소멸 연출이 끝났을 때 발생 - InDungeonObjectManager가 구독해
+    // 실제 별자리 발현(광선 데미지)을 이 시점에 시작한다.
+    public event Action<int> ConstellationManifestReadyEvent;
+
     [Header("Shooting Star")]
     [SerializeField] private ShootingStarVFX shootingStarVfxPrefab;
     [SerializeField] private int shootingStarVfxPoolDefaultCapacity = 4;
@@ -239,16 +252,32 @@ public class InDungeonVFXManager : MonoBehaviour
     /// <summary>
     /// 그룹의 별자리 발현이 트리거되면 호출되어, 그 그룹에서 아직 표시 중인 그라운드 마크에 소멸 연출을
     /// 재생시킵니다. 실제 풀 반환은 각 인스턴스가 연출을 마치고 ManifestFinishedEvent를 발생시킬 때
-    /// OnGroundMarkManifestFinished에서 처리됩니다.
+    /// OnGroundMarkManifestFinished에서 처리되며, 그룹에 속한 모든 마크가 연출을 마치면
+    /// ConstellationManifestReadyEvent가 발생해 실제 발현(광선)을 시작할 수 있게 됩니다.
     /// </summary>
     public void ClearConstellationGroundMarks(int _groupId)
     {
-        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list)) return;
+        // 그룹에 등록된 그라운드 마크가 하나도 없는 경우(예: 스킬이 그룹을 벌목하는 도중에 해금되어
+        // 일부/전체 나무가 그라운드 마크를 만들지 못한 경우) - TryGetValue가 실패해도 기다릴 대상이
+        // 없다는 뜻이므로, 반드시 즉시 발현 준비 완료를 알려야 한다. 여기서 조용히 리턴하면
+        // ConstellationManifestReadyEvent가 영원히 발생하지 않아 발현이 멈춰버린다.
+        if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list) || _list.Count == 0)
+        {
+            activeGroundMarksByGroup.Remove(_groupId);
+            ConstellationManifestReadyEvent?.Invoke(_groupId);
+            return;
+        }
 
         activeGroundMarksByGroup.Remove(_groupId);
 
+        pendingManifestCountByGroup[_groupId] = _list.Count;
+
         for (int i = 0; i < _list.Count; i++)
         {
+            // activeGroundMarksByGroup에서는 제거되지만, 연출이 끝나기 전에 던전을 나가는 경우를
+            // 대비해 pendingManifestInstances로 계속 추적해야 ClearAllConstellationGroundMarks가
+            // 강제로 회수할 수 있다.
+            pendingManifestInstances.Add(_list[i]);
             _list[i].PlayManifestEffect();
         }
     }
@@ -258,6 +287,8 @@ public class InDungeonVFXManager : MonoBehaviour
     /// 새 스테이지로 나무를 재생성(SpawnInitialTrees)할 때 호출되어야 합니다 - Stage3TreeGenerationStrategySO의
     /// groupId 카운터가 매번 0부터 다시 시작되므로, 이전 런에서 미발현 상태로 남은 마크를 여기서 정리해두지
     /// 않으면 다음 런의 그룹이 같은 groupId를 받았을 때 서로 다른 런의 마크가 뒤섞이게 된다.
+    /// 아직 발현되지 않은 마크(activeGroundMarksByGroup)뿐 아니라, 발현 연출이 끝나지 않은 채 남아있는
+    /// 마크(pendingManifestInstances)도 함께 강제 회수한다.
     /// </summary>
     public void ClearAllConstellationGroundMarks()
     {
@@ -268,8 +299,18 @@ public class InDungeonVFXManager : MonoBehaviour
                 _list[i].ForceReturnToPool();
             }
         }
-
         activeGroundMarksByGroup.Clear();
+
+        for (int i = 0; i < pendingManifestInstances.Count; i++)
+        {
+            pendingManifestInstances[i].ForceReturnToPool();
+        }
+        pendingManifestInstances.Clear();
+
+        // 강제 회수는 OnGroundMarkManifestFinished를 거치지 않으므로, 남아있던 카운트도 직접 정리한다.
+        // 이 시점에는 ConstellationManifestReadyEvent를 발생시키지 않는다(던전을 나가는 중이므로
+        // 실제 발현/데미지 로직을 시작하면 안 된다).
+        pendingManifestCountByGroup.Clear();
     }
 
     private TreeStarMarkGroundAnimator CreateTreeStarMarkGround()
@@ -284,10 +325,26 @@ public class InDungeonVFXManager : MonoBehaviour
         return _instance;
     }
 
-    // 그라운드 마크의 소멸 연출이 끝났을 때 호출되어 풀로 반환한다.
+    // 그라운드 마크의 소멸 연출이 끝났을 때 호출되어 풀로 반환하고, 그룹의 남은 개수를 갱신한다.
+    // 그룹의 모든 마크가 연출을 마치면 ConstellationManifestReadyEvent를 발생시켜 실제 발현을 시작하게 한다.
     private void OnGroundMarkManifestFinished(TreeStarMarkGroundAnimator _instance)
     {
+        pendingManifestInstances.Remove(_instance);
+        int _groupId = _instance.GroupId;
         _instance.ForceReturnToPool();
+
+        if (!pendingManifestCountByGroup.TryGetValue(_groupId, out int _remaining)) return;
+
+        _remaining--;
+        if (_remaining <= 0)
+        {
+            pendingManifestCountByGroup.Remove(_groupId);
+            ConstellationManifestReadyEvent?.Invoke(_groupId);
+        }
+        else
+        {
+            pendingManifestCountByGroup[_groupId] = _remaining;
+        }
     }
 
     private void OnGetTreeStarMarkGround(TreeStarMarkGroundAnimator _instance)

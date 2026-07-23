@@ -234,6 +234,10 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 서로 다른 그룹(다른 List 인스턴스)은 동시에 진행돼도 서로 막지 않는다.
     private readonly HashSet<List<Vector3>> activeConstellationGroups = new HashSet<List<Vector3>>();
 
+    // 그룹의 그라운드 마크 소멸 연출이 전부 끝나 InDungeonVFXManager.ConstellationManifestReadyEvent가
+    // 발생할 때까지, 실제 광선 발현에 필요한 별 위치 목록을 groupId 기준으로 보관해둔다.
+    private readonly Dictionary<int, List<Vector3>> pendingConstellationStarPositions = new Dictionary<int, List<Vector3>>();
+
     // 발현 낙인이 찍힌 나무 위에서 반복 재생되는 스파크 VFX(VFX_Spark) - 낙인은 나무가 죽어 리셋될 때까지
     // 유지되므로(EHealthComponent.brandedDamageMultiplier), 그동안 인터벌마다 계속 재생한다. 매번 똑같은
     // 박자로 반짝이면 기계적으로 보이므로 인터벌 자체를 매번 랜덤화한다.
@@ -275,6 +279,8 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager = GetComponentInChildren<InDungeonVFXManager>();
         inDungeonVFXManager.Initialize();
+        inDungeonVFXManager.ConstellationManifestReadyEvent -= OnConstellationManifestReady;
+        inDungeonVFXManager.ConstellationManifestReadyEvent += OnConstellationManifestReady;
 
         lightningZapCreator?.Initialize();
 
@@ -330,6 +336,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         if (lootManager != null)
         {
             lootManager.LootItemAcquiredEvent -= OnLootItemAcquired;
+        }
+
+        if (inDungeonVFXManager != null)
+        {
+            inDungeonVFXManager.ConstellationManifestReadyEvent -= OnConstellationManifestReady;
         }
     }
 
@@ -1625,15 +1636,26 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // 동기 실행되므로 재귀가 그대로 쌓임). _starPositions(그룹별로 항상 같은 List 인스턴스)를 키로
         // 재진입만 막아서, 같은 그룹의 자기 재트리거는 막되 서로 다른 그룹은 동시에 진행되게 둔다.
         if (activeConstellationGroups.Contains(_starPositions)) return;
+        activeConstellationGroups.Add(_starPositions);
 
-        // 발현이 실제로 확정된 시점이므로, 이 그룹에서 아직 살아있던 그라운드 마크를 전부 회수한다.
+        pendingConstellationStarPositions[_groupId] = _starPositions;
+
+        // 발현이 실제로 확정된 시점이므로, 이 그룹에서 아직 살아있던 그라운드 마크에 소멸 연출을 재생시킨다.
+        // 그룹에 속한 모든 마크의 연출이 끝나 VFXManager가 ConstellationManifestReadyEvent를 발생시키면
+        // OnConstellationManifestReady에서 실제 광선 발현을 시작한다.
         inDungeonVFXManager.ClearConstellationGroundMarks(_groupId);
+    }
+
+    // 그룹에 속한 모든 그라운드 마크의 소멸 연출이 끝났을 때 InDungeonVFXManager가 호출한다.
+    private void OnConstellationManifestReady(int _groupId)
+    {
+        if (!pendingConstellationStarPositions.TryGetValue(_groupId, out List<Vector3> _starPositions)) return;
+        pendingConstellationStarPositions.Remove(_groupId);
 
         List<Vector3> path = BuildSimplePolygonPath(_starPositions);
         float damage = BaseConstellationDamage * Mathf.Max(0f, constellationDamageMultiplier);
         int hitCount = Mathf.Max(1, constellationHitCount);
 
-        activeConstellationGroups.Add(_starPositions);
         StartCoroutine(ConstellationBeamRoutine(_starPositions, path, damage, hitCount));
     }
 
