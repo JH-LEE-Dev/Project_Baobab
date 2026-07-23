@@ -54,9 +54,9 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
 
     [Header("Manifest")]
     [Min(0f)]
-    [SerializeField] private float manifestRandomDelayMax = 0.15f;
+    [SerializeField] private float manifestRandomDelayMax = 0.2f;
     [Min(0.01f)]
-    [SerializeField] private float manifestDuration = 0.4f;
+    [SerializeField] private float manifestDuration = 0.5f;
     [Min(1f)]
     [SerializeField] private float manifestOvershootScale = 1.2f;
     [Min(0f)]

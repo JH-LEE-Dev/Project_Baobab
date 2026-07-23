@@ -85,8 +85,8 @@ MonoBehaviour:
   spawnOvershootScale: 1.2
   spawnSettleUndershootScale: 0.97
   spawnClockwiseRotation: -360
-  manifestRandomDelayMax: 0.15
-  manifestDuration: 0.4
+  manifestRandomDelayMax: 0.2
+  manifestDuration: 0.5
   manifestOvershootScale: 1.2
   manifestEndScale: 0.1
   manifestClockwiseRotation: -270
