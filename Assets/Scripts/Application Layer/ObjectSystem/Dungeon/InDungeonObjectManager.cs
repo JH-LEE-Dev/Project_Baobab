@@ -77,6 +77,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     // "별빛 나침반" - StarrootForest_1/2/3 중 어디서든 나무 4~5그루를 벤 시점에 보장 드랍.
     // 세 맵 중 한 곳에서 획득하면 다른 맵에서는 더 이상 드랍되지 않는다(영구 플래그).
+    // 별자리 표식은 이제 기본으로 항상 표시되므로, 이 아이템은 드랍만 되고 획득해도 아무 효과가 없다.
     public bool bHasAcquiredStarCompass { get; set; }
     private bool bStarCompassSpawnedThisRun;
     [SerializeField] private int starCompassPityMinKills = 4;
@@ -433,29 +434,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
         else if (_item.LootType == LootType.StarCompass)
         {
+            // 별자리 표식은 이제 항상 기본으로 표시되므로, 이 아이템은 획득해도 별도 효과가 없다.
             bHasAcquiredStarCompass = true;
-            // 효과 발동: 현재 활성 나무 중 별 표식 나무의 constellationRenderer를 즉시 켠다
-            ApplyStarCompassEffect();
         }
         else if (_item.LootType == LootType.ObsidianCharm)
         {
             bHasAcquiredObsidianCharm = true;
-        }
-    }
-
-    /// <summary>
-    /// "별빛 나침반" 획득 효과: 현재 활성 상태인 모든 별 표식 나무의 constellationRenderer를 켠다.
-    /// 별뿌리 숲에서 별자리, 표식을 볼 수 있게 된다.
-    /// </summary>
-    private void ApplyStarCompassEffect()
-    {
-        for (int i = 0; i < activeTreesForUpdate.Count; i++)
-        {
-            TreeObj tree = activeTreesForUpdate[i];
-            if (tree.bStarMarked && tree.treeVisualComponent != null)
-            {
-                tree.treeVisualComponent.SetConstellationMarkActive(true);
-            }
         }
     }
 
@@ -916,14 +900,12 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
 
-        // 별빛 나침반 획득 전에는 TreeStarMarkGroundAnimator(ConstellationGroundMarkVFX)를 생성하지 않는다
-        if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null && bHasAcquiredStarCompass)
+        if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null && bConstellationManifestUnlocked)
         {
             inDungeonVFXManager.PlayConstellationGroundMarkVFX(
                 _treeObj.transform.position,
                 _treeObj.treeVisualComponent.GetTopSortingOrder(),
-                _treeObj.StarGroupId,
-                _treeObj.treeVisualComponent.GetConstellationHDRIntensity());
+                _treeObj.StarGroupId);
         }
 
         environmentProvider.tilemapDataProvider.ClearTreeCollisionTile(_treeObj.transform.position);

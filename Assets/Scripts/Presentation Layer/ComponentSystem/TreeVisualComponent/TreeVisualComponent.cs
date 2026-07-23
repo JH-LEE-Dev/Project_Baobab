@@ -128,8 +128,6 @@ public class TreeVisualComponent : MonoBehaviour
 
     public int GetTopHighlightSortingOrder() => topHighlightRenderer != null ? topHighlightRenderer.sortingOrder : GetTopShieldSortingOrder();
 
-    public float GetConstellationHDRIntensity() => highlightHDRIntensity;
-
     public void UpdateOnWaterSortingOrder()
     {
         if (cachedTransform == null) cachedTransform = transform;

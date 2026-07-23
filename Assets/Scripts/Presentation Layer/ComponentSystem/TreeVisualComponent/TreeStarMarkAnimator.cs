@@ -9,8 +9,7 @@ using UnityEngine;
 public class TreeStarMarkAnimator : MonoBehaviour
 {
     [SerializeField] private Sprite[] frames;
-
-    private const float FrameRate = 12f;
+    [SerializeField] private float frameRate = 12f;
 
     private SpriteRenderer spriteRenderer;
     private float frameTimer;
@@ -28,7 +27,8 @@ public class TreeStarMarkAnimator : MonoBehaviour
 
         if (frames != null && frames.Length > 0 && spriteRenderer != null)
         {
-            spriteRenderer.sprite = frames[0];
+            currentFrame = Random.Range(0, frames.Length);
+            spriteRenderer.sprite = frames[currentFrame];
         }
     }
 
@@ -37,7 +37,7 @@ public class TreeStarMarkAnimator : MonoBehaviour
         if (frames == null || frames.Length == 0) return;
 
         frameTimer += Time.deltaTime;
-        float frameDuration = 1f / FrameRate;
+        float frameDuration = 1f / Mathf.Max(0.01f, frameRate);
 
         while (frameTimer >= frameDuration)
         {

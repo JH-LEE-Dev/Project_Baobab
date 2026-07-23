@@ -214,10 +214,11 @@ public class InDungeonVFXManager : MonoBehaviour
 
     /// <summary>
     /// 별 표식 나무가 죽은 자리에 TreeStarMark_Ground 마크를 스폰합니다. Instantiate/Destroy 대신
-    /// ObjectPool로 재사용되며, sortingOrder와 HDR 강도는 죽은 나무의 topRenderer/constellationRenderer 값을 그대로 물려받습니다.
+    /// ObjectPool로 재사용되며, sortingOrder는 죽은 나무의 topRenderer 값을 그대로 물려받습니다.
+    /// HDR 강도는 TreeStarMarkGroundAnimator 자체 인스펙터 값을 사용합니다.
     /// 소속 그룹(_groupId)의 별자리 발현이 트리거되기 전까지는 자동으로 사라지지 않고 Loop 재생됩니다.
     /// </summary>
-    public void PlayConstellationGroundMarkVFX(Vector3 _position, int _sortingOrder, int _groupId, float _hdrIntensity)
+    public void PlayConstellationGroundMarkVFX(Vector3 _position, int _sortingOrder, int _groupId)
     {
         if (treeStarMarkGroundPool == null) return;
 
@@ -225,7 +226,6 @@ public class InDungeonVFXManager : MonoBehaviour
         _instance.transform.position = _position;
         _instance.SetSortingOrder(_sortingOrder);
         _instance.SetGroupId(_groupId);
-        _instance.SetHDRIntensity(_hdrIntensity);
         _instance.Play();
 
         if (!activeGroundMarksByGroup.TryGetValue(_groupId, out List<TreeStarMarkGroundAnimator> _list))
@@ -237,7 +237,9 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 그룹의 별자리 발현이 트리거되면 호출되어, 그 그룹에서 아직 표시 중인 그라운드 마크를 전부 즉시 회수합니다.
+    /// 그룹의 별자리 발현이 트리거되면 호출되어, 그 그룹에서 아직 표시 중인 그라운드 마크에 소멸 연출을
+    /// 재생시킵니다. 실제 풀 반환은 각 인스턴스가 연출을 마치고 ManifestFinishedEvent를 발생시킬 때
+    /// OnGroundMarkManifestFinished에서 처리됩니다.
     /// </summary>
     public void ClearConstellationGroundMarks(int _groupId)
     {
@@ -247,7 +249,7 @@ public class InDungeonVFXManager : MonoBehaviour
 
         for (int i = 0; i < _list.Count; i++)
         {
-            _list[i].ForceReturnToPool();
+            _list[i].PlayManifestEffect();
         }
     }
 
@@ -274,7 +276,18 @@ public class InDungeonVFXManager : MonoBehaviour
     {
         TreeStarMarkGroundAnimator _instance = Instantiate(treeStarMarkGroundPrefab, transform);
         _instance.SetPool(treeStarMarkGroundPool);
+
+        // 이벤트 바인딩 (생성 시 한 번만) - LootManager.CreateLootItem과 동일한 패턴
+        _instance.ManifestFinishedEvent -= OnGroundMarkManifestFinished;
+        _instance.ManifestFinishedEvent += OnGroundMarkManifestFinished;
+
         return _instance;
+    }
+
+    // 그라운드 마크의 소멸 연출이 끝났을 때 호출되어 풀로 반환한다.
+    private void OnGroundMarkManifestFinished(TreeStarMarkGroundAnimator _instance)
+    {
+        _instance.ForceReturnToPool();
     }
 
     private void OnGetTreeStarMarkGround(TreeStarMarkGroundAnimator _instance)
@@ -289,7 +302,11 @@ public class InDungeonVFXManager : MonoBehaviour
 
     private void OnDestroyTreeStarMarkGround(TreeStarMarkGroundAnimator _instance)
     {
-        if (_instance != null) Destroy(_instance.gameObject);
+        if (_instance != null)
+        {
+            _instance.ManifestFinishedEvent -= OnGroundMarkManifestFinished;
+            Destroy(_instance.gameObject);
+        }
     }
 
     /// <summary>

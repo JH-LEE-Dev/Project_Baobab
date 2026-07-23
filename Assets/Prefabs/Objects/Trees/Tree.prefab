@@ -284,7 +284,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ea7ae8f8154537ba95ae4a0f5203903a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TreeStarMarkAnimator
   frames:
   - {fileID: 2881428413406656926, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
@@ -297,6 +297,7 @@ MonoBehaviour:
   - {fileID: -542496056008151206, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
   - {fileID: -763310956152536898, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
   - {fileID: -6396488623905115892, guid: 16c9b020c51c7f04596299882c4d6c22, type: 3}
+  frameRate: 7
 --- !u!1 &1680987914026985696
 GameObject:
   m_ObjectHideFlags: 0
