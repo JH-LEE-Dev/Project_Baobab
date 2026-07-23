@@ -120,3 +120,4 @@ MonoBehaviour:
   - {fileID: 6855157187590081287, guid: 9e0701a26b6b19b4bb4de9adb4f3f697, type: 3}
   - {fileID: 6776215208468425626, guid: 9e0701a26b6b19b4bb4de9adb4f3f697, type: 3}
   frameRate: 12
+  hdrIntensity: 1.75

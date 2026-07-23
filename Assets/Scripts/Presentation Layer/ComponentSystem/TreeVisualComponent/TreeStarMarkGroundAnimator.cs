@@ -1,16 +1,21 @@
+using System;
 using UnityEngine;
 using UnityEngine.Pool;
 
 /// <summary>
 /// StarrootForest에서 별 표식 나무가 죽은 자리에 스폰되어 TreeStarMark_Ground 스프라이트를
-/// Loop로 재생하는 마커 애니메이션. 소속 그룹의 별자리 발현이 트리거되어 InDungeonVFXManager가
-/// 강제로 회수하기 전까지는 자동으로 사라지지 않고 계속 재생된다. Destroy 없이 ObjectPool로 재사용된다.
+/// Loop로 재생하는 마커 애니메이션. 소속 그룹의 별자리 발현이 트리거되면 소멸 연출을 재생하고,
+/// 연출이 끝나면(NotifyManifestFinished) 풀로 반환된다. Destroy 없이 ObjectPool로 재사용된다.
 /// </summary>
 [RequireComponent(typeof(SpriteRenderer))]
 public class TreeStarMarkGroundAnimator : MonoBehaviour
 {
     [SerializeField] private Sprite[] frames; // 인스펙터에서 직접 할당 (Resources.LoadAll 사용 안 함)
     [SerializeField] private float frameRate = 12f;
+    [SerializeField] private float hdrIntensity = 1.05f;
+
+    // 소멸(별자리 발현) 연출이 끝났을 때 발생 - InDungeonVFXManager가 구독해 풀로 반환한다.
+    public event Action<TreeStarMarkGroundAnimator> ManifestFinishedEvent;
 
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private MaterialPropertyBlock _mpb;
@@ -44,26 +49,47 @@ public class TreeStarMarkGroundAnimator : MonoBehaviour
         if (spriteRenderer != null) spriteRenderer.sortingOrder = _order;
     }
 
-    // 죽은 나무의 constellationRenderer가 쓰던 HDR 강도를 그대로 물려받아 동일한 발광 세기를 유지한다.
-    public void SetHDRIntensity(float _intensity)
-    {
-        if (spriteRenderer == null) return;
-
-        Mpb.SetFloat(HDRIntensityID, _intensity);
-        spriteRenderer.SetPropertyBlock(Mpb);
-    }
-
+    /// <summary>
+    /// 생성 시점 - 그라운드 마크가 스폰될 때 InDungeonVFXManager가 호출한다.
+    /// 스폰 연출(파티클, 팝업 등)이 필요하면 이 함수 안에 추가한다.
+    /// </summary>
     public void Play()
     {
         isReturned = false;
         frameTimer = 0f;
         currentFrame = 0;
 
+        if (spriteRenderer != null)
+        {
+            Mpb.SetFloat(HDRIntensityID, hdrIntensity);
+            spriteRenderer.SetPropertyBlock(Mpb);
+        }
+
         if (frames != null && frames.Length > 0 && spriteRenderer != null)
             spriteRenderer.sprite = frames[0];
     }
 
-    // 소속 그룹의 별자리 발현이 트리거되면 InDungeonVFXManager가 호출해 즉시 회수한다.
+    /// <summary>
+    /// 별자리 발현 시점 - 소속 그룹의 발현이 확정되면 InDungeonVFXManager가 호출한다.
+    /// 즉시 풀로 반환되지 않으며, 소멸 연출(파티클, 페이드 등)을 여기에 추가한 뒤
+    /// 연출이 끝나는 시점에 반드시 NotifyManifestFinished()를 호출해야 풀로 반환된다.
+    /// </summary>
+    public void PlayManifestEffect()
+    {
+        // 이펙트 작업자 연출 지점. 연출이 끝나면 NotifyManifestFinished()를 호출할 것.
+    }
+
+    /// <summary>
+    /// 소멸 연출이 끝났을 때 이펙트 작업자가 호출한다(애니메이션 이벤트 등에서 연결).
+    /// InDungeonVFXManager가 이 신호를 구독해 풀로 반환한다.
+    /// </summary>
+    public void NotifyManifestFinished()
+    {
+        if (isReturned) return;
+        ManifestFinishedEvent?.Invoke(this);
+    }
+
+    // 던전 이탈 등 - 진행 중이던 연출과 무관하게 즉시 강제 회수한다.
     public void ForceReturnToPool()
     {
         if (isReturned) return;
