@@ -15,18 +15,35 @@ public enum EWindowMode { Windowed, Fullscreen }
 public enum EOnOff { Off, On }
 
 /// <summary>
-/// 주의: 반드시 "해상도 오름차순"으로 선언되어야 합니다.
-/// ClampResolution이 인덱스를 1씩 낮추며 강등하고, 첫 항목을 하한으로 취급합니다.
+/// 주의: 기존 항목(Res640x360~Res2560x1440)의 순서·인덱스는 절대 바꾸지 않습니다.
 /// 중간 삽입이나 순서 변경은 저장된 정수값의 의미를 바꾸므로,
 /// SettingsRepository의 버전을 올려 구버전 파일이 폐기되도록 해야 합니다.
+/// 새 해상도는 항상 맨 뒤에 추가해서 기존 저장 파일을 그대로 호환시킵니다.
 ///
-/// 항목은 640x360의 정수배만 둡니다.
+/// 앞 4개(16:9)는 640x360의 정수배, 뒤 4개(16:10)는 640x400의 정수배입니다.
 /// UI 캔버스가 640x360 기준이고(Assets/Prefabs/UI/Canvas/*.prefab) 게임 아트가
-/// Point 필터 픽셀아트라, 비정수 배율에서는 원본 1px이 화면에서 2px과 3px로
-/// 들쭉날쭉하게 찍혀 테두리·폰트 굵기가 불균일해집니다.
-/// (그래서 2.5배인 1600x900은 제외했습니다)
+/// Point 필터 픽셀아트라, 같은 그룹 안에서 비정수 배율을 쓰면 원본 1px이 화면에서
+/// 2px과 3px로 들쭉날쭉하게 찍혀 테두리·폰트 굵기가 불균일해집니다.
+/// (그래서 16:9의 2.5배인 1600x900, 16:10의 2.5배인 1600x1000 등은 제외했습니다)
+///
+/// 16:10 해상도는 세로 기준 해상도(400)가 16:9(360)보다 커서, 카메라가
+/// Crop Frame: None(확장)으로 동작하는 한 640x360 대비 위아래로 시야가 더 넓게
+/// 노출됩니다(왜곡은 아님 - 정수 배율 자체는 항상 유지됩니다). 화면비와 무관하게
+/// 동일한 시야를 보장해야 한다면 PixelPerfectCamera의 Crop Frame을 Letterbox 등으로
+/// 바꾸는 별도 작업이 필요합니다.
+///
+/// CycleResolution은 선언 순서가 아니라 각 후보가 현재 모니터에 들어맞는지만
+/// 개별 검사하므로, 16:9/16:10 두 그룹이 전역적으로 오름차순이 아니어도(예: 인덱스 3의
+/// 2560x1440보다 인덱스 4의 640x400이 더 작음) 정상 동작합니다. ClampResolution은
+/// 인덱스를 1씩 낮추며 강등하다 최종적으로 인덱스 0(640x360, 모든 모니터가 지원한다고
+/// 가정하는 절대 하한)에서 멈추므로, 두 그룹이 뒤섞여도 모니터 크기를 벗어나는 값을
+/// 반환하지는 않습니다.
 /// </summary>
-public enum EResolution { Res640x360, Res1280x720, Res1920x1080, Res2560x1440 }
+public enum EResolution
+{
+    Res640x360, Res1280x720, Res1920x1080, Res2560x1440,
+    Res640x400, Res1280x800, Res1920x1200, Res2560x1600
+}
 
 /// <summary>
 /// 주의: 숫자 FPS 항목이 앞쪽에 연속으로 오고, 그 뒤에 VSync/Unlimited가 와야 합니다.
@@ -114,14 +131,19 @@ public struct SettingsData
     /// 크기·표기 문자열·항목 수가 모두 여기서 파생되므로, 해상도를 추가할 때
     /// enum과 이 배열만 함께 늘리면 됩니다.
     ///
-    /// 640x360의 정수배만 추가하세요. (옆의 배율 주석 참고)
+    /// 새 항목은 반드시 맨 뒤에 추가하세요 (enum 주석 참고 - 기존 인덱스 불변).
+    /// 640x360의 정수배(16:9) 또는 640x400의 정수배(16:10)만 추가하세요.
     /// </summary>
     private static readonly ResolutionSize[] resolutionSizes =
     {
-        new ResolutionSize(640, 360),    // 1x
-        new ResolutionSize(1280, 720),   // 2x
-        new ResolutionSize(1920, 1080),  // 3x
-        new ResolutionSize(2560, 1440)   // 4x
+        new ResolutionSize(640, 360),    // 16:9 1x
+        new ResolutionSize(1280, 720),   // 16:9 2x
+        new ResolutionSize(1920, 1080),  // 16:9 3x
+        new ResolutionSize(2560, 1440),  // 16:9 4x
+        new ResolutionSize(640, 400),    // 16:10 1x
+        new ResolutionSize(1280, 800),   // 16:10 2x
+        new ResolutionSize(1920, 1200),  // 16:10 3x
+        new ResolutionSize(2560, 1600)   // 16:10 4x
     };
 
     public static int ResolutionCount => resolutionSizes.Length;
@@ -139,6 +161,40 @@ public struct SettingsData
 
         _width = resolutionSizes[_idx].width;
         _height = resolutionSizes[_idx].height;
+    }
+
+    /// <summary>PixelPerfectCamera 기준 해상도의 가로폭입니다. 모든 프로필이 이 값을 공유합니다.</summary>
+    public const int PIXEL_PERFECT_REF_WIDTH = 640;
+
+    private const int PIXEL_PERFECT_REF_HEIGHT_16_9 = 360;
+    private const int PIXEL_PERFECT_REF_HEIGHT_16_10 = 400;
+
+    /// <summary>
+    /// 실제로 적용될(또는 적용된) 화면 크기(_width, _height)를 보고 PixelPerfectCamera에
+    /// 넣을 기준 해상도를 고릅니다. 16:9(360)와 16:10(400) 중 실제 화면비에 더 가까운
+    /// 쪽을 선택하므로, 창모드 프리셋뿐 아니라 임의의 풀스크린 모니터 해상도에도 씁니다.
+    ///
+    /// 정확히 16:9나 16:10인 화면은 항상 해당 프로필이 선택되고(둘 사이 중간값에서만
+    /// 애매하게 갈림), 그 결과 화면이 그 배율의 정수배라면 Crop Frame: None에서도
+    /// 640x360(또는 640x400) 프레임 밖으로 노출되는 여분의 시야가 사라집니다.
+    /// </summary>
+    public static void GetReferenceResolution(int _width, int _height, out int _refWidth, out int _refHeight)
+    {
+        _refWidth = PIXEL_PERFECT_REF_WIDTH;
+
+        if (_width <= 0 || _height <= 0)
+        {
+            _refHeight = PIXEL_PERFECT_REF_HEIGHT_16_9;
+            return;
+        }
+
+        float _aspect = (float)_width / _height;
+        float _aspect169 = 16f / 9f;
+        float _aspect1610 = 16f / 10f;
+
+        _refHeight = Mathf.Abs(_aspect - _aspect169) <= Mathf.Abs(_aspect - _aspect1610)
+            ? PIXEL_PERFECT_REF_HEIGHT_16_9
+            : PIXEL_PERFECT_REF_HEIGHT_16_10;
     }
 
     /// <summary>

@@ -111,10 +111,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.06458334
+    x: -0.077083334
     y: 0
     width: 0.33333334
-    height: 0.53055555
+    height: 0.5277778
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
@@ -225,6 +225,7 @@ GameObject:
   - component: {fileID: 3548909971190760172}
   - component: {fileID: 2684437305768858760}
   - component: {fileID: 3470264435266028823}
+  - component: {fileID: 1810844117801629154}
   m_Layer: 0
   m_Name: PP Main Camera
   m_TagString: MainCamera
@@ -274,15 +275,15 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.06458334
+    x: -0.077083334
     y: 0
     width: 0.33333334
-    height: 0.53055555
+    height: 0.5277778
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.4765625
+  orthographic size: 5.625
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2
@@ -399,7 +400,7 @@ MonoBehaviour:
   m_AssetsPPU: 32
   m_RefResolutionX: 640
   m_RefResolutionY: 360
-  m_CropFrame: 1
+  m_CropFrame: 0
   m_GridSnapping: 0
   m_FilterMode: 1
   m_UpscaleRT: 0
@@ -407,6 +408,18 @@ MonoBehaviour:
   m_CropFrameX: 0
   m_CropFrameY: 0
   m_StretchFill: 0
+--- !u!114 &1810844117801629154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7548777740101753980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1d46436d26f43e5ae4d31a1b20fd949, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!1 &8144299782213539077
 GameObject:
   m_ObjectHideFlags: 0
