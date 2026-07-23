@@ -13,6 +13,9 @@ public class LightningZapCreator : MonoBehaviour
     [SerializeField] private int defaultCapacity = 2;
     [SerializeField] private int maxSize = 8;
 
+    [SerializeField] private Color zapColor = Color.blue; // 별자리 발현 광선 색상
+    [SerializeField] private float zapIntensity = 1f; // HDR Intensity (Inspector HDR 컬러 피커의 Intensity 슬라이더와 동일)
+
     private IObjectPool<PresentationLayer.VFX.VFX_LightningZap> zapPool;
 
     public void Initialize()
@@ -57,7 +60,7 @@ public class LightningZapCreator : MonoBehaviour
     private void OnGetZap(PresentationLayer.VFX.VFX_LightningZap _zap)
     {
         _zap.gameObject.SetActive(true);
-        _zap.SetColor(Color.blue); // 별자리 발현 광선은 푸른색으로 고정
+        _zap.SetColor(zapColor, zapIntensity);
     }
 
     private void OnReleaseZap(PresentationLayer.VFX.VFX_LightningZap _zap) => _zap.gameObject.SetActive(false);

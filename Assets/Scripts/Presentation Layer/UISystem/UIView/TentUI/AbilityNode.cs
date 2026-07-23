@@ -50,6 +50,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool visualHidden;
     private bool isPointerHovering;
     private bool consumedRapidClick;
+    private Vector2 interactionShakeCompensation;
     private Color currentNodeFrameColor = Color.white;
     private MotionEntry hoverMotionEntry;
     private MotionEntry unHoverMotionEntry;
@@ -114,6 +115,16 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void BindOwner(UI_TentAbilityComponent _owner)
     {
         owner = _owner;
+    }
+
+    public void SetInteractionShakeCompensation(Vector2 _compensation)
+    {
+        CacheInteractionReferences();
+        if (abilityNodeTouchArea == null)
+            return;
+
+        abilityNodeTouchArea.anchoredPosition += _compensation - interactionShakeCompensation;
+        interactionShakeCompensation = _compensation;
     }
 
     // JSON에서 읽은 노드 정의를 현재 프리팹 인스턴스에 반영한다.
@@ -286,7 +297,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (IsShiftPressed())
         {
             consumedRapidClick = true;
-            owner?.StartAutoNodeLevelUp(this);
+            owner?.StartAutoNodeLevelUp(this, IsControlPressed());
             return;
         }
     }
@@ -345,6 +356,12 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         PlayClickMotion();
         PlayApprovedNodeEffect(currentNodeFrameColor);
+    }
+
+    // 특성창이 닫힐 때 재생 중인 노드 이펙트를 즉시 정리한다.
+    public void StopAllEffectsImmediately()
+    {
+        vfxComponent?.StopAll();
     }
 
     // 특성 찍기에 성공했을 때 노드 이펙트를 재생하는 자리.

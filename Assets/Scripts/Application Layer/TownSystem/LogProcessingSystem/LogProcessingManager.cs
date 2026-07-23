@@ -30,7 +30,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     // 라인별 독립 출고 타이머. 각 라인은 다른 라인의 상태와 무관하게 자기 타이머로만
     // 컨테이너에서 원목을 꺼내온다(라인이 하나뿐일 때와 동일한 진입 간격을 보장하기 위함).
-    private float[] lineLastOutputTime;
+    // Time.time 절대값 대신 "커터가 바쁘지 않은 시간"만 누적하는 방식이라, 가공 중에는
+    // 진행이 멈춘다(가공이 오래 걸릴수록 다음 출고가 즉시 튀어나오는 것을 방지).
+    private float[] lineElapsedTime;
     private LogProcessLine pendingRequestLine;
 
     // "대표 라인"의 커터 - UI(가공 진행률 표시 등)가 단일 대상을 필요로 하는 곳에서만 사용
@@ -78,8 +80,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         if (activeLineCount <= 0) activeLineCount = 1; // 세이브 로드 전 기본값 (LoadSaveData에서 덮어씀)
         activeLineCount = Mathf.Clamp(activeLineCount, 1, allLines.Count);
 
-        lineLastOutputTime = new float[allLines.Count];
-        ResetLineTimers(0, lineLastOutputTime.Length);
+        lineElapsedTime = new float[allLines.Count];
+        ResetLineTimers(0, lineElapsedTime.Length);
 
         for (int i = 0; i < allLines.Count; i++)
         {
@@ -207,8 +209,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
             // 라인별 독립 출고 타이머도 그대로 저장해서, 로드 시 "이 라인이 다음 원목을 받기까지
             // 얼마나 남았는지"를 저장 시점과 동일하게 복원한다.
-            lineData.lastOutputTimeElapsed = (lineLastOutputTime != null && i < lineLastOutputTime.Length)
-                ? Time.time - lineLastOutputTime[i]
+            lineData.lastOutputTimeElapsed = (lineElapsedTime != null && i < lineElapsedTime.Length)
+                ? lineElapsedTime[i]
                 : 0f;
 
             _saveData.lineDatas.Add(lineData);
@@ -285,13 +287,13 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
         // 라인별 독립 출고 타이머를 저장된 값 그대로 복원한다. 세이브 시점에 "다음 원목까지
         // 남은 시간"이 얼마였는지를 정확히 재현해서, 저장/로드가 제재소 상태를 바꿔놓지 않게 한다.
-        if (lineLastOutputTime == null || lineLastOutputTime.Length != allLines.Count)
-            lineLastOutputTime = new float[allLines.Count];
+        if (lineElapsedTime == null || lineElapsedTime.Length != allLines.Count)
+            lineElapsedTime = new float[allLines.Count];
 
         for (int i = 0; i < activeLineCount; i++)
         {
             if (i < _data.lineDatas.Count)
-                lineLastOutputTime[i] = Time.time - _data.lineDatas[i].lastOutputTimeElapsed;
+                lineElapsedTime[i] = _data.lineDatas[i].lastOutputTimeElapsed;
             else
                 ResetLineTimers(i, i + 1); // 저장된 라인 데이터가 없으면(비정상 케이스) 즉시 출고 가능하게 대체
         }
@@ -462,33 +464,39 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     // 간격을 유지한다(라운드로빈으로 인해 진입 타이밍이 뒤섞여 벨트 간격이 불규칙해지던 문제 해결).
     private void PollLineSupply()
     {
-        if (logContainer == null || lineLastOutputTime == null) return;
+        if (logContainer == null || lineElapsedTime == null) return;
 
         float interval = logContainer.GetEffectiveTransferInterval();
 
         for (int i = 0; i < activeLineCount; i++)
         {
+            // 커터가 가공 중(라인이 바쁨)인 동안은 타이머 진행 자체를 멈춘다. 가공이 오래
+            // 걸려도 그동안 쌓인 경과시간이 인터벌을 이미 채워버려 가공 완료 즉시 다음 원목이
+            // 튀어나오는 것을 막기 위함.
             if (allLines[i].IsBusy) continue;
-            if (Time.time - lineLastOutputTime[i] < interval) continue;
+
+            lineElapsedTime[i] += Time.deltaTime;
+
+            if (lineElapsedTime[i] < interval) continue;
             if (!logContainer.HasAvailableItem()) continue;
 
             pendingRequestLine = allLines[i];
             logContainer.TakeFirstItem();
             pendingRequestLine = null;
 
-            lineLastOutputTime[i] = Time.time;
+            lineElapsedTime[i] = 0f;
         }
     }
 
     private void ResetLineTimers(int _fromIdx, int _toIdxExclusive)
     {
-        if (lineLastOutputTime == null) return;
+        if (lineElapsedTime == null) return;
 
         float interval = logContainer != null ? logContainer.GetEffectiveTransferInterval() : 0f;
-        for (int i = _fromIdx; i < _toIdxExclusive && i < lineLastOutputTime.Length; i++)
+        for (int i = _fromIdx; i < _toIdxExclusive && i < lineElapsedTime.Length; i++)
         {
-            // 즉시 출고 가능하도록 타이머를 한 간격만큼 과거로 세팅
-            lineLastOutputTime[i] = Time.time - interval;
+            // 즉시 출고 가능하도록 경과시간을 인터벌만큼 채워둔다.
+            lineElapsedTime[i] = interval;
         }
     }
 

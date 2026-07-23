@@ -202,6 +202,7 @@ GameObject:
   - component: {fileID: 9034721650183742002}
   - component: {fileID: 9034721650183742004}
   - component: {fileID: 9034721650183742005}
+  - component: {fileID: 9034721650183742012}
   m_Layer: 0
   m_Name: Drone
   m_TagString: Untagged
@@ -285,6 +286,46 @@ MonoBehaviour:
   idleU: {fileID: -8936346841901684153, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
   idleRD: {fileID: 4209614882834400338, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
   idleD: {fileID: -3675159549374260432, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  attackR_Overheat:
+  - {fileID: 4592240411062090904, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 2067571345294476419, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -6284673525162063736, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 1203818792443097482, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -892553541496876646, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -2759725357924433987, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  attackRU_Overheat:
+  - {fileID: 3286132138492026456, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -2954335207920715084, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -2552051463148942623, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 7743379336334260952, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 1697561612483519111, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 7538084347648468024, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  attackU_Overheat:
+  - {fileID: 2490493413958876353, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -8589647049333862887, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -1884158717524878179, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 2890951076529711664, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -8060442752711454409, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -2981892930015368877, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  attackRD_Overheat:
+  - {fileID: 1070161113442637539, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 1068856987965568386, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 5367060505048210804, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -8762967878609115334, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 264341149782960062, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 6764284582459210334, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  attackD_Overheat:
+  - {fileID: -2947907865861085295, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 7577310669316788251, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -5083245949434617518, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 5804063706651877908, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: -2444785280844718216, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  - {fileID: 4816098931086222905, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  idleR_Overheat: {fileID: -7240994763077750993, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  idleRU_Overheat: {fileID: 6363908890915979519, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  idleU_Overheat: {fileID: -3384699373965070591, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  idleRD_Overheat: {fileID: 1247479220780097930, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  idleD_Overheat: {fileID: 1016300909513317186, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
   attackSampleRate: 12
   shadowSpriteRenderer: {fileID: 9034721650183742008}
   muzzleRight: {fileID: 7024289870730460667}
@@ -293,6 +334,9 @@ MonoBehaviour:
   muzzleRightDown: {fileID: 6395071232482829789}
   muzzleDown: {fileID: 8354047403373967797}
   chainZap: {fileID: 8205622560500571532}
+  vfxComponent: {fileID: 9034721650183742012}
+  chargingVfxTag: DroneCharging
+  atkHitVfxTag: DroneAtkHit
 --- !u!114 &9034721650183742005
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -309,6 +353,32 @@ MonoBehaviour:
   spriteRenderers: []
   offset: 0
   precision: 100
+--- !u!114 &9034721650183742012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9034721650183742001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 74394fea1aaa87d45a2ec52cec26176c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
+  isUIComponent: 0
+  vfxPoolDataList:
+  - vfxTag: DroneCharging
+    effectPrefab: {fileID: 3687614857192216124, guid: 5a7db7e738c592d44a3ec5eb91ec9777, type: 3}
+    initialPoolSize: 1
+    allowDynamicExpansion: 0
+    maxPoolSize: 1
+    uiParticleScale: 0
+  - vfxTag: DroneAtkHit
+    effectPrefab: {fileID: 4414206344302795060, guid: 9a9fb228c74b39f4f872c5d7d6ba19e9, type: 3}
+    initialPoolSize: 10
+    allowDynamicExpansion: 1
+    maxPoolSize: 20
+    uiParticleScale: 0
 --- !u!1 &9034721650183742006
 GameObject:
   m_ObjectHideFlags: 0
@@ -482,7 +552,7 @@ SpriteRenderer:
   m_SortingLayer: 12
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -6944644974107990808, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
+  m_Sprite: {fileID: 2056274229838913570, guid: 769507e533c550143ad0cc506a41aa33, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

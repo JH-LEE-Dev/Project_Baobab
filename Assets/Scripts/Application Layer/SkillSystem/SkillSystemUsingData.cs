@@ -117,7 +117,7 @@ public enum SkillType
 
     AxeDamage1,//도끼데미지I
     AxeDamage2,//도끼데미지II
-    AxeDamage3,//도끼데미지II
+    AxeDamage3,//도끼데미지3
 
 
     AxeDurability1, //도끼 내구도I
@@ -205,6 +205,51 @@ public enum SkillType
 
     ShieldExplosionDamage1, // 포자막 폭발 데미지1
     ShieldExplosionRange1, // 포자막 폭발 범위1
+
+    LogProcessingSpeed4, // 원목 가공속도 4
+    SporeShieldCut3, // 포자절단 M
+    SporeShieldPenetration3, // 포자 관통력 M
+    SporeShieldRegenBlock3, //포자막 회복 억제 M
+
+    Boomerang2, //부메랑2
+    Boomerang3, // 부메랑3
+    BoomerangDamage2, //부메랑데미지2
+    BoomerangDamage3, //부메랑데미지3
+    BoomerangRange2, //부메랑 범위2
+    BoomerangRange3, //부메랑 범위3
+    BoomerangDistance, // 부메랑 사정거리 M
+    BoomerangCooldownReduction, // 부메랑 쿨타임 감소 M
+    BoomerangAttackSpeed1,
+    BoomerangAttackSpeed2, // 부메랑 공속 M
+    BoomerangCritical, // 부메랑 지명타 적용
+
+
+    FatigueMaxIncrease5, // 피로도 최대치 증가 5
+    Stamina3, // 지구력 M
+    StaminaRecover, // 휴식
+    WeakPointHit1, // 약점타격1
+    ShieldExplosionResearch, // 폭발 연구
+
+    LogValue4, // 원목 가치4
+    BountifulTree4, // 아낌없이 주는 나무4
+    StarrootForestOverGrowth, // 별뿌리숲 과성장
+
+    AxeDamage5, // 도끼뎀5
+    AxeAttackSpeed2, // 도끼 공격속도2
+    AttackRythm1, // 벌목 리듬
+    AxeDurability3, // 도끼내구도3
+    SteelAxe3, // 강철도끼3
+    MovementSpeed2, // 이동속도2
+    EfficientMovement2, // 효율적인 이동2
+    PickupRange2, // 획득 범위 2
+
+    ConstellationManifestUnlock, // 별자리 발현
+    StarPathSpeedBoost1, // 별길 걸음
+    StarMarkDamage1, // 별표식 베기
+    ConstellationDamage1, // 별자리 데미지
+    ConstellationAfterimage1, // 별자리 잔상
+    ManifestationBrand1, // 발현 낙인
+    
 
     TestNode,  // TestNode
     MAX

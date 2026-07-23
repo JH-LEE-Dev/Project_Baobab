@@ -106,6 +106,17 @@ namespace PresentationLayer.VFX
         }
 
         /// <summary>
+        /// 색상과 HDR Intensity(노출값)를 함께 지정합니다. Unity HDR 컬러 피커의 Intensity 슬라이더와
+        /// 동일하게 RGB를 2^_intensity 배로 스케일합니다(알파는 그대로 유지). _intensity가 0이면
+        /// _baseColor 그대로 적용됩니다.
+        /// </summary>
+        public void SetColor(Color _baseColor, float _intensity)
+        {
+            float scale = Mathf.Pow(2f, _intensity);
+            lightningColor = new Color(_baseColor.r * scale, _baseColor.g * scale, _baseColor.b * scale, _baseColor.a);
+        }
+
+        /// <summary>
         /// 지정된 시작점(A)과 끝점(B)에 맞춰 번개를 쏘고 파사삭 사라지는 연출 재생 (가비지 프리)
         /// </summary>
         public void PlayZap(Vector3 _startPos, Vector3 _endPos)

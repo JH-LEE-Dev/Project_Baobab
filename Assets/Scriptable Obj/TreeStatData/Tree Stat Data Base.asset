@@ -19,12 +19,12 @@ MonoBehaviour:
     spRegen: 0
     regenStrategy: {fileID: 0}
   - treeType: 2
-    hp: 16
+    hp: 20
     sp: 0
     spRegen: 0
     regenStrategy: {fileID: 0}
   - treeType: 3
-    hp: 50
+    hp: 60
     sp: 0
     spRegen: 0
     regenStrategy: {fileID: 0}
@@ -39,22 +39,22 @@ MonoBehaviour:
     spRegen: 30
     regenStrategy: {fileID: 11400000, guid: 9e46b28f810a621459f0a36efd75105e, type: 2}
   - treeType: 6
-    hp: 2000
-    sp: 2000
-    spRegen: 100
+    hp: 2200
+    sp: 2200
+    spRegen: 200
     regenStrategy: {fileID: 11400000, guid: 9e46b28f810a621459f0a36efd75105e, type: 2}
   - treeType: 7
-    hp: 20000
+    hp: 5000
     sp: 0
     spRegen: 0
     regenStrategy: {fileID: 0}
   - treeType: 8
-    hp: 8000
+    hp: 20000
     sp: 0
     spRegen: 0
     regenStrategy: {fileID: 0}
   - treeType: 9
-    hp: 300000
+    hp: 50000
     sp: 0
     spRegen: 0
     regenStrategy: {fileID: 0}

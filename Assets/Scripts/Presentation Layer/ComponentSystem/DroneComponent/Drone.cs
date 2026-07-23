@@ -44,6 +44,19 @@ public class Drone : MonoBehaviour
     [SerializeField] private Sprite idleU;
     [SerializeField] private Sprite idleRD;
     [SerializeField] private Sprite idleD;
+
+    [Header("Sprite Animation - Overheat (6~10행, 과열 상태일 때 위 5개 대신 사용)")]
+    [SerializeField] private List<Sprite> attackR_Overheat;
+    [SerializeField] private List<Sprite> attackRU_Overheat;
+    [SerializeField] private List<Sprite> attackU_Overheat;
+    [SerializeField] private List<Sprite> attackRD_Overheat;
+    [SerializeField] private List<Sprite> attackD_Overheat;
+    [SerializeField] private Sprite idleR_Overheat;
+    [SerializeField] private Sprite idleRU_Overheat;
+    [SerializeField] private Sprite idleU_Overheat;
+    [SerializeField] private Sprite idleRD_Overheat;
+    [SerializeField] private Sprite idleD_Overheat;
+
     [SerializeField] private float attackSampleRate = 12f;
     private const int ImpactFrameIndex = 5; // 공격 모션 0~5번 중 5번(마지막) 프레임에서 실제 데미지 판정
 
@@ -59,6 +72,18 @@ public class Drone : MonoBehaviour
 
     [Header("Chain Attack VFX")]
     [SerializeField] private PresentationLayer.VFX.VFX_LightningZap chainZap; // 드론 전용 인스턴스(풀링 없이 상시 보유) - 연쇄 타격 시 muzzle에서 각 나무 top으로 이어지는 번개 연출
+    [SerializeField] private Color chainZapNormalColor = Color.yellow;
+    [SerializeField] private Color chainZapOverheatColor = Color.red; // 과열 상태(isOverheat)일 때 레이저 색상
+    [SerializeField] private float chainZapIntensity = 1f; // HDR Intensity (Inspector HDR 컬러 피커의 Intensity 슬라이더와 동일)
+
+    [Header("Charging VFX (공격 모션 시작 ~ 임팩트 프레임 직전까지 Muzzle에서 Loop 재생)")]
+    [SerializeField] private VFXComponent vfxComponent;
+    [SerializeField] private string chargingVfxTag = "DroneCharging";
+    private ParticleSystem chargingVfx;
+    private ParticleSystemRenderer[] chargingVfxRenderers; // chargingVfx 본체 + 자식(VFX_OverHeating 등) 렌더러 전부 - Muzzle Y좌표 기준으로 매 프레임 정렬 순서를 맞춘다
+
+    [Header("Attack Hit VFX (주 타겟/연쇄 타겟 각각 맞은 자리에 1회성 재생)")]
+    [SerializeField] private string atkHitVfxTag = "DroneAtkHit";
 
     private Transform followTarget;
     private Vector3 followOffset; // 캐릭터 기준 목표 슬롯(타원 대형 위치). Character가 매 프레임 갱신해준다.
@@ -80,6 +105,7 @@ public class Drone : MonoBehaviour
     private Vector2 lastFacingDir = Vector2.down;
     private Vector2 characterAimDir = Vector2.down; // 캐릭터의 조준 방향. Character가 매 프레임 갱신해준다.
     private int dirIndex = 6; // CharacterAnimator 규칙상 6 = Down
+    private bool isOverheat; // 과열 버프(+"드론 과부하" 특성) 상태. Character가 매 프레임 갱신해준다 - true면 6~10행(Overheat 세트)을 사용한다.
 
     private bool isActive; // 공격 키로 활성화되어 지속시간 동안 대상을 계속 노리는 상태
     private bool isSwinging; // damageInterval마다 한 번씩, 공격 모션이 재생되는 짧은 구간
@@ -144,6 +170,7 @@ public class Drone : MonoBehaviour
         lastFacingDir = Vector2.down;
         characterAimDir = Vector2.down;
         dirIndex = 6;
+        isOverheat = false;
 
         isActive = false;
         isSwinging = false;
@@ -153,6 +180,7 @@ public class Drone : MonoBehaviour
         swingTimer = 0f;
         damageTickTimer = 0f;
         currentTarget = null;
+        StopChargingVfx();
 
         frameTimer = 0f;
         currentFrameIndex = 0;
@@ -199,7 +227,20 @@ public class Drone : MonoBehaviour
     public void PlayChainZap(IReadOnlyList<Vector3> _points, int _count)
     {
         if (chainZap == null || _count < 2) return;
+        chainZap.SetColor(isOverheat ? chainZapOverheatColor : chainZapNormalColor, chainZapIntensity);
         chainZap.PlayZap(_points, _count);
+    }
+
+    /// <summary>
+    /// 이 드론에게 맞은 나무 위치(top)마다 1회성 피격 이펙트를 재생한다. Character.OnDroneChainAttack이
+    /// 주 타겟과 연쇄로 전이된 타겟 각각에 데미지를 적용할 때마다 호출한다 - 한 번의 연쇄공격 안에서
+    /// 여러 나무가 동시에 맞을 수 있으므로 chargingVfx와 달리 재생 중인 인스턴스를 따로 추적하지 않고
+    /// VFXComponent 풀에서 매번 새로 꺼내 쓴다.
+    /// </summary>
+    public void PlayAtkHitVfx(Vector3 _position)
+    {
+        if (vfxComponent == null) return;
+        vfxComponent.Play(new VFXPlaySettings(atkHitVfxTag, _position, Quaternion.identity));
     }
 
     /// <summary>
@@ -229,6 +270,15 @@ public class Drone : MonoBehaviour
         {
             characterAimDir = _aimDir.normalized;
         }
+    }
+
+    /// <summary>
+    /// 과열 버프 상태(OverheatComponent.IsActive && "드론 과부하" 특성). Character가 매 프레임
+    /// 갱신해준다 - true인 동안은 Attack/Idle 스프라이트를 6~10행(Overheat 세트)에서 골라 쓴다.
+    /// </summary>
+    public void SetOverheatState(bool _isOverheat)
+    {
+        isOverheat = _isOverheat;
     }
 
     /// <summary>
@@ -299,6 +349,7 @@ public class Drone : MonoBehaviour
         isSwinging = false;
         currentTarget = null;
         followTarget = null;
+        StopChargingVfx();
     }
 
     private void Awake()
@@ -309,7 +360,7 @@ public class Drone : MonoBehaviour
             customSortable.Initialize(transform);
         }
 
-        chainZap?.SetColor(Color.yellow);
+        chainZap?.SetColor(chainZapNormalColor, chainZapIntensity);
     }
 
     private void Update()
@@ -322,6 +373,7 @@ public class Drone : MonoBehaviour
         UpdateSwingTimer(Time.deltaTime); // isSwinging이 이번 프레임에 자연 종료될 수 있으므로 UpdateFacingDirection보다 먼저 실행한다
         UpdateFacingDirection();
         UpdateAnimationFrame(Time.deltaTime);
+        UpdateChargingVfxPosition(); // dirIndex가 이번 프레임에 바뀌었을 수 있으므로 UpdateFacingDirection 이후에 위치를 갱신한다
 
         if (isActive)
         {
@@ -429,6 +481,7 @@ public class Drone : MonoBehaviour
         if (swingTimer >= swingDuration)
         {
             isSwinging = false;
+            StopChargingVfx(); // 정상적으로는 임팩트 프레임에서 이미 꺼졌겠지만, 만약을 대비한 안전망
         }
     }
 
@@ -440,6 +493,7 @@ public class Drone : MonoBehaviour
             isActive = false;
             isSwinging = false;
             currentTarget = null;
+            StopChargingVfx();
             return;
         }
 
@@ -473,6 +527,7 @@ public class Drone : MonoBehaviour
         if (currentTarget == null)
         {
             isSwinging = false;
+            StopChargingVfx();
         }
         // 대체 타겟을 찾았다면 isSwinging/swingTimer/currentFrameIndex는 전혀 건드리지 않는다.
         // UpdateAnimationFrame이 방향 전환 자체로는 프레임을 리셋하지 않으므로(스윙 중일 때는
@@ -487,6 +542,7 @@ public class Drone : MonoBehaviour
         isSwinging = true;
         swingTimer = 0f;
         damageAppliedThisSwing = false;
+        PlayChargingVfx(); // 공격 모션이 시작되는 이 시점부터 임팩트 프레임 직전까지 Muzzle에서 루프 재생
     }
 
     private void ApplyDamageToCurrentTarget()
@@ -495,6 +551,61 @@ public class Drone : MonoBehaviour
 
         (currentTarget as IDamageable)?.TakeDamage(damage);
         requestChainAttack?.Invoke(this, currentTarget);
+    }
+
+    // Character.SetChainAttackCallback으로 등록된 requestChainAttack과 별개로, 드론 자신이 실제로
+    // "공격하는" 순간(임팩트 프레임)에 맞춰 충전 이펙트를 끈다. ApplyDamageToCurrentTarget은 타겟이
+    // 이미 무효해진 경우 아무 일도 하지 않고 조용히 반환하므로, 충전 이펙트 정지는 타겟 유효성과
+    // 무관하게 임팩트 프레임 도달 자체에 걸어야 확실히 꺼진다(UpdateAnimationFrame 참고).
+    private void PlayChargingVfx()
+    {
+        if (vfxComponent == null || chargingVfx != null) return;
+
+        // spriteRenderer.transform(Visual)의 자식으로 붙여 Hierarchy상 드론 소속으로 정리해둔다.
+        // 다만 위치 추적 자체는 부모-자식 상속에 기대지 않고 UpdateChargingVfxPosition이 매 프레임
+        // 직접 재계산해서 강제로 맞춘다 - 상속에만 맡겼더니 드론이 이동 중일 때 이펙트가 따라오지
+        // 못하고 뒤에 남는 현상이 있었다.
+        Transform parent = spriteRenderer != null ? spriteRenderer.transform : transform;
+        chargingVfx = vfxComponent.Play(new VFXPlaySettings(chargingVfxTag, GetMuzzlePosition(), Quaternion.identity, parent));
+
+        // 본체 + 자식(VFX_OverHeating 등)의 ParticleSystemRenderer를 전부 캐싱해둔다 - CustomSortable이
+        // SpriteRenderer만 자동 수집하므로(Drone.Awake), 파티클 렌더러는 정렬 순서를 직접 챙겨줘야 한다.
+        if (chargingVfx != null)
+        {
+            chargingVfxRenderers = chargingVfx.GetComponentsInChildren<ParticleSystemRenderer>(true);
+        }
+    }
+
+    private void StopChargingVfx()
+    {
+        if (vfxComponent == null || chargingVfx == null) return;
+        vfxComponent.Stop(chargingVfx, true);
+        chargingVfx = null;
+        chargingVfxRenderers = null;
+    }
+
+    // dirIndex(공격 대상을 바라보는 방향)가 스윙 도중 바뀔 수 있으므로(재타겟팅), 재생 중인 동안
+    // 매 프레임 Muzzle 위치로 다시 옮겨 따라가게 한다. 같은 김에 정렬 순서도 그 Muzzle의 Y좌표 기준으로
+    // 맞춘다 - CustomSortable.ComputeSortingOrder에 드론 본체와 동일한 precision/offset 규칙을 그대로
+    // 위임하므로, 드론 스프라이트와 항상 같은 기준으로 앞뒤가 맞는다.
+    private void UpdateChargingVfxPosition()
+    {
+        if (chargingVfx == null) return;
+
+        Vector3 muzzlePos = GetMuzzlePosition();
+        chargingVfx.transform.position = muzzlePos;
+
+        if (chargingVfxRenderers != null && customSortable != null)
+        {
+            int order = customSortable.ComputeSortingOrder(muzzlePos.y);
+            for (int i = 0; i < chargingVfxRenderers.Length; i++)
+            {
+                if (chargingVfxRenderers[i] != null)
+                {
+                    chargingVfxRenderers[i].sortingOrder = order;
+                }
+            }
+        }
     }
 
     private void UpdateAnimationFrame(float _deltaTime)
@@ -527,6 +638,7 @@ public class Drone : MonoBehaviour
             int impactFrame = Mathf.Min(ImpactFrameIndex, attackSprites.Count - 1);
             if (!damageAppliedThisSwing && currentFrameIndex >= impactFrame)
             {
+                StopChargingVfx(); // 실제로 "공격하는" 순간 - 타겟 유효성과 무관하게 항상 여기서 끈다
                 ApplyDamageToCurrentTarget();
                 damageAppliedThisSwing = true;
             }
@@ -565,9 +677,26 @@ public class Drone : MonoBehaviour
 
     // CharacterAnimator.GetBaseSprites와 동일한 규칙: R/RU/U/RD/D 5방향만 원본으로 갖고 있고,
     // 나머지(RU 반전=좌상단, R 반전=좌측, RD 반전=좌하단) 3방향은 FlipX로 만든다.
+    // isOverheat이 true면(과열 버프 + "드론 과부하" 특성) 같은 5방향의 Overheat 세트(6~10행)를 대신 쓴다.
     private List<Sprite> GetAttackSprites(int _dirIndex, out bool _flipX)
     {
         _flipX = false;
+        if (isOverheat)
+        {
+            switch (_dirIndex)
+            {
+                case 0: return attackR_Overheat;
+                case 1: return attackRU_Overheat;
+                case 2: return attackU_Overheat;
+                case 3: _flipX = true; return attackRU_Overheat;
+                case 4: _flipX = true; return attackR_Overheat;
+                case 5: _flipX = true; return attackRD_Overheat;
+                case 6: return attackD_Overheat;
+                case 7: return attackRD_Overheat;
+            }
+            return null;
+        }
+
         switch (_dirIndex)
         {
             case 0: return attackR;
@@ -585,6 +714,22 @@ public class Drone : MonoBehaviour
     private Sprite GetIdleSprite(int _dirIndex, out bool _flipX)
     {
         _flipX = false;
+        if (isOverheat)
+        {
+            switch (_dirIndex)
+            {
+                case 0: return idleR_Overheat;
+                case 1: return idleRU_Overheat;
+                case 2: return idleU_Overheat;
+                case 3: _flipX = true; return idleRU_Overheat;
+                case 4: _flipX = true; return idleR_Overheat;
+                case 5: _flipX = true; return idleRD_Overheat;
+                case 6: return idleD_Overheat;
+                case 7: return idleRD_Overheat;
+            }
+            return null;
+        }
+
         switch (_dirIndex)
         {
             case 0: return idleR;
