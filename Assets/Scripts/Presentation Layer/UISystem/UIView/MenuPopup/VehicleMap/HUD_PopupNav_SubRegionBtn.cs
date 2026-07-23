@@ -11,21 +11,10 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [Header("UI References")]
     [Tooltip("버튼 클릭 영역 (레이캐스트용 이미지)")]
     [SerializeField] private Image clickImage;
-    [Tooltip("잠금/해제 상태에 따라 색상을 바꿀 대상 이미지")]
-    [SerializeField] private Image lockColorTargetImage;
     [Tooltip("NEW 뱃지 오브젝트")]
     [SerializeField] private GameObject newIndicatorObj;
-
-    [Header("Visual Settings")]
-    [Tooltip("해금된 상태일 때의 버튼(Image) 색상 (기본)")]
-    [SerializeField] private Color unlockedColor = Color.white;
-    [Tooltip("잠긴 상태일 때의 버튼(Image) 색상")]
-    [SerializeField] private Color lockedColor = Color.gray;
-
-    [Header("Hover & Click Colors")]
-    [SerializeField] private Color hoverColor = Color.white;
-    [SerializeField] private Color clickColor = Color.white;
-    [SerializeField] private float colorTransitionDuration = 0.2f;
+    [Tooltip("서브지역을 표시할 나무 비주얼 프랍 리스트 (최대 2개 지원)")]
+    [SerializeField] private System.Collections.Generic.List<HUD_PopupNav_TreeProp> treeProps;
 
     [Header("DOTween Settings")]
     [Tooltip("해금 연출 시간")]
@@ -38,15 +27,15 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [SerializeField] private float hoverScaleX = 1.15f;
     [Tooltip("호버 시 커질 목표 Y 스케일")]
     [SerializeField] private float hoverScaleY = 1.15f;
-    [Tooltip("호버 커짐 연출 시간")]
-    [SerializeField] private float hoverDuration = 0.25f;
-    [Tooltip("호버 커짐 이즈 (뾱 하고 찰지게)")]
-    [SerializeField] private Ease hoverEase = Ease.OutBack;
+    [Tooltip("스프링 연출 시간 (또이잉 하고 멈추는 데 걸리는 시간)")]
+    [SerializeField] private float hoverDuration = 0.6f;
+    [Tooltip("스프링 이즈(Ease.OutElastic 추천)")]
+    [SerializeField] private Ease hoverEase = Ease.OutElastic;
     
     [Tooltip("언호버 되감기 연출 시간")]
     [SerializeField] private float unhoverDuration = 0.2f;
-    [Tooltip("언호버 되감기 이즈 (들어갈 때도 찰지게)")]
-    [SerializeField] private Ease unhoverEase = Ease.InBack;
+    [Tooltip("언호버 되감기 이즈")]
+    [SerializeField] private Ease unhoverEase = Ease.OutBack;
 
     [Header("Select Animation")]
     [Tooltip("선택(클릭) 시 흔들림 강도")]
@@ -58,7 +47,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private Tween selectTween;
     private Tween hoverTween;
     private Tween clearNewTween;
-    private Tween colorTween;
     
     // 비주얼 연출을 적용할 자식 트랜스폼 목록 (clickImage 제외)
     private System.Collections.Generic.List<Transform> visualChildren = new System.Collections.Generic.List<Transform>();
@@ -78,19 +66,29 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     public ForestType GetForestType() => myInfo.forestType;
     public ForestEnvironmentInfo GetInfo() => myInfo;
 
-    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType)
+    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas)
     {
         mainController = _mainController;
         myInfo = _info;
         parentMapType = _parentMapType;
 
-        bool _isLocked = !_info.isUnlocked;
-        
-        Image _targetColorImage = (null != lockColorTargetImage) ? lockColorTargetImage : clickImage;
-        if (null != _targetColorImage)
+        if (null != treeProps)
         {
-            _targetColorImage.color = _isLocked ? lockedColor : unlockedColor;
+            for (int i = 0; i < treeProps.Count; i++)
+            {
+                if (null != _visualDatas && i < _visualDatas.Count)
+                {
+                    treeProps[i].gameObject.SetActive(true);
+                    treeProps[i].Setup(_visualDatas[i]);
+                }
+                else
+                {
+                    treeProps[i].gameObject.SetActive(false);
+                }
+            }
         }
+
+        bool _isLocked = !_info.isUnlocked;
 
         if (null != clearNewTween && true == clearNewTween.IsActive())
         {
@@ -143,7 +141,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             return;
         }
 
-        TweenColor(clickColor);
         mainController.HandleSubRegionSelected(myInfo.forestType);
     }
 
@@ -171,11 +168,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     {
         if (true == myInfo.isUnlocked)
         {
-            if (false == isSelected)
-            {
-                TweenColor(hoverColor);
-            }
-
             bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
             
             if (_hasNew)
@@ -199,7 +191,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
                 {
                     hoverTween.Kill();
                 }
-                // clickImage(Raycast) 영역은 찌그러지지 않도록 루트 대신 비주얼 자식들만 연출
+                // 스프링 연출 (OutElastic 활용)
                 Sequence _seq = DOTween.Sequence();
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
@@ -221,10 +213,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         mainController.HandleSubRegionUnhovered();
 
-        if (true == myInfo.isUnlocked && false == isSelected)
-        {
-            TweenColor(unlockedColor);
-        }
+
 
         if (null != hoverTween && true == hoverTween.IsActive())
         {
@@ -239,20 +228,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         hoverTween = _seq;
     }
 
-    private void TweenColor(Color _targetColor)
-    {
-        if (null == lockColorTargetImage)
-        {
-            return;
-        }
 
-        if (null != colorTween && colorTween.IsActive())
-        {
-            colorTween.Kill();
-        }
-
-        colorTween = lockColorTargetImage.DOColor(_targetColor, colorTransitionDuration).SetEase(Ease.OutQuad);
-    }
 
     public void ResetState()
     {
@@ -264,12 +240,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != clearNewTween && clearNewTween.IsActive()) clearNewTween.Kill();
         if (null != unlockTween && unlockTween.IsActive()) unlockTween.Kill();
         if (null != selectTween && selectTween.IsActive()) selectTween.Kill();
-        if (null != colorTween && colorTween.IsActive()) colorTween.Kill();
-
-        if (null != lockColorTargetImage)
-        {
-            lockColorTargetImage.color = unlockedColor;
-        }
 
         for (int i = 0; i < visualChildren.Count; i++)
         {
@@ -342,11 +312,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     private void OnUnlockMotionComplete()
     {
-        Image _targetColorImage = (null != lockColorTargetImage) ? lockColorTargetImage : clickImage;
-        if (null != _targetColorImage)
-        {
-            _targetColorImage.DOColor(unlockedColor, unlockDuration);
-        }
         pendingUnlockCompleteAction?.Invoke();
         pendingUnlockCompleteAction = null;
     }
@@ -362,8 +327,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (true == _isSelected)
         {
-            TweenColor(clickColor);
-
             Sequence _seq = DOTween.Sequence();
             for (int i = 0; i < visualChildren.Count; i++)
             {
@@ -373,15 +336,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
         else
         {
-            if (true == isPointerOver)
-            {
-                TweenColor(hoverColor);
-            }
-            else
-            {
-                TweenColor(unlockedColor);
-            }
-
             for (int i = 0; i < visualChildren.Count; i++)
             {
                 visualChildren[i].localScale = Vector3.one;

@@ -26,6 +26,7 @@ MonoBehaviour:
     - c58335a078671014e871eb729f550e36
     - 5ec8429081db4790b2e3fbc1598fc018
     - 14080133190605a4cb0b2bc8a700da91
+    - dde75749704fede4da0752d06a9236e7
     values:
     - iconNameOrGuid: TerrainData Icon
       colorIndex: 8
@@ -74,6 +75,10 @@ MonoBehaviour:
     - iconNameOrGuid: BoxCollider Icon
       colorIndex: 7
       isIconRecursive: 1
+      isColorRecursive: 1
+    - iconNameOrGuid: 
+      colorIndex: 5
+      isIconRecursive: 0
       isColorRecursive: 1
   bookmarks:
   - guid: 7af48d1be2be6a94f900ef25ecff4760

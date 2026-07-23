@@ -40,12 +40,12 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [SerializeField] private Color clickBgColor = Color.white;
     
     [Header("Hover Animation (Region)")]
-    [Tooltip("호버 시작 시 눌려질 Y축 스케일 (뽀잉 연출용)")]
-    [SerializeField] private float hoverStartYScale = 0.8f;
-    [Tooltip("원래대로 빡! 하고 돌아오는 연출 시간")]
-    [SerializeField] private float hoverSnapDuration = 0.35f;
-    [Tooltip("원래대로 돌아오는 이즈(Ease)")]
-    [SerializeField] private Ease hoverSnapEase = Ease.OutBack;
+    [Tooltip("호버 시 이동할 X축 거리")]
+    [SerializeField] private float hoverMoveX = 20f;
+    [Tooltip("호버 이동 연출 시간")]
+    [SerializeField] private float hoverMoveDuration = 0.2f;
+    [Tooltip("호버 이동 이즈(Ease)")]
+    [SerializeField] private Ease hoverMoveEase = Ease.OutQuad;
 
     [Header("Select Animation")]
     [Tooltip("선택(클릭) 시 흔들림 강도")]
@@ -59,6 +59,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     
     // 비주얼 연출을 적용할 자식 트랜스폼 목록 (clickImage 제외)
     private System.Collections.Generic.List<Transform> visualChildren = new System.Collections.Generic.List<Transform>();
+    private float[] originalLocalX;
 
     private HUD_PopupNav_Main mainController;
     private MapEnvironmentDataInfo myInfo;
@@ -102,16 +103,24 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             }
         }
 
-        // clickImage가 루트에 있지 않고 자식으로 있다면, 연출에서 제외하기 위해 비주얼 자식들만 수집
-        visualChildren.Clear();
-        for (int i = 0; i < transform.childCount; i++)
+        if (originalLocalX == null || originalLocalX.Length == 0)
         {
-            Transform _child = transform.GetChild(i);
-            if (null != clickImage && clickImage.transform == _child)
+            visualChildren.Clear();
+            for (int i = 0; i < transform.childCount; i++)
             {
-                continue;
+                Transform _child = transform.GetChild(i);
+                if (null != clickImage && clickImage.transform == _child)
+                {
+                    continue;
+                }
+                visualChildren.Add(_child);
             }
-            visualChildren.Add(_child);
+
+            originalLocalX = new float[visualChildren.Count];
+            for (int i = 0; i < visualChildren.Count; i++)
+            {
+                originalLocalX[i] = visualChildren[i].localPosition.x;
+            }
         }
 
         CachedActivate = ActivateObject;
@@ -205,12 +214,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             hoverTween.Kill();
         }
         
-        // clickImage(Raycast) 영역은 찌그러지지 않도록 루트 대신 비주얼 자식들만 연출
+        // clickImage(Raycast) 영역은 움직이지 않도록 루트 대신 비주얼 자식들만 연출
         Sequence _seq = DOTween.Sequence();
         for (int i = 0; i < visualChildren.Count; i++)
         {
-            visualChildren[i].localScale = new Vector3(1f, hoverStartYScale, 1f);
-            _seq.Join(visualChildren[i].DOScale(Vector3.one, hoverSnapDuration).SetEase(hoverSnapEase));
+            _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i] + hoverMoveX, hoverMoveDuration).SetEase(hoverMoveEase));
         }
         hoverTween = _seq;
     }
@@ -227,10 +235,19 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (false == isSelected)
         {
             TweenColors(normalShadowColor, normalBgColor, true);
-        }
 
-        // 호버 연출(뽀잉)이 진행 중일 때 마우스가 밖으로 나가더라도,
-        // 애니메이션을 강제로 죽이고 1로 스냅시키지 않음으로써 바운스가 끝까지 자연스럽게 재생되도록 둡니다.
+            if (null != hoverTween && true == hoverTween.IsActive())
+            {
+                hoverTween.Kill();
+            }
+
+            Sequence _seq = DOTween.Sequence();
+            for (int i = 0; i < visualChildren.Count; i++)
+            {
+                _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
+            }
+            hoverTween = _seq;
+        }
     }
 
     private void TweenColors(Color _targetShadow, Color _targetBg, bool _isIdle = false)
@@ -325,28 +342,61 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         {
             if (_playClickAnim)
             {
-                // 선택 시 살짝 눌리는(Punch) 연출 (루트 대신 자식들)
                 Sequence _seq = DOTween.Sequence();
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
+                    if (originalLocalX != null && i < originalLocalX.Length)
+                    {
+                        _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i] + hoverMoveX, hoverMoveDuration).SetEase(hoverMoveEase));
+                    }
                     _seq.Join(visualChildren[i].DOPunchScale(new Vector3(selectPunchStrength, selectPunchStrength, 1f) - Vector3.one, selectDuration, 5, 0.5f));
                 }
                 selectTween = _seq;
+                TweenColors(hoverShadowColor, hoverBgColor, false);
             }
             else
             {
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
                     visualChildren[i].localScale = Vector3.one;
+                    if (originalLocalX != null && i < originalLocalX.Length)
+                    {
+                        visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
+                    }
                 }
                 TweenColors(hoverShadowColor, hoverBgColor, false);
             }
         }
         else
         {
-            for (int i = 0; i < visualChildren.Count; i++)
+            if (null != hoverTween && true == hoverTween.IsActive())
             {
-                visualChildren[i].localScale = Vector3.one;
+                hoverTween.Kill();
+            }
+
+            if (_playClickAnim)
+            {
+                Sequence _seq = DOTween.Sequence();
+                for (int i = 0; i < visualChildren.Count; i++)
+                {
+                    visualChildren[i].localScale = Vector3.one;
+                    if (originalLocalX != null && i < originalLocalX.Length)
+                    {
+                        _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
+                    }
+                }
+                hoverTween = _seq;
+            }
+            else
+            {
+                for (int i = 0; i < visualChildren.Count; i++)
+                {
+                    visualChildren[i].localScale = Vector3.one;
+                    if (originalLocalX != null && i < originalLocalX.Length)
+                    {
+                        visualChildren[i].localPosition = new Vector3(originalLocalX[i], visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
+                    }
+                }
             }
             TweenColors(normalShadowColor, normalBgColor, true);
         }

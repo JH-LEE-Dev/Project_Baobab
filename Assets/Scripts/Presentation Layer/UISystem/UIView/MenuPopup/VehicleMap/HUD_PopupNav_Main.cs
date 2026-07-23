@@ -38,13 +38,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [Tooltip("버튼들 순차 등장 시작 전 대기 딜레이")]
     [SerializeField] private float delayBeforeButtons = 0.01f;
 
-    [Header("Extra UI (Close / Confirm) Animation")]
-    [SerializeField] private HUD_PopupNav_ActionBtn confirmBtn;
-    [SerializeField] private HUD_PopupNav_ActionBtn cancelBtn;
-    [Tooltip("닫기 버튼 등 부가 UI 연출 시간")]
-    [SerializeField] private float extraUIAnimDuration = 0.2f;
-    [Tooltip("닫기 버튼 등 부가 UI 연출 이즈(Ease)")]
-    [SerializeField] private Ease extraUIAnimEase = Ease.OutBack;
+
 
     [Header("Region Name UI")]
     [Tooltip("현재 선택된 대지역 이름을 표시할 텍스트")]
@@ -65,8 +59,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [SerializeField] private HUD_PopupNav_RegionGroup regionGroup;
     [Tooltip("서브지역 관리 그룹")]
     [SerializeField] private HUD_PopupNav_SubRegionGroup subRegionGroup;
-    [Tooltip("식생 정보 관리 팝업")]
-    [SerializeField] private HUD_PopupNav_TreeInfoView treeInfoView;
+    [Tooltip("나무 비주얼 데이터베이스")]
+    [SerializeField] private TreeVisualDataBase treeVisualDataBase;
 
     private Tween appearTween;
     private Tween disappearTween;
@@ -120,8 +114,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private TweenCallback onSubRegionUnlockDelayCompleteCallback;
     
     private UnityEngine.Events.UnityAction onBackgroundDimClickedAction;
-    private UnityEngine.Events.UnityAction onCloseButtonClickedAction;
-    private UnityEngine.Events.UnityAction onConfirmCheckButtonClickedAction;
 
     public bool IsInputBlocked => isInputBlocked || isUnlockingProductionActive || isClosing;
     public bool IsUnlockingProductionActive => isUnlockingProductionActive;
@@ -140,8 +132,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         onSubRegionUnlockDelayCompleteCallback = OnSubRegionUnlockDelayComplete;
         
         onBackgroundDimClickedAction = OnBackgroundDimClicked;
-        onCloseButtonClickedAction = OnCloseButtonClicked;
-        onConfirmCheckButtonClickedAction = OnConfirmCheckButtonClicked;
 
         if (null != regionGroup)
         {
@@ -150,25 +140,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         if (null != subRegionGroup)
         {
-            subRegionGroup.Initialize(this, localizationManager);
-        }
-
-        if (null != treeInfoView)
-        {
-            treeInfoView.Initialize();
-            treeInfoView.SetVisibility(false);
-        }
-
-        if (null != confirmBtn)
-        {
-            confirmBtn.SetVisibility(false, false);
-            confirmBtn.Initialize(OnConfirmCheckButtonClicked);
-        }
-
-        if (null != cancelBtn)
-        {
-            cancelBtn.SetVisibility(true, false);
-            cancelBtn.Initialize(OnCloseButtonClicked);
+            subRegionGroup.Initialize(this, localizationManager, treeVisualDataBase);
         }
 
         BindClickEvents();
@@ -210,17 +182,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         isUnlockingProductionActive = false;
         currentSelectedMapType = MapType.None;
         currentSelectedForestType = ForestType.None;
-        currentShowingTreeInfoType = ForestType.None;
-        
-        if (null != confirmBtn)
-        {
-            confirmBtn.SetVisibility(false, false);
-        }
-        
-        if (null != treeInfoView)
-        {
-            treeInfoView.SetVisibility(false);
-        }
 
         if (debugForceUnlockAll && null != mapDataProvider)
         {
@@ -274,9 +235,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             interactiveUIPanel.localScale = new Vector3(1f, 0f, 1f);
         }
 
-        if (null != cancelBtn) cancelBtn.SetVisibility(false, false);
-        if (null != confirmBtn) confirmBtn.SetVisibility(false, false);
-
         // 시퀀스 생성 전, 대지역 버튼 생성 및 초기화(스케일 0 세팅)를 미리 수행해야 
         // 하단의 PlayAppearSequence() 에서 DOTween 시퀀스를 정상적으로 조립할 수 있습니다.
         if (null != regionGroup)
@@ -314,12 +272,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         // 5. 첫번째 대지역 선택 및 서브지역 연출 준비 (OnMainPopupAppearComplete 역할 포함)
         _seq.AppendCallback(onAppearMidwayCallback);
-
-        // 6. 닫기/확인 버튼 등장
-        if (null != cancelBtn)
-        {
-            cancelBtn.SetVisibility(true, true);
-        }
 
         _seq.OnComplete(onAppearCompleteCallback);
 
@@ -399,16 +351,10 @@ public class HUD_PopupNav_Main : MonoBehaviour
         Sequence _seq = DOTween.Sequence();
         float _currentTime = 0f;
 
-        // 1. 추가 UI 버튼(닫기/확인) 축소 및 패널 Y스케일 축소 (동시 진행)
-        if (null != cancelBtn) cancelBtn.SetVisibility(false, true);
-        if (null != confirmBtn && false == confirmBtn.gameObject.activeSelf)
-        {
-            confirmBtn.SetVisibility(true, true);
-        }
-        
+        // 패널 Y스케일 축소 (동시 진행)
         if (null != interactiveUIPanel)
         {
-            _seq.Insert(_currentTime, interactiveUIPanel.DOScaleY(0f, panelScaleDuration).SetEase(Ease.InBack));
+            _seq.Insert(_currentTime, interactiveUIPanel.DOScaleY(0f, panelScaleDuration).SetEase(panelScaleEase));
         }
 
         _currentTime += panelScaleDuration;
@@ -451,20 +397,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
         Close();
-    }
-
-    private void OnConfirmCheckButtonClicked()
-    {
-        if (true == IsInputBlocked)
-        {
-            return;
-        }
-
-        if (MapType.None != currentSelectedMapType && ForestType.None != currentSelectedForestType)
-        {
-            onConfirmMapSelectedCallback?.Invoke(currentSelectedMapType, currentSelectedForestType);
-            Close();
-        }
     }
 
     private void OnMainPopupAppearComplete()
@@ -680,7 +612,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     {
         if (MapType.None != runtimeLastSelectedMapType)
         {
-            HandleRegionSelected(runtimeLastSelectedMapType, true, false);
+            HandleRegionSelected(runtimeLastSelectedMapType, true, true);
         }
         else
         {
@@ -694,7 +626,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
                     {
                         if (MapType.Town != _db.mapDatas[i].mapType)
                         {
-                            HandleRegionSelected(_db.mapDatas[i].mapType, true, false);
+                            HandleRegionSelected(_db.mapDatas[i].mapType, true, true);
                             break;
                         }
                     }
@@ -757,12 +689,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         currentSelectedMapType = _mapType;
         runtimeLastSelectedMapType = _mapType;
         currentSelectedForestType = ForestType.None;
-        currentShowingTreeInfoType = ForestType.None;
-
-        if (null != confirmBtn)
-        {
-            confirmBtn.SetVisibility(false, true);
-        }
 
         if (null != currentRegionNameText && null != localizationManager)
         {
@@ -809,14 +735,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 }
             };
 
-            if (null != treeInfoView && true == treeInfoView.IsVisible)
-            {
-                treeInfoView.PlayDisappearMotion(_onShowSubRegions);
-            }
-            else
-            {
-                _onShowSubRegions();
-            }
+            _onShowSubRegions();
         }
         else
         {
@@ -830,15 +749,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         {
             return;
         }
-
-        if (currentShowingTreeInfoType != _forestType)
-        {
-            currentShowingTreeInfoType = _forestType;
-            if (null != treeInfoView)
-            {
-                treeInfoView.ShowTreeInfo(_info, _subRegionTransform);
-            }
-        }
     }
 
     public void HandleSubRegionUnhovered()
@@ -846,29 +756,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (true == IsInputBlocked)
         {
             return;
-        }
-
-        if (ForestType.None != currentSelectedForestType && null != subRegionGroup)
-        {
-            if (currentShowingTreeInfoType != currentSelectedForestType)
-            {
-                HUD_PopupNav_SubRegionBtn _selectedBtn = subRegionGroup.GetSubRegionButton(currentSelectedForestType);
-                if (null != _selectedBtn)
-                {
-                    currentShowingTreeInfoType = currentSelectedForestType;
-                    if (null != treeInfoView)
-                    {
-                        treeInfoView.ShowTreeInfo(_selectedBtn.GetInfo(), _selectedBtn.transform);
-                    }
-                }
-            }
-            return;
-        }
-
-        currentShowingTreeInfoType = ForestType.None;
-        if (null != treeInfoView)
-        {
-            treeInfoView.SetVisibility(false);
         }
     }
 
@@ -886,9 +773,10 @@ public class HUD_PopupNav_Main : MonoBehaviour
             subRegionGroup.SetSelectSubRegion(_forestType);
         }
 
-        if (null != confirmBtn && false == confirmBtn.gameObject.activeSelf)
+        if (MapType.None != currentSelectedMapType && ForestType.None != currentSelectedForestType)
         {
-            confirmBtn.SetVisibility(true, true);
+            onConfirmMapSelectedCallback?.Invoke(currentSelectedMapType, currentSelectedForestType);
+            Close();
         }
     }
 }

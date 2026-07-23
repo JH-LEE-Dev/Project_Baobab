@@ -17,6 +17,10 @@ ShaderVariantCollection:
         passType: 0
       - keywords: COLOR_FILTER EDGE_SHINY
         passType: 0
+      - keywords: COLOR_FILTER GRADATION_COLOR2
+        passType: 0
+      - keywords: COLOR_FILTER GRADATION_COLOR4
+        passType: 0
       - keywords: COLOR_FILTER GRADATION_GRADIENT
         passType: 0
       - keywords: COLOR_FILTER SAMPLING_BLUR_FAST
@@ -30,6 +34,8 @@ ShaderVariantCollection:
       - keywords: COLOR_FILTER TONE_RETRO
         passType: 0
       - keywords: COLOR_FILTER TONE_SEPIA
+        passType: 0
+      - keywords: COLOR_FILTER TRANSITION_SHINY
         passType: 0
       - keywords: EDGE_SHINY
         passType: 0

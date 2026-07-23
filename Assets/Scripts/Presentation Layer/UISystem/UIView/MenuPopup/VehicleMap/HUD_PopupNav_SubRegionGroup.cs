@@ -38,6 +38,10 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     [SerializeField] private float paddingLeft = 80f;
     [Tooltip("버튼이 우측 영역 밖으로 나가지 않게 하는 여백")]
     [SerializeField] private float paddingRight = 80f;
+    [Tooltip("버튼 간 최소 보장 거리 (겹침 방지용, 버튼 너비에 대한 비율. 예: 0.9 = 버튼 너비의 90% 이상 띄움)")]
+    [SerializeField] private float minDistanceRatioX = 0.9f;
+    [Tooltip("버튼 간 최소 보장 절대 거리 (프리팹의 Rect 넓이보다 실제 나무 이미지가 더 큰 경우를 대비한 절대 픽셀 값)")]
+    [SerializeField] private float minDistanceAbsoluteX = 120f;
 
     [Header("SubRegion Button Setup & Animation")]
     [Tooltip("기본 프리팹 (초기화 후 비활성화됨)")]
@@ -56,6 +60,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     private HUD_PopupNav_Main mainController;
     private LocalizationManager localizationManager;
+    private TreeVisualDataBase treeVisualDataBase;
     private IMapDataProvider mapDataProvider;
     
     private readonly List<HUD_PopupNav_SubRegionBtn> subRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(16);
@@ -69,10 +74,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private Transform pendingRegionTransform;
     private Action pendingOnComplete;
 
-    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager)
+    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, TreeVisualDataBase _treeVisualDataBase)
     {
         mainController = _mainController;
         localizationManager = _localizationManager;
+        treeVisualDataBase = _treeVisualDataBase;
 
         // 컨테이너 하위에 이미 배치되어 있는 버튼들이 있다면 사전 캐싱
         if (null != container)
@@ -155,7 +161,17 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
                         if (null != _btn)
                         {
                             _btn.gameObject.SetActive(false); // 연출 시작 전까지 비활성화
-                            _btn.Initialize(mainController, _subInfo, localizationManager, _regionInfo.mapType);
+                            System.Collections.Generic.List<TreeVisualData> _visualDatas = new System.Collections.Generic.List<TreeVisualData>();
+                            if (null != treeVisualDataBase && null != _subInfo.spawnTreeTypes)
+                            {
+                                int _treeCount = Mathf.Min(_subInfo.spawnTreeTypes.Count, 2);
+                                for (int k = 0; k < _treeCount; k++)
+                                {
+                                    _visualDatas.Add(treeVisualDataBase.Get(_subInfo.spawnTreeTypes[k].treeType));
+                                }
+                            }
+                            
+                            _btn.Initialize(mainController, _subInfo, localizationManager, _regionInfo.mapType, _visualDatas);
                             activeSubRegionButtons.Add(_btn);
                         }
                     }
@@ -221,10 +237,13 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
         int _count = activeSubRegionButtons.Count;
         float _containerWidth = container.rect.width;
-        float _segmentWidth = _containerWidth / _count;
+        
+        // 패딩이 적용된 실제 배치 가능 영역 너비 계산
+        float _usableWidth = _containerWidth - paddingLeft - paddingRight;
+        float _segmentWidth = _usableWidth / _count;
 
-        // Container의 Pivot X 값에 따라 좌측 끝(Local X) 좌표를 계산
-        float _leftEdgeX = -(_containerWidth * container.pivot.x);
+        // Container의 Pivot X 값에 따라 실제 사용 영역의 좌측 끝(Local X) 좌표 계산 (패딩 적용)
+        float _leftEdgeX = -(_containerWidth * container.pivot.x) + paddingLeft;
         
         // 각 버튼이 속한 분할 영역(Segment)의 중앙에 배치하기 위한 시작 X좌표
         float _startX = _leftEdgeX + (_segmentWidth * 0.5f);
@@ -232,17 +251,32 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         // 이번 배치에 적용할 지그재그 시작 방향 (true면 위->아래->위, false면 아래->위->아래)
         bool _isUpDownUp = 0.5f < UnityEngine.Random.value;
 
+        // 1단계: X, Y 위치 계산 (겹침 방지만 적용하고 전체 영역 클램프는 아직 안 함)
+        System.Collections.Generic.List<Vector2> _calculatedPositions = new System.Collections.Generic.List<Vector2>(_count);
+        float _lastPlacedX = float.MinValue;
+
         for (int i = 0; i < _count; i++)
         {
             RectTransform _btnRect = activeSubRegionButtons[i].GetComponent<RectTransform>();
             if (null != _btnRect)
             {
+                float _btnWidth = _btnRect.rect.width;
+                float _minDistance = Mathf.Max(_btnWidth * minDistanceRatioX, minDistanceAbsoluteX);
+                
                 // 기본 X좌표 (분할된 구역의 중앙)
                 float _baseTargetX = _startX + (i * _segmentWidth);
                 
                 // 순서(1->2->3)가 절대 뒤바뀌지 않도록 각자의 구역 내에서만 X축 랜덤 이동
                 float _randomOffsetX = UnityEngine.Random.Range(-_segmentWidth * randomScatterRatioX, _segmentWidth * randomScatterRatioX);
                 float _targetX = _baseTargetX + _randomOffsetX;
+
+                // 겹침 방지: 이전 버튼과의 거리가 최소 보장 거리보다 가깝다면 우측으로 강제 밀어내기
+                if (i > 0 && (_targetX - _lastPlacedX) < _minDistance)
+                {
+                    _targetX = _lastPlacedX + _minDistance;
+                }
+                
+                _lastPlacedX = _targetX;
                 
                 // 아치형 기본 레이아웃 계산
                 float t = 0f;
@@ -279,17 +313,46 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
                 _targetY = Mathf.Clamp(_targetY, _minY, _maxY);
 
-                // X축 또한 좌우 영역 밖으로 나가지 않도록 클램핑
-                float _maxX = (_containerWidth * (1f - container.pivot.x)) - paddingRight;
-                float _minX = -(_containerWidth * container.pivot.x) + paddingLeft;
-                
-                float _btnHalfWidth = _btnRect.rect.width * 0.5f;
-                _maxX -= _btnHalfWidth;
-                _minX += _btnHalfWidth;
+                _calculatedPositions.Add(new Vector2(_targetX, _targetY));
+            }
+        }
 
-                _targetX = Mathf.Clamp(_targetX, _minX, _maxX);
+        // 2단계: 전체 그룹이 좌우 여백을 벗어났는지 확인하고 통째로 밀어넣기
+        if (0 < _count)
+        {
+            RectTransform _lastBtnRect = activeSubRegionButtons[_count - 1].GetComponent<RectTransform>();
+            RectTransform _firstBtnRect = activeSubRegionButtons[0].GetComponent<RectTransform>();
 
-                _btnRect.anchoredPosition = new Vector2(_targetX, _targetY);
+            float _maxX = (_containerWidth * (1f - container.pivot.x)) - paddingRight - (_lastBtnRect.rect.width * 0.5f);
+            float _minX = -(_containerWidth * container.pivot.x) + paddingLeft + (_firstBtnRect.rect.width * 0.5f);
+
+            // 우측이 삐져나갔다면 전체를 왼쪽으로 밉니다
+            float _lastX = _calculatedPositions[_count - 1].x;
+            if (_lastX > _maxX)
+            {
+                float _shiftLeft = _lastX - _maxX;
+                for (int i = 0; i < _count; i++)
+                {
+                    _calculatedPositions[i] = new Vector2(_calculatedPositions[i].x - _shiftLeft, _calculatedPositions[i].y);
+                }
+            }
+
+            // 좌측이 삐져나갔다면 통째로 오른쪽으로 밉니다. (컨테이너 좁은 경우 좌측 안 잘리는 걸 우선)
+            float _firstX = _calculatedPositions[0].x;
+            if (_firstX < _minX)
+            {
+                float _shiftRight = _minX - _firstX;
+                for (int i = 0; i < _count; i++)
+                {
+                    _calculatedPositions[i] = new Vector2(_calculatedPositions[i].x + _shiftRight, _calculatedPositions[i].y);
+                }
+            }
+
+            // 최종 적용
+            for (int i = 0; i < _count; i++)
+            {
+                RectTransform _btnRect = activeSubRegionButtons[i].GetComponent<RectTransform>();
+                _btnRect.anchoredPosition = _calculatedPositions[i];
             }
         }
     }

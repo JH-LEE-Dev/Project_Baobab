@@ -20,10 +20,10 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
     [SerializeField] private Image highlightTrunkImage;
 
     [Header("HDR Material Support")]
-    [Tooltip("실드 잎/기둥에 적용할 고정 인텐시티 값 (DB 값 무시하고 이 값으로 덮어씀)")]
-    [SerializeField] private float shieldHdrIntensityMultiplier = 1.0f;
-    [Tooltip("하이라이트 잎/기둥에 적용할 고정 인텐시티 값 (DB 값 무시하고 이 값으로 덮어씀)")]
-    [SerializeField] private float highlightHdrIntensityMultiplier = 1.0f;
+    [Tooltip("실드 잎/기둥에 적용할 인텐시티 값 (머테리얼 Float 프로퍼티에 다이렉트 반영)")]
+    [SerializeField] private float shieldHdrIntensity = 1.0f;
+    [Tooltip("하이라이트 잎/기둥에 적용할 인텐시티 값 (머테리얼 Float 프로퍼티에 다이렉트 반영)")]
+    [SerializeField] private float highlightHdrIntensity = 1.0f;
 
     [Header("Appear Animation")]
     [SerializeField] private float appearDuration = 0.3f;
@@ -168,10 +168,10 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
             }
         }
 
-        ApplyHdrIntensity(shieldLeafImage, ref shieldLeafMat, ref originalShieldLeafColor, shieldHdrIntensityMultiplier);
-        ApplyHdrIntensity(shieldTrunkImage, ref shieldTrunkMat, ref originalShieldTrunkColor, shieldHdrIntensityMultiplier);
-        ApplyHdrIntensity(highlightLeafImage, ref highlightLeafMat, ref originalHighlightLeafColor, highlightHdrIntensityMultiplier);
-        ApplyHdrIntensity(highlightTrunkImage, ref highlightTrunkMat, ref originalHighlightTrunkColor, highlightHdrIntensityMultiplier);
+        ApplyHdrIntensity(shieldLeafImage, ref shieldLeafMat, ref originalShieldLeafColor, shieldHdrIntensity);
+        ApplyHdrIntensity(shieldTrunkImage, ref shieldTrunkMat, ref originalShieldTrunkColor, shieldHdrIntensity);
+        ApplyHdrIntensity(highlightLeafImage, ref highlightLeafMat, ref originalHighlightLeafColor, highlightHdrIntensity);
+        ApplyHdrIntensity(highlightTrunkImage, ref highlightTrunkMat, ref originalHighlightTrunkColor, highlightHdrIntensity);
     }
 
     public void PlayAppearAnimation(float _delay)
@@ -211,21 +211,40 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
             return;
         }
 
-        Color _hdrColor = new Color(
-            _originalColor.r * _intensity, 
-            _originalColor.g * _intensity, 
-            _originalColor.b * _intensity, 
-            _originalColor.a
-        );
+        // 1. 기존 컬러에서 순수 색상(LDR)만 추출 (가장 큰 RGB 값으로 나누어 기존 인텐시티 제거)
+        float maxColorComponent = Mathf.Max(_originalColor.r, Mathf.Max(_originalColor.g, _originalColor.b));
+        Color ldrColor = _originalColor;
         
+        // 만약 기존 컬러가 이미 HDR(1.0 초과)이거나 매우 어두울 경우를 대비해 정규화
+        if (maxColorComponent > 0.001f)
+        {
+            // RGB 중 최대값이 1.0이 되도록 맞춰서 순수 원색을 구함
+            ldrColor.r = Mathf.Clamp01(_originalColor.r / maxColorComponent);
+            ldrColor.g = Mathf.Clamp01(_originalColor.g / maxColorComponent);
+            ldrColor.b = Mathf.Clamp01(_originalColor.b / maxColorComponent);
+        }
+
+        // 2. 유니티 에디터 기본 HDR 인텐시티 공식 (2^Intensity) 적용
+        // 인스펙터에 입력된 변수 값이 '절대적인 인텐시티 강도'로 다이렉트 반영됨
+        float factor = Mathf.Pow(2, _intensity);
+        Color hdrColor = new Color(
+            ldrColor.r * factor, 
+            ldrColor.g * factor, 
+            ldrColor.b * factor, 
+            ldrColor.a
+        );
+
         if (_mat.HasProperty(HdrColorPropertyId))
         {
-            _mat.SetColor(HdrColorPropertyId, _hdrColor);
+            _mat.SetColor(HdrColorPropertyId, hdrColor);
         }
-        else
+        else if (_mat.HasProperty("_HDRColor"))
         {
-            _mat.SetColor("_Color", _hdrColor);
-            _image.color = _hdrColor;
+            _mat.SetColor("_HDRColor", hdrColor);
+        }
+        else if (_mat.HasProperty("_Color"))
+        {
+            _mat.SetColor("_Color", hdrColor);
         }
     }
 
