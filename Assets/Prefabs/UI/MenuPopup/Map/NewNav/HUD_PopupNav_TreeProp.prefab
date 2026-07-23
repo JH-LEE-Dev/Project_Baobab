@@ -396,7 +396,7 @@ MonoBehaviour:
   highlightLeafImage: {fileID: 4037891568914494698}
   highlightTrunkImage: {fileID: 5691317982111455772}
   shieldHdrIntensityMultiplier: 1.3
-  highlightHdrIntensityMultiplier: 1.3
+  highlightHdrIntensityMultiplier: 1.38
   appearDuration: 0.15
   appearEase: 27
 --- !u!1 &8282432330623192922

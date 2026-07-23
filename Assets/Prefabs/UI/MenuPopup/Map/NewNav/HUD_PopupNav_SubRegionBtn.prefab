@@ -223,8 +223,8 @@ MonoBehaviour:
   m_ShadowMirrorScale: 0.5
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 4
-  m_ShadowColor: {r: 0.5019608, g: 0.08627451, b: 0, a: 1}
-  m_ShadowColorGlow: 1
+  m_ShadowColor: {r: 0, g: 0.3757227, b: 1.6055588, a: 1}
+  m_ShadowColorGlow: 0
   m_GradationMode: 0
   m_GradationIntensity: 1
   m_GradationColorFilter: 1
@@ -432,20 +432,20 @@ MonoBehaviour:
   clickImage: {fileID: 2337216021500169027}
   lockColorTargetImage: {fileID: 8033886740915779442}
   newIndicatorObj: {fileID: 1704490436478468864}
-  unlockedColor: {r: 0.38203096, g: 0.53453535, b: 0.8018868, a: 1}
+  unlockedColor: {r: 0.249644, g: 0.38559636, b: 0.6226415, a: 1}
   lockedColor: {r: 0.764151, g: 0.051803943, b: 0, a: 1}
-  hoverColor: {r: 0.4198113, g: 0.7230559, b: 1, a: 1}
-  clickColor: {r: 0.6745283, g: 0.91483676, b: 1, a: 1}
+  hoverColor: {r: 0.6367924, g: 0.82575864, b: 1, a: 1}
+  clickColor: {r: 1, g: 1, b: 1, a: 1}
   colorTransitionDuration: 0.2
   unlockDuration: 0.5
   selectDuration: 0.2
-  hoverScaleX: 1.15
-  hoverScaleY: 1.15
-  hoverDuration: 0.25
+  hoverScaleX: 1.3
+  hoverScaleY: 1.3
+  hoverDuration: 0.15
   hoverEase: 27
-  unhoverDuration: 0.2
+  unhoverDuration: 0.1
   unhoverEase: 26
-  selectPunchStrength: 1.1
+  selectPunchStrength: 1.25
 --- !u!1 &8148430121089073189
 GameObject:
   m_ObjectHideFlags: 0

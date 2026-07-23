@@ -39,10 +39,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [SerializeField] private float delayBeforeButtons = 0.01f;
 
     [Header("Extra UI (Close / Confirm) Animation")]
-    [Tooltip("서브지역 선택 시 노출될 확정(이동) 버튼 (레이캐스트용 이미지)")]
-    [SerializeField] private Image confirmCheckImage;
-    [Tooltip("닫기 버튼 (레이캐스트용 이미지)")]
-    [SerializeField] private Image closeImage;
+    [SerializeField] private HUD_PopupNav_ActionBtn confirmBtn;
+    [SerializeField] private HUD_PopupNav_ActionBtn cancelBtn;
     [Tooltip("닫기 버튼 등 부가 UI 연출 시간")]
     [SerializeField] private float extraUIAnimDuration = 0.2f;
     [Tooltip("닫기 버튼 등 부가 UI 연출 이즈(Ease)")]
@@ -161,9 +159,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
             treeInfoView.SetVisibility(false);
         }
 
-        if (null != confirmCheckImage)
+        if (null != confirmBtn)
         {
-            confirmCheckImage.gameObject.SetActive(false);
+            confirmBtn.SetVisibility(false, false);
+            confirmBtn.Initialize(OnConfirmCheckButtonClicked);
+        }
+
+        if (null != cancelBtn)
+        {
+            cancelBtn.SetVisibility(true, false);
+            cancelBtn.Initialize(OnCloseButtonClicked);
         }
 
         BindClickEvents();
@@ -195,8 +200,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private void BindClickEvents()
     {
         if (null != backgroundDimImage) AddClickListener(backgroundDimImage.gameObject, onBackgroundDimClickedAction);
-        if (null != confirmCheckImage) AddClickListener(confirmCheckImage.gameObject, onConfirmCheckButtonClickedAction);
-        if (null != closeImage) AddClickListener(closeImage.gameObject, onCloseButtonClickedAction);
     }
 
     public void Open()
@@ -209,9 +212,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
         currentSelectedForestType = ForestType.None;
         currentShowingTreeInfoType = ForestType.None;
         
-        if (null != confirmCheckImage)
+        if (null != confirmBtn)
         {
-            confirmCheckImage.gameObject.SetActive(false);
+            confirmBtn.SetVisibility(false, false);
         }
         
         if (null != treeInfoView)
@@ -271,8 +274,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
             interactiveUIPanel.localScale = new Vector3(1f, 0f, 1f);
         }
 
-        if (null != closeImage) closeImage.transform.localScale = Vector3.zero;
-        if (null != confirmCheckImage) confirmCheckImage.transform.localScale = Vector3.zero;
+        if (null != cancelBtn) cancelBtn.SetVisibility(false, false);
+        if (null != confirmBtn) confirmBtn.SetVisibility(false, false);
 
         // 시퀀스 생성 전, 대지역 버튼 생성 및 초기화(스케일 0 세팅)를 미리 수행해야 
         // 하단의 PlayAppearSequence() 에서 DOTween 시퀀스를 정상적으로 조립할 수 있습니다.
@@ -313,9 +316,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
         _seq.AppendCallback(onAppearMidwayCallback);
 
         // 6. 닫기/확인 버튼 등장
-        if (null != closeImage)
+        if (null != cancelBtn)
         {
-            _seq.Append(closeImage.transform.DOScale(1f, extraUIAnimDuration).SetEase(extraUIAnimEase));
+            cancelBtn.SetVisibility(true, true);
         }
 
         _seq.OnComplete(onAppearCompleteCallback);
@@ -397,8 +400,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
         float _currentTime = 0f;
 
         // 1. 추가 UI 버튼(닫기/확인) 축소 및 패널 Y스케일 축소 (동시 진행)
-        if (null != closeImage) _seq.Insert(_currentTime, closeImage.transform.DOScale(0f, extraUIAnimDuration).SetEase(Ease.InBack));
-        if (null != confirmCheckImage) _seq.Insert(_currentTime, confirmCheckImage.transform.DOScale(0f, extraUIAnimDuration).SetEase(Ease.InBack));
+        if (null != cancelBtn) cancelBtn.SetVisibility(false, true);
+        if (null != confirmBtn && false == confirmBtn.gameObject.activeSelf)
+        {
+            confirmBtn.SetVisibility(true, true);
+        }
         
         if (null != interactiveUIPanel)
         {
@@ -738,11 +744,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        if (true == IsTransitioning)
-        {
-            return;
-        }
-
         if (currentSelectedMapType == _mapType)
         {
             // 동일한 대지역 재클릭 무시 (토글 안함)
@@ -758,9 +759,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
         currentSelectedForestType = ForestType.None;
         currentShowingTreeInfoType = ForestType.None;
 
-        if (null != confirmCheckImage)
+        if (null != confirmBtn)
         {
-            confirmCheckImage.gameObject.SetActive(false);
+            confirmBtn.SetVisibility(false, true);
         }
 
         if (null != currentRegionNameText && null != localizationManager)
@@ -776,12 +777,15 @@ public class HUD_PopupNav_Main : MonoBehaviour
                     currentRegionNameText.transform.localScale = Vector3.one;
                 }
 
-                regionNameTween = currentRegionNameText.transform.DOPunchScale(
-                    new Vector3(0f, -regionNamePunchScaleY, 0f), 
-                    regionNameAnimDuration, 
-                    regionNameAnimVibrato, 
-                    regionNameAnimElasticity
-                );
+                if (true == _playClickAnim)
+                {
+                    regionNameTween = currentRegionNameText.transform.DOPunchScale(
+                        new Vector3(0f, -regionNamePunchScaleY, 0f), 
+                        regionNameAnimDuration, 
+                        regionNameAnimVibrato, 
+                        regionNameAnimElasticity
+                    );
+                }
             }
         }
 
@@ -882,9 +886,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
             subRegionGroup.SetSelectSubRegion(_forestType);
         }
 
-        if (null != confirmCheckImage && false == confirmCheckImage.gameObject.activeSelf)
+        if (null != confirmBtn && false == confirmBtn.gameObject.activeSelf)
         {
-            confirmCheckImage.gameObject.SetActive(true);
+            confirmBtn.SetVisibility(true, true);
         }
     }
 }

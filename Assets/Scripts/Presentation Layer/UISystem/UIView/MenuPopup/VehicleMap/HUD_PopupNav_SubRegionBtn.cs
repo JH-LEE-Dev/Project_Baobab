@@ -92,6 +92,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             _targetColorImage.color = _isLocked ? lockedColor : unlockedColor;
         }
 
+        if (null != clearNewTween && true == clearNewTween.IsActive())
+        {
+            clearNewTween.Kill();
+        }
+
         if (null != newIndicatorObj)
         {
             bool _showNew = _info.isNew && !_isLocked;
@@ -287,18 +292,9 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void PlayDisappearMotion(Action _onComplete)
     {
-        bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
-        
-        if (true == _hasNew)
-        {
-            ClearNewIndicator(() => {
-                ExecuteDisappearMotion(_onComplete);
-            });
-        }
-        else
-        {
-            ExecuteDisappearMotion(_onComplete);
-        }
+        // 퇴장 시에는 빠른 전환을 위해 NEW 뱃지 연출(ClearNewIndicator)을 생략하고 즉시 퇴장 연출만 진행합니다.
+        // 어차피 풀링되어 다음 사용 시 Initialize에서 상태에 맞게 켜지거나 꺼집니다.
+        ExecuteDisappearMotion(_onComplete);
     }
 
     private void ExecuteDisappearMotion(Action _onComplete)

@@ -13,6 +13,8 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [SerializeField] private Image clickImage;
     [Tooltip("배경 이미지를 교체할 대상 Image (비워두면 clickImage 사용)")]
     [SerializeField] private Image bgImage;
+    [Tooltip("프레임 이미지 (배경과 동일한 색상 연출이 적용됨)")]
+    [SerializeField] private Image frameImage;
     [Tooltip("NEW 뱃지 오브젝트")]
     [SerializeField] private GameObject newIndicatorObj;
     [Tooltip("잠금(Lock) 아이콘 등 상태 비주얼 오브젝트")]
@@ -126,7 +128,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
+        if (null == mainController || true == mainController.IsInputBlocked)
         {
             return;
         }
@@ -146,6 +148,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (null != uiEffect)
         {
+            uiEffect.enabled = true;
             _seq.Append(DOTween.To(() => uiEffect.shadowColor, x => uiEffect.shadowColor = x, clickShadowColor, _halfDuration).SetEase(colorTransitionEase));
             _seq.Append(DOTween.To(() => uiEffect.shadowColor, x => uiEffect.shadowColor = x, hoverShadowColor, _halfDuration).SetEase(colorTransitionEase));
         }
@@ -156,6 +159,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             _seq.Insert(0, _targetBgImg.DOColor(clickBgColor, _halfDuration).SetEase(colorTransitionEase));
             _seq.Insert(_halfDuration, _targetBgImg.DOColor(hoverBgColor, _halfDuration).SetEase(colorTransitionEase));
         }
+        if (null != frameImage)
+        {
+            _seq.Insert(0, frameImage.DOColor(clickBgColor, _halfDuration).SetEase(colorTransitionEase));
+            _seq.Insert(_halfDuration, frameImage.DOColor(hoverBgColor, _halfDuration).SetEase(colorTransitionEase));
+        }
         colorTween = _seq;
 
         mainController.HandleRegionSelected(myInfo.mapType);
@@ -165,7 +173,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     {
         isPointerOver = true;
 
-        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
+        if (null == mainController || true == mainController.IsInputBlocked)
         {
             return;
         }
@@ -175,7 +183,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public void EvaluateHoverState()
     {
-        if (true == isPointerOver && false == mainController.IsInputBlocked && false == mainController.IsTransitioning)
+        if (true == isPointerOver && false == mainController.IsInputBlocked)
         {
             TriggerHover();
         }
@@ -188,7 +196,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             return;
         }
 
-        TweenColors(hoverShadowColor, hoverBgColor);
+        TweenColors(hoverShadowColor, hoverBgColor, false);
         
         ClearNewIndicator();
 
@@ -211,21 +219,21 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     {
         isPointerOver = false;
 
-        if (null == mainController || true == mainController.IsInputBlocked || true == mainController.IsTransitioning)
+        if (null == mainController || true == mainController.IsInputBlocked)
         {
             return;
         }
 
         if (false == isSelected)
         {
-            TweenColors(normalShadowColor, normalBgColor);
+            TweenColors(normalShadowColor, normalBgColor, true);
         }
 
         // 호버 연출(뽀잉)이 진행 중일 때 마우스가 밖으로 나가더라도,
         // 애니메이션을 강제로 죽이고 1로 스냅시키지 않음으로써 바운스가 끝까지 자연스럽게 재생되도록 둡니다.
     }
 
-    private void TweenColors(Color _targetShadow, Color _targetBg)
+    private void TweenColors(Color _targetShadow, Color _targetBg, bool _isIdle = false)
     {
         if (null != colorTween && true == colorTween.IsActive())
         {
@@ -236,13 +244,29 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (null != uiEffect)
         {
+            if (false == _isIdle)
+            {
+                uiEffect.enabled = true;
+            }
+
             _seq.Join(DOTween.To(() => uiEffect.shadowColor, x => uiEffect.shadowColor = x, _targetShadow, colorTransitionDuration).SetEase(colorTransitionEase));
+            
+            if (true == _isIdle)
+            {
+                _seq.OnComplete(() => {
+                    if (null != uiEffect) uiEffect.enabled = false;
+                });
+            }
         }
 
         Image _targetBgImg = (null != bgImage) ? bgImage : clickImage;
         if (null != _targetBgImg)
         {
             _seq.Join(_targetBgImg.DOColor(_targetBg, colorTransitionDuration).SetEase(colorTransitionEase));
+        }
+        if (null != frameImage)
+        {
+            _seq.Join(frameImage.DOColor(_targetBg, colorTransitionDuration).SetEase(colorTransitionEase));
         }
 
         colorTween = _seq;
@@ -315,7 +339,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
                 {
                     visualChildren[i].localScale = Vector3.one;
                 }
-                TweenColors(hoverShadowColor, hoverBgColor);
+                TweenColors(hoverShadowColor, hoverBgColor, false);
             }
         }
         else
@@ -324,7 +348,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             {
                 visualChildren[i].localScale = Vector3.one;
             }
-            TweenColors(normalShadowColor, normalBgColor);
+            TweenColors(normalShadowColor, normalBgColor, true);
         }
     }
 

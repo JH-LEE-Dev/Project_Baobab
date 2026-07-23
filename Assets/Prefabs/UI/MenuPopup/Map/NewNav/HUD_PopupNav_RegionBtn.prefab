@@ -223,7 +223,7 @@ MonoBehaviour:
   m_ShadowMirrorScale: 0.5
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 4
-  m_ShadowColor: {r: 1.7207953, g: 0.25189924, b: 0, a: 1}
+  m_ShadowColor: {r: 0, g: 0.3757227, b: 1.6055588, a: 1}
   m_ShadowColorGlow: 0
   m_GradationMode: 0
   m_GradationIntensity: 1
@@ -537,7 +537,7 @@ MonoBehaviour:
   m_EdgeMode: 2
   m_EdgeWidth: 0.5
   m_EdgeColorFilter: 4
-  m_EdgeColor: {r: 0, g: 0.5350682, b: 1.3041189, a: 1}
+  m_EdgeColor: {r: 0, g: 0.16853239, b: 1.3041189, a: 1}
   m_EdgeColorGlow: 0
   m_EdgeShinyRate: 0.5
   m_EdgeShinyWidth: 0.5
@@ -701,7 +701,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.41509432, g: 0, b: 0, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -780,6 +780,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HUD_PopupNav_RegionBtn
   clickImage: {fileID: 5478284556487052560}
   bgImage: {fileID: 7487641036632318457}
+  frameImage: {fileID: 3388251397429091002}
   newIndicatorObj: {fileID: 2152213400124138834}
   lockVisualObj: {fileID: 7682306616101199194}
   selectDuration: 0.2
@@ -792,9 +793,9 @@ MonoBehaviour:
   normalBgColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
   hoverBgColor: {r: 1, g: 1, b: 1, a: 1}
   clickBgColor: {r: 1, g: 1, b: 1, a: 1}
-  hoverStartYScale: 0.7
-  hoverSnapDuration: 0.25
-  hoverSnapEase: 9
+  hoverStartYScale: 0.85
+  hoverSnapDuration: 0.2
+  hoverSnapEase: 6
   selectPunchStrength: 1.1
 --- !u!1 &6267079760275135465
 GameObject:
@@ -958,8 +959,8 @@ RectTransform:
   - {fileID: 537397477748529678}
   m_Father: {fileID: 4940307367157478699}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 16}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: 11}
   m_SizeDelta: {x: 40, y: 24}
-  m_Pivot: {x: 0, y: 0.5}
+  m_Pivot: {x: 0, y: 1}

@@ -61,10 +61,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private readonly List<HUD_PopupNav_SubRegionBtn> subRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(16);
     private readonly List<HUD_PopupNav_SubRegionBtn> activeSubRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(8);
 
-    private Coroutine sequenceCoroutine;
     private WaitForSeconds cachedSequenceWait;
+    private Coroutine sequenceCoroutine;
+    private Sequence currentAppearSequence;
     
-    private MapType pendingMapType;
+    private MapType pendingMapType = MapType.None;
     private Transform pendingRegionTransform;
     private Action pendingOnComplete;
 
@@ -102,7 +103,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             pendingMapType = _mapType;
             pendingRegionTransform = _regionBtnTransform;
             pendingOnComplete = _onComplete;
-            PlayDisappearSequence(OnDisappearSequenceCompleteForToggle);
+            
+            if (null == sequenceCoroutine)
+            {
+                PlayDisappearSequence(OnDisappearSequenceCompleteForToggle);
+            }
         }
         else
         {
@@ -170,10 +175,18 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
 
         // 세팅이 끝난 후 자체적으로 등장 시퀀스를 재생합니다.
-        Sequence _seq = PlayAppearSequence();
-        if (null != _seq)
+        if (null != currentAppearSequence && true == currentAppearSequence.IsActive())
         {
-            _seq.OnComplete(() => _onComplete?.Invoke());
+            currentAppearSequence.Kill();
+        }
+
+        currentAppearSequence = PlayAppearSequence();
+        if (null != currentAppearSequence)
+        {
+            currentAppearSequence.OnComplete(() => {
+                _onComplete?.Invoke();
+                currentAppearSequence = null;
+            });
         }
         else
         {
@@ -283,6 +296,12 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     private void PlayDisappearSequence(Action _onComplete)
     {
+        if (null != currentAppearSequence && true == currentAppearSequence.IsActive())
+        {
+            currentAppearSequence.Kill();
+            currentAppearSequence = null;
+        }
+
         if (null != sequenceCoroutine)
         {
             StopCoroutine(sequenceCoroutine);
@@ -306,7 +325,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             activeSubRegionButtons[i].PlayDisappearMotion(() => {
                 _completedCount++;
             });
-            yield return cachedSequenceWait;
+            // 기존에는 yield return cachedSequenceWait; 가 있어서 하나씩 순차 퇴장했지만,
+            // 빠른 전환을 위해 딜레이 없이 동시에 퇴장시킵니다.
         }
 
         float _timeout = 2f; // 무한 대기 방지
@@ -316,12 +336,9 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             yield return null;
         }
 
-        // 버튼이 사라졌다 나온 느낌(여운)을 주기 위한 짧은 딜레이
-        if (0f < transitionDelay)
-        {
-            yield return new WaitForSeconds(transitionDelay);
-        }
+        // 빠른 전환을 위해 transitionDelay 제거
 
+        sequenceCoroutine = null;
         _onComplete?.Invoke();
     }
 
@@ -335,7 +352,10 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             
             // 시퀀스가 생성될 때 DOTween이 현재 값을 캡처하므로, 미리 초기값을 세팅해둡니다. (X는 1, Y는 0.01f로 하여 0으로 인한 UI 레이아웃 무한대 팽창 버그 방지)
             _btn.transform.localScale = new Vector3(1f, 0.01f, 1f);
-            _btn.transform.localRotation = Quaternion.identity;
+            
+            // '띠용' 하는 역동적인 반동을 위해 시작부터 살짝 기울여서 배치 (홀/짝수 번째마다 반대로 기울임)
+            float _startAngle = (i % 2 == 0) ? shakeStrength : -shakeStrength;
+            _btn.transform.localRotation = Quaternion.Euler(0, 0, _startAngle);
 
             float _startTime = i * appearSequenceDelay;
             
@@ -347,8 +367,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             // 1. 패널이 열리듯 Y스케일을 0에서 1로 쫙 펴주기 (X는 가만히 유지)
             _btnSeq.Append(_btn.transform.DOScaleY(1f, appearAnimDuration).SetEase(appearAnimEase));
             
-            // 2. 펴지자마자 (스케일업 끝난 직후) 흔들흔들 거리는 펀치(Punch) 회전 연출로 '꽂힌 느낌' 부여
-            _btnSeq.Append(_btn.transform.DOPunchRotation(new Vector3(0, 0, shakeStrength), shakeDuration, shakeVibrato, 1f));
+            // 2. 기울어진 상태에서 탄성 있게(OutElastic) 0도로 튕기며 돌아오는 역동적 회전 연출
+            _btnSeq.Join(_btn.transform.DORotate(Vector3.zero, shakeDuration, RotateMode.Fast).SetEase(Ease.OutElastic));
             
             _seq.Insert(_startTime, _btnSeq);
         }
@@ -403,6 +423,12 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     public void ResetState()
     {
+        if (null != currentAppearSequence && true == currentAppearSequence.IsActive())
+        {
+            currentAppearSequence.Kill();
+            currentAppearSequence = null;
+        }
+
         if (null != sequenceCoroutine)
         {
             StopCoroutine(sequenceCoroutine);
