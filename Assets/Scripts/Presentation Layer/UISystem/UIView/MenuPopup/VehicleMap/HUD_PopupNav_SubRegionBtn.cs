@@ -35,6 +35,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [SerializeField] private float hoverPunchDuration = 0.4f;
 
     [Header("Locked Interaction Settings (Click)")]
+    [Tooltip("잠긴 상태 클릭 거절 시 재생할 파티클 시스템")]
+    [SerializeField] private ParticleSystem lockClickParticle;
     [Tooltip("잠긴 상태 클릭 거절 시 자물쇠 변경 색상")]
     [SerializeField] private Color lockClickColor = Color.red;
     [Tooltip("자물쇠 색상 복구 시간")]
@@ -251,6 +253,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != lockIconTween && true == lockIconTween.IsActive())
         {
             lockIconTween.Kill();
+        }
+
+        if (null != lockClickParticle)
+        {
+            lockClickParticle.Play();
         }
 
         lockIconObj.transform.localScale = Vector3.one;
