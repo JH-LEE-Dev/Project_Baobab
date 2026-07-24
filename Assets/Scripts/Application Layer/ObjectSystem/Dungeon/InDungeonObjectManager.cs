@@ -574,6 +574,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         currentOwnedLoots.Clear();
 
+        // 초기 스폰 코루틴이 아직 진행 중인 상태로 여길 진입하는 경우는 사실상 없지만(스폰이 끝나야
+        // 던전이 플레이어에게 공개되므로), ClearTrees()가 activeTrees를 비운 뒤에도 스폰 코루틴이 계속
+        // SpawnTreeAt을 호출해 activeTrees/풀 상태가 어긋나는 걸 방지하기 위해 방어적으로 먼저 멈춘다.
+        if (spawnTreesCoroutine != null)
+        {
+            StopCoroutine(spawnTreesCoroutine);
+            spawnTreesCoroutine = null;
+        }
+
         StopGrowth();
         ClearTrees();
     }
