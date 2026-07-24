@@ -10,7 +10,7 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
     private Dictionary<int, int> groupRemainingStarCount = new Dictionary<int, int>();
     private int nextGroupId = 0;
 
-    public override void SpawnInitialTrees(InDungeonObjectManager _manager, List<Vector3> _grassTilePositions)
+    public override IEnumerator SpawnInitialTrees(InDungeonObjectManager _manager, List<Vector3> _grassTilePositions)
     {
         _manager.ClearAvailablePositions();
         treeTriggerGroupDict.Clear();
@@ -188,6 +188,9 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
         }
 
         // 최종 생성 및 트리거 그룹 부여
+        float frameStart = Time.realtimeSinceStartup;
+        int countThisFrame = 0;
+
         for (int i = 0; i < clusterGroups.Count; i++)
         {
             List<Vector3Int> group = clusterGroups[i];
@@ -234,6 +237,15 @@ public class Stage3TreeGenerationStrategySO : TreeGenerationStrategySO
                         groupRemainingStarCount[groupId] = currentCount + 1;
 
                         actualTriggerAssigned++;
+                    }
+
+                    countThisFrame++;
+                    bool overBudget = (Time.realtimeSinceStartup - frameStart) * 1000f >= _manager.TreeSpawnFrameTimeBudgetMs;
+                    if (countThisFrame >= _manager.TreeSpawnMinPerFrame && (countThisFrame >= _manager.TreeSpawnMaxPerFrame || overBudget))
+                    {
+                        yield return null;
+                        frameStart = Time.realtimeSinceStartup;
+                        countThisFrame = 0;
                     }
                 }
             }

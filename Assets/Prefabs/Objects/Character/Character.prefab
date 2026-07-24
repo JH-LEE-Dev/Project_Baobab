@@ -1859,7 +1859,7 @@ MonoBehaviour:
   pickupRangeMultiplier: 1
   originalSpeed: 1
   sourceOfSpeedAmount: 0
-  maxStamina: 100
+  maxStamina: 1000000
   staminaIncreaseAlpha: 0
   staminaDecreaseAlpha: 0
   sourceOfStaminaRecoverAmount: 0

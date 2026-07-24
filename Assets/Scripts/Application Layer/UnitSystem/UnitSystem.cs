@@ -161,6 +161,10 @@ public class UnitSystem
         inventoryManager.ReleaseAllDroppedItem();
         unitLogicManager.SetCharacterPos(dungeonStartSignal.characterPos);
         offroadContainer.SetInTown(false);
+
+        // 마을에서 인벤토리에 원목을 든 채로 던전에 입장하면, 조작 가능해지기 전에 오프로드
+        // 컨테이너로 미리 옮겨 인벤토리 슬롯을 비워둔다.
+        inventoryManager.TransferAllLogItemsToOffroadContainer(offroadContainer);
     }
 
     private void TownStarted(TownStartedSignal townStartedSignal)

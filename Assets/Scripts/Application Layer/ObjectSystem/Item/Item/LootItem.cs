@@ -29,6 +29,13 @@ public class LootItem : Item
     // 관리용 인덱스
     public int UpdateIndex { get; set; } = -1;
 
+    [SerializeField] private GameObject outlineObj;
+    [SerializeField] private SpriteRenderer outlineStencilSR;
+    [SerializeField] private SpriteRenderer outlineSR;
+    [SerializeField] private Color outlineColor = Color.white;
+    private static readonly int OutlineColorPropertyID = Shader.PropertyToID("_OutlineColor");
+    private MaterialPropertyBlock mpb;
+
     public void Initialize(LootItemTypeData _lootItemTypeData)
     {
         base.Initialize(_lootItemTypeData.itemType);
@@ -45,6 +52,27 @@ public class LootItem : Item
             spriteRenderer.sprite = sprite;
             visualTransform = spriteRenderer.transform;
         }
+
+        if (outlineStencilSR != null)
+            outlineStencilSR.sprite = sprite;
+        if (outlineSR != null)
+            outlineSR.sprite = sprite;
+
+        // 스텐실 라이터가 아웃라인보다 한 순서 먼저 그려져야 스텐실 마스크 기법이 정상 동작한다(LogItem과 동일).
+        if (outlineStencilSR != null && outlineSR != null)
+            outlineStencilSR.sortingOrder = outlineSR.sortingOrder - 1;
+
+        ApplyOutlineColor();
+    }
+
+    private void ApplyOutlineColor()
+    {
+        if (outlineSR == null) return;
+
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        outlineSR.GetPropertyBlock(mpb);
+        mpb.SetColor(OutlineColorPropertyID, outlineColor);
+        outlineSR.SetPropertyBlock(mpb);
     }
 
     public void IsDropItem(bool _boolean)
@@ -68,6 +96,17 @@ public class LootItem : Item
         duration = _duration;
         elapsed = 0f;
         state = ItemMoveState.Launching;
+
+        if (outlineObj != null)
+        {
+            outlineObj.SetActive(true);
+            if (visualTransform != null)
+            {
+                outlineObj.transform.localPosition = visualTransform.localPosition;
+                outlineObj.transform.localRotation = visualTransform.localRotation;
+                outlineObj.transform.localScale = visualTransform.localScale;
+            }
+        }
     }
 
     public override void ResetItem()
@@ -76,6 +115,11 @@ public class LootItem : Item
         state = ItemMoveState.None;
         suckTarget = null;
         elapsed = 0;
+
+        if (outlineObj != null)
+            outlineObj.SetActive(false);
+        if (outlineSR != null)
+            outlineSR.SetPropertyBlock(null);
     }
 
     public void ManualUpdate(float _deltaTime)
@@ -109,6 +153,9 @@ public class LootItem : Item
         {
             transform.position = currentGroundPos;
             visualTransform.localPosition = new Vector3(0, heightOffset, 0);
+
+            if (outlineObj != null)
+                outlineObj.transform.localPosition = visualTransform.localPosition;
         }
         else
         {
@@ -118,8 +165,12 @@ public class LootItem : Item
         if (t >= 1.0f)
         {
             transform.position = GlobalPixelSnapper.Snap(endPos);
-            if (visualTransform != null) visualTransform.localPosition = Vector3.zero;
-            
+            if (visualTransform != null)
+            {
+                visualTransform.localPosition = Vector3.zero;
+                if (outlineObj != null) outlineObj.transform.localPosition = Vector3.zero;
+            }
+
             state = ItemMoveState.Dropped;
             if (suckTarget != null) StartSucking(suckTarget);
         }
@@ -148,6 +199,9 @@ public class LootItem : Item
         if (visualTransform != null)
         {
             visualTransform.localPosition = Vector3.Lerp(visualTransform.localPosition, Vector3.zero, _deltaTime * 5f);
+
+            if (outlineObj != null)
+                outlineObj.transform.localPosition = visualTransform.localPosition;
         }
     }
 

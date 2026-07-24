@@ -420,6 +420,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void StaminaIsEmpty()
     {
+        if (bDead) return; // MagmaForest 용암 지형에서 DecreaseStamina/ApplyEnvironmentalStaminaDrain가 같은 프레임에 중복 발화하는 것을 방지
+
         stateMachine.ChangeState<DeadState>();
         armComponent.SetActivate(false);
         attackComponent.SetEnable(false);
@@ -1025,13 +1027,20 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bStaminaUpDown) healthComponent.IncreaseStamina();
         else healthComponent.DecreaseStamina();
 
-        // 용암 등 위험 지형 인접 시 추가 소모 (증감 상태와 무관하게 항상 적용)
+        // 용암 등 위험 지형 인접 시 추가 소모. 단, 일반 스태미나 소모(DecreaseStamina)와 마찬가지로
+        // "실제 플레이가 시작된 이후"에만 적용해야 한다. bWhileReset(입장 카메라 연출 중, 조작 불가) 또는
+        // bDead 상태에서까지 깎으면, 스태미나가 매우 빠르게 닳는 스테이지(예: 최대치가 낮은 상태의 MagmaForest)에서
+        // 입장 연출 도중에 사망이 발생해 사망 시퀀스가 아직 끝나지 않은 입장 시퀀스와 충돌하고,
+        // 공유 카메라(isMoved 토글)·입력 잠금 플래그가 꼬여 마을에서 캐릭터가 죽은 채로 남고 입력이 먹통이 된다.
         CurrentCell = environmentProvider.tilemapDataProvider.WorldToCell(transform.position);
-        float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
-        if (hazardDrain > 0f)
+        if (bInDungeon && !bWhileReset && !bDead)
         {
-            healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
-            overheatComponent?.AddOverheatDuration(2f * Time.deltaTime); // 용암 열기 노출 1초당 2초 비율로 연속 적립
+            float hazardDrain = environmentProvider.tilemapDataProvider.GetHazardStaminaDrainPerSecond(CurrentCell);
+            if (hazardDrain > 0f)
+            {
+                healthComponent.ApplyEnvironmentalStaminaDrain(hazardDrain);
+                overheatComponent?.AddOverheatDuration(2f * Time.deltaTime); // 용암 열기 노출 1초당 2초 비율로 연속 적립
+            }
         }
 
         UpdateFacingByAttackPoint();
