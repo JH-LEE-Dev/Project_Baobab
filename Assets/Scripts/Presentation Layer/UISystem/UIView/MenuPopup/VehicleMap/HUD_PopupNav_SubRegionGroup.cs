@@ -74,13 +74,21 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private Transform pendingRegionTransform;
     private Action pendingOnComplete;
 
+    // Fixed GC allocs by making these class-level fields
+    private readonly List<TreeVisualData> tempTreeVisualDatas = new List<TreeVisualData>(8);
+    private float[] cachedSafeDistances = new float[32];
+    private float[] cachedGaps = new float[32];
+    
+    // Fixed Lambdas by replacing them with class methods
+    private int completedDisappearCount;
+    private Action cachedOnComplete;
+
     public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, TreeVisualDataBase _treeVisualDataBase)
     {
         mainController = _mainController;
         localizationManager = _localizationManager;
         treeVisualDataBase = _treeVisualDataBase;
 
-        // 컨테이너 하위에 이미 배치되어 있는 버튼들이 있다면 사전 캐싱
         if (null != container)
         {
             HUD_PopupNav_SubRegionBtn[] _existBtns = container.GetComponentsInChildren<HUD_PopupNav_SubRegionBtn>(true);
@@ -146,7 +154,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             subRegionButtons[i].gameObject.SetActive(false);
         }
 
-        // 대상 대지역 정보 탐색
         for (int i = 0; i < _db.mapDatas.Count; i++)
         {
             if (_mapType == _db.mapDatas[i].mapType)
@@ -160,18 +167,20 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
                         HUD_PopupNav_SubRegionBtn _btn = GetOrCreateSubRegionButton(j);
                         if (null != _btn)
                         {
-                            _btn.gameObject.SetActive(false); // 연출 시작 전까지 비활성화
-                            System.Collections.Generic.List<TreeVisualData> _visualDatas = new System.Collections.Generic.List<TreeVisualData>();
+                            _btn.transform.SetAsFirstSibling();
+                            
+                            _btn.gameObject.SetActive(false); 
+                            tempTreeVisualDatas.Clear(); // Using pre-allocated list to fix GC
                             if (null != treeVisualDataBase && null != _subInfo.spawnTreeTypes)
                             {
                                 int _treeCount = Mathf.Min(_subInfo.spawnTreeTypes.Count, 2);
                                 for (int k = 0; k < _treeCount; k++)
                                 {
-                                    _visualDatas.Add(treeVisualDataBase.Get(_subInfo.spawnTreeTypes[k].treeType));
+                                    tempTreeVisualDatas.Add(treeVisualDataBase.Get(_subInfo.spawnTreeTypes[k].treeType));
                                 }
                             }
                             
-                            _btn.Initialize(mainController, _subInfo, localizationManager, _regionInfo.mapType, _visualDatas);
+                            _btn.Initialize(mainController, _subInfo, localizationManager, _regionInfo.mapType, tempTreeVisualDatas);
                             activeSubRegionButtons.Add(_btn);
                         }
                     }
@@ -180,17 +189,14 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             }
         }
 
-        // 버튼들을 컨테이너 가로폭에 맞춰 균등 배치
         DistributeButtonsEvenly();
 
-        // 동적 앵커링 옵션이 켜져 있을 때만 대지역 위치로 컨테이너 이동
         if (true == useDynamicAnchoring && null != _regionBtnTransform && null != container)
         {
             container.position = _regionBtnTransform.position;
             container.anchoredPosition += new Vector2(anchorOffsetX, 0f);
         }
 
-        // 세팅이 끝난 후 자체적으로 등장 시퀀스를 재생합니다.
         if (null != currentAppearSequence && true == currentAppearSequence.IsActive())
         {
             currentAppearSequence.Kill();
@@ -199,15 +205,20 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         currentAppearSequence = PlayAppearSequence();
         if (null != currentAppearSequence)
         {
-            currentAppearSequence.OnComplete(() => {
-                _onComplete?.Invoke();
-                currentAppearSequence = null;
-            });
+            cachedOnComplete = _onComplete;
+            currentAppearSequence.OnComplete(OnAppearSequenceComplete); // Removed lambda
         }
         else
         {
             _onComplete?.Invoke();
         }
+    }
+
+    private void OnAppearSequenceComplete()
+    {
+        cachedOnComplete?.Invoke();
+        cachedOnComplete = null;
+        currentAppearSequence = null;
     }
 
     private HUD_PopupNav_SubRegionBtn GetOrCreateSubRegionButton(int _index)
@@ -238,122 +249,99 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         int _count = activeSubRegionButtons.Count;
         float _containerWidth = container.rect.width;
         
-        // 패딩이 적용된 실제 배치 가능 영역 너비 계산
         float _usableWidth = _containerWidth - paddingLeft - paddingRight;
-        float _segmentWidth = _usableWidth / _count;
 
-        // Container의 Pivot X 값에 따라 실제 사용 영역의 좌측 끝(Local X) 좌표 계산 (패딩 적용)
-        float _leftEdgeX = -(_containerWidth * container.pivot.x) + paddingLeft;
+        if (cachedSafeDistances.Length < _count)
+        {
+            cachedSafeDistances = new float[_count * 2];
+        }
+        float _totalRequiredSpace = 0f;
+
+        for (int i = 0; i < _count; i++)
+        {
+            if (null != activeSubRegionButtons[i])
+            {
+                float _btnWidth = activeSubRegionButtons[i].GetActualVisualWidth();
+                cachedSafeDistances[i] = Mathf.Max(_btnWidth * minDistanceRatioX, minDistanceAbsoluteX);
+            }
+            else
+            {
+                cachedSafeDistances[i] = minDistanceAbsoluteX;
+            }
+            _totalRequiredSpace += cachedSafeDistances[i];
+        }
         
-        // 각 버튼이 속한 분할 영역(Segment)의 중앙에 배치하기 위한 시작 X좌표
-        float _startX = _leftEdgeX + (_segmentWidth * 0.5f);
+        float _availableRandomSpace = _usableWidth - _totalRequiredSpace;
 
-        // 이번 배치에 적용할 지그재그 시작 방향 (true면 위->아래->위, false면 아래->위->아래)
+        if (_availableRandomSpace < 0f)
+        {
+            _availableRandomSpace = 0f;
+        }
+
+        if (cachedGaps.Length < _count + 1)
+        {
+            cachedGaps = new float[(_count + 1) * 2];
+        }
+        float _sumGaps = 0f;
+        for (int i = 0; i < _count + 1; i++)
+        {
+            cachedGaps[i] = UnityEngine.Random.Range(0.2f, 1.0f);
+            _sumGaps += cachedGaps[i];
+        }
+
+        for (int i = 0; i < _count + 1; i++)
+        {
+            cachedGaps[i] = (cachedGaps[i] / _sumGaps) * _availableRandomSpace;
+        }
+
+        float _currentLocalX = -(_containerWidth * container.pivot.x) + paddingLeft;
+        
         bool _isUpDownUp = 0.5f < UnityEngine.Random.value;
-
-        // 1단계: X, Y 위치 계산 (겹침 방지만 적용하고 전체 영역 클램프는 아직 안 함)
-        System.Collections.Generic.List<Vector2> _calculatedPositions = new System.Collections.Generic.List<Vector2>(_count);
-        float _lastPlacedX = float.MinValue;
 
         for (int i = 0; i < _count; i++)
         {
             RectTransform _btnRect = activeSubRegionButtons[i].GetComponent<RectTransform>();
-            if (null != _btnRect)
+            if (null == _btnRect) continue;
+
+            _currentLocalX += cachedGaps[i];
+
+            float _mySafeDistance = cachedSafeDistances[i];
+            float _targetX = _currentLocalX + (_mySafeDistance * 0.5f);
+
+            _currentLocalX += _mySafeDistance;
+
+            float t = 0f;
+            if (1 < _count)
             {
-                float _btnWidth = _btnRect.rect.width;
-                float _minDistance = Mathf.Max(_btnWidth * minDistanceRatioX, minDistanceAbsoluteX);
-                
-                // 기본 X좌표 (분할된 구역의 중앙)
-                float _baseTargetX = _startX + (i * _segmentWidth);
-                
-                // 순서(1->2->3)가 절대 뒤바뀌지 않도록 각자의 구역 내에서만 X축 랜덤 이동
-                float _randomOffsetX = UnityEngine.Random.Range(-_segmentWidth * randomScatterRatioX, _segmentWidth * randomScatterRatioX);
-                float _targetX = _baseTargetX + _randomOffsetX;
-
-                // 겹침 방지: 이전 버튼과의 거리가 최소 보장 거리보다 가깝다면 우측으로 강제 밀어내기
-                if (i > 0 && (_targetX - _lastPlacedX) < _minDistance)
-                {
-                    _targetX = _lastPlacedX + _minDistance;
-                }
-                
-                _lastPlacedX = _targetX;
-                
-                // 아치형 기본 레이아웃 계산
-                float t = 0f;
-                if (1 < _count)
-                {
-                    t = (i / (float)(_count - 1)) * 2f - 1f; // -1 ~ 1 사이로 정규화 (중앙이 0)
-                }
-                float _archOffset = archHeightY * (1f - (t * t));
-                
-                // Y축 랜덤 분산 추가 (일렬 방지 로직 적용)
-                float _randomOffsetY = 0f;
-                if (preventStraightLine)
-                {
-                    bool _goesUp = _isUpDownUp ? (0 == i % 2) : (0 != i % 2);
-                    _randomOffsetY = UnityEngine.Random.Range(minRandomScatterY, randomScatterRangeY);
-                    _randomOffsetY = _goesUp ? _randomOffsetY : -_randomOffsetY;
-                }
-                else
-                {
-                    _randomOffsetY = UnityEngine.Random.Range(-randomScatterRangeY, randomScatterRangeY);
-                }
-                
-                float _targetY = baseOffsetY + _archOffset + _randomOffsetY;
-
-                // 컨테이너 영역 밖으로 나가지 않도록 Y축 클램핑 (안전 영역 보장)
-                float _containerHeight = container.rect.height;
-                float _maxY = (_containerHeight * (1f - container.pivot.y)) - paddingTop;
-                float _minY = -(_containerHeight * container.pivot.y) + paddingBottom;
-                
-                // 버튼 자체의 크기(절반 높이)도 고려하여 클램핑 기준 강화
-                float _btnHalfHeight = _btnRect.rect.height * 0.5f;
-                _maxY -= _btnHalfHeight;
-                _minY += _btnHalfHeight;
-
-                _targetY = Mathf.Clamp(_targetY, _minY, _maxY);
-
-                _calculatedPositions.Add(new Vector2(_targetX, _targetY));
+                t = (i / (float)(_count - 1)) * 2f - 1f;
             }
-        }
-
-        // 2단계: 전체 그룹이 좌우 여백을 벗어났는지 확인하고 통째로 밀어넣기
-        if (0 < _count)
-        {
-            RectTransform _lastBtnRect = activeSubRegionButtons[_count - 1].GetComponent<RectTransform>();
-            RectTransform _firstBtnRect = activeSubRegionButtons[0].GetComponent<RectTransform>();
-
-            float _maxX = (_containerWidth * (1f - container.pivot.x)) - paddingRight - (_lastBtnRect.rect.width * 0.5f);
-            float _minX = -(_containerWidth * container.pivot.x) + paddingLeft + (_firstBtnRect.rect.width * 0.5f);
-
-            // 우측이 삐져나갔다면 전체를 왼쪽으로 밉니다
-            float _lastX = _calculatedPositions[_count - 1].x;
-            if (_lastX > _maxX)
+            float _archOffset = archHeightY * (1f - (t * t));
+            
+            float _randomOffsetY = 0f;
+            if (preventStraightLine)
             {
-                float _shiftLeft = _lastX - _maxX;
-                for (int i = 0; i < _count; i++)
-                {
-                    _calculatedPositions[i] = new Vector2(_calculatedPositions[i].x - _shiftLeft, _calculatedPositions[i].y);
-                }
+                bool _goesUp = _isUpDownUp ? (0 == i % 2) : (0 != i % 2);
+                _randomOffsetY = UnityEngine.Random.Range(minRandomScatterY, randomScatterRangeY);
+                _randomOffsetY = _goesUp ? _randomOffsetY : -_randomOffsetY;
             }
-
-            // 좌측이 삐져나갔다면 통째로 오른쪽으로 밉니다. (컨테이너 좁은 경우 좌측 안 잘리는 걸 우선)
-            float _firstX = _calculatedPositions[0].x;
-            if (_firstX < _minX)
+            else
             {
-                float _shiftRight = _minX - _firstX;
-                for (int i = 0; i < _count; i++)
-                {
-                    _calculatedPositions[i] = new Vector2(_calculatedPositions[i].x + _shiftRight, _calculatedPositions[i].y);
-                }
+                _randomOffsetY = UnityEngine.Random.Range(-randomScatterRangeY, randomScatterRangeY);
             }
+            
+            float _targetY = baseOffsetY + _archOffset + _randomOffsetY;
 
-            // 최종 적용
-            for (int i = 0; i < _count; i++)
-            {
-                RectTransform _btnRect = activeSubRegionButtons[i].GetComponent<RectTransform>();
-                _btnRect.anchoredPosition = _calculatedPositions[i];
-            }
+            float _containerHeight = container.rect.height;
+            float _maxY = (_containerHeight * (1f - container.pivot.y)) - paddingTop;
+            float _minY = -(_containerHeight * container.pivot.y) + paddingBottom;
+            
+            float _btnHalfHeight = _btnRect.rect.height * 0.5f;
+            _maxY -= _btnHalfHeight;
+            _minY += _btnHalfHeight;
+
+            _targetY = Mathf.Clamp(_targetY, _minY, _maxY);
+
+            _btnRect.anchoredPosition = new Vector2(_targetX, _targetY);
         }
     }
 
@@ -374,7 +362,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
     private System.Collections.IEnumerator CoPlayDisappearSequence(Action _onComplete)
     {
-        int _completedCount = 0;
+        completedDisappearCount = 0;
         int _totalCount = activeSubRegionButtons.Count;
 
         if (0 == _totalCount)
@@ -385,24 +373,23 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
         for (int i = _totalCount - 1; i >= 0; i--)
         {
-            activeSubRegionButtons[i].PlayDisappearMotion(() => {
-                _completedCount++;
-            });
-            // 기존에는 yield return cachedSequenceWait; 가 있어서 하나씩 순차 퇴장했지만,
-            // 빠른 전환을 위해 딜레이 없이 동시에 퇴장시킵니다.
+            activeSubRegionButtons[i].PlayDisappearMotion(OnDisappearMotionComplete); // Removed lambda
         }
 
-        float _timeout = 2f; // 무한 대기 방지
-        while (_completedCount < _totalCount && 0f < _timeout)
+        float _timeout = 2f; 
+        while (completedDisappearCount < _totalCount && 0f < _timeout)
         {
             _timeout -= Time.deltaTime;
             yield return null;
         }
 
-        // 빠른 전환을 위해 transitionDelay 제거
-
         sequenceCoroutine = null;
         _onComplete?.Invoke();
+    }
+
+    private void OnDisappearMotionComplete()
+    {
+        completedDisappearCount++;
     }
 
     public Sequence PlayAppearSequence()
@@ -413,24 +400,19 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         {
             HUD_PopupNav_SubRegionBtn _btn = activeSubRegionButtons[i];
             
-            // 시퀀스가 생성될 때 DOTween이 현재 값을 캡처하므로, 미리 초기값을 세팅해둡니다. (X는 1, Y는 0.01f로 하여 0으로 인한 UI 레이아웃 무한대 팽창 버그 방지)
             _btn.transform.localScale = new Vector3(1f, 0.01f, 1f);
             
-            // '띠용' 하는 역동적인 반동을 위해 시작부터 살짝 기울여서 배치 (홀/짝수 번째마다 반대로 기울임)
-            float _startAngle = (i % 2 == 0) ? shakeStrength : -shakeStrength;
+            float _startAngle = (0 == i % 2) ? shakeStrength : -shakeStrength; // Yoda notation
             _btn.transform.localRotation = Quaternion.Euler(0, 0, _startAngle);
 
             float _startTime = i * appearSequenceDelay;
             
             Sequence _btnSeq = DOTween.Sequence();
 
-            // 애니메이션 시작 시간에 맞춰 버튼 활성화
             _btnSeq.AppendCallback(_btn.CachedActivate);
             
-            // 1. 패널이 열리듯 Y스케일을 0에서 1로 쫙 펴주기 (X는 가만히 유지)
             _btnSeq.Append(_btn.transform.DOScaleY(1f, appearAnimDuration).SetEase(appearAnimEase));
             
-            // 2. 기울어진 상태에서 탄성 있게(OutElastic) 0도로 튕기며 돌아오는 역동적 회전 연출
             _btnSeq.Join(_btn.transform.DORotate(Vector3.zero, shakeDuration, RotateMode.Fast).SetEase(Ease.OutElastic));
             
             _seq.Insert(_startTime, _btnSeq);
@@ -443,7 +425,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
-            if (_forestType == activeSubRegionButtons[i].GetForestType())
+            if (_forestType == activeSubRegionButtons[i].GetForestType()) // Yoda notation
             {
                 activeSubRegionButtons[i].PlayUnlockMotion(_onComplete);
                 return;
@@ -465,7 +447,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
-            if (activeSubRegionButtons[i].GetForestType() == _forestType)
+            if (_forestType == activeSubRegionButtons[i].GetForestType()) // Yoda notation
             {
                 return activeSubRegionButtons[i];
             }
@@ -518,6 +500,22 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             {
                 activeSubRegionButtons[i].EvaluateHoverState();
             }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (null != currentAppearSequence && true == currentAppearSequence.IsActive())
+        {
+            currentAppearSequence.Kill();
+            currentAppearSequence = null;
+        }
+        
+        // Ensure tweens or sequence states are safely cleared
+        if (null != sequenceCoroutine)
+        {
+            StopCoroutine(sequenceCoroutine);
+            sequenceCoroutine = null;
         }
     }
 }

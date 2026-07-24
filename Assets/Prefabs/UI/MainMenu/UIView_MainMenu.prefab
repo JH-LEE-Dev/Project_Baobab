@@ -408,7 +408,7 @@ MonoBehaviour:
   backgroundDimmer: {fileID: 3577683620735908448}
   dimmerTargetAlpha: 0.784
   dimmerFadeDuration: 0.5
-  skipIntroInEditor: 0
+  skipIntroInEditor: 1
   exitMoveDuration: 1.8
   exitMoveDistance: 500
   exitMoveEase: 10

@@ -103,13 +103,13 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             }
         }
 
-        if (originalLocalX == null || originalLocalX.Length == 0)
+        if (null == originalLocalX || 0 == originalLocalX.Length)
         {
             visualChildren.Clear();
             for (int i = 0; i < transform.childCount; i++)
             {
                 Transform _child = transform.GetChild(i);
-                if (null != clickImage && clickImage.transform == _child)
+                if (null != clickImage && _child == clickImage.transform)
                 {
                     continue;
                 }
@@ -158,8 +158,8 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (null != uiEffect)
         {
             uiEffect.enabled = true;
-            _seq.Append(DOTween.To(() => uiEffect.shadowColor, x => uiEffect.shadowColor = x, clickShadowColor, _halfDuration).SetEase(colorTransitionEase));
-            _seq.Append(DOTween.To(() => uiEffect.shadowColor, x => uiEffect.shadowColor = x, hoverShadowColor, _halfDuration).SetEase(colorTransitionEase));
+            _seq.Append(DOTween.To(GetShadowColor, SetShadowColor, clickShadowColor, _halfDuration).SetEase(colorTransitionEase));
+            _seq.Append(DOTween.To(GetShadowColor, SetShadowColor, hoverShadowColor, _halfDuration).SetEase(colorTransitionEase));
         }
 
         Image _targetBgImg = (null != bgImage) ? bgImage : clickImage;
@@ -266,13 +266,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
                 uiEffect.enabled = true;
             }
 
-            _seq.Join(DOTween.To(() => uiEffect.shadowColor, x => uiEffect.shadowColor = x, _targetShadow, colorTransitionDuration).SetEase(colorTransitionEase));
+            _seq.Join(DOTween.To(GetShadowColor, SetShadowColor, _targetShadow, colorTransitionDuration).SetEase(colorTransitionEase));
             
             if (true == _isIdle)
             {
-                _seq.OnComplete(() => {
-                    if (null != uiEffect) uiEffect.enabled = false;
-                });
+                _seq.OnComplete(DisableUIEffect);
             }
         }
 
@@ -340,7 +338,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (true == _isSelected)
         {
-            if (_playClickAnim)
+            if (true == _playClickAnim)
             {
                 Sequence _seq = DOTween.Sequence();
                 for (int i = 0; i < visualChildren.Count; i++)
@@ -374,7 +372,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
                 hoverTween.Kill();
             }
 
-            if (_playClickAnim)
+            if (true == _playClickAnim)
             {
                 Sequence _seq = DOTween.Sequence();
                 for (int i = 0; i < visualChildren.Count; i++)
@@ -449,5 +447,22 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             newIndicatorObj.SetActive(false);
             newIndicatorObj.transform.localScale = Vector3.one;
         }
+    }
+
+    private Color GetShadowColor() { return uiEffect.shadowColor; }
+    private void SetShadowColor(Color c) { uiEffect.shadowColor = c; }
+
+    private void DisableUIEffect() 
+    { 
+        if (null != uiEffect) uiEffect.enabled = false; 
+    }
+
+    private void OnDestroy()
+    {
+        if (null != colorTween && true == colorTween.IsActive()) colorTween.Kill();
+        if (null != hoverTween && true == hoverTween.IsActive()) hoverTween.Kill();
+        if (null != unlockTween && true == unlockTween.IsActive()) unlockTween.Kill();
+        if (null != selectTween && true == selectTween.IsActive()) selectTween.Kill();
+        if (null != clearNewTween && true == clearNewTween.IsActive()) clearNewTween.Kill();
     }
 }

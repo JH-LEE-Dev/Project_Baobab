@@ -15,27 +15,38 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [SerializeField] private GameObject newIndicatorObj;
     [Tooltip("서브지역을 표시할 나무 비주얼 프랍 리스트 (최대 2개 지원)")]
     [SerializeField] private System.Collections.Generic.List<HUD_PopupNav_TreeProp> treeProps;
+    [Tooltip("실제 시각적인 나무 크기를 계산할 때 기준이 되는 오브젝트 (겹침 방지 레이아웃용)")]
+    [SerializeField] private RectTransform visualBoundsRef;
+
+    [Header("Lock Icon")]
+    [Tooltip("자물쇠 아이콘 오브젝트")]
+    [SerializeField] private GameObject lockIconObj;
+
+    [Header("Tree Color Settings")]
+    [Tooltip("호버하지 않을 때의 어두운 명도 (Color 틴트)")]
+    [SerializeField] private Color nonHoveredColor = new Color(0.6f, 0.6f, 0.6f, 1f);
+    [Tooltip("색상 전환 연출 시간")]
+    [SerializeField] private float colorTransitionDuration = 0.2f;
+
+    [Header("Hover Animation (SubRegion)")]
+    [Tooltip("호버 시 툭 치는 느낌의 Y축 스케일 바운스(Punch) 강도")]
+    [SerializeField] private float hoverPunchStrengthY = 0.15f;
+    [Tooltip("호버 바운스 연출 시간")]
+    [SerializeField] private float hoverPunchDuration = 0.4f;
+
+    [Header("Locked Interaction Settings")]
+    [Tooltip("잠긴 상태 클릭 거절 시 자물쇠 변경 색상")]
+    [SerializeField] private Color lockClickColor = Color.red;
+    [Tooltip("자물쇠 색상 복구 시간")]
+    [SerializeField] private float lockClickColorDuration = 0.3f;
+    [Tooltip("잠긴 상태 호버/클릭 시 자물쇠 펀치 강도")]
+    [SerializeField] private float lockPunchStrength = 0.2f;
 
     [Header("DOTween Settings")]
     [Tooltip("해금 연출 시간")]
     [SerializeField] private float unlockDuration = 0.5f;
     [Tooltip("선택 시 연출 시간")]
     [SerializeField] private float selectDuration = 0.2f;
-    
-    [Header("Hover Animation (SubRegion)")]
-    [Tooltip("호버 시 커질 목표 X 스케일")]
-    [SerializeField] private float hoverScaleX = 1.15f;
-    [Tooltip("호버 시 커질 목표 Y 스케일")]
-    [SerializeField] private float hoverScaleY = 1.15f;
-    [Tooltip("스프링 연출 시간 (또이잉 하고 멈추는 데 걸리는 시간)")]
-    [SerializeField] private float hoverDuration = 0.6f;
-    [Tooltip("스프링 이즈(Ease.OutElastic 추천)")]
-    [SerializeField] private Ease hoverEase = Ease.OutElastic;
-    
-    [Tooltip("언호버 되감기 연출 시간")]
-    [SerializeField] private float unhoverDuration = 0.2f;
-    [Tooltip("언호버 되감기 이즈")]
-    [SerializeField] private Ease unhoverEase = Ease.OutBack;
 
     [Header("Select Animation")]
     [Tooltip("선택(클릭) 시 흔들림 강도")]
@@ -47,6 +58,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private Tween selectTween;
     private Tween hoverTween;
     private Tween clearNewTween;
+    private Tween lockIconTween;
     
     // 비주얼 연출을 적용할 자식 트랜스폼 목록 (clickImage 제외)
     private System.Collections.Generic.List<Transform> visualChildren = new System.Collections.Generic.List<Transform>();
@@ -60,11 +72,37 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     public TweenCallback CachedActivate { get; private set; }
     private TweenCallback cachedPlayParticle;
     private TweenCallback cachedClearNewComplete;
+    private TweenCallback cachedDisappearComplete;
+    private TweenCallback cachedUnlockStep1;
+    private TweenCallback cachedUnlockStep2;
+    private TweenCallback cachedUnlockMotionComplete;
+    private TweenCallback cachedClearNewTweenComplete;
+    
+    private Action cachedOnHoverClearNewComplete;
+    private Action pendingDisappearCompleteAction;
+    private Action pendingUnlockCompleteAction;
+    private Action pendingClearNewCompleteAction;
+
     private bool isPointerOver = false;
     private bool isSelected = false;
 
     public ForestType GetForestType() => myInfo.forestType;
     public ForestEnvironmentInfo GetInfo() => myInfo;
+
+    /// <summary>
+    /// 레이아웃 배치 시 사용될 실제 시각적 너비를 반환합니다.
+    /// 바인딩된 객체가 없다면 자신의 RectTransform 너비를 반환합니다.
+    /// </summary>
+    public float GetActualVisualWidth()
+    {
+        if (null != visualBoundsRef)
+        {
+            return visualBoundsRef.rect.width;
+        }
+        
+        RectTransform _myRect = GetComponent<RectTransform>();
+        return null != _myRect ? _myRect.rect.width : 0f;
+    }
 
     public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas)
     {
@@ -88,7 +126,24 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             }
         }
 
-        bool _isLocked = !_info.isUnlocked;
+        bool _isLocked = false == _info.isUnlocked;
+
+        if (null != lockIconObj)
+        {
+            lockIconObj.SetActive(_isLocked);
+            lockIconObj.transform.localScale = Vector3.one;
+            Image _lockImg = lockIconObj.GetComponent<Image>();
+            if (null != _lockImg) _lockImg.color = Color.white;
+        }
+
+        for (int i = 0; i < treeProps.Count; i++)
+        {
+            if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
+            {
+                treeProps[i].SetDimColor(nonHoveredColor);
+                treeProps[i].SetVisualState(_isLocked ? TreeVisualState.Locked : TreeVisualState.Unlocked_Idle, 0f);
+            }
+        }
 
         if (null != clearNewTween && true == clearNewTween.IsActive())
         {
@@ -97,7 +152,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (null != newIndicatorObj)
         {
-            bool _showNew = _info.isNew && !_isLocked;
+            bool _showNew = true == _info.isNew && false == _isLocked;
             newIndicatorObj.SetActive(_showNew);
             if (true == _showNew)
             {
@@ -120,6 +175,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         CachedActivate = ActivateObject;
         cachedPlayParticle = PlayNewIndicatorParticle;
         cachedClearNewComplete = OnClearNewComplete;
+        cachedDisappearComplete = OnDisappearComplete;
+        cachedUnlockStep1 = OnUnlockStep1;
+        cachedUnlockStep2 = OnUnlockStep2;
+        cachedUnlockMotionComplete = OnUnlockMotionComplete;
+        cachedClearNewTweenComplete = OnClearNewTweenComplete;
+        cachedOnHoverClearNewComplete = OnHoverClearNewComplete;
 
         SetSelectedState(false);
     }
@@ -138,10 +199,35 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (false == myInfo.isUnlocked)
         {
+            PlayLockedInteraction();
             return;
         }
 
         mainController.HandleSubRegionSelected(myInfo.forestType);
+    }
+
+    private void PlayLockedInteraction()
+    {
+        if (null == lockIconObj) return;
+
+        if (null != lockIconTween && true == lockIconTween.IsActive())
+        {
+            lockIconTween.Kill();
+        }
+
+        lockIconObj.transform.localScale = Vector3.one;
+        Image _img = lockIconObj.GetComponent<Image>();
+
+        Sequence _seq = DOTween.Sequence();
+        _seq.Join(lockIconObj.transform.DOPunchScale(new Vector3(lockPunchStrength, lockPunchStrength, 0f), 0.3f, 5, 0.5f));
+
+        if (null != _img)
+        {
+            _seq.Join(_img.DOColor(lockClickColor, lockClickColorDuration * 0.5f));
+            _seq.Append(_img.DOColor(Color.white, lockClickColorDuration * 0.5f));
+        }
+        
+        lockIconTween = _seq;
     }
 
     public void OnPointerEnter(PointerEventData _eventData)
@@ -166,39 +252,59 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     private void TriggerHover()
     {
-        if (true == myInfo.isUnlocked)
+        if (false == myInfo.isUnlocked)
         {
-            bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
-            
-            if (_hasNew)
+            if (null != lockIconObj)
             {
-                ClearNewIndicator(() => {
-                    if (null != mainController && false == mainController.IsInputBlocked && false == mainController.IsTransitioning)
-                    {
-                        mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
-                    }
-                });
+                if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
+                lockIconObj.transform.localScale = Vector3.one;
+                lockIconTween = lockIconObj.transform.DOPunchScale(new Vector3(lockPunchStrength, lockPunchStrength, 0f), 0.3f, 5, 0.5f);
             }
-            else
+            return;
+        }
+
+        bool _hasNew = (null != newIndicatorObj && true == newIndicatorObj.activeSelf);
+        
+        if (true == _hasNew)
+        {
+            ClearNewIndicator(cachedOnHoverClearNewComplete);
+        }
+        else
+        {
+            ClearNewIndicator();
+            mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
+        }
+
+        if (false == isSelected)
+        {
+            if (null != hoverTween && true == hoverTween.IsActive())
             {
-                ClearNewIndicator();
-                mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
+                hoverTween.Kill();
+            }
+            
+            for (int i = 0; i < treeProps.Count; i++)
+            {
+                if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
+                {
+                    treeProps[i].SetVisualState(TreeVisualState.Unlocked_Hover, colorTransitionDuration);
+                }
             }
 
-            if (false == isSelected)
+            Sequence _seq = DOTween.Sequence();
+            for (int i = 0; i < visualChildren.Count; i++)
             {
-                if (null != hoverTween && true == hoverTween.IsActive())
-                {
-                    hoverTween.Kill();
-                }
-                // 스프링 연출 (OutElastic 활용)
-                Sequence _seq = DOTween.Sequence();
-                for (int i = 0; i < visualChildren.Count; i++)
-                {
-                    _seq.Join(visualChildren[i].DOScale(new Vector3(hoverScaleX, hoverScaleY, 1f), hoverDuration).SetEase(hoverEase));
-                }
-                hoverTween = _seq;
+                visualChildren[i].localScale = Vector3.one;
+                _seq.Join(visualChildren[i].DOPunchScale(new Vector3(0f, hoverPunchStrengthY, 0f), hoverPunchDuration, 5, 0.5f));
             }
+            hoverTween = _seq;
+        }
+    }
+
+    private void OnHoverClearNewComplete()
+    {
+        if (null != mainController && false == mainController.IsInputBlocked && false == mainController.IsTransitioning)
+        {
+            mainController.HandleSubRegionHovered(myInfo.forestType, transform, myInfo);
         }
     }
 
@@ -211,35 +317,45 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             return;
         }
 
+        if (false == myInfo.isUnlocked)
+        {
+            return;
+        }
+
         mainController.HandleSubRegionUnhovered();
-
-
 
         if (null != hoverTween && true == hoverTween.IsActive())
         {
             hoverTween.Kill();
         }
-        // 원래 크기로 찰지게 되감기
+        
+        for (int i = 0; i < treeProps.Count; i++)
+        {
+            if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
+            {
+                treeProps[i].SetVisualState(TreeVisualState.Unlocked_Idle, colorTransitionDuration);
+            }
+        }
+
         Sequence _seq = DOTween.Sequence();
         for (int i = 0; i < visualChildren.Count; i++)
         {
-            _seq.Join(visualChildren[i].DOScale(1f, unhoverDuration).SetEase(unhoverEase));
+            _seq.Join(visualChildren[i].DOScale(1f, 0.2f).SetEase(Ease.OutBack));
         }
         hoverTween = _seq;
     }
-
-
 
     public void ResetState()
     {
         isSelected = false;
         
-        if (null != hoverTween && hoverTween.IsActive()) hoverTween.Kill();
-        if (null != appearTween && appearTween.IsActive()) appearTween.Kill();
-        if (null != disappearTween && disappearTween.IsActive()) disappearTween.Kill();
-        if (null != clearNewTween && clearNewTween.IsActive()) clearNewTween.Kill();
-        if (null != unlockTween && unlockTween.IsActive()) unlockTween.Kill();
-        if (null != selectTween && selectTween.IsActive()) selectTween.Kill();
+        if (null != hoverTween && true == hoverTween.IsActive()) hoverTween.Kill();
+        if (null != appearTween && true == appearTween.IsActive()) appearTween.Kill();
+        if (null != disappearTween && true == disappearTween.IsActive()) disappearTween.Kill();
+        if (null != clearNewTween && true == clearNewTween.IsActive()) clearNewTween.Kill();
+        if (null != unlockTween && true == unlockTween.IsActive()) unlockTween.Kill();
+        if (null != selectTween && true == selectTween.IsActive()) selectTween.Kill();
+        if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
 
         for (int i = 0; i < visualChildren.Count; i++)
         {
@@ -269,6 +385,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     private void ExecuteDisappearMotion(Action _onComplete)
     {
+        pendingDisappearCompleteAction = _onComplete;
+
         if (null != disappearTween && true == disappearTween.IsActive())
         {
             disappearTween.Kill();
@@ -279,23 +397,20 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         // 역재생 느낌으로 원래대로 작아짐 (Y축 0.01로 축소)
         _seq.Append(transform.DOScaleY(0.01f, 0.15f).SetEase(Ease.InBack));
         
-        _seq.OnComplete(() => {
-            gameObject.SetActive(false);
-            _onComplete?.Invoke();
-        });
+        _seq.OnComplete(cachedDisappearComplete);
 
         disappearTween = _seq;
     }
 
-    private Action pendingUnlockCompleteAction;
+    private void OnDisappearComplete()
+    {
+        gameObject.SetActive(false);
+        pendingDisappearCompleteAction?.Invoke();
+        pendingDisappearCompleteAction = null;
+    }
 
     public void PlayUnlockMotion(Action _onComplete)
     {
-        if (null != newIndicatorObj)
-        {
-            newIndicatorObj.SetActive(true);
-        }
-
         pendingUnlockCompleteAction = _onComplete;
 
         if (null != unlockTween && true == unlockTween.IsActive())
@@ -303,11 +418,51 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             unlockTween.Kill();
         }
 
-        // [TODO] 추후 DOTween 연출 작성
-        // unlockTween = ...
+        Sequence _seq = DOTween.Sequence();
+
+        // 1. 자물쇠 연출 (현재는 즉시 비활성화, 추후 연출 추가 예정)
+        _seq.AppendCallback(cachedUnlockStep1);
+
+        _seq.AppendInterval(unlockDuration);
+
+        // 2. 자물쇠 연출(및 실루엣 해제)이 끝난 직후 NEW 뱃지 팝업 연출
+        _seq.AppendCallback(cachedUnlockStep2);
+
+        if (null != newIndicatorObj)
+        {
+            _seq.Append(newIndicatorObj.transform.DOScale(Vector3.one, 0.4f).SetEase(Ease.OutBack));
+            _seq.AppendCallback(cachedPlayParticle);
+        }
+
+        _seq.OnComplete(cachedUnlockMotionComplete);
+
+        unlockTween = _seq;
+    }
+
+    private void OnUnlockStep1()
+    {
+        if (null != lockIconObj)
+        {
+            lockIconObj.SetActive(false);
+        }
         
-        // 임시 즉시 완료
-        OnUnlockMotionComplete();
+        // 나무 실루엣(검은색) 서서히 벗겨지며 Dim 상태로 돌아오기
+        for (int i = 0; i < treeProps.Count; i++)
+        {
+            if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
+            {
+                treeProps[i].SetVisualState(TreeVisualState.Unlocked_Idle, unlockDuration);
+            }
+        }
+    }
+
+    private void OnUnlockStep2()
+    {
+        if (null != newIndicatorObj)
+        {
+            newIndicatorObj.SetActive(true);
+            newIndicatorObj.transform.localScale = Vector3.zero;
+        }
     }
 
     private void OnUnlockMotionComplete()
@@ -345,14 +500,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     public void ClearNewIndicator(Action _onComplete = null)
     {
+        pendingClearNewCompleteAction = _onComplete;
+
         if (null != newIndicatorObj && true == newIndicatorObj.activeSelf)
         {
             if (null != clearNewTween && true == clearNewTween.IsActive())
             {
-                clearNewTween.OnComplete(() => {
-                    OnClearNewComplete();
-                    _onComplete?.Invoke();
-                });
+                clearNewTween.OnComplete(cachedClearNewTweenComplete);
                 return;
             }
 
@@ -373,17 +527,22 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             _seq.AppendCallback(cachedPlayParticle);
             _seq.Append(_newTr.DOScale(new Vector3(0f, 1f, 1f), 0.15f).SetEase(Ease.InQuad));
 
-            _seq.OnComplete(() => {
-                OnClearNewComplete();
-                _onComplete?.Invoke();
-            });
+            _seq.OnComplete(cachedClearNewTweenComplete);
 
             clearNewTween = _seq;
         }
         else
         {
-            _onComplete?.Invoke();
+            pendingClearNewCompleteAction?.Invoke();
+            pendingClearNewCompleteAction = null;
         }
+    }
+
+    private void OnClearNewTweenComplete()
+    {
+        cachedClearNewComplete?.Invoke();
+        pendingClearNewCompleteAction?.Invoke();
+        pendingClearNewCompleteAction = null;
     }
 
     private void PlayNewIndicatorParticle()
@@ -401,5 +560,16 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             newIndicatorObj.SetActive(false);
             newIndicatorObj.transform.localScale = Vector3.one;
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (null != appearTween && true == appearTween.IsActive()) appearTween.Kill();
+        if (null != disappearTween && true == disappearTween.IsActive()) disappearTween.Kill();
+        if (null != unlockTween && true == unlockTween.IsActive()) unlockTween.Kill();
+        if (null != selectTween && true == selectTween.IsActive()) selectTween.Kill();
+        if (null != hoverTween && true == hoverTween.IsActive()) hoverTween.Kill();
+        if (null != clearNewTween && true == clearNewTween.IsActive()) clearNewTween.Kill();
+        if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
     }
 }

@@ -3,26 +3,33 @@ using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
+public enum TreeVisualState
+{
+    Locked,
+    Unlocked_Idle,
+    Unlocked_Hover
+}
+
 public class HUD_PopupNav_TreeProp : MonoBehaviour
 {
     [Header("UI References")]
-    [Tooltip("나무 잎 이미지")]
+    [Tooltip("?�무 ???��?지")]
     [SerializeField] private Image leafImage;
-    [Tooltip("나무 기둥 이미지")]
+    [Tooltip("?�무 기둥 ?��?지")]
     [SerializeField] private Image trunkImage;
-    [Tooltip("실드 잎 이미지")]
+    [Tooltip("?�드 ???��?지")]
     [SerializeField] private Image shieldLeafImage;
-    [Tooltip("실드 기둥 이미지")]
+    [Tooltip("?�드 기둥 ?��?지")]
     [SerializeField] private Image shieldTrunkImage;
-    [Tooltip("하이라이트 잎 이미지")]
+    [Tooltip("?�이?�이?????��?지")]
     [SerializeField] private Image highlightLeafImage;
-    [Tooltip("하이라이트 기둥 이미지")]
+    [Tooltip("?�이?�이??기둥 ?��?지")]
     [SerializeField] private Image highlightTrunkImage;
 
     [Header("HDR Material Support")]
-    [Tooltip("실드 잎/기둥에 적용할 인텐시티 값 (머테리얼 Float 프로퍼티에 다이렉트 반영)")]
+    [Tooltip("?�드 ??기둥???�용???�텐?�티 �?(머테리얼 Float ?�로?�티???�이?�트 반영)")]
     [SerializeField] private float shieldHdrIntensity = 1.0f;
-    [Tooltip("하이라이트 잎/기둥에 적용할 인텐시티 값 (머테리얼 Float 프로퍼티에 다이렉트 반영)")]
+    [Tooltip("?�이?�이????기둥???�용???�텐?�티 �?(머테리얼 Float ?�로?�티???�이?�트 반영)")]
     [SerializeField] private float highlightHdrIntensity = 1.0f;
 
     [Header("Appear Animation")]
@@ -39,10 +46,17 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
     private Color originalHighlightLeafColor = Color.white;
     private Color originalHighlightTrunkColor = Color.white;
 
-    private static readonly int HdrColorPropertyId = Shader.PropertyToID("_HDRColor");
+    private static readonly int HdrColorPropertyId = Shader.PropertyToID("_HDRColor_1");
+    private static readonly int BaseHdrColorPropertyId = Shader.PropertyToID("_HDRColor");
+    private static readonly int ColorPropertyId = Shader.PropertyToID("_Color");
 
     private ParticleSystem[] childParticles;
     private Tween appearTween;
+
+    private Color dimmedColorMultiplier = Color.gray;
+    private Tween[] colorTweens = new Tween[6];
+
+
 
     private bool isInitialized = false;
 
@@ -55,6 +69,8 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
         childParticles = GetComponentsInChildren<ParticleSystem>(true);
         CacheOriginalMaterialsAndColors();
+        
+        // 그림???기?? ?해 EnvironmentSystem 찾기
         isInitialized = true;
     }
 
@@ -64,28 +80,28 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         {
             shieldLeafMat = Instantiate(shieldLeafImage.material);
             shieldLeafImage.material = shieldLeafMat;
-            originalShieldLeafColor = shieldLeafMat.HasProperty(HdrColorPropertyId) ? shieldLeafMat.GetColor(HdrColorPropertyId) : shieldLeafImage.color;
+            originalShieldLeafColor = shieldLeafMat.HasProperty(BaseHdrColorPropertyId) ? shieldLeafMat.GetColor(BaseHdrColorPropertyId) : shieldLeafImage.color;
         }
 
         if (null != shieldTrunkImage && null != shieldTrunkImage.material)
         {
             shieldTrunkMat = Instantiate(shieldTrunkImage.material);
             shieldTrunkImage.material = shieldTrunkMat;
-            originalShieldTrunkColor = shieldTrunkMat.HasProperty(HdrColorPropertyId) ? shieldTrunkMat.GetColor(HdrColorPropertyId) : shieldTrunkImage.color;
+            originalShieldTrunkColor = shieldTrunkMat.HasProperty(BaseHdrColorPropertyId) ? shieldTrunkMat.GetColor(BaseHdrColorPropertyId) : shieldTrunkImage.color;
         }
 
         if (null != highlightLeafImage && null != highlightLeafImage.material)
         {
             highlightLeafMat = Instantiate(highlightLeafImage.material);
             highlightLeafImage.material = highlightLeafMat;
-            originalHighlightLeafColor = highlightLeafMat.HasProperty(HdrColorPropertyId) ? highlightLeafMat.GetColor(HdrColorPropertyId) : highlightLeafImage.color;
+            originalHighlightLeafColor = highlightLeafMat.HasProperty(BaseHdrColorPropertyId) ? highlightLeafMat.GetColor(BaseHdrColorPropertyId) : highlightLeafImage.color;
         }
 
         if (null != highlightTrunkImage && null != highlightTrunkImage.material)
         {
             highlightTrunkMat = Instantiate(highlightTrunkImage.material);
             highlightTrunkImage.material = highlightTrunkMat;
-            originalHighlightTrunkColor = highlightTrunkMat.HasProperty(HdrColorPropertyId) ? highlightTrunkMat.GetColor(HdrColorPropertyId) : highlightTrunkImage.color;
+            originalHighlightTrunkColor = highlightTrunkMat.HasProperty(BaseHdrColorPropertyId) ? highlightTrunkMat.GetColor(BaseHdrColorPropertyId) : highlightTrunkImage.color;
         }
     }
 
@@ -109,7 +125,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning($"[TreeProp] '{_visualData.treeType}' 나무의 Top Sprite가 비어있어 이미지를 출력할 수 없습니다.");
+                Debug.LogWarning($"[TreeProp] '{_visualData.treeType}' ?무??Top Sprite가 비어?어 ??지?출력?????습?다.");
             }
         }
 
@@ -167,12 +183,38 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
                 highlightTrunkImage.sprite = _spr;
             }
         }
-
-        ApplyHdrIntensity(shieldLeafImage, ref shieldLeafMat, ref originalShieldLeafColor, shieldHdrIntensity);
-        ApplyHdrIntensity(shieldTrunkImage, ref shieldTrunkMat, ref originalShieldTrunkColor, shieldHdrIntensity);
-        ApplyHdrIntensity(highlightLeafImage, ref highlightLeafMat, ref originalHighlightLeafColor, highlightHdrIntensity);
-        ApplyHdrIntensity(highlightTrunkImage, ref highlightTrunkMat, ref originalHighlightTrunkColor, highlightHdrIntensity);
     }
+
+    public void SetDimColor(Color _dimColor)
+    {
+        dimmedColorMultiplier = _dimColor;
+    }
+
+    public void SetVisualState(TreeVisualState _state, float _duration = 0f)
+    {
+        if (false == isInitialized) Initialize();
+
+        Color _baseTargetColor = Color.white;
+        if (TreeVisualState.Locked == _state)
+        {
+            _baseTargetColor = Color.black;
+        }
+        else if (TreeVisualState.Unlocked_Idle == _state)
+        {
+            _baseTargetColor = dimmedColorMultiplier;
+        }
+
+        ApplyStateColorToImage(leafImage, null, Color.white, _baseTargetColor, _duration, ref colorTweens[0], 1f);
+        ApplyStateColorToImage(trunkImage, null, Color.white, _baseTargetColor, _duration, ref colorTweens[1], 1f);
+        
+        ApplyStateColorToImage(shieldLeafImage, shieldLeafMat, originalShieldLeafColor, _baseTargetColor, _duration, ref colorTweens[2], shieldHdrIntensity);
+        ApplyStateColorToImage(shieldTrunkImage, shieldTrunkMat, originalShieldTrunkColor, _baseTargetColor, _duration, ref colorTweens[3], shieldHdrIntensity);
+        
+        ApplyStateColorToImage(highlightLeafImage, highlightLeafMat, originalHighlightLeafColor, _baseTargetColor, _duration, ref colorTweens[4], highlightHdrIntensity);
+        ApplyStateColorToImage(highlightTrunkImage, highlightTrunkMat, originalHighlightTrunkColor, _baseTargetColor, _duration, ref colorTweens[5], highlightHdrIntensity);
+    }
+
+
 
     public void PlayAppearAnimation(float _delay)
     {
@@ -184,72 +226,97 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         transform.localScale = new Vector3(1f, 0.01f, 1f);
 
         Sequence _seq = DOTween.Sequence();
-        if (_delay > 0f)
+        if (0f < _delay)
         {
             _seq.SetDelay(_delay);
         }
 
         _seq.Append(transform.DOScaleY(1f, appearDuration).SetEase(appearEase));
 
-        _seq.AppendCallback(() => {
-            if (null != childParticles)
-            {
-                for (int i = 0; i < childParticles.Length; i++)
-                {
-                    childParticles[i].Play();
-                }
-            }
-        });
+        _seq.AppendCallback(PlayChildParticles);
 
         appearTween = _seq;
     }
 
-    private void ApplyHdrIntensity(Image _image, ref Material _mat, ref Color _originalColor, float _intensity)
+    private void PlayChildParticles()
     {
-        if (null == _image || false == _image.gameObject.activeSelf || null == _mat)
+        if (null != childParticles)
         {
-            return;
+            for (int i = 0; i < childParticles.Length; i++)
+            {
+                childParticles[i].Play();
+            }
+        }
+    }
+
+    private void ApplyStateColorToImage(Image _image, Material _mat, Color _originalColor, Color _stateMultiplier, float _duration, ref Tween _tween, float _intensity)
+    {
+        if (null == _image || false == _image.gameObject.activeSelf) return;
+
+        if (null != _tween && true == _tween.IsActive())
+        {
+            _tween.Kill();
         }
 
-        // 1. 기존 컬러에서 순수 색상(LDR)만 추출 (가장 큰 RGB 값으로 나누어 기존 인텐시티 제거)
-        float maxColorComponent = Mathf.Max(_originalColor.r, Mathf.Max(_originalColor.g, _originalColor.b));
-        Color ldrColor = _originalColor;
-        
-        // 만약 기존 컬러가 이미 HDR(1.0 초과)이거나 매우 어두울 경우를 대비해 정규화
-        if (maxColorComponent > 0.001f)
-        {
-            // RGB 중 최대값이 1.0이 되도록 맞춰서 순수 원색을 구함
-            ldrColor.r = Mathf.Clamp01(_originalColor.r / maxColorComponent);
-            ldrColor.g = Mathf.Clamp01(_originalColor.g / maxColorComponent);
-            ldrColor.b = Mathf.Clamp01(_originalColor.b / maxColorComponent);
-        }
+        Color _targetColor;
 
-        // 2. 유니티 에디터 기본 HDR 인텐시티 공식 (2^Intensity) 적용
-        // 인스펙터에 입력된 변수 값이 '절대적인 인텐시티 강도'로 다이렉트 반영됨
-        float factor = Mathf.Pow(2, _intensity);
-        Color hdrColor = new Color(
-            ldrColor.r * factor, 
-            ldrColor.g * factor, 
-            ldrColor.b * factor, 
-            ldrColor.a
-        );
+        if (null != _mat)
+        {
+            float maxColorComponent = Mathf.Max(_originalColor.r, Mathf.Max(_originalColor.g, _originalColor.b));
+            Color ldrColor = _originalColor;
+            
+            if (0.001f < maxColorComponent)
+            {
+                ldrColor.r = Mathf.Clamp01(_originalColor.r / maxColorComponent);
+                ldrColor.g = Mathf.Clamp01(_originalColor.g / maxColorComponent);
+                ldrColor.b = Mathf.Clamp01(_originalColor.b / maxColorComponent);
+            }
 
-        if (_mat.HasProperty(HdrColorPropertyId))
-        {
-            _mat.SetColor(HdrColorPropertyId, hdrColor);
+            float factor = Mathf.Pow(2, _intensity);
+            Color hdrColor = new Color(
+                ldrColor.r * factor, 
+                ldrColor.g * factor, 
+                ldrColor.b * factor, 
+                ldrColor.a
+            );
+
+            _targetColor = hdrColor * _stateMultiplier;
+
+            if (_mat.HasProperty(HdrColorPropertyId))
+            {
+                _tween = _mat.DOColor(_targetColor, HdrColorPropertyId, _duration);
+            }
+            else if (_mat.HasProperty(BaseHdrColorPropertyId))
+            {
+                _tween = _mat.DOColor(_targetColor, BaseHdrColorPropertyId, _duration);
+            }
+            else if (_mat.HasProperty(ColorPropertyId))
+            {
+                _tween = _mat.DOColor(_targetColor, ColorPropertyId, _duration);
+            }
+            else
+            {
+                _mat.color = _targetColor;
+            }
         }
-        else if (_mat.HasProperty("_HDRColor"))
+        else
         {
-            _mat.SetColor("_HDRColor", hdrColor);
-        }
-        else if (_mat.HasProperty("_Color"))
-        {
-            _mat.SetColor("_Color", hdrColor);
+            _targetColor = _originalColor * _stateMultiplier;
+            _tween = _image.DOColor(_targetColor, _duration);
         }
     }
 
     private void OnDestroy()
     {
+        if (null != appearTween && true == appearTween.IsActive()) appearTween.Kill();
+        for (int i = 0; i < colorTweens.Length; i++)
+        {
+            if (null != colorTweens[i] && true == colorTweens[i].IsActive())
+            {
+                colorTweens[i].Kill();
+            }
+        }
+
         if (null != shieldLeafMat)
         {
             Destroy(shieldLeafMat);

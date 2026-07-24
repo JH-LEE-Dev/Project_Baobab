@@ -152,6 +152,7 @@ public class UIView_MainMenu : UIView
         {
             if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
             if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
+            if (null != this.mainMenuUI) this.mainMenuUI.gameObject.SetActive(false); // 추가: 스킵 시에도 메인 메뉴를 미리 숨겨야 이중 연출 방지
             
             this.ShowDimmer();
 

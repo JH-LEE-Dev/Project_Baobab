@@ -19,8 +19,6 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
     [Tooltip("대지역 버튼 순차 등장 시 버튼 간 딜레이")]
     [SerializeField] private float appearSequenceDelay = 0.05f;
 
-
-
     [Header("Region Background Settings")]
     [Tooltip("맵 타입별 배경 이미지 설정")]
     [SerializeField] private List<RegionBackgroundSetup> regionBackgrounds = new List<RegionBackgroundSetup>();
@@ -40,6 +38,8 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
     private LocalizationManager localizationManager;
     private readonly List<HUD_PopupNav_RegionBtn> regionButtons = new List<HUD_PopupNav_RegionBtn>(8);
 
+    private Sequence appearSeq;
+
     public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager)
     {
         mainController = _mainController;
@@ -51,8 +51,9 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
             HUD_PopupNav_RegionBtn[] _existBtns = container.GetComponentsInChildren<HUD_PopupNav_RegionBtn>(true);
             if (null != _existBtns)
             {
-                for (int i = 0; i < _existBtns.Length; i++)
+                for (int i = 0; _existBtns.Length > i; i++)
                 {
+                    if (null == _existBtns[i]) continue;
                     if (false == regionButtons.Contains(_existBtns[i]))
                     {
                         _existBtns[i].gameObject.SetActive(false);
@@ -77,14 +78,15 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
         }
 
         // 기존 생성된 버튼 초기화 및 비활성화
-        for (int i = 0; i < regionButtons.Count; i++)
+        for (int i = 0; regionButtons.Count > i; i++)
         {
+            if (null == regionButtons[i]) continue;
             regionButtons[i].gameObject.SetActive(false);
         }
 
         // 1. 유효한 대지역 목록 추출 (Town 제외)
         List<MapEnvironmentDataInfo> _validRegions = new List<MapEnvironmentDataInfo>(4);
-        for (int i = 0; i < _db.mapDatas.Count; i++)
+        for (int i = 0; _db.mapDatas.Count > i; i++)
         {
             if (MapType.Town == _db.mapDatas[i].mapType)
             {
@@ -102,7 +104,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
         // 3. 버튼 생성 및 노출
         int _btnIndex = 0;
-        for (int i = 0; i < _validRegions.Count; i++)
+        for (int i = 0; _validRegions.Count > i; i++)
         {
             // 두 번째 대지역이 해금 가능 상태가 아닐 때, 첫 번째 지역 이후의 지역들은 노출하지 않음
             if (false == _isSecondStageAvailable && 0 < i)
@@ -110,13 +112,15 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
                 break;
             }
 
-            if (_btnIndex < regionButtons.Count)
+            if (regionButtons.Count > _btnIndex)
             {
                 HUD_PopupNav_RegionBtn _btn = regionButtons[_btnIndex];
+                if (null == _btn) continue;
+
                 Sprite _bgSprite = null;
-                for (int j = 0; j < regionBackgrounds.Count; j++)
+                for (int j = 0; regionBackgrounds.Count > j; j++)
                 {
-                    if (regionBackgrounds[j].mapType == _validRegions[i].mapType)
+                    if (_validRegions[i].mapType == regionBackgrounds[j].mapType)
                     {
                         _bgSprite = regionBackgrounds[j].backgroundImage;
                         break;
@@ -141,11 +145,17 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
     public Sequence PlayAppearSequence()
     {
-        Sequence _seq = DOTween.Sequence();
+        if (null != appearSeq && appearSeq.IsActive())
+        {
+            appearSeq.Kill();
+        }
         
-        for (int i = 0; i < regionButtons.Count; i++)
+        appearSeq = DOTween.Sequence();
+        
+        for (int i = 0; regionButtons.Count > i; i++)
         {
             HUD_PopupNav_RegionBtn _btn = regionButtons[i];
+            if (null == _btn) continue;
             
             // 데이터가 초기화되어 사용할 버튼인지 확인 (초기화시 activeSelf가 false로 설정되어 있음)
             if (false == _btn.gameObject.activeSelf && MapType.None != _btn.GetMapType())
@@ -162,19 +172,18 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
                 _btnSeq.Append(_btn.transform.DOScale(1f, appearDuration).SetEase(appearEase));
 
                 // 전체 시퀀스의 본인 타이밍에 개별 시퀀스 합체
-                _seq.Insert(_startTime, _btnSeq);
+                appearSeq.Insert(_startTime, _btnSeq);
             }
         }
 
-        return _seq;
+        return appearSeq;
     }
-
-
 
     public void PlayUnlockProduction(MapType _mapType, float _speedRate, Action _onComplete)
     {
-        for (int i = 0; i < regionButtons.Count; i++)
+        for (int i = 0; regionButtons.Count > i; i++)
         {
+            if (null == regionButtons[i]) continue;
             if (_mapType == regionButtons[i].GetMapType())
             {
                 regionButtons[i].PlayUnlockMotion(_onComplete);
@@ -187,16 +196,18 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
     public void SetSelectRegion(MapType _mapType, bool _playClickAnim = true)
     {
-        for (int i = 0; i < regionButtons.Count; i++)
+        for (int i = 0; regionButtons.Count > i; i++)
         {
+            if (null == regionButtons[i]) continue;
             regionButtons[i].SetSelectedState(_mapType == regionButtons[i].GetMapType(), _playClickAnim);
         }
     }
 
     public Transform GetRegionTransform(MapType _mapType)
     {
-        for (int i = 0; i < regionButtons.Count; i++)
+        for (int i = 0; regionButtons.Count > i; i++)
         {
+            if (null == regionButtons[i]) continue;
             if (_mapType == regionButtons[i].GetMapType())
             {
                 return regionButtons[i].transform;
@@ -207,8 +218,9 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
     public void ClearAllNewIndicators()
     {
-        for (int i = 0; i < regionButtons.Count; i++)
+        for (int i = 0; regionButtons.Count > i; i++)
         {
+            if (null == regionButtons[i]) continue;
             if (true == regionButtons[i].gameObject.activeSelf)
             {
                 regionButtons[i].ClearNewIndicator();
@@ -218,8 +230,9 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
     public void ClearNewIndicator(MapType _mapType)
     {
-        for (int i = 0; i < regionButtons.Count; i++)
+        for (int i = 0; regionButtons.Count > i; i++)
         {
+            if (null == regionButtons[i]) continue;
             if (_mapType == regionButtons[i].GetMapType())
             {
                 regionButtons[i].ClearNewIndicator();
@@ -230,12 +243,22 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
     public void EvaluateAllHoverStates()
     {
-        for (int i = 0; i < regionButtons.Count; i++)
+        for (int i = 0; regionButtons.Count > i; i++)
         {
-            if (null != regionButtons[i] && true == regionButtons[i].gameObject.activeSelf)
+            if (null == regionButtons[i]) continue;
+            if (true == regionButtons[i].gameObject.activeSelf)
             {
                 regionButtons[i].EvaluateHoverState();
             }
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (null != appearSeq && appearSeq.IsActive())
+        {
+            appearSeq.Kill();
+            appearSeq = null;
         }
     }
 }

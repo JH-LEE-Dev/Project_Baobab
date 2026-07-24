@@ -65,6 +65,30 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private Tween appearTween;
     private Tween disappearTween;
 
+    [Header("SubRegion Field Animation")]
+    [Tooltip("서브지역 영역 (오른쪽에서 날아옴)")]
+    [SerializeField] private RectTransform subRegionFieldTransform;
+    [Tooltip("시작 시 화면 우측 밖으로 밀려나는 거리 (Offset X)")]
+    [SerializeField] private float subRegionFieldOffsetX = 1500f;
+    [Tooltip("이동 연출 이즈(Ease)")]
+    [SerializeField] private Ease subRegionFieldEase = Ease.OutBack;
+    [Tooltip("바운스(반동) 강도 (낮을수록 약함, 기본 1.0 / DOTween 기본 1.7)")]
+    [SerializeField] private float subRegionFieldOvershoot = 1.0f;
+
+    [Header("Title Band Animation")]
+    [Tooltip("타이틀 배경 검은색 띠 (가운데서 X축 쫙 펴짐)")]
+    [SerializeField] private RectTransform titleBandTransform;
+    [Tooltip("펼쳐지는 연출 이즈(Ease)")]
+    [SerializeField] private Ease titleBandEase = Ease.OutBack;
+    [Tooltip("바운스(반동) 강도 (낮을수록 약함, 기본 1.0 / DOTween 기본 1.7)")]
+    [SerializeField] private float titleBandOvershoot = 1.0f;
+
+    [Header("Sync Animation Settings")]
+    [Tooltip("두 연출의 강제 재생 시간 (0이면 Region 버튼 전체 연출 시간과 동일하게 자동 동기화)")]
+    [SerializeField] private float additionalAnimDurationOverride = 0f;
+
+    private Vector2 subRegionFieldOriginalPos;
+
     [Header("Settings")]
     [Tooltip("해금 연출 기본 지연 시간")]
     [SerializeField] private float defaultUnlockDelay = 1.0f;
@@ -143,6 +167,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
             subRegionGroup.Initialize(this, localizationManager, treeVisualDataBase);
         }
 
+        if (null != subRegionFieldTransform)
+        {
+            subRegionFieldOriginalPos = subRegionFieldTransform.anchoredPosition;
+        }
+
         BindClickEvents();
     }
 
@@ -182,6 +211,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
         isUnlockingProductionActive = false;
         currentSelectedMapType = MapType.None;
         currentSelectedForestType = ForestType.None;
+
+        if (null != currentRegionNameText)
+        {
+            currentRegionNameText.text = "";
+            currentRegionNameText.transform.localScale = Vector3.one;
+        }
 
         if (debugForceUnlockAll && null != mapDataProvider)
         {
@@ -265,10 +300,35 @@ public class HUD_PopupNav_Main : MonoBehaviour
         // 4. Region 버튼들 순차 등장
         // (DOTween 시퀀스는 미리 구성되므로 SetupRegions는 이전에 호출하여 버튼들이 생성되어 있어야 합니다)
         _seq.AppendInterval(delayBeforeButtons);
+        
+        Sequence _simultaneousSeq = DOTween.Sequence();
+        float _animDuration = 0.5f;
+
         if (null != regionGroup)
         {
-            _seq.Append(regionGroup.PlayAppearSequence());
+            Sequence _regionSeq = regionGroup.PlayAppearSequence();
+            _simultaneousSeq.Join(_regionSeq);
+            if (null != _regionSeq) _animDuration = _regionSeq.Duration();
+
+            if (0f < additionalAnimDurationOverride)
+            {
+                _animDuration += additionalAnimDurationOverride;
+            }
         }
+
+        if (null != subRegionFieldTransform)
+        {
+            subRegionFieldTransform.anchoredPosition = new Vector2(subRegionFieldOriginalPos.x + subRegionFieldOffsetX, subRegionFieldOriginalPos.y);
+            _simultaneousSeq.Join(subRegionFieldTransform.DOAnchorPosX(subRegionFieldOriginalPos.x, _animDuration).SetEase(subRegionFieldEase, subRegionFieldOvershoot));
+        }
+
+        if (null != titleBandTransform)
+        {
+            titleBandTransform.localScale = new Vector3(0f, 1f, 1f);
+            _simultaneousSeq.Join(titleBandTransform.DOScaleX(1f, _animDuration).SetEase(titleBandEase, titleBandOvershoot));
+        }
+
+        _seq.Append(_simultaneousSeq);
 
         // 5. 첫번째 대지역 선택 및 서브지역 연출 준비 (OnMainPopupAppearComplete 역할 포함)
         _seq.AppendCallback(onAppearMidwayCallback);
@@ -373,9 +433,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             _seq.Insert(_currentTime, navImageContainer.DOAnchorPosY(-200f, navImageBounceDuration).SetEase(Ease.InBack));
         }
 
-        _seq.OnComplete(() => {
-            OnMainPopupDisappearComplete();
-        });
+        _seq.OnComplete(OnMainPopupDisappearComplete);
 
         disappearTween = _seq;
     }
@@ -686,6 +744,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         MarkCurrentRegionAsRead();
 
+    
+
         currentSelectedMapType = _mapType;
         runtimeLastSelectedMapType = _mapType;
         currentSelectedForestType = ForestType.None;
@@ -720,27 +780,34 @@ public class HUD_PopupNav_Main : MonoBehaviour
             regionGroup.SetSelectRegion(_mapType, _playClickAnim);
             Transform _regionBtnTransform = regionGroup.GetRegionTransform(_mapType);
             
-            Action _onShowSubRegions = () => {
-                if (null != subRegionGroup)
-                {
-                    subRegionGroup.ShowSubRegionsForMap(_mapType, _regionBtnTransform, mapDataProvider, () => {
-                        IsTransitioning = false;
-                        if (null != regionGroup) regionGroup.EvaluateAllHoverStates();
-                        if (null != subRegionGroup) subRegionGroup.EvaluateAllHoverStates();
-                    });
-                }
-                else
-                {
-                    IsTransitioning = false;
-                }
-            };
-
-            _onShowSubRegions();
+            if (MapType.None != _mapType)
+            {
+                ShowSubRegions(_mapType, _regionBtnTransform);
+            }
         }
         else
         {
             IsTransitioning = false;
         }
+    }
+
+    private void ShowSubRegions(MapType _mapType, Transform _regionBtnTransform)
+    {
+        if (null != subRegionGroup)
+        {
+            subRegionGroup.ShowSubRegionsForMap(_mapType, _regionBtnTransform, mapDataProvider, OnSubRegionsShown);
+        }
+        else
+        {
+            IsTransitioning = false;
+        }
+    }
+
+    private void OnSubRegionsShown()
+    {
+        IsTransitioning = false;
+        if (null != regionGroup) regionGroup.EvaluateAllHoverStates();
+        if (null != subRegionGroup) subRegionGroup.EvaluateAllHoverStates();
     }
 
     public void HandleSubRegionHovered(ForestType _forestType, Transform _subRegionTransform, ForestEnvironmentInfo _info)
@@ -778,5 +845,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
             onConfirmMapSelectedCallback?.Invoke(currentSelectedMapType, currentSelectedForestType);
             Close();
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (null != appearTween && appearTween.IsActive()) appearTween.Kill();
+        if (null != disappearTween && disappearTween.IsActive()) disappearTween.Kill();
+        if (null != delayedCallTween && delayedCallTween.IsActive()) delayedCallTween.Kill();
+        if (null != regionNameTween && regionNameTween.IsActive()) regionNameTween.Kill();
     }
 }
