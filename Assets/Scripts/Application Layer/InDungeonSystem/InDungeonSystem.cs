@@ -228,7 +228,14 @@ public class InDungeonSystem : MonoBehaviour
 
     private void MapGenerated(MapGeneratedSignal mapGeneratedSignal)
     {
-        inDungeonObjectManager.ReadyTrees(mapGeneratedSignal.grassTilePositions);
+        // 나무 초기 스폰은 프레임 분산 코루틴으로 실행되어 즉시 끝나지 않을 수 있다. 구름이 걷히는
+        // 트리거(DungeonStartSignal/RollbackCameraMove 포함)를 담은 나머지 로직은 반드시 스폰이
+        // 실제로 끝난 뒤(OnTreesReady)에 실행되어야, 스폰 도중 구름이 걷혀버리는 일이 없다.
+        inDungeonObjectManager.ReadyTrees(mapGeneratedSignal.grassTilePositions, OnTreesReady);
+    }
+
+    private void OnTreesReady()
+    {
         inDungeonObjectManager.ReadyPortal();
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
 

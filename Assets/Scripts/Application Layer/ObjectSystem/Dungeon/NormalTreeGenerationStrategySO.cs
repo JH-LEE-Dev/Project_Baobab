@@ -5,7 +5,7 @@ using System.Collections;
 [CreateAssetMenu(fileName = "NormalTreeGenerationStrategy", menuName = "Baobab/ObjectSystem/TreeGenerationStrategy/Normal")]
 public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
 {
-    public override void SpawnInitialTrees(InDungeonObjectManager _manager, List<Vector3> _grassTilePositions)
+    public override IEnumerator SpawnInitialTrees(InDungeonObjectManager _manager, List<Vector3> _grassTilePositions)
     {
         _manager.ClearAvailablePositions();
         for (int i = 0; i < _grassTilePositions.Count; i++)
@@ -15,9 +15,22 @@ public class NormalTreeGenerationStrategySO : TreeGenerationStrategySO
         _manager.ShuffleAvailablePositions();
 
         int startCount = _manager.EnvironmentProvider.densityProvider.GetTreeStartCnt(currentMapType);
+
+        float frameStart = Time.realtimeSinceStartup;
+        int countThisFrame = 0;
+
         for (int i = 0; i < startCount; i++)
         {
             _manager.SpawnOneTreeFromAvailable(false);
+            countThisFrame++;
+
+            bool overBudget = (Time.realtimeSinceStartup - frameStart) * 1000f >= _manager.TreeSpawnFrameTimeBudgetMs;
+            if (countThisFrame >= _manager.TreeSpawnMinPerFrame && (countThisFrame >= _manager.TreeSpawnMaxPerFrame || overBudget))
+            {
+                yield return null;
+                frameStart = Time.realtimeSinceStartup;
+                countThisFrame = 0;
+            }
         }
     }
 

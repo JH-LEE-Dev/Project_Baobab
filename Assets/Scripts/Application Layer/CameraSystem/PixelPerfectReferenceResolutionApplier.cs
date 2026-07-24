@@ -33,7 +33,7 @@ public class PixelPerfectReferenceResolutionApplier : MonoBehaviour
 
     private void OnDisable()
     {
-        if (null == SettingsManager.Instance) return;
+        if (false == SettingsManager.HasInstance) return;
         SettingsManager.Instance.OnScreenTargetResolvedEvent -= ApplyReferenceResolution;
     }
 
