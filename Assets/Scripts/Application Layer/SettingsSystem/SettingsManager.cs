@@ -23,6 +23,13 @@ public class SettingsManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 인스턴스를 새로 생성하지 않고 존재 여부만 확인합니다.
+    /// 씬 종료(OnDisable/OnDestroy) 중에는 Instance 게터를 호출하면 이미 파괴된 싱글턴이
+    /// 그 시점에 새로 생성되어 정리되지 못한 채 남는 문제가 있어, 그런 경로에서는 이걸 써야 합니다.
+    /// </summary>
+    public static bool HasInstance => null != instance;
+
     /// <summary>언어가 실제로 변경되어 로컬라이징이 갱신된 뒤 발생합니다.</summary>
     public event Action<EOptionLanguage> OnLanguageChangedEvent;
 

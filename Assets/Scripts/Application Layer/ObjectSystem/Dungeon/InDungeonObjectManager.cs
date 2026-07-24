@@ -104,6 +104,18 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private bool enableCulling = true;
     [SerializeField] private float cullingDistance = 25f;
 
+    [Header("Tree Spawn Batching (초기 스폰 프레임 분산)")]
+    [Tooltip("초기 나무 스폰 중 한 프레임에 이 시간(ms)을 넘겨 쓰면 다음 프레임으로 넘긴다.")]
+    [SerializeField] private float treeSpawnFrameTimeBudgetMs = 2f;
+    [Tooltip("프레임당 최소 스폰 개수 - 이 개수를 채우기 전에는 시간 예산을 넘겨도 끊지 않는다.")]
+    [SerializeField] private int treeSpawnMinPerFrame = 1;
+    [Tooltip("프레임당 최대 스폰 개수 - 시간 예산이 남아도 이 개수에 도달하면 다음 프레임으로 넘긴다.")]
+    [SerializeField] private int treeSpawnMaxPerFrame = 40;
+
+    public float TreeSpawnFrameTimeBudgetMs => treeSpawnFrameTimeBudgetMs;
+    public int TreeSpawnMinPerFrame => treeSpawnMinPerFrame;
+    public int TreeSpawnMaxPerFrame => treeSpawnMaxPerFrame;
+
     [Header("Portal")]
     [SerializeField] private OffroadVehicleObj offroadVehiclePrefab;
 
@@ -122,6 +134,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
     private IObjectPool<TreeObj> treePool;
     private Coroutine growthCoroutine;
+    private Coroutine spawnTreesCoroutine;
     private CullingGroup cullingGroup;
     private BoundingSphere[] spheres;
     private float[] cullingDistances;
@@ -488,10 +501,20 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         dungeonData = _dungeonData;
     }
 
-    public void ReadyTrees(List<Vector3> _grassTileWorldPositions)
+    /// <summary>
+    /// 나무 초기 스폰은 (특히 3스테이지처럼 개체수가 많은 맵에서) 프레임 분산 코루틴으로 실행되므로
+    /// 즉시 끝나지 않을 수 있다. 스폰이 실제로 끝난 뒤 이어져야 하는 로직(구름 걷힘, NPC 스폰 등)은
+    /// 이 호출 다음 줄이 아니라 반드시 _onSpawnComplete 콜백에서 처리해야 한다.
+    /// </summary>
+    public void ReadyTrees(List<Vector3> _grassTileWorldPositions, Action _onSpawnComplete = null)
     {
         grassTileWorldPositions = _grassTileWorldPositions;
-        SpawnInitialTrees();
+
+        if (spawnTreesCoroutine != null)
+        {
+            StopCoroutine(spawnTreesCoroutine);
+        }
+        spawnTreesCoroutine = StartCoroutine(SpawnInitialTreesRoutine(_onSpawnComplete));
     }
 
     public void ReadyPortal()
@@ -551,36 +574,49 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         currentOwnedLoots.Clear();
 
+        // 초기 스폰 코루틴이 아직 진행 중인 상태로 여길 진입하는 경우는 사실상 없지만(스폰이 끝나야
+        // 던전이 플레이어에게 공개되므로), ClearTrees()가 activeTrees를 비운 뒤에도 스폰 코루틴이 계속
+        // SpawnTreeAt을 호출해 activeTrees/풀 상태가 어긋나는 걸 방지하기 위해 방어적으로 먼저 멈춘다.
+        if (spawnTreesCoroutine != null)
+        {
+            StopCoroutine(spawnTreesCoroutine);
+            spawnTreesCoroutine = null;
+        }
+
         StopGrowth();
         ClearTrees();
     }
 
     // // 프라이빗 로직 메서드
 
-    private void SpawnInitialTrees()
+    private IEnumerator SpawnInitialTreesRoutine(Action _onSpawnComplete)
     {
-        if (grassTileWorldPositions == null || grassTileWorldPositions.Count == 0) return;
-
-        SetupCullingGroup();
-        StopGrowth();
-        ClearTrees();
-
-        if (currentTreeGenerationStrategy != null)
+        if (grassTileWorldPositions != null && grassTileWorldPositions.Count > 0)
         {
-            currentTreeGenerationStrategy.SpawnInitialTrees(this, grassTileWorldPositions);
+            SetupCullingGroup();
+            StopGrowth();
+            ClearTrees();
+
+            if (currentTreeGenerationStrategy != null)
+            {
+                yield return currentTreeGenerationStrategy.SpawnInitialTrees(this, grassTileWorldPositions);
+            }
+
+            RefreshCullingGroup();
+
+            // 3. 5초 후 성장 루틴 시작
+            growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
+
+            // 별의 주시: 맵 전환과 무관하게 매니저 생애주기 동안 한 번만 시작해 계속 순환시킨다
+            // (루틴 내부에서 currentMapType/스킬 해금 여부를 매 주기 확인하므로 재시작할 필요가 없다).
+            if (starGazeCoroutine == null)
+            {
+                starGazeCoroutine = StartCoroutine(StarGazeRoutine());
+            }
         }
 
-        RefreshCullingGroup();
-
-        // 3. 5초 후 성장 루틴 시작
-        growthCoroutine = StartCoroutine(StartGrowthAfterDelay());
-
-        // 별의 주시: 맵 전환과 무관하게 매니저 생애주기 동안 한 번만 시작해 계속 순환시킨다
-        // (루틴 내부에서 currentMapType/스킬 해금 여부를 매 주기 확인하므로 재시작할 필요가 없다).
-        if (starGazeCoroutine == null)
-        {
-            starGazeCoroutine = StartCoroutine(StarGazeRoutine());
-        }
+        spawnTreesCoroutine = null;
+        _onSpawnComplete?.Invoke();
     }
 
     private IEnumerator StartGrowthAfterDelay()

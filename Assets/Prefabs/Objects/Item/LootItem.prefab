@@ -416,6 +416,10 @@ MonoBehaviour:
   bCanGetSortingOrder: 1
   sprite: {fileID: 0}
   color: {r: 0, g: 0, b: 0, a: 0}
+  outlineObj: {fileID: 4427381365519987101}
+  outlineStencilSR: {fileID: 4172736323387572501}
+  outlineSR: {fileID: 163953909001683201}
+  outlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!114 &1588757393300197101
 MonoBehaviour:
   m_ObjectHideFlags: 0
