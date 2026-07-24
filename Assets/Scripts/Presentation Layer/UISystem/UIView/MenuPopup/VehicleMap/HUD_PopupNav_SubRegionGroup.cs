@@ -401,9 +401,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             HUD_PopupNav_SubRegionBtn _btn = activeSubRegionButtons[i];
             
             _btn.transform.localScale = new Vector3(1f, 0.01f, 1f);
-            
-            float _startAngle = (0 == i % 2) ? shakeStrength : -shakeStrength; // Yoda notation
-            _btn.transform.localRotation = Quaternion.Euler(0, 0, _startAngle);
+            _btn.transform.localRotation = Quaternion.identity;
 
             float _startTime = i * appearSequenceDelay;
             
@@ -412,8 +410,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             _btnSeq.AppendCallback(_btn.CachedActivate);
             
             _btnSeq.Append(_btn.transform.DOScaleY(1f, appearAnimDuration).SetEase(appearAnimEase));
-            
-            _btnSeq.Join(_btn.transform.DORotate(Vector3.zero, shakeDuration, RotateMode.Fast).SetEase(Ease.OutElastic));
             
             _seq.Insert(_startTime, _btnSeq);
         }

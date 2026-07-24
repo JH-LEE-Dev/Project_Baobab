@@ -34,16 +34,46 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [Tooltip("호버 바운스 연출 시간")]
     [SerializeField] private float hoverPunchDuration = 0.4f;
 
-    [Header("Locked Interaction Settings")]
+    [Header("Locked Interaction Settings (Click)")]
     [Tooltip("잠긴 상태 클릭 거절 시 자물쇠 변경 색상")]
     [SerializeField] private Color lockClickColor = Color.red;
     [Tooltip("자물쇠 색상 복구 시간")]
     [SerializeField] private float lockClickColorDuration = 0.3f;
-    [Tooltip("잠긴 상태 호버/클릭 시 자물쇠 펀치 강도")]
+    [Tooltip("잠긴 상태 펀치 시 스케일 강도")]
     [SerializeField] private float lockPunchStrength = 0.2f;
+    [Tooltip("잠긴 상태 펀치 시 회전 강도 (양수, 좌우 랜덤)")]
+    [SerializeField] private float lockPunchRotationStrength = 15f;
+    [Tooltip("잠긴 상태 펀치 연출 시간")]
+    [SerializeField] private float lockPunchDuration = 0.15f;
+    [Tooltip("잠긴 상태 펀치 진동 횟수 (낮을수록 무심하게 툭 치는 느낌)")]
+    [SerializeField] private int lockPunchVibrato = 4;
+    [Tooltip("잠긴 상태 펀치 탄성 (낮을수록 덜 출렁거림)")]
+    [SerializeField] private float lockPunchElasticity = 0.8f;
+
+    [Header("Locked Interaction Settings (Hover)")]
+    [Tooltip("잠긴 상태 호버 시 회전 펀치 각도 (어깨방 느낌)")]
+    [SerializeField] private float lockHoverPunchRotation = 20f;
+    [Tooltip("잠긴 상태 호버 시 회전 연출 시간")]
+    [SerializeField] private float lockHoverPunchDuration = 0.6f;
+    [Tooltip("잠긴 상태 호버 시 진동 횟수 (덜렁거리는 횟수)")]
+    [SerializeField] private int lockHoverPunchVibrato = 6;
+    [Tooltip("잠긴 상태 호버 시 탄성 (클수록 부드럽게 원복)")]
+    [SerializeField] private float lockHoverPunchElasticity = 1f;
+
+    [Header("Unlock Animation Settings")]
+    [Tooltip("해금 연출 중 자물쇠 파괴(스케일 0) 시 재생할 파티클 시스템")]
+    [SerializeField] private ParticleSystem unlockDestructionParticle;
+    [Tooltip("자물쇠가 흔들리는 연출 시간")]
+    [SerializeField] private float unlockShakeDuration = 0.8f;
+    [Tooltip("자물쇠가 흔들리는 강도 (지진 느낌)")]
+    [SerializeField] private float unlockShakeStrength = 15f;
+    [Tooltip("자물쇠가 줄어드는 시간")]
+    [SerializeField] private float unlockShrinkDuration = 0.2f;
+    [Tooltip("파티클 재생 후 다음 연출까지의 대기 시간")]
+    [SerializeField] private float unlockParticleDelay = 0.3f;
 
     [Header("DOTween Settings")]
-    [Tooltip("해금 연출 시간")]
+    [Tooltip("나무 불 켜짐 / 실루엣 해제 시간")]
     [SerializeField] private float unlockDuration = 0.5f;
     [Tooltip("선택 시 연출 시간")]
     [SerializeField] private float selectDuration = 0.2f;
@@ -59,6 +89,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private Tween hoverTween;
     private Tween clearNewTween;
     private Tween lockIconTween;
+    
+    private Vector3 lockIconOriginalLocalPos;
     
     // 비주얼 연출을 적용할 자식 트랜스폼 목록 (clickImage 제외)
     private System.Collections.Generic.List<Transform> visualChildren = new System.Collections.Generic.List<Transform>();
@@ -131,9 +163,15 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != lockIconObj)
         {
             lockIconObj.SetActive(_isLocked);
+            lockIconOriginalLocalPos = lockIconObj.transform.localPosition;
             lockIconObj.transform.localScale = Vector3.one;
+            lockIconObj.transform.localRotation = Quaternion.identity;
             Image _lockImg = lockIconObj.GetComponent<Image>();
-            if (null != _lockImg) _lockImg.color = Color.white;
+            if (null != _lockImg) 
+            {
+                _lockImg.color = Color.white;
+                _lockImg.enabled = true;
+            }
         }
 
         for (int i = 0; i < treeProps.Count; i++)
@@ -216,10 +254,17 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
 
         lockIconObj.transform.localScale = Vector3.one;
+        lockIconObj.transform.localRotation = Quaternion.identity;
+        lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
         Image _img = lockIconObj.GetComponent<Image>();
 
         Sequence _seq = DOTween.Sequence();
-        _seq.Join(lockIconObj.transform.DOPunchScale(new Vector3(lockPunchStrength, lockPunchStrength, 0f), 0.3f, 5, 0.5f));
+        
+        float _randomSign = UnityEngine.Random.value > 0.5f ? 1f : -1f;
+        Vector3 _rotPunch = new Vector3(0f, 0f, lockPunchRotationStrength * _randomSign);
+
+        _seq.Join(lockIconObj.transform.DOPunchScale(new Vector3(lockPunchStrength, lockPunchStrength, 0f), lockPunchDuration, lockPunchVibrato, lockPunchElasticity));
+        _seq.Join(lockIconObj.transform.DOPunchRotation(_rotPunch, lockPunchDuration, lockPunchVibrato, lockPunchElasticity));
 
         if (null != _img)
         {
@@ -258,7 +303,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             {
                 if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
                 lockIconObj.transform.localScale = Vector3.one;
-                lockIconTween = lockIconObj.transform.DOPunchScale(new Vector3(lockPunchStrength, lockPunchStrength, 0f), 0.3f, 5, 0.5f);
+                lockIconObj.transform.localRotation = Quaternion.identity;
+                lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
+                
+                float _randomSign = UnityEngine.Random.value > 0.5f ? 1f : -1f;
+                Vector3 _rotPunch = new Vector3(0f, 0f, lockHoverPunchRotation * _randomSign);
+                
+                lockIconTween = lockIconObj.transform.DOPunchRotation(_rotPunch, lockHoverPunchDuration, lockHoverPunchVibrato, lockHoverPunchElasticity);
             }
             return;
         }
@@ -357,6 +408,18 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != selectTween && true == selectTween.IsActive()) selectTween.Kill();
         if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
 
+        if (null != lockIconObj)
+        {
+            lockIconObj.transform.localScale = Vector3.one;
+            lockIconObj.transform.localRotation = Quaternion.identity;
+            lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
+            Image _lockImg = lockIconObj.GetComponent<Image>();
+            if (null != _lockImg) 
+            {
+                _lockImg.enabled = true;
+            }
+        }
+
         for (int i = 0; i < visualChildren.Count; i++)
         {
             visualChildren[i].localScale = Vector3.one;
@@ -420,12 +483,40 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         Sequence _seq = DOTween.Sequence();
 
-        // 1. 자물쇠 연출 (현재는 즉시 비활성화, 추후 연출 추가 예정)
+        if (null != lockIconObj && true == lockIconObj.activeSelf)
+        {
+            // 1. 자물쇠 지진 난 것처럼 엄청 흔들림
+            _seq.Append(lockIconObj.transform.DOShakePosition(unlockShakeDuration, new Vector3(unlockShakeStrength, unlockShakeStrength, 0f), 30, 90f));
+            _seq.Join(lockIconObj.transform.DOShakeRotation(unlockShakeDuration, new Vector3(0f, 0f, unlockShakeStrength * 2f), 30, 90f));
+            
+            // 2. 스케일 0으로 수렴
+            _seq.Append(lockIconObj.transform.DOScale(Vector3.zero, unlockShrinkDuration).SetEase(Ease.InBack));
+            
+            // 3. 파티클 재생
+            float _waitTime = unlockParticleDelay;
+            if (null != unlockDestructionParticle)
+            {
+                _waitTime = unlockDestructionParticle.main.duration + unlockDestructionParticle.main.startLifetime.constantMax;
+            }
+
+            _seq.AppendCallback(() => 
+            {
+                if (null != unlockDestructionParticle) 
+                {
+                    unlockDestructionParticle.Play();
+                }
+            });
+            
+            // 파티클 터지는 시간 대기 (파티클 재생 시간만큼 동적 대기)
+            _seq.AppendInterval(_waitTime);
+        }
+
+        // 4. 자물쇠 비활성화 및 나무 실루엣 해제
         _seq.AppendCallback(cachedUnlockStep1);
 
         _seq.AppendInterval(unlockDuration);
 
-        // 2. 자물쇠 연출(및 실루엣 해제)이 끝난 직후 NEW 뱃지 팝업 연출
+        // 5. NEW 뱃지 등장
         _seq.AppendCallback(cachedUnlockStep2);
 
         if (null != newIndicatorObj)
@@ -443,7 +534,15 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     {
         if (null != lockIconObj)
         {
-            lockIconObj.SetActive(false);
+            Image _img = lockIconObj.GetComponent<Image>();
+            if (null != _img)
+            {
+                _img.enabled = false;
+            }
+            else
+            {
+                lockIconObj.SetActive(false);
+            }
         }
         
         // 나무 실루엣(검은색) 서서히 벗겨지며 Dim 상태로 돌아오기
@@ -467,8 +566,15 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     private void OnUnlockMotionComplete()
     {
+        myInfo.isUnlocked = true;
+
         pendingUnlockCompleteAction?.Invoke();
         pendingUnlockCompleteAction = null;
+
+        if (true == isPointerOver)
+        {
+            EvaluateHoverState();
+        }
     }
 
     public void SetSelectedState(bool _isSelected)
