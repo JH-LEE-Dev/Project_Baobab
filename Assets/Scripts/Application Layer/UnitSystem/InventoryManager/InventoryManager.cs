@@ -584,6 +584,43 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return rescuedCount;
     }
 
+    /// <summary>
+    /// 던전 입장 시점(DungeonStartSignal)에 인벤토리에 남아있는 원목을 오프로드 컨테이너로 전량
+    /// 이전한다(연출 없이 즉시 커밋 - 이 시점엔 캐릭터가 아직 조작 불가 상태라 날아가는 연출이 의미
+    /// 없다). 컨테이너 쪽에 자리가 있는지 먼저 확인 후 성공했을 때만 인벤토리에서 차감해야
+    /// RescueItemsToOffroadContainer와 마찬가지로 데이터 증발을 막을 수 있다. 컨테이너가 가득 차서
+    /// 더 이상 옮길 수 없으면 그 시점에서 중단하고 남은 수량은 인벤토리에 그대로 남긴다.
+    /// </summary>
+    public int TransferAllLogItemsToOffroadContainer(OffroadContainer _container)
+    {
+        if (_container == null) return 0;
+
+        int transferredCount = 0;
+
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            InventorySlot slot = inventorySlots[i];
+            if (!(slot.itemData is LogItemData logData) || slot.totalCount <= 0) continue;
+
+            while (slot.totalCount > 0)
+            {
+                if (!_container.TryAddLogItemDataDirect(logData, logData.logState))
+                    break;
+
+                slot.TakeOneItem();
+                transferredCount++;
+                ItemRemoved();
+            }
+
+            if (slot.totalCount <= 0)
+            {
+                ItemDeleted(slot);
+            }
+        }
+
+        return transferredCount;
+    }
+
     public int DropAllItem(Transform _charTransform)
     {
         if (_charTransform == null) return 0;
