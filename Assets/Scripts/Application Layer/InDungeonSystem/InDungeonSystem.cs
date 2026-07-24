@@ -299,7 +299,19 @@ public class InDungeonSystem : MonoBehaviour
 
         inDungeonObjectManager.ClearObjManager();
         inDungeonUnitSpawner.ReleaseAllNPC();
+    }
 
+    /// <summary>
+    /// Dungeon → Town 귀환 시, TownSystem.StartTownSystem()의 동기 초기화(그리드 생성, NPC 스폰)가
+    /// 전부 끝난 뒤에 호출되어야 한다. 예전엔 ClearInDungeonSystem()이 StartTownSystem()보다 먼저
+    /// 구름 걷힘 코루틴(0.75초 타이머)을 걸어둬서, Town 초기화가 0.75초보다 오래 걸리면 초기화 도중
+    /// 구름이 걷혀버릴 수 있는 시간 경쟁 구조였다. 다른 전환 경로(Town→Dungeon, Retry 등)와 동일하게
+    /// "무거운 초기화가 끝난 뒤에만 구름이 걷힌다"는 인과적 순서를 보장하기 위해 분리했다.
+    /// 조건/필드는 ClearInDungeonSystem()이 이미 갱신해둔 값을 그대로 사용한다(그 사이 다른 코드가
+    /// 이 필드들을 건드리지 않으므로 안전).
+    /// </summary>
+    public void NotifyTownSystemReady()
+    {
         if ((prevbCurrentlyDungeonScene != bCurrentlyDungeonScene) && bRetryGame == false)
         {
             inDungeonProductionManager.RollbackCameraMove();
