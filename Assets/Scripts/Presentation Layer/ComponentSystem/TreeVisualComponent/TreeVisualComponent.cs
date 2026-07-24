@@ -1,3 +1,4 @@
+using System.Collections;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -42,6 +43,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private float hitDuration = 0.2f;
     [SerializeField] private int hitVibrato = 15;
     [SerializeField] private float hitElasticity = 1f;
+    [SerializeField] private float hitFlashDuration = 0.15f;
+    [SerializeField] private AnimationCurve hitFlashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
 
 
@@ -85,6 +88,11 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private MaterialPropertyBlock _mpb;
     private MaterialPropertyBlock Mpb => _mpb ??= new MaterialPropertyBlock();
+
+    // Hit Flash
+    private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+    private MaterialPropertyBlock _flashMPB;
+    private Coroutine hitFlashCoroutine;
 
     // VFX Color Settings
     private ParticleColorSet currentTopVfxColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
@@ -572,6 +580,63 @@ public class TreeVisualComponent : MonoBehaviour
         visualRoot.DOPunchPosition(new Vector3(hitPunchX, 0f, 0f), hitDuration, hitVibrato, hitElasticity);
     }
 
+    // 피격 시 나무 스프라이트가 짧게 흰색으로 번쩍였다가 원래 색으로 돌아오도록 한다.
+    public void PlayHitFlash()
+    {
+        if (!gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        if (hitFlashCoroutine != null)
+        {
+            StopCoroutine(hitFlashCoroutine);
+        }
+
+        hitFlashCoroutine = StartCoroutine(HitFlashRoutine());
+    }
+
+    private IEnumerator HitFlashRoutine()
+    {
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+
+        float elapsed = 0f;
+        while (elapsed < hitFlashDuration)
+        {
+            float t = elapsed / hitFlashDuration;
+            float flash = hitFlashCurve.Evaluate(t);
+
+            ApplyFlashAmountToRenderers(flash);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        ApplyFlashAmountToRenderers(0f);
+
+        hitFlashCoroutine = null;
+    }
+
+    private void ApplyFlashAmountToRenderers(float flash)
+    {
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+        
+        SetFlashAmountToRenderer(topRenderer, flash);
+        SetFlashAmountToRenderer(bottomRenderer, flash);
+        SetFlashAmountToRenderer(topShieldRenderer, flash);
+        SetFlashAmountToRenderer(bottomShieldRenderer, flash);
+        SetFlashAmountToRenderer(topHighlightRenderer, flash);
+        SetFlashAmountToRenderer(bottomHighlightRenderer, flash);
+    }
+
+    private void SetFlashAmountToRenderer(SpriteRenderer sr, float flash)
+    {
+        if (sr == null) return;
+        sr.GetPropertyBlock(_flashMPB);
+        _flashMPB.SetFloat(FlashAmountID, flash);
+        sr.SetPropertyBlock(_flashMPB);
+    }
+
     // VFX 재생에 필요한 위치/회전/색상 데이터를 외부(InDungeonVFXManager)에 제공한다.
     public Vector3 GetTopRootPosition() => topRoot != null ? topRoot.position : transform.position;
     public Vector3 GetBottomRootPosition() => bottomRoot != null ? bottomRoot.position : transform.position;
@@ -599,6 +664,16 @@ public class TreeVisualComponent : MonoBehaviour
 
         // 3. 투명도(Alpha)를 완전한 불투명(1.0f) 상태로 복구
         SetAlpha(1.0f);
+
+        // 4. 피격 Flash 연출 초기화 (풀 반환 시 흰색 상태로 남는 것을 방지)
+        if (hitFlashCoroutine != null)
+        {
+            StopCoroutine(hitFlashCoroutine);
+            hitFlashCoroutine = null;
+        }
+
+        if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
+        ApplyFlashAmountToRenderers(0f);
     }
 
 
@@ -741,6 +816,7 @@ public class TreeVisualComponent : MonoBehaviour
     private void ApplyHDRToRenderer(SpriteRenderer _renderer, bool _active, float _intensity)
     {
         if (_renderer == null) return;
+        _renderer.GetPropertyBlock(Mpb);
         Mpb.SetFloat(HDRIntensityID, _active ? _intensity : 1f);
         _renderer.SetPropertyBlock(Mpb);
     }

@@ -323,6 +323,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         if (treeVisualComponent != null)
         {
             treeVisualComponent.PlayHitFeedback();
+            treeVisualComponent.PlayHitFlash();
         }
 
         TreeGetHitEvent?.Invoke(this);
