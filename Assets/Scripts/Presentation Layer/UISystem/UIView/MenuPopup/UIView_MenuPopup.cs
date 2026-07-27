@@ -17,12 +17,12 @@ public class UIView_MenuPopup : UIView
     public event Action UnlockProductionStartedEvent;
     public event Action UnlockProductionEndedEvent;
 
-    //외부 의존성
+    // 외부 의존성
     private IMapDataProvider mapDataProvider;
     private IWeatherProvider weatherProvider;
     private ITimeDataProvider timeDataProvider;
 
-    //내부 의존성
+    // 내부 의존성
     [Header("Sub UI Prefabs")]
     // [기존 3-Depth Vehicle UI 주석 처리]
     // [SerializeField] private GameObject vehiclePrefab;

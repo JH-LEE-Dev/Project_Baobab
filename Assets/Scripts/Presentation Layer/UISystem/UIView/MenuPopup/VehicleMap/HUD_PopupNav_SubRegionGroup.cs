@@ -172,7 +172,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
                             _btn.transform.SetAsFirstSibling();
                             
                             _btn.gameObject.SetActive(false); 
-                            tempTreeVisualDatas.Clear(); // Using pre-allocated list to fix GC
+                            tempTreeVisualDatas.Clear(); // GC 할당을 줄이기 위해 미리 할당된 리스트 사용
                             if (null != treeVisualDataBase && null != _subInfo.spawnTreeTypes)
                             {
                                 int _treeCount = Mathf.Min(_subInfo.spawnTreeTypes.Count, 2);
@@ -209,7 +209,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         if (null != currentAppearSequence)
         {
             cachedOnComplete = _onComplete;
-            currentAppearSequence.OnComplete(cachedOnAppearSequenceComplete); // Removed lambda
+            currentAppearSequence.OnComplete(cachedOnAppearSequenceComplete); // 람다식 제거됨
         }
         else
         {
@@ -303,7 +303,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
         for (int i = 0; i < _count; i++)
         {
-            RectTransform _btnRect = activeSubRegionButtons[i].GetComponent<RectTransform>();
+            RectTransform _btnRect = activeSubRegionButtons[i].CachedRectTransform;
             if (null == _btnRect) continue;
 
             _currentLocalX += cachedGaps[i];
@@ -376,7 +376,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
         for (int i = _totalCount - 1; 0 <= i; i--)
         {
-            activeSubRegionButtons[i].PlayDisappearMotion(cachedOnDisappearMotionComplete); // Removed lambda
+            activeSubRegionButtons[i].PlayDisappearMotion(cachedOnDisappearMotionComplete); // 람다식 제거됨
         }
 
         float _timeout = 2f; 
@@ -471,7 +471,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     {
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
-            if (_forestType == activeSubRegionButtons[i].GetForestType()) // Yoda notation
+            if (_forestType == activeSubRegionButtons[i].GetForestType()) // Yoda 표기법 사용
             {
                 return activeSubRegionButtons[i];
             }
@@ -546,7 +546,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             currentAppearSequence = null;
         }
         
-        // Ensure tweens or sequence states are safely cleared
+        // 트윈 또는 시퀀스 상태가 안전하게 정리되도록 보장
         if (null != sequenceCoroutine)
         {
             StopCoroutine(sequenceCoroutine);

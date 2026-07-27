@@ -278,6 +278,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         InitFirstPlayableRegionUnlock();
 
+        BuildUnlockQueues();
+        if (0 < regionUnlockList.Count || 0 < subRegionUnlockList.Count)
+        {
+            isPendingUnlockProcess = true;
+            StartUnlockProduction();
+        }
+
         if (null != appearTween && true == appearTween.IsActive())
         {
             appearTween.Kill();
@@ -411,6 +418,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private void CloseMainPopup(bool _isInstant = false)
     {
         MarkCurrentRegionAsRead();
+        MarkAllUnlockedAsRead();
 
         isClosing = true;
         isInputBlocked = true;
@@ -760,7 +768,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 {
                     if (currentSelectedMapType == _db.mapDatas[i].mapType)
                     {
-                        var _forestDatas = _db.mapDatas[i].forestDatas;
+                        List<ForestEnvironmentInfo> _forestDatas = _db.mapDatas[i].forestDatas;
                         if (null != _forestDatas)
                         {
                             for (int j = 0; j < _forestDatas.Count; j++)
@@ -776,6 +784,35 @@ public class HUD_PopupNav_Main : MonoBehaviour
             if (null != regionGroup)
             {
                 regionGroup.ClearNewIndicator(currentSelectedMapType);
+            }
+        }
+    }
+
+    private void MarkAllUnlockedAsRead()
+    {
+        if (null == mapDataProvider) return;
+        
+        MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+        if (null != _db.mapDatas)
+        {
+            for (int i = 0; i < _db.mapDatas.Count; i++)
+            {
+                if (true == _db.mapDatas[i].isUnlocked)
+                {
+                    mapDataProvider.MarkMapLevelAsRead(_db.mapDatas[i].mapType);
+                    
+                    List<ForestEnvironmentInfo> _forestDatas = _db.mapDatas[i].forestDatas;
+                    if (null != _forestDatas)
+                    {
+                        for (int j = 0; j < _forestDatas.Count; j++)
+                        {
+                            if (true == _forestDatas[j].isUnlocked)
+                            {
+                                mapDataProvider.MarkMapAsRead(_db.mapDatas[i].mapType, _forestDatas[j].forestType);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
