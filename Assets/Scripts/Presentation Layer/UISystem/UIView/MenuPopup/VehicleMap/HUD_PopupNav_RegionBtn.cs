@@ -21,6 +21,14 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [Tooltip("잠금(Lock) 아이콘 등 상태 비주얼 오브젝트")]
     [SerializeField] private GameObject lockVisualObj;
 
+    [Header("Additional Image Settings")]
+    [Tooltip("추가 이미지 (버튼과 동기화됨)")]
+    [SerializeField] private Image additionalImage;
+    [Tooltip("해금 상태일 때의 추가 이미지 색상")]
+    [SerializeField] private Color additionalUnlockedColor = Color.white;
+    [Tooltip("잠금 상태일 때의 추가 이미지 색상")]
+    [SerializeField] private Color additionalLockedColor = Color.gray;
+
     [Header("DOTween Settings")]
     [Tooltip("선택 시 연출 시간")]
     [SerializeField] private float selectDuration = 0.2f;
@@ -378,6 +386,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             {
                 _seq.Join(frameImage.DOColor(_targetBg, colorTransitionDuration).SetEase(colorTransitionEase));
             }
+        }
+        if (null != additionalImage)
+        {
+            Color _targetAdditionalColor = true == myInfo.isUnlocked ? additionalUnlockedColor : additionalLockedColor;
+            _seq.Join(additionalImage.DOColor(_targetAdditionalColor, colorTransitionDuration).SetEase(colorTransitionEase));
         }
 
         colorTween = _seq;

@@ -490,6 +490,17 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
     }
 
+    public void StopAllHoverEffects()
+    {
+        for (int i = 0; i < activeSubRegionButtons.Count; i++)
+        {
+            if (null != activeSubRegionButtons[i] && true == activeSubRegionButtons[i].gameObject.activeSelf)
+            {
+                activeSubRegionButtons[i].StopAllTreePropHoverEffects();
+            }
+        }
+    }
+
     public void ResetState()
     {
         if (null != currentAppearSequence && true == currentAppearSequence.IsActive())

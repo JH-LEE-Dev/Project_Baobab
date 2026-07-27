@@ -32,6 +32,10 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
     [Tooltip("?�이?�이????기둥???�용???�텐?�티 �?(머테리얼 Float ?�로?�티???�이?�트 반영)")]
     [SerializeField] private float highlightHdrIntensity = 1.0f;
 
+    [Header("Hover Effect")]
+    [Tooltip("호버 시 재생할 파티클 이펙트")]
+    [SerializeField] private ParticleSystem hoverEffectParticle;
+
     [Header("Appear Animation")]
     [SerializeField] private float appearDuration = 0.3f;
     [SerializeField] private Ease appearEase = Ease.OutBack;
@@ -115,6 +119,25 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         }
 
         gameObject.SetActive(true);
+
+        if (null != hoverEffectParticle)
+        {
+            var _main = hoverEffectParticle.main;
+            _main.startColor = _visualData.topVfxColor.startColor;
+            
+            if (true == _visualData.topVfxColor.overrideChildrenColor)
+            {
+                ParticleSystem[] _children = hoverEffectParticle.GetComponentsInChildren<ParticleSystem>(true);
+                for (int i = 0; i < _children.Length; i++)
+                {
+                    if (hoverEffectParticle != _children[i])
+                    {
+                        var _childMain = _children[i].main;
+                        _childMain.startColor = _visualData.topVfxColor.startColor;
+                    }
+                }
+            }
+        }
 
         if (null != leafImage)
         {
@@ -249,6 +272,22 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
             {
                 childParticles[i].Play();
             }
+        }
+    }
+
+    public void PlayHoverEffect()
+    {
+        if (null != hoverEffectParticle)
+        {
+            hoverEffectParticle.Play();
+        }
+    }
+
+    public void StopHoverEffect()
+    {
+        if (null != hoverEffectParticle)
+        {
+            hoverEffectParticle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
     }
 

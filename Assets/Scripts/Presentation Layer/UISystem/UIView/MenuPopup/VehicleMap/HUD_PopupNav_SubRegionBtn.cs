@@ -375,6 +375,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
                 if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
                 {
                     treeProps[i].SetVisualState(TreeVisualState.Unlocked_Hover, colorTransitionDuration);
+                    treeProps[i].PlayHoverEffect();
                 }
             }
 
@@ -423,6 +424,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
             {
                 treeProps[i].SetVisualState(TreeVisualState.Unlocked_Idle, colorTransitionDuration);
+                treeProps[i].StopHoverEffect();
             }
         }
 
@@ -432,6 +434,17 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             _seq.Join(visualChildren[i].DOScale(1f, 0.2f).SetEase(Ease.OutBack));
         }
         hoverTween = _seq;
+    }
+
+    public void StopAllTreePropHoverEffects()
+    {
+        for (int i = 0; i < treeProps.Count; i++)
+        {
+            if (null != treeProps[i])
+            {
+                treeProps[i].StopHoverEffect();
+            }
+        }
     }
 
     public void ResetState()
@@ -455,6 +468,14 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             if (null != _lockImg) 
             {
                 _lockImg.enabled = true;
+            }
+        }
+
+        for (int i = 0; i < treeProps.Count; i++)
+        {
+            if (null != treeProps[i])
+            {
+                treeProps[i].StopHoverEffect();
             }
         }
 

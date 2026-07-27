@@ -700,7 +700,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.5330188, g: 0.74533784, b: 1, a: 1}
+  m_Color: {r: 0.5188679, g: 0.1309844, b: 0.09545213, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -857,6 +857,9 @@ MonoBehaviour:
   frameImage: {fileID: 3388251397429091002}
   newIndicatorObj: {fileID: 2152213400124138834}
   lockVisualObj: {fileID: 7682306616101199194}
+  additionalImage: {fileID: 1456108081165022047}
+  additionalUnlockedColor: {r: 0.53333336, g: 0.74509805, b: 1, a: 1}
+  additionalLockedColor: {r: 0.5176471, g: 0.12941177, b: 0.09411765, a: 1}
   selectDuration: 0.2
   uiEffect: {fileID: 1356311456841564540}
   colorTransitionDuration: 0.2

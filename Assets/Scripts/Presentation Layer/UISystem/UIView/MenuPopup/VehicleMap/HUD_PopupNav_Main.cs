@@ -160,6 +160,16 @@ public class HUD_PopupNav_Main : MonoBehaviour
         {
             isUnlockingProductionActive = false;
             OnUnlockProductionEnded?.Invoke();
+            
+            if (null != regionGroup)
+            {
+                regionGroup.EvaluateAllHoverStates();
+            }
+            
+            if (null != subRegionGroup)
+            {
+                subRegionGroup.EvaluateAllHoverStates();
+            }
         }
     }
 
@@ -414,6 +424,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != subRegionGroup)
         {
             subRegionGroup.ClearAllNewIndicators();
+            subRegionGroup.StopAllHoverEffects();
         }
 
         if (null != regionGroup)
