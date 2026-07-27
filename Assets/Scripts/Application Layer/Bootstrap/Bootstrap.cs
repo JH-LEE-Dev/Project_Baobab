@@ -194,6 +194,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     private void Start()
     {
+        SentryUserContextTagger.TagCurrentUser();
+
         if (isTempScene)
         {
             BootTempScene();
