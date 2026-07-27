@@ -87,6 +87,6 @@ MonoBehaviour:
     <LinuxBackend>k__BackingField: 0
     <EnableNativeAppHangTracking>k__BackingField: 0
   <OptionsConfiguration>k__BackingField: {fileID: 0}
-  <Debug>k__BackingField: 1
+  <Debug>k__BackingField: 0
   <DebugOnlyInEditor>k__BackingField: 1
   <DiagnosticLevel>k__BackingField: 0

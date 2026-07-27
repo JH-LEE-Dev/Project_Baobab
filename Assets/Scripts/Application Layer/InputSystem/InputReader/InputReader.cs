@@ -27,7 +27,11 @@ public class InputReader
 
     private Vector2 keyboardMoveInput;
 
-    private bool bPauseInteract = false;
+    // 단순 bool이 아닌 카운터인 이유: 던전 진입 연출(TownProductionManager.StartSkyProduction 등)과
+    // 내비게이션 팝업 해금 연출(GameplayUICoordinator) 등 서로 다른 시스템이 겹치는 타이밍에 각자
+    // Pause(true/false)를 걸 수 있는데, bool이면 한쪽이 먼저 false를 걸어 다른 쪽이 아직 막아야 하는
+    // 구간에서 조기 해제되어 버린다.
+    private int pauseInteractCount = 0;
 
     private bool bPauseESC = false;
 
@@ -145,7 +149,7 @@ public class InputReader
 
     private void InteractionKeyPressed(InputAction.CallbackContext context)
     {
-        if (bPauseInteract == false)
+        if (0 >= pauseInteractCount)
             InteractionKeyPressedEvent?.Invoke();
     }
 
@@ -191,7 +195,14 @@ public class InputReader
 
     public void PauseInteractKey(bool _boolean)
     {
-        bPauseInteract = _boolean;
+        if (true == _boolean)
+        {
+            pauseInteractCount++;
+        }
+        else if (0 < pauseInteractCount)
+        {
+            pauseInteractCount--;
+        }
     }
 
     public void PauseESCKey(bool _boolean)

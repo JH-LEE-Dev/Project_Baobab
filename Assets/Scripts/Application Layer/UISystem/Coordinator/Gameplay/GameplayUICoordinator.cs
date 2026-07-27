@@ -169,6 +169,12 @@ public class GameplayUICoordinator
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
         menuPopupUI.TeleportUIClosedEvent += TeleportUIClosed;
 
+        menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
+        menuPopupUI.UnlockProductionStartedEvent += MenuPopupUnlockProductionStarted;
+
+        menuPopupUI.UnlockProductionEndedEvent -= MenuPopupUnlockProductionEnded;
+        menuPopupUI.UnlockProductionEndedEvent += MenuPopupUnlockProductionEnded;
+
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
         popUpUI.InventoryUIOpendEvent += InventoryUIOpened;
 
@@ -193,6 +199,8 @@ public class GameplayUICoordinator
         escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
         escUI.SaveGameButtonClickedEvent -= SaveGame;
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
+        menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
+        menuPopupUI.UnlockProductionEndedEvent -= MenuPopupUnlockProductionEnded;
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
         resultUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         resultUI.RetryButtonClickedEvent -= RetryGame;
@@ -431,6 +439,22 @@ public class GameplayUICoordinator
         // PortalDeActivated, DungeonSelected, CancelMenuPopup)에서 이미 끝낸 뒤이므로 여기서는
         // 후속 신호만 발행한다.
         signalHub.Publish(new TeleportUIClosedSignal());
+    }
+
+    // 지역/서브지역 해금 연출(popupNavMain.OnUnlockProductionStarted/Ended) 재생 중에는 상호작용 키를
+    // 잠가서, 그 사이 상호작용 키가 다시 눌려 OffroadVehicleObj의 토글 의도(bUIActivated)가 실제 UI
+    // 상태와 어긋나는 것을 막는다.
+    // 주의: 이건 해금 연출 구간만 방어한다. 기본 등장/퇴장 트윈(매번 여닫을 때마다 재생)까지 막으려면
+    // UIView_MenuPopup/HUD_PopupNav_Main 쪽에 더 넓은 범위의 이벤트가 필요한데, 그 시스템은 건드리지
+    // 않기로 했으므로 이번 방어는 해금 연출이 겹치는 케이스로 한정된다.
+    private void MenuPopupUnlockProductionStarted()
+    {
+        inputManager.PauseInteractKey(true);
+    }
+
+    private void MenuPopupUnlockProductionEnded()
+    {
+        inputManager.PauseInteractKey(false);
     }
 
     private void OffroadContainerInteractStateChanged(OffroadContainerInteractStateChangedSignal _offroadContainerInteractStateChangedSignal)

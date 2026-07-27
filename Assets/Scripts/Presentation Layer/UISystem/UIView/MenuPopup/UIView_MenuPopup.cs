@@ -12,6 +12,11 @@ public class UIView_MenuPopup : UIView
     public event Action HomeButtonClickedEvent;
     public event Action CancelButtonClickedEvent;
 
+    // popupNavMain.OnUnlockProductionStarted/Ended를 그대로 상위로 릴레이하는 이벤트.
+    // (popupNavMain이 private 필드라 외부에서 직접 구독할 방법이 없어 최소한의 릴레이만 추가)
+    public event Action UnlockProductionStartedEvent;
+    public event Action UnlockProductionEndedEvent;
+
     //외부 의존성
     private IMapDataProvider mapDataProvider;
     private IWeatherProvider weatherProvider;
@@ -85,8 +90,24 @@ public class UIView_MenuPopup : UIView
         if (null != popupNavMain)
         {
             popupNavMain.Initialize(mapDataProvider, viewCtx.localizationManager, HandlePopupNavClosed, HandleEnterDungeon);
+
+            popupNavMain.OnUnlockProductionStarted -= HandleUnlockProductionStarted;
+            popupNavMain.OnUnlockProductionStarted += HandleUnlockProductionStarted;
+            popupNavMain.OnUnlockProductionEnded -= HandleUnlockProductionEnded;
+            popupNavMain.OnUnlockProductionEnded += HandleUnlockProductionEnded;
+
             popupNavMain.Close(true);
         }
+    }
+
+    private void HandleUnlockProductionStarted()
+    {
+        UnlockProductionStartedEvent?.Invoke();
+    }
+
+    private void HandleUnlockProductionEnded()
+    {
+        UnlockProductionEndedEvent?.Invoke();
     }
 
     private void HandlePrev()
@@ -235,6 +256,12 @@ public class UIView_MenuPopup : UIView
         {
             StopCoroutine(vehicleOpenCoroutine);
             vehicleOpenCoroutine = null;
+        }
+
+        if (null != popupNavMain)
+        {
+            popupNavMain.OnUnlockProductionStarted -= HandleUnlockProductionStarted;
+            popupNavMain.OnUnlockProductionEnded -= HandleUnlockProductionEnded;
         }
 
         // [기존 시스템 주석 처리]
