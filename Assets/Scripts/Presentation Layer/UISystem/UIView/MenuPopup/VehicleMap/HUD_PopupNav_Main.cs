@@ -142,6 +142,27 @@ public class HUD_PopupNav_Main : MonoBehaviour
     public bool IsUnlockingProductionActive => isUnlockingProductionActive;
     public bool IsTransitioning { get; private set; }
 
+    public event Action OnUnlockProductionStarted;
+    public event Action OnUnlockProductionEnded;
+
+    private void StartUnlockProduction()
+    {
+        if (false == isUnlockingProductionActive)
+        {
+            isUnlockingProductionActive = true;
+            OnUnlockProductionStarted?.Invoke();
+        }
+    }
+
+    private void EndUnlockProduction()
+    {
+        if (true == isUnlockingProductionActive)
+        {
+            isUnlockingProductionActive = false;
+            OnUnlockProductionEnded?.Invoke();
+        }
+    }
+
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(IMapDataProvider _provider, LocalizationManager _localizer, Action _onClose, Action<MapType, ForestType> _onConfirm)
     {
@@ -579,7 +600,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         if (true == _hasCurrentMapSubRegionUnlock)
         {
-            isUnlockingProductionActive = true;
+            StartUnlockProduction();
             pendingSubRegionUnlockForestTypes.Clear();
             
             for (int i = subRegionUnlockList.Count - 1; i >= 0; i--)
@@ -602,7 +623,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         // 2순위: 대지역 해금이 1개 이상 존재할 경우
         if (0 < regionUnlockList.Count)
         {
-            isUnlockingProductionActive = true;
+            StartUnlockProduction();
             bool _isMultiRegion = 1 < regionUnlockList.Count;
             float _speedRate = true == _isMultiRegion ? multiRegionUnlockSpeedRate : 1.0f;
             
@@ -622,7 +643,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             subRegionUnlockList.Clear();
         }
 
-        isUnlockingProductionActive = false;
+        EndUnlockProduction();
     }
 
     private void OnSubRegionUnlockDelayComplete()
@@ -649,7 +670,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             mapDataProvider.MarkUnlockAnimationPlayed(pendingRegionUnlockMapType, pendingSubRegionUnlockForestTypes[i]);
         }
         pendingSubRegionUnlockForestTypes.Clear();
-        isUnlockingProductionActive = false;
         
         ProcessNextUnlock();
     }
