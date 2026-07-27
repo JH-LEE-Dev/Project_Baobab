@@ -1,4 +1,5 @@
 using DG.Tweening;
+using GameAnalyticsSDK;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -43,6 +44,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         instance = this;
         DontDestroyOnLoad(gameObject);
+
+        GameAnalytics.Initialize();
 
         // 이벤트 중복 등록 방지
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
