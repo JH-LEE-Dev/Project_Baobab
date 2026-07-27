@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography;
 using System.Text;
 using System.IO;
+using System.Threading;
 
 public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 {
@@ -84,9 +85,17 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
         if (!cloudIsNewer) return;
 
-        if (SteamCloudSaveService.TryDownload(out byte[] cloudData))
+        if (!SteamCloudSaveService.TryDownload(out byte[] cloudData)) return;
+
+        // 손상된 클라우드 데이터가 멀쩡한 로컬 파일/백업을 덮어쓰지 않도록 반영 전 검증한다.
+        if (!TryParseSaveBytes(cloudData, out _))
         {
-            File.WriteAllBytes(path, cloudData);
+            Debug.LogError("[SaveManager] Cloud save data is corrupted; keeping local copy.");
+            return;
+        }
+
+        if (WriteSaveFileWithBackup(cloudData, "CloudSync"))
+        {
             Debug.Log("[SaveManager] Cloud save applied to local (newer than local copy).");
         }
     }
@@ -170,84 +179,239 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         string json = JsonUtility.ToJson(cachedSaveData);
         byte[] encryptedData = Encrypt(json);
 
-        string path = GetSaveFilePath();
-        File.WriteAllBytes(path, encryptedData);
-        SteamCloudSaveService.Upload(encryptedData);
-
-        Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {path} (Alloc-minimized)");
+        if (WriteSaveFileWithBackup(encryptedData, "SaveGameData"))
+        {
+            // 로컬 쓰기가 실패했는데 클라우드에 업로드하면, 클라우드의 "최신" 스냅샷과 로컬 파일이 어긋난다.
+            SteamCloudSaveService.Upload(encryptedData);
+            Debug.Log($"[SaveManager] Game Data Encrypted & Saved to: {GetSaveFilePath()} (Alloc-minimized)");
+        }
+        else
+        {
+            Debug.LogError("[SaveManager] Local save failed; skipping cloud upload to avoid diverging from local state.");
+        }
     }
 
+    // 메인 파일이 손상됐어도 백업이 살아있으면 이어하기가 가능하므로 둘 중 하나라도 있으면 true.
     public bool HasSaveData()
     {
-        string path = GetSaveFilePath();
-        return File.Exists(path);
+        return File.Exists(GetSaveFilePath()) || File.Exists(GamePaths.GameSaveBackupFile);
     }
 
     public void LoadGameData()
     {
         string path = GetSaveFilePath();
-        if (!File.Exists(path))
+
+        if (File.Exists(path) && TryReadAndParse(path, out GameSaveData saveData, out _))
         {
-            Debug.LogWarning("[SaveManager] Save file not found.");
+            ApplyLoadedData(saveData);
+            Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
             return;
         }
 
-        byte[] encryptedData = File.ReadAllBytes(path);
-        string json = Decrypt(encryptedData);
-
-        if (string.IsNullOrEmpty(json))
+        string backupPath = GamePaths.GameSaveBackupFile;
+        if (!File.Exists(backupPath))
         {
-            Debug.LogError("[SaveManager] Failed to decrypt save data.");
+            if (File.Exists(path))
+            {
+                Debug.LogError("[SaveManager] Save file is corrupted and no backup exists. Load aborted.");
+            }
+            else
+            {
+                Debug.LogWarning("[SaveManager] Save file not found.");
+            }
             return;
         }
 
-        GameSaveData saveData = JsonUtility.FromJson<GameSaveData>(json);
+        Debug.LogWarning("[SaveManager] Main save file is missing or corrupted. Trying backup...");
 
-        if (saveData == null) return;
+        if (!TryReadAndParse(backupPath, out GameSaveData backupData, out byte[] backupBytes))
+        {
+            Debug.LogError("[SaveManager] Both main and backup save files are corrupted or unreadable. Load aborted.");
+            return;
+        }
 
+        ApplyLoadedData(backupData);
+        Debug.LogWarning("[SaveManager] Recovered game data from backup save file.");
+
+        // 메인 파일을 백업 내용으로 치유해서 다음 실행부터 같은 손상 파일을 다시 만나지 않게 한다.
+        // 단, 손상된 메인이 남아 있는 채로 WriteSaveFileWithBackup을 부르면 File.Replace가
+        // 그 손상본을 백업 자리로 밀어넣어 방금 복구에 성공한 백업을 덮어써버린다.
+        // 먼저 지워서 File.Move 경로(백업 미변경)를 타게 한다.
+        if (!File.Exists(path) || TryDeleteFile(path))
+        {
+            WriteSaveFileWithBackup(backupBytes, "RecoverFromBackup");
+        }
+    }
+
+    private void ApplyLoadedData(GameSaveData _data)
+    {
         // 1. 스킬 데이터 복구
         if (skillSystem != null && skillSystem.skillManager != null)
         {
-            skillSystem.skillManager.LoadSaveData(saveData.skillTreeSaveData);
+            skillSystem.skillManager.LoadSaveData(_data.skillTreeSaveData);
         }
 
         // 3. 인벤토리 데이터 복구
         if (inventoryManager != null)
         {
-            inventoryManager.LoadSaveData(saveData.inventorySaveData);
+            inventoryManager.LoadSaveData(_data.inventorySaveData);
         }
 
         // 4. 로그 가공 시스템 데이터 복구
         if (logProcessingManager != null)
         {
-            logProcessingManager.LoadSaveData(saveData.logProcessingSaveData);
+            logProcessingManager.LoadSaveData(_data.logProcessingSaveData);
         }
 
         // 5. 환경 밀도 데이터 복구
         if (densityManager != null)
         {
-            densityManager.LoadSaveData(saveData.environmentSaveData);
+            densityManager.LoadSaveData(_data.environmentSaveData);
         }
 
         // 8. 오프로드 컨테이너 데이터 복구
         if (offroadContainer != null)
         {
-            offroadContainer.LoadSaveData(saveData.offroadContainerSaveData);
+            offroadContainer.LoadSaveData(_data.offroadContainerSaveData);
         }
 
         // 8-2. "분실물 보관함" 영구 획득 플래그, "포자 포션" 획득 여부/충전량 복구
         if (inDungeonObjectManager != null)
         {
-            inDungeonObjectManager.bHasAcquiredLostAndFoundBox = saveData.bHasAcquiredLostAndFoundBox;
-            inDungeonObjectManager.bHasAcquiredSporePotion = saveData.bHasAcquiredSporePotion;
-            inDungeonObjectManager.sporePotionCharge = saveData.sporePotionCharge;
-            inDungeonObjectManager.bHasAcquiredStarCompass = saveData.bHasAcquiredStarCompass;
-            inDungeonObjectManager.bHasAcquiredObsidianCharm = saveData.bHasAcquiredObsidianCharm;
-            
-            inDungeonObjectManager.RestoreOwnedLoots(saveData.currentOwnedLoots);
+            inDungeonObjectManager.bHasAcquiredLostAndFoundBox = _data.bHasAcquiredLostAndFoundBox;
+            inDungeonObjectManager.bHasAcquiredSporePotion = _data.bHasAcquiredSporePotion;
+            inDungeonObjectManager.sporePotionCharge = _data.sporePotionCharge;
+            inDungeonObjectManager.bHasAcquiredStarCompass = _data.bHasAcquiredStarCompass;
+            inDungeonObjectManager.bHasAcquiredObsidianCharm = _data.bHasAcquiredObsidianCharm;
+
+            inDungeonObjectManager.RestoreOwnedLoots(_data.currentOwnedLoots);
+        }
+    }
+
+    // 파일을 읽고 복호화+파싱까지 시도한다. 파일 자체가 잠겨있거나 손상된 경우 모두 false를 반환한다.
+    // 복구 시 원본 바이트를 그대로 재사용할 수 있도록 읽어들인 바이트도 함께 돌려준다(파일을 두 번 읽지 않기 위함).
+    private bool TryReadAndParse(string _path, out GameSaveData _data, out byte[] _rawBytes)
+    {
+        _data = null;
+        _rawBytes = null;
+
+        byte[] encryptedData;
+        try
+        {
+            encryptedData = File.ReadAllBytes(_path);
+        }
+        catch (Exception _e)
+        {
+            Debug.LogError($"[SaveManager] Failed to read save file '{_path}': {_e.Message}");
+            return false;
         }
 
-        Debug.Log($"[SaveManager] Game Data Decrypted & Loaded from: {path}");
+        if (!TryParseSaveBytes(encryptedData, out _data))
+        {
+            return false;
+        }
+
+        _rawBytes = encryptedData;
+        return true;
+    }
+
+    private bool TryDeleteFile(string _path)
+    {
+        try
+        {
+            File.Delete(_path);
+            return true;
+        }
+        catch (Exception _e)
+        {
+            Debug.LogError($"[SaveManager] Failed to delete file '{_path}': {_e.Message}");
+            return false;
+        }
+    }
+
+    // 복호화 + JSON 파싱만 담당한다(서브시스템 반영은 ApplyLoadedData에서). 클라우드 데이터 사전 검증에도 재사용된다.
+    private bool TryParseSaveBytes(byte[] _encryptedData, out GameSaveData _data)
+    {
+        _data = null;
+
+        string json = Decrypt(_encryptedData);
+        if (string.IsNullOrEmpty(json))
+        {
+            return false;
+        }
+
+        try
+        {
+            GameSaveData saveData = JsonUtility.FromJson<GameSaveData>(json);
+            if (saveData == null)
+            {
+                return false;
+            }
+
+            _data = saveData;
+            return true;
+        }
+        catch (Exception _e)
+        {
+            Debug.LogError($"[SaveManager] Failed to parse save JSON: {_e.Message}");
+            return false;
+        }
+    }
+
+    // 임시 파일에 먼저 쓰고 File.Replace(원자적 교체 + 기존 파일을 백업으로 자동 이동)로 반영한다.
+    // 실패 시 기존 main/backup 파일은 전혀 건드려지지 않은 상태로 남는다.
+    private bool WriteSaveFileWithBackup(byte[] _data, string _context)
+    {
+        string path = GetSaveFilePath();
+        string tempPath = GamePaths.GameSaveTempFile;
+        string backupPath = GamePaths.GameSaveBackupFile;
+
+        try
+        {
+            File.WriteAllBytes(tempPath, _data);
+        }
+        catch (Exception _e)
+        {
+            Debug.LogError($"[SaveManager] ({_context}) Failed to write temp save file: {_e.Message}");
+            return false;
+        }
+
+        const int maxRetries = 3;
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            try
+            {
+                if (File.Exists(path))
+                {
+                    // 새 내용 반영 + 기존 파일을 backupPath로 이동을 한 번에 원자적으로 처리한다.
+                    File.Replace(tempPath, path, backupPath, ignoreMetadataErrors: true);
+                }
+                else
+                {
+                    File.Move(tempPath, path);
+                }
+
+                return true;
+            }
+            catch (IOException _e)
+            {
+                // OneDrive 동기화/백신 스캔 등으로 대상 파일이 잠깐 잠겨있을 수 있어 짧게 재시도한다.
+                if (attempt >= maxRetries)
+                {
+                    Debug.LogError($"[SaveManager] ({_context}) Failed to replace save file after {maxRetries} attempts: {_e.Message}");
+                    return false;
+                }
+
+                Thread.Sleep(75);
+            }
+            catch (Exception _e)
+            {
+                Debug.LogError($"[SaveManager] ({_context}) Unexpected error replacing save file: {_e.Message}");
+                return false;
+            }
+        }
+
+        return false;
     }
 
     // // 프라이빗 암호화 로직

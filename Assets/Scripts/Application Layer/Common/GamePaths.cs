@@ -10,6 +10,8 @@ public static class GamePaths
 {
     private const string FOLDER_NAME = "Project_Baobab";
     private const string GAME_SAVE_FILE_NAME = "SaveData.dat";
+    private const string GAME_SAVE_BACKUP_FILE_NAME = "SaveData.dat.bak";
+    private const string GAME_SAVE_TEMP_FILE_NAME = "SaveData.dat.tmp";
     private const string SETTINGS_FILE_NAME = "Settings.json";
 
     private static string cachedFolder;
@@ -36,6 +38,12 @@ public static class GamePaths
 
     /// <summary>플레이 진행 상황 (암호화 바이너리)</summary>
     public static string GameSaveFile => Path.Combine(SaveFolder, GAME_SAVE_FILE_NAME);
+
+    /// <summary>직전 저장본 백업 (GameSaveFile을 원자적으로 교체할 때 File.Replace가 자동으로 채움). 반드시 SaveFolder 기준이어야 File.Replace의 "동일 볼륨" 조건이 항상 성립한다.</summary>
+    public static string GameSaveBackupFile => Path.Combine(SaveFolder, GAME_SAVE_BACKUP_FILE_NAME);
+
+    /// <summary>원자적 쓰기용 임시 파일. GameSaveFile과 반드시 같은 폴더(SaveFolder)에 있어야 한다.</summary>
+    public static string GameSaveTempFile => Path.Combine(SaveFolder, GAME_SAVE_TEMP_FILE_NAME);
 
     /// <summary>환경설정 (평문 JSON)</summary>
     public static string SettingsFile => Path.Combine(SaveFolder, SETTINGS_FILE_NAME);
