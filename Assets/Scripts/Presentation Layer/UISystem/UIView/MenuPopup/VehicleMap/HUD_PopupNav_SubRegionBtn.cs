@@ -94,6 +94,18 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private Tween clearNewTween;
     private Tween lockIconTween;
     
+    private RectTransform cachedRectTransform;
+    private Image lockIconImage;
+
+    public RectTransform CachedRectTransform
+    {
+        get
+        {
+            if (null == cachedRectTransform) cachedRectTransform = GetComponent<RectTransform>();
+            return cachedRectTransform;
+        }
+    }
+    
     private Vector3 lockIconOriginalLocalPos;
     
     // 비주얼 연출을 적용할 자식 트랜스폼 목록 (clickImage 제외)
@@ -138,8 +150,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             return visualBoundsRef.rect.width;
         }
         
-        RectTransform _myRect = GetComponent<RectTransform>();
-        return null != _myRect ? _myRect.rect.width : 0f;
+        return CachedRectTransform.rect.width;
     }
 
     public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas)
@@ -172,11 +183,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             lockIconOriginalLocalPos = lockIconObj.transform.localPosition;
             lockIconObj.transform.localScale = Vector3.one;
             lockIconObj.transform.localRotation = Quaternion.identity;
-            Image _lockImg = lockIconObj.GetComponent<Image>();
-            if (null != _lockImg) 
+            if (null == lockIconImage) lockIconImage = lockIconObj.GetComponent<Image>();
+            if (null != lockIconImage) 
             {
-                _lockImg.color = Color.white;
-                _lockImg.enabled = true;
+                lockIconImage.color = Color.white;
+                lockIconImage.enabled = true;
             }
         }
 
@@ -292,7 +303,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         lockIconObj.transform.localScale = Vector3.one;
         lockIconObj.transform.localRotation = Quaternion.identity;
         lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
-        Image _img = lockIconObj.GetComponent<Image>();
 
         Sequence _seq = DOTween.Sequence();
         
@@ -302,10 +312,10 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         _seq.Join(lockIconObj.transform.DOPunchScale(new Vector3(lockPunchStrength, lockPunchStrength, 0f), lockPunchDuration, lockPunchVibrato, lockPunchElasticity));
         _seq.Join(lockIconObj.transform.DOPunchRotation(_rotPunch, lockPunchDuration, lockPunchVibrato, lockPunchElasticity));
 
-        if (null != _img)
+        if (null != lockIconImage)
         {
-            _seq.Join(_img.DOColor(lockClickColor, lockClickColorDuration * 0.5f));
-            _seq.Append(_img.DOColor(Color.white, lockClickColorDuration * 0.5f));
+            _seq.Join(lockIconImage.DOColor(lockClickColor, lockClickColorDuration * 0.5f));
+            _seq.Append(lockIconImage.DOColor(Color.white, lockClickColorDuration * 0.5f));
         }
         
         lockIconTween = _seq;
@@ -464,10 +474,9 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             lockIconObj.transform.localScale = Vector3.one;
             lockIconObj.transform.localRotation = Quaternion.identity;
             lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
-            Image _lockImg = lockIconObj.GetComponent<Image>();
-            if (null != _lockImg) 
+            if (null != lockIconImage) 
             {
-                _lockImg.enabled = true;
+                lockIconImage.enabled = true;
             }
         }
 
@@ -590,10 +599,9 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     {
         if (null != lockIconObj)
         {
-            Image _img = lockIconObj.GetComponent<Image>();
-            if (null != _img)
+            if (null != lockIconImage)
             {
-                _img.enabled = false;
+                lockIconImage.enabled = false;
             }
             else
             {

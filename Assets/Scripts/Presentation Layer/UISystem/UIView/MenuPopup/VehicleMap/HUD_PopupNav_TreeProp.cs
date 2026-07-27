@@ -122,7 +122,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
         if (null != hoverEffectParticle)
         {
-            var _main = hoverEffectParticle.main;
+            ParticleSystem.MainModule _main = hoverEffectParticle.main;
             _main.startColor = _visualData.topVfxColor.startColor;
             
             if (true == _visualData.topVfxColor.overrideChildrenColor)
@@ -132,7 +132,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
                 {
                     if (hoverEffectParticle != _children[i])
                     {
-                        var _childMain = _children[i].main;
+                        ParticleSystem.MainModule _childMain = _children[i].main;
                         _childMain.startColor = _visualData.topVfxColor.startColor;
                     }
                 }
@@ -305,25 +305,25 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
         if (null != _mat)
         {
-            float maxColorComponent = Mathf.Max(_originalColor.r, Mathf.Max(_originalColor.g, _originalColor.b));
-            Color ldrColor = _originalColor;
+            float _maxColorComponent = Mathf.Max(_originalColor.r, Mathf.Max(_originalColor.g, _originalColor.b));
+            Color _ldrColor = _originalColor;
             
-            if (0.001f < maxColorComponent)
+            if (0.001f < _maxColorComponent)
             {
-                ldrColor.r = Mathf.Clamp01(_originalColor.r / maxColorComponent);
-                ldrColor.g = Mathf.Clamp01(_originalColor.g / maxColorComponent);
-                ldrColor.b = Mathf.Clamp01(_originalColor.b / maxColorComponent);
+                _ldrColor.r = Mathf.Clamp01(_originalColor.r / _maxColorComponent);
+                _ldrColor.g = Mathf.Clamp01(_originalColor.g / _maxColorComponent);
+                _ldrColor.b = Mathf.Clamp01(_originalColor.b / _maxColorComponent);
             }
 
-            float factor = Mathf.Pow(2, _intensity);
-            Color hdrColor = new Color(
-                ldrColor.r * factor, 
-                ldrColor.g * factor, 
-                ldrColor.b * factor, 
-                ldrColor.a
+            float _factor = Mathf.Pow(2, _intensity);
+            Color _hdrColor = new Color(
+                _ldrColor.r * _factor, 
+                _ldrColor.g * _factor, 
+                _ldrColor.b * _factor, 
+                _ldrColor.a
             );
 
-            _targetColor = hdrColor * _stateMultiplier;
+            _targetColor = _hdrColor * _stateMultiplier;
 
             if (_mat.HasProperty(HdrColorPropertyId))
             {
