@@ -14,16 +14,14 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     [SerializeField] private float anchorOffsetX = 200f;
     [Tooltip("서브지역 노출 시 요소간 딜레이(순차 등장)")]
     [SerializeField] private float appearSequenceDelay = 0.1f;
-    [Tooltip("다른 지역으로 전환 시 모든 버튼이 사라진 후 다음 버튼들이 나타나기 전 대기 시간")]
-    [SerializeField] private float transitionDelay = 0.15f;
+
 
     [Header("Layout & Distribution")]
     [Tooltip("전체 버튼들의 기본 Y축 오프셋 (아랫쪽 배치를 위해 음수 권장)")]
     [SerializeField] private float baseOffsetY = -50f;
     [Tooltip("자연스러운 배치를 위한 중앙부 솟아오름(아치형) 기본 높이 편차")]
     [SerializeField] private float archHeightY = 30f;
-    [Tooltip("각 버튼별 X축 랜덤 분산 범위 (세그먼트 폭에 대한 비율, 0~0.4 추천. 순서가 안 바뀌게 제한)")]
-    [SerializeField] private float randomScatterRatioX = 0.25f;
+
     [Tooltip("각 버튼별 Y축 랜덤 분산 범위 최대값 (위아래 픽셀)")]
     [SerializeField] private float randomScatterRangeY = 40f;
     [Tooltip("절대 일렬로 배치되지 않도록 강제로 위/아래 지그재그 패턴 적용")]
@@ -51,12 +49,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     [Tooltip("각 서브지역 버튼 등장(스케일 업) 연출 이즈(Ease)")]
     [SerializeField] private Ease appearAnimEase = Ease.OutBack;
     
-    [Tooltip("스케일업 직후 꽂히는 흔들림(Shake) 연출 시간")]
-    [SerializeField] private float shakeDuration = 0.2f;
-    [Tooltip("흔들림 강도 (Z축 회전 각도)")]
-    [SerializeField] private float shakeStrength = 10f;
-    [Tooltip("흔들림 진동 수 (Vibrato)")]
-    [SerializeField] private int shakeVibrato = 10;
+
 
     private HUD_PopupNav_Main mainController;
     private LocalizationManager localizationManager;
@@ -79,9 +72,13 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private float[] cachedSafeDistances = new float[32];
     private float[] cachedGaps = new float[32];
     
-    // Fixed Lambdas by replacing them with class methods
     private int completedDisappearCount;
     private Action cachedOnComplete;
+
+    private Action cachedOnDisappearSequenceCompleteForToggle;
+    private TweenCallback cachedOnAppearSequenceComplete;
+    private Action cachedOnDisappearMotionComplete;
+    private Action cachedOnSingleSubRegionUnlockComplete;
 
     public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, TreeVisualDataBase _treeVisualDataBase)
     {
@@ -106,6 +103,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
         
         cachedSequenceWait = new WaitForSeconds(appearSequenceDelay);
+
+        if (null == cachedOnDisappearSequenceCompleteForToggle) cachedOnDisappearSequenceCompleteForToggle = OnDisappearSequenceCompleteForToggle;
+        if (null == cachedOnAppearSequenceComplete) cachedOnAppearSequenceComplete = OnAppearSequenceComplete;
+        if (null == cachedOnDisappearMotionComplete) cachedOnDisappearMotionComplete = OnDisappearMotionComplete;
+        if (null == cachedOnSingleSubRegionUnlockComplete) cachedOnSingleSubRegionUnlockComplete = OnSingleSubRegionUnlockComplete;
     }
 
     public void ShowSubRegionsForMap(MapType _mapType, Transform _regionBtnTransform, IMapDataProvider _provider, Action _onComplete = null)
@@ -120,7 +122,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             
             if (null == sequenceCoroutine)
             {
-                PlayDisappearSequence(OnDisappearSequenceCompleteForToggle);
+                PlayDisappearSequence(cachedOnDisappearSequenceCompleteForToggle);
             }
         }
         else
@@ -200,13 +202,14 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         if (null != currentAppearSequence && true == currentAppearSequence.IsActive())
         {
             currentAppearSequence.Kill();
+            currentAppearSequence = null;
         }
 
         currentAppearSequence = PlayAppearSequence();
         if (null != currentAppearSequence)
         {
             cachedOnComplete = _onComplete;
-            currentAppearSequence.OnComplete(OnAppearSequenceComplete); // Removed lambda
+            currentAppearSequence.OnComplete(cachedOnAppearSequenceComplete); // Removed lambda
         }
         else
         {
@@ -273,7 +276,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         
         float _availableRandomSpace = _usableWidth - _totalRequiredSpace;
 
-        if (_availableRandomSpace < 0f)
+        if (0f > _availableRandomSpace)
         {
             _availableRandomSpace = 0f;
         }
@@ -341,7 +344,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
             _targetY = Mathf.Clamp(_targetY, _minY, _maxY);
 
-            _btnRect.anchoredPosition = new Vector2(_targetX, _targetY);
+            _btnRect.anchoredPosition = new Vector2(Mathf.Round(_targetX), Mathf.Round(_targetY));
         }
     }
 
@@ -371,9 +374,9 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             yield break;
         }
 
-        for (int i = _totalCount - 1; i >= 0; i--)
+        for (int i = _totalCount - 1; 0 <= i; i--)
         {
-            activeSubRegionButtons[i].PlayDisappearMotion(OnDisappearMotionComplete); // Removed lambda
+            activeSubRegionButtons[i].PlayDisappearMotion(cachedOnDisappearMotionComplete); // Removed lambda
         }
 
         float _timeout = 2f; 
@@ -417,18 +420,43 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         return _seq;
     }
 
-    public void PlayUnlockProduction(ForestType _forestType, Action _onComplete)
+    private int pendingUnlockCount = 0;
+    private Action onMultipleUnlockComplete;
+
+    public void PlayUnlockProduction(List<ForestType> _forestTypes, Action _onComplete)
     {
+        if (null == _forestTypes || 0 == _forestTypes.Count)
+        {
+            _onComplete?.Invoke();
+            return;
+        }
+
+        pendingUnlockCount = 0;
+        onMultipleUnlockComplete = _onComplete;
+
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
-            if (_forestType == activeSubRegionButtons[i].GetForestType()) // Yoda notation
+            if (true == _forestTypes.Contains(activeSubRegionButtons[i].GetForestType()))
             {
-                activeSubRegionButtons[i].PlayUnlockMotion(_onComplete);
-                return;
+                pendingUnlockCount++;
+                activeSubRegionButtons[i].PlayUnlockMotion(cachedOnSingleSubRegionUnlockComplete);
             }
         }
         
-        _onComplete?.Invoke();
+        if (0 == pendingUnlockCount)
+        {
+            _onComplete?.Invoke();
+        }
+    }
+
+    private void OnSingleSubRegionUnlockComplete()
+    {
+        pendingUnlockCount--;
+        if (0 >= pendingUnlockCount)
+        {
+            onMultipleUnlockComplete?.Invoke();
+            onMultipleUnlockComplete = null;
+        }
     }
 
     public void SetSelectSubRegion(ForestType _forestType)

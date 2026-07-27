@@ -90,8 +90,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private Vector2 subRegionFieldOriginalPos;
 
     [Header("Settings")]
-    [Tooltip("해금 연출 기본 지연 시간")]
-    [SerializeField] private float defaultUnlockDelay = 1.0f;
     [Tooltip("다중 대지역 해금 시 배속 (예: 2배속이면 2.0)")]
     [SerializeField] private float multiRegionUnlockSpeedRate = 2.0f;
 
@@ -114,8 +112,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private bool isClosing = false;
     private bool isInputBlocked = false;
     private ForestType currentSelectedForestType = ForestType.None;
-    private ForestType currentShowingTreeInfoType = ForestType.None;
     private MapType currentSelectedMapType = MapType.None;
+    private bool isPendingUnlockProcess = false;
 
     // 언락 큐 구조체
     private struct UnlockInfo
@@ -128,7 +126,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private readonly List<UnlockInfo> regionUnlockList = new List<UnlockInfo>(4);
     private readonly List<UnlockInfo> subRegionUnlockList = new List<UnlockInfo>(8);
 
-    private UnlockInfo pendingSubRegionUnlockInfo;
+
+    private readonly List<ForestType> pendingSubRegionUnlockForestTypes = new List<ForestType>(4);
     private MapType pendingRegionUnlockMapType = MapType.None;
     private float cachedUnlockSpeedRate = 1.0f;
 
@@ -218,7 +217,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             currentRegionNameText.transform.localScale = Vector3.one;
         }
 
-        if (debugForceUnlockAll && null != mapDataProvider)
+        if (true == debugForceUnlockAll && null != mapDataProvider)
         {
             MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
             if (null != _db.mapDatas)
@@ -251,6 +250,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != appearTween && true == appearTween.IsActive())
         {
             appearTween.Kill();
+            appearTween = null;
         }
 
         // 초기 상태 세팅
@@ -351,16 +351,19 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void OnMainPopupAppearCompleteForAnimation()
     {
-        // 원래 Open() 끝에서 호출되던 로직
         BuildUnlockQueues();
 
         if (0 < regionUnlockList.Count || 0 < subRegionUnlockList.Count)
         {
-            ProcessNextUnlock();
+            isPendingUnlockProcess = true;
         }
-        else
+
+        bool _sessionRestored = RestoreSessionState();
+
+        if (false == _sessionRestored && true == isPendingUnlockProcess)
         {
-            RestoreSessionState(); // 내부에서 HandleRegionSelected 호출 -> 서브지역 생성 및 자체 연출 재생 완료됨
+            isPendingUnlockProcess = false;
+            ProcessNextUnlock();
         }
     }
 
@@ -400,6 +403,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != disappearTween && true == disappearTween.IsActive())
         {
             disappearTween.Kill();
+            disappearTween = null;
         }
 
         if (true == _isInstant)
@@ -457,10 +461,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         Close();
     }
 
-    private void OnMainPopupAppearComplete()
-    {
-        // OnMainPopupAppearCompleteForAnimation 으로 대체됨 (이 메서드는 이제 직접 호출되지 않음)
-    }
 
     private void OnMainPopupDisappearComplete()
     {
@@ -566,18 +566,42 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void ProcessNextUnlock()
     {
-        // 1순위: 대지역 해금이 1개 이상 존재할 경우
+        // 1순위: 현재 선택된(보여지고 있는) 맵의 서브지역 해금이 존재할 경우
+        bool _hasCurrentMapSubRegionUnlock = false;
+        for (int i = 0; i < subRegionUnlockList.Count; i++)
+        {
+            if (currentSelectedMapType == subRegionUnlockList[i].mapType)
+            {
+                _hasCurrentMapSubRegionUnlock = true;
+                break;
+            }
+        }
+
+        if (true == _hasCurrentMapSubRegionUnlock)
+        {
+            isUnlockingProductionActive = true;
+            pendingSubRegionUnlockForestTypes.Clear();
+            
+            for (int i = subRegionUnlockList.Count - 1; i >= 0; i--)
+            {
+                UnlockInfo _subInfo = subRegionUnlockList[i];
+                if (currentSelectedMapType == _subInfo.mapType)
+                {
+                    pendingSubRegionUnlockForestTypes.Add(_subInfo.forestType);
+                    subRegionUnlockList.RemoveAt(i);
+                }
+            }
+
+            // 트랜지션 완료 대기가 필요 없으므로 짧은 딜레이 후 바로 연출 진행
+            float _delay = 0.1f;
+            pendingRegionUnlockMapType = currentSelectedMapType; // mapType 캐싱 재사용
+            delayedCallTween = DOVirtual.DelayedCall(_delay, onSubRegionUnlockDelayCompleteCallback).SetEase(Ease.Linear);
+            return;
+        }
+
+        // 2순위: 대지역 해금이 1개 이상 존재할 경우
         if (0 < regionUnlockList.Count)
         {
-            // 서브지역 해금은 모두 스킵 처리 (조용히 해금)
-            for (int i = 0; i < subRegionUnlockList.Count; i++)
-            {
-                UnlockInfo _sub = subRegionUnlockList[i];
-                mapDataProvider.MarkUnlocked(_sub.mapType, _sub.forestType);
-                mapDataProvider.MarkUnlockAnimationPlayed(_sub.mapType, _sub.forestType);
-            }
-            subRegionUnlockList.Clear();
-
             isUnlockingProductionActive = true;
             bool _isMultiRegion = 1 < regionUnlockList.Count;
             float _speedRate = true == _isMultiRegion ? multiRegionUnlockSpeedRate : 1.0f;
@@ -586,39 +610,31 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        // 2순위: 서브지역 해금만 존재할 경우
+        // 3순위: 그 외(현재 보고 있지 않은) 대지역의 서브지역 해금은 조용히 해금 처리 (NEW 뱃지만 표시됨)
         if (0 < subRegionUnlockList.Count)
         {
-            isUnlockingProductionActive = true;
-            
-            // 가장 나중에 갈 수 있는 최신 맵 1개만 추출 (마지막 요소)
-            UnlockInfo _latestSub = subRegionUnlockList[subRegionUnlockList.Count - 1];
-            
-            // 나머지는 스킵 처리
-            for (int i = 0; i < subRegionUnlockList.Count - 1; i++)
+            for (int i = 0; i < subRegionUnlockList.Count; i++)
             {
-                UnlockInfo _skipSub = subRegionUnlockList[i];
-                mapDataProvider.MarkUnlocked(_skipSub.mapType, _skipSub.forestType);
-                mapDataProvider.MarkUnlockAnimationPlayed(_skipSub.mapType, _skipSub.forestType);
+                UnlockInfo _subInfo = subRegionUnlockList[i];
+                mapDataProvider.MarkUnlocked(_subInfo.mapType, _subInfo.forestType);
+                mapDataProvider.MarkUnlockAnimationPlayed(_subInfo.mapType, _subInfo.forestType);
             }
             subRegionUnlockList.Clear();
-
-            // 최신 서브지역 해금 연출을 위해 해당 대지역으로 자동 전환
-            HandleRegionSelected(_latestSub.mapType);
-            
-            // 트랜지션 완료를 기다린 후 서브지역 자물쇠 파괴 연출 진행
-            float _delay = defaultUnlockDelay;
-            pendingSubRegionUnlockInfo = _latestSub;
-            delayedCallTween = DOVirtual.DelayedCall(_delay, onSubRegionUnlockDelayCompleteCallback).SetEase(Ease.Linear);
         }
+
+        isUnlockingProductionActive = false;
     }
 
     private void OnSubRegionUnlockDelayComplete()
     {
-        mapDataProvider.MarkUnlocked(pendingSubRegionUnlockInfo.mapType, pendingSubRegionUnlockInfo.forestType);
+        for (int i = 0; i < pendingSubRegionUnlockForestTypes.Count; i++)
+        {
+            mapDataProvider.MarkUnlocked(pendingRegionUnlockMapType, pendingSubRegionUnlockForestTypes[i]);
+        }
+
         if (null != subRegionGroup)
         {
-            subRegionGroup.PlayUnlockProduction(pendingSubRegionUnlockInfo.forestType, OnSubRegionUnlockMotionComplete);
+            subRegionGroup.PlayUnlockProduction(pendingSubRegionUnlockForestTypes, OnSubRegionUnlockMotionComplete);
         }
         else
         {
@@ -628,8 +644,14 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void OnSubRegionUnlockMotionComplete()
     {
-        mapDataProvider.MarkUnlockAnimationPlayed(pendingSubRegionUnlockInfo.mapType, pendingSubRegionUnlockInfo.forestType);
+        for (int i = 0; i < pendingSubRegionUnlockForestTypes.Count; i++)
+        {
+            mapDataProvider.MarkUnlockAnimationPlayed(pendingRegionUnlockMapType, pendingSubRegionUnlockForestTypes[i]);
+        }
+        pendingSubRegionUnlockForestTypes.Clear();
         isUnlockingProductionActive = false;
+        
+        ProcessNextUnlock();
     }
 
     // IPointerClickHandler 구현은 개별 컴포넌트(SimpleClickHandler)로 위임하여 제거함
@@ -638,8 +660,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     {
         if (0 == regionUnlockList.Count)
         {
-            isUnlockingProductionActive = false;
-            RestoreSessionState();
+            ProcessNextUnlock();
             return;
         }
 
@@ -666,11 +687,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
         PlayNextRegionUnlock(cachedUnlockSpeedRate);
     }
 
-    private void RestoreSessionState()
+    private bool RestoreSessionState()
     {
         if (MapType.None != runtimeLastSelectedMapType)
         {
             HandleRegionSelected(runtimeLastSelectedMapType, true, true);
+            return true;
         }
         else
         {
@@ -685,12 +707,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
                         if (MapType.Town != _db.mapDatas[i].mapType)
                         {
                             HandleRegionSelected(_db.mapDatas[i].mapType, true, true);
-                            break;
+                            return true;
                         }
                     }
                 }
             }
         }
+        return false;
     }
 
     private void MarkCurrentRegionAsRead()
@@ -760,6 +783,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 if (null != regionNameTween && true == regionNameTween.IsActive())
                 {
                     regionNameTween.Kill();
+                    regionNameTween = null;
                     currentRegionNameText.transform.localScale = Vector3.one;
                 }
 
@@ -808,6 +832,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
         IsTransitioning = false;
         if (null != regionGroup) regionGroup.EvaluateAllHoverStates();
         if (null != subRegionGroup) subRegionGroup.EvaluateAllHoverStates();
+
+        if (true == isPendingUnlockProcess)
+        {
+            isPendingUnlockProcess = false;
+            ProcessNextUnlock();
+        }
     }
 
     public void HandleSubRegionHovered(ForestType _forestType, Transform _subRegionTransform, ForestEnvironmentInfo _info)
@@ -849,9 +879,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (null != appearTween && appearTween.IsActive()) appearTween.Kill();
-        if (null != disappearTween && disappearTween.IsActive()) disappearTween.Kill();
-        if (null != delayedCallTween && delayedCallTween.IsActive()) delayedCallTween.Kill();
-        if (null != regionNameTween && regionNameTween.IsActive()) regionNameTween.Kill();
+        if (null != appearTween && appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
+        if (null != disappearTween && disappearTween.IsActive()) { disappearTween.Kill(); disappearTween = null; }
+        if (null != delayedCallTween && delayedCallTween.IsActive()) { delayedCallTween.Kill(); delayedCallTween = null; }
+        if (null != regionNameTween && regionNameTween.IsActive()) { regionNameTween.Kill(); regionNameTween = null; }
     }
 }

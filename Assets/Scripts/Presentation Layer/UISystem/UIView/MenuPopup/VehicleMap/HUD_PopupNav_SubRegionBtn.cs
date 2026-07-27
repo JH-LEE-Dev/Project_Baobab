@@ -65,6 +65,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [Header("Unlock Animation Settings")]
     [Tooltip("해금 연출 중 자물쇠 파괴(스케일 0) 시 재생할 파티클 시스템")]
     [SerializeField] private ParticleSystem unlockDestructionParticle;
+    [Tooltip("해금 파티클에 적용할 HDR 색상")]
+    [ColorUsage(true, true)] [SerializeField] private Color unlockParticleColor = Color.white;
     [Tooltip("자물쇠가 흔들리는 연출 시간")]
     [SerializeField] private float unlockShakeDuration = 0.8f;
     [Tooltip("자물쇠가 흔들리는 강도 (지진 느낌)")]
@@ -111,6 +113,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private TweenCallback cachedUnlockStep2;
     private TweenCallback cachedUnlockMotionComplete;
     private TweenCallback cachedClearNewTweenComplete;
+    private TweenCallback cachedUnlockPlayParticle;
     
     private Action cachedOnHoverClearNewComplete;
     private Action pendingDisappearCompleteAction;
@@ -119,6 +122,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     private bool isPointerOver = false;
     private bool isSelected = false;
+    private bool hasInstantiatedParticleMat = false;
 
     public ForestType GetForestType() => myInfo.forestType;
     public ForestEnvironmentInfo GetInfo() => myInfo;
@@ -221,6 +225,30 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         cachedUnlockMotionComplete = OnUnlockMotionComplete;
         cachedClearNewTweenComplete = OnClearNewTweenComplete;
         cachedOnHoverClearNewComplete = OnHoverClearNewComplete;
+        if (null == cachedUnlockPlayParticle) cachedUnlockPlayParticle = PlayUnlockParticle;
+
+        if (false == hasInstantiatedParticleMat && null != unlockDestructionParticle)
+        {
+            ParticleSystemRenderer _psr = unlockDestructionParticle.GetComponent<ParticleSystemRenderer>();
+            if (null != _psr && null != _psr.sharedMaterial)
+            {
+                Material _instancedMat = new Material(_psr.sharedMaterial);
+                if (_instancedMat.HasProperty("_HDRColor"))
+                {
+                    _instancedMat.SetColor("_HDRColor", unlockParticleColor);
+                }
+                else if (_instancedMat.HasProperty("_TintColor"))
+                {
+                    _instancedMat.SetColor("_TintColor", unlockParticleColor);
+                }
+                else if (_instancedMat.HasProperty("_Color"))
+                {
+                    _instancedMat.SetColor("_Color", unlockParticleColor);
+                }
+                _psr.material = _instancedMat;
+                hasInstantiatedParticleMat = true;
+            }
+        }
 
         SetSelectedState(false);
     }
@@ -253,6 +281,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != lockIconTween && true == lockIconTween.IsActive())
         {
             lockIconTween.Kill();
+            lockIconTween = null;
         }
 
         if (null != lockClickParticle)
@@ -267,7 +296,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         Sequence _seq = DOTween.Sequence();
         
-        float _randomSign = UnityEngine.Random.value > 0.5f ? 1f : -1f;
+        float _randomSign = 0.5f < UnityEngine.Random.value ? 1f : -1f;
         Vector3 _rotPunch = new Vector3(0f, 0f, lockPunchRotationStrength * _randomSign);
 
         _seq.Join(lockIconObj.transform.DOPunchScale(new Vector3(lockPunchStrength, lockPunchStrength, 0f), lockPunchDuration, lockPunchVibrato, lockPunchElasticity));
@@ -308,12 +337,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         {
             if (null != lockIconObj)
             {
-                if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
+                if (null != lockIconTween && true == lockIconTween.IsActive()) { lockIconTween.Kill(); lockIconTween = null; }
                 lockIconObj.transform.localScale = Vector3.one;
                 lockIconObj.transform.localRotation = Quaternion.identity;
                 lockIconObj.transform.localPosition = lockIconOriginalLocalPos;
                 
-                float _randomSign = UnityEngine.Random.value > 0.5f ? 1f : -1f;
+                float _randomSign = 0.5f < UnityEngine.Random.value ? 1f : -1f;
                 Vector3 _rotPunch = new Vector3(0f, 0f, lockHoverPunchRotation * _randomSign);
                 
                 lockIconTween = lockIconObj.transform.DOPunchRotation(_rotPunch, lockHoverPunchDuration, lockHoverPunchVibrato, lockHoverPunchElasticity);
@@ -338,6 +367,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             if (null != hoverTween && true == hoverTween.IsActive())
             {
                 hoverTween.Kill();
+                hoverTween = null;
             }
             
             for (int i = 0; i < treeProps.Count; i++)
@@ -385,6 +415,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != hoverTween && true == hoverTween.IsActive())
         {
             hoverTween.Kill();
+            hoverTween = null;
         }
         
         for (int i = 0; i < treeProps.Count; i++)
@@ -407,13 +438,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     {
         isSelected = false;
         
-        if (null != hoverTween && true == hoverTween.IsActive()) hoverTween.Kill();
-        if (null != appearTween && true == appearTween.IsActive()) appearTween.Kill();
-        if (null != disappearTween && true == disappearTween.IsActive()) disappearTween.Kill();
-        if (null != clearNewTween && true == clearNewTween.IsActive()) clearNewTween.Kill();
-        if (null != unlockTween && true == unlockTween.IsActive()) unlockTween.Kill();
-        if (null != selectTween && true == selectTween.IsActive()) selectTween.Kill();
-        if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
+        if (null != hoverTween && true == hoverTween.IsActive()) { hoverTween.Kill(); hoverTween = null; }
+        if (null != appearTween && true == appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
+        if (null != disappearTween && true == disappearTween.IsActive()) { disappearTween.Kill(); disappearTween = null; }
+        if (null != clearNewTween && true == clearNewTween.IsActive()) { clearNewTween.Kill(); clearNewTween = null; }
+        if (null != unlockTween && true == unlockTween.IsActive()) { unlockTween.Kill(); unlockTween = null; }
+        if (null != selectTween && true == selectTween.IsActive()) { selectTween.Kill(); selectTween = null; }
+        if (null != lockIconTween && true == lockIconTween.IsActive()) { lockIconTween.Kill(); lockIconTween = null; }
 
         if (null != lockIconObj)
         {
@@ -440,6 +471,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != appearTween && true == appearTween.IsActive())
         {
             appearTween.Kill();
+            appearTween = null;
         }
 
         // [TODO] 추후 DOTween 연출 작성
@@ -460,6 +492,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != disappearTween && true == disappearTween.IsActive())
         {
             disappearTween.Kill();
+            disappearTween = null;
         }
 
         Sequence _seq = DOTween.Sequence();
@@ -486,6 +519,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != unlockTween && true == unlockTween.IsActive())
         {
             unlockTween.Kill();
+            unlockTween = null;
         }
 
         Sequence _seq = DOTween.Sequence();
@@ -506,13 +540,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
                 _waitTime = unlockDestructionParticle.main.duration + unlockDestructionParticle.main.startLifetime.constantMax;
             }
 
-            _seq.AppendCallback(() => 
-            {
-                if (null != unlockDestructionParticle) 
-                {
-                    unlockDestructionParticle.Play();
-                }
-            });
+            _seq.AppendCallback(cachedUnlockPlayParticle);
             
             // 파티클 터지는 시간 대기 (파티클 재생 시간만큼 동적 대기)
             _seq.AppendInterval(_waitTime);
@@ -591,6 +619,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         if (null != selectTween && true == selectTween.IsActive())
         {
             selectTween.Kill();
+            selectTween = null;
         }
 
         if (true == _isSelected)
@@ -666,6 +695,14 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         }
     }
 
+    private void PlayUnlockParticle()
+    {
+        if (null != unlockDestructionParticle)
+        {
+            unlockDestructionParticle.Play();
+        }
+    }
+
     private void OnClearNewComplete()
     {
         if (null != newIndicatorObj)
@@ -677,12 +714,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     private void OnDestroy()
     {
-        if (null != appearTween && true == appearTween.IsActive()) appearTween.Kill();
-        if (null != disappearTween && true == disappearTween.IsActive()) disappearTween.Kill();
-        if (null != unlockTween && true == unlockTween.IsActive()) unlockTween.Kill();
-        if (null != selectTween && true == selectTween.IsActive()) selectTween.Kill();
-        if (null != hoverTween && true == hoverTween.IsActive()) hoverTween.Kill();
-        if (null != clearNewTween && true == clearNewTween.IsActive()) clearNewTween.Kill();
-        if (null != lockIconTween && true == lockIconTween.IsActive()) lockIconTween.Kill();
+        if (null != appearTween && true == appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
+        if (null != disappearTween && true == disappearTween.IsActive()) { disappearTween.Kill(); disappearTween = null; }
+        if (null != unlockTween && true == unlockTween.IsActive()) { unlockTween.Kill(); unlockTween = null; }
+        if (null != selectTween && true == selectTween.IsActive()) { selectTween.Kill(); selectTween = null; }
+        if (null != hoverTween && true == hoverTween.IsActive()) { hoverTween.Kill(); hoverTween = null; }
+        if (null != clearNewTween && true == clearNewTween.IsActive()) { clearNewTween.Kill(); clearNewTween = null; }
+        if (null != lockIconTween && true == lockIconTween.IsActive()) { lockIconTween.Kill(); lockIconTween = null; }
     }
 }

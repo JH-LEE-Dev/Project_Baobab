@@ -95,22 +95,10 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
             _validRegions.Add(_db.mapDatas[i]);
         }
 
-        // 2. 두 번째 대지역(1번 인덱스) 해금 가능 상태 체크
-        bool _isSecondStageAvailable = false;
-        if (1 < _validRegions.Count)
-        {
-            _isSecondStageAvailable = _validRegions[1].bCanAccess || _validRegions[1].isUnlocked;
-        }
-
         // 3. 버튼 생성 및 노출
         int _btnIndex = 0;
         for (int i = 0; _validRegions.Count > i; i++)
         {
-            // 두 번째 대지역이 해금 가능 상태가 아닐 때, 첫 번째 지역 이후의 지역들은 노출하지 않음
-            if (false == _isSecondStageAvailable && 0 < i)
-            {
-                break;
-            }
 
             if (regionButtons.Count > _btnIndex)
             {
@@ -148,6 +136,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
         if (null != appearSeq && appearSeq.IsActive())
         {
             appearSeq.Kill();
+            appearSeq = null;
         }
         
         appearSeq = DOTween.Sequence();
@@ -186,7 +175,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
             if (null == regionButtons[i]) continue;
             if (_mapType == regionButtons[i].GetMapType())
             {
-                regionButtons[i].PlayUnlockMotion(_onComplete);
+                regionButtons[i].PlayUnlockMotion(_onComplete, _speedRate);
                 return;
             }
         }

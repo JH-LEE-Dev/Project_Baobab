@@ -58,6 +58,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
 
 
+    private TweenCallback cachedPlayChildParticles;
     private bool isInitialized = false;
 
     public void Initialize()
@@ -71,6 +72,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         CacheOriginalMaterialsAndColors();
         
         // 그림???기?? ?해 EnvironmentSystem 찾기
+        if (null == cachedPlayChildParticles) cachedPlayChildParticles = PlayChildParticles;
         isInitialized = true;
     }
 
@@ -221,6 +223,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         if (null != appearTween && true == appearTween.IsActive())
         {
             appearTween.Kill();
+            appearTween = null;
         }
 
         transform.localScale = new Vector3(1f, 0.01f, 1f);
@@ -233,7 +236,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
         _seq.Append(transform.DOScaleY(1f, appearDuration).SetEase(appearEase));
 
-        _seq.AppendCallback(PlayChildParticles);
+        _seq.AppendCallback(cachedPlayChildParticles);
 
         appearTween = _seq;
     }
@@ -256,6 +259,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         if (null != _tween && true == _tween.IsActive())
         {
             _tween.Kill();
+            _tween = null;
         }
 
         Color _targetColor;
@@ -308,12 +312,13 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (null != appearTween && true == appearTween.IsActive()) appearTween.Kill();
+        if (null != appearTween && true == appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
         for (int i = 0; i < colorTweens.Length; i++)
         {
             if (null != colorTweens[i] && true == colorTweens[i].IsActive())
             {
                 colorTweens[i].Kill();
+                colorTweens[i] = null;
             }
         }
 

@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using DG.Tweening;
+using DG.Tweening.Core;
 using PresentationLayer.DOTweenAnimationSystem;
 using Coffee.UIEffects;
 
@@ -34,11 +35,46 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [ColorUsage(true, true)] [SerializeField] private Color hoverShadowColor = Color.white;
     [ColorUsage(true, true)] [SerializeField] private Color clickShadowColor = Color.white;
 
+    [Header("Locked State Settings")]
+    [Tooltip("잠금 상태의 기본 섀도우 색상")]
+    [ColorUsage(true, true)] [SerializeField] private Color lockedNormalShadowColor = Color.gray;
+    [Tooltip("잠금 상태의 호버 섀도우 색상")]
+    [ColorUsage(true, true)] [SerializeField] private Color lockedHoverShadowColor = Color.gray;
+    [Tooltip("잠금 상태의 클릭 섀도우 색상")]
+    [ColorUsage(true, true)] [SerializeField] private Color lockedClickShadowColor = Color.gray;
+    
+    [Tooltip("잠금 상태의 기본 배경 색상")]
+    [SerializeField] private Color lockedNormalBgColor = Color.gray;
+    [Tooltip("잠금 상태의 호버 배경 색상")]
+    [SerializeField] private Color lockedHoverBgColor = Color.gray;
+    [Tooltip("잠금 상태의 클릭 배경 색상")]
+    [SerializeField] private Color lockedClickBgColor = Color.gray;
+
     [Header("Background Colors")]
     [SerializeField] private Color normalBgColor = Color.white;
     [SerializeField] private Color hoverBgColor = Color.white;
     [SerializeField] private Color clickBgColor = Color.white;
     
+    [Header("Select Animation")]
+    [Tooltip("선택(클릭) 시 흔들림 강도")]
+    [SerializeField] private float selectPunchStrength = 1.1f;
+
+    [Header("Unlock Animation Settings")]
+    [Tooltip("해금 연출 중 자물쇠 파괴(스케일 0) 시 재생할 파티클 시스템")]
+    [SerializeField] private ParticleSystem unlockDestructionParticle;
+    [Tooltip("해금 파티클에 적용할 HDR 색상")]
+    [ColorUsage(true, true)] [SerializeField] private Color unlockParticleColor = Color.white;
+    [Tooltip("자물쇠가 흔들리는 연출 시간")]
+    [SerializeField] private float unlockShakeDuration = 0.8f;
+    [Tooltip("자물쇠가 흔들리는 강도 (지진 느낌)")]
+    [SerializeField] private float unlockShakeStrength = 15f;
+    [Tooltip("자물쇠가 줄어드는 시간")]
+    [SerializeField] private float unlockShrinkDuration = 0.2f;
+    [Tooltip("파티클 재생 후 다음 연출까지의 대기 시간")]
+    [SerializeField] private float unlockParticleDelay = 0.3f;
+    [Tooltip("버튼 비주얼 최종 연출(색상 복구 등) 시간")]
+    [SerializeField] private float unlockDuration = 0.5f;
+
     [Header("Hover Animation (Region)")]
     [Tooltip("호버 시 이동할 X축 거리")]
     [SerializeField] private float hoverMoveX = 20f;
@@ -46,10 +82,6 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [SerializeField] private float hoverMoveDuration = 0.2f;
     [Tooltip("호버 이동 이즈(Ease)")]
     [SerializeField] private Ease hoverMoveEase = Ease.OutQuad;
-
-    [Header("Select Animation")]
-    [Tooltip("선택(클릭) 시 흔들림 강도")]
-    [SerializeField] private float selectPunchStrength = 1.1f;
 
     private Tween unlockTween;
     private Tween hoverTween;
@@ -66,10 +98,21 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     
     // 런타임 캐싱 데이터
     private ParticleSystem newIndicatorParticle;
+    private Sprite unlockedBgSprite;
     public TweenCallback CachedActivate { get; private set; }
     private TweenCallback cachedPlayParticle;
     private TweenCallback cachedClearNewComplete;
+    private TweenCallback cachedUnlockStep1;
+    private TweenCallback cachedUnlockStep2;
+    private TweenCallback cachedUnlockMotionComplete;
+    private TweenCallback cachedUnlockPlayParticle;
+    private TweenCallback cachedDisableUIEffectIfUnlocked;
+    private DOGetter<Color> cachedGetShadowColor;
+    private DOSetter<Color> cachedSetShadowColor;
+
+    private Action pendingClearNewCompleteAction;
     private bool isPointerOver = false;
+    private bool hasInstantiatedParticleMat = false;
 
     public MapType GetMapType() => myInfo.mapType;
 
@@ -77,17 +120,19 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     {
         mainController = _mainController;
         myInfo = _info;
+        unlockedBgSprite = _bgSprite;
 
-        if (null != _bgSprite)
+        bool _isLocked = !_info.isUnlocked;
+
+        Image _targetImage = (null != bgImage) ? bgImage : clickImage;
+        if (null != _targetImage)
         {
-            Image _targetImage = (null != bgImage) ? bgImage : clickImage;
-            if (null != _targetImage)
+            if (false == _isLocked && null != unlockedBgSprite)
             {
-                _targetImage.sprite = _bgSprite;
+                _targetImage.sprite = unlockedBgSprite;
             }
         }
 
-        bool _isLocked = !_info.isUnlocked;
         if (null != lockVisualObj)
         {
             lockVisualObj.SetActive(_isLocked);
@@ -126,6 +171,37 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         CachedActivate = ActivateObject;
         cachedPlayParticle = PlayNewIndicatorParticle;
         cachedClearNewComplete = OnClearNewComplete;
+        cachedUnlockStep1 = OnUnlockStep1;
+        cachedUnlockStep2 = OnUnlockStep2;
+        cachedUnlockMotionComplete = OnUnlockMotionComplete;
+
+        if (null == cachedGetShadowColor) cachedGetShadowColor = GetShadowColor;
+        if (null == cachedSetShadowColor) cachedSetShadowColor = SetShadowColor;
+        if (null == cachedDisableUIEffectIfUnlocked) cachedDisableUIEffectIfUnlocked = DisableUIEffectIfUnlocked;
+        if (null == cachedUnlockPlayParticle) cachedUnlockPlayParticle = PlayUnlockParticle;
+
+        if (false == hasInstantiatedParticleMat && null != unlockDestructionParticle)
+        {
+            ParticleSystemRenderer _psr = unlockDestructionParticle.GetComponent<ParticleSystemRenderer>();
+            if (null != _psr && null != _psr.sharedMaterial)
+            {
+                Material _instancedMat = new Material(_psr.sharedMaterial);
+                if (_instancedMat.HasProperty("_HDRColor"))
+                {
+                    _instancedMat.SetColor("_HDRColor", unlockParticleColor);
+                }
+                else if (_instancedMat.HasProperty("_TintColor"))
+                {
+                    _instancedMat.SetColor("_TintColor", unlockParticleColor);
+                }
+                else if (_instancedMat.HasProperty("_Color"))
+                {
+                    _instancedMat.SetColor("_Color", unlockParticleColor);
+                }
+                _psr.material = _instancedMat;
+                hasInstantiatedParticleMat = true;
+            }
+        }
 
         SetSelectedState(false);
     }
@@ -151,27 +227,37 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (null != colorTween && true == colorTween.IsActive())
         {
             colorTween.Kill();
+            colorTween = null;
         }
         Sequence _seq = DOTween.Sequence();
         float _halfDuration = colorTransitionDuration * 0.5f;
 
         if (null != uiEffect)
         {
-            uiEffect.enabled = true;
-            _seq.Append(DOTween.To(GetShadowColor, SetShadowColor, clickShadowColor, _halfDuration).SetEase(colorTransitionEase));
-            _seq.Append(DOTween.To(GetShadowColor, SetShadowColor, hoverShadowColor, _halfDuration).SetEase(colorTransitionEase));
+            uiEffect.enabled = !myInfo.isUnlocked;
+            Color _targetClickShadow = myInfo.isUnlocked ? clickShadowColor : lockedClickShadowColor;
+            Color _targetHoverShadow = myInfo.isUnlocked ? hoverShadowColor : lockedHoverShadowColor;
+            
+            _seq.Append(DOTween.To(cachedGetShadowColor, cachedSetShadowColor, _targetClickShadow, _halfDuration).SetEase(colorTransitionEase));
+            _seq.Append(DOTween.To(cachedGetShadowColor, cachedSetShadowColor, _targetHoverShadow, _halfDuration).SetEase(colorTransitionEase));
         }
 
         Image _targetBgImg = (null != bgImage) ? bgImage : clickImage;
+        Color _targetClickBg = myInfo.isUnlocked ? clickBgColor : lockedClickBgColor;
+        Color _targetHoverBg = myInfo.isUnlocked ? hoverBgColor : lockedHoverBgColor;
+
         if (null != _targetBgImg)
         {
-            _seq.Insert(0, _targetBgImg.DOColor(clickBgColor, _halfDuration).SetEase(colorTransitionEase));
-            _seq.Insert(_halfDuration, _targetBgImg.DOColor(hoverBgColor, _halfDuration).SetEase(colorTransitionEase));
+            _seq.Insert(0, _targetBgImg.DOColor(_targetClickBg, _halfDuration).SetEase(colorTransitionEase));
+            _seq.Insert(_halfDuration, _targetBgImg.DOColor(_targetHoverBg, _halfDuration).SetEase(colorTransitionEase));
         }
         if (null != frameImage)
         {
-            _seq.Insert(0, frameImage.DOColor(clickBgColor, _halfDuration).SetEase(colorTransitionEase));
-            _seq.Insert(_halfDuration, frameImage.DOColor(hoverBgColor, _halfDuration).SetEase(colorTransitionEase));
+            if (true == myInfo.isUnlocked)
+            {
+                _seq.Insert(0, frameImage.DOColor(_targetClickBg, _halfDuration).SetEase(colorTransitionEase));
+                _seq.Insert(_halfDuration, frameImage.DOColor(_targetHoverBg, _halfDuration).SetEase(colorTransitionEase));
+            }
         }
         colorTween = _seq;
 
@@ -205,13 +291,16 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             return;
         }
 
-        TweenColors(hoverShadowColor, hoverBgColor, false);
+        Color _targetHoverShadow = myInfo.isUnlocked ? hoverShadowColor : lockedHoverShadowColor;
+        Color _targetHoverBg = myInfo.isUnlocked ? hoverBgColor : lockedHoverBgColor;
+        TweenColors(_targetHoverShadow, _targetHoverBg, false);
         
         ClearNewIndicator();
 
         if (null != hoverTween && true == hoverTween.IsActive())
         {
             hoverTween.Kill();
+            hoverTween = null;
         }
         
         // clickImage(Raycast) 영역은 움직이지 않도록 루트 대신 비주얼 자식들만 연출
@@ -234,11 +323,14 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (false == isSelected)
         {
-            TweenColors(normalShadowColor, normalBgColor, true);
+            Color _targetNormalShadow = myInfo.isUnlocked ? normalShadowColor : lockedNormalShadowColor;
+            Color _targetNormalBg = myInfo.isUnlocked ? normalBgColor : lockedNormalBgColor;
+            TweenColors(_targetNormalShadow, _targetNormalBg, true);
 
             if (null != hoverTween && true == hoverTween.IsActive())
             {
                 hoverTween.Kill();
+                hoverTween = null;
             }
 
             Sequence _seq = DOTween.Sequence();
@@ -255,22 +347,23 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (null != colorTween && true == colorTween.IsActive())
         {
             colorTween.Kill();
+            colorTween = null;
         }
 
         Sequence _seq = DOTween.Sequence();
 
         if (null != uiEffect)
         {
-            if (false == _isIdle)
+            if (false == _isIdle || false == myInfo.isUnlocked)
             {
                 uiEffect.enabled = true;
             }
 
-            _seq.Join(DOTween.To(GetShadowColor, SetShadowColor, _targetShadow, colorTransitionDuration).SetEase(colorTransitionEase));
-            
-            if (true == _isIdle)
+            _seq.Join(DOTween.To(cachedGetShadowColor, cachedSetShadowColor, _targetShadow, colorTransitionDuration).SetEase(colorTransitionEase));
+
+            if (true == _isIdle && true == myInfo.isUnlocked)
             {
-                _seq.OnComplete(DisableUIEffect);
+                _seq.OnComplete(cachedDisableUIEffectIfUnlocked);
             }
         }
 
@@ -281,7 +374,10 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         }
         if (null != frameImage)
         {
-            _seq.Join(frameImage.DOColor(_targetBg, colorTransitionDuration).SetEase(colorTransitionEase));
+            if (true == myInfo.isUnlocked)
+            {
+                _seq.Join(frameImage.DOColor(_targetBg, colorTransitionDuration).SetEase(colorTransitionEase));
+            }
         }
 
         colorTween = _seq;
@@ -289,35 +385,109 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     private Action pendingUnlockCompleteAction;
 
-    public void PlayUnlockMotion(Action _onComplete)
+    public void PlayUnlockMotion(Action _onComplete, float _speedRate = 1.0f)
     {
-        if (null != newIndicatorObj)
-        {
-            newIndicatorObj.SetActive(true);
-        }
-
         pendingUnlockCompleteAction = _onComplete;
 
         if (null != unlockTween && true == unlockTween.IsActive())
         {
             unlockTween.Kill();
+            unlockTween = null;
         }
 
-        // [TODO] 추후 이곳에 DOTween 연출(예: 흔들림, 커짐 등) 작성
-        // unlockTween = transform.DOScale(1.2f, unlockDuration).OnComplete(OnUnlockMotionComplete);
+        Sequence _seq = DOTween.Sequence();
+        bool _isFastMode = 1.0f < _speedRate;
+        float _timeScale = 1.0f / _speedRate;
+
+        if (null != lockVisualObj && true == lockVisualObj.activeSelf)
+        {
+            if (false == _isFastMode)
+            {
+                _seq.Append(lockVisualObj.transform.DOShakePosition(unlockShakeDuration, new Vector3(unlockShakeStrength, unlockShakeStrength, 0f), 30, 90f));
+                _seq.Join(lockVisualObj.transform.DOShakeRotation(unlockShakeDuration, new Vector3(0f, 0f, unlockShakeStrength * 2f), 30, 90f));
+                _seq.Append(lockVisualObj.transform.DOScale(Vector3.zero, unlockShrinkDuration).SetEase(Ease.InBack));
+            }
+            else
+            {
+                _seq.Append(lockVisualObj.transform.DOScale(Vector3.zero, unlockShrinkDuration * _timeScale).SetEase(Ease.InBack));
+            }
+            
+            float _waitTime = unlockParticleDelay;
+            if (null != unlockDestructionParticle)
+            {
+                _waitTime = unlockDestructionParticle.main.duration + unlockDestructionParticle.main.startLifetime.constantMax;
+            }
+
+            _seq.AppendCallback(cachedUnlockPlayParticle);
+            
+            _seq.AppendInterval(_waitTime * _timeScale);
+        }
+
+        _seq.AppendCallback(cachedUnlockStep1);
+        _seq.AppendInterval(unlockDuration * _timeScale);
+        _seq.AppendCallback(cachedUnlockStep2);
+
+        if (null != newIndicatorObj)
+        {
+            _seq.Append(newIndicatorObj.transform.DOScale(Vector3.one, 0.4f * _timeScale).SetEase(Ease.OutBack));
+        }
+
+        _seq.OnComplete(cachedUnlockMotionComplete);
+        unlockTween = _seq;
+    }
+
+    private void OnUnlockStep1()
+    {
+        if (null != lockVisualObj)
+        {
+            Image _img = lockVisualObj.GetComponent<Image>();
+            if (null != _img)
+            {
+                _img.enabled = false;
+            }
+            else
+            {
+                lockVisualObj.SetActive(false);
+            }
+        }
+
+        myInfo.isUnlocked = true;
         
-        // 임시로 즉시 완료 처리
-        OnUnlockMotionComplete();
+        Image _targetImage = (null != bgImage) ? bgImage : clickImage;
+        if (null != _targetImage && null != unlockedBgSprite)
+        {
+            _targetImage.sprite = unlockedBgSprite;
+        }
+
+        Color _targetNormalShadow = normalShadowColor;
+        Color _targetNormalBg = normalBgColor;
+        TweenColors(_targetNormalShadow, _targetNormalBg, true);
+    }
+
+    private void OnUnlockStep2()
+    {
+        if (null != newIndicatorObj)
+        {
+            newIndicatorObj.SetActive(true);
+            newIndicatorObj.transform.localScale = Vector3.zero;
+        }
     }
 
     private void OnUnlockMotionComplete()
     {
+        myInfo.isUnlocked = true;
+
         if (null != lockVisualObj)
         {
             lockVisualObj.SetActive(false);
         }
         pendingUnlockCompleteAction?.Invoke();
         pendingUnlockCompleteAction = null;
+
+        if (true == isPointerOver)
+        {
+            EvaluateHoverState();
+        }
     }
 
     private Tween selectTween;
@@ -329,6 +499,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (null != selectTween && true == selectTween.IsActive())
         {
             selectTween.Kill();
+            selectTween = null;
         }
 
         if (null != uiEffect)
@@ -343,26 +514,30 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
                 Sequence _seq = DOTween.Sequence();
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
-                    if (originalLocalX != null && i < originalLocalX.Length)
+                    if (null != originalLocalX && i < originalLocalX.Length)
                     {
                         _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i] + hoverMoveX, hoverMoveDuration).SetEase(hoverMoveEase));
                     }
                     _seq.Join(visualChildren[i].DOPunchScale(new Vector3(selectPunchStrength, selectPunchStrength, 1f) - Vector3.one, selectDuration, 5, 0.5f));
                 }
                 selectTween = _seq;
-                TweenColors(hoverShadowColor, hoverBgColor, false);
+                Color _targetHoverShadow = myInfo.isUnlocked ? hoverShadowColor : lockedHoverShadowColor;
+                Color _targetHoverBg = myInfo.isUnlocked ? hoverBgColor : lockedHoverBgColor;
+                TweenColors(_targetHoverShadow, _targetHoverBg, false);
             }
             else
             {
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
                     visualChildren[i].localScale = Vector3.one;
-                    if (originalLocalX != null && i < originalLocalX.Length)
+                    if (null != originalLocalX && i < originalLocalX.Length)
                     {
                         visualChildren[i].localPosition = new Vector3(originalLocalX[i] + hoverMoveX, visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
                     }
                 }
-                TweenColors(hoverShadowColor, hoverBgColor, false);
+                Color _targetHoverShadow = myInfo.isUnlocked ? hoverShadowColor : lockedHoverShadowColor;
+                Color _targetHoverBg = myInfo.isUnlocked ? hoverBgColor : lockedHoverBgColor;
+                TweenColors(_targetHoverShadow, _targetHoverBg, false);
             }
         }
         else
@@ -370,6 +545,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             if (null != hoverTween && true == hoverTween.IsActive())
             {
                 hoverTween.Kill();
+                hoverTween = null;
             }
 
             if (true == _playClickAnim)
@@ -378,7 +554,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
                     visualChildren[i].localScale = Vector3.one;
-                    if (originalLocalX != null && i < originalLocalX.Length)
+                    if (null != originalLocalX && i < originalLocalX.Length)
                     {
                         _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
                     }
@@ -390,13 +566,15 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
                 for (int i = 0; i < visualChildren.Count; i++)
                 {
                     visualChildren[i].localScale = Vector3.one;
-                    if (originalLocalX != null && i < originalLocalX.Length)
+                    if (null != originalLocalX && i < originalLocalX.Length)
                     {
                         visualChildren[i].localPosition = new Vector3(originalLocalX[i], visualChildren[i].localPosition.y, visualChildren[i].localPosition.z);
                     }
                 }
             }
-            TweenColors(normalShadowColor, normalBgColor, true);
+            Color _targetNormalShadow = myInfo.isUnlocked ? normalShadowColor : lockedNormalShadowColor;
+            Color _targetNormalBg = myInfo.isUnlocked ? normalBgColor : lockedNormalBgColor;
+            TweenColors(_targetNormalShadow, _targetNormalBg, true);
         }
     }
 
@@ -440,6 +618,14 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         }
     }
 
+    private void PlayUnlockParticle()
+    {
+        if (null != unlockDestructionParticle)
+        {
+            unlockDestructionParticle.Play();
+        }
+    }
+
     private void OnClearNewComplete()
     {
         if (null != newIndicatorObj)
@@ -452,17 +638,21 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     private Color GetShadowColor() { return uiEffect.shadowColor; }
     private void SetShadowColor(Color c) { uiEffect.shadowColor = c; }
 
-    private void DisableUIEffect() 
+    private void DisableUIEffectIfUnlocked() 
     { 
-        if (null != uiEffect) uiEffect.enabled = false; 
+        if (null != uiEffect && true == myInfo.isUnlocked) 
+        {
+            uiEffect.enabled = false; 
+        }
     }
+
 
     private void OnDestroy()
     {
-        if (null != colorTween && true == colorTween.IsActive()) colorTween.Kill();
-        if (null != hoverTween && true == hoverTween.IsActive()) hoverTween.Kill();
-        if (null != unlockTween && true == unlockTween.IsActive()) unlockTween.Kill();
-        if (null != selectTween && true == selectTween.IsActive()) selectTween.Kill();
-        if (null != clearNewTween && true == clearNewTween.IsActive()) clearNewTween.Kill();
+        if (null != colorTween && true == colorTween.IsActive()) { colorTween.Kill(); colorTween = null; }
+        if (null != hoverTween && true == hoverTween.IsActive()) { hoverTween.Kill(); hoverTween = null; }
+        if (null != unlockTween && true == unlockTween.IsActive()) { unlockTween.Kill(); unlockTween = null; }
+        if (null != selectTween && true == selectTween.IsActive()) { selectTween.Kill(); selectTween = null; }
+        if (null != clearNewTween && true == clearNewTween.IsActive()) { clearNewTween.Kill(); clearNewTween = null; }
     }
 }

@@ -594,6 +594,7 @@ MonoBehaviour:
   lockHoverPunchVibrato: 8
   lockHoverPunchElasticity: 0.4
   unlockDestructionParticle: {fileID: 5203368991620948451}
+  unlockParticleColor: {r: 1.9766747, g: 1.9766747, b: 1.9766747, a: 1}
   unlockShakeDuration: 1
   unlockShakeStrength: 7
   unlockShrinkDuration: 0.2
@@ -683,7 +684,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7671287923279878261, guid: 60be201003353004bb33b365849857a5, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 26
+      value: 23
       objectReference: {fileID: 0}
     - target: {fileID: 7671287923279878261, guid: 60be201003353004bb33b365849857a5, type: 3}
       propertyPath: m_LocalPosition.z
@@ -966,6 +967,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6746670914652524189}
     m_Modifications:
+    - target: {fileID: 2558649905165420157, guid: 151761afaa3936d469b50425fe6cfceb, type: 3}
+      propertyPath: m_SortingLayer
+      value: 16
+      objectReference: {fileID: 0}
     - target: {fileID: 2861922723456384940, guid: 151761afaa3936d469b50425fe6cfceb, type: 3}
       propertyPath: m_Name
       value: VFX_SubRegionLockImpact
@@ -1020,11 +1025,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7671287923279878261, guid: 151761afaa3936d469b50425fe6cfceb, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0.27124023
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7671287923279878261, guid: 151761afaa3936d469b50425fe6cfceb, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 26.144897
+      value: 23
       objectReference: {fileID: 0}
     - target: {fileID: 7671287923279878261, guid: 151761afaa3936d469b50425fe6cfceb, type: 3}
       propertyPath: m_LocalPosition.z
