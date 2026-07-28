@@ -316,9 +316,17 @@ public class InputReader
 
         _inputAction.Disable();
 
-        InputActionRebindingExtensions.RebindingOperation _operation = _inputAction.PerformInteractiveRebinding(_bindingIndex)
-            .WithControlsExcluding("Mouse")
-            .WithCancelingThrough(RESERVED_ESCAPE_PATH)
+        InputActionRebindingExtensions.RebindingOperation _rebind = _inputAction.PerformInteractiveRebinding(_bindingIndex)
+            .WithCancelingThrough(RESERVED_ESCAPE_PATH);
+
+        // Attack은 기본값 자체가 마우스 좌클릭이라 마우스 버튼도 허용해야 한다.
+        // 그 외 액션은 키보드 전용이므로, 마우스 이동/클릭이 실수로 잡히지 않도록 제외한다.
+        if (ERebindableAction.Attack != _action)
+        {
+            _rebind = _rebind.WithControlsExcluding("Mouse");
+        }
+
+        InputActionRebindingExtensions.RebindingOperation _operation = _rebind
             .OnComplete(_op => CompleteRebind(_action, _inputAction, _bindingIndex, _onFinished))
             .OnCancel(_op => CancelRebindInternal(_inputAction, _onFinished))
             .Start();
@@ -435,11 +443,7 @@ public class InputReader
             case ERebindableAction.MoveRight: _inputAction = actions.Normal.Move; _bindingIndex = 4; break;
             case ERebindableAction.Inventory: _inputAction = actions.Normal.Inventory; _bindingIndex = 0; break;
             case ERebindableAction.Interaction: _inputAction = actions.Normal.Interaction; _bindingIndex = 0; break;
-            case ERebindableAction.SwitchMode: _inputAction = actions.Normal.SwitchMode; _bindingIndex = 0; break;
-            case ERebindableAction.AxeMode: _inputAction = actions.Normal.AxeMode; _bindingIndex = 0; break;
-            case ERebindableAction.RifleMode: _inputAction = actions.Normal.RifleMode; _bindingIndex = 0; break;
-            case ERebindableAction.Reload: _inputAction = actions.Normal.Reload; _bindingIndex = 0; break;
-            case ERebindableAction.AimCorrection: _inputAction = actions.Normal.AimCorrection; _bindingIndex = 0; break;
+            case ERebindableAction.Attack: _inputAction = actions.Normal.Click; _bindingIndex = 0; break;
             case ERebindableAction.PotionKey: _inputAction = actions.Normal.PotionKey; _bindingIndex = 0; break;
             default: throw new ArgumentOutOfRangeException(nameof(_action), _action, null);
         }
