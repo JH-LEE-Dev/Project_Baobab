@@ -17,7 +17,7 @@ public class UIView_MainMenu : UIView
     [SerializeField] private UI_SplashScreen splashScreenUI; // 스플래시 스크린
     [SerializeField] private UI_LogoAnim logoAnimUI; // 로고 애니메이션 객체
     [SerializeField] private UI_MainMenuBackground backgroundUI; // 동적 배경 관리 객체
-    [SerializeField] private CanvasGroup gameVersionCanvasGroup; // 게임 버전 표시 UI (페이드 아웃 연출용)
+    [SerializeField] private CanvasGroup otherCanvasGroup; // 게임 버전 등 기타 UI 최상위 캔버스 그룹
 
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
@@ -145,6 +145,12 @@ public class UIView_MainMenu : UIView
             c.a = 0f;
             backgroundDimmer.color = c;
             backgroundDimmer.gameObject.SetActive(false);
+        }
+
+        if (null != otherCanvasGroup)
+        {
+            otherCanvasGroup.DOKill();
+            otherCanvasGroup.alpha = 0f;
         }
 
 #if UNITY_EDITOR
@@ -281,6 +287,11 @@ public class UIView_MainMenu : UIView
             mainMenuUI.gameObject.SetActive(true);
             mainMenuUI.ResetAndShowButtons();
         }
+
+        if (null != otherCanvasGroup)
+        {
+            otherCanvasGroup.DOFade(1f, 0.5f);
+        }
     }
 
     protected override void OnHide()
@@ -327,9 +338,9 @@ public class UIView_MainMenu : UIView
             }
         }
 
-        if (null != gameVersionCanvasGroup)
+        if (null != otherCanvasGroup)
         {
-            _seq.Join(gameVersionCanvasGroup.DOFade(0f, 0.5f));
+            _seq.Join(otherCanvasGroup.DOFade(0f, 0.5f));
         }
 
         if (null != _onSequenceCompleted)
@@ -452,6 +463,12 @@ public class UIView_MainMenu : UIView
                 _logoCanvas.DOKill();
                 _logoCanvas.alpha = 1f;
             }
+        }
+
+        if (null != otherCanvasGroup)
+        {
+            otherCanvasGroup.DOKill();
+            otherCanvasGroup.alpha = 0f;
         }
 
         // 2. 스플래시 스크린(팀 로고) 이후의 초기 시작 연출을 그대로 다시 트리거합니다.
