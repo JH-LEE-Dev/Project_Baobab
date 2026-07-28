@@ -1,7 +1,11 @@
 /// <summary>
 /// 유저가 직접 리바인딩할 수 있는 액션입니다. Move는 2DVector 컴포지트라
 /// 방향별(up/down/left/right)로 쪼개서 노출합니다.
-/// ESC/Mouse/Click은 시스템 예약·포인터 입력이라 여기 포함하지 않습니다.
+/// ESC/Mouse(포인터 이동)는 시스템 예약·포인터 입력이라 여기 포함하지 않습니다.
+///
+/// SwitchMode/AxeMode/RifleMode/Reload/AimCorrection은 .inputactions 에셋에는 액션이 남아 있지만
+/// InputReader.Initialize에서 구독하지 않는 죽은 바인딩(예전 무기 전환 시스템의 잔재)이라 제외했습니다.
+/// 아무 효과도 없는 키를 리바인딩 대상으로 보여주면 혼란만 주기 때문입니다.
 /// </summary>
 public enum ERebindableAction
 {
@@ -11,11 +15,10 @@ public enum ERebindableAction
     MoveRight,
     Inventory,
     Interaction,
-    SwitchMode,
-    AxeMode,
-    RifleMode,
-    Reload,
-    AimCorrection,
+
+    /// <summary>공격. 실제 액션은 Click(&lt;Mouse&gt;/leftButton)이며 기본값은 마우스 좌클릭입니다.</summary>
+    Attack,
+
     PotionKey,
 }
 

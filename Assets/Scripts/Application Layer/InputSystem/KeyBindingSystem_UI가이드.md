@@ -128,7 +128,7 @@ public class UIView_KeyBinding : UIView
 
 ## 4. 리바인딩 가능한 액션 및 기본 키
 
-`ERebindableAction`에 정의된 항목과 기본값입니다. `ESC`, `Mouse`(마우스 이동), `Click`(좌클릭)은 시스템 예약/포인터 입력이라 리바인딩 대상에서 제외되어 있습니다.
+`ERebindableAction`에 정의된 항목과 기본값입니다. `ESC`, `Mouse`(마우스 이동)는 시스템 예약/포인터 입력이라 리바인딩 대상에서 제외되어 있습니다.
 
 | ERebindableAction | 기본 키 | 비고 |
 |---|---|---|
@@ -138,18 +138,16 @@ public class UIView_KeyBinding : UIView
 | `MoveRight` | D | |
 | `Inventory` | Space | |
 | `Interaction` | E | |
-| `SwitchMode` | Tab | |
-| `AxeMode` | 1 | |
-| `RifleMode` | 2 | |
-| `Reload` | R | |
-| `AimCorrection` | Shift | |
+| `Attack` | 마우스 좌클릭 | 실제 액션은 `Click`. 유일하게 마우스 버튼으로도 재할당 가능한 항목 |
 | `PotionKey` | Q | |
 
 `ERebindableAction`이라는 이름 자체는 코드 식별자일 뿐이므로, 화면에 보여줄 한글 라벨(예: `Interaction` → "상호작용")은 UI 쪽에서 별도 매핑 테이블이나 로컬라이징 키로 관리해야 합니다.
+
+> `SwitchMode`/`AxeMode`/`RifleMode`/`Reload`/`AimCorrection`은 목록에 없습니다. `.inputactions` 에셋엔 액션이 남아 있지만 `InputReader`가 구독하지 않아 실제로는 아무 기능도 하지 않는 죽은 바인딩(예전 무기 전환 시스템의 잔재)이라 리바인딩 대상에서 제외했습니다.
 
 ## 5. 주의사항
 
 - **ESC로 리바인딩 취소**: 키 입력 대기 중 ESC를 누르면 항상 리바인딩이 취소됩니다 (그 키 자체를 새 바인딩으로 지정할 수 없음). 별도 취소 버튼을 만들고 싶다면 `CancelRebind()`를 호출하세요.
 - **세션을 반드시 마무리할 것**: 위 예시처럼 `OnHide()`에서 항상 `DiscardEditSession()`을 호출하도록 해두세요. 저장 버튼으로 이미 커밋된 상태라면 안전한 no-op이고, ESC로 닫기처럼 별도 취소 버튼을 거치지 않는 경로에서도 커밋되지 않은 변경분이 남지 않게 됩니다.
-- **마우스 제외**: 리바인딩 캡처는 마우스 컨트롤을 무시하도록 되어 있어 (`WithControlsExcluding("Mouse")`) 실수로 마우스 이동/클릭이 키로 잡히지 않습니다.
+- **마우스 제외 (Attack 예외)**: `Attack`을 제외한 나머지 액션은 리바인딩 캡처 시 마우스 컨트롤을 무시하도록 되어 있어 실수로 마우스 이동/클릭이 키로 잡히지 않습니다. `Attack`만 예외적으로 마우스 버튼도 새 바인딩으로 허용됩니다 (기본값 자체가 좌클릭이므로).
 - **아이콘 매핑은 `GetBindingPath` 기준으로**: `GetBindingDisplayString`은 사람이 읽기 위한 문자열이라 표시 형태가 바뀔 수 있습니다. 아이콘 스프라이트 딕셔너리의 키로는 `GetBindingPath`가 주는 원본 경로(`"<Keyboard>/w"` 등)를 쓰세요.
