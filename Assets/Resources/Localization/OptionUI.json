@@ -1,5 +1,5 @@
 {
-  "jsonId": 4,
+  "jsonId": 9,
   "entries": [
     {
       "id": 101,
@@ -182,6 +182,78 @@
       "key": "tabControl",
       "kr": "컨트롤",
       "en": "Control",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 305,
+      "key": "moveUp",
+      "kr": "위로 이동",
+      "en": "Move Up",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 306,
+      "key": "moveDown",
+      "kr": "아래로 이동",
+      "en": "Move Down",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 307,
+      "key": "moveLeft",
+      "kr": "왼쪽 이동",
+      "en": "Move Left",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 308,
+      "key": "moveRight",
+      "kr": "오른쪽 이동",
+      "en": "Move Right",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 309,
+      "key": "inventory",
+      "kr": "인벤토리",
+      "en": "Inventory",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 310,
+      "key": "interaction",
+      "kr": "상호작용",
+      "en": "Interact",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 311,
+      "key": "attack",
+      "kr": "공격",
+      "en": "Attack",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 312,
+      "key": "potionKey",
+      "kr": "물약 사용",
+      "en": "Use Potion",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 313,
+      "key": "pressKeyPrompt",
+      "kr": "변경할 키를 입력하세요.\n(ESC: 취소)",
+      "en": "Press any key to rebind.\n(ESC: Cancel)",
       "enumType": "",
       "enumValue": ""
     }

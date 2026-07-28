@@ -361,11 +361,7 @@ public class UI_Option : MonoBehaviour
             case ERebindableAction.MoveRight:     return GetText(LocKeys.OptionUI.moveRight, "오른쪽 이동");
             case ERebindableAction.Inventory:     return GetText(LocKeys.OptionUI.inventory, "인벤토리");
             case ERebindableAction.Interaction:   return GetText(LocKeys.OptionUI.interaction, "상호작용");
-            case ERebindableAction.SwitchMode:    return GetText(LocKeys.OptionUI.switchMode, "모드 전환");
-            case ERebindableAction.AxeMode:       return GetText(LocKeys.OptionUI.axeMode, "도끼 모드");
-            case ERebindableAction.RifleMode:     return GetText(LocKeys.OptionUI.rifleMode, "소총 모드");
-            case ERebindableAction.Reload:        return GetText(LocKeys.OptionUI.reload, "재장전");
-            case ERebindableAction.AimCorrection: return GetText(LocKeys.OptionUI.aimCorrection, "조준 보정");
+            case ERebindableAction.Attack:        return GetText(LocKeys.OptionUI.attack, "공격");
             case ERebindableAction.PotionKey:     return GetText(LocKeys.OptionUI.potionKey, "물약 사용");
             default:                              return _action.ToString();
         }
@@ -549,7 +545,7 @@ public class UI_Option : MonoBehaviour
         if (null != rebindOverlay) rebindOverlay.SetActive(true);
         if (null != rebindOverlayText)
         {
-            rebindOverlayText.text = GetText(LocKeys.OptionUI.pressKeyPrompt, "키를 입력하세요\n(ESC: 취소)");
+            rebindOverlayText.text = GetText(LocKeys.OptionUI.pressKeyPrompt, "변경할 키를 입력하세요.\n(ESC: 취소)");
         }
 
         inputManager.StartRebind(_action, OnRebindFinished);
