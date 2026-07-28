@@ -13,6 +13,7 @@ public static class GamePaths
     private const string GAME_SAVE_BACKUP_FILE_NAME = "SaveData.dat.bak";
     private const string GAME_SAVE_TEMP_FILE_NAME = "SaveData.dat.tmp";
     private const string SETTINGS_FILE_NAME = "Settings.json";
+    private const string KEY_BINDINGS_FILE_NAME = "KeyBindings.json";
 
     private static string cachedFolder;
 
@@ -47,4 +48,7 @@ public static class GamePaths
 
     /// <summary>환경설정 (평문 JSON)</summary>
     public static string SettingsFile => Path.Combine(SaveFolder, SETTINGS_FILE_NAME);
+
+    /// <summary>키 바인딩 오버라이드 (평문 JSON)</summary>
+    public static string KeyBindingsFile => Path.Combine(SaveFolder, KEY_BINDINGS_FILE_NAME);
 }
