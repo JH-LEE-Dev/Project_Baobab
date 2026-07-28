@@ -110,8 +110,6 @@ public class SettingsManager : MonoBehaviour
     // 해상도가 다시 적용되어 창 크기가 튄다.
     private bool isDisplayDirty = false;
 
-    private bool hasSavedSettings = false;
-
     /// <summary>현재 설정값 스냅샷입니다. (구조체이므로 복사본이 반환됩니다)</summary>
     public SettingsData Current
     {
@@ -149,12 +147,9 @@ public class SettingsManager : MonoBehaviour
         SettingsManager _mgr = Instance;
         _mgr.EnsureLoaded();
 
-        // 저장된 설정이 없으면(첫 실행) 아무것도 건드리지 않는다.
-        // 유저가 아직 아무것도 고르지 않았으므로 Player Settings의 기본값을 그대로 존중한다.
-        if (true == _mgr.hasSavedSettings)
-        {
-            _mgr.ApplyDisplaySettings();
-        }
+        // 저장된 설정이 없어도(첫 실행) SettingsData.CreateDefault()의 값(60fps/전체화면 등)을
+        // 그대로 적용한다. Player Settings의 기본값보다 이 기본값을 우선한다.
+        _mgr.ApplyDisplaySettings();
     }
 
     /// <summary>
@@ -169,7 +164,7 @@ public class SettingsManager : MonoBehaviour
 
         // Load 안에서 Current를 다시 타더라도 무한 재귀에 빠지지 않도록 먼저 세운다.
         isLoaded = true;
-        hasSavedSettings = Load();
+        Load();
     }
 
     /// <summary>
@@ -493,13 +488,10 @@ public class SettingsManager : MonoBehaviour
 
     /// <summary>
     /// 저장된 설정을 읽어옵니다. 파일이 없거나 손상되었으면 기본값을 사용합니다.
-    /// 반환값은 "실제로 저장된 설정을 읽었는지" 여부입니다. (false면 첫 실행이거나 복구된 경우)
+    /// isLoaded와 짝을 이루어야 하므로 반드시 EnsureLoaded를 통해서만 호출합니다.
+    /// (직접 부르면 상태가 어긋납니다)
     /// </summary>
-    /// <summary>
-    /// 설정 파일을 읽습니다. isLoaded/hasSavedSettings와 짝을 이루어야 하므로
-    /// 반드시 EnsureLoaded를 통해서만 호출합니다. (직접 부르면 상태가 어긋납니다)
-    /// </summary>
-    private bool Load()
+    private void Load()
     {
         ESettingsLoadResult _result = SettingsRepository.TryLoad(out current);
 
@@ -515,9 +507,6 @@ public class SettingsManager : MonoBehaviour
 
         // 로드 직후의 화면 적용은 Bootstrap이 담당하므로 여기서는 세우지 않는다.
         isDisplayDirty = false;
-
-        // 폐기된 파일은 기본값과 다름없으므로 "저장된 설정 있음"으로 취급하지 않는다.
-        return (ESettingsLoadResult.Loaded == _result);
     }
 
     /// <summary>
