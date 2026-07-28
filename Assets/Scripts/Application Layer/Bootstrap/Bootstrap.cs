@@ -1,5 +1,7 @@
 using DG.Tweening;
 using GameAnalyticsSDK;
+using Sentry;
+using Sentry.Unity;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -7,6 +9,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 {
     // 필드 선언 (내부 의존성)
     [SerializeField] private bool isTempScene = false;
+
+    [Header("SDK Toggles (개발 중에는 꺼두는 걸 권장)")]
+    [SerializeField] private bool enableSentry = true;
+    [SerializeField] private bool enableGameAnalytics = true;
 
     private static BootStrap instance;
     private SceneManager sceneManager;
@@ -45,7 +51,18 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         instance = this;
         DontDestroyOnLoad(gameObject);
 
-        GameAnalytics.Initialize();
+        // Sentry는 SentryOptions.asset 기반으로 이 Awake보다도 먼저 자동 초기화되므로,
+        // 여기서 막을 수 있는 건 "시작 자체"가 아니라 "초기화 직후 바로 종료"뿐이다.
+        // 아직 실제 게임플레이가 시작되기 전이라 의미 있는 데이터가 새어나가지는 않는다.
+        if (!enableSentry)
+        {
+            SentrySdk.Close();
+        }
+
+        if (enableGameAnalytics)
+        {
+            GameAnalytics.Initialize();
+        }
 
         // 이벤트 중복 등록 방지
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -197,7 +214,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     private void Start()
     {
-        SentryUserContextTagger.TagCurrentUser();
+        if (enableSentry)
+        {
+            SentryUserContextTagger.TagCurrentUser();
+        }
 
         if (isTempScene)
         {
