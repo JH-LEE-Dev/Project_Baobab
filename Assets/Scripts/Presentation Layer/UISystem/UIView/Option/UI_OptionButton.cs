@@ -33,11 +33,12 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     // 초기 상태 캐싱
     private Vector3 originalScale;
+    private Transform scaleTarget;
 
     private void Awake()
     {
-        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-        originalScale = _scaleTarget.localScale;
+        scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
+        originalScale = scaleTarget.localScale;
     }
 
     public void Initialize(Action _onClick)
@@ -64,8 +65,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (false == isPointerDown)
         {
             KillTween();
-            Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-            _scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
+            scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
             if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
         }
     }
@@ -78,8 +78,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (false == isPointerDown)
         {
             KillTween();
-            Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-            _scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
+            scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
             if (null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
         }
     }
@@ -90,8 +89,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (false == isInteractable || false == enableMotion) return;
         
         KillTween();
-        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-        _scaleTarget.DOScale(clickScale, tweenDuration).SetUpdate(true);
+        scaleTarget.DOScale(clickScale, tweenDuration).SetUpdate(true);
         if (null != targetGraphic) targetGraphic.DOColor(clickColor, tweenDuration).SetUpdate(true);
     }
 
@@ -101,16 +99,15 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (false == isInteractable || false == enableMotion) return;
         
         KillTween();
-        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
         
         if (true == isHovered)
         {
-            _scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
+            scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
             if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
         }
         else
         {
-            _scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
+            scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
             if (null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
         }
     }
@@ -127,8 +124,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
     private void KillTween()
     {
-        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-        _scaleTarget.DOKill();
+        scaleTarget.DOKill();
         if (null != targetGraphic) targetGraphic.DOKill();
     }
 
@@ -139,8 +135,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
         KillTween();
         
-        Transform _scaleTarget = null != targetGraphic ? targetGraphic.transform : transform;
-        _scaleTarget.localScale = originalScale;
+        scaleTarget.localScale = originalScale;
         
         if (null != targetGraphic)
         {

@@ -253,22 +253,27 @@ public class UI_Option : MonoBehaviour
         return _fallback;
     }
 
+    private static System.Collections.Generic.Dictionary<string, int> locKeyCache;
+
     private string GetTextFromKeyString(string _keyName, string _fallback)
     {
-        if (string.IsNullOrEmpty(_keyName)) return _fallback;
+        if (true == string.IsNullOrEmpty(_keyName)) return _fallback;
 
-        try
+        if (null == locKeyCache)
         {
-            var _fieldInfo = typeof(LocKeys.OptionUI).GetField(_keyName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            if (null != _fieldInfo)
+            locKeyCache = new System.Collections.Generic.Dictionary<string, int>();
+            System.Reflection.FieldInfo[] _fields = typeof(LocKeys.OptionUI).GetFields(
+                System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            for (int i = 0; i < _fields.Length; i++)
             {
-                int _compositeKey = (int)_fieldInfo.GetValue(null);
-                return GetText(_compositeKey, _fallback);
+                locKeyCache[_fields[i].Name] = (int)_fields[i].GetValue(null);
             }
         }
-        catch (System.Exception _ex)
+
+        int _compositeKey;
+        if (true == locKeyCache.TryGetValue(_keyName, out _compositeKey))
         {
-            Debug.LogWarning($"[UI_Option] Failed to find key '{_keyName}' in LocKeys.OptionUI: {_ex.Message}");
+            return GetText(_compositeKey, _fallback);
         }
 
         return _fallback;
@@ -422,7 +427,7 @@ public class UI_Option : MonoBehaviour
             if (null != _tabTexts) tabGroup.RefreshTabTexts(_tabTexts);
         }
 
-        OnLanguageOptionChangedEvent?.Invoke(_lang);
+        if (null != OnLanguageOptionChangedEvent) OnLanguageOptionChangedEvent.Invoke(_lang);
     }
 
     private void RefreshControlTabLabels()
