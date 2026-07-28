@@ -241,7 +241,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: mouse_0
+      name: BlackM_Basic
       rect:
         serializedVersion: 2
         x: 0
@@ -263,7 +263,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_1
+      name: BlackM_LeftClick
       rect:
         serializedVersion: 2
         x: 16
@@ -285,7 +285,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_2
+      name: BlackM_RightClick
       rect:
         serializedVersion: 2
         x: 32
@@ -307,7 +307,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_3
+      name: BlackM_Wheelie
       rect:
         serializedVersion: 2
         x: 48
@@ -329,7 +329,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_4
+      name: WhiteM_Basic
       rect:
         serializedVersion: 2
         x: 0
@@ -351,7 +351,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_5
+      name: WhiteM_LeftClick
       rect:
         serializedVersion: 2
         x: 16
@@ -373,7 +373,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_6
+      name: WhiteM_RightClick
       rect:
         serializedVersion: 2
         x: 32
@@ -395,7 +395,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_7
+      name: WhiteM_Wheelie
       rect:
         serializedVersion: 2
         x: 48
@@ -417,7 +417,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_8
+      name: InvisibleBM_Basic
       rect:
         serializedVersion: 2
         x: 0
@@ -439,7 +439,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_9
+      name: InvisibleBM_LeftClick
       rect:
         serializedVersion: 2
         x: 16
@@ -461,7 +461,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_10
+      name: InvisibleBM_RightClick
       rect:
         serializedVersion: 2
         x: 32
@@ -483,7 +483,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_11
+      name: InvisibleBM_Wheelie
       rect:
         serializedVersion: 2
         x: 48
@@ -505,7 +505,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_12
+      name: InvisibleWM_Basic
       rect:
         serializedVersion: 2
         x: 0
@@ -527,7 +527,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_13
+      name: InvisibleWM_LeftClick
       rect:
         serializedVersion: 2
         x: 16
@@ -549,7 +549,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_14
+      name: InvisibleWM_RightClick
       rect:
         serializedVersion: 2
         x: 32
@@ -571,7 +571,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_15
+      name: InvisibleWM_Wheelie
       rect:
         serializedVersion: 2
         x: 48
@@ -593,7 +593,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_16
+      name: Pad_L
       rect:
         serializedVersion: 2
         x: 0
@@ -615,7 +615,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_17
+      name: Pad_L2
       rect:
         serializedVersion: 2
         x: 16
@@ -637,7 +637,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_18
+      name: Pad_L3
       rect:
         serializedVersion: 2
         x: 32
@@ -659,7 +659,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_19
+      name: Pad_L4
       rect:
         serializedVersion: 2
         x: 48
@@ -681,7 +681,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_20
+      name: Pad_L5
       rect:
         serializedVersion: 2
         x: 64
@@ -703,7 +703,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_21
+      name: Pad_L6
       rect:
         serializedVersion: 2
         x: 80
@@ -725,7 +725,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_22
+      name: Pad_L_Outline1
       rect:
         serializedVersion: 2
         x: 0
@@ -747,7 +747,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_23
+      name: Pad_L_Outline2
       rect:
         serializedVersion: 2
         x: 16
@@ -769,7 +769,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_24
+      name: Pad_L_Outline3
       rect:
         serializedVersion: 2
         x: 32
@@ -791,7 +791,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_25
+      name: Pad_L_Outline4
       rect:
         serializedVersion: 2
         x: 48
@@ -813,7 +813,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_26
+      name: Pad_L_Outline5
       rect:
         serializedVersion: 2
         x: 64
@@ -835,7 +835,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_27
+      name: Pad_L_Outline6
       rect:
         serializedVersion: 2
         x: 80
@@ -989,7 +989,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_34
+      name: Pad_R_Outline1
       rect:
         serializedVersion: 2
         x: 0
@@ -1011,7 +1011,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_35
+      name: Pad_R_Outline2
       rect:
         serializedVersion: 2
         x: 16
@@ -1033,7 +1033,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_36
+      name: Pad_R_Outline3
       rect:
         serializedVersion: 2
         x: 32
@@ -1055,7 +1055,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_37
+      name: Pad_R_Outline4
       rect:
         serializedVersion: 2
         x: 48
@@ -1077,7 +1077,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_38
+      name: Pad_R_Outline5
       rect:
         serializedVersion: 2
         x: 64
@@ -1099,7 +1099,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: mouse_39
+      name: Pad_R_Outline6
       rect:
         serializedVersion: 2
         x: 80
@@ -1312,41 +1312,46 @@ TextureImporter:
       - key: SpriteEditor.SliceSettings
         value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":16.0,"y":16.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      mouse_0: 4454631428275665778
-      mouse_1: -3397387025712965628
-      mouse_10: -4393935285721609103
-      mouse_11: -8115095618622308455
-      mouse_12: -2798577942855918962
-      mouse_13: 4044664119197855241
-      mouse_14: 1130085897967921294
-      mouse_15: 7672685254493838083
-      mouse_16: 7972149966313966234
-      mouse_17: 2198126133366684038
-      mouse_18: -7468163802530496346
-      mouse_19: 2856838504777929956
-      mouse_2: -3124372832261642726
-      mouse_20: -6795935346411263927
-      mouse_21: 1777342796383701153
-      mouse_22: 8802357840750711066
-      mouse_23: 2557321111132195505
-      mouse_24: -7289324467746730388
-      mouse_25: 51308073214423088
-      mouse_26: -1858310383560958790
-      mouse_27: -8855838637533623977
+      BlackM_Basic: 4454631428275665778
+      BlackM_LeftClick: -3397387025712965628
+      BlackM_RightClick: -3124372832261642726
+      BlackM_Wheelie: 3612782681000396837
+      InvisibleBM_Basic: 7494918433759398995
+      InvisibleBM_LeftClick: -4049691716523564207
+      InvisibleBM_RightClick: -4393935285721609103
+      InvisibleBM_Wheelie: -8115095618622308455
+      InvisibleWM_Basic: -2798577942855918962
+      InvisibleWM_LeftClick: 4044664119197855241
+      InvisibleWM_RightClick: 1130085897967921294
+      InvisibleWM_Wheelie: 7672685254493838083
+      Pad_L: 7972149966313966234
+      Pad_L2: 2198126133366684038
+      Pad_L3: -7468163802530496346
+      Pad_L4: 2856838504777929956
+      Pad_L5: -6795935346411263927
+      Pad_L6: 1777342796383701153
+      Pad_L_Outline1: 8802357840750711066
+      Pad_L_Outline2: 2557321111132195505
+      Pad_L_Outline3: -7289324467746730388
+      Pad_L_Outline4: 51308073214423088
+      Pad_L_Outline5: -1858310383560958790
+      Pad_L_Outline6: -8855838637533623977
+      Pad_R_Outline1: 8667462316941521467
+      Pad_R_Outline2: 8550848470203697634
+      Pad_R_Outline3: 5635675437271264484
+      Pad_R_Outline4: -4026258177380794094
+      Pad_R_Outline5: 2459352028785496894
+      Pad_R_Outline6: -4916219336961910200
+      WhiteM_Basic: -3154446981457803592
+      WhiteM_LeftClick: 4930236773760687789
+      WhiteM_RightClick: 1938311220257969084
+      WhiteM_Wheelie: -7201445750087952622
       mouse_28: -1001117450416962311
       mouse_29: -7049636012605796891
-      mouse_3: 3612782681000396837
       mouse_30: -8738503023020002232
       mouse_31: 7769433053449738046
       mouse_32: -4133800902237080227
       mouse_33: 4649518351009173513
-      mouse_34: 8667462316941521467
-      mouse_35: 8550848470203697634
-      mouse_36: 5635675437271264484
-      mouse_37: -4026258177380794094
-      mouse_38: 2459352028785496894
-      mouse_39: -4916219336961910200
-      mouse_4: -3154446981457803592
       mouse_40: -147471034316214269
       mouse_41: -7740113544280771038
       mouse_42: 2656437721479662387
@@ -1355,11 +1360,6 @@ TextureImporter:
       mouse_45: -4603541469748070802
       mouse_46: -7831445510235667385
       mouse_47: 6426042342439164838
-      mouse_5: 4930236773760687789
-      mouse_6: 1938311220257969084
-      mouse_7: -7201445750087952622
-      mouse_8: 7494918433759398995
-      mouse_9: -4049691716523564207
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

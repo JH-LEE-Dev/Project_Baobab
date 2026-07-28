@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using TMPro;
 
 /// <summary>
 /// 옵션 UI 시스템 전체를 총괄하는 최상위 컨트롤러입니다.
@@ -38,6 +39,14 @@ public class UI_Option : MonoBehaviour
     [SerializeField] private UI_OptionSlider bgmVolumeSlider;
     [SerializeField] private UI_OptionSlider sfxVolumeSlider;
 
+    [Header("Control Options")]
+    [SerializeField] private Transform keyBindRowContainer;           // 행들이 배치될 부모 Transform (ScrollView Content 등)
+    [SerializeField] private UI_OptionKeyBindRow keyBindRowPrefab;    // 행 프리팹
+    [SerializeField] private UI_OptionButton resetAllBindingsButton;  // "전체 초기화" 버튼
+    [SerializeField] private GameObject rebindOverlay;                // "키를 입력하세요" 오버레이
+    [SerializeField] private TextMeshProUGUI rebindOverlayText;       // 오버레이 안내 텍스트
+    [SerializeField] private KeyIconDatabase keyIconDatabase;         // 키 아이콘 매핑 DB
+
     private Action onCloseAction;
     private Action hideAction;
 
@@ -68,6 +77,15 @@ public class UI_Option : MonoBehaviour
     private bool isInitialized = false;
     private LocalizationManager locManager;
     private SettingsManager settings;
+    private InputManager inputManager;
+    private System.Collections.Generic.List<UI_OptionKeyBindRow> keyBindRows 
+        = new System.Collections.Generic.List<UI_OptionKeyBindRow>();
+
+    // 캐싱 델리게이트
+    private Action<ERebindableAction> cachedOnRowRebindRequested;
+    private Action<ERebindableAction> cachedOnRowResetRequested;
+    private Action cachedOnResetAllClicked;
+    private Action cachedRefreshKeyBindRows;
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIViewContext _ctx)
@@ -77,6 +95,7 @@ public class UI_Option : MonoBehaviour
         if (null != _ctx)
         {
             locManager = _ctx.localizationManager;
+            inputManager = _ctx.inputManager;
         }
 
         settings = SettingsManager.Instance;
@@ -101,8 +120,11 @@ public class UI_Option : MonoBehaviour
             closeButton.Initialize(hideAction);
         }
 
+        CacheControlDelegates();
+
         InitializeSelectors();
         InitializeSliders();
+        InitializeControlTab();
 
         RefreshResolutionSelector();
 
@@ -124,6 +146,14 @@ public class UI_Option : MonoBehaviour
         if (null != optionPanelRoot)
         {
             optionPanelRoot.SetActive(true);
+        }
+
+        if (null != inputManager)
+        {
+            inputManager.BeginEditSession();
+            inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
+            inputManager.inputReader.KeyBindingsChangedEvent += cachedRefreshKeyBindRows;
+            RefreshKeyBindRows();
         }
     }
 
@@ -148,6 +178,28 @@ public class UI_Option : MonoBehaviour
         if (null != settings)
         {
             settings.CommitChanges();
+        }
+
+        if (null != inputManager)
+        {
+            inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
+
+            // 리바인딩 진행 중이면 취소
+            if (true == inputManager.IsRebinding)
+            {
+                inputManager.CancelRebind();
+            }
+            if (null != rebindOverlay) rebindOverlay.SetActive(false);
+
+            // 충돌 없으면 저장, 있으면 변경 취소
+            if (false == inputManager.HasAnyConflict())
+            {
+                inputManager.CommitEditSession();
+            }
+            else
+            {
+                inputManager.DiscardEditSession();
+            }
         }
     }
 
@@ -181,6 +233,14 @@ public class UI_Option : MonoBehaviour
 
         onSettingsLanguageChanged = HandleLanguageChanged;
         onSettingsWindowModeChanged = HandleWindowModeChanged;
+    }
+
+    private void CacheControlDelegates()
+    {
+        cachedOnRowRebindRequested = OnRowRebindRequested;
+        cachedOnRowResetRequested = OnRowResetRequested;
+        cachedOnResetAllClicked = OnResetAllClicked;
+        cachedRefreshKeyBindRows = RefreshKeyBindRows;
     }
 
     private string GetText(int _compositeKey, string _fallback)
@@ -253,6 +313,64 @@ public class UI_Option : MonoBehaviour
         if (null != sfxVolumeSlider) sfxVolumeSlider.Initialize(GetText(LocKeys.OptionUI.sFXVolume, "사운드 볼륨"), _data.sfxVolume, 0f, 100f, onSfxVolumeChanged);
     }
 
+    private void InitializeControlTab()
+    {
+        if (null == inputManager || null == keyBindRowPrefab || null == keyBindRowContainer) return;
+
+        // 기존 행 정리
+        for (int i = 0; i < keyBindRows.Count; i++)
+        {
+            if (null != keyBindRows[i]) Destroy(keyBindRows[i].gameObject);
+        }
+        keyBindRows.Clear();
+
+        // 리바인딩 가능한 액션 목록으로 행 동적 생성
+        System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
+        for (int i = 0; i < _actions.Count; i++)
+        {
+            ERebindableAction _action = _actions[i];
+            UI_OptionKeyBindRow _row = Instantiate(keyBindRowPrefab, keyBindRowContainer);
+
+            string _label = GetActionLabel(_action);
+            string _bindingPath = inputManager.GetBindingPath(_action);
+            string _displayString = inputManager.GetBindingDisplayString(_action);
+            bool _isConflict = inputManager.IsConflicting(_action);
+
+            _row.Initialize(_action, _label, _bindingPath, _displayString, _isConflict,
+                            keyIconDatabase, cachedOnRowRebindRequested, cachedOnRowResetRequested);
+            keyBindRows.Add(_row);
+        }
+
+        // 전체 초기화 버튼
+        if (null != resetAllBindingsButton)
+        {
+            resetAllBindingsButton.Initialize(cachedOnResetAllClicked);
+        }
+
+        // 오버레이 숨김
+        if (null != rebindOverlay) rebindOverlay.SetActive(false);
+    }
+
+    private string GetActionLabel(ERebindableAction _action)
+    {
+        switch (_action)
+        {
+            case ERebindableAction.MoveUp:        return GetText(LocKeys.OptionUI.moveUp, "위로 이동");
+            case ERebindableAction.MoveDown:      return GetText(LocKeys.OptionUI.moveDown, "아래로 이동");
+            case ERebindableAction.MoveLeft:      return GetText(LocKeys.OptionUI.moveLeft, "왼쪽 이동");
+            case ERebindableAction.MoveRight:     return GetText(LocKeys.OptionUI.moveRight, "오른쪽 이동");
+            case ERebindableAction.Inventory:     return GetText(LocKeys.OptionUI.inventory, "인벤토리");
+            case ERebindableAction.Interaction:   return GetText(LocKeys.OptionUI.interaction, "상호작용");
+            case ERebindableAction.SwitchMode:    return GetText(LocKeys.OptionUI.switchMode, "모드 전환");
+            case ERebindableAction.AxeMode:       return GetText(LocKeys.OptionUI.axeMode, "도끼 모드");
+            case ERebindableAction.RifleMode:     return GetText(LocKeys.OptionUI.rifleMode, "소총 모드");
+            case ERebindableAction.Reload:        return GetText(LocKeys.OptionUI.reload, "재장전");
+            case ERebindableAction.AimCorrection: return GetText(LocKeys.OptionUI.aimCorrection, "조준 보정");
+            case ERebindableAction.PotionKey:     return GetText(LocKeys.OptionUI.potionKey, "물약 사용");
+            default:                              return _action.ToString();
+        }
+    }
+
     // 로컬라이징이 필요한 Enum 표기 변환기
     private string GetWindowModeText(EWindowMode _mode)
     {
@@ -300,6 +418,7 @@ public class UI_Option : MonoBehaviour
         // 언어 텍스트 재로드 후 UI 갱신
         InitializeSelectors();
         InitializeSliders();
+        RefreshControlTabLabels();
 
         if (null != tabGroup)
         {
@@ -308,6 +427,18 @@ public class UI_Option : MonoBehaviour
         }
 
         OnLanguageOptionChangedEvent?.Invoke(_lang);
+    }
+
+    private void RefreshControlTabLabels()
+    {
+        if (null == inputManager) return;
+
+        System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
+        for (int i = 0; i < keyBindRows.Count && i < _actions.Count; i++)
+        {
+            if (null == keyBindRows[i]) continue;
+            keyBindRows[i].RefreshLabel(GetActionLabel(_actions[i]));
+        }
     }
 
     private void HandleWindowModeChanged(EWindowMode _mode)
@@ -394,6 +525,57 @@ public class UI_Option : MonoBehaviour
     private void OnBgmVolumeChanged(float _val) { settings.SetBgmVolume(_val); }
     private void OnSfxVolumeChanged(float _val) { settings.SetSfxVolume(_val); }
 
+    private void RefreshKeyBindRows()
+    {
+        if (null == inputManager) return;
+
+        System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
+        for (int i = 0; i < keyBindRows.Count && i < _actions.Count; i++)
+        {
+            if (null == keyBindRows[i]) continue;
+
+            string _bindingPath = inputManager.GetBindingPath(_actions[i]);
+            string _displayString = inputManager.GetBindingDisplayString(_actions[i]);
+            bool _isConflict = inputManager.IsConflicting(_actions[i]);
+            keyBindRows[i].Refresh(_bindingPath, _displayString, _isConflict);
+        }
+    }
+
+    private void OnRowRebindRequested(ERebindableAction _action)
+    {
+        if (null == inputManager || true == inputManager.IsRebinding) return;
+
+        // 오버레이 표시
+        if (null != rebindOverlay) rebindOverlay.SetActive(true);
+        if (null != rebindOverlayText)
+        {
+            rebindOverlayText.text = GetText(LocKeys.OptionUI.pressKeyPrompt, "키를 입력하세요\n(ESC: 취소)");
+        }
+
+        inputManager.StartRebind(_action, OnRebindFinished);
+    }
+
+    private void OnRebindFinished(ERebindResult _result, ERebindableAction? _conflict)
+    {
+        // 오버레이 숨김
+        if (null != rebindOverlay) rebindOverlay.SetActive(false);
+
+        // Duplicate 경고 (선택적 - 행 색상으로 이미 표시됨)
+        // RefreshKeyBindRows는 KeyBindingsChangedEvent가 자동 호출하므로 별도 처리 불필요
+    }
+
+    private void OnRowResetRequested(ERebindableAction _action)
+    {
+        if (null == inputManager) return;
+        inputManager.ResetBinding(_action);
+    }
+
+    private void OnResetAllClicked()
+    {
+        if (null == inputManager) return;
+        inputManager.ResetAllBindings();
+    }
+
     // 유니티 이벤트 함수
     private void OnDestroy()
     {
@@ -423,5 +605,15 @@ public class UI_Option : MonoBehaviour
 
         onSettingsLanguageChanged = null;
         onSettingsWindowModeChanged = null;
+
+        if (null != inputManager)
+        {
+            inputManager.inputReader.KeyBindingsChangedEvent -= cachedRefreshKeyBindRows;
+        }
+
+        cachedOnRowRebindRequested = null;
+        cachedOnRowResetRequested = null;
+        cachedOnResetAllClicked = null;
+        cachedRefreshKeyBindRows = null;
     }
 }
