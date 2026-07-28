@@ -15,7 +15,8 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     private Graphic targetGraphic;
 
     [Header("Motion Settings")]
-    [SerializeField] private bool enableMotion = true;
+    [SerializeField, Tooltip("스케일 모션 켜기/끄기")] private bool enableScaleMotion = true;
+    [SerializeField, Tooltip("색상 변화 켜기/끄기")] private bool enableColorMotion = true;
     [SerializeField] private Vector3 hoverScale = new Vector3(1.1f, 1.1f, 1f);
     [SerializeField] private Vector3 clickScale = new Vector3(0.9f, 0.9f, 1f);
     [SerializeField] private float tweenDuration = 0.1f;
@@ -60,55 +61,55 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     public void OnPointerEnter(PointerEventData _eventData)
     {
         isHovered = true;
-        if (false == isInteractable || false == enableMotion) return;
+        if (false == isInteractable) return;
         
         if (false == isPointerDown)
         {
             KillTween();
-            scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
-            if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
+            if (true == enableScaleMotion) scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
+            if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
         }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
         isHovered = false;
-        if (false == isInteractable || false == enableMotion) return;
+        if (false == isInteractable) return;
         
         if (false == isPointerDown)
         {
             KillTween();
-            scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
-            if (null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
+            if (true == enableScaleMotion) scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
+            if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
         }
     }
 
     public void OnPointerDown(PointerEventData _eventData)
     {
         isPointerDown = true;
-        if (false == isInteractable || false == enableMotion) return;
+        if (false == isInteractable) return;
         
         KillTween();
-        scaleTarget.DOScale(clickScale, tweenDuration).SetUpdate(true);
-        if (null != targetGraphic) targetGraphic.DOColor(clickColor, tweenDuration).SetUpdate(true);
+        if (true == enableScaleMotion) scaleTarget.DOScale(clickScale, tweenDuration).SetUpdate(true);
+        if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(clickColor, tweenDuration).SetUpdate(true);
     }
 
     public void OnPointerUp(PointerEventData _eventData)
     {
         isPointerDown = false;
-        if (false == isInteractable || false == enableMotion) return;
+        if (false == isInteractable) return;
         
         KillTween();
         
         if (true == isHovered)
         {
-            scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
-            if (null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
+            if (true == enableScaleMotion) scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
+            if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
         }
         else
         {
-            scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
-            if (null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
+            if (true == enableScaleMotion) scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
+            if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
         }
     }
 
