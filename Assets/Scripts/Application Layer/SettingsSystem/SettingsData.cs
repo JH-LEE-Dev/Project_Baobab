@@ -98,8 +98,8 @@ public struct SettingsData
         {
             language = EOptionLanguage.Korean,
             resolution = EResolution.Res1920x1080,
-            windowMode = EWindowMode.Windowed,
-            fps = EFPS.Unlimited,
+            windowMode = EWindowMode.Fullscreen,
+            fps = EFPS.FPS60,
             pauseOnUnfocus = EOnOff.Off,
 
             cameraShake = SLIDER_MAX,
