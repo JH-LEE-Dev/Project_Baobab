@@ -48,6 +48,14 @@
       "en": "Press Any Key to Start",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 6,
+      "key": "NewGameWarning",
+      "kr": "이전 진행 상황이 모두 사라집니다.\n정말 새 게임을 시작하시겠습니까?",
+      "en": "All previous progress will be lost.\nStart a new game anyway?",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }

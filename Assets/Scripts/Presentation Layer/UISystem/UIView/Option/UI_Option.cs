@@ -16,6 +16,7 @@ public class UI_Option : MonoBehaviour
     [SerializeField] private UI_OptionTabGroup tabGroup;
     [SerializeField] private GameObject optionPanelRoot;
     [SerializeField] private UI_OptionButton closeButton;
+    [SerializeField] private UI_WarningPopup warningPopup;
 
     [Header("Tab Localization Keys")]
     [SerializeField, Tooltip("탭 이름으로 쓸 LocKeys.OptionUI 변수명 (예: tabGameplay)")]
@@ -86,6 +87,8 @@ public class UI_Option : MonoBehaviour
     private Action<ERebindableAction> cachedOnRowResetRequested;
     private Action cachedOnResetAllClicked;
     private Action cachedRefreshKeyBindRows;
+    private Action cachedExecuteResetAll;
+    private Action cachedCancelResetAll;
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIViewContext _ctx)
@@ -241,6 +244,9 @@ public class UI_Option : MonoBehaviour
         cachedOnRowResetRequested = OnRowResetRequested;
         cachedOnResetAllClicked = OnResetAllClicked;
         cachedRefreshKeyBindRows = RefreshKeyBindRows;
+        
+        cachedExecuteResetAll = ExecuteResetAllBindings;
+        cachedCancelResetAll = CancelResetAllBindings;
     }
 
     private string GetText(int _compositeKey, string _fallback)
@@ -573,8 +579,28 @@ public class UI_Option : MonoBehaviour
 
     private void OnResetAllClicked()
     {
-        if (null == inputManager) return;
-        inputManager.ResetAllBindings();
+        if (null != warningPopup && null != locManager)
+        {
+            string _warningMsg = locManager.GetText(LocKeys.OptionUI.resetAllWarning);
+            warningPopup.ShowWarning(_warningMsg, cachedExecuteResetAll, cachedCancelResetAll);
+        }
+        else
+        {
+            ExecuteResetAllBindings(); // 팝업이 없거나 로컬매니저가 없으면 바로 강제실행
+        }
+    }
+
+    private void ExecuteResetAllBindings()
+    {
+        if (null != inputManager)
+        {
+            inputManager.ResetAllBindings();
+        }
+    }
+
+    private void CancelResetAllBindings()
+    {
+        // 취소 시 특별한 동작 없음
     }
 
     // 유니티 이벤트 함수
@@ -616,5 +642,7 @@ public class UI_Option : MonoBehaviour
         cachedOnRowResetRequested = null;
         cachedOnResetAllClicked = null;
         cachedRefreshKeyBindRows = null;
+        cachedExecuteResetAll = null;
+        cachedCancelResetAll = null;
     }
 }

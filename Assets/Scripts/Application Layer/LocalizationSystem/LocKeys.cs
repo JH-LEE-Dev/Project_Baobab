@@ -194,6 +194,7 @@ public static class LocKeys
         public const int credits = 16777220;
         public const int exit = 16777221;
         public const int pressAnyKey = 16777315;
+        public const int newGameWarning = 16777222;
     }
 
     public static class MenuPopupUI
@@ -288,6 +289,7 @@ public static class LocKeys
         public const int attack = 18874679;
         public const int potionKey = 18874680;
         public const int pressKeyPrompt = 18874681;
+        public const int resetAllWarning = 18874682;
     }
 
     public static class ResultUI

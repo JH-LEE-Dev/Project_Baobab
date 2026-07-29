@@ -50,11 +50,29 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     public void SetInteractable(bool _isInteractable)
     {
         isInteractable = _isInteractable;
-        if (null != targetGraphic)
+        
+        if (false == isInteractable)
         {
-            Color _c = targetGraphic.color;
-            _c.a = true == isInteractable ? 1f : 0.5f;
-            targetGraphic.color = _c;
+            KillTween();
+            isHovered = false;
+            isPointerDown = false;
+            
+            if (true == enableScaleMotion) scaleTarget.localScale = originalScale;
+            if (null != targetGraphic)
+            {
+                Color _c = normalColor;
+                _c.a = 0.5f;
+                targetGraphic.color = _c;
+            }
+        }
+        else
+        {
+            if (null != targetGraphic)
+            {
+                Color _c = targetGraphic.color;
+                _c.a = 1f;
+                targetGraphic.color = _c;
+            }
         }
     }
 
@@ -63,9 +81,14 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         isHovered = true;
         if (false == isInteractable) return;
         
-        if (false == isPointerDown)
+        KillTween();
+        if (true == isPointerDown)
         {
-            KillTween();
+            if (true == enableScaleMotion) scaleTarget.DOScale(clickScale, tweenDuration).SetUpdate(true);
+            if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(clickColor, tweenDuration).SetUpdate(true);
+        }
+        else
+        {
             if (true == enableScaleMotion) scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
             if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
         }
@@ -76,12 +99,9 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         isHovered = false;
         if (false == isInteractable) return;
         
-        if (false == isPointerDown)
-        {
-            KillTween();
-            if (true == enableScaleMotion) scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
-            if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
-        }
+        KillTween();
+        if (true == enableScaleMotion) scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
+        if (true == enableColorMotion && null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
     }
 
     public void OnPointerDown(PointerEventData _eventData)

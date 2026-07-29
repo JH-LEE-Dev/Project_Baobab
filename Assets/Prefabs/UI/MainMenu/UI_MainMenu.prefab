@@ -127,6 +127,7 @@ MonoBehaviour:
   maintainPulseColorB: {r: 0.5849056, g: 0, b: 0, a: 1}
   maintainRotationEase: 1
   maintainPulseEase: 4
+  autoDisappearOnClick: 1
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
@@ -1281,6 +1282,7 @@ MonoBehaviour:
   maintainPulseColorB: {r: 0.5849056, g: 0, b: 0, a: 1}
   maintainRotationEase: 1
   maintainPulseEase: 4
+  autoDisappearOnClick: 1
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
@@ -2609,6 +2611,7 @@ MonoBehaviour:
   maintainPulseColorB: {r: 0.5849056, g: 0, b: 0, a: 1}
   maintainRotationEase: 1
   maintainPulseEase: 4
+  autoDisappearOnClick: 0
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
@@ -2707,6 +2710,7 @@ MonoBehaviour:
   maintainPulseColorB: {r: 0.5849056, g: 0, b: 0, a: 1}
   maintainRotationEase: 1
   maintainPulseEase: 4
+  autoDisappearOnClick: 1
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
@@ -3211,6 +3215,7 @@ MonoBehaviour:
   maintainPulseColorB: {r: 0.5849056, g: 0, b: 0, a: 1}
   maintainRotationEase: 1
   maintainPulseEase: 4
+  autoDisappearOnClick: 1
   disappearStaggerInterval: 0.08
   disappearSuckDuration: 0.3
   disappearDotShrinkDuration: 0.15
@@ -3273,6 +3278,7 @@ MonoBehaviour:
   exitButton: {fileID: 6252450808567929106}
   optionButton: {fileID: 1366216819725002085}
   creditButton: {fileID: 5869770144812342062}
+  warningPopup: {fileID: 0}
   mainMenuUIJsonId: 8
   startPoint: {fileID: 4517743712231703071}
   buttonSpacingY: 24

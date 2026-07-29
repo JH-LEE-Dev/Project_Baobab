@@ -71,6 +71,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     [SerializeField] private Ease maintainPulseEase = Ease.InOutSine;
 
     [Header("Disappear Settings")]
+    [SerializeField] private bool autoDisappearOnClick = true; // 클릭 시 자동으로 주변 버튼을 숨길지 여부
     [SerializeField] private float disappearStaggerInterval = 0.08f; // 여러 버튼이 순차적으로 사라지는 간격 (다다닥)
     [SerializeField] private float disappearSuckDuration = 0.3f; 
     [SerializeField] private float disappearDotShrinkDuration = 0.15f; 
@@ -84,6 +85,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     // 내부 상태
     private Action onClickAction;
+    private Action manualDisappearCallback;
     private Vector2 textOriginalPos;
     private Vector3 dotOriginalRot;
     private TextMeshProUGUI targetTextComponent;
@@ -109,6 +111,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private TweenCallback playAppearTextMotionCallback;
     private TweenCallback invokeOnClickActionCallback;
     private TweenCallback playDisappearImmediateCallback;
+    private TweenCallback invokeManualDisappearCallback;
 
     private DOGetter<Color> getDotShadowColor;
     private DOSetter<Color> setDotShadowColor;
@@ -139,6 +142,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         playAppearTextMotionCallback = PlayAppearTextMotion;
         invokeOnClickActionCallback = InvokeOnClickAction;
         playDisappearImmediateCallback = PlayDisappearImmediate;
+        invokeManualDisappearCallback = InvokeManualDisappearAction;
 
         getDotShadowColor = GetDotShadowColor;
         setDotShadowColor = SetDotShadowColor;
@@ -153,6 +157,24 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private void OnEnable()
     {
         ResetAndPlayAppear();
+    }
+
+    private void OnDisable()
+    {
+        isHovered = false;
+        isClicked = false;
+        isDisappearing = false;
+        isMaintained = false;
+        isAppearing = false;
+
+        KillAllTweens();
+        
+        if (null != dotTarget) dotTarget.localEulerAngles = dotOriginalRot;
+        if (null != textTarget)
+        {
+            textTarget.localScale = Vector3.one;
+            textTarget.anchoredPosition = textOriginalPos;
+        }
     }
 
     /// <summary>
@@ -380,14 +402,92 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         float _currentDisappearDelay = 0f;
 
-        // 부모 하위에 있는 활성화된 모든 버튼을 찾음 (GetComponentsInChildren은 자신의 자식도 찾지만, 보통 형제 노드 탐색에 유용함)
-        // 여기서는 부모 객체의 자식들을 탐색하여 형제 버튼들을 수집
+        if (true == autoDisappearOnClick)
+        {
+            // 부모 하위에 있는 활성화된 모든 버튼을 찾음 (GetComponentsInChildren은 자신의 자식도 찾지만, 보통 형제 노드 탐색에 유용함)
+            // 여기서는 부모 객체의 자식들을 탐색하여 형제 버튼들을 수집
+            UI_MainMenuButton[] _siblingButtons = null;
+            if (null != transform.parent)
+            {
+                _siblingButtons = transform.parent.GetComponentsInChildren<UI_MainMenuButton>(false);
+                
+                // GC 할당을 피하기 위해 간단한 삽입 정렬(Insertion Sort)을 사용하여 Sibling Index 기준으로 정렬
+                if (null != _siblingButtons && _siblingButtons.Length > 1)
+                {
+                    for (int i = 1; i < _siblingButtons.Length; i++)
+                    {
+                        UI_MainMenuButton _key = _siblingButtons[i];
+                        int _j = i - 1;
+                        while (_j >= 0 && _siblingButtons[_j].transform.GetSiblingIndex() > _key.transform.GetSiblingIndex())
+                        {
+                            _siblingButtons[_j + 1] = _siblingButtons[_j];
+                            _j = _j - 1;
+                        }
+                        _siblingButtons[_j + 1] = _key;
+                    }
+                }
+
+                // 정렬된 순서대로 사라지는 모션 재생
+                if (null != _siblingButtons)
+                {
+                    for (int i = 0; i < _siblingButtons.Length; i++)
+                    {
+                        UI_MainMenuButton _btn = _siblingButtons[i];
+                        if (null != _btn && _btn != this)
+                        {
+                            _btn.PlayDisappearMotion(_currentDisappearDelay);
+                            _hasDisappearTargets = true;
+                            _currentDisappearDelay += disappearStaggerInterval;
+                        }
+                    }
+                }
+            }
+
+            if (true == _hasDisappearTargets)
+            {
+                // 자신(this)을 가장 마지막에 사라지도록 추가
+                DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
+
+                float _disappearTime = _currentDisappearDelay + disappearSuckDuration + disappearDotShrinkDuration;
+                if (_disappearTime > _maxDelay)
+                {
+                    _maxDelay = _disappearTime;
+                }
+            }
+        }
+
+        transform.DOKill();
+        transform.localScale = Vector3.one; // 펀치 모션 시작 전 스케일 정규화
+        
+        Sequence _clickSeq = DOTween.Sequence();
+        
+        _clickSeq.Join(transform.DOPunchScale(clickPunchScale, clickDuration, clickVibrato, clickElasticity));
+        
+        if (true == autoDisappearOnClick && true == _hasDisappearTargets)
+        {
+            DOVirtual.DelayedCall(_maxDelay, invokeOnClickActionCallback);
+        }
+        else
+        {
+            _clickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
+            // 자동 사라짐이 없으므로, 클릭 펀치 종료 시점에 바로 콜백 실행
+            _clickSeq.InsertCallback(clickDuration, invokeOnClickActionCallback);
+        }
+    }
+
+    public void PlayDisappearSequenceManually(Action _onCompleteCallback)
+    {
+        manualDisappearCallback = _onCompleteCallback;
+        
+        float _maxDelay = 0f;
+        bool _hasDisappearTargets = false;
+        float _currentDisappearDelay = 0f;
+
         UI_MainMenuButton[] _siblingButtons = null;
         if (null != transform.parent)
         {
             _siblingButtons = transform.parent.GetComponentsInChildren<UI_MainMenuButton>(false);
             
-            // GC 할당을 피하기 위해 간단한 삽입 정렬(Insertion Sort)을 사용하여 Sibling Index 기준으로 정렬
             if (null != _siblingButtons && _siblingButtons.Length > 1)
             {
                 for (int i = 1; i < _siblingButtons.Length; i++)
@@ -403,7 +503,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
                 }
             }
 
-            // 정렬된 순서대로 사라지는 모션 재생
             if (null != _siblingButtons)
             {
                 for (int i = 0; i < _siblingButtons.Length; i++)
@@ -421,7 +520,6 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         if (true == _hasDisappearTargets)
         {
-            // 자신(this)을 가장 마지막에 사라지도록 추가
             DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
 
             float _disappearTime = _currentDisappearDelay + disappearSuckDuration + disappearDotShrinkDuration;
@@ -430,23 +528,14 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
                 _maxDelay = _disappearTime;
             }
         }
-
-        transform.DOKill();
-        transform.localScale = Vector3.one; // 펀치 모션 시작 전 스케일 정규화
-        
-        Sequence _clickSeq = DOTween.Sequence();
-        
-        _clickSeq.Join(transform.DOPunchScale(clickPunchScale, clickDuration, clickVibrato, clickElasticity));
-        
-        if (true == _hasDisappearTargets)
-        {
-            DOVirtual.DelayedCall(_maxDelay, invokeOnClickActionCallback);
-        }
         else
         {
-            _clickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
-            _clickSeq.InsertCallback(_maxDelay, invokeOnClickActionCallback);
+            // 타겟이 하나도 없으면 자신만 사라짐
+            PlayDisappearImmediate();
+            _maxDelay = disappearSuckDuration + disappearDotShrinkDuration;
         }
+
+        DOVirtual.DelayedCall(_maxDelay, invokeManualDisappearCallback);
     }
 
     private void PlayMaintainMotion()
@@ -614,16 +703,20 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void InvokeOnClickAction()
     {
-        if (null == this) return;
-        if (null != onClickAction)
+        if (null != onClickAction) onClickAction();
+    }
+
+    private void InvokeManualDisappearAction()
+    {
+        if (null != manualDisappearCallback)
         {
-            onClickAction.Invoke();
+            manualDisappearCallback();
+            manualDisappearCallback = null;
         }
     }
 
     private void PlayDisappearImmediate()
     {
-        if (null == this) return;
         PlayDisappearMotion(0f);
     }
 

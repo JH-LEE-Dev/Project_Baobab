@@ -256,6 +256,14 @@
       "en": "Press any key to rebind.\n(ESC: Cancel)",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 314,
+      "key": "resetAllWarning",
+      "kr": "모든 키 설정을 기본값으로 되돌리시겠습니까?",
+      "en": "Are you sure you want to reset all key bindings to default?",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }

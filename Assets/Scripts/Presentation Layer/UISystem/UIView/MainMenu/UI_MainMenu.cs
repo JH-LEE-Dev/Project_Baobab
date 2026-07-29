@@ -16,6 +16,9 @@ public class UI_MainMenu : MonoBehaviour
     [SerializeField] private UI_MainMenuButton optionButton;
     [SerializeField] private UI_MainMenuButton creditButton;
 
+    [Header("Popup UI")]
+    [SerializeField] private UI_WarningPopup warningPopup;
+
     [Header("Localization Settings")]
     [SerializeField] private int mainMenuUIJsonId = 8;
     
@@ -29,11 +32,28 @@ public class UI_MainMenu : MonoBehaviour
     private UIView_MainMenu parentView;
     private UIViewContext viewCtx;
     
+    // 캐싱 델리게이트
+    private System.Action cachedExecuteNewGame;
+    private System.Action cachedCancelNewGame;
+    private System.Action cachedOnNewGameDisappearComplete;
+    private System.Action cachedSetLocalization;
+    
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIView_MainMenu _parentView, UIViewContext _uIViewContext)
     {
         parentView = _parentView;
         viewCtx = _uIViewContext;
+        
+        cachedExecuteNewGame = ExecuteNewGame;
+        cachedCancelNewGame = CancelNewGame;
+        cachedOnNewGameDisappearComplete = OnNewGameDisappearComplete;
+        cachedSetLocalization = SetLocalization;
+        
+        if (null != viewCtx && null != viewCtx.localizationManager)
+        {
+            viewCtx.localizationManager.OnLanguageChanged -= cachedSetLocalization;
+            viewCtx.localizationManager.OnLanguageChanged += cachedSetLocalization;
+        }
         
         if (null != newGameButton)
         {
@@ -202,8 +222,41 @@ public class UI_MainMenu : MonoBehaviour
     {
         if (null != parentView)
         {
+            if (parentView.HasSaveData() && null != warningPopup && null != viewCtx && null != viewCtx.localizationManager)
+            {
+                string _warnMsg = viewCtx.localizationManager.GetText("NewGameWarning");
+                warningPopup.ShowWarning(_warnMsg, cachedExecuteNewGame, cachedCancelNewGame);
+            }
+            else
+            {
+                ExecuteNewGame();
+            }
+        }
+    }
+    
+    private void ExecuteNewGame()
+    {
+        if (null != newGameButton)
+        {
+            newGameButton.PlayDisappearSequenceManually(cachedOnNewGameDisappearComplete);
+        }
+        else
+        {
+            OnNewGameDisappearComplete();
+        }
+    }
+
+    private void OnNewGameDisappearComplete()
+    {
+        if (null != parentView)
+        {
             parentView.OnNewGameStartButton();
         }
+    }
+
+    private void CancelNewGame()
+    {
+        // 팝업 닫힘 (특별한 동작 없음)
     }
     
     private void OnLoadGameClicked()
@@ -250,6 +303,11 @@ public class UI_MainMenu : MonoBehaviour
     // 유니티 이벤트 함수
     private void OnDestroy()
     {
+        if (null != viewCtx && null != viewCtx.localizationManager && null != cachedSetLocalization)
+        {
+            viewCtx.localizationManager.OnLanguageChanged -= cachedSetLocalization;
+        }
+
         if (null != newGameButton)
         {
             newGameButton.Release();
