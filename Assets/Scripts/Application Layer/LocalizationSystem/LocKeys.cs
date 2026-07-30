@@ -290,6 +290,8 @@ public static class LocKeys
         public const int potionKey = 18874680;
         public const int pressKeyPrompt = 18874681;
         public const int resetAllWarning = 18874682;
+        public const int close = 18874683;
+        public const int resetToDefault = 18874684;
     }
 
     public static class ResultUI

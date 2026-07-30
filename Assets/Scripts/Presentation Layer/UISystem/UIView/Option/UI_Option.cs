@@ -455,12 +455,18 @@ public class UI_Option : MonoBehaviour
     {
         if (null != resetAllBindingsButton)
         {
-            resetAllBindingsButton.SetText(GetTextFromKeyString("resetToDefault", "기본 값으로 초기화"));
+            string _txt = string.Empty;
+            if (null != locManager) _txt = locManager.GetText("resetToDefault");
+            if (true == string.IsNullOrEmpty(_txt)) _txt = "기본 값으로 초기화";
+            resetAllBindingsButton.SetText(_txt);
         }
 
         if (null != closeButton)
         {
-            closeButton.SetText(GetTextFromKeyString("close", "닫기"));
+            string _txt = string.Empty;
+            if (null != locManager) _txt = locManager.GetText("close");
+            if (true == string.IsNullOrEmpty(_txt)) _txt = "닫기";
+            closeButton.SetText(_txt);
         }
     }
 
