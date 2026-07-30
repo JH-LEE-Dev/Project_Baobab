@@ -2,6 +2,7 @@
 public enum SoundID
 {
     None = 0,
+    WideGreenForest1BGM = 106979007,
     GetItem = 413619275,
     TreeDead = -794509328,
     PitchHit = 2096610066,

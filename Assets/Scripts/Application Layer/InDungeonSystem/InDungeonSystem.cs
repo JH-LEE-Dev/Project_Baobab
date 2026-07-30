@@ -414,6 +414,12 @@ public class InDungeonSystem : MonoBehaviour
     private void CharacterActivated(ActivateCharacterSignal _signal)
     {
         bCharacterActivated = true;
+
+        // 캐릭터가 실제로 움직일 수 있게 되는 시점에 스테이지별 BGM을 재생한다.
+        if (selectedForestType == ForestType.WideGreenForest_1)
+        {
+            Sound.PlayBGM(SoundID.WideGreenForest1BGM);
+        }
     }
 
     // "포자 포션" - 실제 Town 씬이 로드된 시점에 이번 원정에서 마시지 않았다면 충전한다.
