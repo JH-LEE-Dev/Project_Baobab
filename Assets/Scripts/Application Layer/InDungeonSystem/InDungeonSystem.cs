@@ -281,6 +281,9 @@ public class InDungeonSystem : MonoBehaviour
     {
         inputManager.PauseESCKey(true); // 던전→타운(귀환) 연출 시작 - 종료 시점은 InDungeonProductionManager.CameraDownIsEnd()
 
+        // 카메라가 하늘로 올라가는 연출 시간(moveDuration) 안에 반드시 다 꺼지도록 같은 시간으로 페이드아웃한다.
+        Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
+
         inDungeonProductionManager.StartSkyProduction();
 
         offroadContainer.col.enabled = false;
@@ -512,6 +515,9 @@ public class InDungeonSystem : MonoBehaviour
             return;
 
         bGoingToMainMenu = true;
+
+        // 메인메뉴로 나갈 때도 카메라 상승 연출 시간 안에 BGM이 반드시 꺼지도록 페이드아웃한다.
+        Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
 
         signalHub.Publish(new StartSkyProductionSignal(true));
         signalHub.Publish(new PopupUIDownSignal());

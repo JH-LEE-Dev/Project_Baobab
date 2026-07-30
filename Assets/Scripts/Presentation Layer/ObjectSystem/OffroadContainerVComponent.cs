@@ -194,11 +194,20 @@ public class OffroadContainerVComponent : MonoBehaviour
         // 1. 납작해짐 (Anticipation - 0.15초)
         float elapsed = 0f;
         float duration = 0.15f;
+        bool bBoxOpenSoundPlayed = false;
         while (elapsed < duration)
         {
             float t = elapsed / duration;
             float ease = t * (2f - t); // OutQuad
             parentTransformForOpen.localScale = Vector3.LerpUnclamped(startScale, squashedScale, ease);
+
+            // 1번(납작해짐)에서 2번(Animator 트리거) 시퀀스로 넘어가는 정확히 중간 지점에 재생
+            if (!bBoxOpenSoundPlayed && elapsed >= duration * 0.5f)
+            {
+                Sound.Play(SoundID.BoxOpen, transform.position);
+                bBoxOpenSoundPlayed = true;
+            }
+
             elapsed += Time.deltaTime;
             yield return null;
         }
@@ -297,6 +306,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         // 2. 쾅! 닫히며 강하게 찌그러짐 + 뒤뚱거림 (0.05초)
         parentTransformForOpen.DOPunchRotation(new Vector3(0f, 0f, 20f), 0.5f, 10, 1f);
 
+        Sound.Play(SoundID.BoxClose, transform.position);
         ContainerClosedEvent?.Invoke();
 
         elapsed = 0f;

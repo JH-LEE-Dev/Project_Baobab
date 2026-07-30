@@ -16,6 +16,9 @@ public class SkyCameraProductionManager : MonoBehaviour
 
     // //내부 의존성
     [SerializeField] private float moveDuration = 2.0f;
+    // 카메라가 하늘로 올라가는 시간(moveDuration) 동안 반드시 끝나야 하는 연출(BGM 페이드아웃 등)이
+    // 참조할 수 있도록 외부에 노출한다.
+    public float MoveDuration => moveDuration;
     [SerializeField] private float yOffset = 5.0f;
     [SerializeField] private bool useCustomCurve = false;
     [SerializeField] private AnimationCurve moveCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);

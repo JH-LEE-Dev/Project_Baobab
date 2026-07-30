@@ -2,8 +2,13 @@
 public enum SoundID
 {
     None = 0,
+    TownBGM = 1052300792,
     WideGreenForest1BGM = 106979007,
     GetItem = 413619275,
+    Cutter = -688056987,
+    BoxClose = 532227752,
+    BoxOpen = -1886360244,
+    OffroadOut = -233868034,
     TreeDead = -794509328,
     PitchHit = 2096610066,
     TreeHit = -1641742776,
