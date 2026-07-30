@@ -82,6 +82,9 @@ public class OffroadPorterNPC : MonoBehaviour
         if (visualComponent != null)
         {
             visualComponent.Initialize(_envProvider, cachedWaterGo, cachedShadow, customSortable);
+            // _envProvider.tilemapDataProvider는 던전 전용 TileMapGenerator라, 발소리 등에는
+            // 이미 Town용으로 주입받은 tilemapDataProvider(TownTilemapDataProvider)로 덮어써야 한다.
+            visualComponent.SetTilemapDataProvider(tilemapDataProvider);
         }
 
         if (inventoryComponent != null)

@@ -18,7 +18,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 8de0fb5f33d36a844ac984f91f3875c4, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
-    defaultVolume: 1
+    defaultVolume: 0.8
     is3D: 1
     loop: 0
   - id: -1641742776
@@ -26,7 +26,79 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: cb5f0b30a84b47a4a895a1abb533ad27, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
-    defaultVolume: 1
+    defaultVolume: 0.5
+    is3D: 1
+    loop: 0
+  - id: -398605290
+    mixerId: 0
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: 4fe23d03e13be4941bd0abe6931eb6eb, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.15
+    is3D: 1
+    loop: 0
+  - id: 872570553
+    mixerId: 0
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: 172281bff6add9244b9fa46d2554a049, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.15
+    is3D: 1
+    loop: 0
+  - id: 413619275
+    mixerId: 0
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: 4ceb1d41b4840894e8d1f6f818db1e78, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.15
+    is3D: 1
+    loop: 0
+  - id: 1393049894
+    mixerId: 0
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: ea2e4c3bbf6ceee4890e39f17b6072ae, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.15
+    is3D: 1
+    loop: 0
+  - id: -197311369
+    mixerId: 0
+    clip: {fileID: 8300000, guid: fb8c971fed8a12d4e810cda594210184, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.35
+    is3D: 1
+    loop: 0
+  - id: -43994528
+    mixerId: 0
+    clip: {fileID: 8300000, guid: 4ed2b4f4167f9824bb0de5af6f8f9561, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.5
+    is3D: 1
+    loop: 0
+  - id: 1971635652
+    mixerId: 0
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: bc90c51e9ebaf5f4ca95f58051b73d4d, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.2
+    is3D: 1
+    loop: 0
+  - id: -794509328
+    mixerId: 0
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: d68a58998a7ad204fb6044ac63f17762, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.15
+    is3D: 1
+    loop: 0
+  - id: 106979007
+    mixerId: 433908404
+    clip: {fileID: 8300000, guid: e70f97bf7c157334e830d8b6ab3379c3, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 0.5
     is3D: 1
     loop: 0
   mixers:

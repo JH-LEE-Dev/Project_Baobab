@@ -946,6 +946,7 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         }
 
         inDungeonVFXManager.PlayTreeDeadVFX(_treeObj.treeVisualComponent);
+        Sound.Play(SoundID.TreeDead, _treeObj.transform.position);
 
         if (_treeObj.bStarMarked && _treeObj.treeVisualComponent != null && bConstellationManifestUnlocked)
         {

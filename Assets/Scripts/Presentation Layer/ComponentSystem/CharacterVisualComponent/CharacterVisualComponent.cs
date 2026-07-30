@@ -68,12 +68,13 @@ public class CharacterVisualComponent : MonoBehaviour
 
         vfxComponent.Initialize();
 
+        environmentProvider = _environmentProvider;
+
         if (characterAnimator != null)
         {
-            characterAnimator.Initialize(vfxComponent);
+            characterAnimator.Initialize(vfxComponent, environmentProvider?.tilemapDataProvider);
         }
-        
-        environmentProvider = _environmentProvider;
+
         shadowObject = _shadowObject;
         customSortable = _customSortable;
         defaultSortingLayerId = SortingLayer.NameToID("Default");
@@ -247,6 +248,11 @@ public class CharacterVisualComponent : MonoBehaviour
     public void SetHubState(bool _bInHub)
     {
         bInHub = _bInHub;
+    }
+
+    public void SetTilemapDataProvider(ITilemapDataProvider _tilemapDataProvider)
+    {
+        characterAnimator?.SetTilemapDataProvider(_tilemapDataProvider);
     }
 
     #endregion

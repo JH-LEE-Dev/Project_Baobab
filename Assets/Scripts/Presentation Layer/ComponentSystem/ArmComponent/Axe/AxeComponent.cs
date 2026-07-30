@@ -89,6 +89,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     private void OnAttackStart()
     {
         bAttacked = true;
+        Sound.Play(SoundID.Swing, transform.position);
         axeAnimation.PlaySwing(OnAttackImpact);
 
         if (!bIsSpeedReduced)

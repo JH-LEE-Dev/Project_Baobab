@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b1cb7eb645fca748b1f61ec4d7a2dc4, type: 3}
+  m_Name: GroundFootstep
+  m_EditorClassIdentifier: Assembly-CSharp::AudioCueData
+  clips:
+  - {fileID: 8300000, guid: e62fa75fcc584214598cb096d3092195, type: 3}
+  - {fileID: 8300000, guid: ac655af2247bb514d92363d49ffb515c, type: 3}
+  - {fileID: 8300000, guid: 66a61636afddd2246838a051a031e2af, type: 3}
+  - {fileID: 8300000, guid: 71f6f934abfd1144fb2574bc5e3ec16d, type: 3}
+  - {fileID: 8300000, guid: 1175d3b680ca49447bf34f8ce3997ead, type: 3}
+  minPitch: 0.95
+  maxPitch: 1.05
+  minVolumeModifier: 0.9
+  maxVolumeModifier: 1.1

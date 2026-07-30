@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b1cb7eb645fca748b1f61ec4d7a2dc4, type: 3}
+  m_Name: GrassFootstep
+  m_EditorClassIdentifier: Assembly-CSharp::AudioCueData
+  clips:
+  - {fileID: 8300000, guid: 0e2db85991142c94caabf387775e33a0, type: 3}
+  - {fileID: 8300000, guid: fb4c4cbdbe5bdec4a86bb51148319bf8, type: 3}
+  - {fileID: 8300000, guid: da6cd8bdd36d47440930011413ecdeed, type: 3}
+  - {fileID: 8300000, guid: febe01de92ae901489fc5238c7331325, type: 3}
+  - {fileID: 8300000, guid: 6f6add641107ccf418f75ab2f2620458, type: 3}
+  minPitch: 0.95
+  maxPitch: 1.05
+  minVolumeModifier: 0.9
+  maxVolumeModifier: 1.1

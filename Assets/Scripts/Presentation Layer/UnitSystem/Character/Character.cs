@@ -58,6 +58,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 매 프레임 갱신되는 현재 셀 좌표 (외부 시스템이 재계산 없이 재사용)
     public Vector3Int CurrentCell { get; private set; }
 
+    // Town/Dungeon 전환 시 TownSystem/InDungeonSystem이 발소리 등에 쓰일 실제 타일맵 조회 대상을 직접 갈아끼운다.
+    public void SetTilemapDataProvider(ITilemapDataProvider _tilemapDataProvider)
+    {
+        characterVisualComponent?.SetTilemapDataProvider(_tilemapDataProvider);
+    }
+
     public void TakeEnvironmentalStaminaDamage(float _amount) => healthComponent.DecreaseStaminaFlat(_amount);
     public void AddOverheatDuration(float _seconds) => overheatComponent?.AddOverheatDuration(_seconds);
     public void EndOverheatBuff() => overheatComponent?.ForceEnd();

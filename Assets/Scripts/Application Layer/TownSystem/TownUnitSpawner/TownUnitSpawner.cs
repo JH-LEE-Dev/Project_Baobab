@@ -20,6 +20,10 @@ public class TownUnitSpawner : MonoBehaviour, ITownUnitSpawnerCH
     private IEnvironmentProvider environmentProvider;
     private TownTilemapDataProvider tilemapDataProvider;
 
+    // TownSystem.StartTownSystem()이 이 인스턴스를 character.SetTilemapDataProvider()로 직접 넘겨줘서
+    // 캐릭터도 던전 전용 TileMapGenerator 대신 Town의 실제 타일맵을 조회하도록 한다.
+    public ITilemapDataProvider TilemapDataProvider => tilemapDataProvider;
+
     private OffroadContainer offroadContainer;
     private LogContainer logContainer;
 
