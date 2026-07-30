@@ -25,6 +25,15 @@ public class AudioManager : MonoBehaviour
     private AudioSource bgmSource;
     private Coroutine bgmFadeCoroutine;
 
+    // 2D 게임이므로 카메라(리스너)의 Z축 거리가 3D 사운드 감쇠/패닝에 영향을 주면 안 된다.
+    // 발음원의 Z를 카메라의 고정 Z값으로 맞춰서 거리 계산이 X/Y(화면상 좌우/상하)만으로 이뤄지게 한다.
+    private const float ListenerZ = -8.34f;
+
+    private Vector3 FlattenToListenerZ(Vector3 worldPosition)
+    {
+        return new Vector3(worldPosition.x, worldPosition.y, ListenerZ);
+    }
+
     private void Awake()
     {
         if (Instance == null)
@@ -112,7 +121,7 @@ public class AudioManager : MonoBehaviour
     public void UpdateTrackedPosition(AudioHandle handle, Vector3 position)
     {
         if (!IsHandleValid(handle)) return;
-        sourcePool[handle.sourceIndex].transform.position = position;
+        sourcePool[handle.sourceIndex].transform.position = FlattenToListenerZ(position);
     }
 
     private bool IsHandleValid(AudioHandle handle)
@@ -150,8 +159,8 @@ public class AudioManager : MonoBehaviour
 
         AudioSource src = sourcePool[index];
 
-        // 3D 위치 설정
-        src.transform.position = position;
+        // 3D 위치 설정 (Z는 리스너 기준으로 맞춰 2D 게임에서 카메라 거리로 인한 왜곡을 없앤다)
+        src.transform.position = FlattenToListenerZ(position);
 
         // AudioSource 상태 완전 초기화 (풀링 부작용 방지)
         src.Stop();
