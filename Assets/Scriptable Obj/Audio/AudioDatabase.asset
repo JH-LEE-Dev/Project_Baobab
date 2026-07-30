@@ -13,13 +13,30 @@ MonoBehaviour:
   m_Name: AudioDatabase
   m_EditorClassIdentifier: Assembly-CSharp::AudioDatabase
   sounds:
-  - id: -398605290
-    mixerId: 159138813
-    clip: {fileID: 0}
-    cueData: {fileID: 11400000, guid: ff194b4cdbb05784cb18b184e892ec27, type: 2}
+  - id: 2096610066
+    mixerId: 0
+    clip: {fileID: 8300000, guid: 8de0fb5f33d36a844ac984f91f3875c4, type: 3}
+    cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
     defaultVolume: 1
     is3D: 1
+    loop: 0
+  - id: -1641742776
+    mixerId: 0
+    clip: {fileID: 8300000, guid: cb5f0b30a84b47a4a895a1abb533ad27, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 1
+    is3D: 1
+    loop: 0
   mixers:
-  - id: 159138813
-    mixer: {fileID: 24100000, guid: fdb35ec274407f349a702af791fe9843, type: 2}
+  - id: -235980376
+    group: {fileID: 24300002, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+  - id: 433908404
+    group: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+  - id: 1999992957
+    group: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+  - id: -1090805748
+    group: {fileID: 24300300, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+  - id: -1090754126
+    group: {fileID: 24300400, guid: 865ed13951834138be11bea38be7fea0, type: 2}

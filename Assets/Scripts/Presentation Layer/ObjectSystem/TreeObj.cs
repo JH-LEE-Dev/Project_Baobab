@@ -326,6 +326,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.PlayHitFlash();
         }
 
+        PlayHitSound();
+
         TreeGetHitEvent?.Invoke(this);
 
         if (!wasAlreadyDead && bDead)
@@ -338,6 +340,20 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         TryStartHeatTimer();
 
         bLastHitByPlayer = true;
+    }
+
+    // 도끼 타격음. 나무가 많이 닳을수록(HP가 낮을수록) Tree_Hit은 피치가 1.0 -> 1.3으로,
+    // Pitch_Hit은 피치가 1.0 -> 1.6, 볼륨도 함께 1.0 -> 1.4로 올라가 타격감이 누적되는 느낌을 준다.
+    private void PlayHitSound()
+    {
+        float maxHealth = health.GetMaxHealth();
+        float damageRatio = maxHealth > 0f ? Mathf.Clamp01(1f - health.GetCurrentHealth() / maxHealth) : 0f;
+        float treeHitPitch = Mathf.Lerp(1.0f, 1.3f, damageRatio);
+        float pitchHitPitch = Mathf.Lerp(1.0f, 1.6f, damageRatio);
+        float pitchHitVolume = Mathf.Lerp(1.0f, 1.4f, damageRatio);
+
+        Sound.Play(SoundID.TreeHit, cachedTransform.position, 1f, true, treeHitPitch);
+        Sound.Play(SoundID.PitchHit, cachedTransform.position, pitchHitVolume, true, pitchHitPitch);
     }
 
     private void TryStartHeatTimer()
