@@ -344,7 +344,19 @@ public class UIView_Unit : UIView
     public void TownStarted()
     {
         if (null != speechBubble)
+        {
+            speechBubble.SetLockEnabled(false);
             speechBubble.RemoveAllShownIds();
+        }
+    }
+
+    public void DungeonStarted()
+    {
+        if (null != speechBubble)
+        {
+            speechBubble.SetLockEnabled(true);
+            speechBubble.RemoveAllShownIds();
+        }
     }
 
     public void InventoryItemToOffroadContainer()

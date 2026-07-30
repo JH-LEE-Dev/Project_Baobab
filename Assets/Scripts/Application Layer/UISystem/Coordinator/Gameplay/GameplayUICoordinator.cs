@@ -411,6 +411,8 @@ public class GameplayUICoordinator
 
     private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)
     {
+        unitUI.DungeonStarted();
+        
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         worldPopupUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
@@ -537,6 +539,7 @@ public class GameplayUICoordinator
     private void ItemCantAcquired_Inventory(ItemCantAcquiedSignal _itemCantAcquiedSignal)
     {
         unitUI.ItemCantAcquired_Inventory();
+        popUpUI.ItemCantAcquired_Inventory();
     }
 
     private void DeclareSkillAccumulativeValue(DeclareSkillAccumulatedValueSignal _declareSkillAccumulativeValueSignal)

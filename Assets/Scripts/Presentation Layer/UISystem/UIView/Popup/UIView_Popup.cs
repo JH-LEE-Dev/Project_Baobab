@@ -28,6 +28,7 @@ public class UIView_Popup : UIView
     private MapType currentMapType;
     private ForestType currentForestType;
     private bool isAutoOpenedByInteraction = false;
+    private bool userForceClosed = false;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -85,6 +86,7 @@ public class UIView_Popup : UIView
     {
         currentMapType = _currentMapType;
         currentForestType = _currentForestType;
+        userForceClosed = false;
 
         if (null != uiInventory)
             uiInventory.MapChanged(_currentMapType);
@@ -94,16 +96,19 @@ public class UIView_Popup : UIView
     {
         if (true == _bCanInteract)
         {
+            if (true == userForceClosed)
+                return;
+                
             if (null != uiInventory && false == uiInventory.IsOpening)
             {
-                InventoryUIOpendEvent.Invoke(true);
+                InventoryUIOpendEvent?.Invoke(true);
                 isAutoOpenedByInteraction = true;
             }
         }
         else
         {
             if (true == isAutoOpenedByInteraction)
-                InventoryUIOpendEvent.Invoke(isAutoOpenedByInteraction = false);
+                InventoryUIOpendEvent?.Invoke(isAutoOpenedByInteraction = false);
         }
     }
 
@@ -185,6 +190,11 @@ public class UIView_Popup : UIView
         if (null != uiInventory)
             uiInventory.OnHide();
             
+        if (true == isAutoOpenedByInteraction)
+        {
+            userForceClosed = true;
+        }
+            
         isAutoOpenedByInteraction = false;
 
         base.OnHide();
@@ -221,10 +231,26 @@ public class UIView_Popup : UIView
 
     public void InventoryIsFull()
     {
+        if (true == userForceClosed)
+            return;
+            
         if (null != uiInventory && true == uiInventory.IsOpening)
             return;
 
         InventoryUIOpendEvent?.Invoke(true);
+        isAutoOpenedByInteraction = true;
+    }
+
+    public void ItemCantAcquired_Inventory()
+    {
+        if (true == userForceClosed)
+            return;
+            
+        if (null != uiInventory && true == uiInventory.IsOpening)
+            return;
+
+        InventoryUIOpendEvent?.Invoke(true);
+        isAutoOpenedByInteraction = true;
     }
 
     public void PopupGoDown()
