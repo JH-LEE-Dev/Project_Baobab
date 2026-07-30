@@ -2,8 +2,15 @@
 public enum SoundID
 {
     None = 0,
+    AxeBreakingEx = 1393049894,
+    AxeBreaking = -197311369,
+    AxeBreakingFinal = -43994528,
+    Swing = 1971635652,
+    GetItem = 413619275,
     PitchHit = 2096610066,
     TreeHit = -1641742776,
+    GrassFootstep = -398605290,
+    GroundFootstep = 872570553,
 }
 
 public enum MixerID

@@ -296,6 +296,19 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         return IsWater(_cellPos.x, _cellPos.y);
     }
 
+    // 생성 시 각 셀에 배치된 실제 타일(groundTiles)이 StageTileData의 GrassTiles 목록에 속하는지로 판정한다
+    // (모래/그 외 타일이면 false → 발소리 시스템 등에서 "일반 바닥"으로 취급).
+    public bool IsGrassTile(Vector3Int _cellPos)
+    {
+        if (groundTiles == null) return false;
+        if (_cellPos.x < 0 || _cellPos.x >= width || _cellPos.y < 0 || _cellPos.y >= height) return false;
+
+        TileBase tile = groundTiles[_cellPos.x + _cellPos.y * width];
+        if (tile == null || stageTileData == null || stageTileData.GrassTiles == null) return false;
+
+        return stageTileData.GrassTiles.Contains(tile);
+    }
+
     // 상하좌우+대각선 8방향 오프셋. 매 프레임 새로 할당하지 않도록 static readonly로 한 번만 생성한다.
     private static readonly Vector3Int[] EightDirectionOffsets = new Vector3Int[]
     {

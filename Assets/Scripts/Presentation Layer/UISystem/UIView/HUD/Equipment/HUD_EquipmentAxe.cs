@@ -95,17 +95,38 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     omp.Play(brokenAnimTag, bReset: true);
                 }
 
+                // AxeBreaking(깨지는 소리)은 파티클 발생 여부와 무관하게 스프라이트가 바뀔 때마다 재생한다.
+                Sound.PlayUI(SoundID.AxeBreaking);
+
                 if (null != vfxComponent && null != axeHead && 0.75f > _ratio)
                 {
-                    vfxComponent.Play(axeBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
+                    ParticleSystem brokenEffect = vfxComponent.Play(axeBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
+
+                    // AxeBreaking_ex(파티클이 바닥에 흩뿌려지는 소리)는 실제 파티클이 나갔을 때만 딜레이 재생한다.
+                    if (null != brokenEffect)
+                    {
+                        StartCoroutine(PlayAxeBreakingExDelayed());
+                    }
 
                     if (AxeMode.ZERO == axeMode)
                     {
                         ParticleSystem temp = vfxComponent.Play(axeLastBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
                         Debug.Log(temp);
+
+                        // AxeBreakingFinal은 별도 파티클 풀(axeLastBrokenTag)이 실제로 나갔을 때만 재생한다.
+                        if (null != temp)
+                        {
+                            Sound.PlayUI(SoundID.AxeBreakingFinal);
+                        }
                     }
                 }
             }
+        }
+
+        private System.Collections.IEnumerator PlayAxeBreakingExDelayed()
+        {
+            yield return new WaitForSeconds(UnityEngine.Random.Range(0.5f, 1.5f));
+            Sound.PlayUI(SoundID.AxeBreakingEx);
         }
         // //유니티 이벤트 함수
     }

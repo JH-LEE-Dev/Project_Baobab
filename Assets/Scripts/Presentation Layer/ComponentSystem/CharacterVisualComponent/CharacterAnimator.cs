@@ -90,7 +90,6 @@ public class CharacterAnimator : MonoBehaviour
 
     [Space]
     [Header("VFX Settings")]
-    [SerializeField] private float dustEffectInterval = 0.3f;
     [SerializeField] private float dustOffsetDistance = 0.15f;
 
     // 상태 데이터
@@ -100,27 +99,35 @@ public class CharacterAnimator : MonoBehaviour
     
     private bool prevIsMoving = false;
     private bool prevBInHub = true;
-    private bool prevIsBlinking = false;
     private bool prevIsDead = false;
     private int prevDirIndex = -1;
     private int prevShadowDirIndex = -1;
 
-    private float dustTimer = 0f;
     private Vector3 lastPosition;
+    // 방향 전환 등에 의한 currentFrameIndex 리셋과 무관하게, Run Sample 속도에 맞춰 독립적으로 흐르는 발소리 타이머.
+    private float footstepTimer = 0f;
 
     #region Public Methods
 
     private VFXComponent vfxComponent;
+    private ITilemapDataProvider tilemapDataProvider;
 
-    public void Initialize(VFXComponent _vfxComponent)
+    public void Initialize(VFXComponent _vfxComponent, ITilemapDataProvider _tilemapDataProvider = null)
     {
         vfxComponent = _vfxComponent;
+        tilemapDataProvider = _tilemapDataProvider;
 
         frameTimer = 0f;
         currentFrameIndex = 0;
         isDeadStartFinished = false;
-        dustTimer = 0f;
+        footstepTimer = 0f;
         lastPosition = transform.position;
+    }
+
+    // Town/Dungeon 전환 시 실제 타일맵을 들고 있는 쪽(TownSystem/InDungeonSystem)이 직접 갈아끼운다.
+    public void SetTilemapDataProvider(ITilemapDataProvider _tilemapDataProvider)
+    {
+        tilemapDataProvider = _tilemapDataProvider;
     }
 
     public void UpdateAnimation(float _deltaTime, bool _isMoving, bool _bInHub, float _facingAngle, float _shadowAngle, bool _isBlinking, bool _isDead)
@@ -154,7 +161,9 @@ public class CharacterAnimator : MonoBehaviour
         }
 
         // 2. 상태 전환 시 프레임 리셋
-        if (_isMoving != prevIsMoving || _bInHub != prevBInHub || _isBlinking != prevIsBlinking || _isDead != prevIsDead || dirIndex != prevDirIndex)
+        // 눈 깜빡임(_isBlinking)은 몸통 걷기 스프라이트(baseSprites)와 무관하므로 리셋 조건에서 제외한다.
+        // (블링크/얼굴 프레임은 currentFrameIndex를 그대로 참조해 별도로 모듈로 계산되므로 리셋이 필요 없다)
+        if (_isMoving != prevIsMoving || _bInHub != prevBInHub || _isDead != prevIsDead || dirIndex != prevDirIndex)
         {
             currentFrameIndex = 0;
             frameTimer = 0f;
@@ -162,7 +171,6 @@ public class CharacterAnimator : MonoBehaviour
 
             prevIsMoving = _isMoving;
             prevBInHub = _bInHub;
-            prevIsBlinking = _isBlinking;
             prevIsDead = _isDead;
             prevDirIndex = dirIndex;
             prevShadowDirIndex = shadowDirIndex;
@@ -351,42 +359,55 @@ public class CharacterAnimator : MonoBehaviour
             }
         }
 
-        // 먼지 이펙트 (Dust VFX) 처리
-        if (_isMoving && !_isDead)
+        // 발소리: Run Sample 속도를 그대로 따라가되, 방향 전환 등으로 currentFrameIndex가 리셋되어도
+        // 끊기지 않도록 별도 타이머로 독립 진행시킨다 (4프레임 사이클 기준 절반 = 접지 2회).
+        if (_isMoving && !_isDead && baseSprites != null && baseSprites.Count > 0)
         {
-            dustTimer += _deltaTime;
-            if (dustTimer >= dustEffectInterval)
-            {
-                dustTimer = 0f;
-                if (vfxComponent != null)
-                {
-                    Vector3 moveDelta = transform.position - lastPosition;
-                    Vector3 moveDir;
-                    if (moveDelta.sqrMagnitude > 0.0001f)
-                    {
-                        moveDir = moveDelta.normalized;
-                    }
-                    else
-                    {
-                        float angleRad = _facingAngle * Mathf.Deg2Rad;
-                        moveDir = new Vector3(Mathf.Cos(angleRad), Mathf.Sin(angleRad), 0f);
-                    }
-                    Vector3 spawnPosition = lastPosition - moveDir * dustOffsetDistance;
+            float frameDuration = runSample > 0f ? 1f / runSample : 0.1f;
+            float contactInterval = frameDuration * (baseSprites.Count / 2f);
 
-                    ParticleSystem effect = vfxComponent.Play("Dust", spawnPosition, Quaternion.identity);
-                    if (effect != null && baseSR != null)
-                    {
-                        vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerName, baseSR.sortingOrder);
-                    }
-                }
+            footstepTimer += _deltaTime;
+            if (footstepTimer >= contactInterval)
+            {
+                footstepTimer -= contactInterval;
+                PlayFootstepEffects(_facingAngle);
             }
         }
         else
         {
-            dustTimer = 0f;
+            footstepTimer = 0f;
         }
 
         lastPosition = transform.position;
+    }
+
+    // 발이 바닥에 닿는 애니메이션 프레임에 맞춰 먼지 VFX와 발소리를 함께 재생한다.
+    private void PlayFootstepEffects(float _facingAngle)
+    {
+        if (vfxComponent != null)
+        {
+            Vector3 moveDelta = transform.position - lastPosition;
+            Vector3 moveDir;
+            if (moveDelta.sqrMagnitude > 0.0001f)
+            {
+                moveDir = moveDelta.normalized;
+            }
+            else
+            {
+                float angleRad = _facingAngle * Mathf.Deg2Rad;
+                moveDir = new Vector3(Mathf.Cos(angleRad), Mathf.Sin(angleRad), 0f);
+            }
+            Vector3 spawnPosition = lastPosition - moveDir * dustOffsetDistance;
+
+            ParticleSystem effect = vfxComponent.Play("Dust", spawnPosition, Quaternion.identity);
+            if (effect != null && baseSR != null)
+            {
+                vfxComponent.SetSortingSettings(effect, baseSR.sortingLayerName, baseSR.sortingOrder);
+            }
+        }
+
+        bool isGrass = tilemapDataProvider != null && tilemapDataProvider.IsGrassTile(tilemapDataProvider.WorldToCell(transform.position));
+        Sound.Play(isGrass ? SoundID.GrassFootstep : SoundID.GroundFootstep, transform.position);
     }
 
     #endregion

@@ -88,6 +88,18 @@ public class TownTilemapDataProvider : ITilemapDataProvider
         return townTileManager.WaterColliderTilemap.HasTile(actualCell);
     }
 
+    // GroundTilemap에 실제 배치된 타일 애셋 이름으로 판정한다 (예: "Stage01_GrassTile").
+    // Town의 타일 팔레트가 던전(StageTileDataSO)과 동일한 "Stage0X_GrassTile" 명명 규칙을 그대로 쓰고 있어
+    // 별도 리스트 없이도 이름만으로 안정적으로 구분할 수 있다.
+    public bool IsGrassTile(Vector3Int _cellPos)
+    {
+        if (groundTilemap == null) return false;
+
+        Vector3Int actualCell = _cellPos + originCell;
+        TileBase tile = groundTilemap.GetTile(actualCell);
+        return tile != null && tile.name.IndexOf("Grass", System.StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
     private bool HasAnyCollider(Vector3Int _actualCell)
     {
         if (HasMainGridTile(townTileManager.ColliderTilemap, _actualCell)) return true;

@@ -178,6 +178,7 @@ public class UnitSystem
     private void ItemAcquired(ItemAcquiredSignal itemAcquiredSignal)
     {
         inventoryManager.ItemAcquired(itemAcquiredSignal.item);
+        Sound.PlayUI(SoundID.GetItem);
     }
 
     private void ItemDeleted(DeleteItemSignal deleteItemSignal)

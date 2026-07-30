@@ -93,6 +93,9 @@ public class TownSystem : MonoBehaviour
         townUnitSpawner?.SpawnNPCsIfNeeded(townTileManager, townObjectManager.offroadVehicle, offroadContainer,
             logProcessingManager.logContainer, tentManager.TentSpawnPoint, townStartPoint);
 
+        // 발소리 등 타일 판정이 던전 전용 TileMapGenerator가 아닌 Town의 실제 타일맵을 보도록 갈아끼운다.
+        character?.SetTilemapDataProvider(townUnitSpawner?.TilemapDataProvider);
+
         if (_sceneChangeData.prevScene == SceneType.DungeonScene)
         {
             signalHub.Publish(new TownStartedSignal(townObjectManager.GetTownReturnPoint()));
@@ -361,6 +364,9 @@ public class TownSystem : MonoBehaviour
 
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
     {
+        // Town 전용 타일맵 오버라이드를 풀고 던전의 TileMapGenerator로 되돌린다.
+        character?.SetTilemapDataProvider(environmentProvider.tilemapDataProvider);
+
         logProcessingManager.DisableShopObj();
         tentManager.DisableTent();
         townProductionManager.SetCharacterTransform();
