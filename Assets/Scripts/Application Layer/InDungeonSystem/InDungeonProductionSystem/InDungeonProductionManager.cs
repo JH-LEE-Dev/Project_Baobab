@@ -101,6 +101,7 @@ public class InDungeonProductionManager : MonoBehaviour
         Vector3 startScale = character.transform.localScale;
 
         character.transform.position = characterRidePoint.position;
+        Sound.Play(SoundID.OffroadOut, character.transform.position);
         character.bRide = true;
         character.gameObject.SetActive(false);
         offroadVehicleObj.PlayShinyEffect();
@@ -141,6 +142,13 @@ public class InDungeonProductionManager : MonoBehaviour
 
         inputManager.PauseMove(false);
         inputManager.PauseESCKey(false); // 던전→타운 귀환 연출 종료 (InDungeonSystem.GoHome()에서 걸어둔 PauseESCKey(true) 해제)
+
+        // 캐릭터가 실제로 움직일 수 있게 되는 시점(던전 -> 타운)에 타운 BGM을 재생한다.
+        // bRetryGame이면 타운이 아니라 같은 타입의 새 던전으로 이어지므로 재생하지 않는다.
+        if (!bRetryGame)
+        {
+            Sound.PlayBGM(SoundID.TownBGM);
+        }
 
         CameraDownEndEvent?.Invoke();
     }

@@ -56,6 +56,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private VFXComponent vfxComponent;
     private ParticleSystem cuttingEffect;
     private bool wasForward = false;
+    private AudioHandle cuttingSoundHandle = AudioHandle.Invalid;
 
     // 프로퍼티
     public float timeRemaining
@@ -326,10 +327,14 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             if (isForward)
             {
                 PlayCuttingEffect();
+                cuttingSoundHandle = Sound.PlayTracked(SoundID.Cutter, transform.position);
             }
             else
             {
                 StopCuttingEffect();
+                // 별도의 "정지음"이 없어서, 전원이 꺼지듯 피치/볼륨을 서서히 낮추며 멈춘다.
+                Sound.StopTrackedWithPowerDown(cuttingSoundHandle);
+                cuttingSoundHandle = AudioHandle.Invalid;
             }
             wasForward = isForward;
         }
@@ -444,6 +449,9 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     private void OnDisable()
     {
         StopCuttingEffect();
+        // 씬 전환 등으로 비활성화되는 경우는 페이드아웃 없이 즉시 정지한다 (코루틴은 비활성 오브젝트에서 진행되지 않음).
+        Sound.StopTracked(cuttingSoundHandle);
+        cuttingSoundHandle = AudioHandle.Invalid;
         wasForward = false;
     }
 }

@@ -118,6 +118,39 @@ public class AudioManager : MonoBehaviour
         sourcePool[handle.sourceIndex].Stop();
     }
 
+    // 별도의 "정지음"이 없는 루프 사운드용: 피치를 극한으로 낮추고 볼륨을 0으로 줄이며
+    // 기계가 서서히 전원이 꺼지듯 페이드아웃한 뒤 정지한다.
+    public void StopTrackedWithPowerDown(AudioHandle handle, float duration = 0.4f, float minPitch = 0.1f)
+    {
+        if (!IsHandleValid(handle)) return;
+        StartCoroutine(PowerDownRoutine(handle, duration, minPitch));
+    }
+
+    private System.Collections.IEnumerator PowerDownRoutine(AudioHandle handle, float duration, float minPitch)
+    {
+        AudioSource src = sourcePool[handle.sourceIndex];
+        float startPitch = src.pitch;
+        float startVolume = src.volume;
+
+        float timer = 0f;
+        while (timer < duration)
+        {
+            // 대기 중 슬롯이 다른 사운드에 강탈되면(재사용) 더 이상 손대지 않고 중단한다.
+            if (!IsHandleValid(handle)) yield break;
+
+            timer += Time.deltaTime;
+            float t = timer / duration;
+            src.pitch = Mathf.Lerp(startPitch, minPitch, t);
+            src.volume = Mathf.Lerp(startVolume, 0f, t);
+            yield return null;
+        }
+
+        if (IsHandleValid(handle))
+        {
+            src.Stop();
+        }
+    }
+
     public void UpdateTrackedPosition(AudioHandle handle, Vector3 position)
     {
         if (!IsHandleValid(handle)) return;
@@ -298,6 +331,36 @@ public class AudioManager : MonoBehaviour
     {
         if (bgmSource.isPlaying)
             bgmSource.Stop();
+    }
+
+    // 지정한 시간에 걸쳐 볼륨을 0까지 낮춘 뒤 정지한다 (예: 던전->타운 복귀 시 카메라가 하늘로
+    // 올라가는 연출 시간 안에 반드시 꺼지도록 그 시간과 맞춰 호출).
+    public void FadeOutBGM(float duration)
+    {
+        if (bgmFadeCoroutine != null)
+            StopCoroutine(bgmFadeCoroutine);
+
+        bgmFadeCoroutine = StartCoroutine(FadeOutBGMInternal(duration));
+    }
+
+    private System.Collections.IEnumerator FadeOutBGMInternal(float duration)
+    {
+        float startVolume = bgmSource.volume;
+
+        if (bgmSource.isPlaying && startVolume > 0f && duration > 0f)
+        {
+            float timer = 0f;
+            while (timer < duration)
+            {
+                timer += Time.deltaTime;
+                bgmSource.volume = Mathf.Lerp(startVolume, 0f, timer / duration);
+                yield return null;
+            }
+        }
+
+        bgmSource.volume = 0f;
+        bgmSource.Stop();
+        bgmFadeCoroutine = null;
     }
 
     public void PauseBGM()

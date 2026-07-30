@@ -125,6 +125,7 @@ public class TownProductionManager : MonoBehaviour
         Vector3 startScale = character.transform.localScale;
 
         character.transform.position = characterRidePoint.position;
+        Sound.Play(SoundID.OffroadOut, character.transform.position);
         character.bRide = true;
         character.gameObject.SetActive(false);
         offroadVehicleObj.PlayShinyEffect();
@@ -197,6 +198,9 @@ public class TownProductionManager : MonoBehaviour
     private IEnumerator StartSkyProductionRoutine()
     {
         yield return new WaitForSeconds(3.75f);
+
+        // 카메라가 실제로 하늘로 올라가기 시작하는 이 시점에 맞춰 타운 BGM을 페이드아웃한다.
+        Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
 
         skyCameraProductionManager.StartCameraMove();
         StartSkyProductionEvent?.Invoke(false);

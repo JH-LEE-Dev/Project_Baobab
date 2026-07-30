@@ -479,6 +479,9 @@ public class TownSystem : MonoBehaviour
         inputManager.PauseMove(false);
         inputManager.PauseESCKey(false); // 메인메뉴→타운 인트로 연출 종료 (TownProductionManager.StartMainMenuIntro()에서 걸어둔 PauseESCKey(true) 해제)
 
+        // 캐릭터가 실제로 움직일 수 있게 되는 시점(메인메뉴 -> 타운)에 타운 BGM을 재생한다.
+        Sound.PlayBGM(SoundID.TownBGM);
+
         StartCoroutine(MainMenuIntroPopupUIUpCoroutine());
     }
 
@@ -496,6 +499,10 @@ public class TownSystem : MonoBehaviour
             return;
 
         bGoingToMainMenu = true;
+
+        // 메인메뉴로 나갈 때도 카메라 상승 연출 시간 안에 BGM이 반드시 꺼지도록 페이드아웃한다.
+        Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
+
         townProductionManager.StartGoToMainMenu();
     }
 
