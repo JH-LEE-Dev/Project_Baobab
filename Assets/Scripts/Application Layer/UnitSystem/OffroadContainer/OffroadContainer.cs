@@ -17,6 +17,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private IInventory characterInventory;
     private InventoryManager characterInventoryManager;
     private Transform charTransform;
+    private Character character;
     private LogItemPoolingManager logItemPoolManager;
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
@@ -161,6 +162,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         charTransform = _transform;
     }
 
+    public void SetCharacter(Character _character)
+    {
+        character = _character;
+    }
+
     private void Update()
     {
         UpdateFlyingItems(Time.deltaTime);
@@ -217,7 +223,10 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (flyingData.toCarrier != null)
                         flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
                     else
+                    {
                         AddToCharacterInventory(arrivalDataBuffer, item.logState);
+                        character?.PlayItemAcquireBounce();
+                    }
                 }
                 else
                 {

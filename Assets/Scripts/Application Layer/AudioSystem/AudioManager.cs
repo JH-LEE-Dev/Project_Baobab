@@ -12,6 +12,18 @@ public class AudioManager : MonoBehaviour
     [Header("Pool Settings")]
     [SerializeField] private int poolSize = 50;
 
+    [Header("3D Sound Distance Settings")]
+    // 해상도 설정(16:9/16:10 등)에 따라 PixelPerfectCamera의 orthographicSize가 실제로 달라지므로,
+    // 고정값 대신 재생 시점마다 Camera.main의 현재 값을 읽어 매번 다시 계산한다 (EnsureDistanceRolloffUpToDate 참고).
+    // 화면 대각선(가장 먼 화면 안 지점) 기준으로 이 배율만큼 여유를 둔 지점부터 완전 무음 처리한다.
+    [SerializeField] private float farDistanceBuffer = 1.05f;
+    // Camera.main을 찾을 수 없을 때만 쓰이는 대비용 기본값 (16:9, orthographicSize 5.625 기준).
+    private const float FallbackOrthographicSize = 5.625f;
+    private const float FallbackAspect = 16f / 9f;
+
+    private float cachedNearDistance = -1f;
+    private float cachedFarDistance = -1f;
+
     [Header("BGM Settings")]
     [SerializeField] private float bgmFadeDuration = 1f;
 
@@ -58,6 +70,7 @@ public class AudioManager : MonoBehaviour
         sourcePool.Capacity = poolSize;
         sourceStartTime = new float[poolSize];
         sourcePlayId = new int[poolSize];
+
         for (int i = 0; i < poolSize; i++)
         {
             var obj = new GameObject("AudioSource_" + i);
@@ -68,6 +81,48 @@ public class AudioManager : MonoBehaviour
             source.spatialBlend = 1f;
 
             sourcePool.Add(source);
+        }
+
+        // 최초 생성 시점 기준으로 한 번 적용해둔다 (실제 재생 시점에 다시 최신값으로 갱신됨).
+        EnsureDistanceRolloffUpToDate();
+    }
+
+    // 해상도/화면비가 바뀌면 Camera.main의 orthographicSize/aspect가 실제로 달라지므로,
+    // 사운드 재생 시점마다 현재 값을 다시 계산해서 이전과 다를 때만(=해상도가 바뀐 경우에만)
+    // 커브를 새로 만들어 전체 풀에 반영한다. 값이 그대로면 아무 것도 하지 않아 비용이 거의 없다.
+    private void EnsureDistanceRolloffUpToDate()
+    {
+        Camera cam = Camera.main;
+        float halfHeight = cam != null ? cam.orthographicSize : FallbackOrthographicSize;
+        float halfWidth = cam != null ? halfHeight * cam.aspect : halfHeight * FallbackAspect;
+
+        // 근거리: 가로/세로 중 더 짧은 쪽 기준 - 이 반경 안은 어느 방향이든 확실히 화면 안이다.
+        float near = Mathf.Min(halfWidth, halfHeight);
+        // 원거리: 화면에서 가장 먼 지점인 대각선 모서리에 약간의 여유를 둔다.
+        float far = Mathf.Sqrt(halfWidth * halfWidth + halfHeight * halfHeight) * farDistanceBuffer;
+
+        if (Mathf.Approximately(near, cachedNearDistance) && Mathf.Approximately(far, cachedFarDistance))
+            return;
+
+        cachedNearDistance = near;
+        cachedFarDistance = far;
+
+        // 근거리까지는 거의 감쇠 없이 유지하다가, 마지막 구간(75%~100%)에서만 가파르게 0으로 떨어지는 커브.
+        float cliffStart = near + (far - near) * 0.75f;
+        AnimationCurve rolloffCurve = new AnimationCurve(
+            new Keyframe(0f, 1f, 0f, 0f),
+            new Keyframe(near, 1f, 0f, 0f),
+            new Keyframe(cliffStart, 0.9f, 0f, 0f),
+            new Keyframe(far, 0f, 0f, 0f)
+        );
+
+        for (int i = 0; i < sourcePool.Count; i++)
+        {
+            AudioSource source = sourcePool[i];
+            source.rolloffMode = AudioRolloffMode.Custom;
+            source.minDistance = near;
+            source.maxDistance = far;
+            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, rolloffCurve);
         }
     }
 
@@ -189,6 +244,9 @@ public class AudioManager : MonoBehaviour
 
         int index = GetAvailableSourceIndex();
         if (index < 0) return AudioHandle.Invalid;
+
+        // 해상도가 바뀌어 화면 범위가 달라졌다면 재생 직전에 감지해서 갱신한다.
+        EnsureDistanceRolloffUpToDate();
 
         AudioSource src = sourcePool[index];
 

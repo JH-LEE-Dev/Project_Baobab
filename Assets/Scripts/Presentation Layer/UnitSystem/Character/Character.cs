@@ -175,12 +175,22 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private bool bCanAcquiredItem = false;
 
+    [SerializeField] private GameObject characterVisualObjects;
+    private Vector3 characterVisualObjectsOriginalScale = Vector3.one;
+    private float itemAcquireBounceTime = 1f;
+    private const float ITEM_ACQUIRE_BOUNCE_DURATION = 0.2f;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
     {
         inputManager = _inputManager;
         environmentProvider = _environmentProvider;
+
+        if (characterVisualObjects != null)
+        {
+            characterVisualObjectsOriginalScale = characterVisualObjects.transform.localScale;
+        }
 
         itemDetector = new ItemDetector(transform, itemLayer);
 
@@ -321,6 +331,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         visualHeight = _height;
     }
 
+    // OffroadContainer에서 아이템이 캐릭터에게 도착했을 때(OffroadContainerVComponent의 뽀잉 연출과
+    // 동일한 감쇠 진동 곡선) characterVisualObjects에도 같은 연출을 재생한다.
+    public void PlayItemAcquireBounce()
+    {
+        itemAcquireBounceTime = 0f;
+    }
+
     #endregion
 
     #region Private Methods
@@ -442,6 +459,29 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     {
         yield return new WaitForSeconds(0.5f);
         StaminaIsEmptyEvent?.Invoke();
+    }
+
+    private void UpdateItemAcquireBounce(float _deltaTime)
+    {
+        if (characterVisualObjects == null) return;
+
+        if (itemAcquireBounceTime >= ITEM_ACQUIRE_BOUNCE_DURATION)
+        {
+            if (characterVisualObjects.transform.localScale != characterVisualObjectsOriginalScale)
+                characterVisualObjects.transform.localScale = characterVisualObjectsOriginalScale;
+            return;
+        }
+
+        itemAcquireBounceTime += _deltaTime;
+        float t = itemAcquireBounceTime / ITEM_ACQUIRE_BOUNCE_DURATION;
+
+        // 쫀득함(Squash & Stretch) 연출: 감쇠 진동 곡선(Damped Sine Wave). OffroadContainer.UpdateBounce와 동일한 방식.
+        float curve = Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * 0.3f;
+
+        characterVisualObjects.transform.localScale = new Vector3(
+            characterVisualObjectsOriginalScale.x * (1f + curve),
+            characterVisualObjectsOriginalScale.y * (1f - curve),
+            characterVisualObjectsOriginalScale.z);
     }
 
     private void UpdateItemDetection()
@@ -1027,6 +1067,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
         // 비주얼 업데이트
         characterVisualComponent.UpdateVisuals(bMoving, !bInDungeon, bDead);
+        UpdateItemAcquireBounce(Time.deltaTime);
 
         // 스태미나 로직
         UpdateStaminaAmounts(); // 실시간 소모량 갱신 반영

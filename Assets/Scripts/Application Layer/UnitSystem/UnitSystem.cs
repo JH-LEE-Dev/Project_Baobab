@@ -41,6 +41,7 @@ public class UnitSystem
     {
         unitSpawner.SpawnCharacter();
         offroadContainer.SetCharacterTransform(unitSpawner.character.centerTransform);
+        offroadContainer.SetCharacter(unitSpawner.character);
     }
 
     private void SubscribeSignals()
