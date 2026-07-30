@@ -12,6 +12,9 @@ public class UI_InteractionUnit : MonoBehaviour
     [SerializeField] private Sprite[] interactionIcons;
     [SerializeField] private string motionTag = "Absol";
 
+    [Header("Keyboard Icons")]
+    [SerializeField] private UI_KeyboardImage[] keyboardImages;
+
     private RectTransform rectTransform;
     private Transform targetTransform;
     private Vector2 positionOffset;
@@ -19,7 +22,7 @@ public class UI_InteractionUnit : MonoBehaviour
     private bool bHide = false;
     private bool bFollowTarget = true;
 
-    public void Initialize()
+    public void Initialize(InputManager _inputManager)
     {
         rectTransform = GetComponent<RectTransform>();
         showCount = 0;
@@ -27,6 +30,14 @@ public class UI_InteractionUnit : MonoBehaviour
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
+
+        if (null != keyboardImages)
+        {
+            for (int i = 0; i < keyboardImages.Length; i++)
+            {
+                if (null != keyboardImages[i]) keyboardImages[i].Initialize(_inputManager);
+            }
+        }
 
         HideInteraction(true);
     }
@@ -56,6 +67,16 @@ public class UI_InteractionUnit : MonoBehaviour
             
         if (null != iconImage)
             iconImage.sprite = interactionIcons[_iconIndex];
+
+        // 동적 키보드 아이콘이 배정되어 있다면, interactionIcons 덮어쓰기 이후에 다시 한 번 올바른 키로 갱신해 줍니다.
+        if (null != keyboardImages)
+        {
+            for (int i = 0; i < keyboardImages.Length; i++)
+            {
+                if (null != keyboardImages[i]) 
+                    keyboardImages[i].RefreshIcon();
+            }
+        }
 
         if (null == motionPlayer)
             return;

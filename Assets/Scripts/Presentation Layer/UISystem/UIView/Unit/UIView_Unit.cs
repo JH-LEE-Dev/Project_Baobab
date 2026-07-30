@@ -136,7 +136,10 @@ public class UIView_Unit : UIView
         interactionUnit = Instantiate(interactionUnitPrefab, uiRoot.transform).GetComponent<UI_InteractionUnit>();
 
         if (null != interactionUnit)
-            interactionUnit.Initialize();
+        {
+            InputManager _inputMgr = null != viewCtx ? viewCtx.inputManager : null;
+            interactionUnit.Initialize(_inputMgr);
+        }
     }
 
     private void InitSpeechBubbleUnit()
@@ -341,7 +344,19 @@ public class UIView_Unit : UIView
     public void TownStarted()
     {
         if (null != speechBubble)
+        {
+            speechBubble.SetLockEnabled(false);
             speechBubble.RemoveAllShownIds();
+        }
+    }
+
+    public void DungeonStarted()
+    {
+        if (null != speechBubble)
+        {
+            speechBubble.SetLockEnabled(true);
+            speechBubble.RemoveAllShownIds();
+        }
     }
 
     public void InventoryItemToOffroadContainer()

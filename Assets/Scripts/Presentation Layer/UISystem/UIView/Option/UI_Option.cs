@@ -130,6 +130,7 @@ public class UI_Option : MonoBehaviour
         InitializeControlTab();
 
         RefreshResolutionSelector();
+        RefreshButtonLabels();
 
         isInitialized = true;
     }
@@ -433,6 +434,8 @@ public class UI_Option : MonoBehaviour
             if (null != _tabTexts) tabGroup.RefreshTabTexts(_tabTexts);
         }
 
+        RefreshButtonLabels();
+
         if (null != OnLanguageOptionChangedEvent) OnLanguageOptionChangedEvent.Invoke(_lang);
     }
 
@@ -445,6 +448,25 @@ public class UI_Option : MonoBehaviour
         {
             if (null == keyBindRows[i]) continue;
             keyBindRows[i].RefreshLabel(GetActionLabel(_actions[i]));
+        }
+    }
+
+    private void RefreshButtonLabels()
+    {
+        if (null != resetAllBindingsButton)
+        {
+            string _txt = string.Empty;
+            if (null != locManager) _txt = locManager.GetText("resetToDefault");
+            if (true == string.IsNullOrEmpty(_txt)) _txt = "기본 값으로 초기화";
+            resetAllBindingsButton.SetText(_txt);
+        }
+
+        if (null != closeButton)
+        {
+            string _txt = string.Empty;
+            if (null != locManager) _txt = locManager.GetText("close");
+            if (true == string.IsNullOrEmpty(_txt)) _txt = "닫기";
+            closeButton.SetText(_txt);
         }
     }
 

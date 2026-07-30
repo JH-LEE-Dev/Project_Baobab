@@ -46,6 +46,22 @@ public class PopulateKeyIconDatabase
         // escape
         AddEntry(entries, sprites, "<Keyboard>/escape", "ESC");
         
+        // Punctuation marks (Outline versions as requested)
+        AddEntry(entries, sprites, "<Keyboard>/#>", "Greaterthan_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/#<", "Lessthan_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/quote", "SingleQuote_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/#'", "SingleQuote_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/period", "Dot_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/#.", "Dot_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/semicolon", "Colon_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/#;", "Colon_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/#:", "Colon_Outline");
+        
+        AddEntry(entries, sprites, "<Keyboard>/leftBracket", "LeftBracket_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/#[", "LeftBracket_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/rightBracket", "RightBracket_Outline");
+        AddEntry(entries, sprites, "<Keyboard>/#]", "RightBracket_Outline");
+        
         // Set entries via reflection or serialized object
         SerializedObject so = new SerializedObject(db);
         SerializedProperty entriesProp = so.FindProperty("entries");

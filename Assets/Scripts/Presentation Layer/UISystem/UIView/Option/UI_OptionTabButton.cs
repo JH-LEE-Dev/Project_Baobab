@@ -10,10 +10,19 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler
 {
     // 외부 컴포넌트 참조
     [Header("Visual Settings")]
-    [SerializeField] private Graphic targetGraphic;
+    [SerializeField] private Image targetImage;
+    [SerializeField] private Sprite normalSprite;
+    [SerializeField] private Sprite selectedSprite;
+
+    [Header("Text Settings")]
     [SerializeField] private TextMeshProUGUI tabText;
-    [SerializeField] private Color normalColor = Color.gray;
-    [SerializeField] private Color selectedColor = Color.white;
+    [SerializeField] private Color normalTextColor = Color.gray;
+    [SerializeField] private Color selectedTextColor = Color.white;
+
+    [Header("Shadow Settings")]
+    [SerializeField] private Coffee.UIEffects.UIEffect uiEffect;
+    [SerializeField, ColorUsage(true, true)] private Color normalOutlineColor = Color.black;
+    [SerializeField, ColorUsage(true, true)] private Color selectedOutlineColor = Color.white;
 
     // 내부 상태
     private UI_OptionTabGroup parentGroup;
@@ -28,9 +37,19 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler
 
     public void SetSelected(bool _isSelected)
     {
-        if (null != targetGraphic)
+        if (null != targetImage)
         {
-            targetGraphic.color = true == _isSelected ? selectedColor : normalColor;
+            targetImage.sprite = true == _isSelected ? selectedSprite : normalSprite;
+        }
+
+        if (null != tabText)
+        {
+            tabText.color = true == _isSelected ? selectedTextColor : normalTextColor;
+        }
+
+        if (null != uiEffect)
+        {
+            uiEffect.shadowColor = true == _isSelected ? selectedOutlineColor : normalOutlineColor;
         }
     }
 

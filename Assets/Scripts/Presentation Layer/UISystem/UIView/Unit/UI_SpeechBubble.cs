@@ -25,6 +25,8 @@ public class UI_SpeechBubble : MonoBehaviour
     private float playDuration;
     private float playTimer;
     private bool isPlaying;
+    
+    private bool enableLock = true;
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize()
@@ -35,6 +37,13 @@ public class UI_SpeechBubble : MonoBehaviour
             shownIds = new HashSet<int>(32);
         else
             shownIds.Clear();
+            
+        enableLock = true;
+    }
+    
+    public void SetLockEnabled(bool _enable)
+    {
+        enableLock = _enable;
     }
 
     /// <summary>
@@ -123,7 +132,7 @@ public class UI_SpeechBubble : MonoBehaviour
 
     public void Play(int _id, string _text, float _duration = 3f)
     {
-        if (false == shownIds.Add(_id))
+        if (true == enableLock && false == shownIds.Add(_id))
             return;
 
         currentId = _id;

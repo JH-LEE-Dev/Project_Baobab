@@ -296,8 +296,10 @@ public class UI_MainMenu : MonoBehaviour
     
     private void OnCreditClicked()
     {
-        // TODO: 크레딧(Credit) 기능 연결
-        Debug.Log("Credit Button Clicked - 기능 연결 필요");
+        if (null != parentView)
+        {
+            parentView.OnCreditButtonClicked();
+        }
     }
     
     // 유니티 이벤트 함수

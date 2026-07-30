@@ -264,6 +264,22 @@
       "en": "Are you sure you want to reset all key bindings to default?",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 315,
+      "key": "close",
+      "kr": "닫기",
+      "en": "Close",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 316,
+      "key": "resetToDefault",
+      "kr": "기본 값으로 초기화",
+      "en": "Reset to Defaults",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }

@@ -4521,7 +4521,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ']'
+      name: RightBracket
       rect:
         serializedVersion: 2
         x: 128
@@ -4543,7 +4543,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ']_Outline'
+      name: RightBracket_Outline
       rect:
         serializedVersion: 2
         x: 144
@@ -4565,7 +4565,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ']_Clicked'
+      name: RightBracket_Clicked
       rect:
         serializedVersion: 2
         x: 160
@@ -4587,7 +4587,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: ']_Outline_Clicked'
+      name: RightBracket_Outline_Clicked
       rect:
         serializedVersion: 2
         x: 176
@@ -4873,7 +4873,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: '['
+      name: LeftBracket
       rect:
         serializedVersion: 2
         x: 128
@@ -4895,7 +4895,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: '[_Outline'
+      name: LeftBracket_Outline
       rect:
         serializedVersion: 2
         x: 144
@@ -4917,7 +4917,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: '[_Clicked'
+      name: LeftBracket_Clicked
       rect:
         serializedVersion: 2
         x: 160
@@ -4939,7 +4939,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: '[_Outline_Clicked'
+      name: LeftBracket_Outline_Clicked
       rect:
         serializedVersion: 2
         x: 176
@@ -9312,6 +9312,10 @@ TextureImporter:
       LeftArr_Clicked: 3646705991170717392
       LeftArr_Outline: 4982396924874861963
       LeftArr_Outline_Clicked: -1645904648455881118
+      LeftBracket: 19157856246123496
+      LeftBracket_Clicked: -4856047358521390901
+      LeftBracket_Outline: -4667399041375653427
+      LeftBracket_Outline_Clicked: 2666240356675067853
       Lessthan: -844676618190165310
       Lessthan_Clicked: 5330485079453099820
       Lessthan_Outline: 57283147184399521
@@ -9356,6 +9360,10 @@ TextureImporter:
       RightArr_Clicked: 8166995504429610589
       RightArr_Outline: 5913870273358768496
       RightArr_Outline_Clicked: 6751295503859143875
+      RightBracket: 1861530185005937233
+      RightBracket_Clicked: -863881932430152933
+      RightBracket_Outline: -6065688744138893485
+      RightBracket_Outline_Clicked: 3800940153858251978
       S: 4481915082823471742
       S_Clicked: 2989041963919375660
       S_Outline: -6829836679721664387
@@ -9411,14 +9419,6 @@ TextureImporter:
       Z_Clicked: 9084755388992125647
       Z_Outline: 4788865785323551635
       Z_Outline_Clicked: -4679160976802289346
-      '[': 19157856246123496
-      '[_Clicked': -4856047358521390901
-      '[_Outline': -4667399041375653427
-      '[_Outline_Clicked': 2666240356675067853
-      ']': 1861530185005937233
-      ']_Clicked': -863881932430152933
-      ']_Outline': -6065688744138893485
-      ']_Outline_Clicked': 3800940153858251978
       ^: 4011889158219718034
       kb_light_all_12: 1586420507443217632
       kb_light_all_13: -7734689093443765227
