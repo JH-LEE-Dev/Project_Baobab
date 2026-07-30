@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b1cb7eb645fca748b1f61ec4d7a2dc4, type: 3}
-  m_Name: Swing
+  m_Name: TreeDead
   m_EditorClassIdentifier: Assembly-CSharp::AudioCueData
   clips:
-  - {fileID: 8300000, guid: f8d41aee0acee314a8a992b92789f1e7, type: 3}
-  - {fileID: 8300000, guid: 2f3ec6803f1eeb54aa704ea04ea42992, type: 3}
+  - {fileID: 8300000, guid: 16050679d66547443bb94c1d7189be32, type: 3}
+  - {fileID: 8300000, guid: 65882a7e1a427d54e9df0aa6ffdd4763, type: 3}
   minPitch: 0.95
   maxPitch: 1.05
   minVolumeModifier: 0.9

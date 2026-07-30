@@ -85,6 +85,14 @@ MonoBehaviour:
     defaultVolume: 0.75
     is3D: 1
     loop: 0
+  - id: -794509328
+    mixerId: 0
+    clip: {fileID: 0}
+    cueData: {fileID: 11400000, guid: d68a58998a7ad204fb6044ac63f17762, type: 2}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.25
+    is3D: 1
+    loop: 0
   mixers:
   - id: -235980376
     group: {fileID: 24300002, guid: 865ed13951834138be11bea38be7fea0, type: 2}

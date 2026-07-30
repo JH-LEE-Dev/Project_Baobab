@@ -30,6 +30,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         // //내부 의존성
         private AxeMode axeMode = AxeMode.DB100;
+        private float previousRatio = 1f;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -75,6 +76,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             AxeMode prevMode = axeMode;
 
+            // 수리(RepairDurability)로 비율이 좋아지는 방향에서는 "깨지는" 소리가 나면 안 되므로 방향을 기록해둔다.
+            bool isBreaking = _ratio < previousRatio;
+            previousRatio = _ratio;
+
             if (_ratio > 0.75f)
                 axeMode = AxeMode.DB100;
             else if (_ratio > 0.5f)
@@ -95,15 +100,19 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     omp.Play(brokenAnimTag, bReset: true);
                 }
 
-                // AxeBreaking(깨지는 소리)은 파티클 발생 여부와 무관하게 스프라이트가 바뀔 때마다 재생한다.
-                Sound.PlayUI(SoundID.AxeBreaking);
+                // AxeBreaking(깨지는 소리)은 파티클 발생 여부와 무관하게 스프라이트가 바뀔 때마다 재생하되,
+                // 수리로 좋아지는 방향에서는 재생하지 않는다.
+                if (isBreaking)
+                {
+                    Sound.PlayUI(SoundID.AxeBreaking);
+                }
 
                 if (null != vfxComponent && null != axeHead && 0.75f > _ratio)
                 {
                     ParticleSystem brokenEffect = vfxComponent.Play(axeBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
 
-                    // AxeBreaking_ex(파티클이 바닥에 흩뿌려지는 소리)는 실제 파티클이 나갔을 때만 딜레이 재생한다.
-                    if (null != brokenEffect)
+                    // AxeBreaking_ex(파티클이 바닥에 흩뿌려지는 소리)는 실제로 나빠지는 방향이면서 파티클이 나갔을 때만 딜레이 재생한다.
+                    if (isBreaking && null != brokenEffect)
                     {
                         StartCoroutine(PlayAxeBreakingExDelayed());
                     }
@@ -113,8 +122,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                         ParticleSystem temp = vfxComponent.Play(axeLastBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
                         Debug.Log(temp);
 
-                        // AxeBreakingFinal은 별도 파티클 풀(axeLastBrokenTag)이 실제로 나갔을 때만 재생한다.
-                        if (null != temp)
+                        // AxeBreakingFinal도 마찬가지로 나빠지는 방향이면서 파티클이 실제로 나갔을 때만 재생한다.
+                        if (isBreaking && null != temp)
                         {
                             Sound.PlayUI(SoundID.AxeBreakingFinal);
                         }
