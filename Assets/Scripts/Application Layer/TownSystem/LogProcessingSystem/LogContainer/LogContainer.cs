@@ -97,6 +97,13 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     private const float FLY_INTERVAL = 0.075f;
     private LogItemData arrivalDataBuffer = new LogItemData();
 
+    [Header("Get/Out 아이템 사운드")]
+    [SerializeField] private float depositPitchStep = 0.05f; // 컨테이너에 연속으로 넣을 때마다 GetItem 피치가 오르는 정도
+    [SerializeField] private float depositVolumeBoostMax = 1.3f; // 피치가 최대(1.5)에 도달했을 때의 볼륨 배율
+    private const float DEPOSIT_PITCH_MIN = 1.0f;
+    private const float DEPOSIT_PITCH_MAX = 1.5f;
+    private float currentDepositPitch = DEPOSIT_PITCH_MIN;
+
     private CustomSortable customSortable;
 
     [SerializeField] private Sprite noLogSprite;
@@ -185,6 +192,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         // (OffroadContainer.ResetState의 transferringSlots.Clear()와 동일한 방어.)
         transferringSlots.Clear();
         transferCoroutine = null;
+        currentDepositPitch = DEPOSIT_PITCH_MIN;
     }
 
     public void DI_Inventory(IInventory _inventory)
@@ -252,6 +260,12 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                 AddItemByData(arrivalDataBuffer, item.logState);
                 TriggerBounce();
+
+                // 컨테이너에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
+                float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
+                float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
+                Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, currentDepositPitch);
+                currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
 
                 logItemPoolManager.ReturnLogItem(item);
                 flyingItems.RemoveAt(i);
@@ -400,6 +414,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 if (!CanAddItemByData(sourceData)) break;
 
                 LogState takenState = _charSlot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
 
                 if (characterInventoryManager != null)
                 {
@@ -781,6 +796,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             bPhysicalOverlapped = false;
             UpdateInteractState();
+
+            // 컨테이너와의 상호작용 세션이 끝났으므로 다음 세션은 다시 낮은 피치부터 시작한다.
+            currentDepositPitch = DEPOSIT_PITCH_MIN;
         }
     }
 
@@ -898,6 +916,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 }
 
                 slot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
                 slotTransferredAny = true;
 
                 // 이 코루틴을 미래에 외부에서 취소하는 경로가 생기더라도(현재는 없음), 슬롯이 이번
@@ -939,6 +958,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             {
                 // 1. 해당 슬롯에서 상태 하나 추출 (가장 높은 등급 우선)
                 LogState takenState = slot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
 
                 // 2. 외부로 반환할 데이터 생성 (풀링 활용)
                 LogItemData resultData = itemDataPool.Get(ItemType.Log) as LogItemData;

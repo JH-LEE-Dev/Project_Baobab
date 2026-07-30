@@ -182,8 +182,24 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         }
         else
         {
-            // 인벤토리가 가득 찼을 때의 처리
-            InventoryIsFullEvent?.Invoke();
+            bool hasSpaceRemaining = false;
+            for (int i = 0; i < currentSlotCount; i++)
+            {
+                if (inventorySlots[i].totalCount < maxItemsPerSlot)
+                {
+                    hasSpaceRemaining = true;
+                    break;
+                }
+            }
+
+            if (hasSpaceRemaining)
+            {
+                ItemCantAcquiedEvent?.Invoke();
+            }
+            else
+            {
+                InventoryIsFullEvent?.Invoke();
+            }
         }
     }
 
@@ -338,6 +354,16 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     private List<LogItem> reservedItems = new List<LogItem>(32);
 
+    // CanAcquired()가 실제 슬롯 배치를 미리 시뮬레이션하기 위한 가상 슬롯 스냅샷
+    private struct VirtualSlot
+    {
+        public bool hasItem;
+        public ItemType itemType;
+        public TreeType treeType;
+        public LogState logState;
+        public int count;
+    }
+
     public bool CanAcquired(LogItem _item)
     {
         if (_item == null) return false;
@@ -352,90 +378,94 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             }
         }
 
-        // 2. 현재 남은 총 공간 계산
-        int totalSpace = 0;
-        for (int i = 0; i < currentSlotCount; i++)
+        // 2. 실제 슬롯 상태를 가상 슬롯으로 복사
+        int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
+        var virtualSlots = new VirtualSlot[slotCount];
+        for (int i = 0; i < slotCount; i++)
         {
-            if (i >= inventorySlots.Count) break;
-
-            if (inventorySlots[i].itemData != null)
+            var data = inventorySlots[i].itemData as ItemData;
+            if (data != null)
             {
-                if (inventorySlots[i].totalCount < maxItemsPerSlot && IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
+                virtualSlots[i].hasItem = true;
+                virtualSlots[i].itemType = data.itemType;
+                virtualSlots[i].count = inventorySlots[i].totalCount;
+                if (data is LogItemData logData)
                 {
-                    totalSpace += (maxItemsPerSlot - inventorySlots[i].totalCount);
+                    virtualSlots[i].treeType = logData.treeType;
+                    virtualSlots[i].logState = logData.logState;
                 }
             }
-            else
-            {
-                totalSpace += maxItemsPerSlot;
-            }
         }
 
-        // 3. 같은 종류의 아이템 중 현재 예약된(Sucking 중인) 아이템 개수 계산
-        int reservedCount = 0;
+        // 3. 이미 예약된 아이템들을 예약된 순서대로 먼저 가상 배치한다.
+        //    ItemAcquired()와 동일한 알고리즘(같은 종류 슬롯 우선 → 빈 슬롯)을 쓰기 때문에,
+        //    종류가 다른 예약끼리도 같은 빈 슬롯을 중복으로 차지하지 못하게 된다.
         for (int i = 0; i < reservedItems.Count; i++)
         {
-            var reserved = reservedItems[i];
-            if (reserved.itemType == _item.itemType && reserved.treeType == _item.treeType && reserved.logState == _item.logState)
-            {
-                reservedCount++;
-            }
+            TryPlaceVirtual(reservedItems[i], virtualSlots);
         }
 
-        // 4. 예약 가능한 공간이 있으면 true 반환 및 예약 목록에 추가
-        if (totalSpace - reservedCount > 0)
+        // 4. 이번 아이템도 같은 방식으로 배치를 시도한다. 성공하면 실제 ItemAcquired() 시점에도
+        //    반드시 자리가 있음이 보장되므로 예약 목록에 추가하고 true를 반환한다.
+        if (TryPlaceVirtual(_item, virtualSlots))
         {
             reservedItems.Add(_item);
             return true;
         }
 
         // 5. 들어올 수 없을 때 인벤토리 공간 상태 분석 및 이벤트 호출
-        bool isFull = true;
+        //    이 지점에 도달했다면 모든 슬롯이 이미 점유된 상태라는 뜻이다 - 비어있는 슬롯이
+        //    하나라도 있었다면 TryPlaceVirtual()이 그 자리에 배치하고 true를 반환했을 것이다.
         bool hasSpaceRemaining = false;
-
-        for (int i = 0; i < currentSlotCount; i++)
+        for (int i = 0; i < slotCount; i++)
         {
-            if (i >= inventorySlots.Count) break;
-
-            if (inventorySlots[i].itemData == null)
+            if (virtualSlots[i].count < maxItemsPerSlot)
             {
-                isFull = false;
-            }
-            else
-            {
-                // 해당 슬롯에 예약된 아이템 개수 계산
-                int slotReservedCount = 0;
-                var slotItemData = (ItemData)inventorySlots[i].itemData;
-                for (int j = 0; j < reservedItems.Count; j++)
-                {
-                    var reserved = reservedItems[j];
-                    if (reserved.itemType == slotItemData.itemType)
-                    {
-                        if (reserved is LogItem reservedLog && slotItemData is LogItemData logData)
-                        {
-                            if (reservedLog.logState == logData.logState && reservedLog.treeType == logData.treeType)
-                            {
-                                slotReservedCount++;
-                            }
-                        }
-                    }
-                }
-
-                if (inventorySlots[i].totalCount + slotReservedCount < maxItemsPerSlot)
-                {
-                    isFull = false;
-                    hasSpaceRemaining = true;
-                }
+                hasSpaceRemaining = true;
+                break;
             }
         }
 
-        if (isFull)
+        if (hasSpaceRemaining)
+        {
+            ItemCantAcquiedEvent?.Invoke();
+        }
+        else
         {
             InventoryIsFullEvent?.Invoke();
         }
-        else if (hasSpaceRemaining)
+
+        return false;
+    }
+
+    // ItemAcquired()와 동일한 순서(같은 종류 슬롯에 여유가 있으면 그곳에, 없으면 첫 빈 슬롯에)로
+    // 가상 슬롯에 배치를 시도한다. CanAcquired()의 판정과 ItemAcquired()의 실제 결과가
+    // 항상 일치하도록 두 곳의 배치 규칙을 반드시 동일하게 유지해야 한다.
+    private bool TryPlaceVirtual(LogItem _item, VirtualSlot[] _virtualSlots)
+    {
+        for (int i = 0; i < _virtualSlots.Length; i++)
         {
-            ItemCantAcquiedEvent?.Invoke();
+            if (_virtualSlots[i].hasItem && _virtualSlots[i].count < maxItemsPerSlot &&
+                _virtualSlots[i].itemType == _item.itemType &&
+                _virtualSlots[i].treeType == _item.treeType &&
+                _virtualSlots[i].logState == _item.logState)
+            {
+                _virtualSlots[i].count++;
+                return true;
+            }
+        }
+
+        for (int i = 0; i < _virtualSlots.Length; i++)
+        {
+            if (!_virtualSlots[i].hasItem)
+            {
+                _virtualSlots[i].hasItem = true;
+                _virtualSlots[i].itemType = _item.itemType;
+                _virtualSlots[i].treeType = _item.treeType;
+                _virtualSlots[i].logState = _item.logState;
+                _virtualSlots[i].count = 1;
+                return true;
+            }
         }
 
         return false;
@@ -571,6 +601,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                 }
 
                 slot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
                 rescuedCount++;
                 ItemRemoved();
             }
@@ -608,6 +639,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                     break;
 
                 slot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
                 transferredCount++;
                 ItemRemoved();
             }
@@ -665,6 +697,7 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
                         logItem.Launch(startPos, endPos, height, duration);
                     }
 
+                    Sound.PlayUI(SoundID.OutItem);
                     ItemRemoved();
                 }
             }

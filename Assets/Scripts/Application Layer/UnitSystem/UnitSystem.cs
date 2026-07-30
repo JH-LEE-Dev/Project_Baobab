@@ -180,6 +180,7 @@ public class UnitSystem
     {
         inventoryManager.ItemAcquired(itemAcquiredSignal.item);
         Sound.PlayUI(SoundID.GetItem);
+        unitSpawner.character.PlayItemAcquireBounce();
     }
 
     private void ItemDeleted(DeleteItemSignal deleteItemSignal)

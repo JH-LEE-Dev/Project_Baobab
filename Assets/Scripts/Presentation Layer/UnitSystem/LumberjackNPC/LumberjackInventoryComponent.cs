@@ -32,10 +32,38 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
 
     /// <summary>
     /// 공용 StatComponent(예: OffroadPorterStatComponent)의 슬롯 용량 값을 그대로 적용할 때 사용한다.
+    /// 스킬로 용량이 오를 때마다 반영되도록 매 프레임 호출될 수 있으므로, 값이 실제로 바뀌었을 때만
+    /// 뒷정리를 한다.
     /// </summary>
     public void SetSlotCount(int _count)
     {
-        currentSlotCount = Mathf.Clamp(_count, 1, SYSTEM_VAR.MAX_INVENTORY_CNT);
+        int newCount = Mathf.Clamp(_count, 1, SYSTEM_VAR.MAX_INVENTORY_CNT);
+        if (newCount == currentSlotCount) return;
+
+        currentSlotCount = newCount;
+
+        // 슬롯 수가 바뀌면 "가득 찼는지" 캐시(bInventoryIsFull)는 더 이상 맞지 않는다 - 용량이 늘면
+        // 방금까지 가득 찼던 인벤토리도 이제는 자리가 있는 것이다. 이 캐시를 그대로 두면 실제로는
+        // 자리가 났는데도 PorterState_Idle이 계속 수령을 건너뛰게 된다. 다만 여기서 InventoryIsFullEvent
+        // 까지 쏘면 매 프레임 상태 전환이 반복될 수 있으므로 상태 값만 갱신한다.
+        bInventoryIsFull = IsAllSlotsFull();
+        UpdateInventoryEmptyState();
+    }
+
+    private bool IsAllSlotsFull()
+    {
+        int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
+        if (slotCount <= 0) return false;
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            if (inventorySlots[i].itemData == null || inventorySlots[i].totalCount < maxItemsPerSlot)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -134,6 +162,7 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
             CheckInventoryFull();
             UpdateInventoryEmptyState();
             ItemAddedEvent?.Invoke();
+            Sound.PlayUI(SoundID.GetItem);
         }
         else
         {
@@ -156,6 +185,16 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
         InventoryIsFullEvent?.Invoke();
     }
 
+    // CanAcquired()가 실제 슬롯 배치를 미리 시뮬레이션하기 위한 가상 슬롯 스냅샷
+    private struct VirtualSlot
+    {
+        public bool hasItem;
+        public ItemType itemType;
+        public TreeType treeType;
+        public LogState logState;
+        public int count;
+    }
+
     public bool CanAcquired(LogItem _item)
     {
         if (_item == null) return false;
@@ -170,59 +209,77 @@ public class LumberjackInventoryComponent : MonoBehaviour, IInventory, IInventor
             }
         }
 
-        // 2. 현재 남은 총 공간 계산
-        int totalSpace = 0;
-        for (int i = 0; i < currentSlotCount; i++)
+        // 2. 실제 슬롯 상태를 가상 슬롯으로 복사
+        int slotCount = Mathf.Min(currentSlotCount, inventorySlots.Count);
+        var virtualSlots = new VirtualSlot[slotCount];
+        for (int i = 0; i < slotCount; i++)
         {
-            if (i >= inventorySlots.Count) break;
-
-            if (inventorySlots[i].itemData != null)
+            var data = inventorySlots[i].itemData as ItemData;
+            if (data != null)
             {
-                if (inventorySlots[i].totalCount < maxItemsPerSlot && IsSameItem(_item, (ItemData)inventorySlots[i].itemData))
+                virtualSlots[i].hasItem = true;
+                virtualSlots[i].itemType = data.itemType;
+                virtualSlots[i].count = inventorySlots[i].totalCount;
+                if (data is LogItemData logData)
                 {
-                    totalSpace += (maxItemsPerSlot - inventorySlots[i].totalCount);
-                }
-            }
-            else
-            {
-                // 빈 슬롯이라도, 이미 다른 조합이 이 빈 슬롯을 먼저 예약(흡입 중)해뒀다면 이 아이템에게는
-                // 공간이 없는 것으로 취급한다. 그렇지 않으면 서로 다른 조합의 로그 두 개가 거의 동시에
-                // 감지될 때 "빈 슬롯이니 둘 다 들어갈 수 있다"고 착각해 둘 다 흡입을 승인해버리고,
-                // 나중에 도착한 쪽이 ItemAcquired에서 거부되면서 실제로는 가득 차지도 않았는데
-                // InventoryIsFullEvent가 잘못 발생하는 문제가 있었다.
-                bool slotClaimedByOtherCombo = false;
-                for (int r = 0; r < reservedItems.Count; r++)
-                {
-                    var reserved = reservedItems[r];
-                    if (reserved.itemType != _item.itemType || reserved.treeType != _item.treeType || reserved.logState != _item.logState)
-                    {
-                        slotClaimedByOtherCombo = true;
-                        break;
-                    }
-                }
-
-                if (!slotClaimedByOtherCombo)
-                {
-                    totalSpace += maxItemsPerSlot;
+                    virtualSlots[i].treeType = logData.treeType;
+                    virtualSlots[i].logState = logData.logState;
                 }
             }
         }
 
-        // 3. 같은 종류로 이미 예약(흡입 중)된 개수 계산
-        int reservedCount = 0;
+        // 3. 이미 예약된 아이템들을 예약된 순서대로 먼저 가상 배치한다.
+        //    ItemAcquired()와 동일한 알고리즘(같은 종류 슬롯 우선 → 빈 슬롯)을 쓰기 때문에,
+        //    종류가 다른 예약끼리도 같은 빈 슬롯을 중복으로 차지하지 못하게 된다. 이걸 안 하면
+        //    서로 다른 조합의 로그 두 개가 거의 동시에 감지될 때 "빈 슬롯이니 둘 다 들어갈 수
+        //    있다"고 착각해 둘 다 흡입을 승인해버리고, 나중에 도착한 쪽이 ItemAcquired에서
+        //    거부되면서 실제로는 가득 차지도 않았는데 InventoryIsFullEvent가 잘못 발생한다.
+        //    반대로 "다른 조합의 예약이 하나라도 있으면 빈 슬롯 전체를 막는" 식으로 처리하면,
+        //    빈 슬롯이 여러 개일 때 실제로는 남는 자리가 있는데도 불필요하게 거절하게 된다.
         for (int i = 0; i < reservedItems.Count; i++)
         {
-            var reserved = reservedItems[i];
-            if (reserved.itemType == _item.itemType && reserved.treeType == _item.treeType && reserved.logState == _item.logState)
-            {
-                reservedCount++;
-            }
+            TryPlaceVirtual(reservedItems[i], virtualSlots);
         }
 
-        if (totalSpace - reservedCount > 0)
+        // 4. 이번 아이템도 같은 방식으로 배치를 시도한다. 성공하면 실제 ItemAcquired() 시점에도
+        //    반드시 자리가 있음이 보장되므로 예약 목록에 추가하고 true를 반환한다.
+        if (TryPlaceVirtual(_item, virtualSlots))
         {
             reservedItems.Add(_item);
             return true;
+        }
+
+        return false;
+    }
+
+    // ItemAcquired()와 동일한 순서(같은 종류 슬롯에 여유가 있으면 그곳에, 없으면 첫 빈 슬롯에)로
+    // 가상 슬롯에 배치를 시도한다. CanAcquired()의 판정과 ItemAcquired()의 실제 결과가
+    // 항상 일치하도록 두 곳의 배치 규칙을 반드시 동일하게 유지해야 한다.
+    private bool TryPlaceVirtual(LogItem _item, VirtualSlot[] _virtualSlots)
+    {
+        for (int i = 0; i < _virtualSlots.Length; i++)
+        {
+            if (_virtualSlots[i].hasItem && _virtualSlots[i].count < maxItemsPerSlot &&
+                _virtualSlots[i].itemType == _item.itemType &&
+                _virtualSlots[i].treeType == _item.treeType &&
+                _virtualSlots[i].logState == _item.logState)
+            {
+                _virtualSlots[i].count++;
+                return true;
+            }
+        }
+
+        for (int i = 0; i < _virtualSlots.Length; i++)
+        {
+            if (!_virtualSlots[i].hasItem)
+            {
+                _virtualSlots[i].hasItem = true;
+                _virtualSlots[i].itemType = _item.itemType;
+                _virtualSlots[i].treeType = _item.treeType;
+                _virtualSlots[i].logState = _item.logState;
+                _virtualSlots[i].count = 1;
+                return true;
+            }
         }
 
         return false;

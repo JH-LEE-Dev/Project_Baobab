@@ -90,7 +90,7 @@ public class OffroadPorterNPC : MonoBehaviour
         if (inventoryComponent != null)
         {
             inventoryComponent.Initialize();
-            if (statComponent != null) inventoryComponent.SetSlotCount(statComponent.slotCapacity);
+            SyncInventorySlotCapacity();
         }
 
         if (stateMachine == null)
@@ -114,6 +114,29 @@ public class OffroadPorterNPC : MonoBehaviour
     {
         _state.Initialize(stateMachine, this);
         stateMachine.AddState(_state);
+    }
+
+    // 기존 로직과는 무관한, 아이템 획득 뽀잉 연출 전용 구독/핸들러.
+    private void OnEnable()
+    {
+        if (inventoryComponent != null)
+        {
+            inventoryComponent.ItemAddedEvent -= HandleItemAddedForVisualBounce;
+            inventoryComponent.ItemAddedEvent += HandleItemAddedForVisualBounce;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (inventoryComponent != null)
+        {
+            inventoryComponent.ItemAddedEvent -= HandleItemAddedForVisualBounce;
+        }
+    }
+
+    private void HandleItemAddedForVisualBounce()
+    {
+        visualComponent?.PlayItemAcquireBounce();
     }
 
     public void PauseNPC()
@@ -156,8 +179,26 @@ public class OffroadPorterNPC : MonoBehaviour
         isPaused = false;
     }
 
+    /// <summary>
+    /// 공용 statComponent의 슬롯 용량을 인벤토리에 반영한다. 이동 속도(stat.moveSpeed)는 PorterState가
+    /// 매 프레임 직접 읽어가므로 스킬 효과가 즉시 반영되지만, 슬롯 용량은 인벤토리 쪽에 복사해줘야만
+    /// 적용되는 값이라 한 번만 복사해두면 이후에 오른 스킬 수치가 영영 반영되지 않는다. 이 NPC는
+    /// 마을 최초 진입 시 딱 한 번만 Initialize()되는 반면(TownUnitSpawner.SpawnNPCsIfNeeded) 슬롯 용량
+    /// 스킬은 던전에서 획득되므로, 매 프레임 최신 값으로 동기화해줘야 한다.
+    /// (던전에 있는 동안엔 이 NPC가 비활성화되어 Update가 돌지 않으므로, 스탯 변경 이벤트를
+    /// 구독하는 방식으로는 그 사이에 오른 수치를 놓치게 된다.)
+    /// </summary>
+    private void SyncInventorySlotCapacity()
+    {
+        if (inventoryComponent == null || statComponent == null) return;
+
+        inventoryComponent.SetSlotCount(statComponent.slotCapacity);
+    }
+
     private void Update()
     {
+        SyncInventorySlotCapacity();
+
         // 일시정지 중에는 상태 로직(이동/작업)만 멈추고, 시각 갱신은 계속 돌려서 멈춘 프레임의
         // 움직이는 포즈가 그대로 굳어있지 않고 Idle 포즈로 정상적으로 보이게 한다.
         if (!isPaused)

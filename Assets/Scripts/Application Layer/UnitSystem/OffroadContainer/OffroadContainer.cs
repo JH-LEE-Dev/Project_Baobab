@@ -74,6 +74,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     private List<FlyingTransferItem> dismissingItems = new List<FlyingTransferItem>(16);
     private bool bFlyingPaused = false;
 
+    [Header("Get/Out 아이템 사운드")]
+    [SerializeField] private float depositPitchStep = 0.05f; // 상자에 연속으로 넣을 때마다 GetItem 피치가 오르는 정도
+    [SerializeField] private float depositVolumeBoostMax = 1.3f; // 피치가 최대(1.5)에 도달했을 때의 볼륨 배율
+    private const float DEPOSIT_PITCH_MIN = 1.0f;
+    private const float DEPOSIT_PITCH_MAX = 1.5f;
+    private float currentDepositPitch = DEPOSIT_PITCH_MIN;
+
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private LogItemData arrivalDataBuffer = new LogItemData();
     private SpriteRenderer sr;
@@ -221,11 +228,15 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     // 착지 시점에 실제로 커밋한다(발사 시점엔 여유공간 계산에서 pendingCount로만
                     // 반영됨 - CanAcquireData/CanAddToCharacterInventory 호출부 참고).
                     if (flyingData.toCarrier != null)
+                    {
                         flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
+                        Sound.PlayUI(SoundID.GetItem);
+                    }
                     else
                     {
                         AddToCharacterInventory(arrivalDataBuffer, item.logState);
                         character?.PlayItemAcquireBounce();
+                        Sound.PlayUI(SoundID.GetItem);
                     }
                 }
                 else
@@ -234,6 +245,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     // pendingCount로만 반영됨).
                     AddItemByData(arrivalDataBuffer, item.logState);
                     TriggerBounce();
+
+                    // 상자에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
+                    float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
+                    float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
+                    Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, currentDepositPitch);
+                    currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
                 }
 
                 logItemPoolManager.ReturnLogItem(item);
@@ -311,6 +328,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         transferringSlots.Clear();
         bIsInteracting = false;
         lastTransferTime = -transferInterval;
+        currentDepositPitch = DEPOSIT_PITCH_MIN;
     }
 
     private void TriggerBounce()
@@ -453,6 +471,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 }
 
                 LogState takenState = _sourceSlot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
 
                 if (!_toCharacter)
                 {
@@ -910,6 +929,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 StopCoroutine(transferCoroutine);
                 transferCoroutine = null;
             }
+
+            // 상자와의 상호작용 세션이 끝났으므로 다음 세션은 다시 낮은 피치부터 시작한다.
+            currentDepositPitch = DEPOSIT_PITCH_MIN;
         }
     }
 
@@ -1134,6 +1156,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         if (!CanAddItemByData(_sourceData)) return false;
 
         AddItemByData(_sourceData, _state);
+        Sound.PlayUI(SoundID.GetItem);
         return true;
     }
 
@@ -1217,6 +1240,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 }
 
                 slot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
                 slotTransferredAny = true;
                 anyDelivered = true;
 
@@ -1361,6 +1385,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 if (pendingSameTypeForCarrier >= totalCapacityForCarrier) break;
 
                 LogState takenState = slot.TakeOneItem();
+                Sound.PlayUI(SoundID.OutItem);
 
                 LogItemData visualData = new LogItemData
                 {

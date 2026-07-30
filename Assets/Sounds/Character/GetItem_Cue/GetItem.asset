@@ -13,8 +13,16 @@ MonoBehaviour:
   m_Name: GetItem
   m_EditorClassIdentifier: Assembly-CSharp::AudioCueData
   clips:
-  - {fileID: 8300000, guid: 391914b33d699a44ba6d603b64faf6d0, type: 3}
-  - {fileID: 8300000, guid: 5ab5c6817bb30184091633b71097a948, type: 3}
+  - {fileID: 8300000, guid: 533888dfcd9cdf143b03f83ae9eee8bb, type: 3}
+  - {fileID: 8300000, guid: d0d151644fd51ff40b8c32053957a44c, type: 3}
+  - {fileID: 8300000, guid: 9ab85d1b0bcad2d4483793e3203c1cce, type: 3}
+  - {fileID: 8300000, guid: c5fc1f26c39ac1b44948e6183cbf3744, type: 3}
+  - {fileID: 8300000, guid: 29fe1dfd6f534564f93d2f5232bf1dde, type: 3}
+  - {fileID: 8300000, guid: e7745c104cd3c6f4c9cd36a2321339d4, type: 3}
+  - {fileID: 8300000, guid: aa4144da70d2d0a4aa800e26cbfcf1a7, type: 3}
+  - {fileID: 8300000, guid: d9c4fd5f39187bc45933214412861e95, type: 3}
+  - {fileID: 8300000, guid: 6de70b7369022b548872d5e3136c2925, type: 3}
+  - {fileID: 8300000, guid: abe1eb3a8b675bd4a96a80a1aa5f5471, type: 3}
   minPitch: 0.95
   maxPitch: 1.05
   minVolumeModifier: 0.9

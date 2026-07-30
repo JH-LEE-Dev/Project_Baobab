@@ -228,6 +228,9 @@ public class LumberjackNPC : MonoBehaviour
 
             inventoryComponent.ItemAddedEvent -= HandleItemAdded;
             inventoryComponent.ItemAddedEvent += HandleItemAdded;
+
+            inventoryComponent.ItemAddedEvent -= HandleItemAddedForVisualBounce;
+            inventoryComponent.ItemAddedEvent += HandleItemAddedForVisualBounce;
         }
     }
 
@@ -237,6 +240,7 @@ public class LumberjackNPC : MonoBehaviour
         {
             inventoryComponent.InventoryIsFullEvent -= HandleInventoryFull;
             inventoryComponent.ItemAddedEvent -= HandleItemAdded;
+            inventoryComponent.ItemAddedEvent -= HandleItemAddedForVisualBounce;
         }
     }
 
@@ -249,6 +253,12 @@ public class LumberjackNPC : MonoBehaviour
         {
             deliverState.ClearPermanentStuckIfNeeded();
         }
+    }
+
+    // 기존 HandleItemAdded()와는 완전히 분리된, 아이템 획득 뽀잉 연출 전용 구독/핸들러.
+    private void HandleItemAddedForVisualBounce()
+    {
+        visualComponent?.PlayItemAcquireBounce();
     }
 
     // 영구 정지는 "내 인벤토리가 바뀔 때"만 재확인되던 HandleItemAdded와 별개로, 다른 럼버잭이나

@@ -5,6 +5,7 @@ public enum SoundID
     TownBGM = 1052300792,
     WideGreenForest1BGM = 106979007,
     GetItem = 413619275,
+    OutItem = 1933263251,
     Cutter = -688056987,
     BoxClose = 532227752,
     BoxOpen = -1886360244,

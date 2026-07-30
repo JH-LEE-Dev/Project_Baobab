@@ -603,7 +603,7 @@ Transform:
   m_Children:
   - {fileID: 3204427211746890799}
   - {fileID: 3150923772000673283}
-  m_Father: {fileID: 5601304583361212893}
+  m_Father: {fileID: 1389021518043769419}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3168886551257118820
 GameObject:
@@ -977,6 +977,7 @@ Transform:
   - {fileID: 1403481030741538988}
   - {fileID: 4602724895061784125}
   - {fileID: 633398789818063020}
+  - {fileID: 9022560518398038923}
   - {fileID: 5601304583361212893}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1368,6 +1369,7 @@ MonoBehaviour:
   onWaterFaceObject: {fileID: 3418504347255478067}
   onWaterFaceObjectBlink: {fileID: 14496658055370555}
   characterVisualComponent: {fileID: 8234620837606309691}
+  visualsRoot: {fileID: 0}
 --- !u!114 &5389695045737335736
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2729,6 +2731,5 @@ Transform:
   m_Children:
   - {fileID: 5687516621767501310}
   - {fileID: 3463773722347109962}
-  - {fileID: 9022560518398038923}
   m_Father: {fileID: 1389021518043769419}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}

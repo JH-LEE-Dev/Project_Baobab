@@ -52,6 +52,13 @@ public class CharacterVisualComponent : MonoBehaviour
 
     [SerializeField] private GameObject characterVisualComponent;
 
+    // Base Visuals(몸통/팔 등)와 OnWater Visuals(수면 반사)를 함께 감싸는 최상위 "Visuals" 루트.
+    // 아이템 획득 뽀잉 연출은 이 오브젝트 전체를 스케일링해서 적용한다(Character.characterVisualObjects와 동일한 대상).
+    [SerializeField] private GameObject visualsRoot;
+    private Vector3 visualsRootOriginalScale = Vector3.one;
+    private float itemAcquireBounceTime = 1f;
+    private const float ITEM_ACQUIRE_BOUNCE_DURATION = 0.2f;
+
     private CharacterAnimator characterAnimator;
     private bool bIsInitialized = false;
 
@@ -141,6 +148,20 @@ public class CharacterVisualComponent : MonoBehaviour
         if (customSortable != null)
         {
             customSortable.SetSortingGroup(characterVisualComponent.GetComponent<SortingGroup>());
+        }
+
+        if (visualsRoot != null)
+        {
+            // 오브젝트 풀 재사용 시(럼버잭/포터 NPC는 던전 재입장마다 Initialize()가 다시 호출됨) 이전
+            // 생애에 뽀잉 연출이 채 끝나기 전에 비활성화됐다면 스케일이 일그러진 채로 멈춰있을 수 있다.
+            // 그 상태를 그대로 "원래 스케일"로 새로 캐싱해버리면 왜곡이 영구적으로 고착되므로, 재확인 전에
+            // 먼저 이전에 캐싱해둔 원래 스케일로 강제 복구한다(최초 1회 호출 시에는 진행 중인 연출이 없어 아무 효과 없음).
+            if (itemAcquireBounceTime < ITEM_ACQUIRE_BOUNCE_DURATION)
+            {
+                visualsRoot.transform.localScale = visualsRootOriginalScale;
+            }
+            itemAcquireBounceTime = 1f;
+            visualsRootOriginalScale = visualsRoot.transform.localScale;
         }
     }
 
@@ -255,6 +276,14 @@ public class CharacterVisualComponent : MonoBehaviour
         characterAnimator?.SetTilemapDataProvider(_tilemapDataProvider);
     }
 
+    // OffroadContainer/캐릭터 인벤토리에 아이템이 도착했을 때(Character.PlayItemAcquireBounce와 동일한
+    // 감쇠 진동 곡선)의 뽀잉 연출. LumberjackNPC/OffroadPorterNPC 등 CharacterVisualComponent를 쓰는
+    // 모든 유닛이 공용으로 사용한다.
+    public void PlayItemAcquireBounce()
+    {
+        itemAcquireBounceTime = 0f;
+    }
+
     #endregion
 
     #region Private Methods
@@ -311,6 +340,36 @@ public class CharacterVisualComponent : MonoBehaviour
     private void SetBlinkState(bool _isBlinking)
     {
         isBlinking = _isBlinking;
+    }
+
+    // 아이템 획득 뽀잉 연출 전용 업데이트. UpdateVisuals()(외부에서 수동 호출되는 공용 로직)와는
+    // 완전히 분리된, 이 컴포넌트 자체의 MonoBehaviour Update이다 - 기존 로직에 영향을 주지 않는다.
+    private void Update()
+    {
+        UpdateItemAcquireBounce(Time.deltaTime);
+    }
+
+    private void UpdateItemAcquireBounce(float _deltaTime)
+    {
+        if (visualsRoot == null) return;
+
+        if (itemAcquireBounceTime >= ITEM_ACQUIRE_BOUNCE_DURATION)
+        {
+            if (visualsRoot.transform.localScale != visualsRootOriginalScale)
+                visualsRoot.transform.localScale = visualsRootOriginalScale;
+            return;
+        }
+
+        itemAcquireBounceTime += _deltaTime;
+        float t = itemAcquireBounceTime / ITEM_ACQUIRE_BOUNCE_DURATION;
+
+        // 쫀득함(Squash & Stretch) 연출: 감쇠 진동 곡선(Damped Sine Wave). OffroadContainer.UpdateBounce와 동일한 방식.
+        float curve = Mathf.Sin(t * Mathf.PI * 3f) * (1f - t) * 0.3f;
+
+        visualsRoot.transform.localScale = new Vector3(
+            visualsRootOriginalScale.x * (1f + curve),
+            visualsRootOriginalScale.y * (1f - curve),
+            visualsRootOriginalScale.z);
     }
 
     #endregion
