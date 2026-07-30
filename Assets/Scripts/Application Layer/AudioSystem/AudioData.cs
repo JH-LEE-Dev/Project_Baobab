@@ -17,11 +17,12 @@ public class AudioData
     public AudioMixerGroup mixerGroup;
     public float defaultVolume = 1f;
     public bool is3D = true;
+    public bool loop = false;
 }
 
 [System.Serializable]
 public struct MixerMapping
 {
     public MixerID id;
-    public UnityEngine.Audio.AudioMixer mixer;
+    public UnityEngine.Audio.AudioMixerGroup group;
 }

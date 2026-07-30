@@ -13,6 +13,9 @@ public class AudioIDGenerator
     private const string MixerAssetsRoot = "Assets/Sounds/Mixer";
     private const string ExportPath = "Assets/Scripts/Application Layer/AudioSystem/AudioSystemUsingData.cs";
 
+    // 믹서 애셋 안에서 이 이름을 가진 그룹을 찾아 MixerID를 만든다 (Master → BGM/SFX/UI/Ambience 구조 기준).
+    private static readonly string[] MixerGroupNames = { "Master", "BGM", "SFX", "UI", "Ambience" };
+
     [MenuItem("Tools/Audio/Generate Sound IDs")]
     public static void Generate()
     {
@@ -27,7 +30,7 @@ public class AudioIDGenerator
         Dictionary<string, int> soundNameToHash = new Dictionary<string, int>();
 
         HashSet<string> uniqueMixerNames = new HashSet<string>();
-        Dictionary<string, AudioMixer> mixerNameToAsset = new Dictionary<string, AudioMixer>();
+        Dictionary<string, AudioMixerGroup> mixerNameToAsset = new Dictionary<string, AudioMixerGroup>();
         Dictionary<string, int> mixerNameToHash = new Dictionary<string, int>();
 
         // 1. Sound ID 스캔
@@ -82,7 +85,7 @@ public class AudioIDGenerator
         }
     }
 
-    private static void ScanMixerAssets(HashSet<string> _uniqueNames, Dictionary<string, AudioMixer> _assetMap, Dictionary<string, int> _hashMap)
+    private static void ScanMixerAssets(HashSet<string> _uniqueNames, Dictionary<string, AudioMixerGroup> _assetMap, Dictionary<string, int> _hashMap)
     {
         if (!Directory.Exists(MixerAssetsRoot)) return;
 
@@ -90,14 +93,21 @@ public class AudioIDGenerator
         foreach (string guid in guids)
         {
             string path = AssetDatabase.GUIDToAssetPath(guid);
-            string fileName = Path.GetFileNameWithoutExtension(path);
             AudioMixer mixer = AssetDatabase.LoadAssetAtPath<AudioMixer>(path);
-            
-            if (mixer == null || _uniqueNames.Contains(fileName)) continue;
+            if (mixer == null) continue;
 
-            _uniqueNames.Add(fileName);
-            _assetMap.Add(fileName, mixer);
-            _hashMap.Add(fileName, GetStableHashCode(fileName));
+            // 믹서 파일 하나가 아니라, 그 안의 각 그룹(Master/BGM/SFX/UI/Ambience)마다 MixerID를 만든다.
+            foreach (string groupName in MixerGroupNames)
+            {
+                if (_uniqueNames.Contains(groupName)) continue;
+
+                AudioMixerGroup[] groups = mixer.FindMatchingGroups(groupName);
+                if (groups.Length == 0) continue;
+
+                _uniqueNames.Add(groupName);
+                _assetMap.Add(groupName, groups[0]);
+                _hashMap.Add(groupName, GetStableHashCode(groupName));
+            }
         }
     }
 
@@ -132,7 +142,7 @@ public class AudioIDGenerator
         File.WriteAllText(ExportPath, sb.ToString(), Encoding.UTF8);
     }
 
-    private static void UpdateAudioDatabases(Dictionary<string, int> _soundIdMap, Dictionary<string, UnityEngine.Object> _soundAssetMap, Dictionary<string, int> _mixerIdMap, Dictionary<string, AudioMixer> _mixerAssetMap)
+    private static void UpdateAudioDatabases(Dictionary<string, int> _soundIdMap, Dictionary<string, UnityEngine.Object> _soundAssetMap, Dictionary<string, int> _mixerIdMap, Dictionary<string, AudioMixerGroup> _mixerAssetMap)
     {
         string[] guids = AssetDatabase.FindAssets("t:AudioDatabase");
         foreach (string guid in guids)
@@ -147,7 +157,7 @@ public class AudioIDGenerator
             database.mixers = new List<MixerMapping>();
             foreach (var kvp in _mixerIdMap)
             {
-                database.mixers.Add(new MixerMapping { id = (MixerID)kvp.Value, mixer = _mixerAssetMap[kvp.Key] });
+                database.mixers.Add(new MixerMapping { id = (MixerID)kvp.Value, group = _mixerAssetMap[kvp.Key] });
                 isDirty = true;
             }
 
@@ -178,19 +188,15 @@ public class AudioIDGenerator
                 if (asset is AudioClip clip && data.clip == null && data.cueData == null) { data.clip = clip; isDirty = true; }
                 else if (asset is AudioCueData cue && data.cueData == null && data.clip == null) { data.cueData = cue; isDirty = true; }
 
-                // 믹서 그룹 자동 연결: 사용자가 선택한 MixerID에 해당하는 믹서의 Master 그룹 할당
+                // 믹서 그룹 자동 연결: 사용자가 선택한 MixerID에 해당하는 그룹을 직접 할당
                 if (data.mixerId != MixerID.None && data.mixerGroup == null)
                 {
                     foreach (var mapping in database.mixers)
                     {
-                        if (mapping.id == data.mixerId && mapping.mixer != null)
+                        if (mapping.id == data.mixerId && mapping.group != null)
                         {
-                            var groups = mapping.mixer.FindMatchingGroups("Master");
-                            if (groups.Length > 0)
-                            {
-                                data.mixerGroup = groups[0];
-                                isDirty = true;
-                            }
+                            data.mixerGroup = mapping.group;
+                            isDirty = true;
                             break;
                         }
                     }

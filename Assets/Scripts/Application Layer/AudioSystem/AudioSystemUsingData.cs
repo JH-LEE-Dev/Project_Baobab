@@ -2,11 +2,16 @@
 public enum SoundID
 {
     None = 0,
-    GrassFootstep = -398605290,
+    PitchHit = 2096610066,
+    TreeHit = -1641742776,
 }
 
 public enum MixerID
 {
     None = 0,
-    Character = 159138813,
+    Master = -235980376,
+    BGM = 433908404,
+    SFX = 1999992957,
+    UI = -1090805748,
+    Ambience = -1090754126,
 }

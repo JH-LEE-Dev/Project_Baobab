@@ -17,7 +17,10 @@ public class AudioManager : MonoBehaviour
 
     private Queue<AudioEvent> eventQueue = new Queue<AudioEvent>(100);
     private List<AudioSource> sourcePool = new List<AudioSource>();
-    private Dictionary<SoundID, AudioData> audioCache;
+    private float[] sourceStartTime;
+    private int[] sourcePlayId;
+    private int playIdCounter;
+    private Dictionary<AudioCueData, int> cueLastIndexCache = new Dictionary<AudioCueData, int>();
 
     private AudioSource bgmSource;
     private Coroutine bgmFadeCoroutine;
@@ -39,36 +42,13 @@ public class AudioManager : MonoBehaviour
 
         CreatePool();
         CreateBGMSource();
-        InitializeCache();
-    }
-
-    private void InitializeCache()
-    {
-        if (database == null || database.sounds == null) return;
-
-        // 초기 용량을 설정하여 런타임 확장을 방지 (Maximize Stack/Heap efficiency)
-        int count = database.sounds.Count;
-        audioCache = new Dictionary<SoundID, AudioData>(count);
-
-        for (int i = 0; i < count; i++)
-        {
-            var data = database.sounds[i];
-            if (data.id == SoundID.None) continue;
-            
-            if (!audioCache.ContainsKey(data.id))
-            {
-                audioCache.Add(data.id, data);
-            }
-            else
-            {
-                Debug.LogWarning($"[AudioManager] Duplicate SoundID found in database: {data.id}");
-            }
-        }
     }
 
     private void CreatePool()
     {
         sourcePool.Capacity = poolSize;
+        sourceStartTime = new float[poolSize];
+        sourcePlayId = new int[poolSize];
         for (int i = 0; i < poolSize; i++)
         {
             var obj = new GameObject("AudioSource_" + i);
@@ -98,60 +78,138 @@ public class AudioManager : MonoBehaviour
 
     private void PlayInternal(AudioEvent e)
     {
-        if (audioCache == null || !audioCache.TryGetValue(e.soundId, out AudioData data))
+        AudioData data = database != null ? database.Get(e.soundId) : null;
+        if (data == null)
         {
-            Debug.LogWarning($"Audio ID '{e.soundId}' not found in cache.");
+            Debug.LogWarning($"Audio ID '{e.soundId}' not found in database.");
             return;
         }
 
-        AudioSource src = GetAvailableSource();
-        if (src == null) return;
+        if (!PlayOnAvailableSource(data, e.position, e.volume, e.is3D, e.pitchOverride).IsValid)
+            Debug.LogWarning($"[AudioManager] Sound '{e.soundId}' could not be played (missing clip, or no source available).");
+    }
+
+    // 큐를 거치지 않고 즉시 재생하며, 이후 Stop/위치 갱신이 가능하도록 핸들을 반환한다.
+    // 루프 사운드처럼 재생 이후에도 개별적으로 제어해야 하는 경우에 사용한다.
+    public AudioHandle PlayTracked(SoundID id, Vector3 position, float volume = 1f, bool is3D = true)
+    {
+        AudioData data = database != null ? database.Get(id) : null;
+        if (data == null)
+        {
+            Debug.LogWarning($"Audio ID '{id}' not found in database.");
+            return AudioHandle.Invalid;
+        }
+
+        return PlayOnAvailableSource(data, position, volume, is3D, -1f);
+    }
+
+    public void StopTracked(AudioHandle handle)
+    {
+        if (!IsHandleValid(handle)) return;
+        sourcePool[handle.sourceIndex].Stop();
+    }
+
+    public void UpdateTrackedPosition(AudioHandle handle, Vector3 position)
+    {
+        if (!IsHandleValid(handle)) return;
+        sourcePool[handle.sourceIndex].transform.position = position;
+    }
+
+    private bool IsHandleValid(AudioHandle handle)
+    {
+        if (!handle.IsValid || handle.sourceIndex >= sourcePool.Count) return false;
+        // 슬롯이 이미 다른 사운드에 재사용되었다면(강탈) 이 핸들은 더 이상 유효하지 않다.
+        return sourcePlayId[handle.sourceIndex] == handle.playId;
+    }
+
+    private AudioHandle PlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride)
+    {
+        AudioClip clip;
+        float pitch;
+        float finalVolume;
+
+        if (data.cueData != null)
+        {
+            clip = PickClipFromCue(data.cueData);
+            pitch = data.cueData.GetRandomPitch();
+            finalVolume = data.defaultVolume * volume * data.cueData.GetRandomVolumeModifier();
+        }
+        else
+        {
+            clip = data.clip;
+            pitch = 1f;
+            finalVolume = data.defaultVolume * volume;
+        }
+
+        if (pitchOverride >= 0f) pitch = pitchOverride;
+
+        if (clip == null) return AudioHandle.Invalid;
+
+        int index = GetAvailableSourceIndex();
+        if (index < 0) return AudioHandle.Invalid;
+
+        AudioSource src = sourcePool[index];
 
         // 3D 위치 설정
-        src.transform.position = e.position;
+        src.transform.position = position;
 
         // AudioSource 상태 완전 초기화 (풀링 부작용 방지)
         src.Stop();
-        src.loop = false;
+        src.loop = data.loop;
         src.mute = false;
         src.bypassEffects = false;
         src.bypassListenerEffects = false;
         src.bypassReverbZones = false;
         src.priority = 128;
 
-        // 데이터 및 이벤트 파라미터 적용
-        if (data.cueData != null)
-        {
-            src.clip = data.cueData.GetRandomClip();
-            src.pitch = data.cueData.GetRandomPitch();
-            src.volume = data.defaultVolume * e.volume * data.cueData.GetRandomVolumeModifier();
-        }
-        else
-        {
-            src.clip = data.clip;
-            src.pitch = 1f;
-            src.volume = data.defaultVolume * e.volume;
-        }
-
+        src.clip = clip;
+        src.pitch = pitch;
+        src.volume = finalVolume;
         src.outputAudioMixerGroup = data.mixerGroup;
-        // AudioEvent에서 전달된 is3D 설정을 우선 적용
-        src.spatialBlend = e.is3D ? 1f : 0f;
+        // 사운드 데이터의 is3D를 기준으로 하되, 호출부에서 2D로 강제하는 것은 허용한다(예: PlayUI).
+        src.spatialBlend = (data.is3D && is3D) ? 1f : 0f;
 
         src.Play();
+
+        playIdCounter++;
+        sourceStartTime[index] = Time.time;
+        sourcePlayId[index] = playIdCounter;
+
+        return new AudioHandle(index, playIdCounter);
     }
 
-    private AudioSource GetAvailableSource()
+    private AudioClip PickClipFromCue(AudioCueData cue)
+    {
+        int lastIndex = cueLastIndexCache.TryGetValue(cue, out int idx) ? idx : -1;
+        AudioClip clip = cue.GetRandomClip(ref lastIndex);
+        cueLastIndexCache[cue] = lastIndex;
+        return clip;
+    }
+
+    private int GetAvailableSourceIndex()
     {
         int count = sourcePool.Count;
+        if (count == 0) return -1;
+
         // foreach 대신 for 루프를 사용하여 가비지 발생 차단
         for (int i = 0; i < count; i++)
         {
             if (!sourcePool[i].isPlaying)
-                return sourcePool[i];
+                return i;
         }
 
-        // 모든 소스가 사용 중일 경우 첫 번째 소스(가장 오래된 것일 가능성이 높음)를 재사용
-        return sourcePool[0];
+        // 모든 소스가 사용 중일 경우, 재생을 가장 먼저 시작해 가장 먼저 끝날 가능성이 높은 소스를 강탈
+        int oldestIndex = 0;
+        float oldestTime = sourceStartTime[0];
+        for (int i = 1; i < count; i++)
+        {
+            if (sourceStartTime[i] < oldestTime)
+            {
+                oldestTime = sourceStartTime[i];
+                oldestIndex = i;
+            }
+        }
+        return oldestIndex;
     }
 
     private void CreateBGMSource()
@@ -167,9 +225,10 @@ public class AudioManager : MonoBehaviour
 
     public void PlayBGM(SoundID bgmId, float volume = 1f)
     {
-        if (audioCache == null || !audioCache.TryGetValue(bgmId, out AudioData data))
+        AudioData data = database != null ? database.Get(bgmId) : null;
+        if (data == null)
         {
-            Debug.LogWarning($"BGM ID '{bgmId}' not found in cache.");
+            Debug.LogWarning($"BGM ID '{bgmId}' not found in database.");
             return;
         }
 
@@ -198,7 +257,7 @@ public class AudioManager : MonoBehaviour
         // 2. 새로운 BGM 설정
         if (data.cueData != null)
         {
-            bgmSource.clip = data.cueData.GetRandomClip();
+            bgmSource.clip = PickClipFromCue(data.cueData);
             bgmSource.pitch = data.cueData.GetRandomPitch();
         }
         else

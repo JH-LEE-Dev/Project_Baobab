@@ -35,10 +35,12 @@ public class AudioDatabase : ScriptableObject, ISerializationCallbackReceiver
         for (int i = 0; i < sounds.Count; i++)
         {
             var data = sounds[i];
-            if (data != null && data.id != SoundID.None)
-            {
-                soundCache[data.id] = data;
-            }
+            if (data == null || data.id == SoundID.None) continue;
+
+            if (soundCache.ContainsKey(data.id))
+                Debug.LogWarning($"[AudioDatabase] Duplicate SoundID found in database: {data.id}");
+
+            soundCache[data.id] = data;
         }
     }
 }
