@@ -13,6 +13,9 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     [Header("UI Component")]
     [SerializeField, Tooltip("크기와 색상이 변형될 대상 이미지 (Raycast 본체와 다를 경우 지정)")] 
     private Graphic targetGraphic;
+    
+    [SerializeField, Tooltip("버튼에 표시될 텍스트 (선택 사항)")]
+    private TMPro.TextMeshProUGUI buttonText;
 
     [Header("Motion Settings")]
     [SerializeField, Tooltip("스케일 모션 켜기/끄기")] private bool enableScaleMotion = true;
@@ -64,6 +67,12 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
                 _c.a = 0.5f;
                 targetGraphic.color = _c;
             }
+            if (null != buttonText)
+            {
+                Color _tc = buttonText.color;
+                _tc.a = 0.5f;
+                buttonText.color = _tc;
+            }
         }
         else
         {
@@ -73,6 +82,20 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
                 _c.a = 1f;
                 targetGraphic.color = _c;
             }
+            if (null != buttonText)
+            {
+                Color _tc = buttonText.color;
+                _tc.a = 1f;
+                buttonText.color = _tc;
+            }
+        }
+    }
+
+    public void SetText(string _text)
+    {
+        if (null != buttonText)
+        {
+            buttonText.text = _text;
         }
     }
 

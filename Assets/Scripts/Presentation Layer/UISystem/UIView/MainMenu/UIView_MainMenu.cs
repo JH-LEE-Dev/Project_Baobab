@@ -21,6 +21,7 @@ public class UIView_MainMenu : UIView
 
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 공용 옵션 UI
+    [SerializeField] private UI_Credit creditUI; // 크레딧 UI
 
     [Header("Background Overlay")]
     [SerializeField, Tooltip("메인 메뉴 뒤에 깔릴 검은색 셀로판지(Dimmer)")] 
@@ -102,6 +103,11 @@ public class UIView_MainMenu : UIView
             optionUI.Initialize(_ctx);
             optionUI.OnLanguageOptionChangedEvent -= HandleLanguageOptionChanged;
             optionUI.OnLanguageOptionChangedEvent += HandleLanguageOptionChanged;
+        }
+
+        if (null != creditUI)
+        {
+            creditUI.Initialize(HideCredit);
         }
     }
 
@@ -495,6 +501,22 @@ public class UIView_MainMenu : UIView
             // pressAnyKeyUI가 활성화되면 사용자가 키를 입력할 때 OnPressAnyKeyCompleted()에서 
             // logoAnimUI.PlayRevealSequence(ShowMainMenu)가 진행되므로 여기선 콜백만 호출합니다.
             _onComplete?.Invoke();
+        }
+    }
+
+    public void OnCreditButtonClicked()
+    {
+        if (null != creditUI)
+        {
+            creditUI.PlayCredit();
+        }
+    }
+
+    private void HideCredit()
+    {
+        if (null != mainMenuUI)
+        {
+            mainMenuUI.ReleaseOptionButtonState(); // Reusing this to reset all buttons
         }
     }
 
