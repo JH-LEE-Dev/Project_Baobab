@@ -121,7 +121,9 @@ public class UIView_Popup : UIView
             return;
 
         // uiInventory.Initialize(uiRoot, HandleHomingButtonClicked, HandleInventoryHover, HandleInventoryUnHover);
-        uiInventory.Initialize(uiRoot, HandleInventoryHover, HandleInventoryUnHover);
+        InputManager _inputMgr = null != viewCtx ? viewCtx.inputManager : null;
+        LocalizationManager _locMgr = null != viewCtx ? viewCtx.localizationManager : null;
+        uiInventory.Initialize(uiRoot, HandleInventoryHover, HandleInventoryUnHover, _inputMgr, _locMgr);
         uiInventory.OnHide();
     }
 

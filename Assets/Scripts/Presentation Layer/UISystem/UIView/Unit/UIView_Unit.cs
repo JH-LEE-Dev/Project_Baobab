@@ -136,7 +136,10 @@ public class UIView_Unit : UIView
         interactionUnit = Instantiate(interactionUnitPrefab, uiRoot.transform).GetComponent<UI_InteractionUnit>();
 
         if (null != interactionUnit)
-            interactionUnit.Initialize();
+        {
+            InputManager _inputMgr = null != viewCtx ? viewCtx.inputManager : null;
+            interactionUnit.Initialize(_inputMgr);
+        }
     }
 
     private void InitSpeechBubbleUnit()

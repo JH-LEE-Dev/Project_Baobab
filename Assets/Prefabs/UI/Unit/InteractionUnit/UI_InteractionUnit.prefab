@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 9221736430242406152}
   - component: {fileID: 6891734528710420714}
   - component: {fileID: 1748248865866761163}
+  - component: {fileID: 8496968800778259497}
   m_Layer: 5
   m_Name: Image
   m_TagString: Untagged
@@ -75,6 +76,21 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &8496968800778259497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1647259714782242338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1379ec73bc58865418fc3b0f31254c49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI_KeyboardImage
+  keyIconDatabase: {fileID: 11400000, guid: 5ad5b4a60909f49448135e101a5170f8, type: 2}
+  boundAction: 5
+  targetImage: {fileID: 1748248865866761163}
 --- !u!1 &2954469314965808777
 GameObject:
   m_ObjectHideFlags: 0
@@ -130,6 +146,8 @@ MonoBehaviour:
   interactionIcons:
   - {fileID: -3468430240258086507, guid: 958d9b2b7e6a09d40a26c3f973c8561e, type: 3}
   motionTag: Absol
+  keyboardImages:
+  - {fileID: 8496968800778259497}
 --- !u!1 &3969127138720448973
 GameObject:
   m_ObjectHideFlags: 0

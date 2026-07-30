@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
+using TMPro;
 using PresentationLayer.UISystem.CustomNumber;
 
 /// <summary>
@@ -22,6 +23,12 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private UI_Backpack uiBackpack;
     // [SerializeField] private HUD_NotificationBadge notificationBadge;
     [SerializeField] private UI_InventoryCapacityBar capacityBar;
+    
+    [Header("Keyboard Icons")]
+    [SerializeField] private UI_KeyboardImage[] keyboardImages;
+
+    [Header("Localization")]
+    [SerializeField] private TextMeshProUGUI openText;
 
     [Header("Prefabs")]
     [SerializeField] private GameObject uiSlotPrefab;
@@ -41,6 +48,7 @@ public class UI_Inventory : MonoBehaviour
     private IInventory inventory;
     private IMoneyData moneyData;
     private UI_InventoryPopup invPopup;
+    private LocalizationManager locManager;
 
 
 
@@ -54,8 +62,18 @@ public class UI_Inventory : MonoBehaviour
 
     // //퍼블릭 초기화 및 제어 메서드
 
-    public void Initialize(Transform _uiRoot, Action _hoverEvent, Action _unHoverEvent)
+    public void Initialize(Transform _uiRoot, Action _hoverEvent, Action _unHoverEvent, InputManager _inputManager, LocalizationManager _locManager)
     {
+        locManager = _locManager;
+        
+        if (null != locManager)
+        {
+            locManager.OnLanguageChanged -= RefreshLocalizedTexts;
+            locManager.OnLanguageChanged += RefreshLocalizedTexts;
+        }
+        
+        RefreshLocalizedTexts();
+
         if (null != omp)
             omp.Initialize();
 
@@ -65,6 +83,14 @@ public class UI_Inventory : MonoBehaviour
         InitBackpack();
         // InitNotificationBadge();
         InitCapacityBar();
+        
+        if (null != keyboardImages)
+        {
+            for (int i = 0; i < keyboardImages.Length; i++)
+            {
+                if (null != keyboardImages[i]) keyboardImages[i].Initialize(_inputManager);
+            }
+        }
 
         inventoryHoverEvent = _hoverEvent;
         inventoryUnHoverEvent = _unHoverEvent;
@@ -201,6 +227,14 @@ public class UI_Inventory : MonoBehaviour
     //     uiHoming.Initialize();
     //     uiHoming.clickedEvent = _clickedHomingEvent;
     // }
+
+    private void RefreshLocalizedTexts()
+    {
+        if (null != locManager && null != openText)
+        {
+            openText.text = locManager.GetText("Open");
+        }
+    }
 
     private void InitCoins()
     {

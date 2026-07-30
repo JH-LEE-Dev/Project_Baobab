@@ -11,6 +11,7 @@ public class UI_OptionKeyBindRow : MonoBehaviour
     [SerializeField] private TextMeshProUGUI keyFallbackText;    // 아이콘 없을 때 폴백 텍스트
     [SerializeField] private UI_OptionButton rebindButton;        // "변경" 버튼
     [SerializeField] private UI_OptionButton resetButton;         // "초기화" 버튼
+    [SerializeField] private UI_OptionButton iconRebindButton;    // "아이콘 이미지" 클릭 버튼 (선택 사항)
 
     [Header("Conflict Warning")]
     [SerializeField] private Color normalColor = Color.white;
@@ -43,7 +44,12 @@ public class UI_OptionKeyBindRow : MonoBehaviour
         if (null == cachedOnRebindClicked) cachedOnRebindClicked = OnRebindClicked;
         if (null == cachedOnResetClicked) cachedOnResetClicked = OnResetClicked;
 
-        if (null != rebindButton) rebindButton.Initialize(cachedOnRebindClicked);
+        if (null != cachedOnRebindClicked)
+        {
+            if (null != rebindButton) rebindButton.Initialize(cachedOnRebindClicked);
+            if (null != iconRebindButton) iconRebindButton.Initialize(cachedOnRebindClicked);
+        }
+        
         if (null != resetButton) resetButton.Initialize(cachedOnResetClicked);
 
         if (null != actionNameText) actionNameText.text = _label;
