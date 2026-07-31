@@ -299,6 +299,7 @@ public class VFXComponent : MonoBehaviour
         Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
 
         _target.SetParent(_parent);
+        RestoreLocalScaleIfDetached(_helper, _target, _parent);
         _target.position = _position;
         _target.rotation = _rotation;
 
@@ -321,6 +322,7 @@ public class VFXComponent : MonoBehaviour
         Transform _target = (null != _helper && null != _helper.TargetTransform) ? _helper.TargetTransform : _effect.transform;
 
         _target.SetParent(_settings.Parent);
+        RestoreLocalScaleIfDetached(_helper, _target, _settings.Parent);
         _target.position = _settings.Position;
         _target.rotation = _settings.Rotation;
 
@@ -632,6 +634,35 @@ public class VFXComponent : MonoBehaviour
     }
 
     /// <summary>
+    /// 부모 없이(월드에 그대로) 재생하는 경우에 한해, 풀 인스턴스의 로컬 스케일을 프리팹 원본으로 되돌립니다.
+    ///
+    /// Transform.SetParent(Transform)은 worldPositionStays:true 오버로드라 월드 스케일을 보존하려고
+    /// localScale을 다시 계산해 덮어쓴다. 풀 인스턴스가 대기하는 부모(VFXComponent 자신)가 스케일
+    /// 애니메이션이 걸린 노드 밑에 있으면(예: 캐릭터/NPC의 Visuals - 아이템 획득 뽀잉 연출이 이 노드를
+    /// 비균등 스케일한다), 재생 시 분리(SetParent(null))와 반납 시 재부착(ReturnToPool)의 기준 스케일이
+    /// 서로 달라져 왕복이 상쇄되지 않고 오차가 남는다. 풀 인스턴스는 재사용되므로 이 오차가 계속 누적되어
+    /// 먼지(Dust) 같은 이펙트가 점점 찌그러진다.
+    ///
+    /// 부모가 null이면 "월드 크기 = 프리팹 크기"가 자명하므로 원본으로 되돌리면 그만이다.
+    /// 반대로 부모를 명시해서 재생하는 경우(HUD/TentUI 등 캔버스 하위, LogItem의 Shiny 등)는
+    /// 월드 크기를 유지하는 현재 동작이 의도된 것이므로 절대 건드리지 않는다.
+    /// </summary>
+    private void RestoreLocalScaleIfDetached(VFXPoolInstanceHelper _helper, Transform _target, Transform _parent)
+    {
+        if (null != _parent)
+            return;
+
+        if (null == _helper || null == _target)
+            return;
+
+        // 캐싱된 원본이 없으면(Initialize를 거치지 않은 외부 주입 인스턴스 등) 손대지 않는다.
+        if (false == _helper.TryGetOriginalLocalScale(out Vector3 _originalLocalScale))
+            return;
+
+        _target.localScale = _originalLocalScale;
+    }
+
+    /// <summary>
     /// 이펙트 및 하위 자식들의 모든 렌더러 소팅 레이어 이름과 순서를 설정합니다.
     /// </summary>
     private void ApplySortingSettings(ParticleSystem _effect, string _layerName, int _order)
@@ -705,6 +736,8 @@ public class VFXPoolInstanceHelper : MonoBehaviour
     private bool isReturning;
     private Coroutine stopCoroutine;
     private DG.Tweening.TweenCallback cachedDeferredSetParent;
+    private Vector3 originalLocalScale = Vector3.one;
+    private bool hasOriginalLocalScale = false;
 
 
     // 퍼블릭 초기화 및 제어 메서드
@@ -716,8 +749,25 @@ public class VFXPoolInstanceHelper : MonoBehaviour
         particleSys = GetComponent<ParticleSystem>();
         isReturning = false;
 
+        // 이 시점의 로컬 스케일은 아직 아무 재부모화도 거치지 않은 프리팹 원본 값이다
+        // (CreateNewInstance가 Instantiate(..., worldPositionStays:false) 직후에 이 메서드를 호출한다).
+        // 부모 없이 재생할 때 이 값으로 되돌려, 재부모화 과정에서 스케일이 오염되는 것을 막는다.
+        originalLocalScale = targetTransform.localScale;
+        hasOriginalLocalScale = true;
+
         if (null == cachedDeferredSetParent)
             cachedDeferredSetParent = ExecuteDeferredSetParent;
+    }
+
+    /// <summary>
+    /// 캐싱해둔 프리팹 원본 로컬 스케일을 반환합니다.
+    /// Initialize 전이라 캐싱된 값이 없으면 false를 반환하며, 이 경우 호출부는 스케일을 건드리면 안 됩니다
+    /// (초기값으로 덮어쓰면 이펙트가 사라지거나 크기가 틀어질 수 있음).
+    /// </summary>
+    public bool TryGetOriginalLocalScale(out Vector3 _localScale)
+    {
+        _localScale = originalLocalScale;
+        return hasOriginalLocalScale;
     }
 
     public void Stop(bool _immediate)

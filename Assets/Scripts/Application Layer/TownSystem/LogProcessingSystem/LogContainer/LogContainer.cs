@@ -37,8 +37,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private float transferInterval = 2f;
     // 캐릭터가 자기 인벤토리를 이 컨테이너로 납품할 때 슬롯 하나를 다 발사한 뒤 다음 슬롯을
     // 시작하기까지의 대기(TransferRoutine 전용). transferInterval은 자동 출고(TakeFirstItem)
-    // 주기와 공유되므로, 전송 간격만 OffroadContainer(1초)와 맞추기 위해 별도 필드로 분리한다.
-    [SerializeField] private float transferSlotInterval = 1f;
+    // 주기 및 NPC 납품(NPCTransferRoutine)의 슬롯 간 대기와 공유되므로, 플레이어 전송 간격만
+    // OffroadContainer와 맞추기 위해 별도 필드로 분리한다. 현재 OffroadContainer가 슬롯 간
+    // 대기 없이(transferInterval=0) 연속 전송하므로 여기도 0으로 맞춰 두었다. 이 값을 0이 아닌
+    // 값으로 되돌려도 NPC 납품 간격은 영향받지 않는다.
+    [SerializeField] private float transferSlotInterval = 0f;
     // 타입별 아이템 데이터 풀링 (GC 최적화)
     private ItemDataPool itemDataPool;
 
@@ -389,6 +392,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 if (transferringSlots.Contains(charSlot)) continue;
 
                 if (!(charSlot.itemData is LogItemData logSourceData)) continue;
+
+                // 넣을 자리가 없는 슬롯은 여기서 걸러낸다(OffroadContainer.TryTransferOneSlot과 동일).
+                // 이 검사를 빼면 컨테이너가 가득 찼을 때 TransferOneSlotVisualRoutine이 첫 CanAddItemByData
+                // 에서 곧바로 break되어 yield 없이 동기적으로 끝나버리는데, TryTransferOneItem은 그래도
+                // true를 반환하므로 TransferRoutine의 while(true)가 한 프레임 안에서 무한히 도는 문제가
+                // 생긴다(transferSlotInterval=0이라 상단 대기 루프도 yield하지 않음).
+                // 또한 앞 슬롯이 가득 차 못 들어가도 뒤쪽의 다른 나무종류 슬롯은 계속 전송할 수 있게 된다.
+                if (!CanAddItemByData(logSourceData)) continue;
 
                 // 해당 슬롯 전송 시작
                 StartCoroutine(TransferOneSlotVisualRoutine(charSlot));
@@ -958,7 +969,9 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             {
                 // 1. 해당 슬롯에서 상태 하나 추출 (가장 높은 등급 우선)
                 LogState takenState = slot.TakeOneItem();
-                Sound.PlayUI(SoundID.OutItem);
+                // 보관함 -> 레일(가공 라인) 출고는 인벤토리 인출과 성격이 달라 전용 SFX를 따로 붙일
+                // 예정이므로 여기서는 OutItem을 재생하지 않는다.
+                // (캐릭터/NPC가 보관함으로 납품하는 경로의 OutItem은 그대로 유지)
 
                 // 2. 외부로 반환할 데이터 생성 (풀링 활용)
                 LogItemData resultData = itemDataPool.Get(ItemType.Log) as LogItemData;

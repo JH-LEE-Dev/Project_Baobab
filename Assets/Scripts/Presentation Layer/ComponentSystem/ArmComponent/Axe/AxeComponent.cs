@@ -104,6 +104,16 @@ public class AxeComponent : WeaponComponent, IAxeComponent
 
     private void OnAttackImpact()
     {
+        // 스윙 트윈(DOTween)은 GameObject가 꺼져도 계속 돌기 때문에, 차량 탑승/씬 전환 연출로
+        // 캐릭터가 SetActive(false) 된 뒤에 이 콜백이 도착할 수 있다. 그 상태에서는 코루틴을 시작할 수
+        // 없어(비활성 오브젝트) bAttacked가 true로 굳어버리고, 이후 좌클릭 공격이 영구히 막힌다.
+        // 이미 캐릭터가 꺼진 뒤이므로 공격 판정도 내지 않고 상태만 즉시 정리한다.
+        if (false == isActiveAndEnabled)
+        {
+            ResetAttackState();
+            return;
+        }
+
         AttackEvent?.Invoke();
         axeAnimation.PlayReturn(OnAttackFinish);
         StartCoroutine(nameof(AttackCoolDownRoutine));
@@ -222,6 +232,56 @@ public class AxeComponent : WeaponComponent, IAxeComponent
                 ctx.characterStat.RemoveActionState();
             }
         }
+    }
+
+    public override void SetEnable(bool _boolean)
+    {
+        base.SetEnable(_boolean);
+
+        // 도끼가 꺼지는 시점(무기 리셋/사망/마을↔던전 전환)에 진행 중이던 공격 상태를 반드시 정리한다.
+        // 유니티는 GameObject가 SetActive(false) 되면 그 위의 코루틴을 영구 중단하고 재활성화해도
+        // 되살리지 않기 때문에, 차량 탑승 연출(TownProductionManager/InDungeonProductionManager의
+        // CharacterRideRoutine) 중에 AttackCoolDownRoutine이 죽으면 bAttacked가 true로 남아
+        // 다음 던전에서 좌클릭 공격이 영구히 막혀버린다. 캐릭터는 씬을 넘어 재사용되므로
+        // (GameInstaller에서 1회만 생성) 스스로 풀리지 않는다.
+        if (false == _boolean)
+        {
+            ResetAttackState();
+        }
+    }
+
+    /// <summary>
+    /// 스윙 트윈/쿨다운 코루틴을 정리하고 공격 관련 상태를 초기값으로 되돌립니다.
+    /// 공격 중 상태를 전제로 켜 둔 이동속도 감소와 스왑/회전 잠금도 함께 해제합니다.
+    /// </summary>
+    private void ResetAttackState()
+    {
+        StopCoroutine(nameof(AttackCoolDownRoutine));
+
+        if (null != axeAnimation)
+        {
+            axeAnimation.ResetPose();
+        }
+
+        bAttacked = false;
+        bLeftButtonClicked = false;
+        attackComboStack = 0;
+        comboResetTimer = 0f;
+
+        if (bIsSpeedReduced)
+        {
+            bIsSpeedReduced = false;
+
+            if (null != ctx && null != ctx.characterStat)
+            {
+                ctx.characterStat.RemoveActionState();
+            }
+        }
+
+        // OnAttackStart에서 false/true로 걸어둔 잠금을 되돌린다. 스윙이 중간에 끊기면
+        // OnAttackFinish(트윈 콜백)와 AttackCoolDownRoutine이 실행되지 않아 이 둘이 잠긴 채 남는다.
+        DeclareCanSwapEvent?.Invoke(true);
+        DeclareAttackStateEvent?.Invoke(false);
     }
 
     public void Refresh()
