@@ -9,6 +9,7 @@ using UnityEngine.Tilemaps;
 ///
 /// 길찾기 가능 타일은 GroundTilemap에 타일이 있는 칸뿐이며, ColliderTilemap/BuildingColliderTilemap/
 /// WaterColliderTilemap/RockColliderTilemap 중 하나라도 타일이 있으면 이동 불가로 취급한다.
+/// 제재소 증설분(BuildingColliderTilemap_1/_2)은 실제로 증설되어 활성화된 것만 이동 불가로 본다.
 /// </summary>
 public class TownTilemapDataProvider : ITilemapDataProvider
 {
@@ -106,6 +107,7 @@ public class TownTilemapDataProvider : ITilemapDataProvider
         if (HasMainGridTile(townTileManager.BuildingColliderTilemap, _actualCell)) return true;
         if (HasMainGridTile(townTileManager.WaterColliderTilemap, _actualCell)) return true;
         if (HasMainGridTile(townTileManager.RockColliderTilemap, _actualCell)) return true;
+        if (HasActiveBuildingExpansionTile(_actualCell)) return true;
 
         if (extraColliderTilemaps.Count > 0)
         {
@@ -118,6 +120,22 @@ public class TownTilemapDataProvider : ITilemapDataProvider
                 Vector3Int foreignCell = foreign.WorldToCell(worldPos);
                 if (foreign.HasTile(foreignCell)) return true;
             }
+        }
+
+        return false;
+    }
+
+    // 제재소 증설분 건물 충돌 타일맵은 아직 증설되지 않아도 타일 데이터는 그대로 들어있고(GameObject만 꺼둔 상태)
+    // Tilemap.HasTile은 비활성 오브젝트에서도 true를 돌려준다. 그래서 활성 여부를 반드시 함께 확인해,
+    // 증설 전에는 길이 막히지 않도록 한다.
+    private bool HasActiveBuildingExpansionTile(Vector3Int _actualCell)
+    {
+        IReadOnlyList<Tilemap> expansions = townTileManager.BuildingColliderExpansionTilemaps;
+        for (int i = 0; i < expansions.Count; i++)
+        {
+            Tilemap expansion = expansions[i];
+            if (expansion == null || !expansion.gameObject.activeSelf) continue;
+            if (expansion.HasTile(_actualCell)) return true;
         }
 
         return false;

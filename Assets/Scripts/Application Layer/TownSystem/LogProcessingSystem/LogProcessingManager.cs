@@ -11,6 +11,10 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     public event Action ContainerUpdatedEvent;
     public event Action<bool> InteractStateChangedEvent;
 
+    // 활성 가공 라인 수가 바뀔 때(증설/철거, 세이브 로드) 알린다. TownSystem이 이 값에 맞춰
+    // 마을 Grid의 증설분 건물 충돌 타일맵을 켜고 끈다.
+    public event Action<int> ActiveLineCountChangedEvent;
+
     // 외부 의존성
 
     [SerializeField] GameObject shopPrefab;
@@ -37,6 +41,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     // "대표 라인"의 커터 - UI(가공 진행률 표시 등)가 단일 대상을 필요로 하는 곳에서만 사용
     public LogCutter logCutter => allLines.Count > 0 ? allLines[0].Cutter : null;
+
+    /// <summary>현재 가동 중인 가공 라인 수(1~3). 제재소 건물 증설 단계와 1:1로 대응한다.</summary>
+    public int ActiveLineCount => activeLineCount;
 
     public LogContainer logContainer { get; private set; }
 
@@ -284,6 +291,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
             }
         }
         activeLineCount = savedLineCount;
+        ActiveLineCountChangedEvent?.Invoke(activeLineCount);
 
         // 라인별 독립 출고 타이머를 저장된 값 그대로 복원한다. 세이브 시점에 "다음 원목까지
         // 남은 시간"이 얼마였는지를 정확히 재현해서, 저장/로드가 제재소 상태를 바꿔놓지 않게 한다.
@@ -608,6 +616,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         if (newCount > previousCount)
         {
             ResetLineTimers(previousCount, newCount);
+        }
+
+        // 제재소 건물(증설분 충돌 타일맵)도 라인 수에 맞춰 켜고 꺼야 한다.
+        if (newCount != previousCount)
+        {
+            ActiveLineCountChangedEvent?.Invoke(activeLineCount);
         }
     }
 

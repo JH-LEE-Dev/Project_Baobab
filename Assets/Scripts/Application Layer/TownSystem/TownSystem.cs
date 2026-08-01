@@ -80,6 +80,10 @@ public class TownSystem : MonoBehaviour
     {
         townTileManager.CreateGrid();
 
+        // Grid는 매번 새로 생성되므로, 제재소 증설 단계(가공 라인 수)를 여기서 다시 반영해준다.
+        // 세이브 로드나 던전 안에서의 증설이 이벤트보다 먼저 끝나 있어도 이 동기화로 항상 맞춰진다.
+        ApplyProcessLineCountToGrid(logProcessingManager.ActiveLineCount);
+
         CollisionSystem.Instance?.ClearAll();
         townObjectManager.ReadyObj();
         logProcessingManager.EnableShopObj();
@@ -155,6 +159,9 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
         logProcessingManager.LogProcessorIsActiveEvent += LogItemProcessorActiveState;
 
+        logProcessingManager.ActiveLineCountChangedEvent -= ApplyProcessLineCountToGrid;
+        logProcessingManager.ActiveLineCountChangedEvent += ApplyProcessLineCountToGrid;
+
         townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         townProductionManager.CharacterRideEndEvent += CharacterRideEnd;
 
@@ -200,6 +207,7 @@ public class TownSystem : MonoBehaviour
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
+        logProcessingManager.ActiveLineCountChangedEvent -= ApplyProcessLineCountToGrid;
         townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         townProductionManager.StartSkyProductionEvent -= StartSkyProduction;
         townProductionManager.RollbackSkyProductionEvent -= RollbackSkyProduction;
@@ -360,6 +368,16 @@ public class TownSystem : MonoBehaviour
     private void LogItemProcessorActiveState(bool _boolean)
     {
         signalHub.Publish(new LogItemProcessorActiveStateSignal(_boolean));
+    }
+
+    /// <summary>
+    /// 제재소 가공 라인 수(1~3)를 마을 Grid의 증설분 건물 충돌 타일맵 개수로 변환해 반영한다.
+    /// 1라인 = 기본 건물만(추가 0동), 2라인 = BuildingColliderTilemap_1까지, 3라인 = _2까지 활성화.
+    /// 던전에 있는 동안(Grid가 파괴된 상태) 증설되어도 TownTileManager가 값을 기억해 다음 CreateGrid에서 적용한다.
+    /// </summary>
+    private void ApplyProcessLineCountToGrid(int _activeLineCount)
+    {
+        townTileManager.SetBuildingExpansionCount(_activeLineCount - 1);
     }
 
     private void DungeonStarted(DungeonStartSignal _dungeonStartSignal)
