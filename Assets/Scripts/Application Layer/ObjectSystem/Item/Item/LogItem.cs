@@ -7,6 +7,9 @@ public class LogItem : Item, IStaticCollidable
     public event Action<LogItem> LogItemActivatedEvent;
     public event Action<LogItem> LogItemDeActivatedEvent;
     public event Action<LogItem> LogItemAcquired;
+    // 던전/마을 이동 시 인벤토리를 강제로 버릴 때(DropAllItem) 처럼, 착지하지 않고 공중에서
+    // 페이드아웃되어 사라지는 연출이 끝났을 때 발생한다.
+    public event Action<LogItem> LogItemVanishedEvent;
 
     // IStaticCollidable 구현
     public Vector2 Position => transform.position;
@@ -81,8 +84,15 @@ public class LogItem : Item, IStaticCollidable
 
     [SerializeField] private GameObject shadow;
     private Transform shadowTransform;
+    private SpriteRenderer shadowRenderer;
+
+    // 착지하지 않고 공중에서 서서히 사라지는 연출(버려진 아이템 등) 관련 상태
+    private bool bFadeAndVanish = false;
+    private const float VanishFadeStartT = 0.35f; // 이 시점(t) 이후부터 착지 시점(t=1)까지 알파를 1->0으로 서서히 감소
 
     private Color originalColor;
+    private Color originalOutlineColor;
+    private Color originalShadowColor;
 
     private string flyingItemSortingLayerName = "FlyingItem";
     private string objectsSortingLayerName = "Objects";
@@ -151,6 +161,7 @@ public class LogItem : Item, IStaticCollidable
         if (shadow != null && shadowTransform == null)
         {
             shadowTransform = shadow.transform;
+            shadowRenderer = shadow.GetComponentInChildren<SpriteRenderer>();
         }
 
         if (objectsSortingLayerID == -1)
@@ -180,6 +191,8 @@ public class LogItem : Item, IStaticCollidable
         }
 
         originalColor = spriteRenderer.color;
+        originalOutlineColor = outlineSR != null ? outlineSR.color : Color.white;
+        originalShadowColor = shadowRenderer != null ? shadowRenderer.color : Color.white;
     }
 
     public void SetVfxComponent(VFXComponent _vfxComponent)
@@ -200,6 +213,13 @@ public class LogItem : Item, IStaticCollidable
     public void IsDropItem(bool _boolean)
     {
         bDrop = _boolean;
+    }
+
+    // 활성화하면 다음 Launch()의 포물선 비행 도중 알파가 서서히 0으로 줄어들어, 착지 전에
+    // 사라진 채로 비행을 마친다(= 땅에 떨어져 보이지 않고 공중에서 소멸).
+    public void SetFadeAndVanish(bool _boolean)
+    {
+        bFadeAndVanish = _boolean;
     }
 
     public void Launch(Vector3 _start, Vector3 _end, float _height, float _totalRotation = 0f)
@@ -224,7 +244,11 @@ public class LogItem : Item, IStaticCollidable
         LogItemActivatedEvent?.Invoke(this);
         transform.localScale = Vector3.zero;
 
-        outlineObj.SetActive(true);
+        // 공중에서 페이드아웃되어 사라지는 연출(버려진 아이템)에서는 아웃라인을 켜지 않는다
+        if (outlineObj != null && !bFadeAndVanish)
+        {
+            outlineObj.SetActive(true);
+        }
 
         if (outlineObj != null && visualTransform != null)
         {
@@ -359,6 +383,9 @@ public class LogItem : Item, IStaticCollidable
         rotationSpeed = 0f;
         totalRotation = 0f;
         bCanAcquired = true;
+        bFadeAndVanish = false;
+        // 풀에서 재사용될 때 이전 소유자(예: DropAllItem)가 남긴 구독이 새 사용처로 잘못 넘어가지 않도록 초기화
+        LogItemVanishedEvent = null;
         transform.localScale = Vector3.one;
         landingDampTime = landingDampDuration;
         durability = originalDurability;
@@ -368,7 +395,15 @@ public class LogItem : Item, IStaticCollidable
             outlineObj.SetActive(false);
 
         if (outlineSR != null)
+        {
             outlineSR.SetPropertyBlock(null);
+            outlineSR.color = originalOutlineColor; // FadeAndVanish 연출로 줄어든 알파 복구
+        }
+
+        if (shadowRenderer != null)
+        {
+            shadowRenderer.color = originalShadowColor; // FadeAndVanish 연출로 줄어든 알파 복구
+        }
 
         if (spriteRenderer != null)
         {
@@ -517,6 +552,13 @@ public class LogItem : Item, IStaticCollidable
         }
         transform.localScale = Vector3.one * targetScale;
 
+        // 착지 전에 서서히 사라지는 연출: VanishFadeStartT 시점부터 착지(t=1)까지 알파를 1->0으로 선형 감소
+        if (bFadeAndVanish)
+        {
+            float fadeT = t <= VanishFadeStartT ? 0f : (t - VanishFadeStartT) / (1f - VanishFadeStartT);
+            ApplyLaunchFadeAlpha(1f - fadeT);
+        }
+
         CollisionSystem.Instance?.UpdatePosition(this, transform.position);
 
         if (t >= 1.0f)
@@ -543,6 +585,16 @@ public class LogItem : Item, IStaticCollidable
 
             UpdateShadowScale(0f);
 
+            // 착지 시점(t=1)에는 이미 완전히 투명해진 상태이므로, 일반 착지 처리(줍기 판정/샤이니 VFX 등) 없이
+            // 바로 소멸을 알리고 종료한다.
+            if (bFadeAndVanish)
+            {
+                ApplyLaunchFadeAlpha(0f);
+                state = ItemMoveState.None;
+                LogItemVanishedEvent?.Invoke(this);
+                return;
+            }
+
             landingDampTime = 0f;
 
             state = ItemMoveState.Dropped;
@@ -553,6 +605,30 @@ public class LogItem : Item, IStaticCollidable
                 if (particleEffect != null) particleEffect.transform.localScale = Vector3.one;
             }
             CheckAcquireCondition();
+        }
+    }
+
+    private void ApplyLaunchFadeAlpha(float _alpha)
+    {
+        if (spriteRenderer != null)
+        {
+            Color c = spriteRenderer.color;
+            c.a = _alpha;
+            spriteRenderer.color = c;
+        }
+
+        if (outlineSR != null)
+        {
+            Color c = outlineSR.color;
+            c.a = _alpha;
+            outlineSR.color = c;
+        }
+
+        if (shadowRenderer != null)
+        {
+            Color c = shadowRenderer.color;
+            c.a = _alpha;
+            shadowRenderer.color = c;
         }
     }
 

@@ -46,6 +46,10 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private float hitFlashDuration = 0.15f;
     [SerializeField] private AnimationCurve hitFlashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
 
+    [Header("Grow Up Flash")]
+    [SerializeField] private float growUpFlashDuration = 0.35f;
+    [SerializeField] private AnimationCurve growUpFlashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+
 
 
     [Header("Outline")]
@@ -583,6 +587,17 @@ public class TreeVisualComponent : MonoBehaviour
     // 피격 시 나무 스프라이트가 짧게 흰색으로 번쩍였다가 원래 색으로 돌아오도록 한다.
     public void PlayHitFlash()
     {
+        PlayFlash(hitFlashDuration, hitFlashCurve);
+    }
+
+    // 묘목이 다 자라 스케일이 최대가 되는 순간, 피격 플래시와 같은 셰이더로 한 번 하얗게 반짝인다.
+    public void PlayGrowUpFlash()
+    {
+        PlayFlash(growUpFlashDuration, growUpFlashCurve);
+    }
+
+    private void PlayFlash(float _duration, AnimationCurve _curve)
+    {
         if (!gameObject.activeInHierarchy)
         {
             return;
@@ -593,18 +608,18 @@ public class TreeVisualComponent : MonoBehaviour
             StopCoroutine(hitFlashCoroutine);
         }
 
-        hitFlashCoroutine = StartCoroutine(HitFlashRoutine());
+        hitFlashCoroutine = StartCoroutine(FlashRoutine(_duration, _curve));
     }
 
-    private IEnumerator HitFlashRoutine()
+    private IEnumerator FlashRoutine(float _duration, AnimationCurve _curve)
     {
         if (_flashMPB == null) _flashMPB = new MaterialPropertyBlock();
 
         float elapsed = 0f;
-        while (elapsed < hitFlashDuration)
+        while (elapsed < _duration)
         {
-            float t = elapsed / hitFlashDuration;
-            float flash = hitFlashCurve.Evaluate(t);
+            float t = elapsed / _duration;
+            float flash = _curve.Evaluate(t);
 
             ApplyFlashAmountToRenderers(flash);
 

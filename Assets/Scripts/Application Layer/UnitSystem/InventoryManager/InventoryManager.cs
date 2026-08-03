@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -74,6 +75,12 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
     private LogItemPoolingManager logItemPoolingManager;
     private List<LogItem> activeDroppedItems = new List<LogItem>(64);
+
+    // DropAllItem 시 화면에 날아가는 연출 개수 상한(아이템 데이터 자체는 상한과 무관하게 전량 버려진다)
+    private const int MaxDropVisualCount = 15;
+    // 연출이 한꺼번에 터지지 않고 하나씩 연달아 발사되도록 하는 간격
+    [SerializeField] private float dropVisualInterval = 0.08f;
+    private Coroutine dropVisualsCoroutine;
 
     private VFXComponent vfxComponent;
 
@@ -660,6 +667,11 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         int totalDroppedCount = 0;
         Vector3 startPos = _charTransform.position;
 
+        // 실제로 보유한 나무 종류가 골고루 섞이도록 라운드로빈으로 짠, 최대 MaxDropVisualCount개의 연출 순서
+        // (TreeType/LogState 값만 미리 복사해둔다 - 아래에서 슬롯이 비워지며 원본 LogItemData가 풀로 반환/리셋되므로
+        //  코루틴이 나중에 참조를 그대로 쓰면 안 된다)
+        List<(TreeType treeType, LogState logState)> dropVisualPlan = BuildLogDropVisualPlan();
+
         for (int i = 0; i < currentSlotCount; i++)
         {
             InventorySlot slot = inventorySlots[i];
@@ -668,45 +680,9 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             int count = slot.totalCount;
             totalDroppedCount += count;
 
-            // Log 아이템인 경우 처리
-            if (slot.itemData is LogItemData logData)
+            for (int j = 0; j < count; j++)
             {
-                for (int j = 0; j < count; j++)
-                {
-                    LogItem logItem = logItemPoolingManager.GetLogItem(logData);
-                    logItem.SetbCanAcquired(false);
-
-                    if (logItem != null)
-                    {
-                        logItem.transform.position = startPos;
-                        logItem.SetInventoryChecker(this);
-                        logItem.IsDropItem(true);
-
-                        activeDroppedItems.Add(logItem);
-
-                        // 무작위 방향 및 거리 설정
-                        float angle = UnityEngine.Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                        float distance = UnityEngine.Random.Range(0.5f, 1.2f);
-                        Vector3 offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * distance;
-                        Vector3 endPos = startPos + offset;
-
-                        float height = UnityEngine.Random.Range(0.3f, 0.6f);
-                        float duration = UnityEngine.Random.Range(0.4f, 0.6f);  
-
-                        logItem.SetVfxComponent(vfxComponent);
-                        logItem.Launch(startPos, endPos, height, duration);
-                    }
-
-                    Sound.PlayUI(SoundID.OutItem);
-                    ItemRemoved();
-                }
-            }
-            else
-            {
-                for (int j = 0; j < count; j++)
-                {
-                    ItemRemoved();
-                }
+                ItemRemoved();
             }
 
             // 슬롯 비우기 및 데이터 반환
@@ -717,17 +693,140 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         UpdateInventoryEmptyState();
         LoosAllInventoryItemEvent?.Invoke();
 
+        // 데이터는 위에서 즉시 전량 제거하고, 화면 연출만 한 번에 몰아서 터지지 않도록 순차적으로 하나씩 발사한다
+        if (dropVisualsCoroutine != null)
+        {
+            StopCoroutine(dropVisualsCoroutine);
+            dropVisualsCoroutine = null;
+        }
+
+        if (dropVisualPlan.Count > 0)
+        {
+            dropVisualsCoroutine = StartCoroutine(SpawnDropVisualsRoutine(dropVisualPlan, startPos));
+        }
+
         return totalDroppedCount;
+    }
+
+    // DropAllItem에서 실제로 보유 중인 나무 종류(로그 슬롯)가 골고루 섞이도록 라운드로빈으로 연출 순서를 짠다.
+    // 예) Oak 20개 + Pine 10개를 들고 있을 때 상한이 15라면, 어느 한 종류가 몰리지 않고
+    // Oak-Pine-Oak-Pine... 순서로 번갈아 섞여서 최대 15개까지 순서대로 날아가도록 한다.
+    private List<(TreeType treeType, LogState logState)> BuildLogDropVisualPlan()
+    {
+        List<(TreeType treeType, LogState logState)> plan = new List<(TreeType, LogState)>(MaxDropVisualCount);
+
+        List<int> logSlotIndices = new List<int>();
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData is LogItemData && inventorySlots[i].totalCount > 0)
+            {
+                logSlotIndices.Add(i);
+            }
+        }
+
+        if (logSlotIndices.Count == 0) return plan;
+
+        int[] remaining = new int[currentSlotCount];
+        int totalLogCount = 0;
+        for (int i = 0; i < logSlotIndices.Count; i++)
+        {
+            int slotIndex = logSlotIndices[i];
+            remaining[slotIndex] = inventorySlots[slotIndex].totalCount;
+            totalLogCount += remaining[slotIndex];
+        }
+
+        int visualTarget = Mathf.Min(MaxDropVisualCount, totalLogCount);
+
+        int cursor = 0;
+        while (plan.Count < visualTarget)
+        {
+            int slotIndex = logSlotIndices[cursor % logSlotIndices.Count];
+            if (remaining[slotIndex] > 0)
+            {
+                LogItemData logData = (LogItemData)inventorySlots[slotIndex].itemData;
+                plan.Add((logData.treeType, logData.logState));
+                remaining[slotIndex]--;
+            }
+            cursor++;
+        }
+
+        return plan;
+    }
+
+    // 미리 짜둔 순서(_plan)대로 나무 연출을 하나씩 연달아 발사한다.
+    private IEnumerator SpawnDropVisualsRoutine(List<(TreeType treeType, LogState logState)> _plan, Vector3 _startPos)
+    {
+        for (int i = 0; i < _plan.Count; i++)
+        {
+            SpawnDropVisual(_plan[i].treeType, _plan[i].logState, _startPos);
+
+            if (i < _plan.Count - 1)
+            {
+                yield return new WaitForSeconds(dropVisualInterval);
+            }
+        }
+
+        dropVisualsCoroutine = null;
+    }
+
+    private void SpawnDropVisual(TreeType _treeType, LogState _logState, Vector3 _startPos)
+    {
+        LogItem logItem = logItemPoolingManager.GetLogItem(_treeType, _logState);
+        if (logItem == null) return;
+
+        logItem.SetbCanAcquired(false);
+        logItem.transform.position = _startPos;
+        logItem.SetInventoryChecker(this);
+        logItem.IsDropItem(true);
+
+        // 포물선 비행 도중 서서히 알파가 0이 되어, 착지하지 않고 공중에서 사라지는 연출
+        logItem.SetFadeAndVanish(true);
+        logItem.LogItemVanishedEvent -= LogItemVanished;
+        logItem.LogItemVanishedEvent += LogItemVanished;
+
+        activeDroppedItems.Add(logItem);
+
+        // 나무를 벨 때(LogItemController.SpawnLogItem)와 같은 방식의 포물선 운동: 캐릭터 머리 위로
+        // 높이 솟구쳤다가 무작위 방향으로 퍼지며 빙글빙글 회전하도록 한다.
+        Vector2 randomDir = UnityEngine.Random.insideUnitCircle.normalized;
+        float randomDist = UnityEngine.Random.Range(1.25f, 1.75f);
+        Vector3 endPos = _startPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0f) * randomDist;
+
+        float height = UnityEngine.Random.Range(1.8f, 2.8f);
+        float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+
+        logItem.SetVfxComponent(vfxComponent);
+        logItem.Launch(_startPos, endPos, height, randomRotation);
+
+        Sound.PlayUI(SoundID.OutItem);
+    }
+
+    // 공중에서 페이드아웃되어 사라지는 연출(DropAllItem)이 끝난 LogItem을 즉시 풀로 반환한다.
+    private void LogItemVanished(LogItem _item)
+    {
+        _item.LogItemVanishedEvent -= LogItemVanished;
+        activeDroppedItems.Remove(_item);
+        logItemPoolingManager.ReturnLogItem(_item);
     }
 
     public void ReleaseAllDroppedItem()
     {
         reservedItems.Clear();
-        
+
+        // 아직 순차 발사 중이던 나머지 연출은 씬 전환 시점에 더 이상 의미가 없으므로 중단한다
+        if (dropVisualsCoroutine != null)
+        {
+            StopCoroutine(dropVisualsCoroutine);
+            dropVisualsCoroutine = null;
+        }
+
         if (activeDroppedItems.Count == 0) return;
 
         for (int i = 0; i < activeDroppedItems.Count; i++)
         {
+            // 페이드아웃이 끝나기 전에 씬이 전환되는 경우를 대비해, 풀로 되돌리기 전에 구독을 먼저 해제한다
+            // (해제하지 않으면 ReturnLogItem 이후 이 인스턴스가 재사용될 때 이전 구독이 남아있게 된다)
+            activeDroppedItems[i].LogItemVanishedEvent -= LogItemVanished;
             logItemPoolingManager.ReturnLogItem(activeDroppedItems[i]);
         }
         activeDroppedItems.Clear();

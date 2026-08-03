@@ -36,17 +36,25 @@ public class LogItemPoolingManager : MonoBehaviour
 
     public LogItem GetLogItem(LogItemData _data)
     {
+        return GetLogItem(_data.treeType, _data.logState);
+    }
+
+    // TreeType/LogState는 값 타입이라 호출 시점의 값을 그대로 복사해 사용한다.
+    // DropAllItem처럼 원본 LogItemData가 풀로 반환되어 리셋될 수 있는(예약된) 상황에서
+    // 나중에(지연 스폰 등) 안전하게 꺼내 쓰기 위해, 참조가 아닌 값으로 받는 경로가 필요할 때 사용한다.
+    public LogItem GetLogItem(TreeType _treeType, LogState _logState)
+    {
         LogItem item = logPool.Get();
 
-        LogItemTypeData typeData = logItemTypeDataBase.Get(_data.treeType);
+        LogItemTypeData typeData = logItemTypeDataBase.Get(_treeType);
 
         if (typeData != null)
         {
-            item.Initialize(typeData, typeData.color, _data.logState, null, bDisableCustomSortable);
+            item.Initialize(typeData, typeData.color, _logState, null, bDisableCustomSortable);
         }
         else
         {
-            Debug.LogError($"[LogItemPoolingManager] No LogItemTypeData found for TreeType: {_data.treeType}");
+            Debug.LogError($"[LogItemPoolingManager] No LogItemTypeData found for TreeType: {_treeType}");
         }
 
         return item;

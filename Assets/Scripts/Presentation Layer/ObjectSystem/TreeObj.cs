@@ -27,6 +27,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     private SaplingVEComponent saplingVEComponent;
     private Transform cachedTransform;
 
+    // 성장 연출 정점 콜백. 나무는 풀에서 반복 사용되므로 델리게이트를 매번 새로 만들지 않고 캐싱한다.
+    private Action cachedGrowUpFlashAction;
+
     // StarrootForest 별 표식 - Stage3TreeGenerationStrategySO가 스폰 시 부여
     public bool bStarMarked { get; private set; } = false;
     public int StarGroupId { get; private set; } = -1;
@@ -177,6 +180,8 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
 
         healthComponent = GetComponent<EHealthComponent>();
         healthComponent.Initialize(_shieldStatProvider);
+
+        cachedGrowUpFlashAction = PlayGrowUpFlash;
 
         saplingVEComponent = GetComponentInChildren<SaplingVEComponent>();
         if (saplingVEComponent != null)
@@ -412,7 +417,16 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
 
         if (saplingVEComponent != null)
-            saplingVEComponent.AnimateSaplingVE(false);
+            saplingVEComponent.AnimateSaplingVE(false, cachedGrowUpFlashAction);
+    }
+
+    // 성장 스케일 연출이 최대에 도달하는 순간 피격과 동일한 하얀 플래시를 한 번 터뜨린다.
+    private void PlayGrowUpFlash()
+    {
+        if (treeVisualComponent != null)
+        {
+            treeVisualComponent.PlayGrowUpFlash();
+        }
     }
 
     public Color GetColor()
