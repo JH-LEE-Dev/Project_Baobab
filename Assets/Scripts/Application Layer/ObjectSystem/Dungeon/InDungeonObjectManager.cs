@@ -1413,16 +1413,21 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         if (inventoryChecker.bInventoryIsEmpty == false)
         {
+            float dropDuration = 0f;
+            if (characterInventory is InventoryManager invMgr)
+            {
+                dropDuration = invMgr.GetDropVisualDuration();
+            }
             DropAllItemEvent?.Invoke();
-            StartCoroutine(GameEndRoutine());
+            StartCoroutine(GameEndRoutine(dropDuration + 0.1f));
         }
         else
             RideOffroadEvent?.Invoke();
     }
 
-    private IEnumerator GameEndRoutine()
+    private IEnumerator GameEndRoutine(float _delay)
     {
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(_delay);
 
         RideOffroadEvent?.Invoke();
     }

@@ -230,14 +230,12 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (flyingData.toCarrier != null)
                     {
                         flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
-                        Sound.PlayUI(SoundID.GetItem);
                     }
                     else
                     {
                         AddToCharacterInventory(arrivalDataBuffer, item.logState);
                         character?.PlayItemAcquireBounce();
                         character?.PlayItemAcquireFlash();
-                        Sound.PlayUI(SoundID.GetItem);
                     }
                 }
                 else
@@ -246,13 +244,13 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     // pendingCount로만 반영됨).
                     AddItemByData(arrivalDataBuffer, item.logState);
                     TriggerBounce();
-
-                    // 상자에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
-                    float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
-                    float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
-                    Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, currentDepositPitch);
-                    currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
                 }
+
+                // 연속으로 넣거나 꺼낼수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
+                float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
+                float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
+                Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, currentDepositPitch);
+                currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
 
                 logItemPoolManager.ReturnLogItem(item);
                 flyingItems.RemoveAt(i);

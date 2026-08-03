@@ -708,6 +708,21 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
         return totalDroppedCount;
     }
 
+    public float GetDropVisualDuration()
+    {
+        int totalLogCount = 0;
+        for (int i = 0; i < currentSlotCount; i++)
+        {
+            if (inventorySlots[i].itemData is LogItemData && inventorySlots[i].totalCount > 0)
+            {
+                totalLogCount += inventorySlots[i].totalCount;
+            }
+        }
+        int count = Mathf.Min(MaxDropVisualCount, totalLogCount);
+        if (count <= 0) return 0f;
+        return (count - 1) * dropVisualInterval;
+    }
+
     // DropAllItem에서 실제로 보유 중인 나무 종류(로그 슬롯)가 골고루 섞이도록 라운드로빈으로 연출 순서를 짠다.
     // 예) Oak 20개 + Pine 10개를 들고 있을 때 상한이 15라면, 어느 한 종류가 몰리지 않고
     // Oak-Pine-Oak-Pine... 순서로 번갈아 섞여서 최대 15개까지 순서대로 날아가도록 한다.
