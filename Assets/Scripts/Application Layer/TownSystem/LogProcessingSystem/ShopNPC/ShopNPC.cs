@@ -90,7 +90,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         flyingCoins = new List<FlyingCoin>(32);
 
-        money = 10000;
+        money = 0;
 
         frameWait = new WaitForSeconds(frameTime);
 
