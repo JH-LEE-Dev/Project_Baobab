@@ -181,6 +181,7 @@ public class UnitSystem
         inventoryManager.ItemAcquired(itemAcquiredSignal.item);
         Sound.PlayUI(SoundID.GetItem);
         unitSpawner.character.PlayItemAcquireBounce();
+        unitSpawner.character.PlayItemAcquireFlash();
     }
 
     private void ItemDeleted(DeleteItemSignal deleteItemSignal)
@@ -196,6 +197,7 @@ public class UnitSystem
     private void MoneyEarned(MoneyEarnedSignal moneyEarnedSignal)
     {
         inventoryManager.MoneyEarned(moneyEarnedSignal.money);
+        // 반짝임/카메라 셰이크는 이제 ShopNPC가 코인이 도착할 때마다(짤랑짤랑) 직접 재생한다.
         signalHub.Publish(new CharacterEarnMoneySignal(MoneyType.Coin));
     }
 

@@ -122,6 +122,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         character = _character;
         logContainer.SetCharTransform(character.centerTransform);
         shopNPC.SetCharacterTransform(character.centerTransform);
+        shopNPC.SetCharacter(character);
     }
 
     private void BindEvents()

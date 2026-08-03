@@ -60,16 +60,21 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         /// 도끼 게이지 값을 업데이트합니다.
         /// </summary>
         /// <param name="_ratio">0~1 사이의 비율</param>
-        public void UpdateGauge(float _ratio)
+        /// <param name="_bPlayEffects">
+        /// true면 진짜 공격/수리로 인한 내구도 변화이므로 사운드·VFX를 재생한다.
+        /// false면 도끼 내구도 강화 스킬 등으로 최대 내구도가 바뀌어 비율만 재계산되는
+        /// "무음 재동기화"이므로 스프라이트/게이지만 갱신하고 사운드·VFX는 재생하지 않는다.
+        /// </param>
+        public void UpdateGauge(float _ratio, bool _bPlayEffects = true)
         {
             if (null == axeGaugeBar)
                 return;
 
             axeGaugeBar.UpdateValue(_ratio);
-            UpdateAxeImage(_ratio);
+            UpdateAxeImage(_ratio, _bPlayEffects);
         }
 
-        private void UpdateAxeImage(float _ratio)
+        private void UpdateAxeImage(float _ratio, bool _bPlayEffects)
         {
             if (null == axeImages || null == axeImage)
                 return;
@@ -93,6 +98,11 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             axeImage.sprite = axeImages[(int)axeMode];
 
+            // 무음 재동기화(스킬로 최대 내구도만 바뀌는 등)에서는 스프라이트/모드/previousRatio만
+            // 갱신하고, 실제 파손 사운드·VFX·애니메이션은 재생하지 않는다.
+            if (!_bPlayEffects)
+                return;
+
             if (1f > _ratio && prevMode != axeMode)
             {
                 if (null != omp)
@@ -112,7 +122,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                     ParticleSystem brokenEffect = vfxComponent.Play(axeBrokenTag, axeHead.transform.position, Quaternion.identity, transform);
 
                     // AxeBreaking_ex(파티클이 바닥에 흩뿌려지는 소리)는 실제로 나빠지는 방향이면서 파티클이 나갔을 때만 딜레이 재생한다.
-                    if (isBreaking && null != brokenEffect)
+                    // HUD가 비활성 상태(예: 어빌리티 트리 UI가 열려있는 동안)면 코루틴을 시작할 수 없으므로 건너뛴다.
+                    if (isBreaking && null != brokenEffect && gameObject.activeInHierarchy)
                     {
                         StartCoroutine(PlayAxeBreakingExDelayed());
                     }

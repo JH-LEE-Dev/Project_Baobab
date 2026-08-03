@@ -338,6 +338,20 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         itemAcquireBounceTime = 0f;
     }
 
+    // 흡입(Suck)/포물선(OffroadContainer) 두 아이템 획득 경로 모두에서 도착 시점에 호출한다.
+    // 사망 연출(PlayDeathFlash/ShakeCamera)보다 훨씬 옅고 약하게 잡아 긍정적인 획득 피드백으로 느껴지게 한다.
+    public void PlayItemAcquireFlash()
+    {
+        characterVisualComponent.PlayItemAcquireFlash(GetArmFlashRenderer());
+        CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
+    }
+
+    // 무기(Arm) 스프라이트는 던전에 있을 때만 반짝인다 - 마을에서는 무기가 꺼져 있어 의미가 없다.
+    private SpriteRenderer GetArmFlashRenderer()
+    {
+        return bInDungeon ? armComponent?.currentWeapon?.spriteRenderer : null;
+    }
+
     #endregion
 
     #region Private Methods
@@ -449,7 +463,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         armComponent.SetActivate(false);
         attackComponent.SetEnable(false);
         characterVisualComponent.CharacterIsDead(true);
-        characterVisualComponent.PlayDeathFlash();
+        characterVisualComponent.PlayDeathFlash(GetArmFlashRenderer());
         CameraMoveController.Instance?.ShakeCamera(5f, 0.3f);
         CameraMoveController.Instance?.ZoomCamera(1.05f, 0.08f, 0.05f, 0.15f);
         bDead = true;

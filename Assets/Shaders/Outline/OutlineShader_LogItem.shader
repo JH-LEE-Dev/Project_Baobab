@@ -4,7 +4,7 @@ Shader "Custom/OutlineShader_LogItem"
     {
         [MainColor] _BaseColor("Base Color", Color) = (1, 1, 1, 1)
         [MainTexture] _BaseMap("Base Map", 2D) = "white" {}
-        _OutlineColor("Outline Color", Color) = (0, 0, 0, 1)
+        [HDR] _OutlineColor("Outline Color", Color) = (0, 0, 0, 1)
         _OutlineWidth("Outline Width", Float) = 1
     }
 

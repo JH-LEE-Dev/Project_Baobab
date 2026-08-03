@@ -55,9 +55,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private CustomSortable customSortable;
     private Transform characterTransform;
     private CoinItemPoolingManager coinItemPoolingManager;
+    private Character character;
     private List<FlyingCoin> flyingCoins;
     private Coroutine coinThrowCoroutine;
     private Coroutine animationCoroutine;
+
+    // 코인은 개별적으로 날아가 보이지만, 실제 재화 지급은 연출과 무관하게 첫 번째 코인이
+    // 캐릭터에 도착하는 순간 전액 한 번에 처리한다(뒤이어 도착하는 코인들은 시각 연출일 뿐).
+    private int pendingBatchMoney = 0;
+    private bool bAwaitingFirstArrival = false;
     public SpriteRenderer sr;
     public SpriteRenderer outlineSr;
     private int currentFrameIndex = 0;
@@ -84,7 +90,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
         flyingCoins = new List<FlyingCoin>(32);
 
-        money = 0;
+        money = 10000;
 
         frameWait = new WaitForSeconds(frameTime);
 
@@ -217,12 +223,16 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         money = 0;
         ShopMoneyChangedEvent?.Invoke();
 
+        pendingBatchMoney += tempMoney;
+        bAwaitingFirstArrival = true;
+
         if (bFirstTimeEarnMoney == true)
         {
             bFirstTimeEarnMoney = false;
         }
 
-        // 동전 개수 계산 (최대 20개 제한, 금화=100,000, 은화=1,000, 동화=10)
+        // 동전 개수 계산 (최대 20개 제한). 등급 구분 없이 항상 골드 동전만 생성하며,
+        // 예전에 Bronze(동화)를 나누던 것과 동일하게 10 단위로만 쪼갠다.
         int remainingMoney = tempMoney;
         List<CoinSpawnInfo> coinsToSpawn = new List<CoinSpawnInfo>(20);
 
@@ -230,38 +240,19 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         {
             if (coinsToSpawn.Count == 19)
             {
-                CoinType type = CoinType.Bronze;
-                if (remainingMoney >= 100000)
-                {
-                    type = CoinType.Gold;
-                }
-                else if (remainingMoney >= 1000)
-                {
-                    type = CoinType.Silver;
-                }
-                coinsToSpawn.Add(new CoinSpawnInfo(type, remainingMoney));
+                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, remainingMoney));
                 remainingMoney = 0;
                 break;
             }
 
-            if (remainingMoney >= 100000)
+            if (remainingMoney >= 10)
             {
-                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, 100000));
-                remainingMoney -= 100000;
-            }
-            else if (remainingMoney >= 1000)
-            {
-                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Silver, 1000));
-                remainingMoney -= 1000;
-            }
-            else if (remainingMoney >= 10)
-            {
-                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Bronze, 10));
+                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, 10));
                 remainingMoney -= 10;
             }
             else
             {
-                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Bronze, remainingMoney));
+                coinsToSpawn.Add(new CoinSpawnInfo(CoinType.Gold, remainingMoney));
                 remainingMoney = 0;
             }
         }
@@ -276,10 +267,10 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private IEnumerator CoThrowCoins(List<CoinSpawnInfo> _coins)
     {
         int coinCount = _coins.Count;
-        float currentInterval = 0.05f;
+        float currentInterval = 0.09f;
         if (coinCount > 0)
         {
-            float maxAllowedInterval = 0.5f / coinCount;
+            float maxAllowedInterval = 0.9f / coinCount;
             if (currentInterval > maxAllowedInterval)
             {
                 currentInterval = maxAllowedInterval;
@@ -303,7 +294,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
             float arcPower = UnityEngine.Random.Range(-0.3f, 0.3f);
             Vector3 trajectoryJitter = normal * arcPower;
 
-            float rotationSpeed = UnityEngine.Random.Range(90f, 270f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
+            float rotationSpeed = UnityEngine.Random.Range(60f, 160f) * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
             coin.DynamicTransferLaunch(
                 start,
@@ -343,11 +334,27 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
             if (fc.coin.isArrived)
             {
-                EarnMoneyEvent?.Invoke(fc.value);
+                if (bAwaitingFirstArrival)
+                {
+                    EarnMoneyEvent?.Invoke(pendingBatchMoney);
+                    pendingBatchMoney = 0;
+                    bAwaitingFirstArrival = false;
+                }
+
+                // 실제 재화 지급은 첫 코인 도착 시 한 번에 처리하지만, 반짝임/카메라 셰이크는
+                // 코인이 도착할 때마다(짤랑짤랑) 매번 재생해 손맛을 살린다.
+                character?.PlayItemAcquireBounce();
+                character?.PlayItemAcquireFlash();
+
                 coinItemPoolingManager.ReturnCoin(fc.coin);
                 flyingCoins.RemoveAt(i);
             }
         }
+    }
+
+    public void SetCharacter(Character _character)
+    {
+        character = _character;
     }
 
     public void SetCharacterTransform(Transform _transform)

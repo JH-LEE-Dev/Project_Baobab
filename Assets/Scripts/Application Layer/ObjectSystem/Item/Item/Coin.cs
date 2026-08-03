@@ -13,6 +13,16 @@ public class Coin : MonoBehaviour
     [SerializeField] private SpriteRenderer sr;
     [SerializeField] private Animator anim;
 
+    // LogItem과 동일한 스텐실 2-패스 아웃라인 구조(OutlineStencilWriter -> 자식 Outline).
+    [Header("Outline (LogItem과 동일한 방식)")]
+    [SerializeField] private GameObject outlineObj;
+    [SerializeField] private SpriteRenderer outlineStencilSR;
+    [SerializeField] private SpriteRenderer outlineSR;
+    [ColorUsage(true, true)]
+    [SerializeField] private Color outlineColor = Color.white;
+    private static readonly int OutlineColorPropertyID = Shader.PropertyToID("_OutlineColor");
+    private MaterialPropertyBlock outlineMPB;
+
     // 내부 의존성
     public CoinType coinType { get; private set; }
     public bool isArrived { get; private set; } = false;
@@ -31,9 +41,54 @@ public class Coin : MonoBehaviour
     private float rotationSpeed;
     private float elapsed;
 
+    // 정점 부근에서 서서히 느려졌다가 다시 빨라지는 느낌을 위한 가감속 계수(0~0.159 권장, 클수록 정점에서 더 느려짐).
+    [SerializeField] [Range(0f, 0.159f)] private float apexEaseStrength = 0.13f;
+
     private void Awake()
     {
+        // 프리팹 인스펙터에 sr이 연결되지 않은 경우를 대비한 안전장치.
+        // (실측 결과 Gold/Bronze/Silver 코인 프리팹 전부 sr이 비어있어서 회전/Squash&Stretch가
+        // 한 번도 재생되지 않고 있었다 - 이 자동 할당으로 그 문제를 함께 해결한다)
+        if (sr == null)
+        {
+            sr = GetComponent<SpriteRenderer>();
+        }
+
         CacheOriginalScale();
+        SyncOutlineSprite();
+        ApplyOutlineColor();
+
+        if (outlineObj != null)
+        {
+            outlineObj.SetActive(true);
+        }
+    }
+
+    // Animator가 매 프레임 sr의 스프라이트를 바꾸는 반짝임 애니메이션을 재생 중이므로,
+    // Outline도 그 프레임 변화를 따라가지 않으면 코인 본체와 어긋나 보인다.
+    private void Update()
+    {
+        SyncOutlineSprite();
+    }
+
+    // 아웃라인 스프라이트가 본체 스프라이트와 항상 같은 모양을 가리키도록 동기화한다.
+    private void SyncOutlineSprite()
+    {
+        if (sr == null) return;
+
+        if (outlineStencilSR != null) outlineStencilSR.sprite = sr.sprite;
+        if (outlineSR != null) outlineSR.sprite = sr.sprite;
+    }
+
+    // 인스펙터에서 설정한 outlineColor(HDR)를 셰이더의 _OutlineColor로 전달한다.
+    private void ApplyOutlineColor()
+    {
+        if (outlineSR == null) return;
+
+        if (outlineMPB == null) outlineMPB = new MaterialPropertyBlock();
+        outlineSR.GetPropertyBlock(outlineMPB);
+        outlineMPB.SetColor(OutlineColorPropertyID, outlineColor);
+        outlineSR.SetPropertyBlock(outlineMPB);
     }
 
     public void Initailize(CoinType _coinType)
@@ -69,105 +124,66 @@ public class Coin : MonoBehaviour
     {
         if (isArrived || dynamicTarget == null) return;
 
-        float currentT = duration > 0 ? (elapsed / duration) : 1f;
-        
-        // 정점 부근에서 느려지고, 낙하할 때 빨라지도록 비선형 속도 보정 (Disney Slow-in/Slow-out) - 후반 가속도 극대화
-        float speedMultiplier = 1f;
-        if (currentT < 0.35f)
-        {
-            speedMultiplier = 1.3f; // 처음엔 빠르게 튀어 오름
-        }
-        else if (currentT >= 0.35f && currentT <= 0.6f)
-        {
-            speedMultiplier = 0.5f; // 정점에서는 좀 더 체공 시간이 길어지는 느낌
-        }
-        else
-        {
-            speedMultiplier = 2.4f; // 캐릭터에게 빨려 들어갈 땐 초고속 가속
-        }
+        elapsed += _deltaTime;
+        float t = Mathf.Clamp01(duration > 0 ? (elapsed / duration) : 1f);
 
-        elapsed += _deltaTime * speedMultiplier;
-        float t = Mathf.Clamp01(elapsed / duration);
+        // 정점(t=0.5) 부근에서는 느려지고 시작/도착 구간에서는 빨라지도록 실제 이동에 쓰이는
+        // 시간(t)을 왜곡한다. sin 보정이라 t=0, 0.5, 1의 위치는 그대로 유지되고 그 사이의
+        // 진행 속도만 바뀐다 (미분값 1±2π*apexEaseStrength, apexEaseStrength<1/2π면 항상 단조증가).
+        float easedT = t + apexEaseStrength * Mathf.Sin(2f * Mathf.PI * t);
+        float easedTDerivative = 1f + apexEaseStrength * 2f * Mathf.PI * Mathf.Cos(2f * Mathf.PI * t);
 
         Vector3 endPos = dynamicTarget.position;
-        float jitterFactor = 4f * t * (1f - t);
-        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t) + (trajectoryJitter * jitterFactor);
+        float jitterFactor = 4f * easedT * (1f - easedT);
+        Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, easedT) + (trajectoryJitter * jitterFactor);
 
-        float heightOffset = -4f * height * (t - 0.5f) * (t - 0.5f) + height;
+        float heightOffset = -4f * height * (easedT - 0.5f) * (easedT - 0.5f) + height;
 
-        // Y축 속도 유추 (위치 변화율 미분)
-        float verticalVelocity = -8f * height * (t - 0.5f) / duration;
+        // Y축 속도 유추 (위치 변화율 미분, 연쇄법칙으로 easedT 왜곡까지 반영)
+        float verticalVelocity = -8f * height * (easedT - 0.5f) * easedTDerivative / duration;
+
+        // sr이 코인 루트 자신에 붙어있는 구조라(별도 자식 트랜스폼 아님) 위치/회전/스케일을
+        // 전부 이 하나의 transform에 합쳐서 적용한다 - 나눠서 적용하면 나중 대입이 앞선 대입을 덮어써 버린다.
+        transform.position = currentGroundPos + new Vector3(0f, heightOffset, 0f);
+
+        float squashX = 0f;
+        float stretchY = 0f;
 
         if (sr != null)
         {
-            transform.position = currentGroundPos;
-            sr.transform.localPosition = new Vector3(0f, heightOffset, 0f);
+            // Squash & Stretch: 낙하 속도에 비례해서만 반응한다(도착 직전 별도 보정 없음).
+            stretchY = Mathf.Min(Mathf.Abs(verticalVelocity) * 0.08f, 0.4f);
+            squashX = stretchY * 0.6f;
+        }
 
-            // 후반 흡수될 때 회전 속도를 최대 5배까지 증폭
-            float currentRotationSpeed = rotationSpeed;
-            if (t > 0.7f)
-            {
-                float rotAccel = (t - 0.7f) / 0.3f;
-                currentRotationSpeed = rotationSpeed * (1f + rotAccel * 4.0f);
-            }
-            sr.transform.Rotate(Vector3.forward, currentRotationSpeed * _deltaTime);
-
-            // Squash & Stretch 연출 강화 (변형 폭 상향)
-            float stretchY = Mathf.Min(Mathf.Abs(verticalVelocity) * 0.08f, 0.5f);
-            float squashX = stretchY * 0.6f;
-
-            // 후반부에 캐릭터 쪽으로 흡수될 때 추가적인 방향성 연장 효과
-            if (t > 0.7f)
-            {
-                float suckStretch = (t - 0.7f) / 0.3f * 0.3f;
-                stretchY += suckStretch;
-                squashX += suckStretch * 0.5f;
-            }
-
-            sr.transform.localScale = new Vector3(
-                originalVisualScale.x * (1f - squashX), 
-                originalVisualScale.y * (1f + stretchY), 
-                originalVisualScale.z
-            );
+        // 전체 스케일: 오버슈트 없이 등장/흡수 구간에서만 짧게 0<->1로 스냅하고,
+        // 그 사이 구간에는 Squash&Stretch만 반영한다(비행 내내 1.5배로 부풀어있던 기존 방식 제거).
+        const float snapWindow = 0.12f;
+        float scaleMultiplier;
+        if (t < snapWindow)
+        {
+            scaleMultiplier = t / snapWindow; // 등장: 0 -> 1
+        }
+        else if (t > 1f - snapWindow)
+        {
+            scaleMultiplier = (1f - t) / snapWindow; // 흡수: 1 -> 0
         }
         else
         {
-            transform.position = currentGroundPos + new Vector3(0f, heightOffset, 0f);
+            scaleMultiplier = 1f;
         }
 
-        // 전체 스케일 곡선 (최대 1.5배 팝업 및 빠른 소멸)
-        float targetScale = 1f;
-        if (t < 0.3f)
-        {
-            // 탄성 있게 커짐 (Overshoot 효과 강화)
-            float nt = t / 0.3f;
-            const float s = 2.0f;
-            float t1 = nt - 1f;
-            targetScale = Mathf.Max(0f, (t1 * t1 * ((s + 1f) * t1 + s) + 1f)) * 1.5f;
-        }
-        else if (t > 0.7f)
-        {
-            // 캐릭터에게 도달할 때 빠르게 작아지며 흡수됨
-            float nt = (t - 0.7f) / 0.3f;
-            targetScale = Mathf.Lerp(1.5f, 0f, nt);
-        }
-        else
-        {
-            targetScale = 1.5f;
-        }
-
-        transform.localScale = originalScale * targetScale;
+        transform.localScale = new Vector3(
+            originalScale.x * (1f - squashX) * scaleMultiplier,
+            originalScale.y * (1f + stretchY) * scaleMultiplier,
+            originalScale.z * scaleMultiplier
+        );
 
         if (t >= 1.0f)
         {
             isArrived = true;
             transform.position = endPos;
-            if (sr != null)
-            {
-                sr.transform.localPosition = Vector3.zero;
-                sr.transform.localRotation = Quaternion.identity;
-                sr.transform.localScale = originalVisualScale;
-            }
+            transform.rotation = Quaternion.identity;
             transform.localScale = originalScale;
         }
     }
@@ -186,4 +202,13 @@ public class Coin : MonoBehaviour
         }
         bHasCachedOriginalScale = true;
     }
+
+#if UNITY_EDITOR
+    // 인스펙터에서 outlineColor(HDR)를 바꿀 때 에디터 프리뷰에도 바로 반영되게 한다.
+    private void OnValidate()
+    {
+        if (outlineSR == null) return;
+        ApplyOutlineColor();
+    }
+#endif
 }

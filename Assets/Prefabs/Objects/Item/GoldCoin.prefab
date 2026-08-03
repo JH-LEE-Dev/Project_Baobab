@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 5700592897975571765}
   - component: {fileID: 7460006151328378632}
   - component: {fileID: 3348857310563699513}
-  - component: {fileID: 3415862898346624328}
   m_Layer: 0
   m_Name: GoldCoin
   m_TagString: Untagged
@@ -61,7 +60,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: e880c8cc906e30a49a8f8e63742acf0b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -81,7 +80,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -1266786427
-  m_SortingLayer: 10
+  m_SortingLayer: 12
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: -6474822756817492616, guid: 7417d3c54b8d90b4b8f8ea1e9c4cbce3, type: 3}
@@ -130,17 +129,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Coin
   sr: {fileID: 0}
   anim: {fileID: 0}
---- !u!114 &3415862898346624328
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5455410831914295957}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7ea4b267cd2b1a4994aa7a222edfd5e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Coin
-  sr: {fileID: 0}
-  anim: {fileID: 0}
+  outlineObj: {fileID: 0}
+  outlineStencilSR: {fileID: 0}
+  outlineSR: {fileID: 0}
+  outlineColor: {r: 3.3635857, g: 3.3635857, b: 3.3635857, a: 1}

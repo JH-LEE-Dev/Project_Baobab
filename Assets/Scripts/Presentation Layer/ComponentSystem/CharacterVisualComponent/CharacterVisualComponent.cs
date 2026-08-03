@@ -63,13 +63,16 @@ public class CharacterVisualComponent : MonoBehaviour
     private CharacterAnimator characterAnimator;
     private bool bIsInitialized = false;
 
-    // 사망 시 하얀 플래시 연출 (TreeVisualComponent.PlayHitFlash와 동일한 방식: _FlashAmount를
-    // MaterialPropertyBlock으로 조작해 SRP 배칭을 깨지 않는다)
+    // 하얀 플래시 연출 (TreeVisualComponent.PlayHitFlash와 동일한 방식: _FlashAmount를
+    // MaterialPropertyBlock으로 조작해 SRP 배칭을 깨지 않는다). 사망/아이템 획득 등 상황별로
+    // 지속시간·커브만 다르게 재생 - 한 번에 하나만 재생되면 되므로 코루틴 핸들을 공유한다.
     [SerializeField] private float deathFlashDuration = 0.3f;
     [SerializeField] private AnimationCurve deathFlashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    [SerializeField] private float itemAcquireFlashDuration = 0.12f;
+    [SerializeField] private AnimationCurve itemAcquireFlashCurve = AnimationCurve.EaseInOut(0f, 0.6f, 1f, 0f);
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private MaterialPropertyBlock flashMPB;
-    private Coroutine deathFlashCoroutine;
+    private Coroutine flashCoroutine;
 
     // Character.cs 컴파일 호환성 유지용 (혹시 외부에서 사용되는 경우 대비)
     public Animator Anim => null;
@@ -293,6 +296,12 @@ public class CharacterVisualComponent : MonoBehaviour
         itemAcquireBounceTime = 0f;
     }
 
+    // 아이템 획득(흡입/포물선 도착) 시의 짧고 옅은 하얀 플래시. 사망 플래시보다 약하고 짧다.
+    public void PlayItemAcquireFlash(SpriteRenderer _extraRenderer = null)
+    {
+        PlayFlash(itemAcquireFlashDuration, itemAcquireFlashCurve, _extraRenderer);
+    }
+
     #endregion
 
     #region Private Methods
@@ -393,41 +402,59 @@ public class CharacterVisualComponent : MonoBehaviour
         if (faceBlinkSR != null) faceBlinkSR.enabled = !_boolean;
     }
 
-    public void PlayDeathFlash()
+    // _extraRenderer: ArmComponent(무기) 등 CharacterVisualComponent 바깥의 렌더러도 함께 반짝여야 할 때
+    // Character.cs가 넘겨준다(예: 던전에 있을 때만 무기 스프라이트 렌더러를 전달).
+    public void PlayDeathFlash(SpriteRenderer _extraRenderer = null)
+    {
+        PlayFlash(deathFlashDuration, deathFlashCurve, _extraRenderer);
+    }
+
+    private void PlayFlash(float _duration, AnimationCurve _curve, SpriteRenderer _extraRenderer)
     {
         if (!gameObject.activeInHierarchy) return;
 
-        if (deathFlashCoroutine != null)
+        if (flashCoroutine != null)
         {
-            StopCoroutine(deathFlashCoroutine);
+            StopCoroutine(flashCoroutine);
         }
-        deathFlashCoroutine = StartCoroutine(DeathFlashRoutine());
+        flashCoroutine = StartCoroutine(FlashRoutine(_duration, _curve, _extraRenderer));
     }
 
-    private IEnumerator DeathFlashRoutine()
+    private IEnumerator FlashRoutine(float _duration, AnimationCurve _curve, SpriteRenderer _extraRenderer)
     {
         if (flashMPB == null) flashMPB = new MaterialPropertyBlock();
 
         float elapsed = 0f;
-        while (elapsed < deathFlashDuration)
+        while (elapsed < _duration)
         {
-            float t = elapsed / deathFlashDuration;
-            SetFlashAmount(deathFlashCurve.Evaluate(t));
+            float t = elapsed / _duration;
+            SetFlashAmount(_curve.Evaluate(t), _extraRenderer);
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        SetFlashAmount(0f);
-        deathFlashCoroutine = null;
+        SetFlashAmount(0f, _extraRenderer);
+        flashCoroutine = null;
     }
 
-    private void SetFlashAmount(float _flash)
+    private void SetFlashAmount(float _flash, SpriteRenderer _extraRenderer)
     {
-        if (sr == null) return;
-
         if (flashMPB == null) flashMPB = new MaterialPropertyBlock();
-        sr.GetPropertyBlock(flashMPB);
+
+        ApplyFlashToRenderer(sr, _flash);
+        ApplyFlashToRenderer(faceSR, _flash);
+        ApplyFlashToRenderer(faceBlinkSR, _flash);
+        ApplyFlashToRenderer(onWaterFaceSR, _flash);
+        ApplyFlashToRenderer(onWaterFaceBlinkSR, _flash);
+        ApplyFlashToRenderer(_extraRenderer, _flash);
+    }
+
+    private void ApplyFlashToRenderer(SpriteRenderer _renderer, float _flash)
+    {
+        if (_renderer == null) return;
+
+        _renderer.GetPropertyBlock(flashMPB);
         flashMPB.SetFloat(FlashAmountID, _flash);
-        sr.SetPropertyBlock(flashMPB);
+        _renderer.SetPropertyBlock(flashMPB);
     }
 }

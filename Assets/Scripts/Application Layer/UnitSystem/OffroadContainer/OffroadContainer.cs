@@ -236,6 +236,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     {
                         AddToCharacterInventory(arrivalDataBuffer, item.logState);
                         character?.PlayItemAcquireBounce();
+                        character?.PlayItemAcquireFlash();
                         Sound.PlayUI(SoundID.GetItem);
                     }
                 }
