@@ -155,7 +155,7 @@ public class AudioManager : MonoBehaviour
 
     // 큐를 거치지 않고 즉시 재생하며, 이후 Stop/위치 갱신이 가능하도록 핸들을 반환한다.
     // 루프 사운드처럼 재생 이후에도 개별적으로 제어해야 하는 경우에 사용한다.
-    public AudioHandle PlayTracked(SoundID id, Vector3 position, float volume = 1f, bool is3D = true)
+    public AudioHandle PlayTracked(SoundID id, Vector3 position, float volume = 1f, bool is3D = true, float pitchOverride = -1f)
     {
         AudioData data = database != null ? database.Get(id) : null;
         if (data == null)
@@ -164,13 +164,21 @@ public class AudioManager : MonoBehaviour
             return AudioHandle.Invalid;
         }
 
-        return PlayOnAvailableSource(data, position, volume, is3D, -1f);
+        return PlayOnAvailableSource(data, position, volume, is3D, pitchOverride);
     }
 
     public void StopTracked(AudioHandle handle)
     {
         if (!IsHandleValid(handle)) return;
         sourcePool[handle.sourceIndex].Stop();
+    }
+
+    // 다른 트랙 사운드로 전환할 때 현재 피치를 이어받기 위해(예: 파워업 도중 끊겨도 그 자리에서
+    // 자연스럽게 이어지도록) 트랙 중인 소스의 현재 피치를 조회한다. 핸들이 유효하지 않으면 1(정상 피치)을 반환한다.
+    public float GetTrackedPitch(AudioHandle handle)
+    {
+        if (!IsHandleValid(handle)) return 1f;
+        return sourcePool[handle.sourceIndex].pitch;
     }
 
     // 별도의 "정지음"이 없는 루프 사운드용: 피치를 극한으로 낮추고 볼륨을 0으로 줄이며
@@ -203,6 +211,45 @@ public class AudioManager : MonoBehaviour
         if (IsHandleValid(handle))
         {
             src.Stop();
+        }
+    }
+
+    // 별도의 "예열음"이 없는 루프 사운드용: 낮은 피치로 재생을 시작해 목표 피치까지 서서히
+    // 올리며(전원이 들어오듯) 재생한다. targetPitch를 호출부에서 넘겨받아, 도달하는 정상 피치
+    // 자체를 다르게 줄 수 있다(예: 장비 속도 비율만큼 높여서 시작).
+    public AudioHandle PlayTrackedWithPowerUp(SoundID id, Vector3 position, float volume = 1f, bool is3D = true, float duration = 0.4f, float minPitch = 0.1f, float targetPitch = 1f)
+    {
+        AudioData data = database != null ? database.Get(id) : null;
+        if (data == null)
+        {
+            Debug.LogWarning($"Audio ID '{id}' not found in database.");
+            return AudioHandle.Invalid;
+        }
+
+        AudioHandle handle = PlayOnAvailableSource(data, position, volume, is3D, minPitch);
+        if (handle.IsValid)
+            StartCoroutine(PowerUpRoutine(handle, duration, minPitch, targetPitch));
+
+        return handle;
+    }
+
+    private System.Collections.IEnumerator PowerUpRoutine(AudioHandle handle, float duration, float minPitch, float targetPitch)
+    {
+        AudioSource src = sourcePool[handle.sourceIndex];
+
+        float timer = 0f;
+        while (timer < duration)
+        {
+            if (!IsHandleValid(handle)) yield break;
+
+            timer += Time.deltaTime;
+            src.pitch = Mathf.Lerp(minPitch, targetPitch, timer / duration);
+            yield return null;
+        }
+
+        if (IsHandleValid(handle))
+        {
+            src.pitch = targetPitch;
         }
     }
 

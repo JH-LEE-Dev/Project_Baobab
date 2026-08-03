@@ -132,7 +132,7 @@ MonoBehaviour:
     mixerGroup: {fileID: 0}
     defaultVolume: 0.075
     is3D: 1
-    loop: 1
+    loop: 0
   - id: 1052300792
     mixerId: 433908404
     clip: {fileID: 8300000, guid: 9bf5848d558d5174c9a7e7a87e3544d9, type: 3}
@@ -149,6 +149,14 @@ MonoBehaviour:
     defaultVolume: 0.125
     is3D: 1
     loop: 0
+  - id: -213121976
+    mixerId: 0
+    clip: {fileID: 8300000, guid: 90370f3fdf1e7e447b5417fe07f0cb5b, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 0}
+    defaultVolume: 0.075
+    is3D: 1
+    loop: 1
   mixers:
   - id: -235980376
     group: {fileID: 24300002, guid: 865ed13951834138be11bea38be7fea0, type: 2}

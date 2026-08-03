@@ -540,6 +540,11 @@ public class InDungeonSystem : MonoBehaviour
         bRetryGame = true;
         inDungeonProductionManager.bRetryGame = true;
 
+        // 던전<->타운 전환(GoHome/GoToMainMenuRequested)과 동일하게, 카메라가 하늘로
+        // 올라가는 연출 시간 안에 반드시 다 꺼지도록 같은 시간으로 페이드아웃한다.
+        // 재생 재개는 새 던전 진입 후 CharacterActivated()가 담당한다.
+        Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
+
         inDungeonProductionManager.StartSkyProduction();
         signalHub.Publish(new StartSkyProductionSignal());
     }

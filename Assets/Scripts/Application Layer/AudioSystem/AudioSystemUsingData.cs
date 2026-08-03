@@ -7,6 +7,7 @@ public enum SoundID
     GetItem = 413619275,
     OutItem = 1933263251,
     Cutter = -688056987,
+    SawmillCutterLoop = -213121976,
     BoxClose = 532227752,
     BoxOpen = -1886360244,
     OffroadOut = -233868034,

@@ -141,6 +141,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     public void CuttingDone()
     {
         cuttingItem.gameObject.SetActive(true);
+        // 사운드는 여기서 직접 처리하지 않는다. 완료 직후 Update()가 다시 UpdateVFXState()를
+        // 호출하면서 정방향->역방향 전환으로 인식되어 자연스럽게 파워다운 사운드로 이어진다.
         CuttingDoneEvent?.Invoke();
     }
 
@@ -319,6 +321,17 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         return speed * globalSpeedMultiplier;
     }
 
+    // 커터 속도가 1배(기본값)일 때는 기존 그대로 0.4초짜리 피치 램프를 쓰고, 거기서 속도가
+    // 빨라진 만큼(GetCurrentSpeed()가 1보다 커진 비율만큼) 램프 시간을 반비례로 줄여
+    // 피치가 변화하는 속도 자체도 비례해서 빨라지게 한다.
+    private const float BASE_PITCH_RAMP_DURATION = 0.4f;
+
+    private float GetPitchRampDuration()
+    {
+        float currentSpeed = GetCurrentSpeed();
+        return currentSpeed > 0f ? BASE_PITCH_RAMP_DURATION / currentSpeed : BASE_PITCH_RAMP_DURATION;
+    }
+
     private void UpdateVFXState()
     {
         bool isForward = bIsCutting && !isReversing;
@@ -327,14 +340,22 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
             if (isForward)
             {
                 PlayCuttingEffect();
-                cuttingSoundHandle = Sound.PlayTracked(SoundID.Cutter, transform.position);
+                // 별도의 시작음 없이 루프 사운드 자체를 낮은 피치에서 정상 피치(1.0)로 올리며
+                // (전원이 들어오듯) 재생한다. 도달하는 목표 피치는 항상 동일하고, 거기까지 오르는
+                // 램프 시간만 가공 속도에 반비례해 줄여서 피치가 변화하는 속도가 비례해서 빨라지게 한다.
+                cuttingSoundHandle = Sound.PlayTrackedWithPowerUp(SoundID.SawmillCutterLoop, transform.position,
+                    1f, true, GetPitchRampDuration());
             }
             else
             {
                 StopCuttingEffect();
-                // 별도의 "정지음"이 없어서, 전원이 꺼지듯 피치/볼륨을 서서히 낮추며 멈춘다.
-                Sound.StopTrackedWithPowerDown(cuttingSoundHandle);
-                cuttingSoundHandle = AudioHandle.Invalid;
+                // 날이 되돌아올 때는 루프를 끊고 기존 사운드로 바꾸되, 루프가 지금 올라와 있던
+                // 피치 그대로 이어받아 거기서부터 (가공 속도에 비례한 속도로) 서서히 내려가며
+                // 꺼지는 느낌(전원이 빠지듯)을 준다.
+                float pitchAtReversal = Sound.GetTrackedPitch(cuttingSoundHandle);
+                Sound.StopTracked(cuttingSoundHandle);
+                cuttingSoundHandle = Sound.PlayTracked(SoundID.Cutter, transform.position, 1f, true, pitchAtReversal);
+                Sound.StopTrackedWithPowerDown(cuttingSoundHandle, GetPitchRampDuration());
             }
             wasForward = isForward;
         }
