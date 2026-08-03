@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -61,6 +62,14 @@ public class CharacterVisualComponent : MonoBehaviour
 
     private CharacterAnimator characterAnimator;
     private bool bIsInitialized = false;
+
+    // 사망 시 하얀 플래시 연출 (TreeVisualComponent.PlayHitFlash와 동일한 방식: _FlashAmount를
+    // MaterialPropertyBlock으로 조작해 SRP 배칭을 깨지 않는다)
+    [SerializeField] private float deathFlashDuration = 0.3f;
+    [SerializeField] private AnimationCurve deathFlashCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
+    private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+    private MaterialPropertyBlock flashMPB;
+    private Coroutine deathFlashCoroutine;
 
     // Character.cs 컴파일 호환성 유지용 (혹시 외부에서 사용되는 경우 대비)
     public Animator Anim => null;
@@ -382,5 +391,43 @@ public class CharacterVisualComponent : MonoBehaviour
         if (shadowSR != null) shadowSR.enabled = !_boolean;
         if (faceSR != null) faceSR.enabled = !_boolean;
         if (faceBlinkSR != null) faceBlinkSR.enabled = !_boolean;
+    }
+
+    public void PlayDeathFlash()
+    {
+        if (!gameObject.activeInHierarchy) return;
+
+        if (deathFlashCoroutine != null)
+        {
+            StopCoroutine(deathFlashCoroutine);
+        }
+        deathFlashCoroutine = StartCoroutine(DeathFlashRoutine());
+    }
+
+    private IEnumerator DeathFlashRoutine()
+    {
+        if (flashMPB == null) flashMPB = new MaterialPropertyBlock();
+
+        float elapsed = 0f;
+        while (elapsed < deathFlashDuration)
+        {
+            float t = elapsed / deathFlashDuration;
+            SetFlashAmount(deathFlashCurve.Evaluate(t));
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        SetFlashAmount(0f);
+        deathFlashCoroutine = null;
+    }
+
+    private void SetFlashAmount(float _flash)
+    {
+        if (sr == null) return;
+
+        if (flashMPB == null) flashMPB = new MaterialPropertyBlock();
+        sr.GetPropertyBlock(flashMPB);
+        flashMPB.SetFloat(FlashAmountID, _flash);
+        sr.SetPropertyBlock(flashMPB);
     }
 }

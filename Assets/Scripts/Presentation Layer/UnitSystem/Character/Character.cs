@@ -449,6 +449,9 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         armComponent.SetActivate(false);
         attackComponent.SetEnable(false);
         characterVisualComponent.CharacterIsDead(true);
+        characterVisualComponent.PlayDeathFlash();
+        CameraMoveController.Instance?.ShakeCamera(5f, 0.3f);
+        CameraMoveController.Instance?.ZoomCamera(1.05f, 0.08f, 0.05f, 0.15f);
         bDead = true;
         healthComponent.SetStaminaDecrease(false);
         inputManager.PauseMove(true);

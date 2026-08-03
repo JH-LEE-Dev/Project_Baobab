@@ -105,6 +105,11 @@ public class InDungeonProductionManager : MonoBehaviour
         character.bRide = true;
         character.gameObject.SetActive(false);
         offroadVehicleObj.PlayShinyEffect();
+
+        // 착륙 임팩트에 맞춘 카메라 셰이크 + 줌 펀치 연출
+        CameraMoveController.Instance?.ShakeCamera(3f, 0.2f);
+        CameraMoveController.Instance?.ZoomCamera(1.025f, 0.06f, 0.03f, 0.11f);
+
         if (offroadVehicleObj != null)
         {
             offroadVehicleObj.SetActiveWheelForStencil(false);
