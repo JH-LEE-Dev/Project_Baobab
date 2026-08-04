@@ -394,6 +394,7 @@ public class GameplayUICoordinator
             }
 
             escUI.Hide();
+            inputManager.PauseMove(false);
             Time.timeScale = 1f;
         }
         else if (null != escUI)

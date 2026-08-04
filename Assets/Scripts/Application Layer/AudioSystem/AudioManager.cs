@@ -196,10 +196,15 @@ public class AudioManager : MonoBehaviour
         float halfHeight = cam != null ? cam.orthographicSize : FallbackOrthographicSize;
         float halfWidth = cam != null ? halfHeight * cam.aspect : halfHeight * FallbackAspect;
 
-        // 근거리: 가로/세로 중 더 짧은 쪽 기준 - 이 반경 안은 어느 방향이든 확실히 화면 안이다.
         float near = Mathf.Min(halfWidth, halfHeight);
-        // 원거리: 화면에서 가장 먼 지점인 대각선 모서리에 약간의 여유를 둔다.
-        float far = Mathf.Sqrt(halfWidth * halfWidth + halfHeight * halfHeight) * farDistanceBuffer;
+        float diagonal = Mathf.Sqrt(halfWidth * halfWidth + halfHeight * halfHeight);
+
+        // 1번(0~near) 및 2번(near~cliffStart) 구간의 위치와 길이는 기존 그대로 100% 고정
+        float baseFar = diagonal * 1.05f;
+        float cliffStart = near + (baseFar - near) * 0.75f;
+
+        // 마지막 3번 구간(cliffStart~far)의 길이만 늘려 완만하게 만들기 위해 전체 최대 거리(far)를 확장
+        float far = diagonal * 1.4f;
 
         if (Mathf.Approximately(near, cachedNearDistance) && Mathf.Approximately(far, cachedFarDistance))
             return;
@@ -207,8 +212,6 @@ public class AudioManager : MonoBehaviour
         cachedNearDistance = near;
         cachedFarDistance = far;
 
-        // 근거리까지는 거의 감쇠 없이 유지하다가, 마지막 구간(75%~100%)에서만 가파르게 0으로 떨어지는 커브.
-        float cliffStart = near + (far - near) * 0.75f;
         cachedRolloffCurve = new AnimationCurve(
             new Keyframe(0f, 1f, 0f, 0f),
             new Keyframe(near, 1f, 0f, 0f),

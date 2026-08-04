@@ -70,7 +70,7 @@ public class ArmComponent : PComponent, IArmComponent
 
     private void Update()
     {
-        if (bRotationLocked) return;
+        if (bRotationLocked || Time.timeScale == 0f) return;
 
         UpdateRotation();
         UpdateFacingDirection();

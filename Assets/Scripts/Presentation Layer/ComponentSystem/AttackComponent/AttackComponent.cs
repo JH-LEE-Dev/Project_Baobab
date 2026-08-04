@@ -127,7 +127,7 @@ public class AttackComponent : PComponent
 
     private void UpdateAttackColliderPosition(Vector2 _mouseScreenPos)
     {
-        if (bCursorEnable == false)
+        if (bCursorEnable == false || Time.timeScale == 0f)
             return;
 
         if (mainCamera == null)
