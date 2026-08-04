@@ -18,11 +18,11 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         // //퍼블릭 초기화 및 제어 메서드
 
-        public void Initialize()
+        public void Initialize(InputManager _inputManager = null, LocalizationManager _localizationManager = null)
         {
             if (null != axeItem)
             {
-                axeItem.Initialize();
+                axeItem.Initialize(_inputManager, _localizationManager);
             }
         }
 

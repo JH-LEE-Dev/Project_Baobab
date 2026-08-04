@@ -231,6 +231,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             return;
         }
 
+        if (true == isSelected)
+        {
+            return;
+        }
+
         // 클릭 시 색상 연출 (일시적으로 click 색상 -> hover 색상)
         if (null != colorTween && true == colorTween.IsActive())
         {
@@ -242,7 +247,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (null != uiEffect)
         {
-            uiEffect.enabled = !myInfo.isUnlocked;
+            uiEffect.enabled = true;
             Color _targetClickShadow = myInfo.isUnlocked ? clickShadowColor : lockedClickShadowColor;
             Color _targetHoverShadow = myInfo.isUnlocked ? hoverShadowColor : lockedHoverShadowColor;
             
@@ -513,6 +518,12 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         {
             selectTween.Kill();
             selectTween = null;
+        }
+
+        if (null != hoverTween && true == hoverTween.IsActive())
+        {
+            hoverTween.Kill();
+            hoverTween = null;
         }
 
         if (null != uiEffect)

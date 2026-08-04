@@ -129,7 +129,7 @@ public class UIView_HUD : UIView
 
         if (null != hudEquipment)
         {
-            hudEquipment.Initialize();
+            hudEquipment.Initialize(viewCtx?.inputManager, viewCtx?.localizationManager);
         }
     }
 
