@@ -210,7 +210,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 01801afd8ab9b30439c81b71bc234944, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
-    defaultVolume: 0.5
+    defaultVolume: 0.1
     is3D: 1
     loop: 0
   - id: -476703456
@@ -218,7 +218,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 317c2574ce68a4d4fa627c16541bc87e, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
-    defaultVolume: 0.5
+    defaultVolume: 0.1
     is3D: 1
     loop: 0
   - id: 1137393812
