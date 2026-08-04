@@ -14,6 +14,11 @@ public class UIView_ESC : UIView
     public event Action ExitButtonClickedEvent;
     public event Action SaveGameButtonClickedEvent;
 
+    /// <summary>
+    /// 연출 재생 중 키보드 동작(ESC 등) 잠금/해제 요청 이벤트 (true = 잠금, false = 해제)
+    /// </summary>
+    public event Action<bool> UIInputLockChangedEvent;
+
     [Header("UI References")]
     [SerializeField] private Transform uiRoot;
     [SerializeField] private GameObject uiPrefab;
@@ -22,11 +27,26 @@ public class UIView_ESC : UIView
     [Header("Sub Views")]
     [SerializeField] private UI_Option optionUI; // 인스펙터 바인딩 지원
 
+    [Header("Input Lock Settings")]
+    [SerializeField, Tooltip("1. ESC 메뉴 패널 등장 연출 중 키보드 입력 Lock 여부")]
+    private bool lockOnMenuAppear = true;
+
+    [SerializeField, Tooltip("2. ESC 메뉴 -> 옵션 패널 전환 연출 중 키보드 입력 Lock 여부")]
+    private bool lockOnTransitionToOption = true;
+
+    [SerializeField, Tooltip("3. 옵션 패널 -> ESC 메뉴 복귀 연출 중 키보드 입력 Lock 여부")]
+    private bool lockOnTransitionFromOption = true;
+
     private Action cachedCloseProductionFinished;
     private Action cachedOptionMenuCloseCompleted;
     private Action cachedOptionClosed;
+    private Action cachedMenuAppearCompleted;
+    private Action cachedReturnFromOptionCompleted;
 
-    public bool IsOptionOpen => null != optionUI && true == optionUI.gameObject.activeInHierarchy;
+    private bool isClosing = false;
+    private bool isOpeningOption = false;
+
+    public bool IsOptionOpen => (null != optionUI && true == optionUI.gameObject.activeInHierarchy) || true == isOpeningOption;
 
     public override void Initialize(UIViewContext _ctx)
     {
@@ -35,6 +55,8 @@ public class UIView_ESC : UIView
         cachedCloseProductionFinished = OnCloseProductionFinished;
         cachedOptionMenuCloseCompleted = OnOptionMenuCloseCompleted;
         cachedOptionClosed = OnOptionClosed;
+        cachedMenuAppearCompleted = OnMenuAppearCompleted;
+        cachedReturnFromOptionCompleted = OnReturnFromOptionCompleted;
 
         if (null != uiPrefab)
         {
@@ -84,30 +106,45 @@ public class UIView_ESC : UIView
         GoToMainMenuButtonClickedEvent = null;
         ExitButtonClickedEvent = null;
         SaveGameButtonClickedEvent = null;
+        UIInputLockChangedEvent = null;
+
         cachedCloseProductionFinished = null;
         cachedOptionMenuCloseCompleted = null;
         cachedOptionClosed = null;
+        cachedMenuAppearCompleted = null;
+        cachedReturnFromOptionCompleted = null;
 
         base.OnDestroy();
     }
 
+    public override void Show()
+    {
+        isClosing = false;
+        isOpeningOption = false;
+        base.Show();
+    }
+
     public override void Hide()
     {
-        if (false == IsVisible) return;
-
-        base.Hide();
+        if (false == IsVisible || true == isClosing || true == isOpeningOption) return;
 
         if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
         {
             optionUI.Hide();
         }
 
-        if (null != escapeMenu)
+        if (null != escapeMenu && true == gameObject.activeInHierarchy)
         {
+            isClosing = true;
+
             if (null == cachedCloseProductionFinished)
                 cachedCloseProductionFinished = OnCloseProductionFinished;
 
             escapeMenu.PlayCloseProduction(cachedCloseProductionFinished);
+        }
+        else
+        {
+            OnCloseProductionFinished();
         }
     }
 
@@ -118,23 +155,46 @@ public class UIView_ESC : UIView
 
         if (null != escapeMenu)
         {
-            escapeMenu.PlayOpenProduction();
+            // 1. ESC 메뉴 패널 등장 시작 시 Lock
+            if (true == lockOnMenuAppear)
+            {
+                DispatchInputLock(true);
+            }
+
+            if (null == cachedMenuAppearCompleted)
+            {
+                cachedMenuAppearCompleted = OnMenuAppearCompleted;
+            }
+
+            escapeMenu.PlayOpenProduction(cachedMenuAppearCompleted);
         }
     }
 
     protected override void OnHide()
     {
         base.OnHide();
-        gameObject.SetActive(false);
+    }
+
+    private void OnMenuAppearCompleted()
+    {
+        // 1-1. ESC 메뉴 패널 등장 연출 종료 시 Unlock
+        if (true == lockOnMenuAppear)
+        {
+            DispatchInputLock(false);
+        }
     }
 
     private void OnCloseProductionFinished()
     {
+        isClosing = false;
+        base.Hide();
         gameObject.SetActive(false);
     }
 
     public void OnResumeButtonClicked()
     {
+        if (true == isClosing || true == isOpeningOption) return;
+
         Hide();
         if (null != ResumeButtonClickedEvent)
         {
@@ -144,6 +204,16 @@ public class UIView_ESC : UIView
 
     public void OnOptionButtonClicked()
     {
+        if (true == isClosing || true == isOpeningOption) return;
+
+        isOpeningOption = true;
+
+        // 2. ESC Menu -> Option 전환 연출 시작 시 Lock
+        if (true == lockOnTransitionToOption)
+        {
+            DispatchInputLock(true);
+        }
+
         if (null != escapeMenu)
         {
             if (null == cachedOptionMenuCloseCompleted)
@@ -159,6 +229,8 @@ public class UIView_ESC : UIView
 
     public void CloseOption()
     {
+        if (true == isOpeningOption) return;
+
         if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
         {
             optionUI.Hide();
@@ -167,12 +239,20 @@ public class UIView_ESC : UIView
 
     private void OnOptionMenuCloseCompleted()
     {
+        isOpeningOption = false;
+
         if (null != optionUI)
         {
             if (null == cachedOptionClosed)
                 cachedOptionClosed = OnOptionClosed;
 
             optionUI.Show(cachedOptionClosed);
+        }
+
+        // 2-1. Option Panel 등장(오픈) 완료 시 Unlock
+        if (true == lockOnTransitionToOption)
+        {
+            DispatchInputLock(false);
         }
 
         if (null != OptionButtonClickedEvent)
@@ -187,12 +267,42 @@ public class UIView_ESC : UIView
 
         if (null != escapeMenu)
         {
-            escapeMenu.PlayOpenProduction();
+            // 3. Option -> ESC Menu 복귀 연출 시작 시 Lock
+            if (true == lockOnTransitionFromOption)
+            {
+                DispatchInputLock(true);
+            }
+
+            if (null == cachedReturnFromOptionCompleted)
+            {
+                cachedReturnFromOptionCompleted = OnReturnFromOptionCompleted;
+            }
+
+            escapeMenu.PlayOpenProduction(cachedReturnFromOptionCompleted);
+        }
+    }
+
+    private void OnReturnFromOptionCompleted()
+    {
+        // 3-1. ESC Menu 복귀 연출 완료 시 Unlock
+        if (true == lockOnTransitionFromOption)
+        {
+            DispatchInputLock(false);
+        }
+    }
+
+    private void DispatchInputLock(bool _isLocked)
+    {
+        if (null != UIInputLockChangedEvent)
+        {
+            UIInputLockChangedEvent.Invoke(_isLocked);
         }
     }
 
     public void OnGoToMainMenuButtonClicked()
     {
+        if (true == isClosing || true == isOpeningOption) return;
+
         if (null != GoToMainMenuButtonClickedEvent)
         {
             GoToMainMenuButtonClickedEvent.Invoke();
@@ -201,6 +311,8 @@ public class UIView_ESC : UIView
 
     public void OnExitButtonClicked()
     {
+        if (true == isClosing || true == isOpeningOption) return;
+
         if (null != ExitButtonClickedEvent)
         {
             ExitButtonClickedEvent.Invoke();
@@ -209,6 +321,8 @@ public class UIView_ESC : UIView
 
     public void OnSaveGameButton()
     {
+        if (true == isClosing || true == isOpeningOption) return;
+
         if (null != SaveGameButtonClickedEvent)
         {
             SaveGameButtonClickedEvent.Invoke();
