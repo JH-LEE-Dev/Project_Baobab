@@ -47,6 +47,10 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [SerializeField] private float ignitionSquashDuration = 0.4f; // 스프링 연출이 일어나는 전체 시간
     [SerializeField] private float ignitionDelay = 0.1f; // 연출 후 대기 시간
     [SerializeField] private float reachThreshold = 0.1f;
+    [Tooltip("Offroad_RunStart 클립에서 엔진이 걸리는 지점(클립 길이 대비 비율). 이 지점까지 먼저 사운드를 재생한 뒤 시동 임팩트 연출(먼지 파티클)이 나온다.")]
+    [SerializeField] private float engineIgnitionCatchRatio = 0.1f;
+    [Tooltip("시동이 걸린 뒤(=출발하는 구간) 남은 재생 시간 동안 서서히 도달하는 최대 피치")]
+    [SerializeField] private float engineRunPitchTarget = 1.4f;
 
     [Space(10)]
     [Header("Point Transforms")]
@@ -101,6 +105,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private bool bOverlapped = false;
     private bool bUIActivated = false;
     private Coroutine driveCoroutine;
+    private AudioHandle engineStartHandle;
     private float colRadius;
     private bool bCanReach = true;
     private bool bCanInteract = false;
@@ -478,6 +483,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
             StopCoroutine(driveCoroutine);
         }
 
+        Sound.StopTracked(engineStartHandle);
+
         driveCoroutine = StartCoroutine(DriveRoutine(_endPoint));
     }
 
@@ -489,11 +496,21 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         // 0. 컨테이너 점프 시퀀스
         yield return ContainerJumpSequence();
 
-        // 1.5초 대기 후 시동
-        yield return new WaitForSeconds(0.25f);
+        // 시동 임팩트(먼지 파티클)보다 엔진 캐치 지점만큼 앞서 엔진 사운드를 재생한다.
+        engineStartHandle = Sound.PlayTracked(SoundID.OffroadNonEdit, transform.position);
+        float runStartClipLength = Sound.GetClipLength(SoundID.OffroadNonEdit);
+        float ignitionCatchTime = runStartClipLength * engineIgnitionCatchRatio;
+        yield return new WaitForSeconds(ignitionCatchTime);
 
-        // 1. 시동 임팩트 시퀀스 (스프링 댐퍼)
+        // 1. 시동 임팩트 시퀀스 (스프링 댐퍼) - 사운드의 엔진 캐치 지점과 동시에 재생된다.
         yield return IgnitionImpactSequence(jitterVisualObjectInitialLocalPos, visualObjectInitialScale);
+
+        // 시동이 걸린 뒤(=이후 출발하는 구간) 남은 재생 시간 동안 피치를 서서히 올린다.
+        float remainingClipTime = runStartClipLength - ignitionCatchTime;
+        if (remainingClipTime > 0f)
+        {
+            Sound.RampTrackedPitch(engineStartHandle, engineRunPitchTarget, remainingClipTime);
+        }
 
         // 2. 시동 유지 시퀀스 (공회전)
         yield return IgnitionIdleSequence(jitterVisualObjectInitialLocalPos);
@@ -579,6 +596,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private IEnumerator IgnitionImpactSequence(Vector3 _initialPos, Vector3 _initialScale)
     {
         PlayStartUpEffect();
+
         float elapsed = 0f;
         while (elapsed < ignitionSquashDuration)
         {

@@ -126,6 +126,7 @@ public class OffroadContainerVComponent : MonoBehaviour
         parentTransform.localScale = originalScale;
 
         // 3. 포물선 점프 단계
+        Sound.Play(SoundID.BoxJumping, parentTransform.position);
         float jumpElapsed = 0f;
         Vector3 targetLandScaleForJump = originalJumpContainerScale * 0.5f; // 공중 이동 중 0.5배까지 스케일 축소
 
@@ -156,6 +157,8 @@ public class OffroadContainerVComponent : MonoBehaviour
         }
 
         // 4. 안착 단계
+        Sound.Play(SoundID.BoxLanding, _targetPos);
+        Sound.Play(SoundID.BoxLandingEx, _targetPos);
         parentTransform.position = _targetPos;
         currentHeight = roofHeight;
         parentTransform.localScale = originalScale * 0.25f; // 착지 시 부모 스케일 0.25배 안착

@@ -92,6 +92,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [Header("Settings")]
     [Tooltip("다중 대지역 해금 시 배속 (예: 2배속이면 2.0)")]
     [SerializeField] private float multiRegionUnlockSpeedRate = 2.0f;
+    [Tooltip("닫힘(내려가는) 연출이 끝난 뒤 던전 확정 콜백을 호출하기까지의 지연 시간")]
+    [SerializeField] private float dungeonConfirmDelay = 0.25f;
 
     [Header("Debug")]
     [Tooltip("체크 시 내비게이션을 열 때 모든 지역 및 서브지역을 강제로 해금 처리합니다.")]
@@ -114,6 +116,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private ForestType currentSelectedForestType = ForestType.None;
     private MapType currentSelectedMapType = MapType.None;
     private bool isPendingUnlockProcess = false;
+    // 던전 확정 콜백은 닫힘(내려가는) 연출이 끝난 뒤 발동해야 하므로,
+    // HandleSubRegionSelected에서 즉시 호출하지 않고 이 플래그로 예약해둔다.
+    private bool hasPendingDungeonConfirm = false;
+    private MapType pendingConfirmMapType = MapType.None;
+    private ForestType pendingConfirmForestType = ForestType.None;
+    private Tween dungeonConfirmDelayTween;
 
     // 언락 큐 구조체
     private struct UnlockInfo
@@ -135,6 +143,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private TweenCallback onAppearMidwayCallback;
     private TweenCallback onAppearCompleteCallback;
     private TweenCallback onSubRegionUnlockDelayCompleteCallback;
+    private TweenCallback onDungeonConfirmDelayCompleteCallback;
     
     private UnityEngine.Events.UnityAction onBackgroundDimClickedAction;
 
@@ -184,6 +193,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         onAppearMidwayCallback = OnAppearMidway;
         onAppearCompleteCallback = OnAppearComplete;
         onSubRegionUnlockDelayCompleteCallback = OnSubRegionUnlockDelayComplete;
+        onDungeonConfirmDelayCompleteCallback = OnDungeonConfirmDelayComplete;
         
         onBackgroundDimClickedAction = OnBackgroundDimClicked;
 
@@ -239,8 +249,15 @@ public class HUD_PopupNav_Main : MonoBehaviour
         isClosing = false;
         isInputBlocked = true;
         isUnlockingProductionActive = false;
+        hasPendingDungeonConfirm = false;
         currentSelectedMapType = MapType.None;
         currentSelectedForestType = ForestType.None;
+
+        if (null != dungeonConfirmDelayTween && true == dungeonConfirmDelayTween.IsActive())
+        {
+            dungeonConfirmDelayTween.Kill();
+            dungeonConfirmDelayTween = null;
+        }
 
         if (null != currentRegionNameText)
         {
@@ -510,6 +527,35 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
         
         gameObject.SetActive(false);
+
+        // 던전 선택 확정 콜백(DungeonSelectedEvent로 이어짐)은 UI가 완전히 내려간 뒤,
+        // dungeonConfirmDelay만큼 추가로 기다렸다가 발동한다.
+        // onNavigationClosedCallback(TeleportUIClosedEvent)도 함께 미뤄야 한다 - 이 콜백이 바로
+        // TownSystem.GetOffFromTheVehicle()로 이어지는데, 던전 확정 콜백(bCanGetOff=false 설정)보다
+        // 먼저 실행되면 아직 bCanGetOff가 true인 상태라 캐릭터가 차에서 잘못 내려버린다.
+        if (true == hasPendingDungeonConfirm)
+        {
+            hasPendingDungeonConfirm = false;
+
+            if (null != dungeonConfirmDelayTween && true == dungeonConfirmDelayTween.IsActive())
+            {
+                dungeonConfirmDelayTween.Kill();
+                dungeonConfirmDelayTween = null;
+            }
+
+            dungeonConfirmDelayTween = DOVirtual.DelayedCall(dungeonConfirmDelay, onDungeonConfirmDelayCompleteCallback).SetEase(Ease.Linear);
+            return;
+        }
+
+        onNavigationClosedCallback?.Invoke();
+    }
+
+    private void OnDungeonConfirmDelayComplete()
+    {
+        dungeonConfirmDelayTween = null;
+        // 순서 중요: 확정 콜백(bCanGetOff=false 등 상태 처리)이 onNavigationClosedCallback(TeleportUIClosedEvent)보다
+        // 먼저 실행되어야 GetOffFromTheVehicle()이 안전하게 막힌다.
+        onConfirmMapSelectedCallback?.Invoke(pendingConfirmMapType, pendingConfirmForestType);
         onNavigationClosedCallback?.Invoke();
     }
 
@@ -940,7 +986,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         if (MapType.None != currentSelectedMapType && ForestType.None != currentSelectedForestType)
         {
-            onConfirmMapSelectedCallback?.Invoke(currentSelectedMapType, currentSelectedForestType);
+            hasPendingDungeonConfirm = true;
+            pendingConfirmMapType = currentSelectedMapType;
+            pendingConfirmForestType = currentSelectedForestType;
             Close();
         }
     }
@@ -951,5 +999,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != disappearTween && disappearTween.IsActive()) { disappearTween.Kill(); disappearTween = null; }
         if (null != delayedCallTween && delayedCallTween.IsActive()) { delayedCallTween.Kill(); delayedCallTween = null; }
         if (null != regionNameTween && regionNameTween.IsActive()) { regionNameTween.Kill(); regionNameTween = null; }
+        if (null != dungeonConfirmDelayTween && dungeonConfirmDelayTween.IsActive()) { dungeonConfirmDelayTween.Kill(); dungeonConfirmDelayTween = null; }
     }
 }

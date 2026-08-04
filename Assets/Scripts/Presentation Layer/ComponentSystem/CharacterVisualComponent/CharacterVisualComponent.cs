@@ -73,6 +73,7 @@ public class CharacterVisualComponent : MonoBehaviour
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private MaterialPropertyBlock flashMPB;
     private Coroutine flashCoroutine;
+    private SpriteRenderer currentExtraRenderer;
 
     // Character.cs 컴파일 호환성 유지용 (혹시 외부에서 사용되는 경우 대비)
     public Animator Anim => null;
@@ -409,6 +410,22 @@ public class CharacterVisualComponent : MonoBehaviour
         PlayFlash(deathFlashDuration, deathFlashCurve, _extraRenderer);
     }
 
+    private void OnDisable()
+    {
+        ResetFlash();
+    }
+
+    public void ResetFlash()
+    {
+        if (flashCoroutine != null)
+        {
+            StopCoroutine(flashCoroutine);
+            flashCoroutine = null;
+        }
+        SetFlashAmount(0f, currentExtraRenderer);
+        currentExtraRenderer = null;
+    }
+
     private void PlayFlash(float _duration, AnimationCurve _curve, SpriteRenderer _extraRenderer)
     {
         if (!gameObject.activeInHierarchy) return;
@@ -417,6 +434,7 @@ public class CharacterVisualComponent : MonoBehaviour
         {
             StopCoroutine(flashCoroutine);
         }
+        currentExtraRenderer = _extraRenderer;
         flashCoroutine = StartCoroutine(FlashRoutine(_duration, _curve, _extraRenderer));
     }
 
@@ -435,6 +453,7 @@ public class CharacterVisualComponent : MonoBehaviour
 
         SetFlashAmount(0f, _extraRenderer);
         flashCoroutine = null;
+        currentExtraRenderer = null;
     }
 
     private void SetFlashAmount(float _flash, SpriteRenderer _extraRenderer)

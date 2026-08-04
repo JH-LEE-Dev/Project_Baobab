@@ -101,7 +101,7 @@ public class InDungeonProductionManager : MonoBehaviour
         Vector3 startScale = character.transform.localScale;
 
         character.transform.position = characterRidePoint.position;
-        Sound.Play(SoundID.OffroadOut, character.transform.position);
+        Sound.Play(SoundID.OffroadClose, character.transform.position);
         character.bRide = true;
         character.gameObject.SetActive(false);
         offroadVehicleObj.PlayShinyEffect();

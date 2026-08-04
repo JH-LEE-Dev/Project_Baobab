@@ -282,9 +282,29 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         bPowerSupply = _bPowerSupply;
     }
 
+    private bool isRestoredFromOtherMap = false;
+
     public void SetMapType(MapType _mapType)
     {
+        MapType prevMap = mapType;
         mapType = _mapType;
+
+        if (prevMap != mapType)
+        {
+            if (cuttingSoundHandle.IsValid)
+            {
+                Sound.StopTracked(cuttingSoundHandle);
+                cuttingSoundHandle = AudioHandle.Invalid;
+            }
+            // 맵 상태가 바뀔 때(던전 -> 마을 복귀 등) sound 연출 상태를 리셋하여,
+            // 정방향(가공 중)이든 역방향(날 복귀 중)이든 현재 단계에 맞춰 사운드가 100% 올바르게 재개되도록 유도
+            wasForward = isReversing;
+
+            if (mapType == MapType.Town && bIsCutting)
+            {
+                isRestoredFromOtherMap = true;
+            }
+        }
     }
 
     private void TriggerBounce()
@@ -332,19 +352,35 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
         return currentSpeed > 0f ? BASE_PITCH_RAMP_DURATION / currentSpeed : BASE_PITCH_RAMP_DURATION;
     }
 
+    private float GetSoundVolume()
+    {
+        return mapType == MapType.Town ? 1f : 0f;
+    }
+
     private void UpdateVFXState()
     {
         bool isForward = bIsCutting && !isReversing;
         if (isForward != wasForward)
         {
+            float soundVolume = GetSoundVolume();
             if (isForward)
             {
                 PlayCuttingEffect();
-                // 별도의 시작음 없이 루프 사운드 자체를 낮은 피치에서 정상 피치(1.0)로 올리며
-                // (전원이 들어오듯) 재생한다. 도달하는 목표 피치는 항상 동일하고, 거기까지 오르는
-                // 램프 시간만 가공 속도에 반비례해 줄여서 피치가 변화하는 속도가 비례해서 빨라지게 한다.
-                cuttingSoundHandle = Sound.PlayTrackedWithPowerUp(SoundID.SawmillCutterLoop, transform.position,
-                    1f, true, GetPitchRampDuration());
+                if (isRestoredFromOtherMap)
+                {
+                    // 이미 가공 중반에 던전에서 마을로 돌아온 경우:
+                    // 0 RPM에서 시동이 새로 걸리는 예열음(PowerUp) 대신, 이미 쌩쌩 가동 중인 정상 피치(1.0)로 루프를 재생하여
+                    // 카메라 하강 오디오 페이드인 연출과 자연스럽게 이어지게 한다.
+                    cuttingSoundHandle = Sound.PlayTracked(SoundID.SawmillCutterLoop, transform.position,
+                        soundVolume, true, 1f);
+                    isRestoredFromOtherMap = false;
+                }
+                else
+                {
+                    // 새로 가공이 시작된 경우: 0.4초 피치 램프(시동 연출) 적용
+                    cuttingSoundHandle = Sound.PlayTrackedWithPowerUp(SoundID.SawmillCutterLoop, transform.position,
+                        soundVolume, true, GetPitchRampDuration());
+                }
             }
             else
             {
@@ -354,7 +390,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
                 // 꺼지는 느낌(전원이 빠지듯)을 준다.
                 float pitchAtReversal = Sound.GetTrackedPitch(cuttingSoundHandle);
                 Sound.StopTracked(cuttingSoundHandle);
-                cuttingSoundHandle = Sound.PlayTracked(SoundID.Cutter, transform.position, 1f, true, pitchAtReversal);
+                cuttingSoundHandle = Sound.PlayTracked(SoundID.Cutter, transform.position, soundVolume, true, pitchAtReversal);
                 Sound.StopTrackedWithPowerDown(cuttingSoundHandle, GetPitchRampDuration());
             }
             wasForward = isForward;

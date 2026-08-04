@@ -1209,6 +1209,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent.ResetSpeed();
         bCanRotate = true;
         attackComponent.ResetAttackComponent();
+        characterVisualComponent?.ResetFlash();
         stateMachine.ChangeState<IdleState>();
         attackComponent.SetEnable(false);
         attackComponent.SetCursorEnable(false);
