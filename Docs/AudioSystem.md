@@ -114,19 +114,97 @@ Sound.RampProduction3DVolume(1f, 1.5f);              // 1.5초에 걸쳐 원래 
 
 ---
 
-## 5. 새 사운드 추가하는 방법
+## 5. 사운드 애셋 폴더 위치 및 작성 규칙
 
-**코드에서 `SoundID`를 직접 추가하지 마세요.** 아래 순서로 폴더 규칙에 맞춰 에셋을 넣고 자동 생성 툴을 실행해야 합니다.
+모든 사운드 원본 파일은 **`Assets/Sounds`** 아래에 위치해야 합니다(`AudioIDGenerator.cs:12`에 하드코딩된 루트). 이 루트 하위는 몇 단계든 자유롭게 폴더를 중첩해도 되며(재귀 스캔), **폴더 이름 끝이 `_Clip` 또는 `_Cue`로 끝나는 폴더만** 스캔 대상이 됩니다(대소문자 무관).
 
-1. `Assets/Sounds` 하위에 폴더를 만듭니다. 폴더 이름 규칙:
-   - `XXX_Clip` : 폴더 안의 개별 `AudioClip`들이 각각 사운드로 등록됩니다. (예: `Cutter_Clip/Cutter.ogg` → `SoundID.Cutter`)
-   - `XXX_Cue` : 폴더 안에 `AudioCueData`(ScriptableObject) 1개를 만들고, 그 안에 여러 클립을 등록하면 재생할 때마다 랜덤으로 하나가 선택됩니다. 같은 클립이 연속으로 재생되지 않도록 자동 관리됩니다. (예: `FootStep/Grass_Cue`)
-2. `AudioCueData`가 필요하면 `Project` 창에서 우클릭 → `Create > Game > Audio Cue`로 생성 후 클립 리스트와 피치/볼륨 랜덤 범위를 채웁니다.
-3. 믹서 그룹을 지정하려면 `Assets/Sounds/Mixer/Main.mixer`의 `Master/BGM/SFX/UI/Ambience` 그룹 중 하나에 소속되도록 폴더/에셋을 구성합니다.
-4. 유니티 메뉴에서 **`Tools > Audio > Generate Sound IDs`** 를 실행합니다.
+### 5.1 현재 실제 폴더 구조 (예시)
+
+```
+Assets/Sounds/
+├── Mixer/
+│   └── Main.mixer                     # Master/BGM/SFX/UI/Ambience 그룹 (스캔 제외 폴더)
+├── BGM_Clip/
+│   ├── TownBGM.mp3                    # → SoundID.TownBGM
+│   └── WideGreenForest1_BGM.mp3       # → SoundID.WideGreenForest1BGM
+├── Character/
+│   ├── Axe/
+│   │   ├── AxeBreak_Clip/AxeBreaking.ogg, AxeBreaking_Final.ogg
+│   │   ├── AxeBreakEx_Cue/AxeBreakingEx.asset (+ 원본 ogg 2개)
+│   │   └── Swing_Cue/Swing.asset
+│   ├── Die_Clip/ (Character_Die.wav 등 3개)
+│   ├── FootStep/
+│   │   ├── Grass_Cue/GrassFootstep.asset (+ 원본 ogg 5개)
+│   │   └── Ground_Cue/GroundFootstep.asset (+ 원본 ogg 5개)
+│   ├── GetItem_Cue/GetItem.asset (+ 원본 ogg 10개)
+│   └── OutItem_Cue/OutItem.asset (+ 원본 ogg 2개)
+├── Cutter/
+│   └── Cutter_Clip/Cutter.ogg, Sawmill_Cutter_Loop.wav
+├── Offroad/
+│   └── Offroad_Clip/ (Box_Open, Box_Close, Box_Jumping, Offroad_NonEdit 등)
+├── Shop/
+│   ├── Coin_Clip/Coin_Get.wav, Coin_Out.wav
+│   └── Convayer_Clip/Convayer_Loop.wav, Convayer_Put.wav 등
+└── Tree/
+    ├── Hit_Clip/Tree_Hit.wav, Pitch_Hit.ogg
+    ├── Dead_Cue/TreeDead.asset (+ 원본 wav 2개)
+    └── Prize_Clip/Prize2.wav
+```
+
+`Character/Axe`, `Character/FootStep`처럼 카테고리 폴더를 자유롭게 몇 단계든 중첩할 수 있습니다. 중요한 건 최종적으로 `_Clip`/`_Cue`로 끝나는 폴더가 어딘가에 있으면 된다는 점입니다. `Mixer` 폴더는 이름에 상관없이 스캔에서 항상 제외됩니다(`AudioIDGenerator.cs:60`).
+
+### 5.2 `_Clip` 폴더 — 개별 클립을 그대로 등록
+
+폴더 이름이 `_Clip`으로 끝나면, **그 폴더에 직접 들어있는** `AudioClip` 파일들이 각각 하나의 사운드로 등록됩니다(하위 폴더에 있는 클립은 등록되지 않음, `AudioIDGenerator.cs:74-83`).
+
+```
+Cutter_Clip/
+└── Cutter.ogg          → SoundID.Cutter
+```
+
+여러 개의 클립을 한 `_Clip` 폴더에 넣으면 각각 별도의 `SoundID`가 됩니다:
+```
+Offroad_Clip/
+├── Box_Open.ogg        → SoundID.BoxOpen
+├── Box_Close.wav       → SoundID.BoxClose
+└── Offroad_NonEdit.wav → SoundID.OffroadNonEdit
+```
+
+> 예외: `Assets/Sounds` 루트에 직접 넣은 클립도 `_Clip` 폴더처럼 취급되어 등록됩니다(`AudioIDGenerator.cs:74`, `normalizedPath == SoundAssetsRoot`). 다만 정리 차원에서 반드시 하위 `XXX_Clip` 폴더를 만들어 사용하는 것을 권장합니다.
+
+### 5.3 `_Cue` 폴더 — 랜덤 재생용 `AudioCueData` 1개 + 원본 클립들
+
+폴더 이름이 `_Cue`로 끝나면, 그 폴더 안(하위 폴더 포함)에서 `AudioCueData` 타입 에셋을 찾아 **그 애셋 하나만** 사운드로 등록합니다(`AudioIDGenerator.cs:64-73`). 폴더 안의 원본 `.ogg`/`.wav` 클립들은 직접 `SoundID`가 되는 게 아니라, `AudioCueData` 애셋의 클립 리스트에 참조로만 채워 넣는 재료입니다.
+
+```
+GetItem_Cue/
+├── GetItem.asset        ← 이 AudioCueData 애셋 이름이 SoundID가 됨 → SoundID.GetItem
+├── GetItem_00.ogg  ┐
+├── GetItem_01.ogg  │ AudioCueData(GetItem.asset)의 clips 리스트에 드래그해 넣음
+├── ...             │
+└── GetItem_09.ogg  ┘
+```
+
+**작성 순서**
+1. `_Cue` 폴더를 만들고 원본 클립들을 넣습니다.
+2. `Project` 창에서 그 폴더 안에 우클릭 → `Create > Game > Audio Cue`로 `AudioCueData` 애셋을 생성합니다. **애셋 이름이 곧 `SoundID` 이름**이 되므로 원하는 사운드 이름으로 지어주세요(예: `GetItem`, `GrassFootstep`).
+3. 인스펙터에서 `clips` 리스트에 원본 클립들을 등록하고, 필요하면 `minPitch~maxPitch`, `minVolumeModifier~maxVolumeModifier` 랜덤 범위를 설정합니다.
+4. 한 `_Cue` 폴더 안에 `AudioCueData`는 **1개만** 두세요. 여러 개가 있으면 그중 하나만(먼저 검색되는 것) 등록됩니다.
+
+### 5.4 사운드 이름(= SoundID) 규칙
+
+- `SoundID` 이름은 **폴더 이름이 아니라 실제 애셋(클립 파일 또는 `AudioCueData`) 이름**에서 만들어집니다. 이름에서 영문/숫자가 아닌 문자(공백, `_`, `-` 등)는 제거되고 각 단어 첫 글자가 대문자로 합쳐집니다(PascalCase). 예: `WideGreenForest1_BGM.mp3` → `SoundID.WideGreenForest1BGM`.
+- **애셋 이름은 `Assets/Sounds` 전체를 통틀어 유일해야 합니다.** 같은 이름이 이미 등록되어 있으면 나중 것은 무시됩니다(`AudioIDGenerator.cs:116`, 이름 기준 dictionary). 서로 다른 폴더에 같은 파일명을 쓰지 마세요.
+- 믹서 그룹(`MixerID`)은 `Assets/Sounds/Mixer/Main.mixer` 안의 `Master`/`BGM`/`SFX`/`UI`/`Ambience` 5개 그룹 이름으로 고정되어 있습니다(`AudioIDGenerator.cs:17`). 새 믹서 그룹을 추가해도 자동으로 스캔되지 않으니, 그룹을 늘리려면 `AudioIDGenerator.cs`의 `MixerGroupNames` 배열도 함께 수정해야 합니다.
+
+### 5.5 등록 절차 (자동 생성 실행)
+
+1. 위 규칙에 맞춰 `Assets/Sounds` 아래에 클립/큐 애셋을 배치합니다.
+2. 유니티 메뉴에서 **`Tools > Audio > Generate Sound IDs`** 를 실행합니다.
    - `AudioSystemUsingData.cs`에 새 `SoundID`가 자동 추가됩니다.
-   - `Assets/Scriptable Obj/Audio/AudioDatabase.asset`에 클립/큐/믹서 그룹이 자동 매칭되어 등록됩니다.
-5. 이후 코드에서 `SoundID.새사운드이름`으로 바로 사용할 수 있습니다.
+   - `Assets/Scriptable Obj/Audio/AudioDatabase.asset`에 신규 슬롯이 추가되고, 클립/큐 에셋과 믹서 그룹이 자동으로 매칭됩니다.
+3. `AudioDatabase.asset`을 열어 새로 추가된 슬롯의 `mixerId`(원하는 믹서 그룹), `defaultVolume`, `is3D`, `loop` 값을 확인/설정합니다. (믹서 그룹 자동 연결은 `mixerId`를 먼저 지정해줘야 동작합니다 — `AudioIDGenerator.cs:192`.)
+4. 이후 코드에서 `SoundID.새사운드이름`으로 바로 사용할 수 있습니다.
 
 > `AudioSystemUsingData.cs`는 `// <auto-generated />` 파일이므로 직접 수정하지 마세요. 수정해도 다음 생성 시 덮어써집니다.
 
