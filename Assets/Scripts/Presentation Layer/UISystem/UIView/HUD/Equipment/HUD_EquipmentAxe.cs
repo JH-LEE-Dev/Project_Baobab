@@ -19,11 +19,11 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private Image axeImage; // 도끼 이미지
         [SerializeField] private HUD_HPBar axeGaugeBar; // 도끼 특수 게이지 바
 
-        [Header("Key Image & Localization")]
-        [SerializeField] private UI_KeyboardImage keyboardImage;
-        [SerializeField] private TextMeshProUGUI actionText;
-        [SerializeField] private int localizationJsonId = 12;
-        [SerializeField] private int localizationEntryId = 1;
+        // [Header("Key Image & Localization")]
+        // [SerializeField] private UI_KeyboardImage keyboardImage;
+        // [SerializeField] private TextMeshProUGUI actionText;
+        // [SerializeField] private int localizationJsonId = 12;
+        // [SerializeField] private int localizationEntryId = 1;
 
         [Header("Animations")]
         [SerializeField] private ObjectMotionPlayer omp;
@@ -39,8 +39,8 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private AxeMode axeMode = AxeMode.DB100;
         private float previousRatio = 1f;
 
-        private LocalizationManager localizationManager;
-        private Action cachedRefreshLocalizedText;
+        // private LocalizationManager localizationManager;
+        // private Action cachedRefreshLocalizedText;
 
         // //퍼블릭 초기화 및 제어 메서드
 
@@ -65,6 +65,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
             if (null != omp)
                 omp.Initialize();
 
+            /*
             if (null != keyboardImage && null != _inputManager)
             {
                 keyboardImage.Initialize(_inputManager);
@@ -81,8 +82,10 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
                 RefreshLocalizedText();
             }
+            */
         }
 
+        /*
         public void RefreshLocalizedText()
         {
             if (null == actionText || null == localizationManager)
@@ -94,6 +97,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                 actionText.text = _localized;
             }
         }
+        */
 
         protected override void UpdateVisuals()
         {
@@ -195,10 +199,12 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
         private void OnDestroy()
         {
+            /*
             if (null != localizationManager && null != cachedRefreshLocalizedText)
             {
                 localizationManager.OnLanguageChanged -= cachedRefreshLocalizedText;
             }
+            */
         }
         // //유니티 이벤트 함수
     }
