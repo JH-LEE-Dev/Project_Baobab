@@ -133,4 +133,33 @@ public static class Sound
 
         AudioManager.Instance.RampProduction3DVolume(targetFactor, duration);
     }
+
+    // 핸들이 가리키는 소스가 지금 실제로 재생 중인지 확인한다(StopAll3DSounds 등 핸들을 무효화하지
+    // 않고 AudioSource만 직접 정지시키는 경로가 있어, 루프를 계속 유지해야 하는 발음체는 이걸로
+    // "핸들은 유효한데 소리는 멈춰있는" 상태를 감지해 다시 재생을 트리거해야 한다).
+    public static bool IsTrackedPlaying(AudioHandle handle)
+    {
+        if (AudioManager.Instance == null)
+            return false;
+
+        return AudioManager.Instance.IsTrackedPlaying(handle);
+    }
+
+    // 트랙 중인 사운드의 볼륨/피치를 즉시(보간 없이) 설정한다. 호출부가 매 프레임 자체적으로
+    // 목표값을 계산해 미는 경우(예: 컨베이어 벨트 속도 연동 루프 사운드)에 사용한다.
+    public static void SetTrackedVolume(AudioHandle handle, float volume)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.SetTrackedVolume(handle, volume);
+    }
+
+    public static void SetTrackedPitch(AudioHandle handle, float pitch)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.SetTrackedPitch(handle, pitch);
+    }
 }

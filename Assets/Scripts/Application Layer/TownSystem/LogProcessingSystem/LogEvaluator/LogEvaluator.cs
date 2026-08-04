@@ -27,6 +27,8 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
     public void EvaluateLog(ILogItemData _itemData)
     {
+        Sound.Play(SoundID.ConvayerComplete, transform.position);
+
         LogItemValueData valueData = logItemValueDataBase.Get(_itemData.treeType);
         if (valueData == null)
         {

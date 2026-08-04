@@ -150,6 +150,8 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         if (bIsCutting) return;
 
+        Sound.Play(SoundID.ConvayerCutterGetWood, transform.position);
+
         cuttingItem = _item;
         bIsCutting = true;
         isReversing = false; // 되돌아가는 도중에 나무가 들어오면 즉시 정방향으로 전환

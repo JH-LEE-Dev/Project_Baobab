@@ -60,6 +60,9 @@ public class SkyCameraProductionManager : MonoBehaviour
 
         if (virtualCamera == null)
         {
+            // 씬 로드 시 3D 볼륨이 0으로 덕킹돼 있고, 하강 분기가 그걸 되돌리는 유일한 지점이다.
+            // 카메라를 못 찾아 연출을 통째로 건너뛰는 경우에도 볼륨은 반드시 원복해야 한다.
+            Sound.SetProduction3DVolumeFactor(1f);
             return;
         }
 
@@ -173,6 +176,9 @@ public class SkyCameraProductionManager : MonoBehaviour
             // 실행되도록 한다(안 그러면 입력이 잠기고 메인 메뉴가 화면에 남는다).
             Debug.LogWarning($"[SkyCameraProductionManager] PlayIntroDescend 실패로 카메라 하강 연출을 건너뜁니다. " +
                 $"(virtualCamera={virtualCamera != null}, character={_characterTransform != null}, dummyTarget={dummyTarget != null}) 즉시 완료 처리합니다.");
+            // 씬 로드 시 3D 볼륨이 0으로 덕킹된 상태다. 이 하강 연출이 유일한 복원 지점이므로,
+            // 건너뛸 때도 반드시 원복해야 한다(안 그러면 이후 모든 3D 사운드가 영영 무음이 된다).
+            Sound.SetProduction3DVolumeFactor(1f);
             IntroRevealEndEvent?.Invoke();
             return;
         }
