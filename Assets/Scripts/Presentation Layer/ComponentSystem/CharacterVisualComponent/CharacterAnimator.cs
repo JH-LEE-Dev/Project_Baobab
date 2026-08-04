@@ -165,6 +165,12 @@ public class CharacterAnimator : MonoBehaviour
         // (블링크/얼굴 프레임은 currentFrameIndex를 그대로 참조해 별도로 모듈로 계산되므로 리셋이 필요 없다)
         if (_isMoving != prevIsMoving || _bInHub != prevBInHub || _isDead != prevIsDead || dirIndex != prevDirIndex)
         {
+            // 캐릭터가 죽는 그 순간(살아있다가 죽은 상태로 전환되는 시점)에 재생.
+            if (_isDead && !prevIsDead)
+            {
+                Sound.Play(SoundID.CharacterDie, transform.position);
+            }
+
             currentFrameIndex = 0;
             frameTimer = 0f;
             isDeadStartFinished = false;
@@ -229,6 +235,17 @@ public class CharacterAnimator : MonoBehaviour
                         if (currentFrameIndex < baseSprites.Count - 1)
                         {
                             currentFrameIndex++;
+
+                            // Retire_8(9번째 스프라이트): 풀밭에 쓰러지는 프레임 - BodyDrop 소리
+                            // Retire_9(10번째 스프라이트): 도끼가 땅에 박히는 프레임 - AxeDrop 소리
+                            if (currentFrameIndex == 8)
+                            {
+                                Sound.Play(SoundID.CharacterDieBodyDrop, transform.position);
+                            }
+                            else if (currentFrameIndex == 9)
+                            {
+                                Sound.Play(SoundID.CharacterDieAxeDrop, transform.position);
+                            }
                         }
                         else
                         {

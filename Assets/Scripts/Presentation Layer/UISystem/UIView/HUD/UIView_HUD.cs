@@ -230,7 +230,7 @@ public class UIView_HUD : UIView
 
         bool bTown = MapType.Town == currentMapType;
 
-        if (false == bTown)
+        if (true == bTown)
         {
             hudDirIndicator?.OnHide();
         }

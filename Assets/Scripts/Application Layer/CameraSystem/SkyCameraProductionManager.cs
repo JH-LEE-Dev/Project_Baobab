@@ -85,6 +85,7 @@ public class SkyCameraProductionManager : MonoBehaviour
             targetPosition.y += yOffset;
 
             // 더미 타겟을 위로 이동시키면 카메라도 이를 쫓아 위로 올라갑니다.
+            Sound.RampProduction3DVolume(0f, moveDuration);
             Sequence seq = DOTween.Sequence();
             seq.Append(dummyTarget.DOMove(targetPosition, moveDuration));
             seq.AppendInterval(0.5f);
@@ -105,6 +106,7 @@ public class SkyCameraProductionManager : MonoBehaviour
 
             // 원래 위치(캐릭터 위치 + 오프셋 잔여분)로 더미 타겟 복원 및 복원 완료 시 원래 타겟팅 재연결
             Sequence seq = DOTween.Sequence();
+            seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, rollbackDuration));
             seq.Append(dummyTarget.DOMove(targetRollbackPos, rollbackDuration));
             seq.AppendCallback(OnRollbackCameraComplete);
             //seq.AppendInterval(1.0f);
@@ -194,7 +196,9 @@ public class SkyCameraProductionManager : MonoBehaviour
         virtualCamera.transform.position = startPos;
         virtualCamera.ForceCameraPosition(startPos, virtualCamera.transform.rotation);
 
+        Sound.SetProduction3DVolumeFactor(0f);
         Sequence seq = DOTween.Sequence();
+        seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, moveDuration));
         seq.Append(dummyTarget.DOMove(_characterTransform.position, moveDuration));
         seq.AppendCallback(OnIntroDescendComplete);
 
@@ -250,6 +254,7 @@ public class SkyCameraProductionManager : MonoBehaviour
         Vector3 targetPos = _characterTransform.position;
         targetPos.y += yOffset;
 
+        Sound.RampProduction3DVolume(0f, moveDuration);
         Sequence seq = DOTween.Sequence();
         seq.Append(dummyTarget.DOMove(targetPos, moveDuration));
         seq.AppendCallback(OnAscendOutComplete);
@@ -279,6 +284,9 @@ public class SkyCameraProductionManager : MonoBehaviour
     private void ResetCameraPos()
     {
         KillCameraMoveTween();
+
+        // 카메라 초기 재설정 시 3D 사운드를 0(무음)으로 확실히 억제
+        Sound.SetProduction3DVolumeFactor(0f);
 
         cachedFollowTarget = characterTransform;
         cachedLookAtTarget = characterTransform;

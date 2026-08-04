@@ -363,6 +363,7 @@ public class GameplayUICoordinator
     {
         // 카메라 상승 연출이 재생되는 동안 중복 클릭으로 재진입하지 못하도록 즉시 닫는다.
         escUI.Hide();
+        inputManager.PauseMove(false);
 
         GoToMainMenuEvent?.Invoke();
         Time.timeScale = 1f;
@@ -393,11 +394,13 @@ public class GameplayUICoordinator
             }
 
             escUI.Hide();
+            inputManager.PauseMove(false);
             Time.timeScale = 1f;
         }
         else if (null != escUI)
         {
             escUI.Show();
+            inputManager.PauseMove(true);
             Time.timeScale = 0f;
         }
     }

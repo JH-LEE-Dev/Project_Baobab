@@ -2039,6 +2039,8 @@ MonoBehaviour:
   ignitionSquashDuration: 0.8
   ignitionDelay: 0.5
   reachThreshold: 0.1
+  engineIgnitionCatchRatio: 0.1
+  engineRunPitchTarget: 1.4
   containerCarryPoint: {fileID: 8170189756255339106}
   containerDropPoint: {fileID: 7940638458654477517}
   CharacterRidePoint: {fileID: 5304305252831328137}

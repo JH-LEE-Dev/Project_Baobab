@@ -88,4 +88,49 @@ public static class Sound
 
         AudioManager.Instance.UpdateTrackedPosition(handle, position);
     }
+
+    // 이미 재생 중인 트랙 사운드의 피치를 현재 값에서 targetPitch까지 duration에 걸쳐 서서히 올리거나 내린다.
+    public static void RampTrackedPitch(AudioHandle handle, float targetPitch, float duration)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.RampTrackedPitch(handle, targetPitch, duration);
+    }
+
+    // 사운드 ID에 연결된 클립의 길이(초)를 조회한다.
+    public static float GetClipLength(SoundID id)
+    {
+        if (AudioManager.Instance == null)
+            return 0f;
+
+        return AudioManager.Instance.GetClipLength(id);
+    }
+
+    // 현재 재생 중인 모든 3D 사운드를 즉시 정지하고 대기 큐를 비운다.
+    public static void StopAll3DSounds()
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.StopAll3DSounds();
+    }
+
+    // 카메라 연출 등에 맞춰 3D 사운드 전역 계수를 즉시 설정한다 (0f~1f).
+    public static void SetProduction3DVolumeFactor(float factor)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.SetProduction3DVolumeFactor(factor);
+    }
+
+    // 카메라 연출 등에 맞춰 3D 사운드 전역 계수를 지정한 시간에 걸쳐 서서히 페이드한다.
+    public static void RampProduction3DVolume(float targetFactor, float duration)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.RampProduction3DVolume(targetFactor, duration);
+    }
 }

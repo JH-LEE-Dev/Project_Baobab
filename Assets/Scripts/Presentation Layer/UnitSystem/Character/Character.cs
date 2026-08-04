@@ -409,7 +409,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateFacingByAttackPoint()
     {
-        if (bFacingLocked) return;
+        if (bFacingLocked || Time.timeScale == 0f) return;
         if (attackComponent == null || bInDungeon == false || bWhileReset == true) return;
 
         Transform attackTarget = attackComponent.GetAttackPointTransform();
@@ -1209,6 +1209,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         statComponent.ResetSpeed();
         bCanRotate = true;
         attackComponent.ResetAttackComponent();
+        characterVisualComponent?.ResetFlash();
         stateMachine.ChangeState<IdleState>();
         attackComponent.SetEnable(false);
         attackComponent.SetCursorEnable(false);
