@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// ESC 메뉴의 백그라운드 조각 연출, 버튼 순차 등장 애니메이션, 다국어 로컬라이징을 총괄하는 컴포넌트입니다.
+/// ESC 메뉴의 백그라운드 조각 연출, 버튼 순차 등장 애니메이션, 되감기 역모션 퇴장, 다국어 로컬라이징을 총괄하는 컴포넌트입니다.
 /// </summary>
 public class UI_EscapeMenu : MonoBehaviour
 {
@@ -27,6 +27,7 @@ public class UI_EscapeMenu : MonoBehaviour
     [SerializeField] private float bgPieceOpenDelay = 0.04f;
     [SerializeField] private float bgTargetWidth = 500f;
     [SerializeField] private Ease bgEase = Ease.OutCubic;
+    [SerializeField] private Ease bgCloseEase = Ease.InCubic;
 
     [Header("Button Container & Buttons")]
     [SerializeField] private RectTransform buttonContainer;
@@ -38,7 +39,6 @@ public class UI_EscapeMenu : MonoBehaviour
     [Header("Button Production Settings")]
     [SerializeField] private float buttonOpenDuration = 0.2f;
     [SerializeField] private float buttonStaggerDelay = 0.06f;
-    [SerializeField] private float closeDuration = 0.2f;
 
     [Header("Localization Settings")]
     [SerializeField] private int localizationJsonId = 13;
@@ -66,7 +66,7 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private UI_EscapeMenuButton[] allButtons = Array.Empty<UI_EscapeMenuButton>();
     private TweenCallback[] buttonAppearCallbacks = Array.Empty<TweenCallback>();
-    private TweenCallback cachedEnableButtons;
+    private TweenCallback[] buttonDisappearCallbacks = Array.Empty<TweenCallback>();
 
     private sealed class EscapeMenuBGPiece
     {
@@ -79,7 +79,6 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private void Awake()
     {
-        cachedEnableButtons = EnableButtons;
         CacheCanvasGroups();
         CacheBGPieces();
         CacheButtons();
@@ -98,7 +97,6 @@ public class UI_EscapeMenu : MonoBehaviour
         onOptionCallback = null;
         onMainMenuCallback = null;
         onExitCallback = null;
-        cachedEnableButtons = null;
     }
 
     public void Initialize(LocalizationManager _localizationManager, Action _onResume, Action _onOption, Action _onMainMenu, Action _onExit)
@@ -202,6 +200,9 @@ public class UI_EscapeMenu : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 버튼과 백그라운드를 되감기(Rewind)하듯이 역순으로 축소/퇴장시키는 역모션 연출을 재생합니다.
+    /// </summary>
     public void PlayCloseProduction(Action _onComplete)
     {
         KillProductionSequences();
@@ -210,24 +211,56 @@ public class UI_EscapeMenu : MonoBehaviour
 
         closeSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
+        // 1단계: 버튼 역순 퇴장 (하단 -> 상단)
+        float _buttonCloseTime = 0.15f;
+        for (int i = 0; i < allButtons.Length; i++)
+        {
+            int _btnIndex = (allButtons.Length - 1) - i;
+            UI_EscapeMenuButton _btn = allButtons[_btnIndex];
+            if (null == _btn) continue;
+
+            float _btnDelay = i * buttonStaggerDelay;
+            _buttonCloseTime = _btn.DisappearDuration;
+
+            if (_btnIndex < buttonDisappearCallbacks.Length && null != buttonDisappearCallbacks[_btnIndex])
+            {
+                closeSequence.InsertCallback(_btnDelay, buttonDisappearCallbacks[_btnIndex]);
+            }
+        }
+
+        float _bgStartTime = allButtons.Length > 0
+            ? ((allButtons.Length - 1) * buttonStaggerDelay + _buttonCloseTime)
+            : 0f;
+
+        // 2단계: 백그라운드 역순 축소 (외곽 -> 중앙)
+        if (bgPieces.Length > 0)
+        {
+            AssignBGCloseDelays();
+            InsertBGCloseTweens(closeSequence, _bgStartTime);
+        }
+        else if (null != bgRoot)
+        {
+            closeSequence.Insert(_bgStartTime, DOTween.To(GetBGWidth, SetBGWidth, HiddenBGWidth, bgOpenDuration).SetEase(bgCloseEase));
+            if (null != bgCanvasGroup)
+            {
+                closeSequence.Insert(_bgStartTime, bgCanvasGroup.DOFade(0f, bgOpenDuration).SetEase(bgCloseEase));
+            }
+        }
+
         if (null != menuCanvasGroup)
         {
-            closeSequence.Join(menuCanvasGroup.DOFade(0f, closeDuration).SetEase(Ease.OutQuad));
-        }
-        else
-        {
-            if (null != bgCanvasGroup)
-                closeSequence.Join(bgCanvasGroup.DOFade(0f, closeDuration).SetEase(Ease.OutQuad));
-
-            if (null != buttonContainerCanvasGroup)
-                closeSequence.Join(buttonContainerCanvasGroup.DOFade(0f, closeDuration).SetEase(Ease.OutQuad));
+            float _totalBGCloseDuration = GetBGProductionDuration();
+            closeSequence.Insert(_bgStartTime + _totalBGCloseDuration * 0.8f, menuCanvasGroup.DOFade(0f, _totalBGCloseDuration * 0.2f));
         }
 
         closeSequence.OnComplete(() =>
         {
             closeSequence = null;
             isClosing = false;
-            if (null != _onComplete) _onComplete.Invoke();
+            if (null != _onComplete)
+            {
+                _onComplete.Invoke();
+            }
         });
     }
 
@@ -303,12 +336,14 @@ public class UI_EscapeMenu : MonoBehaviour
     {
         allButtons = new[] { resumeButton, optionButton, mainMenuButton, exitButton };
         buttonAppearCallbacks = new TweenCallback[allButtons.Length];
+        buttonDisappearCallbacks = new TweenCallback[allButtons.Length];
 
         for (int i = 0; i < allButtons.Length; i++)
         {
             if (null != allButtons[i])
             {
                 buttonAppearCallbacks[i] = allButtons[i].PlayAppearAnimation;
+                buttonDisappearCallbacks[i] = allButtons[i].PlayDisappearAnimation;
             }
         }
     }
@@ -365,6 +400,30 @@ public class UI_EscapeMenu : MonoBehaviour
         }
     }
 
+    private void InsertBGCloseTweens(Sequence _seq, float _startOffset)
+    {
+        if (bgPieces.Length > 0)
+        {
+            _seq.Insert(_startOffset, DOTween.To(
+                GetBGPiecesAlpha,
+                SetBGPiecesAlpha,
+                0f,
+                bgOpenDuration).SetEase(Ease.Linear));
+        }
+
+        for (int i = 0; i < bgPieces.Length; i++)
+        {
+            EscapeMenuBGPiece _piece = bgPieces[i];
+            float _pieceTime = _startOffset + _piece.delay;
+
+            _seq.Insert(_pieceTime, DOTween.To(
+                () => GetBGPieceWidth(_piece),
+                w => SetBGPieceWidth(_piece, w),
+                HiddenBGWidth,
+                bgOpenDuration).SetEase(bgCloseEase));
+        }
+    }
+
     private void AssignBGDelays()
     {
         if (bgPieces.Length <= 0) return;
@@ -395,6 +454,47 @@ public class UI_EscapeMenu : MonoBehaviour
                 for (int i = 0; i < bgPieces.Length; i++)
                 {
                     bgPieces[i].delay = (bgPieces.Length - 1 - i) * bgPieceOpenDelay;
+                }
+                break;
+        }
+    }
+
+    private void AssignBGCloseDelays()
+    {
+        if (bgPieces.Length <= 0) return;
+
+        switch (bgDelayMode)
+        {
+            case BGDelayMode.CenterOutward:
+                float _mid = (bgPieces.Length - 1) * 0.5f;
+                int _maxDist = 0;
+                for (int i = 0; i < bgPieces.Length; i++)
+                {
+                    int _dist = Mathf.FloorToInt(Mathf.Abs(i - _mid));
+                    _maxDist = Mathf.Max(_maxDist, _dist);
+                }
+                for (int i = 0; i < bgPieces.Length; i++)
+                {
+                    int _distFromCenter = Mathf.FloorToInt(Mathf.Abs(i - _mid));
+                    bgPieces[i].delay = (_maxDist - _distFromCenter) * bgPieceOpenDelay;
+                }
+                break;
+
+            case BGDelayMode.Random:
+                AssignRandomBGDelays();
+                break;
+
+            case BGDelayMode.TopToBottom:
+                for (int i = 0; i < bgPieces.Length; i++)
+                {
+                    bgPieces[i].delay = (bgPieces.Length - 1 - i) * bgPieceOpenDelay;
+                }
+                break;
+
+            case BGDelayMode.BottomToTop:
+                for (int i = 0; i < bgPieces.Length; i++)
+                {
+                    bgPieces[i].delay = i * bgPieceOpenDelay;
                 }
                 break;
         }
@@ -483,18 +583,6 @@ public class UI_EscapeMenu : MonoBehaviour
     private void SetCanvasGroupAlpha(CanvasGroup _cg, float _alpha)
     {
         if (null != _cg) _cg.alpha = _alpha;
-    }
-
-    private void EnableButtons()
-    {
-        SetButtonsInteractable(true);
-        for (int i = 0; i < allButtons.Length; i++)
-        {
-            if (null != allButtons[i])
-            {
-                allButtons[i].CheckCursorHover();
-            }
-        }
     }
 
     private void SetButtonsInteractable(bool _interactable)

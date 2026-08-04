@@ -3,7 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// ESC 메뉴의 최상위 UIView 컴포넌트입니다.
-/// 유니티 기본 Button 대신 UI_EscapeMenu 컴포넌트와 연동하여 애니메이션 및 이벤트를 중계합니다.
+/// 유니티 기본 Button 대신 UI_EscapeMenu 컴포넌트와 연동하여 애니메이션 및 이벤트를 중계하며,
+/// 옵션 버튼 클릭 시 되감기 역모션 후 UI_Option을 열고, 옵션 창이 닫히면 ESC 메뉴를 다시 복원합니다.
 /// </summary>
 public class UIView_ESC : UIView
 {
@@ -18,11 +19,22 @@ public class UIView_ESC : UIView
     [SerializeField] private GameObject uiPrefab;
     [SerializeField] private UI_EscapeMenu escapeMenu;
 
+    [Header("Sub Views")]
+    [SerializeField] private UI_Option optionUI; // 인스펙터 바인딩 지원
+
     private Action cachedCloseProductionFinished;
+    private Action cachedOptionMenuCloseCompleted;
+    private Action cachedOptionClosed;
+
+    public bool IsOptionOpen => null != optionUI && true == optionUI.gameObject.activeInHierarchy;
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
+
+        cachedCloseProductionFinished = OnCloseProductionFinished;
+        cachedOptionMenuCloseCompleted = OnOptionMenuCloseCompleted;
+        cachedOptionClosed = OnOptionClosed;
 
         if (null != uiPrefab)
         {
@@ -32,11 +44,21 @@ public class UIView_ESC : UIView
             {
                 escapeMenu = _instance.GetComponentInChildren<UI_EscapeMenu>(true);
             }
+
+            if (null == optionUI)
+            {
+                optionUI = _instance.GetComponentInChildren<UI_Option>(true);
+            }
         }
 
         if (null == escapeMenu)
         {
             escapeMenu = GetComponentInChildren<UI_EscapeMenu>(true);
+        }
+
+        if (null == optionUI)
+        {
+            optionUI = GetComponentInChildren<UI_Option>(true);
         }
 
         if (null != escapeMenu)
@@ -48,6 +70,11 @@ public class UIView_ESC : UIView
                 OnGoToMainMenuButtonClicked,
                 OnExitButtonClicked);
         }
+
+        if (null != optionUI)
+        {
+            optionUI.Initialize(_ctx);
+        }
     }
 
     public override void OnDestroy()
@@ -58,6 +85,8 @@ public class UIView_ESC : UIView
         ExitButtonClickedEvent = null;
         SaveGameButtonClickedEvent = null;
         cachedCloseProductionFinished = null;
+        cachedOptionMenuCloseCompleted = null;
+        cachedOptionClosed = null;
 
         base.OnDestroy();
     }
@@ -66,16 +95,19 @@ public class UIView_ESC : UIView
     {
         if (false == IsVisible) return;
 
+        base.Hide();
+
+        if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
+        {
+            optionUI.Hide();
+        }
+
         if (null != escapeMenu)
         {
             if (null == cachedCloseProductionFinished)
                 cachedCloseProductionFinished = OnCloseProductionFinished;
 
             escapeMenu.PlayCloseProduction(cachedCloseProductionFinished);
-        }
-        else
-        {
-            base.Hide();
         }
     }
 
@@ -98,7 +130,7 @@ public class UIView_ESC : UIView
 
     private void OnCloseProductionFinished()
     {
-        base.Hide();
+        gameObject.SetActive(false);
     }
 
     public void OnResumeButtonClicked()
@@ -112,9 +144,50 @@ public class UIView_ESC : UIView
 
     public void OnOptionButtonClicked()
     {
+        if (null != escapeMenu)
+        {
+            if (null == cachedOptionMenuCloseCompleted)
+                cachedOptionMenuCloseCompleted = OnOptionMenuCloseCompleted;
+
+            escapeMenu.PlayCloseProduction(cachedOptionMenuCloseCompleted);
+        }
+        else
+        {
+            OnOptionMenuCloseCompleted();
+        }
+    }
+
+    public void CloseOption()
+    {
+        if (null != optionUI && true == optionUI.gameObject.activeInHierarchy)
+        {
+            optionUI.Hide();
+        }
+    }
+
+    private void OnOptionMenuCloseCompleted()
+    {
+        if (null != optionUI)
+        {
+            if (null == cachedOptionClosed)
+                cachedOptionClosed = OnOptionClosed;
+
+            optionUI.Show(cachedOptionClosed);
+        }
+
         if (null != OptionButtonClickedEvent)
         {
             OptionButtonClickedEvent.Invoke();
+        }
+    }
+
+    private void OnOptionClosed()
+    {
+        if (false == IsVisible) return;
+
+        if (null != escapeMenu)
+        {
+            escapeMenu.PlayOpenProduction();
         }
     }
 

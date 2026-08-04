@@ -12,7 +12,7 @@ using Coffee.UIEffects;
 /// ESC 메뉴 전용 커스텀 버튼 컴포넌트입니다.
 /// 등장 시 X 확장/Y 압축 상태에서 원복되며,
 /// 호버 및 클릭 시 Y 스케일이 살짝 찌부되었다가 뽀잉 원복되는 찰진 모션을 제공합니다.
-/// 언호버 시에는 UIEffect 외곽선 색상만 복원됩니다.
+/// 퇴장 시에는 역순으로 찌부되며 페이드아웃됩니다.
 /// </summary>
 public class UI_EscapeMenuButton : MonoBehaviour,
     IPointerClickHandler,
@@ -29,6 +29,10 @@ public class UI_EscapeMenuButton : MonoBehaviour,
     [SerializeField] private Vector3 appearStartScale = new Vector3(1.25f, 0.2f, 1f);
     [SerializeField] private float appearDuration = 0.2f;
     [SerializeField] private Ease appearEase = Ease.OutBack;
+
+    [Header("Disappear Motion Settings (되감기 역모션)")]
+    [SerializeField] private float disappearDuration = 0.15f;
+    [SerializeField] private Ease disappearEase = Ease.InBack;
 
     [Header("Hover & Click Squash Motion Settings (Y찌부 뽀잉)")]
     [SerializeField, Tooltip("호버/클릭 시 찌부되는 Y 스케일 비율 (예: 0.85)")]
@@ -87,6 +91,8 @@ public class UI_EscapeMenuButton : MonoBehaviour,
             return canvasGroup;
         }
     }
+
+    public float DisappearDuration => disappearDuration;
 
     private void Awake()
     {
@@ -294,6 +300,59 @@ public class UI_EscapeMenuButton : MonoBehaviour,
         isAppearing = false;
         isInteractable = true;
         CheckCursorHover();
+    }
+
+    public void PlayDisappearAnimation()
+    {
+        PlayDisappearAnimation(0f, null);
+    }
+
+    /// <summary>
+    /// 등장 연출의 역과정으로 찌부 축소되며 페이드아웃되는 퇴장 애니메이션입니다.
+    /// </summary>
+    public void PlayDisappearAnimation(float _delay, Action _onComplete)
+    {
+        KillTweens();
+        isInteractable = false;
+        isAppearing = false;
+        isHovered = false;
+
+        if (null == motionTarget)
+        {
+            if (null != CanvasGroup) CanvasGroup.alpha = 0f;
+            if (null != _onComplete) _onComplete.Invoke();
+            return;
+        }
+
+        Vector3 _squashTargetScale = new Vector3(
+            originalScale.x * appearStartScale.x,
+            originalScale.y * appearStartScale.y,
+            originalScale.z * appearStartScale.z);
+
+        Sequence _disappearSeq = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+
+        if (_delay > 0f)
+        {
+            _disappearSeq.AppendInterval(_delay);
+        }
+
+        _disappearSeq.Append(motionTarget.DOScale(_squashTargetScale, disappearDuration).SetEase(disappearEase));
+        if (null != CanvasGroup)
+        {
+            _disappearSeq.Join(CanvasGroup.DOFade(0f, disappearDuration * 0.8f).SetEase(Ease.InQuad));
+        }
+
+        _disappearSeq.OnComplete(() =>
+        {
+            if (null != motionTarget)
+                motionTarget.localScale = Vector3.zero;
+
+            if (null != CanvasGroup)
+                CanvasGroup.alpha = 0f;
+
+            if (null != _onComplete)
+                _onComplete.Invoke();
+        });
     }
 
     /// <summary>

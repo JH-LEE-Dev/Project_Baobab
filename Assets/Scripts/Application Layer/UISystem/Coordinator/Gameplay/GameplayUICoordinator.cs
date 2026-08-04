@@ -379,20 +379,26 @@ public class GameplayUICoordinator
 
     private void EscButtonPressed()
     {
-        if (uiDepthController != null && uiDepthController.TryCloseTopView())
+        if (null != uiDepthController && uiDepthController.TryCloseTopView())
         {
             return;
         }
 
-        if (!escUI.IsVisible)
+        if (null != escUI && true == escUI.IsVisible)
+        {
+            if (true == escUI.IsOptionOpen)
+            {
+                escUI.CloseOption();
+                return;
+            }
+
+            escUI.Hide();
+            Time.timeScale = 1f;
+        }
+        else if (null != escUI)
         {
             escUI.Show();
             Time.timeScale = 0f;
-        }
-        else
-        {
-            escUI.Hide();
-            Time.timeScale = 1f;
         }
     }
 
