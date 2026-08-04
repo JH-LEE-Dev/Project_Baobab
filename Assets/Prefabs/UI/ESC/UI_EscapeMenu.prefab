@@ -93,16 +93,18 @@ MonoBehaviour:
   motionTarget: {fileID: 1108027821826950766}
   buttonText: {fileID: 8045194824928522301}
   uiEffect: {fileID: 0}
-  appearStartScale: {x: 1.25, y: 0.2, z: 1}
-  appearDuration: 0.15
+  appearStartScale: {x: 1.35, y: 0.4, z: 1}
+  appearDuration: 0.175
   appearEase: 27
-  squashYScale: 0.4
+  disappearDuration: 0.125
+  disappearEase: 26
+  squashYScale: 0.5
   squashDuration: 0.15
-  squashPressRatio: 0.2
+  squashPressRatio: 0.25
   squashPressEase: 6
   squashBounceEase: 27
   normalShadowColor: {r: 0, g: 0, b: 0, a: 1}
-  hoverShadowColor: {r: 1, g: 0.34097308, b: 0, a: 1}
+  hoverShadowColor: {r: 1, g: 0.49803922, b: 0, a: 1}
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowColor: {r: 0.735849, g: 0.19555679, b: 0, a: 1}
   shadowTweenDuration: 0.15
@@ -1274,16 +1276,18 @@ MonoBehaviour:
   motionTarget: {fileID: 7412062359814044777}
   buttonText: {fileID: 8161031774428382301}
   uiEffect: {fileID: 0}
-  appearStartScale: {x: 1.25, y: 0.2, z: 1}
-  appearDuration: 0.15
+  appearStartScale: {x: 1.35, y: 0.4, z: 1}
+  appearDuration: 0.175
   appearEase: 27
-  squashYScale: 0.4
+  disappearDuration: 0.125
+  disappearEase: 26
+  squashYScale: 0.5
   squashDuration: 0.15
-  squashPressRatio: 0.2
+  squashPressRatio: 0.25
   squashPressEase: 6
   squashBounceEase: 27
   normalShadowColor: {r: 0, g: 0, b: 0, a: 1}
-  hoverShadowColor: {r: 1, g: 0.34097308, b: 0, a: 1}
+  hoverShadowColor: {r: 1, g: 0.49803922, b: 0, a: 1}
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowColor: {r: 0.735849, g: 0.19555679, b: 0, a: 1}
   shadowTweenDuration: 0.15
@@ -1630,16 +1634,18 @@ MonoBehaviour:
   motionTarget: {fileID: 4718365473078737165}
   buttonText: {fileID: 4994319308824309830}
   uiEffect: {fileID: 0}
-  appearStartScale: {x: 1.25, y: 0.2, z: 1}
-  appearDuration: 0.15
+  appearStartScale: {x: 1.35, y: 0.4, z: 1}
+  appearDuration: 0.175
   appearEase: 27
-  squashYScale: 0.4
+  disappearDuration: 0.125
+  disappearEase: 26
+  squashYScale: 0.5
   squashDuration: 0.15
-  squashPressRatio: 0.2
+  squashPressRatio: 0.25
   squashPressEase: 6
   squashBounceEase: 27
   normalShadowColor: {r: 0, g: 0, b: 0, a: 1}
-  hoverShadowColor: {r: 1, g: 0.34097308, b: 0, a: 1}
+  hoverShadowColor: {r: 1, g: 0.49803922, b: 0, a: 1}
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowColor: {r: 0.735849, g: 0.19555679, b: 0, a: 1}
   shadowTweenDuration: 0.15
@@ -2185,16 +2191,18 @@ MonoBehaviour:
   motionTarget: {fileID: 120517310846086393}
   buttonText: {fileID: 753372704269685288}
   uiEffect: {fileID: 0}
-  appearStartScale: {x: 1.25, y: 0.2, z: 1}
-  appearDuration: 0.15
+  appearStartScale: {x: 1.35, y: 0.4, z: 1}
+  appearDuration: 0.175
   appearEase: 27
-  squashYScale: 0.4
+  disappearDuration: 0.125
+  disappearEase: 26
+  squashYScale: 0.5
   squashDuration: 0.15
-  squashPressRatio: 0.2
+  squashPressRatio: 0.25
   squashPressEase: 6
   squashBounceEase: 27
   normalShadowColor: {r: 0, g: 0, b: 0, a: 1}
-  hoverShadowColor: {r: 1, g: 0.34097308, b: 0, a: 1}
+  hoverShadowColor: {r: 1, g: 0.49803922, b: 0, a: 1}
   unhoverShadowColor: {r: 0, g: 0, b: 0, a: 1}
   clickShadowColor: {r: 0.735849, g: 0.19555679, b: 0, a: 1}
   shadowTweenDuration: 0.15
@@ -2448,6 +2456,7 @@ MonoBehaviour:
   bgPieceOpenDelay: 0.04
   bgTargetWidth: 700
   bgEase: 9
+  bgCloseEase: 8
   buttonContainer: {fileID: 7699114106920132337}
   resumeButton: {fileID: 7540380995776264473}
   optionButton: {fileID: 7315084585379504709}
@@ -2455,7 +2464,6 @@ MonoBehaviour:
   exitButton: {fileID: 295554050111268635}
   buttonOpenDuration: 0.25
   buttonStaggerDelay: 0.06
-  closeDuration: 0.2
   localizationJsonId: 13
   resumeTextId: 1
   optionTextId: 2

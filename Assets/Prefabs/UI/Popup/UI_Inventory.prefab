@@ -141,7 +141,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Open
+  m_text: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C/\u0417\u0430\u043A\u0440\u044B\u0442\u044C"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 4909044e3da435245a063b33ac595034, type: 2}
   m_sharedMaterial: {fileID: -4971463764404031913, guid: 4909044e3da435245a063b33ac595034, type: 2}
@@ -2671,7 +2671,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_KeyboardImage
   keyIconDatabase: {fileID: 11400000, guid: 5ad5b4a60909f49448135e101a5170f8, type: 2}
+  keyIconMode: 0
   boundAction: 4
+  otherKey: 0
+  customKeyboardPath: 
+  otherGamepadButton: 0
+  customGamepadPath: 
   targetImage: {fileID: 8955155674529491529}
 --- !u!1 &8211580376268119402
 GameObject:

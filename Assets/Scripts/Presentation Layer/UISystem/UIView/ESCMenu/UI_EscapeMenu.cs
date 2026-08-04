@@ -153,7 +153,7 @@ public class UI_EscapeMenu : MonoBehaviour
         }
     }
 
-    public void PlayOpenProduction()
+    public void PlayOpenProduction(Action _onComplete = null)
     {
         KillProductionSequences();
         isClosing = false;
@@ -186,18 +186,39 @@ public class UI_EscapeMenu : MonoBehaviour
             openSequence.Insert(_buttonsStartTime, buttonContainerCanvasGroup.DOFade(1f, buttonOpenDuration).SetEase(Ease.OutQuad));
         }
 
+        float _maxButtonEndTime = _buttonsStartTime;
+
         for (int i = 0; i < allButtons.Length; i++)
         {
             UI_EscapeMenuButton _btn = allButtons[i];
             if (null == _btn) continue;
 
             float _btnDelay = _buttonsStartTime + (i * buttonStaggerDelay);
+            float _btnEndTime = _btnDelay + _btn.AppearDuration;
+            if (_btnEndTime > _maxButtonEndTime)
+            {
+                _maxButtonEndTime = _btnEndTime;
+            }
 
             if (i < buttonAppearCallbacks.Length && null != buttonAppearCallbacks[i])
             {
                 openSequence.InsertCallback(_btnDelay, buttonAppearCallbacks[i]);
             }
         }
+
+        if (_maxButtonEndTime > 0f)
+        {
+            openSequence.Insert(_maxButtonEndTime, DOTween.To(() => 0f, _ => { }, 0f, 0f));
+        }
+
+        openSequence.OnComplete(() =>
+        {
+            openSequence = null;
+            if (null != _onComplete)
+            {
+                _onComplete.Invoke();
+            }
+        });
     }
 
     /// <summary>

@@ -166,6 +166,9 @@ public class GameplayUICoordinator
         escUI.ExitButtonClickedEvent -= ExitGame;
         escUI.ExitButtonClickedEvent += ExitGame;
 
+        escUI.UIInputLockChangedEvent -= ESCUIInputLockChanged;
+        escUI.UIInputLockChangedEvent += ESCUIInputLockChanged;
+
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
         menuPopupUI.TeleportUIClosedEvent += TeleportUIClosed;
 
@@ -198,6 +201,7 @@ public class GameplayUICoordinator
         escUI.ExitButtonClickedEvent -= ExitGame;
         escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
         escUI.SaveGameButtonClickedEvent -= SaveGame;
+        escUI.UIInputLockChangedEvent -= ESCUIInputLockChanged;
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
         menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
         menuPopupUI.UnlockProductionEndedEvent -= MenuPopupUnlockProductionEnded;
@@ -466,6 +470,11 @@ public class GameplayUICoordinator
     private void MenuPopupUnlockProductionEnded()
     {
         inputManager.PauseInteractKey(false);
+    }
+
+    private void ESCUIInputLockChanged(bool _isLocked)
+    {
+        inputManager.PauseESCKey(_isLocked);
     }
 
     private void OffroadContainerInteractStateChanged(OffroadContainerInteractStateChangedSignal _offroadContainerInteractStateChangedSignal)

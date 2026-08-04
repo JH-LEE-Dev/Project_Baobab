@@ -92,6 +92,7 @@ public class UI_EscapeMenuButton : MonoBehaviour,
         }
     }
 
+    public float AppearDuration => appearDuration;
     public float DisappearDuration => disappearDuration;
 
     private void Awake()
