@@ -2,7 +2,8 @@ using PresentationLayer.DOTweenAnimationSystem;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-//using PresentationLayer.UISystem.UIView.HUD.Common; // HUD_ProgressBar 등 공통 UI 요소 네임스페이스 가정
+using TMPro;
+using System;
 
 namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 {
@@ -18,6 +19,12 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         [SerializeField] private Image axeImage; // 도끼 이미지
         [SerializeField] private HUD_HPBar axeGaugeBar; // 도끼 특수 게이지 바
 
+        [Header("Key Image & Localization")]
+        [SerializeField] private UI_KeyboardImage keyboardImage;
+        [SerializeField] private TextMeshProUGUI actionText;
+        [SerializeField] private int localizationJsonId = 12;
+        [SerializeField] private int localizationEntryId = 1;
+
         [Header("Animations")]
         [SerializeField] private ObjectMotionPlayer omp;
         [SerializeField] private string brokenAnimTag;
@@ -32,12 +39,20 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         private AxeMode axeMode = AxeMode.DB100;
         private float previousRatio = 1f;
 
+        private LocalizationManager localizationManager;
+        private Action cachedRefreshLocalizedText;
+
         // //퍼블릭 초기화 및 제어 메서드
 
         /// <summary>
         /// 초기 설정 및 의존성 구성.
         /// </summary>
         public override void Initialize()
+        {
+            Initialize(null, null);
+        }
+
+        public void Initialize(InputManager _inputManager, LocalizationManager _localizationManager)
         {
             base.Initialize();
 
@@ -49,6 +64,35 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             if (null != omp)
                 omp.Initialize();
+
+            if (null != keyboardImage && null != _inputManager)
+            {
+                keyboardImage.Initialize(_inputManager);
+            }
+
+            localizationManager = _localizationManager;
+            if (null != localizationManager)
+            {
+                if (null == cachedRefreshLocalizedText)
+                    cachedRefreshLocalizedText = RefreshLocalizedText;
+
+                localizationManager.OnLanguageChanged -= cachedRefreshLocalizedText;
+                localizationManager.OnLanguageChanged += cachedRefreshLocalizedText;
+
+                RefreshLocalizedText();
+            }
+        }
+
+        public void RefreshLocalizedText()
+        {
+            if (null == actionText || null == localizationManager)
+                return;
+
+            string _localized = localizationManager.GetText(localizationJsonId, localizationEntryId);
+            if (false == string.IsNullOrEmpty(_localized))
+            {
+                actionText.text = _localized;
+            }
         }
 
         protected override void UpdateVisuals()
@@ -100,7 +144,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
             // 무음 재동기화(스킬로 최대 내구도만 바뀌는 등)에서는 스프라이트/모드/previousRatio만
             // 갱신하고, 실제 파손 사운드·VFX·애니메이션은 재생하지 않는다.
-            if (!_bPlayEffects)
+            if (false == _bPlayEffects)
                 return;
 
             if (1f > _ratio && prevMode != axeMode)
@@ -112,7 +156,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
                 // AxeBreaking(깨지는 소리)은 파티클 발생 여부와 무관하게 스프라이트가 바뀔 때마다 재생하되,
                 // 수리로 좋아지는 방향에서는 재생하지 않는다.
-                if (isBreaking)
+                if (true == isBreaking)
                 {
                     Sound.PlayUI(SoundID.AxeBreaking);
                 }
@@ -123,7 +167,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
 
                     // AxeBreaking_ex(파티클이 바닥에 흩뿌려지는 소리)는 실제로 나빠지는 방향이면서 파티클이 나갔을 때만 딜레이 재생한다.
                     // HUD가 비활성 상태(예: 어빌리티 트리 UI가 열려있는 동안)면 코루틴을 시작할 수 없으므로 건너뛴다.
-                    if (isBreaking && null != brokenEffect && gameObject.activeInHierarchy)
+                    if (true == isBreaking && null != brokenEffect && true == gameObject.activeInHierarchy)
                     {
                         StartCoroutine(PlayAxeBreakingExDelayed());
                     }
@@ -134,7 +178,7 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
                         Debug.Log(temp);
 
                         // AxeBreakingFinal도 마찬가지로 나빠지는 방향이면서 파티클이 실제로 나갔을 때만 재생한다.
-                        if (isBreaking && null != temp)
+                        if (true == isBreaking && null != temp)
                         {
                             Sound.PlayUI(SoundID.AxeBreakingFinal);
                         }
@@ -147,6 +191,14 @@ namespace PresentationLayer.UISystem.UIView.HUD.Equipment
         {
             yield return new WaitForSeconds(UnityEngine.Random.Range(0.5f, 1.5f));
             Sound.PlayUI(SoundID.AxeBreakingEx);
+        }
+
+        private void OnDestroy()
+        {
+            if (null != localizationManager && null != cachedRefreshLocalizedText)
+            {
+                localizationManager.OnLanguageChanged -= cachedRefreshLocalizedText;
+            }
         }
         // //유니티 이벤트 함수
     }

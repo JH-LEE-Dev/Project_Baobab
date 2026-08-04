@@ -179,6 +179,16 @@ public static class LocKeys
         public const int abilityDescriptionConstellationDamage = 4203461;
     }
 
+    public static class EquipmentHUD
+    {
+        public const int axeUse = 25165825;
+    }
+
+    public static class InventoryUI
+    {
+        public const int open = 23068673;
+    }
+
     public static class LootTooltipUI
     {
         public const int foundbox = 20971521;

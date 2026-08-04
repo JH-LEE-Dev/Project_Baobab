@@ -884,7 +884,7 @@ MonoBehaviour:
   unlockShrinkDuration: 0.2
   unlockParticleDelay: 0.3
   unlockDuration: 0.5
-  hoverMoveX: 10
+  hoverMoveX: 20
   hoverMoveDuration: 0.2
   hoverMoveEase: 28
 --- !u!1 &7682306616101199194

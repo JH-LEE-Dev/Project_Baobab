@@ -4,8 +4,8 @@
     {
       "id": 1,
       "key": "Open",
-      "kr": "열기",
-      "en": "Open",
+      "kr": "열기/닫기",
+      "en": "Open/Close",
       "enumType": "",
       "enumValue": ""
     }
