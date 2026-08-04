@@ -30,6 +30,11 @@ public class AudioManager : MonoBehaviour
     private Queue<AudioEvent> eventQueue = new Queue<AudioEvent>(100);
     private List<AudioSource> sourcePool = new List<AudioSource>();
     private float[] sourceStartTime;
+    // 슬롯이 재생 중인 사운드의 DB 기준 볼륨(defaultVolume × 큐 랜덤 보정). SetTrackedVolume이
+    // Play(volume)과 동일하게 "0~1 배율"을 받도록 하기 위한 기준값이다.
+    private float[] sourceBaseVolume;
+    // 위 기준값에 호출부가 지정한 배율까지 곱한 "의도한 볼륨". 실제 src.volume은 여기에
+    // 연출용 전역 계수(production3DVolumeFactor)를 한 번 더 곱해서 정해진다(ApplySourceVolume 참고).
     private float[] sourceTargetVolume;
     private int[] sourcePlayId;
     private int playIdCounter;
@@ -98,6 +103,13 @@ public class AudioManager : MonoBehaviour
             if (src != null && src.spatialBlend > 0f)
             {
                 src.Stop();
+
+                // 여기서 끊은 소리를 가리키던 기존 핸들은 전부 무효화한다. playId를 그대로 두면
+                // IsHandleValid()가 계속 true를 반환해서, 루프 사운드를 유지해야 하는 발음체가
+                // "핸들이 살아있으니 아직 재생 중"이라고 오판하고 영영 다시 재생하지 않게 된다.
+                // (playIdCounter는 단조 증가라 예전 핸들과 값이 겹치지 않는다.)
+                playIdCounter++;
+                sourcePlayId[i] = playIdCounter;
             }
         }
     }
@@ -155,17 +167,34 @@ public class AudioManager : MonoBehaviour
         for (int i = 0; i < count; i++)
         {
             AudioSource src = sourcePool[i];
-            if (src != null && src.spatialBlend > 0f && src.isPlaying && sourceTargetVolume != null)
+            if (src != null && src.spatialBlend > 0f && src.isPlaying)
             {
-                src.volume = sourceTargetVolume[i] * production3DVolumeFactor;
+                ApplySourceVolume(i);
             }
         }
+    }
+
+    // src.volume에 쓰는 창구를 여기 하나로 모은다. 예전에는 재생 시작, 연출 계수 페이드, 파워다운
+    // 페이드아웃이 각자 src.volume에 직접 써서 서로를 덮어썼다(특히 연출 계수 페이드가 매 프레임
+    // 원래 볼륨으로 되돌려버려 파워다운 페이드아웃이 들리지 않았다).
+    // 이제 각자는 sourceTargetVolume만 갱신하고, 실제 반영은 항상 이 함수를 거친다.
+    private void ApplySourceVolume(int index)
+    {
+        if (sourceTargetVolume == null || index < 0 || index >= sourcePool.Count) return;
+
+        AudioSource src = sourcePool[index];
+        if (src == null) return;
+
+        // 연출용 전역 계수는 3D 사운드에만 적용한다(UI/2D 사운드는 카메라 연출과 무관해야 한다).
+        float factor = src.spatialBlend > 0f ? production3DVolumeFactor : 1f;
+        src.volume = sourceTargetVolume[index] * factor;
     }
 
     private void CreatePool()
     {
         sourcePool.Capacity = poolSize;
         sourceStartTime = new float[poolSize];
+        sourceBaseVolume = new float[poolSize];
         sourceTargetVolume = new float[poolSize];
         sourcePlayId = new int[poolSize];
 
@@ -200,7 +229,7 @@ public class AudioManager : MonoBehaviour
         float diagonal = Mathf.Sqrt(halfWidth * halfWidth + halfHeight * halfHeight);
 
         // 1번(0~near) 및 2번(near~cliffStart) 구간의 위치와 길이는 기존 그대로 100% 고정
-        float baseFar = diagonal * 1.05f;
+        float baseFar = diagonal * farDistanceBuffer;
         float cliffStart = near + (baseFar - near) * 0.75f;
 
         // 마지막 3번 구간(cliffStart~far)의 길이만 늘려 완만하게 만들기 위해 전체 최대 거리(far)를 확장
@@ -294,9 +323,12 @@ public class AudioManager : MonoBehaviour
 
     private System.Collections.IEnumerator PowerDownRoutine(AudioHandle handle, float duration, float minPitch)
     {
-        AudioSource src = sourcePool[handle.sourceIndex];
+        int index = handle.sourceIndex;
+        AudioSource src = sourcePool[index];
         float startPitch = src.pitch;
-        float startVolume = src.volume;
+        // src.volume이 아니라 "의도한 볼륨"에서 시작한다. src.volume에는 연출용 전역 계수가 이미
+        // 곱해져 있어서, 그걸 기준으로 잡으면 페이드 도중 계수가 올라갈 때 최종 볼륨이 어긋난다.
+        float startTargetVolume = sourceTargetVolume[index];
 
         float timer = 0f;
         while (timer < duration)
@@ -307,7 +339,8 @@ public class AudioManager : MonoBehaviour
             timer += Time.deltaTime;
             float t = timer / duration;
             src.pitch = Mathf.Lerp(startPitch, minPitch, t);
-            src.volume = Mathf.Lerp(startVolume, 0f, t);
+            sourceTargetVolume[index] = Mathf.Lerp(startTargetVolume, 0f, t);
+            ApplySourceVolume(index);
             yield return null;
         }
 
@@ -400,6 +433,37 @@ public class AudioManager : MonoBehaviour
         return data.clip.length;
     }
 
+    // 핸들이 가리키는 소스가 지금 실제로 재생 중인지 확인한다. 핸들이 유효해도 클립 재생이 이미
+    // 끝났거나(원샷) 외부에서 정지된 경우를 걸러내야 하는 쪽 - 특히 루프를 계속 유지해야 하는
+    // 발음체 - 에서 이 값을 확인해 필요하면 다시 재생을 트리거한다.
+    public bool IsTrackedPlaying(AudioHandle handle)
+    {
+        if (!IsHandleValid(handle)) return false;
+        return sourcePool[handle.sourceIndex].isPlaying;
+    }
+
+    // 트랙 중인 사운드의 볼륨 배율을 즉시(보간 없이) 설정한다. 컨베이어 벨트처럼 이미 매 프레임
+    // 자체 로직(가감속 등)으로 값을 계산해 미는 경우, 별도 코루틴 없이 그 값을 그대로 반영할 때 쓴다.
+    //
+    // _volumeScale은 Play(id, pos, volume)의 volume과 같은 의미의 0~1 배율이며, DB의 defaultVolume에
+    // 곱해진다. 여기서 곧장 src.volume에 쓰면 (1) DB 볼륨 설정이 무시되고 (2) 카메라 연출용 전역
+    // 덕킹(production3DVolumeFactor)까지 무시된다 - 씬 전환 직후 계수가 0인데도 벨트 루프처럼 매
+    // 프레임 갱신되는 소리가 그걸 무시하고 원래 볼륨으로 튀어나오는 문제가 실제로 있었다.
+    public void SetTrackedVolume(AudioHandle handle, float _volumeScale)
+    {
+        if (!IsHandleValid(handle)) return;
+
+        int index = handle.sourceIndex;
+        sourceTargetVolume[index] = sourceBaseVolume[index] * _volumeScale;
+        ApplySourceVolume(index);
+    }
+
+    public void SetTrackedPitch(AudioHandle handle, float pitch)
+    {
+        if (!IsHandleValid(handle)) return;
+        sourcePool[handle.sourceIndex].pitch = pitch;
+    }
+
     private bool IsHandleValid(AudioHandle handle)
     {
         if (!handle.IsValid || handle.sourceIndex >= sourcePool.Count) return false;
@@ -411,20 +475,24 @@ public class AudioManager : MonoBehaviour
     {
         AudioClip clip;
         float pitch;
-        float finalVolume;
+        // baseVolume: 호출부 배율을 빼고 DB/큐만으로 결정되는 볼륨. 이후 SetTrackedVolume이
+        // "0~1 배율"을 받아 이 값에 곱할 수 있도록 슬롯에 따로 보관한다.
+        float baseVolume;
 
         if (data.cueData != null)
         {
             clip = PickClipFromCue(data.cueData);
             pitch = data.cueData.GetRandomPitch();
-            finalVolume = data.defaultVolume * volume * data.cueData.GetRandomVolumeModifier();
+            baseVolume = data.defaultVolume * data.cueData.GetRandomVolumeModifier();
         }
         else
         {
             clip = data.clip;
             pitch = 1f;
-            finalVolume = data.defaultVolume * volume;
+            baseVolume = data.defaultVolume;
         }
+
+        float finalVolume = baseVolume * volume;
 
         if (pitchOverride >= 0f) pitch = pitchOverride;
 
@@ -453,6 +521,7 @@ public class AudioManager : MonoBehaviour
         bool is3DSound = data.is3D && is3D;
         float initialVolume = finalVolume;
 
+        sourceBaseVolume[index] = baseVolume;
         sourceTargetVolume[index] = finalVolume;
 
         // 3D 사운드이고 카메라/커브 정보가 유효하다면, 재생 시작 시점의 거리를 사전 계산하여
@@ -486,22 +555,22 @@ public class AudioManager : MonoBehaviour
 
         AudioHandle handle = new AudioHandle(index, playIdCounter);
 
-        // 3D 사운드는 1프레임 뒤 오디오 스레드 3D 스파티얼라이저가 동기화되면 기본 볼륨(finalVolume * productionFactor)으로 원복해,
+        // 3D 사운드는 1프레임 뒤 오디오 스레드 3D 스파티얼라이저가 동기화되면 의도한 볼륨으로 원복해,
         // 이후 이동이나 카메라 변화에 따른 동적 거리 감쇠가 Unity 엔진 표준 방식으로 계속 적용되게 한다.
         if (is3DSound)
         {
-            StartCoroutine(SyncVolumeNextFrameRoutine(handle, finalVolume));
+            StartCoroutine(SyncVolumeNextFrameRoutine(handle));
         }
 
         return handle;
     }
 
-    private System.Collections.IEnumerator SyncVolumeNextFrameRoutine(AudioHandle handle, float targetVolume)
+    private System.Collections.IEnumerator SyncVolumeNextFrameRoutine(AudioHandle handle)
     {
         yield return null;
         if (IsHandleValid(handle))
         {
-            sourcePool[handle.sourceIndex].volume = sourceTargetVolume[handle.sourceIndex] * production3DVolumeFactor;
+            ApplySourceVolume(handle.sourceIndex);
         }
     }
 

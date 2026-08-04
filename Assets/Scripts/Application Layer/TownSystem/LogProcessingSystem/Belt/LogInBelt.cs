@@ -41,6 +41,19 @@ public class LogInBelt : MonoBehaviour
     [SerializeField] private float acceleration = 2.5f;
     [SerializeField] private float beltAnimationSpeedMultiplier = 1f;
 
+    [Header("Loop Sound")]
+    [Tooltip("벨트가 완전히 멈췄을 때의 피치(반음/세미톤 단위, 음수). 실제 재생 피치 = 2^(세미톤/12).")]
+    [SerializeField] private float loopStopPitchSemitones = -5f;
+    [Tooltip("벨트가 기본 속도로 돌 때 도달하는 목표 볼륨 배율(0~1). AudioDatabase의 ConvayerLoop " +
+             "defaultVolume에 곱해진다. 아주 작게 잡아둔 기본값이며 추후 직접 튜닝 예정.")]
+    [SerializeField] private float loopIntendedVolume = 0.4f;
+    [Tooltip("컨베이어 가속 특성으로 beltSpeed가 최초 속도 대비 이 배율까지 올라갔을 때 피치가 loopMaxSpeedPitch에 도달한다.")]
+    [SerializeField] private float loopMaxSpeedMultiplier = 2f;
+    [Tooltip("최고 속도에서 도달하는 최대 피치")]
+    [SerializeField] private float loopMaxSpeedPitch = 1.6f;
+
+    private AudioHandle loopSoundHandle = AudioHandle.Invalid;
+    private float baseBeltSpeed = -1f;
 
     // 내부 상태
     private List<BeltItem> activeItems = new List<BeltItem>(10);
@@ -72,6 +85,13 @@ public class LogInBelt : MonoBehaviour
         isMoving = false;
         currentSpeed = 0f;
 
+        // 가속 특성(IncreaseSpeed)으로 beltSpeed가 이미 오른 상태에서 재초기화될 수 있으므로,
+        // "기본 속도 대비 몇 배 빨라졌는지"의 기준점은 최초 1회만 캐싱한다.
+        if (baseBeltSpeed < 0f)
+        {
+            baseBeltSpeed = beltSpeed;
+        }
+
         for (int i = 0; i < belts.Count; ++i)
         {
             belts[i].Initialize();
@@ -101,6 +121,8 @@ public class LogInBelt : MonoBehaviour
     public void LogIn(LogItem _item)
     {
         if (_item == null || checkPoints.Count == 0) return;
+
+        Sound.Play(SoundID.ConvayerPut, checkPoints[0].position);
 
         _item.SetHeight(0.425f);
         // 아이템을 첫 번째 체크포인트 위치로 즉시 이동
@@ -135,6 +157,8 @@ public class LogInBelt : MonoBehaviour
             currentSpeed = Mathf.MoveTowards(currentSpeed, targetSpeedValue, acceleration * deltaTime);
             SetBeltsAnimationSpeed(currentSpeed);
         }
+
+        UpdateLoopSound();
 
         // 3. 실행 조건 확인 (속도가 0이고 목표 속도도 0이면 중단)
         if (currentSpeed <= 0f && targetSpeedValue <= 0f) return;
@@ -182,6 +206,45 @@ public class LogInBelt : MonoBehaviour
                 }
             }
         }
+    }
+
+    // ConvayerLoop는 Start/End 구간이 따로 없는 순수 루프 클립이라, 코드에서 currentSpeed(가감속 곡선)를
+    // 그대로 따라가는 볼륨/피치로 매 프레임 직접 밀어준다. 별도의 페이드 타이머 없이 이 방식만으로
+    // 벨트가 멈춰있을 때(볼륨 0, 피치 -5세미톤) -> 가속(정상 볼륨/피치로 상승) -> 감속(다시 0/-5세미톤으로
+    // 하강)이 실제 컨베이어 속도와 항상 정확히 연동된다.
+    private void UpdateLoopSound()
+    {
+        // IsValid만으로는 부족하다 - 씬 전환 시 AudioManager.StopAll3DSounds()가 핸들은 그대로 둔 채
+        // AudioSource만 직접 Stop()시키는 경로가 있어서, 핸들은 여전히 "유효"하지만 실제로는 재생이
+        // 멈춰있는 상태가 될 수 있다(예: 던전에서 마을로 돌아온 직후). 그 경우도 걸러서 다시 재생한다.
+        if (!loopSoundHandle.IsValid || !Sound.IsTrackedPlaying(loopSoundHandle))
+        {
+            loopSoundHandle = Sound.PlayTracked(SoundID.ConvayerLoop, transform.position, 0f);
+        }
+
+        float ratio = beltSpeed > 0f ? Mathf.Clamp01(currentSpeed / beltSpeed) : 0f;
+
+        // 가속 특성으로 beltSpeed가 기본 속도 대비 올라간 만큼, 정상 주행 시 도달하는 피치도
+        // 1.0에서 loopMaxSpeedPitch(기본 1.6)까지 함께 올라간다.
+        float speedMultiplier = baseBeltSpeed > 0f ? beltSpeed / baseBeltSpeed : 1f;
+        float runningPitch = loopMaxSpeedMultiplier > 1f
+            ? Mathf.Lerp(1f, loopMaxSpeedPitch, Mathf.InverseLerp(1f, loopMaxSpeedMultiplier, speedMultiplier))
+            : 1f;
+
+        float stopPitch = Mathf.Pow(2f, loopStopPitchSemitones / 12f);
+
+        Sound.SetTrackedVolume(loopSoundHandle, Mathf.Lerp(0f, loopIntendedVolume, ratio));
+        Sound.SetTrackedPitch(loopSoundHandle, Mathf.Lerp(stopPitch, runningPitch, ratio));
+        Sound.UpdateTrackedPosition(loopSoundHandle, transform.position);
+    }
+
+    // 루프 사운드는 AudioManager의 소스 풀이 소유하므로, 이 오브젝트가 꺼져도(제재소 라인 축소,
+    // 세이브 로드로 라인 수가 줄어드는 경우 등) 저절로 멈추지 않는다. Update()가 돌지 않아
+    // 볼륨 갱신도 끊기므로, 마지막 볼륨 그대로 영영 남는다. 여기서 확실히 끊는다.
+    private void OnDisable()
+    {
+        Sound.StopTracked(loopSoundHandle);
+        loopSoundHandle = AudioHandle.Invalid;
     }
 
     private void UpdateDeactivatingItems(float _deltaTime)
