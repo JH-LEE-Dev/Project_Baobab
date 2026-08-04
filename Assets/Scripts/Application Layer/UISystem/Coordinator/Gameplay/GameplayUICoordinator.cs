@@ -157,6 +157,9 @@ public class GameplayUICoordinator
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
         inputManager.inputReader.ESCButtonPressedEvent += EscButtonPressed;
 
+        escUI.ResumeButtonClickedEvent -= ResumeGame;
+        escUI.ResumeButtonClickedEvent += ResumeGame;
+
         escUI.SaveGameButtonClickedEvent -= SaveGame;
         escUI.SaveGameButtonClickedEvent += SaveGame;
 
@@ -198,6 +201,7 @@ public class GameplayUICoordinator
         menuPopupUI.DungeonSelectedEvent -= DungeonSelected;
         menuPopupUI.CancelButtonClickedEvent -= CancelMenuPopup;
         inputManager.inputReader.ESCButtonPressedEvent -= EscButtonPressed;
+        escUI.ResumeButtonClickedEvent -= ResumeGame;
         escUI.ExitButtonClickedEvent -= ExitGame;
         escUI.GoToMainMenuButtonClickedEvent -= GoToMainMenu;
         escUI.SaveGameButtonClickedEvent -= SaveGame;
@@ -361,6 +365,14 @@ public class GameplayUICoordinator
     private void SaveGame()
     {
         SaveGameEvent?.Invoke();
+    }
+
+    private void ResumeGame()
+    {
+        // escUI.OnResumeButtonClicked()가 Hide()를 이미 호출한 뒤 이 이벤트를 발행하므로
+        // 여기서는 EscButtonPressed의 ESC 키 종료 경로와 동일하게 이동/시간만 복구한다.
+        inputManager.PauseMove(false);
+        Time.timeScale = 1f;
     }
 
     private void GoToMainMenu()
