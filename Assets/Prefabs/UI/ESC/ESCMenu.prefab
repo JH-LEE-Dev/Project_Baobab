@@ -56,7 +56,7 @@ MonoBehaviour:
   bCloseableByESC: 0
   bWorld: 0
   bScreenSpace: 0
-  bOverlay: 0
+  bOverlay: 1
   uiRoot: {fileID: 1428547135923378214}
   uiPrefab: {fileID: 0}
   escapeMenu: {fileID: 8248091534663188830}
