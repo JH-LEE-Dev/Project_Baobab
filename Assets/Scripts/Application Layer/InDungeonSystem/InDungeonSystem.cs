@@ -545,6 +545,9 @@ public class InDungeonSystem : MonoBehaviour
         // 재생 재개는 새 던전 진입 후 CharacterActivated()가 담당한다.
         Sound.FadeOutBGM(skyCameraProductionManager.MoveDuration);
 
+        // 리트라이 카메라 연출 시작 - 종료 시점은 InDungeonProductionManager.CameraDownIsEnd()
+        inputManager.PauseESCKey(true);
+
         inDungeonProductionManager.StartSkyProduction();
         signalHub.Publish(new StartSkyProductionSignal());
     }
