@@ -99,6 +99,40 @@ public class HUD_PopupNav_Main : MonoBehaviour
     [Tooltip("체크 시 내비게이션을 열 때 모든 지역 및 서브지역을 강제로 해금 처리합니다.")]
     [SerializeField] private bool debugForceUnlockAll = false;
 
+    [Header("Demo Version Settings")]
+    [Tooltip("체크 시 데모 버전으로 동작합니다. 인스펙터에서 켜고 끌 수 있습니다.")]
+    [SerializeField] private bool isDemoVersion = false;
+    [Tooltip("데모 버전에서 플레이 가능한 최대 대지역 (기본: WideGreenForest)")]
+    [SerializeField] private MapType maxPlayableMapTypeInDemo = MapType.WideGreenForest;
+    [Tooltip("Steam 상점 페이지 / 찜하기 URL")]
+    [SerializeField] private string steamWishlistUrl = "https://store.steampowered.com/app/YOUR_APP_ID/";
+    [Tooltip("공식 디스코드 커뮤니티 URL")]
+    [SerializeField] private string discordCommunityUrl = "https://discord.gg/your_invite_link";
+
+    [Header("Demo Notice UI References")]
+    [Tooltip("데모 안내 오버레이 루트 오브젝트 (Dim 및 배너 포함)")]
+    [SerializeField] private GameObject demoNoticeOverlay;
+    [Tooltip("데모 안내 전체 화면 Dim 캔버스 그룹")]
+    [SerializeField] private CanvasGroup demoDimCanvasGroup;
+    [Tooltip("Title DimBG 스타일 좌우 펼쳐짐 띠 배너")]
+    [SerializeField] private RectTransform demoBandTransform;
+    [Tooltip("데모 안내 타이틀 텍스트")]
+    [SerializeField] private TextMeshProUGUI demoTitleText;
+    [Tooltip("데모 안내 설명 텍스트 (통합 줄바꿈 텍스트)")]
+    [SerializeField] private TextMeshProUGUI demoDescText;
+    [Tooltip("데모 안내 타이틀 스타일 애니메이터")]
+    [SerializeField] private PresentationLayer.UISystem.TMPInlineStyleAnimator demoTitleAnimator;
+    [Tooltip("데모 안내 설명 스타일 애니메이터")]
+    [SerializeField] private PresentationLayer.UISystem.TMPInlineStyleAnimator demoDescAnimator;
+    [Tooltip("스팀 찜하기 외부 링크 버튼")]
+    [SerializeField] private UI_ExternalLinkButton steamWishlistBtn;
+    [Tooltip("디스코드 외부 링크 버튼")]
+    [SerializeField] private UI_ExternalLinkButton discordBtn;
+    [Tooltip("데모 안내 닫기 / 계속 탐험하기 버튼")]
+    [SerializeField] private Button closeNoticeBtn;
+    [Tooltip("데모 안내 닫기용 Dim 클릭 감지 이미지")]
+    [SerializeField] private Image demoDimClickImage;
+
     // 내부 의존성
     private IMapDataProvider mapDataProvider;
     private LocalizationManager localizationManager;
@@ -113,6 +147,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private bool isUnlockingProductionActive = false;
     private bool isClosing = false;
     private bool isInputBlocked = false;
+    private bool isDemoNoticeShowing = false;
     private ForestType currentSelectedForestType = ForestType.None;
     private MapType currentSelectedMapType = MapType.None;
     private bool isPendingUnlockProcess = false;
@@ -122,6 +157,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private MapType pendingConfirmMapType = MapType.None;
     private ForestType pendingConfirmForestType = ForestType.None;
     private Tween dungeonConfirmDelayTween;
+    private Tween demoNoticeTween;
 
     // 언락 큐 구조체
     private struct UnlockInfo
@@ -146,10 +182,14 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private TweenCallback onDungeonConfirmDelayCompleteCallback;
     
     private UnityEngine.Events.UnityAction onBackgroundDimClickedAction;
+    private UnityEngine.Events.UnityAction onDemoNoticeCloseAction;
 
-    public bool IsInputBlocked => isInputBlocked || isUnlockingProductionActive || isClosing;
+    public bool IsInputBlocked => isInputBlocked || isUnlockingProductionActive || isClosing || isDemoNoticeShowing;
     public bool IsUnlockingProductionActive => isUnlockingProductionActive;
+    public bool IsDemoNoticeShowing => isDemoNoticeShowing;
     public bool IsTransitioning { get; private set; }
+    public bool IsDemoVersion { get => isDemoVersion; set => isDemoVersion = value; }
+    public MapType MaxPlayableMapTypeInDemo { get => maxPlayableMapTypeInDemo; set => maxPlayableMapTypeInDemo = value; }
 
     public event Action OnUnlockProductionStarted;
     public event Action OnUnlockProductionEnded;
@@ -196,6 +236,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         onDungeonConfirmDelayCompleteCallback = OnDungeonConfirmDelayComplete;
         
         onBackgroundDimClickedAction = OnBackgroundDimClicked;
+        onDemoNoticeCloseAction = HideDemoNoticeOverlay;
 
         if (null != regionGroup)
         {
@@ -210,6 +251,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != subRegionFieldTransform)
         {
             subRegionFieldOriginalPos = subRegionFieldTransform.anchoredPosition;
+        }
+
+        if (null != demoNoticeOverlay)
+        {
+            demoNoticeOverlay.SetActive(false);
         }
 
         BindClickEvents();
@@ -241,6 +287,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private void BindClickEvents()
     {
         if (null != backgroundDimImage) AddClickListener(backgroundDimImage.gameObject, onBackgroundDimClickedAction);
+        if (null != closeNoticeBtn) AddClickListener(closeNoticeBtn.gameObject, onDemoNoticeCloseAction);
+        if (null != demoDimClickImage) AddClickListener(demoDimClickImage.gameObject, onDemoNoticeCloseAction);
     }
 
     public void Open()
@@ -248,6 +296,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
         gameObject.SetActive(true);
         isClosing = false;
         isInputBlocked = true;
+        isDemoNoticeShowing = false;
+
+        if (null != demoNoticeOverlay)
+        {
+            demoNoticeOverlay.SetActive(false);
+        }
         isUnlockingProductionActive = false;
         hasPendingDungeonConfirm = false;
         currentSelectedMapType = MapType.None;
@@ -439,6 +493,17 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         isClosing = true;
         isInputBlocked = true;
+
+        if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
+        {
+            demoNoticeTween.Kill();
+            demoNoticeTween = null;
+        }
+        if (null != demoNoticeOverlay)
+        {
+            demoNoticeOverlay.SetActive(false);
+        }
+        isDemoNoticeShowing = false;
 
         if (null != delayedCallTween && true == delayedCallTween.IsActive())
         {
@@ -774,7 +839,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     private bool RestoreSessionState()
     {
-        if (MapType.None != runtimeLastSelectedMapType)
+        if (MapType.None != runtimeLastSelectedMapType && false == IsDemoRestrictedMapType(runtimeLastSelectedMapType))
         {
             HandleRegionSelected(runtimeLastSelectedMapType, true, true);
             return true;
@@ -789,7 +854,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
                 {
                     for (int i = 0; i < _db.mapDatas.Count; i++)
                     {
-                        if (MapType.Town != _db.mapDatas[i].mapType)
+                        if (MapType.Town != _db.mapDatas[i].mapType && false == IsDemoRestrictedMapType(_db.mapDatas[i].mapType))
                         {
                             HandleRegionSelected(_db.mapDatas[i].mapType, true, true);
                             return true;
@@ -874,6 +939,13 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (currentSelectedMapType == _mapType)
         {
             // 동일한 대지역 재클릭 무시 (토글 안함)
+            return;
+        }
+
+        // 데모 버전 체크: 첫 대지역 해금 연출 이후 해당 대지역 클릭 시 데모 안내 표시
+        if (false == _force && true == IsDemoRestrictedMapType(_mapType))
+        {
+            ShowDemoNoticeOverlay(_mapType);
             return;
         }
 
@@ -993,6 +1065,145 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
+    public bool IsDemoRestrictedMapType(MapType _mapType)
+    {
+        if (false == isDemoVersion) return false;
+        if (_mapType == MapType.None || _mapType == MapType.Town) return false;
+        return _mapType > maxPlayableMapTypeInDemo;
+    }
+
+    public void ShowDemoNoticeOverlay(MapType _restrictedMapType = MapType.None)
+    {
+        if (null == demoNoticeOverlay)
+        {
+            Debug.LogWarning("[HUD_PopupNav_Main] Demo notice overlay is not assigned!");
+            return;
+        }
+
+        isDemoNoticeShowing = true;
+        demoNoticeOverlay.SetActive(true);
+
+        // 텍스트 로컬라이징 적용 (JSON ID 14)
+        if (null != localizationManager)
+        {
+            const int demoJsonId = 14;
+            if (null != demoTitleText)
+            {
+                string _title = localizationManager.GetText(demoJsonId, 1);
+                if (false == string.IsNullOrEmpty(_title))
+                {
+                    demoTitleText.text = _title;
+                }
+            }
+
+            if (null != demoDescText)
+            {
+                string _desc = localizationManager.GetText(demoJsonId, 2);
+                if (false == string.IsNullOrEmpty(_desc))
+                {
+                    demoDescText.text = _desc;
+                }
+            }
+        }
+
+        // URL 동적 주입
+        if (null != steamWishlistBtn && false == string.IsNullOrEmpty(steamWishlistUrl))
+        {
+            steamWishlistBtn.SetUrl(steamWishlistUrl);
+        }
+        if (null != discordBtn && false == string.IsNullOrEmpty(discordCommunityUrl))
+        {
+            discordBtn.SetUrl(discordCommunityUrl);
+        }
+
+        // DOTween 애니메이션: Title DimBG 연출 동일 적용
+        if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
+        {
+            demoNoticeTween.Kill();
+            demoNoticeTween = null;
+        }
+
+        Sequence _seq = DOTween.Sequence();
+
+        if (null != demoDimCanvasGroup)
+        {
+            demoDimCanvasGroup.alpha = 0f;
+            demoDimCanvasGroup.blocksRaycasts = true;
+            _seq.Join(demoDimCanvasGroup.DOFade(1f, dimFadeDuration).SetEase(dimFadeEase));
+        }
+
+        if (null != demoBandTransform)
+        {
+            demoBandTransform.localScale = new Vector3(0f, 1f, 1f);
+            _seq.Join(demoBandTransform.DOScaleX(1f, panelScaleDuration).SetEase(titleBandEase, titleBandOvershoot));
+        }
+
+        _seq.OnComplete(() =>
+        {
+            if (null != demoTitleAnimator)
+            {
+                demoTitleAnimator.PlayRevealBounce();
+            }
+            if (null != demoDescAnimator)
+            {
+                demoDescAnimator.PlayRevealBounce();
+            }
+        });
+
+        demoNoticeTween = _seq;
+    }
+
+    public void HideDemoNoticeOverlay()
+    {
+        if (null == demoNoticeOverlay || false == demoNoticeOverlay.activeSelf)
+        {
+            return;
+        }
+
+        if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
+        {
+            demoNoticeTween.Kill();
+            demoNoticeTween = null;
+        }
+
+        Sequence _seq = DOTween.Sequence();
+
+        if (null != demoBandTransform)
+        {
+            _seq.Join(demoBandTransform.DOScaleX(0f, 0.2f).SetEase(Ease.InBack));
+        }
+
+        if (null != demoDimCanvasGroup)
+        {
+            _seq.Join(demoDimCanvasGroup.DOFade(0f, 0.2f).SetEase(Ease.Linear));
+        }
+
+        _seq.OnComplete(() =>
+        {
+            if (null != demoDimCanvasGroup)
+            {
+                demoDimCanvasGroup.blocksRaycasts = false;
+            }
+            if (null != demoNoticeOverlay)
+            {
+                demoNoticeOverlay.SetActive(false);
+            }
+            isDemoNoticeShowing = false;
+
+            // 안전하게 현재 플레이 가능한 대지역으로 UI 복구
+            MapType _targetMap = (currentSelectedMapType != MapType.None && false == IsDemoRestrictedMapType(currentSelectedMapType))
+                ? currentSelectedMapType
+                : maxPlayableMapTypeInDemo;
+
+            if (null != regionGroup)
+            {
+                regionGroup.SetSelectRegion(_targetMap, false);
+            }
+        });
+
+        demoNoticeTween = _seq;
+    }
+
     private void OnDestroy()
     {
         if (null != appearTween && appearTween.IsActive()) { appearTween.Kill(); appearTween = null; }
@@ -1000,5 +1211,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != delayedCallTween && delayedCallTween.IsActive()) { delayedCallTween.Kill(); delayedCallTween = null; }
         if (null != regionNameTween && regionNameTween.IsActive()) { regionNameTween.Kill(); regionNameTween = null; }
         if (null != dungeonConfirmDelayTween && dungeonConfirmDelayTween.IsActive()) { dungeonConfirmDelayTween.Kill(); dungeonConfirmDelayTween = null; }
+        if (null != demoNoticeTween && demoNoticeTween.IsActive()) { demoNoticeTween.Kill(); demoNoticeTween = null; }
     }
 }

@@ -66,6 +66,8 @@ public class UIView_Unit : UIView
             {
                 axeComponent.DurabilityEmptyEvent -= AxeDurabilityEmpty;
                 axeComponent.DurabilityEmptyEvent += AxeDurabilityEmpty;
+                axeComponent.DurabilityRestoredEvent -= AxeDurabilityRestored;
+                axeComponent.DurabilityRestoredEvent += AxeDurabilityRestored;
             }
 
             interactionUnit?.SetTarget(character.GetTransform(), interactionYOffset);
@@ -335,6 +337,14 @@ public class UIView_Unit : UIView
         SpeechBubblePlay(id, viewCtx.localizationManager.GetText(speechBubbleJsonId, id));
     }
 
+    private void AxeDurabilityRestored()
+    {
+        if (null != speechBubble)
+        {
+            speechBubble.RemoveShownId(3);
+        }
+    }
+
     private void SpeechBubblePlay(int _id, string _text)
     {
         if (null != speechBubble)
@@ -345,8 +355,8 @@ public class UIView_Unit : UIView
     {
         if (null != speechBubble)
         {
+            speechBubble.ResetSpeechBubble();
             speechBubble.SetLockEnabled(false);
-            speechBubble.RemoveAllShownIds();
         }
     }
 
@@ -354,8 +364,8 @@ public class UIView_Unit : UIView
     {
         if (null != speechBubble)
         {
+            speechBubble.ResetSpeechBubble();
             speechBubble.SetLockEnabled(true);
-            speechBubble.RemoveAllShownIds();
         }
     }
 

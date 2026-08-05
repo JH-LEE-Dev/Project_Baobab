@@ -52,6 +52,11 @@ public class UI_ExternalLinkButton : MonoBehaviour, IPointerEnterHandler, IPoint
         PlayColorTween(normalColor);
     }
 
+    public void SetUrl(string _url)
+    {
+        targetUrl = _url;
+    }
+
     public void OnPointerClick(PointerEventData _eventData)
     {
         if (false == string.IsNullOrEmpty(targetUrl))

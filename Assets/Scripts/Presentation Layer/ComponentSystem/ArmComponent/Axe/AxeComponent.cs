@@ -8,6 +8,7 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     public event Action<bool> DeclareAttackStateEvent;
     public event Action AttackEvent;
     public event Action DurabilityEmptyEvent;
+    public event Action DurabilityRestoredEvent;
 
     // 외부 의존성
     [SerializeField] private Sprite halfDurabilityAxe;
@@ -186,6 +187,11 @@ public class AxeComponent : WeaponComponent, IAxeComponent
     {
         durability = ctx.characterStat.axeDurability;
         UpdateSpriteByDurability();
+
+        if (0f < durability)
+        {
+            DurabilityRestoredEvent?.Invoke();
+        }
     }
 
     public void RepairDurability(float percentage)
@@ -200,6 +206,11 @@ public class AxeComponent : WeaponComponent, IAxeComponent
         AxeAttackedEvent?.Invoke();
 
         UpdateSpriteByDurability();
+
+        if (0f < durability)
+        {
+            DurabilityRestoredEvent?.Invoke();
+        }
     }
 
     private void UpdateSpriteByDurability()
