@@ -275,14 +275,14 @@ public class TownProductionManager : MonoBehaviour
         GoToMainMenuReadyEvent?.Invoke();
     }
 
-    public void RollbackCameraMove()
+    public void RollbackCameraMove(bool _bNoDelay = false)
     {
-        StartCoroutine(RollbackCameraMoveRoutine());
+        StartCoroutine(RollbackCameraMoveRoutine(_bNoDelay));
     }
 
-    private IEnumerator RollbackCameraMoveRoutine()
+    private IEnumerator RollbackCameraMoveRoutine(bool _bNoDelay)
     {
-        yield return new WaitForSeconds(0.75f);
+        if (!_bNoDelay) yield return new WaitForSeconds(0.75f);
 
         RollbackSkyProductionEvent?.Invoke();
         skyCameraProductionManager.StartCameraMove();

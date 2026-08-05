@@ -33,6 +33,7 @@ public class InDungeonSystem : MonoBehaviour
     private bool bGoingToMainMenu = false;
     private MapType selectedMapType;
     private ForestType selectedForestType;
+    private bool bIsFromMainMenu = false;
 
     // "포자 포션" - 던전 입장 후 캐릭터가 실제로 조작 가능해진 시점(ActivateCharacterSignal)부터만
     // PotionKey를 허용한다. 매 던전 진입마다(StartDungeonSystem) 리셋된다.
@@ -80,6 +81,15 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonResultManager.Reset();
         bCharacterActivated = false;
+        bIsFromMainMenu = (_sceneChangeData.prevScene == SceneType.MainMenu);
+
+        if (bIsFromMainMenu)
+        {
+            // MainMenu → Dungeon: 인게임 HUD를 확실히 숨긴 상태에서 시작
+            signalHub.Publish(new PopupUIDownSignal());
+            inputManager.PauseMove(true);
+            inputManager.PauseESCKey(true);
+        }
 
         currentMapType = _sceneChangeData.mapType;
         currentForestType = _sceneChangeData.forestType;
@@ -238,6 +248,13 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonObjectManager.ReadyPortal();
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
+
+        // MainMenu → Dungeon: 나무가 전부 생성된 이 시점에 카메라를 상승 완료 위치로 즉시 배치.
+        // 이후 DungeonStartSignal → TownSystem.DungeonStarted → RollbackCameraMove로 하강이 시작된다.
+        if (bIsFromMainMenu)
+        {
+            skyCameraProductionManager.PrepareForDescend(character.transform);
+        }
 
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnNPC();

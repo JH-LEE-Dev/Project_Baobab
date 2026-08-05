@@ -116,6 +116,19 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         else if (_sceneName == dungeonSceneName)
         {
             currentSceneType = SceneType.DungeonScene;
+
+            // MainMenu → Dungeon 직행: gameInstaller가 아직 없으면 최초 생성
+            if (gameInstaller == null)
+            {
+                gameInstaller = Instantiate(gameInstallerPrefab);
+                gameInstaller.Initialize(this, inputManager, localizationManager, saveManager);
+
+                gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
+                gameInstaller.TownIntroCurtainRollbackEvent += OnTownIntroCurtainRollback;
+
+                gameInstaller.GoToMainMenuCurtainRevealEvent -= OnGoToMainMenuCurtainReveal;
+                gameInstaller.GoToMainMenuCurtainRevealEvent += OnGoToMainMenuCurtainReveal;
+            }
         }
 
         if (gameInstaller != null)
@@ -166,6 +179,14 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
         bNewGame = _bNewGame;
         StartCoroutine(TransitionToScene(SceneType.Town));
+    }
+
+    public void GoToDungeonFromMainMenu()
+    {
+        bNewGame = true;
+        currentMapType = MapType.WideGreenForest;
+        currentForestType = ForestType.WideGreenForest_1;
+        StartCoroutine(TransitionToScene(SceneType.DungeonScene));
     }
 
     private System.Collections.IEnumerator TransitionToScene(SceneType _sceneType)
