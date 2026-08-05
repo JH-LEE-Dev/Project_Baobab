@@ -108,9 +108,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [Header("Get/Out 아이템 사운드")]
     [SerializeField] private float depositPitchStep = 0.05f; // 컨테이너에 연속으로 넣을 때마다 GetItem 피치가 오르는 정도
     [SerializeField] private float depositVolumeBoostMax = 1.3f; // 피치가 최대(1.5)에 도달했을 때의 볼륨 배율
+    // 마지막 납품 이후 이 시간(초) 동안 추가 납품이 없으면 다음 납품 시점에 피치를 초기화한다.
+    // 플레이어의 물리적 콜라이더 Exit(트리거 경계에서의 미세한 흔들림 등)에 의존하지 않도록,
+    // "흐름이 끊겼다"는 판정을 실제 납품 간격 기준으로 바꾼 것이다.
+    [SerializeField] private float depositPitchResetTimeout = 1f;
     private const float DEPOSIT_PITCH_MIN = 1.0f;
     private const float DEPOSIT_PITCH_MAX = 1.5f;
     private float currentDepositPitch = DEPOSIT_PITCH_MIN;
+    private float lastDepositPitchTime = -999f;
 
     private CustomSortable customSortable;
 
@@ -201,6 +206,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         transferringSlots.Clear();
         transferCoroutine = null;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
+        lastDepositPitchTime = -999f;
     }
 
     public void DI_Inventory(IInventory _inventory)
@@ -274,6 +280,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 {
                     CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
                 }
+
+                // 마지막 납품 이후 depositPitchResetTimeout(초)가 넘게 흘렀다면 그 사이 흐름이
+                // 실제로 끊긴 것으로 보고 피치를 초기화한다(콜라이더 Exit 이벤트에 의존하지 않음).
+                if (Time.time - lastDepositPitchTime > depositPitchResetTimeout)
+                {
+                    currentDepositPitch = DEPOSIT_PITCH_MIN;
+                }
+                lastDepositPitchTime = Time.time;
 
                 // 컨테이너에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
                 float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
@@ -823,9 +837,6 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         {
             bPhysicalOverlapped = false;
             UpdateInteractState();
-
-            // 컨테이너와의 상호작용 세션이 끝났으므로 다음 세션은 다시 낮은 피치부터 시작한다.
-            currentDepositPitch = DEPOSIT_PITCH_MIN;
         }
     }
 
