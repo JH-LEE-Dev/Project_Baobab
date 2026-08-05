@@ -28,6 +28,10 @@ Material:
     m_Ints: []
     m_Floats:
     - _Intensity: 1
+    - _BloomMultiplier: 1.5
+    - _PixelateEnabled: 1
+    - _PixelResolution: 32
+    - _ColorBandingSteps: 4
     - _RayCount: 6
     - _AngleJitter: 0.4
     - _BeamMinWidth: 0.12
@@ -44,7 +48,7 @@ Material:
     - _OuterRadius: 0.48
     - _RadialSoftness: 0.55
     - _DistanceFalloff: 0.9
-    - _CoreGlowRadius: 0.12
+    - _CoreGlowRadius: 0.15
     - _InnerRadius: 0
     - _InnerFade: 0.05
     - _SrcBlend: 1

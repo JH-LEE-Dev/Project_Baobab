@@ -2,11 +2,17 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 {
     Properties
     {
-        [Header(Color and Intensity)]
+        [Header(Color and Bloom Intensity)]
         [HDR] _CoreColor ("Core Center Color", Color) = (3.5, 3.2, 2.0, 1.0)
         [HDR] _BeamColor ("Primary Beam Color", Color) = (2.5, 1.8, 0.3, 1.0)
         [HDR] _OuterColor ("Outer Glow Color", Color) = (1.2, 0.5, 0.05, 1.0)
         _Intensity ("Overall Intensity Multiplier", Float) = 1.0
+        _BloomMultiplier ("Bloom Intensity Multiplier", Range(0.5, 10.0)) = 1.5
+
+        [Header(Pixel Perfect Settings)]
+        _PixelateEnabled ("Enable Pixel Style (1: ON, 0: OFF)", Float) = 1.0
+        _PixelResolution ("Pixel Grid Resolution (PPU)", Range(8.0, 128.0)) = 32.0
+        _ColorBandingSteps ("Color Banding Steps", Range(1.0, 16.0)) = 4.0
 
         [Header(Ray Count and Expanding Fan Width)]
         _RayCount ("Ray Count (Exact Number)", Range(1.0, 32.0)) = 6.0
@@ -22,7 +28,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
         _FlickerAmount ("Shimmer Flashing Depth", Range(0.0, 1.0)) = 0.4
 
         [Header(One Shot Burst and Staggered Lifecycles)]
-        [Toggle] _EnableBurstMode ("Enable One-Shot Burst Mode", Float) = 1.0
+        _EnableBurstMode ("Enable One-Shot Burst Mode", Float) = 1.0
         _BurstProgress ("Burst Progress (0.0 to 1.0)", Range(0.0, 1.0)) = 0.0
         _StaggerSpread ("Staggered Fadeout Spread", Range(0.0, 0.4)) = 0.25
 
@@ -31,7 +37,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
         _OuterRadius ("Max Beam Reach", Range(0.2, 1.0)) = 0.48
         _RadialSoftness ("Outer Tip Soft Fadeout Ratio", Range(0.1, 0.9)) = 0.55
         _DistanceFalloff ("Distance Falloff Power", Range(0.1, 3.0)) = 0.9
-        _CoreGlowRadius ("Core Glow Radial Size", Range(0.0, 0.3)) = 0.12
+        _CoreGlowRadius ("Core Glow Radial Size", Range(0.0, 0.3)) = 0.15
         _InnerRadius ("Inner Hole Radius", Range(0.0, 0.3)) = 0.0
         _InnerFade ("Inner Softness Width", Range(0.001, 0.2)) = 0.05
         _EdgeSoftness ("Quad Edge Soft Fade Width", Range(0.01, 0.3)) = 0.08
@@ -89,6 +95,10 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                 float4 _OuterColor;
                 float4 _Center;
                 float _Intensity;
+                float _BloomMultiplier;
+                float _PixelateEnabled;
+                float _PixelResolution;
+                float _ColorBandingSteps;
                 float _RayCount;
                 float _AngleJitter;
                 float _BeamMinWidth;
@@ -133,16 +143,44 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 
             half4 frag(Varyings input) : SV_Target
             {
-                // 1. 극좌표계 변환
-                float2 delta = input.uv - _Center.xy;
-                float radius = length(delta);
-                float pixelAngle = atan2(delta.y, delta.x); // [-PI, PI]
+                bool isPixelMode = (_PixelateEnabled > 0.5);
 
-                // 2. 정확한 광선 개수
+                // 1. 픽셀 그리드 양자화 (Pixel Perfect Snapping)
+                float2 localPos = (input.uv - _Center.xy) * 2.0; // [-1, +1]
+
+                if (isPixelMode)
+                {
+                    float halfRes = max(2.0, _PixelResolution * 0.5);
+                    localPos = (floor(localPos * halfRes) + 0.5) / halfRes;
+                }
+
+                // 2. 극좌표계 변환 (양자화된 픽셀 좌표로부터 계산)
+                float radius = length(localPos) * 0.5; // [0, 0.5]
+                float pixelAngle = atan2(localPos.y, localPos.x); // [-PI, PI]
+
+                // 3. 버스트 진행도에 따른 셰이더 내부 픽셀 확장(Growth) 및 전체 페이드 계산
+                float globalReachMultiplier = 1.0;
+                float globalFade = 1.0;
+
+                if (_EnableBurstMode > 0.5)
+                {
+                    // 초반(0.0 ~ 0.35) 픽셀이 중심에서 외곽으로 뻗어나가는 확장 모션 (Pixel Growth)
+                    float popProgress = saturate(_BurstProgress / 0.35);
+                    globalReachMultiplier = 1.0 - pow(1.0 - popProgress, 3.0); // Cubic Ease Out
+
+                    // 후반(0.7 ~ 1.0) 부드러운 소멸 곡선 (절벽 끊김 방지)
+                    if (_BurstProgress > 0.65)
+                    {
+                        float fadeProgress = saturate((1.0 - _BurstProgress) / 0.35);
+                        globalFade = smoothstep(0.0, 1.0, fadeProgress);
+                    }
+                }
+
+                // 4. 정확한 광선 개수 및 각도 스텝
                 int exactRayCount = (int)clamp(floor(_RayCount + 0.5), 1.0, 32.0);
                 float sectorStep = TWO_PI / (float)exactRayCount;
 
-                // 3. 개별 부채꼴 광선 루프 연산
+                // 5. 개별 부채꼴 광선 루프 연산
                 float totalRays = 0.0;
 
                 for (int k = 0; k < 32; ++k)
@@ -167,7 +205,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                     float speedMult = lerp(1.0 - _SpeedVariation, 1.0 + _SpeedVariation, hSpeed);
                     float raySpeed = _RotationSpeed * speedMult;
 
-                    // 생성된 이후 회전 시작 (버스트 모드에서는 진행도 기반 회전)
+                    // 생성된 이후 회전 시작
                     float rotDelta = 0.0;
                     if (_EnableBurstMode > 0.5)
                     {
@@ -183,22 +221,44 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                     float angleDiff = fmod(pixelAngle - currentRayAngle + 3.0 * PI, TWO_PI) - PI;
                     float absAngleDiff = abs(angleDiff);
 
-                    // 도달 거리 및 끝부분 롱 테일 소프트 알파 페이드아웃 (단면 짤림 방지)
-                    float reach = lerp(0.85, 1.2, hReach) * _OuterRadius;
-                    float innerReach = reach * saturate(1.0 - _RadialSoftness);
-                    float radialFade = smoothstep(reach, innerReach, radius);
-                    radialFade = pow(radialFade, _DistanceFalloff);
+                    // 동적 도달 거리 (버스트 초반에 픽셀이 뻗어나감)
+                    float baseReach = lerp(0.85, 1.2, hReach) * _OuterRadius;
+                    float currentReach = baseReach * globalReachMultiplier;
+                    float innerReach = currentReach * saturate(1.0 - _RadialSoftness);
 
-                    // 외곽으로 갈수록 자연스럽게 퍼지는 부채꼴(Expanding Fan) 빔 폭
+                    float radialFade = 0.0;
+                    if (radius < currentReach)
+                    {
+                        radialFade = smoothstep(currentReach, innerReach, radius);
+                        radialFade = pow(radialFade, _DistanceFalloff);
+                    }
+
+                    // 외곽으로 갈수록 넓어지는 부채꼴(Expanding Fan) 빔 폭
                     float widthWeight = pow(hWidth, 1.3);
                     float baseWidth = lerp(_BeamMinWidth, _BeamMaxWidth, widthWeight);
-                    float fanExpand = lerp(0.8, 1.25, saturate(radius / max(0.001, reach)));
+                    float fanExpand = lerp(0.8, 1.25, saturate(radius / max(0.001, currentReach)));
                     float beamWidthRad = baseWidth * sectorStep * fanExpand;
 
-                    // 블러 강도(_BeamBlur) 기반 가장자리 선명도/부드러움 동적 제어 (내부 레이저 선 없는 균일한 부채꼴)
                     float normDist = absAngleDiff / max(0.0001, beamWidthRad);
-                    float blurFeather = max(0.005, _BeamBlur * 0.5);
-                    float edgeFactor = smoothstep(1.0, max(0.0, 1.0 - blurFeather * 2.0), normDist);
+                    float edgeFactor = 0.0;
+
+                    if (isPixelMode)
+                    {
+                        // 픽셀 모드: 계단화된 도트 경계 (32 PPU 그리드 스냅과 결합)
+                        if (normDist <= 1.0)
+                        {
+                            float steps = max(1.0, _ColorBandingSteps);
+                            edgeFactor = ceil(saturate(1.0 - normDist) * steps) / steps;
+                            radialFade = ceil(radialFade * steps) / steps;
+                        }
+                    }
+                    else
+                    {
+                        // 아날로그 모드: 부드러운 블러 그라디언트
+                        float blurFeather = max(0.005, _BeamBlur * 0.5);
+                        edgeFactor = smoothstep(1.0, max(0.0, 1.0 - blurFeather * 2.0), normDist);
+                    }
+
                     float wedge = edgeFactor * radialFade;
 
                     // 생명주기 및 단발성 시차 소멸
@@ -206,7 +266,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                     if (_EnableBurstMode > 0.5)
                     {
                         float birthTime = hDelay * _StaggerSpread;
-                        float lifeDuration = lerp(0.5, 0.95, hLife) * (1.0 - _StaggerSpread);
+                        float lifeDuration = lerp(0.55, 0.95, hLife) * (1.0 - _StaggerSpread);
 
                         if (_BurstProgress < birthTime)
                         {
@@ -216,7 +276,7 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                         {
                             float localAge = saturate((_BurstProgress - birthTime) / max(0.001, lifeDuration));
                             lifeEnvelope = sin(localAge * PI);
-                            lifeEnvelope = pow(saturate(lifeEnvelope), 1.2);
+                            lifeEnvelope = pow(saturate(lifeEnvelope), 1.5);
                         }
                     }
                     else
@@ -229,32 +289,50 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
                     totalRays += wedge * lifeEnvelope;
                 }
 
-                // 4. 사각형 쿼드(Sprite Square) 단면 잘림 방지 소프트 페이드
+                // 6. 마스킹 및 단면 처리
+                float innerMask = smoothstep(_InnerRadius, _InnerRadius + _InnerFade, radius);
+                float totalAura = totalRays * innerMask * globalFade;
+
+                // 7. 중앙 방사형 원형 코어 글로우 (Center Core Glow)
+                float activeCoreRadius = _CoreGlowRadius * globalReachMultiplier;
+                float coreFactor = saturate(1.0 - (radius / max(0.001, activeCoreRadius)));
+                coreFactor = pow(coreFactor, 1.8);
+
+                float coreLife = 1.0;
+                if (_EnableBurstMode > 0.5)
+                {
+                    float coreProgress = sin(_BurstProgress * PI);
+                    coreLife = saturate(coreProgress * 1.5) * globalFade;
+                }
+
+                if (isPixelMode)
+                {
+                    float steps = max(1.0, _ColorBandingSteps);
+                    coreFactor = ceil(coreFactor * steps) / steps;
+                }
+
+                float coreGlow = coreFactor * coreLife;
+
+                // 8. 쿼드 외곽 가장자리 페이드
                 float edgeDistX = min(input.uv.x, 1.0 - input.uv.x);
                 float edgeDistY = min(input.uv.y, 1.0 - input.uv.y);
                 float quadEdgeFade = saturate(min(edgeDistX, edgeDistY) / max(0.001, _EdgeSoftness));
                 quadEdgeFade = smoothstep(0.0, 1.0, quadEdgeFade);
 
-                // 5. 마스킹 결합
-                float innerMask = smoothstep(_InnerRadius, _InnerRadius + _InnerFade, radius);
-                float totalAura = totalRays * innerMask * quadEdgeFade;
+                totalAura *= quadEdgeFade;
 
-                // 6. 중심부 코어 발광 (Bloom)
-                float coreGlow = saturate(1.0 - radius / max(0.001, _CoreGlowRadius));
-                coreGlow = pow(coreGlow, 2.5);
-
-                if (_EnableBurstMode > 0.5)
-                {
-                    float coreProgress = sin(_BurstProgress * PI);
-                    coreGlow *= saturate(coreProgress * 1.5);
-                }
-
-                // 7. HDR 컬러 그라디언트 합성
+                // 9. HDR 컬러 합성 + Bloom 배율 증폭
                 half3 beamRgb = lerp(_OuterColor.rgb, _BeamColor.rgb, saturate(totalRays * 1.2));
-                half3 finalRgb = (beamRgb * totalAura + _CoreColor.rgb * coreGlow) * _Intensity * input.color.rgb;
+                float totalIntensity = _Intensity * _BloomMultiplier;
+                half3 finalRgb = (beamRgb * totalAura + _CoreColor.rgb * coreGlow) * totalIntensity * input.color.rgb;
 
-                // 8. 알파(Alpha) 출력 (외곽으로 완벽하게 스며들며 소멸)
+                // 10. 알파(Alpha) 출력 (부드러운 소멸 보장)
                 half finalAlpha = saturate(totalAura + coreGlow) * quadEdgeFade * input.color.a * _BeamColor.a;
+
+                if (finalAlpha <= 0.0005)
+                {
+                    discard;
+                }
 
                 return half4(finalRgb, finalAlpha);
             }
