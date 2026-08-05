@@ -84,8 +84,30 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     [SerializeField] private float depositPitchResetTimeout = 1f;
     private const float DEPOSIT_PITCH_MIN = 1.0f;
     private const float DEPOSIT_PITCH_MAX = 1.5f;
+
+    // 납품(컨테이너로 들어오는 방향, toCharacter=false)은 캐릭터가 넣든 NPC가 넣든 "컨테이너가
+    // 채워지는 흐름" 하나로 취급해 피치를 공유한다 - 누가 넣었는지는 중요하지 않다.
     private float currentDepositPitch = DEPOSIT_PITCH_MIN;
     private float lastDepositPitchTime = -999f;
+
+    // 인출(캐릭터/운반 NPC 쪽으로 나가는 방향, toCharacter=true)은 "누가 가져가는가"에 따라 서로
+    // 독립된 흐름으로 취급해야 한다. 캐릭터는 아래 전용 필드를, 운반 NPC는 carrier별 항목
+    // (carrierWithdrawPitches)을 각각 사용하므로, 캐릭터와 포터가 동시에 인출하거나 포터 여러 명이
+    // 동시에 인출해도 서로의 피치 진행을 방해하지 않는다.
+    private float currentWithdrawPitchCharacter = DEPOSIT_PITCH_MIN;
+    private float lastWithdrawPitchTimeCharacter = -999f;
+
+    // 운반 NPC 1명당 하나씩 갖는 인출 피치 상태. PlayDepositPitchSound에 필드를 ref로 넘기기 위해
+    // (List<struct>는 인덱스 되쓰기가 필요해 ref를 못 넘긴다) 참조 타입으로 둔다.
+    private class WithdrawPitchState
+    {
+        public LumberjackInventoryComponent carrier;
+        public float pitch;
+        public float lastTime;
+    }
+    // 포터는 많아야 수 명 수준(TownUnitSpawner.npcCount 기본 3, 스킬로 증가)이라 선형 탐색으로 충분하고,
+    // 매 프레임이 아니라 아이템 착지 시점에만 조회되므로 비용이 무시할 수준이다.
+    private readonly List<WithdrawPitchState> carrierWithdrawPitches = new List<WithdrawPitchState>(8);
 
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private LogItemData arrivalDataBuffer = new LogItemData();
@@ -236,12 +258,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     if (flyingData.toCarrier != null)
                     {
                         flyingData.toCarrier.AddItemByData(arrivalDataBuffer, item.logState);
+
+                        // 인출은 가져가는 주체별로 독립된 흐름이므로, 이 운반 NPC 전용 카운터를 쓴다.
+                        WithdrawPitchState carrierPitch = GetCarrierWithdrawPitch(flyingData.toCarrier);
+                        PlayDepositPitchSound(ref carrierPitch.pitch, ref carrierPitch.lastTime);
                     }
                     else
                     {
                         AddToCharacterInventory(arrivalDataBuffer, item.logState);
                         character?.PlayItemAcquireBounce();
                         character?.PlayItemAcquireFlash();
+                        PlayDepositPitchSound(ref currentWithdrawPitchCharacter, ref lastWithdrawPitchTimeCharacter);
                     }
                 }
                 else
@@ -250,31 +277,64 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     // pendingCount로만 반영됨).
                     AddItemByData(arrivalDataBuffer, item.logState);
                     TriggerBounce();
-                    
+
                     if (flyingData.fromCharacter)
                     {
                         CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
                     }
-                }
 
-                // 마지막 전송 이후 depositPitchResetTimeout(초)가 넘게 흘렀다면 그 사이 흐름이
-                // 실제로 끊긴 것으로 보고 피치를 초기화한다(콜라이더 Exit 이벤트에 의존하지 않음).
-                if (Time.time - lastDepositPitchTime > depositPitchResetTimeout)
-                {
-                    currentDepositPitch = DEPOSIT_PITCH_MIN;
+                    // 납품은 캐릭터/NPC 구분 없이 하나의 흐름(currentDepositPitch)을 공유한다.
+                    PlayDepositPitchSound(ref currentDepositPitch, ref lastDepositPitchTime);
                 }
-                lastDepositPitchTime = Time.time;
-
-                // 연속으로 넣거나 꺼낼수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
-                float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
-                float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
-                Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, currentDepositPitch);
-                currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
 
                 logItemPoolManager.ReturnLogItem(item);
                 flyingItems.RemoveAt(i);
             }
         }
+    }
+
+    /// <summary>
+    /// 주어진 운반 NPC 전용 인출 피치 상태를 가져온다(없으면 새로 만든다).
+    /// </summary>
+    private WithdrawPitchState GetCarrierWithdrawPitch(LumberjackInventoryComponent _carrier)
+    {
+        for (int i = 0; i < carrierWithdrawPitches.Count; i++)
+        {
+            if (carrierWithdrawPitches[i].carrier == _carrier) return carrierWithdrawPitches[i];
+        }
+
+        // 새 항목을 만들기 전에, 이미 파괴된 NPC가 남긴 항목을 정리해 리스트가 무한정 늘어나지 않게 한다.
+        for (int i = carrierWithdrawPitches.Count - 1; i >= 0; i--)
+        {
+            if (carrierWithdrawPitches[i].carrier == null) carrierWithdrawPitches.RemoveAt(i);
+        }
+
+        WithdrawPitchState newState = new WithdrawPitchState
+        {
+            carrier = _carrier,
+            pitch = DEPOSIT_PITCH_MIN,
+            lastTime = -999f
+        };
+        carrierWithdrawPitches.Add(newState);
+        return newState;
+    }
+
+    // 마지막 재생 이후 depositPitchResetTimeout(초)가 넘게 흘렀다면 그 사이 흐름이 실제로 끊긴
+    // 것으로 보고 피치를 초기화한다(콜라이더 Exit 이벤트에 의존하지 않음). 호출부에서 넘기는
+    // (_currentPitch, _lastTime) 쌍에 따라 납품/캐릭터 인출/NPC 인출 흐름이 서로 독립적으로 진행된다.
+    private void PlayDepositPitchSound(ref float _currentPitch, ref float _lastTime)
+    {
+        if (Time.time - _lastTime > depositPitchResetTimeout)
+        {
+            _currentPitch = DEPOSIT_PITCH_MIN;
+        }
+        _lastTime = Time.time;
+
+        // 연속으로 넣거나 꺼낼수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
+        float depositT = (_currentPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
+        float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
+        Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, _currentPitch);
+        _currentPitch = Mathf.Clamp(_currentPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
     }
 
     private void UpdateDismissingItems(float _deltaTime)
@@ -348,6 +408,9 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         lastTransferTime = -transferInterval;
         currentDepositPitch = DEPOSIT_PITCH_MIN;
         lastDepositPitchTime = -999f;
+        currentWithdrawPitchCharacter = DEPOSIT_PITCH_MIN;
+        lastWithdrawPitchTimeCharacter = -999f;
+        carrierWithdrawPitches.Clear();
     }
 
     private void TriggerBounce()
