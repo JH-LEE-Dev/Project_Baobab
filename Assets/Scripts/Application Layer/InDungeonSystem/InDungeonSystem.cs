@@ -85,6 +85,18 @@ public class InDungeonSystem : MonoBehaviour
 
         if (bIsFromMainMenu)
         {
+            // MainMenu → Dungeon: Town의 포탈 선택(DungeonSelectedSignal)을 거치지 않으므로,
+            // BGM 재생(CharacterActivated)/재도전(GoToDungeonSignal)/던전 상태 판정(CalcDungeonState)이
+            // 참조하는 selectedMapType/selectedForestType을 여기서 직접 동기화해야 한다.
+            selectedMapType = _sceneChangeData.mapType;
+            selectedForestType = _sceneChangeData.forestType;
+
+            // MainMenu → Dungeon: Town→Dungeon 왕복에서는 직전 MainMenu→Town 진입 시 SetWhereIsCharacter(false)가
+            // 공격 인디케이터(RadiusIndicator, 프리팹 기본값 active)를 이미 꺼둔 상태로 던전에 들어온다.
+            // 여기는 Town을 거치지 않으므로 그 단계가 없어, 명시적으로 꺼줘야 ActivateCharacterSignal 전까지
+            // 인디케이터가 노출되지 않는다.
+            character?.DisableAttackComponent();
+
             // MainMenu → Dungeon: 인게임 HUD를 확실히 숨긴 상태에서 시작
             signalHub.Publish(new PopupUIDownSignal());
             inputManager.PauseMove(true);

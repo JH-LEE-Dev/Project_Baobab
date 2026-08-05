@@ -437,7 +437,12 @@ public class GameplayUICoordinator
     private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)
     {
         unitUI.DungeonStarted();
-        
+
+        // MainMenu → Dungeon 직행 등, DungeonSelected(MapType,ForestType) UI 콜백을 거치지 않고 던전에
+        // 들어온 경우에도 DeclareDungeonState()가 올바른 mapType/forestType을 참조하도록 여기서 동기화한다.
+        mapType = decareDungeonTypeSignal.mapType;
+        forestType = decareDungeonTypeSignal.forestType;
+
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         worldPopupUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
