@@ -23,6 +23,7 @@ public enum SoundID
     ConvayerComplete = 1734120465,
     ConvayerCutterGetWood = 459198478,
     ConvayerLoop = -533517232,
+    ConvayerPrize = 115041426,
     ConvayerPut = -352744251,
     TreeDead = -794509328,
     TreeBigGrow = -443006492,
