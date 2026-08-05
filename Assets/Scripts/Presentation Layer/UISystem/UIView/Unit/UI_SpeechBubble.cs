@@ -76,6 +76,18 @@ public class UI_SpeechBubble : MonoBehaviour
             shownIds.Clear();
     }
 
+    /// <summary>
+    /// 씬 전환 또는 재도전 시 말풍선 연출 및 타이머 상태를 즉시 초기화하고 노출 기록을 비웁니다.
+    /// </summary>
+    public void ResetSpeechBubble()
+    {
+        Hide(_bSkip: true);
+        isPlaying = false;
+        playTimer = 0f;
+        currentId = -1;
+        RemoveAllShownIds();
+    }
+
 
 
     /// <summary>
