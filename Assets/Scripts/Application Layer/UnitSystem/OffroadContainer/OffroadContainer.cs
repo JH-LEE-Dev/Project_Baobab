@@ -63,6 +63,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
     {
         public LogItem item;
         public bool toCharacter;
+        public bool fromCharacter;
         // null이 아니면 toCharacter 경로 대신 이 운반 NPC(예: OffroadPorterNPC)의 인벤토리로 도착 처리한다.
         public LumberjackInventoryComponent toCarrier;
         // 이 아이템이 flyingItems에 들어온 뒤 경과한 시간. 정상적인 비행은 길어도 1~2초 안에 끝나므로,
@@ -244,6 +245,11 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     // pendingCount로만 반영됨).
                     AddItemByData(arrivalDataBuffer, item.logState);
                     TriggerBounce();
+                    
+                    if (flyingData.fromCharacter)
+                    {
+                        CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
+                    }
                 }
 
                 // 연속으로 넣거나 꺼낼수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
@@ -521,7 +527,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                     flyingItem.ContainerTransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
                 }
 
-                flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter });
+                flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = _toCharacter, fromCharacter = !_toCharacter });
 
                 yield return new WaitForSeconds(FLY_INTERVAL / Mathf.Max(0.01f, itemTransferSpeedMul));
             }
@@ -1200,7 +1206,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         flyingItem.transform.position = _fromWorldPos;
         flyingItem.ContainerTransferLaunch(_fromWorldPos, containerPos, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
 
-        flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = false });
+        flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = false, fromCharacter = false });
 
         return true;
     }
@@ -1412,7 +1418,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
                 flyingItem.transform.position = containerPos;
                 flyingItem.DynamicTransferLaunch(containerPos, _carrierInventory.transform, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
 
-                flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = true, toCarrier = _carrierInventory });
+                flyingItems.Add(new FlyingTransferItem { item = flyingItem, toCharacter = true, fromCharacter = false, toCarrier = _carrierInventory });
 
                 transferredAny = true;
                 anyWithdrawn = true;

@@ -27,6 +27,10 @@ public class AudioManager : MonoBehaviour
     [Header("BGM Settings")]
     [SerializeField] private float bgmFadeDuration = 1f;
 
+    [Header("Debug Settings")]
+    [SerializeField] private bool enableDebugSound = false;
+    [SerializeField] private SoundID debugSoundId;
+
     private Queue<AudioEvent> eventQueue = new Queue<AudioEvent>(100);
     private List<AudioSource> sourcePool = new List<AudioSource>();
     private float[] sourceStartTime;
@@ -269,6 +273,17 @@ public class AudioManager : MonoBehaviour
         {
             var e = eventQueue.Dequeue();
             PlayInternal(e);
+        }
+
+        if (enableDebugSound && UnityEngine.Input.GetKeyDown(KeyCode.BackQuote))
+        {
+            if (Camera.main != null)
+            {
+                Vector3 mousePos = UnityEngine.Input.mousePosition;
+                mousePos.z = Mathf.Abs(Camera.main.transform.position.z - ListenerZ);
+                Vector3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
+                EnqueueEvent(new AudioEvent(debugSoundId, worldPos));
+            }
         }
     }
 

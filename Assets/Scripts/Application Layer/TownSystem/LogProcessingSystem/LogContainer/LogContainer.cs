@@ -95,7 +95,12 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     [SerializeField] private LogItemTypeDataBase logItemTypeDataBase;
 
     // // 시각적 효과 (비행 중인 아이템 관리)
-    private List<LogItem> flyingItems = new List<LogItem>(32);
+    private struct FlyingTransferItem
+    {
+        public LogItem item;
+        public bool fromCharacter;
+    }
+    private List<FlyingTransferItem> flyingItems = new List<FlyingTransferItem>(32);
     private HashSet<InventorySlot> transferringSlots = new HashSet<InventorySlot>();
     private const float FLY_INTERVAL = 0.075f;
     private LogItemData arrivalDataBuffer = new LogItemData();
@@ -248,7 +253,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         for (int i = flyingItems.Count - 1; i >= 0; i--)
         {
-            LogItem item = flyingItems[i];
+            var flyingData = flyingItems[i];
+            LogItem item = flyingData.item;
             item.ManualUpdate(_deltaTime);
 
             if (item.MoveState != ItemMoveState.Transferring)
@@ -263,6 +269,11 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
                 AddItemByData(arrivalDataBuffer, item.logState);
                 TriggerBounce();
+                
+                if (flyingData.fromCharacter)
+                {
+                    CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
+                }
 
                 // 컨테이너에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
                 float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
@@ -462,7 +473,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 // 전용 전송 메서드 호출 (시점, 종점, 높이, 시간, 궤적 지터, 회전 속도)
                 // 비행 시간은 OffroadContainer와 동일하게 0.5초 고정.
                 flyingItem.TransferLaunch(start, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.5f), trajectoryJitter, rotationSpeed);
-                flyingItems.Add(flyingItem);
+                flyingItems.Add(new FlyingTransferItem { item = flyingItem, fromCharacter = true });
 
                 ContainerUpdatedEvent?.Invoke();
 
@@ -520,11 +531,14 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
         int emptySlotsReservedByOthers = 0;
         for (int i = 0; i < flyingItems.Count; i++)
         {
+            var flyingData = flyingItems[i];
+            LogItem itemI = flyingData.item;
+            
             // LogContainer의 flyingItems는 전부 "이 컨테이너로 들어오는 중"인 항목뿐이다
             // (여기서 밖으로 꺼내가는 경로는 없음).
-            if (flyingItems[i].itemType != ItemType.Log) continue;
+            if (itemI.itemType != ItemType.Log) continue;
 
-            if (flyingItems[i].logState == logSource.logState && flyingItems[i].treeType == logSource.treeType)
+            if (itemI.logState == logSource.logState && itemI.treeType == logSource.treeType)
             {
                 pendingSameType++;
                 continue;
@@ -534,9 +548,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             bool alreadyCounted = false;
             for (int j = 0; j < i; j++)
             {
-                if (flyingItems[j].itemType == ItemType.Log &&
-                    flyingItems[j].logState == flyingItems[i].logState &&
-                    flyingItems[j].treeType == flyingItems[i].treeType)
+                var itemJ = flyingItems[j].item;
+                if (itemJ.itemType == ItemType.Log &&
+                    itemJ.logState == itemI.logState &&
+                    itemJ.treeType == itemI.treeType)
                 {
                     alreadyCounted = true;
                     break;
@@ -552,9 +567,10 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             int otherPending = 0;
             for (int k = i; k < flyingItems.Count; k++)
             {
-                if (flyingItems[k].itemType == ItemType.Log &&
-                    flyingItems[k].logState == flyingItems[i].logState &&
-                    flyingItems[k].treeType == flyingItems[i].treeType)
+                var itemK = flyingItems[k].item;
+                if (itemK.itemType == ItemType.Log &&
+                    itemK.logState == itemI.logState &&
+                    itemK.treeType == itemI.treeType)
                 {
                     otherPending++;
                 }
@@ -564,8 +580,8 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
             for (int s = 0; s < currentSlotCount; s++)
             {
                 if (containerSlots[s].itemData is LogItemData otherSlotData &&
-                    otherSlotData.logState == flyingItems[i].logState &&
-                    otherSlotData.treeType == flyingItems[i].treeType)
+                    otherSlotData.logState == itemI.logState &&
+                    otherSlotData.treeType == itemI.treeType)
                 {
                     int remaining = maxItemsPerSlot - containerSlots[s].totalCount;
                     if (remaining > 0) otherExistingSpace += remaining;
@@ -867,7 +883,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
 
         flyingItem.transform.position = _fromWorldPos;
         flyingItem.TransferLaunch(_fromWorldPos, end, UnityEngine.Random.Range(0.8f, 1.2f), UnityEngine.Random.Range(0.5f, 0.7f), trajectoryJitter, rotationSpeed);
-        flyingItems.Add(flyingItem);
+        flyingItems.Add(new FlyingTransferItem { item = flyingItem, fromCharacter = false });
 
         ContainerUpdatedEvent?.Invoke();
 
@@ -1064,7 +1080,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     {
         for (int i = 0; i < flyingItems.Count; i++)
         {
-            LogItem item = flyingItems[i];
+            LogItem item = flyingItems[i].item;
             if (item == null || item.itemType != ItemType.Log) continue;
 
             if (!SaveDataMerge.AddLog(ref _saveData, item.treeType, item.logState, item.color, maxItemsPerSlot))

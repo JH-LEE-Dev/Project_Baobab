@@ -111,6 +111,8 @@ public class ShockWave : MonoBehaviour
         maxDist = initialMaxDist;
         findRange = initialFindRange;
         lastMinDist = initialMinDist;
+
+        Sound.Play(SoundID.ShockWaveAppear, transform.position);
     }
 
     private void ApplyShockWaveDamage()

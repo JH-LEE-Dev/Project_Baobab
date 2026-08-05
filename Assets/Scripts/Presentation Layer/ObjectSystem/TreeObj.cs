@@ -263,6 +263,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.DeActivateOnWaterObject();
             treeVisualComponent.ApplySaplingVisual(treeData);
             saplingVEComponent.AnimateSaplingVE(true);
+            Sound.Play(SoundID.TreeSmallGrow, cachedTransform.position);
         }
     }
 
@@ -417,7 +418,10 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         }
 
         if (saplingVEComponent != null)
+        {
             saplingVEComponent.AnimateSaplingVE(false, cachedGrowUpFlashAction);
+            Sound.Play(SoundID.TreeBigGrow, cachedTransform.position);
+        }
     }
 
     // 성장 스케일 연출이 최대에 도달하는 순간 피격과 동일한 하얀 플래시를 한 번 터뜨린다.
