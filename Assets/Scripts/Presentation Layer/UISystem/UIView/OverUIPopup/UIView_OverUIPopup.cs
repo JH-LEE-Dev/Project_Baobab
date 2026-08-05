@@ -1,25 +1,46 @@
+using System;
 using UnityEngine;
 
 public class UIView_OverUIPopup : UIView
 {
-    protected override void Awake()
-    {
-        base.Awake();
-    }
+    // 이벤트
+    public event Action CompanyLogoProductionCompletedEvent;
 
-    public override void OnDestroy()
-    {
-        base.OnDestroy();
-    }
+    // 내부 의존성
+    [Header("Opening Production")]
+    [SerializeField] private UI_OpeningProduction openingProduction;
 
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
+        if (null != openingProduction)
+        {
+            openingProduction.Initialize(_ctx?.localizationManager);
+        }
     }
 
     public override void SetupUI()
     {
         base.SetupUI();
+    }
+
+    public void PlayCompanyLogo()
+    {
+        if (null != openingProduction)
+        {
+            openingProduction.PlayIntroScene(OnIntroSceneCompleted);
+        }
+    }
+
+    public override void Release()
+    {
+        base.Release();
+        CompanyLogoProductionCompletedEvent = null;
+    }
+
+    public override void Refresh()
+    {
+        base.Refresh();
     }
 
     protected override void OnShow()
@@ -30,20 +51,25 @@ public class UIView_OverUIPopup : UIView
     protected override void OnHide()
     {
         base.OnHide();
+        if (null != openingProduction)
+        {
+            openingProduction.StopOpeningProduction();
+        }
     }
 
-    public override void Release()
+    private void OnIntroSceneCompleted()
     {
-        base.Release();
+        CompanyLogoProductionCompletedEvent?.Invoke();
     }
 
-    public override void Refresh()
+    protected override void Awake()
     {
-        base.Refresh();
+        base.Awake();
     }
 
-    public void PlayCompanyLogo()
+    public override void OnDestroy()
     {
-
+        base.OnDestroy();
+        CompanyLogoProductionCompletedEvent = null;
     }
 }

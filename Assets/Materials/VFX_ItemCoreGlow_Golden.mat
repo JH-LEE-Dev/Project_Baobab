@@ -19,7 +19,7 @@ Material:
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
   stringTagMap:
-    Queue: Transparent
+    QUEUE: Transparent
     RenderType: TransparentCutout
   disabledShaderPasses: []
   m_LockedProperties: 
@@ -32,18 +32,18 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _SrcBlend: 1
-    - _DstBlend: 1
-    - _Intensity: 1.2
     - _CoreRadius: 0.25
-    - _GlowRadius: 0.85
-    - _Falloff: 2.0
-    - _PulseSpeed: 2.0
-    - _PulseAmount: 0.08
-    - _PixelateEnabled: 1
+    - _DstBlend: 1
+    - _Falloff: 1.15
+    - _GlowRadius: 0.9
+    - _Intensity: 3.7
     - _PixelResolution: 32
+    - _PixelateEnabled: 1
+    - _PulseAmount: 0.08
+    - _PulseSpeed: 2
+    - _SrcBlend: 1
     m_Colors:
-    - _CoreColor: {r: 3.5, g: 3.2, b: 1.8, a: 1}
-    - _OuterColor: {r: 2.4, g: 1.4, b: 0.25, a: 1}
+    - _CoreColor: {r: 1.304119, g: 1.1923373, b: 0.67068976, a: 1}
+    - _OuterColor: {r: 2.6082377, g: 1.5214719, b: 0.2716914, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

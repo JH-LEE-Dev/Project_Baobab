@@ -59,7 +59,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
@@ -204,17 +204,6 @@ MonoBehaviour:
     swingCount: 5
     rotationTimeRatio: 1
     rotationEase: 3
-  clickSettings:
-    duration: 0.45
-    squashScale: {x: 1.4, y: 0.7}
-    recoilScale: {x: 0.8, y: 1.3}
-    bounceCount: 2
-    bounceDamping: 0.25
-    squashTimeRatio: 0.15
-    recoilTimeRatio: 0.2
-    restoreTimeRatio: 0.4
-    squashEase: 6
-    restoreEase: 27
 --- !u!1 &1943265971725105455
 GameObject:
   m_ObjectHideFlags: 0
@@ -348,7 +337,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 100, y: -136}
-  m_SizeDelta: {x: 0, y: 32}
+  m_SizeDelta: {x: 138, y: 32}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &5630655697537822016
 MonoBehaviour:
@@ -519,17 +508,6 @@ MonoBehaviour:
     swingCount: 5
     rotationTimeRatio: 1
     rotationEase: 3
-  clickSettings:
-    duration: 0.45
-    squashScale: {x: 1.4, y: 0.7}
-    recoilScale: {x: 0.8, y: 1.3}
-    bounceCount: 2
-    bounceDamping: 0.25
-    squashTimeRatio: 0.15
-    recoilTimeRatio: 0.2
-    restoreTimeRatio: 0.4
-    squashEase: 6
-    restoreEase: 27
 --- !u!1 &4080633465160585376
 GameObject:
   m_ObjectHideFlags: 0
@@ -800,7 +778,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
