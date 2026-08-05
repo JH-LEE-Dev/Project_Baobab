@@ -275,11 +275,11 @@ public class AudioManager : MonoBehaviour
             PlayInternal(e);
         }
 
-        if (enableDebugSound && UnityEngine.Input.GetKeyDown(KeyCode.BackQuote))
+        if (enableDebugSound && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.backquoteKey.wasPressedThisFrame)
         {
-            if (Camera.main != null)
+            if (Camera.main != null && UnityEngine.InputSystem.Mouse.current != null)
             {
-                Vector3 mousePos = UnityEngine.Input.mousePosition;
+                Vector3 mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
                 mousePos.z = Mathf.Abs(Camera.main.transform.position.z - ListenerZ);
                 Vector3 worldPos = Camera.main.ScreenToWorldPoint(mousePos);
                 EnqueueEvent(new AudioEvent(debugSoundId, worldPos));
