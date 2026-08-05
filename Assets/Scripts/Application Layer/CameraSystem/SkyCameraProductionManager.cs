@@ -188,13 +188,12 @@ public class SkyCameraProductionManager : MonoBehaviour
         cachedFollowTarget = virtualCamera.Follow;
         cachedLookAtTarget = virtualCamera.LookAt;
 
-        // "위로 올라가는 연출(up 분기)"의 종착 높이(character.position + yOffset)에서 시작해서, 그 연출과
-        // 똑같은 moveDuration으로 캐릭터 위치까지 전부 내려온다. 던전 귀환용 rollback(40만 내려가는 짧은 버전)은
-        // "이미 위에 가 있던" 상태를 마무리하는 것뿐이라 여기서 재사용하면 안 된다 — MainMenu→Town은 사전에
-        // "올라가는" 연출이 없었으므로, 올라간 높이 전체(yOffset)를 내려와야 같은 속도(yOffset/moveDuration)로
-        // 제대로 된 하강처럼 보인다.
+        // 메인 메뉴 -> 타운 진입 시에도 타운 -> 던전과 동일하게 +10 위치에서 시작해 하강하도록 변경
+        float rollbackDistance = 40.0f;
+        float rollbackDuration = moveDuration * (rollbackDistance / yOffset);
+
         Vector3 startPos = _characterTransform.position;
-        startPos.y += yOffset;
+        startPos.y += (yOffset - rollbackDistance); // +10 위치에서 시작
 
         dummyTarget.position = startPos;
         virtualCamera.Follow = dummyTarget;
@@ -204,8 +203,8 @@ public class SkyCameraProductionManager : MonoBehaviour
 
         Sound.SetProduction3DVolumeFactor(0f);
         Sequence seq = DOTween.Sequence();
-        seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, moveDuration));
-        seq.Append(dummyTarget.DOMove(_characterTransform.position, moveDuration));
+        seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, rollbackDuration));
+        seq.Append(dummyTarget.DOMove(_characterTransform.position, rollbackDuration));
         seq.AppendCallback(OnIntroDescendComplete);
 
         if (useCustomCurve)
@@ -285,6 +284,46 @@ public class SkyCameraProductionManager : MonoBehaviour
     public void SetCharacterTransform(Transform _characterTransform)
     {
         characterTransform = _characterTransform;
+    }
+
+    /// <summary>
+    /// MainMenu → Dungeon 전용. 카메라를 상승 완료 상태(dummyTarget이 캐릭터 + yOffset 위치)에
+    /// 즉시 배치하여, 이후 StartCameraMove()가 하강 모드로 동작하도록 준비한다.
+    /// Town↔Dungeon 왕복의 "올라갔다가 내려오는" 흐름에서 "올라가는" 부분을 대체한다.
+    /// </summary>
+    public void PrepareForDescend(Transform _characterTransform)
+    {
+        if (virtualCamera == null)
+        {
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        }
+
+        if (virtualCamera == null || _characterTransform == null || dummyTarget == null)
+        {
+            Debug.LogWarning("[SkyCameraProductionManager] PrepareForDescend 실패. 카메라/캐릭터/더미타겟 중 null이 있습니다.");
+            return;
+        }
+
+        KillCameraMoveTween();
+
+        // 현재 카메라 위치(캐릭터 레벨)를 저장 — 하강 시 도착지로 사용된다.
+        cameraStartPos = virtualCamera.transform.position;
+        cachedFollowTarget = virtualCamera.Follow;
+        cachedLookAtTarget = virtualCamera.LookAt;
+
+        // 더미 타겟을 캐릭터 상공(yOffset)에 배치
+        Vector3 elevatedPos = _characterTransform.position;
+        elevatedPos.y += yOffset;
+        dummyTarget.position = elevatedPos;
+        virtualCamera.Follow = dummyTarget;
+        virtualCamera.LookAt = dummyTarget;
+        virtualCamera.transform.position = elevatedPos;
+        virtualCamera.ForceCameraPosition(elevatedPos, virtualCamera.transform.rotation);
+
+        Sound.SetProduction3DVolumeFactor(0f);
+
+        // isMoved = true로 세팅해야 다음 StartCameraMove()에서 !isMoved = false (하강 분기)로 진입한다.
+        isMoved = true;
     }
 
     private void ResetCameraPos()

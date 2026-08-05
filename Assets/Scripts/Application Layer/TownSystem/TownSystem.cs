@@ -36,6 +36,7 @@ public class TownSystem : MonoBehaviour
     private bool bCurrentlyTownScene = true;
     private bool bRetryGame = false;
     private bool bGoingToMainMenu = false;
+    private bool bTownSystemStarted = false;
 
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
@@ -78,6 +79,7 @@ public class TownSystem : MonoBehaviour
 
     public void StartTownSystem(SceneChangeData _sceneChangeData)
     {
+        bTownSystemStarted = true;
         townTileManager.CreateGrid();
 
         // Grid는 매번 새로 생성되므로, 제재소 증설 단계(가공 라인 수)를 여기서 다시 반영해준다.
@@ -390,7 +392,17 @@ public class TownSystem : MonoBehaviour
         townProductionManager.SetCharacterTransform();
 
         if (bRetryGame == false)
-            townProductionManager.RollbackCameraMove();
+        {
+            // MainMenu → Dungeon: PrepareForDescend가 이미 카메라를 배치했으므로 딜레이 없이 즉시 하강
+            bool bNoDelay = !bTownSystemStarted;
+            townProductionManager.RollbackCameraMove(bNoDelay);
+
+            // MainMenu → Dungeon: 메인 메뉴 커튼(딤머/오버레이)을 걷어낸다
+            if (!bTownSystemStarted)
+            {
+                MainMenuCurtainRollbackEvent?.Invoke();
+            }
+        }
 
         bCurrentlyTownScene = false;
         townProductionManager.bCurrentlyTownScene = false;
@@ -437,11 +449,25 @@ public class TownSystem : MonoBehaviour
         if (bCurrentlyTownScene == true)
             return;
 
+        // MainMenu → Dungeon 튜토리얼 최초 진입: 조작 해제/캐릭터 활성화(ActivateCharacterSignal)/HUD 복귀는
+        // 별도 트리거로 원하는 시점에 실행할 예정이므로 카메라 하강 완료 시점엔 대신 스튜디오 로고 연출만 예약한다.
+        if (!bTownSystemStarted)
+        {
+            StartCoroutine(StudioLogoRevealCoroutine());
+            return;
+        }
+
         inputManager.PauseMove(false);
         inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (DungeonSelected()에서 걸어둔 PauseESCKey(true) 해제)
         signalHub.Publish(new ActivateCharacterSignal());
 
         StartCoroutine(PopupUIGoUPCoroutine());
+    }
+
+    private IEnumerator StudioLogoRevealCoroutine()
+    {
+        yield return new WaitForSeconds(2f);
+        signalHub.Publish(new StudioLogoRevealSignal());
     }
 
     private IEnumerator PopupUIGoUPCoroutine()

@@ -139,7 +139,7 @@ public class MainMenuUIInstaller : MonoBehaviour
 
     private void NewGameStart()
     {
-        bootStrapProvider.GoToTownScene(true);
+        bootStrapProvider.GoToDungeonFromMainMenu();
     }
 
     private void LoadGame()

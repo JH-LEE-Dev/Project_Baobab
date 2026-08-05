@@ -18,6 +18,7 @@ public class GameplayUICoordinator
     private UIView_Result resultUI;
     private UIView_SkyProduction skyProduction;
     private UIView_Warning warningUI;
+    private UIView_OverUIPopup overUIPopupUI;
 
     private UIDepthController uiDepthController;
 
@@ -28,7 +29,8 @@ public class GameplayUICoordinator
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
-     UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI, UIView_Warning _warningUI)
+     UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI, UIView_Warning _warningUI,
+     UIView_OverUIPopup _overUIPopupUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -43,6 +45,7 @@ public class GameplayUICoordinator
         skyProduction = _skyProduction;
         resultUI = _resultUI;
         warningUI = _warningUI;
+        overUIPopupUI = _overUIPopupUI;
 
         SubscribeSignals();
         BindEvents();
@@ -92,6 +95,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
         signalHub.Subscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
         signalHub.Subscribe<RepairBoxInteractStateChangedSignal>(RepairBoxInteractStateChanged);
+        signalHub.Subscribe<StudioLogoRevealSignal>(StudioLogoReveal);
     }
 
     private void UnSubscribeSignals()
@@ -138,6 +142,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(InventoryItemToOffroadContainer);
         signalHub.UnSubscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
         signalHub.UnSubscribe<RepairBoxInteractStateChangedSignal>(RepairBoxInteractStateChanged);
+        signalHub.UnSubscribe<StudioLogoRevealSignal>(StudioLogoReveal);
     }
 
     private void BindEvents()
@@ -437,7 +442,12 @@ public class GameplayUICoordinator
     private void DungeonStarted(DecalreDungeonTypeSignal decareDungeonTypeSignal)
     {
         unitUI.DungeonStarted();
-        
+
+        // MainMenu → Dungeon 직행 등, DungeonSelected(MapType,ForestType) UI 콜백을 거치지 않고 던전에
+        // 들어온 경우에도 DeclareDungeonState()가 올바른 mapType/forestType을 참조하도록 여기서 동기화한다.
+        mapType = decareDungeonTypeSignal.mapType;
+        forestType = decareDungeonTypeSignal.forestType;
+
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         worldPopupUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
@@ -641,5 +651,10 @@ public class GameplayUICoordinator
     private void DeclareDungeonState(DeclareDungeonStateSignal _declareDungeonStateSignal)
     {
         hudUI.DungeonStateDeclared(mapType, forestType, _declareDungeonStateSignal.dungeonState);
+    }
+
+    private void StudioLogoReveal(StudioLogoRevealSignal _studioLogoRevealSignal)
+    {
+        overUIPopupUI.PlayCompanyLogo();
     }
 }

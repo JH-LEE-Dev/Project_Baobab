@@ -96,6 +96,8 @@ MonoBehaviour:
   maxItemsPerSlot: 5
   inventorySlots: []
   transferInterval: 0
+  depositPitchStep: 0.05
+  depositVolumeBoostMax: 1.3
   bCanInteract: 0
   col: {fileID: 0}
   itemTransferSpeedMul: 1
@@ -830,6 +832,7 @@ MonoBehaviour:
   moonEssence: 0
   lightningEssence: 0
   logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
+  dropVisualInterval: 0.08
 --- !u!114 &28769940137761721
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2344,6 +2347,7 @@ MonoBehaviour:
   - {fileID: 1648287473275215075, guid: 3b6c7873bd3ae9541a72dbde19a90dfb, type: 3}
   - {fileID: 3227807807071390872, guid: 56ab1690e99457b42b9b057f319d65d9, type: 3}
   - {fileID: -82623250303254125, guid: edc3b765b8e25be4a8ff664cf503693e, type: 3}
+  - {fileID: 3010344662233434431, guid: 49598863ab55d30479b17c3e77cb1510, type: 3}
 --- !u!114 &6498721921695947709
 MonoBehaviour:
   m_ObjectHideFlags: 0

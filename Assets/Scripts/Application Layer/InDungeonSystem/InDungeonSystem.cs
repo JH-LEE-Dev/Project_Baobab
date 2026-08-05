@@ -33,6 +33,7 @@ public class InDungeonSystem : MonoBehaviour
     private bool bGoingToMainMenu = false;
     private MapType selectedMapType;
     private ForestType selectedForestType;
+    private bool bIsFromMainMenu = false;
 
     // "포자 포션" - 던전 입장 후 캐릭터가 실제로 조작 가능해진 시점(ActivateCharacterSignal)부터만
     // PotionKey를 허용한다. 매 던전 진입마다(StartDungeonSystem) 리셋된다.
@@ -80,6 +81,27 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonResultManager.Reset();
         bCharacterActivated = false;
+        bIsFromMainMenu = (_sceneChangeData.prevScene == SceneType.MainMenu);
+
+        if (bIsFromMainMenu)
+        {
+            // MainMenu → Dungeon: Town의 포탈 선택(DungeonSelectedSignal)을 거치지 않으므로,
+            // BGM 재생(CharacterActivated)/재도전(GoToDungeonSignal)/던전 상태 판정(CalcDungeonState)이
+            // 참조하는 selectedMapType/selectedForestType을 여기서 직접 동기화해야 한다.
+            selectedMapType = _sceneChangeData.mapType;
+            selectedForestType = _sceneChangeData.forestType;
+
+            // MainMenu → Dungeon: Town→Dungeon 왕복에서는 직전 MainMenu→Town 진입 시 SetWhereIsCharacter(false)가
+            // 공격 인디케이터(RadiusIndicator, 프리팹 기본값 active)를 이미 꺼둔 상태로 던전에 들어온다.
+            // 여기는 Town을 거치지 않으므로 그 단계가 없어, 명시적으로 꺼줘야 ActivateCharacterSignal 전까지
+            // 인디케이터가 노출되지 않는다.
+            character?.DisableAttackComponent();
+
+            // MainMenu → Dungeon: 인게임 HUD를 확실히 숨긴 상태에서 시작
+            signalHub.Publish(new PopupUIDownSignal());
+            inputManager.PauseMove(true);
+            inputManager.PauseESCKey(true);
+        }
 
         currentMapType = _sceneChangeData.mapType;
         currentForestType = _sceneChangeData.forestType;
@@ -239,6 +261,13 @@ public class InDungeonSystem : MonoBehaviour
         inDungeonObjectManager.ReadyPortal();
         inDungeonProductionManager.Offroad_DI(inDungeonObjectManager.offroadVehicle);
 
+        // MainMenu → Dungeon: 나무가 전부 생성된 이 시점에 카메라를 상승 완료 위치로 즉시 배치.
+        // 이후 DungeonStartSignal → TownSystem.DungeonStarted → RollbackCameraMove로 하강이 시작된다.
+        if (bIsFromMainMenu)
+        {
+            skyCameraProductionManager.PrepareForDescend(character.transform);
+        }
+
         signalHub.Publish(new DungeonStartSignal(inDungeonObjectManager.GetPlayerStartPos()));
         inDungeonUnitSpawner.SpawnNPC();
 
@@ -259,7 +288,11 @@ public class InDungeonSystem : MonoBehaviour
             inDungeonProductionManager.RollbackCameraMove();
         }
 
-        signalHub.Publish(new DeclareDungeonStateSignal(inDungeonStateManager.CalcDungeonState(selectedMapType)));
+        // MainMenu → Dungeon 튜토리얼: 던전 상태(스테이지 배너) UI는 노출하지 않는다.
+        if (!bIsFromMainMenu)
+        {
+            signalHub.Publish(new DeclareDungeonStateSignal(inDungeonStateManager.CalcDungeonState(selectedMapType)));
+        }
     }
 
     private void ItemAcquired(Item _item)
