@@ -31,6 +31,7 @@ public enum SoundID
     PitchHit = 2096610066,
     TreeHit = -1641742776,
     Prize2 = 1137393812,
+    FontPop = -1165999806,
     AxeBreakingEx = 1393049894,
     AxeBreaking = -197311369,
     AxeBreakingFinal = -43994528,

@@ -50,7 +50,7 @@ MonoBehaviour:
     clip: {fileID: 0}
     cueData: {fileID: 11400000, guid: 4ceb1d41b4840894e8d1f6f818db1e78, type: 2}
     mixerGroup: {fileID: 0}
-    defaultVolume: 0.145
+    defaultVolume: 0.125
     is3D: 1
     loop: 0
   - id: 1393049894
@@ -186,7 +186,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 68fe8cff254798442aca0403a920d03c, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
-    defaultVolume: 0.35
+    defaultVolume: 0.28
     is3D: 1
     loop: 0
   - id: 339084960
@@ -194,7 +194,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 648facf0949c6324887e38fd6abd64d3, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
-    defaultVolume: 0.035
+    defaultVolume: 0.01
     is3D: 1
     loop: 0
   - id: 495908140
@@ -300,6 +300,14 @@ MonoBehaviour:
     mixerGroup: {fileID: 0}
     defaultVolume: 0.3
     is3D: 1
+    loop: 0
+  - id: -1165999806
+    mixerId: -1090805748
+    clip: {fileID: 8300000, guid: c4d3a39e07ab58143b95819002b8d63f, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300300, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 0.25
+    is3D: 0
     loop: 0
   mixers:
   - id: -235980376

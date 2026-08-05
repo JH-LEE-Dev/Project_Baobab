@@ -22,6 +22,9 @@ namespace PresentationLayer.UISystem.CustomNumber
         private const string AmountPivotAName = "AmountPivot_A";
         private const string AmountPivotBName = "AmountPivot_B";
         private const string CenterPivotName = "CenterPivot";
+        private const float FontPopInterval = 0.04f;
+
+        private static float lastFontPopPlayedTime = float.NegativeInfinity;
 
         private static readonly ulong[] SuffixDivisors =
         {
@@ -628,12 +631,34 @@ namespace PresentationLayer.UISystem.CustomNumber
                             return;
 
                         _displayedLongValue = _nextDisplayValue;
-                        SetValue(_displayedLongValue, false);
+                        SetTweenedValue(_displayedLongValue);
                     },
                     _targetValue,
                     Mathf.Max(0.01f, valueTweenDuration))
                 .SetEase(valueTweenEase)
-                .OnComplete(() => SetValue(_targetValue, false));
+                .OnComplete(() => SetTweenedValue(_targetValue));
+        }
+
+        private void SetTweenedValue(long _value)
+        {
+            if (lastDisplayedValue == _value)
+                return;
+
+            SetValue(_value, false);
+            TryPlayFontPop();
+        }
+
+        private static void TryPlayFontPop()
+        {
+            if (false == Application.isPlaying)
+                return;
+
+            float _currentTime = Time.realtimeSinceStartup;
+            if (_currentTime - lastFontPopPlayedTime < FontPopInterval)
+                return;
+
+            lastFontPopPlayedTime = _currentTime;
+            Sound.PlayUI(SoundID.FontPop);
         }
 
         private void PlayGlyphColorTween(Color _motionColor)

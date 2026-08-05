@@ -65,14 +65,15 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private int pendingBatchMoney = 0;
     private bool bAwaitingFirstArrival = false;
 
-    [Header("Coin Pickup Pitch")]
-    [Tooltip("코인을 연속으로 먹을 때 피치가 최대치까지 올라가는 데 필요한 코인 개수")]
-    [SerializeField] private int coinPitchRampCount = 10;
-    [Tooltip("코인 연속 획득 시 도달하는 최대 피치")]
-    [SerializeField] private float coinPitchMax = 1.5f;
+    [Header("Coin Pickup Sound")]
+    [SerializeField, Min(0f)] private float coinGetCooldown = 0.04f;
+    [SerializeField, Min(0f)] private float coinPitchResetDelay = 0.2f;
+    [SerializeField, Min(0f)] private float coinPitchStep = 0.05f;
+    [SerializeField, Min(1f)] private float coinPitchMax = 1.5f;
 
-    // 한 배치(CoThrowCoins) 안에서 코인을 먹을 때마다 증가하며, 피치를 점점 올리는 데 쓰인다.
-    private int coinPickupComboCount = 0;
+    private const float CoinPitchBase = 1f;
+    private float currentCoinPitch = CoinPitchBase;
+    private float lastCoinGetPlayedTime = float.NegativeInfinity;
     public SpriteRenderer sr;
     public SpriteRenderer outlineSr;
     private int currentFrameIndex = 0;
@@ -275,8 +276,6 @@ public class ShopNPC : MonoBehaviour, IShopNPC
 
     private IEnumerator CoThrowCoins(List<CoinSpawnInfo> _coins)
     {
-        coinPickupComboCount = 0;
-
         int coinCount = _coins.Count;
         float currentInterval = 0.09f;
         if (coinCount > 0)
@@ -329,6 +328,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         if (customSortable != null)
             customSortable.SetHeight(0f);
 
+        ResetCoinPitchAfterIdle();
         UpdateFlyingCoins(Time.deltaTime);
     }
 
@@ -359,16 +359,32 @@ public class ShopNPC : MonoBehaviour, IShopNPC
                 character?.PlayItemAcquireBounce();
                 character?.PlayItemAcquireFlash();
 
-                // 코인을 연속으로 먹을수록 피치가 점점 올라가 손맛을 살린다.
-                float pitchT = coinPitchRampCount > 0 ? Mathf.Clamp01((float)coinPickupComboCount / coinPitchRampCount) : 0f;
-                float coinPitch = Mathf.Lerp(1f, coinPitchMax, pitchT);
-                Sound.Play(SoundID.CoinGet, fc.coin.transform.position, 1f, true, coinPitch);
-                coinPickupComboCount++;
+                TryPlayCoinGetSound(fc.coin.transform.position);
 
                 coinItemPoolingManager.ReturnCoin(fc.coin);
                 flyingCoins.RemoveAt(i);
             }
         }
+    }
+
+    private void TryPlayCoinGetSound(Vector3 _position)
+    {
+        float currentTime = Time.time;
+        if (currentTime - lastCoinGetPlayedTime < coinGetCooldown)
+            return;
+
+        Sound.Play(SoundID.CoinGet, _position, 1f, true, currentCoinPitch);
+        lastCoinGetPlayedTime = currentTime;
+        currentCoinPitch = Mathf.Min(Mathf.Max(CoinPitchBase, coinPitchMax), currentCoinPitch + coinPitchStep);
+    }
+
+    private void ResetCoinPitchAfterIdle()
+    {
+        if (currentCoinPitch <= CoinPitchBase || float.IsNegativeInfinity(lastCoinGetPlayedTime))
+            return;
+
+        if (Time.time - lastCoinGetPlayedTime >= coinPitchResetDelay)
+            currentCoinPitch = CoinPitchBase;
     }
 
     public void SetCharacter(Character _character)
