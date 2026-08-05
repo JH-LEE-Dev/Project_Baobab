@@ -342,7 +342,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     // 사망 연출(PlayDeathFlash/ShakeCamera)보다 훨씬 옅고 약하게 잡아 긍정적인 획득 피드백으로 느껴지게 한다.
     public void PlayItemAcquireFlash()
     {
-        characterVisualComponent.PlayItemAcquireFlash(GetArmFlashRenderer());
         CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
     }
 
