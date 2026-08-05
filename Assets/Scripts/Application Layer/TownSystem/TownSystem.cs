@@ -449,11 +449,25 @@ public class TownSystem : MonoBehaviour
         if (bCurrentlyTownScene == true)
             return;
 
+        // MainMenu → Dungeon 튜토리얼 최초 진입: 조작 해제/캐릭터 활성화(ActivateCharacterSignal)/HUD 복귀는
+        // 별도 트리거로 원하는 시점에 실행할 예정이므로 카메라 하강 완료 시점엔 대신 스튜디오 로고 연출만 예약한다.
+        if (!bTownSystemStarted)
+        {
+            StartCoroutine(StudioLogoRevealCoroutine());
+            return;
+        }
+
         inputManager.PauseMove(false);
         inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (DungeonSelected()에서 걸어둔 PauseESCKey(true) 해제)
         signalHub.Publish(new ActivateCharacterSignal());
 
         StartCoroutine(PopupUIGoUPCoroutine());
+    }
+
+    private IEnumerator StudioLogoRevealCoroutine()
+    {
+        yield return new WaitForSeconds(2f);
+        signalHub.Publish(new StudioLogoRevealSignal());
     }
 
     private IEnumerator PopupUIGoUPCoroutine()

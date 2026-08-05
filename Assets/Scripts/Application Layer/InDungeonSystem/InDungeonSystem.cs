@@ -288,7 +288,11 @@ public class InDungeonSystem : MonoBehaviour
             inDungeonProductionManager.RollbackCameraMove();
         }
 
-        signalHub.Publish(new DeclareDungeonStateSignal(inDungeonStateManager.CalcDungeonState(selectedMapType)));
+        // MainMenu → Dungeon 튜토리얼: 던전 상태(스테이지 배너) UI는 노출하지 않는다.
+        if (!bIsFromMainMenu)
+        {
+            signalHub.Publish(new DeclareDungeonStateSignal(inDungeonStateManager.CalcDungeonState(selectedMapType)));
+        }
     }
 
     private void ItemAcquired(Item _item)

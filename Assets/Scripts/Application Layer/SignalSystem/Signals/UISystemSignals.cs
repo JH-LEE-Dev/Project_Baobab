@@ -37,3 +37,6 @@ public struct WarningUIClosedSignal
         bResult = _bResult;
     }
 }
+
+// MainMenu → Dungeon 튜토리얼: 카메라 하강 완료 2초 뒤 스튜디오 로고 연출을 재생하라는 신호
+public struct StudioLogoRevealSignal { }
