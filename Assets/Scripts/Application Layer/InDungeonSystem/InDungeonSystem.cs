@@ -275,6 +275,29 @@ public class InDungeonSystem : MonoBehaviour
 
         character.gameObject.SetActive(true);
 
+        // MainMenu → Dungeon: 캐릭터를 차량 탑승 위치로 옮겨 탑승 상태로 표시한 뒤 다시 숨기고,
+        // 차량은 시동이 걸린 공회전(덜덜거림)만 실행시킨다. 카메라는 캐릭터 원래 위치로 하강한 뒤
+        // Follow/LookAt 없이 그 자리에 그대로 정지한다. 실제 하차/조작 활성화는 별도 트리거에서
+        // 처리할 예정이므로 여기서는 건드리지 않는다.
+        if (bIsFromMainMenu)
+        {
+            skyCameraProductionManager.ClearFollowAndLookAtOnArrive();
+
+            var offroadVehicle = inDungeonObjectManager.offroadVehicle;
+            if (offroadVehicle != null && offroadVehicle.CharacterRidePoint != null)
+            {
+                character.transform.position = offroadVehicle.CharacterRidePoint.position;
+            }
+
+            character.bRide = true;
+            character.gameObject.SetActive(false);
+
+            if (offroadVehicle != null)
+            {
+                offroadVehicle.StartEngineIdle();
+            }
+        }
+
         CameraMoveController.Instance.SetupCamera();
 
         if (bRetryGame == false)

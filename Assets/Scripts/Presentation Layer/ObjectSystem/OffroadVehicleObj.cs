@@ -488,6 +488,50 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         driveCoroutine = StartCoroutine(DriveRoutine(_endPoint));
     }
 
+    private Coroutine idleRumbleCoroutine;
+    private Vector3 idleRumbleInitialLocalPos;
+
+    /// <summary>
+    /// 튜토리얼(MainMenu → Dungeon) 전용. 시동을 거는 연출(임팩트) 없이, 이미 시동이 걸려 있는 상태로
+    /// 공회전 떨림만 StopEngineIdle()이 호출될 때까지 무한 반복한다. 사운드는 재생하지 않는다.
+    /// </summary>
+    public void StartEngineIdle()
+    {
+        if (idleRumbleCoroutine != null)
+        {
+            StopCoroutine(idleRumbleCoroutine);
+        }
+
+        idleRumbleCoroutine = StartCoroutine(EngineIdleRoutine());
+    }
+
+    public void StopEngineIdle()
+    {
+        if (idleRumbleCoroutine != null)
+        {
+            StopCoroutine(idleRumbleCoroutine);
+            idleRumbleCoroutine = null;
+        }
+
+        if (jitterVisualObject != null)
+        {
+            jitterVisualObject.transform.localPosition = idleRumbleInitialLocalPos;
+        }
+    }
+
+    private IEnumerator EngineIdleRoutine()
+    {
+        idleRumbleInitialLocalPos = jitterVisualObject.transform.localPosition;
+
+        // 시동 임팩트(스프링 댐퍼/먼지 파티클) 재생 없이, 이미 시동이 걸린 상태로 바로 공회전 떨림만 시작한다.
+        // StopEngineIdle()이 호출되기 전까지 계속 유지한다.
+        while (true)
+        {
+            ApplyShake(idleRumbleInitialLocalPos, shakeIntensity);
+            yield return null;
+        }
+    }
+
     private IEnumerator DriveRoutine(Transform _endPoint)
     {
         Vector3 jitterVisualObjectInitialLocalPos = jitterVisualObject.transform.localPosition;
