@@ -11,6 +11,7 @@ public struct TownStartedSignal
 
 public struct ContainerUpdatedSignal { }
 public struct ItemAddedToLogContainerSignal { }
+public struct ReturnToTownCameraDownEndedSignal { }
 
 public struct ShopMoneyUpdatedSignal
 {

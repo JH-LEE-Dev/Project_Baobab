@@ -35,7 +35,7 @@ public class TutorialSystem
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
         signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
-        signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.Subscribe<ReturnToTownCameraDownEndedSignal>(ReturnToTownCameraDownEnded);
         signalHub.Subscribe<ItemAddedToLogContainerSignal>(ItemAddedToLogContainer);
         signalHub.Subscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
@@ -50,7 +50,7 @@ public class TutorialSystem
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
         signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
-        signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.UnSubscribe<ReturnToTownCameraDownEndedSignal>(ReturnToTownCameraDownEnded);
         signalHub.UnSubscribe<ItemAddedToLogContainerSignal>(ItemAddedToLogContainer);
         signalHub.UnSubscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
@@ -117,7 +117,7 @@ public class TutorialSystem
         }
     }
 
-    private void TeleportUIClosed(TeleportUIClosedSignal _signal)
+    private void ReturnToTownCameraDownEnded(ReturnToTownCameraDownEndedSignal _signal)
     {
         if (bStepActive == false && currentStep == TutorialStep.GoHomeBeforeExhausted)
         {

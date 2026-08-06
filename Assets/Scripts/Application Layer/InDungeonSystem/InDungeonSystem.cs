@@ -683,7 +683,13 @@ public class InDungeonSystem : MonoBehaviour
             return;
 
         if (bCurrentlyDungeonScene == true)
+        {
             signalHub.Publish(new ActivateCharacterSignal());
+        }
+        else
+        {
+            signalHub.Publish(new ReturnToTownCameraDownEndedSignal());
+        }
 
         StartCoroutine(PopupUIGoUPCoroutine());
 
