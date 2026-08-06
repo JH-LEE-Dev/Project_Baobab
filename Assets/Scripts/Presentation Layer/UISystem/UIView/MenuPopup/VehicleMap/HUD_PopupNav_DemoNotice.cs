@@ -21,6 +21,8 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
     [SerializeField] private CanvasGroup demoDimCanvasGroup;
     [Tooltip("Title DimBG 스타일 좌우 펼쳐짐 띠 배너")]
     [SerializeField] private RectTransform demoBandTransform;
+    [Tooltip("내부 콘텐츠(텍스트 및 버튼) 가시성/알파 제어용 캔버스 그룹")]
+    [SerializeField] private CanvasGroup demoContentCanvasGroup;
     [Tooltip("데모 안내 타이틀 텍스트")]
     [SerializeField] private TextMeshProUGUI demoTitleText;
     [Tooltip("데모 안내 설명 텍스트 (통합 줄바꿈 텍스트)")]
@@ -74,6 +76,9 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
 
         isDemoNoticeShowing = true;
         demoNoticeOverlay.SetActive(true);
+
+        // 배너 확장 연출 전 콘텐츠는 투명(Alpha 0) 상태로 대기 (레이아웃 크기는 정상 유지)
+        SetContentAlpha(0f);
 
         // 텍스트 로컬라이징 적용 (JSON ID 14)
         if (null != localizationManager)
@@ -137,6 +142,9 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
 
     private void HandleRevealAnimationComplete()
     {
+        // 배너 확장이 완료된 시점에 콘텐츠 알파 활성화 및 텍스트 바운스 연출 실행
+        SetContentAlpha(1f);
+
         if (null != demoTitleAnimator)
         {
             demoTitleAnimator.PlayRevealBounce();
@@ -153,6 +161,8 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
         {
             return;
         }
+
+        SetContentAlpha(0f);
 
         if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
         {
@@ -196,9 +206,19 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
         }
     }
 
+    private void SetContentAlpha(float _alpha)
+    {
+        if (null != demoContentCanvasGroup)
+        {
+            demoContentCanvasGroup.alpha = _alpha;
+            demoContentCanvasGroup.blocksRaycasts = _alpha >= 0.99f;
+        }
+    }
+
     public void ResetNotice()
     {
         KillTweens();
+        SetContentAlpha(0f);
 
         if (null != demoNoticeOverlay)
         {
