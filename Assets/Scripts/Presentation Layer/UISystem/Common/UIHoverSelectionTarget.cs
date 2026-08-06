@@ -1,9 +1,12 @@
+using System;
 using PresentationLayer.DOTweenAnimationSystem;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
+    public event Action PointerEnteredEvent;
+
     [Header("Motion Settings")]
     [SerializeField] private ObjectMotionPlayer motionPlayer;
     [SerializeField] private string hoverMotionTag = "UIHover";
@@ -131,6 +134,7 @@ public class UIHoverSelectionTarget : MonoBehaviour, IPointerEnterHandler, IPoin
             return;
 
         isPointerHovering = true;
+        PointerEnteredEvent?.Invoke();
         selectionCursor?.Show(cursorTargetRectTransform != null ? cursorTargetRectTransform : targetRectTransform);
         PlayHoverMotion();
     }

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -60,6 +61,8 @@ namespace PresentationLayer.UISystem
         private bool isRevealPlaying;
         private float revealStartTime;
         private int revealCharacterCount;
+        private int nextRevealCallbackCharacterIndex;
+        private Action revealCharacterAppearedCallback;
 
         public string PreprocessText(string _text)
         {
@@ -68,7 +71,7 @@ namespace PresentationLayer.UISystem
             return cleanTextBuilder.ToString();
         }
 
-        public void PlayRevealBounce()
+        public void PlayRevealBounce(Action _characterAppearedCallback = null)
         {
             if (Application.isPlaying == false)
                 return;
@@ -80,6 +83,8 @@ namespace PresentationLayer.UISystem
 
             isRevealPlaying = true;
             revealStartTime = Time.time;
+            nextRevealCallbackCharacterIndex = 0;
+            revealCharacterAppearedCallback = _characterAppearedCallback;
 
             tmpText.ForceMeshUpdate(false, true);
             revealCharacterCount = Mathf.Max(0, tmpText.textInfo.characterCount);
@@ -87,6 +92,7 @@ namespace PresentationLayer.UISystem
             if (revealCharacterCount == 0)
             {
                 isRevealPlaying = false;
+                revealCharacterAppearedCallback = null;
                 return;
             }
 
@@ -96,6 +102,7 @@ namespace PresentationLayer.UISystem
         public void StopRevealBounce(bool showImmediately = true)
         {
             isRevealPlaying = false;
+            revealCharacterAppearedCallback = null;
 
             if (tmpText == null)
                 return;
@@ -153,8 +160,16 @@ namespace PresentationLayer.UISystem
             if (Application.isPlaying == false && animateInEditMode == false)
                 return;
 
-            if (isRevealPlaying && IsRevealComplete())
-                isRevealPlaying = false;
+            if (isRevealPlaying)
+            {
+                DispatchRevealCharacterCallbacks();
+
+                if (IsRevealComplete())
+                {
+                    isRevealPlaying = false;
+                    revealCharacterAppearedCallback = null;
+                }
+            }
 
             tmpText.ForceMeshUpdate(false, false);
 
@@ -413,6 +428,31 @@ namespace PresentationLayer.UISystem
 
             float lastCharacterStartTime = revealStartTime + GetRevealInterval() * (revealCharacterCount - 1);
             return Time.time >= lastCharacterStartTime + revealCharacterDuration;
+        }
+
+        private void DispatchRevealCharacterCallbacks()
+        {
+            if (revealCharacterAppearedCallback == null || tmpText == null)
+                return;
+
+            float revealInterval = GetRevealInterval();
+            while (nextRevealCallbackCharacterIndex < revealCharacterCount)
+            {
+                int characterIndex = nextRevealCallbackCharacterIndex;
+                float characterStartTime = revealStartTime + (revealInterval * characterIndex);
+                if (Time.time < characterStartTime)
+                    break;
+
+                nextRevealCallbackCharacterIndex++;
+
+                if (characterIndex >= tmpText.textInfo.characterCount ||
+                    tmpText.textInfo.characterInfo[characterIndex].isVisible == false)
+                {
+                    continue;
+                }
+
+                revealCharacterAppearedCallback.Invoke();
+            }
         }
 
         private float GetRevealInterval()

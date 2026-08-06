@@ -108,6 +108,11 @@ public class UIView_Result : UIView
     private const string AcquiredLogsHeaderFallback = "\uC774\uBC88 \uC6D0\uC815\uC5D0\uC11C \uD68D\uB4DD\uD55C \uC6D0\uBAA9";
     private const string EmptyAcquiredLogsFallback = "\uC5C6\uC74C";
     private const string ContainerStateHeaderFallback = "\uC6B4\uBC18 \uC0C1\uC790 \uC0C1\uD0DC";
+    private const float FontPopSoundInterval = 0.04f;
+    private const float TreeKillCountSoundInterval = 0.05f;
+    private const float TreeKillCountPitchStep = 0.02f;
+    private const float TreeKillCountMaxPitch = 1.5f;
+    private const float InventoryLogSoundInterval = 0.03f;
 
     public event Action GoHomeButtonClickedEvent;
     public event Action RetryButtonClickedEvent;
@@ -193,6 +198,10 @@ public class UIView_Result : UIView
     private Button retryTouchAreaButton;
     private RectTransform goHomeButtonVisual;
     private RectTransform retryButtonVisual;
+    private float lastFontPopSoundTime = float.NegativeInfinity;
+    private float lastTreeKillCountSoundTime = float.NegativeInfinity;
+    private float lastInventoryLogSoundTime = float.NegativeInfinity;
+    private float treeKillCountSoundPitch = 1f;
 
     #region Public Override Methods
 
@@ -223,12 +232,14 @@ public class UIView_Result : UIView
 
     public void OnGoHomeButtonClicked()
     {
+        Sound.PlayUI(SoundID.MainClick);
         HideSelectionCursorImmediately();
         PlayResultCloseProduction(InvokeGoHomeButtonClickedEvent);
     }
 
     public void OnRetryButtonClicked()
     {
+        Sound.PlayUI(SoundID.MainClick);
         HideSelectionCursorImmediately();
         PlayResultCloseProduction(InvokeRetryButtonClickedEvent);
     }
@@ -348,6 +359,8 @@ public class UIView_Result : UIView
         isClosingProduction = false;
         SetButtonsInteractable(false);
         PrepareResultProductionHidden();
+        ResetResultProductionSounds();
+        Sound.PlayUI(SoundID.ResultUIOpen);
 
         resultOpenSequence = DOTween.Sequence();
 
@@ -469,6 +482,7 @@ public class UIView_Result : UIView
         CacheProductionStartState();
         KillResultProductionSequences();
         isClosingProduction = true;
+        Sound.PlayUI(SoundID.ResultUIClose);
         HideSelectionCursorImmediately();
         SetButtonsInteractable(false);
 
@@ -591,6 +605,8 @@ public class UIView_Result : UIView
         RectTransform visualRectTransform = visual != null ? visual : touchArea;
         ObjectMotionPlayer motionPlayer = visual != null ? visual.GetComponentInChildren<ObjectMotionPlayer>(true) : null;
         hoverTarget.Initialize(selectionCursorInstance, visualRectTransform, motionPlayer);
+        hoverTarget.PointerEnteredEvent -= OnResultButtonHovered;
+        hoverTarget.PointerEnteredEvent += OnResultButtonHovered;
         return hoverTarget;
     }
 
@@ -635,6 +651,17 @@ public class UIView_Result : UIView
 
         if (retryTouchAreaButton != null)
             retryTouchAreaButton.onClick.RemoveListener(OnRetryButtonClicked);
+
+        if (goHomeHoverTarget != null)
+            goHomeHoverTarget.PointerEnteredEvent -= OnResultButtonHovered;
+
+        if (retryHoverTarget != null)
+            retryHoverTarget.PointerEnteredEvent -= OnResultButtonHovered;
+    }
+
+    private void OnResultButtonHovered()
+    {
+        Sound.PlayUI(SoundID.ResultUIHover);
     }
 
     private void InvokeGoHomeButtonClickedEvent()
@@ -700,12 +727,13 @@ public class UIView_Result : UIView
             if (targetTreeKillCount <= 0)
             {
                 RefreshTreeKillCount();
-                treeKillCountTextAnimator?.PlayRevealBounce();
+                treeKillCountTextAnimator?.PlayRevealBounce(TryPlayFontPopSound);
                 return;
             }
 
             SetTreeKillCountText(1);
-            treeKillCountTextAnimator?.PlayRevealBounce();
+            treeKillCountTextAnimator?.PlayRevealBounce(TryPlayFontPopSound);
+            TryPlayTreeKillCountSound();
         });
 
         if (targetTreeKillCount <= 0)
@@ -721,6 +749,7 @@ public class UIView_Result : UIView
 
                     currentTreeKillCount = value;
                     SetTreeKillCountText(currentTreeKillCount);
+                    TryPlayTreeKillCountSound();
                 },
                 targetTreeKillCount,
                 treeKillCountUpDuration)
@@ -732,13 +761,13 @@ public class UIView_Result : UIView
     private void PlayAcquiredLogsHeaderProduction()
     {
         SetCanvasGroupVisible(sectionAcquiredLogsCanvasGroup, true);
-        acquiredLogsHeaderAnimator?.PlayRevealBounce();
+        acquiredLogsHeaderAnimator?.PlayRevealBounce(TryPlayFontPopSound);
     }
 
     private void PlayContainerHeaderProduction()
     {
         SetCanvasGroupVisible(sectionContainerCanvasGroup, true);
-        containerHeaderAnimator?.PlayRevealBounce();
+        containerHeaderAnimator?.PlayRevealBounce(TryPlayFontPopSound);
     }
 
     private void PrepareContainerDisplayProduction()
@@ -1305,6 +1334,7 @@ public class UIView_Result : UIView
             return;
 
         EnsureContainerSlotCount(displaySlots.Length);
+        bool playedChangedSlotInteraction = false;
 
         for (int i = 0; i < containerSlots.Count; i++)
         {
@@ -1316,10 +1346,56 @@ public class UIView_Result : UIView
             slotUI.gameObject.SetActive(isActive);
 
             if (isActive)
-                slotUI.UpdateBindSlotData(displaySlots[i], offroadContainer != null ? offroadContainer.maxItemCntPerSlot : 99, playChangedSlotInteraction && displaySlots[i].HasChanged);
+            {
+                bool shouldPlayChangedInteraction = playChangedSlotInteraction && displaySlots[i].HasChanged;
+                slotUI.UpdateBindSlotData(displaySlots[i], offroadContainer != null ? offroadContainer.maxItemCntPerSlot : 99, shouldPlayChangedInteraction);
+                playedChangedSlotInteraction |= shouldPlayChangedInteraction;
+            }
         }
 
+        if (playedChangedSlotInteraction)
+            TryPlayInventoryLogSound();
+
         ApplyContainerSlotLayout();
+    }
+
+    private void ResetResultProductionSounds()
+    {
+        lastFontPopSoundTime = float.NegativeInfinity;
+        lastTreeKillCountSoundTime = float.NegativeInfinity;
+        lastInventoryLogSoundTime = float.NegativeInfinity;
+        treeKillCountSoundPitch = 1f;
+    }
+
+    private void TryPlayFontPopSound()
+    {
+        float currentTime = Time.unscaledTime;
+        if (currentTime - lastFontPopSoundTime < FontPopSoundInterval)
+            return;
+
+        Sound.PlayUI(SoundID.FontPop);
+        lastFontPopSoundTime = currentTime;
+    }
+
+    private void TryPlayTreeKillCountSound()
+    {
+        float currentTime = Time.unscaledTime;
+        if (currentTime - lastTreeKillCountSoundTime < TreeKillCountSoundInterval)
+            return;
+
+        Sound.PlayUI(SoundID.GetItem, 1f, treeKillCountSoundPitch);
+        lastTreeKillCountSoundTime = currentTime;
+        treeKillCountSoundPitch = Mathf.Min(treeKillCountSoundPitch + TreeKillCountPitchStep, TreeKillCountMaxPitch);
+    }
+
+    private void TryPlayInventoryLogSound()
+    {
+        float currentTime = Time.unscaledTime;
+        if (currentTime - lastInventoryLogSoundTime < InventoryLogSoundInterval)
+            return;
+
+        Sound.PlayUI(SoundID.OutItem);
+        lastInventoryLogSoundTime = currentTime;
     }
 
     private void EnsureContainerSlotCount(int count)
