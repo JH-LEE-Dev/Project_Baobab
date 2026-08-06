@@ -23,6 +23,10 @@ public struct DecalreDungeonTypeSignal
     }
 }
 
+// MainMenu → Dungeon 튜토리얼: 카메라 하강 완료 시점에 던전 BGM만 재생하라는 신호.
+// (이 경로에서는 ActivateCharacterSignal이 아직 발행되지 않아 BGM 재생 지점이 없다)
+public struct DungeonBGMStartSignal { }
+
 public struct DungeonStartSignal
 {
     public Vector3 characterPos;

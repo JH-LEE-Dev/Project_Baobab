@@ -300,8 +300,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         {
             bCanAcquiredItem = true;
             armComponent.ResetWeaponStatus();
+
+            // 튜토리얼이 걸어둔 스태미나 바닥값이 다음 원정까지 남지 않도록 던전에 들어설 때마다 해제한다.
+            // 타운 분기는 위의 StaminaReset()이 이미 해제하지만, 재도전(결과창 → 재도전)은 타운을 거치지
+            // 않고 던전 → 던전으로 직행하므로 여기서 풀어주지 않으면 바닥값이 그대로 이어져 탈진이 막힌다.
+            // 튜토리얼은 이 시점보다 한참 뒤(퀘스트 시작)에 바닥값을 걸므로 서로 간섭하지 않는다.
+            healthComponent.SetMinStaminaPercent(0f);
         }
-    
+
         bDead = false;
 
         bInDungeon = _bInDungeon;
@@ -1187,6 +1193,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void StartDecreaseStamina()
     {
         healthComponent.SetStaminaDecrease(true);
+    }
+
+    public void SetMinStaminaPercent(float _percent)
+    {
+        healthComponent.SetMinStaminaPercent(_percent);
     }
 
     public void ResetStatus()

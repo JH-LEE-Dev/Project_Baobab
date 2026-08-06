@@ -38,6 +38,16 @@ public class InDungeonSystem : MonoBehaviour
     // "포자 포션" - 던전 입장 후 캐릭터가 실제로 조작 가능해진 시점(ActivateCharacterSignal)부터만
     // PotionKey를 허용한다. 매 던전 진입마다(StartDungeonSystem) 리셋된다.
     private bool bCharacterActivated;
+
+    // 이번 던전에서 스테이지 BGM을 이미 재생했는지. 매 던전 진입마다(StartDungeonSystem) 리셋된다.
+    private bool bDungeonBGMPlayed;
+
+    // MainMenu → Dungeon 튜토리얼: 캐릭터를 차량 탑승 위치로 옮기기 직전의 위치(= 차를 타지 않았다면
+    // 던전에서 서 있었어야 할 위치). 로고 연출이 끝난 뒤 하차할 때 정확히 이 자리로 되돌린다.
+    private Vector3 characterDungeonStartPos;
+    private bool bTutorialRideExitPending;
+    private Coroutine tutorialRideExitCoroutine;
+
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
     InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager,
     InDungeonResultManager _inDungeonResultManager)
@@ -73,6 +83,13 @@ public class InDungeonSystem : MonoBehaviour
     {
         ReleaseEvents();
         UnSubscribeSignals();
+
+        if (tutorialRideExitCoroutine != null)
+        {
+            StopCoroutine(tutorialRideExitCoroutine);
+            tutorialRideExitCoroutine = null;
+        }
+
         inDungeonProductionManager.Release();
         inDungeonObjectManager.Release();
     }
@@ -81,6 +98,8 @@ public class InDungeonSystem : MonoBehaviour
     {
         inDungeonResultManager.Reset();
         bCharacterActivated = false;
+        bTutorialRideExitPending = false;
+        bDungeonBGMPlayed = false;
         bIsFromMainMenu = (_sceneChangeData.prevScene == SceneType.MainMenu);
 
         if (bIsFromMainMenu)
@@ -228,6 +247,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.Subscribe<TownStartedSignal>(TownStarted);
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
+        signalHub.Subscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
+        signalHub.Subscribe<DungeonBGMStartSignal>(DungeonBGMStart);
+        signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -241,6 +263,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<ActivateCharacterSignal>(CharacterActivated);
         signalHub.UnSubscribe<TownStartedSignal>(TownStarted);
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
+        signalHub.UnSubscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
+        signalHub.UnSubscribe<DungeonBGMStartSignal>(DungeonBGMStart);
+        signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
     }
 
     private void PortalActivated()
@@ -275,6 +300,39 @@ public class InDungeonSystem : MonoBehaviour
 
         character.gameObject.SetActive(true);
 
+        // MainMenu → Dungeon: 캐릭터를 차량 탑승 위치로 옮겨 탑승 상태로 표시한 뒤 다시 숨기고,
+        // 차량은 시동이 걸린 공회전(덜덜거림)만 실행시킨다. 카메라는 캐릭터 원래 위치로 하강한 뒤
+        // Follow/LookAt 없이 그 자리에 그대로 정지한다. 실제 하차는 스튜디오 로고 연출이 끝난 뒤
+        // (CompanyLogoProductionCompletedSignal) 처리하고, 조작 활성화는 그 이후 별도 트리거에서 다룬다.
+        if (bIsFromMainMenu)
+        {
+            skyCameraProductionManager.ClearFollowAndLookAtOnArrive();
+
+            // 하차 시 되돌아갈 원래 위치를 탑승 위치로 옮기기 전에 기억해둔다.
+            characterDungeonStartPos = character.transform.position;
+            bTutorialRideExitPending = true;
+
+            var offroadVehicle = inDungeonObjectManager.offroadVehicle;
+            if (offroadVehicle != null && offroadVehicle.CharacterRidePoint != null)
+            {
+                character.transform.position = offroadVehicle.CharacterRidePoint.position;
+            }
+
+            character.bRide = true;
+            character.gameObject.SetActive(false);
+
+            if (offroadVehicle != null)
+            {
+                offroadVehicle.StartEngineIdle();
+            }
+
+            // MainMenu → Dungeon 튜토리얼: 처음엔 둘 다 상호작용 불가로 시작한다.
+            // OffroadContainer는 나무 벌목 퀘스트가 끝나면, OffroadVehicle은 원목 이관 퀘스트가
+            // 끝나면 각각 TutorialStepCompleted(TutorialStepCompletedSignal)에서 열어준다.
+            offroadVehicle?.SetCanTravel(false);
+            offroadContainer.DisableCollision();
+        }
+
         CameraMoveController.Instance.SetupCamera();
 
         if (bRetryGame == false)
@@ -288,11 +346,10 @@ public class InDungeonSystem : MonoBehaviour
             inDungeonProductionManager.RollbackCameraMove();
         }
 
-        // MainMenu → Dungeon 튜토리얼: 던전 상태(스테이지 배너) UI는 노출하지 않는다.
-        if (!bIsFromMainMenu)
-        {
-            signalHub.Publish(new DeclareDungeonStateSignal(inDungeonStateManager.CalcDungeonState(selectedMapType)));
-        }
+        // 스테이지 배너(HUD_Message)의 문구는 이 신호로만 채워지고, 실제 노출은 HUD가 올라오는 시점
+        // (PopupUIUpSignal → OnHUDGoUp)에 일어난다. MainMenu → Dungeon 튜토리얼도 하차 후 HUD가 올라오므로,
+        // 여기서 빠뜨리면 배너가 값이 비어 있는 상태(None)로 떠버린다.
+        signalHub.Publish(new DeclareDungeonStateSignal(inDungeonStateManager.CalcDungeonState(selectedMapType)));
     }
 
     private void ItemAcquired(Item _item)
@@ -452,9 +509,94 @@ public class InDungeonSystem : MonoBehaviour
         bCharacterActivated = true;
 
         // 캐릭터가 실제로 움직일 수 있게 되는 시점에 스테이지별 BGM을 재생한다.
+        PlayDungeonBGM();
+    }
+
+    // MainMenu → Dungeon 튜토리얼: 이 경로엔 ActivateCharacterSignal이 없어 BGM 재생 지점도 없으므로,
+    // 카메라 하강이 끝나는 시점(TownSystem.CameraDownIsEnd)에 BGM만 따로 받아 재생한다.
+    private void DungeonBGMStart(DungeonBGMStartSignal _signal)
+    {
+        PlayDungeonBGM();
+    }
+
+    // 같은 던전에서 두 번 재생되어 트랙이 처음부터 다시 시작되는 일이 없도록 1회만 재생한다.
+    // (튜토리얼에서 여기로 먼저 재생된 뒤, 나중에 ActivateCharacterSignal이 와도 이어서 흐른다)
+    private void PlayDungeonBGM()
+    {
+        if (bDungeonBGMPlayed)
+            return;
+
+        bDungeonBGMPlayed = true;
+
         if (selectedForestType == ForestType.WideGreenForest_1)
         {
             Sound.PlayBGM(SoundID.WideGreenForest1BGM);
+        }
+    }
+
+    // MainMenu → Dungeon 튜토리얼: 스튜디오 로고 UI 연출이 끝나면 차량 시동을 끄고, 그 1초 뒤 캐릭터를 내린다.
+    private void CompanyLogoProductionCompleted(CompanyLogoProductionCompletedSignal _signal)
+    {
+        if (bIsFromMainMenu == false || bTutorialRideExitPending == false)
+            return;
+
+        bTutorialRideExitPending = false;
+
+        if (tutorialRideExitCoroutine != null)
+            StopCoroutine(tutorialRideExitCoroutine);
+
+        tutorialRideExitCoroutine = StartCoroutine(TutorialRideExitCoroutine());
+    }
+
+    private IEnumerator TutorialRideExitCoroutine()
+    {
+        // 1. 공회전 중이던 차량의 시동이 꺼지는 연출을 먼저 끝까지 재생한다.
+        var offroadVehicle = inDungeonObjectManager.offroadVehicle;
+        if (offroadVehicle != null)
+        {
+            yield return offroadVehicle.EngineShutdownSequence();
+        }
+
+        // 2. 시동이 완전히 꺼지고 1초 뒤에 하차한다.
+        yield return new WaitForSeconds(1f);
+
+        if (character == null)
+        {
+            tutorialRideExitCoroutine = null;
+            yield break;
+        }
+
+        // 차를 타지 않았다면 서 있었어야 할 위치로 되돌리고 탑승 상태를 해제한다.
+        // Town → Dungeon 진입 연출과 동일하게, 이 시점의 캐릭터는 화면에 보이되 조작은 잠긴 상태다.
+        // (StartDungeonSystem에서 걸어둔 PauseMove/PauseESCKey/DisableAttackComponent가 그대로 유지된다)
+        character.transform.position = characterDungeonStartPos;
+        character.bRide = false;
+        character.gameObject.SetActive(true);
+        character.SetFacingDirection(Vector2.down);
+
+        // 하차 시점부터 카메라는 다시 캐릭터를 따라간다(하강이 끝난 자리와 같은 위치라 튐이 없다).
+        skyCameraProductionManager.AttachFollowAndLookAt(character.transform);
+
+        // 3. 하차 1초 뒤에 일반 던전 입장과 동일한 마무리(조작 개방 + 캐릭터 활성화 + HUD 복귀)를 실행한다.
+        yield return new WaitForSeconds(1f);
+
+        tutorialRideExitCoroutine = null;
+
+        signalHub.Publish(new CompleteDungeonEntrySignal());
+    }
+
+    // MainMenu → Dungeon 튜토리얼: 퀘스트가 끝날 때마다 해당 상호작용을 순서대로 열어준다.
+    // (처음엔 OnTreesReady()의 bIsFromMainMenu 분기에서 둘 다 잠가둔 상태로 시작한다)
+    private void TutorialStepCompleted(TutorialStepCompletedSignal _signal)
+    {
+        switch (_signal.step)
+        {
+            case TutorialStep.CutTree:
+                offroadContainer.EnableCollision();
+                break;
+            case TutorialStep.FillOffroadContainer:
+                inDungeonObjectManager.offroadVehicle?.SetCanTravel(true);
+                break;
         }
     }
 

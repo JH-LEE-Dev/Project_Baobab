@@ -279,11 +279,16 @@ public class UIView_HUD : UIView
         }
     }
 
-    public void HUDGoUp()
+    /// <param name="_onCompleted">HUD가 완전히 다 올라온 시점에 호출된다. 모션이 없으면 즉시 호출된다.</param>
+    public void HUDGoUp(Action _onCompleted = null)
     {
         if (null != omp)
         {
-            omp.PlayBackward(mapTransitionMotionTag, bReset: true);
+            omp.PlayBackward(mapTransitionMotionTag, _onComplete: () => _onCompleted?.Invoke(), bReset: true);
+        }
+        else
+        {
+            _onCompleted?.Invoke();
         }
 
         hudLoot?.OnHUDGoUp();

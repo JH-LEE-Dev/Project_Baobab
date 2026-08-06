@@ -132,13 +132,62 @@ public class SkyCameraProductionManager : MonoBehaviour
         SkyProductionEndEvent?.Invoke();
     }
 
+    private bool bClearFollowLookAtOnArrive;
+
+    /// <summary>
+    /// 다음 하강 완료 시점에 Follow/LookAt을 캐릭터로 재연결하지 않고 null로 둔다.
+    /// 카메라는 하강이 끝난 그 자리(캐릭터 원래 위치)에 그대로 정지해 있게 된다.
+    /// 한 번 적용되면 즉시 초기화되어(1회성) 이후 왕복에는 영향을 주지 않는다.
+    /// </summary>
+    public void ClearFollowAndLookAtOnArrive()
+    {
+        bClearFollowLookAtOnArrive = true;
+    }
+
+    /// <summary>
+    /// ClearFollowAndLookAtOnArrive()로 Follow/LookAt이 비워진 상태에서, 지정한 타겟으로 카메라 추적을
+    /// 다시 연결한다(MainMenu → Dungeon 튜토리얼의 캐릭터 하차 시점).
+    /// 이후 Town↔Dungeon 왕복의 복원 대상도 이 타겟이 되도록 캐시까지 함께 갱신한다.
+    /// </summary>
+    public void AttachFollowAndLookAt(Transform _target)
+    {
+        if (virtualCamera == null)
+        {
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        }
+
+        if (virtualCamera == null || _target == null)
+        {
+            Debug.LogWarning("[SkyCameraProductionManager] AttachFollowAndLookAt 실패. 카메라/타겟 중 null이 있습니다.");
+            return;
+        }
+
+        cachedFollowTarget = _target;
+        cachedLookAtTarget = _target;
+
+        virtualCamera.Follow = _target;
+        virtualCamera.LookAt = _target;
+    }
+
     private void OnRollbackCameraComplete()
     {
         if (virtualCamera != null)
         {
-            virtualCamera.Follow = cachedFollowTarget;
-            virtualCamera.LookAt = cachedLookAtTarget;
+            if (bClearFollowLookAtOnArrive)
+            {
+                // 하강 트윈이 도착한 그 자리(캐릭터가 차량 탑승 위치로 옮겨지기 이전 위치)에 그대로 둔다.
+                // 이후 캐릭터가 탑승 위치로 재배치되어도 카메라는 따라가지 않는다.
+                virtualCamera.Follow = null;
+                virtualCamera.LookAt = null;
+            }
+            else
+            {
+                virtualCamera.Follow = cachedFollowTarget;
+                virtualCamera.LookAt = cachedLookAtTarget;
+            }
         }
+
+        bClearFollowLookAtOnArrive = false;
     }
 
     private void OnSkyProductionRollbackEnd()
