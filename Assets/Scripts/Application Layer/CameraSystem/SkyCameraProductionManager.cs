@@ -88,7 +88,11 @@ public class SkyCameraProductionManager : MonoBehaviour
             targetPosition.y += yOffset;
 
             // 더미 타겟을 위로 이동시키면 카메라도 이를 쫓아 위로 올라갑니다.
-            Sound.RampProduction3DVolume(0f, moveDuration);
+            // 상승 중에는 3D 볼륨 계수를 일부러 건드리지 않는다. 카메라가 yOffset(50)만큼 멀어지면
+            // 가청 한계(화면 대각선 x 1.4, 약 16유닛)를 훨씬 넘어서므로 거리 감쇠만으로 자연히
+            // 무음이 된다. 여기서 계수까지 함께 깎으면 이중으로 적용되어 의도보다 빨리 죽는다.
+            // (씬 로드 시 AudioManager.OnSceneLoaded가 계수를 0으로 내리고 3D 사운드를 전부 정지시키므로,
+            //  다음 씬은 언제나 0에서 시작해 하강 연출에서 1로 회복된다.)
             Sequence seq = DOTween.Sequence();
             seq.Append(dummyTarget.DOMove(targetPosition, moveDuration));
             seq.AppendInterval(0.5f);
@@ -99,12 +103,13 @@ public class SkyCameraProductionManager : MonoBehaviour
         {
             ResetCameraPos();
 
-            // yOffset(50)에서 40을 뺀 만큼만 내려감 (최종 높이는 캐릭터 기준 +10)
-            // 즉, 내려가는 실제 거리는 40f
+            // 하강은 상승(yOffset=50)을 그대로 되짚지 않는다. ResetCameraPos()가 카메라를 캐릭터 기준
+            // +10(= yOffset - rollbackDistance) 지점으로 먼저 스냅시키므로, 실제로 내려가는 거리는 10이다.
+            // rollbackDistance는 그 시작 높이를 정하는 값이자 하강 시간을 정하는 기준값으로만 쓰인다.
             float rollbackDistance = 40.0f;
             float rollbackDuration = moveDuration * (rollbackDistance / yOffset);
 
-            // 최종 도착지 = 캐릭터 위치 + (yOffset - 40)
+            // 최종 도착지 = 캐릭터 위치 (ResetCameraPos에서 cameraStartPos에 대입해 둔 값)
             Vector3 targetRollbackPos = cameraStartPos;
 
             // 원래 위치(캐릭터 위치 + 오프셋 잔여분)로 더미 타겟 복원 및 복원 완료 시 원래 타겟팅 재연결
@@ -308,7 +313,7 @@ public class SkyCameraProductionManager : MonoBehaviour
         Vector3 targetPos = _characterTransform.position;
         targetPos.y += yOffset;
 
-        Sound.RampProduction3DVolume(0f, moveDuration);
+        // 상승 연출은 PlayCameraMove의 상승 분기와 동일하게 거리 감쇠에만 맡긴다(위 주석 참고).
         Sequence seq = DOTween.Sequence();
         seq.Append(dummyTarget.DOMove(targetPos, moveDuration));
         seq.AppendCallback(OnAscendOutComplete);

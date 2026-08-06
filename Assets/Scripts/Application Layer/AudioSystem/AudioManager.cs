@@ -41,6 +41,12 @@ public class AudioManager : MonoBehaviour
     // 연출용 전역 계수(production3DVolumeFactor)를 한 번 더 곱해서 정해진다(ApplySourceVolume 참고).
     private float[] sourceTargetVolume;
     private int[] sourcePlayId;
+    // 슬롯이 지금 재생 중인 사운드의 ID. 같은 SoundID가 동시에 몇 개나 겹쳐 재생 중인지 세어
+    // 폴리포니 제한/감쇠(maxConcurrentVoices, polyphonyAttenuationStrength)를 적용하는 데 쓴다.
+    private SoundID[] sourceSoundID;
+    // 재생 시작 시점에 계산된 폴리포니 감쇠 계수(0~1, 미적용 시 1). SetTrackedVolume이 볼륨을
+    // 다시 계산할 때 이 계수를 빼먹으면 감쇠가 통째로 풀려 소리가 원래 크기로 튄다.
+    private float[] sourcePolyphonyAttenuation;
     private int playIdCounter;
     private Dictionary<AudioCueData, int> cueLastIndexCache = new Dictionary<AudioCueData, int>();
 
@@ -201,6 +207,8 @@ public class AudioManager : MonoBehaviour
         sourceBaseVolume = new float[poolSize];
         sourceTargetVolume = new float[poolSize];
         sourcePlayId = new int[poolSize];
+        sourceSoundID = new SoundID[poolSize];
+        sourcePolyphonyAttenuation = new float[poolSize];
 
         for (int i = 0; i < poolSize; i++)
         {
@@ -469,7 +477,9 @@ public class AudioManager : MonoBehaviour
         if (!IsHandleValid(handle)) return;
 
         int index = handle.sourceIndex;
-        sourceTargetVolume[index] = sourceBaseVolume[index] * _volumeScale;
+        // 재생 시작 시 적용된 폴리포니 감쇠를 그대로 유지한다. 이걸 빼면 매 프레임 볼륨을 미는
+        // 발음체(벨트 루프 등)에서 감쇠가 첫 갱신 순간 풀려 소리가 원래 크기로 튀어오른다.
+        sourceTargetVolume[index] = sourceBaseVolume[index] * _volumeScale * sourcePolyphonyAttenuation[index];
         ApplySourceVolume(index);
     }
 
@@ -513,11 +523,36 @@ public class AudioManager : MonoBehaviour
 
         if (clip == null) return AudioHandle.Invalid;
 
-        int index = GetAvailableSourceIndex();
-        if (index < 0) return AudioHandle.Invalid;
-
         // 해상도가 바뀌어 화면 범위가 달라졌다면 재생 직전에 감지해서 갱신한다.
+        // (아래 폴리포니 계산이 최신 가청 거리(cachedFarDistance)를 기준으로 세도록 먼저 호출한다.)
         EnsureDistanceRolloffUpToDate();
+
+        // 같은 SoundID가 지금 몇 개나 겹쳐 재생 중인지 센다 (인크리멘탈 특성상 여러 발음원이
+        // 동시에 같은 사운드를 울릴 때 합산 음량이 과도해지는 문제를 사운드별로 억제하기 위함).
+        int activeVoices = CountActiveVoicesAndFindOldest(data.id, out int oldestSameSoundIndex);
+
+        float polyphonyAttenuation = 1f;
+        if (data.polyphonyAttenuationStrength > 0f)
+        {
+            // 비상관 음원 n개가 겹치면 체감 진폭은 대략 sqrt(n)로 늘어난다는 근거로,
+            // 그 반대인 1/sqrt(1+n)를 감쇠 계수로 삼는다. strength(0~1)로 사운드별 적용 정도를 조절.
+            float countFactor = 1f / Mathf.Sqrt(1f + activeVoices);
+            polyphonyAttenuation = Mathf.Lerp(1f, countFactor, data.polyphonyAttenuationStrength);
+            finalVolume *= polyphonyAttenuation;
+        }
+
+        int index;
+        if (data.maxConcurrentVoices > 0 && activeVoices >= data.maxConcurrentVoices && oldestSameSoundIndex >= 0)
+        {
+            // 이 사운드만의 한도를 넘었다면, 전체 풀에서 아무 슬롯이나 강탈하는 대신 같은 SoundID 중
+            // 가장 먼저 시작된 것을 이어받는다 - 관계없는 루프 사운드가 엉뚱하게 끊기는 일을 막는다.
+            index = oldestSameSoundIndex;
+        }
+        else
+        {
+            index = GetAvailableSourceIndex();
+        }
+        if (index < 0) return AudioHandle.Invalid;
 
         AudioSource src = sourcePool[index];
 
@@ -538,6 +573,7 @@ public class AudioManager : MonoBehaviour
 
         sourceBaseVolume[index] = baseVolume;
         sourceTargetVolume[index] = finalVolume;
+        sourcePolyphonyAttenuation[index] = polyphonyAttenuation;
 
         // 3D 사운드이고 카메라/커브 정보가 유효하다면, 재생 시작 시점의 거리를 사전 계산하여
         // 오디오 스레드가 첫 프레임(약 20ms)에 3D 거리 감쇠를 반영하지 못해 발생하는 팝 현상(풀 볼륨 출력)을 방지한다.
@@ -567,6 +603,7 @@ public class AudioManager : MonoBehaviour
         playIdCounter++;
         sourceStartTime[index] = Time.time;
         sourcePlayId[index] = playIdCounter;
+        sourceSoundID[index] = data.id;
 
         AudioHandle handle = new AudioHandle(index, playIdCounter);
 
@@ -595,6 +632,44 @@ public class AudioManager : MonoBehaviour
         AudioClip clip = cue.GetRandomClip(ref lastIndex);
         cueLastIndexCache[cue] = lastIndex;
         return clip;
+    }
+
+    // 지정한 SoundID가 지금 몇 개의 슬롯에서 "실제로 들리게" 재생 중인지 세고, 그중 가장 먼저
+    // 재생을 시작한 슬롯의 인덱스를 함께 돌려준다(폴리포니 한도 초과 시 이어받을 대상).
+    // 풀 크기(최대 50)만 순회하므로 사운드 재생마다 호출해도 비용이 미미하다.
+    private int CountActiveVoicesAndFindOldest(SoundID id, out int oldestIndex)
+    {
+        oldestIndex = -1;
+        float oldestTime = float.MaxValue;
+        int count = 0;
+
+        Camera cam = Camera.main;
+        Vector3 listenerPos = cam != null ? cam.transform.position : Vector3.zero;
+
+        int poolCount = sourcePool.Count;
+        for (int i = 0; i < poolCount; i++)
+        {
+            if (sourceSoundID[i] != id) continue;
+
+            AudioSource src = sourcePool[i];
+            if (!src.isPlaying) continue;
+
+            // 가청 범위 밖(거리 감쇠로 이미 볼륨 0)에서 나는 3D 사운드는 세지 않는다. 이걸 세면
+            // 맵 저편에서 NPC들이 내는, 플레이어에게 들리지도 않는 소리 때문에 정작 화면 안의
+            // 소리가 깎이거나 잘려나간다 - 발음원이 맵 전체에 흩어지는 이 게임에서는 치명적이다.
+            if (src.spatialBlend > 0f && cam != null &&
+                Vector3.Distance(src.transform.position, listenerPos) >= cachedFarDistance)
+                continue;
+
+            count++;
+            if (sourceStartTime[i] < oldestTime)
+            {
+                oldestTime = sourceStartTime[i];
+                oldestIndex = i;
+            }
+        }
+
+        return count;
     }
 
     private int GetAvailableSourceIndex()

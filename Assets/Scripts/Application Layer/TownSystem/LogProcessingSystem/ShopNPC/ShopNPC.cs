@@ -74,6 +74,19 @@ public class ShopNPC : MonoBehaviour, IShopNPC
     private const float CoinPitchBase = 1f;
     private float currentCoinPitch = CoinPitchBase;
     private float lastCoinGetPlayedTime = float.NegativeInfinity;
+    private MapType mapType;
+
+    // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속
+    // 수금이 진행되는 상태) 코인 사운드도 재생하지 않는다.
+    public void SetMapType(MapType _mapType)
+    {
+        mapType = _mapType;
+    }
+
+    private float GetSoundVolume()
+    {
+        return mapType == MapType.Town ? 1f : 0f;
+    }
     public SpriteRenderer sr;
     public SpriteRenderer outlineSr;
     private int currentFrameIndex = 0;
@@ -298,7 +311,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
             Vector3 start = coinThrowTransform != null ? coinThrowTransform.position : transform.position;
             Vector3 end = characterTransform != null ? characterTransform.position : transform.position;
 
-            Sound.Play(SoundID.CoinOut, start);
+            Sound.Play(SoundID.CoinOut, start, GetSoundVolume());
 
             Vector3 dir = (end - start).normalized;
             if (dir == Vector3.zero) dir = Vector3.up;
@@ -373,7 +386,7 @@ public class ShopNPC : MonoBehaviour, IShopNPC
         if (currentTime - lastCoinGetPlayedTime < coinGetCooldown)
             return;
 
-        Sound.Play(SoundID.CoinGet, _position, 1f, true, currentCoinPitch);
+        Sound.Play(SoundID.CoinGet, _position, GetSoundVolume(), true, currentCoinPitch);
         lastCoinGetPlayedTime = currentTime;
         currentCoinPitch = Mathf.Min(Mathf.Max(CoinPitchBase, coinPitchMax), currentCoinPitch + coinPitchStep);
     }

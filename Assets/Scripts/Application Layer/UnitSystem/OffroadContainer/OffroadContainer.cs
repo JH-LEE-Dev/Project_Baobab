@@ -333,7 +333,7 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         // 연속으로 넣거나 꺼낼수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
         float depositT = (_currentPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
         float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
-        Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, _currentPitch);
+        Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, true, _currentPitch);
         _currentPitch = Mathf.Clamp(_currentPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
     }
 

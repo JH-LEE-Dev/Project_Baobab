@@ -120,6 +120,9 @@ public class LogProcessLine : MonoBehaviour
     public void SetMapType(MapType _mapType)
     {
         cutter.SetMapType(_mapType);
+        inBelt.SetMapType(_mapType);
+        outBelt.SetMapType(_mapType);
+        evaluator.SetMapType(_mapType);
     }
 
     public void ShiftItems(Vector3 _offset)

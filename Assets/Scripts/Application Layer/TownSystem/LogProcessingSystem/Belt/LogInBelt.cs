@@ -67,10 +67,24 @@ public class LogInBelt : MonoBehaviour
     // 평가기로 향하는 벨트(outBelt)는 평가기가 용량 제약 없이 즉시 아이템을 받으므로 멈출 필요가 없다.
     // activeItems가 비면 Update()의 속도 계산에서 자연히 멈추므로 별도 강제 정지가 없어도 된다.
     private bool stopsOnLogOut = true;
+    private MapType mapType;
 
     public void SetGlobalSpeedMultiplier(float _mul)
     {
         globalSpeedMultiplier = _mul;
+    }
+
+    // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속 도는
+    // 상태) 벨트 사운드도 재생하지 않는다. ratio 기반 볼륨이 매 프레임 다시 계산되므로(UpdateLoopSound),
+    // Cutter처럼 맵 전환 시 별도로 사운드를 끊었다 재시작할 필요 없이 다음 프레임에 자동으로 반영된다.
+    public void SetMapType(MapType _mapType)
+    {
+        mapType = _mapType;
+    }
+
+    private float GetSoundVolume()
+    {
+        return mapType == MapType.Town ? 1f : 0f;
     }
 
     public void SetStopsOnLogOut(bool _value)
@@ -122,7 +136,7 @@ public class LogInBelt : MonoBehaviour
     {
         if (_item == null || checkPoints.Count == 0) return;
 
-        Sound.Play(SoundID.ConvayerPut, checkPoints[0].position);
+        Sound.Play(SoundID.ConvayerPut, checkPoints[0].position, GetSoundVolume());
 
         _item.SetHeight(0.425f);
         // 아이템을 첫 번째 체크포인트 위치로 즉시 이동
@@ -233,7 +247,7 @@ public class LogInBelt : MonoBehaviour
 
         float stopPitch = Mathf.Pow(2f, loopStopPitchSemitones / 12f);
 
-        Sound.SetTrackedVolume(loopSoundHandle, Mathf.Lerp(0f, loopIntendedVolume, ratio));
+        Sound.SetTrackedVolume(loopSoundHandle, Mathf.Lerp(0f, loopIntendedVolume, ratio) * GetSoundVolume());
         Sound.SetTrackedPitch(loopSoundHandle, Mathf.Lerp(stopPitch, runningPitch, ratio));
         Sound.UpdateTrackedPosition(loopSoundHandle, transform.position);
     }
