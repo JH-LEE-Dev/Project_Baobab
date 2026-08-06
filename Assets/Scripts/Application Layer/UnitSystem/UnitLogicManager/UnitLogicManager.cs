@@ -116,6 +116,11 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.StartDecreaseStamina();
     }
 
+    public void SetMinStaminaPercent(float _percent)
+    {
+        character.SetMinStaminaPercent(_percent);
+    }
+
     private IEnumerator GameEnd()
     {
         yield return new WaitForSeconds(1.5f);

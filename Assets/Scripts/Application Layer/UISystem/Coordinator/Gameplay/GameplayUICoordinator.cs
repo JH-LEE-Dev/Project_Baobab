@@ -24,6 +24,10 @@ public class GameplayUICoordinator
 
     private bool bInventoryOpened = false;
 
+    // MainMenu → Dungeon 튜토리얼: 로고 연출이 끝난 뒤 처음으로 HUD가 다 올라오는 시점에만
+    // 인트로 종료를 알리기 위한 예약 플래그(일반 던전/타운 전환의 HUD 복귀와 구분한다).
+    private bool bWaitingIntroProductionEnd = false;
+
     private MapType mapType;
     private ForestType forestType;
 
@@ -96,6 +100,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
         signalHub.Subscribe<RepairBoxInteractStateChangedSignal>(RepairBoxInteractStateChanged);
         signalHub.Subscribe<StudioLogoRevealSignal>(StudioLogoReveal);
+        signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
+        signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -143,6 +149,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<DeclareDungeonStateSignal>(DeclareDungeonState);
         signalHub.UnSubscribe<RepairBoxInteractStateChangedSignal>(RepairBoxInteractStateChanged);
         signalHub.UnSubscribe<StudioLogoRevealSignal>(StudioLogoReveal);
+        signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
+        signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
     }
 
     private void BindEvents()
@@ -197,6 +205,9 @@ public class GameplayUICoordinator
 
         warningUI.DeActivateWarningUIEvent -= DeActivateWarningUI;
         warningUI.DeActivateWarningUIEvent += DeActivateWarningUI;
+
+        overUIPopupUI.CompanyLogoProductionCompletedEvent -= CompanyLogoProductionCompleted;
+        overUIPopupUI.CompanyLogoProductionCompletedEvent += CompanyLogoProductionCompleted;
     }
 
     private void ReleaseEvents()
@@ -218,6 +229,7 @@ public class GameplayUICoordinator
         resultUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         resultUI.RetryButtonClickedEvent -= RetryGame;
         warningUI.DeActivateWarningUIEvent -= DeActivateWarningUI;
+        overUIPopupUI.CompanyLogoProductionCompletedEvent -= CompanyLogoProductionCompleted;
     }
 
     public void Release()
@@ -607,9 +619,32 @@ public class GameplayUICoordinator
 
     private void PopupUIUp(PopupUIUpSignal _popupUIUpSignal)
     {
-        hudUI.HUDGoUp();
+        hudUI.HUDGoUp(HUDGoUpCompleted);
         popUpUI.PopupGoUp();
         worldPopupUI.WorldPopupGoUp();
+    }
+
+    // HUD가 완전히 다 올라온 시점. 튜토리얼 인트로 중이었다면 그 종료를 UI에 알린다.
+    private void HUDGoUpCompleted()
+    {
+        if (bWaitingIntroProductionEnd == false)
+            return;
+
+        bWaitingIntroProductionEnd = false;
+        overUIPopupUI.IntroProductionEnded();
+
+        // 튜토리얼 로직(TutorialSystem)이 첫 스텝을 시작할 수 있도록 같은 시점에 알린다.
+        signalHub.Publish(new TutorialIntroEndedSignal());
+    }
+
+    private void TutorialStepStarted(TutorialStepStartedSignal _signal)
+    {
+        overUIPopupUI.TutorialStepStarted(_signal.step);
+    }
+
+    private void TutorialStepCompleted(TutorialStepCompletedSignal _signal)
+    {
+        overUIPopupUI.TutorialStepCompleted(_signal.step);
     }
 
     private void ProvideAccumulatedValueChangeEvent(ProvideSkillAccumulatedValueChangeSignal _signal)
@@ -656,5 +691,14 @@ public class GameplayUICoordinator
     private void StudioLogoReveal(StudioLogoRevealSignal _studioLogoRevealSignal)
     {
         overUIPopupUI.PlayCompanyLogo();
+    }
+
+    // 스튜디오 로고 UI 연출이 끝난 시점 - 이후 캐릭터 하차 연출(InDungeonSystem)이 이 신호를 받는다.
+    // 하차 뒤 HUD가 다 올라오면 인트로 전체가 끝난 것이므로, 그때까지 종료 통보를 예약해둔다.
+    private void CompanyLogoProductionCompleted()
+    {
+        bWaitingIntroProductionEnd = true;
+
+        signalHub.Publish(new CompanyLogoProductionCompletedSignal());
     }
 }

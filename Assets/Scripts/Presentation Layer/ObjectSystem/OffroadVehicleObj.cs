@@ -53,6 +53,13 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     [SerializeField] private float engineRunPitchTarget = 1.4f;
 
     [Space(10)]
+    [Header("Engine Shutdown Settings")]
+    [Tooltip("시동이 꺼지며 차체가 주저앉는 연출 시간")]
+    [SerializeField] private float engineShutdownSettleDuration = 0.4f;
+    [Tooltip("시동이 꺼지며 차체가 주저앉는 최대 스케일 변화량")]
+    [SerializeField] private float engineShutdownSettleIntensity = 0.12f;
+
+    [Space(10)]
     [Header("Point Transforms")]
     [SerializeField] private Transform containerCarryPoint;
     [SerializeField] private Transform containerDropPoint;
@@ -517,6 +524,41 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             jitterVisualObject.transform.localPosition = idleRumbleInitialLocalPos;
         }
+    }
+
+    /// <summary>
+    /// 튜토리얼(MainMenu → Dungeon) 전용. StartEngineIdle()로 공회전 중인 시동이 꺼지는 연출.
+    /// 공회전 떨림을 멈추고, 힘이 빠지며 차체가 살짝 주저앉았다 돌아온다(시동 임팩트의 반대 방향).
+    /// 시동 걸기와 마찬가지로 사운드는 재생하지 않는다.
+    /// </summary>
+    public IEnumerator EngineShutdownSequence()
+    {
+        StopEngineIdle();
+
+        yield return EngineShutdownSettleSequence();
+    }
+
+    private IEnumerator EngineShutdownSettleSequence()
+    {
+        if (visualObject == null) yield break;
+
+        Vector3 initialScale = visualObject.transform.localScale;
+
+        float elapsed = 0f;
+        while (elapsed < engineShutdownSettleDuration)
+        {
+            float progress = elapsed / engineShutdownSettleDuration;
+            float spring = Mathf.Exp(-ignitionSpringDamping * progress) * Mathf.Sin(ignitionSpringFrequency * progress);
+            float pulse = spring * engineShutdownSettleIntensity;
+
+            // 시동 임팩트(위로 튀는 스쿼시)와 반대로, 힘이 빠지며 아래로 살짝 주저앉는다.
+            visualObject.transform.localScale = initialScale + new Vector3(-pulse, pulse * 0.7f, 0);
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        visualObject.transform.localScale = initialScale;
     }
 
     private IEnumerator EngineIdleRoutine()

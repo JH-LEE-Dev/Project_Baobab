@@ -291,6 +291,7 @@ MonoBehaviour:
   isTempScene: 0
   enableSentry: 1
   enableGameAnalytics: 1
+  enableTutorial: 1
   gameInstallerPrefab: {fileID: 2618603934779584709, guid: 2ebab4c8acaf99742b56d0772e82689f, type: 3}
   mainMenuInstallerPrefab: {fileID: 2903737071357978035, guid: ac5e5f0119faab946b0b9760ecca8785, type: 3}
 --- !u!114 &209871257
@@ -661,7 +662,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   database: {fileID: 11400000, guid: 0df6751f8c20d9743bd59806f470bed3, type: 2}
   poolSize: 50
+  farDistanceBuffer: 1.05
   bgmFadeDuration: 1
+  enableDebugSound: 0
+  debugSoundId: 0
 --- !u!1001 &1407627020
 PrefabInstance:
   m_ObjectHideFlags: 0

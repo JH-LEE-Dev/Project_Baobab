@@ -233,6 +233,7 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
+        signalHub.Subscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
     }
 
     private void UnSubscribeSignals()
@@ -246,6 +247,7 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<TeleportUIClosedWhileTeleportSignal>(TeleportUIClosedWhileTeleport);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
+        signalHub.UnSubscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
     }
 
     private void PortalActivated()
@@ -451,17 +453,35 @@ public class TownSystem : MonoBehaviour
 
         // MainMenu → Dungeon 튜토리얼 최초 진입: 조작 해제/캐릭터 활성화(ActivateCharacterSignal)/HUD 복귀는
         // 별도 트리거로 원하는 시점에 실행할 예정이므로 카메라 하강 완료 시점엔 대신 스튜디오 로고 연출만 예약한다.
+        // 단, BGM은 다른 경로와 동일하게 카메라 하강이 끝나는 이 시점부터 흐르게 한다.
+        // (ActivateCharacterSignal이 없어 BGM 재생 지점도 같이 사라지므로 전용 신호로 분리했다)
         if (!bTownSystemStarted)
         {
+            signalHub.Publish(new DungeonBGMStartSignal());
             StartCoroutine(StudioLogoRevealCoroutine());
             return;
         }
 
+        CompleteDungeonEntry();
+    }
+
+    /// <summary>
+    /// 던전 입장 연출 마무리: 조작 잠금 해제 + 캐릭터 활성화 + HUD 복귀.
+    /// 일반 경로(Town → Dungeon)에서는 카메라 하강 완료 시점에, MainMenu → Dungeon 튜토리얼에서는
+    /// 캐릭터가 차량에서 내린 1초 뒤(CompleteDungeonEntrySignal)에 호출된다.
+    /// </summary>
+    private void CompleteDungeonEntry()
+    {
         inputManager.PauseMove(false);
         inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (DungeonSelected()에서 걸어둔 PauseESCKey(true) 해제)
         signalHub.Publish(new ActivateCharacterSignal());
 
         StartCoroutine(PopupUIGoUPCoroutine());
+    }
+
+    private void CompleteDungeonEntry(CompleteDungeonEntrySignal _signal)
+    {
+        CompleteDungeonEntry();
     }
 
     private IEnumerator StudioLogoRevealCoroutine()

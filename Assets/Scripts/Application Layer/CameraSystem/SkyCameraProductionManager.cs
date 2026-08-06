@@ -144,6 +144,31 @@ public class SkyCameraProductionManager : MonoBehaviour
         bClearFollowLookAtOnArrive = true;
     }
 
+    /// <summary>
+    /// ClearFollowAndLookAtOnArrive()로 Follow/LookAt이 비워진 상태에서, 지정한 타겟으로 카메라 추적을
+    /// 다시 연결한다(MainMenu → Dungeon 튜토리얼의 캐릭터 하차 시점).
+    /// 이후 Town↔Dungeon 왕복의 복원 대상도 이 타겟이 되도록 캐시까지 함께 갱신한다.
+    /// </summary>
+    public void AttachFollowAndLookAt(Transform _target)
+    {
+        if (virtualCamera == null)
+        {
+            virtualCamera = FindAnyObjectByType<CinemachineCamera>();
+        }
+
+        if (virtualCamera == null || _target == null)
+        {
+            Debug.LogWarning("[SkyCameraProductionManager] AttachFollowAndLookAt 실패. 카메라/타겟 중 null이 있습니다.");
+            return;
+        }
+
+        cachedFollowTarget = _target;
+        cachedLookAtTarget = _target;
+
+        virtualCamera.Follow = _target;
+        virtualCamera.LookAt = _target;
+    }
+
     private void OnRollbackCameraComplete()
     {
         if (virtualCamera != null)

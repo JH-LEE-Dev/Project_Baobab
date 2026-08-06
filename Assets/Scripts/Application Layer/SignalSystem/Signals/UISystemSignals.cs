@@ -40,3 +40,6 @@ public struct WarningUIClosedSignal
 
 // MainMenu → Dungeon 튜토리얼: 카메라 하강 완료 2초 뒤 스튜디오 로고 연출을 재생하라는 신호
 public struct StudioLogoRevealSignal { }
+
+// MainMenu → Dungeon 튜토리얼: 스튜디오 로고 UI 연출이 끝났음을 알리는 신호(캐릭터 하차 트리거)
+public struct CompanyLogoProductionCompletedSignal { }

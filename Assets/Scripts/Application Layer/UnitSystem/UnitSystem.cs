@@ -61,6 +61,8 @@ public class UnitSystem
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.Subscribe<ActivateCharacterSignal>(ActivateCharacter);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
+        signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -80,6 +82,8 @@ public class UnitSystem
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.UnSubscribe<ActivateCharacterSignal>(ActivateCharacter);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
+        signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
     }
 
     private void BindEvents()
@@ -326,6 +330,25 @@ public class UnitSystem
         if (_signal.isPlayerKilled)
         {
             unitLogicManager.SourceOfStaminaRecover();
+        }
+    }
+
+    // MainMenu → Dungeon 튜토리얼: 벌목/이관 퀘스트를 진행하는 동안(차량이 아직 상호작용 불가라
+    // 탈출 수단이 없는 상태)에는 피로도가 21% 아래로는 떨어지지 않게 막아둔다.
+    private void TutorialStepStarted(TutorialStepStartedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.CutTree)
+        {
+            unitLogicManager.SetMinStaminaPercent(21f);
+        }
+    }
+
+    // 원목 이관 퀘스트가 끝나 차량 탑승이 가능해지면, 바닥값을 19%로 낮춰 다시 내려갈 수 있게 한다.
+    private void TutorialStepCompleted(TutorialStepCompletedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.FillOffroadContainer)
+        {
+            unitLogicManager.SetMinStaminaPercent(19f);
         }
     }
 }

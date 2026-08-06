@@ -36,6 +36,7 @@ public class GameInstaller : MonoBehaviour
 
     private SkillSystem skillSystem;
     private GameSystem gameSystem;
+    private TutorialSystem tutorialSystem;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager, SaveManager _saveManager)
     {
@@ -45,6 +46,7 @@ public class GameInstaller : MonoBehaviour
         signalHub = new SignalHub();
         skillSystem = new SkillSystem();
         gameSystem = new GameSystem();
+        tutorialSystem = new TutorialSystem();
 
         inputManager = _inputManager;
         bootStrapProvider = _bootStrapProvider;
@@ -102,6 +104,7 @@ public class GameInstaller : MonoBehaviour
         unitSystem.Initialize(signalHub, unitSpawner, unitLogicManager, inventoryManager, offroadContainer, inDungeonSystem.inDungeonResultManager,
         environmentSystem);
         skillSystem.Initialize(signalHub, skillManager, skillDispatcher);
+        tutorialSystem.Initialize(signalHub, inventoryManager);
 
         _saveManager.Initialize(signalHub, skillSystem, inventoryManager, townSystem.logProcessingManager,
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager, offroadContainer,
@@ -157,6 +160,7 @@ public class GameInstaller : MonoBehaviour
         skillDispatcher.Release();
         saveManager.Release();
         gameSystem.Release();
+        tutorialSystem.Release();
 
         ReleaseEvents();
         Destroy(gameObject);
