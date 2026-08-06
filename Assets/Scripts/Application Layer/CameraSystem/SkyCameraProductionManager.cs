@@ -113,6 +113,7 @@ public class SkyCameraProductionManager : MonoBehaviour
             Vector3 targetRollbackPos = cameraStartPos;
 
             // 원래 위치(캐릭터 위치 + 오프셋 잔여분)로 더미 타겟 복원 및 복원 완료 시 원래 타겟팅 재연결
+            Sound.FadeOutBGM(rollbackDuration * 0.5f);
             Sequence seq = DOTween.Sequence();
             seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, rollbackDuration));
             seq.Append(dummyTarget.DOMove(targetRollbackPos, rollbackDuration));
@@ -255,6 +256,7 @@ public class SkyCameraProductionManager : MonoBehaviour
         virtualCamera.transform.position = startPos;
         virtualCamera.ForceCameraPosition(startPos, virtualCamera.transform.rotation);
 
+        Sound.FadeOutBGM(rollbackDuration * 0.5f);
         Sound.SetProduction3DVolumeFactor(0f);
         Sequence seq = DOTween.Sequence();
         seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, rollbackDuration));

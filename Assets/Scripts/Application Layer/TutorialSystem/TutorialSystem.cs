@@ -33,6 +33,7 @@ public class TutorialSystem
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
     }
 
     private void UnSubscribeSignals()
@@ -41,6 +42,7 @@ public class TutorialSystem
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
+        signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
     }
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
@@ -84,7 +86,15 @@ public class TutorialSystem
             return;
 
         CompleteStep();
-        StartStep(TutorialStep.GoHomeBeforeExhausted);
+    }
+
+    private void TutorialStaminaReachedFloor(TutorialStaminaReachedFloorSignal _signal)
+    {
+        // FillOffroadContainer 퀘스트가 완료된 이후에 피로도가 19%에 도달했을 때 마지막 퀘스트를 시작한다.
+        if (bStepActive == false && currentStep == TutorialStep.FillOffroadContainer)
+        {
+            StartStep(TutorialStep.GoHomeBeforeExhausted);
+        }
     }
 
     private void StartStep(TutorialStep _step)
