@@ -1,0 +1,227 @@
+using System;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using TMPro;
+using DG.Tweening;
+using PresentationLayer.UISystem;
+
+public class HUD_PopupNav_DemoNotice : MonoBehaviour
+{
+    [Header("External Links")]
+    [Tooltip("Steam 상점 페이지 / 찜하기 URL")]
+    [SerializeField] private string steamWishlistUrl = "https://store.steampowered.com/app/YOUR_APP_ID/";
+    [Tooltip("공식 디스코드 커뮤니티 URL")]
+    [SerializeField] private string discordCommunityUrl = "https://discord.gg/your_invite_link";
+
+    [Header("Demo Notice UI References")]
+    [Tooltip("데모 안내 오버레이 루트 오브젝트 (Dim 및 배너 포함)")]
+    [SerializeField] private GameObject demoNoticeOverlay;
+    [Tooltip("데모 안내 전체 화면 Dim 캔버스 그룹")]
+    [SerializeField] private CanvasGroup demoDimCanvasGroup;
+    [Tooltip("Title DimBG 스타일 좌우 펼쳐짐 띠 배너")]
+    [SerializeField] private RectTransform demoBandTransform;
+    [Tooltip("데모 안내 타이틀 텍스트")]
+    [SerializeField] private TextMeshProUGUI demoTitleText;
+    [Tooltip("데모 안내 설명 텍스트 (통합 줄바꿈 텍스트)")]
+    [SerializeField] private TextMeshProUGUI demoDescText;
+    [Tooltip("데모 안내 타이틀 스타일 애니메이터")]
+    [SerializeField] private TMPInlineStyleAnimator demoTitleAnimator;
+    [Tooltip("데모 안내 설명 스타일 애니메이터")]
+    [SerializeField] private TMPInlineStyleAnimator demoDescAnimator;
+    [Tooltip("스팀 찜하기 외부 링크 버튼")]
+    [SerializeField] private UI_ExternalLinkButton steamWishlistBtn;
+    [Tooltip("디스코드 외부 링크 버튼")]
+    [SerializeField] private UI_ExternalLinkButton discordBtn;
+
+    [Header("Demo Notice Animation Settings")]
+    [Tooltip("DimBG 알파 페이드 인 연출 시간")]
+    [SerializeField] private float dimFadeDuration = 0.2f;
+    [Tooltip("DimBG 알파 페이드 인 이즈(Ease)")]
+    [SerializeField] private Ease dimFadeEase = Ease.Linear;
+    [Tooltip("상호작용 패널/밴드 쫀득한 펴짐 연출 시간")]
+    [SerializeField] private float panelScaleDuration = 0.3f;
+    [Tooltip("펼쳐지는 연출 이즈(Ease)")]
+    [SerializeField] private Ease titleBandEase = Ease.OutBack;
+    [Tooltip("바운스(반동) 강도 (낮을수록 약함, 기본 1.0 / DOTween 기본 1.7)")]
+    [SerializeField] private float titleBandOvershoot = 1.0f;
+
+    // 내부 의존성 및 상태
+    private HUD_PopupNav_Main mainController;
+    private LocalizationManager localizationManager;
+    private bool isDemoNoticeShowing = false;
+    private Tween demoNoticeTween;
+
+    public bool IsDemoNoticeShowing => isDemoNoticeShowing;
+
+    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager)
+    {
+        mainController = _mainController;
+        localizationManager = _localizationManager;
+
+        ResetNotice();
+    }
+
+
+
+    public void ShowDemoNoticeOverlay(MapType _restrictedMapType = MapType.None)
+    {
+        if (null == demoNoticeOverlay)
+        {
+            Debug.LogWarning("[HUD_PopupNav_DemoNotice] Demo notice overlay is not assigned!");
+            return;
+        }
+
+        isDemoNoticeShowing = true;
+        demoNoticeOverlay.SetActive(true);
+
+        // 텍스트 로컬라이징 적용 (JSON ID 14)
+        if (null != localizationManager)
+        {
+            const int demoJsonId = 14;
+            if (null != demoTitleText)
+            {
+                string _title = localizationManager.GetText(demoJsonId, 1);
+                if (false == string.IsNullOrEmpty(_title))
+                {
+                    demoTitleText.text = _title;
+                }
+            }
+
+            if (null != demoDescText)
+            {
+                string _desc = localizationManager.GetText(demoJsonId, 2);
+                if (false == string.IsNullOrEmpty(_desc))
+                {
+                    demoDescText.text = _desc;
+                }
+            }
+        }
+
+        // URL 동적 주입
+        if (null != steamWishlistBtn && false == string.IsNullOrEmpty(steamWishlistUrl))
+        {
+            steamWishlistBtn.SetUrl(steamWishlistUrl);
+        }
+        if (null != discordBtn && false == string.IsNullOrEmpty(discordCommunityUrl))
+        {
+            discordBtn.SetUrl(discordCommunityUrl);
+        }
+
+        // DOTween 애니메이션: Title DimBG 연출 동일 적용
+        if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
+        {
+            demoNoticeTween.Kill();
+            demoNoticeTween = null;
+        }
+
+        Sequence _seq = DOTween.Sequence();
+
+        if (null != demoDimCanvasGroup)
+        {
+            demoDimCanvasGroup.alpha = 0f;
+            demoDimCanvasGroup.blocksRaycasts = true;
+            _seq.Join(demoDimCanvasGroup.DOFade(1f, dimFadeDuration).SetEase(dimFadeEase));
+        }
+
+        if (null != demoBandTransform)
+        {
+            demoBandTransform.localScale = new Vector3(0f, 1f, 1f);
+            _seq.Join(demoBandTransform.DOScaleX(1f, panelScaleDuration).SetEase(titleBandEase, titleBandOvershoot));
+        }
+
+        _seq.OnComplete(HandleRevealAnimationComplete);
+
+        demoNoticeTween = _seq;
+    }
+
+    private void HandleRevealAnimationComplete()
+    {
+        if (null != demoTitleAnimator)
+        {
+            demoTitleAnimator.PlayRevealBounce();
+        }
+        if (null != demoDescAnimator)
+        {
+            demoDescAnimator.PlayRevealBounce();
+        }
+    }
+
+    public void HideDemoNoticeOverlay()
+    {
+        if (null == demoNoticeOverlay || false == demoNoticeOverlay.activeSelf)
+        {
+            return;
+        }
+
+        if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
+        {
+            demoNoticeTween.Kill();
+            demoNoticeTween = null;
+        }
+
+        Sequence _seq = DOTween.Sequence();
+
+        if (null != demoBandTransform)
+        {
+            _seq.Join(demoBandTransform.DOScaleX(0f, 0.2f).SetEase(Ease.InBack));
+        }
+
+        if (null != demoDimCanvasGroup)
+        {
+            _seq.Join(demoDimCanvasGroup.DOFade(0f, 0.2f).SetEase(Ease.Linear));
+        }
+
+        _seq.OnComplete(HandleHideAnimationComplete);
+
+        demoNoticeTween = _seq;
+    }
+
+    private void HandleHideAnimationComplete()
+    {
+        if (null != demoDimCanvasGroup)
+        {
+            demoDimCanvasGroup.blocksRaycasts = false;
+        }
+        if (null != demoNoticeOverlay)
+        {
+            demoNoticeOverlay.SetActive(false);
+        }
+        isDemoNoticeShowing = false;
+
+        // 메인 컨트롤러에 닫힘 알림 전달
+        if (null != mainController)
+        {
+            mainController.HandleDemoNoticeClosed();
+        }
+    }
+
+    public void ResetNotice()
+    {
+        KillTweens();
+
+        if (null != demoNoticeOverlay)
+        {
+            demoNoticeOverlay.SetActive(false);
+        }
+        if (null != demoDimCanvasGroup)
+        {
+            demoDimCanvasGroup.blocksRaycasts = false;
+        }
+        isDemoNoticeShowing = false;
+    }
+
+    public void KillTweens()
+    {
+        if (null != demoNoticeTween && true == demoNoticeTween.IsActive())
+        {
+            demoNoticeTween.Kill();
+            demoNoticeTween = null;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        KillTweens();
+    }
+}
