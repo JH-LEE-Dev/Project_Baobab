@@ -48,6 +48,10 @@ public class InDungeonSystem : MonoBehaviour
     private bool bTutorialRideExitPending;
     private Coroutine tutorialRideExitCoroutine;
 
+    // MainMenu → Dungeon 튜토리얼: 피로도가 바닥값(19.1%)에 닿는지 감시하는 코루틴. 이번 원정 안에서만
+    // 유효하므로 마을에 도착하면(TownStarted) 중단한다.
+    private Coroutine waitStaminaFloorCoroutine;
+
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, IInventoryChecker _inventoryChecker,
     InputManager _inputManager, IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager,
     InDungeonResultManager _inDungeonResultManager)
@@ -612,10 +616,10 @@ public class InDungeonSystem : MonoBehaviour
                 // (OffroadContainer 상호작용은 다음 퀘스트 UI로 트랜지션이 완전히 끝난 후 TutorialQuestTransitionCompleted 에서 켠다)
                 break;
             case TutorialStep.FillOffroadContainer:
-                // 튜토리얼 전용: 해당 퀘스트가 끝나면 피로도 바닥값이 19%로 낮아지는데, 
+                // 튜토리얼 전용: 해당 퀘스트가 끝나면 피로도 바닥값이 19%로 낮아지는데,
                 // 실제로 19%에 도달할 때 다음 퀘스트를 띄워주기 위해 여기서 체크를 시작한다.
                 // (차량 상호작용은 퀘스트 UI가 완전히 사라진 후 TutorialQuestHideCompleted 에서 켠다)
-                StartCoroutine(WaitUntilStaminaReachedFloor());
+                StartWaitUntilStaminaReachedFloor();
                 break;
         }
     }
@@ -636,6 +640,22 @@ public class InDungeonSystem : MonoBehaviour
         }
     }
 
+    private void StartWaitUntilStaminaReachedFloor()
+    {
+        StopWaitUntilStaminaReachedFloor();
+
+        waitStaminaFloorCoroutine = StartCoroutine(WaitUntilStaminaReachedFloor());
+    }
+
+    private void StopWaitUntilStaminaReachedFloor()
+    {
+        if (waitStaminaFloorCoroutine == null)
+            return;
+
+        StopCoroutine(waitStaminaFloorCoroutine);
+        waitStaminaFloorCoroutine = null;
+    }
+
     private IEnumerator WaitUntilStaminaReachedFloor()
     {
         if (character != null && character.pHealthComponent != null)
@@ -646,7 +666,9 @@ public class InDungeonSystem : MonoBehaviour
                 yield return null;
             }
         }
-        
+
+        waitStaminaFloorCoroutine = null;
+
         signalHub.Publish(new TutorialStaminaReachedFloorSignal());
     }
 
@@ -654,6 +676,11 @@ public class InDungeonSystem : MonoBehaviour
     private void TownStarted(TownStartedSignal _signal)
     {
         inDungeonObjectManager.RefillSporePotionCharge();
+
+        // 피로도 바닥값 감시는 이번 원정 안에서만 의미가 있다. 플레이어가 바닥값에 닿기 전에 스스로
+        // 귀환하면(GoHomeBeforeExhausted 스킵) 마을 진입 시 StaminaReset()으로 피로도가 최대치로
+        // 돌아가 루프가 영원히 끝나지 않으므로, 여기서 확실히 정리한다.
+        StopWaitUntilStaminaReachedFloor();
     }
 
     private void CharacterRideEnd()

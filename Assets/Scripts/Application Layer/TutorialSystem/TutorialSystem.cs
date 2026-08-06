@@ -14,6 +14,11 @@ public class TutorialSystem
     // 인벤토리가 비는 것만으로는 "컨테이너에 넣어서 비운 것"인지 구분할 수 없어(버리기 등) 함께 확인한다.
     private bool bContainerTransferStarted;
 
+    // UpgradeAxe 완료 ~ 마지막 스텝(StartNewLogging) 시작 사이에 이미 마을 차량에 탑승했는지.
+    // 차량 잠금은 UpgradeAxe 완료 즉시 풀리는 반면 마지막 스텝은 안내 UI 퇴장 연출이 끝나야 시작되므로,
+    // 그 빈틈에 들어온 탑승을 놓치지 않기 위해 기억해둔다.
+    private bool bTownVehicleActivatedBeforeLastStep;
+
     public void Initialize(SignalHub _signalHub, IInventory _characterInventory)
     {
         signalHub = _signalHub;
@@ -181,6 +186,13 @@ public class TutorialSystem
         if (bStepActive == false && currentStep == TutorialStep.UpgradeAxe && _signal.step == TutorialStep.UpgradeAxe)
         {
             StartStep(TutorialStep.StartNewLogging);
+
+            // 연출이 흐르는 동안 이미 차량에 탑승했다면 조건은 이미 만족된 것이므로 곧바로 완료 처리한다.
+            if (bTownVehicleActivatedBeforeLastStep)
+            {
+                bTownVehicleActivatedBeforeLastStep = false;
+                CompleteStep();
+            }
         }
     }
 
@@ -190,6 +202,15 @@ public class TutorialSystem
         if (bStepActive && currentStep == TutorialStep.StartNewLogging)
         {
             CompleteStep();
+            return;
+        }
+
+        // UpgradeAxe가 완료되면 차량 잠금은 그 즉시 풀리지만, 마지막 스텝은 안내 UI가 사라지는 연출이
+        // 끝난 뒤에야 시작된다. 그 사이(약 1.9초)에 탑승하면 위 조건에 걸리지 않아 스텝이 영영 완료되지
+        // 않으므로, 여기서 기억해뒀다가 스텝이 시작될 때 즉시 완료시킨다.
+        if (bStepActive == false && currentStep == TutorialStep.UpgradeAxe)
+        {
+            bTownVehicleActivatedBeforeLastStep = true;
         }
     }
 
