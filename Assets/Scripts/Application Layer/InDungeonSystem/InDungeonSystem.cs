@@ -686,10 +686,6 @@ public class InDungeonSystem : MonoBehaviour
         {
             signalHub.Publish(new ActivateCharacterSignal());
         }
-        else
-        {
-            signalHub.Publish(new ReturnToTownCameraDownEndedSignal());
-        }
 
         StartCoroutine(PopupUIGoUPCoroutine());
 
@@ -719,6 +715,11 @@ public class InDungeonSystem : MonoBehaviour
             ActivatePortalEvent?.Invoke();
 
             inputManager.PauseInteractKey(false);
+
+            // 던전→마을 귀환의 실제 완료 시점(카메라 하강 연출 종료 + 조작 가능). TownSystem 쪽에도 동일한
+            // 신호 발행 코드가 있지만 그쪽은 bCurrentlyTownScene이 이미 true라 이 경로에서는 호출되지 않으므로,
+            // 실제로 이 흐름을 타는 InDungeonSystem 쪽에서 발행해야 튜토리얼의 PutItemsInLogContainer 퀘스트가 시작된다.
+            signalHub.Publish(new ReturnToTownCameraDownEndedSignal());
         }
     }
 

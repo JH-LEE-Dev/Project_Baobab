@@ -40,6 +40,8 @@ public class TutorialSystem
         signalHub.Subscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.Subscribe<TownOffroadVehicleActivatedSignal>(TownOffroadVehicleActivated);
+        signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -55,6 +57,8 @@ public class TutorialSystem
         signalHub.UnSubscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.UnSubscribe<TownOffroadVehicleActivatedSignal>(TownOffroadVehicleActivated);
+        signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
@@ -119,7 +123,13 @@ public class TutorialSystem
 
     private void ReturnToTownCameraDownEnded(ReturnToTownCameraDownEndedSignal _signal)
     {
-        if (bStepActive == false && currentStep == TutorialStep.GoHomeBeforeExhausted)
+        // GoHomeBeforeExhausted는 피로도가 바닥값에 도달하기 전에 플레이어가 스스로 차량을 타고 귀환하면
+        // 아예 시작되지 않고 건너뛰어질 수 있는 퀘스트다(차량 상호작용은 FillOffroadContainer 완료와 함께
+        // 이미 열려있어, 피로도와 무관하게 그 즉시 탈 수 있다). 이 경우 currentStep은 FillOffroadContainer에
+        // 머문 채로 타운에 도착한다. 마을 쪽 퀘스트 체인(PutItemsInLogContainer 이후)은 이 던전 퀘스트의
+        // 완료 여부에 영향을 받아서는 안 되므로, 두 경우(정상 완료/스킵) 모두 여기서 다음 단계로 넘긴다.
+        if (bStepActive == false &&
+            (currentStep == TutorialStep.GoHomeBeforeExhausted || currentStep == TutorialStep.FillOffroadContainer))
         {
             StartStep(TutorialStep.PutItemsInLogContainer);
         }
@@ -158,8 +168,28 @@ public class TutorialSystem
         {
             if (_signal.commandType == SkillCommandType.AxeDamage)
             {
+                // 마지막 스텝(StartNewLogging)은 여기서 곧바로 시작하지 않는다. "도끼를 강화하세요"
+                // 안내 UI가 사라지는 연출이 실제로 끝난 뒤(TutorialQuestHideCompletedSignal)에 시작한다.
                 CompleteStep();
             }
+        }
+    }
+
+    // UpgradeAxe의 완료 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 시점에 마지막 스텝을 시작한다.
+    private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
+    {
+        if (bStepActive == false && currentStep == TutorialStep.UpgradeAxe && _signal.step == TutorialStep.UpgradeAxe)
+        {
+            StartStep(TutorialStep.StartNewLogging);
+        }
+    }
+
+    // 마지막 스텝: 마을에서 OffroadVehicle에 상호작용(다시 던전으로 향함)하면 완료된다.
+    private void TownOffroadVehicleActivated(TownOffroadVehicleActivatedSignal _signal)
+    {
+        if (bStepActive && currentStep == TutorialStep.StartNewLogging)
+        {
+            CompleteStep();
         }
     }
 

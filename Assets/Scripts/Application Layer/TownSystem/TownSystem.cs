@@ -262,6 +262,8 @@ public class TownSystem : MonoBehaviour
     {
         townProductionManager.StartCharacterRide();
 
+        signalHub.Publish(new TownOffroadVehicleActivatedSignal());
+
         // 컨테이너/차량 콜라이더 비활성화는 DungeonSelected()에서 NPC 일시정지(PauseAllNPCs)와
         // 같은 시점에 함께 처리한다. 여기서 미리 꺼두면 "탑승~던전 선택" 대기 구간 동안 운반 NPC의
         // IsWithinInteractRadius(col.OverlapPoint 기반)가 항상 false로 판정되어, 감지 반경에서
@@ -526,6 +528,7 @@ public class TownSystem : MonoBehaviour
                 townObjectManager.offroadVehicle.col.enabled = true;
 
             inputManager.PauseInteractKey(false);
+            signalHub.Publish(new ReturnToTownCameraDownEndedSignal());
         }
     }
 

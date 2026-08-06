@@ -115,6 +115,7 @@ public class UIView_Result : UIView
     private IInventory offroadContainer;
     private IDungeonResultProvider dungeonResultProvider;
     private LocalizationManager localizationManager;
+    private bool bIsTutorial;
 
     [Header("UI References")]
     [SerializeField] private Button goHomeButton;
@@ -219,6 +220,15 @@ public class UIView_Result : UIView
     {
         offroadContainer = _offroadContainer;
         dungeonResultProvider = _dungeonResultProvider;
+    }
+
+    /// <summary>
+    /// 이번에 열릴 결과창이 튜토리얼 퀘스트 체인 도중(GoHomeBeforeExhausted 완료 ~ UpgradeAxe 완료 전)인지 알려준다.
+    /// OpenResultUI()보다 먼저 호출되어야 하며, 튜토리얼 중에는 Retry를 막는 등의 판단에 쓰인다.
+    /// </summary>
+    public void SetTutorialState(bool _bIsTutorial)
+    {
+        bIsTutorial = _bIsTutorial;
     }
 
     public void OnGoHomeButtonClicked()

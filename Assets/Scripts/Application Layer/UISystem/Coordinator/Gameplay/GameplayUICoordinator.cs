@@ -30,6 +30,10 @@ public class GameplayUICoordinator
     // 인트로 종료를 알리기 위한 예약 플래그(일반 던전/타운 전환의 HUD 복귀와 구분한다).
     private bool bWaitingIntroProductionEnd = false;
 
+    // 튜토리얼 퀘스트 체인이 진행 중인 동안(첫 스텝 시작 ~ 마지막 스텝(UpgradeAxe) 완료)만 true.
+    // ResultUI가 튜토리얼 중 Retry를 막는 등 자체 판단을 하도록 SetTutorialState()로 넘겨준다.
+    private bool bIsTutorialActive = false;
+
     private MapType mapType;
     private ForestType forestType;
 
@@ -633,7 +637,10 @@ public class GameplayUICoordinator
 
     private void PopupUIUp(PopupUIUpSignal _popupUIUpSignal)
     {
-        hudUI.HUDGoUp(HUDGoUpCompleted);
+        // bWaitingIntroProductionEnd는 MainMenu → Dungeon 튜토리얼의 스튜디오 로고 연출이 끝난 뒤부터
+        // 이번 HUDGoUp의 완료 콜백(HUDGoUpCompleted)에서 꺼질 때까지만 true이므로, 튜토리얼 최초 HUD
+        // 노출인지 여기서 정확히 판별할 수 있다. 이 진입에서는 던전 상태 배너를 띄우지 않는다.
+        hudUI.HUDGoUp(HUDGoUpCompleted, bWaitingIntroProductionEnd);
         popUpUI.PopupGoUp();
         worldPopupUI.WorldPopupGoUp();
     }
@@ -653,6 +660,8 @@ public class GameplayUICoordinator
 
     private void TutorialStepStarted(TutorialStepStartedSignal _signal)
     {
+        bIsTutorialActive = true;
+
         overUIPopupUI.TutorialStepStarted(_signal.step);
     }
 
@@ -663,6 +672,12 @@ public class GameplayUICoordinator
         if (_signal.step == TutorialStep.GoHomeBeforeExhausted || _signal.step == TutorialStep.FillOffroadContainer)
         {
             bIsTutorialQuestHiding = true;
+        }
+
+        // 튜토리얼 마지막 스텝(StartNewLogging)이 끝나면 이후 결과창은 더 이상 튜토리얼 상태로 취급하지 않는다.
+        if (_signal.step == TutorialStep.StartNewLogging)
+        {
+            bIsTutorialActive = false;
         }
     }
 
@@ -675,11 +690,16 @@ public class GameplayUICoordinator
             if (bPendingGameEnd)
             {
                 bPendingGameEnd = false;
+                resultUI.SetTutorialState(bIsTutorialActive);
                 resultUI.OpenResultUI();
             }
         }
-        else if (_step == TutorialStep.FillOffroadContainer)
+        else if (_step == TutorialStep.FillOffroadContainer || _step == TutorialStep.UpgradeAxe)
         {
+            // FillOffroadContainer는 InDungeonSystem이 이 신호로 차량 상호작용 잠금을 풀고,
+            // UpgradeAxe는 TutorialSystem이 이 신호로 다음(마지막) 스텝인 StartNewLogging을 시작한다.
+            // 두 경우 모두 "완료 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 뒤"에 다음 로직이
+            // 이어져야 하므로 스텝 완료 시점이 아니라 이 콜백에서 발행한다.
             signalHub.Publish(new TutorialQuestHideCompletedSignal(_step));
         }
     }
@@ -705,6 +725,7 @@ public class GameplayUICoordinator
         }
         else
         {
+            resultUI.SetTutorialState(bIsTutorialActive);
             resultUI.OpenResultUI();
         }
     }

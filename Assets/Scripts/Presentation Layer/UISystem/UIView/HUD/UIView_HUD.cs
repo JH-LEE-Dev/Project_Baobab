@@ -280,7 +280,9 @@ public class UIView_HUD : UIView
     }
 
     /// <param name="_onCompleted">HUD가 완전히 다 올라온 시점에 호출된다. 모션이 없으면 즉시 호출된다.</param>
-    public void HUDGoUp(Action _onCompleted = null)
+    /// <param name="_bSuppressDungeonStateBanner">MainMenu → Dungeon 튜토리얼의 최초 HUD 노출처럼, 던전 상태 배너(HUD_Message)를
+    /// 띄우면 안 되는 경우 true로 넘긴다.</param>
+    public void HUDGoUp(Action _onCompleted = null, bool _bSuppressDungeonStateBanner = false)
     {
         if (null != omp)
         {
@@ -295,7 +297,9 @@ public class UIView_HUD : UIView
 
         if (MapType.Town != currentMapType)
         {
-            hudMessage?.Play();
+            if (false == _bSuppressDungeonStateBanner)
+                hudMessage?.Play();
+
             hudDirIndicator?.ShowAfterDelay(dirIndicatorShowDelay);
         }
     }
