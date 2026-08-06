@@ -85,6 +85,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     // 내부 상태
     private Action onClickAction;
+    private Action onPressedAction;
     private Action manualDisappearCallback;
     private Vector2 textOriginalPos;
     private Vector3 dotOriginalRot;
@@ -200,9 +201,10 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     }
 
     // 퍼블릭 초기화 및 제어 메서드
-    public void Initialize(Action _onClickCallback)
+    public void Initialize(Action _onClickCallback, Action _onPressedCallback = null)
     {
         onClickAction = _onClickCallback;
+        onPressedAction = _onPressedCallback;
 
         if (null == buttonImage)
         {
@@ -239,6 +241,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     public void Release()
     {
         onClickAction = null;
+        onPressedAction = null;
         KillAllTweens();
     }
 
@@ -325,6 +328,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         isHovered = true;
         if (true == isClicked || true == isDisappearing || true == isAppearing || true == isMaintained) return;
 
+        Sound.PlayUI(SoundID.MainButtonHover);
         PlayHoverMotion();
     }
 
@@ -396,6 +400,9 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             _disabledClickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
             return;
         }
+
+        Sound.PlayUI(SoundID.MainClick);
+        onPressedAction?.Invoke();
 
         float _maxDelay = clickDuration;
         bool _hasDisappearTargets = false;

@@ -156,6 +156,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             inputManager.PauseESCKey(false);
             mainMenuInstaller.PlayButtonsRevealAnimation();
         }
+
+        Sound.PlayBGM(SoundID.MainBGM);
     }
 
     public void GoToMainMenuScene()

@@ -474,10 +474,22 @@ public class InDungeonSystem : MonoBehaviour
     {
         bCharacterActivated = true;
 
-        // 캐릭터가 실제로 움직일 수 있게 되는 시점에 스테이지별 BGM을 재생한다.
-        if (selectedForestType == ForestType.WideGreenForest_1)
+        // 캐릭터가 실제로 움직일 수 있게 되는 시점에 대지역별 BGM을 재생한다.
+        // 하위 ForestType(_1/_2/_3)과 무관하게 같은 대지역은 같은 BGM을 공유한다.
+        switch (currentMapType)
         {
-            Sound.PlayBGM(SoundID.WideGreenForest1BGM);
+            case MapType.WideGreenForest:
+                Sound.PlayBGM(SoundID.Stage1BGM);
+                break;
+            case MapType.FluffySporeForest:
+                Sound.PlayBGM(SoundID.Stage2BGM);
+                break;
+            case MapType.StarrootForest:
+                Sound.PlayBGM(SoundID.Stage3BGM);
+                break;
+            case MapType.MagmaForest:
+                Sound.PlayBGM(SoundID.Stage4BGM);
+                break;
         }
     }
 
