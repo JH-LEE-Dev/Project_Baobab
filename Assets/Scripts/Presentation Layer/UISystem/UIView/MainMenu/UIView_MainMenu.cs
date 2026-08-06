@@ -257,6 +257,9 @@ public class UIView_MainMenu : UIView
     /// </summary>
     public void OnPressAnyKeyCompleted()
     {
+        Sound.PlayUI(SoundID.MainClick);
+        Sound.PlayUI(SoundID.MainGameStart);
+
         if (null != pressAnyKeyUI) pressAnyKeyUI.Hide();
         
         ShowDimmer(); // 로고 애니메이션(또는 메인메뉴) 시작 시 딤 처리 실행

@@ -19,6 +19,19 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
     private CustomSortable customSortable;
     private float topgradeAssessmentChance = 0f;
+    private MapType mapType;
+
+    // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속
+    // 평가가 진행되는 상태) 평가 완료음도 재생하지 않는다.
+    public void SetMapType(MapType _mapType)
+    {
+        mapType = _mapType;
+    }
+
+    private float GetSoundVolume()
+    {
+        return mapType == MapType.Town ? 1f : 0f;
+    }
 
     public void Initialize()
     {
@@ -27,8 +40,8 @@ public class LogEvaluator : MonoBehaviour, ILogEvaluatorCH
 
     public void EvaluateLog(ILogItemData _itemData)
     {
-        Sound.Play(SoundID.ConvayerComplete, transform.position);
-        Sound.Play(SoundID.ConvayerPrize, transform.position);
+        Sound.Play(SoundID.ConvayerComplete, transform.position, GetSoundVolume());
+        Sound.Play(SoundID.ConvayerPrize, transform.position, GetSoundVolume());
 
         LogItemValueData valueData = logItemValueDataBase.Get(_itemData.treeType);
         if (valueData == null)

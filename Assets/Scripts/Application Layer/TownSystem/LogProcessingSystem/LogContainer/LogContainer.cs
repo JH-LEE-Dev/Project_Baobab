@@ -127,9 +127,23 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
     public float itemTransferSpeedMul = 1f;
     private float globalSpeedMultiplier = 1f;
 
+    private MapType mapType;
+
     public void SetGlobalSpeedMultiplier(float _mul)
     {
         globalSpeedMultiplier = _mul;
+    }
+
+    // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속
+    // 납품이 진행되는 상태) 납품 사운드도 재생하지 않는다.
+    public void SetMapType(MapType _mapType)
+    {
+        mapType = _mapType;
+    }
+
+    private float GetSoundVolume()
+    {
+        return mapType == MapType.Town ? 1f : 0f;
     }
 
     public void Initialize(InputManager _inputManager, LogItemPoolingManager logItemPoolingManager)
@@ -292,7 +306,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 // 컨테이너에 연속으로 넣을수록 피치/볼륨이 1.0~1.5 범위에서 선형으로 올라간다.
                 float depositT = (currentDepositPitch - DEPOSIT_PITCH_MIN) / (DEPOSIT_PITCH_MAX - DEPOSIT_PITCH_MIN);
                 float depositVolumeMul = Mathf.Lerp(1f, depositVolumeBoostMax, depositT);
-                Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul, false, currentDepositPitch);
+                Sound.Play(SoundID.GetItem, transform.position, depositVolumeMul * GetSoundVolume(), true, currentDepositPitch);
                 currentDepositPitch = Mathf.Clamp(currentDepositPitch + depositPitchStep, DEPOSIT_PITCH_MIN, DEPOSIT_PITCH_MAX);
 
                 logItemPoolManager.ReturnLogItem(item);
@@ -954,7 +968,7 @@ public class LogContainer : MonoBehaviour, IInventory, IContainerCH
                 }
 
                 slot.TakeOneItem();
-                Sound.PlayUI(SoundID.OutItem);
+                Sound.PlayUI(SoundID.OutItem, GetSoundVolume());
                 slotTransferredAny = true;
 
                 // 이 코루틴을 미래에 외부에서 취소하는 경로가 생기더라도(현재는 없음), 슬롯이 이번

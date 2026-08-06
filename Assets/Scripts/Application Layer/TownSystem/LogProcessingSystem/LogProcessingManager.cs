@@ -413,6 +413,8 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     public void SetMapType(MapType _mapType)
     {
         for (int i = 0; i < allLines.Count; i++) allLines[i].SetMapType(_mapType);
+        shopNPC?.SetMapType(_mapType);
+        logContainer?.SetMapType(_mapType);
     }
 
     private void ShopInteractStateChanged(bool _boolean)

@@ -528,9 +528,21 @@ public class InDungeonSystem : MonoBehaviour
 
         bDungeonBGMPlayed = true;
 
-        if (selectedForestType == ForestType.WideGreenForest_1)
+        // 하위 ForestType(_1/_2/_3)과 무관하게 같은 대지역은 같은 BGM을 공유한다.
+        switch (currentMapType)
         {
-            Sound.PlayBGM(SoundID.WideGreenForest1BGM);
+            case MapType.WideGreenForest:
+                Sound.PlayBGM(SoundID.Stage1BGM);
+                break;
+            case MapType.FluffySporeForest:
+                Sound.PlayBGM(SoundID.Stage2BGM);
+                break;
+            case MapType.StarrootForest:
+                Sound.PlayBGM(SoundID.Stage3BGM);
+                break;
+            case MapType.MagmaForest:
+                Sound.PlayBGM(SoundID.Stage4BGM);
+                break;
         }
     }
 
@@ -596,8 +608,25 @@ public class InDungeonSystem : MonoBehaviour
                 break;
             case TutorialStep.FillOffroadContainer:
                 inDungeonObjectManager.offroadVehicle?.SetCanTravel(true);
+                // 튜토리얼 전용: 해당 퀘스트가 끝나면 피로도 바닥값이 19%로 낮아지는데, 
+                // 실제로 19%에 도달할 때 다음 퀘스트를 띄워주기 위해 여기서 체크를 시작한다.
+                StartCoroutine(WaitUntilStaminaReachedFloor());
                 break;
         }
+    }
+
+    private IEnumerator WaitUntilStaminaReachedFloor()
+    {
+        if (character != null && character.pHealthComponent != null)
+        {
+            float targetStamina = character.pHealthComponent.GetMaxStamina() * 0.191f;
+            while (character.pHealthComponent.GetCurrentStamina() > targetStamina)
+            {
+                yield return null;
+            }
+        }
+        
+        signalHub.Publish(new TutorialStaminaReachedFloorSignal());
     }
 
     // "포자 포션" - 실제 Town 씬이 로드된 시점에 이번 원정에서 마시지 않았다면 충전한다.
