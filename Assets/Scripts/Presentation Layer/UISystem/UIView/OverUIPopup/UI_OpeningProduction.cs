@@ -59,11 +59,13 @@ public struct OpeningElementInfo
 
 public class UI_OpeningProduction : MonoBehaviour
 {
-    private const int OpeningLocalizationJsonId = 15;
+    [Header("Localization Settings")]
+    [SerializeField] private int localizationJsonId = 16;
 
     // 외부 의존성
     private LocalizationManager localizationManager;
     private Action onIntroCompleteCallback;
+    private Action cachedApplyLocalization;
 
     // 내부 의존성
     [SerializeField] private List<OpeningElementInfo> introSceneElements = new List<OpeningElementInfo>();
@@ -73,6 +75,16 @@ public class UI_OpeningProduction : MonoBehaviour
     public void Initialize(LocalizationManager _localizationManager = null)
     {
         localizationManager = _localizationManager;
+        if (null != localizationManager)
+        {
+            if (null == cachedApplyLocalization)
+            {
+                cachedApplyLocalization = ApplyLocalization;
+            }
+            localizationManager.OnLanguageChanged -= cachedApplyLocalization;
+            localizationManager.OnLanguageChanged += cachedApplyLocalization;
+        }
+
         CacheComponents();
         ApplyLocalization();
         SetAllActive(false);
@@ -364,7 +376,7 @@ public class UI_OpeningProduction : MonoBehaviour
                 continue;
             }
 
-            string localizedText = localizationManager.GetText(OpeningLocalizationJsonId, element.localizationEntryId);
+            string localizedText = localizationManager.GetText(localizationJsonId, element.localizationEntryId);
             if (!string.IsNullOrEmpty(localizedText))
             {
                 element.targetText.text = localizedText;
@@ -521,6 +533,10 @@ public class UI_OpeningProduction : MonoBehaviour
     private void OnDestroy()
     {
         KillActiveSequence();
+        if (null != localizationManager && null != cachedApplyLocalization)
+        {
+            localizationManager.OnLanguageChanged -= cachedApplyLocalization;
+        }
     }
 }
 
@@ -528,10 +544,12 @@ public class UI_OpeningProduction : MonoBehaviour
 [CustomEditor(typeof(UI_OpeningProduction))]
 public class UI_OpeningProductionEditor : Editor
 {
+    private SerializedProperty localizationJsonIdProp;
     private SerializedProperty introSceneElementsProp;
 
     private void OnEnable()
     {
+        localizationJsonIdProp = serializedObject.FindProperty("localizationJsonId");
         introSceneElementsProp = serializedObject.FindProperty("introSceneElements");
     }
 
@@ -541,7 +559,14 @@ public class UI_OpeningProductionEditor : Editor
 
         UI_OpeningProduction opening = (UI_OpeningProduction)target;
 
-        // 1. Duration Summary Box
+        // 1. Localization Settings
+        if (localizationJsonIdProp != null)
+        {
+            EditorGUILayout.Space(2);
+            EditorGUILayout.PropertyField(localizationJsonIdProp, new GUIContent("🌐 Localization Json ID"));
+        }
+
+        // 2. Duration Summary Box
         EditorGUILayout.Space(5);
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         EditorGUILayout.LabelField("🎬 [Intro Scene Duration (Read-Only)]", EditorStyles.boldLabel);
@@ -551,7 +576,7 @@ public class UI_OpeningProductionEditor : Editor
         EditorGUILayout.EndVertical();
         EditorGUILayout.Space(8);
 
-        // 2. Elements List
+        // 3. Elements List
         if (introSceneElementsProp != null)
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
