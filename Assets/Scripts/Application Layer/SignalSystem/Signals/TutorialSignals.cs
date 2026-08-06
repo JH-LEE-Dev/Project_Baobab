@@ -32,3 +32,21 @@ public struct TutorialStepCompletedSignal
 
 // 튜토리얼 전용: 피로도가 19% 바닥값에 도달했을 때 발생하는 신호
 public struct TutorialStaminaReachedFloorSignal { }
+
+public struct TutorialQuestHideCompletedSignal
+{
+    public TutorialStep step;
+    public TutorialQuestHideCompletedSignal(TutorialStep _step)
+    {
+        step = _step;
+    }
+}
+
+public struct TutorialQuestTransitionCompletedSignal
+{
+    public TutorialStep step;
+    public TutorialQuestTransitionCompletedSignal(TutorialStep _step)
+    {
+        step = _step;
+    }
+}

@@ -213,6 +213,9 @@ public class GameplayUICoordinator
 
         overUIPopupUI.TutorialQuestHideCompletedEvent -= TutorialQuestHideCompleted;
         overUIPopupUI.TutorialQuestHideCompletedEvent += TutorialQuestHideCompleted;
+
+        overUIPopupUI.TutorialQuestTransitionCompletedEvent -= TutorialQuestTransitionCompleted;
+        overUIPopupUI.TutorialQuestTransitionCompletedEvent += TutorialQuestTransitionCompleted;
     }
 
     private void ReleaseEvents()
@@ -236,6 +239,7 @@ public class GameplayUICoordinator
         warningUI.DeActivateWarningUIEvent -= DeActivateWarningUI;
         overUIPopupUI.CompanyLogoProductionCompletedEvent -= CompanyLogoProductionCompleted;
         overUIPopupUI.TutorialQuestHideCompletedEvent -= TutorialQuestHideCompleted;
+        overUIPopupUI.TutorialQuestTransitionCompletedEvent -= TutorialQuestTransitionCompleted;
     }
 
     public void Release()
@@ -656,20 +660,35 @@ public class GameplayUICoordinator
     {
         overUIPopupUI.TutorialStepCompleted(_signal.step);
 
-        if (_signal.step == TutorialStep.GoHomeBeforeExhausted)
+        if (_signal.step == TutorialStep.GoHomeBeforeExhausted || _signal.step == TutorialStep.FillOffroadContainer)
         {
             bIsTutorialQuestHiding = true;
         }
     }
 
-    private void TutorialQuestHideCompleted()
+    private void TutorialQuestHideCompleted(TutorialStep _step)
     {
         bIsTutorialQuestHiding = false;
 
-        if (bPendingGameEnd)
+        if (_step == TutorialStep.GoHomeBeforeExhausted)
         {
-            bPendingGameEnd = false;
-            resultUI.OpenResultUI();
+            if (bPendingGameEnd)
+            {
+                bPendingGameEnd = false;
+                resultUI.OpenResultUI();
+            }
+        }
+        else if (_step == TutorialStep.FillOffroadContainer)
+        {
+            signalHub.Publish(new TutorialQuestHideCompletedSignal(_step));
+        }
+    }
+
+    private void TutorialQuestTransitionCompleted(TutorialStep _step)
+    {
+        if (_step == TutorialStep.FillOffroadContainer)
+        {
+            signalHub.Publish(new TutorialQuestTransitionCompletedSignal(_step));
         }
     }
 

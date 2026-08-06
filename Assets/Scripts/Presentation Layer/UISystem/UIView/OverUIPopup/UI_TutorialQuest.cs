@@ -69,7 +69,8 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private TutorialStep currentStep;
     private bool bIsShowing = false;
-    public event Action HideCompletedEvent;
+    public event Action<TutorialStep> HideCompletedEvent;
+    public event Action<TutorialStep> StepTransitionCompletedEvent;
 
     private sealed class TutorialQuestBGPiece
     {
@@ -276,7 +277,7 @@ public class UI_TutorialQuest : MonoBehaviour
         {
             hideSequence = null;
             PrepareHiddenState();
-            HideCompletedEvent?.Invoke();
+            HideCompletedEvent?.Invoke(currentStep);
         });
     }
 
@@ -341,6 +342,7 @@ public class UI_TutorialQuest : MonoBehaviour
         stepTransitionSequence.OnComplete(() =>
         {
             stepTransitionSequence = null;
+            StepTransitionCompletedEvent?.Invoke(currentStep);
         });
     }
 
