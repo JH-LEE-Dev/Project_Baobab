@@ -10,6 +10,16 @@ public struct TownStartedSignal
 }
 
 public struct ContainerUpdatedSignal { }
+public struct ItemAddedToLogContainerSignal { }
+
+public struct ShopMoneyUpdatedSignal
+{
+    public int money;
+    public ShopMoneyUpdatedSignal(int _money)
+    {
+        money = _money;
+    }
+}
 
 public struct MoneyEarnedSignal
 {

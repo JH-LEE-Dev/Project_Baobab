@@ -1,5 +1,11 @@
-
-public struct SkillDispatchedSignal { }
+public struct SkillDispatchedSignal 
+{
+    public SkillCommandType commandType;
+    public SkillDispatchedSignal(SkillCommandType _commandType)
+    {
+        commandType = _commandType;
+    }
+}
 
 public struct PrestigeLevelIncreasedSignal
 {
