@@ -40,6 +40,8 @@ public enum SoundID
     MainClick = -1190731768,
     MainGameSelect = 774955818,
     MainGameStart = -910708774,
+    SkyDown = 1617231916,
+    SkyUP = -358144385,
     AxeBreakingEx = 1393049894,
     AxeBreaking = -197311369,
     AxeBreakingFinal = -43994528,

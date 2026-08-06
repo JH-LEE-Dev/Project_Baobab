@@ -496,7 +496,7 @@ public class AudioManager : MonoBehaviour
         return sourcePlayId[handle.sourceIndex] == handle.playId;
     }
 
-    private AudioHandle PlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride)
+    private AudioHandle PlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride = -1f)
     {
         AudioClip clip;
         float pitch;
