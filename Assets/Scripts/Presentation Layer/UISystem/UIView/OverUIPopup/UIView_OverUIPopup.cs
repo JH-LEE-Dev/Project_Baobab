@@ -5,6 +5,7 @@ public class UIView_OverUIPopup : UIView
 {
     // 이벤트
     public event Action CompanyLogoProductionCompletedEvent;
+    public event Action TutorialQuestHideCompletedEvent;
 
     // 내부 의존성
     [Header("Opening Production")]
@@ -24,7 +25,14 @@ public class UIView_OverUIPopup : UIView
         if (null != tutorialQuest)
         {
             tutorialQuest.Initialize(_ctx?.localizationManager);
+            tutorialQuest.HideCompletedEvent -= OnTutorialQuestHideCompleted;
+            tutorialQuest.HideCompletedEvent += OnTutorialQuestHideCompleted;
         }
+    }
+
+    private void OnTutorialQuestHideCompleted()
+    {
+        TutorialQuestHideCompletedEvent?.Invoke();
     }
 
     public override void SetupUI()
@@ -75,9 +83,11 @@ public class UIView_OverUIPopup : UIView
     {
         base.Release();
         CompanyLogoProductionCompletedEvent = null;
+        TutorialQuestHideCompletedEvent = null;
 
         if (null != tutorialQuest)
         {
+            tutorialQuest.HideCompletedEvent -= OnTutorialQuestHideCompleted;
             tutorialQuest.ResetQuest();
         }
     }
@@ -120,9 +130,11 @@ public class UIView_OverUIPopup : UIView
     {
         base.OnDestroy();
         CompanyLogoProductionCompletedEvent = null;
+        TutorialQuestHideCompletedEvent = null;
 
         if (null != tutorialQuest)
         {
+            tutorialQuest.HideCompletedEvent -= OnTutorialQuestHideCompleted;
             tutorialQuest.ResetQuest();
         }
     }

@@ -34,6 +34,7 @@ public class TutorialSystem
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
+        signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void UnSubscribeSignals()
@@ -43,6 +44,7 @@ public class TutorialSystem
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
+        signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
@@ -94,6 +96,14 @@ public class TutorialSystem
         if (bStepActive == false && currentStep == TutorialStep.FillOffroadContainer)
         {
             StartStep(TutorialStep.GoHomeBeforeExhausted);
+        }
+    }
+
+    private void CharacterRideStart(CharacterRideStartSignal _signal)
+    {
+        if (bStepActive && currentStep == TutorialStep.GoHomeBeforeExhausted)
+        {
+            CompleteStep();
         }
     }
 

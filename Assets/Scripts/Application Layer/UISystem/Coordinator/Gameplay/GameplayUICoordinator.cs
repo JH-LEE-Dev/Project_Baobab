@@ -23,6 +23,8 @@ public class GameplayUICoordinator
     private UIDepthController uiDepthController;
 
     private bool bInventoryOpened = false;
+    private bool bIsTutorialQuestHiding = false;
+    private bool bPendingGameEnd = false;
 
     // MainMenu → Dungeon 튜토리얼: 로고 연출이 끝난 뒤 처음으로 HUD가 다 올라오는 시점에만
     // 인트로 종료를 알리기 위한 예약 플래그(일반 던전/타운 전환의 HUD 복귀와 구분한다).
@@ -208,6 +210,9 @@ public class GameplayUICoordinator
 
         overUIPopupUI.CompanyLogoProductionCompletedEvent -= CompanyLogoProductionCompleted;
         overUIPopupUI.CompanyLogoProductionCompletedEvent += CompanyLogoProductionCompleted;
+
+        overUIPopupUI.TutorialQuestHideCompletedEvent -= TutorialQuestHideCompleted;
+        overUIPopupUI.TutorialQuestHideCompletedEvent += TutorialQuestHideCompleted;
     }
 
     private void ReleaseEvents()
@@ -230,6 +235,7 @@ public class GameplayUICoordinator
         resultUI.RetryButtonClickedEvent -= RetryGame;
         warningUI.DeActivateWarningUIEvent -= DeActivateWarningUI;
         overUIPopupUI.CompanyLogoProductionCompletedEvent -= CompanyLogoProductionCompleted;
+        overUIPopupUI.TutorialQuestHideCompletedEvent -= TutorialQuestHideCompleted;
     }
 
     public void Release()
@@ -448,6 +454,8 @@ public class GameplayUICoordinator
         worldPopupUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
 
         bInventoryOpened = false;
+        bIsTutorialQuestHiding = false;
+        bPendingGameEnd = false;
         popUpUI.Hide();
     }
 
@@ -467,6 +475,8 @@ public class GameplayUICoordinator
         resultUI.DungeonStarted();
 
         bInventoryOpened = false;
+        bIsTutorialQuestHiding = false;
+        bPendingGameEnd = false;
         popUpUI.Hide();
     }
 
@@ -645,6 +655,22 @@ public class GameplayUICoordinator
     private void TutorialStepCompleted(TutorialStepCompletedSignal _signal)
     {
         overUIPopupUI.TutorialStepCompleted(_signal.step);
+
+        if (_signal.step == TutorialStep.GoHomeBeforeExhausted)
+        {
+            bIsTutorialQuestHiding = true;
+        }
+    }
+
+    private void TutorialQuestHideCompleted()
+    {
+        bIsTutorialQuestHiding = false;
+
+        if (bPendingGameEnd)
+        {
+            bPendingGameEnd = false;
+            resultUI.OpenResultUI();
+        }
     }
 
     private void ProvideAccumulatedValueChangeEvent(ProvideSkillAccumulatedValueChangeSignal _signal)
@@ -654,7 +680,14 @@ public class GameplayUICoordinator
 
     private void GameEnd(GameEndSignal _gameEndSignal)
     {
-        resultUI.OpenResultUI();
+        if (bIsTutorialQuestHiding)
+        {
+            bPendingGameEnd = true;
+        }
+        else
+        {
+            resultUI.OpenResultUI();
+        }
     }
 
     private void RetryGame()

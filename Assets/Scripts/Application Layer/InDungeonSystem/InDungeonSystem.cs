@@ -480,6 +480,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Publish(new PopupUIDownSignal());
         inDungeonProductionManager.StartCharacterRide();
+        signalHub.Publish(new CharacterRideStartSignal());
 
         offroadContainer.col.enabled = false;
         if (inDungeonObjectManager.offroadVehicle != null)
