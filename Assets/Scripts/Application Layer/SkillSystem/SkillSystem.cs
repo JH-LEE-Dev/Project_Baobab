@@ -48,7 +48,7 @@ public class SkillSystem
     private void SkillDispatched(SkillDispatchInfo _skillDispatchInfo)
     {
         skillDispatcher.DispatchCommand(_skillDispatchInfo);
-        signalHub.Publish(new SkillDispatchedSignal());
+        signalHub.Publish(new SkillDispatchedSignal(_skillDispatchInfo.commandInfo.skillCommandType));
     }
 
     private void PrestigeLevelIncreased(int _level)

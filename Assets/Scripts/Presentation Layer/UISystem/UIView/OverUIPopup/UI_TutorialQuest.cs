@@ -52,6 +52,9 @@ public class UI_TutorialQuest : MonoBehaviour
     [SerializeField] private int fillContainerTitleId = 2;
     [SerializeField] private int goHomeTitleId = 3;
     [SerializeField] private int goHomeDescId = 4;
+    [SerializeField] private int putItemsTitleId = 5;
+    [SerializeField] private int receiveMoneyTitleId = 6;
+    [SerializeField] private int upgradeAxeTitleId = 7;
 
     // 내부 의존성
     private const float HiddenBGWidth = 0f;
@@ -69,6 +72,8 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private TutorialStep currentStep;
     private bool bIsShowing = false;
+    public event Action<TutorialStep> HideCompletedEvent;
+    public event Action<TutorialStep> StepTransitionCompletedEvent;
 
     private sealed class TutorialQuestBGPiece
     {
@@ -143,6 +148,42 @@ public class UI_TutorialQuest : MonoBehaviour
                     PlayShowQuest();
                 }
                 break;
+
+            case TutorialStep.PutItemsInLogContainer:
+                if (bIsShowing)
+                {
+                    PlayStepTransition(GetPutItemsTitle(), string.Empty);
+                }
+                else
+                {
+                    SetQuestContent(GetPutItemsTitle(), string.Empty);
+                    PlayShowQuest();
+                }
+                break;
+
+            case TutorialStep.ReceiveMoney:
+                if (bIsShowing)
+                {
+                    PlayStepTransition(GetReceiveMoneyTitle(), string.Empty);
+                }
+                else
+                {
+                    SetQuestContent(GetReceiveMoneyTitle(), string.Empty);
+                    PlayShowQuest();
+                }
+                break;
+
+            case TutorialStep.UpgradeAxe:
+                if (bIsShowing)
+                {
+                    PlayStepTransition(GetUpgradeAxeTitle(), string.Empty);
+                }
+                else
+                {
+                    SetQuestContent(GetUpgradeAxeTitle(), string.Empty);
+                    PlayShowQuest();
+                }
+                break;
         }
     }
 
@@ -152,6 +193,9 @@ public class UI_TutorialQuest : MonoBehaviour
         {
             case TutorialStep.FillOffroadContainer:
             case TutorialStep.GoHomeBeforeExhausted:
+            case TutorialStep.PutItemsInLogContainer:
+            case TutorialStep.ReceiveMoney:
+            case TutorialStep.UpgradeAxe:
                 if (bIsShowing)
                 {
                     PlayCompleteAndHide();
@@ -183,6 +227,15 @@ public class UI_TutorialQuest : MonoBehaviour
                 break;
             case TutorialStep.GoHomeBeforeExhausted:
                 SetQuestContent(GetGoHomeTitle(), GetGoHomeDesc());
+                break;
+            case TutorialStep.PutItemsInLogContainer:
+                SetQuestContent(GetPutItemsTitle(), string.Empty);
+                break;
+            case TutorialStep.ReceiveMoney:
+                SetQuestContent(GetReceiveMoneyTitle(), string.Empty);
+                break;
+            case TutorialStep.UpgradeAxe:
+                SetQuestContent(GetUpgradeAxeTitle(), string.Empty);
                 break;
         }
     }
@@ -275,6 +328,7 @@ public class UI_TutorialQuest : MonoBehaviour
         {
             hideSequence = null;
             PrepareHiddenState();
+            HideCompletedEvent?.Invoke(currentStep);
         });
     }
 
@@ -339,6 +393,7 @@ public class UI_TutorialQuest : MonoBehaviour
         stepTransitionSequence.OnComplete(() =>
         {
             stepTransitionSequence = null;
+            StepTransitionCompletedEvent?.Invoke(currentStep);
         });
     }
 
@@ -703,6 +758,36 @@ public class UI_TutorialQuest : MonoBehaviour
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "피로도가 20% 아래로 내려가면 탈진할 수 있습니다.";
+    }
+
+    private string GetPutItemsTitle()
+    {
+        if (null != localizationManager)
+        {
+            string _text = localizationManager.GetText(localizationJsonId, putItemsTitleId);
+            if (false == string.IsNullOrEmpty(_text)) return _text;
+        }
+        return "가져온 원목을 제재소 원목 보관함에 넣으세요";
+    }
+
+    private string GetReceiveMoneyTitle()
+    {
+        if (null != localizationManager)
+        {
+            string _text = localizationManager.GetText(localizationJsonId, receiveMoneyTitleId);
+            if (false == string.IsNullOrEmpty(_text)) return _text;
+        }
+        return "정산된 금액을 받아가세요!";
+    }
+
+    private string GetUpgradeAxeTitle()
+    {
+        if (null != localizationManager)
+        {
+            string _text = localizationManager.GetText(localizationJsonId, upgradeAxeTitleId);
+            if (false == string.IsNullOrEmpty(_text)) return _text;
+        }
+        return "도끼를 강화하세요.";
     }
 
     // 유니티 이벤트 함수

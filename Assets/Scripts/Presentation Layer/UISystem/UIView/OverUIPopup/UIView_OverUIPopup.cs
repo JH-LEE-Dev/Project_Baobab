@@ -5,6 +5,8 @@ public class UIView_OverUIPopup : UIView
 {
     // 이벤트
     public event Action CompanyLogoProductionCompletedEvent;
+    public event Action<TutorialStep> TutorialQuestHideCompletedEvent;
+    public event Action<TutorialStep> TutorialQuestTransitionCompletedEvent;
 
     // 내부 의존성
     [Header("Opening Production")]
@@ -24,7 +26,21 @@ public class UIView_OverUIPopup : UIView
         if (null != tutorialQuest)
         {
             tutorialQuest.Initialize(_ctx?.localizationManager);
+            tutorialQuest.HideCompletedEvent -= OnTutorialQuestHideCompleted;
+            tutorialQuest.HideCompletedEvent += OnTutorialQuestHideCompleted;
+            tutorialQuest.StepTransitionCompletedEvent -= OnTutorialQuestTransitionCompleted;
+            tutorialQuest.StepTransitionCompletedEvent += OnTutorialQuestTransitionCompleted;
         }
+    }
+
+    private void OnTutorialQuestTransitionCompleted(TutorialStep _step)
+    {
+        TutorialQuestTransitionCompletedEvent?.Invoke(_step);
+    }
+
+    private void OnTutorialQuestHideCompleted(TutorialStep _step)
+    {
+        TutorialQuestHideCompletedEvent?.Invoke(_step);
     }
 
     public override void SetupUI()
@@ -75,9 +91,13 @@ public class UIView_OverUIPopup : UIView
     {
         base.Release();
         CompanyLogoProductionCompletedEvent = null;
+        TutorialQuestHideCompletedEvent = null;
+        TutorialQuestTransitionCompletedEvent = null;
 
         if (null != tutorialQuest)
         {
+            tutorialQuest.HideCompletedEvent -= OnTutorialQuestHideCompleted;
+            tutorialQuest.StepTransitionCompletedEvent -= OnTutorialQuestTransitionCompleted;
             tutorialQuest.ResetQuest();
         }
     }
@@ -120,9 +140,13 @@ public class UIView_OverUIPopup : UIView
     {
         base.OnDestroy();
         CompanyLogoProductionCompletedEvent = null;
+        TutorialQuestHideCompletedEvent = null;
+        TutorialQuestTransitionCompletedEvent = null;
 
         if (null != tutorialQuest)
         {
+            tutorialQuest.HideCompletedEvent -= OnTutorialQuestHideCompleted;
+            tutorialQuest.StepTransitionCompletedEvent -= OnTutorialQuestTransitionCompleted;
             tutorialQuest.ResetQuest();
         }
     }

@@ -206,6 +206,14 @@ namespace PresentationLayer.UISystem
                             index = tagEndIndex + 1;
                             continue;
                         }
+                        else
+                        {
+                            // Standard TextMeshPro rich text tags (<b>, </i>, <size=...>, etc.)
+                            // Pass through to cleanTextBuilder for TMP to format, but do not add dummy entries to characterStyles.
+                            cleanTextBuilder.Append(_source, index, tagEndIndex - index + 1);
+                            index = tagEndIndex + 1;
+                            continue;
+                        }
                     }
                 }
 

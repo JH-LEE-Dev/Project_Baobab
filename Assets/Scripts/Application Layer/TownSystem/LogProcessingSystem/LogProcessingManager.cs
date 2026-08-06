@@ -6,9 +6,11 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 {
     public event Action<bool> LogProcessorIsActiveEvent;
     public event Action<bool> ShopInteracteStateChangedEvent;
+    public event Action<int> ShopMoneyChangedEvent;
     public event Action LogContainerSpecChangedEvent;
     public event Action<int> EarnMoneyEvent;
     public event Action ContainerUpdatedEvent;
+    public event Action ItemAddedToLogContainerEvent;
     public event Action<bool> InteractStateChangedEvent;
 
     // 활성 가공 라인 수가 바뀔 때(증설/철거, 세이브 로드) 알린다. TownSystem이 이 값에 맞춰
@@ -139,6 +141,9 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         shopNPC.EarnMoneyEvent -= EarnMoney;
         shopNPC.EarnMoneyEvent += EarnMoney;
 
+        shopNPC.ShopMoneyChangedEvent -= OnShopMoneyChanged;
+        shopNPC.ShopMoneyChangedEvent += OnShopMoneyChanged;
+
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
         logContainer.ContainerSpecChangedEvent += LogContainerSpecChanged;
 
@@ -158,6 +163,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
         logContainer.InteractStateEvent -= InteractStateChanged;
         logContainer.LogOutEvent -= LogOutFromContainer;
         shopNPC.EarnMoneyEvent -= EarnMoney;
+        shopNPC.ShopMoneyChangedEvent -= OnShopMoneyChanged;
         logContainer.ContainerSpecChangedEvent -= LogContainerSpecChanged;
         shopNPC.InteractStateEvent -= ShopInteractStateChanged;
         logContainer.ItemAddedEvent -= ItemAddedInContainer;
@@ -394,7 +400,12 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
 
     private void EarnMoney(int _money)
     {
-        EarnMoneyEvent.Invoke(_money);
+        EarnMoneyEvent?.Invoke(_money);
+    }
+
+    private void OnShopMoneyChanged()
+    {
+        ShopMoneyChangedEvent?.Invoke(shopNPC.GetMoney());
     }
 
     private void LogContainerSpecChanged()
@@ -436,6 +447,7 @@ public class LogProcessingManager : MonoBehaviour, ILogProcessingSystemCH, ICutt
     {
         ++preCutItemCnt;
         UpdateProcessorActiveState();
+        ItemAddedToLogContainerEvent?.Invoke();
     }
 
     public void DisableShopObj()
