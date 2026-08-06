@@ -32,6 +32,30 @@
       "en": "Watch out when fatigue drops below 20%.",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 5,
+      "key": "PutItemsInLogContainer_Title",
+      "kr": "가져온 원목을 제재소 원목 보관함에 넣으세요",
+      "en": "Put the collected logs into the sawmill log storage",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 6,
+      "key": "ReceiveMoney_Title",
+      "kr": "정산된 금액을 받아가세요!",
+      "en": "Collect the settled money!",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 7,
+      "key": "UpgradeAxe_Title",
+      "kr": "도끼를 강화하세요.",
+      "en": "Upgrade your axe.",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }
