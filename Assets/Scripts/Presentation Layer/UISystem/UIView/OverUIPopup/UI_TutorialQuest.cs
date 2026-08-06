@@ -18,10 +18,8 @@ public class UI_TutorialQuest : MonoBehaviour
     [SerializeField] private CanvasGroup contentCanvasGroup;
     [SerializeField] private RectTransform textContainer;
     [SerializeField] private TextMeshProUGUI questTitleText;
-    [SerializeField] private TMPInlineStyleAnimator questTitleAnimator;
     [SerializeField] private GameObject questDescRoot;
     [SerializeField] private TextMeshProUGUI questDescText;
-    [SerializeField] private TMPInlineStyleAnimator questDescAnimator;
 
     [Header("Background Dim Settings")]
     [SerializeField] private bool useBgFadeIn = true;
@@ -103,6 +101,9 @@ public class UI_TutorialQuest : MonoBehaviour
 
     public void OnTutorialStepStarted(TutorialStep _step)
     {
+        if (currentStep == _step && bIsShowing)
+            return;
+
         currentStep = _step;
 
         switch (_step)
@@ -224,8 +225,6 @@ public class UI_TutorialQuest : MonoBehaviour
             showSequence.Insert(_contentStartTime, textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
         }
 
-        showSequence.InsertCallback(_contentStartTime, OnPlayTextRevealAnimations);
-
         showSequence.OnComplete(() =>
         {
             showSequence = null;
@@ -242,24 +241,33 @@ public class UI_TutorialQuest : MonoBehaviour
 
         hideSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
-        // 1. 텍스트 컨텐츠 페이드아웃
+        // 1. 텍스트 컨텐츠 스케일 & 페이드아웃 선행 연출
+        float _textHideDuration = scaleDuration;
+
         if (null != contentCanvasGroup)
         {
-            hideSequence.Join(contentCanvasGroup.DOFade(0f, bgCloseDuration * 0.5f).SetEase(Ease.InQuad));
+            hideSequence.Insert(0f, contentCanvasGroup.DOFade(0f, _textHideDuration).SetEase(Ease.InQuad));
         }
 
-        // 2. DimBG 축소 및 페이드 연출
+        if (null != textContainer)
+        {
+            hideSequence.Insert(0f, textContainer.DOScale(startScale, _textHideDuration).SetEase(Ease.InBack));
+        }
+
+        // 2. DimBG 축소 및 페이드 역재생 연출 (글자가 완전히 사라진 후 시작)
+        float _bgHideStartTime = _textHideDuration;
+
         if (bgPieces.Length > 0)
         {
             AssignBGCloseDelays();
-            InsertBGCloseTweens(hideSequence, 0f);
+            InsertBGCloseTweens(hideSequence, _bgHideStartTime);
         }
         else if (null != bgRoot)
         {
-            hideSequence.Join(DOTween.To(GetBGWidth, SetBGWidth, HiddenBGWidth, bgCloseDuration).SetEase(bgCloseEase));
+            hideSequence.Insert(_bgHideStartTime, DOTween.To(GetBGWidth, SetBGWidth, HiddenBGWidth, bgCloseDuration).SetEase(bgCloseEase));
             if (null != bgCanvasGroup && useBgFadeOut)
             {
-                hideSequence.Join(bgCanvasGroup.DOFade(0f, bgCloseDuration).SetEase(bgCloseEase));
+                hideSequence.Insert(_bgHideStartTime, bgCanvasGroup.DOFade(0f, bgCloseDuration).SetEase(bgCloseEase));
             }
         }
 
@@ -327,8 +335,6 @@ public class UI_TutorialQuest : MonoBehaviour
                 stepTransitionSequence.Append(textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
             }
         }
-
-        stepTransitionSequence.AppendCallback(OnPlayTextRevealAnimations);
 
         stepTransitionSequence.OnComplete(() =>
         {
@@ -625,19 +631,6 @@ public class UI_TutorialQuest : MonoBehaviour
     private void SetCanvasGroupAlpha(CanvasGroup _cg, float _alpha)
     {
         if (null != _cg) _cg.alpha = _alpha;
-    }
-
-    private void OnPlayTextRevealAnimations()
-    {
-        if (null != questTitleAnimator)
-        {
-            questTitleAnimator.PlayRevealBounce();
-        }
-
-        if (null != questDescAnimator && null != questDescRoot && questDescRoot.activeSelf)
-        {
-            questDescAnimator.PlayRevealBounce();
-        }
     }
 
     private void OnCompleteHideCallback()
