@@ -291,7 +291,7 @@ MonoBehaviour:
   isTempScene: 0
   enableSentry: 1
   enableGameAnalytics: 1
-  enableTutorial: 1
+  enableTutorial: 0
   gameInstallerPrefab: {fileID: 2618603934779584709, guid: 2ebab4c8acaf99742b56d0772e82689f, type: 3}
   mainMenuInstallerPrefab: {fileID: 2903737071357978035, guid: ac5e5f0119faab946b0b9760ecca8785, type: 3}
 --- !u!114 &209871257

@@ -11,12 +11,12 @@ public static class Sound
         AudioManager.Instance.EnqueueEvent(e);
     }
 
-    public static void PlayUI(SoundID id, float volume = 1f)
+    public static void PlayUI(SoundID id, float volume = 1f, float pitchOverride = -1f)
     {
         if (AudioManager.Instance == null)
             return;
 
-        AudioEvent e = new AudioEvent(id, Vector3.zero, volume, false);
+        AudioEvent e = new AudioEvent(id, Vector3.zero, volume, false, pitchOverride);
         AudioManager.Instance.EnqueueEvent(e);
     }
 
