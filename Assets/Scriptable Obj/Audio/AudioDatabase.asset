@@ -21,6 +21,8 @@ MonoBehaviour:
     defaultVolume: 0.175
     is3D: 1
     loop: 0
+    maxConcurrentVoices: 6
+    polyphonyAttenuationStrength: 0.6
   - id: -1641742776
     mixerId: 0
     clip: {fileID: 8300000, guid: cb5f0b30a84b47a4a895a1abb533ad27, type: 3}
@@ -29,6 +31,8 @@ MonoBehaviour:
     defaultVolume: 0.12
     is3D: 1
     loop: 0
+    maxConcurrentVoices: 6
+    polyphonyAttenuationStrength: 0.6
   - id: -398605290
     mixerId: 0
     clip: {fileID: 0}
@@ -53,6 +57,8 @@ MonoBehaviour:
     defaultVolume: 0.125
     is3D: 1
     loop: 0
+    maxConcurrentVoices: 5
+    polyphonyAttenuationStrength: 0.75
   - id: 1393049894
     mixerId: 0
     clip: {fileID: 0}
@@ -181,6 +187,8 @@ MonoBehaviour:
     defaultVolume: 0.28
     is3D: 1
     loop: 0
+    maxConcurrentVoices: 5
+    polyphonyAttenuationStrength: 0.7
   - id: 339084960
     mixerId: 0
     clip: {fileID: 8300000, guid: 648facf0949c6324887e38fd6abd64d3, type: 3}
@@ -261,6 +269,8 @@ MonoBehaviour:
     defaultVolume: 0.5
     is3D: 1
     loop: 0
+    maxConcurrentVoices: 6
+    polyphonyAttenuationStrength: 0.8
   - id: -443006492
     mixerId: 0
     clip: {fileID: 8300000, guid: cd7e41e9db93c514a8dab599d26ed5a1, type: 3}
@@ -269,6 +279,8 @@ MonoBehaviour:
     defaultVolume: 0.1
     is3D: 1
     loop: 0
+    maxConcurrentVoices: 4
+    polyphonyAttenuationStrength: 0.7
   - id: -2002985169
     mixerId: 0
     clip: {fileID: 8300000, guid: 92fad5090feb6c34e8532fcd03ae9c7a, type: 3}
@@ -277,6 +289,8 @@ MonoBehaviour:
     defaultVolume: 0.3
     is3D: 1
     loop: 0
+    maxConcurrentVoices: 4
+    polyphonyAttenuationStrength: 0.7
   - id: -568122919
     mixerId: 0
     clip: {fileID: 8300000, guid: 8c94e30b1825aef45b871355b2ec587f, type: 3}
@@ -301,6 +315,8 @@ MonoBehaviour:
     defaultVolume: 0.25
     is3D: 0
     loop: 0
+    maxConcurrentVoices: 4
+    polyphonyAttenuationStrength: 0.6
   - id: 1645788879
     mixerId: 433908404
     clip: {fileID: 8300000, guid: 747f5f8f4bb7daa4c9548c5f2c8eee1b, type: 3}

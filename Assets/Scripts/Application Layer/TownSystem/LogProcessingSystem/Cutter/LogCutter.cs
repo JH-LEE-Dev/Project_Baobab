@@ -150,7 +150,7 @@ public class LogCutter : MonoBehaviour, ILogCutter, ICutterCH
     {
         if (bIsCutting) return;
 
-        Sound.Play(SoundID.ConvayerCutterGetWood, transform.position);
+        Sound.Play(SoundID.ConvayerCutterGetWood, transform.position, GetSoundVolume());
 
         cuttingItem = _item;
         bIsCutting = true;

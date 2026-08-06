@@ -179,9 +179,23 @@ public static class LocKeys
         public const int abilityDescriptionConstellationDamage = 4203461;
     }
 
+    public static class DemoNoticeUI
+    {
+        public const int title = 29360129;
+        public const int description = 29360130;
+    }
+
     public static class EquipmentHUD
     {
         public const int axeUse = 25165825;
+    }
+
+    public static class EscapeMenuUI
+    {
+        public const int resume = 27262977;
+        public const int option = 27262978;
+        public const int mainMenu = 27262979;
+        public const int exitGame = 27262980;
     }
 
     public static class InventoryUI
