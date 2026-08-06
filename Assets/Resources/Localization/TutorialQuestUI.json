@@ -1,0 +1,37 @@
+{
+  "jsonId": 15,
+  "entries": [
+    {
+      "id": 1,
+      "key": "CutTree_Title",
+      "kr": "나무를 벌목하세요",
+      "en": "Chop down a tree",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 2,
+      "key": "FillOffroadContainer_Title",
+      "kr": "마을로 가져갈 원목을 운반 상자에 넣으세요!",
+      "en": "Store logs into the transport container!",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 3,
+      "key": "GoHomeBeforeExhausted_Title",
+      "kr": "탈진하기 전에 마을로 돌아가세요!",
+      "en": "Return to town before exhaustion!",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 4,
+      "key": "GoHomeBeforeExhausted_Desc",
+      "kr": "피로도가 20% 아래로 내려가면 탈진할 수 있습니다.",
+      "en": "Watch out when fatigue drops below 20%.",
+      "enumType": "",
+      "enumValue": ""
+    }
+  ]
+}

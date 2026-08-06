@@ -10,12 +10,20 @@ public class UIView_OverUIPopup : UIView
     [Header("Opening Production")]
     [SerializeField] private UI_OpeningProduction openingProduction;
 
+    [Header("Tutorial Quest")]
+    [SerializeField] private UI_TutorialQuest tutorialQuest;
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
         if (null != openingProduction)
         {
             openingProduction.Initialize(_ctx?.localizationManager);
+        }
+
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.Initialize(_ctx?.localizationManager);
         }
     }
 
@@ -46,6 +54,10 @@ public class UIView_OverUIPopup : UIView
     /// </summary>
     public void TutorialStepStarted(TutorialStep _step)
     {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.OnTutorialStepStarted(_step);
+        }
     }
 
     /// <summary>
@@ -53,12 +65,21 @@ public class UIView_OverUIPopup : UIView
     /// </summary>
     public void TutorialStepCompleted(TutorialStep _step)
     {
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.OnTutorialStepCompleted(_step);
+        }
     }
 
     public override void Release()
     {
         base.Release();
         CompanyLogoProductionCompletedEvent = null;
+
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.ResetQuest();
+        }
     }
 
     public override void Refresh()
@@ -78,6 +99,11 @@ public class UIView_OverUIPopup : UIView
         {
             openingProduction.StopOpeningProduction();
         }
+
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.ResetQuest();
+        }
     }
 
     private void OnIntroSceneCompleted()
@@ -94,5 +120,10 @@ public class UIView_OverUIPopup : UIView
     {
         base.OnDestroy();
         CompanyLogoProductionCompletedEvent = null;
+
+        if (null != tutorialQuest)
+        {
+            tutorialQuest.ResetQuest();
+        }
     }
 }
