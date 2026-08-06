@@ -56,5 +56,10 @@ public struct PopupUIUpSignal { }
 
 public struct ActivateCharacterSignal { }
 
+// MainMenu → Dungeon 튜토리얼: 캐릭터 하차 후, 일반 던전 입장과 동일한 마무리
+// (조작 잠금 해제 + ActivateCharacterSignal + HUD 복귀)를 실행하라는 신호.
+// 일반 경로에서 카메라 하강 완료가 하던 역할을 튜토리얼에서는 이 신호가 대신한다.
+public struct CompleteDungeonEntrySignal { }
+
 public struct GoToMainMenuRequestedSignal { }
 public struct GoToMainMenuSignal { }

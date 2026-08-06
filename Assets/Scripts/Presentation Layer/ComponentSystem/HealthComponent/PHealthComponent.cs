@@ -24,6 +24,10 @@ public class PHealthComponent : PComponent, IPHealthComponent
 
     private bool bStaminaDecrease = false;
 
+    // 튜토리얼 등에서 스태미나가 특정 비율 아래로 떨어지지 않도록 거는 최소치(0~1 비율, maxStamina 기준).
+    // 0이면 바닥이 없다는 뜻(기존 동작과 동일하게 0까지 감소). StaminaReset()으로 원정이 끝나면 자동 해제된다.
+    private float minStaminaRatio = 0f;
+
     /// <summary>
     /// 컴포넌트 초기화
     /// </summary>
@@ -53,12 +57,13 @@ public class PHealthComponent : PComponent, IPHealthComponent
     /// </summary>
     public void DecreaseStamina()
     {
-        if (currentStamina <= 0 || bStaminaDecrease == false)
+        float floor = minStaminaRatio * maxStamina;
+        if (currentStamina <= floor || bStaminaDecrease == false)
             return;
 
         // staminaDecAmount는 초당 변화량이므로 Time.deltaTime을 곱함
         float amount = staminaDecAmount * Time.deltaTime;
-        currentStamina = Mathf.Max(0, currentStamina - amount);
+        currentStamina = Mathf.Max(floor, currentStamina - amount);
 
         if (currentStamina <= 0)
         {
@@ -72,11 +77,12 @@ public class PHealthComponent : PComponent, IPHealthComponent
     /// </summary>
     public void ApplyEnvironmentalStaminaDrain(float _drainPerSecond)
     {
-        if (currentStamina <= 0 || _drainPerSecond <= 0f)
+        float floor = minStaminaRatio * maxStamina;
+        if (currentStamina <= floor || _drainPerSecond <= 0f)
             return;
 
         float amount = _drainPerSecond * Time.deltaTime;
-        currentStamina = Mathf.Max(0, currentStamina - amount);
+        currentStamina = Mathf.Max(floor, currentStamina - amount);
 
         if (currentStamina <= 0)
         {
@@ -89,10 +95,11 @@ public class PHealthComponent : PComponent, IPHealthComponent
     /// </summary>
     public void DecreaseStaminaFlat(float _damage)
     {
-        if (currentStamina <= 0 || _damage <= 0f)
+        float floor = minStaminaRatio * maxStamina;
+        if (currentStamina <= floor || _damage <= 0f)
             return;
 
-        currentStamina = Mathf.Max(0, currentStamina - _damage);
+        currentStamina = Mathf.Max(floor, currentStamina - _damage);
 
         if (currentStamina <= 0)
         {
@@ -172,6 +179,16 @@ public class PHealthComponent : PComponent, IPHealthComponent
     public void StaminaReset()
     {
         currentStamina = maxStamina;
+        minStaminaRatio = 0f;
+    }
+
+    /// <summary>
+    /// 스태미나가 maxStamina 대비 _percent(0~100)% 아래로는 떨어지지 않도록 바닥값을 건다.
+    /// 0을 넘기면 바닥을 해제(자유롭게 0까지 감소)한다. StaminaReset()에서 자동으로 초기화된다.
+    /// </summary>
+    public void SetMinStaminaPercent(float _percent)
+    {
+        minStaminaRatio = Mathf.Clamp01(_percent / 100f);
     }
 
     public void SetStaminaDecrease(bool _boolean)
