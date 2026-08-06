@@ -10,9 +10,14 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     // 필드 선언 (내부 의존성)
     [SerializeField] private bool isTempScene = false;
 
-    [Header("SDK Toggles (개발 중에는 꺼두는 걸 권장)")]
+    [Header("SDK Toggles")]
     [SerializeField] private bool enableSentry = true;
     [SerializeField] private bool enableGameAnalytics = true;
+
+    [Header("Tutorial")]
+    [Tooltip("켜면 '새 게임'이 MainMenu → Dungeon 튜토리얼로 직행한다. 끄면 튜토리얼을 거치지 않고 " +
+        "바로 Town으로 진입한다(튜토리얼 도입 이전의 기존 새 게임 경로).")]
+    [SerializeField] private bool enableTutorial = true;
 
     private static BootStrap instance;
     private SceneManager sceneManager;
@@ -183,6 +188,15 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void GoToDungeonFromMainMenu()
     {
+        if (enableTutorial == false)
+        {
+            // 튜토리얼 비활성화: 던전 직행 대신 기존 새 게임 경로(MainMenu → Town)로 보낸다.
+            // InDungeonSystem/TutorialSystem/UnitSystem의 튜토리얼 로직은 전부 MainMenu → Dungeon
+            // 진입(bIsFromMainMenu)에서만 트리거되므로, 이 경로로는 전혀 발동하지 않는다.
+            GoToTownScene(true);
+            return;
+        }
+
         bNewGame = true;
         currentMapType = MapType.WideGreenForest;
         currentForestType = ForestType.WideGreenForest_1;
