@@ -199,6 +199,11 @@ public class UIView_Result : UIView
     private Button retryTouchAreaButton;
     private RectTransform goHomeButtonVisual;
     private RectTransform retryButtonVisual;
+    private Vector2 goHomeButtonVisualDefaultPosition;
+    private Vector2 retryButtonVisualDefaultPosition;
+    private Vector2 goHomeButtonTouchAreaDefaultPosition;
+    private Vector2 retryButtonTouchAreaDefaultPosition;
+    private bool hasCachedButtonLayout;
     private float lastFontPopSoundTime = float.NegativeInfinity;
     private float lastTreeKillCountSoundTime = float.NegativeInfinity;
     private float lastInventoryLogSoundTime = float.NegativeInfinity;
@@ -257,6 +262,7 @@ public class UIView_Result : UIView
     public void OpenResultUI()
     {
         RefreshResult();
+        ApplyTutorialButtonLayout();
         SetResultContentsActive(true);
         PlayResultOpenProduction();
     }
@@ -557,6 +563,59 @@ public class UIView_Result : UIView
 
         SetButtonVisualRaycastTarget(goHomeButtonVisual, false);
         SetButtonVisualRaycastTarget(retryButtonVisual, false);
+        CacheButtonLayout();
+    }
+
+    private void CacheButtonLayout()
+    {
+        if (hasCachedButtonLayout)
+            return;
+
+        if (goHomeButtonVisual != null)
+            goHomeButtonVisualDefaultPosition = goHomeButtonVisual.anchoredPosition;
+
+        if (retryButtonVisual != null)
+            retryButtonVisualDefaultPosition = retryButtonVisual.anchoredPosition;
+
+        if (goHomeButtonTouchArea != null)
+            goHomeButtonTouchAreaDefaultPosition = goHomeButtonTouchArea.anchoredPosition;
+
+        if (retryButtonTouchArea != null)
+            retryButtonTouchAreaDefaultPosition = retryButtonTouchArea.anchoredPosition;
+
+        hasCachedButtonLayout = true;
+    }
+
+    private void ApplyTutorialButtonLayout()
+    {
+        CacheButtonLayout();
+
+        bool showRetryButton = bIsTutorial == false;
+
+        if (retryButtonVisual != null)
+        {
+            retryButtonVisual.gameObject.SetActive(showRetryButton);
+            retryButtonVisual.anchoredPosition = retryButtonVisualDefaultPosition;
+        }
+
+        if (retryButtonTouchArea != null)
+        {
+            retryButtonTouchArea.gameObject.SetActive(showRetryButton);
+            retryButtonTouchArea.anchoredPosition = retryButtonTouchAreaDefaultPosition;
+        }
+
+        Vector2 goHomePosition = bIsTutorial ? Vector2.zero : goHomeButtonVisualDefaultPosition;
+        if (goHomeButtonVisual != null)
+        {
+            goHomeButtonVisual.gameObject.SetActive(true);
+            goHomeButtonVisual.anchoredPosition = goHomePosition;
+        }
+
+        if (goHomeButtonTouchArea != null)
+        {
+            goHomeButtonTouchArea.gameObject.SetActive(true);
+            goHomeButtonTouchArea.anchoredPosition = bIsTutorial ? Vector2.zero : goHomeButtonTouchAreaDefaultPosition;
+        }
     }
 
     private RectTransform GetButtonVisual(Button button)
