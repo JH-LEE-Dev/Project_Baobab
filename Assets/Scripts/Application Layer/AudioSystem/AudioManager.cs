@@ -654,6 +654,15 @@ public class AudioManager : MonoBehaviour
             AudioSource src = sourcePool[i];
             if (!src.isPlaying) continue;
 
+            // 호출부가 볼륨 0으로 재생한 소리는 세지 않는다. 던전에 있는 동안에도 마을의 제재소
+            // 라인은 배경에서 계속 돌아가며 무음(볼륨 0)으로 사운드를 재생하는데(각 발음체의
+            // GetSoundVolume() 참고), 마을 오브젝트는 DontDestroyOnLoad라 던전 카메라와 월드
+            // 좌표상 가까울 수 있어 아래 거리 필터로도 걸러지지 않는다. 이걸 세면 던전에서 실제로
+            // 들려야 할 소리가 들리지도 않는 마을 소리 때문에 감쇠되거나 슬롯을 빼앗긴다.
+            // (production3DVolumeFactor에 의한 일시적 덕킹은 sourceTargetVolume에 반영되지 않으므로
+            //  여기서 걸러지지 않는다 - 덕킹이 풀리는 순간 여러 소리가 한꺼번에 터지지 않도록 의도한 것이다.)
+            if (sourceTargetVolume[i] <= 0.0001f) continue;
+
             // 가청 범위 밖(거리 감쇠로 이미 볼륨 0)에서 나는 3D 사운드는 세지 않는다. 이걸 세면
             // 맵 저편에서 NPC들이 내는, 플레이어에게 들리지도 않는 소리 때문에 정작 화면 안의
             // 소리가 깎이거나 잘려나간다 - 발음원이 맵 전체에 흩어지는 이 게임에서는 치명적이다.
