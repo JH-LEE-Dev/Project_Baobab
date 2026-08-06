@@ -17,6 +17,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float UnlockRevealDuration = 0.1f;
     private const float UnlockRevealStaggerDelay = 0.025f;
     private const float AutoLevelUpInterval = 0.1f;
+    private const float AbilityUpgradeMaxSemitones = 6f;
     private const string ToolTipCostAvailableColor = "54D86A";
     private const string ToolTipCostUnavailableColor = "B94A42";
     private const string ToolTipCostMaxLevelColor = "58D7F2";
@@ -1682,7 +1683,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         if (CanRequestAutoNodeLevelUp(_node, _withoutCost) == false)
+        {
+            AbilityLevelUpRejectReason rejectReason = NormalizeRejectReason(skillSystemProvider.CanApplySkill(_node.SkillType));
+            OnAbilityLevelUpRejected(_node.SkillType, rejectReason);
+            _node.PlayRejectedRequestMotion();
             return;
+        }
 
         for (int i = 0; i < activeAutoLevelUps.Count; i++)
         {
@@ -1845,6 +1851,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         bool wasLockedByLevel = node.IsUnlockedByLevel() == false;
         SyncNodeLevelsFromProvider();
+        SkillInfo upgradedSkillInfo = GetSkillInfo(_skillType);
+        PlayAbilityUpgradeSounds(upgradedSkillInfo);
         bool prestigeIncreased = _currentHUDState.IsValid &&
             _previousHUDState.IsValid &&
             _currentHUDState.PrestigeLevel > _previousHUDState.PrestigeLevel;
@@ -1874,8 +1882,32 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (spawnedNodeMap.TryGetValue(_skillType, out AbilityNode node) == false)
             return;
 
+        if (_rejectReason == AbilityLevelUpRejectReason.MaxLevel ||
+            _rejectReason == AbilityLevelUpRejectReason.NotEnoughMoney)
+        {
+            Sound.PlayUI(SoundID.AbilityUpgradeFailed);
+        }
+
         if (currentToolTipNode == node)
             ShowToolTip(node);
+    }
+
+    private void PlayAbilityUpgradeSounds(SkillInfo _skillInfo)
+    {
+        int maxLevel = Mathf.Max(_skillInfo.maxLevel, 1);
+        int reachedLevel = Mathf.Clamp(_skillInfo.currentLevel, 1, maxLevel);
+        float reachedRatio = (float)reachedLevel / maxLevel;
+        float semitones = AbilityUpgradeMaxSemitones * reachedRatio;
+        float pitch = Mathf.Pow(2f, semitones / 12f);
+
+        Sound.PlayUI(SoundID.AbilityUpgrade, 1f, pitch);
+
+        if (_skillInfo.maxLevel > 0 && _skillInfo.currentLevel >= _skillInfo.maxLevel)
+        {
+            Sound.PlayUI(SoundID.AbilityFinalUpgrade);
+            Sound.PlayUI(SoundID.AbilityFinalEX);
+            Sound.PlayUI(SoundID.AbilityFinalEX2);
+        }
     }
 
 
@@ -1977,6 +2009,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void RefreshNodeVisibility(bool _playUnlockReveal)
     {
+        bool assignedAppearSound = false;
+
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
@@ -1985,7 +2019,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
             node.gameObject.SetActive(isVisible);
 
             if (_playUnlockReveal && wasVisible == false && isVisible)
-                StartUnlockReveal(node);
+            {
+                StartUnlockReveal(node, assignedAppearSound == false);
+                assignedAppearSound = true;
+            }
 
             if (isVisible == false && currentToolTipNode == node)
                 HideToolTip(node);
@@ -1997,7 +2034,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         RefreshLines();
     }
 
-    private void StartUnlockReveal(AbilityNode _node)
+    private void StartUnlockReveal(AbilityNode _node, bool _playAppearSound)
     {
         if (_node == null)
             return;
@@ -2009,6 +2046,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             activeUnlockReveals[i].Elapsed = 0f;
             activeUnlockReveals[i].Delay = GetUnlockRevealDelay();
+            activeUnlockReveals[i].PlayAppearSound = _playAppearSound;
             lineRenderer.SetLineRevealProgress(_node.SkillType, 0f);
             _node.SetVisualVisible(false);
             lineLayoutDirty = true;
@@ -2017,7 +2055,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         lineRenderer.SetLineRevealProgress(_node.SkillType, 0f);
         _node.SetVisualVisible(false);
-        activeUnlockReveals.Add(new AbilityNodeUnlockReveal(_node, GetUnlockRevealDelay()));
+        activeUnlockReveals.Add(new AbilityNodeUnlockReveal(_node, GetUnlockRevealDelay(), _playAppearSound));
         lineLayoutDirty = true;
     }
 
@@ -2046,6 +2084,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             lineRenderer.ClearLineRevealProgress(reveal.Node.SkillType);
             reveal.Node.SetVisualVisible(true);
+
+            if (reveal.PlayAppearSound)
+                Sound.PlayUI(SoundID.AbilityAppear);
+
             reveal.Node.PlayUnlockAppearMotion();
             activeUnlockReveals.RemoveAt(i);
         }
@@ -2200,11 +2242,13 @@ public class AbilityNodeUnlockReveal
     public AbilityNode Node { get; }
     public float Elapsed { get; set; }
     public float Delay { get; set; }
+    public bool PlayAppearSound { get; set; }
 
-    public AbilityNodeUnlockReveal(AbilityNode _node, float _delay)
+    public AbilityNodeUnlockReveal(AbilityNode _node, float _delay, bool _playAppearSound)
     {
         Node = _node;
         Elapsed = 0f;
         Delay = _delay;
+        PlayAppearSound = _playAppearSound;
     }
 }

@@ -161,6 +161,12 @@ public class TownSystem : MonoBehaviour
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
         logProcessingManager.LogProcessorIsActiveEvent += LogItemProcessorActiveState;
 
+        logProcessingManager.ShopMoneyChangedEvent -= ShopMoneyChanged;
+        logProcessingManager.ShopMoneyChangedEvent += ShopMoneyChanged;
+
+        logProcessingManager.ItemAddedToLogContainerEvent -= ItemAddedToLogContainer;
+        logProcessingManager.ItemAddedToLogContainerEvent += ItemAddedToLogContainer;
+
         logProcessingManager.ActiveLineCountChangedEvent -= ApplyProcessLineCountToGrid;
         logProcessingManager.ActiveLineCountChangedEvent += ApplyProcessLineCountToGrid;
 
@@ -209,6 +215,8 @@ public class TownSystem : MonoBehaviour
         townObjectManager.OffroadInteractStateChangedEvent -= OffroadInteractStateChanged;
         logProcessingManager.ShopInteracteStateChangedEvent -= ShopInteractStateChanged;
         logProcessingManager.LogProcessorIsActiveEvent -= LogItemProcessorActiveState;
+        logProcessingManager.ShopMoneyChangedEvent -= ShopMoneyChanged;
+        logProcessingManager.ItemAddedToLogContainerEvent -= ItemAddedToLogContainer;
         logProcessingManager.ActiveLineCountChangedEvent -= ApplyProcessLineCountToGrid;
         townProductionManager.CharacterRideEndEvent -= CharacterRideEnd;
         townProductionManager.StartSkyProductionEvent -= StartSkyProduction;
@@ -372,6 +380,16 @@ public class TownSystem : MonoBehaviour
     private void LogItemProcessorActiveState(bool _boolean)
     {
         signalHub.Publish(new LogItemProcessorActiveStateSignal(_boolean));
+    }
+
+    private void ShopMoneyChanged(int _money)
+    {
+        signalHub.Publish(new ShopMoneyUpdatedSignal(_money));
+    }
+
+    private void ItemAddedToLogContainer()
+    {
+        signalHub.Publish(new ItemAddedToLogContainerSignal());
     }
 
     /// <summary>

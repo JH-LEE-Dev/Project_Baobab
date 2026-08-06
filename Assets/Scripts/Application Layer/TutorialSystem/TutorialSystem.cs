@@ -34,6 +34,12 @@ public class TutorialSystem
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
+        signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
+        signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.Subscribe<ItemAddedToLogContainerSignal>(ItemAddedToLogContainer);
+        signalHub.Subscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
+        signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
+        signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
     }
 
     private void UnSubscribeSignals()
@@ -43,6 +49,12 @@ public class TutorialSystem
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
+        signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
+        signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.UnSubscribe<ItemAddedToLogContainerSignal>(ItemAddedToLogContainer);
+        signalHub.UnSubscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
+        signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
+        signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
     }
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
@@ -94,6 +106,60 @@ public class TutorialSystem
         if (bStepActive == false && currentStep == TutorialStep.FillOffroadContainer)
         {
             StartStep(TutorialStep.GoHomeBeforeExhausted);
+        }
+    }
+
+    private void CharacterRideStart(CharacterRideStartSignal _signal)
+    {
+        if (bStepActive && currentStep == TutorialStep.GoHomeBeforeExhausted)
+        {
+            CompleteStep();
+        }
+    }
+
+    private void TeleportUIClosed(TeleportUIClosedSignal _signal)
+    {
+        if (bStepActive == false && currentStep == TutorialStep.GoHomeBeforeExhausted)
+        {
+            StartStep(TutorialStep.PutItemsInLogContainer);
+        }
+    }
+
+    private void ItemAddedToLogContainer(ItemAddedToLogContainerSignal _signal)
+    {
+        if (bStepActive && currentStep == TutorialStep.PutItemsInLogContainer)
+        {
+            CompleteStep();
+        }
+    }
+
+    private void ShopMoneyUpdated(ShopMoneyUpdatedSignal _signal)
+    {
+        // 이전 퀘스트(PutItems)가 아이템을 넣어 이미 완료되어 bStepActive가 false인 상태에서,
+        // 가공이 끝나 돈이 들어오면 다음 퀘스트(ReceiveMoney)를 시작한다.
+        if (bStepActive == false && currentStep == TutorialStep.PutItemsInLogContainer && _signal.money > 0)
+        {
+            StartStep(TutorialStep.ReceiveMoney);
+        }
+    }
+
+    private void MoneyEarned(MoneyEarnedSignal _signal)
+    {
+        if (bStepActive && currentStep == TutorialStep.ReceiveMoney)
+        {
+            CompleteStep();
+            StartStep(TutorialStep.UpgradeAxe);
+        }
+    }
+
+    private void SkillDispatched(SkillDispatchedSignal _signal)
+    {
+        if (bStepActive && currentStep == TutorialStep.UpgradeAxe)
+        {
+            if (_signal.commandType == SkillCommandType.AxeDamage)
+            {
+                CompleteStep();
+            }
         }
     }
 

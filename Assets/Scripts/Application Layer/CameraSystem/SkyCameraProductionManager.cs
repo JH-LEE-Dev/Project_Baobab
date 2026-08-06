@@ -93,6 +93,7 @@ public class SkyCameraProductionManager : MonoBehaviour
             // 무음이 된다. 여기서 계수까지 함께 깎으면 이중으로 적용되어 의도보다 빨리 죽는다.
             // (씬 로드 시 AudioManager.OnSceneLoaded가 계수를 0으로 내리고 3D 사운드를 전부 정지시키므로,
             //  다음 씬은 언제나 0에서 시작해 하강 연출에서 1로 회복된다.)
+            Sound.PlayUI(SoundID.SkyUP);
             Sequence seq = DOTween.Sequence();
             seq.Append(dummyTarget.DOMove(targetPosition, moveDuration));
             seq.AppendInterval(0.5f);
@@ -113,6 +114,7 @@ public class SkyCameraProductionManager : MonoBehaviour
             Vector3 targetRollbackPos = cameraStartPos;
 
             // 원래 위치(캐릭터 위치 + 오프셋 잔여분)로 더미 타겟 복원 및 복원 완료 시 원래 타겟팅 재연결
+            Sound.PlayUI(SoundID.SkyDown);
             Sound.FadeOutBGM(rollbackDuration * 0.5f);
             Sequence seq = DOTween.Sequence();
             seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, rollbackDuration));
@@ -259,6 +261,7 @@ public class SkyCameraProductionManager : MonoBehaviour
         Sound.FadeOutBGM(rollbackDuration * 0.5f);
         Sound.SetProduction3DVolumeFactor(0f);
         Sequence seq = DOTween.Sequence();
+        seq.InsertCallback(0.1f, () => Sound.PlayUI(SoundID.SkyDown));
         seq.AppendCallback(() => Sound.RampProduction3DVolume(1f, rollbackDuration));
         seq.Append(dummyTarget.DOMove(_characterTransform.position, rollbackDuration));
         seq.AppendCallback(OnIntroDescendComplete);
@@ -316,6 +319,7 @@ public class SkyCameraProductionManager : MonoBehaviour
         targetPos.y += yOffset;
 
         // 상승 연출은 PlayCameraMove의 상승 분기와 동일하게 거리 감쇠에만 맡긴다(위 주석 참고).
+        Sound.PlayUI(SoundID.SkyUP);
         Sequence seq = DOTween.Sequence();
         seq.Append(dummyTarget.DOMove(targetPos, moveDuration));
         seq.AppendCallback(OnAscendOutComplete);

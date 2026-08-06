@@ -250,6 +250,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.Subscribe<DungeonBGMStartSignal>(DungeonBGMStart);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
+        signalHub.Subscribe<TutorialQuestTransitionCompletedSignal>(TutorialQuestTransitionCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -266,6 +268,8 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.UnSubscribe<DungeonBGMStartSignal>(DungeonBGMStart);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
+        signalHub.UnSubscribe<TutorialQuestTransitionCompletedSignal>(TutorialQuestTransitionCompleted);
     }
 
     private void PortalActivated()
@@ -480,6 +484,7 @@ public class InDungeonSystem : MonoBehaviour
     {
         signalHub.Publish(new PopupUIDownSignal());
         inDungeonProductionManager.StartCharacterRide();
+        signalHub.Publish(new CharacterRideStartSignal());
 
         offroadContainer.col.enabled = false;
         if (inDungeonObjectManager.offroadVehicle != null)
@@ -604,14 +609,30 @@ public class InDungeonSystem : MonoBehaviour
         switch (_signal.step)
         {
             case TutorialStep.CutTree:
-                offroadContainer.EnableCollision();
+                // (OffroadContainer 상호작용은 다음 퀘스트 UI로 트랜지션이 완전히 끝난 후 TutorialQuestTransitionCompleted 에서 켠다)
                 break;
             case TutorialStep.FillOffroadContainer:
-                inDungeonObjectManager.offroadVehicle?.SetCanTravel(true);
                 // 튜토리얼 전용: 해당 퀘스트가 끝나면 피로도 바닥값이 19%로 낮아지는데, 
                 // 실제로 19%에 도달할 때 다음 퀘스트를 띄워주기 위해 여기서 체크를 시작한다.
+                // (차량 상호작용은 퀘스트 UI가 완전히 사라진 후 TutorialQuestHideCompleted 에서 켠다)
                 StartCoroutine(WaitUntilStaminaReachedFloor());
                 break;
+        }
+    }
+
+    private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.FillOffroadContainer)
+        {
+            inDungeonObjectManager.offroadVehicle?.SetCanTravel(true);
+        }
+    }
+
+    private void TutorialQuestTransitionCompleted(TutorialQuestTransitionCompletedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.FillOffroadContainer)
+        {
+            offroadContainer.EnableCollision();
         }
     }
 

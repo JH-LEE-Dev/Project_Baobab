@@ -175,3 +175,5 @@ public struct DeclareDungeonStateSignal
         dungeonState = _dungeonState;
     }
 }
+
+public struct CharacterRideStartSignal { }
