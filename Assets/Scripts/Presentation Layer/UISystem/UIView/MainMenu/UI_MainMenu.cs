@@ -37,6 +37,10 @@ public class UI_MainMenu : MonoBehaviour
     private System.Action cachedCancelNewGame;
     private System.Action cachedOnNewGameDisappearComplete;
     private System.Action cachedSetLocalization;
+    private System.Action cachedOnNewGamePressed;
+    private System.Action cachedPlayGameSelect;
+
+    private bool isNewGameConfirmationOpen;
     
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(UIView_MainMenu _parentView, UIViewContext _uIViewContext)
@@ -48,6 +52,8 @@ public class UI_MainMenu : MonoBehaviour
         cachedCancelNewGame = CancelNewGame;
         cachedOnNewGameDisappearComplete = OnNewGameDisappearComplete;
         cachedSetLocalization = SetLocalization;
+        cachedOnNewGamePressed = OnNewGamePressed;
+        cachedPlayGameSelect = PlayGameSelect;
         
         if (null != viewCtx && null != viewCtx.localizationManager)
         {
@@ -57,12 +63,12 @@ public class UI_MainMenu : MonoBehaviour
         
         if (null != newGameButton)
         {
-            newGameButton.Initialize(OnNewGameClicked);
+            newGameButton.Initialize(OnNewGameClicked, cachedOnNewGamePressed);
         }
         
         if (null != loadGameButton)
         {
-            loadGameButton.Initialize(OnLoadGameClicked);
+            loadGameButton.Initialize(OnLoadGameClicked, cachedPlayGameSelect);
             // 이곳에서의 초기 판단은 saveSystem 주입 전일 수 있으므로 제거하거나 둡니다. (안전하게 의존성 주입 후 다시 업데이트함)
         }
         
@@ -222,8 +228,9 @@ public class UI_MainMenu : MonoBehaviour
     {
         if (null != parentView)
         {
-            if (parentView.HasSaveData() && null != warningPopup && null != viewCtx && null != viewCtx.localizationManager)
+            if (ShouldConfirmNewGame())
             {
+                isNewGameConfirmationOpen = true;
                 string _warnMsg = viewCtx.localizationManager.GetText("NewGameWarning");
                 warningPopup.ShowWarning(_warnMsg, cachedExecuteNewGame, cachedCancelNewGame);
             }
@@ -233,9 +240,38 @@ public class UI_MainMenu : MonoBehaviour
             }
         }
     }
+
+    private void OnNewGamePressed()
+    {
+        if (false == ShouldConfirmNewGame())
+        {
+            PlayGameSelect();
+        }
+    }
+
+    private bool ShouldConfirmNewGame()
+    {
+        return null != parentView
+            && parentView.HasSaveData()
+            && null != warningPopup
+            && null != viewCtx
+            && null != viewCtx.localizationManager;
+    }
+
+    private void PlayGameSelect()
+    {
+        Sound.PlayUI(SoundID.MainGameSelect);
+    }
     
     private void ExecuteNewGame()
     {
+        if (true == isNewGameConfirmationOpen)
+        {
+            isNewGameConfirmationOpen = false;
+            Sound.PlayUI(SoundID.MainClick);
+            PlayGameSelect();
+        }
+
         if (null != newGameButton)
         {
             newGameButton.PlayDisappearSequenceManually(cachedOnNewGameDisappearComplete);
@@ -256,6 +292,12 @@ public class UI_MainMenu : MonoBehaviour
 
     private void CancelNewGame()
     {
+        if (true == isNewGameConfirmationOpen)
+        {
+            isNewGameConfirmationOpen = false;
+            Sound.PlayUI(SoundID.MainClick);
+        }
+
         // 팝업 닫힘 (특별한 동작 없음)
     }
     
