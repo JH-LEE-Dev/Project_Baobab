@@ -344,7 +344,16 @@ public class TownObjectManager : MonoBehaviour, ITownObjSystemCH
 
     public void CanTravel()
     {
-        bCanTravel = true;
+        SetCanTravel(true);
+    }
+
+    /// <summary>
+    /// 마을에 있는 OffroadVehicle의 상호작용 가능 여부를 직접 지정한다. 다음에 ReadyObj()가 호출될
+    /// 때(재입장 등)도 이 값이 유지되도록 내부 필드도 함께 갱신한다.
+    /// </summary>
+    public void SetCanTravel(bool _bCanTravel)
+    {
+        bCanTravel = _bCanTravel;
 
         if (offroadVehicle != null)
             offroadVehicle.SetCanTravel(bCanTravel);
