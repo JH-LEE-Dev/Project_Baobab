@@ -83,6 +83,11 @@ public class UI_MainMenu : MonoBehaviour
             creditButton.Initialize(OnCreditClicked);
         }
 
+        if (null != warningPopup)
+        {
+            warningPopup.Initialize(_uIViewContext);
+        }
+
         SetLocalization();
     }
 
