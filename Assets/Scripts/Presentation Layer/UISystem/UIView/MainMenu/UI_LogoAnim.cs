@@ -95,6 +95,8 @@ public class UI_LogoAnim : MonoBehaviour
             Vector2 targetPos = initialPosition + new Vector2(0f, moveDistanceY);
 
             // 부드럽고 찰지게 이동 후 콜백 실행
+            Sound.PlayUI(SoundID.MainMenuStart00);
+            Sound.PlayUI(SoundID.MainMenuStart01);
             logoTransform.DOAnchorPos(targetPos, moveDuration)
                 .SetEase(moveEase)
                 .OnComplete(onRevealCompleteCallback);

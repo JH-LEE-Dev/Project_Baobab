@@ -110,6 +110,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private TweenCallback onDisappearCompleteCallback;
     private TweenCallback onClickPunchCompleteCallback;
     private TweenCallback playAppearTextMotionCallback;
+    private TweenCallback playAppearDotSoundCallback;
+    private TweenCallback playAppearButtonSoundCallback;
     private TweenCallback invokeOnClickActionCallback;
     private TweenCallback playDisappearImmediateCallback;
     private TweenCallback invokeManualDisappearCallback;
@@ -119,6 +121,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private DOGetter<Color> getTextShadowColor;
     private DOSetter<Color> setTextShadowColor;
+
+    private int appearSoundIndex = -1;
 
     private void Awake()
     {
@@ -141,6 +145,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         onDisappearCompleteCallback = OnDisappearComplete;
         onClickPunchCompleteCallback = OnClickPunchComplete;
         playAppearTextMotionCallback = PlayAppearTextMotion;
+        playAppearDotSoundCallback = PlayAppearDotSound;
+        playAppearButtonSoundCallback = PlayAppearButtonSound;
         invokeOnClickActionCallback = InvokeOnClickAction;
         playDisappearImmediateCallback = PlayDisappearImmediate;
         invokeManualDisappearCallback = InvokeManualDisappearAction;
@@ -157,7 +163,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     private void OnEnable()
     {
-        ResetAndPlayAppear();
+        ResetAndPlayAppearInternal();
     }
 
     private void OnDisable()
@@ -167,6 +173,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         isDisappearing = false;
         isMaintained = false;
         isAppearing = false;
+        appearSoundIndex = -1;
 
         KillAllTweens();
         
@@ -181,8 +188,10 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     /// <summary>
     /// 외부에서 강제로 버튼을 초기화하고 처음 등장하는 다다닥 모션을 다시 재생할 때 호출합니다.
     /// </summary>
-    public void ResetAndPlayAppear()
+    public void ResetAndPlayAppear(int _appearSoundIndex = -1)
     {
+        appearSoundIndex = _appearSoundIndex;
+
         // 꺼져있다면 켜주기만 해도 OnEnable이 불리면서 알아서 연출이 시작됨
         if (false == gameObject.activeSelf)
         {
@@ -190,6 +199,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             return;
         }
 
+        ResetAndPlayAppearInternal();
+    }
+
+    private void ResetAndPlayAppearInternal()
+    {
         SetInteractable(isInteractable); // 초기 컬러 갱신
 
         float _delay = appearManualDelay;
@@ -286,7 +300,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             dotTarget.localScale = Vector3.zero;
             dotTarget.localEulerAngles = dotOriginalRot - appearDotRotation;
 
-            dotTarget.DOScale(Vector3.one, appearDotDuration).SetEase(Ease.OutBack).SetDelay(_delay);
+            dotTarget.DOScale(Vector3.one, appearDotDuration).SetEase(Ease.OutBack).SetDelay(_delay)
+                     .OnStart(playAppearDotSoundCallback);
             dotTarget.DOLocalRotate(dotOriginalRot, appearDotDuration, RotateMode.FastBeyond360).SetEase(appearRotEase).SetDelay(_delay)
                      .OnComplete(playAppearTextMotionCallback);
             
@@ -299,6 +314,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         {
             textTarget.DOScale(Vector3.one, appearTextDuration).SetEase(Ease.OutBack).SetDelay(_delay);
             textTarget.DOAnchorPos(textOriginalPos, appearTextDuration).SetEase(Ease.OutBack).SetDelay(_delay)
+                      .OnStart(playAppearButtonSoundCallback)
                       .OnComplete(onAppearCompleteCallback);
         }
         else
@@ -311,6 +327,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         if (null != textTarget)
         {
+            PlayAppearButtonSound();
             textTarget.DOScale(Vector3.one, appearTextDuration).SetEase(appearEase);
             textTarget.DOAnchorPos(textOriginalPos, appearTextDuration).SetEase(appearEase)
                       .OnComplete(onAppearCompleteCallback);
@@ -323,6 +340,36 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
     // 유니티 이벤트 시스템
     
+    private void PlayAppearDotSound()
+    {
+        switch (appearSoundIndex)
+        {
+            case 0: Sound.PlayUI(SoundID.MainMenuDot00); break;
+            case 1: Sound.PlayUI(SoundID.MainMenuDot01); break;
+            case 2: Sound.PlayUI(SoundID.MainMenuDot02); break;
+            case 3: Sound.PlayUI(SoundID.MainMenuDot03); break;
+            case 4: Sound.PlayUI(SoundID.MainMenuDot04); break;
+        }
+    }
+
+    private void PlayAppearButtonSound()
+    {
+        if (0 == appearSoundIndex)
+        {
+            Sound.PlayUI(SoundID.MainMenuButtonAppearStart00);
+            Sound.PlayUI(SoundID.MainMenuButtonAppearStart01);
+        }
+
+        switch (appearSoundIndex)
+        {
+            case 0: Sound.PlayUI(SoundID.MainMenuButton00); break;
+            case 1: Sound.PlayUI(SoundID.MainMenuButton01); break;
+            case 2: Sound.PlayUI(SoundID.MainMenuButton02); break;
+            case 3: Sound.PlayUI(SoundID.MainMenuButton03); break;
+            case 4: Sound.PlayUI(SoundID.MainMenuButton04); break;
+        }
+    }
+
     public void OnPointerEnter(PointerEventData _eventData)
     {
         isHovered = true;
@@ -442,6 +489,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
                         UI_MainMenuButton _btn = _siblingButtons[i];
                         if (null != _btn && _btn != this)
                         {
+                            if (false == _hasDisappearTargets)
+                            {
+                                Sound.PlayUI(SoundID.MainGameSelect);
+                            }
+
                             _btn.PlayDisappearMotion(_currentDisappearDelay);
                             _hasDisappearTargets = true;
                             _currentDisappearDelay += disappearStaggerInterval;
@@ -517,6 +569,11 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
                     UI_MainMenuButton _btn = _siblingButtons[i];
                     if (null != _btn && _btn != this)
                     {
+                        if (false == _hasDisappearTargets)
+                        {
+                            Sound.PlayUI(SoundID.MainGameSelect);
+                        }
+
                         _btn.PlayDisappearMotion(_currentDisappearDelay);
                         _hasDisappearTargets = true;
                         _currentDisappearDelay += disappearStaggerInterval;
@@ -538,6 +595,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         else
         {
             // 타겟이 하나도 없으면 자신만 사라짐
+            Sound.PlayUI(SoundID.MainGameSelect);
             PlayDisappearImmediate();
             _maxDelay = disappearSuckDuration + disappearDotShrinkDuration;
         }

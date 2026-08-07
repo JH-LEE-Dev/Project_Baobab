@@ -6,7 +6,7 @@ using TMPro;
 /// <summary>
 /// 옵션 창의 개별 탭 버튼을 담당합니다. 클로저 할당 방지를 위해 IPointerClickHandler를 직접 구현합니다.
 /// </summary>
-public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler
+public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler
 {
     // 외부 컴포넌트 참조
     [Header("Visual Settings")]
@@ -62,8 +62,15 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler
     }
 
     // 유니티 이벤트 함수
+    public void OnPointerEnter(PointerEventData _eventData)
+    {
+        Sound.PlayUI(SoundID.MainMenuDot01);
+    }
+
     public void OnPointerClick(PointerEventData _eventData)
     {
+        Sound.PlayUI(SoundID.OptionClick);
+
         if (null != parentGroup)
         {
             parentGroup.OnTabClicked(tabIndex);

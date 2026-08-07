@@ -50,6 +50,8 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     [ColorUsage(true, true)] [SerializeField] private Color clickEffectColor = Color.black;
     
     private Action onClickAction;
+    private SoundID hoverSoundId = SoundID.MainMenuDot01;
+    private SoundID clickSoundId = SoundID.OptionClick;
     private bool isInteractable = true;
     
     private bool isHovered = false;
@@ -68,9 +70,14 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         targetImage = targetGraphic as Image;
     }
 
-    public void Initialize(Action _onClick)
+    public void Initialize(
+        Action _onClick,
+        SoundID _hoverSoundId = SoundID.MainMenuDot01,
+        SoundID _clickSoundId = SoundID.OptionClick)
     {
         onClickAction = _onClick;
+        hoverSoundId = _hoverSoundId;
+        clickSoundId = _clickSoundId;
     }
 
     public void SetInteractable(bool _isInteractable)
@@ -148,6 +155,8 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     {
         isHovered = true;
         if (false == isInteractable) return;
+
+        Sound.PlayUI(hoverSoundId);
         
         KillTween();
         if (true == isPointerDown)
@@ -228,6 +237,8 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
     public void OnPointerClick(PointerEventData _eventData)
     {
         if (false == isInteractable) return;
+
+        Sound.PlayUI(clickSoundId);
 
         if (null != onClickAction)
         {
