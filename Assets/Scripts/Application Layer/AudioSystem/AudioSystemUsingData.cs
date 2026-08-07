@@ -40,6 +40,7 @@ public enum SoundID
     AbilityFinalEX2 = 460321177,
     AbilityFinalUpgrade = -662555292,
     AbilityHover = -206841789,
+    AbilityOpen = 1422650221,
     AbilityUpgrade = -1560408535,
     AbilityUpgradeFailed = 1456123281,
     FontPop = -1165999806,

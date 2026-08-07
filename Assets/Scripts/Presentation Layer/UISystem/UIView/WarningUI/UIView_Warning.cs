@@ -15,8 +15,6 @@ public class UIView_Warning : UIView
     private const float HiddenBGWidth = 0f;
     private const float WarningBGTargetAlpha = 0.95f;
 
-    private IInventory characterInventory;
-
     public event Action DeActivateWarningUIEvent;
 
     [Header("UI References")]
@@ -69,6 +67,7 @@ public class UIView_Warning : UIView
     private RectTransform cancelButtonVisual;
     private LocalizationManager localizationManager;
     private bool isClosing;
+    private bool playSoundsForCurrentPresentation;
 
     private sealed class WarningBGPiece
     {
@@ -94,9 +93,10 @@ public class UIView_Warning : UIView
         BindButtonEvents();
     }
 
-    public void DependencyInjection(IInventory _characterInventory)
+    public void ShowWarning()
     {
-        characterInventory = _characterInventory;
+        playSoundsForCurrentPresentation = true;
+        Show();
     }
 
     public override void Hide()
@@ -112,6 +112,10 @@ public class UIView_Warning : UIView
         base.OnShow();
         bApproved = false;
         gameObject.SetActive(true);
+
+        if (playSoundsForCurrentPresentation)
+            Sound.PlayUI(SoundID.ResultUIOpen);
+
         PlayOpenProduction();
     }
 
@@ -121,6 +125,7 @@ public class UIView_Warning : UIView
         gameObject.SetActive(false);
         DeActivateWarningUI();
         bApproved = false;
+        playSoundsForCurrentPresentation = false;
     }
 
     public override void OnDestroy()
@@ -139,6 +144,10 @@ public class UIView_Warning : UIView
     {
         HideSelectionCursorImmediately();
         bApproved = true;
+
+        if (playSoundsForCurrentPresentation)
+            Sound.PlayUI(SoundID.MainClick);
+
         Hide();
     }
 
@@ -146,6 +155,10 @@ public class UIView_Warning : UIView
     {
         HideSelectionCursorImmediately();
         bApproved = false;
+
+        if (playSoundsForCurrentPresentation)
+            Sound.PlayUI(SoundID.MainClick);
+
         Hide();
     }
 
@@ -193,15 +206,12 @@ public class UIView_Warning : UIView
     {
         KillProductionSequences();
         CacheTargetSize();
-        bool hasLogInInventory = HasLogInCharacterInventory();
-        RectTransform mainTargetPivot = hasLogInInventory || soloTextPivot == null ? mainTextPivot : soloTextPivot;
         AssignRandomWarningBGDelays();
         float bgProductionDuration = GetWarningBGProductionDuration();
-        float buttonStartTime = hasLogInInventory
-            ? bgProductionDuration + (contentOpenInterval * 2f)
-            : bgProductionDuration + contentOpenInterval;
+        float subTextStartTime = bgProductionDuration + contentOpenInterval;
+        float buttonStartTime = bgProductionDuration + (contentOpenInterval * 2f);
 
-        PrepareOpenState(hasLogInInventory, mainTargetPivot);
+        PrepareOpenState(true, mainTextPivot);
         SetButtonInputEnabled(false);
 
         openSequence = DOTween.Sequence().SetUpdate(true);
@@ -219,12 +229,17 @@ public class UIView_Warning : UIView
                 openSequence.Join(warningBGCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(productionEase));
         }
 
-        InsertContentOpenTween(mainText, mainTextCanvasGroup, mainTargetPivot, bgProductionDuration);
-
-        if (hasLogInInventory)
-            InsertContentOpenTween(subText, subTextCanvasGroup, subTextPivot, bgProductionDuration + contentOpenInterval);
+        InsertContentOpenTween(mainText, mainTextCanvasGroup, mainTextPivot, bgProductionDuration);
+        InsertContentOpenTween(subText, subTextCanvasGroup, subTextPivot, subTextStartTime);
 
         InsertContentOpenTween(buttonRoot, buttonRootCanvasGroup, buttonPivot, buttonStartTime);
+
+        if (playSoundsForCurrentPresentation)
+        {
+            openSequence.InsertCallback(bgProductionDuration, () => Sound.PlayUI(SoundID.MainMenuDot02));
+            openSequence.InsertCallback(subTextStartTime, () => Sound.PlayUI(SoundID.MainMenuDot03));
+            openSequence.InsertCallback(buttonStartTime, () => Sound.PlayUI(SoundID.MainMenuDot04));
+        }
 
         openSequence.InsertCallback(buttonStartTime, EnableButtons);
     }
@@ -297,44 +312,6 @@ public class UIView_Warning : UIView
     private Vector3 GetHiddenPosition(RectTransform pivot)
     {
         return pivot.localPosition + new Vector3(0f, contentOpenYOffset, 0f);
-    }
-
-    private bool HasLogInCharacterInventory()
-    {
-        if (characterInventory == null || characterInventory.inventorySlots == null)
-            return false;
-
-        IReadOnlyList<IInventorySlot> slots = characterInventory.inventorySlots;
-        int slotCount = Mathf.Min(characterInventory.currentSlotCnt, slots.Count);
-
-        for (int i = 0; i < slotCount; i++)
-        {
-            IInventorySlot slot = slots[i];
-            if (slot == null || slot.count <= 0)
-                continue;
-
-            if (slot.itemData is ILogItemData)
-                return true;
-
-            if (HasTreeTypeCount(slot.treeTypeCounts))
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool HasTreeTypeCount(TreeTypeCount[] treeTypeCounts)
-    {
-        if (treeTypeCounts == null)
-            return false;
-
-        for (int i = 0; i < treeTypeCounts.Length; i++)
-        {
-            if (treeTypeCounts[i].treeType != TreeType.None && treeTypeCounts[i].count > 0)
-                return true;
-        }
-
-        return false;
     }
 
     private void CacheWarningBGPieces()
@@ -492,6 +469,10 @@ public class UIView_Warning : UIView
     {
         KillProductionSequences();
         isClosing = true;
+
+        if (playSoundsForCurrentPresentation)
+            Sound.PlayUI(SoundID.ResultUIClose);
+
         HideSelectionCursorImmediately();
         SetButtonInputEnabled(false);
         SetCanvasGroupRaycast(warningBGCanvasGroup, true);
@@ -744,6 +725,12 @@ public class UIView_Warning : UIView
 
         if (cancelTouchAreaButton != null)
             cancelTouchAreaButton.onClick.AddListener(OnCancelButtonClicked);
+
+        if (okHoverTarget != null)
+            okHoverTarget.PointerEnteredEvent += OnWarningButtonHovered;
+
+        if (cancelHoverTarget != null)
+            cancelHoverTarget.PointerEnteredEvent += OnWarningButtonHovered;
     }
 
     private void UnbindButtonEvents()
@@ -753,6 +740,18 @@ public class UIView_Warning : UIView
 
         if (cancelTouchAreaButton != null)
             cancelTouchAreaButton.onClick.RemoveListener(OnCancelButtonClicked);
+
+        if (okHoverTarget != null)
+            okHoverTarget.PointerEnteredEvent -= OnWarningButtonHovered;
+
+        if (cancelHoverTarget != null)
+            cancelHoverTarget.PointerEnteredEvent -= OnWarningButtonHovered;
+    }
+
+    private void OnWarningButtonHovered()
+    {
+        if (playSoundsForCurrentPresentation)
+            Sound.PlayUI(SoundID.ResultUIHover);
     }
 
     private void DeActivateWarningUI()
