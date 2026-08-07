@@ -125,8 +125,10 @@ public class UIView_Result : UIView
     [Header("UI References")]
     [SerializeField] private Button goHomeButton;
     [SerializeField] private Button retryButton;
+    [SerializeField] private Button tutorialGoHomeButton;
     [SerializeField] private RectTransform goHomeButtonTouchArea;
     [SerializeField] private RectTransform retryButtonTouchArea;
+    [SerializeField] private RectTransform tutorialGoHomeButtonTouchArea;
     [SerializeField] private GameObject resultContentsRoot;
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text treeKillCountText;
@@ -195,15 +197,13 @@ public class UIView_Result : UIView
     private UISelectionCursor selectionCursorInstance;
     private UIHoverSelectionTarget goHomeHoverTarget;
     private UIHoverSelectionTarget retryHoverTarget;
+    private UIHoverSelectionTarget tutorialGoHomeHoverTarget;
     private Button goHomeTouchAreaButton;
     private Button retryTouchAreaButton;
+    private Button tutorialGoHomeTouchAreaButton;
     private RectTransform goHomeButtonVisual;
     private RectTransform retryButtonVisual;
-    private Vector2 goHomeButtonVisualDefaultPosition;
-    private Vector2 retryButtonVisualDefaultPosition;
-    private Vector2 goHomeButtonTouchAreaDefaultPosition;
-    private Vector2 retryButtonTouchAreaDefaultPosition;
-    private bool hasCachedButtonLayout;
+    private RectTransform tutorialGoHomeButtonVisual;
     private float lastFontPopSoundTime = float.NegativeInfinity;
     private float lastTreeKillCountSoundTime = float.NegativeInfinity;
     private float lastInventoryLogSoundTime = float.NegativeInfinity;
@@ -262,7 +262,7 @@ public class UIView_Result : UIView
     public void OpenResultUI()
     {
         RefreshResult();
-        ApplyTutorialButtonLayout();
+        ApplyResultButtonVisibility();
         SetResultContentsActive(true);
         PlayResultOpenProduction();
     }
@@ -547,75 +547,50 @@ public class UIView_Result : UIView
         if (retryTouchAreaButton != null)
             retryTouchAreaButton.interactable = enabled;
 
+        if (tutorialGoHomeTouchAreaButton != null)
+            tutorialGoHomeTouchAreaButton.interactable = enabled;
+
         if (goHomeButton != null)
             goHomeButton.interactable = enabled;
 
         if (retryButton != null)
             retryButton.interactable = enabled;
+
+        if (tutorialGoHomeButton != null)
+            tutorialGoHomeButton.interactable = enabled;
     }
 
     private void CacheButtonTouchAreas()
     {
         goHomeButtonVisual = GetButtonVisual(goHomeButton);
         retryButtonVisual = GetButtonVisual(retryButton);
+        tutorialGoHomeButtonVisual = GetButtonVisual(tutorialGoHomeButton);
         goHomeTouchAreaButton = EnsureTouchAreaButton(goHomeButtonTouchArea);
         retryTouchAreaButton = EnsureTouchAreaButton(retryButtonTouchArea);
+        tutorialGoHomeTouchAreaButton = EnsureTouchAreaButton(tutorialGoHomeButtonTouchArea);
 
         SetButtonVisualRaycastTarget(goHomeButtonVisual, false);
         SetButtonVisualRaycastTarget(retryButtonVisual, false);
-        CacheButtonLayout();
+        SetButtonVisualRaycastTarget(tutorialGoHomeButtonVisual, false);
     }
 
-    private void CacheButtonLayout()
+    private void ApplyResultButtonVisibility()
     {
-        if (hasCachedButtonLayout)
-            return;
+        bool showNormalButtons = false == bIsTutorial;
 
-        if (goHomeButtonVisual != null)
-            goHomeButtonVisualDefaultPosition = goHomeButtonVisual.anchoredPosition;
+        SetButtonActive(goHomeButtonVisual, showNormalButtons);
+        SetButtonActive(goHomeButtonTouchArea, showNormalButtons);
+        SetButtonActive(retryButtonVisual, showNormalButtons);
+        SetButtonActive(retryButtonTouchArea, showNormalButtons);
 
-        if (retryButtonVisual != null)
-            retryButtonVisualDefaultPosition = retryButtonVisual.anchoredPosition;
-
-        if (goHomeButtonTouchArea != null)
-            goHomeButtonTouchAreaDefaultPosition = goHomeButtonTouchArea.anchoredPosition;
-
-        if (retryButtonTouchArea != null)
-            retryButtonTouchAreaDefaultPosition = retryButtonTouchArea.anchoredPosition;
-
-        hasCachedButtonLayout = true;
+        SetButtonActive(tutorialGoHomeButtonVisual, bIsTutorial);
+        SetButtonActive(tutorialGoHomeButtonTouchArea, bIsTutorial);
     }
 
-    private void ApplyTutorialButtonLayout()
+    private void SetButtonActive(RectTransform target, bool active)
     {
-        CacheButtonLayout();
-
-        bool showRetryButton = bIsTutorial == false;
-
-        if (retryButtonVisual != null)
-        {
-            retryButtonVisual.gameObject.SetActive(showRetryButton);
-            retryButtonVisual.anchoredPosition = retryButtonVisualDefaultPosition;
-        }
-
-        if (retryButtonTouchArea != null)
-        {
-            retryButtonTouchArea.gameObject.SetActive(showRetryButton);
-            retryButtonTouchArea.anchoredPosition = retryButtonTouchAreaDefaultPosition;
-        }
-
-        Vector2 goHomePosition = bIsTutorial ? Vector2.zero : goHomeButtonVisualDefaultPosition;
-        if (goHomeButtonVisual != null)
-        {
-            goHomeButtonVisual.gameObject.SetActive(true);
-            goHomeButtonVisual.anchoredPosition = goHomePosition;
-        }
-
-        if (goHomeButtonTouchArea != null)
-        {
-            goHomeButtonTouchArea.gameObject.SetActive(true);
-            goHomeButtonTouchArea.anchoredPosition = bIsTutorial ? Vector2.zero : goHomeButtonTouchAreaDefaultPosition;
-        }
+        if (target != null)
+            target.gameObject.SetActive(active);
     }
 
     private RectTransform GetButtonVisual(Button button)
@@ -660,6 +635,7 @@ public class UIView_Result : UIView
 
         goHomeHoverTarget = InitializeHoverTarget(goHomeButtonTouchArea, goHomeButtonVisual);
         retryHoverTarget = InitializeHoverTarget(retryButtonTouchArea, retryButtonVisual);
+        tutorialGoHomeHoverTarget = InitializeHoverTarget(tutorialGoHomeButtonTouchArea, tutorialGoHomeButtonVisual);
     }
 
     private UIHoverSelectionTarget InitializeHoverTarget(RectTransform touchArea, RectTransform visual)
@@ -702,6 +678,9 @@ public class UIView_Result : UIView
 
         if (retryHoverTarget != null)
             retryHoverTarget.HideCursorImmediately();
+
+        if (tutorialGoHomeHoverTarget != null)
+            tutorialGoHomeHoverTarget.HideCursorImmediately();
     }
 
     private void BindButtonEvents()
@@ -711,6 +690,9 @@ public class UIView_Result : UIView
 
         if (retryTouchAreaButton != null)
             retryTouchAreaButton.onClick.AddListener(OnRetryButtonClicked);
+
+        if (tutorialGoHomeTouchAreaButton != null)
+            tutorialGoHomeTouchAreaButton.onClick.AddListener(OnGoHomeButtonClicked);
     }
 
     private void UnbindButtonEvents()
@@ -721,11 +703,17 @@ public class UIView_Result : UIView
         if (retryTouchAreaButton != null)
             retryTouchAreaButton.onClick.RemoveListener(OnRetryButtonClicked);
 
+        if (tutorialGoHomeTouchAreaButton != null)
+            tutorialGoHomeTouchAreaButton.onClick.RemoveListener(OnGoHomeButtonClicked);
+
         if (goHomeHoverTarget != null)
             goHomeHoverTarget.PointerEnteredEvent -= OnResultButtonHovered;
 
         if (retryHoverTarget != null)
             retryHoverTarget.PointerEnteredEvent -= OnResultButtonHovered;
+
+        if (tutorialGoHomeHoverTarget != null)
+            tutorialGoHomeHoverTarget.PointerEnteredEvent -= OnResultButtonHovered;
     }
 
     private void OnResultButtonHovered()

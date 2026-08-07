@@ -5,6 +5,12 @@ using UnityEngine.UI;
 
 namespace PresentationLayer.UISystem.CustomNumber
 {
+    public enum CurrencyCounterLayoutMode
+    {
+        Left,
+        CenterContent,
+    }
+
     public class CurrencyCounterHUD : MonoBehaviour
     {
         [Serializable]
@@ -21,6 +27,10 @@ namespace PresentationLayer.UISystem.CustomNumber
         [Header("Currency Icons")]
         [SerializeField] private CurrencyIconEntry[] iconEntries;
 
+        [Header("Layout")]
+        [SerializeField] private CurrencyCounterLayoutMode layoutMode = CurrencyCounterLayoutMode.Left;
+        [SerializeField] private float contentSpacing = 2.0f;
+
         [Header("Default")]
         [SerializeField] private MoneyType defaultMoneyType = MoneyType.Coin;
         [SerializeField] private long defaultValue;
@@ -33,6 +43,11 @@ namespace PresentationLayer.UISystem.CustomNumber
         private long currentValue;
         private bool initialized;
         private bool hasDisplayedValue;
+        private RectTransform currencyIconRect;
+        private RectTransform currencyFontRect;
+        private Vector2 defaultIconPosition;
+        private Vector2 defaultFontPosition;
+        private bool hasCachedLayout;
 
         public void Initialize()
         {
@@ -47,9 +62,18 @@ namespace PresentationLayer.UISystem.CustomNumber
             if (null == currencyFontHUD)
                 currencyFontHUD = GetComponentInChildren<CurrencyFontHUD>(true);
 
+            CacheLayout();
+            SubscribeFontBoundsChanged();
             currencyFontHUD?.Initialize();
             SetMoneyType(defaultMoneyType);
             SetNumber(defaultValue);
+            RefreshLayout();
+        }
+
+        private void OnDestroy()
+        {
+            if (null != currencyFontHUD)
+                currencyFontHUD.VisibleContentBoundsChanged -= RefreshLayout;
         }
 
         public void SetMoneyType(MoneyType _moneyType)
@@ -64,6 +88,7 @@ namespace PresentationLayer.UISystem.CustomNumber
 
             currencyIcon.sprite = _icon;
             currencyIcon.gameObject.SetActive(null != _icon);
+            RefreshLayout();
         }
 
         public void SetNumber(long _value)
@@ -97,6 +122,22 @@ namespace PresentationLayer.UISystem.CustomNumber
             currencyFontHUD?.SetMode(_mode);
         }
 
+        public void SetLayoutMode(CurrencyCounterLayoutMode _mode)
+        {
+            InitializeIfNeeded();
+
+            if (layoutMode == _mode)
+                return;
+
+            layoutMode = _mode;
+            RefreshLayout();
+        }
+
+        public CurrencyCounterLayoutMode GetLayoutMode()
+        {
+            return layoutMode;
+        }
+
         public MoneyType GetMoneyType()
         {
             return currentMoneyType;
@@ -111,6 +152,89 @@ namespace PresentationLayer.UISystem.CustomNumber
         {
             if (false == initialized)
                 Initialize();
+        }
+
+        private void CacheLayout()
+        {
+            if (hasCachedLayout)
+                return;
+
+            currencyIconRect = null != currencyIcon ? currencyIcon.rectTransform : null;
+            currencyFontRect = null != currencyFontHUD ? currencyFontHUD.GetComponent<RectTransform>() : null;
+
+            if (null != currencyIconRect)
+                defaultIconPosition = currencyIconRect.anchoredPosition;
+
+            if (null != currencyFontRect)
+                defaultFontPosition = currencyFontRect.anchoredPosition;
+
+            hasCachedLayout = true;
+        }
+
+        private void SubscribeFontBoundsChanged()
+        {
+            if (null == currencyFontHUD)
+                return;
+
+            currencyFontHUD.VisibleContentBoundsChanged -= RefreshLayout;
+            currencyFontHUD.VisibleContentBoundsChanged += RefreshLayout;
+        }
+
+        private void RefreshLayout()
+        {
+            if (false == hasCachedLayout)
+                CacheLayout();
+
+            if (layoutMode == CurrencyCounterLayoutMode.Left)
+            {
+                RestoreDefaultLayout();
+                return;
+            }
+
+            bool _hasIcon = null != currencyIconRect && currencyIcon.gameObject.activeSelf;
+            bool _hasFont = null != currencyFontRect && currencyFontHUD.gameObject.activeSelf &&
+                            currencyFontHUD.VisibleContentWidth > 0.0f;
+
+            float _iconWidth = _hasIcon ? currencyIconRect.rect.width : 0.0f;
+            float _fontWidth = _hasFont ? currencyFontHUD.VisibleContentWidth : 0.0f;
+            float _spacing = _hasIcon && _hasFont ? Mathf.Max(0.0f, contentSpacing) : 0.0f;
+            float _leftEdge = -(_iconWidth + _spacing + _fontWidth) * 0.5f;
+            float _pixelUnit = null != currencyFontHUD ? currencyFontHUD.PixelUnit : 1.0f;
+            _leftEdge = SnapToPixelGrid(_leftEdge, _pixelUnit);
+
+            if (_hasIcon)
+            {
+                Vector2 _position = currencyIconRect.anchoredPosition;
+                _position.x = SnapToPixelGrid(
+                    _leftEdge + (_iconWidth * currencyIconRect.pivot.x),
+                    _pixelUnit);
+                currencyIconRect.anchoredPosition = _position;
+                _leftEdge += _iconWidth + _spacing;
+            }
+
+            if (_hasFont)
+            {
+                Vector2 _position = currencyFontRect.anchoredPosition;
+                _position.x = SnapToPixelGrid(
+                    _leftEdge - currencyFontHUD.VisibleContentLeftEdge,
+                    _pixelUnit);
+                currencyFontRect.anchoredPosition = _position;
+            }
+        }
+
+        private static float SnapToPixelGrid(float _value, float _pixelUnit)
+        {
+            _pixelUnit = Mathf.Max(0.0001f, _pixelUnit);
+            return Mathf.Round(_value / _pixelUnit) * _pixelUnit;
+        }
+
+        private void RestoreDefaultLayout()
+        {
+            if (null != currencyIconRect)
+                currencyIconRect.anchoredPosition = defaultIconPosition;
+
+            if (null != currencyFontRect)
+                currencyFontRect.anchoredPosition = defaultFontPosition;
         }
 
         private Sprite GetIcon(MoneyType _moneyType)

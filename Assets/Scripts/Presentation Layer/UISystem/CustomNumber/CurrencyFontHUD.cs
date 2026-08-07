@@ -114,7 +114,10 @@ namespace PresentationLayer.UISystem.CustomNumber
         private RectTransform centerPivot;
         private long lastDisplayedValue = long.MinValue;
         private float mainLayoutWidth;
+        private float mainVisibleLeftEdge;
         private float mainVisibleRightEdge;
+        private float notifiedVisibleLeftEdge = float.NaN;
+        private float notifiedVisibleWidth = float.NaN;
         private bool initialized;
         private readonly List<GlyphMotionState> glyphMotionStates = new List<GlyphMotionState>(8);
         private readonly List<Sequence> glyphMotionTweens = new List<Sequence>(8);
@@ -127,6 +130,12 @@ namespace PresentationLayer.UISystem.CustomNumber
         private int activeDeltaLength;
         private float currentDeltaShowTime;
         private Color currentGlyphColor = Color.white;
+
+        public event Action VisibleContentBoundsChanged;
+
+        public float PixelUnit => Mathf.Max(0.0001f, pixelScale);
+        public float VisibleContentLeftEdge => mainVisibleLeftEdge;
+        public float VisibleContentWidth => Mathf.Max(0.0f, mainVisibleRightEdge - mainVisibleLeftEdge);
 
         public void Initialize()
         {
@@ -929,6 +938,7 @@ namespace PresentationLayer.UISystem.CustomNumber
             EnsureGlyphVisibilitySize(glyphPool.Count);
 
             float _scaledGlyphSize = GlyphPixelSize * pixelScale;
+            mainVisibleLeftEdge = 0.0f;
             mainVisibleRightEdge = 0.0f;
 
             int _visibleLength = Mathf.Min(_length, _slotCount);
@@ -937,6 +947,9 @@ namespace PresentationLayer.UISystem.CustomNumber
                 _layoutWidth = Mathf.Max(0.0f, centerModeWidth);
 
             float _cursor = GetMainStartCursor(_visibleLength, _layoutWidth);
+            if (_visibleLength > 0)
+                mainVisibleLeftEdge = _cursor;
+
             for (int i = 0; i < _slotCount; i++)
             {
                 bool _isVisible = i < _visibleLength;
@@ -978,6 +991,21 @@ namespace PresentationLayer.UISystem.CustomNumber
             }
 
             HideRemainingGlyphs(_slotCount);
+            NotifyVisibleContentBoundsChanged();
+        }
+
+        private void NotifyVisibleContentBoundsChanged()
+        {
+            float _visibleWidth = VisibleContentWidth;
+            if (Mathf.Approximately(notifiedVisibleLeftEdge, mainVisibleLeftEdge) &&
+                Mathf.Approximately(notifiedVisibleWidth, _visibleWidth))
+            {
+                return;
+            }
+
+            notifiedVisibleLeftEdge = mainVisibleLeftEdge;
+            notifiedVisibleWidth = _visibleWidth;
+            VisibleContentBoundsChanged?.Invoke();
         }
 
         private float GetMainStartCursor(int _visibleLength, float _layoutWidth)
