@@ -36,6 +36,7 @@ public class AbilityToolTip : MonoBehaviour
     private MotionEntry hideMotionEntry;
     private MotionEntry clickMotionEntry;
     private MotionEntry idleMotionEntry;
+    private Image backgroundImage;
     private Sequence idleFallbackSequence;
     private Vector2 baseAnchoredPosition;
     private Vector2 baseMotionAnchoredPosition;
@@ -53,6 +54,19 @@ public class AbilityToolTip : MonoBehaviour
     public TMP_Text DescriptionText => descriptionText;
     public TMP_Text ValueText => valueText;
     public TMP_Text CostText => costText;
+
+    public void SetBackgroundColor(Color _color)
+    {
+        if (backgroundImage == null && backgroundRectTransform != null)
+            backgroundImage = backgroundRectTransform.GetComponent<Image>();
+
+        if (backgroundImage == null)
+            return;
+
+        Color _currentColor = backgroundImage.color;
+        _color.a = _currentColor.a;
+        backgroundImage.color = _color;
+    }
 
     public void SetContent(string _title, string _level, string _description, string _cost)
     {

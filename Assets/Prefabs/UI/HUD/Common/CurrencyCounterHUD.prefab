@@ -63,6 +63,8 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: 7501affa499263b4ca8f176cb9ba49d6, type: 3}
   - moneyType: 5
     icon: {fileID: 21300000, guid: d7f19eb1ded11344898e27c05237c2b4, type: 3}
+  layoutMode: 0
+  contentSpacing: 2
   defaultMoneyType: 1
   defaultValue: 0
   debugIncreaseAmount: 100

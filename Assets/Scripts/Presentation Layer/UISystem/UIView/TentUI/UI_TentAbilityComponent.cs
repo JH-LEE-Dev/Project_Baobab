@@ -1145,6 +1145,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         string costText = BuildToolTipCostText(_skillInfo, _applyReason, out MoneyType costMoneyType);
         string descriptionFormat = GetToolTipDescriptionFormat(_previewData.type);
+        toolTipInstance.SetBackgroundColor(_node.CurrentNodeFrameColor);
         toolTipInstance.SetContent(
             BuildToolTipTitleText(_node),
             BuildToolTipLevelText(_skillInfo),
