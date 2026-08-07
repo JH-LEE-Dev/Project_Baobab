@@ -247,12 +247,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TutorialQuestIndicatorManager
   indicatorPrefab: {fileID: 4713820055391000003, guid: fa41ca12a0ac4cb0871ff8d8780e4f80, type: 3}
-  offroadContainerOffset: {x: 0, y: 1, z: 0}
-  dungeonVehicleOffset: {x: 0, y: 1, z: 0}
+  offroadContainerOffset: {x: 0, y: 1.125, z: 0}
+  dungeonVehicleOffset: {x: 0, y: 1.3125, z: 0}
   logContainerOffset: {x: 0, y: 1, z: 0}
   shopNPCOffset: {x: 0, y: 1, z: 0}
-  homeOffset: {x: 0, y: 1, z: 0}
-  townVehicleOffset: {x: 0, y: 1, z: 0}
+  homeOffset: {x: 0, y: 2.25, z: 0}
+  townVehicleOffset: {x: 0, y: 1.3125, z: 0}
 --- !u!1 &2011389324134278026
 GameObject:
   m_ObjectHideFlags: 0

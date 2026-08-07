@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuestIndicator
   arrowRenderer: {fileID: 4713820055391000013}
-  floatAmplitude: 0.1
+  floatAmplitude: 0.03125
   floatSpeed: 2.5
   showDuration: 0.3
   hideDuration: 0.15
@@ -54,6 +54,9 @@ MonoBehaviour:
   shownScale: {x: 1, y: 1, z: 1}
   showEase: 27
   hideEase: 26
+  enableTargetShimmer: 1
+  shimmerMaxAmount: 0.25
+  shimmerSpeed: 2
 --- !u!1 &4713820055391000011
 GameObject:
   m_ObjectHideFlags: 0
