@@ -17,10 +17,22 @@ public class UIView_Tent : UIView
     [SerializeField] private RectTransform moneyPivot;
     [SerializeField] private GameObject currencyCounterHUDPrefab;
 
+    [Header("Tutorial HUD Presentation")]
+    [SerializeField, Min(0.0f)] private float tutorialHUDRevealDelay = 0.5f;
+    [SerializeField, Min(0.0f)] private float tutorialHUDFadeDuration = 0.5f;
+
     private CurrencyCounterHUD coinCounter;
+    private AbilityHUD abilityHUD;
+    private CanvasGroup abilityHUDCanvasGroup;
+    private CanvasGroup coinCounterCanvasGroup;
 
     private bool isInitialOpen = false;
     private bool playSoundsForCurrentPresentation;
+    private bool isTutorialState;
+    private bool isTutorialUpgradeAxeQuestUIHidden;
+    private bool isTutorialHUDRevealPlaying;
+    private float tutorialHUDRevealElapsed;
+    private float tutorialHUDAlpha = 1.0f;
 
     #region Default Logic
 
@@ -37,6 +49,7 @@ public class UIView_Tent : UIView
     {
         abilityUIComponent?.Initialize(skillSystemProvider, viewCtx?.localizationManager);
         InitializeMoneyCounters();
+        ApplyTutorialHUDAlpha(tutorialHUDAlpha);
     }
 
     // 외부에서 전달된 스킬 시스템과 재화 데이터를 보관한다.
@@ -64,6 +77,7 @@ public class UIView_Tent : UIView
     public override void Update()
     {
         abilityUIComponent?.Tick();
+        UpdateTutorialHUDPresentation();
     }
 
     protected override void OnShow()
@@ -82,6 +96,7 @@ public class UIView_Tent : UIView
         viewCtx.inputManager.PauseMove(true);
 
         RefreshMoneyTexts(false);
+        ApplyTutorialHUDAlpha(tutorialHUDAlpha);
         abilityUIComponent?.Open();
     }
 
@@ -172,6 +187,8 @@ public class UIView_Tent : UIView
         coinCounter.SetMoneyType(MoneyType.Coin);
         coinCounter.SetNumber(0);
         coinCounter.gameObject.SetActive(true);
+        coinCounterCanvasGroup = GetOrAddCanvasGroup(coinCounter.gameObject);
+        ApplyCanvasGroupAlpha(coinCounterCanvasGroup, tutorialHUDAlpha);
     }
 
     private Transform FindChildByName(Transform _root, string _name)
@@ -234,12 +251,119 @@ public class UIView_Tent : UIView
     // TentUI를 열기(Show) 직전에 호출한다.
     public void SetTutorialState(bool _bIsTutorial)
     {
+        isTutorialState = _bIsTutorial;
         abilityUIComponent?.SetTutorialState(_bIsTutorial);
+
+        if (false == isTutorialState)
+        {
+            isTutorialUpgradeAxeQuestUIHidden = false;
+            StopTutorialHUDReveal();
+            ApplyTutorialHUDAlpha(1.0f);
+            return;
+        }
+
+        if (isTutorialUpgradeAxeQuestUIHidden)
+        {
+            if (false == isTutorialHUDRevealPlaying)
+                ApplyTutorialHUDAlpha(1.0f);
+
+            return;
+        }
+
+        StopTutorialHUDReveal();
+        ApplyTutorialHUDAlpha(0.0f);
     }
 
     // "도끼를 강화하세요" 퀘스트 안내 UI가 화면에서 완전히 사라진 시점에 GameplayUICoordinator가 호출한다.
     public void NotifyTutorialUpgradeAxeQuestUIHidden()
     {
         abilityUIComponent?.NotifyTutorialUpgradeAxeQuestUIHidden();
+
+        if (isTutorialUpgradeAxeQuestUIHidden)
+            return;
+
+        isTutorialUpgradeAxeQuestUIHidden = true;
+
+        if (false == isTutorialState)
+        {
+            ApplyTutorialHUDAlpha(1.0f);
+            return;
+        }
+
+        tutorialHUDRevealElapsed = 0.0f;
+        isTutorialHUDRevealPlaying = true;
+        ApplyTutorialHUDAlpha(0.0f);
+    }
+
+    private void UpdateTutorialHUDPresentation()
+    {
+        if (false == isTutorialHUDRevealPlaying)
+            return;
+
+        tutorialHUDRevealElapsed += Time.unscaledDeltaTime;
+
+        float _delay = Mathf.Max(0.0f, tutorialHUDRevealDelay);
+        if (tutorialHUDRevealElapsed < _delay)
+        {
+            ApplyTutorialHUDAlpha(0.0f);
+            return;
+        }
+
+        float _fadeDuration = Mathf.Max(0.0f, tutorialHUDFadeDuration);
+        float _fadeElapsed = tutorialHUDRevealElapsed - _delay;
+        float _progress = _fadeDuration <= 0.0f
+            ? 1.0f
+            : Mathf.Clamp01(_fadeElapsed / _fadeDuration);
+
+        ApplyTutorialHUDAlpha(_progress);
+
+        if (_progress < 1.0f)
+            return;
+
+        isTutorialHUDRevealPlaying = false;
+        tutorialHUDRevealElapsed = 0.0f;
+    }
+
+    private void StopTutorialHUDReveal()
+    {
+        isTutorialHUDRevealPlaying = false;
+        tutorialHUDRevealElapsed = 0.0f;
+    }
+
+    private void ApplyTutorialHUDAlpha(float _alpha)
+    {
+        tutorialHUDAlpha = Mathf.Clamp01(_alpha);
+
+        if (abilityHUD == null)
+            abilityHUD = GetComponentInChildren<AbilityHUD>(true);
+
+        if (abilityHUD != null && abilityHUDCanvasGroup == null)
+            abilityHUDCanvasGroup = GetOrAddCanvasGroup(abilityHUD.gameObject);
+
+        if (coinCounter != null && coinCounterCanvasGroup == null)
+            coinCounterCanvasGroup = GetOrAddCanvasGroup(coinCounter.gameObject);
+
+        ApplyCanvasGroupAlpha(abilityHUDCanvasGroup, tutorialHUDAlpha);
+        ApplyCanvasGroupAlpha(coinCounterCanvasGroup, tutorialHUDAlpha);
+    }
+
+    private CanvasGroup GetOrAddCanvasGroup(GameObject _target)
+    {
+        if (_target == null)
+            return null;
+
+        CanvasGroup _canvasGroup = _target.GetComponent<CanvasGroup>();
+        if (_canvasGroup == null)
+            _canvasGroup = _target.AddComponent<CanvasGroup>();
+
+        return _canvasGroup;
+    }
+
+    private void ApplyCanvasGroupAlpha(CanvasGroup _canvasGroup, float _alpha)
+    {
+        if (_canvasGroup == null)
+            return;
+
+        _canvasGroup.alpha = Mathf.Clamp01(_alpha);
     }
 }

@@ -52,6 +52,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         UpdateImage(null, Color.white);
         SetEffectActive(false);
+        SetShinyEffectActive(false);
         
         if (null != uiImage && null != uiImage.sprite && true == uiImage.sprite.texture.isReadable)
             uiImage.alphaHitTestMinimumThreshold = 0.1f;
@@ -63,13 +64,13 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             currencyFont.Initialize();
             currencyFont.SetMode(CurrencyFontAlignmentMode.Center);
 
-            if (CameraFinder.Instance != null)
+            if (null != CameraFinder.Instance)
             {
                 CameraFinder.Instance.HandleCameraFindingEvent -= ApplySorting;
                 CameraFinder.Instance.HandleCameraFindingEvent += ApplySorting;
                 
                 // 만약 이미 카메라가 할당되어 있다면 즉시 실행
-                if (CameraFinder.Instance.PPUiCamera != null)
+                if (null != CameraFinder.Instance.PPUiCamera)
                 {
                     ApplySorting();
                 }
@@ -156,6 +157,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
         UpdateImage(null, Color.white);
         SetEffectActive(false);
+        SetShinyEffectActive(false);
         UpdateItemCount(0);
 
         invSlotRef = null;
@@ -211,9 +213,6 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             uiImage.sprite = _sprite;
             //uiImage.color = _color;
         }
-
-        if (null != shinyEffectComponent)
-            shinyEffectComponent.UseShinyEffect = null != _sprite;
     }
 
     public void UpdateBindSlotData(IInventorySlot _newSlot, int _maxCount = 99, bool _playInteraction = false)
@@ -259,6 +258,14 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             uiEffect.gameObject.SetActive(_active);
         }
     }
+
+    public void SetShinyEffectActive(bool _active)
+    {
+        if (null != shinyEffectComponent)
+        {
+            shinyEffectComponent.UseShinyEffect = _active;
+        }
+    }
  
     public void SetEdgeColor(Color _color)
     {
@@ -274,6 +281,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == _itemData)
         {
             SetEffectActive(false);
+            SetShinyEffectActive(false);
             return;
         }
 
@@ -285,23 +293,28 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
                 case LogState.Fascinating:
                     SetEffectActive(true);
                     SetEdgeColor(fascinatingColor);
+                    SetShinyEffectActive(true);
                     break;
                 case LogState.Advanced:
                     SetEffectActive(true);
                     SetEdgeColor(advancedColor);
+                    SetShinyEffectActive(true);
                     break;
                 case LogState.Perfect:
                     SetEffectActive(true);
                     SetEdgeColor(perfectColor);
+                    SetShinyEffectActive(true);
                     break;
                 default:
                     SetEffectActive(false);
+                    SetShinyEffectActive(false);
                     break;
             }
         }
         else
         {
             SetEffectActive(false);
+            SetShinyEffectActive(false);
         }
     }
 
@@ -352,6 +365,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
             {
                 UpdateImage(null, Color.white);
                 SetEffectActive(false);
+                SetShinyEffectActive(false);
             }
             else
             {
@@ -383,7 +397,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void OnDestroy()
     {
-        if (CameraFinder.Instance != null)
+        if (null != CameraFinder.Instance)
         {
             CameraFinder.Instance.HandleCameraFindingEvent -= ApplySorting;
         }

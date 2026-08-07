@@ -277,7 +277,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             return;
 
         isPointerHovering = true;
-        Sound.PlayUI(SoundID.AbilityHover);
+        owner?.PlayNodeHoverSound();
         owner?.ShowSelectionCursor(this);
         owner?.ShowToolTip(this);
         PlayHoverMotion();

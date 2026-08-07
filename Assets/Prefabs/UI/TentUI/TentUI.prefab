@@ -136,6 +136,8 @@ MonoBehaviour:
   abilityUIComponent: {fileID: 3966334113652107173}
   moneyPivot: {fileID: 1186389941642898093}
   currencyCounterHUDPrefab: {fileID: 2718141575618077796, guid: 4850b80aef722d3468cbabd70cbf1014, type: 3}
+  tutorialHUDRevealDelay: 0.2
+  tutorialHUDFadeDuration: 0.5
 --- !u!114 &3966334113652107173
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -428,6 +430,7 @@ MonoBehaviour:
   selectionCursorPrefab: {fileID: 1125404888247100005, guid: 9813bb38494a4975b5f51d04e8412a65, type: 3}
   selectionCursorParent: {fileID: 0}
   selectionCursorSize: {x: 38, y: 38}
+  nodeHoverSoundSuppressDurationAfterOpen: 0.3
   viewShakeDuration: 0.2
   viewShakeStrength: 2.8
   viewShakeFrequency: 50

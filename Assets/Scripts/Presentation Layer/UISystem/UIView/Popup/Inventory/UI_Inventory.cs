@@ -27,6 +27,10 @@ public class UI_Inventory : MonoBehaviour
     [Header("Keyboard Icons")]
     [SerializeField] private UI_KeyboardImage[] keyboardImages;
 
+    [Header("Icons Follower")]
+    [SerializeField] private RectTransform iconsRoot;
+    [SerializeField] private RectTransform iconsAnchor;
+
     [Header("Localization")]
     [SerializeField] private TextMeshProUGUI openText;
 
@@ -83,6 +87,9 @@ public class UI_Inventory : MonoBehaviour
         InitBackpack();
         // InitNotificationBadge();
         InitCapacityBar();
+        UpdateIconsPosition();
+        if (null != iconsRoot)
+            iconsRoot.SetAsLastSibling();
         
         if (null != keyboardImages)
         {
@@ -211,7 +218,37 @@ public class UI_Inventory : MonoBehaviour
             invPopup.Initialize();
             invPopup.gameObject.SetActive(false);
         }
+
+        if (null != iconsRoot)
+            iconsRoot.SetAsLastSibling();
     }
+
+    private void OnEnable()
+    {
+        UpdateIconsPosition();
+        if (null != iconsRoot)
+            iconsRoot.SetAsLastSibling();
+    }
+
+    private void LateUpdate()
+    {
+        UpdateIconsPosition();
+    }
+
+    private void UpdateIconsPosition()
+    {
+        if (null != iconsRoot && null != iconsAnchor)
+        {
+            iconsRoot.position = iconsAnchor.position;
+        }
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        UpdateIconsPosition();
+    }
+#endif
 
     private void HandleExitPopup()
     {
