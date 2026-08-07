@@ -716,6 +716,9 @@ public class AudioManager : MonoBehaviour
         bgmSource.playOnAwake = false;
         bgmSource.loop = true;
         bgmSource.spatialBlend = 0f;
+        // 풀의 원샷 소스들과 priority(128)가 같으면 실보이스 한도(32) 경쟁에서 BGM이 밀려 뮤트될 수 있다.
+        // 0(최우선)으로 고정해 BGM은 항상 실보이스에서 배제되지 않도록 한다.
+        bgmSource.priority = 0;
     }
 
     public void PlayBGM(SoundID bgmId, float volume = 1f)

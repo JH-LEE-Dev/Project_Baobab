@@ -16,7 +16,7 @@ public class TownSystem : MonoBehaviour
     public TownObjectManager townObjectManager { get; private set; }
     private IEnvironmentProvider environmentProvider;
     public LogProcessingManager logProcessingManager { get; private set; }
-    private TentManager tentManager;
+    public TentManager tentManager { get; private set; }
     private Character character;
     private IInventory characterInventory;
     private OffroadContainer offroadContainer;

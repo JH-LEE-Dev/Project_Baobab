@@ -19,6 +19,35 @@ public class TutorialSystem
     // 그 빈틈에 들어온 탑승을 놓치지 않기 위해 기억해둔다.
     private bool bTownVehicleActivatedBeforeLastStep;
 
+    // CutTree 완료(나무 벌목) 이후 FillOffroadContainer가 시작되기 전까지 플레이어가 직접 주운
+    // 원목 개수. 이 값이 아래 기준치에 도달해야 FillOffroadContainer가 시작된다("나무 한 그루만
+    // 베고 바로 다음 퀘스트로" 넘어가면 정작 컨테이너에 넣을 원목이 부족한 경우가 있어,
+    // 최소한의 물량을 확보한 뒤 다음 단계를 열어준다).
+    private int logItemsAcquiredSinceCutTree;
+    private const int RequiredLogItemsForFillOffroadContainer = 2;
+
+    // ReceiveMoney 완료 이후 UpgradeAxe가 시작되기 전까지 정산받은 금액의 누적합. 이 값이 아래
+    // 기준치에 도달해야 UpgradeAxe가 시작된다. characterInventory.money를 그대로 읽지 않는 이유는,
+    // SignalHub.Publish가 구독자를 등록 역순으로 호출해 UnitSystem이 실제로 money를 반영하기 전에
+    // 이 시스템의 MoneyEarned가 먼저 실행될 수 있기 때문이다 - 신호에 담긴 금액을 직접 누적해야
+    // 이번 정산이 곧바로 반영된 값으로 정확히 판정할 수 있다.
+    private int moneyEarnedSinceReceiveMoney;
+    private const int RequiredMoneyForUpgradeAxe = 5;
+
+    // UpgradeAxe는 "돈이 기준치에 도달"과 "ReceiveMoney 안내 UI가 완전히 사라짐" 두 조건을 모두
+    // 만족해야 시작된다. 어느 쪽이 먼저 만족될지 알 수 없으므로(정산액이 한 번에 기준치를 넘기면
+    // 금액 조건이 먼저, 안내 UI 퇴장 연출이 더 빠르면 UI 조건이 먼저 만족된다) 먼저 만족된 쪽을
+    // 여기 기억해뒀다가 나머지 조건도 만족되는 즉시 시작한다.
+    private bool bMoneyThresholdReachedForUpgradeAxe;
+    private bool bReceiveMoneyUIHideCompleted;
+
+    // TentUI(집)가 현재 열려 있는지. StartNewLogging은 "UpgradeAxe 안내 UI가 완전히 사라짐"과
+    // "TentUI가 닫혀 있음" 두 조건이 모두 만족돼야 시작된다 - 도끼를 강화한 뒤에도 플레이어가
+    // 다른 스킬을 마저 둘러보다가 나중에 TentUI를 닫을 수 있어서, 안내 UI가 먼저 사라지더라도
+    // TentUI가 열려 있는 동안에는 대기해야 한다(아래 TryStartNewLogging 참고).
+    private bool bTentUIOpen;
+    private bool bUpgradeAxeUIHideCompleted;
+
     public void Initialize(SignalHub _signalHub, IInventory _characterInventory)
     {
         signalHub = _signalHub;
@@ -36,6 +65,7 @@ public class TutorialSystem
     {
         signalHub.Subscribe<TutorialIntroEndedSignal>(TutorialIntroEnded);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
@@ -47,12 +77,15 @@ public class TutorialSystem
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.Subscribe<TownOffroadVehicleActivatedSignal>(TownOffroadVehicleActivated);
         signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
+        signalHub.Subscribe<TentInteractSignal>(TentInteracted);
+        signalHub.Subscribe<TentUIClosedSignal>(TentUIClosed);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<TutorialIntroEndedSignal>(TutorialIntroEnded);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
@@ -64,6 +97,8 @@ public class TutorialSystem
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
         signalHub.UnSubscribe<TownOffroadVehicleActivatedSignal>(TownOffroadVehicleActivated);
         signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
+        signalHub.UnSubscribe<TentInteractSignal>(TentInteracted);
+        signalHub.UnSubscribe<TentUIClosedSignal>(TentUIClosed);
     }
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
@@ -72,12 +107,32 @@ public class TutorialSystem
     }
 
     // 1단계: 플레이어가 나무를 벌목하면 완료. NPC(럼버잭)가 죽인 나무는 카운트하지 않는다.
+    // 다음 단계(FillOffroadContainer)는 여기서 곧바로 시작하지 않고, 원목을 충분히 주울 때까지
+    // 기다린다(아래 ItemAcquired 참고).
     private void TreeIsDead(TreeIsDeadSignal _signal)
     {
         if (bStepActive == false || currentStep != TutorialStep.CutTree || _signal.isPlayerKilled == false)
             return;
 
         CompleteStep();
+    }
+
+    // CutTree 완료 이후, 플레이어가 원목을 RequiredLogItemsForFillOffroadContainer개 이상 직접
+    // 주우면 FillOffroadContainer를 시작한다. ItemAcquiredSignal은 LogItemController가 "커스텀
+    // 습득자(럼버잭 NPC 등)가 없는" 원목, 즉 플레이어가 직접 주운 원목에 대해서만 발행하므로
+    // NPC가 주운 물량은 자연히 제외된다.
+    private void ItemAcquired(ItemAcquiredSignal _signal)
+    {
+        if (bStepActive || currentStep != TutorialStep.CutTree)
+            return;
+
+        if (_signal.item is not LogItem)
+            return;
+
+        logItemsAcquiredSinceCutTree++;
+        if (logItemsAcquiredSinceCutTree < RequiredLogItemsForFillOffroadContainer)
+            return;
+
         StartStep(TutorialStep.FillOffroadContainer);
     }
 
@@ -158,13 +213,39 @@ public class TutorialSystem
         }
     }
 
+    // ReceiveMoney는 첫 정산을 받으면 완료된다(기존과 동일). 다음 단계(UpgradeAxe)는 여기서
+    // 곧바로 시작하지 않고, 캐릭터의 돈이 RequiredMoneyForUpgradeAxe원 이상이 되고 ReceiveMoney
+    // 안내 UI가 완전히 사라질 때까지 기다린다(아래 TryStartUpgradeAxe 참고).
     private void MoneyEarned(MoneyEarnedSignal _signal)
     {
         if (bStepActive && currentStep == TutorialStep.ReceiveMoney)
         {
             CompleteStep();
-            StartStep(TutorialStep.UpgradeAxe);
         }
+
+        if (bStepActive || currentStep != TutorialStep.ReceiveMoney)
+            return;
+
+        moneyEarnedSinceReceiveMoney += _signal.money;
+        if (moneyEarnedSinceReceiveMoney < RequiredMoneyForUpgradeAxe)
+            return;
+
+        bMoneyThresholdReachedForUpgradeAxe = true;
+        TryStartUpgradeAxe();
+    }
+
+    // 돈 기준치 도달과 ReceiveMoney UI 퇴장 연출 완료, 두 조건이 모두 만족됐을 때만 UpgradeAxe를 시작한다.
+    private void TryStartUpgradeAxe()
+    {
+        if (bStepActive || currentStep != TutorialStep.ReceiveMoney)
+            return;
+
+        if (bMoneyThresholdReachedForUpgradeAxe == false || bReceiveMoneyUIHideCompleted == false)
+            return;
+
+        bMoneyThresholdReachedForUpgradeAxe = false;
+        bReceiveMoneyUIHideCompleted = false;
+        StartStep(TutorialStep.UpgradeAxe);
     }
 
     private void SkillDispatched(SkillDispatchedSignal _signal)
@@ -183,16 +264,53 @@ public class TutorialSystem
     // UpgradeAxe의 완료 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 시점에 마지막 스텝을 시작한다.
     private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
     {
+        if (_signal.step == TutorialStep.ReceiveMoney)
+        {
+            bReceiveMoneyUIHideCompleted = true;
+            TryStartUpgradeAxe();
+            return;
+        }
+
         if (bStepActive == false && currentStep == TutorialStep.UpgradeAxe && _signal.step == TutorialStep.UpgradeAxe)
         {
-            StartStep(TutorialStep.StartNewLogging);
+            bUpgradeAxeUIHideCompleted = true;
+            TryStartNewLogging();
+        }
+    }
 
-            // 연출이 흐르는 동안 이미 차량에 탑승했다면 조건은 이미 만족된 것이므로 곧바로 완료 처리한다.
-            if (bTownVehicleActivatedBeforeLastStep)
-            {
-                bTownVehicleActivatedBeforeLastStep = false;
-                CompleteStep();
-            }
+    // TentUI(집) 상호작용 토글. 여기서는 "현재 열려 있는지"만 추적한다 - ESC로 닫히는 경로는
+    // 이 신호를 거치지 않으므로 닫힘 판정은 아래 TentUIClosed(TentUIClosedSignal)에서 담당한다.
+    private void TentInteracted(TentInteractSignal _signal)
+    {
+        bTentUIOpen = _signal.bInteract;
+    }
+
+    // TentUI가 실제로 닫혔음을 알리는 신호. 상호작용 토글(TentInteractSignal)뿐 아니라 ESC로
+    // 닫힌 경우에도 항상 발행되므로, "닫혀 있음" 판정은 이 신호를 기준으로 확정한다.
+    private void TentUIClosed(TentUIClosedSignal _signal)
+    {
+        bTentUIOpen = false;
+        TryStartNewLogging();
+    }
+
+    // UpgradeAxe 안내 UI가 완전히 사라진 것과 TentUI가 닫혀 있는 것, 두 조건이 모두 만족됐을 때만
+    // StartNewLogging을 시작한다.
+    private void TryStartNewLogging()
+    {
+        if (bStepActive || currentStep != TutorialStep.UpgradeAxe)
+            return;
+
+        if (bUpgradeAxeUIHideCompleted == false || bTentUIOpen)
+            return;
+
+        bUpgradeAxeUIHideCompleted = false;
+        StartStep(TutorialStep.StartNewLogging);
+
+        // 연출이 흐르는 동안 이미 차량에 탑승했다면 조건은 이미 만족된 것이므로 곧바로 완료 처리한다.
+        if (bTownVehicleActivatedBeforeLastStep)
+        {
+            bTownVehicleActivatedBeforeLastStep = false;
+            CompleteStep();
         }
     }
 

@@ -253,9 +253,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.Subscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.Subscribe<DungeonBGMStartSignal>(DungeonBGMStart);
+        signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
-        signalHub.Subscribe<TutorialQuestTransitionCompletedSignal>(TutorialQuestTransitionCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -271,9 +271,9 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.UnSubscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.UnSubscribe<DungeonBGMStartSignal>(DungeonBGMStart);
+        signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
-        signalHub.UnSubscribe<TutorialQuestTransitionCompletedSignal>(TutorialQuestTransitionCompleted);
     }
 
     private void PortalActivated()
@@ -612,9 +612,6 @@ public class InDungeonSystem : MonoBehaviour
     {
         switch (_signal.step)
         {
-            case TutorialStep.CutTree:
-                // (OffroadContainer 상호작용은 다음 퀘스트 UI로 트랜지션이 완전히 끝난 후 TutorialQuestTransitionCompleted 에서 켠다)
-                break;
             case TutorialStep.FillOffroadContainer:
                 // 튜토리얼 전용: 해당 퀘스트가 끝나면 피로도 바닥값이 19%로 낮아지는데,
                 // 실제로 19%에 도달할 때 다음 퀘스트를 띄워주기 위해 여기서 체크를 시작한다.
@@ -624,19 +621,22 @@ public class InDungeonSystem : MonoBehaviour
         }
     }
 
+    // CutTree 완료 후 원목을 충분히 주워 FillOffroadContainer가 실제로 시작되는 시점에
+    // OffroadContainer 상호작용을 열어준다. CutTree 완료 시점에 미리 열어두면 "나무를 벌목하세요"
+    // 안내가 아직 화면에 떠 있는 동안에도 컨테이너에 상호작용할 수 있게 되어버린다.
+    private void TutorialStepStarted(TutorialStepStartedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.FillOffroadContainer)
+        {
+            offroadContainer.EnableCollision();
+        }
+    }
+
     private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
     {
         if (_signal.step == TutorialStep.FillOffroadContainer)
         {
             inDungeonObjectManager.offroadVehicle?.SetCanTravel(true);
-        }
-    }
-
-    private void TutorialQuestTransitionCompleted(TutorialQuestTransitionCompletedSignal _signal)
-    {
-        if (_signal.step == TutorialStep.FillOffroadContainer)
-        {
-            offroadContainer.EnableCollision();
         }
     }
 

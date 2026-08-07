@@ -1,8 +1,13 @@
+using System;
 using PresentationLayer.UISystem.CustomNumber;
 using UnityEngine;
 
 public class UIView_Tent : UIView
 {
+    // ESC로 닫힐 때는 UIDepthController가 Hide()를 직접 호출해 TentInteractSignal(false) 경로를
+    // 거치지 않으므로, 닫힘을 항상 감지하려면 상호작용 토글이 아니라 이 UI 자체의 Hide 시점을 봐야 한다.
+    public event Action TentUIClosedEvent;
+
     private ISkillSystemProvider skillSystemProvider;
     private IMoneyData moneyData;
 
@@ -83,6 +88,8 @@ public class UIView_Tent : UIView
         viewCtx.inputManager.PauseMove(false);
 
         abilityUIComponent?.Close();
+
+        TentUIClosedEvent?.Invoke();
     }
 
     #endregion
@@ -210,5 +217,18 @@ public class UIView_Tent : UIView
     public void SkillAccumulatedValuePreviewProvided(SkillAccumulatedValueChangeData _data)
     {
         abilityUIComponent?.SkillAccumulatedValuePreviewProvided(_data);
+    }
+
+    // 이 TentUI 오픈이 튜토리얼 "도끼를 강화하세요" 스텝 중인지 전달한다. GameplayUICoordinator가
+    // TentUI를 열기(Show) 직전에 호출한다.
+    public void SetTutorialState(bool _bIsTutorial)
+    {
+        abilityUIComponent?.SetTutorialState(_bIsTutorial);
+    }
+
+    // "도끼를 강화하세요" 퀘스트 안내 UI가 화면에서 완전히 사라진 시점에 GameplayUICoordinator가 호출한다.
+    public void NotifyTutorialUpgradeAxeQuestUIHidden()
+    {
+        abilityUIComponent?.NotifyTutorialUpgradeAxeQuestUIHidden();
     }
 }

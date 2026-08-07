@@ -27,6 +27,9 @@ public struct SpendMoneySignal { }
 public struct TeleportUIClosedSignal { }
 public struct TeleportUIClosedWhileTeleportSignal { }
 
+// Tent(집) UI가 닫혔음을 알리는 신호. ESC로 닫힌 경우도 포함해 항상 발행된다.
+public struct TentUIClosedSignal { }
+
 public struct RetryButtonClickedSignal { }
 
 public struct WarningUIClosedSignal
