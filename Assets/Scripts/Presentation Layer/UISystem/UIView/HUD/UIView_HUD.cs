@@ -172,7 +172,11 @@ public class UIView_HUD : UIView
     private void Init_HUDMessage()
     {
         if (null == hudMessage)
+        {
             hudMessage = Instantiate(hudMessagePrefab, viewCtx.overlayCanvas.transform).GetComponent<HUD_Message>();
+            // OverlayRoot(Clone) 보다 위(이전)에 배치하여 ResultUI 등 팝업류가 HUD_Message 위에 그려지게 함
+            hudMessage.transform.SetSiblingIndex(1);
+        }
 
         if (null != hudMessage)
             hudMessage.Initialize(viewCtx?.localizationManager);

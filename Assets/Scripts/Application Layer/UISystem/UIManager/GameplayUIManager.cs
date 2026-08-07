@@ -62,5 +62,8 @@ public class GameplayUIManager : UIManager
 
         if(view is UIView_Warning warningUI)
             warningUI.DependencyInjection(inventory);
+
+        if (view is UIView_CursorBox cursorBoxUI)
+            viewCtx.SetCursorBoxUI(cursorBoxUI);
     }
 }

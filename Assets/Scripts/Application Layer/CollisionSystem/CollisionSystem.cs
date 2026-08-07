@@ -150,6 +150,18 @@ public class CollisionSystem : MonoBehaviour
         // 기록된 엔티티 인덱스가 없으면 이미 제거된 것
         if (!ownerToEntityIndex.TryGetValue(_obj, out int _idx)) return;
 
+        // 방어: 이미 프리 리스트로 반환된 슬롯(owner == null)을 한 번 더 반환하려는 상황.
+        // 그대로 진행하면 아래에서 nextPointers[_idx] = freeListHead(= _idx)로 자기 참조가 만들어지고,
+        // 이후 이 슬롯을 재사용한 셀 체인을 순회할 때 while(_curr != -1)이 영원히 끝나지 않는다(게임 정지).
+        // 링크를 건드리지 않고 매핑만 정리해 손상이 퍼지지 않게 한다.
+        if (entities[_idx].owner == null)
+        {
+            Debug.LogError($"[CollisionSystem] Unregister: 슬롯 {_idx}은(는) 이미 해제된 상태입니다(이중 해제). " +
+                $"프리 리스트 손상을 막기 위해 매핑만 제거합니다.");
+            ownerToEntityIndex.Remove(_obj);
+            return;
+        }
+
         ref var _ent = ref entities[_idx];
         int _prev = prevPointers[_idx];
         int _next = nextPointers[_idx];
@@ -268,12 +280,30 @@ public class CollisionSystem : MonoBehaviour
         return false;
     }
 
+    /// <summary>
+    /// 셀 체인은 nextPointers를 -1이 나올 때까지 따라가는 구조라, 체인에 순환이 한 번이라도 생기면
+    /// 그 자리에서 게임(에디터 포함)이 통째로 멈춘다. 한 체인의 길이가 전체 슬롯 수를 넘을 수 없다는
+    /// 점을 이용해 순환을 감지하고, 멈추는 대신 에러를 남기고 빠져나오기 위한 공통 로그.
+    /// </summary>
+    private void LogChainCycleDetected(string _caller, int _headIdx, int _currIdx)
+    {
+        Debug.LogError($"[CollisionSystem] {_caller}: 충돌 체인에서 순환이 감지되어 순회를 중단합니다. " +
+            $"(head={_headIdx}, curr={_currIdx}, maxEntities={maxEntities})");
+    }
+
     private bool InternalCheck(int _headIdx, Vector2 _start, Vector2 _ab, float _invAb2, float _bulletRadius, int _mask, out IStaticCollidable _hit)
     {
         _hit = null;
         int _curr = _headIdx;
+        int _visited = 0;
         while (_curr != -1)
         {
+            if (++_visited > maxEntities)
+            {
+                LogChainCycleDetected(nameof(InternalCheck), _headIdx, _curr);
+                break;
+            }
+
             ref var _ent = ref entities[_curr];
             if ((_ent.layerBit & _mask) != 0)
             {
@@ -347,8 +377,15 @@ public class CollisionSystem : MonoBehaviour
     private void InternalCollect(int _headIdx, Vector2 _center, float _radius, int _mask, List<IStaticCollidable> _results)
     {
         int _curr = _headIdx;
+        int _visited = 0;
         while (_curr != -1)
         {
+            if (++_visited > maxEntities)
+            {
+                LogChainCycleDetected(nameof(InternalCollect), _headIdx, _curr);
+                break;
+            }
+
             ref var _ent = ref entities[_curr];
             if ((_ent.layerBit & _mask) != 0)
             {
@@ -367,8 +404,15 @@ public class CollisionSystem : MonoBehaviour
     private void InternalCollectByLayer(int _headIdx, int _mask, List<IStaticCollidable> _results)
     {
         int _curr = _headIdx;
+        int _visited = 0;
         while (_curr != -1)
         {
+            if (++_visited > maxEntities)
+            {
+                LogChainCycleDetected(nameof(InternalCollectByLayer), _headIdx, _curr);
+                break;
+            }
+
             ref var _ent = ref entities[_curr];
             if ((_ent.layerBit & _mask) != 0)
             {
@@ -421,8 +465,13 @@ public class CollisionSystem : MonoBehaviour
     private void DrawChain(int _headIdx)
     {
         int _curr = _headIdx;
+        int _visited = 0;
         while (_curr != -1)
         {
+            // 기즈모 그리기는 에디터 렌더 스레드에서 매 프레임 돌기 때문에, 여기서 순환에 빠지면
+            // 플레이 중이 아니어도 에디터가 멈춘다. 로그 폭주를 막기 위해 조용히 중단만 한다.
+            if (++_visited > maxEntities) break;
+
             Gizmos.DrawWireSphere(entities[_curr].center, entities[_curr].radius);
             _curr = nextPointers[_curr];
         }

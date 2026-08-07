@@ -155,24 +155,44 @@ public class GameInstaller : MonoBehaviour
         }
     }
 
+    // 해제 순서는 기존과 동일하다. 달라진 건 "한 단계가 예외로 실패해도 나머지 단계와 Destroy가
+    // 반드시 실행된다"는 점뿐이다. 예전엔 앞 단계에서 예외가 나면 뒤쪽 시스템이 시그널 구독을 남긴 채
+    // 좀비로 남고, 호출자(BootStrap.TransitionToScene)의 씬 로드까지 도달하지 못했다.
     public void Release()
     {
-        unitSystem.Release();
-        cameraManager.Release();
-        teleportManager.Release();
-        townSystem.Release();
-        inDungeonSystem.Release();
-        environmentSystem.Release();
-        gameplayUIInstaller.Release();
-        skillSystem.Release();
-        skillDispatcher.Release();
-        saveManager.Release();
-        gameSystem.Release();
-        tutorialSystem.Release();
-        tutorialQuestIndicatorManager?.Release();
+        SafeRelease("unitSystem", () => unitSystem.Release());
+        SafeRelease("cameraManager", () => cameraManager.Release());
+        SafeRelease("teleportManager", () => teleportManager.Release());
+        SafeRelease("townSystem", () => townSystem.Release());
+        SafeRelease("inDungeonSystem", () => inDungeonSystem.Release());
+        SafeRelease("environmentSystem", () => environmentSystem.Release());
+        SafeRelease("gameplayUIInstaller", () => gameplayUIInstaller.Release());
+        SafeRelease("skillSystem", () => skillSystem.Release());
+        SafeRelease("skillDispatcher", () => skillDispatcher.Release());
+        SafeRelease("saveManager", () => saveManager.Release());
+        SafeRelease("gameSystem", () => gameSystem.Release());
+        SafeRelease("tutorialSystem", () => tutorialSystem.Release());
+        SafeRelease("tutorialQuestIndicatorManager", () => tutorialQuestIndicatorManager?.Release());
 
-        ReleaseEvents();
+        SafeRelease("ReleaseEvents", ReleaseEvents);
         Destroy(gameObject);
+    }
+
+    /// <summary>
+    /// 해제 단계 하나를 예외로부터 격리한다. 실패하면 어느 단계였는지 에러 로그로 남기고 다음 단계로 넘어간다.
+    /// (Debug.LogError는 Sentry가 스택과 함께 자동 수집하므로 별도 전송 코드가 필요 없다)
+    /// </summary>
+    private void SafeRelease(string _stepName, Action _step)
+    {
+        try
+        {
+            _step();
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[GameInstaller] Release 단계 '{_stepName}'에서 예외가 발생했습니다. 나머지 해제는 계속 진행합니다.");
+            Debug.LogException(e);
+        }
     }
 
     private void Awake()

@@ -16,7 +16,7 @@ public class QuestIndicator : MonoBehaviour
 
     [Header("Float Motion")]
     [Tooltip("위아래로 둥둥 떠다니는 진폭(월드 단위)")]
-    [SerializeField] private float floatAmplitude = 0.2f;
+    [SerializeField] private float floatAmplitude = 0.1f;
     [Tooltip("위아래로 둥둥 떠다니는 속도")]
     [SerializeField] private float floatSpeed = 2.5f;
 
