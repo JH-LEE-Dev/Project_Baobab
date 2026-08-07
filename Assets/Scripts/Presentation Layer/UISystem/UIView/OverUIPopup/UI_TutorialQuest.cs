@@ -200,6 +200,7 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         switch (_step)
         {
+            case TutorialStep.CutTree:
             case TutorialStep.FillOffroadContainer:
             case TutorialStep.GoHomeBeforeExhausted:
             case TutorialStep.PutItemsInLogContainer:

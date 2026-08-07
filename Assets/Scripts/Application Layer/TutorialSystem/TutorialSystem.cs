@@ -19,6 +19,21 @@ public class TutorialSystem
     // 그 빈틈에 들어온 탑승을 놓치지 않기 위해 기억해둔다.
     private bool bTownVehicleActivatedBeforeLastStep;
 
+    // CutTree 완료(나무 벌목) 이후 FillOffroadContainer가 시작되기 전까지 플레이어가 직접 주운
+    // 원목 개수. 이 값이 아래 기준치에 도달해야 FillOffroadContainer가 시작된다("나무 한 그루만
+    // 베고 바로 다음 퀘스트로" 넘어가면 정작 컨테이너에 넣을 원목이 부족한 경우가 있어,
+    // 최소한의 물량을 확보한 뒤 다음 단계를 열어준다).
+    private int logItemsAcquiredSinceCutTree;
+    private const int RequiredLogItemsForFillOffroadContainer = 2;
+
+    // ReceiveMoney 완료 이후 UpgradeAxe가 시작되기 전까지 정산받은 금액의 누적합. 이 값이 아래
+    // 기준치에 도달해야 UpgradeAxe가 시작된다. characterInventory.money를 그대로 읽지 않는 이유는,
+    // SignalHub.Publish가 구독자를 등록 역순으로 호출해 UnitSystem이 실제로 money를 반영하기 전에
+    // 이 시스템의 MoneyEarned가 먼저 실행될 수 있기 때문이다 - 신호에 담긴 금액을 직접 누적해야
+    // 이번 정산이 곧바로 반영된 값으로 정확히 판정할 수 있다.
+    private int moneyEarnedSinceReceiveMoney;
+    private const int RequiredMoneyForUpgradeAxe = 5;
+
     public void Initialize(SignalHub _signalHub, IInventory _characterInventory)
     {
         signalHub = _signalHub;
@@ -36,6 +51,7 @@ public class TutorialSystem
     {
         signalHub.Subscribe<TutorialIntroEndedSignal>(TutorialIntroEnded);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.Subscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.Subscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
@@ -53,6 +69,7 @@ public class TutorialSystem
     {
         signalHub.UnSubscribe<TutorialIntroEndedSignal>(TutorialIntroEnded);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
+        signalHub.UnSubscribe<ItemAcquiredSignal>(ItemAcquired);
         signalHub.UnSubscribe<InventoryItemTransferToOffroadContainerSignal>(ItemTransferredToOffroadContainer);
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
@@ -72,12 +89,32 @@ public class TutorialSystem
     }
 
     // 1단계: 플레이어가 나무를 벌목하면 완료. NPC(럼버잭)가 죽인 나무는 카운트하지 않는다.
+    // 다음 단계(FillOffroadContainer)는 여기서 곧바로 시작하지 않고, 원목을 충분히 주울 때까지
+    // 기다린다(아래 ItemAcquired 참고).
     private void TreeIsDead(TreeIsDeadSignal _signal)
     {
         if (bStepActive == false || currentStep != TutorialStep.CutTree || _signal.isPlayerKilled == false)
             return;
 
         CompleteStep();
+    }
+
+    // CutTree 완료 이후, 플레이어가 원목을 RequiredLogItemsForFillOffroadContainer개 이상 직접
+    // 주우면 FillOffroadContainer를 시작한다. ItemAcquiredSignal은 LogItemController가 "커스텀
+    // 습득자(럼버잭 NPC 등)가 없는" 원목, 즉 플레이어가 직접 주운 원목에 대해서만 발행하므로
+    // NPC가 주운 물량은 자연히 제외된다.
+    private void ItemAcquired(ItemAcquiredSignal _signal)
+    {
+        if (bStepActive || currentStep != TutorialStep.CutTree)
+            return;
+
+        if (_signal.item is not LogItem)
+            return;
+
+        logItemsAcquiredSinceCutTree++;
+        if (logItemsAcquiredSinceCutTree < RequiredLogItemsForFillOffroadContainer)
+            return;
+
         StartStep(TutorialStep.FillOffroadContainer);
     }
 
@@ -158,13 +195,23 @@ public class TutorialSystem
         }
     }
 
+    // ReceiveMoney는 첫 정산을 받으면 완료된다(기존과 동일). 다음 단계(UpgradeAxe)는 여기서
+    // 곧바로 시작하지 않고, 캐릭터의 돈이 RequiredMoneyForUpgradeAxe원 이상이 될 때까지 기다린다.
     private void MoneyEarned(MoneyEarnedSignal _signal)
     {
         if (bStepActive && currentStep == TutorialStep.ReceiveMoney)
         {
             CompleteStep();
-            StartStep(TutorialStep.UpgradeAxe);
         }
+
+        if (bStepActive || currentStep != TutorialStep.ReceiveMoney)
+            return;
+
+        moneyEarnedSinceReceiveMoney += _signal.money;
+        if (moneyEarnedSinceReceiveMoney < RequiredMoneyForUpgradeAxe)
+            return;
+
+        StartStep(TutorialStep.UpgradeAxe);
     }
 
     private void SkillDispatched(SkillDispatchedSignal _signal)
