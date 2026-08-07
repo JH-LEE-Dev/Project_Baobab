@@ -26,6 +26,18 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [Header("중앙 보호 구역 설정")]
     [SerializeField] private float centerSafeZoneRadius = 15f;
 
+    [Header("섬 내부 웅덩이 설정")]
+    // 1 = 기존과 동일하게 생성되는 모든 웅덩이를 유지, 0 = 섬 내부 웅덩이를 전부 제거.
+    // 해안선(외부 바다)과 연결되지 않은 고립된 물웅덩이만 대상으로 하므로 Shoreline 생성 로직에는 영향을 주지 않는다.
+    [SerializeField, Range(0f, 1f)] private float innerPuddleDensity = 1f;
+    // 이 칸 수 미만인 웅덩이는 innerPuddleDensity 설정과 무관하게 항상 잔디 타일로 메운다.
+    [SerializeField] private int minPuddleTileCount = 4;
+    private bool[] isOceanConnectedWater;
+    private bool[] puddleVisited;
+    private Queue<int> puddleQueue = new Queue<int>(2000);
+    private List<int> puddleComponentBuffer = new List<int>(500);
+    private List<int> puddleBorderBuffer = new List<int>(200);
+
     [Header("육지 타일 밀도 설정")]
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
     [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
@@ -158,6 +170,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         cellToIndex = new int[size];
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
         isShoreline = new bool[size];
+        isOceanConnectedWater = new bool[size];
+        puddleVisited = new bool[size];
 
         worldPosMap = new Vector3[size];
 
@@ -494,7 +508,134 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 noiseValues[i] = val;
             }
         }
+
+        ApplyInnerPuddleDensity();
         MarkMainland();
+    }
+
+    // ── 섬 내부 웅덩이 빈도 조절 ──
+    // Shoreline(외부 바다와 맞닿은 해안선)을 만드는 위 로직은 전혀 건드리지 않고,
+    // 외부 바다와 연결되지 않은 "고립된 물웅덩이"만 컴포넌트 단위로 찾아
+    // innerPuddleDensity 확률로 유지하거나 육지로 메워버린다.
+    private void ApplyInnerPuddleDensity()
+    {
+        // innerPuddleDensity가 1이어도 minPuddleTileCount 미만의 자투리 웅덩이는 항상 제거해야 하므로
+        // 여기서는 조기 종료하지 않는다.
+        int size = width * height;
+        Array.Clear(isOceanConnectedWater, 0, size);
+        Array.Clear(puddleVisited, 0, size);
+        puddleQueue.Clear();
+
+        // 1. 그리드 테두리와 맞닿은 물을 시작점으로 외부 바다 영역을 BFS로 표시
+        for (int x = 0; x < width; x++)
+        {
+            TryEnqueueOceanWater(x, 0);
+            TryEnqueueOceanWater(x, height - 1);
+        }
+        for (int y = 0; y < height; y++)
+        {
+            TryEnqueueOceanWater(0, y);
+            TryEnqueueOceanWater(width - 1, y);
+        }
+
+        while (puddleQueue.Count > 0)
+        {
+            int curr = puddleQueue.Dequeue();
+            int cx = curr % width;
+            int cy = curr / width;
+
+            TryEnqueueOceanWater(cx + 1, cy);
+            TryEnqueueOceanWater(cx - 1, cy);
+            TryEnqueueOceanWater(cx, cy + 1);
+            TryEnqueueOceanWater(cx, cy - 1);
+        }
+
+        // 2. 외부 바다와 연결되지 않은 물(=섬 내부 웅덩이)을 컴포넌트 단위로 찾아 확률적으로 제거
+        float fillValue = waterThreshold + (1f - waterThreshold) * 0.5f;
+
+        for (int i = 0; i < size; i++)
+        {
+            if (puddleVisited[i]) continue;
+            if (noiseValues[i] >= waterThreshold || isOceanConnectedWater[i]) continue;
+
+            puddleComponentBuffer.Clear();
+            puddleBorderBuffer.Clear();
+            puddleQueue.Clear();
+            puddleQueue.Enqueue(i);
+            puddleVisited[i] = true;
+
+            while (puddleQueue.Count > 0)
+            {
+                int curr = puddleQueue.Dequeue();
+                puddleComponentBuffer.Add(curr);
+
+                int cx = curr % width;
+                int cy = curr / width;
+
+                TryEnqueuePuddleCell(cx + 1, cy);
+                TryEnqueuePuddleCell(cx - 1, cy);
+                TryEnqueuePuddleCell(cx, cy + 1);
+                TryEnqueuePuddleCell(cx, cy - 1);
+
+                CollectPuddleBorderCell(cx + 1, cy);
+                CollectPuddleBorderCell(cx - 1, cy);
+                CollectPuddleBorderCell(cx, cy + 1);
+                CollectPuddleBorderCell(cx, cy - 1);
+            }
+
+            bool isTooSmall = puddleComponentBuffer.Count < minPuddleTileCount;
+            bool keepPuddle = !isTooSmall && UnityEngine.Random.value < innerPuddleDensity;
+            if (keepPuddle) continue; // 이 웅덩이는 유지
+
+            for (int k = 0; k < puddleComponentBuffer.Count; k++)
+            {
+                noiseValues[puddleComponentBuffer[k]] = fillValue;
+            }
+
+            // 웅덩이 테두리로 인해 sandThreshold 밑으로 깔려 있던 육지 칸(예전 모래 테두리)도
+            // 같이 잔디 값으로 밀어서, 웅덩이를 지운 자리에 모래 "도넛" 자국이 남지 않도록 한다.
+            for (int k = 0; k < puddleBorderBuffer.Count; k++)
+            {
+                int borderIdx = puddleBorderBuffer[k];
+                if (noiseValues[borderIdx] < fillValue)
+                {
+                    noiseValues[borderIdx] = fillValue;
+                }
+            }
+        }
+    }
+
+    private void TryEnqueueOceanWater(int _x, int _y)
+    {
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return;
+        int idx = _x + _y * width;
+        if (isOceanConnectedWater[idx]) return;
+        if (noiseValues[idx] >= waterThreshold) return;
+
+        isOceanConnectedWater[idx] = true;
+        puddleQueue.Enqueue(idx);
+    }
+
+    private void TryEnqueuePuddleCell(int _x, int _y)
+    {
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return;
+        int idx = _x + _y * width;
+        if (puddleVisited[idx]) return;
+        if (noiseValues[idx] >= waterThreshold || isOceanConnectedWater[idx]) return;
+
+        puddleVisited[idx] = true;
+        puddleQueue.Enqueue(idx);
+    }
+
+    // 웅덩이 컴포넌트에 맞닿은 육지 칸(모래 테두리가 남을 수 있는 칸)을 수집한다.
+    // 중복으로 여러 번 들어와도 이후 덮어쓰기가 멱등적이라 문제 없다.
+    private void CollectPuddleBorderCell(int _x, int _y)
+    {
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return;
+        int idx = _x + _y * width;
+        if (noiseValues[idx] < waterThreshold) return; // 물 칸은 border가 아님
+
+        puddleBorderBuffer.Add(idx);
     }
 
     private System.Collections.Generic.Queue<int> floodFillQueue = new System.Collections.Generic.Queue<int>(10000);

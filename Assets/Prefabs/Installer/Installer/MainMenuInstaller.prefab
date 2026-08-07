@@ -95,6 +95,11 @@ MonoBehaviour:
     overlayLayerRoot: {fileID: 4750015337367576829, guid: cbd5119decaf607429f3b180b835f245, type: 3}
     tooltipLayerRoot: {fileID: 0}
   canvasPrefab: {fileID: 5983813252923583599, guid: 3397ab25825686d409ff314f4d9c4ac1, type: 3}
+  overlayCanvasRootPrefab:
+    popupLayerRoot: {fileID: 0}
+    overlayLayerRoot: {fileID: 4750015337367576829, guid: cbd5119decaf607429f3b180b835f245, type: 3}
+    tooltipLayerRoot: {fileID: 0}
+  overlayCanvasPrefab: {fileID: 5983813252923583599, guid: 3db5eb1612747ce4aa7cc1e7363c3642, type: 3}
 --- !u!114 &6368970355805350200
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -109,3 +114,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuUIManager
   viewPrefabs:
   - {fileID: 4149786304424182963, guid: 9ebf378887fd90d49a073c3a90cce74c, type: 3}
+  - {fileID: 2290007335703501642, guid: 0881de5baa698ad4bae64ae1558ae593, type: 3}
