@@ -258,7 +258,6 @@ public class UIView_MainMenu : UIView
     public void OnPressAnyKeyCompleted()
     {
         Sound.PlayUI(SoundID.MainClick);
-        Sound.PlayUI(SoundID.MainGameStart);
 
         if (null != pressAnyKeyUI) pressAnyKeyUI.Hide();
         

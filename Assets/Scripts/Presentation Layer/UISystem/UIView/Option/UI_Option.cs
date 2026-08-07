@@ -120,7 +120,7 @@ public class UI_Option : MonoBehaviour
 
         if (null != closeButton)
         {
-            closeButton.Initialize(hideAction);
+            closeButton.Initialize(hideAction, SoundID.MainButtonHover, SoundID.MainClick);
         }
 
         CacheControlDelegates();

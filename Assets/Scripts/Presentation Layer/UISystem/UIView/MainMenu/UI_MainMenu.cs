@@ -37,8 +37,6 @@ public class UI_MainMenu : MonoBehaviour
     private System.Action cachedCancelNewGame;
     private System.Action cachedOnNewGameDisappearComplete;
     private System.Action cachedSetLocalization;
-    private System.Action cachedOnNewGamePressed;
-    private System.Action cachedPlayGameSelect;
 
     private bool isNewGameConfirmationOpen;
     
@@ -52,8 +50,6 @@ public class UI_MainMenu : MonoBehaviour
         cachedCancelNewGame = CancelNewGame;
         cachedOnNewGameDisappearComplete = OnNewGameDisappearComplete;
         cachedSetLocalization = SetLocalization;
-        cachedOnNewGamePressed = OnNewGamePressed;
-        cachedPlayGameSelect = PlayGameSelect;
         
         if (null != viewCtx && null != viewCtx.localizationManager)
         {
@@ -63,12 +59,12 @@ public class UI_MainMenu : MonoBehaviour
         
         if (null != newGameButton)
         {
-            newGameButton.Initialize(OnNewGameClicked, cachedOnNewGamePressed);
+            newGameButton.Initialize(OnNewGameClicked);
         }
         
         if (null != loadGameButton)
         {
-            loadGameButton.Initialize(OnLoadGameClicked, cachedPlayGameSelect);
+            loadGameButton.Initialize(OnLoadGameClicked);
             // 이곳에서의 초기 판단은 saveSystem 주입 전일 수 있으므로 제거하거나 둡니다. (안전하게 의존성 주입 후 다시 업데이트함)
         }
         
@@ -186,11 +182,25 @@ public class UI_MainMenu : MonoBehaviour
                     continue;
                 }
 
-                _btn.ResetAndPlayAppear();
+                if (false == _btn.gameObject.activeSelf)
+                {
+                    _btn.gameObject.SetActive(true);
+                }
             }
         }
 
         UpdateButtonLayout();
+
+        int _appearSoundIndex = 0;
+        for (int i = 0; i < buttonsInOrder.Length; i++)
+        {
+            UI_MainMenuButton _btn = buttonsInOrder[i];
+            if (null != _btn && true == _btn.gameObject.activeSelf)
+            {
+                _btn.ResetAndPlayAppear(_appearSoundIndex);
+                _appearSoundIndex++;
+            }
+        }
     }
 
     public void SetLocalization()
@@ -241,14 +251,6 @@ public class UI_MainMenu : MonoBehaviour
         }
     }
 
-    private void OnNewGamePressed()
-    {
-        if (false == ShouldConfirmNewGame())
-        {
-            PlayGameSelect();
-        }
-    }
-
     private bool ShouldConfirmNewGame()
     {
         return null != parentView
@@ -258,18 +260,12 @@ public class UI_MainMenu : MonoBehaviour
             && null != viewCtx.localizationManager;
     }
 
-    private void PlayGameSelect()
-    {
-        Sound.PlayUI(SoundID.MainGameSelect);
-    }
-    
     private void ExecuteNewGame()
     {
         if (true == isNewGameConfirmationOpen)
         {
             isNewGameConfirmationOpen = false;
             Sound.PlayUI(SoundID.MainClick);
-            PlayGameSelect();
         }
 
         if (null != newGameButton)
