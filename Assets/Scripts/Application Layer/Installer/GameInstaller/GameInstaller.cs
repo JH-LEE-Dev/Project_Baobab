@@ -27,6 +27,7 @@ public class GameInstaller : MonoBehaviour
     private OffroadContainer offroadContainer;
     private SkyCameraProductionManager skyCameraProductionManager;
     private InDungeonResultManager inDungeonResultManager;
+    private TutorialQuestIndicatorManager tutorialQuestIndicatorManager;
 
     //시스템 객체들
     private UnitSystem unitSystem;
@@ -67,6 +68,7 @@ public class GameInstaller : MonoBehaviour
         offroadContainer = GetComponentInChildren<OffroadContainer>();
         skyCameraProductionManager = GetComponentInChildren<SkyCameraProductionManager>();
         inDungeonResultManager = GetComponentInChildren<InDungeonResultManager>();
+        tutorialQuestIndicatorManager = GetComponentInChildren<TutorialQuestIndicatorManager>(true);
 
         inDungeonResultManager.Initialize();
         skyCameraProductionManager.Initialize();
@@ -105,6 +107,12 @@ public class GameInstaller : MonoBehaviour
         environmentSystem);
         skillSystem.Initialize(signalHub, skillManager, skillDispatcher);
         tutorialSystem.Initialize(signalHub, inventoryManager);
+
+        // 튜토리얼 퀘스트 목표 오브젝트 위에 뜨는 화살표 인디케이터. 대상(차량/보관함 등)은 런타임에
+        // 생성되므로 참조가 아니라 매니저를 넘겨 퀘스트가 시작될 때마다 현재 오브젝트를 찾아가게 한다.
+        tutorialQuestIndicatorManager?.Initialize(signalHub, offroadContainer,
+            inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager,
+            townSystem.logProcessingManager, townSystem.tentManager);
 
         _saveManager.Initialize(signalHub, skillSystem, inventoryManager, townSystem.logProcessingManager,
         environmentSystem.densityManager, inDungeonSystem.inDungeonObjectManager, townSystem.townObjectManager, offroadContainer,
@@ -161,6 +169,7 @@ public class GameInstaller : MonoBehaviour
         saveManager.Release();
         gameSystem.Release();
         tutorialSystem.Release();
+        tutorialQuestIndicatorManager?.Release();
 
         ReleaseEvents();
         Destroy(gameObject);

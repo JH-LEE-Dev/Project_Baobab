@@ -17,6 +17,12 @@ public class TentManager : MonoBehaviour
     /// </summary>
     public Transform TentSpawnPoint => tentSpawnPoint;
 
+    /// <summary>
+    /// 실제로 생성된 텐트(집) 오브젝트의 트랜스폼. 튜토리얼 퀘스트 인디케이터가 이 위에 화살표를 띄운다.
+    /// Initialize() 전에는 null이다.
+    /// </summary>
+    public Transform TentTransform => null != tent ? tent.transform : null;
+
     public void Initialize(InputManager _inputManager)
     {
         inputManager = _inputManager;
