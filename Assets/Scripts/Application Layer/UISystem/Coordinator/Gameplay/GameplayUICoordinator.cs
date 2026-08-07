@@ -194,6 +194,9 @@ public class GameplayUICoordinator
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
         menuPopupUI.TeleportUIClosedEvent += TeleportUIClosed;
 
+        tentUI.TentUIClosedEvent -= TentUIClosed;
+        tentUI.TentUIClosedEvent += TentUIClosed;
+
         menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
         menuPopupUI.UnlockProductionStartedEvent += MenuPopupUnlockProductionStarted;
 
@@ -235,6 +238,7 @@ public class GameplayUICoordinator
         escUI.SaveGameButtonClickedEvent -= SaveGame;
         escUI.UIInputLockChangedEvent -= ESCUIInputLockChanged;
         menuPopupUI.TeleportUIClosedEvent -= TeleportUIClosed;
+        tentUI.TentUIClosedEvent -= TentUIClosed;
         menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
         menuPopupUI.UnlockProductionEndedEvent -= MenuPopupUnlockProductionEnded;
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
@@ -338,6 +342,9 @@ public class GameplayUICoordinator
     {
         if (tentInteractSignal.bInteract == true)
         {
+            // TentUI가 "도끼를 강화하세요" 퀘스트 UI와 동시에 보이면 가시성이 나빠지므로(겹침), 지금
+            // 열리는 게 그 튜토리얼 스텝 중인지 미리 알려준다.
+            tentUI.SetTutorialState(bIsTutorialActive);
             tentUI.Show();
         }
         else
@@ -506,6 +513,11 @@ public class GameplayUICoordinator
         // PortalDeActivated, DungeonSelected, CancelMenuPopup)에서 이미 끝낸 뒤이므로 여기서는
         // 후속 신호만 발행한다.
         signalHub.Publish(new TeleportUIClosedSignal());
+    }
+
+    private void TentUIClosed()
+    {
+        signalHub.Publish(new TentUIClosedSignal());
     }
 
     // 지역/서브지역 해금 연출(popupNavMain.OnUnlockProductionStarted/Ended) 재생 중에는 상호작용 키를
@@ -694,13 +706,21 @@ public class GameplayUICoordinator
                 resultUI.OpenResultUI();
             }
         }
-        else if (_step == TutorialStep.FillOffroadContainer || _step == TutorialStep.UpgradeAxe)
+        else if (_step == TutorialStep.FillOffroadContainer || _step == TutorialStep.UpgradeAxe || _step == TutorialStep.ReceiveMoney)
         {
             // FillOffroadContainer는 InDungeonSystem이 이 신호로 차량 상호작용 잠금을 풀고,
-            // UpgradeAxe는 TutorialSystem이 이 신호로 다음(마지막) 스텝인 StartNewLogging을 시작한다.
-            // 두 경우 모두 "완료 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 뒤"에 다음 로직이
-            // 이어져야 하므로 스텝 완료 시점이 아니라 이 콜백에서 발행한다.
+            // UpgradeAxe는 TutorialSystem이 이 신호로 다음(마지막) 스텝인 StartNewLogging을 시작하며,
+            // ReceiveMoney는 TutorialSystem이 이 신호로 UpgradeAxe를 시작한다. 세 경우 모두 "완료
+            // 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 뒤"에 다음 로직이 이어져야 하므로
+            // 스텝 완료 시점이 아니라 이 콜백에서 발행한다.
             signalHub.Publish(new TutorialQuestHideCompletedSignal(_step));
+
+            if (_step == TutorialStep.UpgradeAxe)
+            {
+                // TentUI(특성 화면)가 이 타이밍을 알아야 퀘스트 UI와 겹치지 않게 특성HUD 노출을
+                // 조절할 수 있다(실제 지연/노출 로직은 TentUI 쪽에서 처리).
+                tentUI.NotifyTutorialUpgradeAxeQuestUIHidden();
+            }
         }
     }
 

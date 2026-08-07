@@ -66,6 +66,16 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private readonly List<AutoLevelUpRequest> activeAutoLevelUps = new List<AutoLevelUpRequest>(4);
     private readonly AbilityLineRenderer lineRenderer = new AbilityLineRenderer();
 
+    // 튜토리얼 "도끼를 강화하세요" 스텝 동안 이 화면이 열렸는지. 그 스텝의 퀘스트 안내 UI와 이 화면의
+    // 오픈 리빌 연출(원형 리빌 등)이 동시에 보이면 가시성이 나빠져서(겹침), 퀘스트 UI가 화면에서
+    // 완전히 사라진 뒤에 특성HUD를 노출하는 데 이 값과 아래 플래그를 함께 사용할 예정이다.
+    private bool bIsTutorialState;
+    // 위 튜토리얼 스텝의 퀘스트 안내 UI가 화면에서 완전히 사라진 시점에 true가 된다.
+    private bool bTutorialUpgradeAxeQuestUIHidden;
+
+    public bool IsTutorialState => bIsTutorialState;
+    public bool IsTutorialUpgradeAxeQuestUIHidden => bTutorialUpgradeAxeQuestUIHidden;
+
     private bool hasBuiltNodes;
     private bool hasPrewarmedNodePool;
     private bool lineLayoutDirty;
@@ -175,6 +185,22 @@ public class UI_TentAbilityComponent : MonoBehaviour
         RefreshLocalizedNodeTexts();
         RefreshAbilityHUDImmediately();
         Close();
+    }
+
+    // 이 TentUI 오픈이 튜토리얼 "도끼를 강화하세요" 스텝 중인지를 전달받는다(GameplayUICoordinator가
+    // TentUI를 열기 직전에 호출). 튜토리얼이 끝나 있으면 이전에 남아있던 퀘스트 UI 소멸 플래그도 함께 지운다.
+    public void SetTutorialState(bool _bIsTutorial)
+    {
+        bIsTutorialState = _bIsTutorial;
+
+        if (bIsTutorialState == false)
+            bTutorialUpgradeAxeQuestUIHidden = false;
+    }
+
+    // "도끼를 강화하세요" 퀘스트 안내 UI가 화면에서 완전히 사라진 시점에 GameplayUICoordinator가 호출한다.
+    public void NotifyTutorialUpgradeAxeQuestUIHidden()
+    {
+        bTutorialUpgradeAxeQuestUIHidden = true;
     }
 
     private void SetLocalizationManager(LocalizationManager _localizationManager)
