@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuestIndicator
   arrowRenderer: {fileID: 4713820055391000013}
-  floatAmplitude: 0.2
+  floatAmplitude: 0.1
   floatSpeed: 2.5
   showDuration: 0.3
   hideDuration: 0.15

@@ -197,6 +197,8 @@ public class GameplayUIInstaller : MonoBehaviour
         // 별도 함수 호출로 재생한다.
         UIView_OverUIPopup overUIPopupUI = uiManager.Open<UIView_OverUIPopup>();
 
+        UIView_CursorBox cursorBoxUI = uiManager.Open<UIView_CursorBox>();
+
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
         menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI, overUIPopupUI);
 

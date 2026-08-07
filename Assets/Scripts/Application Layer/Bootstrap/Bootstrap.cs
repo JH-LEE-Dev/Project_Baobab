@@ -44,6 +44,13 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private MapType currentMapType = MapType.Town;
     private ForestType currentForestType = ForestType.InTown;
 
+    // 씬 전환이 진행 중인 동안 추가 요청을 막는다. 카메라 상승 완료 이벤트(AscendOutEndEvent)는
+    // TownProductionManager와 InDungeonProductionManager 양쪽에 동시에 전달되고 둘 다 씬 전환을
+    // 요청할 수 있어서, 같은 프레임에 요청이 두 번 들어올 수 있다. 지금까지는 첫 요청이 동기적으로
+    // gameInstaller를 해제하며 두 번째 요청의 경로를 끊어놓는 덕에 우연히 문제가 없었지만,
+    // 해제가 도중에 실패하면 그 보호가 사라져 LoadSceneAsync가 두 번 걸린다.
+    private bool bIsSceneTransitioning = false;
+
     // 유니티 이벤트 함수
     private void Awake()
     {
@@ -144,6 +151,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     public void SetupMainMenuScene()
     {
+        // 간헐적으로 메인 메뉴가 뜨지 않는 문제를 추적하기 위한 도달 기록.
+        // GoToMainMenuScene() 로그는 찍혔는데 이 로그가 없으면 씬 전환 자체가 실패한 것이고,
+        // 둘 다 찍혔는데 화면이 비어 있으면 메인 메뉴 UI 쪽 문제다.
+        Debug.Log($"[BootStrap] SetupMainMenuScene 진입 (timeScale={Time.timeScale}, " +
+            $"installer={(mainMenuInstaller != null ? "재사용" : "신규 생성")})");
+
         currentSceneType = SceneType.MainMenu;
 
         if (mainMenuInstaller == null)
@@ -172,7 +185,9 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             return;
         }
 
-        StartCoroutine(TransitionToScene(SceneType.MainMenu));
+        Debug.Log("[BootStrap] GoToMainMenuScene 요청 수신 - 씬 전환을 시작합니다.");
+
+        TryBeginTransition(SceneType.MainMenu);
     }
 
     public void GoToTownScene(bool _bNewGame)
@@ -184,8 +199,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             return;
         }
 
+        // 중복 요청이면 bNewGame까지 건드리지 않도록 시작 여부를 먼저 확인한다.
+        if (IsTransitionBlocked(SceneType.Town)) return;
+
         bNewGame = _bNewGame;
-        StartCoroutine(TransitionToScene(SceneType.Town));
+        TryBeginTransition(SceneType.Town);
     }
 
     public void GoToDungeonFromMainMenu()
@@ -199,54 +217,100 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             return;
         }
 
+        if (IsTransitionBlocked(SceneType.DungeonScene)) return;
+
         bNewGame = true;
         currentMapType = MapType.WideGreenForest;
         currentForestType = ForestType.WideGreenForest_1;
-        StartCoroutine(TransitionToScene(SceneType.DungeonScene));
+        TryBeginTransition(SceneType.DungeonScene);
+    }
+
+    /// <summary>
+    /// 이미 씬 전환이 진행 중이라 이번 요청을 무시해야 하는지 확인한다.
+    /// 요청 상태(bNewGame/currentMapType 등)를 바꾸기 전에 먼저 호출해, 무시된 요청이
+    /// 진행 중인 전환의 목적지를 오염시키지 않도록 한다.
+    /// </summary>
+    private bool IsTransitionBlocked(SceneType _sceneType)
+    {
+        if (bIsSceneTransitioning == false) return false;
+
+        Debug.LogWarning($"[BootStrap] 씬 전환 요청({_sceneType})이 중복으로 들어왔습니다. " +
+            $"이미 전환이 진행 중이므로 무시합니다.");
+        return true;
+    }
+
+    private void TryBeginTransition(SceneType _sceneType)
+    {
+        if (IsTransitionBlocked(_sceneType)) return;
+
+        bIsSceneTransitioning = true;
+        StartCoroutine(TransitionToScene(_sceneType));
     }
 
     private System.Collections.IEnumerator TransitionToScene(SceneType _sceneType)
     {
-        // 1. 전환 로직 시작
-        prevSceneType = currentSceneType;
-
-        // 기존 인스톨러 해제 (mainMenuInstaller는 절대 파괴하지 않으므로 여기서 다루지 않는다)
-        if (_sceneType == SceneType.MainMenu)
+        try
         {
-            if (gameInstaller != null)
+            // 1. 전환 로직 시작
+            prevSceneType = currentSceneType;
+
+            // 기존 인스톨러 해제 (mainMenuInstaller는 절대 파괴하지 않으므로 여기서 다루지 않는다)
+            if (_sceneType == SceneType.MainMenu)
             {
-                gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
-                gameInstaller.GoToMainMenuCurtainRevealEvent -= OnGoToMainMenuCurtainReveal;
-                gameInstaller.Release();
-                gameInstaller = null;
+                if (gameInstaller != null)
+                {
+                    gameInstaller.TownIntroCurtainRollbackEvent -= OnTownIntroCurtainRollback;
+                    gameInstaller.GoToMainMenuCurtainRevealEvent -= OnGoToMainMenuCurtainReveal;
+
+                    // 해제가 실패하더라도 아래 씬 로드는 반드시 실행되어야 한다.
+                    // 이 코루틴의 첫 구간은 카메라 상승 연출의 DOTween 완료 콜백 안에서 동기 실행되는데,
+                    // DOTween이 세이프 모드(useSafeMode)로 콜백 예외를 삼켜버리기 때문에, 예전엔 여기서
+                    // 예외가 나면 ChangeSceneAsync에 도달하지 못한 채 원인도 남지 않고 조용히 멈췄다.
+                    // (연출은 정상적으로 끝났는데 메인 메뉴가 영영 뜨지 않는 증상)
+                    try
+                    {
+                        gameInstaller.Release();
+                    }
+                    catch (System.Exception e)
+                    {
+                        Debug.LogError("[BootStrap] gameInstaller.Release()에서 예외가 발생했습니다. " +
+                            "메인 메뉴로는 계속 진행합니다.");
+                        Debug.LogException(e);
+                    }
+
+                    gameInstaller = null;
+                }
             }
-        }
 
-        // 2. 비동기 씬 로드
-        AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
-        if (asyncLoad != null)
+            // 2. 비동기 씬 로드
+            AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
+            if (asyncLoad != null)
+            {
+                while (!asyncLoad.isDone) yield return null;
+            }
+
+            // 3. 시스템 초기화 대기 (OnSceneLoaded 실행을 위해 1프레임 + 여유 시간)
+            yield return null;
+            yield return new WaitForSeconds(0.2f);
+        }
+        finally
         {
-            while (!asyncLoad.isDone) yield return null;
+            // 어떤 경로로 끝나든(정상 종료/코루틴 중단) 다음 전환이 막히지 않도록 반드시 해제한다.
+            bIsSceneTransitioning = false;
         }
-
-        // 3. 시스템 초기화 대기 (OnSceneLoaded 실행을 위해 1프레임 + 여유 시간)
-        yield return null;
-        yield return new WaitForSeconds(0.2f);
     }
 
     public void GoToOtherScene(MapType _mapType, ForestType _forestType)
     {
+        SceneType _targetScene = (MapType.Town == _mapType) ? SceneType.Town : SceneType.DungeonScene;
+
+        // 중복 요청이면 currentMapType/currentForestType까지 건드리지 않도록 먼저 확인한다.
+        if (IsTransitionBlocked(_targetScene)) return;
+
         currentMapType = _mapType;
         currentForestType = _forestType;
 
-        if (MapType.Town == _mapType)
-        {
-            StartCoroutine(TransitionToScene(SceneType.Town));
-        }
-        else
-        {
-            StartCoroutine(TransitionToScene(SceneType.DungeonScene));
-        }
+        TryBeginTransition(_targetScene);
     }
 
     private void Start()

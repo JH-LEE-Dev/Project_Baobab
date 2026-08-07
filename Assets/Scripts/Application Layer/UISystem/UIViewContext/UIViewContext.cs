@@ -7,6 +7,13 @@ public class UIViewContext
     public UIDepthController depthController { get; private set; }
     public Canvas screenSpaceCanvas { get; private set; }
     public Canvas overlayCanvas { get; private set; }
+    
+    public ICursorBoxUI cursorBoxUI { get; private set; }
+
+    public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI)
+    {
+        cursorBoxUI = _cursorBoxUI;
+    }
 
     public void Initialize(InputManager _inputManager, LocalizationManager _localizationManager, UIDepthController _depthController)
     {
