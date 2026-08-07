@@ -45,8 +45,9 @@ public class WeatherManager : MonoBehaviour,IWeatherProvider
 
     private void Update()
     {
-        UpdateWeatherTimer();
-        UpdateRainEmission();
+        // 기능 정지를 위해 주석 처리
+        // UpdateWeatherTimer();
+        // UpdateRainEmission();
         //UpdateRainPosition();
     }
 
@@ -97,6 +98,8 @@ public class WeatherManager : MonoBehaviour,IWeatherProvider
 
     private void OnGUI()
     {
+        // 기능 정지를 위해 주석 처리
+        /*
         if (debugStyle == null)
         {
             debugStyle = new GUIStyle();
@@ -111,6 +114,7 @@ public class WeatherManager : MonoBehaviour,IWeatherProvider
         float width = 300f;
         float height = 100f;
         GUI.Label(new Rect(Screen.width - width - 10f, 10, width, height), weatherInfo, debugStyle);
+        */
     }
 
     public WeatherType GetCurrentWeatherType()

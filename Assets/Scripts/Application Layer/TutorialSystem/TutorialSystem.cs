@@ -10,6 +10,15 @@ public class TutorialSystem
     private TutorialStep currentStep;
     private bool bStepActive;
 
+    // TutorialIntroEndedSignal(= MainMenu → Dungeon 튜토리얼 진입)로만 true가 된다. 이어하기(GoToTownScene(false))나
+    // Town/Dungeon 왕복으로 재생성된 세션에서는 이 신호가 발행되지 않으므로 계속 false로 남아, currentStep/bStepActive의
+    // 기본값(각각 CutTree/false)이 "CutTree를 막 끝낸 상태"와 우연히 같아지더라도 아래 스텝 로직이 절대 실행되지 않는다.
+    private bool bTutorialSessionActive;
+
+    // 마지막 스텝(StartNewLogging)까지 완료되면 true로 고정된다. 이후 같은 세션에서 Town↔Dungeon을 오가도
+    // 튜토리얼 로직이 다시는 실행되지 않도록 완전히 차단한다.
+    private bool bTutorialCompleted;
+
     // 2단계에서 플레이어가 실제로 OffroadContainer에 원목을 넣기 시작했는지.
     // 인벤토리가 비는 것만으로는 "컨테이너에 넣어서 비운 것"인지 구분할 수 없어(버리기 등) 함께 확인한다.
     private bool bContainerTransferStarted;
@@ -101,8 +110,15 @@ public class TutorialSystem
         signalHub.UnSubscribe<TentUIClosedSignal>(TentUIClosed);
     }
 
+    // 튜토리얼 세션인지 + 아직 완료 전인지. 아래 모든 스텝 핸들러는 진입 즉시 이 확인부터 거친다.
+    private bool CanProcessTutorialLogic()
+    {
+        return bTutorialSessionActive && bTutorialCompleted == false;
+    }
+
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
     {
+        bTutorialSessionActive = true;
         StartStep(TutorialStep.CutTree);
     }
 
@@ -111,6 +127,9 @@ public class TutorialSystem
     // 기다린다(아래 ItemAcquired 참고).
     private void TreeIsDead(TreeIsDeadSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive == false || currentStep != TutorialStep.CutTree || _signal.isPlayerKilled == false)
             return;
 
@@ -123,6 +142,9 @@ public class TutorialSystem
     // NPC가 주운 물량은 자연히 제외된다.
     private void ItemAcquired(ItemAcquiredSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive || currentStep != TutorialStep.CutTree)
             return;
 
@@ -141,6 +163,9 @@ public class TutorialSystem
     // 이 시점엔 인벤토리가 아직 비어 있지 않으므로, 여기서 완료를 판정하면 영원히 완료되지 않는다.
     private void ItemTransferredToOffroadContainer(InventoryItemTransferToOffroadContainerSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive == false || currentStep != TutorialStep.FillOffroadContainer)
             return;
 
@@ -151,6 +176,9 @@ public class TutorialSystem
     // 여기서 확인해야 마지막 원목까지 넣은 상태를 정확히 잡아낼 수 있다.
     private void ItemRemovedFromInventory(ItemRemovedFromInventorySignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive == false || currentStep != TutorialStep.FillOffroadContainer)
             return;
 
@@ -166,6 +194,9 @@ public class TutorialSystem
 
     private void TutorialStaminaReachedFloor(TutorialStaminaReachedFloorSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         // FillOffroadContainer 퀘스트가 완료된 이후에 피로도가 19%에 도달했을 때 마지막 퀘스트를 시작한다.
         if (bStepActive == false && currentStep == TutorialStep.FillOffroadContainer)
         {
@@ -175,6 +206,9 @@ public class TutorialSystem
 
     private void CharacterRideStart(CharacterRideStartSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive && currentStep == TutorialStep.GoHomeBeforeExhausted)
         {
             CompleteStep();
@@ -183,6 +217,9 @@ public class TutorialSystem
 
     private void ReturnToTownCameraDownEnded(ReturnToTownCameraDownEndedSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         // GoHomeBeforeExhausted는 피로도가 바닥값에 도달하기 전에 플레이어가 스스로 차량을 타고 귀환하면
         // 아예 시작되지 않고 건너뛰어질 수 있는 퀘스트다(차량 상호작용은 FillOffroadContainer 완료와 함께
         // 이미 열려있어, 피로도와 무관하게 그 즉시 탈 수 있다). 이 경우 currentStep은 FillOffroadContainer에
@@ -197,6 +234,9 @@ public class TutorialSystem
 
     private void ItemAddedToLogContainer(ItemAddedToLogContainerSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive && currentStep == TutorialStep.PutItemsInLogContainer)
         {
             CompleteStep();
@@ -205,6 +245,9 @@ public class TutorialSystem
 
     private void ShopMoneyUpdated(ShopMoneyUpdatedSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         // 이전 퀘스트(PutItems)가 아이템을 넣어 이미 완료되어 bStepActive가 false인 상태에서,
         // 가공이 끝나 돈이 들어오면 다음 퀘스트(ReceiveMoney)를 시작한다.
         if (bStepActive == false && currentStep == TutorialStep.PutItemsInLogContainer && _signal.money > 0)
@@ -218,6 +261,9 @@ public class TutorialSystem
     // 안내 UI가 완전히 사라질 때까지 기다린다(아래 TryStartUpgradeAxe 참고).
     private void MoneyEarned(MoneyEarnedSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive && currentStep == TutorialStep.ReceiveMoney)
         {
             CompleteStep();
@@ -250,6 +296,9 @@ public class TutorialSystem
 
     private void SkillDispatched(SkillDispatchedSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive && currentStep == TutorialStep.UpgradeAxe)
         {
             if (_signal.commandType == SkillCommandType.AxeDamage)
@@ -264,6 +313,9 @@ public class TutorialSystem
     // UpgradeAxe의 완료 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 시점에 마지막 스텝을 시작한다.
     private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (_signal.step == TutorialStep.ReceiveMoney)
         {
             bReceiveMoneyUIHideCompleted = true;
@@ -282,6 +334,9 @@ public class TutorialSystem
     // 이 신호를 거치지 않으므로 닫힘 판정은 아래 TentUIClosed(TentUIClosedSignal)에서 담당한다.
     private void TentInteracted(TentInteractSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         bTentUIOpen = _signal.bInteract;
     }
 
@@ -289,6 +344,9 @@ public class TutorialSystem
     // 닫힌 경우에도 항상 발행되므로, "닫혀 있음" 판정은 이 신호를 기준으로 확정한다.
     private void TentUIClosed(TentUIClosedSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         bTentUIOpen = false;
         TryStartNewLogging();
     }
@@ -317,9 +375,15 @@ public class TutorialSystem
     // 마지막 스텝: 마을에서 OffroadVehicle에 상호작용(다시 던전으로 향함)하면 완료된다.
     private void TownOffroadVehicleActivated(TownOffroadVehicleActivatedSignal _signal)
     {
+        if (CanProcessTutorialLogic() == false)
+            return;
+
         if (bStepActive && currentStep == TutorialStep.StartNewLogging)
         {
             CompleteStep();
+            // 튜토리얼의 마지막 스텝이 끝났다 - 이 세션에서는 이후 어떤 신호가 와도 튜토리얼 로직이
+            // 다시 실행되지 않도록 완전히 잠근다.
+            bTutorialCompleted = true;
             return;
         }
 
