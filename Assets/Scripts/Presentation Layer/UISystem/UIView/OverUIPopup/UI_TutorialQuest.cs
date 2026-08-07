@@ -55,7 +55,6 @@ public class UI_TutorialQuest : MonoBehaviour
     [SerializeField] private int putItemsTitleId = 5;
     [SerializeField] private int receiveMoneyTitleId = 6;
     [SerializeField] private int upgradeAxeTitleId = 7;
-    [SerializeField] private int startNewLoggingTitleId = 8;
 
     // 내부 의존성
     private const float HiddenBGWidth = 0f;
@@ -185,18 +184,6 @@ public class UI_TutorialQuest : MonoBehaviour
                     PlayShowQuest();
                 }
                 break;
-
-            case TutorialStep.StartNewLogging:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetStartNewLoggingTitle(), string.Empty);
-                }
-                else
-                {
-                    SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
-                    PlayShowQuest();
-                }
-                break;
         }
     }
 
@@ -209,7 +196,6 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.PutItemsInLogContainer:
             case TutorialStep.ReceiveMoney:
             case TutorialStep.UpgradeAxe:
-            case TutorialStep.StartNewLogging:
                 if (bIsShowing)
                 {
                     PlayCompleteAndHide();
@@ -250,9 +236,6 @@ public class UI_TutorialQuest : MonoBehaviour
                 break;
             case TutorialStep.UpgradeAxe:
                 SetQuestContent(GetUpgradeAxeTitle(), string.Empty);
-                break;
-            case TutorialStep.StartNewLogging:
-                SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
                 break;
         }
     }
@@ -805,16 +788,6 @@ public class UI_TutorialQuest : MonoBehaviour
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "도끼를 강화하세요.";
-    }
-
-    private string GetStartNewLoggingTitle()
-    {
-        if (null != localizationManager)
-        {
-            string _text = localizationManager.GetText(localizationJsonId, startNewLoggingTitleId);
-            if (false == string.IsNullOrEmpty(_text)) return _text;
-        }
-        return "새로운 벌목을 시작하세요!";
     }
 
     // 유니티 이벤트 함수

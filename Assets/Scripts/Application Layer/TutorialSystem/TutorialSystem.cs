@@ -40,7 +40,6 @@ public class TutorialSystem
         signalHub.Subscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
-        signalHub.Subscribe<GoToDungeonSignal>(GoToDungeon);
     }
 
     private void UnSubscribeSignals()
@@ -56,7 +55,6 @@ public class TutorialSystem
         signalHub.UnSubscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
-        signalHub.UnSubscribe<GoToDungeonSignal>(GoToDungeon);
     }
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
@@ -161,16 +159,7 @@ public class TutorialSystem
             if (_signal.commandType == SkillCommandType.AxeDamage)
             {
                 CompleteStep();
-                StartStep(TutorialStep.StartNewLogging);
             }
-        }
-    }
-
-    private void GoToDungeon(GoToDungeonSignal _signal)
-    {
-        if (bStepActive && currentStep == TutorialStep.StartNewLogging)
-        {
-            CompleteStep();
         }
     }
 
