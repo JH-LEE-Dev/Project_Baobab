@@ -757,7 +757,7 @@ public class GameplayUICoordinator
 
     private void ActivateWarningUI(ActivateWarningUISignal _activateWarningUISignal)
     {
-        warningUI.Show();
+        warningUI.ShowWarning();
     }
 
     private void DeActivateWarningUI()

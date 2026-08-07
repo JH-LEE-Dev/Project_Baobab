@@ -54,6 +54,7 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
     [SerializeField] private UnhoverSettings unhoverSettings = new UnhoverSettings();
     
     private Action onClickAction;
+    private Action onHoverAction;
     private bool isInteractable = true;
     private bool isHovered = false;
 
@@ -90,11 +91,13 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
     {
         KillTween();
         onClickAction = null;
+        onHoverAction = null;
     }
 
-    public void Initialize(Action _onClick)
+    public void Initialize(Action _onClick, Action _onHover = null)
     {
         onClickAction = _onClick;
+        onHoverAction = _onHover;
     }
 
     public void SetInteractable(bool _isInteractable)
@@ -118,6 +121,8 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
     {
         isHovered = true;
         if (false == isInteractable) return;
+
+        if (null != onHoverAction) onHoverAction();
         
         KillTween();
         PlayHoverAnimation();

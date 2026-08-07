@@ -242,7 +242,13 @@ public class UI_MainMenu : MonoBehaviour
             {
                 isNewGameConfirmationOpen = true;
                 string _warnMsg = viewCtx.localizationManager.GetText("NewGameWarning");
-                warningPopup.ShowWarning(_warnMsg, cachedExecuteNewGame, cachedCancelNewGame);
+                warningPopup.ShowWarning(
+                    _warnMsg,
+                    cachedExecuteNewGame,
+                    cachedCancelNewGame,
+                    SoundID.ResultUIOpen,
+                    SoundID.ResultUIClose,
+                    SoundID.ResultUIHover);
             }
             else
             {
