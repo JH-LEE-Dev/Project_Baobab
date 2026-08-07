@@ -15,11 +15,11 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
     [SerializeField] private QuestIndicator indicatorPrefab;
 
     [Header("Offsets (대상 오브젝트 원점 기준 월드 오프셋)")]
-    [Tooltip("FillOffroadContainer - 던전의 원목 운반 상자")]
+    [Tooltip("FillOffroadContainer - 던전의 원목 운반 상자 / PutItemsInLogContainer 시작 직후 - 마을의 같은 운반 상자")]
     [SerializeField] private Vector3 offroadContainerOffset = new Vector3(0f, 2.5f, 0f);
     [Tooltip("GoHomeBeforeExhausted - 던전의 차량")]
     [SerializeField] private Vector3 dungeonVehicleOffset = new Vector3(0f, 3f, 0f);
-    [Tooltip("PutItemsInLogContainer - 제재소 원목 보관함")]
+    [Tooltip("PutItemsInLogContainer - 마을 OffroadContainer에서 원목을 인출한 뒤 가리킬 제재소 원목 보관함")]
     [SerializeField] private Vector3 logContainerOffset = new Vector3(0f, 2.5f, 0f);
     [Tooltip("ReceiveMoney - 상점 NPC")]
     [SerializeField] private Vector3 shopNPCOffset = new Vector3(0f, 2f, 0f);
@@ -38,6 +38,7 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
 
     // 내부 상태
     private QuestIndicator indicator;
+    private TutorialStep currentStep;
 
     public void Initialize(SignalHub _signalHub, OffroadContainer _offroadContainer,
         InDungeonObjectManager _inDungeonObjectManager, TownObjectManager _townObjectManager,
@@ -69,6 +70,7 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
 
         signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.Subscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
     }
 
     private void UnSubscribeSignals()
@@ -77,10 +79,13 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
 
         signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.UnSubscribe<ItemAddedToInventorySignal>(ItemAddedToInventory);
     }
 
     private void TutorialStepStarted(TutorialStepStartedSignal _signal)
     {
+        currentStep = _signal.step;
+
         Transform _target = GetTargetTransform(_signal.step);
 
         // 대상이 없는 스텝(CutTree)이거나 아직 대상 오브젝트가 생성되지 않았다면 띄우지 않는다.
@@ -98,6 +103,18 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
         HideIndicator();
     }
 
+    // PutItemsInLogContainer 시작 시엔 마을 OffroadContainer를 먼저 가리키다가, 캐릭터가 거기서 실제로
+    // 원목을 인출하는 순간(ItemAddedToInventorySignal은 OffroadContainer.AddToCharacterInventory에서만
+    // 발행되므로 이 상황을 정확히 짚어낸다) 다음 목적지인 LogContainer로 화살표를 옮긴다.
+    private void ItemAddedToInventory(ItemAddedToInventorySignal _signal)
+    {
+        if (currentStep != TutorialStep.PutItemsInLogContainer) return;
+
+        if (null == logProcessingManager || null == logProcessingManager.logContainer) return;
+
+        ShowIndicator(logProcessingManager.logContainer.transform, logContainerOffset);
+    }
+
     /// <summary>
     /// 스텝별 목표 오브젝트. 차량/보관함 등은 런타임에 생성되므로 매번 현재 참조를 다시 가져온다.
     /// </summary>
@@ -110,17 +127,17 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
                 return null;
 
             case TutorialStep.FillOffroadContainer:
-                return null != offroadContainer ? offroadContainer.GetTransform() : null;
+                return GetOffroadContainerVisualTransform();
 
             case TutorialStep.GoHomeBeforeExhausted:
                 return null != inDungeonObjectManager && null != inDungeonObjectManager.offroadVehicle
                     ? inDungeonObjectManager.offroadVehicle.transform
                     : null;
 
+            // 시작 시점엔 아직 캐릭터 인벤토리가 비어 있으므로, 원목을 실제로 들고 있는 마을
+            // OffroadContainer를 먼저 가리킨다. LogContainer로의 전환은 ItemAddedToInventory에서 처리한다.
             case TutorialStep.PutItemsInLogContainer:
-                return null != logProcessingManager && null != logProcessingManager.logContainer
-                    ? logProcessingManager.logContainer.transform
-                    : null;
+                return GetOffroadContainerVisualTransform();
 
             case TutorialStep.ReceiveMoney:
                 return null != logProcessingManager && null != logProcessingManager.shopNPC
@@ -139,13 +156,29 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
         return null;
     }
 
+    /// <summary>
+    /// OffroadContainer.GetTransform()은 위치 동기화용 로직 트랜스폼일 뿐 하위에 SpriteRenderer가
+    /// 없다(실제 상자 스프라이트는 OffroadContainerVComponent 쪽에 있다). 인디케이터의 반짝임 효과가
+    /// 렌더러를 찾으려면 반드시 GetVisualTransform()을 써야 하므로, 아직 세팅 전(null)인 극히 이른
+    /// 타이밍 대비로만 GetTransform()에 폴백한다.
+    /// </summary>
+    private Transform GetOffroadContainerVisualTransform()
+    {
+        if (null == offroadContainer) return null;
+
+        Transform _visual = offroadContainer.GetVisualTransform();
+        return null != _visual ? _visual : offroadContainer.GetTransform();
+    }
+
     private Vector3 GetOffset(TutorialStep _step)
     {
         switch (_step)
         {
             case TutorialStep.FillOffroadContainer: return offroadContainerOffset;
             case TutorialStep.GoHomeBeforeExhausted: return dungeonVehicleOffset;
-            case TutorialStep.PutItemsInLogContainer: return logContainerOffset;
+            // 시작 시점의 타겟(마을 OffroadContainer)에 대한 오프셋. LogContainer로 전환된 뒤의
+            // 오프셋은 ItemAddedToInventory에서 logContainerOffset을 직접 사용한다.
+            case TutorialStep.PutItemsInLogContainer: return offroadContainerOffset;
             case TutorialStep.ReceiveMoney: return shopNPCOffset;
             case TutorialStep.UpgradeAxe: return homeOffset;
             case TutorialStep.StartNewLogging: return townVehicleOffset;
