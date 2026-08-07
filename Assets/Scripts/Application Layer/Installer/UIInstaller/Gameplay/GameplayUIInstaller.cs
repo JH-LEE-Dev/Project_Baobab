@@ -164,6 +164,10 @@ public class GameplayUIInstaller : MonoBehaviour
 
     private void OpenUIView()
     {
+        // 다른 UIView들이 자신의 Initialize()/SetupUI()에서 viewCtx.cursorBoxUI를 참조할 수 있도록,
+        // CursorBox를 가장 먼저 생성해 viewCtx에 등록해둔다.
+        UIView_CursorBox cursorBoxUI = uiManager.Open<UIView_CursorBox>();
+
         UIView_Popup inventoryUI = uiManager.Open<UIView_Popup>();
         inventoryUI.Hide();
 
@@ -196,8 +200,6 @@ public class GameplayUIInstaller : MonoBehaviour
         // Show/Hide로 토글하지 않고 항상 Show 상태로 유지한다. 실제 연출은 PlayCompanyLogo() 등
         // 별도 함수 호출로 재생한다.
         UIView_OverUIPopup overUIPopupUI = uiManager.Open<UIView_OverUIPopup>();
-
-        UIView_CursorBox cursorBoxUI = uiManager.Open<UIView_CursorBox>();
 
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
         menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI, overUIPopupUI);
