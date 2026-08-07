@@ -430,6 +430,7 @@ public class UI_EscapeMenuButton : MonoBehaviour,
 
     private void PlayHoverAnimation()
     {
+        Sound.PlayUI(SoundID.MainButtonHover);
         PlaySquashBoingMotion();
         TweenShadowColor(hoverShadowColor, shadowTweenDuration, shadowEase);
     }
@@ -447,6 +448,7 @@ public class UI_EscapeMenuButton : MonoBehaviour,
 
     private void PlayClickAnimation()
     {
+        Sound.PlayUI(SoundID.MainClick);
         PlaySquashBoingMotion();
         TweenShadowColor(clickShadowColor, shadowTweenDuration * 0.5f, Ease.OutQuad);
     }

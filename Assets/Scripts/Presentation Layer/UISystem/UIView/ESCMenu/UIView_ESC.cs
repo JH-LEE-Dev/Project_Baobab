@@ -124,6 +124,14 @@ public class UIView_ESC : UIView
         base.Show();
     }
 
+    public void ShowPauseMenu()
+    {
+        if (null != escapeMenu)
+            escapeMenu.SetSoundsEnabled(true);
+
+        Show();
+    }
+
     public override void Hide()
     {
         if (false == IsVisible || true == isClosing || true == isOpeningOption) return;
@@ -189,6 +197,9 @@ public class UIView_ESC : UIView
         isClosing = false;
         base.Hide();
         gameObject.SetActive(false);
+
+        if (null != escapeMenu)
+            escapeMenu.SetSoundsEnabled(false);
     }
 
     public void OnResumeButtonClicked()

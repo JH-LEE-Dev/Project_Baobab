@@ -20,6 +20,7 @@ public class UIView_Tent : UIView
     private CurrencyCounterHUD coinCounter;
 
     private bool isInitialOpen = false;
+    private bool playSoundsForCurrentPresentation;
 
     #region Default Logic
 
@@ -75,6 +76,9 @@ public class UIView_Tent : UIView
             return;
         }
 
+        playSoundsForCurrentPresentation = true;
+        Sound.PlayUI(SoundID.AbilityOpen);
+
         viewCtx.inputManager.PauseMove(true);
 
         RefreshMoneyTexts(false);
@@ -85,6 +89,13 @@ public class UIView_Tent : UIView
     protected override void OnHide()
     {
         base.OnHide();
+
+        if (playSoundsForCurrentPresentation)
+        {
+            Sound.PlayUI(SoundID.ResultUIClose);
+            playSoundsForCurrentPresentation = false;
+        }
+
         viewCtx.inputManager.PauseMove(false);
 
         abilityUIComponent?.Close();
