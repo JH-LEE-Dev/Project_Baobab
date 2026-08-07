@@ -84,13 +84,27 @@ public class AudioManager : MonoBehaviour
         CreateBGMSource();
     }
 
+    // Bootstrap 오브젝트가 MainMenuScene에 들어 있어서, 메인 메뉴로 돌아올 때마다 그 하위의
+    // AudioManager까지 통째로 중복 생성된다. 중복 인스턴스는 Awake()에서 Instance 검사에 걸려
+    // CreatePool()을 거치지 않고 빠져나가므로 sourceStartTime/sourceBaseVolume 등 내부 배열이
+    // 전부 null인 상태다. 그런데도 여기서 sceneLoaded에 등록해 버리면(파괴는 프레임 끝이라
+    // OnEnable은 그대로 실행된다) 준비되지 않은 인스턴스의 OnSceneLoaded가 함께 호출된다.
+    // 지금은 eventQueue/sourcePool이 필드 초기화라 빈 컬렉션이어서 우연히 넘어가지만,
+    // OnSceneLoaded가 배열을 건드리는 순간 메인 메뉴로 돌아올 때마다 NRE가 난다.
+    // sceneLoaded 핸들러에서 터진 예외는 뒤에 등록된 BootStrap.OnSceneLoaded까지 막을 수 있어
+    // 그대로 "메인 메뉴가 뜨지 않는" 증상이 되므로, 실제 인스턴스만 등록하도록 막는다.
     private void OnEnable()
     {
+        if (Instance != this) return;
+
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
         UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
     private void OnDisable()
     {
+        if (Instance != this) return;
+
         UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 

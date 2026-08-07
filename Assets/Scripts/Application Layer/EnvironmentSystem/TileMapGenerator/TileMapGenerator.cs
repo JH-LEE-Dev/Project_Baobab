@@ -38,6 +38,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     private List<int> puddleComponentBuffer = new List<int>(500);
     private List<int> puddleBorderBuffer = new List<int>(200);
 
+    // ── 물 웅덩이별 균일 애니메이션 오브젝트 배치용 ──
+    // 물 애니메이션 오브젝트(SpawnWaterAnimatedObj)를 타일 단위 독립 확률로 뽑으면
+    // 작은 웅덩이는 운이 나빠 하나도 안 뽑히는 경우가 생긴다.
+    // 그래서 연결된 물 덩어리(웅덩이) 단위로 목표 개수를 계산해 그 안에서만 랜덤 분배한다.
+    private bool[] deepWaterTileFlags;
+    private bool[] waterCompVisited;
+    private Queue<int> waterCompQueue = new Queue<int>(2000);
+    private List<int> pondInnerDeepBuffer = new List<int>(500);
+    private List<int> pondOuterDeepBuffer = new List<int>(200);
+
     [Header("육지 타일 밀도 설정")]
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
     [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
@@ -172,6 +182,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         isShoreline = new bool[size];
         isOceanConnectedWater = new bool[size];
         puddleVisited = new bool[size];
+        deepWaterTileFlags = new bool[size];
+        waterCompVisited = new bool[size];
 
         worldPosMap = new Vector3[size];
 
@@ -789,6 +801,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         Array.Clear(bloomWaterDecoTilesToApply, 0, size);
         Array.Clear(waterStencilTiles, 0, size);
         Array.Clear(groundStencilTiles, 0, size);
+        Array.Clear(deepWaterTileFlags, 0, size);
 
         grassPositions.Clear();
         delayedGrassPositions.Clear();
@@ -841,14 +854,12 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     {
                         shouldPlaceBloom = UnityEngine.Random.value < stageTileData.BloomWaterDecoDensity;
                     }
-                    
+
                     if (shouldPlaceBloom)
                     {
                         bloomWaterDecoTilesToApply[i] = stageTileData.BloomWaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.BloomWaterDecoTiles.Count)];
                     }
                 }
-
-
 
                 bool _isDeepWater = true;
                 for (int _dy = -1; _dy <= 1; _dy++)
@@ -865,6 +876,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     if (!_isDeepWater) break;
                 }
 
+                deepWaterTileFlags[i] = _isDeepWater;
+
                 if (_isDeepWater)
                 {
                     if (stageTileData != null)
@@ -873,16 +886,6 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                         {
                             waterDecoTilesToApply[i] = stageTileData.WaterDecoTiles[UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
                         }
-                    }
-
-                    float currentDensity = (distSq < mapRadius * mapRadius) ? 
-                        (stageTileData != null ? stageTileData.WaterAnimatedObjDensity : 0f) : 
-                        outerWaterObjectDensity;
-                        
-                    if (animatedObjGenerator != null && UnityEngine.Random.value < currentDensity)
-                    {
-                        Vector3 pos = GetWorldPos(i);
-                        animatedObjGenerator.SpawnWaterAnimatedObj(pos);
                     }
                 }
             }
@@ -991,6 +994,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
+        PlaceWaterAnimatedObjects(size, centerX, centerY, mapRadius);
+
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);
         collisionTilemap.SetTilesBlock(b, collisionTiles);
@@ -1005,6 +1010,103 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         if (bloomWaterDecoTilemap != null) bloomWaterDecoTilemap.SetTilesBlock(b, bloomWaterDecoTilesToApply);
         if (waterStencilTilemap != null) waterStencilTilemap.SetTilesBlock(b, waterStencilTiles);
         if (groundStencilTilemap != null) groundStencilTilemap.SetTilesBlock(b, groundStencilTiles);
+    }
+
+    // ── 웅덩이(연결된 물 덩어리) 단위 애니메이션 오브젝트 균일 분배 ──
+    // 기존에는 깊은 물 타일마다 독립적으로 확률을 굴려 SpawnWaterAnimatedObj를 호출했기 때문에
+    // 작은 웅덩이는 확률이 전부 빗나가면 애니메이션 오브젝트가 하나도 안 생길 수 있었다.
+    // 물 타일을 4방향 연결 컴포넌트(웅덩이)로 묶은 뒤, 그 웅덩이에 속한 깊은 물 타일 수에 비례한
+    // 목표 개수를 계산해서 웅덩이 안에서만 랜덤하게 뽑아 스폰한다.
+    private void PlaceWaterAnimatedObjects(int _size, float _centerX, float _centerY, float _mapRadius)
+    {
+        if (animatedObjGenerator == null) return;
+
+        float mapRadiusSq = _mapRadius * _mapRadius;
+        float waterAnimatedObjDensity = stageTileData != null ? stageTileData.WaterAnimatedObjDensity : 0f;
+
+        Array.Clear(waterCompVisited, 0, _size);
+
+        for (int i = 0; i < _size; i++)
+        {
+            if (waterCompVisited[i] || waterTiles[i] == null) continue;
+
+            pondInnerDeepBuffer.Clear();
+            pondOuterDeepBuffer.Clear();
+            waterCompQueue.Clear();
+            waterCompQueue.Enqueue(i);
+            waterCompVisited[i] = true;
+
+            while (waterCompQueue.Count > 0)
+            {
+                int curr = waterCompQueue.Dequeue();
+                int cx = curr % width;
+                int cy = curr / width;
+
+                if (deepWaterTileFlags[curr])
+                {
+                    float ddx = cx - _centerX;
+                    float ddy = cy - _centerY;
+                    bool inMainMap = (ddx * ddx + ddy * ddy) < mapRadiusSq;
+                    (inMainMap ? pondInnerDeepBuffer : pondOuterDeepBuffer).Add(curr);
+                }
+
+                TryEnqueueWaterCompCell(cx + 1, cy);
+                TryEnqueueWaterCompCell(cx - 1, cy);
+                TryEnqueueWaterCompCell(cx, cy + 1);
+                TryEnqueueWaterCompCell(cx, cy - 1);
+            }
+
+            SpawnDistributedWaterAnimatedObj(pondInnerDeepBuffer, waterAnimatedObjDensity);
+            SpawnDistributedWaterAnimatedObj(pondOuterDeepBuffer, outerWaterObjectDensity);
+        }
+    }
+
+    private void TryEnqueueWaterCompCell(int _x, int _y)
+    {
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return;
+        int idx = _x + _y * width;
+        if (waterCompVisited[idx] || waterTiles[idx] == null) return;
+
+        waterCompVisited[idx] = true;
+        waterCompQueue.Enqueue(idx);
+    }
+
+    // 웅덩이 크기 * 밀도의 기댓값을 정수부 + 소수부 확률적 반올림으로 변환하되,
+    // 웅덩이가 존재하고(깊은 물 타일 1칸 이상) 밀도가 0보다 크면 최소 1개는 항상 보장한다.
+    // (기댓값만 따르면 작은 웅덩이는 기댓값 자체가 1 미만이라 거의 항상 0개가 되어,
+    //  타일별 독립 확률로 뽑던 기존 방식과 통계적으로 별 차이가 없었다.)
+    private int ComputeDistributedCount(int _poolSize, float _density)
+    {
+        if (_poolSize <= 0 || _density <= 0f) return 0;
+
+        float expected = _poolSize * _density;
+        int intPart = Mathf.FloorToInt(expected);
+        float frac = expected - intPart;
+        if (UnityEngine.Random.value < frac) intPart++;
+
+        if (intPart <= 0) intPart = 1;
+
+        return Mathf.Min(intPart, _poolSize);
+    }
+
+    // _candidates(웅덩이에 속한 깊은 물 타일 목록)에서 부분 Fisher-Yates로 목표 개수만큼 뽑아
+    // 해당 위치에 물 애니메이션 오브젝트를 스폰한다. _candidates는 호출마다 재사용되는 버퍼이므로
+    // 여기서 순서를 바꿔도 안전하다.
+    private void SpawnDistributedWaterAnimatedObj(List<int> _candidates, float _density)
+    {
+        int count = ComputeDistributedCount(_candidates.Count, _density);
+        if (count <= 0) return;
+
+        int n = _candidates.Count;
+        for (int k = 0; k < count; k++)
+        {
+            int r = k + UnityEngine.Random.Range(0, n - k);
+            int tmp = _candidates[k];
+            _candidates[k] = _candidates[r];
+            _candidates[r] = tmp;
+
+            animatedObjGenerator.SpawnWaterAnimatedObj(GetWorldPos(_candidates[k]));
+        }
     }
 
     private TileBase GetWaterTile(int _x, int _y)
