@@ -11,6 +11,11 @@ public struct TownStartedSignal
 
 public struct ContainerUpdatedSignal { }
 public struct ItemAddedToLogContainerSignal { }
+public struct ReturnToTownCameraDownEndedSignal { }
+
+// 마을에서 플레이어가 OffroadVehicle에 실제로 상호작용(인터랙트 키 입력)한 시점.
+// PortalActivatedSignal은 던전 쪽 차량 상호작용에도 공용으로 쓰여 마을 전용 판별에는 쓸 수 없어 별도로 둔다.
+public struct TownOffroadVehicleActivatedSignal { }
 
 public struct ShopMoneyUpdatedSignal
 {

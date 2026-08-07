@@ -8,6 +8,9 @@ public enum TutorialStep
     PutItemsInLogContainer,
     ReceiveMoney,
     UpgradeAxe,
+    // 마지막 스텝 - "새로운 벌목을 시작하세요". 도끼 강화가 끝나면 시작되고,
+    // 마을에서 OffroadVehicle에 상호작용하면(다시 던전으로 향하면) 완료된다.
+    StartNewLogging,
 }
 
 // MainMenu → Dungeon 튜토리얼: 인트로 연출(로고 → 하차 → HUD 복귀)이 전부 끝난 시점.

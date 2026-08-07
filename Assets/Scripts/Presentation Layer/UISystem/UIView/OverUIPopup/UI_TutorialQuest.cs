@@ -109,6 +109,15 @@ public class UI_TutorialQuest : MonoBehaviour
         if (currentStep == _step && bIsShowing)
             return;
 
+        // 이전 퀘스트의 "완료 색상 전환 → 유지 → 숨김" 연출(PlayCompleteAndHide)이 아직 끝나지 않은 상태로
+        // 다음 퀘스트가 시작될 수 있다(예: 피로도가 바닥값에 빠르게 도달해 GoHomeBeforeExhausted가
+        // FillOffroadContainer의 숨김 연출보다 먼저 시작하는 경우). 이때 아래 PlayStepTransition()이
+        // KillSequences()로 진행 중이던 연출을 죽여버리면 HideCompletedEvent가 영영 발행되지 않아,
+        // 이 이벤트에 걸려있는 게임 로직(예: 차량 상호작용 잠금 해제)이 씹힌다.
+        // 따라서 다음 퀘스트로 넘어가기 직전에 미완료 숨김 연출을 강제로 즉시 완료 처리해 이벤트가
+        // 반드시 발행되도록 보장한다.
+        ForceCompletePendingHide();
+
         currentStep = _step;
 
         switch (_step)
@@ -691,6 +700,29 @@ public class UI_TutorialQuest : MonoBehaviour
     private void OnCompleteHideCallback()
     {
         PlayHideQuest();
+    }
+
+    /// <summary>
+    /// PlayCompleteAndHide()로 시작된 "완료 후 숨김" 연출이 completedSequence(완료 색상/유지) 또는
+    /// hideSequence(퇴장 애니메이션) 단계에서 아직 끝나지 않았다면, 남은 연출을 건너뛰고 즉시 숨김
+    /// 상태로 확정한 뒤 HideCompletedEvent를 발행한다. 이 이벤트를 구독해 게임 로직을 진행시키는
+    /// 쪽(예: 상호작용 잠금 해제)이 다음 퀘스트 시작 타이밍과 무관하게 항상 신호를 받도록 보장하기 위함.
+    /// </summary>
+    private void ForceCompletePendingHide()
+    {
+        bool _hasPendingHide = (null != completedSequence && completedSequence.IsActive())
+                             || (null != hideSequence && hideSequence.IsActive());
+
+        if (false == _hasPendingHide)
+            return;
+
+        TutorialStep _hidingStep = currentStep;
+
+        KillSequences();
+        bIsShowing = false;
+        PrepareHiddenState();
+
+        HideCompletedEvent?.Invoke(_hidingStep);
     }
 
     private void KillSequences()

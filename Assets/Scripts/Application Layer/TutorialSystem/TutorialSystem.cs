@@ -14,6 +14,11 @@ public class TutorialSystem
     // 인벤토리가 비는 것만으로는 "컨테이너에 넣어서 비운 것"인지 구분할 수 없어(버리기 등) 함께 확인한다.
     private bool bContainerTransferStarted;
 
+    // UpgradeAxe 완료 ~ 마지막 스텝(StartNewLogging) 시작 사이에 이미 마을 차량에 탑승했는지.
+    // 차량 잠금은 UpgradeAxe 완료 즉시 풀리는 반면 마지막 스텝은 안내 UI 퇴장 연출이 끝나야 시작되므로,
+    // 그 빈틈에 들어온 탑승을 놓치지 않기 위해 기억해둔다.
+    private bool bTownVehicleActivatedBeforeLastStep;
+
     public void Initialize(SignalHub _signalHub, IInventory _characterInventory)
     {
         signalHub = _signalHub;
@@ -35,11 +40,13 @@ public class TutorialSystem
         signalHub.Subscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.Subscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
         signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
-        signalHub.Subscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.Subscribe<ReturnToTownCameraDownEndedSignal>(ReturnToTownCameraDownEnded);
         signalHub.Subscribe<ItemAddedToLogContainerSignal>(ItemAddedToLogContainer);
         signalHub.Subscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.Subscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.Subscribe<TownOffroadVehicleActivatedSignal>(TownOffroadVehicleActivated);
+        signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -50,11 +57,13 @@ public class TutorialSystem
         signalHub.UnSubscribe<ItemRemovedFromInventorySignal>(ItemRemovedFromInventory);
         signalHub.UnSubscribe<TutorialStaminaReachedFloorSignal>(TutorialStaminaReachedFloor);
         signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
-        signalHub.UnSubscribe<TeleportUIClosedSignal>(TeleportUIClosed);
+        signalHub.UnSubscribe<ReturnToTownCameraDownEndedSignal>(ReturnToTownCameraDownEnded);
         signalHub.UnSubscribe<ItemAddedToLogContainerSignal>(ItemAddedToLogContainer);
         signalHub.UnSubscribe<ShopMoneyUpdatedSignal>(ShopMoneyUpdated);
         signalHub.UnSubscribe<MoneyEarnedSignal>(MoneyEarned);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.UnSubscribe<TownOffroadVehicleActivatedSignal>(TownOffroadVehicleActivated);
+        signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
 
     private void TutorialIntroEnded(TutorialIntroEndedSignal _signal)
@@ -117,9 +126,15 @@ public class TutorialSystem
         }
     }
 
-    private void TeleportUIClosed(TeleportUIClosedSignal _signal)
+    private void ReturnToTownCameraDownEnded(ReturnToTownCameraDownEndedSignal _signal)
     {
-        if (bStepActive == false && currentStep == TutorialStep.GoHomeBeforeExhausted)
+        // GoHomeBeforeExhausted는 피로도가 바닥값에 도달하기 전에 플레이어가 스스로 차량을 타고 귀환하면
+        // 아예 시작되지 않고 건너뛰어질 수 있는 퀘스트다(차량 상호작용은 FillOffroadContainer 완료와 함께
+        // 이미 열려있어, 피로도와 무관하게 그 즉시 탈 수 있다). 이 경우 currentStep은 FillOffroadContainer에
+        // 머문 채로 타운에 도착한다. 마을 쪽 퀘스트 체인(PutItemsInLogContainer 이후)은 이 던전 퀘스트의
+        // 완료 여부에 영향을 받아서는 안 되므로, 두 경우(정상 완료/스킵) 모두 여기서 다음 단계로 넘긴다.
+        if (bStepActive == false &&
+            (currentStep == TutorialStep.GoHomeBeforeExhausted || currentStep == TutorialStep.FillOffroadContainer))
         {
             StartStep(TutorialStep.PutItemsInLogContainer);
         }
@@ -158,8 +173,44 @@ public class TutorialSystem
         {
             if (_signal.commandType == SkillCommandType.AxeDamage)
             {
+                // 마지막 스텝(StartNewLogging)은 여기서 곧바로 시작하지 않는다. "도끼를 강화하세요"
+                // 안내 UI가 사라지는 연출이 실제로 끝난 뒤(TutorialQuestHideCompletedSignal)에 시작한다.
                 CompleteStep();
             }
+        }
+    }
+
+    // UpgradeAxe의 완료 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 시점에 마지막 스텝을 시작한다.
+    private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
+    {
+        if (bStepActive == false && currentStep == TutorialStep.UpgradeAxe && _signal.step == TutorialStep.UpgradeAxe)
+        {
+            StartStep(TutorialStep.StartNewLogging);
+
+            // 연출이 흐르는 동안 이미 차량에 탑승했다면 조건은 이미 만족된 것이므로 곧바로 완료 처리한다.
+            if (bTownVehicleActivatedBeforeLastStep)
+            {
+                bTownVehicleActivatedBeforeLastStep = false;
+                CompleteStep();
+            }
+        }
+    }
+
+    // 마지막 스텝: 마을에서 OffroadVehicle에 상호작용(다시 던전으로 향함)하면 완료된다.
+    private void TownOffroadVehicleActivated(TownOffroadVehicleActivatedSignal _signal)
+    {
+        if (bStepActive && currentStep == TutorialStep.StartNewLogging)
+        {
+            CompleteStep();
+            return;
+        }
+
+        // UpgradeAxe가 완료되면 차량 잠금은 그 즉시 풀리지만, 마지막 스텝은 안내 UI가 사라지는 연출이
+        // 끝난 뒤에야 시작된다. 그 사이(약 1.9초)에 탑승하면 위 조건에 걸리지 않아 스텝이 영영 완료되지
+        // 않으므로, 여기서 기억해뒀다가 스텝이 시작될 때 즉시 완료시킨다.
+        if (bStepActive == false && currentStep == TutorialStep.UpgradeAxe)
+        {
+            bTownVehicleActivatedBeforeLastStep = true;
         }
     }
 

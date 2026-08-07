@@ -38,6 +38,10 @@ public class TownSystem : MonoBehaviour
     private bool bGoingToMainMenu = false;
     private bool bTownSystemStarted = false;
 
+    // 튜토리얼 "도끼를 강화하세요"(UpgradeAxe)가 완료되기 전까지 마을의 OffroadVehicle 상호작용을 잠가둔다.
+    // 튜토리얼 첫 스텝이 시작되면 true가 되고, UpgradeAxe가 완료되면 false로 풀린다.
+    private bool bTutorialAxeUpgradePending = false;
+
     public void Initialize(SignalHub _signalHub, IEnvironmentProvider _environmentProvider, InputManager _inputManager,
     IInventory _characterInventory, OffroadContainer _offroadContainer, SkyCameraProductionManager _skyCameraProductionManager)
     {
@@ -88,6 +92,11 @@ public class TownSystem : MonoBehaviour
 
         CollisionSystem.Instance?.ClearAll();
         townObjectManager.ReadyObj();
+
+        // 튜토리얼 "도끼를 강화하세요"가 아직 안 끝났다면, 마을에 도착할 때마다(재입장 포함)
+        // ReadyObj()가 기본값(true)으로 되돌려놓은 차량 상호작용을 다시 잠근다.
+        if (bTutorialAxeUpgradePending)
+            townObjectManager.SetCanTravel(false);
         logProcessingManager.EnableShopObj();
         tentManager.EnableTent();
 
@@ -242,6 +251,8 @@ public class TownSystem : MonoBehaviour
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.Subscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
+        signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
+        signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
     }
 
     private void UnSubscribeSignals()
@@ -256,11 +267,47 @@ public class TownSystem : MonoBehaviour
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryButtonClicked);
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.UnSubscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
+        signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
+        signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+    }
+
+    // 튜토리얼 스텝이 시작되면(던전 쪽 스텝 포함) 마을에 도착했을 때 바로 차량을 타고 나가버리는
+    // 일이 없도록 잠금을 예약해둔다. 실제로 마을 차량에 반영되는 시점은 StartTownSystem().
+    // 단, 마지막 스텝(StartNewLogging)은 차량 상호작용 자체가 완료 조건이므로 잠그지 않는다.
+    private void TutorialStepStarted(TutorialStepStartedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.StartNewLogging)
+        {
+            // 이미 UpgradeAxe 완료 시점에 풀렸지만, 순서가 어긋나더라도 확실히 열려 있도록 한 번 더 보장한다.
+            UnlockTownVehicleForTutorial();
+            return;
+        }
+
+        bTutorialAxeUpgradePending = true;
+    }
+
+    // "도끼를 강화하세요"가 완료되면 그 즉시 잠금을 푼다. 안내 UI가 사라지는 연출이 끝나기를 기다렸다가
+    // 풀면, 그 연출이 취소·유실될 경우 차량이 영영 잠긴 채 남아 마을에서 빠져나갈 수 없게 된다.
+    // (마지막 스텝 시작 전에 미리 열려 생기는 빈틈은 TutorialSystem 쪽에서 처리한다)
+    private void TutorialStepCompleted(TutorialStepCompletedSignal _signal)
+    {
+        if (_signal.step != TutorialStep.UpgradeAxe)
+            return;
+
+        UnlockTownVehicleForTutorial();
+    }
+
+    private void UnlockTownVehicleForTutorial()
+    {
+        bTutorialAxeUpgradePending = false;
+        townObjectManager.SetCanTravel(true);
     }
 
     private void PortalActivated()
     {
         townProductionManager.StartCharacterRide();
+
+        signalHub.Publish(new TownOffroadVehicleActivatedSignal());
 
         // 컨테이너/차량 콜라이더 비활성화는 DungeonSelected()에서 NPC 일시정지(PauseAllNPCs)와
         // 같은 시점에 함께 처리한다. 여기서 미리 꺼두면 "탑승~던전 선택" 대기 구간 동안 운반 NPC의
@@ -526,6 +573,7 @@ public class TownSystem : MonoBehaviour
                 townObjectManager.offroadVehicle.col.enabled = true;
 
             inputManager.PauseInteractKey(false);
+            signalHub.Publish(new ReturnToTownCameraDownEndedSignal());
         }
     }
 
