@@ -903,6 +903,17 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
         return transform;
     }
 
+    /// <summary>
+    /// 실제 상자 스프라이트(OffroadContainerVComponent)가 붙어 있는 비주얼 트랜스폼. OffroadContainer
+    /// 자신의 transform(GetTransform)은 위치 동기화용 로직 트랜스폼일 뿐 하위에 SpriteRenderer가 없으므로,
+    /// 셰이더 효과 등 실제 렌더러가 필요한 용도는 반드시 이쪽을 써야 한다. OffroadVehicleObj.ResetObject()가
+    /// 마을/던전 진입 시마다 현재 활성화된 차량의 컨테이너 오브젝트로 갱신한다.
+    /// </summary>
+    public Transform GetVisualTransform()
+    {
+        return visualTransform;
+    }
+
     private void InteractionKeyPressed()
     {
         if (!bCanInteract || characterInventory == null) return;

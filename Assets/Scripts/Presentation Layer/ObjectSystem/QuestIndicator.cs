@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 
@@ -28,6 +29,20 @@ public class QuestIndicator : MonoBehaviour
     [SerializeField] private Ease showEase = Ease.OutBack;
     [SerializeField] private Ease hideEase = Ease.InBack;
 
+    [Header("Target Shimmer")]
+    [Tooltip("인디케이터가 떠 있는 동안 대상 오브젝트에 은은한 하얀 반짝임을 넣을지")]
+    [SerializeField] private bool enableTargetShimmer = true;
+    [Tooltip("반짝임 최대 강도 (0~1, _FlashAmount와 동일한 스케일)")]
+    [SerializeField] private float shimmerMaxAmount = 0.25f;
+    [Tooltip("반짝임이 밝아졌다 옅어지길 반복하는 속도")]
+    [SerializeField] private float shimmerSpeed = 2f;
+
+    // Custom-Sprite-Default 계열 셰이더가 공유하는 프로퍼티. CharacterVisualComponent/TreeVisualComponent/
+    // OffroadVehicleObj의 피격·획득 플래시와 동일한 방식(MaterialPropertyBlock)으로 SRP 배칭을 깨지 않는다.
+    private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
+    private MaterialPropertyBlock shimmerMPB;
+    private readonly List<SpriteRenderer> targetRenderers = new List<SpriteRenderer>(8);
+
     // 내부 상태
     private Transform targetTransform;
     private Vector3 worldOffset;
@@ -46,7 +61,15 @@ public class QuestIndicator : MonoBehaviour
         if (null == _target)
             return;
 
-        targetTransform = _target;
+        if (targetTransform != _target)
+        {
+            // 대상이 바뀌는 순간(PutItemsInLogContainer의 OffroadContainer→LogContainer 전환 등) 이전
+            // 대상에 남아있는 반짝임을 지우고, 새 대상의 렌더러를 다시 캐싱한다.
+            ClearTargetShimmer();
+            targetTransform = _target;
+            CacheTargetRenderers();
+        }
+
         worldOffset = _worldOffset;
 
         gameObject.SetActive(true);
@@ -92,6 +115,7 @@ public class QuestIndicator : MonoBehaviour
         }
 
         bShowing = false;
+        ClearTargetShimmer();
         KillSequence();
 
         currentSequence = DOTween.Sequence().SetLink(gameObject);
@@ -114,9 +138,11 @@ public class QuestIndicator : MonoBehaviour
     public void HideImmediately()
     {
         KillSequence();
+        ClearTargetShimmer();
 
         bShowing = false;
         targetTransform = null;
+        targetRenderers.Clear();
 
         SetAlpha(0f);
         transform.localScale = hiddenScale;
@@ -140,6 +166,43 @@ public class QuestIndicator : MonoBehaviour
         Color _color = arrowRenderer.color;
         _color.a = _alpha;
         arrowRenderer.color = _color;
+    }
+
+    /// <summary>
+    /// 현재 대상 트랜스폼 하위의 모든 SpriteRenderer를 캐싱한다. 반짝임 대상은 화살표가 가리키는
+    /// 오브젝트 전체(예: 차량의 base/wheel/inner)이므로, 특정 렌더러 하나가 아니라 하위 전부를 모은다.
+    /// </summary>
+    private void CacheTargetRenderers()
+    {
+        targetRenderers.Clear();
+
+        if (null != targetTransform)
+            targetTransform.GetComponentsInChildren(true, targetRenderers);
+    }
+
+    private void ClearTargetShimmer()
+    {
+        ApplyShimmerToTargets(0f);
+    }
+
+    private void ApplyShimmerToTargets(float _amount)
+    {
+        if (targetRenderers.Count == 0)
+            return;
+
+        if (null == shimmerMPB)
+            shimmerMPB = new MaterialPropertyBlock();
+
+        for (int i = 0; i < targetRenderers.Count; i++)
+        {
+            SpriteRenderer _renderer = targetRenderers[i];
+            if (null == _renderer)
+                continue;
+
+            _renderer.GetPropertyBlock(shimmerMPB);
+            shimmerMPB.SetFloat(FlashAmountID, _amount);
+            _renderer.SetPropertyBlock(shimmerMPB);
+        }
     }
 
     private void KillSequence()
@@ -167,10 +230,18 @@ public class QuestIndicator : MonoBehaviour
 
         floatTime += Time.deltaTime * floatSpeed;
         FollowTarget();
+
+        if (bShowing && enableTargetShimmer)
+        {
+            // 0~1을 은은하게 오가는 사인파. 최대값(shimmerMaxAmount)을 낮게 잡아 눈에 띄지 않게 억제한다.
+            float _shimmer = (Mathf.Sin(Time.time * shimmerSpeed) * 0.5f + 0.5f) * shimmerMaxAmount;
+            ApplyShimmerToTargets(_shimmer);
+        }
     }
 
     private void OnDestroy()
     {
         KillSequence();
+        ClearTargetShimmer();
     }
 }

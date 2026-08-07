@@ -12,10 +12,13 @@ public class MainMenuUIInstaller : MonoBehaviour
     [Header("UI Canvas/CanvasRoot Objects")]
     [SerializeField] private CanvasRoot canvasRootPrefab;
     [SerializeField] private Canvas canvasPrefab;
+    [SerializeField] private CanvasRoot overlayCanvasRootPrefab;
+    [SerializeField] private Canvas overlayCanvasPrefab;
 
     //Gameplay Scene
     private CanvasRoot canvasRoot;
     private Canvas canvas;
+    private Canvas overlayCanvas;
 
     public void Initialize(IBootStrapProvider _bootStrapProvider, InputManager _inputManager, LocalizationManager _localizeManager, IMainMenuSaveSystem _saveSystem)
     {
@@ -78,13 +81,22 @@ public class MainMenuUIInstaller : MonoBehaviour
         //Transform screenLayerRoot = Instantiate(canvasRootPrefab.screenLayerRoot, canvas.transform);
         //Transform tooltipLayerRoot = Instantiate(canvasRootPrefab.tooltipLayerRoot, canvas.transform);
 
+        Transform overlayCanvasOverlayRoot = Instantiate(overlayCanvasRootPrefab.overlayLayerRoot, overlayCanvas.transform);
+
         SetAnchorToCanvas(overlayRoot);
+        SetAnchorToCanvas(overlayCanvasOverlayRoot);
         //SetAnchorToCanvas(popupLayerRoot);
 
         CanvasRoot tempRoot = new CanvasRoot();
         tempRoot.overlayLayerRoot = overlayRoot;
         //tempRoot.popupLayerRoot = popupLayerRoot;
-        uiManager.SceneChanged(tempRoot, default, default, default);
+
+        CanvasRoot overlayCanvasRoot = new CanvasRoot();
+        overlayCanvasRoot.overlayLayerRoot = overlayCanvasOverlayRoot;
+
+        // GameplayUIManager.GetLayerRoot()와 동일하게, bOverlay UIView(예: UIView_CursorBox)는
+        // 3번째 인자(overlayCanvasRoot)의 레이어 루트를 사용한다.
+        uiManager.SceneChanged(tempRoot, default, overlayCanvasRoot, default);
 
         OpenUIView();
         SetupCanvasChilds();
@@ -95,6 +107,9 @@ public class MainMenuUIInstaller : MonoBehaviour
         // 부모 없이 Instantiate하면 MainMenuScene 소속 루트 오브젝트가 되어, mainMenuInstaller의
         // DontDestroyOnLoad가 적용되지 않고 Town 씬 로드 시 그대로 파괴돼버린다(GameplayUIInstaller.SetupCanvas()와 동일 패턴으로 맞춤).
         canvas = Instantiate(canvasPrefab, transform);
+        overlayCanvas = Instantiate(overlayCanvasPrefab, transform);
+
+        uiManager.DI(null, overlayCanvas);
     }
 
     private void SetupCanvasChilds()
@@ -105,6 +120,8 @@ public class MainMenuUIInstaller : MonoBehaviour
     private void OpenUIView()
     {
         UIView_MainMenu mainMenuUIView = uiManager.Open<UIView_MainMenu>();
+
+        UIView_CursorBox cursorBoxUI = uiManager.Open<UIView_CursorBox>();
 
         BindEvent();
     }

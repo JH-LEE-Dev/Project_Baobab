@@ -63,6 +63,7 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
     
     private UI_WarningPopup parentPopup;
     private Action onClickAction;
+    private Action onHoverAction;
     private bool isInteractable = true;
     private bool isHovered = false;
 
@@ -104,12 +105,21 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
     {
         KillTween();
         onClickAction = null;
+        onHoverAction = null;
         parentPopup = null;
     }
 
-    public void Initialize(Action _onClick, UI_WarningPopup _parentPopup = null)
+    public void Initialize(Action _onClick, Action _onHover = null, UI_WarningPopup _parentPopup = null)
     {
         onClickAction = _onClick;
+        onHoverAction = _onHover;
+        parentPopup = _parentPopup;
+    }
+
+    public void Initialize(Action _onClick, UI_WarningPopup _parentPopup)
+    {
+        onClickAction = _onClick;
+        onHoverAction = null;
         parentPopup = _parentPopup;
     }
 
@@ -170,6 +180,9 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         isHovered = true;
         if (false == isInteractable)
             return;
+
+        if (null != onHoverAction)
+            onHoverAction();
         
         KillTween();
         PlayHoverAnimation();

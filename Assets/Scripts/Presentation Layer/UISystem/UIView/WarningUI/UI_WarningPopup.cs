@@ -30,6 +30,10 @@ public class UI_WarningPopup : MonoBehaviour
     private ICursorBoxUI cursorBoxUI;
     private Action onConfirmAction;
     private Action onCancelAction;
+    private SoundID openSoundId = SoundID.None;
+    private SoundID closeSoundId = SoundID.None;
+    private SoundID hoverSoundId = SoundID.None;
+    private bool hasPlayedCloseSound;
     
     private Sequence productionSequence;
     private Vector2 originalRootAnchoredPosition;
@@ -67,23 +71,34 @@ public class UI_WarningPopup : MonoBehaviour
     /// <summary>
     /// 경고 팝업을 띄우고 콜백을 등록합니다.
     /// </summary>
-    public void ShowWarning(string _message, Action _onConfirm, Action _onCancel = null)
+    public void ShowWarning(
+        string _message,
+        Action _onConfirm,
+        Action _onCancel = null,
+        SoundID _openSoundId = SoundID.None,
+        SoundID _closeSoundId = SoundID.None,
+        SoundID _hoverSoundId = SoundID.None)
     {
         if (null != messageText)
             messageText.text = _message;
 
         onConfirmAction = _onConfirm;
         onCancelAction = _onCancel;
+        openSoundId = _openSoundId;
+        closeSoundId = _closeSoundId;
+        hoverSoundId = _hoverSoundId;
+        hasPlayedCloseSound = false;
 
         if (null != confirmButton)
-            confirmButton.Initialize(OnConfirmButtonClicked, this);
+            confirmButton.Initialize(OnConfirmButtonClicked, PlayHoverSound, this);
             
         if (null != cancelButton)
         {
             cancelButton.gameObject.SetActive(null != _onCancel);
-            cancelButton.Initialize(OnCancelButtonClicked, this);
+            cancelButton.Initialize(OnCancelButtonClicked, PlayHoverSound, this);
         }
 
+        PlayConfiguredSound(openSoundId);
         PlayOpenProduction();
     }
 
@@ -185,6 +200,12 @@ public class UI_WarningPopup : MonoBehaviour
 
     private void PlayCloseProduction()
     {
+        if (false == hasPlayedCloseSound)
+        {
+            hasPlayedCloseSound = true;
+            PlayConfiguredSound(closeSoundId);
+        }
+
         KillSequence();
         HideCursor();
 
@@ -220,6 +241,19 @@ public class UI_WarningPopup : MonoBehaviour
         {
             productionSequence.Kill();
             productionSequence = null;
+        }
+    }
+
+    private void PlayHoverSound()
+    {
+        PlayConfiguredSound(hoverSoundId);
+    }
+
+    private static void PlayConfiguredSound(SoundID _soundId)
+    {
+        if (SoundID.None != _soundId)
+        {
+            Sound.PlayUI(_soundId);
         }
     }
 }

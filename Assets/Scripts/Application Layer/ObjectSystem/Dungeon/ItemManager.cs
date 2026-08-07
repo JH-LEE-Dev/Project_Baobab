@@ -9,7 +9,7 @@ public class ItemManager : MonoBehaviour
     private IInventoryChecker inventoryChecker;
     private ICharacter character;
 
-    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character)
+    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character, ITilemapDataProvider _tilemapDataProvider)
     {
         inventoryChecker = _inventoryChecker;
         character = _character;
@@ -19,7 +19,7 @@ public class ItemManager : MonoBehaviour
 
         if (logItemController != null)
         {
-            logItemController.Initialize(inventoryChecker, character);
+            logItemController.Initialize(inventoryChecker, character, _tilemapDataProvider);
         }
 
         BindEvents();

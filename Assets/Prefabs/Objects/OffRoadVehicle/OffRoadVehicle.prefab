@@ -1648,7 +1648,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  - {fileID: 2100000, guid: b67fe07a84e38264994e6c435bb30cc5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2041,6 +2041,8 @@ MonoBehaviour:
   reachThreshold: 0.1
   engineIgnitionCatchRatio: 0.1
   engineRunPitchTarget: 1.4
+  engineShutdownSettleDuration: 0.4
+  engineShutdownSettleIntensity: 0.12
   containerCarryPoint: {fileID: 8170189756255339106}
   containerDropPoint: {fileID: 7940638458654477517}
   CharacterRidePoint: {fileID: 5304305252831328137}

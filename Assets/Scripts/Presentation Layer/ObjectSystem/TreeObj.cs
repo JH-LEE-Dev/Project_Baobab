@@ -65,7 +65,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public int Layer => gameObject.layer;
     public int EntityIndex { get; set; } = -1;
 
-    [SerializeField] private float alphaDownRadius = 0.5f;
+    [SerializeField] private float alphaDownRadius = 0.6f;
     [SerializeField] private Vector2 adColliderOffset = new Vector2(0f, 0.9f);
 
     public float AlphaDownRadius => alphaDownRadius;

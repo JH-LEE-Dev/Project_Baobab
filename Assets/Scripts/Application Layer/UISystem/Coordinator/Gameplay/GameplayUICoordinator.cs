@@ -453,7 +453,7 @@ public class GameplayUICoordinator
         }
         else if (null != escUI)
         {
-            escUI.Show();
+            escUI.ShowPauseMenu();
             inputManager.PauseMove(true);
             Time.timeScale = 0f;
         }
@@ -757,7 +757,7 @@ public class GameplayUICoordinator
 
     private void ActivateWarningUI(ActivateWarningUISignal _activateWarningUISignal)
     {
-        warningUI.Show();
+        warningUI.ShowWarning();
     }
 
     private void DeActivateWarningUI()

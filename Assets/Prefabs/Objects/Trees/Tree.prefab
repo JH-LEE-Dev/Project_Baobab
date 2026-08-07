@@ -783,7 +783,7 @@ MonoBehaviour:
   collisionRadius: 0.29
   collisionOffset: {x: 0, y: 0}
   bDead: 0
-  alphaDownRadius: 0.5
+  alphaDownRadius: 0.6
   adColliderOffset: {x: 0, y: 0.7}
   topShadowRadius: 0.3
   topShadowOffset: {x: 0, y: 0.6}

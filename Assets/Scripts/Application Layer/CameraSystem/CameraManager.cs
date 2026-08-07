@@ -16,6 +16,7 @@ public class CameraManager : MonoBehaviour
 
     private GameObject uiCamera;
 
+    private bool isCinematicMode = false;
 
     public void Initialize(SignalHub _signalHub, InputManager _inputManager)
     {
@@ -141,6 +142,54 @@ public class CameraManager : MonoBehaviour
         // }
 
         // lastCharacterPosition = currentCharacterPos;
+    }
+
+    private void Update()
+    {
+        if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.f1Key.wasPressedThisFrame)
+        {
+            isCinematicMode = !isCinematicMode;
+
+            // 시네마틱 모드에 진입하면 GameInstaller 하위의 모든 캔버스를 비활성화 (종료 시 재활성화)
+            Canvas[] canvases = GetComponentsInChildren<Canvas>(true);
+            foreach (var canvas in canvases)
+            {
+                canvas.enabled = !isCinematicMode;
+            }
+
+            if (isCinematicMode)
+            {
+                if (characterTransform != null && virtualCamera != null)
+                {
+                    virtualCamera.Follow = null;
+                    virtualCamera.LookAt = null;
+
+                    Vector3 startPos = characterTransform.position + new Vector3(-30f, 30f, 0f); // 좌상단으로 더 멀리 위치 이동
+                    startPos.z = virtualCamera.transform.position.z;
+                    
+                    virtualCamera.transform.position = startPos;
+                    virtualCamera.ForceCameraPosition(startPos, virtualCamera.transform.rotation);
+                }
+            }
+            else
+            {
+                if (characterTransform != null && virtualCamera != null)
+                {
+                    virtualCamera.Follow = characterTransform;
+                    virtualCamera.LookAt = characterTransform;
+                }
+            }
+        }
+
+        if (isCinematicMode && virtualCamera != null)
+        {
+            Vector3 moveDir = new Vector3(1f, -1f, 0f).normalized; // 우하단 방향
+            float speed = 2f; // 이동 속도
+            
+            Vector3 nextPos = virtualCamera.transform.position + (moveDir * speed * Time.deltaTime);
+            virtualCamera.transform.position = nextPos;
+            virtualCamera.ForceCameraPosition(nextPos, virtualCamera.transform.rotation);
+        }
     }
 
     private void CharacterMoved(Vector2 _input)

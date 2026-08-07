@@ -148,7 +148,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 4d8a011b803413f418c9fb0caef2db2c, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.1
+    defaultVolume: 0.08
     is3D: 0
     loop: 1
     maxConcurrentVoices: 0
@@ -348,7 +348,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 8c94e30b1825aef45b871355b2ec587f, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 0}
-    defaultVolume: 0.05
+    defaultVolume: 0.075
     is3D: 1
     loop: 0
     maxConcurrentVoices: 0
@@ -368,7 +368,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: c4d3a39e07ab58143b95819002b8d63f, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300300, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.25
+    defaultVolume: 0.35
     is3D: 0
     loop: 0
     maxConcurrentVoices: 4
@@ -378,7 +378,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 747f5f8f4bb7daa4c9548c5f2c8eee1b, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.1
+    defaultVolume: 0.08
     is3D: 0
     loop: 1
     maxConcurrentVoices: 0
@@ -388,7 +388,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 5c943db1ba4ff05459c86294d8440fbf, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.1
+    defaultVolume: 0.08
     is3D: 0
     loop: 1
     maxConcurrentVoices: 0
@@ -398,7 +398,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 97ee4e97a09c31543a0742fa98f63339, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.1
+    defaultVolume: 0.08
     is3D: 0
     loop: 1
     maxConcurrentVoices: 0
@@ -408,7 +408,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 52d70bb27c6f9eb4abf09f74f51fdb73, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.1
+    defaultVolume: 0.08
     is3D: 0
     loop: 1
     maxConcurrentVoices: 0
@@ -418,7 +418,7 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: e6ebc3addeefef14d9f3bd0a1df188d7, type: 3}
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300100, guid: 865ed13951834138be11bea38be7fea0, type: 2}
-    defaultVolume: 0.1
+    defaultVolume: 0.08
     is3D: 0
     loop: 1
     maxConcurrentVoices: 0
@@ -491,7 +491,7 @@ MonoBehaviour:
     defaultVolume: 0.6
     is3D: 0
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 5
     polyphonyAttenuationStrength: 0
   - id: -1560408535
     mixerId: -1090805748
@@ -719,6 +719,16 @@ MonoBehaviour:
     cueData: {fileID: 0}
     mixerGroup: {fileID: 24300300, guid: 865ed13951834138be11bea38be7fea0, type: 2}
     defaultVolume: 0.4
+    is3D: 0
+    loop: 0
+    maxConcurrentVoices: 0
+    polyphonyAttenuationStrength: 0
+  - id: 1422650221
+    mixerId: -1090805748
+    clip: {fileID: 8300000, guid: cca429db23a69cf41a281cf91cddcbec, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300300, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 0.35
     is3D: 0
     loop: 0
     maxConcurrentVoices: 0

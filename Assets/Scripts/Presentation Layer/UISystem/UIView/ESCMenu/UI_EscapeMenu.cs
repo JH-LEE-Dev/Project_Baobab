@@ -66,7 +66,9 @@ public class UI_EscapeMenu : MonoBehaviour
 
     private UI_EscapeMenuButton[] allButtons = Array.Empty<UI_EscapeMenuButton>();
     private TweenCallback[] buttonAppearCallbacks = Array.Empty<TweenCallback>();
+    private TweenCallback[] buttonAppearSoundCallbacks = Array.Empty<TweenCallback>();
     private TweenCallback[] buttonDisappearCallbacks = Array.Empty<TweenCallback>();
+    private bool soundsEnabled;
 
     private sealed class EscapeMenuBGPiece
     {
@@ -158,6 +160,9 @@ public class UI_EscapeMenu : MonoBehaviour
         KillProductionSequences();
         isClosing = false;
 
+        if (soundsEnabled)
+            Sound.PlayUI(SoundID.ResultUIOpen);
+
         AssignBGDelays();
         float _bgDuration = GetBGProductionDuration();
 
@@ -200,6 +205,11 @@ public class UI_EscapeMenu : MonoBehaviour
                 _maxButtonEndTime = _btnEndTime;
             }
 
+            if (i < buttonAppearSoundCallbacks.Length && null != buttonAppearSoundCallbacks[i])
+            {
+                openSequence.InsertCallback(_btnDelay, buttonAppearSoundCallbacks[i]);
+            }
+
             if (i < buttonAppearCallbacks.Length && null != buttonAppearCallbacks[i])
             {
                 openSequence.InsertCallback(_btnDelay, buttonAppearCallbacks[i]);
@@ -229,6 +239,9 @@ public class UI_EscapeMenu : MonoBehaviour
         KillProductionSequences();
         isClosing = true;
         SetButtonsInteractable(false);
+
+        if (soundsEnabled)
+            Sound.PlayUI(SoundID.ResultUIClose);
 
         closeSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
@@ -357,15 +370,37 @@ public class UI_EscapeMenu : MonoBehaviour
     {
         allButtons = new[] { resumeButton, optionButton, mainMenuButton, exitButton };
         buttonAppearCallbacks = new TweenCallback[allButtons.Length];
+        buttonAppearSoundCallbacks = new TweenCallback[allButtons.Length];
         buttonDisappearCallbacks = new TweenCallback[allButtons.Length];
 
         for (int i = 0; i < allButtons.Length; i++)
         {
+            int _buttonIndex = i;
+            buttonAppearSoundCallbacks[i] = () => PlayButtonAppearSound(_buttonIndex);
+
             if (null != allButtons[i])
             {
                 buttonAppearCallbacks[i] = allButtons[i].PlayAppearAnimation;
                 buttonDisappearCallbacks[i] = allButtons[i].PlayDisappearAnimation;
             }
+        }
+    }
+
+    public void SetSoundsEnabled(bool _enabled)
+    {
+        soundsEnabled = _enabled;
+    }
+
+    private void PlayButtonAppearSound(int _buttonIndex)
+    {
+        if (false == soundsEnabled) return;
+
+        switch (_buttonIndex)
+        {
+            case 0: Sound.PlayUI(SoundID.MainMenuDot00); break;
+            case 1: Sound.PlayUI(SoundID.MainMenuDot01); break;
+            case 2: Sound.PlayUI(SoundID.MainMenuDot02); break;
+            case 3: Sound.PlayUI(SoundID.MainMenuDot03); break;
         }
     }
 
