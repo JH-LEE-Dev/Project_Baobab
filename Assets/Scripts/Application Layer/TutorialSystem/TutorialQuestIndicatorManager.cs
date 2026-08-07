@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -95,7 +96,7 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
             return;
         }
 
-        ShowIndicator(_target, GetOffset(_signal.step));
+        ShowIndicator(_target, GetOffset(_signal.step), GetShimmerRenderers(_signal.step));
     }
 
     private void TutorialStepCompleted(TutorialStepCompletedSignal _signal)
@@ -187,7 +188,29 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
         return Vector3.zero;
     }
 
-    private void ShowIndicator(Transform _target, Vector3 _offset)
+    /// <summary>
+    /// GoHomeBeforeExhausted/StartNewLogging은 OffroadVehicle 루트를 타겟으로 삼는데, 그 하위에
+    /// OffroadContainer 비주얼(OffroadContainerVComponent)이 자식으로 붙어 있어 기본 자동 탐색
+    /// (대상 하위 전체 SpriteRenderer)을 쓰면 컨테이너까지 함께 반짝인다. 차량 본체만 반짝이도록
+    /// OffroadVehicleObj가 이미 PlayShinyEffect에 쓰는 것과 동일한 렌더러 집합을 명시적으로 넘긴다.
+    /// 그 외 스텝은 대상 오브젝트에 불필요한 자식이 없으므로 null(자동 탐색)을 그대로 쓴다.
+    /// </summary>
+    private IReadOnlyList<SpriteRenderer> GetShimmerRenderers(TutorialStep _step)
+    {
+        OffroadVehicleObj _vehicle = null;
+
+        if (_step == TutorialStep.GoHomeBeforeExhausted)
+            _vehicle = inDungeonObjectManager != null ? inDungeonObjectManager.offroadVehicle : null;
+        else if (_step == TutorialStep.StartNewLogging)
+            _vehicle = townObjectManager != null ? townObjectManager.offroadVehicle : null;
+
+        if (null == _vehicle)
+            return null;
+
+        return new SpriteRenderer[] { _vehicle.baseSR, _vehicle.wheelSR, _vehicle.innerSR };
+    }
+
+    private void ShowIndicator(Transform _target, Vector3 _offset, IReadOnlyList<SpriteRenderer> _shimmerRenderers = null)
     {
         if (null == indicator)
         {
@@ -199,7 +222,7 @@ public class TutorialQuestIndicatorManager : MonoBehaviour
             indicator.HideImmediately();
         }
 
-        indicator.Show(_target, _offset);
+        indicator.Show(_target, _offset, _shimmerRenderers);
     }
 
     private void HideIndicator()

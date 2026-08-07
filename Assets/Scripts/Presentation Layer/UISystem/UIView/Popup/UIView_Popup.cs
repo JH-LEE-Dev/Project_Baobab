@@ -29,6 +29,7 @@ public class UIView_Popup : UIView
     private ForestType currentForestType;
     private bool isAutoOpenedByInteraction = false;
     private bool userForceClosed = false;
+    private bool wasContainerInteractable = false;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -96,9 +97,18 @@ public class UIView_Popup : UIView
     {
         if (true == _bCanInteract)
         {
+            // 상호작용 가능 범위에 새로 진입하는 시점(=이전엔 false였다가 이번에 true)에는 이전에
+            // 다른 이유(인벤토리 꽉 참 경고 등)로 사용자가 강제로 닫았던 기록을 초기화한다. 그렇지
+            // 않으면 한 번 강제로 닫힌 뒤에는 같은 던전/마을 방문 내내(맵 전환 전까지) LogContainer든
+            // OffroadContainer든 어떤 상자와 상호작용해도 가방이 다시는 자동으로 열리지 않는다.
+            if (false == wasContainerInteractable)
+                userForceClosed = false;
+
+            wasContainerInteractable = true;
+
             if (true == userForceClosed)
                 return;
-                
+
             if (null != uiInventory && false == uiInventory.IsOpening)
             {
                 InventoryUIOpendEvent?.Invoke(true);
@@ -107,6 +117,8 @@ public class UIView_Popup : UIView
         }
         else
         {
+            wasContainerInteractable = false;
+
             if (true == isAutoOpenedByInteraction)
                 InventoryUIOpendEvent?.Invoke(isAutoOpenedByInteraction = false);
         }

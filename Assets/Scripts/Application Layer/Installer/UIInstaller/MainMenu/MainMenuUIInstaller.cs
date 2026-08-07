@@ -119,9 +119,11 @@ public class MainMenuUIInstaller : MonoBehaviour
 
     private void OpenUIView()
     {
-        UIView_MainMenu mainMenuUIView = uiManager.Open<UIView_MainMenu>();
-
+        // 다른 UIView들이 자신의 Initialize()/SetupUI()에서 viewCtx.cursorBoxUI를 참조할 수 있도록,
+        // CursorBox를 가장 먼저 생성해 viewCtx에 등록해둔다.
         UIView_CursorBox cursorBoxUI = uiManager.Open<UIView_CursorBox>();
+
+        UIView_MainMenu mainMenuUIView = uiManager.Open<UIView_MainMenu>();
 
         BindEvent();
     }

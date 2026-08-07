@@ -56,7 +56,12 @@ public class QuestIndicator : MonoBehaviour
     /// 지정한 대상 위에 인디케이터를 띄운다. 이미 떠 있는 상태라면 등장 연출을 다시 재생하지 않고
     /// 추적 대상만 갈아끼운다(퀘스트가 연달아 바뀔 때 깜빡이지 않도록).
     /// </summary>
-    public void Show(Transform _target, Vector3 _worldOffset)
+    /// <param name="_shimmerRenderers">
+    /// 반짝임을 적용할 렌더러를 직접 지정하고 싶을 때 사용한다(예: OffroadVehicle 루트를 대상으로 삼으면
+    /// 하위의 OffroadContainer 비주얼까지 딸려와 통째로 반짝이므로, 차량 본체 렌더러만 명시적으로 넘긴다).
+    /// null이면 대상 트랜스폼 하위의 모든 SpriteRenderer를 자동으로 캐싱한다.
+    /// </param>
+    public void Show(Transform _target, Vector3 _worldOffset, IReadOnlyList<SpriteRenderer> _shimmerRenderers = null)
     {
         if (null == _target)
             return;
@@ -67,7 +72,7 @@ public class QuestIndicator : MonoBehaviour
             // 대상에 남아있는 반짝임을 지우고, 새 대상의 렌더러를 다시 캐싱한다.
             ClearTargetShimmer();
             targetTransform = _target;
-            CacheTargetRenderers();
+            CacheTargetRenderers(_shimmerRenderers);
         }
 
         worldOffset = _worldOffset;
@@ -172,9 +177,19 @@ public class QuestIndicator : MonoBehaviour
     /// 현재 대상 트랜스폼 하위의 모든 SpriteRenderer를 캐싱한다. 반짝임 대상은 화살표가 가리키는
     /// 오브젝트 전체(예: 차량의 base/wheel/inner)이므로, 특정 렌더러 하나가 아니라 하위 전부를 모은다.
     /// </summary>
-    private void CacheTargetRenderers()
+    private void CacheTargetRenderers(IReadOnlyList<SpriteRenderer> _explicitRenderers)
     {
         targetRenderers.Clear();
+
+        if (null != _explicitRenderers)
+        {
+            for (int i = 0; i < _explicitRenderers.Count; i++)
+            {
+                if (null != _explicitRenderers[i])
+                    targetRenderers.Add(_explicitRenderers[i]);
+            }
+            return;
+        }
 
         if (null != targetTransform)
             targetTransform.GetComponentsInChildren(true, targetRenderers);
