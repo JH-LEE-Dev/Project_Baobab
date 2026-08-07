@@ -43,6 +43,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private float circleRevealElapsed;
     private float openingZoomStart;
     private float openingZoomTarget;
+    private float nodeHoverSoundEnableUnscaledTime;
     private bool isViewShaking;
     private bool isCloseFading;
     private bool isOpeningZoomReveal;
@@ -142,6 +143,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private UISelectionCursor selectionCursorPrefab;
     [SerializeField] private RectTransform selectionCursorParent;
     [SerializeField] private Vector2 selectionCursorSize = new Vector2(40f, 40f);
+
+    [Header("Node Hover Sound")]
+    [SerializeField, Min(0f)] private float nodeHoverSoundSuppressDurationAfterOpen = 0.3f;
 
     [Header("View Shake Settings")]
     [SerializeField] private float viewShakeDuration = 0.16f;
@@ -331,6 +335,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (abilityBackground == null)
             return;
 
+        nodeHoverSoundEnableUnscaledTime = Time.unscaledTime + Mathf.Max(0f, nodeHoverSoundSuppressDurationAfterOpen);
         hasOpenedView = true;
         isCloseFading = false;
         isCircleRevealPlaying = false;
@@ -934,6 +939,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         selectionCursorInstance.Show(_node.RectTransform);
+    }
+
+    public void PlayNodeHoverSound()
+    {
+        if (Time.unscaledTime < nodeHoverSoundEnableUnscaledTime)
+            return;
+
+        Sound.PlayUI(SoundID.AbilityHover);
     }
 
     public void HideSelectionCursor(AbilityNode _node)

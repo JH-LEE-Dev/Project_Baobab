@@ -46,6 +46,11 @@ public class UI_TutorialQuest : MonoBehaviour
     [Header("Completed Transition Timing")]
     [SerializeField] private float completedHoldDuration = 1.0f;
 
+    [Header("Completed Text Pop")]
+    [SerializeField] private float completedTextPopDuration = 0.3f;
+    [SerializeField] private Vector3 completedTextSquashScale = new Vector3(1.12f, 0.88f, 1.0f);
+    [SerializeField] private Vector3 completedTextStretchScale = new Vector3(0.96f, 1.08f, 1.0f);
+
 
 
     // 내부 의존성
@@ -297,6 +302,8 @@ public class UI_TutorialQuest : MonoBehaviour
             showSequence.Insert(_contentStartTime, textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
         }
 
+        showSequence.InsertCallback(_contentStartTime, PlayQuestTextAppearSounds);
+
         showSequence.OnComplete(() =>
         {
             showSequence = null;
@@ -359,6 +366,8 @@ public class UI_TutorialQuest : MonoBehaviour
         KillSequences();
         bIsShowing = true;
 
+        PlayQuestCompletedSound();
+
         stepTransitionSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
         // 1. 현재 완료된 퀘스트 텍스트 색상 전환 (Append로 시퀀스 타임라인에 명시적 등록)
@@ -370,6 +379,10 @@ public class UI_TutorialQuest : MonoBehaviour
         {
             stepTransitionSequence.AppendInterval(colorTransitionDuration);
         }
+
+        Tween _completedTextPopTween = BuildCompletedTextPopTween();
+        if (null != _completedTextPopTween)
+            stepTransitionSequence.Join(_completedTextPopTween);
 
         // 2. 완료 색상 유지 시간(Hold Duration) 대기 (지정한 시간 동안 완료 상태 유지)
         float _holdTime = Mathf.Max(0.1f, completedHoldDuration);
@@ -385,6 +398,7 @@ public class UI_TutorialQuest : MonoBehaviour
         stepTransitionSequence.AppendCallback(() =>
         {
             SetQuestContent(_nextTitle, _nextDesc);
+            PlayQuestTextAppearSounds();
             if (null != textContainer)
             {
                 textContainer.localScale = startScale;
@@ -440,6 +454,8 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         KillSequences();
 
+        PlayQuestCompletedSound();
+
         completedSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
         // 1. 현재 퀘스트 텍스트 완료 색상 전환 (Append로 타임라인 명시적 등록)
@@ -452,6 +468,10 @@ public class UI_TutorialQuest : MonoBehaviour
             completedSequence.AppendInterval(colorTransitionDuration);
         }
 
+        Tween _completedTextPopTween = BuildCompletedTextPopTween();
+        if (null != _completedTextPopTween)
+            completedSequence.Join(_completedTextPopTween);
+
         // 2. 완료 색상 유지
         float _holdTime = Mathf.Max(0.1f, completedHoldDuration);
         completedSequence.AppendInterval(_holdTime);
@@ -463,6 +483,37 @@ public class UI_TutorialQuest : MonoBehaviour
         {
             completedSequence = null;
         });
+    }
+
+    private Tween BuildCompletedTextPopTween()
+    {
+        if (null == textContainer)
+            return null;
+
+        float _duration = Mathf.Max(0.0f, completedTextPopDuration);
+        textContainer.localScale = targetScale;
+
+        if (_duration <= 0.0f)
+            return null;
+
+        Vector3 _squashScale = Vector3.Scale(targetScale, completedTextSquashScale);
+        Vector3 _stretchScale = Vector3.Scale(targetScale, completedTextStretchScale);
+
+        return DOTween.Sequence()
+            .Append(textContainer.DOScale(_squashScale, _duration * 0.28f).SetEase(Ease.OutQuad))
+            .Append(textContainer.DOScale(_stretchScale, _duration * 0.30f).SetEase(Ease.InOutQuad))
+            .Append(textContainer.DOScale(targetScale, _duration * 0.42f).SetEase(Ease.OutBack));
+    }
+
+    private void PlayQuestTextAppearSounds()
+    {
+        Sound.PlayUI(SoundID.MainMenuButtonAppearStart00);
+        Sound.PlayUI(SoundID.MainMenuDot02);
+    }
+
+    private void PlayQuestCompletedSound()
+    {
+        Sound.PlayUI(SoundID.AbilityUpgradeFailed);
     }
 
     private void SetQuestContent(string _title, string _desc)
