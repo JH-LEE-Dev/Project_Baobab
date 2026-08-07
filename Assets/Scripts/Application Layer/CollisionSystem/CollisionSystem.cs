@@ -41,6 +41,27 @@ public class CollisionSystem : MonoBehaviour
     [SerializeField] private Vector2 gridOrigin = new Vector2(-150, -150);
     [SerializeField] private int maxEntities = 10000; // 최대 관리 객체 수
 
+    [Header("Diagnostics")]
+    [SerializeField, Tooltip("사용 슬롯이 이 비율을 넘으면 경고를 남긴다(0~1). 풀 고갈 추적용.")]
+    private float poolUsageWarnRatio = 0.8f;
+
+    // 로그 폭주 방지용 1회성 플래그. ClearAll()에서 다시 열린다.
+    private bool bPoolExhaustedLogged = false;
+    private bool bPoolUsageWarned = false;
+
+    /// <summary>현재 등록되어 슬롯을 점유 중인 객체 수.</summary>
+    public int UsedEntityCount => ownerToEntityIndex != null ? ownerToEntityIndex.Count : 0;
+    public int MaxEntityCount => maxEntities;
+
+    /// <summary>
+    /// 씬 전환 등 원하는 시점의 풀 사용량을 남긴다. 씬을 오갈수록 값이 계속 커지면
+    /// 어딘가에서 Unregister가 누락되어 슬롯이 새고 있다는 뜻이다.
+    /// </summary>
+    public void LogPoolUsage(string _context)
+    {
+        Debug.Log($"[CollisionSystem] {_context} - 사용 슬롯 {UsedEntityCount}/{maxEntities}");
+    }
+
     [Header("Debug")]
     [SerializeField] private bool showDebug = true;
     [SerializeField] private bool showFullGrid = false;
@@ -122,7 +143,24 @@ public class CollisionSystem : MonoBehaviour
         }
 
         int _gridIndex = WorldToGridIndex(_obj.Position + _obj.Offset);
-        if (_gridIndex < 0 || freeListHead == -1) return;
+
+        // 그리드 밖은 정상적인 상황이라 조용히 넘어간다.
+        if (_gridIndex < 0) return;
+
+        // 반면 풀 고갈은 지금까지 아무 흔적도 남기지 않고 실패해 왔다. 이 시점 이후로 등록되는 객체는
+        // 충돌 판정에서 통째로 빠지므로 반드시 남긴다.
+        // (ClearAll()은 타운 진입 시에만 호출되므로, 던전 재도전을 반복하는 동안에는 초기화되지 않고
+        //  계속 누적된다 - 슬롯이 새고 있다면 여기서 먼저 드러난다)
+        if (freeListHead == -1)
+        {
+            if (!bPoolExhaustedLogged)
+            {
+                bPoolExhaustedLogged = true;
+                Debug.LogError($"[CollisionSystem] 엔티티 풀이 고갈되었습니다({maxEntities}개 전부 점유). " +
+                    $"이후 Register 요청은 무시되어 충돌 판정에서 제외됩니다.");
+            }
+            return;
+        }
 
         // 프리 리스트에서 슬롯 하나 할당
         int _newIdx = freeListHead;
@@ -143,6 +181,14 @@ public class CollisionSystem : MonoBehaviour
 
         // 인덱스 기록 (엔티티 인덱스를 저장)
         ownerToEntityIndex[_obj] = _newIdx;
+
+        // 고갈에 닿기 전에 미리 알 수 있도록 고수위 경고를 한 번 남긴다.
+        if (!bPoolUsageWarned && ownerToEntityIndex.Count >= maxEntities * poolUsageWarnRatio)
+        {
+            bPoolUsageWarned = true;
+            Debug.LogWarning($"[CollisionSystem] 엔티티 풀 사용량이 {ownerToEntityIndex.Count}/{maxEntities}에 도달했습니다. " +
+                $"Unregister 누락으로 슬롯이 새고 있는지 확인이 필요합니다.");
+        }
     }
 
     public void Unregister(IStaticCollidable _obj, bool _isStatic = true)
@@ -192,6 +238,13 @@ public class CollisionSystem : MonoBehaviour
     public void ClearAll()
     {
         if (staticHeads == null || dynamicHeads == null) return;
+
+        // 초기화 직전 사용량을 남긴다. ClearAll()은 타운 진입 시에만 호출되므로, 이 값이 매번
+        // 커진다면 던전 쪽에서 Unregister가 누락되어 슬롯이 새고 있다는 뜻이다.
+        LogPoolUsage("ClearAll 직전");
+
+        bPoolExhaustedLogged = false;
+        bPoolUsageWarned = false;
 
         int _totalCells = gridCount.x * gridCount.y;
         for (int i = 0; i < _totalCells; i++)

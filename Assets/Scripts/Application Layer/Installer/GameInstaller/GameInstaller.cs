@@ -135,6 +135,10 @@ public class GameInstaller : MonoBehaviour
 
     public void SetupGameInstaller(SceneChangeData _sceneChangeData)
     {
+        // 씬 전환마다(던전 재도전 포함) 충돌 풀 사용량을 남긴다. 타운을 거치지 않는 재도전 경로에서는
+        // CollisionSystem.ClearAll()이 호출되지 않으므로, 슬롯이 새고 있다면 이 값이 계속 커진다.
+        CollisionSystem.Instance?.LogPoolUsage($"SetupGameInstaller({_sceneChangeData.currentScene})");
+
         cameraManager.ResetCamera();
 
         if (_sceneChangeData.currentScene == SceneType.DungeonScene)

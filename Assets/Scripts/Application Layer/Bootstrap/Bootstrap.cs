@@ -399,6 +399,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     {
         DOTween.Init();
         DOTween.SetTweensCapacity(1250, 312);
+
+        // 세이프 모드는 트윈 콜백 안에서 발생한 예외를 삼키고 로그만 남긴다. 기본값(Warning)으로 두면
+        // Sentry가 에러만 수집하도록 설정돼 있어(CaptureLogErrorEvents) 그 예외가 영영 보고되지 않는다.
+        // 씬 전환 로직 상당 부분이 카메라 연출의 트윈 완료 콜백 안에서 동기 실행되므로, 여기서 삼켜진
+        // 예외는 그대로 "연출은 끝났는데 아무 일도 일어나지 않는" 증상이 된다. 반드시 에러로 올린다.
+        DOTween.safeModeLogBehaviour = DG.Tweening.Core.Enums.SafeModeLogBehaviour.Error;
     }
 
     private void BootTempScene()

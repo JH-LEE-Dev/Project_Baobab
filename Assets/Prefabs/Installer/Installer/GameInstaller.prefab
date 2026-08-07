@@ -2254,6 +2254,8 @@ MonoBehaviour:
   baseMapRadius: 75
   outerWaterObjectDensity: 0.025
   centerSafeZoneRadius: 5
+  innerPuddleDensity: 1
+  minPuddleTileCount: 3
   sandDensity: 0.075
   grassDensity: 0.625
   stageTileData: {fileID: 11400000, guid: 7f7e6fd6cc9cc7f45acefb152231cf44, type: 2}
