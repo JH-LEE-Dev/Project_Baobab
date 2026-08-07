@@ -186,6 +186,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_WarningPopupButton
   targetGraphic: {fileID: 1986760502835578453}
+  cursorTargetTransform: {fileID: 2338799203888061322}
+  cursorPadding: {x: 8, y: 8}
+  cursorOffset: {x: 0, y: 0}
+  useCustomCursorSize: 0
+  customCursorSize: {x: 100, y: 40}
   hoverSettings:
     duration: 0.7
     shrinkScale: 0.8
@@ -490,6 +495,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_WarningPopupButton
   targetGraphic: {fileID: 500627172970634607}
+  cursorTargetTransform: {fileID: 6760869410420975540}
+  cursorPadding: {x: 8, y: 8}
+  cursorOffset: {x: 0, y: 0}
+  useCustomCursorSize: 0
+  customCursorSize: {x: 100, y: 40}
   hoverSettings:
     duration: 0.7
     shrinkScale: 0.8

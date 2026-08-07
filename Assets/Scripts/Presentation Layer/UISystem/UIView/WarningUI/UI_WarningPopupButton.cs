@@ -49,10 +49,19 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
     [SerializeField, Tooltip("크기와 회전이 변형될 대상 (Raycast 본체와 다를 경우 지정)")] 
     private Graphic targetGraphic;
 
+    [Header("Cursor Settings")]
+    [SerializeField, Tooltip("커서가 감쌀 실제 비주얼 RectTransform (미지정 시 targetGraphic 사용)")]
+    private RectTransform cursorTargetTransform;
+    [SerializeField] private Vector2 cursorPadding = new Vector2(8f, 8f);
+    [SerializeField] private Vector2 cursorOffset = Vector2.zero;
+    [SerializeField] private bool useCustomCursorSize = false;
+    [SerializeField] private Vector2 customCursorSize = new Vector2(100f, 40f);
+
     [Header("Motion Settings")]
     [SerializeField] private HoverSettings hoverSettings = new HoverSettings();
     [SerializeField] private UnhoverSettings unhoverSettings = new UnhoverSettings();
     
+    private UI_WarningPopup parentPopup;
     private Action onClickAction;
     private Action onHoverAction;
     private bool isInteractable = true;
@@ -85,6 +94,11 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
             scaleTarget.localScale = originalScale;
             scaleTarget.localRotation = originalRotation;
         }
+
+        if (null != parentPopup)
+        {
+            parentPopup.OnButtonUnhovered(this);
+        }
     }
 
     private void OnDestroy()
@@ -92,12 +106,51 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         KillTween();
         onClickAction = null;
         onHoverAction = null;
+        parentPopup = null;
     }
 
-    public void Initialize(Action _onClick, Action _onHover = null)
+    public void Initialize(Action _onClick, Action _onHover = null, UI_WarningPopup _parentPopup = null)
     {
         onClickAction = _onClick;
         onHoverAction = _onHover;
+        parentPopup = _parentPopup;
+    }
+
+    public void Initialize(Action _onClick, UI_WarningPopup _parentPopup)
+    {
+        onClickAction = _onClick;
+        onHoverAction = null;
+        parentPopup = _parentPopup;
+    }
+
+    public RectTransform GetCursorTargetRect()
+    {
+        if (null != cursorTargetTransform)
+            return cursorTargetTransform;
+
+        if (null != targetGraphic)
+            return targetGraphic.rectTransform;
+
+        return transform as RectTransform;
+    }
+
+    public Vector2 GetCursorSize()
+    {
+        if (true == useCustomCursorSize)
+            return customCursorSize;
+
+        RectTransform target = GetCursorTargetRect();
+        if (null != target)
+        {
+            return target.rect.size + cursorPadding;
+        }
+
+        return customCursorSize;
+    }
+
+    public Vector2 GetCursorOffset()
+    {
+        return cursorOffset;
     }
 
     public void SetInteractable(bool _isInteractable)
@@ -114,38 +167,65 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
                 scaleTarget.localScale = originalScale;
                 scaleTarget.localRotation = originalRotation;
             }
+
+            if (null != parentPopup)
+            {
+                parentPopup.OnButtonUnhovered(this);
+            }
         }
     }
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
         isHovered = true;
-        if (false == isInteractable) return;
+        if (false == isInteractable)
+            return;
 
-        if (null != onHoverAction) onHoverAction();
+        if (null != onHoverAction)
+            onHoverAction();
         
         KillTween();
         PlayHoverAnimation();
+
+        if (null != parentPopup)
+        {
+            parentPopup.OnButtonHovered(this);
+        }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
     {
         isHovered = false;
-        if (false == isInteractable) return;
+        if (false == isInteractable)
+            return;
         
         KillTween();
         PlayUnhoverAnimation();
+
+        if (null != parentPopup)
+        {
+            parentPopup.OnButtonUnhovered(this);
+        }
     }
 
     public void OnPointerClick(PointerEventData _eventData)
     {
-        if (false == isInteractable) return;
-        if (null != onClickAction) onClickAction();
+        if (false == isInteractable)
+            return;
+
+        if (null != parentPopup)
+        {
+            parentPopup.OnButtonClicked(this);
+        }
+
+        if (null != onClickAction)
+            onClickAction();
     }
 
     private void PlayHoverAnimation()
     {
-        if (null == scaleTarget) return;
+        if (null == scaleTarget)
+            return;
 
         scaleTarget.localScale = originalScale;
         scaleTarget.localRotation = originalRotation;
@@ -187,7 +267,8 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
 
     private void PlayUnhoverAnimation()
     {
-        if (null == scaleTarget) return;
+        if (null == scaleTarget)
+            return;
 
         scaleTarget.localScale = originalScale;
         scaleTarget.localRotation = originalRotation;

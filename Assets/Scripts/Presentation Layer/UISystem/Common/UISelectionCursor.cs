@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
@@ -12,7 +13,10 @@ public class UISelectionCursor : MonoBehaviour
     [SerializeField] private Vector2 cursorSize = new Vector2(40f, 40f);
     [SerializeField] private Vector2 anchoredOffset = Vector2.zero;
 
-    [Header("Motion Settings")]
+    [Header("Built-in Motion Settings")]
+    [SerializeField] private CursorMotionSettings motionSettings = new CursorMotionSettings();
+
+    [Header("Legacy OMB Motion Settings (Fallback)")]
     [SerializeField] private ObjectMotionPlayer motionPlayer;
     [SerializeField] private string showMotionTag = "CursorShow";
     [SerializeField] private string idleMotionTag = "CursorIdle";
@@ -22,14 +26,63 @@ public class UISelectionCursor : MonoBehaviour
     private MotionEntry showMotionEntry;
     private MotionEntry idleMotionEntry;
     private MotionEntry hideMotionEntry;
+
+    private Sequence showSequence;
+    private Sequence idleSequence;
+    private Sequence hideSequence;
+
     private Vector2 currentAnchoredPosition;
-    private int motionVersion;
-    private int showMotionVersion;
-    private int hideMotionVersion;
+    private int motionVersion = 0;
+    private int showMotionVersion = 0;
+    private int hideMotionVersion = 0;
+
+    private TweenCallback onShowCompleteAction;
+    private TweenCallback onHideCompleteAction;
+    private TweenCallback setExpandedSizeAction;
+    private TweenCallback setBaseSizeAction;
+    private TweenCallback setContractedSizeAction;
+
+    private Vector2 currentBaseSize;
+    private Vector2 currentExpandedSize;
+    private Vector2 currentContractedSize;
 
     public Vector2 CursorSize => cursorSize;
+    public CursorMotionSettings MotionSettings
+    {
+        get => motionSettings;
+        set => motionSettings = value;
+    }
 
-#region 이 세개만 쓰면 됨
+    private void Awake()
+    {
+        CacheReferences();
+        InitCallbacks();
+    }
+
+    private void OnDestroy()
+    {
+        KillAllSequences();
+    }
+
+    private void InitCallbacks()
+    {
+        if (null == onShowCompleteAction)
+            onShowCompleteAction = OnShowComplete;
+
+        if (null == onHideCompleteAction)
+            onHideCompleteAction = OnHideComplete;
+
+        if (null == setExpandedSizeAction)
+            setExpandedSizeAction = ApplyExpandedSize;
+
+        if (null == setBaseSizeAction)
+            setBaseSizeAction = ApplyBaseSize;
+
+        if (null == setContractedSizeAction)
+            setContractedSizeAction = ApplyContractedSize;
+    }
+
+    #region Public APIs
 
     public void Initialize(Vector2 _cursorSize)
     {
@@ -39,8 +92,6 @@ public class UISelectionCursor : MonoBehaviour
         HideImmediately();
     }
 
-
-    // 이곳에 보여주렴.
     public void Show(RectTransform _target)
     {
         Show(_target, cursorSize);
@@ -60,12 +111,22 @@ public class UISelectionCursor : MonoBehaviour
         if (null == parentRectTransform)
             return;
 
-        StopAndResetAllMotions();
-
         Vector3 targetWorldCenter = _target.TransformPoint(_target.rect.center);
         Vector2 localCenter = parentRectTransform.InverseTransformPoint(targetWorldCenter);
 
-        currentAnchoredPosition = localCenter + anchoredOffset;
+        ShowAtAnchoredPosition(localCenter + anchoredOffset, _size, null);
+    }
+
+    public void ShowAtAnchoredPosition(Vector2 _anchoredPosition, Vector2 _size, CursorMotionSettings _customMotion = null)
+    {
+        cursorSize = _size;
+        CacheReferences();
+        if (null == rootRectTransform)
+            return;
+
+        StopAndResetAllMotions();
+
+        currentAnchoredPosition = _anchoredPosition;
         rootRectTransform.anchoredPosition = currentAnchoredPosition;
         rootRectTransform.SetAsLastSibling();
         ApplySize();
@@ -73,34 +134,51 @@ public class UISelectionCursor : MonoBehaviour
         gameObject.SetActive(true);
 
         int currentVersion = ++motionVersion;
-        PlayShowMotion(currentVersion);
+        CursorMotionSettings activeSettings = null != _customMotion ? _customMotion : motionSettings;
+
+        if (null != motionPlayer && false == string.IsNullOrEmpty(showMotionTag))
+        {
+            PlayOMBShowMotion(currentVersion);
+        }
+        else
+        {
+            PlayBuiltInShowMotion(currentVersion, activeSettings);
+        }
+    }
+
+    public void SetAnchoredPosition(Vector2 _anchoredPosition)
+    {
+        currentAnchoredPosition = _anchoredPosition;
+        if (null != rootRectTransform)
+        {
+            rootRectTransform.anchoredPosition = currentAnchoredPosition;
+        }
     }
 
     public void Hide()
     {
-        if (gameObject.activeSelf == false)
+        if (false == gameObject.activeSelf)
             return;
 
         int currentVersion = ++motionVersion;
-        StopAndResetMotion(showMotionEntry);
-        StopAndResetMotion(idleMotionEntry);
-        StopAndResetMotion(hideMotionEntry);
+        StopAndResetAllMotions();
 
-        rootRectTransform.anchoredPosition = currentAnchoredPosition;
+        if (null != rootRectTransform)
+        {
+            rootRectTransform.anchoredPosition = currentAnchoredPosition;
+        }
         ApplySize();
 
-        if (motionPlayer == null || string.IsNullOrEmpty(hideMotionTag))
+        if (null != motionPlayer && false == string.IsNullOrEmpty(hideMotionTag))
         {
-            HideImmediately();
-            return;
+            hideMotionVersion = currentVersion;
+            hideMotionEntry = motionPlayer.Play(hideMotionTag, _onComplete: CompleteHide, bReset: false);
         }
-
-        hideMotionVersion = currentVersion;
-        hideMotionEntry = motionPlayer.Play(hideMotionTag, _onComplete: CompleteHide, bReset: false);
+        else
+        {
+            PlayBuiltInHideMotion(currentVersion, motionSettings);
+        }
     }
-
-
-#endregion
 
     public void HideImmediately()
     {
@@ -111,59 +189,172 @@ public class UISelectionCursor : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    #endregion
 
+    #region Built-in DOTween Motions
 
-    private void CacheReferences()
+    private void PlayBuiltInShowMotion(int _version, CursorMotionSettings _settings)
     {
-        if (rootRectTransform == null)
-            rootRectTransform = transform as RectTransform;
-
-        if (cursorImage == null)
-            cursorImage = GetComponent<Image>();
-
-        if (canvasGroup == null)
-            canvasGroup = GetComponent<CanvasGroup>();
-
-        if (motionPlayer == null)
-            motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
-    }
-
-    private void ApplySize()
-    {
-        if (rootRectTransform != null)
-            rootRectTransform.sizeDelta = cursorSize;
-
-        if (cursorImage != null)
+        if (null == _settings || false == _settings.enableShowMotion)
         {
-            cursorImage.raycastTarget = false;
-            cursorImage.type = Image.Type.Sliced;
-        }
-    }
-
-    private void PlayShowMotion(int _version)
-    {
-        if (motionPlayer == null || string.IsNullOrEmpty(showMotionTag))
-        {
-            PlayIdleMotion(_version);
+            PlayBuiltInIdleMotion(_version, _settings);
             return;
         }
 
-        gameObject.SetActive(true);
         showMotionVersion = _version;
-        showMotionEntry = motionPlayer.Play(showMotionTag, _onComplete: PlayIdleMotion, bReset: false);
+        KillSequence(ref showSequence);
+
+        showSequence = DOTween.Sequence();
+        showSequence.SetUpdate(true);
+
+        // 1. Size Tween (Shrink -> Restore)
+        Vector2 shrinkSize = cursorSize * _settings.shrinkSizeScale;
+        float shrinkDuration = _settings.showDuration * Mathf.Clamp01(_settings.shrinkTimeRatio);
+        float restoreDuration = _settings.showDuration * Mathf.Clamp01(_settings.restoreTimeRatio);
+
+        Sequence sizeSeq = DOTween.Sequence();
+        sizeSeq.Append(rootRectTransform.DOSizeDelta(shrinkSize, shrinkDuration).SetEase(Ease.OutQuad));
+        sizeSeq.Append(rootRectTransform.DOSizeDelta(cursorSize, restoreDuration).SetEase(_settings.sizeRestoreEase));
+        showSequence.Join(sizeSeq);
+
+        // 2. Rotation Tween (Damped Alternating Swing)
+        Sequence rotSeq = DOTween.Sequence();
+        float angle = Mathf.Abs(_settings.startAngle);
+        int swingCount = Mathf.Max(_settings.swingCount, 1);
+        float rotationDuration = _settings.showDuration * Mathf.Clamp01(_settings.rotationTimeRatio);
+        float swingDuration = rotationDuration / (swingCount + 1);
+
+        for (int i = 0; i < swingCount; i++)
+        {
+            float direction = (0 == i % 2) ? -1f : 1f;
+            Vector3 targetRot = Vector3.forward * (angle * direction);
+            rotSeq.Append(rootRectTransform.DOLocalRotate(targetRot, swingDuration, RotateMode.Fast).SetEase(_settings.rotationEase));
+            angle *= Mathf.Clamp01(_settings.angleDamping);
+        }
+        rotSeq.Append(rootRectTransform.DOLocalRotate(Vector3.zero, swingDuration, RotateMode.Fast).SetEase(_settings.rotationEase));
+        showSequence.Join(rotSeq);
+
+        showSequence.OnComplete(onShowCompleteAction);
     }
 
-    private void PlayIdleMotion()
+    private void OnShowComplete()
     {
-        PlayIdleMotion(showMotionVersion);
+        PlayBuiltInIdleMotion(showMotionVersion, motionSettings);
     }
 
-    private void PlayIdleMotion(int _version)
+    private void PlayBuiltInIdleMotion(int _version, CursorMotionSettings _settings)
     {
         if (_version != motionVersion)
             return;
 
-        if (motionPlayer == null || string.IsNullOrEmpty(idleMotionTag) || gameObject.activeSelf == false)
+        if (false == gameObject.activeSelf || null == _settings || false == _settings.enableIdleMotion)
+            return;
+
+        KillSequence(ref showSequence);
+        KillSequence(ref idleSequence);
+
+        if (null != rootRectTransform)
+        {
+            rootRectTransform.localEulerAngles = Vector3.zero;
+            rootRectTransform.anchoredPosition = currentAnchoredPosition;
+        }
+
+        currentBaseSize = cursorSize;
+        float sizeDeltaOffset = Mathf.Abs(_settings.idleSizeOffset) * 2f;
+        currentExpandedSize = currentBaseSize + Vector2.one * sizeDeltaOffset;
+        currentContractedSize = currentBaseSize - Vector2.one * sizeDeltaOffset;
+
+        float stepDuration = Mathf.Max(_settings.idleCycleDuration / 4f, 0.0001f);
+
+        idleSequence = DOTween.Sequence();
+        idleSequence.SetUpdate(true);
+        idleSequence.AppendCallback(setExpandedSizeAction);
+        idleSequence.AppendInterval(stepDuration);
+        idleSequence.AppendCallback(setBaseSizeAction);
+        idleSequence.AppendInterval(stepDuration);
+        idleSequence.AppendCallback(setContractedSizeAction);
+        idleSequence.AppendInterval(stepDuration);
+        idleSequence.AppendCallback(setBaseSizeAction);
+        idleSequence.AppendInterval(stepDuration);
+        idleSequence.SetLoops(-1, LoopType.Restart);
+    }
+
+    private void ApplyExpandedSize()
+    {
+        if (null != rootRectTransform)
+            rootRectTransform.sizeDelta = currentExpandedSize;
+    }
+
+    private void ApplyBaseSize()
+    {
+        if (null != rootRectTransform)
+            rootRectTransform.sizeDelta = currentBaseSize;
+    }
+
+    private void ApplyContractedSize()
+    {
+        if (null != rootRectTransform)
+            rootRectTransform.sizeDelta = currentContractedSize;
+    }
+
+    private void PlayBuiltInHideMotion(int _version, CursorMotionSettings _settings)
+    {
+        if (null == _settings || false == _settings.enableHideMotion)
+        {
+            HideImmediately();
+            return;
+        }
+
+        hideMotionVersion = _version;
+        KillSequence(ref hideSequence);
+
+        hideSequence = DOTween.Sequence();
+        hideSequence.SetUpdate(true);
+
+        Vector2 expandedSize = cursorSize + Vector2.one * Mathf.Abs(_settings.hideExpandOffset);
+        hideSequence.Join(rootRectTransform.DOSizeDelta(expandedSize, _settings.hideDuration).SetEase(_settings.hideEase));
+
+        if (null != canvasGroup)
+        {
+            hideSequence.Join(canvasGroup.DOFade(0f, _settings.hideDuration).SetEase(_settings.hideEase));
+        }
+
+        hideSequence.OnComplete(onHideCompleteAction);
+    }
+
+    private void OnHideComplete()
+    {
+        if (hideMotionVersion != motionVersion)
+            return;
+
+        StopAndResetAllMotions();
+        ApplySize();
+        SetAlpha(1f);
+        gameObject.SetActive(false);
+    }
+
+    #endregion
+
+    #region Legacy OMB Motions (Fallback)
+
+    private void PlayOMBShowMotion(int _version)
+    {
+        gameObject.SetActive(true);
+        showMotionVersion = _version;
+        showMotionEntry = motionPlayer.Play(showMotionTag, _onComplete: PlayOMBIdleMotion, bReset: false);
+    }
+
+    private void PlayOMBIdleMotion()
+    {
+        PlayOMBIdleMotion(showMotionVersion);
+    }
+
+    private void PlayOMBIdleMotion(int _version)
+    {
+        if (_version != motionVersion)
+            return;
+
+        if (null == motionPlayer || true == string.IsNullOrEmpty(idleMotionTag) || false == gameObject.activeSelf)
             return;
 
         StopAndResetMotion(showMotionEntry);
@@ -189,16 +380,72 @@ public class UISelectionCursor : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    #endregion
+
+    #region Internal Helpers
+
+    private void CacheReferences()
+    {
+        if (null == rootRectTransform)
+            rootRectTransform = transform as RectTransform;
+
+        if (null == cursorImage)
+            cursorImage = GetComponent<Image>();
+
+        if (null == canvasGroup)
+            canvasGroup = GetComponent<CanvasGroup>();
+
+        if (null == motionPlayer)
+            motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
+
+        InitCallbacks();
+    }
+
+    private void ApplySize()
+    {
+        if (null != rootRectTransform)
+            rootRectTransform.sizeDelta = cursorSize;
+
+        if (null != cursorImage)
+        {
+            cursorImage.raycastTarget = false;
+            cursorImage.type = Image.Type.Sliced;
+        }
+    }
+
     private void StopAndResetAllMotions()
     {
+        KillAllSequences();
+
         StopAndResetMotion(showMotionEntry);
         StopAndResetMotion(idleMotionEntry);
         StopAndResetMotion(hideMotionEntry);
+
+        if (null != rootRectTransform)
+        {
+            rootRectTransform.localEulerAngles = Vector3.zero;
+        }
+    }
+
+    private void KillAllSequences()
+    {
+        KillSequence(ref showSequence);
+        KillSequence(ref idleSequence);
+        KillSequence(ref hideSequence);
+    }
+
+    private void KillSequence(ref Sequence _seq)
+    {
+        if (null != _seq && true == _seq.IsActive())
+        {
+            _seq.Kill(false);
+        }
+        _seq = null;
     }
 
     private void StopAndResetMotion(MotionEntry _entry)
     {
-        if (motionPlayer == null || _entry == null)
+        if (null == motionPlayer || null == _entry)
             return;
 
         motionPlayer.SettingEntryMotion(_entry, true, true);
@@ -206,7 +453,9 @@ public class UISelectionCursor : MonoBehaviour
 
     private void SetAlpha(float _alpha)
     {
-        if (canvasGroup != null)
+        if (null != canvasGroup)
             canvasGroup.alpha = _alpha;
     }
+
+    #endregion
 }

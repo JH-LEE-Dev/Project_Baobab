@@ -123,6 +123,11 @@ public class UI_Option : MonoBehaviour
             closeButton.Initialize(hideAction, SoundID.MainButtonHover, SoundID.MainClick);
         }
 
+        if (null != warningPopup)
+        {
+            warningPopup.Initialize(_ctx);
+        }
+
         CacheControlDelegates();
 
         InitializeSelectors();

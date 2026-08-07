@@ -27,6 +27,7 @@ public class UI_WarningPopup : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float dimTargetAlpha = 0.8f;
     [SerializeField] private float dimAnimationDuration = 0.25f;
 
+    private ICursorBoxUI cursorBoxUI;
     private Action onConfirmAction;
     private Action onCancelAction;
     private SoundID openSoundId = SoundID.None;
@@ -48,8 +49,23 @@ public class UI_WarningPopup : MonoBehaviour
     private void OnDestroy()
     {
         KillSequence();
+        HideCursor();
         onConfirmAction = null;
         onCancelAction = null;
+        cursorBoxUI = null;
+    }
+
+    public void Initialize(UIViewContext _ctx)
+    {
+        if (null != _ctx)
+        {
+            cursorBoxUI = _ctx.cursorBoxUI;
+        }
+    }
+
+    public void SetCursorBoxUI(ICursorBoxUI _cursorBoxUI)
+    {
+        cursorBoxUI = _cursorBoxUI;
     }
 
     /// <summary>
@@ -63,7 +79,8 @@ public class UI_WarningPopup : MonoBehaviour
         SoundID _closeSoundId = SoundID.None,
         SoundID _hoverSoundId = SoundID.None)
     {
-        if (null != messageText) messageText.text = _message;
+        if (null != messageText)
+            messageText.text = _message;
 
         onConfirmAction = _onConfirm;
         onCancelAction = _onCancel;
@@ -73,20 +90,70 @@ public class UI_WarningPopup : MonoBehaviour
         hasPlayedCloseSound = false;
 
         if (null != confirmButton)
-            confirmButton.Initialize(OnConfirmButtonClicked, PlayHoverSound);
+            confirmButton.Initialize(OnConfirmButtonClicked, PlayHoverSound, this);
             
         if (null != cancelButton)
         {
             cancelButton.gameObject.SetActive(null != _onCancel);
-            cancelButton.Initialize(OnCancelButtonClicked, PlayHoverSound);
+            cancelButton.Initialize(OnCancelButtonClicked, PlayHoverSound, this);
         }
 
         PlayConfiguredSound(openSoundId);
         PlayOpenProduction();
     }
 
+    #region Button Event Handling
+
+    public void OnButtonHovered(UI_WarningPopupButton _button)
+    {
+        if (null == cursorBoxUI || null == _button)
+            return;
+
+        RectTransform targetRect = _button.GetCursorTargetRect();
+        if (null == targetRect)
+            return;
+
+        Vector2 size = _button.GetCursorSize();
+        Vector2 offset = _button.GetCursorOffset();
+
+        cursorBoxUI.Show(targetRect, size, offset);
+    }
+
+    public void OnButtonUnhovered(UI_WarningPopupButton _button)
+    {
+        if (null == cursorBoxUI || null == _button)
+            return;
+
+        RectTransform targetRect = _button.GetCursorTargetRect();
+        if (null != targetRect)
+        {
+            cursorBoxUI.Hide(targetRect);
+        }
+        else
+        {
+            cursorBoxUI.Hide();
+        }
+    }
+
+    public void OnButtonClicked(UI_WarningPopupButton _button)
+    {
+        HideCursor();
+    }
+
+    private void HideCursor()
+    {
+        if (null != cursorBoxUI)
+        {
+            cursorBoxUI.HideImmediately();
+        }
+    }
+
+    #endregion
+
     private void OnConfirmButtonClicked()
     {
+        HideCursor();
+
         if (null != onConfirmAction)
             onConfirmAction();
             
@@ -95,6 +162,8 @@ public class UI_WarningPopup : MonoBehaviour
 
     private void OnCancelButtonClicked()
     {
+        HideCursor();
+
         if (null != onCancelAction)
             onCancelAction();
             
@@ -106,7 +175,8 @@ public class UI_WarningPopup : MonoBehaviour
         gameObject.SetActive(true);
         KillSequence();
 
-        if (null == popupCanvasGroup || null == popupWindowRoot) return;
+        if (null == popupCanvasGroup || null == popupWindowRoot)
+            return;
 
         // 초기 상태 세팅 (투명, 아래로 내려간 상태)
         popupCanvasGroup.alpha = 0f;
@@ -137,6 +207,7 @@ public class UI_WarningPopup : MonoBehaviour
         }
 
         KillSequence();
+        HideCursor();
 
         if (null == popupCanvasGroup || null == popupWindowRoot)
         {

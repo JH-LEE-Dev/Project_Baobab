@@ -956,12 +956,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionTabButton
   targetImage: {fileID: 7084658191201059319}
   normalSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
+  hoveredSprite: {fileID: 21300000, guid: 0ba6e5f7938b78e4fbca1484c417dea3, type: 3}
   selectedSprite: {fileID: 21300000, guid: 912478fd2bb866e429429ea0ad8bada9, type: 3}
   tabText: {fileID: 4578813961984563171}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hoveredTextColor: {r: 1, g: 1, b: 1, a: 1}
   selectedTextColor: {r: 0, g: 0, b: 0, a: 1}
   uiEffect: {fileID: 6708569355542718480}
   normalOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  hoveredOutlineColor: {r: 0, g: 0, b: 0, a: 1}
   selectedOutlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!222 &9108024953189902843
 CanvasRenderer:
@@ -1918,12 +1921,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionTabButton
   targetImage: {fileID: 385581638351065341}
   normalSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
+  hoveredSprite: {fileID: 21300000, guid: 0ba6e5f7938b78e4fbca1484c417dea3, type: 3}
   selectedSprite: {fileID: 21300000, guid: 912478fd2bb866e429429ea0ad8bada9, type: 3}
   tabText: {fileID: 1093457811575640012}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hoveredTextColor: {r: 1, g: 1, b: 1, a: 1}
   selectedTextColor: {r: 0, g: 0, b: 0, a: 1}
   uiEffect: {fileID: 2946784866307163039}
   normalOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  hoveredOutlineColor: {r: 0, g: 0, b: 0, a: 1}
   selectedOutlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!222 &8647833354326279764
 CanvasRenderer:
@@ -2017,12 +2023,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionTabButton
   targetImage: {fileID: 5482331320936446704}
   normalSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
+  hoveredSprite: {fileID: 21300000, guid: 0ba6e5f7938b78e4fbca1484c417dea3, type: 3}
   selectedSprite: {fileID: 21300000, guid: 912478fd2bb866e429429ea0ad8bada9, type: 3}
   tabText: {fileID: 8679563084377580657}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hoveredTextColor: {r: 1, g: 1, b: 1, a: 1}
   selectedTextColor: {r: 0, g: 0, b: 0, a: 1}
   uiEffect: {fileID: 2658537240258445839}
   normalOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  hoveredOutlineColor: {r: 0, g: 0, b: 0, a: 1}
   selectedOutlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!222 &917072599825086798
 CanvasRenderer:
@@ -4308,12 +4317,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI_OptionTabButton
   targetImage: {fileID: 5424627155148326862}
   normalSprite: {fileID: 21300000, guid: 53d8c672ab0433c46ae704732639119c, type: 3}
+  hoveredSprite: {fileID: 21300000, guid: 0ba6e5f7938b78e4fbca1484c417dea3, type: 3}
   selectedSprite: {fileID: 21300000, guid: 912478fd2bb866e429429ea0ad8bada9, type: 3}
   tabText: {fileID: 7391343301422629891}
   normalTextColor: {r: 1, g: 1, b: 1, a: 1}
+  hoveredTextColor: {r: 1, g: 1, b: 1, a: 1}
   selectedTextColor: {r: 0, g: 0, b: 0, a: 1}
   uiEffect: {fileID: 5668183370893103578}
   normalOutlineColor: {r: 0, g: 0, b: 0, a: 1}
+  hoveredOutlineColor: {r: 0, g: 0, b: 0, a: 1}
   selectedOutlineColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!222 &6237890126057230595
 CanvasRenderer:
