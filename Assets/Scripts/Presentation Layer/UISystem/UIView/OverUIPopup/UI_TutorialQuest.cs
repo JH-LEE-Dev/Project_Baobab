@@ -46,15 +46,7 @@ public class UI_TutorialQuest : MonoBehaviour
     [Header("Completed Transition Timing")]
     [SerializeField] private float completedHoldDuration = 1.0f;
 
-    [Header("Localization")]
-    [SerializeField] private int localizationJsonId = 15;
-    [SerializeField] private int cutTreeTitleId = 1;
-    [SerializeField] private int fillContainerTitleId = 2;
-    [SerializeField] private int fillContainerDescId = 3;
-    [SerializeField] private int goHomeTitleId = 4;
-    [SerializeField] private int putItemsTitleId = 5;
-    [SerializeField] private int receiveMoneyTitleId = 6;
-    [SerializeField] private int upgradeAxeTitleId = 7;
+
 
     // 내부 의존성
     private const float HiddenBGWidth = 0f;
@@ -64,6 +56,7 @@ public class UI_TutorialQuest : MonoBehaviour
     private Action cachedRefreshLocalizedTexts;
 
     private TutorialQuestBGPiece[] bgPieces = Array.Empty<TutorialQuestBGPiece>();
+    private int activeBGCount = 1;
 
     private Sequence showSequence;
     private Sequence hideSequence;
@@ -193,6 +186,18 @@ public class UI_TutorialQuest : MonoBehaviour
                     PlayShowQuest();
                 }
                 break;
+
+            case TutorialStep.StartNewLogging:
+                if (bIsShowing)
+                {
+                    PlayStepTransition(GetStartNewLoggingTitle(), string.Empty);
+                }
+                else
+                {
+                    SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
+                    PlayShowQuest();
+                }
+                break;
         }
     }
 
@@ -205,6 +210,7 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.PutItemsInLogContainer:
             case TutorialStep.ReceiveMoney:
             case TutorialStep.UpgradeAxe:
+            case TutorialStep.StartNewLogging:
                 if (bIsShowing)
                 {
                     PlayCompleteAndHide();
@@ -245,6 +251,9 @@ public class UI_TutorialQuest : MonoBehaviour
                 break;
             case TutorialStep.UpgradeAxe:
                 SetQuestContent(GetUpgradeAxeTitle(), string.Empty);
+                break;
+            case TutorialStep.StartNewLogging:
+                SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
                 break;
         }
     }
@@ -379,6 +388,23 @@ public class UI_TutorialQuest : MonoBehaviour
             {
                 textContainer.localScale = startScale;
             }
+
+            if (bgPieces.Length > 1)
+            {
+                if (activeBGCount >= 2)
+                {
+                    SetGraphicAlpha(bgPieces[1].graphic, bgPieces[1].targetAlpha);
+                    DOTween.To(() => GetBGPieceWidth(bgPieces[1]), w => SetBGPieceWidth(bgPieces[1], w), bgTargetWidth > 0f ? bgTargetWidth : bgPieces[1].targetWidth, scaleDuration).SetEase(bgOpenEase).SetLink(gameObject);
+                }
+                else
+                {
+                    DOTween.To(() => GetBGPieceWidth(bgPieces[1]), w => SetBGPieceWidth(bgPieces[1], w), HiddenBGWidth, 0.15f).SetEase(bgCloseEase).SetLink(gameObject).OnComplete(() =>
+                    {
+                        if (activeBGCount < 2)
+                            SetGraphicAlpha(bgPieces[1].graphic, 0f);
+                    });
+                }
+            }
         });
 
         // 5. 다음 퀘스트 텍스트 스케일 바운스 & 페이드인 등장 연출
@@ -456,6 +482,8 @@ public class UI_TutorialQuest : MonoBehaviour
         {
             questDescText.text = _desc;
         }
+
+        activeBGCount = _hasDesc ? Mathf.Min(2, bgPieces.Length) : Mathf.Min(1, bgPieces.Length);
     }
 
     private void PrepareShowState()
@@ -465,7 +493,14 @@ public class UI_TutorialQuest : MonoBehaviour
             for (int i = 0; i < bgPieces.Length; i++)
             {
                 SetBGPieceWidth(bgPieces[i], HiddenBGWidth);
-                SetGraphicAlpha(bgPieces[i].graphic, useBgFadeIn ? 0f : bgPieces[i].targetAlpha);
+                if (i < activeBGCount)
+                {
+                    SetGraphicAlpha(bgPieces[i].graphic, useBgFadeIn ? 0f : bgPieces[i].targetAlpha);
+                }
+                else
+                {
+                    SetGraphicAlpha(bgPieces[i].graphic, 0f);
+                }
             }
         }
         else if (null != bgRoot)
@@ -522,7 +557,8 @@ public class UI_TutorialQuest : MonoBehaviour
                 bgOpenDuration).SetEase(Ease.Linear));
         }
 
-        for (int i = 0; i < bgPieces.Length; i++)
+        int _count = Mathf.Clamp(activeBGCount, 1, bgPieces.Length);
+        for (int i = 0; i < _count; i++)
         {
             TutorialQuestBGPiece _piece = bgPieces[i];
             float _width = bgTargetWidth > 0f ? bgTargetWidth : _piece.targetWidth;
@@ -532,6 +568,12 @@ public class UI_TutorialQuest : MonoBehaviour
                 w => SetBGPieceWidth(_piece, w),
                 _width,
                 bgOpenDuration).SetEase(bgOpenEase));
+        }
+
+        for (int i = _count; i < bgPieces.Length; i++)
+        {
+            SetBGPieceWidth(bgPieces[i], HiddenBGWidth);
+            SetGraphicAlpha(bgPieces[i].graphic, 0f);
         }
     }
 
@@ -546,7 +588,8 @@ public class UI_TutorialQuest : MonoBehaviour
                 bgCloseDuration).SetEase(Ease.Linear));
         }
 
-        for (int i = 0; i < bgPieces.Length; i++)
+        int _count = Mathf.Clamp(activeBGCount, 1, bgPieces.Length);
+        for (int i = 0; i < _count; i++)
         {
             TutorialQuestBGPiece _piece = bgPieces[i];
             float _pieceTime = _startOffset + _piece.delay;
@@ -573,9 +616,10 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (bgPieces.Length <= 0) return;
 
-        for (int i = 0; i < bgPieces.Length; i++)
+        int _count = Mathf.Clamp(activeBGCount, 1, bgPieces.Length);
+        for (int i = 0; i < _count; i++)
         {
-            bgPieces[i].delay = (bgPieces.Length - 1 - i) * bgPieceStaggerDelay;
+            bgPieces[i].delay = (_count - 1 - i) * bgPieceStaggerDelay;
         }
     }
 
@@ -665,9 +709,14 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private void SetBGPiecesAlpha(float _ratio)
     {
-        for (int i = 0; i < bgPieces.Length; i++)
+        int _count = Mathf.Clamp(activeBGCount, 1, bgPieces.Length);
+        for (int i = 0; i < _count; i++)
         {
             SetGraphicAlpha(bgPieces[i].graphic, bgPieces[i].targetAlpha * _ratio);
+        }
+        for (int i = _count; i < bgPieces.Length; i++)
+        {
+            SetGraphicAlpha(bgPieces[i].graphic, 0f);
         }
     }
 
@@ -756,7 +805,7 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (null != localizationManager)
         {
-            string _text = localizationManager.GetText(localizationJsonId, cutTreeTitleId);
+            string _text = localizationManager.GetText("CutTree_Title");
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "나무를 벌목하세요";
@@ -766,7 +815,7 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (null != localizationManager)
         {
-            string _text = localizationManager.GetText(localizationJsonId, fillContainerTitleId);
+            string _text = localizationManager.GetText("FillOffroadContainer_Title");
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "마을로 가져갈 원목을 운반 상자에 넣으세요!";
@@ -776,7 +825,7 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (null != localizationManager)
         {
-            string _text = localizationManager.GetText(localizationJsonId, fillContainerDescId);
+            string _text = localizationManager.GetText("FillOffroadContainer_Desc");
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "넣지 않은 원목은 숲을 떠날 때 사라집니다.";
@@ -786,7 +835,7 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (null != localizationManager)
         {
-            string _text = localizationManager.GetText(localizationJsonId, goHomeTitleId);
+            string _text = localizationManager.GetText("GoHomeBeforeExhausted_Title");
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "탈진하기 전에 마을로 돌아가세요!";
@@ -796,7 +845,7 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (null != localizationManager)
         {
-            string _text = localizationManager.GetText(localizationJsonId, putItemsTitleId);
+            string _text = localizationManager.GetText("PutItemsInLogContainer_Title");
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "가져온 원목을 제재소 원목 보관함에 넣으세요";
@@ -806,7 +855,7 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (null != localizationManager)
         {
-            string _text = localizationManager.GetText(localizationJsonId, receiveMoneyTitleId);
+            string _text = localizationManager.GetText("ReceiveMoney_Title");
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "정산된 금액을 받아가세요!";
@@ -816,10 +865,20 @@ public class UI_TutorialQuest : MonoBehaviour
     {
         if (null != localizationManager)
         {
-            string _text = localizationManager.GetText(localizationJsonId, upgradeAxeTitleId);
+            string _text = localizationManager.GetText("UpgradeAxe_Title");
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "도끼를 강화하세요.";
+    }
+
+    private string GetStartNewLoggingTitle()
+    {
+        if (null != localizationManager)
+        {
+            string _text = localizationManager.GetText("StartNewLogging_Title");
+            if (false == string.IsNullOrEmpty(_text)) return _text;
+        }
+        return "새로운 벌목을 시작하세요!";
     }
 
     // 유니티 이벤트 함수
