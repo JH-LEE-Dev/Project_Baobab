@@ -30,16 +30,25 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     private ICharacter character;
 
+    private ITilemapDataProvider tilemapDataProvider;
+    // 물 타일 폴백 시 "몇 월드 유닛 = 1타일"인지 알아야 해서, 실제 그리드 셀 크기를 한 번만 계산해 캐싱한다.
+    // Initialize() 시점엔 아직 던전 타일맵이 생성되기 전이라 여기서는 측정할 수 없고, 나무가 실제로
+    // 존재하는(= 맵 생성이 끝난) SpawnLogItem 최초 호출 시점에 지연 계산한다.
+    private float tileWorldSize = 1f;
+    private bool tileWorldSizeMeasured = false;
+
     private VFXComponent vfxComponent;
 
     [Header("Skill Attribute")]
     private float jackPotChance = 0f;
     private float jackPotAmount = 2f;
 
-    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character)
+    public void Initialize(IInventoryChecker _inventoryChecker, ICharacter _character, ITilemapDataProvider _tilemapDataProvider)
     {
         inventoryChecker = _inventoryChecker;
         character = _character;
+        tilemapDataProvider = _tilemapDataProvider;
+        tileWorldSizeMeasured = false;
 
         vfxComponent = GetComponent<VFXComponent>();
         vfxComponent.Initialize();
@@ -322,6 +331,11 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
 
     public void SpawnLogItem(TreeObj _treeObj, float _multiplier)
     {
+        if (!tileWorldSizeMeasured)
+        {
+            MeasureTileWorldSize();
+        }
+
         TreeData treeData = _treeObj.treeData;
         LogDropProbData dropProbData = GetDropProbData(treeData.grade);
 
@@ -353,12 +367,35 @@ public class LogItemController : MonoBehaviour, ILogItemControllerCH
             float randomDist = UnityEngine.Random.Range(1.25f, 1.75f);
             Vector3 endPos = startPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * randomDist;
 
+            // 물 타일에 착지하면 캐릭터가 접근할 수 없다. 나무 위치에 그대로 겹쳐 떨어지면 부자연스러우니,
+            // 같은 방향으로 1타일 이내까지만 당겨서 한 번 더 확인하고, 그마저도 물이면 그때만 나무 위치로 대체한다
+            if (tilemapDataProvider != null && tilemapDataProvider.IsWaterTile(tilemapDataProvider.WorldToCell(endPos)))
+            {
+                float pulledDist = Mathf.Min(randomDist, tileWorldSize * 0.9f);
+                Vector3 pulledPos = startPos + new Vector3(randomDir.x, randomDir.y * 0.5f, 0) * pulledDist;
+
+                endPos = tilemapDataProvider.IsWaterTile(tilemapDataProvider.WorldToCell(pulledPos)) ? spawnPos : pulledPos;
+            }
+
             float height = UnityEngine.Random.Range(0.75f, 1.25f);
 
             float randomRotation = UnityEngine.Random.Range(1, 3) * 360f * (UnityEngine.Random.value > 0.5f ? 1f : -1f);
 
             logItem.Launch(startPos, endPos, height, randomRotation);
         }
+    }
+
+    // Initialize() 시점엔 던전 타일맵이 아직 생성 전이라 측정이 불가능하므로, 나무가 실제로 존재하는
+    // (= 맵 생성이 끝난) 첫 SpawnLogItem 호출 시점에 한 번만 측정해 캐싱한다.
+    private void MeasureTileWorldSize()
+    {
+        tileWorldSizeMeasured = true;
+
+        if (tilemapDataProvider == null) return;
+
+        Vector3Int originCell = tilemapDataProvider.WorldToCell(Vector3.zero);
+        float measuredSize = Vector3.Distance(tilemapDataProvider.CellToWorld(originCell), tilemapDataProvider.CellToWorld(originCell + Vector3Int.right));
+        if (measuredSize > 0f) tileWorldSize = measuredSize;
     }
 
     private LogDropProbData GetDropProbData(TreeGrade _grade)

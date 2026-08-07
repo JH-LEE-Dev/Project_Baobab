@@ -14,5 +14,8 @@ public class MainMenuUIManager : UIManager
     {
         if (view is UIView_MainMenu mainMenuUI)
             mainMenuUI.DependencyInjection(saveSystem);
+
+        if (view is UIView_CursorBox cursorBoxUI)
+            viewCtx.SetCursorBoxUI(cursorBoxUI);
     }
 }
