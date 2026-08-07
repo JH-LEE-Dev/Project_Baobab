@@ -8,6 +8,7 @@ public enum TutorialStep
     PutItemsInLogContainer,
     ReceiveMoney,
     UpgradeAxe,
+    StartNewLogging,
 }
 
 // MainMenu → Dungeon 튜토리얼: 인트로 연출(로고 → 하차 → HUD 복귀)이 전부 끝난 시점.

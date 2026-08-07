@@ -50,11 +50,12 @@ public class UI_TutorialQuest : MonoBehaviour
     [SerializeField] private int localizationJsonId = 15;
     [SerializeField] private int cutTreeTitleId = 1;
     [SerializeField] private int fillContainerTitleId = 2;
-    [SerializeField] private int goHomeTitleId = 3;
-    [SerializeField] private int goHomeDescId = 4;
+    [SerializeField] private int fillContainerDescId = 3;
+    [SerializeField] private int goHomeTitleId = 4;
     [SerializeField] private int putItemsTitleId = 5;
     [SerializeField] private int receiveMoneyTitleId = 6;
     [SerializeField] private int upgradeAxeTitleId = 7;
+    [SerializeField] private int startNewLoggingTitleId = 8;
 
     // 내부 의존성
     private const float HiddenBGWidth = 0f;
@@ -128,11 +129,11 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.FillOffroadContainer:
                 if (bIsShowing)
                 {
-                    PlayStepTransition(GetFillContainerTitle(), string.Empty);
+                    PlayStepTransition(GetFillContainerTitle(), GetFillContainerDesc());
                 }
                 else
                 {
-                    SetQuestContent(GetFillContainerTitle(), string.Empty);
+                    SetQuestContent(GetFillContainerTitle(), GetFillContainerDesc());
                     PlayShowQuest();
                 }
                 break;
@@ -140,11 +141,11 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.GoHomeBeforeExhausted:
                 if (bIsShowing)
                 {
-                    PlayStepTransition(GetGoHomeTitle(), GetGoHomeDesc());
+                    PlayStepTransition(GetGoHomeTitle(), string.Empty);
                 }
                 else
                 {
-                    SetQuestContent(GetGoHomeTitle(), GetGoHomeDesc());
+                    SetQuestContent(GetGoHomeTitle(), string.Empty);
                     PlayShowQuest();
                 }
                 break;
@@ -184,6 +185,18 @@ public class UI_TutorialQuest : MonoBehaviour
                     PlayShowQuest();
                 }
                 break;
+
+            case TutorialStep.StartNewLogging:
+                if (bIsShowing)
+                {
+                    PlayStepTransition(GetStartNewLoggingTitle(), string.Empty);
+                }
+                else
+                {
+                    SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
+                    PlayShowQuest();
+                }
+                break;
         }
     }
 
@@ -196,6 +209,7 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.PutItemsInLogContainer:
             case TutorialStep.ReceiveMoney:
             case TutorialStep.UpgradeAxe:
+            case TutorialStep.StartNewLogging:
                 if (bIsShowing)
                 {
                     PlayCompleteAndHide();
@@ -223,10 +237,10 @@ public class UI_TutorialQuest : MonoBehaviour
                 SetQuestContent(GetCutTreeTitle(), string.Empty);
                 break;
             case TutorialStep.FillOffroadContainer:
-                SetQuestContent(GetFillContainerTitle(), string.Empty);
+                SetQuestContent(GetFillContainerTitle(), GetFillContainerDesc());
                 break;
             case TutorialStep.GoHomeBeforeExhausted:
-                SetQuestContent(GetGoHomeTitle(), GetGoHomeDesc());
+                SetQuestContent(GetGoHomeTitle(), string.Empty);
                 break;
             case TutorialStep.PutItemsInLogContainer:
                 SetQuestContent(GetPutItemsTitle(), string.Empty);
@@ -236,6 +250,9 @@ public class UI_TutorialQuest : MonoBehaviour
                 break;
             case TutorialStep.UpgradeAxe:
                 SetQuestContent(GetUpgradeAxeTitle(), string.Empty);
+                break;
+            case TutorialStep.StartNewLogging:
+                SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
                 break;
         }
     }
@@ -740,6 +757,16 @@ public class UI_TutorialQuest : MonoBehaviour
         return "마을로 가져갈 원목을 운반 상자에 넣으세요!";
     }
 
+    private string GetFillContainerDesc()
+    {
+        if (null != localizationManager)
+        {
+            string _text = localizationManager.GetText(localizationJsonId, fillContainerDescId);
+            if (false == string.IsNullOrEmpty(_text)) return _text;
+        }
+        return "넣지 않은 원목은 숲을 떠날 때 사라집니다.";
+    }
+
     private string GetGoHomeTitle()
     {
         if (null != localizationManager)
@@ -748,16 +775,6 @@ public class UI_TutorialQuest : MonoBehaviour
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "탈진하기 전에 마을로 돌아가세요!";
-    }
-
-    private string GetGoHomeDesc()
-    {
-        if (null != localizationManager)
-        {
-            string _text = localizationManager.GetText(localizationJsonId, goHomeDescId);
-            if (false == string.IsNullOrEmpty(_text)) return _text;
-        }
-        return "피로도가 20% 아래로 내려가면 탈진할 수 있습니다.";
     }
 
     private string GetPutItemsTitle()
@@ -788,6 +805,16 @@ public class UI_TutorialQuest : MonoBehaviour
             if (false == string.IsNullOrEmpty(_text)) return _text;
         }
         return "도끼를 강화하세요.";
+    }
+
+    private string GetStartNewLoggingTitle()
+    {
+        if (null != localizationManager)
+        {
+            string _text = localizationManager.GetText(localizationJsonId, startNewLoggingTitleId);
+            if (false == string.IsNullOrEmpty(_text)) return _text;
+        }
+        return "새로운 벌목을 시작하세요!";
     }
 
     // 유니티 이벤트 함수
