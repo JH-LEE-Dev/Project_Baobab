@@ -185,7 +185,7 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             return;
         }
 
-        Debug.Log("[BootStrap] GoToMainMenuScene 요청 수신 - 씬 전환을 시작합니다.");
+        Debug.Log($"[BootStrap] GoToMainMenuScene 요청 수신 - 현재 씬={currentSceneType}, 씬 전환을 시작합니다.");
 
         TryBeginTransition(SceneType.MainMenu);
     }
@@ -249,6 +249,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
 
     private System.Collections.IEnumerator TransitionToScene(SceneType _sceneType)
     {
+        // 각 구간의 실제 소요 시간을 남긴다. "멈췄다"는 제보가 실제로는 "매우 느리다"인 경우를
+        // 로그만으로 구분하기 위해서다(먹통 상태에서 CPU를 확인해달라고 부탁하지 않아도 된다).
+        System.Diagnostics.Stopwatch _swTotal = System.Diagnostics.Stopwatch.StartNew();
+
         try
         {
             // 1. 전환 로직 시작
@@ -267,6 +271,10 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                     // DOTween이 세이프 모드(useSafeMode)로 콜백 예외를 삼켜버리기 때문에, 예전엔 여기서
                     // 예외가 나면 ChangeSceneAsync에 도달하지 못한 채 원인도 남지 않고 조용히 멈췄다.
                     // (연출은 정상적으로 끝났는데 메인 메뉴가 영영 뜨지 않는 증상)
+                    // 멈춤 지점 추적용 흔적. 아래 "해제 완료"가 안 찍히면 Release() 안에서 멈춘 것이다.
+                    Debug.Log("[BootStrap] gameInstaller.Release() 시작");
+                    System.Diagnostics.Stopwatch _swRelease = System.Diagnostics.Stopwatch.StartNew();
+
                     try
                     {
                         gameInstaller.Release();
@@ -278,16 +286,40 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                         Debug.LogException(e);
                     }
 
+                    Debug.Log($"[BootStrap] gameInstaller.Release() 완료 ({_swRelease.ElapsedMilliseconds}ms)");
+
                     gameInstaller = null;
                 }
             }
 
             // 2. 비동기 씬 로드
+            Debug.Log($"[BootStrap] ChangeSceneAsync({_sceneType}) 호출 (요청 후 {_swTotal.ElapsedMilliseconds}ms)");
             AsyncOperation asyncLoad = sceneManager.ChangeSceneAsync(_sceneType);
+
+            // 여기까지가 카메라 연출의 DOTween 콜백 안에서 동기 실행되는 구간이다.
+            // 이 다음 로그가 찍혔다는 건 프레임이 정상적으로 끝났다는 뜻이고, 곧 프레임 끝에 밀려 있던
+            // GameInstaller 계층의 지연 파괴(Destroy)까지 통과했다는 의미다.
+            // 반대로 이 로그가 없으면 멈춤은 "프레임 종료 처리" 안에 있다.
+            yield return null;
+            Debug.Log($"[BootStrap] 첫 프레임 통과 - 지연 파괴 처리 완료 ({_swTotal.ElapsedMilliseconds}ms)");
+
             if (asyncLoad != null)
             {
-                while (!asyncLoad.isDone) yield return null;
+                // 로드가 느리게라도 진행 중인지, 특정 지점에서 멈춰 있는지 구분하기 위해 1초마다 진행률을 남긴다.
+                float _nextReportSec = 1f;
+                while (!asyncLoad.isDone)
+                {
+                    if (_swTotal.Elapsed.TotalSeconds >= _nextReportSec)
+                    {
+                        Debug.Log($"[BootStrap] 씬 로드 대기 중... progress={asyncLoad.progress:F2} " +
+                            $"({_swTotal.ElapsedMilliseconds}ms 경과)");
+                        _nextReportSec += 1f;
+                    }
+
+                    yield return null;
+                }
             }
+            Debug.Log($"[BootStrap] 씬 로드 완료({_sceneType}) - 전환 시작부터 {_swTotal.ElapsedMilliseconds}ms");
 
             // 3. 시스템 초기화 대기 (OnSceneLoaded 실행을 위해 1프레임 + 여유 시간)
             yield return null;
@@ -371,7 +403,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         else
         {
             // 이어하기 버튼 상태(HasSaveData)를 UI가 확인하기 전에 클라우드 세이브를 로컬로 먼저 반영한다.
+            // SyncCloudSaveIfNewer()는 Steam Remote Storage를 동기로 호출하므로, 멈춤 지점을 가리기 위해
+            // 앞뒤로 흔적을 남긴다. "시작"만 찍히고 "완료"가 없으면 여기서 블로킹된 것이다.
+            Debug.Log("[BootStrap] SyncCloudSaveIfNewer 시작");
             saveManager?.SyncCloudSaveIfNewer();
+            Debug.Log("[BootStrap] SyncCloudSaveIfNewer 완료");
+
             SetupMainMenuScene();
         }
     }

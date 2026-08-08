@@ -188,6 +188,12 @@ public class GameInstaller : MonoBehaviour
     /// </summary>
     private void SafeRelease(string _stepName, Action _step)
     {
+        // 멈춤(무한 루프/블로킹) 지점을 특정하기 위한 진입 흔적.
+        // 에디터가 먹통이 됐을 때 Editor.log에 마지막으로 남은 이 로그가 곧 범인 단계다.
+        // 씬 전환당 한 번씩만 찍히므로 로그 부담은 없다.
+        Debug.Log($"[GameInstaller] Release 단계 진입: {_stepName}");
+        System.Diagnostics.Stopwatch _sw = System.Diagnostics.Stopwatch.StartNew();
+
         try
         {
             _step();
@@ -196,6 +202,12 @@ public class GameInstaller : MonoBehaviour
         {
             Debug.LogError($"[GameInstaller] Release 단계 '{_stepName}'에서 예외가 발생했습니다. 나머지 해제는 계속 진행합니다.");
             Debug.LogException(e);
+        }
+
+        // 정상 종료라도 오래 걸린 단계는 남긴다. 멈춘 게 아니라 느린 경우를 잡기 위해서다.
+        if (_sw.ElapsedMilliseconds >= 50)
+        {
+            Debug.LogWarning($"[GameInstaller] Release 단계 '{_stepName}'가 {_sw.ElapsedMilliseconds}ms 걸렸습니다.");
         }
     }
 
