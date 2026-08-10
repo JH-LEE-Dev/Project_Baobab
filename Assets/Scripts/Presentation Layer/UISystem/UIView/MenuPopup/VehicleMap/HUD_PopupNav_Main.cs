@@ -1087,6 +1087,10 @@ public class HUD_PopupNav_Main : MonoBehaviour
     {
         if (null != demoNotice)
         {
+            if (null != cursorBoxUI)
+            {
+                cursorBoxUI.HideImmediately();
+            }
             demoNotice.ShowDemoNoticeOverlay(_restrictedMapType);
         }
     }

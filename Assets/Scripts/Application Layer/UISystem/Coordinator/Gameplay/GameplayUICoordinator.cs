@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using PresentationLayer.UISystem.CustomNumber;
 
 public class GameplayUICoordinator
 {
@@ -467,6 +468,7 @@ public class GameplayUICoordinator
         hudUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         popUpUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
         worldPopupUI.SetCurrentMapType(MapType.Town, ForestType.InTown);
+        CurrencyFontHUD.SetGlobalMapType(MapType.Town);
 
         bInventoryOpened = false;
         bIsTutorialQuestHiding = false;
@@ -486,6 +488,7 @@ public class GameplayUICoordinator
         hudUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         popUpUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
         worldPopupUI.SetCurrentMapType(decareDungeonTypeSignal.mapType, decareDungeonTypeSignal.forestType);
+        CurrencyFontHUD.SetGlobalMapType(decareDungeonTypeSignal.mapType);
 
         resultUI.DungeonStarted();
 

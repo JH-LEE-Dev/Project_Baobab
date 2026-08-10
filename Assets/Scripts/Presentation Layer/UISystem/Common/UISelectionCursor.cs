@@ -78,7 +78,7 @@ public class UISelectionCursor : MonoBehaviour
 
     public void Initialize(Vector2 _cursorSize)
     {
-        cursorSize = _cursorSize;
+        cursorSize = new Vector2(Mathf.Round(_cursorSize.x), Mathf.Round(_cursorSize.y));
         activeMotionSettings = motionSettings;
         CacheReferences();
         ApplySize();
@@ -95,7 +95,7 @@ public class UISelectionCursor : MonoBehaviour
         if (null == _target)
             return;
 
-        cursorSize = _size;
+        cursorSize = new Vector2(Mathf.Round(_size.x), Mathf.Round(_size.y));
         CacheReferences();
         if (null == rootRectTransform)
             return;
@@ -112,14 +112,14 @@ public class UISelectionCursor : MonoBehaviour
 
     public void ShowAtAnchoredPosition(Vector2 _anchoredPosition, Vector2 _size, CursorMotionSettings _customMotion = null)
     {
-        cursorSize = _size;
+        cursorSize = new Vector2(Mathf.Round(_size.x), Mathf.Round(_size.y));
         CacheReferences();
         if (null == rootRectTransform)
             return;
 
         StopAndResetAllMotions();
 
-        currentAnchoredPosition = _anchoredPosition;
+        currentAnchoredPosition = GetPixelPerfectPosition(_anchoredPosition, cursorSize);
         rootRectTransform.anchoredPosition = currentAnchoredPosition;
         rootRectTransform.SetAsLastSibling();
         ApplySize();
@@ -134,11 +134,22 @@ public class UISelectionCursor : MonoBehaviour
 
     public void SetAnchoredPosition(Vector2 _anchoredPosition)
     {
-        currentAnchoredPosition = _anchoredPosition;
+        currentAnchoredPosition = GetPixelPerfectPosition(_anchoredPosition, cursorSize);
         if (null != rootRectTransform)
         {
             rootRectTransform.anchoredPosition = currentAnchoredPosition;
         }
+    }
+
+    private Vector2 GetPixelPerfectPosition(Vector2 _pos, Vector2 _size)
+    {
+        int sizeX = Mathf.RoundToInt(_size.x);
+        int sizeY = Mathf.RoundToInt(_size.y);
+
+        float snapX = (sizeX % 2 == 0) ? Mathf.Round(_pos.x) : Mathf.Floor(_pos.x) + 0.5f;
+        float snapY = (sizeY % 2 == 0) ? Mathf.Round(_pos.y) : Mathf.Floor(_pos.y) + 0.5f;
+
+        return new Vector2(snapX, snapY);
     }
 
     public void Hide()
