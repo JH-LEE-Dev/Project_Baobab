@@ -122,6 +122,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     // 상태 변수
     private bool isUnlockingProductionActive = false;
+    private bool hasPlayedUnlockStartSound = false;
     private bool isClosing = false;
     private bool isInputBlocked = false;
     private ForestType currentSelectedForestType = ForestType.None;
@@ -176,8 +177,20 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (false == isUnlockingProductionActive)
         {
             isUnlockingProductionActive = true;
+            hasPlayedUnlockStartSound = false;
             OnUnlockProductionStarted?.Invoke();
         }
+    }
+
+    public void PlayUnlockStartSoundIfNeeded()
+    {
+        if (false == isUnlockingProductionActive || true == hasPlayedUnlockStartSound)
+        {
+            return;
+        }
+
+        hasPlayedUnlockStartSound = true;
+        Sound.PlayUI(SoundID.NaviUnLockStart);
     }
 
     private void EndUnlockProduction()

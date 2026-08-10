@@ -517,6 +517,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             unlockTween = null;
         }
 
+        if (null != mainController)
+        {
+            mainController.PlayUnlockStartSoundIfNeeded();
+        }
+
         Sequence _seq = DOTween.Sequence();
         bool _isFastMode = 1.0f < _speedRate;
         float _timeScale = 1.0f / _speedRate;
@@ -748,6 +753,9 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     private void PlayUnlockParticle()
     {
+        Sound.PlayUI(SoundID.NaviUnLock);
+        Sound.PlayUI(SoundID.NaviUnLockEX);
+
         if (null != unlockDestructionParticle)
         {
             unlockDestructionParticle.Play();

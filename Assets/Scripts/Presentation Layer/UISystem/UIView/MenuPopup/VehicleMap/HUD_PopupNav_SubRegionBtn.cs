@@ -636,6 +636,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             unlockTween = null;
         }
 
+        if (null != mainController)
+        {
+            mainController.PlayUnlockStartSoundIfNeeded();
+        }
+
         Sequence _seq = DOTween.Sequence();
 
         if (null != lockIconObj && true == lockIconObj.activeSelf)
@@ -810,6 +815,9 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
     private void PlayUnlockParticle()
     {
+        Sound.PlayUI(SoundID.NaviUnLock);
+        Sound.PlayUI(SoundID.NaviUnLockEX);
+
         if (null != unlockDestructionParticle)
         {
             unlockDestructionParticle.Play();
