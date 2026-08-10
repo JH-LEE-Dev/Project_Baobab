@@ -91,7 +91,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a0a2d98a534e16408e1abd00a447320, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OffroadContainer
-  logItemTypeDataBase: {fileID: 0}
+  logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
   currentSlotCount: 2
   maxItemsPerSlot: 5
   inventorySlots: []
