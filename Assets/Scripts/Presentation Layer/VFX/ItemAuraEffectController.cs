@@ -51,6 +51,11 @@ public class ItemAuraEffectController : MonoBehaviour
     private float elapsedTime = 0f;
     private bool isPlaying = false;
 
+    /// <summary>
+    /// 인스펙터에 세팅된 단발성 버스트의 재생 시간(수명)입니다.
+    /// </summary>
+    public float BurstDuration => burstDuration;
+
     // 셰이더 프로퍼티 ID 캐싱
     private static readonly int IntensityPropertyId = Shader.PropertyToID("_Intensity");
     private static readonly int BloomMultiplierPropertyId = Shader.PropertyToID("_BloomMultiplier");
@@ -176,6 +181,18 @@ public class ItemAuraEffectController : MonoBehaviour
         beamBlur = _blur;
         overrideRaySettings = true;
         ApplyRayOverrides();
+    }
+
+    /// <summary>
+    /// 실시간으로 렌더러의 소팅 오더를 변경합니다 (소팅 레이어는 그대로 유지).
+    /// </summary>
+    public void SetSortingOrder(int _order)
+    {
+        EnsurePropertyBlock();
+        if (null != targetRenderer)
+        {
+            targetRenderer.sortingOrder = _order;
+        }
     }
 
     /// <summary>
