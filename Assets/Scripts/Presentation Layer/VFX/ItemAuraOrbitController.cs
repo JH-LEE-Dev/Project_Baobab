@@ -149,6 +149,30 @@ public class ItemAuraOrbitController : MonoBehaviour
         UpdateBloomSettings();
         SetVisualsActive(true);
         isPlaying = true;
+
+        // 트레일 꼬리 끌림(Streak) 방지를 위해 1프레임 뒤 트레일 완전 초기화
+        StartCoroutine(DelayedClearTrailsCoroutine());
+    }
+
+    private System.Collections.IEnumerator DelayedClearTrailsCoroutine()
+    {
+        yield return null; // 1프레임 대기 (트랜스폼 업데이트 및 TrailRenderer 초기화 대기)
+        
+        for (int i = 0; i < activeSatellites.Count; i++)
+        {
+            var sat = activeSatellites[i];
+            if (sat != null && sat.trailPool != null)
+            {
+                for (int t = 0; t < sat.trailPool.Length; t++)
+                {
+                    if (sat.trailPool[t] != null)
+                    {
+                        sat.trailPool[t].Clear();
+                        sat.trailPool[t].emitting = (t == sat.activeTrailIndex); // 트랜스폼 갱신이 완전히 끝난 뒤 방출 시작
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -450,7 +474,7 @@ public class ItemAuraOrbitController : MonoBehaviour
             TrailRenderer trail = trailObj.AddComponent<TrailRenderer>();
             ConfigureTrail(trail);
             trail.Clear();
-            trail.emitting = (t == 0); // 0번만 최초 방출 활성화
+            trail.emitting = false; // 1프레임 대기 후 코루틴에서 켬
 
             data.trailPool[t] = trail;
         }
@@ -484,7 +508,7 @@ public class ItemAuraOrbitController : MonoBehaviour
                 {
                     tr.transform.localPosition = pos;
                     tr.Clear();
-                    tr.emitting = (t == 0);
+                    tr.emitting = false; // 1프레임 대기 후 코루틴에서 켬
                 }
             }
             sat.activeTrailIndex = 0;
