@@ -26,6 +26,17 @@ namespace PresentationLayer.UISystem.CustomNumber
 
         private static float lastFontPopPlayedTime = float.NegativeInfinity;
 
+        // LogCutter.GetSoundVolume()과 동일한 규칙: 마을이 아니면(=던전에 있는 동안 배경에서 계속
+        // 진행되는 원격 입금 등으로 카운터가 갱신되는 상태) 폰트 팝 사운드도 재생하지 않는다.
+        // 이 HUD는 여러 화면(인벤토리/텐트/트레이더)에 흩어져 있고 사운드 재생 자체가 static
+        // 메서드이므로, 게이팅도 단일 static 값으로 관리해 GameplayUICoordinator 한 곳에서만 갱신한다.
+        private static MapType currentGlobalMapType = MapType.Town;
+
+        public static void SetGlobalMapType(MapType _mapType)
+        {
+            currentGlobalMapType = _mapType;
+        }
+
         private static readonly ulong[] SuffixDivisors =
         {
             1000UL,
@@ -660,6 +671,9 @@ namespace PresentationLayer.UISystem.CustomNumber
         private static void TryPlayFontPop()
         {
             if (false == Application.isPlaying)
+                return;
+
+            if (MapType.Town != currentGlobalMapType)
                 return;
 
             float _currentTime = Time.realtimeSinceStartup;
