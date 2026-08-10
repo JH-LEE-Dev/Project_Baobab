@@ -267,11 +267,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             if (null != activeSubRegionButtons[i])
             {
                 float _btnWidth = activeSubRegionButtons[i].GetActualVisualWidth();
-                cachedSafeDistances[i] = Mathf.Max(_btnWidth * minDistanceRatioX, minDistanceAbsoluteX);
+                cachedSafeDistances[i] = Mathf.Round(Mathf.Max(_btnWidth * minDistanceRatioX, minDistanceAbsoluteX));
             }
             else
             {
-                cachedSafeDistances[i] = minDistanceAbsoluteX;
+                cachedSafeDistances[i] = Mathf.Round(minDistanceAbsoluteX);
             }
             _totalRequiredSpace += cachedSafeDistances[i];
         }
