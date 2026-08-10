@@ -16,16 +16,7 @@ public class UISelectionCursor : MonoBehaviour
     [Header("Built-in Motion Settings")]
     [SerializeField] private CursorMotionSettings motionSettings = new CursorMotionSettings();
 
-    [Header("Legacy OMB Motion Settings (Fallback)")]
-    [SerializeField] private ObjectMotionPlayer motionPlayer;
-    [SerializeField] private string showMotionTag = "CursorShow";
-    [SerializeField] private string idleMotionTag = "CursorIdle";
-    [SerializeField] private string hideMotionTag = "CursorHide";
-
     private CanvasGroup canvasGroup;
-    private MotionEntry showMotionEntry;
-    private MotionEntry idleMotionEntry;
-    private MotionEntry hideMotionEntry;
 
     private Sequence showSequence;
     private Sequence idleSequence;
@@ -136,14 +127,7 @@ public class UISelectionCursor : MonoBehaviour
         int currentVersion = ++motionVersion;
         CursorMotionSettings activeSettings = null != _customMotion ? _customMotion : motionSettings;
 
-        if (null != motionPlayer && false == string.IsNullOrEmpty(showMotionTag))
-        {
-            PlayOMBShowMotion(currentVersion);
-        }
-        else
-        {
-            PlayBuiltInShowMotion(currentVersion, activeSettings);
-        }
+        PlayBuiltInShowMotion(currentVersion, activeSettings);
     }
 
     public void SetAnchoredPosition(Vector2 _anchoredPosition)
@@ -169,15 +153,7 @@ public class UISelectionCursor : MonoBehaviour
         }
         ApplySize();
 
-        if (null != motionPlayer && false == string.IsNullOrEmpty(hideMotionTag))
-        {
-            hideMotionVersion = currentVersion;
-            hideMotionEntry = motionPlayer.Play(hideMotionTag, _onComplete: CompleteHide, bReset: false);
-        }
-        else
-        {
-            PlayBuiltInHideMotion(currentVersion, motionSettings);
-        }
+        PlayBuiltInHideMotion(currentVersion, motionSettings);
     }
 
     public void HideImmediately()
@@ -335,53 +311,6 @@ public class UISelectionCursor : MonoBehaviour
 
     #endregion
 
-    #region Legacy OMB Motions (Fallback)
-
-    private void PlayOMBShowMotion(int _version)
-    {
-        gameObject.SetActive(true);
-        showMotionVersion = _version;
-        showMotionEntry = motionPlayer.Play(showMotionTag, _onComplete: PlayOMBIdleMotion, bReset: false);
-    }
-
-    private void PlayOMBIdleMotion()
-    {
-        PlayOMBIdleMotion(showMotionVersion);
-    }
-
-    private void PlayOMBIdleMotion(int _version)
-    {
-        if (_version != motionVersion)
-            return;
-
-        if (null == motionPlayer || true == string.IsNullOrEmpty(idleMotionTag) || false == gameObject.activeSelf)
-            return;
-
-        StopAndResetMotion(showMotionEntry);
-        rootRectTransform.anchoredPosition = currentAnchoredPosition;
-        ApplySize();
-        idleMotionEntry = motionPlayer.Play(idleMotionTag, bReset: false);
-    }
-
-    private void CompleteHide()
-    {
-        CompleteHide(hideMotionVersion);
-    }
-
-    private void CompleteHide(int _version)
-    {
-        if (_version != motionVersion)
-            return;
-
-        hideMotionEntry = null;
-        rootRectTransform.anchoredPosition = currentAnchoredPosition;
-        ApplySize();
-        SetAlpha(1f);
-        gameObject.SetActive(false);
-    }
-
-    #endregion
-
     #region Internal Helpers
 
     private void CacheReferences()
@@ -394,9 +323,6 @@ public class UISelectionCursor : MonoBehaviour
 
         if (null == canvasGroup)
             canvasGroup = GetComponent<CanvasGroup>();
-
-        if (null == motionPlayer)
-            motionPlayer = GetComponentInChildren<ObjectMotionPlayer>(true);
 
         InitCallbacks();
     }
@@ -416,10 +342,6 @@ public class UISelectionCursor : MonoBehaviour
     private void StopAndResetAllMotions()
     {
         KillAllSequences();
-
-        StopAndResetMotion(showMotionEntry);
-        StopAndResetMotion(idleMotionEntry);
-        StopAndResetMotion(hideMotionEntry);
 
         if (null != rootRectTransform)
         {
@@ -441,14 +363,6 @@ public class UISelectionCursor : MonoBehaviour
             _seq.Kill(false);
         }
         _seq = null;
-    }
-
-    private void StopAndResetMotion(MotionEntry _entry)
-    {
-        if (null == motionPlayer || null == _entry)
-            return;
-
-        motionPlayer.SettingEntryMotion(_entry, true, true);
     }
 
     private void SetAlpha(float _alpha)
