@@ -92,9 +92,6 @@ public class ItemAuraOrbitController : MonoBehaviour
     [Header("디버그")]
     [SerializeField] private bool showOnScreenDebugGui = false;
 
-    [Header("페이드 인 (등장 연출)")]
-    [SerializeField, Range(0.0f, 2.0f)] private float fadeInDuration = 0.1f;
-
     // NaughtyAttributes 조건자
     private bool IsHelicalScrewMode => trajectoryMode == OrbitTrajectoryMode.HelicalScrew;
 
@@ -108,7 +105,6 @@ public class ItemAuraOrbitController : MonoBehaviour
     private Transform trailRoot;
     private bool isPlaying = false;
     private bool isInitialized = false;
-    private float playTimer = 0f;
 
     private static readonly int CenterIntensityPropertyId = Shader.PropertyToID("_Intensity");
 
@@ -150,11 +146,33 @@ public class ItemAuraOrbitController : MonoBehaviour
             ResetAllSatellites();
         }
 
-        playTimer = 0f;
-
         UpdateBloomSettings();
         SetVisualsActive(true);
         isPlaying = true;
+
+        // 트레일 꼬리 끌림(Streak) 방지를 위해 1프레임 뒤 트레일 완전 초기화
+        StartCoroutine(DelayedClearTrailsCoroutine());
+    }
+
+    private System.Collections.IEnumerator DelayedClearTrailsCoroutine()
+    {
+        yield return null; // 1프레임 대기 (트랜스폼 업데이트 및 TrailRenderer 초기화 대기)
+        
+        for (int i = 0; i < activeSatellites.Count; i++)
+        {
+            var sat = activeSatellites[i];
+            if (sat != null && sat.trailPool != null)
+            {
+                for (int t = 0; t < sat.trailPool.Length; t++)
+                {
+                    if (sat.trailPool[t] != null)
+                    {
+                        sat.trailPool[t].Clear();
+                        sat.trailPool[t].emitting = (t == sat.activeTrailIndex); // 트랜스폼 갱신이 완전히 끝난 뒤 방출 시작
+                    }
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -441,7 +459,7 @@ public class ItemAuraOrbitController : MonoBehaviour
             TrailRenderer trail = trailObj.AddComponent<TrailRenderer>();
             ConfigureTrail(trail);
             trail.Clear();
-            trail.emitting = (t == 0); // 0번만 최초 방출 활성화
+            trail.emitting = false; // 1프레임 대기 후 코루틴에서 켬
 
             data.trailPool[t] = trail;
         }
@@ -475,7 +493,7 @@ public class ItemAuraOrbitController : MonoBehaviour
                 {
                     tr.transform.localPosition = pos;
                     tr.Clear();
-                    tr.emitting = (t == 0);
+                    tr.emitting = false; // 1프레임 대기 후 코루틴에서 켬
                 }
             }
             sat.activeTrailIndex = 0;
@@ -724,20 +742,6 @@ public class ItemAuraOrbitController : MonoBehaviour
         float time = Time.time;
         int count = activeSatellites.Count;
 
-        playTimer += dt;
-        float masterFade = (fadeInDuration > 0f) ? Mathf.Clamp01(playTimer / fadeInDuration) : 1f;
-
-        if (useCenterGlow && null != centerGlowObject)
-        {
-            SpriteRenderer csr = centerGlowObject.GetComponent<SpriteRenderer>();
-            if (csr != null)
-            {
-                Color c = csr.color;
-                c.a = masterFade;
-                csr.color = c;
-            }
-        }
-
         for (int i = 0; i < count; i++)
         {
             SatelliteData sat = activeSatellites[i];
@@ -801,7 +805,7 @@ public class ItemAuraOrbitController : MonoBehaviour
 
                 // 위성 HDR Bloom 컬러 및 3D Depth 스케일링
                 Color c = satelliteColor * satelliteBloomMultiplier;
-                c.a = satelliteColor.a * fade * masterFade;
+                c.a = satelliteColor.a * fade;
                 sat.spriteRenderer.color = c;
 
                 float scaleFactor = (1.0f + depthZ * depthScaleAmount) * fade;
@@ -820,7 +824,6 @@ public class ItemAuraOrbitController : MonoBehaviour
                 if (null != tr) tr.transform.localPosition = pos;
 
                 Color c = satelliteColor * satelliteBloomMultiplier;
-                c.a *= masterFade;
                 sat.spriteRenderer.color = c;
 
                 if (0.001f < depthScaleAmount)
