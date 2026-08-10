@@ -49,10 +49,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     [SerializeField] private float lostAndFoundBoxDropChanceIncreasePerKill = 0.005f;
     private int lostAndFoundBoxWideGreenTreeKillCount;
 
-    // [DEBUG] 임시 테스트용 - 켜두면 1스테이지(1-1~1-3) 어디서든 나무를 벨 때마다 전리품이 확률 무시하고
-    // 즉시 드랍된다. 작업 완료 후 반드시 false로 되돌리거나 이 블록을 제거할 것.
-    [SerializeField] private bool DEBUG_ForceStage1LootDrop = true;
-
     // "2-1"(FluffySporeForest_1) 구제(pity) 드랍 - "1-3"에서 못 얻었을 경우를 대비해, 이 스테이지에서
     // 나무를 min~max그루 베면 확률과 무관하게 무조건 드랍시킨다. 임계값은 스테이지 진입마다 다시 뽑는다.
     [SerializeField] private int lostAndFoundBoxPityMinKills = 4;
@@ -1002,15 +998,6 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
                 // "2-1" - "1-3"에서 못 얻었을 경우의 구제책. 나무 min~max그루째에 확률과 무관하게 보장 드랍.
                 lostAndFoundBoxPityTreeKillCount++;
                 bShouldSpawnLostAndFoundBox = lostAndFoundBoxPityTreeKillCount >= lostAndFoundBoxPityThreshold;
-            }
-
-            // [DEBUG] 임시 테스트용 - 1스테이지(1-1~1-3) 어디서든 확률 무시하고 즉시 드랍. 작업 후 제거할 것.
-            if (DEBUG_ForceStage1LootDrop &&
-                (currentForestType == ForestType.WideGreenForest_1 ||
-                 currentForestType == ForestType.WideGreenForest_2 ||
-                 currentForestType == ForestType.WideGreenForest_3))
-            {
-                bShouldSpawnLostAndFoundBox = true;
             }
 
             if (bShouldSpawnLostAndFoundBox)
