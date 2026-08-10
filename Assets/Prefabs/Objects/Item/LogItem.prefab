@@ -209,7 +209,7 @@ Transform:
   m_GameObject: {fileID: 4744639262904547207}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -0.2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -264,7 +264,7 @@ SpriteRenderer:
   m_SortingLayer: 7
   m_SortingOrder: 0
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -9045473120822325250, guid: e46a05ab65a75524c9d4bf121c804f1b, type: 3}
+  m_Sprite: {fileID: -6133725493358166398, guid: 04908f31946a9954b83cad9a062f1ef5, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -418,7 +418,11 @@ MonoBehaviour:
   color: {r: 0, g: 0, b: 0, a: 0}
   spriteRenderer: {fileID: 0}
   durability: 0
-  shadow: {fileID: 0}
+  shadow: {fileID: 4744639262904547207}
+  shadowSprite_Minus1: {fileID: 3262699988636807072, guid: 04908f31946a9954b83cad9a062f1ef5, type: 3}
+  shadowSprite_0: {fileID: -6133725493358166398, guid: 04908f31946a9954b83cad9a062f1ef5, type: 3}
+  shadowSprite_1: {fileID: -8461363764323684523, guid: 04908f31946a9954b83cad9a062f1ef5, type: 3}
+  shadowSprite_2Plus: {fileID: 6723388401076506186, guid: 04908f31946a9954b83cad9a062f1ef5, type: 3}
   outlineObj: {fileID: 4427381365519987007}
   outlineStencilSR: {fileID: 4172736323387572403}
   outlineSR: {fileID: 163953909001683204}

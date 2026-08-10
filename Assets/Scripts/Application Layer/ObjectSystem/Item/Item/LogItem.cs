@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class LogItem : Item, IStaticCollidable
@@ -81,6 +82,14 @@ public class LogItem : Item, IStaticCollidable
     private static readonly int UseFloatingPropertyID = Shader.PropertyToID("_UseFloating");
     private static readonly int FloatingOffsetPropertyID = Shader.PropertyToID("_FloatingOffset");
     private static readonly int ShinyEnabledPropertyID = Shader.PropertyToID("_ShinyEnabled");
+    private static readonly int ShadowFrameRect0PropertyID = Shader.PropertyToID("_ShadowFrameRect0");
+    private static readonly int ShadowFrameRect1PropertyID = Shader.PropertyToID("_ShadowFrameRect1");
+    private static readonly int ShadowFrameRect2PropertyID = Shader.PropertyToID("_ShadowFrameRect2");
+    private static readonly int ShadowFrameRect3PropertyID = Shader.PropertyToID("_ShadowFrameRect3");
+    private static readonly int ShadowHeightPixelsPropertyID = Shader.PropertyToID("_ShadowHeightPixels");
+    private static readonly int ShadowLocalOffsetPropertyID = Shader.PropertyToID("_ShadowLocalOffset");
+    // 그림자 프레임 Rect/오프셋은 같은 머티리얼을 쓰는 모든 LogItem에 동일하므로, 머티리얼당 1회만 구워두면 된다.
+    private static readonly HashSet<Material> initializedShadowMaterials = new HashSet<Material>();
 
     [SerializeField] private GameObject shadow;
     private Transform shadowTransform;
@@ -95,6 +104,8 @@ public class LogItem : Item, IStaticCollidable
     [SerializeField] private Sprite shadowSprite_1;
     [Tooltip("원목이 2 위치 이상에 있을 때(포물선 비행 중)")]
     [SerializeField] private Sprite shadowSprite_2Plus;
+    [Tooltip("포물선 비행 중 그림자 프레임 전환 폭(값이 클수록 정점 부근에서 3번 프레임을 더 오래 유지)")]
+    [SerializeField] private float shadowFlightPixelScale = 3f;
 
     // 착지하지 않고 공중에서 서서히 사라지는 연출(버려진 아이템 등) 관련 상태
     private bool bFadeAndVanish = false;
@@ -174,6 +185,8 @@ public class LogItem : Item, IStaticCollidable
             shadowRenderer = shadow.GetComponentInChildren<SpriteRenderer>();
         }
 
+        InitializeShadowFrames();
+
         if (objectsSortingLayerID == -1)
         {
             objectsSortingLayerID = SortingLayer.NameToID(objectsSortingLayerName);
@@ -203,8 +216,6 @@ public class LogItem : Item, IStaticCollidable
         originalColor = spriteRenderer.color;
         originalOutlineColor = outlineSR != null ? outlineSR.color : Color.white;
         originalShadowColor = shadowRenderer != null ? shadowRenderer.color : Color.white;
-
-        UpdateShadowFrame();
     }
 
     public void SetVfxComponent(VFXComponent _vfxComponent)
@@ -478,8 +489,6 @@ public class LogItem : Item, IStaticCollidable
                 UpdateDropped(_deltaTime);
                 break;
         }
-
-        UpdateShadowFrame();
 
         if (bDisableCustomSortable == false)
         {
@@ -1119,39 +1128,64 @@ public class LogItem : Item, IStaticCollidable
 
         float shadowScale = Mathf.Max(0.3f, 1f - (_heightOffset * 0.25f));
         shadowTransform.localScale = new Vector3(shadowScale, shadowScale, 1f);
+
+        // Dropped 상태에서는 그림자의 높이-프레임 판정(둥둥 뜨는 움직임 포함)이 Shadow_LogItem 셰이더 내부에서
+        // 전부 처리되므로(CPU 연산 없음), 여기서 프로퍼티 블록을 갱신하지 않는다.
+        if (state == ItemMoveState.Dropped || shadowRenderer == null) return;
+
+        // 실제 월드 높이(height)는 던지기마다 제각각 크기 때문에 그대로 픽셀로 환산하면 3번 프레임에
+        // 순식간에 도달해 버린다(대부분의 비행 구간에서 3번 프레임에 "무작정" 고정). 대신 이번 비행의
+        // 정점(height) 대비 진행률로 정규화해서, 솟아오를 때 1->2->3, 떨어질 때 3->2->1로 자연스럽게
+        // 전환되고 착지 순간(heightOffset=0)에는 항상 1번 프레임으로 정확히 이어지도록 한다.
+        float normalizedHeight = height > 0.0001f ? Mathf.Clamp01(_heightOffset / height) : 0f;
+        float shadowHeightPixels = normalizedHeight * shadowFlightPixelScale;
+
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        shadowRenderer.GetPropertyBlock(mpb);
+        mpb.SetFloat(ShadowHeightPixelsPropertyID, shadowHeightPixels);
+        shadowRenderer.SetPropertyBlock(mpb);
     }
 
-    // 원목의 현재 높이(픽셀 단위)에 맞는 그림자 스프라이트로 교체한다.
-    // Dropped 상태에서는 CPU 트랜스폼이 0으로 고정되고 둥둥 뜨는 움직임이 셰이더 내부에서만 계산되므로,
-    // 셰이더(Custom-Sprite-Default_LogItem.shader)의 사인파 공식을 그대로 재현해 높이를 추정한다.
-    private void UpdateShadowFrame()
+    // 그림자용 4프레임 스프라이트의 UV 사각형을 계산해 셰이더에 1회 전달한다(스폰/재사용 시 1회만 실행).
+    // Dropped 상태의 둥둥 뜨는 애니메이션에 따른 프레임 선택은 Shadow_LogItem 셰이더가 LogItem 본체와 동일한
+    // 사인파 공식으로 직접 계산하므로, 매 프레임 CPU 개입이 전혀 없다.
+    private void InitializeShadowFrames()
     {
         if (shadowRenderer == null) return;
 
-        float heightPixels = state == ItemMoveState.Dropped
-            ? GetIdleFloatingPixelOffset()
-            : (visualTransform != null ? visualTransform.localPosition.y * 32f : 0f);
+        shadowRenderer.sprite = shadowSprite_0 != null ? shadowSprite_0 : shadowRenderer.sprite;
 
-        int level = Mathf.RoundToInt(heightPixels);
-
-        Sprite frameSprite;
-        if (level <= -1) frameSprite = shadowSprite_Minus1;
-        else if (level == 0) frameSprite = shadowSprite_0;
-        else if (level == 1) frameSprite = shadowSprite_1;
-        else frameSprite = shadowSprite_2Plus;
-
-        if (frameSprite != null)
+        // 모든 LogItem이 같은 그림자 스프라이트시트를 공유하므로, 프레임 Rect는 인스턴스별이 아니라
+        // 공유 머티리얼에 직접 굽는다(인스턴싱 버퍼로 개별 전달했을 때의 신뢰성 문제를 피하기 위함).
+        Material sharedShadowMaterial = shadowRenderer.sharedMaterial;
+        if (sharedShadowMaterial != null && initializedShadowMaterials.Add(sharedShadowMaterial))
         {
-            shadowRenderer.sprite = frameSprite;
+            sharedShadowMaterial.SetVector(ShadowFrameRect0PropertyID, GetSpriteUVRect(shadowSprite_Minus1));
+            sharedShadowMaterial.SetVector(ShadowFrameRect1PropertyID, GetSpriteUVRect(shadowSprite_0));
+            sharedShadowMaterial.SetVector(ShadowFrameRect2PropertyID, GetSpriteUVRect(shadowSprite_1));
+            sharedShadowMaterial.SetVector(ShadowFrameRect3PropertyID, GetSpriteUVRect(shadowSprite_2Plus));
+
+            // Shadow 오브젝트가 본체(Animator)와 다른 로컬 오프셋을 가질 수 있으므로, 셰이더가 본체와 동일한
+            // 월드 기준점으로 둥둥 뜨는 위상을 계산할 수 있도록 그 오프셋을 전달한다(회전/스케일 없는 형제 관계 전제).
+            Vector3 localOffset = shadowTransform != null ? shadowTransform.localPosition : Vector3.zero;
+            sharedShadowMaterial.SetVector(ShadowLocalOffsetPropertyID, new Vector4(localOffset.x, localOffset.y, 0f, 0f));
         }
+
+        if (mpb == null) mpb = new MaterialPropertyBlock();
+        shadowRenderer.GetPropertyBlock(mpb);
+        mpb.SetFloat(ShadowHeightPixelsPropertyID, 0f);
+        shadowRenderer.SetPropertyBlock(mpb);
     }
 
-    private float GetIdleFloatingPixelOffset()
+    private static Vector4 GetSpriteUVRect(Sprite _sprite)
     {
-        Vector3 pivotWorldPos = visualTransform != null ? visualTransform.position : transform.position;
-        float floatingPhase = (pivotWorldPos.x + pivotWorldPos.y) * 10f;
-        float floatOffsetUnits = Mathf.Sin(Time.time * 2.5f + floatingPhase) * (1f / 32f);
-        return floatOffsetUnits * 32f;
+        if (_sprite == null || _sprite.texture == null) return new Vector4(0f, 0f, 1f, 1f);
+
+        Rect r = _sprite.textureRect;
+        float texWidth = _sprite.texture.width;
+        float texHeight = _sprite.texture.height;
+
+        return new Vector4(r.xMin / texWidth, r.yMin / texHeight, r.xMax / texWidth, r.yMax / texHeight);
     }
 
     public void SetHeight(float _height)
