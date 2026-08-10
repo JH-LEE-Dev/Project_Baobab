@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using PresentationLayer.DOTweenAnimationSystem;
 
-public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerClickHandler
+public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
 {
     private const float AbilityBarMaxHeight = 26f;
 
@@ -48,6 +48,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool canApplyVisual;
     private bool completedVisual;
     private bool visualHidden;
+    private bool isPointerInside;
     private bool isPointerHovering;
     private bool consumedRapidClick;
     private Vector2 interactionShakeCompensation;
@@ -68,6 +69,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public bool CanApplyVisual => canApplyVisual;
     public bool CompletedVisual => completedVisual;
     public Color CurrentNodeFrameColor => currentNodeFrameColor;
+    public bool IsPointerInside => isPointerInside;
 
     private void Awake()
     {
@@ -273,25 +275,28 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     // 마우스가 노드 위에 올라오면 상위 컴포넌트에 툴팁 표시를 요청한다.
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (isPointerHovering)
+        isPointerInside = true;
+        if (owner != null && owner.CanShowNodeHover(this) == false)
             return;
 
-        isPointerHovering = true;
-        owner?.PlayNodeHoverSound();
-        owner?.ShowSelectionCursor(this);
-        owner?.ShowToolTip(this);
-        PlayHoverMotion();
+        BeginHover();
     }
 
     // 마우스가 노드 밖으로 나가면 상위 컴포넌트에 툴팁 숨김을 요청한다.
     public void OnPointerExit(PointerEventData eventData)
     {
+        isPointerInside = false;
+        if (owner != null && owner.ShouldKeepNodeHoverCaptured(this))
+            return;
+
         EndHover();
     }
 
-    // 노드 클릭 시 상위 컴포넌트에 레벨업 요청을 전달한다.
+    // 어느 마우스 버튼이든 노드에서 눌리면 Hover를 캡처한다. 레벨업 입력은 좌클릭만 처리한다.
     public void OnPointerDown(PointerEventData eventData)
     {
+        owner?.CaptureNodeHover(this);
+
         if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
             return;
 
@@ -301,6 +306,11 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             owner?.StartAutoNodeLevelUp(this, IsControlPressed());
             return;
         }
+    }
+
+    public void OnPointerUp(PointerEventData eventData)
+    {
+        owner?.ReleaseNodeHoverCapture(this);
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -464,6 +474,26 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         return isClickPlaying || isNonPassClickPlaying;
     }
 
+    public void RefreshHoverAfterCapture()
+    {
+        if (isPointerInside && (owner == null || owner.CanShowNodeHover(this)))
+            BeginHover();
+        else
+            EndHover();
+    }
+
+    private void BeginHover()
+    {
+        if (isPointerHovering)
+            return;
+
+        isPointerHovering = true;
+        owner?.PlayNodeHoverSound();
+        owner?.ShowSelectionCursor(this);
+        owner?.ShowToolTip(this);
+        PlayHoverMotion();
+    }
+
     private void EndHover()
     {
         if (isPointerHovering == false)
@@ -536,11 +566,14 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     private void CancelHoverState()
     {
-        if (isPointerHovering == false)
-            return;
+        isPointerInside = false;
+        owner?.NotifyNodeHoverUnavailable(this);
 
-        isPointerHovering = false;
-        owner?.HideSelectionCursor(this);
-        owner?.HideToolTip(this);
+        if (isPointerHovering)
+        {
+            isPointerHovering = false;
+            owner?.HideSelectionCursor(this);
+            owner?.HideToolTip(this);
+        }
     }
 }

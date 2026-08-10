@@ -431,6 +431,7 @@ MonoBehaviour:
   selectionCursorParent: {fileID: 0}
   selectionCursorSize: {x: 38, y: 38}
   nodeHoverSoundSuppressDurationAfterOpen: 0.3
+  viewGridHalfExtents: {x: 60, y: 30}
   viewShakeDuration: 0.2
   viewShakeStrength: 2.8
   viewShakeFrequency: 50
