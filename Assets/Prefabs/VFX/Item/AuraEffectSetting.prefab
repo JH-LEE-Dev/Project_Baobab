@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 5327452773589341236}
   - component: {fileID: 3592317222108709861}
   m_Layer: 0
-  m_Name: AuraEffectTest
+  m_Name: AuraEffectSetting
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
