@@ -55,6 +55,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private LocalizationManager localizationManager;
     private TreeVisualDataBase treeVisualDataBase;
     private IMapDataProvider mapDataProvider;
+    private ICursorBoxUI cursorBoxUI;
     
     private readonly List<HUD_PopupNav_SubRegionBtn> subRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(16);
     private readonly List<HUD_PopupNav_SubRegionBtn> activeSubRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(8);
@@ -80,10 +81,11 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private Action cachedOnDisappearMotionComplete;
     private Action cachedOnSingleSubRegionUnlockComplete;
 
-    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, TreeVisualDataBase _treeVisualDataBase)
+    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, TreeVisualDataBase _treeVisualDataBase)
     {
         mainController = _mainController;
         localizationManager = _localizationManager;
+        cursorBoxUI = _cursorBoxUI;
         treeVisualDataBase = _treeVisualDataBase;
 
         if (null != container)
@@ -182,7 +184,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
                                 }
                             }
                             
-                            _btn.Initialize(mainController, _subInfo, localizationManager, _regionInfo.mapType, tempTreeVisualDatas);
+                            _btn.Initialize(mainController, _subInfo, localizationManager, cursorBoxUI, _regionInfo.mapType, tempTreeVisualDatas);
                             activeSubRegionButtons.Add(_btn);
                         }
                     }

@@ -112,6 +112,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
     // 내부 의존성
     private IMapDataProvider mapDataProvider;
     private LocalizationManager localizationManager;
+    private ICursorBoxUI cursorBoxUI;
     private Action onNavigationClosedCallback;
     private Action<MapType, ForestType> onConfirmMapSelectedCallback;
     private Tween delayedCallTween;
@@ -196,10 +197,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
     }
 
     // 퍼블릭 초기화 및 제어 메서드
-    public void Initialize(IMapDataProvider _provider, LocalizationManager _localizer, Action _onClose, Action<MapType, ForestType> _onConfirm)
+    public void Initialize(IMapDataProvider _provider, LocalizationManager _localizer, ICursorBoxUI _cursorBoxUI, Action _onClose, Action<MapType, ForestType> _onConfirm)
     {
         mapDataProvider = _provider;
         localizationManager = _localizer;
+        cursorBoxUI = _cursorBoxUI;
         onNavigationClosedCallback = _onClose;
         onConfirmMapSelectedCallback = _onConfirm;
 
@@ -212,12 +214,12 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         if (null != regionGroup)
         {
-            regionGroup.Initialize(this, localizationManager);
+            regionGroup.Initialize(this, localizationManager, cursorBoxUI);
         }
 
         if (null != subRegionGroup)
         {
-            subRegionGroup.Initialize(this, localizationManager, treeVisualDataBase);
+            subRegionGroup.Initialize(this, localizationManager, cursorBoxUI, treeVisualDataBase);
         }
 
         if (null != demoNotice)
@@ -483,6 +485,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (null != regionGroup)
         {
             regionGroup.ClearAllNewIndicators();
+            regionGroup.StopAllHoverEffects();
         }
 
         if (null != disappearTween && true == disappearTween.IsActive())

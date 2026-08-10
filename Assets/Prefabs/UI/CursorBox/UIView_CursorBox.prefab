@@ -1,62 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &5760967653565331794
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1921913141502917227}
-  - component: {fileID: 2290007335703501642}
-  m_Layer: 0
-  m_Name: UIView_CursorBox
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1921913141502917227
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5760967653565331794}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1125404888247100002}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2290007335703501642
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5760967653565331794}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5b049691ad1abb3458ac4a28d254f0ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIView_CursorBox
-  layer: 2
-  bCloseableByESC: 0
-  bWorld: 0
-  bScreenSpace: 0
-  bOverlay: 1
-  selectionCursor: {fileID: 1125404888247100005}
-  defaultCursorSize: {x: 40, y: 40}
-  defaultPadding: {x: 0, y: 0}
 --- !u!1 &1125404888247100001
 GameObject:
   m_ObjectHideFlags: 0
@@ -182,10 +125,6 @@ MonoBehaviour:
     hideDuration: 0.15
     hideExpandOffset: 10
     hideEase: 1
-  motionPlayer: {fileID: 1125404888247100103}
-  showMotionTag: CursorShow
-  idleMotionTag: CursorIdle
-  hideMotionTag: CursorHide
 --- !u!1 &1125404888247100101
 GameObject:
   m_ObjectHideFlags: 0
@@ -214,10 +153,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1125404888247100202}
-  - {fileID: 1125404888247100302}
-  - {fileID: 1125404888247100402}
+  m_Children: []
   m_Father: {fileID: 1125404888247100002}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -239,7 +175,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.ObjectMotionPlayer
   motionEntries:
   - motionTag: CursorShow
-    motionPrefab: {fileID: 1125404888247100203}
+    motionPrefab: {fileID: 0}
     targets:
     - transform: {fileID: 0}
       rectTransform: {fileID: 1125404888247100002}
@@ -248,7 +184,7 @@ MonoBehaviour:
       uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
   - motionTag: CursorIdle
-    motionPrefab: {fileID: 1125404888247100303}
+    motionPrefab: {fileID: 0}
     targets:
     - transform: {fileID: 0}
       rectTransform: {fileID: 1125404888247100002}
@@ -257,7 +193,7 @@ MonoBehaviour:
       uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
   - motionTag: CursorHide
-    motionPrefab: {fileID: 1125404888247100403}
+    motionPrefab: {fileID: 0}
     targets:
     - transform: {fileID: 0}
       rectTransform: {fileID: 1125404888247100002}
@@ -265,7 +201,7 @@ MonoBehaviour:
       spriteRenderer: {fileID: 0}
       uiGraphic: {fileID: 0}
     motionInstance: {fileID: 0}
---- !u!1 &1125404888247100201
+--- !u!1 &5760967653565331794
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -273,179 +209,52 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1125404888247100202}
-  - component: {fileID: 1125404888247100203}
-  m_Layer: 5
-  m_Name: OMB_UISelectionCursorShow
+  - component: {fileID: 1921913141502917227}
+  - component: {fileID: 2290007335703501642}
+  m_Layer: 0
+  m_Name: UIView_CursorBox
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &1125404888247100202
+--- !u!224 &1921913141502917227
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125404888247100201}
+  m_GameObject: {fileID: 5760967653565331794}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1125404888247100102}
+  m_Children:
+  - {fileID: 1125404888247100002}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 40, y: 40}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1125404888247100203
+--- !u!114 &2290007335703501642
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125404888247100201}
+  m_GameObject: {fileID: 5760967653565331794}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: db9d89163f9e208479e000e3cf031e4e, type: 3}
+  m_Script: {fileID: 11500000, guid: 5b049691ad1abb3458ac4a28d254f0ae, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UISelectionCursorShow
-  forwardDuration: 0.7
-  forwardDelay: 0
-  forwardEase: 0
-  backwardDuration: 0.5
-  backwardDelay: 0
-  backwardEase: 0
-  bUnScaledTime: 0
-  resetOnValidateInPlayMode: 1
-  valueSettings:
-    shrinkSizeScale: 0.8
-    shrinkTimeRatio: 0.08
-    restoreTimeRatio: 0.12
-    sizeEase: 27
-    startAngle: 20
-    angleDamping: 0.62
-    swingCount: 5
-    rotationTimeRatio: 0.8
-    rotationEase: 2
---- !u!1 &1125404888247100301
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1125404888247100302}
-  - component: {fileID: 1125404888247100303}
-  m_Layer: 5
-  m_Name: OMB_UISelectionCursorIdle
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1125404888247100302
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125404888247100301}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1125404888247100102}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 40, y: 40}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1125404888247100303
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125404888247100301}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c088d8bcf53dc33469dbfdb0264627be, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UISelectionCursorIdle
-  forwardDuration: 3
-  forwardDelay: 0
-  forwardEase: 1
-  backwardDuration: 0.5
-  backwardDelay: 0
-  backwardEase: 1
-  bUnScaledTime: 0
-  resetOnValidateInPlayMode: 1
-  valueSettings:
-    sizeOffset: 1
-    idleEase: 1
---- !u!1 &1125404888247100401
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1125404888247100402}
-  - component: {fileID: 1125404888247100403}
-  m_Layer: 5
-  m_Name: OMB_UISelectionCursorHide
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1125404888247100402
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125404888247100401}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1125404888247100102}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 40, y: 40}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1125404888247100403
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1125404888247100401}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: de59d185e78ec334ab51bf7ae048fa56, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.DOTweenAnimationSystem.OMB_UISelectionCursorHide
-  forwardDuration: 0.15
-  forwardDelay: 0
-  forwardEase: 0
-  backwardDuration: 0.5
-  backwardDelay: 0
-  backwardEase: 0
-  bUnScaledTime: 0
-  resetOnValidateInPlayMode: 1
-  valueSettings:
-    expandSizeOffset: 10
-    hideEase: 1
+  m_EditorClassIdentifier: Assembly-CSharp::UIView_CursorBox
+  layer: 2
+  bCloseableByESC: 0
+  bWorld: 0
+  bScreenSpace: 0
+  bOverlay: 1
+  selectionCursor: {fileID: 1125404888247100005}
+  defaultCursorSize: {x: 40, y: 40}
+  defaultPadding: {x: 0, y: 0}

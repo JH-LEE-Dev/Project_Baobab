@@ -86,6 +86,36 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [Tooltip("선택(클릭) 시 흔들림 강도")]
     [SerializeField] private float selectPunchStrength = 1.1f;
 
+    [Header("Cursor Settings")]
+    [Tooltip("커서를 표시할 대상 트랜스폼 (비워두면 자기 자신)")]
+    [SerializeField] private RectTransform cursorTargetTransform;
+    
+    [Tooltip("커서 크기 여백 (기본 크기 + Padding)")]
+    [SerializeField] private Vector2 cursorPadding = new Vector2(8f, 8f);
+    
+    [Tooltip("커서 표시 위치 오프셋")]
+    [SerializeField] private Vector2 cursorOffset = Vector2.zero;
+    
+    [Tooltip("커스텀 크기 사용 여부")]
+    [SerializeField] private bool useCustomCursorSize = false;
+    
+    [Tooltip("수동으로 지정할 커서 크기")]
+    [SerializeField] private Vector2 customCursorSize = new Vector2(100f, 40f);
+
+    [Tooltip("서브지역 버튼 호버 시 미세한 커서 연출 세팅")]
+    [SerializeField] private CursorMotionSettings hoverCursorMotion = new CursorMotionSettings
+    {
+        enableShowMotion = true,
+        showDuration = 0.2f,
+        shrinkSizeScale = 0.9f,
+        swingCount = 2,
+        startAngle = 5f,
+        enableIdleMotion = true,
+        idleSizeOffset = 0.5f,
+        hideDuration = 0.1f
+    };
+    
+    private ICursorBoxUI cursorBoxUI;
     private Tween appearTween;
     private Tween disappearTween;
     private Tween unlockTween;
@@ -153,9 +183,10 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         return CachedRectTransform.rect.width;
     }
 
-    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas)
+    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas)
     {
         mainController = _mainController;
+        cursorBoxUI = _cursorBoxUI;
         myInfo = _info;
         parentMapType = _parentMapType;
 
@@ -282,6 +313,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             return;
         }
 
+        if (null != cursorBoxUI)
+        {
+            cursorBoxUI.HideImmediately();
+        }
+
         mainController.HandleSubRegionSelected(myInfo.forestType);
     }
 
@@ -397,6 +433,14 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             }
             hoverTween = _seq;
         }
+
+        if (null != cursorBoxUI)
+        {
+            RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
+            Vector2 size = useCustomCursorSize ? customCursorSize : (target.rect.size + cursorPadding);
+            
+            cursorBoxUI.Show(target, size, cursorOffset, hoverCursorMotion);
+        }
     }
 
     private void OnHoverClearNewComplete()
@@ -444,6 +488,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             _seq.Join(visualChildren[i].DOScale(1f, 0.2f).SetEase(Ease.OutBack));
         }
         hoverTween = _seq;
+
+        if (null != cursorBoxUI)
+        {
+            RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
+            cursorBoxUI.Hide(target);
+        }
     }
 
     public void StopAllTreePropHoverEffects()
@@ -453,6 +503,26 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             if (null != treeProps[i])
             {
                 treeProps[i].StopHoverEffect();
+            }
+        }
+        
+        if (null != cursorBoxUI)
+        {
+            RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
+            if (cursorBoxUI.IsTarget(target))
+            {
+                var settings = cursorBoxUI.MotionSettings;
+                if (settings != null)
+                {
+                    float originalDuration = settings.hideDuration;
+                    settings.hideDuration = 0.03f; // 내비게이션 닫힐 때는 더 빠르게 사라짐
+                    cursorBoxUI.Hide(target);
+                    settings.hideDuration = originalDuration;
+                }
+                else
+                {
+                    cursorBoxUI.Hide(target);
+                }
             }
         }
     }

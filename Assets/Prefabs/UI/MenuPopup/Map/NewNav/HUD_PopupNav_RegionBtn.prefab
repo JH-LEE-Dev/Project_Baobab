@@ -887,6 +887,30 @@ MonoBehaviour:
   hoverMoveX: 20
   hoverMoveDuration: 0.2
   hoverMoveEase: 28
+  cursorTargetTransform: {fileID: 4940307367157478699}
+  cursorPadding: {x: 10, y: 10}
+  cursorOffset: {x: 0, y: 0}
+  useCustomCursorSize: 0
+  customCursorSize: {x: 300, y: 150}
+  hoverCursorMotion:
+    enableShowMotion: 1
+    showDuration: 0.7
+    shrinkSizeScale: 0.8
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
+    sizeRestoreEase: 27
+    startAngle: 4
+    angleDamping: 0.62
+    swingCount: 5
+    rotationTimeRatio: 0.8
+    rotationEase: 3
+    enableIdleMotion: 1
+    idleCycleDuration: 3
+    idleSizeOffset: 1
+    enableHideMotion: 1
+    hideDuration: 0.15
+    hideExpandOffset: 10
+    hideEase: 6
 --- !u!1 &7682306616101199194
 GameObject:
   m_ObjectHideFlags: 0

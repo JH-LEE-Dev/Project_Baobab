@@ -36,6 +36,7 @@ public class UISelectionCursor : MonoBehaviour
     private Vector2 currentBaseSize;
     private Vector2 currentExpandedSize;
     private Vector2 currentContractedSize;
+    private CursorMotionSettings activeMotionSettings;
 
     public Vector2 CursorSize => cursorSize;
     public CursorMotionSettings MotionSettings
@@ -78,6 +79,7 @@ public class UISelectionCursor : MonoBehaviour
     public void Initialize(Vector2 _cursorSize)
     {
         cursorSize = _cursorSize;
+        activeMotionSettings = motionSettings;
         CacheReferences();
         ApplySize();
         HideImmediately();
@@ -125,9 +127,9 @@ public class UISelectionCursor : MonoBehaviour
         gameObject.SetActive(true);
 
         int currentVersion = ++motionVersion;
-        CursorMotionSettings activeSettings = null != _customMotion ? _customMotion : motionSettings;
+        activeMotionSettings = null != _customMotion ? _customMotion : motionSettings;
 
-        PlayBuiltInShowMotion(currentVersion, activeSettings);
+        PlayBuiltInShowMotion(currentVersion, activeMotionSettings);
     }
 
     public void SetAnchoredPosition(Vector2 _anchoredPosition)
@@ -153,7 +155,7 @@ public class UISelectionCursor : MonoBehaviour
         }
         ApplySize();
 
-        PlayBuiltInHideMotion(currentVersion, motionSettings);
+        PlayBuiltInHideMotion(currentVersion, activeMotionSettings);
     }
 
     public void HideImmediately()
@@ -184,11 +186,12 @@ public class UISelectionCursor : MonoBehaviour
         showSequence.SetUpdate(true);
 
         // 1. Size Tween (Shrink -> Restore)
-        Vector2 shrinkSize = cursorSize * _settings.shrinkSizeScale;
+        Vector3 shrinkScale = Vector3.one * _settings.shrinkSizeScale;
         float shrinkDuration = _settings.showDuration * Mathf.Clamp01(_settings.shrinkTimeRatio);
         float restoreDuration = _settings.showDuration * Mathf.Clamp01(_settings.restoreTimeRatio);
 
         Sequence sizeSeq = DOTween.Sequence();
+        Vector2 shrinkSize = cursorSize * _settings.shrinkSizeScale;
         sizeSeq.Append(rootRectTransform.DOSizeDelta(shrinkSize, shrinkDuration).SetEase(Ease.OutQuad));
         sizeSeq.Append(rootRectTransform.DOSizeDelta(cursorSize, restoreDuration).SetEase(_settings.sizeRestoreEase));
         showSequence.Join(sizeSeq);
@@ -215,7 +218,7 @@ public class UISelectionCursor : MonoBehaviour
 
     private void OnShowComplete()
     {
-        PlayBuiltInIdleMotion(showMotionVersion, motionSettings);
+        PlayBuiltInIdleMotion(showMotionVersion, activeMotionSettings);
     }
 
     private void PlayBuiltInIdleMotion(int _version, CursorMotionSettings _settings)
@@ -233,17 +236,19 @@ public class UISelectionCursor : MonoBehaviour
         {
             rootRectTransform.localEulerAngles = Vector3.zero;
             rootRectTransform.anchoredPosition = currentAnchoredPosition;
+            rootRectTransform.localScale = Vector3.one;
+            rootRectTransform.sizeDelta = cursorSize;
         }
+
+        float stepDuration = Mathf.Max(_settings.idleCycleDuration / 4f, 0.0001f);
+        idleSequence = DOTween.Sequence();
+        idleSequence.SetUpdate(true);
 
         currentBaseSize = cursorSize;
         float sizeDeltaOffset = Mathf.Abs(_settings.idleSizeOffset) * 2f;
         currentExpandedSize = currentBaseSize + Vector2.one * sizeDeltaOffset;
         currentContractedSize = currentBaseSize - Vector2.one * sizeDeltaOffset;
 
-        float stepDuration = Mathf.Max(_settings.idleCycleDuration / 4f, 0.0001f);
-
-        idleSequence = DOTween.Sequence();
-        idleSequence.SetUpdate(true);
         idleSequence.AppendCallback(setExpandedSizeAction);
         idleSequence.AppendInterval(stepDuration);
         idleSequence.AppendCallback(setBaseSizeAction);
@@ -330,7 +335,10 @@ public class UISelectionCursor : MonoBehaviour
     private void ApplySize()
     {
         if (null != rootRectTransform)
+        {
             rootRectTransform.sizeDelta = cursorSize;
+            rootRectTransform.localScale = Vector3.one;
+        }
 
         if (null != cursorImage)
         {
