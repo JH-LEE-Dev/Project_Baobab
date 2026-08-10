@@ -602,6 +602,30 @@ MonoBehaviour:
   unlockDuration: 0.5
   selectDuration: 0.2
   selectPunchStrength: 1.25
+  cursorTargetTransform: {fileID: 3745134431217913545}
+  cursorPadding: {x: 1, y: 1}
+  cursorOffset: {x: 0, y: 0}
+  useCustomCursorSize: 0
+  customCursorSize: {x: 100, y: 40}
+  hoverCursorMotion:
+    enableShowMotion: 1
+    showDuration: 0.2
+    shrinkSizeScale: 0.9
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
+    sizeRestoreEase: 27
+    startAngle: 5
+    angleDamping: 0.62
+    swingCount: 2
+    rotationTimeRatio: 0.8
+    rotationEase: 3
+    enableIdleMotion: 1
+    idleCycleDuration: 3
+    idleSizeOffset: 0.5
+    enableHideMotion: 1
+    hideDuration: 0.1
+    hideExpandOffset: 10
+    hideEase: 6
 --- !u!1 &8148430121089073189
 GameObject:
   m_ObjectHideFlags: 0

@@ -36,14 +36,16 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
 
     private HUD_PopupNav_Main mainController;
     private LocalizationManager localizationManager;
+    private ICursorBoxUI cursorBoxUI;
     private readonly List<HUD_PopupNav_RegionBtn> regionButtons = new List<HUD_PopupNav_RegionBtn>(8);
 
     private Sequence appearSeq;
 
-    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager)
+    public void Initialize(HUD_PopupNav_Main _mainController, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI)
     {
         mainController = _mainController;
         localizationManager = _localizationManager;
+        cursorBoxUI = _cursorBoxUI;
 
         // 컨테이너 하위에 이미 배치되어 있는 버튼들이 있다면 사전 캐싱
         if (null != container)
@@ -115,7 +117,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
                     }
                 }
 
-                _btn.Initialize(mainController, _validRegions[i], localizationManager, _bgSprite, _btnIndex);
+                _btn.Initialize(mainController, _validRegions[i], localizationManager, cursorBoxUI, _bgSprite, _btnIndex);
                 
                 // 연출을 위해 임시로 꺼두거나 초기 스케일 세팅
                 _btn.gameObject.SetActive(false);
@@ -227,6 +229,15 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
                 regionButtons[i].ClearNewIndicator();
                 break;
             }
+        }
+    }
+
+    public void StopAllHoverEffects()
+    {
+        for (int i = 0; i < regionButtons.Count; i++)
+        {
+            if (null == regionButtons[i]) continue;
+            regionButtons[i].ForceStopHoverEffect();
         }
     }
 

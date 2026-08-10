@@ -106,10 +106,25 @@ MonoBehaviour:
   cursorImage: {fileID: 1125404888247100004}
   cursorSize: {x: 40, y: 40}
   anchoredOffset: {x: 0, y: 0}
-  motionPlayer: {fileID: 1125404888247100103}
-  showMotionTag: CursorShow
-  idleMotionTag: CursorIdle
-  hideMotionTag: CursorHide
+  motionSettings:
+    enableShowMotion: 1
+    showDuration: 0.7
+    shrinkSizeScale: 0.8
+    shrinkTimeRatio: 0.08
+    restoreTimeRatio: 0.12
+    sizeRestoreEase: 27
+    startAngle: 20
+    angleDamping: 0.62
+    swingCount: 5
+    rotationTimeRatio: 0.8
+    rotationEase: 3
+    enableIdleMotion: 1
+    idleCycleDuration: 3
+    idleSizeOffset: 1
+    enableHideMotion: 1
+    hideDuration: 0.15
+    hideExpandOffset: 10
+    hideEase: 6
 --- !u!1 &1125404888247100101
 GameObject:
   m_ObjectHideFlags: 0
@@ -244,6 +259,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     shrinkSizeScale: 0.8
     shrinkTimeRatio: 0.08
@@ -309,6 +325,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 1
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     sizeOffset: 1
     idleEase: 1
@@ -367,6 +384,7 @@ MonoBehaviour:
   backwardDelay: 0
   backwardEase: 0
   resetOnValidateInPlayMode: 1
+  keyEvents: []
   valueSettings:
     expandSizeOffset: 6
     hideEase: 18

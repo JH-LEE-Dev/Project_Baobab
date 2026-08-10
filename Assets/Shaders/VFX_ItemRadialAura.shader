@@ -2,6 +2,8 @@ Shader "Custom/VFX/URP2D_ItemRadialAura"
 {
     Properties
     {
+        [HideInInspector] _MainTex("Sprite Texture", 2D) = "white" {}
+
         [Header(Color and Bloom Intensity)]
         [HDR] _CoreColor ("Core Center Color", Color) = (3.5, 3.2, 2.0, 1.0)
         [HDR] _BeamColor ("Primary Beam Color", Color) = (2.5, 1.8, 0.3, 1.0)

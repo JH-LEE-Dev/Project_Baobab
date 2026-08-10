@@ -91,6 +91,34 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     [Tooltip("호버 이동 이즈(Ease)")]
     [SerializeField] private Ease hoverMoveEase = Ease.OutQuad;
 
+    [Header("Cursor Settings")]
+    [Tooltip("커서가 따라다닐 타겟 트랜스폼 (비워두면 자기 자신)")]
+    [SerializeField] private RectTransform cursorTargetTransform;
+    [Tooltip("커서 패딩 (여백)")]
+    [SerializeField] private Vector2 cursorPadding = new Vector2(10f, 10f);
+    [Tooltip("커서 오프셋")]
+    [SerializeField] private Vector2 cursorOffset = Vector2.zero;
+    [Tooltip("커스텀 커서 크기 사용 여부 (false면 타겟의 rect size 사용)")]
+    [SerializeField] private bool useCustomCursorSize = false;
+    [Tooltip("커스텀 커서 크기")]
+    [SerializeField] private Vector2 customCursorSize = new Vector2(300f, 150f);
+    [Tooltip("호버 시 커서 모션 세팅")]
+    [SerializeField] private CursorMotionSettings hoverCursorMotion = new CursorMotionSettings();
+
+    private ICursorBoxUI cursorBoxUI;
+    private RectTransform cachedRectTransform;
+    private RectTransform CachedRectTransform
+    {
+        get
+        {
+            if (null == cachedRectTransform)
+            {
+                cachedRectTransform = GetComponent<RectTransform>();
+            }
+            return cachedRectTransform;
+        }
+    }
+
     private Tween unlockTween;
     private Tween hoverTween;
     private Tween clearNewTween;
@@ -125,10 +153,11 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public MapType GetMapType() => myInfo.mapType;
 
-    public void Initialize(HUD_PopupNav_Main _mainController, MapEnvironmentDataInfo _info, LocalizationManager _localizationManager, Sprite _bgSprite = null, int _appearSoundIndex = -1)
+    public void Initialize(HUD_PopupNav_Main _mainController, MapEnvironmentDataInfo _info, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, Sprite _bgSprite = null, int _appearSoundIndex = -1)
     {
         mainController = _mainController;
         myInfo = _info;
+        cursorBoxUI = _cursorBoxUI;
         appearSoundIndex = _appearSoundIndex;
         unlockedBgSprite = _bgSprite;
 
@@ -307,6 +336,50 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         TriggerHover();
     }
 
+    public void ForceStopHoverEffect()
+    {
+        isPointerOver = false;
+
+        if (null != hoverTween && true == hoverTween.IsActive())
+        {
+            hoverTween.Kill();
+            hoverTween = null;
+        }
+
+        Sequence _seq = DOTween.Sequence();
+        for (int i = 0; i < visualChildren.Count; i++)
+        {
+            _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
+        }
+        hoverTween = _seq;
+
+        if (null != cursorBoxUI)
+        {
+            RectTransform _target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
+            if (cursorBoxUI.IsTarget(_target))
+            {
+                var _settings = cursorBoxUI.MotionSettings;
+                if (null != _settings)
+                {
+                    float _originalHide = _settings.hideDuration;
+                    try
+                    {
+                        _settings.hideDuration = 0.03f;
+                        cursorBoxUI.Hide(_target);
+                    }
+                    finally
+                    {
+                        _settings.hideDuration = _originalHide;
+                    }
+                }
+                else
+                {
+                    cursorBoxUI.Hide(_target);
+                }
+            }
+        }
+    }
+
     public void EvaluateHoverState()
     {
         if (true == isPointerOver && false == mainController.IsInputBlocked)
@@ -341,6 +414,13 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
             _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i] + hoverMoveX, hoverMoveDuration).SetEase(hoverMoveEase));
         }
         hoverTween = _seq;
+
+        if (null != cursorBoxUI)
+        {
+            RectTransform _target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
+            Vector2 _size = useCustomCursorSize ? customCursorSize : (_target.rect.size + cursorPadding);
+            cursorBoxUI.Show(_target, _size, cursorOffset, hoverCursorMotion);
+        }
     }
 
     public void OnPointerExit(PointerEventData _eventData)
@@ -370,6 +450,12 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
                 _seq.Join(visualChildren[i].DOLocalMoveX(originalLocalX[i], hoverMoveDuration).SetEase(hoverMoveEase));
             }
             hoverTween = _seq;
+        }
+
+        if (null != cursorBoxUI)
+        {
+            RectTransform _target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
+            cursorBoxUI.Hide(_target);
         }
     }
 

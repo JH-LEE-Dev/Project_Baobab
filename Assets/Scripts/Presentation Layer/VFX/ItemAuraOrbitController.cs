@@ -253,6 +253,21 @@ public class ItemAuraOrbitController : MonoBehaviour
         ApplySortingToAll();
     }
 
+    /// <summary>
+    /// 소팅 레이어와 위성/트레일/중앙 글로우 사이의 기존 상대 오프셋(인스펙터에서 잡아둔 깊이감 간격)은
+    /// 그대로 유지한 채, 위성 기준 오더만 외부 값(예: 본체+1)으로 재기준(rebase)합니다.
+    /// </summary>
+    public void RebaseSortingOrder(int _satelliteOrder)
+    {
+        int trailOffset = trailSortingOrder - satelliteSortingOrder;
+        int centerGlowOffset = centerGlowSortingOrder - satelliteSortingOrder;
+
+        satelliteSortingOrder = _satelliteOrder;
+        trailSortingOrder = _satelliteOrder + trailOffset;
+        centerGlowSortingOrder = _satelliteOrder + centerGlowOffset;
+        ApplySortingToAll();
+    }
+
     public void SetCenterGlowSortingOrder(int _order)
     {
         centerGlowSortingOrder = _order;
