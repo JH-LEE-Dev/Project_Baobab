@@ -93,7 +93,7 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
 
                 float3 pivotWorldPos = TransformObjectToWorld(float3(0,0,0));
                 float floatingOffset = (pivotWorldPos.x + pivotWorldPos.y) * 10.0;
-                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * 0.05;
+                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * (1.0 / 32.0);
                 input.positionOS.y += floatOffset;
 
                 Varyings o = CommonLitVertex(input);
@@ -206,7 +206,7 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
 
                 float3 pivotWorldPos = TransformObjectToWorld(float3(0,0,0));
                 float floatingOffset = (pivotWorldPos.x + pivotWorldPos.y) * 10.0;
-                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * 0.05;
+                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * (1.0 / 32.0);
                 input.positionOS.y += floatOffset;
 
                 Varyings o = CommonNormalsVertex(input);
@@ -295,7 +295,7 @@ Shader "Custom/2D/Custom-Sprite-Default_LogItem"
 
                 float3 pivotWorldPos = TransformObjectToWorld(float3(0,0,0));
                 float floatingOffset = (pivotWorldPos.x + pivotWorldPos.y) * 10.0;
-                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * 0.05;
+                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * (1.0 / 32.0);
                 input.positionOS.y += floatOffset;
 
                 Varyings o = CommonUnlitVertex(input);
