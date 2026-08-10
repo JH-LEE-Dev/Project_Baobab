@@ -74,20 +74,30 @@ MonoBehaviour:
   - {fileID: 797919803063131645, guid: e4b61bc5607848c4f8150fb503323cfe, type: 3}
   - {fileID: 6049851641271938233, guid: 54ac872e6f8957549b32f8e0f6248201, type: 3}
   - {fileID: 6158695759910253706, guid: 9d3500dd8baa2294ea0100f58bc905f3, type: 3}
+  - {fileID: 6158695759910253706, guid: 9d3500dd8baa2294ea0100f58bc905f3, type: 3}
+  waterAnimatedOtherTypeObjPrefabs:
+  - {fileID: 6761461242732384596, guid: 5b6b548cf47a58e49bee2ad27941c66f, type: 3}
   grassStaticObjPrefabs:
   - {fileID: 5425288766945036917, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
   - {fileID: 563241788502290586, guid: ce53722f442ca18478b233a84a3cdfbb, type: 3}
   sandStaticObjPrefabs:
   - {fileID: 5425288766945036917, guid: 89dbc82bee51d2c44973784844018b54, type: 3}
   - {fileID: 563241788502290586, guid: ce53722f442ca18478b233a84a3cdfbb, type: 3}
+  shorelineStaticObjPrefabs: []
+  shorelineAnimatedObjPrefabs: []
   bloomDecoHDRIntensity: 1
   bloomWaterDecoHDRIntensity: 1
   useWaterTileBloom: 0
   waterTileHDRIntensity: 1
   grassStaticObjDensity: 0.0025
   sandStaticObjDensity: 0.0025
+  shorelineStaticObjDensity: 0.0005
   animatedObjDensity: 0.0025
+  shorelineAnimatedObjDensity: 0.0025
   waterAnimatedObjDensity: 0.1
+  waterAnimatedOtherTypeObjDensity: 0
+  waterAnimatedObjSeaDensity: 0.01
+  waterAnimatedOtherTypeObjSeaDensity: 0.01
   waterDecoDensity: 0
   sandDecoDensity: 0.05
   groundDecoDensity: 0.01
@@ -97,3 +107,5 @@ MonoBehaviour:
   bloomGrassDecoDensity: 0.07
   useBloomWaterDecoDensity: 0
   bloomWaterDecoDensity: 0.1
+  waterHazardStaminaDrainPerSecond: 0
+  treeHeatStaminaDamage: 0

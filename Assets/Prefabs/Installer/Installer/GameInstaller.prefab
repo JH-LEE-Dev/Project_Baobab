@@ -91,7 +91,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a0a2d98a534e16408e1abd00a447320, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OffroadContainer
-  logItemTypeDataBase: {fileID: 0}
+  logItemTypeDataBase: {fileID: 11400000, guid: 061243096a233554f96518b0d65c5dc3, type: 2}
   currentSlotCount: 2
   maxItemsPerSlot: 5
   inventorySlots: []
@@ -2253,12 +2253,12 @@ MonoBehaviour:
   waterThreshold: 0.25
   outerWaterDepth: 25
   baseMapRadius: 75
-  outerWaterObjectDensity: 0.025
   centerSafeZoneRadius: 5
   innerPuddleDensity: 1
-  minPuddleTileCount: 3
+  minPuddleTileCount: 10
   sandDensity: 0.075
   grassDensity: 0.625
+  minSandPatchTileCount: 4
   stageTileData: {fileID: 11400000, guid: 7f7e6fd6cc9cc7f45acefb152231cf44, type: 2}
   mapTypeTileDatas:
   - mapType: 2

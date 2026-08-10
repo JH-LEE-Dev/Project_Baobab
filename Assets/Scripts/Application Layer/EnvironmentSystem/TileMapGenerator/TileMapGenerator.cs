@@ -19,8 +19,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     [Header("외부 물 타일 설정")]
     [SerializeField] private int outerWaterDepth = 25;
     [SerializeField] private float baseMapRadius = 75f;
-    [Range(0f, 1f)]
-    [SerializeField] private float outerWaterObjectDensity = 0.01f;
+    // "바다" 오브젝트 밀도는 여기가 아니라 StageTileDataSO.WaterAnimatedObjSeaDensity /
+    // WaterAnimatedOtherTypeObjSeaDensity에서 설정한다 (섬과 연결된 모든 물에 동일 적용,
+    // 150x150 그리드 안의 바다 링과 ApplyOuterWaterTiles가 만드는 확장 바다 모두 포함).
     private bool[] isMainland;
 
     [Header("중앙 보호 구역 설정")]
@@ -42,15 +43,24 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     // 물 애니메이션 오브젝트(SpawnWaterAnimatedObj)를 타일 단위 독립 확률로 뽑으면
     // 작은 웅덩이는 운이 나빠 하나도 안 뽑히는 경우가 생긴다.
     // 그래서 연결된 물 덩어리(웅덩이) 단위로 목표 개수를 계산해 그 안에서만 랜덤 분배한다.
+    // isOceanConnectedWater로 "바다(섬과 연결된 물)"와 "웅덩이(섬 내부 고립된 물)"를 구분해서
+    // 서로 다른 밀도를 적용한다 — 거리(mapRadius) 기준이 아니라 실제 연결 여부 기준이다.
     private bool[] deepWaterTileFlags;
     private bool[] waterCompVisited;
     private Queue<int> waterCompQueue = new Queue<int>(2000);
-    private List<int> pondInnerDeepBuffer = new List<int>(500);
-    private List<int> pondOuterDeepBuffer = new List<int>(200);
+    private List<int> pondDeepBuffer = new List<int>(500);
+    private List<int> seaDeepBuffer = new List<int>(200);
 
     [Header("육지 타일 밀도 설정")]
     [SerializeField, Range(0f, 1f)] private float sandDensity = 0.1f;
     [SerializeField, Range(0f, 1f)] private float grassDensity = 0.7f;
+    // 해안선(Shoreline)이 아닌, 노이즈로 섬 내부에 흩뿌려진 모래 패치 중 이 칸 수 미만인 것은 항상 잔디로 메운다.
+    // 해안선 모래에는 영향을 주지 않는다.
+    [SerializeField] private int minSandPatchTileCount = 4;
+    private bool[] forceGrassOverride;
+    private bool[] sandPatchVisited;
+    private Queue<int> sandPatchQueue = new Queue<int>(500);
+    private List<int> sandPatchComponentBuffer = new List<int>(200);
 
     [System.Serializable]
     public struct MapTypeTileData
@@ -184,6 +194,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         puddleVisited = new bool[size];
         deepWaterTileFlags = new bool[size];
         waterCompVisited = new bool[size];
+        forceGrassOverride = new bool[size];
+        sandPatchVisited = new bool[size];
 
         worldPosMap = new Vector3[size];
 
@@ -219,7 +231,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         if (animatedObjGenerator != null && stageTileData != null)
         {
-            animatedObjGenerator.SetPrefabs(stageTileData.AnimatedObjPrefabs, stageTileData.WaterAnimatedObjPrefabs, stageTileData.GrassStaticObjPrefabs, stageTileData.SandStaticObjPrefabs);
+            animatedObjGenerator.SetPrefabs(stageTileData.AnimatedObjPrefabs, stageTileData.WaterAnimatedObjPrefabs, stageTileData.GrassStaticObjPrefabs, stageTileData.SandStaticObjPrefabs, stageTileData.ShorelineStaticObjPrefabs, stageTileData.ShorelineAnimatedObjPrefabs, stageTileData.WaterAnimatedOtherTypeObjPrefabs);
         }
 
         if (bloomDecoTilemap != null && stageTileData != null)
@@ -279,6 +291,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
         GenerateNoiseMap();
         DetermineSpawns();
+        ApplySmallInlandSandPatches();
         ApplyTiles();
         ApplyOuterWaterTiles();
 
@@ -732,7 +745,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             int x = i % width;
             int y = i / width;
 
-            if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1))
+            if (IsWater(x + 1, y) || IsWater(x - 1, y) || IsWater(x, y + 1) || IsWater(x, y - 1) ||
+                IsWater(x + 1, y + 1) || IsWater(x + 1, y - 1) || IsWater(x - 1, y + 1) || IsWater(x - 1, y - 1))
             {
                 isShoreline[i] = true;
                 shorelineList.Add(i);
@@ -786,6 +800,84 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         playerIdx = centerX + centerY * width;
     }
 
+    // ApplyTiles()에서 sandThreshold를 계산하는 로직과 동일. 모래 패치 판정에도 같은 기준을 써야 하므로
+    // 별도 메서드로 분리해 재사용한다.
+    private float ComputeSandThreshold()
+    {
+        float totalDensity = sandDensity + grassDensity;
+        float invTotal = totalDensity > 0 ? 1f / totalDensity : 0;
+        float landRange = 1f - waterThreshold;
+
+        return waterThreshold + (landRange * (sandDensity * invTotal));
+    }
+
+    // ── 해안선이 아닌 작은 내륙 모래 패치를 잔디로 메우기 ──
+    // 노이즈 때문에 섬 내부에 흩뿌려지는 모래 조각들 중, 해안선(Shoreline)과 무관하게 생기는
+    // 작은 패치는 minSandPatchTileCount 칸 미만이면 어색해 보이므로 잔디로 대체한다.
+    // 해안선 모래는 이 로직의 대상이 아니므로 그대로 유지된다.
+    private void ApplySmallInlandSandPatches()
+    {
+        int size = width * height;
+        Array.Clear(forceGrassOverride, 0, size);
+
+        if (minSandPatchTileCount <= 0) return;
+
+        Array.Clear(sandPatchVisited, 0, size);
+        float sandThreshold = ComputeSandThreshold();
+
+        for (int i = 0; i < size; i++)
+        {
+            if (sandPatchVisited[i]) continue;
+            if (!IsInlandSandCandidate(i, sandThreshold)) continue;
+
+            sandPatchComponentBuffer.Clear();
+            sandPatchQueue.Clear();
+            sandPatchQueue.Enqueue(i);
+            sandPatchVisited[i] = true;
+
+            while (sandPatchQueue.Count > 0)
+            {
+                int curr = sandPatchQueue.Dequeue();
+                sandPatchComponentBuffer.Add(curr);
+
+                int cx = curr % width;
+                int cy = curr / width;
+
+                TryEnqueueSandPatchCell(cx + 1, cy, sandThreshold);
+                TryEnqueueSandPatchCell(cx - 1, cy, sandThreshold);
+                TryEnqueueSandPatchCell(cx, cy + 1, sandThreshold);
+                TryEnqueueSandPatchCell(cx, cy - 1, sandThreshold);
+            }
+
+            if (sandPatchComponentBuffer.Count < minSandPatchTileCount)
+            {
+                for (int k = 0; k < sandPatchComponentBuffer.Count; k++)
+                {
+                    forceGrassOverride[sandPatchComponentBuffer[k]] = true;
+                }
+            }
+        }
+    }
+
+    private bool IsInlandSandCandidate(int _idx, float _sandThreshold)
+    {
+        if (isShoreline[_idx]) return false;
+
+        float v = noiseValues[_idx];
+        return v >= waterThreshold && v < _sandThreshold;
+    }
+
+    private void TryEnqueueSandPatchCell(int _x, int _y, float _sandThreshold)
+    {
+        if (_x < 0 || _x >= width || _y < 0 || _y >= height) return;
+        int idx = _x + _y * width;
+        if (sandPatchVisited[idx]) return;
+        if (!IsInlandSandCandidate(idx, _sandThreshold)) return;
+
+        sandPatchVisited[idx] = true;
+        sandPatchQueue.Enqueue(idx);
+    }
+
     private void ApplyTiles()
     {
         int size = width * height;
@@ -808,11 +900,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         walkablePositions.Clear();
         for (int i = 0; i < size; i++) cellToIndex[i] = -1;
 
-        float totalDensity = sandDensity + grassDensity;
-        float invTotal = totalDensity > 0 ? 1f / totalDensity : 0;
-        float landRange = 1f - waterThreshold;
-
-        float sandThreshold = waterThreshold + (landRange * (sandDensity * invTotal));
+        float sandThreshold = ComputeSandThreshold();
 
         Vector3 portalPos = GetPortalSpawnPosition();
         Vector3 playerPos = GetPlayerSpawnPosition();
@@ -900,7 +988,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 cellToIndex[i] = walkablePositions.Count;
                 walkablePositions.Add(pos);
 
-                bool _isSand = isShoreline[i] || v < sandThreshold;
+                bool _isShoreline = isShoreline[i];
+                bool _isSand = _isShoreline || (v < sandThreshold && !forceGrassOverride[i]);
                 if (_isSand)
                 {
                     groundTiles[i] = (stageTileData != null && stageTileData.SandTiles != null && stageTileData.SandTiles.Count > 0)
@@ -917,8 +1006,24 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 bool _hasRockDeco = false;
                 if (stageTileData != null)
                 {
-                    var staticPrefabs = _isSand ? stageTileData.SandStaticObjPrefabs : stageTileData.GrassStaticObjPrefabs;
-                    float density = _isSand ? stageTileData.SandStaticObjDensity : stageTileData.GrassStaticObjDensity;
+                    List<StaticObj> staticPrefabs;
+                    float density;
+
+                    if (_isShoreline)
+                    {
+                        staticPrefabs = stageTileData.ShorelineStaticObjPrefabs;
+                        density = stageTileData.ShorelineStaticObjDensity;
+                    }
+                    else if (_isSand)
+                    {
+                        staticPrefabs = stageTileData.SandStaticObjPrefabs;
+                        density = stageTileData.SandStaticObjDensity;
+                    }
+                    else
+                    {
+                        staticPrefabs = stageTileData.GrassStaticObjPrefabs;
+                        density = stageTileData.GrassStaticObjDensity;
+                    }
 
                     if (staticPrefabs != null && staticPrefabs.Count > 0 && UnityEngine.Random.value < density)
                     {
@@ -926,7 +1031,9 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                         {
                             if (animatedObjGenerator != null)
                             {
-                                if (_isSand)
+                                if (_isShoreline)
+                                    animatedObjGenerator.SpawnShorelineStaticObj(pos);
+                                else if (_isSand)
                                     animatedObjGenerator.SpawnSandStaticObj(pos);
                                 else
                                     animatedObjGenerator.SpawnGrassStaticObj(pos);
@@ -937,13 +1044,27 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                     }
                 }
 
+                // Shoreline은 StaticObj와 마찬가지로 전용 밀도/프리팹을 쓰고, Sand(비Shoreline)는 기존처럼
+                // 애니메이션 오브젝트를 스폰하지 않는다. _hasRockDeco로 이미 배제했으므로 같은 타일에
+                // Static과 Animated가 겹쳐 생성되지 않는다.
                 bool _hasAnimatedObj = false;
-                if (false == _hasRockDeco && false == _isSand)
+                if (false == _hasRockDeco)
                 {
-                    if (animatedObjGenerator != null && stageTileData != null && UnityEngine.Random.value < stageTileData.AnimatedObjDensity)
+                    if (_isShoreline)
                     {
-                        animatedObjGenerator.SpawnAnimatedObj(pos);
-                        _hasAnimatedObj = true;
+                        if (animatedObjGenerator != null && stageTileData != null && UnityEngine.Random.value < stageTileData.ShorelineAnimatedObjDensity)
+                        {
+                            animatedObjGenerator.SpawnShorelineAnimatedObj(pos);
+                            _hasAnimatedObj = true;
+                        }
+                    }
+                    else if (false == _isSand)
+                    {
+                        if (animatedObjGenerator != null && stageTileData != null && UnityEngine.Random.value < stageTileData.AnimatedObjDensity)
+                        {
+                            animatedObjGenerator.SpawnAnimatedObj(pos);
+                            _hasAnimatedObj = true;
+                        }
                     }
                 }
 
@@ -994,7 +1115,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
             }
         }
 
-        PlaceWaterAnimatedObjects(size, centerX, centerY, mapRadius);
+        PlaceWaterAnimatedObjects(size);
 
         BoundsInt b = new BoundsInt(0, 0, 0, width, height, 1);
         groundTilemap.SetTilesBlock(b, groundTiles);
@@ -1017,12 +1138,16 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
     // 작은 웅덩이는 확률이 전부 빗나가면 애니메이션 오브젝트가 하나도 안 생길 수 있었다.
     // 물 타일을 4방향 연결 컴포넌트(웅덩이)로 묶은 뒤, 그 웅덩이에 속한 깊은 물 타일 수에 비례한
     // 목표 개수를 계산해서 웅덩이 안에서만 랜덤하게 뽑아 스폰한다.
-    private void PlaceWaterAnimatedObjects(int _size, float _centerX, float _centerY, float _mapRadius)
+    // "바다"와 "웅덩이"는 거리(mapRadius)가 아니라 isOceanConnectedWater(섬과 물리적으로 연결됐는지)로
+    // 구분한다 — 섬 외부를 채우는 바다와 섬 내부에 고립된 웅덩이가 실제로 다른 것이기 때문이다.
+    private void PlaceWaterAnimatedObjects(int _size)
     {
         if (animatedObjGenerator == null) return;
 
-        float mapRadiusSq = _mapRadius * _mapRadius;
         float waterAnimatedObjDensity = stageTileData != null ? stageTileData.WaterAnimatedObjDensity : 0f;
+        float waterAnimatedOtherTypeObjDensity = stageTileData != null ? stageTileData.WaterAnimatedOtherTypeObjDensity : 0f;
+        float waterAnimatedObjSeaDensity = stageTileData != null ? stageTileData.WaterAnimatedObjSeaDensity : 0f;
+        float waterAnimatedOtherTypeObjSeaDensity = stageTileData != null ? stageTileData.WaterAnimatedOtherTypeObjSeaDensity : 0f;
 
         Array.Clear(waterCompVisited, 0, _size);
 
@@ -1030,8 +1155,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         {
             if (waterCompVisited[i] || waterTiles[i] == null) continue;
 
-            pondInnerDeepBuffer.Clear();
-            pondOuterDeepBuffer.Clear();
+            pondDeepBuffer.Clear();
+            seaDeepBuffer.Clear();
             waterCompQueue.Clear();
             waterCompQueue.Enqueue(i);
             waterCompVisited[i] = true;
@@ -1044,10 +1169,7 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
 
                 if (deepWaterTileFlags[curr])
                 {
-                    float ddx = cx - _centerX;
-                    float ddy = cy - _centerY;
-                    bool inMainMap = (ddx * ddx + ddy * ddy) < mapRadiusSq;
-                    (inMainMap ? pondInnerDeepBuffer : pondOuterDeepBuffer).Add(curr);
+                    (isOceanConnectedWater[curr] ? seaDeepBuffer : pondDeepBuffer).Add(curr);
                 }
 
                 TryEnqueueWaterCompCell(cx + 1, cy);
@@ -1056,8 +1178,8 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                 TryEnqueueWaterCompCell(cx, cy - 1);
             }
 
-            SpawnDistributedWaterAnimatedObj(pondInnerDeepBuffer, waterAnimatedObjDensity);
-            SpawnDistributedWaterAnimatedObj(pondOuterDeepBuffer, outerWaterObjectDensity);
+            SpawnTwoWaterAnimatedTypes(pondDeepBuffer, waterAnimatedObjDensity, pos => animatedObjGenerator.SpawnWaterAnimatedObj(pos), waterAnimatedOtherTypeObjDensity, pos => animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos));
+            SpawnTwoWaterAnimatedTypes(seaDeepBuffer, waterAnimatedObjSeaDensity, pos => animatedObjGenerator.SpawnWaterAnimatedObj(pos), waterAnimatedOtherTypeObjSeaDensity, pos => animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos));
         }
     }
 
@@ -1089,23 +1211,43 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
         return Mathf.Min(intPart, _poolSize);
     }
 
-    // _candidates(웅덩이에 속한 깊은 물 타일 목록)에서 부분 Fisher-Yates로 목표 개수만큼 뽑아
-    // 해당 위치에 물 애니메이션 오브젝트를 스폰한다. _candidates는 호출마다 재사용되는 버퍼이므로
-    // 여기서 순서를 바꿔도 안전하다.
-    private void SpawnDistributedWaterAnimatedObj(List<int> _candidates, float _density)
+    // _candidates(웅덩이에 속한 깊은 물 타일 목록) 전체를 기준으로 두 타입(A, B)의 목표 개수를
+    // 각각 독립적으로 계산한다. 즉 A가 몇 개를 차지하든 B의 계산에는 영향을 주지 않는다 —
+    // 그래야 두 밀도가 서로의 실효 밀도를 깎아먹지 않는다.
+    // 둘의 합이 풀 크기를 넘어서 물리적으로 둘 다 원하는 만큼 채울 자리가 없을 때만
+    // (오버서브스크라이브 상황에서만) B를 깎아서 겹치지 않게 한다.
+    private void SpawnTwoWaterAnimatedTypes(List<int> _candidates, float _densityA, System.Action<Vector3> _spawnA, float _densityB, System.Action<Vector3> _spawnB)
     {
-        int count = ComputeDistributedCount(_candidates.Count, _density);
-        if (count <= 0) return;
+        int n = _candidates.Count;
+        if (n == 0) return;
+
+        int countA = ComputeDistributedCount(n, _densityA);
+        int countB = ComputeDistributedCount(n, _densityB);
+
+        if (countA + countB > n)
+        {
+            countB = Mathf.Max(0, n - countA);
+        }
+
+        SpawnFromRange(_candidates, 0, countA, _spawnA);
+        SpawnFromRange(_candidates, countA, countB, _spawnB);
+    }
+
+    // _candidates의 [_offset, _offset+_count) 구간을 부분 Fisher-Yates로 채운 뒤 그 위치들에 스폰한다.
+    // _candidates는 호출마다 재사용되는 버퍼이므로 여기서 순서를 바꿔도 안전하다.
+    private void SpawnFromRange(List<int> _candidates, int _offset, int _count, System.Action<Vector3> _spawnAction)
+    {
+        if (_count <= 0) return;
 
         int n = _candidates.Count;
-        for (int k = 0; k < count; k++)
+        for (int k = _offset; k < _offset + _count; k++)
         {
             int r = k + UnityEngine.Random.Range(0, n - k);
             int tmp = _candidates[k];
             _candidates[k] = _candidates[r];
             _candidates[r] = tmp;
 
-            animatedObjGenerator.SpawnWaterAnimatedObj(GetWorldPos(_candidates[k]));
+            _spawnAction(GetWorldPos(_candidates[k]));
         }
     }
 
@@ -1259,11 +1401,29 @@ public class TileMapGenerator : MonoBehaviour, ITilemapDataProvider
                         UnityEngine.Random.Range(0, stageTileData.WaterDecoTiles.Count)];
                 }
 
-                if (animatedObjGenerator != null && UnityEngine.Random.value < outerWaterObjectDensity)
+                if (animatedObjGenerator != null)
                 {
-                    Vector3Int cellPos = new Vector3Int(worldX, worldY, 0);
-                    Vector3 pos = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
-                    animatedObjGenerator.SpawnWaterAnimatedObj(pos);
+                    // 각 타입 확률을 그대로 보존하면서 겹치지 않게 하려면, 독립적으로 두 번 굴리면 안 된다
+                    // (그러면 OtherType의 실제 확률이 (1-물고기밀도)×OtherType밀도로 줄어든다).
+                    // 대신 랜덤값 하나를 굴려서 [0, 물고기밀도) / [물고기밀도, 물고기밀도+OtherType밀도) /
+                    // 나머지 세 구간으로 나눈다 — 이러면 둘 다 설정값 그대로의 확률을 갖고 서로 배타적이다.
+                    // (둘의 합이 1을 넘으면 물리적으로 둘 다 보장할 수 없어 OtherType 쪽이 줄어든다.)
+                    float fishDensity = stageTileData.WaterAnimatedObjSeaDensity;
+                    float otherDensity = stageTileData.WaterAnimatedOtherTypeObjSeaDensity;
+                    float roll = UnityEngine.Random.value;
+
+                    if (roll < fishDensity)
+                    {
+                        Vector3Int cellPos = new Vector3Int(worldX, worldY, 0);
+                        Vector3 pos = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
+                        animatedObjGenerator.SpawnWaterAnimatedObj(pos);
+                    }
+                    else if (roll < fishDensity + otherDensity)
+                    {
+                        Vector3Int cellPos = new Vector3Int(worldX, worldY, 0);
+                        Vector3 pos = groundTilemap.GetCellCenterWorld(cellPos) + new Vector3(0, halfCellY, 0);
+                        animatedObjGenerator.SpawnWaterAnimatedOtherTypeObj(pos);
+                    }
                 }
 
                 if (stageTileData.BloomWaterDecoTiles != null && stageTileData.BloomWaterDecoTiles.Count > 0)
