@@ -154,6 +154,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private TweenCallback onAppearCompleteCallback;
     private TweenCallback onSubRegionUnlockDelayCompleteCallback;
     private TweenCallback onDungeonConfirmDelayCompleteCallback;
+    private TweenCallback onPanelOpenStartedCallback;
+    private TweenCallback onAdditionalElementsAppearStartedCallback;
+    private TweenCallback onNavImageDownStartedCallback;
     
     private UnityEngine.Events.UnityAction onBackgroundDimClickedAction;
 
@@ -207,6 +210,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
         onAppearCompleteCallback = OnAppearComplete;
         onSubRegionUnlockDelayCompleteCallback = OnSubRegionUnlockDelayComplete;
         onDungeonConfirmDelayCompleteCallback = OnDungeonConfirmDelayComplete;
+        onPanelOpenStartedCallback = PlayPanelOpenSound;
+        onAdditionalElementsAppearStartedCallback = PlayAdditionalElementsAppearSounds;
+        onNavImageDownStartedCallback = PlayNavImageDownSound;
         
         onBackgroundDimClickedAction = OnBackgroundDimClicked;
 
@@ -266,6 +272,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         gameObject.SetActive(true);
         isClosing = false;
         isInputBlocked = true;
+        Sound.PlayUI(SoundID.ResultUIOpen);
 
         if (null != demoNotice)
         {
@@ -372,6 +379,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         // 3. 상호작용 가능한 UI BG 패널 Y 스케일 쫀득하게 펼쳐짐
         if (null != interactiveUIPanel)
         {
+            _seq.InsertCallback(navImageBounceDuration, onPanelOpenStartedCallback);
             _seq.Insert(navImageBounceDuration, interactiveUIPanel.DOScaleY(1f, panelScaleDuration).SetEase(panelScaleEase));
         }
 
@@ -406,6 +414,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             _simultaneousSeq.Join(titleBandTransform.DOScaleX(1f, _animDuration).SetEase(titleBandEase, titleBandOvershoot));
         }
 
+        _seq.AppendCallback(onAdditionalElementsAppearStartedCallback);
         _seq.Append(_simultaneousSeq);
 
         // 5. 첫번째 대지역 선택 및 서브지역 연출 준비 (OnMainPopupAppearComplete 역할 포함)
@@ -425,6 +434,22 @@ public class HUD_PopupNav_Main : MonoBehaviour
     private void OnAppearComplete()
     {
         isInputBlocked = false;
+    }
+
+    private void PlayPanelOpenSound()
+    {
+        Sound.PlayUI(SoundID.NaviOpen);
+    }
+
+    private void PlayAdditionalElementsAppearSounds()
+    {
+        Sound.PlayUI(SoundID.NaviRowAppear);
+        Sound.PlayUI(SoundID.NaviSubBGAppear);
+    }
+
+    private void PlayNavImageDownSound()
+    {
+        Sound.PlayUI(SoundID.ResultUIClose);
     }
 
     private void OnMainPopupAppearCompleteForAnimation()
@@ -497,6 +522,8 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
+        Sound.PlayUI(SoundID.NaviClose);
+
         Sequence _seq = DOTween.Sequence();
         float _currentTime = 0f;
 
@@ -519,6 +546,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         // 3. 내비게이션 이미지가 아래로 내려가며 퇴장
         if (null != navImageContainer)
         {
+            _seq.InsertCallback(_currentTime, onNavImageDownStartedCallback);
             _seq.Insert(_currentTime, navImageContainer.DOAnchorPosY(-200f, navImageBounceDuration).SetEase(Ease.InBack));
         }
 
@@ -921,6 +949,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         currentSelectedMapType = _mapType;
         runtimeLastSelectedMapType = _mapType;
         currentSelectedForestType = ForestType.None;
+        Sound.PlayUI(SoundID.NaviSelectStart);
 
         if (null != currentRegionNameText && null != localizationManager)
         {

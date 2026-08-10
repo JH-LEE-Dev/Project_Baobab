@@ -115,7 +115,7 @@ public class HUD_PopupNav_RegionGroup : MonoBehaviour
                     }
                 }
 
-                _btn.Initialize(mainController, _validRegions[i], localizationManager, _bgSprite);
+                _btn.Initialize(mainController, _validRegions[i], localizationManager, _bgSprite, _btnIndex);
                 
                 // 연출을 위해 임시로 꺼두거나 초기 스케일 세팅
                 _btn.gameObject.SetActive(false);

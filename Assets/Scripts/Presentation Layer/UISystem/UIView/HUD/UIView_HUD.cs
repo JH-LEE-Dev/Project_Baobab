@@ -270,6 +270,8 @@ public class UIView_HUD : UIView
 
     public void HUDGoDown()
     {
+        Sound.PlayUI(SoundID.HUDDown);
+
         hudDirIndicator?.OnHide();
 
         if (null != hudScreenBlood)
@@ -288,6 +290,8 @@ public class UIView_HUD : UIView
     /// 띄우면 안 되는 경우 true로 넘긴다.</param>
     public void HUDGoUp(Action _onCompleted = null, bool _bSuppressDungeonStateBanner = false)
     {
+        Sound.PlayUI(SoundID.HUDUp);
+
         if (null != omp)
         {
             omp.PlayBackward(mapTransitionMotionTag, _onComplete: () => _onCompleted?.Invoke(), bReset: true);

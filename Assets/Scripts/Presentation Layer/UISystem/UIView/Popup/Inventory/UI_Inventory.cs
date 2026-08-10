@@ -359,7 +359,11 @@ public class UI_Inventory : MonoBehaviour
 
     public void OnHide()
     {
+        bool _wasOpening = IsOpening || isOpenAnimated;
         IsOpening = isOpenAnimated = false;
+
+        if (true == _wasOpening)
+            Sound.PlayUI(SoundID.HUDBackpackClose);
 
         if (null != omp)
         {
@@ -386,6 +390,7 @@ public class UI_Inventory : MonoBehaviour
             return;
 
         IsOpening = isOpenAnimated = true;
+        Sound.PlayUI(SoundID.HUDBackpackOpen);
         // hideAccCount = 0;
 
         if (null != omp)

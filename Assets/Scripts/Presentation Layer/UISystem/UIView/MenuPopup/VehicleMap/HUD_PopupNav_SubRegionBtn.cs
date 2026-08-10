@@ -114,6 +114,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private HUD_PopupNav_Main mainController;
     private ForestEnvironmentInfo myInfo;
     private MapType parentMapType;
+    private int appearSoundIndex = -1;
 
     // 런타임 캐싱 데이터
     private ParticleSystem newIndicatorParticle;
@@ -153,11 +154,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         return CachedRectTransform.rect.width;
     }
 
-    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas)
+    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas, int _appearSoundIndex = -1)
     {
         mainController = _mainController;
         myInfo = _info;
         parentMapType = _parentMapType;
+        appearSoundIndex = _appearSoundIndex;
 
         if (null != treeProps)
         {
@@ -267,6 +269,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private void ActivateObject()
     {
         gameObject.SetActive(true);
+
+        switch (appearSoundIndex)
+        {
+            case 0: Sound.PlayUI(SoundID.MainMenuButton01); break;
+            case 1: Sound.PlayUI(SoundID.MainMenuButton02); break;
+            case 2: Sound.PlayUI(SoundID.MainMenuButton03); break;
+        }
     }
 
     public void OnPointerClick(PointerEventData _eventData)
@@ -278,10 +287,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (false == myInfo.isUnlocked)
         {
+            Sound.PlayUI(SoundID.NaviLocked);
             PlayLockedInteraction();
             return;
         }
 
+        Sound.PlayUI(SoundID.MainClick);
         mainController.HandleSubRegionSelected(myInfo.forestType);
     }
 
@@ -329,6 +340,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         {
             return;
         }
+
+        Sound.PlayUI(SoundID.NaviSubHover);
 
         TriggerHover();
     }

@@ -182,7 +182,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
                                 }
                             }
                             
-                            _btn.Initialize(mainController, _subInfo, localizationManager, _regionInfo.mapType, tempTreeVisualDatas);
+                            _btn.Initialize(mainController, _subInfo, localizationManager, _regionInfo.mapType, tempTreeVisualDatas, j);
                             activeSubRegionButtons.Add(_btn);
                         }
                     }
