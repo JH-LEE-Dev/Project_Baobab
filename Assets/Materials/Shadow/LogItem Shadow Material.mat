@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: LogItem Shadow Material
-  m_Shader: {fileID: 4800000, guid: 89339c19e1c748f42a23c1f5ff81d9f2, type: 3}
+  m_Shader: {fileID: 4800000, guid: f8d3bbbb8143dcfe165a87013c1c7d9f, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -49,6 +49,7 @@ Material:
     - _HeightScale: -0.5510729
     - _HorizontalOffset: 0.71203315
     - _IgnoreStencilMask: 3
+    - _ShadowHeightPixels: 0
     - _ShadowStencilBit: 4
     - _Skew: 0
     - _StencilComp: 3
@@ -62,6 +63,10 @@ Material:
     - _BaseColor: {r: 0, g: 0, b: 0, a: 0.65}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+    - _ShadowFrameRect0: {r: 0, g: 0, b: 0.25, a: 1}
+    - _ShadowFrameRect1: {r: 0.25, g: 0, b: 0.5, a: 1}
+    - _ShadowFrameRect2: {r: 0.5, g: 0, b: 0.75, a: 1}
+    - _ShadowFrameRect3: {r: 0.75, g: 0, b: 1, a: 1}
     - _ShadowOffset: {r: 0, g: 0, b: 0, a: 0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

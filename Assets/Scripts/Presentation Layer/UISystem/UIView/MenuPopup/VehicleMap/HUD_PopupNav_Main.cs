@@ -122,6 +122,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
     // 상태 변수
     private bool isUnlockingProductionActive = false;
+    private bool hasPlayedUnlockStartSound = false;
     private bool isClosing = false;
     private bool isInputBlocked = false;
     private ForestType currentSelectedForestType = ForestType.None;
@@ -176,8 +177,20 @@ public class HUD_PopupNav_Main : MonoBehaviour
         if (false == isUnlockingProductionActive)
         {
             isUnlockingProductionActive = true;
+            hasPlayedUnlockStartSound = false;
             OnUnlockProductionStarted?.Invoke();
         }
+    }
+
+    public void PlayUnlockStartSoundIfNeeded()
+    {
+        if (false == isUnlockingProductionActive || true == hasPlayedUnlockStartSound)
+        {
+            return;
+        }
+
+        hasPlayedUnlockStartSound = true;
+        Sound.PlayUI(SoundID.NaviUnLockStart);
     }
 
     private void EndUnlockProduction()
@@ -472,17 +485,17 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
-    public void Close(bool _isInstant = false)
+    public void Close(bool _isInstant = false, bool _playCloseSound = true)
     {
         if (true == isClosing)
         {
             return;
         }
 
-        CloseMainPopup(_isInstant);
+        CloseMainPopup(_isInstant, _playCloseSound);
     }
 
-    private void CloseMainPopup(bool _isInstant = false)
+    private void CloseMainPopup(bool _isInstant = false, bool _playCloseSound = true)
     {
         MarkCurrentRegionAsRead();
         MarkAllUnlockedAsRead();
@@ -525,7 +538,10 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        Sound.PlayUI(SoundID.NaviClose);
+        if (true == _playCloseSound)
+        {
+            Sound.PlayUI(SoundID.NaviClose);
+        }
 
         Sequence _seq = DOTween.Sequence();
         float _currentTime = 0f;
@@ -1056,7 +1072,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             hasPendingDungeonConfirm = true;
             pendingConfirmMapType = currentSelectedMapType;
             pendingConfirmForestType = currentSelectedForestType;
-            Close();
+            Close(_playCloseSound: false);
         }
     }
 
