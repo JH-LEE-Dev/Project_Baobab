@@ -14,7 +14,6 @@ public class ItemAuraEffectController : MonoBehaviour
     // 설정 파라미터
     [Header("단발성 버스트 애니메이션")]
     [SerializeField] private float burstDuration = 1.2f;
-    public float BurstDuration => burstDuration;
     [SerializeField] private float targetIntensity = 1.0f;
     [SerializeField] private Vector3 maxScale = new Vector3(5f, 5f, 1f);
     [SerializeField] private bool playOnAwake = false;
