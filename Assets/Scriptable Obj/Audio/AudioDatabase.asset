@@ -111,7 +111,7 @@ MonoBehaviour:
     defaultVolume: 0.045
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 5
     polyphonyAttenuationStrength: 0.1
   - id: 532227752
     mixerId: 0
@@ -271,7 +271,7 @@ MonoBehaviour:
     defaultVolume: 0.225
     is3D: 1
     loop: 0
-    maxConcurrentVoices: 0
+    maxConcurrentVoices: 5
     polyphonyAttenuationStrength: 0.1
   - id: -928538285
     mixerId: 0
