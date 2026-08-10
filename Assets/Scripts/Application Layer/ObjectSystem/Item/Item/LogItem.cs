@@ -86,6 +86,16 @@ public class LogItem : Item, IStaticCollidable
     private Transform shadowTransform;
     private SpriteRenderer shadowRenderer;
 
+    [Header("Shadow Sprites By Height Position")]
+    [Tooltip("원목이 -1 위치에 있을 때(바닥 아래로 1픽셀 내려갔을 때)")]
+    [SerializeField] private Sprite shadowSprite_Minus1;
+    [Tooltip("원목이 0 위치에 있을 때(기본 착지 위치)")]
+    [SerializeField] private Sprite shadowSprite_0;
+    [Tooltip("원목이 1 위치에 있을 때(바닥 위로 1픽셀 올라갔을 때)")]
+    [SerializeField] private Sprite shadowSprite_1;
+    [Tooltip("원목이 2 위치 이상에 있을 때(포물선 비행 중)")]
+    [SerializeField] private Sprite shadowSprite_2Plus;
+
     // 착지하지 않고 공중에서 서서히 사라지는 연출(버려진 아이템 등) 관련 상태
     private bool bFadeAndVanish = false;
     private const float VanishFadeStartT = 0.35f; // 이 시점(t) 이후부터 착지 시점(t=1)까지 알파를 1->0으로 서서히 감소
@@ -193,6 +203,8 @@ public class LogItem : Item, IStaticCollidable
         originalColor = spriteRenderer.color;
         originalOutlineColor = outlineSR != null ? outlineSR.color : Color.white;
         originalShadowColor = shadowRenderer != null ? shadowRenderer.color : Color.white;
+
+        UpdateShadowFrame();
     }
 
     public void SetVfxComponent(VFXComponent _vfxComponent)
@@ -466,6 +478,8 @@ public class LogItem : Item, IStaticCollidable
                 UpdateDropped(_deltaTime);
                 break;
         }
+
+        UpdateShadowFrame();
 
         if (bDisableCustomSortable == false)
         {
@@ -1105,6 +1119,39 @@ public class LogItem : Item, IStaticCollidable
 
         float shadowScale = Mathf.Max(0.3f, 1f - (_heightOffset * 0.25f));
         shadowTransform.localScale = new Vector3(shadowScale, shadowScale, 1f);
+    }
+
+    // 원목의 현재 높이(픽셀 단위)에 맞는 그림자 스프라이트로 교체한다.
+    // Dropped 상태에서는 CPU 트랜스폼이 0으로 고정되고 둥둥 뜨는 움직임이 셰이더 내부에서만 계산되므로,
+    // 셰이더(Custom-Sprite-Default_LogItem.shader)의 사인파 공식을 그대로 재현해 높이를 추정한다.
+    private void UpdateShadowFrame()
+    {
+        if (shadowRenderer == null) return;
+
+        float heightPixels = state == ItemMoveState.Dropped
+            ? GetIdleFloatingPixelOffset()
+            : (visualTransform != null ? visualTransform.localPosition.y * 32f : 0f);
+
+        int level = Mathf.RoundToInt(heightPixels);
+
+        Sprite frameSprite;
+        if (level <= -1) frameSprite = shadowSprite_Minus1;
+        else if (level == 0) frameSprite = shadowSprite_0;
+        else if (level == 1) frameSprite = shadowSprite_1;
+        else frameSprite = shadowSprite_2Plus;
+
+        if (frameSprite != null)
+        {
+            shadowRenderer.sprite = frameSprite;
+        }
+    }
+
+    private float GetIdleFloatingPixelOffset()
+    {
+        Vector3 pivotWorldPos = visualTransform != null ? visualTransform.position : transform.position;
+        float floatingPhase = (pivotWorldPos.x + pivotWorldPos.y) * 10f;
+        float floatOffsetUnits = Mathf.Sin(Time.time * 2.5f + floatingPhase) * (1f / 32f);
+        return floatOffsetUnits * 32f;
     }
 
     public void SetHeight(float _height)

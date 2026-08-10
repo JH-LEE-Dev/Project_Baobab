@@ -71,7 +71,7 @@ Shader "Custom/OutlineShader_LogItem"
 
                 float3 pivotWorldPos = TransformObjectToWorld(float3(0,0,0));
                 float floatingOffset = (pivotWorldPos.x + pivotWorldPos.y) * 10.0;
-                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * 0.05;
+                float floatOffset = sin(_Time.y * 2.5 + floatingOffset) * (1.0 / 32.0);
                 IN.positionOS.y += floatOffset;
                 OUT.positionHCS = TransformObjectToHClip(IN.positionOS.xyz);
                 OUT.worldPos = TransformObjectToWorld(IN.positionOS.xyz);
