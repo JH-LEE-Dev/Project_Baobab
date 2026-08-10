@@ -61,8 +61,12 @@ public class StageTileDataSO : ScriptableObject
     [SerializeField] private TileBase groundStencilTile;
     [SerializeField] private List<AnimatedObj> animatedObjPrefabs;
     [SerializeField] private List<DecoSpritePatternAnimator> waterAnimatedObjPrefabs;
+    // WaterAnimatedObjPrefabs(DecoSpritePatternAnimator)와 별개로, AnimatedObj 타입 프리팹을 물 위에 스폰하기 위한 목록.
+    [SerializeField] private List<AnimatedObj> waterAnimatedOtherTypeObjPrefabs;
     [SerializeField] [FormerlySerializedAs("staticObjPrefabs")] private List<StaticObj> grassStaticObjPrefabs;
     [SerializeField] [FormerlySerializedAs("staticObjPrefabs")] private List<StaticObj> sandStaticObjPrefabs;
+    [SerializeField] private List<StaticObj> shorelineStaticObjPrefabs;
+    [SerializeField] private List<AnimatedObj> shorelineAnimatedObjPrefabs;
 
     [Header("블룸(Bloom) HDR 강도 설정")]
     [SerializeField] private float bloomDecoHDRIntensity = 1f;
@@ -74,8 +78,15 @@ public class StageTileDataSO : ScriptableObject
     [Header("오브젝트 밀도 설정")]
     [SerializeField, Range(0f, 0.1f)] [FormerlySerializedAs("rockDecoDensity")] private float grassStaticObjDensity = 0.0005f;
     [SerializeField, Range(0f, 0.1f)] [FormerlySerializedAs("rockDecoDensity")] private float sandStaticObjDensity = 0.0005f;
+    [SerializeField, Range(0f, 0.1f)] private float shorelineStaticObjDensity = 0.0005f;
     [SerializeField, Range(0f, 0.1f)] private float animatedObjDensity = 0.0025f;
+    [SerializeField, Range(0f, 0.1f)] private float shorelineAnimatedObjDensity = 0.0025f;
+    // 섬 내부에 고립된 웅덩이(바다와 연결되지 않은 물)에 적용되는 밀도.
     [SerializeField, Range(0f, 1f)] private float waterAnimatedObjDensity = 0.1f;
+    [SerializeField, Range(0f, 1f)] private float waterAnimatedOtherTypeObjDensity = 0.1f;
+    // 섬을 감싸는 바다(섬과 연결된 물, 그리드 안팎 구분 없이 전부 동일 적용)에 적용되는 밀도.
+    [SerializeField, Range(0f, 1f)] private float waterAnimatedObjSeaDensity = 0.01f;
+    [SerializeField, Range(0f, 1f)] private float waterAnimatedOtherTypeObjSeaDensity = 0.01f;
 
     [Header("데코 타일 밀도 설정")]
     [SerializeField, Range(0f, 1f)] private float waterDecoDensity = 1f;
@@ -97,8 +108,13 @@ public class StageTileDataSO : ScriptableObject
     // // 퍼블릭 초기화 및 제어 메서드
     public float GrassStaticObjDensity => grassStaticObjDensity;
     public float SandStaticObjDensity => sandStaticObjDensity;
+    public float ShorelineStaticObjDensity => shorelineStaticObjDensity;
     public float AnimatedObjDensity => animatedObjDensity;
+    public float ShorelineAnimatedObjDensity => shorelineAnimatedObjDensity;
     public float WaterAnimatedObjDensity => waterAnimatedObjDensity;
+    public float WaterAnimatedOtherTypeObjDensity => waterAnimatedOtherTypeObjDensity;
+    public float WaterAnimatedObjSeaDensity => waterAnimatedObjSeaDensity;
+    public float WaterAnimatedOtherTypeObjSeaDensity => waterAnimatedOtherTypeObjSeaDensity;
     public float WaterDecoDensity => waterDecoDensity;
     public float SandDecoDensity => sandDecoDensity;
     public float GroundDecoDensity => groundDecoDensity;
@@ -116,8 +132,11 @@ public class StageTileDataSO : ScriptableObject
     public float TreeHeatStaminaDamage => treeHeatStaminaDamage;
     public List<AnimatedObj> AnimatedObjPrefabs => animatedObjPrefabs;
     public List<DecoSpritePatternAnimator> WaterAnimatedObjPrefabs => waterAnimatedObjPrefabs;
+    public List<AnimatedObj> WaterAnimatedOtherTypeObjPrefabs => waterAnimatedOtherTypeObjPrefabs;
     public List<StaticObj> GrassStaticObjPrefabs => grassStaticObjPrefabs;
     public List<StaticObj> SandStaticObjPrefabs => sandStaticObjPrefabs;
+    public List<StaticObj> ShorelineStaticObjPrefabs => shorelineStaticObjPrefabs;
+    public List<AnimatedObj> ShorelineAnimatedObjPrefabs => shorelineAnimatedObjPrefabs;
     public TileBase WaterTile => waterTile;
     public TileBase WaterTileBorderRU => waterTileBorderRU;
     public TileBase WaterTileBorderRD => waterTileBorderRD;

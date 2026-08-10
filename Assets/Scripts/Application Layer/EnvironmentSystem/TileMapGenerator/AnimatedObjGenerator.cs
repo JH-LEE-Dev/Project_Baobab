@@ -12,6 +12,9 @@ public class AnimatedObjGenerator : MonoBehaviour
     private List<DecoSpritePatternAnimator> currentWaterPrefabs;
     private List<StaticObj> currentGrassStaticPrefabs;
     private List<StaticObj> currentSandStaticPrefabs;
+    private List<StaticObj> currentShorelineStaticPrefabs;
+    private List<AnimatedObj> currentShorelineAnimatedPrefabs;
+    private List<AnimatedObj> currentWaterOtherTypeAnimatedPrefabs;
     
     private Dictionary<AnimatedObj, IObjectPool<AnimatedObj>> poolDict;
     private Dictionary<AnimatedObj, List<AnimatedObj>> activeObjectsDict;
@@ -32,13 +35,16 @@ public class AnimatedObjGenerator : MonoBehaviour
 
     // // 퍼블릭 초기화 및 제어 메서드
 
-    public void SetPrefabs(List<AnimatedObj> _landPrefabs, List<DecoSpritePatternAnimator> _waterPrefabs, List<StaticObj> _grassStaticPrefabs, List<StaticObj> _sandStaticPrefabs)
+    public void SetPrefabs(List<AnimatedObj> _landPrefabs, List<DecoSpritePatternAnimator> _waterPrefabs, List<StaticObj> _grassStaticPrefabs, List<StaticObj> _sandStaticPrefabs, List<StaticObj> _shorelineStaticPrefabs, List<AnimatedObj> _shorelineAnimatedPrefabs, List<AnimatedObj> _waterOtherTypeAnimatedPrefabs)
     {
         ReleaseAllActive();
         currentLandPrefabs = _landPrefabs;
         currentWaterPrefabs = _waterPrefabs;
         currentGrassStaticPrefabs = _grassStaticPrefabs;
         currentSandStaticPrefabs = _sandStaticPrefabs;
+        currentShorelineStaticPrefabs = _shorelineStaticPrefabs;
+        currentShorelineAnimatedPrefabs = _shorelineAnimatedPrefabs;
+        currentWaterOtherTypeAnimatedPrefabs = _waterOtherTypeAnimatedPrefabs;
 
         if (mainCam == null)
         {
@@ -178,10 +184,26 @@ public class AnimatedObjGenerator : MonoBehaviour
 
     public AnimatedObj SpawnAnimatedObj(Vector3 _position)
     {
-        if (currentLandPrefabs == null || currentLandPrefabs.Count == 0) return null;
+        return SpawnAnimatedObjFromList(_position, currentLandPrefabs);
+    }
 
-        int randomIndex = UnityEngine.Random.Range(0, currentLandPrefabs.Count);
-        AnimatedObj _prefab = currentLandPrefabs[randomIndex];
+    public AnimatedObj SpawnShorelineAnimatedObj(Vector3 _position)
+    {
+        return SpawnAnimatedObjFromList(_position, currentShorelineAnimatedPrefabs);
+    }
+
+    // WaterAnimatedObjPrefabs(DecoSpritePatternAnimator)와 별개로, AnimatedObj 타입 프리팹을 물 위에 스폰한다.
+    public AnimatedObj SpawnWaterAnimatedOtherTypeObj(Vector3 _position)
+    {
+        return SpawnAnimatedObjFromList(_position, currentWaterOtherTypeAnimatedPrefabs);
+    }
+
+    private AnimatedObj SpawnAnimatedObjFromList(Vector3 _position, List<AnimatedObj> _prefabs)
+    {
+        if (_prefabs == null || _prefabs.Count == 0) return null;
+
+        int randomIndex = UnityEngine.Random.Range(0, _prefabs.Count);
+        AnimatedObj _prefab = _prefabs[randomIndex];
         if (_prefab == null) return null;
 
         IObjectPool<AnimatedObj> _pool = GetPool(_prefab);
@@ -226,6 +248,11 @@ public class AnimatedObjGenerator : MonoBehaviour
     public StaticObj SpawnSandStaticObj(Vector3 _position)
     {
         return SpawnStaticObjFromList(_position, currentSandStaticPrefabs);
+    }
+
+    public StaticObj SpawnShorelineStaticObj(Vector3 _position)
+    {
+        return SpawnStaticObjFromList(_position, currentShorelineStaticPrefabs);
     }
 
     private StaticObj SpawnStaticObjFromList(Vector3 _position, List<StaticObj> _prefabs)
