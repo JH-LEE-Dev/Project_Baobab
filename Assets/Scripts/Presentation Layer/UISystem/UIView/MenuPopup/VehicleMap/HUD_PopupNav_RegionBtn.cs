@@ -131,6 +131,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     private HUD_PopupNav_Main mainController;
     private MapEnvironmentDataInfo myInfo;
+    private int appearSoundIndex = -1;
     
     // 런타임 캐싱 데이터
     private ParticleSystem newIndicatorParticle;
@@ -152,11 +153,12 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
     public MapType GetMapType() => myInfo.mapType;
 
-    public void Initialize(HUD_PopupNav_Main _mainController, MapEnvironmentDataInfo _info, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, Sprite _bgSprite = null)
+    public void Initialize(HUD_PopupNav_Main _mainController, MapEnvironmentDataInfo _info, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, Sprite _bgSprite = null, int _appearSoundIndex = -1)
     {
         mainController = _mainController;
         myInfo = _info;
         cursorBoxUI = _cursorBoxUI;
+        appearSoundIndex = _appearSoundIndex;
         unlockedBgSprite = _bgSprite;
 
         bool _isLocked = !_info.isUnlocked;
@@ -246,6 +248,14 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
     private void ActivateObject()
     {
         gameObject.SetActive(true);
+
+        switch (appearSoundIndex)
+        {
+            case 0: Sound.PlayUI(SoundID.MainMenuDot01); break;
+            case 1: Sound.PlayUI(SoundID.MainMenuDot02); break;
+            case 2: Sound.PlayUI(SoundID.MainMenuDot03); break;
+            case 3: Sound.PlayUI(SoundID.MainMenuDot04); break;
+        }
     }
 
     public void OnPointerClick(PointerEventData _eventData)
@@ -257,6 +267,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         if (false == myInfo.isUnlocked)
         {
+            Sound.PlayUI(SoundID.NaviLocked);
             return;
         }
 
@@ -314,6 +325,13 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         {
             return;
         }
+
+        if (true == isSelected)
+        {
+            return;
+        }
+
+        Sound.PlayUI(SoundID.NaviMainHover);
         
         TriggerHover();
     }

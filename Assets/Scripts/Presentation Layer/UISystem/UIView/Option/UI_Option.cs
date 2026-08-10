@@ -76,6 +76,7 @@ public class UI_Option : MonoBehaviour
     private Action<EWindowMode> onSettingsWindowModeChanged;
 
     private bool isInitialized = false;
+    private bool isResetAllConfirmationOpen = false;
     private LocalizationManager locManager;
     private SettingsManager settings;
     private InputManager inputManager;
@@ -608,8 +609,15 @@ public class UI_Option : MonoBehaviour
     {
         if (null != warningPopup && null != locManager)
         {
+            isResetAllConfirmationOpen = true;
             string _warningMsg = locManager.GetText(LocKeys.OptionUI.resetAllWarning);
-            warningPopup.ShowWarning(_warningMsg, cachedExecuteResetAll, cachedCancelResetAll);
+            warningPopup.ShowWarning(
+                _warningMsg,
+                cachedExecuteResetAll,
+                cachedCancelResetAll,
+                SoundID.ResultUIOpen,
+                SoundID.ResultUIClose,
+                SoundID.ResultUIHover);
         }
         else
         {
@@ -619,6 +627,8 @@ public class UI_Option : MonoBehaviour
 
     private void ExecuteResetAllBindings()
     {
+        PlayResetAllConfirmationClickSound();
+
         if (null != inputManager)
         {
             inputManager.ResetAllBindings();
@@ -627,7 +637,17 @@ public class UI_Option : MonoBehaviour
 
     private void CancelResetAllBindings()
     {
+        PlayResetAllConfirmationClickSound();
         // 취소 시 특별한 동작 없음
+    }
+
+    private void PlayResetAllConfirmationClickSound()
+    {
+        if (false == isResetAllConfirmationOpen)
+            return;
+
+        isResetAllConfirmationOpen = false;
+        Sound.PlayUI(SoundID.MainClick);
     }
 
     // 유니티 이벤트 함수

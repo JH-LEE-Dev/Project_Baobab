@@ -140,6 +140,7 @@ public class UI_Storage : MonoBehaviour
         gameObject.SetActive(IsOpening = true);
         isPendingHide = false;
         isOnShow = true;
+        Sound.PlayUI(SoundID.HUDEverySlotOpen);
 
         if (null != positioningTween && true == positioningTween.IsActive())
             positioningTween.Kill();

@@ -89,16 +89,16 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     [Header("Cursor Settings")]
     [Tooltip("커서를 표시할 대상 트랜스폼 (비워두면 자기 자신)")]
     [SerializeField] private RectTransform cursorTargetTransform;
-    
+
     [Tooltip("커서 크기 여백 (기본 크기 + Padding)")]
     [SerializeField] private Vector2 cursorPadding = new Vector2(8f, 8f);
-    
+
     [Tooltip("커서 표시 위치 오프셋")]
     [SerializeField] private Vector2 cursorOffset = Vector2.zero;
-    
+
     [Tooltip("커스텀 크기 사용 여부")]
     [SerializeField] private bool useCustomCursorSize = false;
-    
+
     [Tooltip("수동으로 지정할 커서 크기")]
     [SerializeField] private Vector2 customCursorSize = new Vector2(100f, 40f);
 
@@ -114,7 +114,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         idleSizeOffset = 0.5f,
         hideDuration = 0.1f
     };
-    
+
     private ICursorBoxUI cursorBoxUI;
     private Tween appearTween;
     private Tween disappearTween;
@@ -144,6 +144,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private HUD_PopupNav_Main mainController;
     private ForestEnvironmentInfo myInfo;
     private MapType parentMapType;
+    private int appearSoundIndex = -1;
 
     // 런타임 캐싱 데이터
     private ParticleSystem newIndicatorParticle;
@@ -183,12 +184,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         return CachedRectTransform.rect.width;
     }
 
-    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas)
+    public void Initialize(HUD_PopupNav_Main _mainController, ForestEnvironmentInfo _info, LocalizationManager _localizationManager, ICursorBoxUI _cursorBoxUI, MapType _parentMapType, System.Collections.Generic.List<TreeVisualData> _visualDatas, int _appearSoundIndex = -1)
     {
         mainController = _mainController;
         cursorBoxUI = _cursorBoxUI;
         myInfo = _info;
         parentMapType = _parentMapType;
+        appearSoundIndex = _appearSoundIndex;
 
         if (null != treeProps)
         {
@@ -298,6 +300,13 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
     private void ActivateObject()
     {
         gameObject.SetActive(true);
+
+        switch (appearSoundIndex)
+        {
+            case 0: Sound.PlayUI(SoundID.MainMenuButton01); break;
+            case 1: Sound.PlayUI(SoundID.MainMenuButton02); break;
+            case 2: Sound.PlayUI(SoundID.MainMenuButton03); break;
+        }
     }
 
     public void OnPointerClick(PointerEventData _eventData)
@@ -309,9 +318,12 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (false == myInfo.isUnlocked)
         {
+            Sound.PlayUI(SoundID.NaviLocked);
             PlayLockedInteraction();
             return;
         }
+
+        Sound.PlayUI(SoundID.MainClick);
 
         if (null != cursorBoxUI)
         {
@@ -365,6 +377,8 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         {
             return;
         }
+
+        Sound.PlayUI(SoundID.NaviSubHover);
 
         TriggerHover();
     }
@@ -438,7 +452,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         {
             RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
             Vector2 size = useCustomCursorSize ? customCursorSize : (target.rect.size + cursorPadding);
-            
+
             cursorBoxUI.Show(target, size, cursorOffset, hoverCursorMotion);
         }
     }
@@ -505,7 +519,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
                 treeProps[i].StopHoverEffect();
             }
         }
-        
+
         if (null != cursorBoxUI)
         {
             RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
