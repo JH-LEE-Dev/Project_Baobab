@@ -18,7 +18,7 @@ public class UIView_Tent : UIView
     [SerializeField] private GameObject currencyCounterHUDPrefab;
 
     [Header("Tutorial HUD Presentation")]
-    [SerializeField, Min(0.0f)] private float tutorialHUDRevealDelay = 0.5f;
+    [SerializeField, Min(0.0f)] private float tutorialHUDRevealDelay = 0.2f;
     [SerializeField, Min(0.0f)] private float tutorialHUDFadeDuration = 0.5f;
 
     private CurrencyCounterHUD coinCounter;
