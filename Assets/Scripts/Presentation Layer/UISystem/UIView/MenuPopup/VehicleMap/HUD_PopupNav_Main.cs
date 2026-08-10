@@ -485,17 +485,17 @@ public class HUD_PopupNav_Main : MonoBehaviour
         }
     }
 
-    public void Close(bool _isInstant = false)
+    public void Close(bool _isInstant = false, bool _playCloseSound = true)
     {
         if (true == isClosing)
         {
             return;
         }
 
-        CloseMainPopup(_isInstant);
+        CloseMainPopup(_isInstant, _playCloseSound);
     }
 
-    private void CloseMainPopup(bool _isInstant = false)
+    private void CloseMainPopup(bool _isInstant = false, bool _playCloseSound = true)
     {
         MarkCurrentRegionAsRead();
         MarkAllUnlockedAsRead();
@@ -538,7 +538,10 @@ public class HUD_PopupNav_Main : MonoBehaviour
             return;
         }
 
-        Sound.PlayUI(SoundID.NaviClose);
+        if (true == _playCloseSound)
+        {
+            Sound.PlayUI(SoundID.NaviClose);
+        }
 
         Sequence _seq = DOTween.Sequence();
         float _currentTime = 0f;
@@ -1069,7 +1072,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             hasPendingDungeonConfirm = true;
             pendingConfirmMapType = currentSelectedMapType;
             pendingConfirmForestType = currentSelectedForestType;
-            Close();
+            Close(_playCloseSound: false);
         }
     }
 
