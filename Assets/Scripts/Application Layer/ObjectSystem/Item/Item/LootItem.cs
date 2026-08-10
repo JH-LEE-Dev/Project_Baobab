@@ -24,7 +24,9 @@ public class LootItem : Item
     private float duration;
     private float elapsed;
     private float suckSpeed;
-    private const float SuckAccel = 12f;
+    [Header("흡입(Suck) 연출")]
+    [Tooltip("캐릭터에게 빨려올 때의 가속도. 값이 작을수록 천천히 빨려옵니다.")]
+    [SerializeField] private float suckAccel = 4f;
     private const float MinAcquireDist = 0.2f;
 
     // 관리용 인덱스
@@ -285,7 +287,7 @@ public class LootItem : Item
             return;
         }
 
-        suckSpeed += SuckAccel * _deltaTime;
+        suckSpeed += suckAccel * _deltaTime;
         transform.position = Vector3.MoveTowards(transform.position, targetPos, suckSpeed * _deltaTime);
 
         if (visualTransform != null)
