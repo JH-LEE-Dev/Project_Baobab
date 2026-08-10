@@ -595,7 +595,7 @@ SpriteRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: f7858dabf56a35b44b0657ea0e8e67a5, type: 2}
+  - {fileID: 2100000, guid: e880c8cc906e30a49a8f8e63742acf0b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -684,6 +684,10 @@ MonoBehaviour:
   outlineStencilSR: {fileID: 4172736323387572501}
   outlineSR: {fileID: 163953909001683201}
   outlineColor: {r: 1, g: 1, b: 1, a: 1}
+  vfxRoot: {fileID: 6278290062918489305}
+  vfxOrbit: {fileID: 4271329846673708407}
+  vfxBeam: {fileID: 5228358539814469293}
+  arcSlowMoTimeScale: 3.5
 --- !u!114 &1588757393300197101
 MonoBehaviour:
   m_ObjectHideFlags: 0

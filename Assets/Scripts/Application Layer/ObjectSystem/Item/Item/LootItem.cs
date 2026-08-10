@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class LootItem : Item
@@ -35,6 +36,16 @@ public class LootItem : Item
     [SerializeField] private Color outlineColor = Color.white;
     private static readonly int OutlineColorPropertyID = Shader.PropertyToID("_OutlineColor");
     private MaterialPropertyBlock mpb;
+
+    [Header("VFX 연출")]
+    [SerializeField] private GameObject vfxRoot;
+    [SerializeField] private ItemAuraOrbitController vfxOrbit;
+    [SerializeField] private ItemAuraEffectController vfxBeam;
+    private Coroutine vfxRelayCoroutine;
+
+    [Header("드랍 포물선 연출")]
+    [Tooltip("포물선 낙하 구간(좌우 이동 + 높이)의 실제 소요 시간을 이 배율만큼 늘립니다. 1이면 원래 속도, 클수록 낙하 자체가 느려지는 진짜 슬로우모션이 됩니다. Sucking(흡입) 구간에는 영향 없습니다.")]
+    [SerializeField, Range(1f, 5f)] private float arcSlowMoTimeScale = 1.5f;
 
     public void Initialize(LootItemTypeData _lootItemTypeData)
     {
@@ -107,6 +118,8 @@ public class LootItem : Item
                 outlineObj.transform.localScale = visualTransform.localScale;
             }
         }
+
+        PlayVFX();
     }
 
     public override void ResetItem()
@@ -116,10 +129,82 @@ public class LootItem : Item
         suckTarget = null;
         elapsed = 0;
 
+        if (vfxRelayCoroutine != null)
+        {
+            StopCoroutine(vfxRelayCoroutine);
+            vfxRelayCoroutine = null;
+        }
+        if (vfxRoot != null)
+            vfxRoot.SetActive(false);
+
         if (outlineObj != null)
             outlineObj.SetActive(false);
         if (outlineSR != null)
             outlineSR.SetPropertyBlock(null);
+    }
+
+    private void PlayVFX()
+    {
+        if (vfxRoot == null) return;
+
+        if (vfxRelayCoroutine != null)
+            StopCoroutine(vfxRelayCoroutine);
+
+        vfxRelayCoroutine = StartCoroutine(VFXRelayRoutine());
+    }
+
+    /// <summary>
+    /// 단발성 빔(VFX_Beam)이 터진 뒤, 빔의 수명(BurstDuration) 절반 지점에서
+    /// 상시 궤도 오오라(VFX_Orbit)로 자연스럽게 릴레이 전환합니다.
+    /// </summary>
+    private IEnumerator VFXRelayRoutine()
+    {
+        vfxRoot.SetActive(true);
+        SyncVFXPosition();
+        SyncVFXSortingOrder();
+
+        if (vfxOrbit != null)
+            vfxOrbit.gameObject.SetActive(false);
+
+        float delay = 0f;
+        if (vfxBeam != null)
+        {
+            vfxBeam.gameObject.SetActive(true);
+            vfxBeam.Play();
+            delay = vfxBeam.BurstDuration * 0.5f;
+        }
+
+        if (delay > 0f)
+            yield return new WaitForSeconds(delay);
+
+        if (vfxOrbit != null)
+            vfxOrbit.gameObject.SetActive(true);
+
+        vfxRelayCoroutine = null;
+    }
+
+    private void SyncVFXPosition()
+    {
+        if (vfxRoot == null || visualTransform == null) return;
+
+        vfxRoot.transform.localPosition = visualTransform.localPosition;
+    }
+
+    /// <summary>
+    /// VFX_Beam은 본체 스프라이트보다 항상 1 앞(+1)으로 유지합니다.
+    /// VFX_Orbit은 위성 기준 오더를 본체+1로 재기준(rebase)하되, 인스펙터에 세팅된
+    /// 트레일/중앙 글로우의 상대 깊이 오프셋(-10/+10 등)은 그대로 보존됩니다.
+    /// </summary>
+    private void SyncVFXSortingOrder()
+    {
+        if (spriteRenderer == null) return;
+
+        int order = spriteRenderer.sortingOrder + 1;
+
+        if (vfxBeam != null)
+            vfxBeam.SetSortingOrder(order);
+        if (vfxOrbit != null)
+            vfxOrbit.RebaseSortingOrder(order);
     }
 
     public void ManualUpdate(float _deltaTime)
@@ -144,7 +229,11 @@ public class LootItem : Item
     private void UpdateLaunching(float _deltaTime)
     {
         elapsed += _deltaTime;
-        float t = Mathf.Clamp01(elapsed / duration);
+
+        // 포물선 낙하 구간의 실제 소요 시간 자체를 배율만큼 늘려서(= elapsed가 더 천천히 100%에 도달) 진짜 슬로우모션으로 만든다.
+        // Sucking(흡입) 상태로 넘어간 뒤에는 이 배율이 적용되지 않는다.
+        float effectiveDuration = duration * arcSlowMoTimeScale;
+        float t = Mathf.Clamp01(elapsed / effectiveDuration);
 
         Vector3 currentGroundPos = Vector3.Lerp(startPos, endPos, t);
         float heightOffset = -4 * height * (t - 0.5f) * (t - 0.5f) + height;
@@ -156,6 +245,8 @@ public class LootItem : Item
 
             if (outlineObj != null)
                 outlineObj.transform.localPosition = visualTransform.localPosition;
+            SyncVFXPosition();
+            SyncVFXSortingOrder();
         }
         else
         {
@@ -169,6 +260,7 @@ public class LootItem : Item
             {
                 visualTransform.localPosition = Vector3.zero;
                 if (outlineObj != null) outlineObj.transform.localPosition = Vector3.zero;
+                if (vfxRoot != null) vfxRoot.transform.localPosition = Vector3.zero;
             }
 
             state = ItemMoveState.Dropped;
@@ -202,6 +294,8 @@ public class LootItem : Item
 
             if (outlineObj != null)
                 outlineObj.transform.localPosition = visualTransform.localPosition;
+            SyncVFXPosition();
+            SyncVFXSortingOrder();
         }
     }
 
