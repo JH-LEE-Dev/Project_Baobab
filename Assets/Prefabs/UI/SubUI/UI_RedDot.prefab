@@ -50,11 +50,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProjectBaobab.UI_RedDot
   targetVisual: {fileID: 6393396491910444954}
+  appearDuration: 0.4
   idleDuration: 2
   shakeDuration: 1
-  shakeStrength: {x: 0, y: 0, z: 15}
-  shakeVibrato: 10
-  shakeRandomness: 90
+  shakeRotStrength: {x: 0, y: 0, z: 15}
+  shakeVibrato: 30
 --- !u!1 &8818308972407020693
 GameObject:
   m_ObjectHideFlags: 0

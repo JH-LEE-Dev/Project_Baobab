@@ -7,12 +7,14 @@ using UnityEngine.EventSystems;
 public class HUD_LootSlotTrigger : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     private HUD_LootTooltip tooltipUI;
+    private UI_RedDot redDotUI;
     private RectTransform rectTransform;
     private string descriptionText;
 
-    public void Initialize(HUD_LootTooltip _tooltipUI)
+    public void Initialize(HUD_LootTooltip _tooltipUI, UI_RedDot _redDotUI)
     {
         tooltipUI = _tooltipUI;
+        redDotUI = _redDotUI;
         rectTransform = GetComponent<RectTransform>();
     }
 
@@ -23,14 +25,14 @@ public class HUD_LootSlotTrigger : MonoBehaviour, IPointerEnterHandler, IPointer
 
     public void OnPointerEnter(PointerEventData _eventData)
     {
-        Debug.Log($"[HUD_LootSlotTrigger] OnPointerEnter called! tooltipUI: {(tooltipUI != null)}, description: {descriptionText}");
         if (null != tooltipUI && false == string.IsNullOrEmpty(descriptionText))
         {
             tooltipUI.ShowTooltip(rectTransform, descriptionText);
         }
-        else
+
+        if (null != redDotUI)
         {
-            Debug.LogWarning($"[HUD_LootSlotTrigger] Tooltip not shown. tooltipUI is null: {(tooltipUI == null)}, description is empty: {string.IsNullOrEmpty(descriptionText)}");
+            redDotUI.Deactivate();
         }
     }
 

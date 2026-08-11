@@ -10,9 +10,8 @@ public class UI_RedDot : MonoBehaviour
     [SerializeField] private float appearDuration = 0.4f;
     [SerializeField] private float idleDuration = 3f;
     [SerializeField] private float shakeDuration = 0.4f;
-    [SerializeField] private Vector3 shakePosStrength = new Vector3(3f, 3f, 0f);
-    [SerializeField] private Vector3 shakeRotStrength = new Vector3(0f, 0f, 5f);
-    [SerializeField] private int shakeVibrato = 50;
+    [SerializeField] private Vector3 shakeRotStrength = new Vector3(0f, 0f, 15f);
+    [SerializeField] private int shakeVibrato = 40;
 
     private Sequence dotweenSeq;
 
@@ -22,8 +21,9 @@ public class UI_RedDot : MonoBehaviour
     /// </summary>
     public void Activate()
     {
+        bool wasActive = gameObject.activeSelf;
         gameObject.SetActive(true);
-        PlayAnimation();
+        PlayAnimation(wasActive);
     }
 
     /// <summary>
@@ -36,7 +36,7 @@ public class UI_RedDot : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private void PlayAnimation()
+    private void PlayAnimation(bool wasActive)
     {
         if (targetVisual == null)
         {
@@ -47,21 +47,29 @@ public class UI_RedDot : MonoBehaviour
         KillAnimation();
 
         // 초기화
-        targetVisual.localScale = Vector3.zero;
         targetVisual.localPosition = Vector3.zero;
         targetVisual.localEulerAngles = Vector3.zero;
 
         dotweenSeq = DOTween.Sequence();
         
-        // 1. 등장 연출 (뽁 하고 커짐)
-        dotweenSeq.Append(targetVisual.DOScale(1f, appearDuration).SetEase(Ease.OutBack));
+        if (true == wasActive)
+        {
+            // 이미 켜진 상태에서 추가 신호: 뽀잉 연출
+            targetVisual.localScale = new Vector3(0.7f, 0.7f, 0.7f);
+            dotweenSeq.Append(targetVisual.DOScale(1f, 0.2f).SetEase(Ease.OutBack));
+        }
+        else
+        {
+            // 최초 등장 연출 (뽁 하고 커짐)
+            targetVisual.localScale = Vector3.zero;
+            dotweenSeq.Append(targetVisual.DOScale(1f, appearDuration).SetEase(Ease.OutBack));
+        }
         
-        // 2. 무한 반복될 대기 -> 미세 진동(핸드폰 진동) 시퀀스
+        // 2. 무한 반복될 대기 -> 알람시계 회전 진동 시퀀스
         Sequence loopSeq = DOTween.Sequence();
         loopSeq.AppendInterval(idleDuration);
         
-        loopSeq.Append(targetVisual.DOShakePosition(shakeDuration, shakePosStrength, shakeVibrato, 90f, snapping: false, fadeOut: true));
-        loopSeq.Join(targetVisual.DOShakeRotation(shakeDuration, shakeRotStrength, shakeVibrato, 90f, fadeOut: true));
+        loopSeq.Append(targetVisual.DOShakeRotation(shakeDuration, shakeRotStrength, shakeVibrato, 90f, fadeOut: true));
         
         loopSeq.SetLoops(-1);
 
