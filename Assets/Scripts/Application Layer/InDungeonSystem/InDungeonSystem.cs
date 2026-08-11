@@ -595,6 +595,9 @@ public class InDungeonSystem : MonoBehaviour
         character.gameObject.SetActive(true);
         character.SetFacingDirection(Vector2.down);
 
+        // 튜토리얼 전용: 아이템 획득 때와 동일한 뽀잉(감쇠 진동 스케일) 연출로 하차를 강조한다.
+        character.PlayItemAcquireBounce();
+
         // 하차 시점부터 카메라는 다시 캐릭터를 따라간다(하강이 끝난 자리와 같은 위치라 튐이 없다).
         skyCameraProductionManager.AttachFollowAndLookAt(character.transform);
 
