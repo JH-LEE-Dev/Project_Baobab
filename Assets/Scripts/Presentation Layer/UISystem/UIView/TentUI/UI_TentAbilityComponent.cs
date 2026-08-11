@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+[DefaultExecutionOrder(-100)]
 public class UI_TentAbilityComponent : MonoBehaviour
 {
     private const int AbilityLocalizationJsonId = 2;
@@ -30,8 +31,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private ISkillSystemProvider skillSystemProvider;
     private LocalizationManager localizationManager;
     private Canvas rootCanvas;
-    private bool isDragging;
+    private bool hasDraggedCurrentPress;
     private bool hasZoomFocus;
+    private bool hasPreviousMousePosition;
     private Vector2 previousMousePosition;
     private Vector2 zoomFocusScreenPosition;
     private Vector2 currentViewShakeOffset;
@@ -81,6 +83,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private bool hasPrewarmedNodePool;
     private bool lineLayoutDirty;
     private bool toolTipLayoutDirty;
+    private HoverCaptureMode hoverCaptureMode;
+    private AbilityNode capturedHoverNode;
     private AbilityNode currentToolTipNode;
     private AbilityNode currentCursorNode;
     private AbilityToolTip toolTipInstance;
@@ -93,6 +97,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         Right,
         Left
+    }
+
+    private enum HoverCaptureMode
+    {
+        None,
+        Empty,
+        Node
     }
 
     private struct PrestigeHUDState
@@ -146,6 +157,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     [Header("Node Hover Sound")]
     [SerializeField, Min(0f)] private float nodeHoverSoundSuppressDurationAfterOpen = 0.3f;
+
+    [Header("View Bounds")]
+    [SerializeField] private Vector2 viewGridHalfExtents = new Vector2(60f, 30f);
 
     [Header("View Shake Settings")]
     [SerializeField] private float viewShakeDuration = 0.16f;
@@ -511,24 +525,25 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (moveTarget == null)
             return;
 
-        isDragging = false;
+        CancelViewDrag();
         hasZoomFocus = false;
         StopViewShake();
         float finalZoom = hasSavedView ? savedZoom : DefaultZoom;
         Vector2 finalViewPosition = hasSavedView ? savedViewPosition : Vector2.zero;
-        currentZoom = finalZoom;
-        targetZoom = finalZoom;
+        float effectiveMinZoom = GetEffectiveMinZoom();
+        currentZoom = Mathf.Clamp(finalZoom, effectiveMinZoom, MaxZoom);
+        targetZoom = currentZoom;
         moveTarget.localScale = Vector3.one * currentZoom;
-        moveTarget.anchoredPosition = finalViewPosition;
+        moveTarget.anchoredPosition = ClampViewPosition(finalViewPosition, currentZoom);
 
-        BeginOpenZoomReveal(finalViewPosition, finalZoom);
+        BeginOpenZoomReveal(moveTarget.anchoredPosition, currentZoom);
         MarkViewLayoutDirty();
     }
 
     private void BeginOpenZoomReveal(Vector2 _finalViewPosition, float _finalZoom)
     {
         openingZoomElapsed = 0f;
-        openingZoomTarget = Mathf.Clamp(_finalZoom, MinZoom, MaxZoom);
+        openingZoomTarget = Mathf.Clamp(_finalZoom, GetEffectiveMinZoom(), MaxZoom);
         openingZoomStart = Mathf.Max(openingZoomTarget * Mathf.Max(openZoomRevealMultiplier, 1f), openingZoomTarget);
         openingZoomFocusPoint = -_finalViewPosition / Mathf.Max(openingZoomTarget, 0.0001f);
         isOpeningZoomReveal = openZoomRevealDuration > 0f && Mathf.Approximately(openingZoomStart, openingZoomTarget) == false;
@@ -548,6 +563,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         currentZoom = Mathf.Max(_zoom, MinZoom);
         moveTarget.localScale = Vector3.one * currentZoom;
         moveTarget.anchoredPosition = -openingZoomFocusPoint * currentZoom;
+        ClampCurrentViewPosition(currentZoom);
     }
 
     private void EnsureAbilityCanvasGroup()
@@ -860,8 +876,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         float sourceZoom = Mathf.Max(currentZoom, 0.0001f);
         Vector2 currentViewCenter = -currentViewPosition / sourceZoom;
 
-        savedZoom = Mathf.Clamp(currentZoom, MinZoom, MaxZoom);
-        savedViewPosition = -currentViewCenter * savedZoom;
+        savedZoom = Mathf.Clamp(currentZoom, GetEffectiveMinZoom(), MaxZoom);
+        savedViewPosition = ClampViewPosition(-currentViewCenter * savedZoom, savedZoom);
         hasSavedView = true;
     }
 
@@ -871,7 +887,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (hasOpenedView && abilityBackground != null && abilityBackground.gameObject.activeSelf)
             SaveCurrentView();
 
-        isDragging = false;
+        CancelViewDrag();
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
         openingZoomFocusPoint = Vector2.zero;
@@ -922,6 +938,91 @@ public class UI_TentAbilityComponent : MonoBehaviour
             ShowToolTip(currentToolTipNode);
     }
 
+
+#endregion
+
+
+#region Node Hover Capture
+
+    // 드래그 중에는 눌렀던 노드 하나만 Hover 연출의 소유권을 유지한다.
+    public bool CanShowNodeHover(AbilityNode _node)
+    {
+        if (_node == null)
+            return false;
+
+        return hoverCaptureMode == HoverCaptureMode.None ||
+               (hoverCaptureMode == HoverCaptureMode.Node && capturedHoverNode == _node);
+    }
+
+    public bool ShouldKeepNodeHoverCaptured(AbilityNode _node)
+    {
+        return _node != null &&
+               hoverCaptureMode == HoverCaptureMode.Node &&
+               capturedHoverNode == _node;
+    }
+
+    public void CaptureNodeHover(AbilityNode _node)
+    {
+        if (_node == null || _node.IsPointerInside == false || IsViewInputEnabled() == false)
+            return;
+
+        if (hoverCaptureMode == HoverCaptureMode.Node && capturedHoverNode != _node)
+            return;
+
+        hoverCaptureMode = HoverCaptureMode.Node;
+        capturedHoverNode = _node;
+        _node.RefreshHoverAfterCapture();
+    }
+
+    public void ReleaseNodeHoverCapture(AbilityNode _node)
+    {
+        if (_node == null || capturedHoverNode != _node)
+            return;
+
+        ReleaseCapturedNodeHover(true);
+    }
+
+    public void NotifyNodeHoverUnavailable(AbilityNode _node)
+    {
+        if (capturedHoverNode == _node)
+        {
+            capturedHoverNode = null;
+            hoverCaptureMode = HoverCaptureMode.Empty;
+        }
+    }
+
+    private void BeginEmptyHoverCapture()
+    {
+        if (hoverCaptureMode != HoverCaptureMode.None)
+            return;
+
+        hoverCaptureMode = HoverCaptureMode.Empty;
+        capturedHoverNode = null;
+    }
+
+    private void ReleaseCapturedNodeHover(bool _restoreCurrentPointerHover)
+    {
+        if (hoverCaptureMode == HoverCaptureMode.None)
+            return;
+
+        AbilityNode releasedNode = capturedHoverNode;
+        hoverCaptureMode = HoverCaptureMode.None;
+        capturedHoverNode = null;
+        releasedNode?.RefreshHoverAfterCapture();
+
+        if (_restoreCurrentPointerHover == false)
+            return;
+
+        for (int i = spawnedNodes.Count - 1; i >= 0; i--)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node == null || node == releasedNode || node.IsPointerInside == false)
+                continue;
+
+            node.RefreshHoverAfterCapture();
+            break;
+        }
+    }
 
 #endregion
 
@@ -1340,9 +1441,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
         }
 
+        bool boundsAdjusted = EnsureViewWithinBounds();
+
         if (isOpeningZoomReveal || isCircleRevealPlaying)
         {
-            bool revealViewChanged = false;
+            bool revealViewChanged = boundsAdjusted;
             if (isOpeningZoomReveal)
                 revealViewChanged |= UpdateOpenZoomReveal();
 
@@ -1359,10 +1462,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
 
         // 드래그 이동
-        bool viewChanged = false;
+        bool viewChanged = boundsAdjusted;
 
         UpdateAutoLevelUps();
-        viewChanged |= HandlePan();
         // 줌 기능
         bool zoomChanged = HandleZoom();
         if (zoomChanged)
@@ -1439,44 +1541,127 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return value * value * value;
     }
 
-    private bool HandlePan()
+    private void Update()
+    {
+        UpdateImmediateViewDrag();
+    }
+
+    private void LateUpdate()
+    {
+        // 포커스 손실 등으로 PointerUp 이벤트가 누락되어도 캡처가 남지 않게 한다.
+        if (hoverCaptureMode != HoverCaptureMode.None && IsAnyMouseButtonPressed(Mouse.current) == false)
+            ReleaseCapturedNodeHover(true);
+    }
+
+    private void UpdateImmediateViewDrag()
     {
         Mouse mouse = Mouse.current;
         if (mouse == null)
-            return false;
-
-        bool canDrag =
-            mouse.leftButton.isPressed ||
-            mouse.rightButton.isPressed ||
-            mouse.middleButton.isPressed;
+        {
+            ResetViewDragTracking();
+            return;
+        }
 
         Vector2 currentMousePosition = mouse.position.ReadValue();
+        EnsurePreviousMousePosition(currentMousePosition);
 
-        if (canDrag == false)
+        if (IsViewInputEnabled() == false || IsAnyMouseButtonPressed(mouse) == false)
         {
-            isDragging = false;
-            return false;
-        }
-
-        if (isDragging == false)
-        {
-            isDragging = true;
+            hasDraggedCurrentPress = false;
             previousMousePosition = currentMousePosition;
-            return false;
+            return;
         }
+
+        // 입력을 누른 순간에는 우선 "Hover 없음"을 캡처한다.
+        // 같은 프레임에 노드 PointerDown이 오면 CaptureNodeHover가 노드 캡처로 승격한다.
+        BeginEmptyHoverCapture();
 
         Vector2 delta = currentMousePosition - previousMousePosition;
         previousMousePosition = currentMousePosition;
-
         if (delta.sqrMagnitude <= 0.0001f)
-            return false;
+            return;
+
+        if (hasDraggedCurrentPress == false)
+        {
+            hasDraggedCurrentPress = true;
+            StopViewShake();
+        }
+
+        ApplyViewDragScreenDelta(delta);
+    }
+
+    private void ApplyViewDragScreenDelta(Vector2 _screenDelta)
+    {
+        if (moveTarget == null || _screenDelta.sqrMagnitude <= 0.0001f)
+            return;
 
         float scaleFactor = 1f;
         if (rootCanvas != null)
             scaleFactor = Mathf.Max(rootCanvas.rootCanvas.scaleFactor, 0.0001f);
 
-        moveTarget.anchoredPosition += delta / scaleFactor;
-        return true;
+        Vector2 previousPosition = moveTarget.anchoredPosition;
+        Vector2 logicalPosition = previousPosition - currentViewShakeOffset;
+        logicalPosition += _screenDelta / scaleFactor;
+        moveTarget.anchoredPosition = ClampViewPosition(logicalPosition, currentZoom) + currentViewShakeOffset;
+
+        if ((moveTarget.anchoredPosition - previousPosition).sqrMagnitude <= 0.0001f)
+            return;
+
+        MarkViewLayoutDirty();
+        RefreshLinesIfNeeded();
+        UpdateToolTipPositionIfNeeded();
+    }
+
+    private bool IsViewInputEnabled()
+    {
+        return rootCanvas != null &&
+               abilityBackground != null &&
+               abilityBackground.gameObject.activeSelf &&
+               moveTarget != null &&
+               abilityCanvasGroup != null &&
+               abilityCanvasGroup.interactable &&
+               isOpeningZoomReveal == false &&
+               isCircleRevealPlaying == false &&
+               isCloseFading == false;
+    }
+
+    private static bool IsAnyMouseButtonPressed(Mouse _mouse)
+    {
+        return _mouse != null &&
+               (_mouse.leftButton.isPressed ||
+                _mouse.rightButton.isPressed ||
+                _mouse.middleButton.isPressed);
+    }
+
+    private void EnsurePreviousMousePosition(Vector2 _currentMousePosition)
+    {
+        if (hasPreviousMousePosition)
+            return;
+
+        previousMousePosition = _currentMousePosition;
+        hasPreviousMousePosition = true;
+    }
+
+    private void ResetViewDragTracking()
+    {
+        hasDraggedCurrentPress = false;
+        hasPreviousMousePosition = false;
+    }
+
+    private void CancelViewDrag()
+    {
+        ReleaseCapturedNodeHover(false);
+
+        Mouse mouse = Mouse.current;
+        if (mouse == null)
+        {
+            ResetViewDragTracking();
+            return;
+        }
+
+        hasDraggedCurrentPress = false;
+        previousMousePosition = mouse.position.ReadValue();
+        hasPreviousMousePosition = true;
     }
 
     // 마우스 휠 입력으로 목표 줌 값을 갱신한다.
@@ -1493,7 +1678,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         zoomFocusScreenPosition = mouse.position.ReadValue();
         hasZoomFocus = true;
         targetZoom += Mathf.Sign(scrollY) * ZoomStep;
-        targetZoom = Mathf.Clamp(targetZoom, MinZoom, MaxZoom);
+        targetZoom = Mathf.Clamp(targetZoom, GetEffectiveMinZoom(), MaxZoom);
         return true;
     }
 
@@ -1513,6 +1698,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             ApplyZoomAroundFocus(previousZoom, currentZoom);
 
         moveTarget.localScale = Vector3.one * currentZoom;
+        ClampCurrentViewPosition(currentZoom);
         return Mathf.Approximately(previousZoom, currentZoom) == false;
     }
 
@@ -1532,6 +1718,85 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return;
 
         moveTarget.anchoredPosition += localPointBeforeScale * (_previousZoom - _currentZoom);
+    }
+
+    private bool EnsureViewWithinBounds()
+    {
+        if (moveTarget == null || abilityBackground == null)
+            return false;
+
+        bool changed = false;
+        float effectiveMinZoom = GetEffectiveMinZoom();
+        targetZoom = Mathf.Clamp(targetZoom, effectiveMinZoom, MaxZoom);
+
+        if (currentZoom < effectiveMinZoom)
+        {
+            Vector2 logicalPosition = moveTarget.anchoredPosition - currentViewShakeOffset;
+            Vector2 viewCenter = -logicalPosition / Mathf.Max(currentZoom, 0.0001f);
+            currentZoom = effectiveMinZoom;
+            moveTarget.localScale = Vector3.one * currentZoom;
+            moveTarget.anchoredPosition = -viewCenter * currentZoom + currentViewShakeOffset;
+            changed = true;
+        }
+
+        return ClampCurrentViewPosition(currentZoom) || changed;
+    }
+
+    private float GetEffectiveMinZoom()
+    {
+        if (abilityBackground == null)
+            return MinZoom;
+
+        float horizontalGridLimit = Mathf.Max(Mathf.Abs(viewGridHalfExtents.x), 0.0001f);
+        float verticalGridLimit = Mathf.Max(Mathf.Abs(viewGridHalfExtents.y), 0.0001f);
+        float horizontalContentHalfSize = horizontalGridLimit * Mathf.Max(gridCellSize, 0.0001f);
+        float verticalContentHalfSize = verticalGridLimit * Mathf.Max(gridCellSize, 0.0001f);
+        Rect viewportRect = abilityBackground.rect;
+        float horizontalRequiredZoom = viewportRect.width * 0.5f / horizontalContentHalfSize;
+        float verticalRequiredZoom = viewportRect.height * 0.5f / verticalContentHalfSize;
+
+        return Mathf.Clamp(
+            Mathf.Max(MinZoom, horizontalRequiredZoom, verticalRequiredZoom),
+            MinZoom,
+            MaxZoom);
+    }
+
+    private bool ClampCurrentViewPosition(float _zoom)
+    {
+        if (moveTarget == null)
+            return false;
+
+        Vector2 logicalPosition = moveTarget.anchoredPosition - currentViewShakeOffset;
+        Vector2 clampedPosition = ClampViewPosition(logicalPosition, _zoom);
+        if ((clampedPosition - logicalPosition).sqrMagnitude <= 0.0001f)
+            return false;
+
+        moveTarget.anchoredPosition = clampedPosition + currentViewShakeOffset;
+        return true;
+    }
+
+    private Vector2 ClampViewPosition(Vector2 _position, float _zoom)
+    {
+        if (abilityBackground == null || moveTarget == null)
+            return _position;
+
+        Rect viewportRect = abilityBackground.rect;
+        float anchorReferenceX = Mathf.Lerp(viewportRect.xMin, viewportRect.xMax, moveTarget.anchorMin.x);
+        float anchorReferenceY = Mathf.Lerp(viewportRect.yMin, viewportRect.yMax, moveTarget.anchorMin.y);
+        float viewportLeft = viewportRect.xMin - anchorReferenceX;
+        float viewportRight = viewportRect.xMax - anchorReferenceX;
+        float viewportBottom = viewportRect.yMin - anchorReferenceY;
+        float viewportTop = viewportRect.yMax - anchorReferenceY;
+        float contentHalfWidth = Mathf.Abs(viewGridHalfExtents.x) * gridCellSize * Mathf.Max(_zoom, 0f);
+        float contentHalfHeight = Mathf.Abs(viewGridHalfExtents.y) * gridCellSize * Mathf.Max(_zoom, 0f);
+        float minX = viewportRight - contentHalfWidth;
+        float maxX = viewportLeft + contentHalfWidth;
+        float minY = viewportTop - contentHalfHeight;
+        float maxY = viewportBottom + contentHalfHeight;
+
+        _position.x = minX <= maxX ? Mathf.Clamp(_position.x, minX, maxX) : (minX + maxX) * 0.5f;
+        _position.y = minY <= maxY ? Mathf.Clamp(_position.y, minY, maxY) : (minY + maxY) * 0.5f;
+        return _position;
     }
 
     private Camera GetCanvasEventCamera()
@@ -1586,15 +1851,18 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (moveTarget == null)
             return;
 
-        Vector2 offsetDelta = _offset - currentViewShakeOffset;
-        moveTarget.anchoredPosition += offsetDelta;
-        currentViewShakeOffset = _offset;
+        Vector2 logicalPosition = moveTarget.anchoredPosition - currentViewShakeOffset;
+        Vector2 clampedPosition = ClampViewPosition(logicalPosition + _offset, currentZoom);
+        Vector2 appliedOffset = clampedPosition - logicalPosition;
+        Vector2 offsetDelta = appliedOffset - currentViewShakeOffset;
+        moveTarget.anchoredPosition = clampedPosition;
+        currentViewShakeOffset = appliedOffset;
 
         RectTransform lineShakeTarget = GetLineShakeTarget();
         if (lineShakeTarget != null)
             lineShakeTarget.anchoredPosition += offsetDelta;
 
-        Vector2 interactionCompensation = -_offset / Mathf.Max(currentZoom, 0.0001f);
+        Vector2 interactionCompensation = -appliedOffset / Mathf.Max(currentZoom, 0.0001f);
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
