@@ -113,8 +113,14 @@ public class UIView_Warning : UIView
         bApproved = false;
         gameObject.SetActive(true);
 
+        // 설치 시점(GameplayUIInstaller)에도 UIManager.Open()이 Show()를 부르지만, 그때의 Hide는
+        // 닫기 연출을 거치는 비동기라 OnHide가 몇 프레임 뒤에 온다. 그 사이 오디오가 먹먹해지는 걸
+        // 막기 위해 실제 경고창으로 열린 경우(ShowWarning)에만 오디오를 건드린다.
         if (playSoundsForCurrentPresentation)
+        {
             Sound.PlayUI(SoundID.ResultUIOpen);
+            Sound.RequestAudioDuck();
+        }
 
         PlayOpenProduction();
     }
@@ -123,6 +129,12 @@ public class UIView_Warning : UIView
     {
         base.OnHide();
         gameObject.SetActive(false);
+
+        // OnShow에서 요청했을 때만 짝을 맞춰 해제한다(playSoundsForCurrentPresentation은 아래에서
+        // 꺼지므로 반드시 그 전에 확인해야 한다).
+        if (playSoundsForCurrentPresentation)
+            Sound.ReleaseAudioDuck();
+
         DeActivateWarningUI();
         bApproved = false;
         playSoundsForCurrentPresentation = false;

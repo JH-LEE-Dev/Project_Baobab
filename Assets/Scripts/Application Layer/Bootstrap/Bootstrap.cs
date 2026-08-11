@@ -289,6 +289,16 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                     Debug.Log($"[BootStrap] gameInstaller.Release() 완료 ({_swRelease.ElapsedMilliseconds}ms)");
 
                     gameInstaller = null;
+
+                    // Release()의 Destroy(gameObject)는 프레임 끝에 처리된다. 그 대량 파괴와 아래
+                    // ChangeSceneAsync의 비동기 씬 로드를 같은 프레임에 걸치게 하면 엔진 내부에서
+                    // 락이 물려 메인 스레드가 영구 정지한다(덤프 확인: Unity Main Thread /
+                    // BatchDeleteObjects / Loading.PreloadManager 세 스레드가 모두 같은 락 대기).
+                    // 한 프레임 양보해 파괴를 완전히 끝낸 뒤에 씬 로드를 시작한다.
+                    // Town↔Dungeon 전환은 gameInstaller를 파괴하지 않아 이 문제가 없었다.
+                    yield return null;
+
+                    Debug.Log($"[BootStrap] 지연 파괴 완료 대기 후 씬 로드 진행 ({_swTotal.ElapsedMilliseconds}ms)");
                 }
             }
 

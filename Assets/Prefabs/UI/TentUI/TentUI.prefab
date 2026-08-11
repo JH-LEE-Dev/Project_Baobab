@@ -1128,6 +1128,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2514996248941026845}
     m_Modifications:
+    - target: {fileID: 3174445166996621861, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_text
+      value: "\uD655\uB300 / \uCD95\uC18C"
+      objectReference: {fileID: 0}
     - target: {fileID: 5708205854321629177, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Name
       value: KeyGuideRow_magnification
@@ -1278,6 +1282,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2514996248941026845}
     m_Modifications:
+    - target: {fileID: 3174445166996621861, guid: 7fac8189cec29354da87489252a0394e, type: 3}
+      propertyPath: m_text
+      value: "\uB4DC\uB798\uADF8\uB85C \uC774\uB3D9"
+      objectReference: {fileID: 0}
     - target: {fileID: 5708205854321629177, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Name
       value: KeyGuideRow_Move
@@ -1768,7 +1776,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5389869008974868172, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1784,7 +1792,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6519470873578380521, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 23
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6811739450326591716, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Layer
