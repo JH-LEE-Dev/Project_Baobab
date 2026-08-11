@@ -11,12 +11,16 @@ public static class Sound
         AudioManager.Instance.EnqueueEvent(e);
     }
 
-    public static void PlayUI(SoundID id, float volume = 1f, float pitchOverride = -1f)
+    // bypassDucking: 이 재생만 UI 믹서 그룹으로 보내 덕킹/일시정지 음소거를 받지 않게 한다.
+    // 같은 SoundID를 게임플레이와 UI 연출이 함께 쓰는 경우에만 필요하다 - 예를 들어 GetItem은
+    // 인벤토리에서는 게임플레이 효과음이라 그대로 덕킹을 받아야 하지만, 결과창의 카운트업
+    // 연출에서는 그 창 자신의 피드백이라 자기가 건 덕킹에 먹먹해지면 안 된다.
+    public static void PlayUI(SoundID id, float volume = 1f, float pitchOverride = -1f, bool bypassDucking = false)
     {
         if (AudioManager.Instance == null)
             return;
 
-        AudioEvent e = new AudioEvent(id, Vector3.zero, volume, false, pitchOverride);
+        AudioEvent e = new AudioEvent(id, Vector3.zero, volume, false, pitchOverride, bypassDucking);
         AudioManager.Instance.EnqueueEvent(e);
     }
 

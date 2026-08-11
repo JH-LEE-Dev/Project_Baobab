@@ -63,6 +63,8 @@ AudioMixerController:
     name: SfxVolume
   - guid: 146de928ad374c77997ae20de44409ce
     name: AmbienceVolume
+  - guid: 725cf2edcafe43fcb9d997f21547c0f9
+    name: UiVolume
   m_AudioMixerGroupViews:
   - guids:
     - 07d5a4fa9b55ba94e8706b1a28db9f41

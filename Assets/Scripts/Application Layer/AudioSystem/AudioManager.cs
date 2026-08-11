@@ -42,6 +42,9 @@ public class AudioManager : MonoBehaviour
     private const string BgmVolumeParam = "BgmVolume";
     private const string SfxVolumeParam = "SfxVolume";
     private const string AmbienceVolumeParam = "AmbienceVolume";
+    private const string UiVolumeParam = "UiVolume";
+    private const string UIMixerGroupName = "UI";
+    private AudioMixerGroup uiMixerGroup;
 
     [Header("Debug Settings")]
     [SerializeField] private bool enableDebugSound = false;
@@ -75,6 +78,8 @@ public class AudioManager : MonoBehaviour
     private Coroutine duckCoroutine;
     private Coroutine pauseMuteCoroutine;
     private bool mixerSetupWarned;
+    private bool volumeParamsChecked;
+    private bool volumeParamsReady;
     // 지금 향하고 있는 목표값. 같은 목표로 다시 요청이 와도 코루틴을 재시작하지 않기 위한 것으로,
     // NaN은 "아직 한 번도 설정한 적 없음"을 뜻해 최초 1회는 반드시 반영되게 한다.
     private float cutoffTarget = float.NaN;
@@ -110,6 +115,28 @@ public class AudioManager : MonoBehaviour
         CreatePool();
         CreateBGMSource();
         ResetMixerToDefaults();
+        CacheUIMixerGroup();
+    }
+
+    // bypassDucking으로 재생되는 소리를 보낼 그룹. UI 그룹은 Duckable/Gameplay 바깥(Master 직속)이라
+    // 덕킹도 일시정지 음소거도 받지 않는다. 인스펙터에 따로 물리지 않아도 되도록 이미 연결된
+    // mixer에서 이름으로 찾아 캐싱한다.
+    private void CacheUIMixerGroup()
+    {
+        if (mixer == null) return;
+
+        AudioMixerGroup[] found = mixer.FindMatchingGroups(UIMixerGroupName);
+        for (int i = 0; i < found.Length; i++)
+        {
+            if (found[i] != null && found[i].name == UIMixerGroupName)
+            {
+                uiMixerGroup = found[i];
+                return;
+            }
+        }
+
+        Debug.LogWarning($"[AudioManager] AudioMixer에서 '{UIMixerGroupName}' 그룹을 찾지 못했다. " +
+                         "bypassDucking 재생이 원래 그룹으로 나가 덕킹을 그대로 받는다.");
     }
 
     // AudioMixer의 SetFloat 오버라이드는 에디터에서 플레이 세션을 넘어 남아있을 수 있어서, 이전
@@ -155,17 +182,35 @@ public class AudioManager : MonoBehaviour
     /// </summary>
     public void ApplyVolumeSettings(SettingsData data)
     {
-        if (mixer == null || duckSettings == null) return;
+        if (false == AreVolumeParamsReady()) return;
 
         mixer.SetFloat(MasterVolumeParam, SliderToDecibel(data.masterVolume, duckSettings.masterZeroDbValue));
 
         float bgmDb = SliderToDecibel(data.bgmVolume, duckSettings.mixZeroDbValue);
         mixer.SetFloat(BgmVolumeParam, bgmDb);
 
-        // 효과음 슬라이더는 SFX와 환경음을 함께 담당한다.
+        // 효과음 슬라이더는 SFX·환경음뿐 아니라 UI 조작음까지 함께 담당한다. UI 그룹을 빼두면
+        // 유저가 효과음을 0으로 내려도 메뉴 클릭음·호버음이 원래 크기로 계속 울려서 고장으로 보인다.
         float sfxDb = SliderToDecibel(data.sfxVolume, duckSettings.mixZeroDbValue);
         mixer.SetFloat(SfxVolumeParam, sfxDb);
         mixer.SetFloat(AmbienceVolumeParam, sfxDb);
+        mixer.SetFloat(UiVolumeParam, sfxDb);
+    }
+
+    // 볼륨 반영은 슬라이더를 드래그하는 동안 매 프레임 호출된다. 믹서에 파라미터가 없으면 SetFloat이
+    // 호출마다 경고를 찍어 콘솔이 초당 수백 줄로 도배되므로, 준비 여부는 최초 1회만 확인해 캐싱한다.
+    // (GetFloat 자체도 파라미터가 없으면 경고를 남기기 때문에 매번 확인해서는 안 된다)
+    private bool AreVolumeParamsReady()
+    {
+        if (volumeParamsChecked) return volumeParamsReady;
+
+        volumeParamsChecked = true;
+        volumeParamsReady = mixer != null && duckSettings != null && mixer.GetFloat(MasterVolumeParam, out _);
+
+        if (false == volumeParamsReady)
+            WarnMixerSetupOnce("볼륨 Exposed Parameter(MasterVolume 등)를 찾을 수 없다. 옵션의 볼륨 슬라이더가 동작하지 않는다.");
+
+        return volumeParamsReady;
     }
 
     // 슬라이더는 0~100 선형이지만 믹서 볼륨은 dB(로그) 단위다. 비율을 그대로 dB에 대입하면
@@ -562,7 +607,7 @@ public class AudioManager : MonoBehaviour
             return;
         }
 
-        if (!PlayOnAvailableSource(data, e.position, e.volume, e.is3D, e.pitchOverride).IsValid)
+        if (!PlayOnAvailableSource(data, e.position, e.volume, e.is3D, e.pitchOverride, e.bypassDucking).IsValid)
             Debug.LogWarning($"[AudioManager] Sound '{e.soundId}' could not be played (missing clip, or no source available).");
     }
 
@@ -754,7 +799,7 @@ public class AudioManager : MonoBehaviour
         return sourcePlayId[handle.sourceIndex] == handle.playId;
     }
 
-    private AudioHandle PlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride = -1f)
+    private AudioHandle PlayOnAvailableSource(AudioData data, Vector3 position, float volume, bool is3D, float pitchOverride = -1f, bool bypassDucking = false)
     {
         AudioClip clip;
         float pitch;
@@ -852,7 +897,9 @@ public class AudioManager : MonoBehaviour
         src.clip = clip;
         src.pitch = pitch;
         src.volume = initialVolume;
-        src.outputAudioMixerGroup = data.mixerGroup;
+        // 같은 SoundID라도 이 재생이 UI 피드백으로 쓰인 경우에는 UI 그룹으로 우회시킨다.
+        // (결과창의 카운트업처럼, 창 자신이 건 덕킹에 자기 연출음이 먹먹해지면 안 되는 경우)
+        src.outputAudioMixerGroup = (bypassDucking && uiMixerGroup != null) ? uiMixerGroup : data.mixerGroup;
         // 사운드 데이터의 is3D를 기준으로 하되, 호출부에서 2D로 강제하는 것은 허용한다(예: PlayUI).
         src.spatialBlend = is3DSound ? 1f : 0f;
 

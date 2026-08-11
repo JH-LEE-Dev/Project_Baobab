@@ -1464,7 +1464,10 @@ public class UIView_Result : UIView
         if (currentTime - lastTreeKillCountSoundTime < TreeKillCountSoundInterval)
             return;
 
-        Sound.PlayUI(SoundID.GetItem, 1f, treeKillCountSoundPitch);
+        // GetItem은 인벤토리 등에서도 쓰는 게임플레이 효과음이라 SFX 그룹에 있지만, 여기서는
+        // 결과창 자신의 카운트업 연출음이다. 결과창은 스스로 덕킹을 걸고 있으므로 그대로 두면
+        // 자기 연출음이 자기가 건 로우패스에 먹먹해진다. 이 재생만 UI 그룹으로 우회시킨다.
+        Sound.PlayUI(SoundID.GetItem, 1f, treeKillCountSoundPitch, bypassDucking: true);
         lastTreeKillCountSoundTime = currentTime;
         treeKillCountSoundPitch = Mathf.Min(treeKillCountSoundPitch + TreeKillCountPitchStep, TreeKillCountMaxPitch);
     }
@@ -1475,7 +1478,8 @@ public class UIView_Result : UIView
         if (currentTime - lastInventoryLogSoundTime < InventoryLogSoundInterval)
             return;
 
-        Sound.PlayUI(SoundID.OutItem);
+        // TryPlayTreeKillCountSound와 같은 이유로 UI 그룹으로 우회시킨다(결과창 자신의 연출음).
+        Sound.PlayUI(SoundID.OutItem, bypassDucking: true);
         lastInventoryLogSoundTime = currentTime;
     }
 
