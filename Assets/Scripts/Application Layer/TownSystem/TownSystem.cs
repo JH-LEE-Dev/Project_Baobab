@@ -531,7 +531,9 @@ public class TownSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 던전 입장 연출 마무리: 조작 잠금 해제 + 캐릭터 활성화 + HUD 복귀.
+    /// 던전 입장 연출 마무리: 조작 잠금 해제 + HUD 복귀(+ 그 시점의 캐릭터 활성화).
+    /// 캐릭터 활성화(ActivateCharacterSignal, AttackIndicator 포함)는 조작 잠금 해제와 동시가 아니라
+    /// HUD가 올라오는 PopupUIGoUPCoroutine 시점에 함께 발행한다.
     /// 일반 경로(Town → Dungeon)에서는 카메라 하강 완료 시점에, MainMenu → Dungeon 튜토리얼에서는
     /// 캐릭터가 차량에서 내린 1초 뒤(CompleteDungeonEntrySignal)에 호출된다.
     /// </summary>
@@ -539,7 +541,6 @@ public class TownSystem : MonoBehaviour
     {
         inputManager.PauseMove(false);
         inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (DungeonSelected()에서 걸어둔 PauseESCKey(true) 해제)
-        signalHub.Publish(new ActivateCharacterSignal());
 
         StartCoroutine(PopupUIGoUPCoroutine());
     }
@@ -563,6 +564,10 @@ public class TownSystem : MonoBehaviour
 
         if (bCurrentlyTownScene == false)
         {
+            // AttackIndicator(공격 사거리 인디케이터)는 캐릭터가 움직일 수 있게 되는 시점이 아니라
+            // HUD가 올라오는 이 시점에 함께 나타나야 자연스러우므로, 캐릭터 활성화를 여기로 옮겼다.
+            signalHub.Publish(new ActivateCharacterSignal());
+
             StartCoroutine(StaminaDecreaseCoroutine());
         }
         else

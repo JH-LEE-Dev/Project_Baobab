@@ -68,6 +68,11 @@ public class AttackComponent : PComponent
     private Material ellipseIndicatorMat;
     private static readonly int EllipseRadiusID = Shader.PropertyToID("_EllipseRadius");
     private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
+    private static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
+
+    private const float IndicatorFadeInDuration = 1f; // 인디케이터 활성화 시 알파가 0에서 복원되는 데 걸리는 시간
+    private Coroutine indicatorFadeCoroutine;
+    private float indicatorFullAlpha = 1f; // Initialize에서 1회만 캐싱되는 인디케이터의 원래 알파값(페이드인의 목표값)
 
     [Header("Whirlwind VFX")]
     [SerializeField] private Sprite[] whirlwindFrames; // Whirlwind 스프라이트 시트의 프레임들 (인스펙터에서 직접 연결)
@@ -96,7 +101,14 @@ public class AttackComponent : PComponent
         if (ellipseRadiusIndicator != null)
         {
             var renderer = ellipseRadiusIndicator.GetComponent<Renderer>();
-            if (renderer != null) ellipseIndicatorMat = renderer.material;
+            if (renderer != null)
+            {
+                ellipseIndicatorMat = renderer.material;
+                // 이후 페이드인의 목표값으로 쓸 "원래" 알파값. 페이드 도중 SetEnable(false)로 끊기면
+                // 머티리얼에 중간값(예: 0.4)이 남는데, 이걸 그대로 목표로 삼으면 재입장할 때마다
+                // 인디케이터가 갈수록 흐려지므로 반드시 최초 1회 값을 고정해 둬야 한다.
+                indicatorFullAlpha = ellipseIndicatorMat.GetColor(BaseColorID).a;
+            }
         }
 
         BindEvents();
@@ -777,6 +789,47 @@ public class AttackComponent : PComponent
     public void SetEnable(bool _boolean)
     {
         ellipseRadiusIndicator.gameObject.SetActive(_boolean);
+
+        if (indicatorFadeCoroutine != null)
+        {
+            StopCoroutine(indicatorFadeCoroutine);
+            indicatorFadeCoroutine = null;
+        }
+
+        if (ellipseIndicatorMat == null) return;
+
+        if (_boolean)
+        {
+            indicatorFadeCoroutine = StartCoroutine(IndicatorFadeInRoutine());
+        }
+        else
+        {
+            // 페이드 도중 꺼졌다면(예: 던전→마을 이동) 머티리얼에 중간 알파값이 남아있을 수 있으므로,
+            // 다음 SetEnable(true)이 항상 0에서 시작할 수 있도록 즉시 원래 알파로 되돌려 둔다.
+            Color color = ellipseIndicatorMat.GetColor(BaseColorID);
+            color.a = indicatorFullAlpha;
+            ellipseIndicatorMat.SetColor(BaseColorID, color);
+        }
+    }
+
+    private System.Collections.IEnumerator IndicatorFadeInRoutine()
+    {
+        Color color = ellipseIndicatorMat.GetColor(BaseColorID);
+        color.a = 0f;
+        ellipseIndicatorMat.SetColor(BaseColorID, color);
+
+        float elapsed = 0f;
+        while (elapsed < IndicatorFadeInDuration)
+        {
+            elapsed += Time.deltaTime;
+            color.a = Mathf.Lerp(0f, indicatorFullAlpha, elapsed / IndicatorFadeInDuration);
+            ellipseIndicatorMat.SetColor(BaseColorID, color);
+            yield return null;
+        }
+
+        color.a = indicatorFullAlpha;
+        ellipseIndicatorMat.SetColor(BaseColorID, color);
+        indicatorFadeCoroutine = null;
     }
 
     public void SetCursorEnable(bool _boolean)
