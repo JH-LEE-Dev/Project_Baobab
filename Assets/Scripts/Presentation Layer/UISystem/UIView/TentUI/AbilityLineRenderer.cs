@@ -2,30 +2,28 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AbilityLineRenderer
+public sealed class AbilityLineRenderer
 {
     private const float StraightLineOverlap = 1f;
 
     private readonly Dictionary<AbilityLineSegmentSpriteType, Sprite> lineSpriteMap = new Dictionary<AbilityLineSegmentSpriteType, Sprite>();
+    private readonly Dictionary<AbilityLineSegmentSpriteType, AbilityLineGraphic> lineGraphicMap = new Dictionary<AbilityLineSegmentSpriteType, AbilityLineGraphic>();
+    private readonly Dictionary<AbilityLineSegmentSpriteType, List<AbilityLineMeshQuad>> lineQuadMap = new Dictionary<AbilityLineSegmentSpriteType, List<AbilityLineMeshQuad>>();
     private readonly Dictionary<SkillType, float> lineRevealProgressMap = new Dictionary<SkillType, float>();
     private readonly List<AbilityLineConnection> lineConnections = new List<AbilityLineConnection>();
-    private readonly List<AbilityLine> spawnedLines = new List<AbilityLine>();
 
     private RectTransform abilityBackground;
     private RectTransform moveTarget;
     private RectTransform lineParent;
-    private AbilityLine abilityLinePrefab;
     private Canvas rootCanvas;
     private float gridCellSize;
-    private int activeLineCount;
+    private bool hasConfiguredLineLayer;
     private Func<SkillType, Color> lineColorResolver;
 
-    // 라인 렌더러가 참조해야 하는 UI 루트와 콜백을 등록한다.
     public void Initialize(
         RectTransform _abilityBackground,
         RectTransform _moveTarget,
         RectTransform _lineParent,
-        AbilityLine _abilityLinePrefab,
         Canvas _rootCanvas,
         float _gridCellSize,
         Func<SkillType, Color> _lineColorResolver)
@@ -33,42 +31,33 @@ public class AbilityLineRenderer
         abilityBackground = _abilityBackground;
         moveTarget = _moveTarget;
         lineParent = _lineParent;
-        abilityLinePrefab = _abilityLinePrefab;
         rootCanvas = _rootCanvas;
-        gridCellSize = _gridCellSize;
+        gridCellSize = Mathf.Max(_gridCellSize, 0.0001f);
         lineColorResolver = _lineColorResolver;
+
+        EnsureLineLayer();
+        EnsureLineGraphics();
     }
 
-    // 인스펙터에서 연결된 라인 스프라이트를 타입별 조회 맵으로 캐시한다.
     public void CacheLineSpriteBindings(List<AbilityLineSegmentSpriteBinding> _lineSpriteBindings)
     {
         lineSpriteMap.Clear();
 
-        if (_lineSpriteBindings == null)
-            return;
-
-        for (int i = 0; i < _lineSpriteBindings.Count; i++)
+        if (_lineSpriteBindings != null)
         {
-            AbilityLineSegmentSpriteBinding binding = _lineSpriteBindings[i];
-            if (binding == null || binding.sprite == null)
-                continue;
+            for (int i = 0; i < _lineSpriteBindings.Count; i++)
+            {
+                AbilityLineSegmentSpriteBinding binding = _lineSpriteBindings[i];
+                if (binding == null || binding.sprite == null)
+                    continue;
 
-            lineSpriteMap[binding.lineType] = binding.sprite;
+                lineSpriteMap[binding.lineType] = binding.sprite;
+            }
         }
+
+        EnsureLineGraphics();
     }
 
-    public void SetLineRevealProgress(SkillType _childSkillType, float _progress)
-    {
-        lineRevealProgressMap[_childSkillType] = Mathf.Clamp01(_progress);
-    }
-
-    public void ClearLineRevealProgress(SkillType _childSkillType)
-    {
-        if (lineRevealProgressMap.ContainsKey(_childSkillType))
-            lineRevealProgressMap.Remove(_childSkillType);
-    }
-
-    // 현재 노드 구조를 바탕으로 부모-자식 연결 리스트를 다시 만든다.
     public void RebuildConnections(
         List<AbilityNode> _spawnedNodes,
         Dictionary<SkillType, AbilityNode> _spawnedNodeMap,
@@ -91,49 +80,164 @@ public class AbilityLineRenderer
                 if (_spawnedNodeMap.TryGetValue(parents[parentIndex], out AbilityNode parentNode) == false)
                     continue;
 
-                AbilityParentJson route = FindParentLineRoute(_nodeDefinitionMap, childNode.SkillType, parents[parentIndex]);
-                if (route != null && route.usePivot)
-                {
-                    lineConnections.Add(new AbilityLineConnection(
-                        parentNode,
-                        childNode,
-                        true,
-                        new Vector2Int(route.pivotX, route.pivotY)));
-                }
-                else
-                {
-                    lineConnections.Add(new AbilityLineConnection(parentNode, childNode));
-                }
+                AbilityParentJson route = FindParentLineRoute(
+                    _nodeDefinitionMap,
+                    childNode.SkillType,
+                    parents[parentIndex]);
+
+                lineConnections.Add(route != null && route.usePivot
+                    ? new AbilityLineConnection(parentNode, childNode, true, new Vector2Int(route.pivotX, route.pivotY))
+                    : new AbilityLineConnection(parentNode, childNode));
             }
         }
     }
 
-    // 현재 줌 비율을 기준으로 모든 라인 풀 오브젝트를 재배치한다.
+    public void SetLineRevealProgress(SkillType _childSkillType, float _progress)
+    {
+        lineRevealProgressMap[_childSkillType] = Mathf.Clamp01(_progress);
+    }
+
+    public void ClearLineRevealProgress(SkillType _childSkillType)
+    {
+        lineRevealProgressMap.Remove(_childSkillType);
+    }
+
+    public void InvalidateVisualData()
+    {
+    }
+
     public void RefreshLines(float _currentZoom)
     {
-        if (abilityLinePrefab == null || abilityBackground == null)
+        EnsureLineLayer();
+        EnsureLineGraphics();
+
+        if (abilityBackground == null || lineParent == null)
             return;
 
-        activeLineCount = 0;
-
-        RectTransform targetParent = lineParent != null ? lineParent : abilityBackground;
+        ClearLineQuads();
         int segmentSize = GetActiveSegmentSize(_currentZoom);
 
         for (int i = 0; i < lineConnections.Count; i++)
         {
-            if (lineConnections[i].ParentNode.gameObject.activeSelf == false || lineConnections[i].ChildNode.gameObject.activeSelf == false)
+            AbilityLineConnection connection = lineConnections[i];
+            if (connection.ParentNode == null || connection.ChildNode == null)
                 continue;
 
-            if (ShouldCullLineConnection(lineConnections[i], targetParent, segmentSize))
+            if (connection.ParentNode.IsProgressionVisible == false ||
+                connection.ChildNode.IsProgressionVisible == false)
                 continue;
 
-            BuildLineSegments(lineConnections[i], targetParent, segmentSize);
+            BuildLineSegments(connection, segmentSize);
         }
 
-        HideUnusedLines();
+        ApplyLineQuads();
     }
 
-    // 자식 정의에서 특정 부모 연결에 대한 꺾임 경로 설정을 찾는다.
+    private void EnsureLineLayer()
+    {
+        if (hasConfiguredLineLayer || abilityBackground == null || lineParent == null)
+            return;
+
+        if (lineParent.parent != abilityBackground)
+            lineParent.SetParent(abilityBackground, false);
+
+        lineParent.SetAsFirstSibling();
+        lineParent.anchorMin = Vector2.zero;
+        lineParent.anchorMax = Vector2.one;
+        lineParent.pivot = new Vector2(0.5f, 0.5f);
+        lineParent.offsetMin = Vector2.zero;
+        lineParent.offsetMax = Vector2.zero;
+        lineParent.localScale = Vector3.one;
+        lineParent.localRotation = Quaternion.identity;
+
+        AbilityLineGraphic legacyGraphic = lineParent.GetComponent<AbilityLineGraphic>();
+        if (legacyGraphic != null)
+            legacyGraphic.enabled = false;
+
+        hasConfiguredLineLayer = true;
+    }
+
+    private void EnsureLineGraphics()
+    {
+        if (lineParent == null || lineSpriteMap.Count == 0)
+            return;
+
+        foreach (KeyValuePair<AbilityLineSegmentSpriteType, Sprite> pair in lineSpriteMap)
+        {
+            if (pair.Value == null)
+                continue;
+
+            if (lineGraphicMap.TryGetValue(pair.Key, out AbilityLineGraphic graphic) == false || graphic == null)
+            {
+                string objectName = $"AbilityLineBatch_{pair.Key}";
+                Transform existingChild = lineParent.Find(objectName);
+                if (existingChild != null)
+                    graphic = existingChild.GetComponent<AbilityLineGraphic>();
+
+                if (graphic == null)
+                {
+                    GameObject graphicObject = new GameObject(
+                        objectName,
+                        typeof(RectTransform),
+                        typeof(CanvasRenderer),
+                        typeof(AbilityLineGraphic));
+                    graphicObject.layer = lineParent.gameObject.layer;
+                    graphicObject.transform.SetParent(lineParent, false);
+                    graphic = graphicObject.GetComponent<AbilityLineGraphic>();
+                }
+
+                PrepareFullScreenRect(graphic.rectTransform);
+                lineGraphicMap[pair.Key] = graphic;
+            }
+
+            graphic.raycastTarget = false;
+            graphic.color = Color.white;
+            graphic.SetLineSprite(pair.Value);
+
+            if (lineQuadMap.ContainsKey(pair.Key) == false)
+                lineQuadMap[pair.Key] = new List<AbilityLineMeshQuad>();
+        }
+    }
+
+    private static void PrepareFullScreenRect(RectTransform _rectTransform)
+    {
+        if (_rectTransform == null)
+            return;
+
+        _rectTransform.anchorMin = Vector2.zero;
+        _rectTransform.anchorMax = Vector2.one;
+        _rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        _rectTransform.offsetMin = Vector2.zero;
+        _rectTransform.offsetMax = Vector2.zero;
+        _rectTransform.localScale = Vector3.one;
+        _rectTransform.localRotation = Quaternion.identity;
+    }
+
+    private void ClearLineQuads()
+    {
+        foreach (List<AbilityLineMeshQuad> quads in lineQuadMap.Values)
+            quads.Clear();
+    }
+
+    private void ApplyLineQuads()
+    {
+        foreach (KeyValuePair<AbilityLineSegmentSpriteType, AbilityLineGraphic> pair in lineGraphicMap)
+        {
+            if (pair.Value == null)
+                continue;
+
+            if (lineQuadMap.TryGetValue(pair.Key, out List<AbilityLineMeshQuad> quads) == false)
+            {
+                pair.Value.SetQuads(null);
+                pair.Value.enabled = false;
+                continue;
+            }
+
+            pair.Value.SetQuads(quads);
+            pair.Value.enabled = quads.Count > 0;
+        }
+    }
+
     private AbilityParentJson FindParentLineRoute(
         Dictionary<SkillType, AbilityNodeDefinitionJson> _nodeDefinitionMap,
         SkillType _childSkillType,
@@ -145,46 +249,68 @@ public class AbilityLineRenderer
         return childDefinition.FindParentLineRoute(_parentSkillType);
     }
 
-    // 한 부모-자식 연결을 실제 라인 세그먼트/직선으로 분해한다.
-    private void BuildLineSegments(AbilityLineConnection _connection, RectTransform _targetParent, int _segmentSize)
+    private void BuildLineSegments(AbilityLineConnection _connection, int _segmentSize)
     {
-        if (_connection.ParentNode == null || _connection.ChildNode == null)
+        Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform);
+        Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform);
+        bool hasPivot = _connection.HasPivot;
+        Vector2 pivotCenter = hasPivot
+            ? GetGridPointCenterInRectangle(_connection.PivotGrid)
+            : Vector2.zero;
+
+        if (ShouldCullLineConnection(startCenter, endCenter, pivotCenter, hasPivot, _segmentSize))
             return;
 
-        if (_connection.HasPivot)
-        {
-            float connectionProgress = GetLineRevealProgress(_connection.ChildNode.SkillType);
-            Vector2Int pivotGrid = _connection.PivotGrid;
-            Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
-            Vector2 pivotCenter = GetGridPointCenterInRectangle(pivotGrid, _targetParent);
-            Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
-            float firstPathProgress = Mathf.Clamp01(connectionProgress * 2f);
-            float secondPathProgress = Mathf.Clamp01((connectionProgress - 0.5f) * 2f);
+        float connectionProgress = GetLineRevealProgress(_connection.ChildNode.SkillType);
+        Color color = GetLineColor(_connection.ChildNode.SkillType);
 
-            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "A", _connection.ParentNode.GridPosition, pivotGrid, startCenter, pivotCenter, _targetParent, _segmentSize, true, false, firstPathProgress);
-            BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, "B", pivotGrid, _connection.ChildNode.GridPosition, pivotCenter, endCenter, _targetParent, _segmentSize, true, true, secondPathProgress);
+        if (hasPivot)
+        {
+            BuildLineSegmentPath(
+                _connection.ParentNode.GridPosition,
+                _connection.PivotGrid,
+                startCenter,
+                pivotCenter,
+                _segmentSize,
+                true,
+                false,
+                Mathf.Clamp01(connectionProgress * 2f),
+                color);
+            BuildLineSegmentPath(
+                _connection.PivotGrid,
+                _connection.ChildNode.GridPosition,
+                pivotCenter,
+                endCenter,
+                _segmentSize,
+                true,
+                true,
+                Mathf.Clamp01((connectionProgress - 0.5f) * 2f),
+                color);
             return;
         }
 
-        Vector2 directStartCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
-        Vector2 directEndCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
-        BuildLineSegmentPath(_connection.ParentNode.SkillType, _connection.ChildNode.SkillType, string.Empty, _connection.ParentNode.GridPosition, _connection.ChildNode.GridPosition, directStartCenter, directEndCenter, _targetParent, _segmentSize, false, false, GetLineRevealProgress(_connection.ChildNode.SkillType));
+        BuildLineSegmentPath(
+            _connection.ParentNode.GridPosition,
+            _connection.ChildNode.GridPosition,
+            startCenter,
+            endCenter,
+            _segmentSize,
+            false,
+            false,
+            connectionProgress,
+            color);
     }
 
-    // 두 점 사이 한 구간을 가로/세로/대각선 규칙에 맞춰 라인으로 그린다.
     private void BuildLineSegmentPath(
-        SkillType _parentSkillType,
-        SkillType _childSkillType,
-        string _pathSuffix,
         Vector2Int _startGrid,
         Vector2Int _endGrid,
         Vector2 _startCenter,
         Vector2 _endCenter,
-        RectTransform _targetParent,
         int _segmentSize,
         bool _hasCornerAnchor,
         bool _isStartCornerAnchor,
-        float _progress)
+        float _progress,
+        Color _color)
     {
         if (_progress <= 0f)
             return;
@@ -199,21 +325,29 @@ public class AbilityLineRenderer
         bool isHorizontal = absDx > 0 && dy == 0;
         bool isVertical = absDy > 0 && dx == 0;
         bool isDiagonal = absDx == absDy && absDx > 0;
-
         if (isHorizontal == false && isVertical == false && isDiagonal == false)
             return;
 
         AbilityLineSegmentSpriteType spriteType = GetSegmentSpriteType(stepX, stepY, _segmentSize);
-        if (lineSpriteMap.TryGetValue(spriteType, out Sprite sprite) == false)
+        if (lineSpriteMap.TryGetValue(spriteType, out Sprite sprite) == false || sprite == null)
             return;
 
         Vector2 delta = _endCenter - _startCenter;
-        if (delta.magnitude <= 0.001f)
+        if (delta.sqrMagnitude <= 0.0001f)
             return;
 
         if (isHorizontal || isVertical)
         {
-            BuildStretchedStraightLine(_parentSkillType, _childSkillType, _pathSuffix, _startCenter, _endCenter, _targetParent, isHorizontal, sprite, _hasCornerAnchor, _isStartCornerAnchor, _progress);
+            BuildStretchedStraightLine(
+                spriteType,
+                sprite,
+                _startCenter,
+                _endCenter,
+                isHorizontal,
+                _hasCornerAnchor,
+                _isStartCornerAnchor,
+                _progress,
+                _color);
             return;
         }
 
@@ -222,53 +356,42 @@ public class AbilityLineRenderer
         float coveredDistance = segmentCount * _segmentSize;
         float remainingDistance = Mathf.Max(0f, primaryDistance - coveredDistance);
         float leadingOffset = remainingDistance * 0.5f;
-
         Vector2 segmentAxisStep = new Vector2(stepX * _segmentSize, stepY * _segmentSize);
-        Vector2 firstSegmentCenter = _startCenter + new Vector2(stepX, stepY) * (leadingOffset + (_segmentSize * 0.5f));
-        firstSegmentCenter = SnapToPixel(firstSegmentCenter);
+        Vector2 firstSegmentCenter = SnapToPixel(
+            _startCenter + new Vector2(stepX, stepY) * (leadingOffset + _segmentSize * 0.5f));
+        Vector2 nativeSize = GetSpriteNativeSize(sprite);
 
         int revealSegmentCount = Mathf.CeilToInt(segmentCount * Mathf.Clamp01(_progress));
         for (int segmentIndex = 0; segmentIndex < revealSegmentCount; segmentIndex++)
         {
-            Vector2 position = firstSegmentCenter + (segmentAxisStep * segmentIndex);
-
-            AbilityLine line = GetOrCreatePooledLine(_targetParent);
-            line.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
-                ? $"Line_{_parentSkillType}_{_childSkillType}_{segmentIndex}"
-                : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}_{segmentIndex}";
-            line.Setup(sprite, position, GetLineColor(_childSkillType));
+            Vector2 position = firstSegmentCenter + segmentAxisStep * segmentIndex;
+            AddCenteredQuad(spriteType, position, nativeSize, _color);
         }
     }
 
-    // 가로/세로 라인은 width, height 기반 선분 하나로 표현한다.
     private void BuildStretchedStraightLine(
-        SkillType _parentSkillType,
-        SkillType _childSkillType,
-        string _pathSuffix,
+        AbilityLineSegmentSpriteType _spriteType,
+        Sprite _sprite,
         Vector2 _startCenter,
         Vector2 _endCenter,
-        RectTransform _targetParent,
         bool _isHorizontal,
-        Sprite _sprite,
         bool _hasCornerAnchor,
         bool _isStartCornerAnchor,
-        float _progress)
+        float _progress,
+        Color _color)
     {
         _progress = Mathf.Clamp01(_progress);
-        Color lineColor = GetLineColor(_childSkillType);
         Vector2 snappedStart = SnapToPixel(_startCenter);
         Vector2 snappedEnd = SnapToPixel(_endCenter);
-        float baseLength;
 
         if (_hasCornerAnchor)
         {
             Vector2 pivotCenter = _isStartCornerAnchor ? snappedStart : snappedEnd;
             Vector2 farCenter = _isStartCornerAnchor ? snappedEnd : snappedStart;
             Vector2 cornerAxisDirection = (farCenter - pivotCenter).normalized;
-            baseLength = _isHorizontal
+            float baseLength = _isHorizontal
                 ? Mathf.Abs(farCenter.x - pivotCenter.x)
                 : Mathf.Abs(farCenter.y - pivotCenter.y);
-
             if (baseLength <= 0.001f)
                 return;
 
@@ -276,52 +399,134 @@ public class AbilityLineRenderer
             if (length <= 0f)
                 return;
 
-            bool cornerAnchorAtStart = _isHorizontal
+            bool anchorAtStart = _isHorizontal
                 ? farCenter.x >= pivotCenter.x
                 : farCenter.y >= pivotCenter.y;
-            Vector2 anchoredCornerPosition = SnapToPixel(pivotCenter - (cornerAxisDirection * StraightLineOverlap));
-
-            AbilityLine anchoredLine = GetOrCreatePooledLine(_targetParent);
-            anchoredLine.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
-                ? $"Line_{_parentSkillType}_{_childSkillType}"
-                : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-            anchoredLine.SetupAnchoredSize(_sprite, anchoredCornerPosition, _isHorizontal, length, cornerAnchorAtStart, lineColor);
+            Vector2 anchoredPosition = SnapToPixel(
+                pivotCenter - cornerAxisDirection * StraightLineOverlap);
+            AddAnchoredStraightQuad(
+                _spriteType,
+                _sprite,
+                anchoredPosition,
+                _isHorizontal,
+                length,
+                anchorAtStart,
+                _color);
             return;
         }
 
-        baseLength = _isHorizontal
+        float directLength = _isHorizontal
             ? Mathf.Abs(snappedEnd.x - snappedStart.x)
             : Mathf.Abs(snappedEnd.y - snappedStart.y);
-
-        if (baseLength <= 0.001f)
+        if (directLength <= 0.001f)
             return;
 
         Vector2 axisDirection = (snappedEnd - snappedStart).normalized;
-        float lineLength = Mathf.Round((baseLength + StraightLineOverlap) * _progress);
+        float lineLength = Mathf.Round((directLength + StraightLineOverlap) * _progress);
         if (lineLength <= 0f)
             return;
 
-        bool anchorAtStart = _isHorizontal
+        bool directAnchorAtStart = _isHorizontal
             ? snappedEnd.x >= snappedStart.x
             : snappedEnd.y >= snappedStart.y;
-        Vector2 anchoredStartPosition = SnapToPixel(snappedStart - (axisDirection * StraightLineOverlap));
-
-        AbilityLine line = GetOrCreatePooledLine(_targetParent);
-        line.gameObject.name = string.IsNullOrEmpty(_pathSuffix)
-            ? $"Line_{_parentSkillType}_{_childSkillType}"
-            : $"Line_{_parentSkillType}_{_childSkillType}_{_pathSuffix}";
-        line.SetupAnchoredSize(_sprite, anchoredStartPosition, _isHorizontal, lineLength, anchorAtStart, lineColor);
+        Vector2 anchoredStartPosition = SnapToPixel(
+            snappedStart - axisDirection * StraightLineOverlap);
+        AddAnchoredStraightQuad(
+            _spriteType,
+            _sprite,
+            anchoredStartPosition,
+            _isHorizontal,
+            lineLength,
+            directAnchorAtStart,
+            _color);
     }
 
-    // 현재 줌 비율에 따라 4px 또는 8px 대각선 세그먼트를 고른다.
+    private void AddCenteredQuad(
+        AbilityLineSegmentSpriteType _spriteType,
+        Vector2 _center,
+        Vector2 _size,
+        Color _color)
+    {
+        Vector2 halfSize = _size * 0.5f;
+        Rect rect = Rect.MinMaxRect(
+            _center.x - halfSize.x,
+            _center.y - halfSize.y,
+            _center.x + halfSize.x,
+            _center.y + halfSize.y);
+        AddQuad(_spriteType, rect, _color);
+    }
+
+    private void AddAnchoredStraightQuad(
+        AbilityLineSegmentSpriteType _spriteType,
+        Sprite _sprite,
+        Vector2 _anchoredPosition,
+        bool _isHorizontal,
+        float _length,
+        bool _anchorAtStart,
+        Color _color)
+    {
+        Vector2 nativeSize = GetSpriteNativeSize(_sprite);
+        float length = Mathf.Max(Mathf.Round(_length), 1f);
+        Rect rect;
+
+        if (_isHorizontal)
+        {
+            float xMin = _anchorAtStart ? _anchoredPosition.x : _anchoredPosition.x - length;
+            rect = new Rect(
+                xMin,
+                _anchoredPosition.y - nativeSize.y * 0.5f,
+                length,
+                nativeSize.y);
+        }
+        else
+        {
+            float yMin = _anchorAtStart ? _anchoredPosition.y : _anchoredPosition.y - length;
+            rect = new Rect(
+                _anchoredPosition.x - nativeSize.x * 0.5f,
+                yMin,
+                nativeSize.x,
+                length);
+        }
+
+        AddQuad(_spriteType, rect, _color);
+    }
+
+    private void AddQuad(AbilityLineSegmentSpriteType _spriteType, Rect _rect, Color _color)
+    {
+        if (lineQuadMap.TryGetValue(_spriteType, out List<AbilityLineMeshQuad> quads) == false)
+        {
+            quads = new List<AbilityLineMeshQuad>();
+            lineQuadMap[_spriteType] = quads;
+        }
+
+        quads.Add(new AbilityLineMeshQuad(_rect, _color));
+    }
+
+    private Vector2 GetSpriteNativeSize(Sprite _sprite)
+    {
+        if (_sprite == null)
+            return Vector2.zero;
+
+        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null
+            ? rootCanvas.rootCanvas
+            : rootCanvas;
+        float referencePixelsPerUnit = targetCanvas != null
+            ? Mathf.Max(targetCanvas.referencePixelsPerUnit, 0.0001f)
+            : 100f;
+        float pixelsPerUnit = Mathf.Max(_sprite.pixelsPerUnit / referencePixelsPerUnit, 0.0001f);
+        return _sprite.rect.size / pixelsPerUnit;
+    }
+
     private int GetActiveSegmentSize(float _currentZoom)
     {
-        float projectedGridSize = gridCellSize * _currentZoom;
+        float projectedGridSize = gridCellSize * Mathf.Max(_currentZoom, 0f);
         return projectedGridSize >= 16f ? 8 : 4;
     }
 
-    // 방향과 세그먼트 크기에 맞는 라인 스프라이트 타입을 찾는다.
-    private AbilityLineSegmentSpriteType GetSegmentSpriteType(int _stepX, int _stepY, int _segmentSize)
+    private static AbilityLineSegmentSpriteType GetSegmentSpriteType(
+        int _stepX,
+        int _stepY,
+        int _segmentSize)
     {
         if (_segmentSize == 8)
         {
@@ -347,17 +552,18 @@ public class AbilityLineRenderer
             : AbilityLineSegmentSpriteType.DiagSENW4;
     }
 
-    // 노드 중심점을 대상 RectTransform 기준 로컬 좌표로 변환한다.
-    private Vector2 GetNodeCenterInRectangle(RectTransform _nodeRect, RectTransform _targetRectangle)
+    private Vector2 GetNodeCenterInRectangle(RectTransform _nodeRect)
     {
+        if (_nodeRect == null || lineParent == null)
+            return Vector2.zero;
+
         Vector3[] corners = new Vector3[4];
         _nodeRect.GetWorldCorners(corners);
         Vector3 worldCenter = (corners[0] + corners[2]) * 0.5f;
-
         Camera eventCamera = GetCanvasEventCamera();
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _targetRectangle,
+            lineParent,
             RectTransformUtility.WorldToScreenPoint(eventCamera, worldCenter),
             eventCamera,
             out Vector2 localPoint);
@@ -365,18 +571,17 @@ public class AbilityLineRenderer
         return SnapToPixel(localPoint);
     }
 
-    // 그리드 좌표를 대상 RectTransform 기준 로컬 중심점으로 변환한다.
-    private Vector2 GetGridPointCenterInRectangle(Vector2Int _gridPoint, RectTransform _targetRectangle)
+    private Vector2 GetGridPointCenterInRectangle(Vector2Int _gridPoint)
     {
-        if (moveTarget == null)
+        if (moveTarget == null || lineParent == null)
             return Vector2.zero;
 
-        Vector3 worldPoint = moveTarget.TransformPoint(new Vector3(_gridPoint.x * gridCellSize, _gridPoint.y * gridCellSize, 0f));
-
+        Vector3 worldPoint = moveTarget.TransformPoint(
+            new Vector3(_gridPoint.x * gridCellSize, _gridPoint.y * gridCellSize, 0f));
         Camera eventCamera = GetCanvasEventCamera();
 
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            _targetRectangle,
+            lineParent,
             RectTransformUtility.WorldToScreenPoint(eventCamera, worldPoint),
             eventCamera,
             out Vector2 localPoint);
@@ -384,107 +589,57 @@ public class AbilityLineRenderer
         return SnapToPixel(localPoint);
     }
 
-    // 정수 픽셀 좌표 기준으로 위치를 스냅한다.
-    private Vector2 SnapToPixel(Vector2 _position)
+    private static Vector2 SnapToPixel(Vector2 _position)
     {
         return new Vector2(Mathf.Round(_position.x), Mathf.Round(_position.y));
     }
 
     private Camera GetCanvasEventCamera()
     {
-        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null ? rootCanvas.rootCanvas : rootCanvas;
+        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null
+            ? rootCanvas.rootCanvas
+            : rootCanvas;
         if (targetCanvas == null || targetCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
             return null;
 
         return targetCanvas.worldCamera;
     }
 
-    // 화면 밖으로 충분히 벗어난 라인 연결은 이번 프레임 렌더링을 생략한다.
-    private bool ShouldCullLineConnection(AbilityLineConnection _connection, RectTransform _targetParent, int _segmentSize)
+    private bool ShouldCullLineConnection(
+        Vector2 _startCenter,
+        Vector2 _endCenter,
+        Vector2 _pivotCenter,
+        bool _hasPivot,
+        int _segmentSize)
     {
-        Vector2 startCenter = GetNodeCenterInRectangle(_connection.ParentNode.RectTransform, _targetParent);
-        Vector2 endCenter = GetNodeCenterInRectangle(_connection.ChildNode.RectTransform, _targetParent);
+        float minX = Mathf.Min(_startCenter.x, _endCenter.x);
+        float maxX = Mathf.Max(_startCenter.x, _endCenter.x);
+        float minY = Mathf.Min(_startCenter.y, _endCenter.y);
+        float maxY = Mathf.Max(_startCenter.y, _endCenter.y);
 
-        float minX = Mathf.Min(startCenter.x, endCenter.x);
-        float maxX = Mathf.Max(startCenter.x, endCenter.x);
-        float minY = Mathf.Min(startCenter.y, endCenter.y);
-        float maxY = Mathf.Max(startCenter.y, endCenter.y);
-
-        if (_connection.HasPivot)
+        if (_hasPivot)
         {
-            Vector2 pivotCenter = GetGridPointCenterInRectangle(_connection.PivotGrid, _targetParent);
-            minX = Mathf.Min(minX, pivotCenter.x);
-            maxX = Mathf.Max(maxX, pivotCenter.x);
-            minY = Mathf.Min(minY, pivotCenter.y);
-            maxY = Mathf.Max(maxY, pivotCenter.y);
+            minX = Mathf.Min(minX, _pivotCenter.x);
+            maxX = Mathf.Max(maxX, _pivotCenter.x);
+            minY = Mathf.Min(minY, _pivotCenter.y);
+            maxY = Mathf.Max(maxY, _pivotCenter.y);
         }
 
         Rect viewRect = abilityBackground.rect;
         float margin = _segmentSize * 2f;
-
-        if (maxX < viewRect.xMin - margin)
-            return true;
-
-        if (minX > viewRect.xMax + margin)
-            return true;
-
-        if (maxY < viewRect.yMin - margin)
-            return true;
-
-        if (minY > viewRect.yMax + margin)
-            return true;
-
-        return false;
+        return maxX < viewRect.xMin - margin ||
+               minX > viewRect.xMax + margin ||
+               maxY < viewRect.yMin - margin ||
+               minY > viewRect.yMax + margin;
     }
 
-    // 풀에서 재사용 가능한 라인 오브젝트를 가져오거나 새로 생성한다.
-    private AbilityLine GetOrCreatePooledLine(RectTransform _targetParent)
-    {
-        AbilityLine line;
-
-        if (activeLineCount < spawnedLines.Count)
-        {
-            line = spawnedLines[activeLineCount];
-            RectTransform lineRect = line.transform as RectTransform;
-            if (lineRect != null && lineRect.parent != _targetParent)
-                lineRect.SetParent(_targetParent, false);
-        }
-        else
-        {
-            line = UnityEngine.Object.Instantiate(abilityLinePrefab, _targetParent, false);
-            spawnedLines.Add(line);
-        }
-
-        activeLineCount++;
-        return line;
-    }
-
-    // 이번 프레임에 사용하지 않은 라인 오브젝트는 숨긴다.
-    private void HideUnusedLines()
-    {
-        for (int i = activeLineCount; i < spawnedLines.Count; i++)
-        {
-            if (spawnedLines[i] != null)
-                spawnedLines[i].Hide();
-        }
-    }
-
-    // 자식 노드의 현재 상태를 기준으로 라인 색상을 결정한다.
     private Color GetLineColor(SkillType _childSkillType)
     {
-        if (lineColorResolver == null)
-            return Color.white;
-
-        return lineColorResolver(_childSkillType);
+        return lineColorResolver != null ? lineColorResolver(_childSkillType) : Color.white;
     }
 
     private float GetLineRevealProgress(SkillType _childSkillType)
     {
-        if (lineRevealProgressMap.TryGetValue(_childSkillType, out float progress))
-            return progress;
-
-        return 1f;
+        return lineRevealProgressMap.TryGetValue(_childSkillType, out float progress) ? progress : 1f;
     }
-
-    // 완료된 라인은 흰색 기본 라인보다 위에 오도록 sibling 순서를 분리한다.
 }

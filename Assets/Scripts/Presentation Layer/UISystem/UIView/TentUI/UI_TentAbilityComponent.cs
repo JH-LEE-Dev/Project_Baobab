@@ -19,6 +19,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float UnlockRevealStaggerDelay = 0.025f;
     private const float AutoLevelUpInterval = 0.1f;
     private const float AbilityUpgradeMaxSemitones = 6f;
+    private const string SharedNodeVfxPoolName = "SharedAbilityNodeVFXPool";
     private const string ToolTipCostAvailableColor = "54D86A";
     private const string ToolTipCostUnavailableColor = "B94A42";
     private const string ToolTipCostMaxLevelColor = "58D7F2";
@@ -82,6 +83,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private bool hasBuiltNodes;
     private bool hasPrewarmedNodePool;
     private bool lineLayoutDirty;
+    private bool nodeViewportLayoutDirty = true;
     private bool toolTipLayoutDirty;
     private HoverCaptureMode hoverCaptureMode;
     private AbilityNode capturedHoverNode;
@@ -89,6 +91,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private AbilityNode currentCursorNode;
     private AbilityToolTip toolTipInstance;
     private UISelectionCursor selectionCursorInstance;
+    private VFXComponent sharedNodeVfxPool;
     private Material circleRevealDimMaterialInstance;
     private ToolTipPlacementMode toolTipPlacementMode = ToolTipPlacementMode.Right;
     private readonly Dictionary<SkillType, SkillAccumulatedValueChangeData> toolTipPreviewDataMap = new Dictionary<SkillType, SkillAccumulatedValueChangeData>();
@@ -136,7 +139,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     [Header("Ability Node Setup")]
     [SerializeField] private AbilityNode abilityNodePrefab;
-    [SerializeField] private AbilityLine abilityLinePrefab;
     [SerializeField] private TextAsset abilityNodeJson;
     [SerializeField] private float gridCellSize = 32f;
     [SerializeField] private int prewarmNodePoolCount = 64;
@@ -144,6 +146,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private List<AbilityLevelBadgeBinding> levelBadgeBindings = new List<AbilityLevelBadgeBinding>();
     [SerializeField] private List<AbilityLineSegmentSpriteBinding> lineSpriteBindings = new List<AbilityLineSegmentSpriteBinding>();
     [SerializeField] private RectTransform lineParent;
+
+    [Header("Node Viewport Culling")]
+    [SerializeField, Min(0f)] private float nodeViewportCullPadding = 64f;
 
     [Header("ToolTip Setup")]
     [SerializeField] private AbilityToolTip toolTipPrefab;
@@ -192,11 +197,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
         EnsureCircleRevealMask();
         EnsureCircleRevealDim();
         BindAbilityHUDIfNeeded();
-        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, abilityLinePrefab, rootCanvas, gridCellSize, GetLineColor);
+        lineRenderer.CacheLineSpriteBindings(lineSpriteBindings);
+        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, rootCanvas, gridCellSize, GetLineColor);
         CachePictureBindings();
         CacheLevelBadgeBindings();
-        CacheLineSpriteBindings();
         LoadNodeDefinitions();
+        EnsureSharedNodeVfxPool();
         PrewarmNodePool();
         EnsureToolTipInstance();
         EnsureSelectionCursorInstance();
@@ -271,12 +277,6 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
             levelBadgeSpriteMap[binding.levelBadge] = binding.sprite;
         }
-    }
-
-    // 인스펙터에서 연결한 라인 세그먼트 스프라이트를 타입별 조회 맵으로 캐시한다.
-    private void CacheLineSpriteBindings()
-    {
-        lineRenderer.CacheLineSpriteBindings(lineSpriteBindings);
     }
 
     // JSON 노드 정의를 읽어 SkillType 기준 조회 맵으로 만든다.
@@ -365,6 +365,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         RefreshNodeAvailabilityVisuals();
         RefreshAbilityHUDImmediately();
         RestoreViewOnOpen();
+        RefreshNodeViewportCullingIfNeeded();
         BeginCircleReveal();
         RefreshOpenTransitionInput();
         RefreshLinesIfNeeded();
@@ -459,7 +460,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (hasPrewarmedNodePool || moveTarget == null || abilityNodePrefab == null)
             return;
 
-        int targetCount = Mathf.Max(prewarmNodePoolCount, 0);
+        int targetCount = Mathf.Min(Mathf.Max(prewarmNodePoolCount, 0), nodeBuildOrder.Count);
         for (int i = nodePool.Count; i < targetCount; i++)
         {
             AbilityNode pooledNode = Instantiate(abilityNodePrefab, moveTarget);
@@ -469,6 +470,54 @@ public class UI_TentAbilityComponent : MonoBehaviour
         }
 
         hasPrewarmedNodePool = true;
+    }
+
+    private void EnsureSharedNodeVfxPool()
+    {
+        if (sharedNodeVfxPool != null || abilityNodePrefab == null || abilityNodePrefab.VfxTemplate == null)
+            return;
+
+        Transform existingPoolTransform = transform.Find(SharedNodeVfxPoolName);
+        GameObject poolObject;
+        if (existingPoolTransform != null)
+        {
+            poolObject = existingPoolTransform.gameObject;
+        }
+        else
+        {
+            poolObject = new GameObject(SharedNodeVfxPoolName);
+            poolObject.transform.SetParent(transform, false);
+        }
+
+        sharedNodeVfxPool = poolObject.GetComponent<VFXComponent>();
+        if (sharedNodeVfxPool == null)
+            sharedNodeVfxPool = poolObject.AddComponent<VFXComponent>();
+
+        sharedNodeVfxPool.InitializeFrom(abilityNodePrefab.VfxTemplate);
+    }
+
+    public void PlaySharedNodeEffect(
+        string _effectTag,
+        Transform _target,
+        Color _color,
+        string _sortingLayer,
+        int _sortingOrder)
+    {
+        if (_target == null || string.IsNullOrEmpty(_effectTag))
+            return;
+
+        EnsureSharedNodeVfxPool();
+        if (sharedNodeVfxPool == null)
+            return;
+
+        ParticleSystem effect = sharedNodeVfxPool.Get(_effectTag);
+        if (effect == null)
+            return;
+
+        sharedNodeVfxPool.SetStartColor(effect, _color);
+        sharedNodeVfxPool.SetSortingSettings(effect, _sortingLayer, _sortingOrder);
+        Transform effectParent = moveTarget != null ? moveTarget : _target;
+        sharedNodeVfxPool.Play(effect, _target.position, Quaternion.identity, effectParent);
     }
 
     // 풀에 준비된 노드를 꺼내고, 부족하면 새로 만들어 반환한다.
@@ -1456,6 +1505,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 MarkViewLayoutDirty();
 
             UpdateUnlockReveals();
+            RefreshNodeViewportCullingIfNeeded();
             RefreshLinesIfNeeded();
             UpdateToolTipPositionIfNeeded();
             return;
@@ -1477,6 +1527,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         UpdateUnlockReveals();
         UpdateViewShake();
+        RefreshNodeViewportCullingIfNeeded();
         RefreshLinesIfNeeded();
         // 툴팁 포지션 스냅
         UpdateToolTipPositionIfNeeded();
@@ -1857,6 +1908,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
         Vector2 offsetDelta = appliedOffset - currentViewShakeOffset;
         moveTarget.anchoredPosition = clampedPosition;
         currentViewShakeOffset = appliedOffset;
+        nodeViewportLayoutDirty = true;
+        toolTipLayoutDirty = true;
 
         RectTransform lineShakeTarget = GetLineShakeTarget();
         if (lineShakeTarget != null)
@@ -1893,6 +1946,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private void MarkViewLayoutDirty()
     {
         lineLayoutDirty = true;
+        nodeViewportLayoutDirty = true;
         toolTipLayoutDirty = true;
     }
 
@@ -2077,12 +2131,8 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void StopAllNodeEffects()
     {
-        for (int i = 0; i < spawnedNodes.Count; i++)
-        {
-            AbilityNode node = spawnedNodes[i];
-            if (node != null)
-                node.StopAllEffectsImmediately();
-        }
+        if (sharedNodeVfxPool != null)
+            sharedNodeVfxPool.StopAll();
     }
 
 
@@ -2322,9 +2372,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
-            bool wasVisible = node != null && node.gameObject.activeSelf;
+            if (node == null)
+                continue;
+
+            bool wasVisible = node.IsProgressionVisible;
             bool isVisible = ShouldShowNode(node);
-            node.gameObject.SetActive(isVisible);
+            node.SetProgressionVisible(isVisible);
 
             if (_playUnlockReveal && wasVisible == false && isVisible)
             {
@@ -2339,7 +2392,59 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 HideSelectionCursor(node);
         }
 
+        nodeViewportLayoutDirty = true;
+        RefreshNodeViewportCullingIfNeeded();
+        lineRenderer.InvalidateVisualData();
         RefreshLines();
+    }
+
+    private void RefreshNodeViewportCullingIfNeeded()
+    {
+        if (nodeViewportLayoutDirty == false)
+            return;
+
+        nodeViewportLayoutDirty = false;
+        if (abilityBackground == null || moveTarget == null)
+            return;
+
+        Rect viewportRect = abilityBackground.rect;
+        float padding = Mathf.Max(0f, nodeViewportCullPadding);
+        viewportRect.xMin -= padding;
+        viewportRect.xMax += padding;
+        viewportRect.yMin -= padding;
+        viewportRect.yMax += padding;
+
+        for (int i = 0; i < spawnedNodes.Count; i++)
+        {
+            AbilityNode node = spawnedNodes[i];
+            if (node == null)
+                continue;
+
+            if (node.IsProgressionVisible == false)
+            {
+                node.SetViewportVisible(false);
+                continue;
+            }
+
+            RectTransform nodeRect = node.RectTransform;
+            if (nodeRect == null)
+            {
+                node.SetViewportVisible(false);
+                continue;
+            }
+
+            Bounds nodeBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(
+                abilityBackground,
+                nodeRect);
+
+            bool isInsideViewport =
+                nodeBounds.max.x >= viewportRect.xMin &&
+                nodeBounds.min.x <= viewportRect.xMax &&
+                nodeBounds.max.y >= viewportRect.yMin &&
+                nodeBounds.min.y <= viewportRect.yMax;
+
+            node.SetViewportVisible(isInsideViewport);
+        }
     }
 
     private void StartUnlockReveal(AbilityNode _node, bool _playAppearSound)
@@ -2376,8 +2481,12 @@ public class UI_TentAbilityComponent : MonoBehaviour
         for (int i = activeUnlockReveals.Count - 1; i >= 0; i--)
         {
             AbilityNodeUnlockReveal reveal = activeUnlockReveals[i];
-            if (reveal == null || reveal.Node == null || reveal.Node.gameObject.activeSelf == false)
+            if (reveal == null || reveal.Node == null || reveal.Node.IsProgressionVisible == false)
             {
+                if (reveal != null && reveal.Node != null)
+                    lineRenderer.ClearLineRevealProgress(reveal.Node.SkillType);
+
+                lineLayoutDirty = true;
                 activeUnlockReveals.RemoveAt(i);
                 continue;
             }
@@ -2393,10 +2502,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
             lineRenderer.ClearLineRevealProgress(reveal.Node.SkillType);
             reveal.Node.SetVisualVisible(true);
 
-            if (reveal.PlayAppearSound)
+            if (reveal.PlayAppearSound && reveal.Node.gameObject.activeInHierarchy)
                 Sound.PlayUI(SoundID.AbilityAppear);
 
-            reveal.Node.PlayUnlockAppearMotion();
+            if (reveal.Node.gameObject.activeInHierarchy)
+                reveal.Node.PlayUnlockAppearMotion();
             activeUnlockReveals.RemoveAt(i);
         }
     }
@@ -2412,7 +2522,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         for (int i = 0; i < spawnedNodes.Count; i++)
         {
             AbilityNode node = spawnedNodes[i];
-            if (node == null || node.gameObject.activeSelf == false)
+            if (node == null || node.IsProgressionVisible == false)
                 continue;
 
             bool canApply = false;
@@ -2439,6 +2549,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
                 isCompleted);
         }
 
+        lineRenderer.InvalidateVisualData();
         RefreshLines();
     }
 
