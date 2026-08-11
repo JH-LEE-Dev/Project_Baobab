@@ -297,7 +297,13 @@ public class AbilityHUD : MonoBehaviour
             flowerStackFontInitialAnchoredPosition = flowerStackFontRectTransform.anchoredPosition;
         }
 
-        int _startExperience = currentExperience;
+        // The reset begins from a visually full bar using the newly applied limit.
+        // The previous limit can differ, so using the old absolute experience here
+        // would make the fill jump before the drain starts.
+        int _startExperience = maxExperience;
+        currentExperience = _startExperience;
+        RefreshAbilityBar();
+
         fillInitialColor = null == fillImage ? Color.white : fillImage.color;
         ApplyResetFlashColors(0.0f, 0.0f);
 
