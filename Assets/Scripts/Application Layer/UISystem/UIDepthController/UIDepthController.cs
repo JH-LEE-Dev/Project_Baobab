@@ -6,7 +6,7 @@ public class UIDepthController : MonoBehaviour
     // //외부 의존성 (없음)
 
     // //내부 의존성
-    private readonly List<UIView> activeViews = new List<UIView>(16);
+    private readonly List<IUIDepthCloseable> activeViews = new List<IUIDepthCloseable>(16);
 
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize()
@@ -14,7 +14,7 @@ public class UIDepthController : MonoBehaviour
         activeViews.Clear();
     }
 
-    public void RegisterView(UIView _view)
+    public void RegisterView(IUIDepthCloseable _view)
     {
         if (_view == null)
         {
@@ -27,7 +27,7 @@ public class UIDepthController : MonoBehaviour
         }
     }
 
-    public void UnregisterView(UIView _view)
+    public void UnregisterView(IUIDepthCloseable _view)
     {
         if (_view == null)
         {
@@ -45,9 +45,9 @@ public class UIDepthController : MonoBehaviour
         }
 
         int lastIndex = activeViews.Count - 1;
-        UIView topView = activeViews[lastIndex];
+        IUIDepthCloseable topView = activeViews[lastIndex];
 
-        if (topView != null && topView.gameObject.activeSelf)
+        if (topView != null && topView.IsActive)
         {
             topView.Hide();
             return true;

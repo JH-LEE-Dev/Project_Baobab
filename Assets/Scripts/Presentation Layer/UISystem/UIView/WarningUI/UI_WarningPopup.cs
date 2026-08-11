@@ -7,7 +7,7 @@ using DG.Tweening;
 /// 범용 경고/확인 팝업 UI 스크립트입니다.
 /// 다양한 시스템 텍스트 출력과 콜백 실행을 담당하며 DOTween을 사용한 슬라이드 및 페이드 연출이 포함되어 있습니다.
 /// </summary>
-public class UI_WarningPopup : MonoBehaviour
+public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
 {
     [Header("UI References")]
     [SerializeField] private TMP_Text messageText;
@@ -28,16 +28,26 @@ public class UI_WarningPopup : MonoBehaviour
     [SerializeField] private float dimAnimationDuration = 0.25f;
 
     private ICursorBoxUI cursorBoxUI;
+    private UIDepthController depthController;
     private Action onConfirmAction;
     private Action onCancelAction;
     private SoundID openSoundId = SoundID.None;
     private SoundID closeSoundId = SoundID.None;
     private SoundID hoverSoundId = SoundID.None;
     private bool hasPlayedCloseSound;
-    
+
     private Sequence productionSequence;
     private Vector2 originalRootAnchoredPosition;
-    
+
+    public bool IsActive => gameObject.activeSelf;
+
+    /// <summary>ESC로 뎁스 스택에서 닫힐 때 호출됩니다. 확인(Confirm)이 아닌 취소(Cancel)로 처리해
+    /// 파괴적인 동작이 실수로 실행되지 않게 합니다.</summary>
+    public void Hide()
+    {
+        OnCancelButtonClicked();
+    }
+
     private void Awake()
     {
         if (null != popupWindowRoot)
@@ -48,6 +58,7 @@ public class UI_WarningPopup : MonoBehaviour
 
     private void OnDestroy()
     {
+        depthController?.UnregisterView(this);
         KillSequence();
         HideCursor();
         onConfirmAction = null;
@@ -60,6 +71,7 @@ public class UI_WarningPopup : MonoBehaviour
         if (null != _ctx)
         {
             cursorBoxUI = _ctx.cursorBoxUI;
+            depthController = _ctx.depthController;
         }
     }
 
@@ -97,6 +109,8 @@ public class UI_WarningPopup : MonoBehaviour
             cancelButton.gameObject.SetActive(null != _onCancel);
             cancelButton.Initialize(OnCancelButtonClicked, PlayHoverSound, this);
         }
+
+        depthController?.RegisterView(this);
 
         PlayConfiguredSound(openSoundId);
         PlayOpenProduction();
@@ -200,6 +214,8 @@ public class UI_WarningPopup : MonoBehaviour
 
     private void PlayCloseProduction()
     {
+        depthController?.UnregisterView(this);
+
         if (false == hasPlayedCloseSound)
         {
             hasPlayedCloseSound = true;

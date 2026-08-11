@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class UIView : MonoBehaviour
+public abstract class UIView : MonoBehaviour, IUIDepthCloseable
 {
     protected UIViewContext viewCtx;
 
@@ -11,10 +11,11 @@ public abstract class UIView : MonoBehaviour
     public bool bWorld = false;
     public bool bScreenSpace = false;
     public bool bOverlay = false;
-    
+
     public UILayer Layer => layer;
     public bool IsCloseableByESC => bCloseableByESC;
     public bool IsVisible => bVisible;
+    public bool IsActive => gameObject.activeSelf;
 
     private bool bVisible;
 

@@ -7,7 +7,7 @@ using TMPro;
 /// 메인 메뉴나 ESC 메뉴에서 호출되어 옵션 창을 띄우고 닫는 역할을 합니다.
 /// 설정값의 소유·적용·저장은 SettingsManager가 담당하며, 이 클래스는 표시와 입력 전달만 합니다.
 /// </summary>
-public class UI_Option : MonoBehaviour
+public class UI_Option : MonoBehaviour, IUIDepthCloseable
 {
     public event Action<EOptionLanguage> OnLanguageOptionChangedEvent;
 
@@ -89,6 +89,9 @@ public class UI_Option : MonoBehaviour
     private LocalizationManager locManager;
     private SettingsManager settings;
     private InputManager inputManager;
+    private UIDepthController depthController;
+
+    public bool IsActive => gameObject.activeSelf;
     private System.Collections.Generic.List<UI_OptionKeyBindRow> keyBindRows 
         = new System.Collections.Generic.List<UI_OptionKeyBindRow>();
 
@@ -109,6 +112,7 @@ public class UI_Option : MonoBehaviour
         {
             locManager = _ctx.localizationManager;
             inputManager = _ctx.inputManager;
+            depthController = _ctx.depthController;
         }
 
         settings = SettingsManager.Instance;
@@ -162,6 +166,8 @@ public class UI_Option : MonoBehaviour
 
         onCloseAction = _onCloseCallback;
 
+        depthController?.RegisterView(this);
+
         // 옵션 창은 ESC 메뉴(일시정지)에서 열리는데, 그 상태에서는 게임플레이 사운드가 음소거라
         // 효과음 볼륨을 조절해도 아무것도 들리지 않는다. 창이 열려 있는 동안만 덕킹/음소거를 풀어
         // 조절 중인 소리를 실제로 들을 수 있게 한다.
@@ -183,6 +189,16 @@ public class UI_Option : MonoBehaviour
 
     public void Hide()
     {
+        depthController?.UnregisterView(this);
+
+        // Option이 ESC가 아닌 다른 경로(escUI.Hide() 등)로 강제로 닫힐 때, 그 안에 중첩된 경고
+        // 팝업(warningPopup)이 아직 열려 있으면 뎁스 스택에 좀비로 남는다(부모가 비활성화되어도
+        // 자기 자신의 activeSelf는 그대로라 IsActive가 true로 남음). 팝업부터 확실히 닫아 정리한다.
+        if (null != warningPopup && true == warningPopup.IsActive)
+        {
+            warningPopup.Hide();
+        }
+
         // 창을 닫으면 원래의 덕킹/일시정지 음소거 상태로 되돌린다(ESC 메뉴로 복귀하는 경우 등).
         Sound.SetAudioPreviewMode(false);
 
@@ -699,6 +715,8 @@ public class UI_Option : MonoBehaviour
     // 유니티 이벤트 함수
     private void OnDestroy()
     {
+        depthController?.UnregisterView(this);
+
         if (null != settings)
         {
             settings.OnLanguageChangedEvent -= onSettingsLanguageChanged;
