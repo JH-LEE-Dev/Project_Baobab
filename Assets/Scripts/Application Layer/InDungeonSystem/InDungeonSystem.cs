@@ -709,11 +709,6 @@ public class InDungeonSystem : MonoBehaviour
         if (bCurrentlyDungeonScene == true && bRetryGame == false)
             return;
 
-        if (bCurrentlyDungeonScene == true)
-        {
-            signalHub.Publish(new ActivateCharacterSignal());
-        }
-
         StartCoroutine(PopupUIGoUPCoroutine());
 
         if (bRetryGame == true)
@@ -731,6 +726,10 @@ public class InDungeonSystem : MonoBehaviour
 
         if (bCurrentlyDungeonScene == true)
         {
+            // AttackIndicator(공격 사거리 인디케이터)는 캐릭터가 움직일 수 있게 되는 시점이 아니라
+            // HUD가 올라오는 이 시점에 함께 나타나야 자연스러우므로, 캐릭터 활성화를 여기로 옮겼다.
+            signalHub.Publish(new ActivateCharacterSignal());
+
             StartCoroutine(StaminaDecreaseCoroutine());
         }
         else
