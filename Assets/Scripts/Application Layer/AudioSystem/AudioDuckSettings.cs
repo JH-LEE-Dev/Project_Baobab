@@ -1,0 +1,39 @@
+using UnityEngine;
+
+[CreateAssetMenu(fileName = "AudioDuckSettings", menuName = "Game/Audio Duck Settings")]
+public class AudioDuckSettings : ScriptableObject
+{
+    [Header("Cutoff Frequency (Hz)")]
+    [Tooltip("평소 상태의 Cutoff. Lowpass가 사실상 걸리지 않는 최대값.")]
+    public float openCutoffHz = 22000f;
+
+    [Tooltip("대상 UI가 떠 있을 때 적용되는 Cutoff. 낮을수록 더 먹먹해진다.")]
+    public float duckedCutoffHz = 1200f;
+
+    [Tooltip("Cutoff를 전환하는 데 걸리는 시간(초). unscaledTime 기준.")]
+    public float cutoffTransitionDuration = 0.25f;
+
+    [Header("Pause Mute (dB)")]
+    [Tooltip("평소 게임플레이(SFX/Ambience) 그룹 볼륨. 0 = 원본 그대로.")]
+    public float normalVolumeDb = 0f;
+
+    [Tooltip("일시정지 중 게임플레이 그룹 볼륨. -80 = 완전 무음.")]
+    public float pausedVolumeDb = -80f;
+
+    [Tooltip("일시정지 음소거를 전환하는 데 걸리는 시간(초). 짧게 둬야 딸깍 소리가 안 난다.")]
+    public float pauseFadeDuration = 0.1f;
+
+    [Header("Volume Slider Mapping")]
+    [Tooltip("마스터 슬라이더가 이 값일 때 0dB(원본 그대로)가 된다.")]
+    public float masterZeroDbValue = 100f;
+
+    [Tooltip("BGM/효과음 슬라이더가 이 값일 때 0dB(원본 그대로)가 된다. 사운드를 50% 기준으로 " +
+             "밸런싱했으므로 50이며, 그래서 기본값 50에서 지금 들리는 것과 똑같이 재생된다.")]
+    public float mixZeroDbValue = 50f;
+
+    [Tooltip("슬라이더를 0까지 내렸을 때 적용할 dB. -80이면 완전 무음.")]
+    public float minVolumeDb = -80f;
+
+    [Tooltip("슬라이더를 최대로 올렸을 때 허용할 최대 dB. 과도한 증폭으로 클리핑되는 걸 막는다.")]
+    public float maxVolumeDb = 6f;
+}

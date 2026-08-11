@@ -664,6 +664,8 @@ MonoBehaviour:
   poolSize: 50
   farDistanceBuffer: 1.05
   bgmFadeDuration: 1
+  mixer: {fileID: 24100000, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+  duckSettings: {fileID: 11400000, guid: 0051b4e90e29e3e4ea42c245e77f7610, type: 2}
   enableDebugSound: 0
   debugSoundId: 0
 --- !u!1001 &1407627020

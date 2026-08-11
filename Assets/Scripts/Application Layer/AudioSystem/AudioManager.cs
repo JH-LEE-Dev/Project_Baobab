@@ -27,6 +27,22 @@ public class AudioManager : MonoBehaviour
     [Header("BGM Settings")]
     [SerializeField] private float bgmFadeDuration = 1f;
 
+    [Header("Duck Settings")]
+    [SerializeField] private AudioMixer mixer;
+    [SerializeField] private AudioDuckSettings duckSettings;
+    // Main.mixer의 Exposed Parameter 이름. Duckable 그룹(BGM+Gameplay)의 Lowpass Cutoff와,
+    // Gameplay 그룹(SFX+Ambience)의 볼륨이다. UI 그룹은 둘 다의 바깥(Master 직속)에 있어서
+    // 팝업 조작음은 먹먹해지지도, 일시정지에 꺼지지도 않는다.
+    private const string DuckCutoffParam = "DuckCutoffFreq";
+    private const string GameplayVolumeParam = "GameplayVolume";
+    // 옵션 볼륨 슬라이더용. 효과음 슬라이더는 Gameplay가 아니라 그 아래의 SFX/Ambience에 건다 -
+    // Gameplay는 일시정지 음소거가 쓰고 있어서, 같은 파라미터를 공유하면 일시정지가 풀릴 때
+    // 유저가 맞춰둔 볼륨을 덮어써 버린다. 중첩 그룹이라 두 값은 자연스럽게 곱해진다.
+    private const string MasterVolumeParam = "MasterVolume";
+    private const string BgmVolumeParam = "BgmVolume";
+    private const string SfxVolumeParam = "SfxVolume";
+    private const string AmbienceVolumeParam = "AmbienceVolume";
+
     [Header("Debug Settings")]
     [SerializeField] private bool enableDebugSound = false;
     [SerializeField] private SoundID debugSoundId;
@@ -52,6 +68,17 @@ public class AudioManager : MonoBehaviour
 
     private float production3DVolumeFactor = 1f;
     private Coroutine productionVolumeCoroutine;
+
+    private int duckRequestCount;
+    private bool gameplayMuted;
+    private bool audioPreviewMode;
+    private Coroutine duckCoroutine;
+    private Coroutine pauseMuteCoroutine;
+    private bool mixerSetupWarned;
+    // 지금 향하고 있는 목표값. 같은 목표로 다시 요청이 와도 코루틴을 재시작하지 않기 위한 것으로,
+    // NaN은 "아직 한 번도 설정한 적 없음"을 뜻해 최초 1회는 반드시 반영되게 한다.
+    private float cutoffTarget = float.NaN;
+    private float gameplayVolumeTarget = float.NaN;
 
     private AudioSource bgmSource;
     private Coroutine bgmFadeCoroutine;
@@ -82,6 +109,76 @@ public class AudioManager : MonoBehaviour
 
         CreatePool();
         CreateBGMSource();
+        ResetMixerToDefaults();
+    }
+
+    // AudioMixer의 SetFloat 오버라이드는 에디터에서 플레이 세션을 넘어 남아있을 수 있어서, 이전
+    // 실행이 덕킹/음소거 상태로 끝나면 다음 실행이 먹먹하거나 조용한 채로 시작된다. 시작 시점에
+    // 항상 기준값으로 맞춰 그런 상태가 새어나오지 않게 한다.
+    private void ResetMixerToDefaults()
+    {
+        duckRequestCount = 0;
+        gameplayMuted = false;
+        audioPreviewMode = false;
+        cutoffTarget = float.NaN;
+        gameplayVolumeTarget = float.NaN;
+
+        if (mixer == null || duckSettings == null) return;
+
+        mixer.SetFloat(DuckCutoffParam, duckSettings.openCutoffHz);
+        mixer.SetFloat(GameplayVolumeParam, duckSettings.normalVolumeDb);
+    }
+
+    private void Start()
+    {
+        if (Instance != this) return;
+
+        // 저장된 볼륨 설정을 부팅 시 한 번 반영한다. SettingsManager의 적용 이벤트는 옵션 창을
+        // 닫을 때만 발행되므로, 이게 없으면 게임을 껐다 켰을 때 저장된 볼륨이 무시된다.
+        SettingsManager settings = SettingsManager.Instance;
+        settings.OnAudioSettingsAppliedEvent -= ApplyVolumeSettings;
+        settings.OnAudioSettingsAppliedEvent += ApplyVolumeSettings;
+        ApplyVolumeSettings(settings.Current);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance != this) return;
+
+        // 종료 중에 Instance 게터를 쓰면 싱글턴이 되살아나므로 HasInstance로 확인한다.
+        if (SettingsManager.HasInstance)
+            SettingsManager.Instance.OnAudioSettingsAppliedEvent -= ApplyVolumeSettings;
+    }
+
+    /// <summary>
+    /// 옵션의 볼륨 슬라이더 값(0~100)을 믹서 그룹 볼륨에 반영한다.
+    /// </summary>
+    public void ApplyVolumeSettings(SettingsData data)
+    {
+        if (mixer == null || duckSettings == null) return;
+
+        mixer.SetFloat(MasterVolumeParam, SliderToDecibel(data.masterVolume, duckSettings.masterZeroDbValue));
+
+        float bgmDb = SliderToDecibel(data.bgmVolume, duckSettings.mixZeroDbValue);
+        mixer.SetFloat(BgmVolumeParam, bgmDb);
+
+        // 효과음 슬라이더는 SFX와 환경음을 함께 담당한다.
+        float sfxDb = SliderToDecibel(data.sfxVolume, duckSettings.mixZeroDbValue);
+        mixer.SetFloat(SfxVolumeParam, sfxDb);
+        mixer.SetFloat(AmbienceVolumeParam, sfxDb);
+    }
+
+    // 슬라이더는 0~100 선형이지만 믹서 볼륨은 dB(로그) 단위다. 비율을 그대로 dB에 대입하면
+    // 절반으로 내려도 거의 안 줄어들다가 끝에서 갑자기 사라지는, 고장난 것 같은 조작감이 된다.
+    // zeroDbValue는 "원본 그대로(0dB)에 해당하는 슬라이더 값"이다 - 마스터는 100, BGM/효과음은
+    // 50이라서, 기본값 상태가 지금 들리는 소리와 정확히 같아지고 위로 더 키울 여지가 남는다.
+    private float SliderToDecibel(float sliderValue, float zeroDbValue)
+    {
+        if (sliderValue <= SettingsData.SLIDER_MIN + 0.01f || zeroDbValue <= 0f)
+            return duckSettings.minVolumeDb;
+
+        float db = Mathf.Log10(sliderValue / zeroDbValue) * 20f;
+        return Mathf.Clamp(db, duckSettings.minVolumeDb, duckSettings.maxVolumeDb);
     }
 
     // Bootstrap 오브젝트가 MainMenuScene에 들어 있어서, 메인 메뉴로 돌아올 때마다 그 하위의
@@ -112,6 +209,23 @@ public class AudioManager : MonoBehaviour
     {
         StopAll3DSounds();
         SetProduction3DVolumeFactor(0f);
+
+        // 씬 전환으로 대상 UI가 Hide()를 거치지 않고 그대로 파괴될 수 있으므로(예: ESC 메뉴를 띄운 채
+        // 메인 메뉴로 나가기), 씬이 새로 뜰 때마다 덕킹/음소거를 강제로 원복해 다음 씬에서 계속
+        // 먹먹하거나 조용한 상태로 남지 않게 한다.
+        if (duckCoroutine != null)
+        {
+            StopCoroutine(duckCoroutine);
+            duckCoroutine = null;
+        }
+
+        if (pauseMuteCoroutine != null)
+        {
+            StopCoroutine(pauseMuteCoroutine);
+            pauseMuteCoroutine = null;
+        }
+
+        ResetMixerToDefaults();
     }
 
     /// <summary>
@@ -196,6 +310,136 @@ public class AudioManager : MonoBehaviour
                 ApplySourceVolume(i);
             }
         }
+    }
+
+    /// <summary>
+    /// ResultUI/TentUI/EscUI/WarningUI/Navigation UI 등 대상 UI가 열릴 때 호출한다. 참조 카운트 방식이라
+    /// 여러 대상 UI가 동시에 떠 있어도 마지막 하나가 닫힐 때(ReleaseAudioDuck이 카운트를 0으로 되돌릴 때)만
+    /// cutoff가 원복된다.
+    /// </summary>
+    public void RequestAudioDuck()
+    {
+        duckRequestCount++;
+        RefreshMixerState();
+    }
+
+    public void ReleaseAudioDuck()
+    {
+        duckRequestCount = Mathf.Max(0, duckRequestCount - 1);
+        RefreshMixerState();
+    }
+
+    /// <summary>
+    /// 일시정지(ESC 표시) 중 게임플레이 사운드(SFX/Ambience 그룹)를 통째로 음소거해 BGM과 UI 조작음만
+    /// 남긴다. 믹서 그룹 볼륨을 내리는 방식이라 이미 울리고 있던 원샷까지 한 번에 사라지고, 일시정지
+    /// 도중 새로 재생되는 소리도 예외 없이 걸린다(AudioSource를 개별로 건드리면 재생 시작 경로가
+    /// 빠져나가는 구멍이 생긴다). AudioSource 자체는 계속 돌아가므로 해제 시 루프가 끊기지 않는다.
+    /// </summary>
+    public void SetGameplayAudioMuted(bool muted)
+    {
+        gameplayMuted = muted;
+        RefreshMixerState();
+    }
+
+    /// <summary>
+    /// 옵션 창에서 볼륨을 조절하는 동안 덕킹과 일시정지 음소거를 일시적으로 해제한다.
+    /// 옵션 창은 ESC 메뉴에서 열리는데, 그때는 게임플레이 그룹이 음소거 상태라 효과음 슬라이더를
+    /// 움직여도 미리듣기가 아예 들리지 않는다 - 정작 조절이 필요한 자리에서 피드백이 죽는다.
+    /// 덕킹까지 같이 풀어야 먹먹하지 않은 원래 음색으로 볼륨을 판단할 수 있다.
+    /// </summary>
+    public void SetAudioPreviewMode(bool enabled)
+    {
+        audioPreviewMode = enabled;
+        RefreshMixerState();
+    }
+
+    // 덕킹·일시정지 음소거·옵션 미리듣기는 서로 겹칠 수 있으므로, 각자 파라미터를 직접 쓰지 않고
+    // 여기 한 곳에서 최종 상태를 계산해 반영한다. (예전에 볼륨을 여러 곳에서 각자 덮어써서
+    // 서로를 지워버린 전례가 있어 ApplySourceVolume도 같은 방식으로 창구를 모아 두었다)
+    private void RefreshMixerState()
+    {
+        if (duckSettings == null) return;
+
+        bool ducked = false == audioPreviewMode && duckRequestCount > 0;
+        bool muted = false == audioPreviewMode && gameplayMuted;
+
+        RampCutoff(ducked ? duckSettings.duckedCutoffHz : duckSettings.openCutoffHz);
+        RampGameplayVolume(muted ? duckSettings.pausedVolumeDb : duckSettings.normalVolumeDb);
+    }
+
+    private void RampCutoff(float targetHz)
+    {
+        // 이미 같은 목표로 가고 있으면 코루틴을 다시 시작하지 않는다.
+        if (Mathf.Approximately(cutoffTarget, targetHz)) return;
+        if (false == IsMixerParamReady(DuckCutoffParam)) return;
+
+        cutoffTarget = targetHz;
+
+        if (duckCoroutine != null)
+            StopCoroutine(duckCoroutine);
+
+        duckCoroutine = StartCoroutine(RampMixerParamRoutine(
+            DuckCutoffParam, targetHz, duckSettings.cutoffTransitionDuration, () => duckCoroutine = null));
+    }
+
+    private void RampGameplayVolume(float targetDb)
+    {
+        if (Mathf.Approximately(gameplayVolumeTarget, targetDb)) return;
+        if (false == IsMixerParamReady(GameplayVolumeParam)) return;
+
+        gameplayVolumeTarget = targetDb;
+
+        if (pauseMuteCoroutine != null)
+            StopCoroutine(pauseMuteCoroutine);
+
+        pauseMuteCoroutine = StartCoroutine(RampMixerParamRoutine(
+            GameplayVolumeParam, targetDb, duckSettings.pauseFadeDuration, () => pauseMuteCoroutine = null));
+    }
+
+    // 이 기능은 AudioMixer 쪽 사전 설정(그룹 구성 + Exposed Parameter)에 의존하는데, 설정이 빠져 있으면
+    // SetFloat이 아무 일도 하지 않고 조용히 넘어가 원인을 찾기 어렵다. 그래서 최초 1회만 경고를
+    // 남긴다(매 UI 개폐마다 찍히면 로그가 도배된다).
+    private bool IsMixerParamReady(string param)
+    {
+        if (mixer == null || duckSettings == null)
+        {
+            WarnMixerSetupOnce("AudioManager의 Mixer / Duck Settings 필드가 비어 있다.");
+            return false;
+        }
+
+        if (false == mixer.GetFloat(param, out _))
+        {
+            WarnMixerSetupOnce($"AudioMixer에 '{param}' Exposed Parameter가 없다.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void WarnMixerSetupOnce(string reason)
+    {
+        if (mixerSetupWarned) return;
+
+        mixerSetupWarned = true;
+        Debug.LogWarning($"[AudioManager] UI 덕킹/일시정지 음소거가 적용되지 않는다: {reason}");
+    }
+
+    // ESC(일시정지)가 대상 UI 중 하나라서 전환 시작과 거의 동시에 Time.timeScale이 0이 될 수 있다.
+    // Time.deltaTime을 쓰면 그 순간 램프가 멈춰버리므로 반드시 unscaledDeltaTime으로 진행한다.
+    private System.Collections.IEnumerator RampMixerParamRoutine(string param, float target, float duration, System.Action onComplete)
+    {
+        mixer.GetFloat(param, out float start);
+        float timer = 0f;
+
+        while (timer < duration)
+        {
+            timer += Time.unscaledDeltaTime;
+            mixer.SetFloat(param, Mathf.Lerp(start, target, duration > 0f ? timer / duration : 1f));
+            yield return null;
+        }
+
+        mixer.SetFloat(param, target);
+        onComplete?.Invoke();
     }
 
     // src.volume에 쓰는 창구를 여기 하나로 모은다. 예전에는 재생 시작, 연출 계수 페이드, 파워다운

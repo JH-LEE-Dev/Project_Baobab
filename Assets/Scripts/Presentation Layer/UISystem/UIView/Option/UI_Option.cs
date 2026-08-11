@@ -40,6 +40,15 @@ public class UI_Option : MonoBehaviour
     [SerializeField] private UI_OptionSlider bgmVolumeSlider;
     [SerializeField] private UI_OptionSlider sfxVolumeSlider;
 
+    [SerializeField, Tooltip("효과음 슬라이더를 조작할 때 들려줄 미리듣기 사운드. 반드시 SFX 믹서 " +
+        "그룹을 타는 사운드여야 조절한 볼륨이 그대로 반영되어 들린다(UI 그룹 사운드는 영향을 받지 않는다).")]
+    private SoundID sfxVolumePreviewSound = SoundID.GetItem;
+
+    // 슬라이더 드래그 중에는 값 변경 콜백이 매 프레임 들어오므로, 미리듣기가 겹쳐 울리지 않도록
+    // 최소 간격을 둔다.
+    private const float SfxPreviewInterval = 0.08f;
+    private float lastSfxPreviewTime = float.NegativeInfinity;
+
     [Header("Control Options")]
     [SerializeField] private Transform keyBindRowContainer;           // 행들이 배치될 부모 Transform (ScrollView Content 등)
     [SerializeField] private UI_OptionKeyBindRow keyBindRowPrefab;    // 행 프리팹
@@ -153,6 +162,11 @@ public class UI_Option : MonoBehaviour
 
         onCloseAction = _onCloseCallback;
 
+        // 옵션 창은 ESC 메뉴(일시정지)에서 열리는데, 그 상태에서는 게임플레이 사운드가 음소거라
+        // 효과음 볼륨을 조절해도 아무것도 들리지 않는다. 창이 열려 있는 동안만 덕킹/음소거를 풀어
+        // 조절 중인 소리를 실제로 들을 수 있게 한다.
+        Sound.SetAudioPreviewMode(true);
+
         if (null != optionPanelRoot)
         {
             optionPanelRoot.SetActive(true);
@@ -169,6 +183,9 @@ public class UI_Option : MonoBehaviour
 
     public void Hide()
     {
+        // 창을 닫으면 원래의 덕킹/일시정지 음소거 상태로 되돌린다(ESC 메뉴로 복귀하는 경우 등).
+        Sound.SetAudioPreviewMode(false);
+
         if (null != optionPanelRoot)
         {
             optionPanelRoot.SetActive(false);
@@ -556,9 +573,38 @@ public class UI_Option : MonoBehaviour
     private void OnBrightnessChanged(float _val) { settings.SetBrightness(_val); }
     private void OnSaturationChanged(float _val) { settings.SetSaturation(_val); }
 
-    private void OnMasterVolumeChanged(float _val) { settings.SetMasterVolume(_val); }
-    private void OnBgmVolumeChanged(float _val) { settings.SetBgmVolume(_val); }
-    private void OnSfxVolumeChanged(float _val) { settings.SetSfxVolume(_val); }
+    // 볼륨은 창을 닫을 때가 아니라 조작하는 즉시 들려야 조절이 가능하므로, 값을 넘긴 뒤
+    // 곧바로 실시간 반영까지 요청한다. (저장은 기존대로 창을 닫을 때 CommitChanges가 담당)
+    private void OnMasterVolumeChanged(float _val)
+    {
+        settings.SetMasterVolume(_val);
+        settings.ApplyAudioSettingsLive();
+    }
+
+    private void OnBgmVolumeChanged(float _val)
+    {
+        settings.SetBgmVolume(_val);
+        settings.ApplyAudioSettingsLive();
+    }
+
+    private void OnSfxVolumeChanged(float _val)
+    {
+        settings.SetSfxVolume(_val);
+        settings.ApplyAudioSettingsLive();
+        PlaySfxVolumePreview();
+    }
+
+    // 효과음은 BGM과 달리 조작하는 동안 계속 울리는 소리가 없어서, 슬라이더를 움직여도 지금
+    // 몇 %인지 귀로 알 수 없다. 그래서 값이 바뀔 때마다 효과음 그룹을 타는 소리를 짧게 재생해
+    // 유저가 바로 체감하게 한다. 드래그 중에는 매 프레임 호출되므로 간격 제한이 필수다.
+    private void PlaySfxVolumePreview()
+    {
+        float _now = Time.unscaledTime;
+        if (_now - lastSfxPreviewTime < SfxPreviewInterval) return;
+
+        lastSfxPreviewTime = _now;
+        Sound.PlayUI(sfxVolumePreviewSound);
+    }
 
     private void RefreshKeyBindRows()
     {

@@ -208,6 +208,9 @@ public class UIView_Result : UIView
     private float lastTreeKillCountSoundTime = float.NegativeInfinity;
     private float lastInventoryLogSoundTime = float.NegativeInfinity;
     private float treeKillCountSoundPitch = 1f;
+    // ResultUI는 UIView.Show()/Hide()를 거치지 않고 OpenResultUI()/DungeonStarted()로 직접 열리고
+    // 닫히므로, UIView.OnShow()/OnHide()의 bVisible 가드를 대신할 자체 가드가 필요하다.
+    private bool bDuckRegistered;
 
     #region Public Override Methods
 
@@ -261,6 +264,12 @@ public class UIView_Result : UIView
 
     public void OpenResultUI()
     {
+        if (!bDuckRegistered)
+        {
+            bDuckRegistered = true;
+            Sound.RequestAudioDuck();
+        }
+
         RefreshResult();
         ApplyResultButtonVisibility();
         SetResultContentsActive(true);
@@ -269,6 +278,9 @@ public class UIView_Result : UIView
 
     public void DungeonStarted()
     {
+        // 닫기 연출을 거치지 않고 결과창이 사라지는 경로(연출 중단 등)를 위한 안전장치.
+        ReleaseAudioDuckIfRegistered();
+
         SnapshotOffroadContainer();
         KillResultProductionSequences();
         SetResultContentsActive(false);
@@ -739,7 +751,19 @@ public class UIView_Result : UIView
         isClosingProduction = false;
 
         SetResultContentsActive(false);
+        ReleaseAudioDuckIfRegistered();
         completedEvent?.Invoke();
+    }
+
+    // 결과창이 실제로 닫히는 지점. DungeonStarted()는 "다음 던전이 시작될 때"만 호출되므로,
+    // 여기서 풀어주지 않으면 결과창을 닫고 마을에 있는 내내 사운드가 먹먹한 채로 남는다.
+    private void ReleaseAudioDuckIfRegistered()
+    {
+        if (false == bDuckRegistered)
+            return;
+
+        bDuckRegistered = false;
+        Sound.ReleaseAudioDuck();
     }
 
     private CanvasGroup GetOrAddCanvasGroup(RectTransform rectTransform)
