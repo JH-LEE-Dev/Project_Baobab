@@ -14,6 +14,7 @@ public class HUD_Loot : MonoBehaviour
     [SerializeField] private HUD_LootTooltip tooltipUI; // 툴팁 UI 컴포넌트 (마우스 오버 시 설명 텍스트 표시)
     
     [Header("Settings")]
+    [SerializeField] private GameObject lootPrefab;
     [SerializeField] private int maxLootCount = 5;
     [SerializeField] private Vector2 imageSize = new Vector2(100f, 100f); // 생성될 이미지의 크기
 
@@ -34,6 +35,8 @@ public class HUD_Loot : MonoBehaviour
     [SerializeField] private Color flashColor = Color.white;
     
     private List<Image> lootImages = new List<Image>();
+    private List<Image> lootOverlays = new List<Image>();
+    private List<UI_RedDot> lootRedDots = new List<UI_RedDot>();
     private List<HUD_LootSlotTrigger> lootTriggers = new List<HUD_LootSlotTrigger>();
     private Material flashMaterial;
     private int currentLootIndex = 0;
@@ -72,11 +75,21 @@ public class HUD_Loot : MonoBehaviour
         // 최대 전리품 개수만큼 코드로 메인 이미지와 오버레이 이미지를 직접 생성
         for (int i = 0; i < maxLootCount; i++)
         {
+            if (null == lootPrefab)
+            {
+                Debug.LogError("[HUD_Loot] Loot Prefab is not assigned.");
+                return;
+            }
+
             // 1. 메인 부모 및 원본 이미지 출력용 Image
-            GameObject _newObj = new GameObject("LootImage_" + i);
-            _newObj.transform.SetParent(container, false);
+            GameObject _newObj = Instantiate(lootPrefab, container);
+            _newObj.name = "LootImage_" + i;
             
-            Image _newImage = _newObj.AddComponent<Image>();
+            Image _newImage = _newObj.GetComponent<Image>();
+            if (null == _newImage)
+            {
+                _newImage = _newObj.AddComponent<Image>();
+            }
             _newImage.raycastTarget = true; // 툴팁 마우스 이벤트를 받기 위해 true로 설정
             
             RectTransform _rect = _newObj.GetComponent<RectTransform>();
@@ -108,12 +121,21 @@ public class HUD_Loot : MonoBehaviour
             _clearColor.a = 0f;
             _overlayImage.color = _clearColor;
             
+            // 레드닷 찾기
+            UI_RedDot _redDot = _newObj.GetComponentInChildren<UI_RedDot>(true);
+            
             // 툴팁 호버 이벤트용 트리거 스크립트 자동 부착
-            HUD_LootSlotTrigger _trigger = _newObj.AddComponent<HUD_LootSlotTrigger>();
-            _trigger.Initialize(tooltipUI);
+            HUD_LootSlotTrigger _trigger = _newObj.GetComponent<HUD_LootSlotTrigger>();
+            if (null == _trigger)
+            {
+                _trigger = _newObj.AddComponent<HUD_LootSlotTrigger>();
+            }
+            _trigger.Initialize(tooltipUI, _redDot);
 
             _newObj.SetActive(false);
             lootImages.Add(_newImage);
+            lootOverlays.Add(_overlayImage);
+            lootRedDots.Add(_redDot);
             lootTriggers.Add(_trigger);
         }
     }
@@ -151,14 +173,26 @@ public class HUD_Loot : MonoBehaviour
                 // 동일한 전리품이 이미 있다면 새로 슬롯을 차지하지 않고, 기존 슬롯의 애니메이션만 다시 튕겨줍니다.
                 if (true == _playAnimation)
                 {
-                    Image _existingOverlay = lootImages[i].transform.GetChild(0).GetComponent<Image>();
+                    Image _existingOverlay = lootOverlays[i];
                     PlayAcquireMotion(lootImages[i], _existingOverlay);
+                    
+                    if (null != lootRedDots[i])
+                    {
+                        lootRedDots[i].Activate();
+                    }
+                    
+                    if (null != lootTriggers[i])
+                    {
+                        lootTriggers[i].StartPulse();
+                    }
                 }
                 return;
             }
         }
 
         Image _targetImage = lootImages[currentLootIndex];
+        Image _overlayImage = lootOverlays[currentLootIndex];
+        UI_RedDot _redDot = lootRedDots[currentLootIndex];
         HUD_LootSlotTrigger _targetTrigger = lootTriggers[currentLootIndex];
         
         if (null != _targetImage)
@@ -182,10 +216,19 @@ public class HUD_Loot : MonoBehaviour
             _targetTrigger.SetDescription(_descText);
 
             // 오버레이 이미지에도 똑같은 스프라이트를 넣어주어 뼈대를 맞춤
-            Image _overlayImage = _targetImage.transform.GetChild(0).GetComponent<Image>();
             if (null != _overlayImage)
             {
                 _overlayImage.sprite = _lootSprite;
+            }
+            
+            if (null != _redDot)
+            {
+                _redDot.Activate();
+            }
+            
+            if (null != _targetTrigger)
+            {
+                _targetTrigger.StartPulse();
             }
             
             if (true == _playAnimation)

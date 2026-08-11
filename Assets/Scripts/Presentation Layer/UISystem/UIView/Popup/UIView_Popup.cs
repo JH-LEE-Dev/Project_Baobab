@@ -278,6 +278,8 @@ public class UIView_Popup : UIView
 
     public void PopupGoUp()
     {
+        uiInventory?.Refresh();
+
         if (null != omp)
         {
             omp.PlayBackward(mapTransitionMotionTag, bReset: true);

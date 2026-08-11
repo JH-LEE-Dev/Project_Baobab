@@ -163,4 +163,5 @@ MonoBehaviour:
     icon: {fileID: 4930236773760687789, guid: 51fc0cf4fd4936a4db7bdc71d24ae72b, type: 3}
   - bindingPath: <Mouse>/rightButton
     icon: {fileID: 1938311220257969084, guid: 51fc0cf4fd4936a4db7bdc71d24ae72b, type: 3}
-
+  - bindingPath: <Mouse>/delta
+    icon: {fileID: -3154446981457803592, guid: 51fc0cf4fd4936a4db7bdc71d24ae72b, type: 3}

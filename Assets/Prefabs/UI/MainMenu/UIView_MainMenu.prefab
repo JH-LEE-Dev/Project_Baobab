@@ -1685,11 +1685,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2519601473535406421, guid: 32850bd477469ec4c92d17aafabffde8, type: 3}
       propertyPath: backgroundFadeOutDelay
-      value: 0.25
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 2519601473535406421, guid: 32850bd477469ec4c92d17aafabffde8, type: 3}
       propertyPath: sequences.Array.data[0].holdDuration
-      value: 3.5
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4699113252308768433, guid: 32850bd477469ec4c92d17aafabffde8, type: 3}
       propertyPath: m_Pivot.x
