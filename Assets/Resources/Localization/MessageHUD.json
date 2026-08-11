@@ -21,7 +21,7 @@
       "id": 3,
       "key": "forestWideGreenForest1Title",
       "kr": "풀빛너른숲 I",
-      "en": "",
+      "en": "WideGreen Forest I",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_1"
     },
@@ -29,7 +29,7 @@
       "id": 4,
       "key": "forestWideGreenForest2Title",
       "kr": "풀빛너른숲 II",
-      "en": "",
+      "en": "WideGreen Forest II",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_2"
     },
@@ -37,7 +37,7 @@
       "id": 5,
       "key": "forestWideGreenForest3Title",
       "kr": "풀빛너른숲 III",
-      "en": "",
+      "en": "WideGreen Forest III",
       "enumType": "ForestType",
       "enumValue": "WideGreenForest_3"
     },
