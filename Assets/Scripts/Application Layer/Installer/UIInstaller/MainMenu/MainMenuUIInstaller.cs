@@ -111,7 +111,26 @@ public class MainMenuUIInstaller : MonoBehaviour
     public void MainMenuLevelStarted()
     {
         SetupCanvas();
+        SetupUILayout();
+        OpenUIView();
+        SetupCanvasChilds();
+    }
 
+    /// <summary>
+    /// Town/Dungeon에서 메인 메뉴로 복귀할 때 호출한다.
+    /// Canvas 인스턴스는 DontDestroyOnLoad로 살아있으므로 재생성하지 않고,
+    /// UIView 계층(SceneChanged + OpenUIView)만 재구성한다.
+    /// </summary>
+    public void MainMenuReturned()
+    {
+        // SceneChanged → CloseAll → bVisible 리셋 → Open<T>에서 Initialize 재실행
+        // 순서로 UIView_CursorBox를 포함한 모든 UIView를 올바른 Canvas에 다시 배치한다.
+        SetupUILayout();
+        OpenUIView();
+    }
+
+    private void SetupUILayout()
+    {
         Transform overlayRoot = Instantiate(canvasRootPrefab.overlayLayerRoot, canvas.transform);
         //Transform popupLayerRoot = Instantiate(canvasRootPrefab.popupLayerRoot, canvas.transform);
         //Transform screenLayerRoot = Instantiate(canvasRootPrefab.screenLayerRoot, canvas.transform);
@@ -133,9 +152,6 @@ public class MainMenuUIInstaller : MonoBehaviour
         // GameplayUIManager.GetLayerRoot()와 동일하게, bOverlay UIView(예: UIView_CursorBox)는
         // 3번째 인자(overlayCanvasRoot)의 레이어 루트를 사용한다.
         uiManager.SceneChanged(tempRoot, default, overlayCanvasRoot, default);
-
-        OpenUIView();
-        SetupCanvasChilds();
     }
 
     public void SetupCanvas()

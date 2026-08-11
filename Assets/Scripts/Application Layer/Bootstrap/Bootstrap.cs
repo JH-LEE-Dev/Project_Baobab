@@ -168,10 +168,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
         else
         {
-            // Town/Dungeon에서 돌아온 경우: 씬 전환이 실제로 완료된 이 시점에야 딤머/로고/버튼을 다시 보여준다.
+            // Town/Dungeon에서 돌아온 경우: UIView 계층(CursorBox 포함)을 올바른 Canvas에
+            // 재배치한 뒤, 씬 전환이 실제로 완료된 이 시점에야 딤머/로고/버튼을 다시 보여준다.
             // StartGoToMainMenu()에서 걸어둔 PauseMove(true)/PauseESCKey(true)를 여기서 풀어준다(캐릭터가 없는 씬이라 위험은 없지만 위생 차원).
             inputManager.PauseMove(false);
             inputManager.PauseESCKey(false);
+            mainMenuInstaller.MainMenuReturned();
             mainMenuInstaller.PlayButtonsRevealAnimation();
         }
 

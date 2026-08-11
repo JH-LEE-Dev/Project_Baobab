@@ -36,6 +36,11 @@ public class MainMenuInstaller : MonoBehaviour
         uiInstaller.PlayButtonsRevealAnimation(_onComplete);
     }
 
+    public void MainMenuReturned()
+    {
+        uiInstaller.MainMenuReturned();
+    }
+
     public void StartMainMenuScene()
     {
         inputManager.PauseMove(false);
