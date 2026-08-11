@@ -680,6 +680,14 @@ MonoBehaviour:
   bCanGetSortingOrder: 1
   sprite: {fileID: 0}
   color: {r: 0, g: 0, b: 0, a: 0}
+  suckAccel: 5
+  suckAccelGrowth: 0.5
+  suckMaxSpeed: 20
+  suckScaleDownDistance: 1.2
+  suckMinScale: 0.3
+  ropeRecoilInitialSpeed: -3.5
+  ropeRecoilDecel: 8
+  suckAccelFloor: 0.3
   outlineObj: {fileID: 4427381365519987101}
   outlineStencilSR: {fileID: 4172736323387572501}
   outlineSR: {fileID: 163953909001683201}

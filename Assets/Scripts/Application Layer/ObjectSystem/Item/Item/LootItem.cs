@@ -25,8 +25,22 @@ public class LootItem : Item
     private float elapsed;
     private float suckSpeed;
     [Header("흡입(Suck) 연출")]
-    [Tooltip("캐릭터에게 빨려올 때의 가속도. 값이 작을수록 천천히 빨려옵니다.")]
+    [Tooltip("캐릭터에게 빨려올 때의 기본 가속도. 값이 작을수록 처음엔 천천히 빨려옵니다(속도 0일 때는 이 값 그대로 적용).")]
     [SerializeField] private float suckAccel = 4f;
+    [Tooltip("속도가 붙을수록 가속도 자체가 커지는 정도. 0이면 지금처럼 일정한 가속, 클수록 막판에 훅 빨려드는 속도감이 강해집니다.")]
+    [SerializeField] private float suckAccelGrowth = 0.15f;
+    [Tooltip("흡입 속도 상한(폭주 방지).")]
+    [SerializeField] private float suckMaxSpeed = 20f;
+    [Tooltip("이 거리 이내로 가까워지면 스케일이 줄어들기 시작합니다(LogItem과 동일한 연출).")]
+    [SerializeField] private float suckScaleDownDistance = 1.2f;
+    [Tooltip("스케일이 줄어들 수 있는 최솟값(0~1).")]
+    [SerializeField, Range(0.05f, 1f)] private float suckMinScale = 0.3f;
+    [Tooltip("흡입 시작 순간 로프가 팽팽해지기 전 반대 방향(캐릭터 반대편)으로 튕겨나가는 초기 속도(음수). 반동 거리는 이 값과 ropeRecoilDecel의 비율로 정해지므로, 속도만 빠르게 하고 거리는 유지하려면 이 값과 ropeRecoilDecel을 같은 비율로 함께 올리세요.")]
+    [SerializeField] private float ropeRecoilInitialSpeed = -1.5f;
+    [Tooltip("반동 구간 전용 감속력. 클수록 반동이 더 빨리 감속되어 짧고 굵게 튕기고(속도는 빠르되 거리는 짧아짐), 작을수록 오래 밀려납니다. suckAccel/suckAccelGrowth와는 별개로 반동 구간에서만(속도가 음수인 동안) 작용하고 속도 0 지점에서 자연스럽게 사라지므로 흡입 구간의 가속 곡선에는 영향이 없습니다.")]
+    [SerializeField] private float ropeRecoilDecel = 3f;
+    [Tooltip("반동(뒤로 튕기는) 구간에서의 최소 가속 배율(0~1). 작을수록 반동이 더 오래 느리게 유지되다가, 이후 suckAccelGrowth에 의해 매끄럽게 가속이 붙어 빠르게 빨려들어옵니다. 별도의 단계 전환 없이 하나의 연속된 곡선으로 이어집니다.")]
+    [SerializeField, Range(0.05f, 1f)] private float suckAccelFloor = 0.3f;
     private const float MinAcquireDist = 0.2f;
 
     // 관리용 인덱스
@@ -130,6 +144,8 @@ public class LootItem : Item
         state = ItemMoveState.None;
         suckTarget = null;
         elapsed = 0;
+        suckSpeed = 0f;
+        transform.localScale = Vector3.one;
 
         if (vfxRelayCoroutine != null)
         {
@@ -275,20 +291,55 @@ public class LootItem : Item
         if (suckTarget == null)
         {
             state = ItemMoveState.Dropped;
+            transform.localScale = Vector3.one;
             return;
         }
 
         Vector3 targetPos = suckTarget.position;
-        float distance = Vector3.Distance(transform.position, targetPos);
+        Vector3 diff = targetPos - transform.position;
+        float distance = diff.magnitude;
 
-        if (distance < MinAcquireDist)
+        // 프레임 드랍 방어 가드: 다음 이동 거리가 남은 거리 이상이면 오버슈트 없이 바로 획득 처리(LogItem과 동일)
+        if (suckSpeed > 0f)
         {
-            lootItemAcquiredEvent?.Invoke(this);
-            return;
+            float nextMoveStep = suckSpeed * _deltaTime;
+            if (nextMoveStep >= distance)
+            {
+                transform.position = targetPos;
+                lootItemAcquiredEvent?.Invoke(this);
+                return;
+            }
+
+            if (distance < MinAcquireDist)
+            {
+                lootItemAcquiredEvent?.Invoke(this);
+                return;
+            }
         }
 
-        suckSpeed += suckAccel * _deltaTime;
-        transform.position = Vector3.MoveTowards(transform.position, targetPos, suckSpeed * _deltaTime);
+        // 반동(음수 속도) 구간과 흡입(양수 속도) 구간을 단계 전환 없이 하나의 연속된 곡선으로 처리한다.
+        // 속도가 낮을수록(반동 초반) 가속 배율이 suckAccelFloor까지 줄어들어 천천히 튕기고,
+        // 속도가 붙을수록(0을 지나 흡입 구간으로) 가속 배율이 매끄럽게 커져 훅 빨려들어오는 느낌을 만든다.
+        float accelMultiplier = Mathf.Max(suckAccelFloor, 1f + suckSpeed * suckAccelGrowth);
+
+        // 반동 전용 추가 감속력 - 음수 속도가 클수록(반동이 클수록) 강하게 붙고, 속도가 0에 가까워지면
+        // 자연스럽게 0으로 사라져서(연속) 흡입 구간의 가속 곡선과는 단절 없이 이어진다.
+        float recoilExtraDecel = ropeRecoilDecel * Mathf.Max(0f, -suckSpeed);
+
+        float dynamicAccel = suckAccel * accelMultiplier + recoilExtraDecel;
+        suckSpeed += dynamicAccel * _deltaTime;
+        suckSpeed = Mathf.Min(suckSpeed, suckMaxSpeed);
+
+        Vector3 dir = distance > 0.0001f ? diff / distance : Vector3.zero;
+        transform.position += dir * suckSpeed * _deltaTime;
+
+        // 타겟에 가까워질수록 스케일을 줄여서 빨려들어가는 느낌을 강조한다(LogItem과 동일한 연출)
+        if (suckSpeed > 0f && distance < suckScaleDownDistance)
+        {
+            float scaleT = Mathf.Clamp01(distance / suckScaleDownDistance);
+            scaleT = Mathf.Max(suckMinScale, scaleT);
+            transform.localScale = Vector3.one * scaleT;
+        }
 
         if (visualTransform != null)
         {
@@ -328,7 +379,7 @@ public class LootItem : Item
     private void StartSucking(Transform _target)
     {
         suckTarget = _target;
-        suckSpeed = 0f;
+        suckSpeed = ropeRecoilInitialSpeed;
         state = ItemMoveState.Sucking;
     }
 }
