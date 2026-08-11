@@ -378,7 +378,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             return;
         }
 
-        Sound.PlayUI(SoundID.NaviSubHover);
+        Sound.PlayUI(true == myInfo.isUnlocked ? SoundID.NaviSubHover : SoundID.NaviLockHover);
 
         TriggerHover();
     }

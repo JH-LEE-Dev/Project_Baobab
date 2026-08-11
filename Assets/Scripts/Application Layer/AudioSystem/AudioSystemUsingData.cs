@@ -71,6 +71,7 @@ public enum SoundID
     SkyUP = -358144385,
     NaviClose = -494540975,
     NaviLocked = 1564583461,
+    NaviLockHover = -1037988270,
     NaviMainHover = -1462453184,
     NaviOpen = -1737638273,
     NaviRowAppear = -556951096,
