@@ -16,6 +16,7 @@ public struct SplashSequenceItem
 public class UI_SplashScreen : MonoBehaviour
 {
     //내부 의존성
+    [SerializeField] private float startDelay = 0.5f; // 첫 시퀀스 시작 전 대기 시간 (검은 화면 유지)
     [SerializeField] private CanvasGroup splashBackgroundGroup; // 스플래시 스크린 전용 배경
     [SerializeField] private float backgroundFadeOutDelay = 0.5f; // 마지막 시퀀스 페이드아웃 후 대기 시간 (N초)
     [SerializeField] private float backgroundFadeOutDuration = 1f; // 배경 페이드아웃 소요 시간
@@ -60,6 +61,11 @@ public class UI_SplashScreen : MonoBehaviour
         }
 
         this.currentSequence = DOTween.Sequence();
+
+        if (this.startDelay > 0f)
+        {
+            this.currentSequence.AppendInterval(this.startDelay);
+        }
 
         for (int i = 0; i < this.sequences.Length; ++i)
         {

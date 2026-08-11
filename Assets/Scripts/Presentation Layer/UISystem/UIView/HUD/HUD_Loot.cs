@@ -180,6 +180,11 @@ public class HUD_Loot : MonoBehaviour
                     {
                         lootRedDots[i].Activate();
                     }
+                    
+                    if (null != lootTriggers[i])
+                    {
+                        lootTriggers[i].StartPulse();
+                    }
                 }
                 return;
             }
@@ -219,6 +224,11 @@ public class HUD_Loot : MonoBehaviour
             if (null != _redDot)
             {
                 _redDot.Activate();
+            }
+            
+            if (null != _targetTrigger)
+            {
+                _targetTrigger.StartPulse();
             }
             
             if (true == _playAnimation)
