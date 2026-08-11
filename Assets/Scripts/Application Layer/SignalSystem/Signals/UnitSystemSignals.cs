@@ -50,6 +50,10 @@ public struct InventorySpecChangedSignal { }
 public struct LogContainerSpecChangedSignal { }
 public struct OffraodContainerSpecChangedSignal { }
 
+// 공격 범위 안에 나무가 하나도 없다가 처음 감지/감지되어 있다가 전부 사라졌을 때만 발생(AttackComponent.SetTreesDetected 참고)
+public struct TreeDetectedSignal { }
+public struct TreeDetectionClearedSignal { }
+
 public struct CharacterStaminaIsEmptySignal { }
 
 public struct OffroadContainerInteractStateChangedSignal

@@ -8,6 +8,8 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     public event Action GameEndEvent;
     public event Action CharacterStaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
+    public event Action TreeDetectedEvent;
+    public event Action TreeDetectionClearedEvent;
 
     private Character character;
     private InputManager inputManager;
@@ -31,12 +33,20 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
 
         character.StaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
         character.StaminaIsEmptyEvent += CharacterStaminaIsEmpty;
+
+        character.TreeDetectedEvent -= TreeDetected;
+        character.TreeDetectedEvent += TreeDetected;
+
+        character.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        character.TreeDetectionClearedEvent += TreeDetectionCleared;
     }
 
     private void ReleaseEvents()
     {
         character.WeaponModeChangedEvent -= WeaponModeChanged;
         character.StaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
+        character.TreeDetectedEvent -= TreeDetected;
+        character.TreeDetectionClearedEvent -= TreeDetectionCleared;
     }
 
     public void SetCharacter(Character _character)
@@ -99,6 +109,16 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
     {
         CharacterStaminaIsEmptyEvent?.Invoke();
         StartCoroutine(GameEnd());
+    }
+
+    private void TreeDetected()
+    {
+        TreeDetectedEvent?.Invoke();
+    }
+
+    private void TreeDetectionCleared()
+    {
+        TreeDetectionClearedEvent?.Invoke();
     }
 
     public void RefreshCharacter()

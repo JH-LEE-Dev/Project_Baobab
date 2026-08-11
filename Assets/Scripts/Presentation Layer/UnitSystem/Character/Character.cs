@@ -6,6 +6,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 {
     public event Action StaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
+    public event Action TreeDetectedEvent;
+    public event Action TreeDetectionClearedEvent;
 
     // 외부 의존성
     public InputManager inputManager { get; private set; }
@@ -378,6 +380,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void BindEvents()
     {
+        attackComponent.TreeDetectedEvent -= TreeDetected;
+        attackComponent.TreeDetectedEvent += TreeDetected;
+
+        attackComponent.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        attackComponent.TreeDetectionClearedEvent += TreeDetectionCleared;
+
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -402,6 +410,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void ReleaseEvents()
     {
+        if (attackComponent != null)
+        {
+            attackComponent.TreeDetectedEvent -= TreeDetected;
+            attackComponent.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        }
+
         if (armComponent != null && armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -410,6 +424,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
         }
+    }
+
+    private void TreeDetected()
+    {
+        TreeDetectedEvent?.Invoke();
+    }
+
+    private void TreeDetectionCleared()
+    {
+        TreeDetectionClearedEvent?.Invoke();
     }
 
     private void UpdateFacingByAttackPoint()
