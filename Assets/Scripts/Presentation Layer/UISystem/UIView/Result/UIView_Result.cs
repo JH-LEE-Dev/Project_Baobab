@@ -208,6 +208,9 @@ public class UIView_Result : UIView
     private float lastTreeKillCountSoundTime = float.NegativeInfinity;
     private float lastInventoryLogSoundTime = float.NegativeInfinity;
     private float treeKillCountSoundPitch = 1f;
+    // ResultUI는 UIView.Show()/Hide()를 거치지 않고 OpenResultUI()/DungeonStarted()로 직접 열리고
+    // 닫히므로, UIView.OnShow()/OnHide()의 bVisible 가드를 대신할 자체 가드가 필요하다.
+    private bool bDuckRegistered;
 
     #region Public Override Methods
 
@@ -261,6 +264,12 @@ public class UIView_Result : UIView
 
     public void OpenResultUI()
     {
+        if (!bDuckRegistered)
+        {
+            bDuckRegistered = true;
+            Sound.RequestAudioDuck();
+        }
+
         RefreshResult();
         ApplyResultButtonVisibility();
         SetResultContentsActive(true);
@@ -269,6 +278,9 @@ public class UIView_Result : UIView
 
     public void DungeonStarted()
     {
+        // 닫기 연출을 거치지 않고 결과창이 사라지는 경로(연출 중단 등)를 위한 안전장치.
+        ReleaseAudioDuckIfRegistered();
+
         SnapshotOffroadContainer();
         KillResultProductionSequences();
         SetResultContentsActive(false);
@@ -739,7 +751,19 @@ public class UIView_Result : UIView
         isClosingProduction = false;
 
         SetResultContentsActive(false);
+        ReleaseAudioDuckIfRegistered();
         completedEvent?.Invoke();
+    }
+
+    // 결과창이 실제로 닫히는 지점. DungeonStarted()는 "다음 던전이 시작될 때"만 호출되므로,
+    // 여기서 풀어주지 않으면 결과창을 닫고 마을에 있는 내내 사운드가 먹먹한 채로 남는다.
+    private void ReleaseAudioDuckIfRegistered()
+    {
+        if (false == bDuckRegistered)
+            return;
+
+        bDuckRegistered = false;
+        Sound.ReleaseAudioDuck();
     }
 
     private CanvasGroup GetOrAddCanvasGroup(RectTransform rectTransform)
@@ -1440,7 +1464,10 @@ public class UIView_Result : UIView
         if (currentTime - lastTreeKillCountSoundTime < TreeKillCountSoundInterval)
             return;
 
-        Sound.PlayUI(SoundID.GetItem, 1f, treeKillCountSoundPitch);
+        // GetItem은 인벤토리 등에서도 쓰는 게임플레이 효과음이라 SFX 그룹에 있지만, 여기서는
+        // 결과창 자신의 카운트업 연출음이다. 결과창은 스스로 덕킹을 걸고 있으므로 그대로 두면
+        // 자기 연출음이 자기가 건 로우패스에 먹먹해진다. 이 재생만 UI 그룹으로 우회시킨다.
+        Sound.PlayUI(SoundID.GetItem, 1f, treeKillCountSoundPitch, bypassDucking: true);
         lastTreeKillCountSoundTime = currentTime;
         treeKillCountSoundPitch = Mathf.Min(treeKillCountSoundPitch + TreeKillCountPitchStep, TreeKillCountMaxPitch);
     }
@@ -1451,7 +1478,8 @@ public class UIView_Result : UIView
         if (currentTime - lastInventoryLogSoundTime < InventoryLogSoundInterval)
             return;
 
-        Sound.PlayUI(SoundID.OutItem);
+        // TryPlayTreeKillCountSound와 같은 이유로 UI 그룹으로 우회시킨다(결과창 자신의 연출음).
+        Sound.PlayUI(SoundID.OutItem, bypassDucking: true);
         lastInventoryLogSoundTime = currentTime;
     }
 

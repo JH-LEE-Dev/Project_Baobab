@@ -10,6 +10,9 @@ public class AttackComponent : PComponent
     // ShockWaveMastery로 허공에 충격파만 나갔을 때(실제 타격 없음) - 내구도만 감소시키고 콤보는 쌓지 않기 위해 별도 이벤트로 분리
     public event Action ShockWaveMissEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
+    // 공격 범위 안에 나무가 하나도 없다가 처음 감지되었을 때/감지되어 있다가 전부 사라졌을 때만 발생(매 프레임, 감지 대상 교체 시엔 발생하지 않음)
+    public event Action TreeDetectedEvent;
+    public event Action TreeDetectionClearedEvent;
     //외부 의존성
     private Camera mainCamera;
 
@@ -53,6 +56,7 @@ public class AttackComponent : PComponent
     private float detectionTimer = 0f;
     private const float detectionInterval = 0.2f;
     private List<IStaticCollidable> detectionResults = new List<IStaticCollidable>(16);
+    private bool bTreesDetected = false;
 
     // 이중 버퍼용 리스트
     private List<IStaticCollidable> detectionResultsA = new List<IStaticCollidable>(16);
@@ -64,6 +68,11 @@ public class AttackComponent : PComponent
     private Material ellipseIndicatorMat;
     private static readonly int EllipseRadiusID = Shader.PropertyToID("_EllipseRadius");
     private static readonly int AttackDirID = Shader.PropertyToID("_AttackDir");
+    private static readonly int BaseColorID = Shader.PropertyToID("_BaseColor");
+
+    private const float IndicatorFadeInDuration = 1f; // 인디케이터 활성화 시 알파가 0에서 복원되는 데 걸리는 시간
+    private Coroutine indicatorFadeCoroutine;
+    private float indicatorFullAlpha = 1f; // Initialize에서 1회만 캐싱되는 인디케이터의 원래 알파값(페이드인의 목표값)
 
     [Header("Whirlwind VFX")]
     [SerializeField] private Sprite[] whirlwindFrames; // Whirlwind 스프라이트 시트의 프레임들 (인스펙터에서 직접 연결)
@@ -92,7 +101,14 @@ public class AttackComponent : PComponent
         if (ellipseRadiusIndicator != null)
         {
             var renderer = ellipseRadiusIndicator.GetComponent<Renderer>();
-            if (renderer != null) ellipseIndicatorMat = renderer.material;
+            if (renderer != null)
+            {
+                ellipseIndicatorMat = renderer.material;
+                // 이후 페이드인의 목표값으로 쓸 "원래" 알파값. 페이드 도중 SetEnable(false)로 끊기면
+                // 머티리얼에 중간값(예: 0.4)이 남는데, 이걸 그대로 목표로 삼으면 재입장할 때마다
+                // 인디케이터가 갈수록 흐려지므로 반드시 최초 1회 값을 고정해 둬야 한다.
+                indicatorFullAlpha = ellipseIndicatorMat.GetColor(BaseColorID).a;
+            }
         }
 
         BindEvents();
@@ -568,6 +584,8 @@ public class AttackComponent : PComponent
         previouslyDetectedTrees = currentlyDetectedTrees;
         currentlyDetectedTrees = temp;
         currentlyDetectedTrees.Clear();
+
+        SetTreesDetected(previouslyDetectedTrees.Count > 0);
     }
 
     private void ClearDetectedTreeOutlines()
@@ -578,6 +596,23 @@ public class AttackComponent : PComponent
         }
         previouslyDetectedTrees.Clear();
         currentlyDetectedTrees.Clear();
+
+        SetTreesDetected(false);
+    }
+
+    // 감지 상태가 실제로 바뀔 때(없음→있음, 있음→없음)만 이벤트를 발생시킨다. 감지된 나무가
+    // 다른 나무로 바뀌거나 매 탐지 주기마다 호출되는 것은 상태 전환이 아니므로 무시한다.
+    private void SetTreesDetected(bool _detected)
+    {
+        if (bTreesDetected == _detected)
+            return;
+
+        bTreesDetected = _detected;
+
+        if (_detected)
+            TreeDetectedEvent?.Invoke();
+        else
+            TreeDetectionClearedEvent?.Invoke();
     }
 
     private void OnDestroy()
@@ -754,6 +789,47 @@ public class AttackComponent : PComponent
     public void SetEnable(bool _boolean)
     {
         ellipseRadiusIndicator.gameObject.SetActive(_boolean);
+
+        if (indicatorFadeCoroutine != null)
+        {
+            StopCoroutine(indicatorFadeCoroutine);
+            indicatorFadeCoroutine = null;
+        }
+
+        if (ellipseIndicatorMat == null) return;
+
+        if (_boolean)
+        {
+            indicatorFadeCoroutine = StartCoroutine(IndicatorFadeInRoutine());
+        }
+        else
+        {
+            // 페이드 도중 꺼졌다면(예: 던전→마을 이동) 머티리얼에 중간 알파값이 남아있을 수 있으므로,
+            // 다음 SetEnable(true)이 항상 0에서 시작할 수 있도록 즉시 원래 알파로 되돌려 둔다.
+            Color color = ellipseIndicatorMat.GetColor(BaseColorID);
+            color.a = indicatorFullAlpha;
+            ellipseIndicatorMat.SetColor(BaseColorID, color);
+        }
+    }
+
+    private System.Collections.IEnumerator IndicatorFadeInRoutine()
+    {
+        Color color = ellipseIndicatorMat.GetColor(BaseColorID);
+        color.a = 0f;
+        ellipseIndicatorMat.SetColor(BaseColorID, color);
+
+        float elapsed = 0f;
+        while (elapsed < IndicatorFadeInDuration)
+        {
+            elapsed += Time.deltaTime;
+            color.a = Mathf.Lerp(0f, indicatorFullAlpha, elapsed / IndicatorFadeInDuration);
+            ellipseIndicatorMat.SetColor(BaseColorID, color);
+            yield return null;
+        }
+
+        color.a = indicatorFullAlpha;
+        ellipseIndicatorMat.SetColor(BaseColorID, color);
+        indicatorFadeCoroutine = null;
     }
 
     public void SetCursorEnable(bool _boolean)

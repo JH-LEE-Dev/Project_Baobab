@@ -52,6 +52,7 @@ public enum EOtherKey
     MouseLeft,
     MouseRight,
     MouseMiddle,
+    MouseMove,
 
     // 알파벳 (A-Z)
     A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
@@ -364,6 +365,7 @@ public class UI_KeyboardImage : MonoBehaviour
             case EOtherKey.MouseLeft:   return "<Mouse>/leftButton";
             case EOtherKey.MouseRight:  return "<Mouse>/rightButton";
             case EOtherKey.MouseMiddle: return "<Mouse>/middleButton";
+            case EOtherKey.MouseMove:   return "<Mouse>/delta";
 
             case EOtherKey.A:           return "<Keyboard>/a";
             case EOtherKey.B:           return "<Keyboard>/b";

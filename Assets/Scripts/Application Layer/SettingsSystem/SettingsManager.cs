@@ -283,6 +283,16 @@ public class SettingsManager : MonoBehaviour
     public void SetBgmVolume(float _val) { EnsureLoaded(); current.bgmVolume = _val; isDirty = true; }
     public void SetSfxVolume(float _val) { EnsureLoaded(); current.sfxVolume = _val; isDirty = true; }
 
+    /// <summary>
+    /// 볼륨을 조작하는 즉시 소리에 반영합니다. (슬라이더를 드래그하는 동안 실시간 피드백용)
+    /// 저장은 하지 않으므로 CommitChanges와 별개이며, 창을 닫을 때 한 번 더 적용/저장됩니다.
+    /// </summary>
+    public void ApplyAudioSettingsLive()
+    {
+        EnsureLoaded();
+        OnAudioSettingsAppliedEvent?.Invoke(current);
+    }
+
     private void MarkDisplayDirty()
     {
         isDirty = true;

@@ -402,14 +402,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d31b201877a0c0408962352a9b45acd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_SplashScreen
+  startDelay: 2
   splashBackgroundGroup: {fileID: 5366730410812836996}
-  backgroundFadeOutDelay: 0.5
-  backgroundFadeOutDuration: 1
+  backgroundFadeOutDelay: 2
+  backgroundFadeOutDuration: 2
   sequences:
   - targetGroup: {fileID: 2739587799559425717}
     fadeInDuration: 1
     fadeInEase: 6
-    holdDuration: 2
+    holdDuration: 3
     fadeOutDuration: 1
     fadeOutEase: 6
 --- !u!1 &7671115967965500276

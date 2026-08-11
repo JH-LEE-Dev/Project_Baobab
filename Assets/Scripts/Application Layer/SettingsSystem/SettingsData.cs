@@ -79,6 +79,14 @@ public struct SettingsData
     public const float SLIDER_MIN = 0f;
     public const float SLIDER_MAX = 100f;
 
+    /// <summary>
+    /// BGM·효과음 볼륨의 기본값입니다. 게임의 사운드는 "슬라이더 50%가 기준"이라는 전제로
+    /// 밸런싱되어 있어서, 이 값에서 원본 그대로(0dB) 재생됩니다. 즉 기본값을 50으로 둔다고
+    /// 소리가 절반으로 줄어드는 것이 아니라, 유저가 100까지 올려 더 키울 여지를 주는 것입니다.
+    /// (실제 dB 변환은 AudioManager와 AudioDuckSettings가 담당합니다)
+    /// </summary>
+    public const float SLIDER_MIX_DEFAULT = 50f;
+
     // enum 순환·검증에 쓰는 길이 상수 (Enum.IsDefined는 박싱이 발생하므로 쓰지 않는다)
     // 해상도 항목 수는 resolutionSizes 배열에서 파생된다. (SettingsData.ResolutionCount)
     public const int WINDOW_MODE_COUNT = 2;
@@ -109,8 +117,8 @@ public struct SettingsData
             saturation = SLIDER_MAX,
 
             masterVolume = SLIDER_MAX,
-            bgmVolume = SLIDER_MAX,
-            sfxVolume = SLIDER_MAX
+            bgmVolume = SLIDER_MIX_DEFAULT,
+            sfxVolume = SLIDER_MIX_DEFAULT
         };
     }
 

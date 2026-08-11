@@ -23,6 +23,7 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private UI_Backpack uiBackpack;
     // [SerializeField] private HUD_NotificationBadge notificationBadge;
     [SerializeField] private UI_InventoryCapacityBar capacityBar;
+    [SerializeField] private UI_RedDot newAlertRedDot;
     
     [Header("Keyboard Icons")]
     [SerializeField] private UI_KeyboardImage[] keyboardImages;
@@ -63,6 +64,8 @@ public class UI_Inventory : MonoBehaviour
     public Action inventoryUnHoverEvent;
 
     private bool isOpenAnimated = false;
+    private int previousLogCount = 0;
+    private bool isFirstDataBind = true;
 
     // //퍼블릭 초기화 및 제어 메서드
 
@@ -170,10 +173,17 @@ public class UI_Inventory : MonoBehaviour
         int _itemCount = inventory.currentSlotCnt;
         int _maxSlots = inventorySlots.Count;
 
+        int currentLogCount = 0;
+
         for (int _i = 0; _i < _maxSlots; ++_i)
         {
             UI_InventorySlot _slot = inventorySlots[_i];
             IInventorySlot _item = _items[_i];
+            
+            if (_i < _itemCount && null != _item && null != _item.itemData && _item.itemData.itemType == ItemType.Log)
+            {
+                currentLogCount += _item.count;
+            }
             
             if (null == _slot)
                 continue;
@@ -181,6 +191,21 @@ public class UI_Inventory : MonoBehaviour
             _slot.gameObject.SetActive(_i < _itemCount);
             _slot.UpdateBindSlotData(_item, inventory.maxItemCntPerSlot);
         }
+
+        if (!isFirstDataBind)
+        {
+            if (currentLogCount > previousLogCount && !IsOpening)
+            {
+                if (null != newAlertRedDot)
+                    newAlertRedDot.Activate();
+            }
+        }
+        else
+        {
+            isFirstDataBind = false;
+        }
+
+        previousLogCount = currentLogCount;
 
         UpdateCapacityBar();
     }
@@ -392,6 +417,11 @@ public class UI_Inventory : MonoBehaviour
         IsOpening = isOpenAnimated = true;
         Sound.PlayUI(SoundID.HUDBackpackOpen);
         // hideAccCount = 0;
+
+        if (null != newAlertRedDot)
+        {
+            newAlertRedDot.Deactivate();
+        }
 
         if (null != omp)
         {

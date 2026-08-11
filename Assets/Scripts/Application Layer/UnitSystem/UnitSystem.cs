@@ -100,6 +100,12 @@ public class UnitSystem
         unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
         unitLogicManager.CharacterStaminaIsEmptyEvent += CharacterStaminaIsEmpty;
 
+        unitLogicManager.TreeDetectedEvent -= TreeDetected;
+        unitLogicManager.TreeDetectedEvent += TreeDetected;
+
+        unitLogicManager.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        unitLogicManager.TreeDetectionClearedEvent += TreeDetectionCleared;
+
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         inventoryManager.SpendMoneyEvent += SpendMoney;
 
@@ -137,6 +143,8 @@ public class UnitSystem
         unitLogicManager.WeaponModeChangedEvent -= WeaponModeChanged;
         inventoryManager.InventorySpecChangedEvent -= InventorySpecChanged;
         unitLogicManager.CharacterStaminaIsEmptyEvent -= CharacterStaminaIsEmpty;
+        unitLogicManager.TreeDetectedEvent -= TreeDetected;
+        unitLogicManager.TreeDetectionClearedEvent -= TreeDetectionCleared;
         inventoryManager.SpendMoneyEvent -= SpendMoney;
         offroadContainer.InteractStateEvent -= OffroadContainerInteractStateChanged;
         inventoryManager.LoosAllInventoryItemEvent -= LoosAllInventoryItem;
@@ -213,6 +221,16 @@ public class UnitSystem
     private void WeaponModeChanged(WeaponMode _currentMode)
     {
         signalHub.Publish(new WeaponModeChangedSignal(_currentMode));
+    }
+
+    private void TreeDetected()
+    {
+        signalHub.Publish(new TreeDetectedSignal());
+    }
+
+    private void TreeDetectionCleared()
+    {
+        signalHub.Publish(new TreeDetectionClearedSignal());
     }
 
     private void CarrotItemAcquired(CarrotItemAcquiredSignal carrotItemAcquiredSignal)

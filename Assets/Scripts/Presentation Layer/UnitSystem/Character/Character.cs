@@ -6,6 +6,8 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 {
     public event Action StaminaIsEmptyEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
+    public event Action TreeDetectedEvent;
+    public event Action TreeDetectionClearedEvent;
 
     // 외부 의존성
     public InputManager inputManager { get; private set; }
@@ -351,6 +353,13 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         CameraMoveController.Instance?.ShakeCamera(1f, 0.08f);
     }
 
+    // 아이템 획득 시의 옅은 하얀 스프라이트 플래시(셰이더의 _FlashAmount 연출, CharacterVisualComponent.PlayItemAcquireFlash)만
+    // 필요한 곳(카메라 흔들림 없이)에서 사용한다. PlayDeathFlash가 characterVisualComponent에 직접 위임하는 것과 동일한 방식.
+    public void PlayItemAcquireSpriteFlash()
+    {
+        characterVisualComponent.PlayItemAcquireFlash(GetArmFlashRenderer());
+    }
+
     // 무기(Arm) 스프라이트는 던전에 있을 때만 반짝인다 - 마을에서는 무기가 꺼져 있어 의미가 없다.
     private SpriteRenderer GetArmFlashRenderer()
     {
@@ -378,6 +387,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void BindEvents()
     {
+        attackComponent.TreeDetectedEvent -= TreeDetected;
+        attackComponent.TreeDetectedEvent += TreeDetected;
+
+        attackComponent.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        attackComponent.TreeDetectionClearedEvent += TreeDetectionCleared;
+
         if (armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -402,6 +417,12 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void ReleaseEvents()
     {
+        if (attackComponent != null)
+        {
+            attackComponent.TreeDetectedEvent -= TreeDetected;
+            attackComponent.TreeDetectionClearedEvent -= TreeDetectionCleared;
+        }
+
         if (armComponent != null && armComponent.axeComponent != null)
         {
             armComponent.axeComponent.DeclareAttackStateEvent -= SetbCanAction;
@@ -410,6 +431,16 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
             armComponent.axeComponent.AttackEvent -= attackComponent.Attack;
             healthComponent.StaminaIsEmptyEvent -= StaminaIsEmpty;
         }
+    }
+
+    private void TreeDetected()
+    {
+        TreeDetectedEvent?.Invoke();
+    }
+
+    private void TreeDetectionCleared()
+    {
+        TreeDetectionClearedEvent?.Invoke();
     }
 
     private void UpdateFacingByAttackPoint()

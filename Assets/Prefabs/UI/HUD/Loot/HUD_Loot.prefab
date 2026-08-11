@@ -129,6 +129,7 @@ MonoBehaviour:
   container: {fileID: 5108425876231448825}
   rootCanvasGroup: {fileID: 5129314714954249010}
   tooltipUI: {fileID: 5137964979534339618}
+  lootPrefab: {fileID: 302955996206182628, guid: d53b966b1e2d37f488ed66f260a510c4, type: 3}
   maxLootCount: 5
   imageSize: {x: 36, y: 36}
   lootSpritePairs:

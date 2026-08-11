@@ -35,6 +35,10 @@ public class GameplayUICoordinator
     // ResultUI가 튜토리얼 중 Retry를 막는 등 자체 판단을 하도록 SetTutorialState()로 넘겨준다.
     private bool bIsTutorialActive = false;
 
+    // TreeDetected()를 unitUI에 전달했는지. bIsTutorialActive일 때만 TreeDetected를 전달하므로,
+    // 짝이 되는 TreeDetectionCleared는 이 값이 true일 때만 전달해 on/off 호출이 항상 쌍을 이루게 한다.
+    private bool bTreeDetectedNotified = false;
+
     private MapType mapType;
     private ForestType forestType;
 
@@ -109,6 +113,10 @@ public class GameplayUICoordinator
         signalHub.Subscribe<StudioLogoRevealSignal>(StudioLogoReveal);
         signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.Subscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
+        signalHub.Subscribe<TreeDetectedSignal>(TreeDetected);
+        signalHub.Subscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
+        signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void UnSubscribeSignals()
@@ -158,6 +166,10 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<StudioLogoRevealSignal>(StudioLogoReveal);
         signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
+        signalHub.UnSubscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
+        signalHub.UnSubscribe<TreeDetectedSignal>(TreeDetected);
+        signalHub.UnSubscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
+        signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void BindEvents()
@@ -503,6 +515,31 @@ public class GameplayUICoordinator
         unitUI.AnimalGetHit(animalHitSignal.animal);
     }
 
+    private void CompleteDungeonEntry(CompleteDungeonEntrySignal completeDungeonEntrySignal)
+    {
+        unitUI.CompleteDungeonEntry();
+    }
+
+    // 무조건 튜토리얼 진행 중(bIsTutorialActive)일 때만 unitUI에 전달한다. 일반 플레이 중의
+    // 나무 감지는 UI에 알리지 않는다.
+    private void TreeDetected(TreeDetectedSignal treeDetectedSignal)
+    {
+        if (bIsTutorialActive == false)
+            return;
+
+        bTreeDetectedNotified = true;
+        unitUI.TreeDetected();
+    }
+
+    private void TreeDetectionCleared(TreeDetectionClearedSignal treeDetectionClearedSignal)
+    {
+        if (bTreeDetectedNotified == false)
+            return;
+
+        bTreeDetectedNotified = false;
+        unitUI.TreeDetectionCleared();
+    }
+
     private void SkillDispatched(SkillDispatchedSignal skillDispatchedSignal)
     {
         hudUI.Refresh();
@@ -673,6 +710,14 @@ public class GameplayUICoordinator
         signalHub.Publish(new TutorialIntroEndedSignal());
     }
 
+    private void CharacterRideStart(CharacterRideStartSignal _signal)
+    {
+        // 튜토리얼 GoHomeBeforeExhausted 스텝 진행 중에 차량에 탑승한 즉시 알린다.
+        // ResultUI가 열리는 타이밍보다 훨씬 이르므로 탑승 연출과 함께 처리가 필요한 로직에 활용한다.
+        if (bIsTutorialActive)
+            unitUI.TutorialOffroadResultUIOpened();
+    }
+
     private void TutorialStepStarted(TutorialStepStartedSignal _signal)
     {
         bIsTutorialActive = true;
@@ -693,6 +738,14 @@ public class GameplayUICoordinator
         if (_signal.step == TutorialStep.StartNewLogging)
         {
             bIsTutorialActive = false;
+
+            // 튜토리얼이 끝나는 시점에 나무가 아직 감지된 상태로 남아있다면, 짝이 되는
+            // TreeDetectionCleared를 놓치지 않도록 여기서 직접 닫아준다.
+            if (bTreeDetectedNotified)
+            {
+                bTreeDetectedNotified = false;
+                unitUI.TreeDetectionCleared();
+            }
         }
     }
 

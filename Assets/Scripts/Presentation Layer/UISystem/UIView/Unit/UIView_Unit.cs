@@ -377,4 +377,41 @@ public class UIView_Unit : UIView
             speechBubble.RemoveShownId(2);
         }
     }
+
+    /// <summary>
+    /// 던전 진입 연출(차량 시동 꺼짐 → 캐릭터 하차)이 끝나고 실제로 조작 가능해지는 시점에 호출된다.
+    /// CompleteDungeonEntrySignal(InDungeonSystem에서 발행) 수신 시 GameplayUICoordinator를 통해 호출됨.
+    /// </summary>
+    public void CompleteDungeonEntry()
+    {
+        interactionUnit?.ShowTutorialKey(TutorialKeyType.Move);
+    }
+
+    /// <summary>
+    /// 튜토리얼 중 플레이어가 던전의 OffroadVehicle에 상호작용(탑승)한 즉시 호출된다.
+    /// GameplayUICoordinator.CharacterRideStart(CharacterRideStartSignal)에서 bIsTutorialActive일 때 호출됨.
+    /// </summary>
+    public void TutorialOffroadResultUIOpened()
+    {
+        interactionUnit?.HideAllTutorialKeys();
+    }
+
+    /// <summary>
+    /// 튜토리얼 진행 중(GameplayUICoordinator.bIsTutorialActive)에만 호출된다. AttackComponent의
+    /// 공격 범위 안에 나무가 하나도 없다가 처음 감지된 시점에 한 번만 호출되며, 감지된 나무가
+    /// 다른 나무로 바뀌거나 매 탐지 주기(0.2초)마다 호출되지는 않는다.
+    /// </summary>
+    public void TreeDetected()
+    {
+        interactionUnit?.ShowTutorialKey(TutorialKeyType.Attack);
+    }
+
+    /// <summary>
+    /// TreeDetected()로 감지가 통지된 뒤, 공격 범위에 감지되어 있던 나무가 전부 사라진 시점에
+    /// 한 번만 호출된다(TreeDetected()와 항상 쌍으로 호출됨).
+    /// </summary>
+    public void TreeDetectionCleared()
+    {
+        interactionUnit?.ShowTutorialKey(TutorialKeyType.Move);
+    }
 }

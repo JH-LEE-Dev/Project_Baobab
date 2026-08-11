@@ -385,10 +385,6 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 74a86569c5e60364d88e15975a06aa3d, type: 3}
   axeImage: {fileID: 8614871370824734834}
   axeGaugeBar: {fileID: 423231602786947951}
-  keyboardImage: {fileID: 8989855087175564505}
-  actionText: {fileID: 9078994085880764932}
-  localizationJsonId: 12
-  localizationEntryId: 1
   omp: {fileID: 4529823348898067991}
   brokenAnimTag: AxeSkew
   vfxComponent: {fileID: 1823110791385607140}

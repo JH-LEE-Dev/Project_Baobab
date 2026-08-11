@@ -11,12 +11,16 @@ public static class Sound
         AudioManager.Instance.EnqueueEvent(e);
     }
 
-    public static void PlayUI(SoundID id, float volume = 1f, float pitchOverride = -1f)
+    // bypassDucking: 이 재생만 UI 믹서 그룹으로 보내 덕킹/일시정지 음소거를 받지 않게 한다.
+    // 같은 SoundID를 게임플레이와 UI 연출이 함께 쓰는 경우에만 필요하다 - 예를 들어 GetItem은
+    // 인벤토리에서는 게임플레이 효과음이라 그대로 덕킹을 받아야 하지만, 결과창의 카운트업
+    // 연출에서는 그 창 자신의 피드백이라 자기가 건 덕킹에 먹먹해지면 안 된다.
+    public static void PlayUI(SoundID id, float volume = 1f, float pitchOverride = -1f, bool bypassDucking = false)
     {
         if (AudioManager.Instance == null)
             return;
 
-        AudioEvent e = new AudioEvent(id, Vector3.zero, volume, false, pitchOverride);
+        AudioEvent e = new AudioEvent(id, Vector3.zero, volume, false, pitchOverride, bypassDucking);
         AudioManager.Instance.EnqueueEvent(e);
     }
 
@@ -161,5 +165,44 @@ public static class Sound
             return;
 
         AudioManager.Instance.SetTrackedPitch(handle, pitch);
+    }
+
+    // ResultUI/TentUI/EscUI/WarningUI/Navigation UI 등 대상 UI가 열려있는 동안 BGM/SFX/Ambience에
+    // Low Pass Filter를 걸어 먹먹하게 만든다. 참조 카운트 방식이라 여러 대상 UI가 겹쳐 떠 있어도
+    // 마지막 하나가 닫힐 때만 원복된다.
+    public static void RequestAudioDuck()
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.RequestAudioDuck();
+    }
+
+    public static void ReleaseAudioDuck()
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.ReleaseAudioDuck();
+    }
+
+    // 일시정지(ESC 표시) 중 게임플레이 사운드(SFX/Ambience)를 통째로 음소거해 BGM과 UI 조작음만
+    // 남긴다. 이미 울리고 있던 원샷도 함께 사라진다.
+    public static void SetGameplayAudioMuted(bool muted)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.SetGameplayAudioMuted(muted);
+    }
+
+    // 옵션 창이 열려 있는 동안 덕킹/일시정지 음소거를 잠시 풀어, 조절 중인 볼륨을 실제로 들을 수
+    // 있게 한다. (옵션은 ESC 메뉴에서 열리는데 그때는 게임플레이 사운드가 꺼져 있다)
+    public static void SetAudioPreviewMode(bool enabled)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.SetAudioPreviewMode(enabled);
     }
 }

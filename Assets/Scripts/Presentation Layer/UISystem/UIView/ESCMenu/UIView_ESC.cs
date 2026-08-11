@@ -45,6 +45,11 @@ public class UIView_ESC : UIView
 
     private bool isClosing = false;
     private bool isOpeningOption = false;
+    // 설치 시점(GameplayUIInstaller)에도 UIManager.Open()이 Show()를 호출했다가 곧바로 Hide()하는데,
+    // 이때의 Hide는 닫기 연출을 거치는 비동기라 OnHide가 몇 프레임 뒤에 온다. 그 사이 오디오가
+    // 먹먹해지고 루프가 꺼지는 게 메인 메뉴에서 실제로 들리므로, 진짜 일시정지(ShowPauseMenu)로
+    // 열린 경우에만 오디오를 건드린다. escapeMenu.SetSoundsEnabled와 같은 취지의 플래그다.
+    private bool isPauseShow = false;
 
     public bool IsOptionOpen => (null != optionUI && true == optionUI.gameObject.activeInHierarchy) || true == isOpeningOption;
 
@@ -129,6 +134,7 @@ public class UIView_ESC : UIView
         if (null != escapeMenu)
             escapeMenu.SetSoundsEnabled(true);
 
+        isPauseShow = true;
         Show();
     }
 
@@ -161,6 +167,14 @@ public class UIView_ESC : UIView
         base.OnShow();
         gameObject.SetActive(true);
 
+        // ESC 메뉴 = 일시정지. BGM을 먹먹하게 하고, 게임플레이 사운드는 통째로 죽여
+        // BGM과 이 메뉴의 조작음만 들리게 한다.
+        if (true == isPauseShow)
+        {
+            Sound.RequestAudioDuck();
+            Sound.SetGameplayAudioMuted(true);
+        }
+
         if (null != escapeMenu)
         {
             // 1. ESC 메뉴 패널 등장 시작 시 Lock
@@ -181,6 +195,13 @@ public class UIView_ESC : UIView
     protected override void OnHide()
     {
         base.OnHide();
+
+        if (true == isPauseShow)
+        {
+            isPauseShow = false;
+            Sound.ReleaseAudioDuck();
+            Sound.SetGameplayAudioMuted(false);
+        }
     }
 
     private void OnMenuAppearCompleted()

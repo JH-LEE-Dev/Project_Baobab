@@ -168,10 +168,12 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
         }
         else
         {
-            // Town/Dungeon에서 돌아온 경우: 씬 전환이 실제로 완료된 이 시점에야 딤머/로고/버튼을 다시 보여준다.
+            // Town/Dungeon에서 돌아온 경우: UIView 계층(CursorBox 포함)을 올바른 Canvas에
+            // 재배치한 뒤, 씬 전환이 실제로 완료된 이 시점에야 딤머/로고/버튼을 다시 보여준다.
             // StartGoToMainMenu()에서 걸어둔 PauseMove(true)/PauseESCKey(true)를 여기서 풀어준다(캐릭터가 없는 씬이라 위험은 없지만 위생 차원).
             inputManager.PauseMove(false);
             inputManager.PauseESCKey(false);
+            mainMenuInstaller.MainMenuReturned();
             mainMenuInstaller.PlayButtonsRevealAnimation();
         }
 
@@ -289,6 +291,16 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
                     Debug.Log($"[BootStrap] gameInstaller.Release() 완료 ({_swRelease.ElapsedMilliseconds}ms)");
 
                     gameInstaller = null;
+
+                    // Release()의 Destroy(gameObject)는 프레임 끝에 처리된다. 그 대량 파괴와 아래
+                    // ChangeSceneAsync의 비동기 씬 로드를 같은 프레임에 걸치게 하면 엔진 내부에서
+                    // 락이 물려 메인 스레드가 영구 정지한다(덤프 확인: Unity Main Thread /
+                    // BatchDeleteObjects / Loading.PreloadManager 세 스레드가 모두 같은 락 대기).
+                    // 한 프레임 양보해 파괴를 완전히 끝낸 뒤에 씬 로드를 시작한다.
+                    // Town↔Dungeon 전환은 gameInstaller를 파괴하지 않아 이 문제가 없었다.
+                    yield return null;
+
+                    Debug.Log($"[BootStrap] 지연 파괴 완료 대기 후 씬 로드 진행 ({_swTotal.ElapsedMilliseconds}ms)");
                 }
             }
 

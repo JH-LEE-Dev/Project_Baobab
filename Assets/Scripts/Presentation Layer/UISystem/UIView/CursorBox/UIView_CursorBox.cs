@@ -43,6 +43,12 @@ public class UIView_CursorBox : UIView, ICursorBoxUI
     public override void SetupUI()
     {
         base.SetupUI();
+        // SetupUI()는 씬 전환(SceneChanged → Open<T> → Initialize)마다 호출된다.
+        // myCanvas/myCanvasCamera는 null 가드로 캐싱되므로, 씬 재진입 시 구버전
+        // Canvas 참조를 그대로 사용하게 된다. 여기서 명시적으로 초기화해 항상
+        // 최신 부모 Canvas를 가리키도록 강제한다.
+        myCanvas = null;
+        myCanvasCamera = null;
         CacheReferences();
         if (null != selectionCursor)
         {

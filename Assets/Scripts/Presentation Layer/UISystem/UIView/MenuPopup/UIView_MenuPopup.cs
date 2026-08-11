@@ -155,6 +155,8 @@ public class UIView_MenuPopup : UIView
     {
         base.OnShow();
 
+        Sound.RequestAudioDuck();
+
         if (false == isInitialOpen)
         {
             isInitialOpen = true;
@@ -224,6 +226,8 @@ public class UIView_MenuPopup : UIView
     protected override void OnHide()
     {
         base.OnHide();
+
+        Sound.ReleaseAudioDuck();
 
         if (null != vehicleOpenCoroutine)
         {
