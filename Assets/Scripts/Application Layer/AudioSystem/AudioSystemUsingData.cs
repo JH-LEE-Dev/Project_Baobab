@@ -47,7 +47,6 @@ public enum SoundID
     AbilityHUDDownTick = 419757159,
     AbilityHUDFlowerGrow = -1810764210,
     AbilityHUDLevelUp = 991552427,
-    AbilityHUDPrize = 1022828362,
     FontPop = -1165999806,
     HUDBackpackClose = -515772775,
     HUDBackpackOpen = 1734522867,

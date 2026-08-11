@@ -316,7 +316,6 @@ public class AbilityHUD : MonoBehaviour
         resetEffectSequence.AppendCallback(() =>
         {
             Sound.PlayUI(SoundID.AbilityHUDLevelUp);
-            Sound.PlayUI(SoundID.AbilityHUDPrize);
 
             if (null != barFontRectTransform)
                 barFontRectTransform.DOShakeAnchorPos(
