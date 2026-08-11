@@ -13,6 +13,8 @@ using UnityEditor;
 [ExecuteAlways]
 public class AbilityHUD : MonoBehaviour
 {
+    private const float DownTickMinimumInterval = 0.04f;
+
     [Header("UI References")]
     [SerializeField] private Image fillImage;
     [SerializeField] private FontMaker fontMakerForBar;
@@ -69,8 +71,10 @@ public class AbilityHUD : MonoBehaviour
     private Vector3 flowerStackFontInitialScale = Vector3.one;
     private Vector2 flowerStackFontInitialAnchoredPosition;
     private Color fillInitialColor = Color.white;
+    private AudioHandle downStartSoundHandle = AudioHandle.Invalid;
     private int resetDrainTargetExperience;
     private int resetTargetFlowerStack;
+    private float lastDownTickSoundElapsed = float.NegativeInfinity;
     private bool playExperienceMotionAfterReset;
     private bool playFlowerDangleAfterReset;
 
@@ -303,6 +307,7 @@ public class AbilityHUD : MonoBehaviour
         int _startExperience = maxExperience;
         currentExperience = _startExperience;
         RefreshAbilityBar();
+        lastDownTickSoundElapsed = float.NegativeInfinity;
 
         fillInitialColor = null == fillImage ? Color.white : fillImage.color;
         ApplyResetFlashColors(0.0f, 0.0f);
@@ -310,6 +315,9 @@ public class AbilityHUD : MonoBehaviour
         resetEffectSequence = DOTween.Sequence();
         resetEffectSequence.AppendCallback(() =>
         {
+            Sound.PlayUI(SoundID.AbilityHUDLevelUp);
+            Sound.PlayUI(SoundID.AbilityHUDPrize);
+
             if (null != barFontRectTransform)
                 barFontRectTransform.DOShakeAnchorPos(
                     Mathf.Max(0.0f, resetColorDuration + resetDrainDuration),
@@ -322,10 +330,16 @@ public class AbilityHUD : MonoBehaviour
         resetEffectSequence.Join(BuildResetSquashTween());
         resetEffectSequence.Join(BuildResetColorFlashTween());
         resetEffectSequence.AppendCallback(PlayFlowerStackGrowEffect);
+        resetEffectSequence.AppendCallback(PlayDownStartSound);
         resetEffectSequence.Append(DOVirtual.Float(0.0f, 1.0f, Mathf.Max(0.0f, resetDrainDuration), _progress =>
         {
             int _targetExperience = ClampExperience(resetDrainTargetExperience);
+            int _previousExperience = currentExperience;
             currentExperience = Mathf.RoundToInt(Mathf.Lerp(_startExperience, _targetExperience, _progress));
+            TryPlayDownTickSound(
+                _previousExperience,
+                currentExperience,
+                resetDrainDuration * _progress);
             ApplyResetFlashColors(resetColorDuration + (resetDrainDuration * _progress), _progress);
             RefreshAbilityBar();
         }).SetEase(Ease.Linear));
@@ -359,6 +373,8 @@ public class AbilityHUD : MonoBehaviour
     private void PlayFlowerStackGrowEffect()
     {
         FlowerVisual _newFlowerVisual = AddFlowerStackFromReset();
+        if (null != _newFlowerVisual)
+            Sound.PlayUI(SoundID.AbilityHUDFlowerGrow);
 
         if (null == flowerStackFontRectTransform)
         {
@@ -377,6 +393,37 @@ public class AbilityHUD : MonoBehaviour
         _sequence.Append(flowerStackFontRectTransform.DOScale(flowerStackFontInitialScale, flowerStackPopDuration * 0.36f).SetEase(Ease.OutBack));
 
         _newFlowerVisual?.PlayGrow();
+    }
+
+    private void TryPlayDownTickSound(int _previousExperience, int _currentExperience, float _elapsed)
+    {
+        if (_currentExperience >= _previousExperience ||
+            _elapsed - lastDownTickSoundElapsed < DownTickMinimumInterval)
+        {
+            return;
+        }
+
+        lastDownTickSoundElapsed = _elapsed;
+        Sound.PlayUI(SoundID.AbilityHUDDownTick);
+    }
+
+    private void PlayDownStartSound()
+    {
+        StopDownStartSound();
+        downStartSoundHandle = Sound.PlayTracked(
+            SoundID.AbilityHUDDownStart,
+            Vector3.zero,
+            1.0f,
+            false);
+    }
+
+    private void StopDownStartSound()
+    {
+        if (false == downStartSoundHandle.IsValid)
+            return;
+
+        Sound.StopTracked(downStartSoundHandle);
+        downStartSoundHandle = AudioHandle.Invalid;
     }
 
     private Tween BuildResetColorFlashTween()
@@ -456,6 +503,7 @@ public class AbilityHUD : MonoBehaviour
 
     private void RestoreResetExperienceEffectState()
     {
+        StopDownStartSound();
         StopBarFontExperienceMotion();
 
         if (null != barFontRectTransform)
@@ -843,6 +891,7 @@ public class AbilityHUD : MonoBehaviour
     private void OnDestroy()
     {
         StopResetExperienceEffect(false);
+        StopDownStartSound();
     }
 
     private void PlayBarFontExperienceMotion()
