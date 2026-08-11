@@ -65,16 +65,15 @@ public class UI_RedDot : MonoBehaviour
             dotweenSeq.Append(targetVisual.DOScale(1f, appearDuration).SetEase(Ease.OutBack));
         }
         
-        // 2. 무한 반복될 대기 -> 알람시계 회전 진동 시퀀스
-        Sequence loopSeq = DOTween.Sequence();
-        loopSeq.AppendInterval(idleDuration);
-        
-        loopSeq.Append(targetVisual.DOShakeRotation(shakeDuration, shakeRotStrength, shakeVibrato, 90f, fadeOut: true));
-        
-        loopSeq.SetLoops(-1);
-
-        // 메인 시퀀스에 루프 시퀀스를 연결
-        dotweenSeq.Append(loopSeq);
+        // DOTween은 시퀀스 내부에 무한 반복(-1) 요소를 Append하는 것을 허용하지 않습니다.
+        // 따라서 첫 등장 연출이 끝난 직후(OnComplete)에 무한 반복 시퀀스로 덮어씌워 재생합니다.
+        dotweenSeq.OnComplete(() =>
+        {
+            dotweenSeq = DOTween.Sequence();
+            dotweenSeq.AppendInterval(idleDuration);
+            dotweenSeq.Append(targetVisual.DOShakeRotation(shakeDuration, shakeRotStrength, shakeVibrato, 90f, fadeOut: true));
+            dotweenSeq.SetLoops(-1);
+        });
     }
 
     private void KillAnimation()

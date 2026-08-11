@@ -192,6 +192,9 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
         if (null == popupCanvasGroup || null == popupWindowRoot)
             return;
 
+        popupCanvasGroup.interactable = true;
+        popupCanvasGroup.blocksRaycasts = true;
+
         // 초기 상태 세팅 (투명, 아래로 내려간 상태)
         popupCanvasGroup.alpha = 0f;
         popupWindowRoot.anchoredPosition = originalRootAnchoredPosition + new Vector2(0f, -slideOffset);
@@ -230,6 +233,9 @@ public class UI_WarningPopup : MonoBehaviour, IUIDepthCloseable
             gameObject.SetActive(false);
             return;
         }
+
+        popupCanvasGroup.interactable = false;
+        popupCanvasGroup.blocksRaycasts = false;
 
         productionSequence = DOTween.Sequence().SetUpdate(true);
         
