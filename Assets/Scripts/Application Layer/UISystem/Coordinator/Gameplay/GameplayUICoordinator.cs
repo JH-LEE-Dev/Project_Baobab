@@ -116,6 +116,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
         signalHub.Subscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.Subscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
+        signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void UnSubscribeSignals()
@@ -168,6 +169,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<CompleteDungeonEntrySignal>(CompleteDungeonEntry);
         signalHub.UnSubscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.UnSubscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
+        signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
     }
 
     private void BindEvents()
@@ -708,6 +710,14 @@ public class GameplayUICoordinator
         signalHub.Publish(new TutorialIntroEndedSignal());
     }
 
+    private void CharacterRideStart(CharacterRideStartSignal _signal)
+    {
+        // 튜토리얼 GoHomeBeforeExhausted 스텝 진행 중에 차량에 탑승한 즉시 알린다.
+        // ResultUI가 열리는 타이밍보다 훨씬 이르므로 탑승 연출과 함께 처리가 필요한 로직에 활용한다.
+        if (bIsTutorialActive)
+            unitUI.TutorialOffroadResultUIOpened();
+    }
+
     private void TutorialStepStarted(TutorialStepStartedSignal _signal)
     {
         bIsTutorialActive = true;
@@ -749,7 +759,6 @@ public class GameplayUICoordinator
             {
                 bPendingGameEnd = false;
                 resultUI.SetTutorialState(bIsTutorialActive);
-                unitUI.TutorialOffroadResultUIOpened();
                 resultUI.OpenResultUI();
             }
         }

@@ -387,8 +387,8 @@ public class UIView_Unit : UIView
     }
 
     /// <summary>
-    /// 튜토리얼 중 플레이어가 던전의 OffroadVehicle에 상호작용(탑승)해 귀환하여 ResultUI가 열리는 시점에 호출된다.
-    /// GameplayUICoordinator.TutorialQuestHideCompleted(GoHomeBeforeExhausted)에서 resultUI.OpenResultUI() 직전에 호출됨.
+    /// 튜토리얼 중 플레이어가 던전의 OffroadVehicle에 상호작용(탑승)한 즉시 호출된다.
+    /// GameplayUICoordinator.CharacterRideStart(CharacterRideStartSignal)에서 bIsTutorialActive일 때 호출됨.
     /// </summary>
     public void TutorialOffroadResultUIOpened()
     {
