@@ -10,6 +10,9 @@ public class AttackComponent : PComponent
     // ShockWaveMastery로 허공에 충격파만 나갔을 때(실제 타격 없음) - 내구도만 감소시키고 콤보는 쌓지 않기 위해 별도 이벤트로 분리
     public event Action ShockWaveMissEvent;
     public event Action<WeaponMode> WeaponModeChangedEvent;
+    // 공격 범위 안에 나무가 하나도 없다가 처음 감지되었을 때/감지되어 있다가 전부 사라졌을 때만 발생(매 프레임, 감지 대상 교체 시엔 발생하지 않음)
+    public event Action TreeDetectedEvent;
+    public event Action TreeDetectionClearedEvent;
     //외부 의존성
     private Camera mainCamera;
 
@@ -53,6 +56,7 @@ public class AttackComponent : PComponent
     private float detectionTimer = 0f;
     private const float detectionInterval = 0.2f;
     private List<IStaticCollidable> detectionResults = new List<IStaticCollidable>(16);
+    private bool bTreesDetected = false;
 
     // 이중 버퍼용 리스트
     private List<IStaticCollidable> detectionResultsA = new List<IStaticCollidable>(16);
@@ -568,6 +572,8 @@ public class AttackComponent : PComponent
         previouslyDetectedTrees = currentlyDetectedTrees;
         currentlyDetectedTrees = temp;
         currentlyDetectedTrees.Clear();
+
+        SetTreesDetected(previouslyDetectedTrees.Count > 0);
     }
 
     private void ClearDetectedTreeOutlines()
@@ -578,6 +584,23 @@ public class AttackComponent : PComponent
         }
         previouslyDetectedTrees.Clear();
         currentlyDetectedTrees.Clear();
+
+        SetTreesDetected(false);
+    }
+
+    // 감지 상태가 실제로 바뀔 때(없음→있음, 있음→없음)만 이벤트를 발생시킨다. 감지된 나무가
+    // 다른 나무로 바뀌거나 매 탐지 주기마다 호출되는 것은 상태 전환이 아니므로 무시한다.
+    private void SetTreesDetected(bool _detected)
+    {
+        if (bTreesDetected == _detected)
+            return;
+
+        bTreesDetected = _detected;
+
+        if (_detected)
+            TreeDetectedEvent?.Invoke();
+        else
+            TreeDetectionClearedEvent?.Invoke();
     }
 
     private void OnDestroy()
