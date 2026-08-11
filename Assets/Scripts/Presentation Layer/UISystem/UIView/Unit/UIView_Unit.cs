@@ -384,6 +384,7 @@ public class UIView_Unit : UIView
     /// </summary>
     public void CompleteDungeonEntry()
     {
+        interactionUnit?.ShowTutorialKey(TutorialKeyType.Move);
     }
 
     /// <summary>
@@ -392,6 +393,7 @@ public class UIView_Unit : UIView
     /// </summary>
     public void TutorialOffroadResultUIOpened()
     {
+        interactionUnit?.HideAllTutorialKeys();
     }
 
     /// <summary>
@@ -401,6 +403,7 @@ public class UIView_Unit : UIView
     /// </summary>
     public void TreeDetected()
     {
+        interactionUnit?.ShowTutorialKey(TutorialKeyType.Attack);
     }
 
     /// <summary>
@@ -409,5 +412,6 @@ public class UIView_Unit : UIView
     /// </summary>
     public void TreeDetectionCleared()
     {
+        interactionUnit?.ShowTutorialKey(TutorialKeyType.Move);
     }
 }

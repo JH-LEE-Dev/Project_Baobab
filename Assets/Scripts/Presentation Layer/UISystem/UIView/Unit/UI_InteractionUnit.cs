@@ -241,6 +241,9 @@ public class UI_InteractionUnit : MonoBehaviour
                 }
 
                 currentlyVisibleTutorialKey = pendingTutorialKey;
+                
+                // 튜토리얼 UI가 나타나면 반드시 타겟을 따라가도록 설정합니다.
+                bFollowTarget = true;
                 break;
             }
         }
