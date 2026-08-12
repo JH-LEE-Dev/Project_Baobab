@@ -395,6 +395,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 1
+  initializeOnAwake: 0
   vfxPoolDataList:
   - vfxTag: LevelUpEffect
     effectPrefab: {fileID: 5748764238649717206, guid: 1797ceac0dec4a64da158d3d4dab7dba, type: 3}

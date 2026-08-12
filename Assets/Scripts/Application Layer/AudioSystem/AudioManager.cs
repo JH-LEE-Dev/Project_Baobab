@@ -217,6 +217,16 @@ public class AudioManager : MonoBehaviour
     // 절반으로 내려도 거의 안 줄어들다가 끝에서 갑자기 사라지는, 고장난 것 같은 조작감이 된다.
     // zeroDbValue는 "원본 그대로(0dB)에 해당하는 슬라이더 값"이다 - 마스터는 100, BGM/효과음은
     // 50이라서, 기본값 상태가 지금 들리는 소리와 정확히 같아지고 위로 더 키울 여지가 남는다.
+    // 볼륨 "배율"(0~1)을 dB로 바꾼다. 진폭이 절반이면 20*log10(0.5) = 약 -6.02dB이므로,
+    // 설정에 0.5를 넣으면 실제로 소리 크기가 정확히 절반이 된다.
+    private float ScaleToDecibel(float scale)
+    {
+        if (scale <= 0.0001f)
+            return duckSettings.minVolumeDb;
+
+        return Mathf.Clamp(Mathf.Log10(scale) * 20f, duckSettings.minVolumeDb, duckSettings.maxVolumeDb);
+    }
+
     private float SliderToDecibel(float sliderValue, float zeroDbValue)
     {
         if (sliderValue <= SettingsData.SLIDER_MIN + 0.01f || zeroDbValue <= 0f)
@@ -408,8 +418,18 @@ public class AudioManager : MonoBehaviour
         bool ducked = false == audioPreviewMode && duckRequestCount > 0;
         bool muted = false == audioPreviewMode && gameplayMuted;
 
+        // 게임플레이 볼륨은 세 상태가 겹칠 수 있어 우선순위가 필요하다.
+        // 일시정지 음소거 > 덕킹 감쇠 > 평소. (일시정지는 아예 안 들려야 하므로 덕킹보다 우선한다)
+        float gameplayDb;
+        if (muted)
+            gameplayDb = duckSettings.pausedVolumeDb;
+        else if (ducked)
+            gameplayDb = ScaleToDecibel(duckSettings.duckedVolumeScale);
+        else
+            gameplayDb = duckSettings.normalVolumeDb;
+
         RampCutoff(ducked ? duckSettings.duckedCutoffHz : duckSettings.openCutoffHz);
-        RampGameplayVolume(muted ? duckSettings.pausedVolumeDb : duckSettings.normalVolumeDb);
+        RampGameplayVolume(gameplayDb);
     }
 
     private void RampCutoff(float targetHz)

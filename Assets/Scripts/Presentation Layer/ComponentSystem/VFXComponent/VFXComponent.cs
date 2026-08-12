@@ -149,6 +149,7 @@ public class VFXComponent : MonoBehaviour
 {
     [Header("UI Canvas Settings")]
     [SerializeField] private bool isUIComponent = false;
+    [SerializeField] private bool initializeOnAwake = true;
 
     // 외부 의존성
     [Header("VFX Pool List")]
@@ -202,6 +203,27 @@ public class VFXComponent : MonoBehaviour
         }
 
         isInitialized = true;
+    }
+
+    /// <summary>
+    /// 다른 VFXComponent의 직렬화 설정만 복사해 하나의 공용 런타임 풀을 구성합니다.
+    /// 풀 인스턴스가 만들어지기 전에 한 번만 호출해야 합니다.
+    /// </summary>
+    public bool InitializeFrom(VFXComponent _template)
+    {
+        if (isInitialized)
+            return true;
+
+        if (_template == null)
+            return false;
+
+        isUIComponent = _template.isUIComponent;
+        vfxPoolDataList = _template.vfxPoolDataList != null
+            ? new List<VFXPoolData>(_template.vfxPoolDataList)
+            : new List<VFXPoolData>();
+
+        Initialize();
+        return isInitialized;
     }
 
     /// <summary>
@@ -718,7 +740,8 @@ public class VFXComponent : MonoBehaviour
 
     private void Awake()
     {
-        Initialize();
+        if (initializeOnAwake)
+            Initialize();
     }
 
     private void OnDestroy()

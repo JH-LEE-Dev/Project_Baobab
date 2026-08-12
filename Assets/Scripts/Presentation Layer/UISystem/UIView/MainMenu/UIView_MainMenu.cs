@@ -171,6 +171,8 @@ public class UIView_MainMenu : UIView
             
             this.ShowDimmer();
 
+            Sound.PlayBGM(SoundID.MainBGM);
+
             if (null != this.logoAnimUI)
             {
                 this.logoAnimUI.gameObject.SetActive(true);
@@ -195,7 +197,8 @@ public class UIView_MainMenu : UIView
                 if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(false);
 
                 // 마지막 페이드아웃 직전에 UI를 미리 켜고, 완료 시 스플래시 자체를 끕니다.
-                this.splashScreenUI.PlaySequence(this.OnSplashScreenCompleted, this.PrepareNextUIAfterSplash);
+                // 팀 로고가 페이드인되기 시작하는 시점에 메인메뉴 BGM을 재생합니다.
+                this.splashScreenUI.PlaySequence(this.OnSplashScreenCompleted, this.PrepareNextUIAfterSplash, this.OnSplashLogoFadeInStart);
             }
             else
             {
@@ -208,9 +211,15 @@ public class UIView_MainMenu : UIView
         {
             // 이미 스플래시를 본 적이 있다면(인게임에서 나왔다면) 스플래시 연출을 스킵하고 바로 Press Any Key로 넘어감
             if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
+            Sound.PlayBGM(SoundID.MainBGM);
             this.PrepareNextUIAfterSplash();
             this.OnSplashScreenCompleted();
         }
+    }
+
+    private void OnSplashLogoFadeInStart()
+    {
+        Sound.PlayBGM(SoundID.MainBGM);
     }
 
     private void PrepareNextUIAfterSplash()

@@ -13,6 +13,12 @@ public class AudioDuckSettings : ScriptableObject
     [Tooltip("Cutoff를 전환하는 데 걸리는 시간(초). unscaledTime 기준.")]
     public float cutoffTransitionDuration = 0.25f;
 
+    [Header("Duck Volume")]
+    [Tooltip("덕킹 중 게임플레이 사운드(SFX/Ambience)에 곱할 볼륨 배율. 0.5 = 소리 크기 절반(-6dB). " +
+             "먹먹하게 만드는 것만으로는 부족할 때 함께 작아지도록 한다. BGM은 이 감쇠를 받지 않는다.")]
+    [Range(0f, 1f)]
+    public float duckedVolumeScale = 0.5f;
+
     [Header("Pause Mute (dB)")]
     [Tooltip("평소 게임플레이(SFX/Ambience) 그룹 볼륨. 0 = 원본 그대로.")]
     public float normalVolumeDb = 0f;

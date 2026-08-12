@@ -57,6 +57,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private MotionEntry unHoverMotionEntry;
     private MotionEntry clickMotionEntry;
     private MotionEntry nonPassClickMotionEntry;
+    private bool progressionVisible = true;
+    private bool viewportVisible = true;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -70,6 +72,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public bool CompletedVisual => completedVisual;
     public Color CurrentNodeFrameColor => currentNodeFrameColor;
     public bool IsPointerInside => isPointerInside;
+    public bool IsProgressionVisible => progressionVisible;
+    public VFXComponent VfxTemplate => vfxComponent;
 
     private void Awake()
     {
@@ -78,8 +82,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (null != motionPlayer)
             motionPlayer.Initialize();
 
-        if (null != vfxComponent)
-            vfxComponent.Initialize();
     }
 
     private void OnEnable()
@@ -117,6 +119,31 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void BindOwner(UI_TentAbilityComponent _owner)
     {
         owner = _owner;
+    }
+
+    public void SetProgressionVisible(bool _visible)
+    {
+        if (progressionVisible == _visible)
+            return;
+
+        progressionVisible = _visible;
+        RefreshActiveState();
+    }
+
+    public void SetViewportVisible(bool _visible)
+    {
+        if (viewportVisible == _visible)
+            return;
+
+        viewportVisible = _visible;
+        RefreshActiveState();
+    }
+
+    private void RefreshActiveState()
+    {
+        bool shouldBeActive = progressionVisible && viewportVisible;
+        if (gameObject.activeSelf != shouldBeActive)
+            gameObject.SetActive(shouldBeActive);
     }
 
     public void SetInteractionShakeCompensation(Vector2 _compensation)
@@ -369,25 +396,15 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         PlayApprovedNodeEffect(currentNodeFrameColor);
     }
 
-    // 특성창이 닫힐 때 재생 중인 노드 이펙트를 즉시 정리한다.
-    public void StopAllEffectsImmediately()
-    {
-        vfxComponent?.StopAll();
-    }
-
     // 특성 찍기에 성공했을 때 노드 이펙트를 재생하는 자리.
     private void PlayApprovedNodeEffect(Color _nodeFrameColor)
     {
-        if (vfxComponent == null)
-            return;
-
-        ParticleSystem currVFX = vfxComponent.Get(levelUpImpactTag);
-        if (null != currVFX)
-        {
-            vfxComponent.SetStartColor(currVFX, _nodeFrameColor);
-            vfxComponent.SetSortingSettings(currVFX, effectLayerTag, 2);
-            vfxComponent.Play(currVFX, transform.position, Quaternion.identity, transform);
-        }
+        owner?.PlaySharedNodeEffect(
+            levelUpImpactTag,
+            transform,
+            _nodeFrameColor,
+            effectLayerTag,
+            2);
     }
 
     public void PlayRejectedRequestMotion()
