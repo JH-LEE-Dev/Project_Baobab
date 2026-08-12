@@ -64,6 +64,28 @@ public struct TentInteractStateChangedSignal
     }
 }
 
+public struct LootPillarInteractStateChangedSignal
+{
+    public bool state;
+    public LootType lootType;
+    public LootPillarInteractStateChangedSignal(bool _state, LootType _lootType)
+    {
+        state = _state;
+        lootType = _lootType;
+    }
+}
+
+public struct LootPillarInteractSignal
+{
+    public bool bInteract;
+    public LootType lootType;
+    public LootPillarInteractSignal(bool _bInteract, LootType _lootType)
+    {
+        bInteract = _bInteract;
+        lootType = _lootType;
+    }
+}
+
 public struct StartDecreaseStaminaSignal { }
 
 public struct PopupUIDownSignal { }

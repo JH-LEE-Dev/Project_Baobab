@@ -197,12 +197,14 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_Warning warningUI = uiManager.Open<UIView_Warning>();
         warningUI.Hide();
 
+        UIView_ScreenModal screenModalUI = uiManager.Open<UIView_ScreenModal>();
+
         // Show/Hide로 토글하지 않고 항상 Show 상태로 유지한다. 실제 연출은 PlayCompanyLogo() 등
         // 별도 함수 호출로 재생한다.
         UIView_OverUIPopup overUIPopupUI = uiManager.Open<UIView_OverUIPopup>();
 
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI, overUIPopupUI);
+        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI, overUIPopupUI, screenModalUI);
 
         BindEvent();
     }

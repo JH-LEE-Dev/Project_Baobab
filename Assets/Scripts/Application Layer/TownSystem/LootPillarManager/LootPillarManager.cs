@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using PresentationLayer.Environment;
 
@@ -17,6 +19,18 @@ public class LootPillarManager : MonoBehaviour
         LootType.ObsidianCharm,
     };
 
+    public event Action<bool, LootType> LootPillarInteractStateChangedEvent;
+    public event Action<bool, LootType> LootPillarInteractEvent;
+
+    private readonly List<LootDisplayObject> spawnedPillars = new List<LootDisplayObject>();
+
+    private InputManager inputManager;
+
+    public void Initialize(InputManager _inputManager)
+    {
+        inputManager = _inputManager;
+    }
+
     /// <summary>
     /// 영구 획득한 전리품 종류마다 LootPoint를 하나씩 순서대로 사용해 LootPillar를 생성한다.
     /// TownScene은 마을에 들어올 때마다 새로 로드되므로(=이전에 생성된 필러는 이미 사라진 상태),
@@ -25,6 +39,8 @@ public class LootPillarManager : MonoBehaviour
     public void SpawnAcquiredPillars(InDungeonObjectManager _inDungeonObjectManager)
     {
         if (lootPillarPrefab == null || lootPoints == null || _inDungeonObjectManager == null) return;
+
+        spawnedPillars.Clear();
 
         int pointIndex = 0;
         for (int i = 0; i < displayOrder.Length && pointIndex < lootPoints.Length; i++)
@@ -37,8 +53,28 @@ public class LootPillarManager : MonoBehaviour
             LootDisplayObject pillar = Instantiate(lootPillarPrefab, point.position, Quaternion.identity);
             pillar.ApplySortingBasis(pivot != null ? pivot.position.y : point.position.y);
             pillar.SetLootDisplay(displayOrder[i]);
+            pillar.Initialize(inputManager);
+
+            pillar.InteractStateChangedEvent -= OnPillarInteractStateChanged;
+            pillar.InteractStateChangedEvent += OnPillarInteractStateChanged;
+
+            pillar.LootPillarInteractEvent -= OnPillarInteract;
+            pillar.LootPillarInteractEvent += OnPillarInteract;
+
+            spawnedPillars.Add(pillar);
+
             pointIndex++;
         }
+    }
+
+    private void OnPillarInteractStateChanged(bool _state, LootType _lootType)
+    {
+        LootPillarInteractStateChangedEvent?.Invoke(_state, _lootType);
+    }
+
+    private void OnPillarInteract(bool _bInteract, LootType _lootType)
+    {
+        LootPillarInteractEvent?.Invoke(_bInteract, _lootType);
     }
 
     private bool IsAcquired(InDungeonObjectManager _inDungeonObjectManager, LootType _type)

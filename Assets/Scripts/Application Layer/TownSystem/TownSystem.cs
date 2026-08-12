@@ -67,6 +67,7 @@ public class TownSystem : MonoBehaviour
         tentManager.Initialize(inputManager);
         townTileManager.Initialize();
         townUnitSpawner?.Initialize(environmentProvider);
+        lootPillarManager?.Initialize(inputManager);
 
         BindEvents();
         SubscribeSignals();
@@ -210,6 +211,15 @@ public class TownSystem : MonoBehaviour
 
         townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         townProductionManager.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
+
+        if (lootPillarManager != null)
+        {
+            lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
+            lootPillarManager.LootPillarInteractStateChangedEvent += LootPillarInteractStateChanged;
+
+            lootPillarManager.LootPillarInteractEvent -= LootPillarInteract;
+            lootPillarManager.LootPillarInteractEvent += LootPillarInteract;
+        }
     }
 
     private void ReleaseEvents()
@@ -239,6 +249,12 @@ public class TownSystem : MonoBehaviour
         townProductionManager.MainMenuIntroEndEvent -= MainMenuIntroEnd;
         townProductionManager.GoToMainMenuReadyEvent -= GoToMainMenuReady;
         townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+
+        if (lootPillarManager != null)
+        {
+            lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
+            lootPillarManager.LootPillarInteractEvent -= LootPillarInteract;
+        }
     }
 
     private void SubscribeSignals()
@@ -427,6 +443,16 @@ public class TownSystem : MonoBehaviour
     private void ShopInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new ShopInteractStateChangedSignal(_boolean));
+    }
+
+    private void LootPillarInteractStateChanged(bool _state, LootType _lootType)
+    {
+        signalHub.Publish(new LootPillarInteractStateChangedSignal(_state, _lootType));
+    }
+
+    private void LootPillarInteract(bool _bInteract, LootType _lootType)
+    {
+        signalHub.Publish(new LootPillarInteractSignal(_bInteract, _lootType));
     }
 
     private void LogItemProcessorActiveState(bool _boolean)

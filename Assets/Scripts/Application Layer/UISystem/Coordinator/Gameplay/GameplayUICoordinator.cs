@@ -20,6 +20,7 @@ public class GameplayUICoordinator
     private UIView_SkyProduction skyProduction;
     private UIView_Warning warningUI;
     private UIView_OverUIPopup overUIPopupUI;
+    private UIView_ScreenModal screenModalUI;
 
     private UIDepthController uiDepthController;
 
@@ -45,7 +46,7 @@ public class GameplayUICoordinator
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
      UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI, UIView_Warning _warningUI,
-     UIView_OverUIPopup _overUIPopupUI)
+     UIView_OverUIPopup _overUIPopupUI, UIView_ScreenModal _screenModalUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -61,6 +62,7 @@ public class GameplayUICoordinator
         resultUI = _resultUI;
         warningUI = _warningUI;
         overUIPopupUI = _overUIPopupUI;
+        screenModalUI = _screenModalUI;
 
         SubscribeSignals();
         BindEvents();
@@ -117,6 +119,8 @@ public class GameplayUICoordinator
         signalHub.Subscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.Subscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
         signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
+        signalHub.Subscribe<LootPillarInteractStateChangedSignal>(LootPillarInteractStateChanged);
+        signalHub.Subscribe<LootPillarInteractSignal>(LootPillarInteract);
     }
 
     private void UnSubscribeSignals()
@@ -170,6 +174,8 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.UnSubscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
         signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
+        signalHub.UnSubscribe<LootPillarInteractStateChangedSignal>(LootPillarInteractStateChanged);
+        signalHub.UnSubscribe<LootPillarInteractSignal>(LootPillarInteract);
     }
 
     private void BindEvents()
@@ -650,6 +656,19 @@ public class GameplayUICoordinator
     private void ShopInteractStateChanged(ShopInteractStateChangedSignal _shopInteractStateChangedSignal)
     {
         unitUI.ShopInteractStateChanged(_shopInteractStateChangedSignal.state);
+    }
+
+    // 콜라이더 범위 진입/이탈 - 상호작용 가능 아이콘(UIView_Unit)만 갱신한다.
+    // UIView_ScreenModal을 실제로 여닫는 건 상호작용 키 입력(LootPillarInteract) 쪽이다.
+    private void LootPillarInteractStateChanged(LootPillarInteractStateChangedSignal _lootPillarInteractStateChangedSignal)
+    {
+        unitUI.LootPillarInteractStateChanged(_lootPillarInteractStateChangedSignal.state);
+    }
+
+    // 범위 안에서 상호작용 키를 눌렀을 때만 UIView_ScreenModal을 토글로 여닫는다.
+    private void LootPillarInteract(LootPillarInteractSignal _lootPillarInteractSignal)
+    {
+        screenModalUI.LootPillarInteractStateChanged(_lootPillarInteractSignal.bInteract, _lootPillarInteractSignal.lootType);
     }
 
     private void LogItemProcessorIsActive(LogItemProcessorActiveStateSignal _logItemProcessorActiveStateSignal)
