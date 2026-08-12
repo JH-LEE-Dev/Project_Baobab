@@ -1,3 +1,6 @@
+---
+trigger: always_on
+---
 # Strict Coding & Planning Rule
 
 ## 1. 계획표 승인 및 피드백 처리 (Approval Gate)

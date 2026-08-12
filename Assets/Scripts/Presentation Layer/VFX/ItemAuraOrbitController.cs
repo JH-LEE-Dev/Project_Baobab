@@ -76,6 +76,8 @@ public class ItemAuraOrbitController : MonoBehaviour
     [SerializeField] private bool useCenterGlow = true;
     [SerializeField, ShowIf("useCenterGlow")] private Material centerGlowMaterial;
     [SerializeField, ShowIf("useCenterGlow")] private Sprite centerGlowSprite;
+    [SerializeField, ColorUsage(true, true), ShowIf("useCenterGlow"), Tooltip("중앙 원형 코어 컬러 (HDR)")]
+    private Color centerGlowColor = new Color(2.5f, 2.2f, 1.2f, 1f);
     [SerializeField, Range(0.1f, 3.0f), ShowIf("useCenterGlow")] private float centerGlowScale = 1.0f;
     [SerializeField, Range(0.5f, 10.0f), ShowIf("useCenterGlow"), Tooltip("중앙 원형 코어 Bloom 발광 증폭 배율")]
     private float centerGlowBloomMultiplier = 1.5f;
@@ -236,6 +238,19 @@ public class ItemAuraOrbitController : MonoBehaviour
         UpdateBloomSettings();
     }
 
+    public void SetCenterGlowColor(Color _color)
+    {
+        centerGlowColor = _color;
+        if (null != centerGlowObject)
+        {
+            SpriteRenderer sr = centerGlowObject.GetComponent<SpriteRenderer>();
+            if (null != sr)
+            {
+                sr.color = centerGlowColor; // Bloom multiplier는 별도 _Intensity로 제어되거나 Material에 위임될 수 있으나, 기본 색상 적용.
+            }
+        }
+    }
+
     public void SetTrailMaterial(Material _material)
     {
         trailMaterial = _material;
@@ -345,6 +360,7 @@ public class ItemAuraOrbitController : MonoBehaviour
 
             SpriteRenderer sr = centerGlowObject.AddComponent<SpriteRenderer>();
             sr.sprite = centerGlowSprite != null ? centerGlowSprite : satelliteSprite;
+            sr.color = centerGlowColor;
             if (null != centerGlowMaterial)
             {
                 sr.material = centerGlowMaterial;
@@ -604,6 +620,12 @@ public class ItemAuraOrbitController : MonoBehaviour
                 r.GetPropertyBlock(centerGlowPropertyBlock);
                 centerGlowPropertyBlock.SetFloat(CenterIntensityPropertyId, centerGlowBloomMultiplier);
                 r.SetPropertyBlock(centerGlowPropertyBlock);
+            }
+            
+            SpriteRenderer sr = centerGlowObject.GetComponent<SpriteRenderer>();
+            if (null != sr)
+            {
+                sr.color = centerGlowColor; // 블룸 업데이트 시 컬러도 갱신
             }
         }
 
