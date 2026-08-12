@@ -1,0 +1,1718 @@
+fileFormatVersion: 2
+guid: a47a56badab33af4cbd8e1e0b879fbc4
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 3980452787086413427
+    second: AbilityHUD_SideEffect_0
+  - first:
+      213: 4091294634362861207
+    second: AbilityHUD_SideEffect_1
+  - first:
+      213: -6415966311943459679
+    second: AbilityHUD_SideEffect_2
+  - first:
+      213: -5998066819624871759
+    second: AbilityHUD_SideEffect_3
+  - first:
+      213: 7010243703980704960
+    second: AbilityHUD_SideEffect_4
+  - first:
+      213: -3209479772440272001
+    second: AbilityHUD_SideEffect_5
+  - first:
+      213: 245525728445610982
+    second: AbilityHUD_SideEffect_6
+  - first:
+      213: 820056511589339552
+    second: AbilityHUD_SideEffect_7
+  - first:
+      213: -343848642569221345
+    second: AbilityHUD_SideEffect_8
+  - first:
+      213: 8956644322359469937
+    second: AbilityHUD_SideEffect_9
+  - first:
+      213: 4391459351205488442
+    second: AbilityHUD_SideEffect_10
+  - first:
+      213: -807654774923447917
+    second: AbilityHUD_SideEffect_11
+  - first:
+      213: -3296506657486418404
+    second: AbilityHUD_SideEffect_12
+  - first:
+      213: -2078978543490509024
+    second: AbilityHUD_SideEffect_13
+  - first:
+      213: 1777680523735150929
+    second: AbilityHUD_SideEffect_14
+  - first:
+      213: 34799003693548902
+    second: AbilityHUD_SideEffect_15
+  - first:
+      213: 2947325887999211978
+    second: AbilityHUD_SideEffect_16
+  - first:
+      213: -618396299653230788
+    second: AbilityHUD_SideEffect_17
+  - first:
+      213: -4768870331435054558
+    second: AbilityHUD_SideEffect_18
+  - first:
+      213: -6456804661479403424
+    second: AbilityHUD_SideEffect_19
+  - first:
+      213: -1694982794163877691
+    second: AbilityHUD_SideEffect_20
+  - first:
+      213: 950827075465762806
+    second: AbilityHUD_SideEffect_21
+  - first:
+      213: 8544757641359299795
+    second: AbilityHUD_SideEffect_22
+  - first:
+      213: 7305118585755733507
+    second: AbilityHUD_SideEffect_23
+  - first:
+      213: -3578929130682755673
+    second: AbilityHUD_SideEffect_24
+  - first:
+      213: 103884005590814955
+    second: AbilityHUD_SideEffect_25
+  - first:
+      213: -1845220937197408550
+    second: AbilityHUD_SideEffect_26
+  - first:
+      213: 1170894590399201983
+    second: AbilityHUD_SideEffect_27
+  - first:
+      213: -1401176403804019305
+    second: AbilityHUD_SideEffect_28
+  - first:
+      213: 3188403203707929889
+    second: AbilityHUD_SideEffect_29
+  - first:
+      213: -4191930159228445740
+    second: AbilityHUD_SideEffect_30
+  - first:
+      213: -897842155556083203
+    second: AbilityHUD_SideEffect_31
+  - first:
+      213: 4911909402629646673
+    second: AbilityHUD_SideEffect_32
+  - first:
+      213: -6754453323106718335
+    second: AbilityHUD_SideEffect_33
+  - first:
+      213: 3982154134922499615
+    second: AbilityHUD_SideEffect_34
+  - first:
+      213: 7483508239629486430
+    second: AbilityHUD_SideEffect_35
+  - first:
+      213: 1310407004616904735
+    second: AbilityHUD_SideEffect_36
+  - first:
+      213: -354269975302308597
+    second: AbilityHUD_SideEffect_37
+  - first:
+      213: -4300346870196552246
+    second: AbilityHUD_SideEffect_38
+  - first:
+      213: 8206741396268947829
+    second: AbilityHUD_SideEffect_39
+  - first:
+      213: 3942826780527886411
+    second: AbilityHUD_SideEffect_40
+  - first:
+      213: -4484941345300080455
+    second: AbilityHUD_SideEffect_41
+  - first:
+      213: -4359787649460078997
+    second: AbilityHUD_SideEffect_42
+  - first:
+      213: 5266279369054375474
+    second: AbilityHUD_SideEffect_43
+  - first:
+      213: -5428465560463842927
+    second: AbilityHUD_SideEffect_44
+  - first:
+      213: -4029804435308502042
+    second: AbilityHUD_SideEffect_45
+  - first:
+      213: -9103217275688650518
+    second: AbilityHUD_SideEffect_46
+  - first:
+      213: 1765065666074712813
+    second: AbilityHUD_SideEffect_47
+  - first:
+      213: 3254873504361682168
+    second: AbilityHUD_SideEffect_48
+  - first:
+      213: -2502641231214495095
+    second: AbilityHUD_SideEffect_49
+  - first:
+      213: 2357212228131254920
+    second: AbilityHUD_SideEffect_50
+  - first:
+      213: -2166007312126899050
+    second: AbilityHUD_SideEffect_51
+  - first:
+      213: -5894569927903104713
+    second: AbilityHUD_SideEffect_52
+  - first:
+      213: -6682675862038941939
+    second: AbilityHUD_SideEffect_53
+  - first:
+      213: -5776857840840514563
+    second: AbilityHUD_SideEffect_54
+  - first:
+      213: -3110181818056078111
+    second: AbilityHUD_SideEffect_55
+  - first:
+      213: 6112489748187028384
+    second: AbilityHUD_SideEffect_56
+  - first:
+      213: 2697251345500771379
+    second: AbilityHUD_SideEffect_57
+  - first:
+      213: -4595197758957364683
+    second: AbilityHUD_SideEffect_58
+  - first:
+      213: 9217679561715152247
+    second: AbilityHUD_SideEffect_59
+  - first:
+      213: -528812099298756255
+    second: AbilityHUD_SideEffect_60
+  - first:
+      213: 1374986708432014063
+    second: AbilityHUD_SideEffect_61
+  - first:
+      213: -6751403793852205834
+    second: AbilityHUD_SideEffect_62
+  - first:
+      213: -1571263543536561560
+    second: AbilityHUD_SideEffect_63
+  - first:
+      213: 5619263899754943499
+    second: AbilityHUD_SideEffect_64
+  - first:
+      213: -9005272530044212308
+    second: AbilityHUD_SideEffect_65
+  - first:
+      213: 594423514053051189
+    second: AbilityHUD_SideEffect_66
+  - first:
+      213: 5466952793120584550
+    second: AbilityHUD_SideEffect_67
+  - first:
+      213: 3402184608551876769
+    second: AbilityHUD_SideEffect_68
+  - first:
+      213: -5108174450558342036
+    second: AbilityHUD_SideEffect_69
+  - first:
+      213: 2700491133601051772
+    second: AbilityHUD_SideEffect_70
+  - first:
+      213: -2774568493008171199
+    second: AbilityHUD_SideEffect_71
+  - first:
+      213: 8610108748030801978
+    second: AbilityHUD_SideEffect_72
+  - first:
+      213: 2742535340510660780
+    second: AbilityHUD_SideEffect_73
+  - first:
+      213: -6632803155156380513
+    second: AbilityHUD_SideEffect_74
+  - first:
+      213: 7511507412046686766
+    second: AbilityHUD_SideEffect_75
+  - first:
+      213: -3296856565502493123
+    second: AbilityHUD_SideEffect_76
+  - first:
+      213: -5524536701448083844
+    second: AbilityHUD_SideEffect_77
+  - first:
+      213: 6346859479077177010
+    second: AbilityHUD_SideEffect_78
+  - first:
+      213: -8524480839256254651
+    second: AbilityHUD_SideEffect_79
+  - first:
+      213: -7785838251840021429
+    second: AbilityHUD_SideEffect_80
+  - first:
+      213: 2086769941381617532
+    second: AbilityHUD_SideEffect_81
+  - first:
+      213: -7851800397137441091
+    second: AbilityHUD_SideEffect_82
+  - first:
+      213: 8255026340186132210
+    second: AbilityHUD_SideEffect_83
+  - first:
+      213: 1135111217303096280
+    second: AbilityHUD_SideEffect_84
+  - first:
+      213: 8717480600311773473
+    second: AbilityHUD_SideEffect_85
+  - first:
+      213: 7271887752099048201
+    second: AbilityHUD_SideEffect_86
+  - first:
+      213: -5412477708632865288
+    second: AbilityHUD_SideEffect_87
+  - first:
+      213: 1342089279807855087
+    second: AbilityHUD_SideEffect_88
+  - first:
+      213: 8635377123406568613
+    second: AbilityHUD_SideEffect_89
+  - first:
+      213: -5887760758856630288
+    second: AbilityHUD_SideEffect_90
+  - first:
+      213: -7793615060921669510
+    second: AbilityHUD_SideEffect_91
+  - first:
+      213: -3847047752859265526
+    second: AbilityHUD_SideEffect_92
+  - first:
+      213: 5460243666243966145
+    second: AbilityHUD_SideEffect_93
+  - first:
+      213: 235847140719722532
+    second: AbilityHUD_SideEffect_94
+  - first:
+      213: -6726480646112167074
+    second: AbilityHUD_SideEffect_95
+  - first:
+      213: -6435576515144523874
+    second: AbilityHUD_SideEffect_96
+  - first:
+      213: 5688987424538600058
+    second: AbilityHUD_SideEffect_97
+  - first:
+      213: -8350434499447409039
+    second: AbilityHUD_SideEffect_98
+  - first:
+      213: -1001601739414933941
+    second: AbilityHUD_SideEffect_99
+  - first:
+      213: 9088349460914806905
+    second: AbilityHUD_SideEffect_100
+  - first:
+      213: -6050249114950842234
+    second: AbilityHUD_SideEffect_101
+  - first:
+      213: -7372008745546862064
+    second: AbilityHUD_SideEffect_102
+  - first:
+      213: -1605009368917591329
+    second: AbilityHUD_SideEffect_103
+  - first:
+      213: 6830815587366840613
+    second: AbilityHUD_SideEffect_104
+  - first:
+      213: 6202570179552721409
+    second: AbilityHUD_SideEffect_105
+  - first:
+      213: 1100814046526078661
+    second: AbilityHUD_SideEffect_106
+  - first:
+      213: -304838028596577595
+    second: AbilityHUD_SideEffect_107
+  - first:
+      213: -2019848426966810729
+    second: AbilityHUD_SideEffect_108
+  - first:
+      213: 120282592077248566
+    second: AbilityHUD_SideEffect_109
+  - first:
+      213: 6526293248169096040
+    second: AbilityHUD_SideEffect_110
+  - first:
+      213: -7677906224100210828
+    second: AbilityHUD_SideEffect_111
+  - first:
+      213: 2962653921409257912
+    second: AbilityHUD_SideEffect_112
+  - first:
+      213: 5278262765623389672
+    second: AbilityHUD_SideEffect_113
+  - first:
+      213: -3336744970849931347
+    second: AbilityHUD_SideEffect_114
+  - first:
+      213: -6742816334199165021
+    second: AbilityHUD_SideEffect_115
+  - first:
+      213: 1744189956618002927
+    second: AbilityHUD_SideEffect_116
+  - first:
+      213: -1699466027021058507
+    second: AbilityHUD_SideEffect_117
+  - first:
+      213: 1699441666721482543
+    second: AbilityHUD_SideEffect_118
+  - first:
+      213: 5254330385038597431
+    second: AbilityHUD_SideEffect_119
+  - first:
+      213: -8157924484141590983
+    second: AbilityHUD_SideEffect_120
+  - first:
+      213: -8804001830242370750
+    second: AbilityHUD_SideEffect_121
+  - first:
+      213: 1479341430363145338
+    second: AbilityHUD_SideEffect_122
+  - first:
+      213: -4050307440289105007
+    second: AbilityHUD_SideEffect_123
+  - first:
+      213: 6216341388572029432
+    second: AbilityHUD_SideEffect_124
+  - first:
+      213: -9213347057365554080
+    second: AbilityHUD_SideEffect_125
+  - first:
+      213: -3610607212558513536
+    second: AbilityHUD_SideEffect_126
+  - first:
+      213: -8359817321986571341
+    second: AbilityHUD_SideEffect_127
+  - first:
+      213: 4619878558266723011
+    second: AbilityHUD_SideEffect_128
+  - first:
+      213: 4522595591529718095
+    second: AbilityHUD_SideEffect_129
+  - first:
+      213: -52422173027880963
+    second: AbilityHUD_SideEffect_130
+  - first:
+      213: -2115650446667985
+    second: AbilityHUD_SideEffect_131
+  - first:
+      213: 8691030507412526852
+    second: AbilityHUD_SideEffect_132
+  - first:
+      213: 2610166362550974733
+    second: AbilityHUD_SideEffect_133
+  - first:
+      213: 8170633933089961185
+    second: AbilityHUD_SideEffect_134
+  - first:
+      213: 345845742133005114
+    second: AbilityHUD_SideEffect_135
+  - first:
+      213: 3250334887115472244
+    second: AbilityHUD_SideEffect_136
+  - first:
+      213: 5650426886296425728
+    second: AbilityHUD_SideEffect_137
+  - first:
+      213: -1503318818451136656
+    second: AbilityHUD_SideEffect_138
+  - first:
+      213: 6695705557253688365
+    second: AbilityHUD_SideEffect_139
+  - first:
+      213: -4972498063742208794
+    second: AbilityHUD_SideEffect_140
+  - first:
+      213: 764198659582466519
+    second: AbilityHUD_SideEffect_141
+  - first:
+      213: -3509195950742337830
+    second: AbilityHUD_SideEffect_142
+  - first:
+      213: 5843687827391645593
+    second: AbilityHUD_SideEffect_143
+  - first:
+      213: -4256210197517791462
+    second: AbilityHUD_SideEffect_144
+  - first:
+      213: -4551156200348903665
+    second: AbilityHUD_SideEffect_145
+  - first:
+      213: 8284676384178363458
+    second: AbilityHUD_SideEffect_146
+  - first:
+      213: -1012320764469551576
+    second: AbilityHUD_SideEffect_147
+  - first:
+      213: 6808371032997704449
+    second: AbilityHUD_SideEffect_148
+  - first:
+      213: -4248994485184307411
+    second: AbilityHUD_SideEffect_149
+  - first:
+      213: -5165025263991878692
+    second: AbilityHUD_SideEffect_150
+  - first:
+      213: 9159947309052441357
+    second: AbilityHUD_SideEffect_151
+  - first:
+      213: -5760521917981392217
+    second: AbilityHUD_SideEffect_152
+  - first:
+      213: -3106556279633562732
+    second: AbilityHUD_SideEffect_153
+  - first:
+      213: 6657702132528310391
+    second: AbilityHUD_SideEffect_154
+  - first:
+      213: 8195699052235371765
+    second: AbilityHUD_SideEffect_155
+  - first:
+      213: 8126538292420221349
+    second: AbilityHUD_SideEffect_156
+  - first:
+      213: 2634556820411222518
+    second: AbilityHUD_SideEffect_157
+  - first:
+      213: -5363307247722067007
+    second: AbilityHUD_SideEffect_158
+  - first:
+      213: 3818803667788263787
+    second: AbilityHUD_SideEffect_159
+  - first:
+      213: 853370998400300177
+    second: AbilityHUD_SideEffect_160
+  - first:
+      213: -4703660664255606786
+    second: AbilityHUD_SideEffect_161
+  - first:
+      213: 3701073538403739876
+    second: AbilityHUD_SideEffect_162
+  - first:
+      213: -1189080010412429388
+    second: AbilityHUD_SideEffect_163
+  - first:
+      213: -7349228954039668297
+    second: AbilityHUD_SideEffect_164
+  - first:
+      213: -748961517398719367
+    second: AbilityHUD_SideEffect_165
+  - first:
+      213: 6082530196074939638
+    second: AbilityHUD_SideEffect_166
+  - first:
+      213: -528352606373853951
+    second: AbilityHUD_SideEffect_167
+  - first:
+      213: 7624725592817563041
+    second: AbilityHUD_SideEffect_168
+  - first:
+      213: -6821350424453083085
+    second: AbilityHUD_SideEffect_169
+  - first:
+      213: -9151384021840886430
+    second: AbilityHUD_SideEffect_170
+  - first:
+      213: 1472005113284901377
+    second: AbilityHUD_SideEffect_171
+  - first:
+      213: 1120231686198983533
+    second: AbilityHUD_SideEffect_172
+  - first:
+      213: -7493732964146652128
+    second: AbilityHUD_SideEffect_173
+  - first:
+      213: 6737392307864738898
+    second: AbilityHUD_SideEffect_174
+  - first:
+      213: 3975430016717177413
+    second: AbilityHUD_SideEffect_175
+  - first:
+      213: 7702033505756195641
+    second: AbilityHUD_SideEffect_176
+  - first:
+      213: -9212944444541414529
+    second: AbilityHUD_SideEffect_177
+  - first:
+      213: 7658026081584206405
+    second: AbilityHUD_SideEffect_178
+  - first:
+      213: -3528563998455140509
+    second: AbilityHUD_SideEffect_179
+  - first:
+      213: -6875524066392963511
+    second: AbilityHUD_SideEffect_180
+  - first:
+      213: -5838779486044022769
+    second: AbilityHUD_SideEffect_181
+  - first:
+      213: 1470525662866079599
+    second: AbilityHUD_SideEffect_182
+  - first:
+      213: 3603784893962982279
+    second: AbilityHUD_SideEffect_183
+  - first:
+      213: -6015187549165069741
+    second: AbilityHUD_SideEffect_184
+  - first:
+      213: 2508524474542041150
+    second: AbilityHUD_SideEffect_185
+  - first:
+      213: 5092953507427280063
+    second: AbilityHUD_SideEffect_186
+  - first:
+      213: 8246930179468332781
+    second: AbilityHUD_SideEffect_187
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 32
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 288
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 37ecf7378b86d3730800000000000000
+      internalID: 3980452787086413427
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_1
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 288
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 796f8a81bc237c830800000000000000
+      internalID: 4091294634362861207
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_2
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 288
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1acacbde1a8e5f6a0800000000000000
+      internalID: -6415966311943459679
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_3
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 288
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1b8d335b10692cca0800000000000000
+      internalID: -5998066819624871759
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_4
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 288
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c440b4c183694160800000000000000
+      internalID: 7010243703980704960
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_5
+      rect:
+        serializedVersion: 2
+        x: 800
+        y: 288
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f7365e9c623a573d0800000000000000
+      internalID: -3209479772440272001
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_6
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 288
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6eb38336958486300800000000000000
+      internalID: 245525728445610982
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_7
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 240
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a1570d6d0d616b00800000000000000
+      internalID: 820056511589339552
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_8
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 240
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1b492b3b776a3bf0800000000000000
+      internalID: -343848642569221345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_9
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 240
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 17761cd8e846c4c70800000000000000
+      internalID: 8956644322359469937
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_10
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 240
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a37ab22530991fc30800000000000000
+      internalID: 4391459351205488442
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_11
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 240
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3913a87e242aac4f0800000000000000
+      internalID: -807654774923447917
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_12
+      rect:
+        serializedVersion: 2
+        x: 800
+        y: 240
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c1ecfc029a47042d0800000000000000
+      internalID: -3296506657486418404
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_13
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 240
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 027d693970cf523e0800000000000000
+      internalID: -2078978543490509024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_14
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 192
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1513d5d84079ba810800000000000000
+      internalID: 1777680523735150929
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_15
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 192
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 66501bd6281ab7000800000000000000
+      internalID: 34799003693548902
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_16
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 192
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ac9718f874107e820800000000000000
+      internalID: 2947325887999211978
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_17
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 192
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c3fc0c487d30b67f0800000000000000
+      internalID: -618396299653230788
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_18
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 192
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22a0aea33b191ddb0800000000000000
+      internalID: -4768870331435054558
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_19
+      rect:
+        serializedVersion: 2
+        x: 800
+        y: 192
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0601f68be52d466a0800000000000000
+      internalID: -6456804661479403424
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_20
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 192
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c8867d01263a78e0800000000000000
+      internalID: -1694982794163877691
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_21
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 144
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f7d5fbff24023d00800000000000000
+      internalID: 950827075465762806
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_22
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 144
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3d496018dc3159670800000000000000
+      internalID: 8544757641359299795
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_23
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 144
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30e031a46aef06560800000000000000
+      internalID: 7305118585755733507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_24
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 144
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7a55b59eae6155ec0800000000000000
+      internalID: -3578929130682755673
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_25
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 144
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: be0d513e3f1117100800000000000000
+      internalID: 103884005590814955
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_26
+      rect:
+        serializedVersion: 2
+        x: 800
+        y: 144
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ade2c3285557466e0800000000000000
+      internalID: -1845220937197408550
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_27
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 144
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fb2cb222d6adf3010800000000000000
+      internalID: 1170894590399201983
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_28
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 96
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7952a970c750e8ce0800000000000000
+      internalID: -1401176403804019305
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_29
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 96
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1258ab522db7f3c20800000000000000
+      internalID: 3188403203707929889
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_30
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 96
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4db11ffdab543d5c0800000000000000
+      internalID: -4191930159228445740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_31
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 96
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: df965b501593a83f0800000000000000
+      internalID: -897842155556083203
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_32
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 96
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15924a8c39b9a2440800000000000000
+      internalID: 4911909402629646673
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_33
+      rect:
+        serializedVersion: 2
+        x: 800
+        y: 96
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18d64404d7c5342a0800000000000000
+      internalID: -6754453323106718335
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_34
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 96
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1698ec5614734730800000000000000
+      internalID: 3982154134922499615
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_35
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 48
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5903d83813cad760800000000000000
+      internalID: 7483508239629486430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_36
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 48
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f10df555a308f2210800000000000000
+      internalID: 1310407004616904735
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_37
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 48
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0df48f9551651bf0800000000000000
+      internalID: -354269975302308597
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_38
+      rect:
+        serializedVersion: 2
+        x: 480
+        y: 48
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: acdb8f64e491254c0800000000000000
+      internalID: -4300346870196552246
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_39
+      rect:
+        serializedVersion: 2
+        x: 640
+        y: 48
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5799a1891d334e170800000000000000
+      internalID: 8206741396268947829
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_40
+      rect:
+        serializedVersion: 2
+        x: 800
+        y: 48
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b400340211cb7b630800000000000000
+      internalID: 3942826780527886411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_41
+      rect:
+        serializedVersion: 2
+        x: 960
+        y: 48
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b81de2db9942c1c0800000000000000
+      internalID: -4484941345300080455
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_42
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b66fbc16b3cee73c0800000000000000
+      internalID: -4359787649460078997
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_43
+      rect:
+        serializedVersion: 2
+        x: 160
+        y: 0
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23e44782f25951940800000000000000
+      internalID: 5266279369054375474
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_SideEffect_44
+      rect:
+        serializedVersion: 2
+        x: 320
+        y: 0
+        width: 160
+        height: 48
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1916c1185573aa4b0800000000000000
+      internalID: -5428465560463842927
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":160.0,"y":48.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      AbilityHUD_SideEffect_0: 3980452787086413427
+      AbilityHUD_SideEffect_1: 4091294634362861207
+      AbilityHUD_SideEffect_10: 4391459351205488442
+      AbilityHUD_SideEffect_11: -807654774923447917
+      AbilityHUD_SideEffect_12: -3296506657486418404
+      AbilityHUD_SideEffect_13: -2078978543490509024
+      AbilityHUD_SideEffect_14: 1777680523735150929
+      AbilityHUD_SideEffect_15: 34799003693548902
+      AbilityHUD_SideEffect_16: 2947325887999211978
+      AbilityHUD_SideEffect_17: -618396299653230788
+      AbilityHUD_SideEffect_18: -4768870331435054558
+      AbilityHUD_SideEffect_19: -6456804661479403424
+      AbilityHUD_SideEffect_2: -6415966311943459679
+      AbilityHUD_SideEffect_20: -1694982794163877691
+      AbilityHUD_SideEffect_21: 950827075465762806
+      AbilityHUD_SideEffect_22: 8544757641359299795
+      AbilityHUD_SideEffect_23: 7305118585755733507
+      AbilityHUD_SideEffect_24: -3578929130682755673
+      AbilityHUD_SideEffect_25: 103884005590814955
+      AbilityHUD_SideEffect_26: -1845220937197408550
+      AbilityHUD_SideEffect_27: 1170894590399201983
+      AbilityHUD_SideEffect_28: -1401176403804019305
+      AbilityHUD_SideEffect_29: 3188403203707929889
+      AbilityHUD_SideEffect_3: -5998066819624871759
+      AbilityHUD_SideEffect_30: -4191930159228445740
+      AbilityHUD_SideEffect_31: -897842155556083203
+      AbilityHUD_SideEffect_32: 4911909402629646673
+      AbilityHUD_SideEffect_33: -6754453323106718335
+      AbilityHUD_SideEffect_34: 3982154134922499615
+      AbilityHUD_SideEffect_35: 7483508239629486430
+      AbilityHUD_SideEffect_36: 1310407004616904735
+      AbilityHUD_SideEffect_37: -354269975302308597
+      AbilityHUD_SideEffect_38: -4300346870196552246
+      AbilityHUD_SideEffect_39: 8206741396268947829
+      AbilityHUD_SideEffect_4: 7010243703980704960
+      AbilityHUD_SideEffect_40: 3942826780527886411
+      AbilityHUD_SideEffect_41: -4484941345300080455
+      AbilityHUD_SideEffect_42: -4359787649460078997
+      AbilityHUD_SideEffect_43: 5266279369054375474
+      AbilityHUD_SideEffect_44: -5428465560463842927
+      AbilityHUD_SideEffect_5: -3209479772440272001
+      AbilityHUD_SideEffect_6: 245525728445610982
+      AbilityHUD_SideEffect_7: 820056511589339552
+      AbilityHUD_SideEffect_8: -343848642569221345
+      AbilityHUD_SideEffect_9: 8956644322359469937
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

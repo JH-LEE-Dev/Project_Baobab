@@ -4,10 +4,12 @@ using System;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using PresentationLayer.DOTweenAnimationSystem;
+using DG.Tweening;
 
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
 {
     private const float AbilityBarMaxHeight = 26f;
+    private const string MaxLevelUpEffectResourcePath = "AbilityHUD/NodeEffect";
 
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
@@ -35,6 +37,10 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private string effectLayerTag = "HUD";
     [SerializeField] private string levelUpImpactTag = "LevelUpEffect";
 
+    [Header("Max Level Sprite Effect")]
+    [SerializeField] private Image maxLevelUpEffectImage;
+    [SerializeField, Min(1f)] private float maxLevelUpEffectFrameRate = 24f;
+
     [Header("Motion Settings")]
     [SerializeField] private ObjectMotionPlayer motionPlayer;
     [SerializeField] private string hoverMotionTag = "UIHover";
@@ -59,6 +65,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private MotionEntry nonPassClickMotionEntry;
     private bool progressionVisible = true;
     private bool viewportVisible = true;
+    private Tween maxLevelUpEffectTween;
+    private static Sprite[] maxLevelUpEffectFrames;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -82,15 +90,20 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (null != motionPlayer)
             motionPlayer.Initialize();
 
+        CacheMaxLevelUpEffectReference();
+        HideMaxLevelUpEffect();
     }
 
     private void OnEnable()
     {
         CacheInteractionReferences();
+        CacheMaxLevelUpEffectReference();
+        HideMaxLevelUpEffect();
     }
 
     private void OnDisable()
     {
+        StopMaxLevelUpEffect();
         CancelHoverState();
         consumedRapidClick = false;
     }
@@ -297,6 +310,110 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void PlayUnlockAppearMotion()
     {
         PlayClickMotion();
+    }
+
+    public void PlayMaxLevelUpEffect()
+    {
+        StopMaxLevelUpEffect();
+        CacheMaxLevelUpEffectReference();
+        LoadMaxLevelUpEffectFramesIfNeeded();
+
+        if (maxLevelUpEffectImage == null || maxLevelUpEffectFrames == null || maxLevelUpEffectFrames.Length == 0)
+            return;
+
+        maxLevelUpEffectImage.raycastTarget = false;
+        maxLevelUpEffectImage.sprite = maxLevelUpEffectFrames[0];
+        maxLevelUpEffectImage.gameObject.SetActive(true);
+
+        float frameRate = Mathf.Max(1f, maxLevelUpEffectFrameRate);
+        float duration = maxLevelUpEffectFrames.Length / frameRate;
+        int currentFrameIndex = 0;
+        maxLevelUpEffectTween = DOVirtual.Float(0f, duration, duration, _elapsedTime =>
+        {
+            int frameIndex = Mathf.Min(
+                Mathf.FloorToInt(_elapsedTime * frameRate),
+                maxLevelUpEffectFrames.Length - 1);
+            if (frameIndex == currentFrameIndex)
+                return;
+
+            currentFrameIndex = frameIndex;
+            maxLevelUpEffectImage.sprite = maxLevelUpEffectFrames[frameIndex];
+        })
+        .SetEase(Ease.Linear)
+        .SetUpdate(true)
+        .OnComplete(() =>
+        {
+            maxLevelUpEffectTween = null;
+            HideMaxLevelUpEffect();
+        });
+    }
+
+    private void StopMaxLevelUpEffect()
+    {
+        if (maxLevelUpEffectTween != null && maxLevelUpEffectTween.IsActive())
+            maxLevelUpEffectTween.Kill(false);
+
+        maxLevelUpEffectTween = null;
+        HideMaxLevelUpEffect();
+    }
+
+    private void HideMaxLevelUpEffect()
+    {
+        if (maxLevelUpEffectImage != null)
+            maxLevelUpEffectImage.gameObject.SetActive(false);
+    }
+
+    private void CacheMaxLevelUpEffectReference()
+    {
+        if (maxLevelUpEffectImage == null)
+        {
+            Transform effectTransform = FindChildRecursive(transform, "MaxLevelUpEffect");
+            if (effectTransform != null)
+                maxLevelUpEffectImage = effectTransform.GetComponent<Image>();
+        }
+
+        if (maxLevelUpEffectImage != null)
+            maxLevelUpEffectImage.raycastTarget = false;
+    }
+
+    private static void LoadMaxLevelUpEffectFramesIfNeeded()
+    {
+        if (maxLevelUpEffectFrames != null && maxLevelUpEffectFrames.Length > 0)
+            return;
+
+        maxLevelUpEffectFrames = Resources.LoadAll<Sprite>(MaxLevelUpEffectResourcePath);
+        Array.Sort(maxLevelUpEffectFrames, CompareSpriteFrameNames);
+    }
+
+    private static int CompareSpriteFrameNames(Sprite _left, Sprite _right)
+    {
+        int leftIndex = GetSpriteFrameIndex(_left);
+        int rightIndex = GetSpriteFrameIndex(_right);
+        int indexComparison = leftIndex.CompareTo(rightIndex);
+        if (indexComparison != 0)
+            return indexComparison;
+
+        string leftName = _left == null ? string.Empty : _left.name;
+        string rightName = _right == null ? string.Empty : _right.name;
+        return string.CompareOrdinal(leftName, rightName);
+    }
+
+    private static int GetSpriteFrameIndex(Sprite _sprite)
+    {
+        if (_sprite == null || string.IsNullOrEmpty(_sprite.name))
+            return int.MaxValue;
+
+        string spriteName = _sprite.name;
+        int digitStart = spriteName.Length;
+        while (digitStart > 0 && char.IsDigit(spriteName[digitStart - 1]))
+            digitStart--;
+
+        if (digitStart >= spriteName.Length)
+            return int.MaxValue;
+
+        return int.TryParse(spriteName.Substring(digitStart), out int frameIndex)
+            ? frameIndex
+            : int.MaxValue;
     }
 
     // 마우스가 노드 위에 올라오면 상위 컴포넌트에 툴팁 표시를 요청한다.
