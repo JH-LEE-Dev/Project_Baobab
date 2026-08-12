@@ -67,6 +67,7 @@ public class TownSystem : MonoBehaviour
         tentManager.Initialize(inputManager);
         townTileManager.Initialize();
         townUnitSpawner?.Initialize(environmentProvider);
+        lootPillarManager?.Initialize(inputManager);
 
         BindEvents();
         SubscribeSignals();
@@ -215,6 +216,9 @@ public class TownSystem : MonoBehaviour
         {
             lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
             lootPillarManager.LootPillarInteractStateChangedEvent += LootPillarInteractStateChanged;
+
+            lootPillarManager.LootPillarInteractEvent -= LootPillarInteract;
+            lootPillarManager.LootPillarInteractEvent += LootPillarInteract;
         }
     }
 
@@ -249,6 +253,7 @@ public class TownSystem : MonoBehaviour
         if (lootPillarManager != null)
         {
             lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
+            lootPillarManager.LootPillarInteractEvent -= LootPillarInteract;
         }
     }
 
@@ -443,6 +448,11 @@ public class TownSystem : MonoBehaviour
     private void LootPillarInteractStateChanged(bool _state, LootType _lootType)
     {
         signalHub.Publish(new LootPillarInteractStateChangedSignal(_state, _lootType));
+    }
+
+    private void LootPillarInteract(bool _bInteract, LootType _lootType)
+    {
+        signalHub.Publish(new LootPillarInteractSignal(_bInteract, _lootType));
     }
 
     private void LogItemProcessorActiveState(bool _boolean)
