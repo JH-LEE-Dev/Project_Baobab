@@ -1,278 +1,156 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using DG.Tweening;
 
 /// <summary>
-/// 획득한 전리품을 순차적으로 화면에 노출시켜주는 HUD 컴포넌트입니다.
+/// 단일 슬롯 형태의 포션 퀵 인터페이스(Active Potion Slot)를 제공하는 HUD 컴포넌트입니다.
 /// </summary>
 public class HUD_Loot : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private Transform container;      // Horizontal Layout Group이 적용된 부모 객체
-    [SerializeField] private CanvasGroup rootCanvasGroup; // 트랜지션 페이드(Fade) 처리를 위한 캔버스 그룹
-    [SerializeField] private HUD_LootTooltip tooltipUI; // 툴팁 UI 컴포넌트 (마우스 오버 시 설명 텍스트 표시)
+    [Header("UI References")]
+    [SerializeField] private CanvasGroup slotCanvasGroup; // 사용 불가 상태 등의 페이드 처리용
+    [SerializeField] private RectTransform motionTarget;  // 스케일 모션 연출이 적용될 대상 객체
+    [SerializeField] private Image potionIcon;          // 포션 아이콘 (필요 시 활용)
+    [SerializeField] private Image flashOverlay;        // 반짝임 연출용 하얀색 오버레이 (선택사항)
+    [SerializeField] private UI_KeyboardImage keyBindImage; // 키 바인딩 표기용
     
-    [Header("Settings")]
-    [SerializeField] private GameObject lootPrefab;
-    [SerializeField] private int maxLootCount = 5;
-    [SerializeField] private Vector2 imageSize = new Vector2(100f, 100f); // 생성될 이미지의 크기
-
-    [System.Serializable]
-    public struct LootSpritePair
-    {
-        public LootType lootType;
-        public Sprite sprite;
-        public string tooltipLocKey; // 로컬라이징 텍스트 식별자 키 (예: "ITEM_WOOD_DESC")
-    }
-
-    [Header("Loot Sprite Binding")]
-    [SerializeField] private LootSpritePair[] lootSpritePairs;
-    
-    [Header("Acquire Motion Settings")]
+    [Header("Motion Settings")]
     [SerializeField] private float motionDuration = 0.6f;
     [SerializeField] private Vector3 maxScale = new Vector3(1.4f, 1.4f, 1f);
-    [SerializeField] private Color flashColor = Color.white;
     
-    private List<Image> lootImages = new List<Image>();
-    private List<Image> lootOverlays = new List<Image>();
-    private List<UI_RedDot> lootRedDots = new List<UI_RedDot>();
-    private List<HUD_LootSlotTrigger> lootTriggers = new List<HUD_LootSlotTrigger>();
-    private Material flashMaterial;
-    private int currentLootIndex = 0;
     private Tween transitionTween;
-    private LocalizationManager locManager;
+    private Sequence motionSequence;
+    private bool hasAcquired = false;
 
-    public void Initialize(LocalizationManager _locManager = null)
+    public void Initialize(InputManager _inputManager = null)
     {
-        locManager = _locManager;
-        
-        if (null != tooltipUI)
+        if (null != keyBindImage && null != _inputManager)
         {
-            tooltipUI.Initialize();
+            keyBindImage.Initialize(_inputManager);
         }
-        if (null == container)
+        if (null == slotCanvasGroup)
         {
-            return;
-        }
-
-        if (null == rootCanvasGroup)
-        {
-            rootCanvasGroup = gameObject.GetComponent<CanvasGroup>();
-            if (null == rootCanvasGroup)
+            slotCanvasGroup = gameObject.GetComponent<CanvasGroup>();
+            if (null == slotCanvasGroup)
             {
-                rootCanvasGroup = gameObject.AddComponent<CanvasGroup>();
+                slotCanvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
         }
 
-        // 이미지의 본연의 색상을 무시하고, 알파(투명도) 실루엣만 따와서 단색(하얀색)으로 칠해주는 셰이더 적용
-        Shader _textShader = Shader.Find("GUI/Text Shader");
-        if (null != _textShader)
+        if (null != slotCanvasGroup)
         {
-            flashMaterial = new Material(_textShader);
+            slotCanvasGroup.alpha = 0f;
         }
 
-        // 최대 전리품 개수만큼 코드로 메인 이미지와 오버레이 이미지를 직접 생성
-        for (int i = 0; i < maxLootCount; i++)
+        if (null != flashOverlay)
         {
-            if (null == lootPrefab)
-            {
-                Debug.LogError("[HUD_Loot] Loot Prefab is not assigned.");
-                return;
-            }
-
-            // 1. 메인 부모 및 원본 이미지 출력용 Image
-            GameObject _newObj = Instantiate(lootPrefab, container);
-            _newObj.name = "LootImage_" + i;
-            
-            Image _newImage = _newObj.GetComponent<Image>();
-            if (null == _newImage)
-            {
-                _newImage = _newObj.AddComponent<Image>();
-            }
-            _newImage.raycastTarget = true; // 툴팁 마우스 이벤트를 받기 위해 true로 설정
-            
-            RectTransform _rect = _newObj.GetComponent<RectTransform>();
-            if (null != _rect)
-            {
-                _rect.sizeDelta = imageSize;
-            }
-
-            // 2. 하얗게 번쩍일 플래시 오버레이용 Image (자식 객체)
-            GameObject _overlayObj = new GameObject("FlashOverlay");
-            _overlayObj.transform.SetParent(_newObj.transform, false);
-            
-            Image _overlayImage = _overlayObj.AddComponent<Image>();
-            _overlayImage.raycastTarget = false;
-            
-            if (null != flashMaterial)
-            {
-                _overlayImage.material = flashMaterial;
-            }
-
-            RectTransform _overlayRect = _overlayImage.rectTransform;
-            _overlayRect.anchorMin = Vector2.zero;
-            _overlayRect.anchorMax = Vector2.one;
-            _overlayRect.sizeDelta = Vector2.zero;
-            _overlayRect.anchoredPosition = Vector2.zero;
-
-            // 오버레이는 평소에 투명하도록 세팅
-            Color _clearColor = flashColor;
+            Color _clearColor = flashOverlay.color;
             _clearColor.a = 0f;
-            _overlayImage.color = _clearColor;
-            
-            // 레드닷 찾기
-            UI_RedDot _redDot = _newObj.GetComponentInChildren<UI_RedDot>(true);
-            
-            // 툴팁 호버 이벤트용 트리거 스크립트 자동 부착
-            HUD_LootSlotTrigger _trigger = _newObj.GetComponent<HUD_LootSlotTrigger>();
-            if (null == _trigger)
-            {
-                _trigger = _newObj.AddComponent<HUD_LootSlotTrigger>();
-            }
-            _trigger.Initialize(tooltipUI, _redDot);
-
-            _newObj.SetActive(false);
-            lootImages.Add(_newImage);
-            lootOverlays.Add(_overlayImage);
-            lootRedDots.Add(_redDot);
-            lootTriggers.Add(_trigger);
+            flashOverlay.color = _clearColor;
         }
+        
+        hasAcquired = false;
+        gameObject.SetActive(false);
     }
 
     /// <summary>
-    /// 전리품을 획득했을 때 호출되어 이미지를 교체하고 모션을 재생합니다.
+    /// 포션 충전(획득) 신호가 들어왔을 때 호출되어 충전 피드백 모션을 재생합니다.
+    /// 최초 획득 시에는 비활성 상태에서 활성화되며 등장 연출을 재생합니다.
+    /// 인자로 들어오는 _acquiredType은 무시하고 고정된 포션 아이콘에 대해 작동합니다.
     /// </summary>
     public void AcquireLoot(LootType _acquiredType, bool _playAnimation = true)
     {
-        if (null == lootSpritePairs || 0 == lootImages.Count)
+        if (false == _playAnimation || null == motionTarget)
         {
             return;
         }
 
-        // 바인딩된 배열에서 매칭되는 스프라이트 및 설명 ID 찾기
-        Sprite _lootSprite = null;
-        string _locKey = string.Empty;
-        for (int i = 0; i < lootSpritePairs.Length; i++)
+        if (false == hasAcquired)
         {
-            if (lootSpritePairs[i].lootType == _acquiredType)
-            {
-                _lootSprite = lootSpritePairs[i].sprite;
-                _locKey = lootSpritePairs[i].tooltipLocKey;
-                break;
-            }
+            hasAcquired = true;
+            gameObject.SetActive(true);
+            PlayAppearanceMotion();
         }
-
-        if (null == _lootSprite) return;
-
-        // 중복 검사: 이미 화면에 켜져 있는 동일한 전리품이 있는지 확인
-        for (int i = 0; i < lootImages.Count; i++)
+        else
         {
-            if (true == lootImages[i].gameObject.activeInHierarchy && _lootSprite == lootImages[i].sprite)
-            {
-                // 동일한 전리품이 이미 있다면 새로 슬롯을 차지하지 않고, 기존 슬롯의 애니메이션만 다시 튕겨줍니다.
-                if (true == _playAnimation)
-                {
-                    Image _existingOverlay = lootOverlays[i];
-                    PlayAcquireMotion(lootImages[i], _existingOverlay);
-                    
-                    if (null != lootRedDots[i])
-                    {
-                        lootRedDots[i].Activate();
-                    }
-                    
-                    if (null != lootTriggers[i])
-                    {
-                        lootTriggers[i].StartPulse();
-                    }
-                }
-                return;
-            }
-        }
-
-        Image _targetImage = lootImages[currentLootIndex];
-        Image _overlayImage = lootOverlays[currentLootIndex];
-        UI_RedDot _redDot = lootRedDots[currentLootIndex];
-        HUD_LootSlotTrigger _targetTrigger = lootTriggers[currentLootIndex];
-        
-        if (null != _targetImage)
-        {
-            _targetImage.sprite = _lootSprite;
-            _targetImage.gameObject.SetActive(true);
-
-            // 로컬라이징 텍스트 조회 및 트리거 갱신
-            string _descText = string.Empty;
-            if (null != locManager && false == string.IsNullOrEmpty(_locKey))
-            {
-                _descText = locManager.GetText(_locKey);
-            }
-            
-            // 텍스트를 못 찾았을 경우 키값 자체를 띄워 로컬라이징 문제인지 마우스 이벤트 문제인지 구분
-            if (string.IsNullOrEmpty(_descText))
-            {
-                _descText = string.IsNullOrEmpty(_locKey) ? "No Loc Key" : _locKey;
-            }
-            
-            _targetTrigger.SetDescription(_descText);
-
-            // 오버레이 이미지에도 똑같은 스프라이트를 넣어주어 뼈대를 맞춤
-            if (null != _overlayImage)
-            {
-                _overlayImage.sprite = _lootSprite;
-            }
-            
-            if (null != _redDot)
-            {
-                _redDot.Activate();
-            }
-            
-            if (null != _targetTrigger)
-            {
-                _targetTrigger.StartPulse();
-            }
-            
-            if (true == _playAnimation)
-            {
-                PlayAcquireMotion(_targetImage, _overlayImage);
-            }
-        }
-
-        currentLootIndex++;
-        
-        if (maxLootCount <= currentLootIndex)
-        {
-            currentLootIndex = 0; 
+            PlayFeedbackMotion(Vector3.one * 1.2f, motionDuration * 0.8f);
         }
     }
-    
-    private void PlayAcquireMotion(Image _target, Image _overlay)
+
+    private void PlayAppearanceMotion()
     {
-        if (null == _target || null == _overlay)
+        if (null != motionSequence && true == motionSequence.IsActive())
+        {
+            motionSequence.Kill();
+        }
+
+        motionTarget.localScale = Vector3.zero;
+        if (null != slotCanvasGroup)
+        {
+            slotCanvasGroup.alpha = 0f;
+            slotCanvasGroup.DOFade(1f, motionDuration).SetEase(Ease.OutQuad);
+        }
+
+        motionSequence = DOTween.Sequence();
+        motionSequence.Insert(0f, motionTarget.DOScale(maxScale, motionDuration * 0.6f).SetEase(Ease.OutBack));
+        motionSequence.Insert(motionDuration * 0.6f, motionTarget.DOScale(Vector3.one, motionDuration * 0.4f).SetEase(Ease.OutQuad));
+        motionSequence.Play();
+    }
+
+    /// <summary>
+    /// 특수 키를 눌러 포션을 일괄 소비할 때 강렬한 피드백 모션을 재생합니다.
+    /// </summary>
+    public void PlayUsePotionMotion()
+    {
+        if (null == motionTarget)
         {
             return;
         }
+        
+        PlayFeedbackMotion(maxScale, motionDuration);
+    }
 
-        // 1. 기존 트윈 강제 종료 및 초기화
-        _target.transform.DOKill();
-        _overlay.DOKill();
+    /// <summary>
+    /// 현재 포션의 사용 가능 여부에 따라 슬롯의 투명도를 조절합니다.
+    /// </summary>
+    public void SetSlotActive(bool _isActive)
+    {
+        if (null != slotCanvasGroup)
+        {
+            slotCanvasGroup.DOKill();
+            slotCanvasGroup.DOFade(true == _isActive ? 1f : 0.4f, 0.3f);
+        }
+    }
+
+    private void PlayFeedbackMotion(Vector3 _targetScale, float _duration)
+    {
+        if (null != motionSequence && true == motionSequence.IsActive())
+        {
+            motionSequence.Kill();
+        }
+
+        motionTarget.localScale = Vector3.one;
+        if (null != flashOverlay)
+        {
+            Color _clearColor = flashOverlay.color;
+            _clearColor.a = 0f;
+            flashOverlay.color = _clearColor; 
+        }
+
+        motionSequence = DOTween.Sequence();
         
-        _target.transform.localScale = Vector3.one;
+        // 쫀득한 뽀잉 스케일 연출
+        motionSequence.Insert(0f, motionTarget.DOScale(_targetScale, _duration * 0.3f).SetEase(Ease.OutQuad));
+        motionSequence.Insert(_duration * 0.3f, motionTarget.DOScale(Vector3.one, _duration * 0.7f).SetEase(Ease.OutElastic));
         
-        Color _clearColor = flashColor;
-        _clearColor.a = 0f;
-        _overlay.color = _clearColor; 
+        // 오버레이가 설정되어 있다면 반짝임 연출 추가
+        if (null != flashOverlay)
+        {
+            motionSequence.Insert(0f, flashOverlay.DOFade(1f, _duration * 0.2f).SetEase(Ease.OutFlash));
+            motionSequence.Insert(_duration * 0.2f, flashOverlay.DOFade(0f, _duration * 0.8f).SetEase(Ease.InQuad));
+        }
         
-        Sequence _seq = DOTween.Sequence();
-        
-        // 2. 쫀득한 뽀잉 스케일 연출 (OutQuad -> OutElastic)
-        _seq.Insert(0f, _target.transform.DOScale(maxScale, motionDuration * 0.3f).SetEase(Ease.OutQuad));
-        _seq.Insert(motionDuration * 0.3f, _target.transform.DOScale(Vector3.one, motionDuration * 0.7f).SetEase(Ease.OutElastic));
-        
-        // 3. 메인 이미지 색상을 바꾸는 게 아니라, 위에 덮인 오버레이 이미지의 알파값(투명도)을 Fade In/Out 하여 찰나의 순간 하얗게 빛나게 덮어줌
-        _seq.Insert(0f, _overlay.DOFade(1f, motionDuration * 0.2f).SetEase(Ease.OutFlash));
-        _seq.Insert(motionDuration * 0.2f, _overlay.DOFade(0f, motionDuration * 0.8f).SetEase(Ease.InQuad));
-        
-        _seq.Play();
+        motionSequence.Play();
     }
 
     /// <summary>
@@ -280,7 +158,7 @@ public class HUD_Loot : MonoBehaviour
     /// </summary>
     public void OnHUDGoDown()
     {
-        if (null == rootCanvasGroup)
+        if (null == slotCanvasGroup)
         {
             return;
         }
@@ -290,8 +168,7 @@ public class HUD_Loot : MonoBehaviour
             transitionTween.Kill();
         }
         
-        // OMP를 대체하여 DOTween으로 페이드아웃 처리
-        transitionTween = rootCanvasGroup.DOFade(0f, 0.3f);
+        transitionTween = slotCanvasGroup.DOFade(0f, 0.3f);
     }
 
     /// <summary>
@@ -299,7 +176,7 @@ public class HUD_Loot : MonoBehaviour
     /// </summary>
     public void OnHUDGoUp()
     {
-        if (null == rootCanvasGroup)
+        if (null == slotCanvasGroup)
         {
             return;
         }
@@ -309,33 +186,20 @@ public class HUD_Loot : MonoBehaviour
             transitionTween.Kill();
         }
         
-        // OMP를 대체하여 DOTween으로 페이드인 처리
-        transitionTween = rootCanvasGroup.DOFade(1f, 0.3f);
+        transitionTween = slotCanvasGroup.DOFade(1f, 0.3f);
     }
 
     #region Editor Test Logic
-    [Header("Test Mode")]
-    private int testLootIndex = 0;
-
-    [NaughtyAttributes.Button("Test Acquire Loot (순차 획득)")]
-    private void TestAcquireLootSequence()
+    [NaughtyAttributes.Button("Test Fill Motion")]
+    private void TestFillMotion()
     {
-        if (null == lootSpritePairs || 0 == lootSpritePairs.Length)
-        {
-            Debug.LogWarning("바인딩된 Loot Type이 없습니다.");
-            return;
-        }
+        AcquireLoot(LootType.SporePotion, true);
+    }
 
-        // 등록된 LootType을 순차적으로 넘겨줍니다.
-        LootType _type = lootSpritePairs[testLootIndex].lootType;
-        AcquireLoot(_type);
-
-        testLootIndex++;
-        
-        if (lootSpritePairs.Length <= testLootIndex)
-        {
-            testLootIndex = 0;
-        }
+    [NaughtyAttributes.Button("Test Use Motion")]
+    private void TestUseMotion()
+    {
+        PlayUsePotionMotion();
     }
     #endregion
 }

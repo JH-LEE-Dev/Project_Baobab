@@ -52,12 +52,12 @@ public class UIView_HUD : UIView
 
         currentMapType = MapType.Town;
 
-        Init_HUDScreenBlood();
+        Init_HUDLoot();
         Init_HUDStaminaBar();
         Init_HUDEquipment();
         Init_HUDMessage();
         Init_HUDDirIndicator();
-        Init_HUDLoot();
+        Init_HUDScreenBlood();
 
         bool isTown = MapType.Town == currentMapType;
 
@@ -109,7 +109,7 @@ public class UIView_HUD : UIView
 
     private void OnLootAcquired(LootType newlyAcquiredType)
     {
-        if (null != hudLoot)
+        if (null != hudLoot && LootType.SporePotion == newlyAcquiredType)
         {
             hudLoot.AcquireLoot(newlyAcquiredType);
         }
@@ -192,7 +192,7 @@ public class UIView_HUD : UIView
             hudLoot = Instantiate(hudLootPrefab, uiRoot.transform).GetComponent<HUD_Loot>();
 
         if (null != hudLoot)
-            hudLoot.Initialize(viewCtx?.localizationManager);
+            hudLoot.Initialize(viewCtx?.inputManager);
     }
 
 
