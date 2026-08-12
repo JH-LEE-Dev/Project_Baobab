@@ -5,10 +5,15 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using PresentationLayer.DOTweenAnimationSystem;
 using DG.Tweening;
+using Coffee.UIEffects;
 
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
 {
     private const float AbilityBarMaxHeight = 26f;
+    private static readonly Color32 CanApplyShinyColor = new Color32(184, 255, 243, 255);
+    private static readonly Color32 CannotApplyShinyColor = new Color32(255, 106, 98, 255);
+    private static readonly Color32 CompletedShinyColor = new Color32(136, 145, 255, 255);
+
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private string displayName;
@@ -26,6 +31,13 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     [SerializeField] private Image abilityPictureImage;
     [SerializeField] private Image abilityLevelImage;
     [SerializeField] private Image abilityBarImage;
+    [SerializeField] private UIEffect abilityBaseEffect;
+
+    [Header("Important Node Loop Effect")]
+    [SerializeField] private Image importantNodeLoopEffectFirstImage;
+    [SerializeField] private Image importantNodeLoopEffectSecondImage;
+    [SerializeField] private Sprite[] importantNodeLoopEffectFrames;
+    [SerializeField, Min(1f)] private float importantNodeLoopEffectFrameRate = 16f;
 
     [Header("Default Visual")]
     [SerializeField] private Sprite defaultPictureSprite;
@@ -64,6 +76,12 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private MotionEntry nonPassClickMotionEntry;
     private bool progressionVisible = true;
     private bool viewportVisible = true;
+    private bool isImportantNode;
+    private bool importantNodeLoopEffectInitialized;
+    private bool importantNodeLoopEffectPlaying;
+    private int importantNodeLoopEffectFirstFrameIndex;
+    private int importantNodeLoopEffectSecondFrameIndex;
+    private float importantNodeLoopEffectElapsed;
     private Tween maxLevelUpEffectTween;
 
     public SkillType SkillType => skillType;
@@ -84,6 +102,10 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void Awake()
     {
         CacheInteractionReferences();
+        CacheAbilityBaseEffectReference();
+        CacheImportantNodeLoopEffectReferences();
+        SortImportantNodeLoopEffectFrames();
+        RefreshImportantNodeClassification();
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
@@ -96,15 +118,24 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private void OnEnable()
     {
         CacheInteractionReferences();
+        CacheAbilityBaseEffectReference();
+        CacheImportantNodeLoopEffectReferences();
+        RefreshImportantNodeEffect();
         CacheMaxLevelUpEffectReference();
         HideMaxLevelUpEffect();
     }
 
     private void OnDisable()
     {
+        StopImportantNodeLoopEffect();
         StopMaxLevelUpEffect();
         CancelHoverState();
         consumedRapidClick = false;
+    }
+
+    private void Update()
+    {
+        UpdateImportantNodeLoopEffect();
     }
 
     // 특성 노드의 내부 그림을 외부에서 교체한다.
@@ -176,6 +207,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
         skillType = _skillType;
         displayName = _displayName;
+        importantNodeLoopEffectInitialized = false;
+        RefreshImportantNodeClassification();
         levelBadge = ParseLevelBadge(_definition.levelBadge);
         requiredPrestigeLevel = Mathf.Max(_definition.requiredPrestigeLevel, 0);
         currentLevel = 0;
@@ -191,6 +224,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     public void ApplyLocalizedText(string _displayName)
     {
         displayName = _displayName;
+        RefreshImportantNodeClassification();
     }
 
     // 노드의 JSON 기반 그리드 좌표를 실제 UI 좌표로 변환해 적용한다.
@@ -295,6 +329,8 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             _baseColor.a = visualHidden ? 0f : _baseColor.a;
             abilityBaseImage.color = _baseColor;
         }
+
+        RefreshImportantNodeEffect();
     }
 
     public void SetVisualVisible(bool _visible)
@@ -304,6 +340,181 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         ApplyImageAlpha(abilityBackgroundImage, _visible ? 1f : 0f);
         ApplyImageAlpha(abilityPictureImage, _visible ? 1f : 0f);
         ApplyImageAlpha(abilityLevelImage, _visible ? 1f : 0f);
+        RefreshImportantNodeEffect();
+    }
+
+    private void CacheAbilityBaseEffectReference()
+    {
+        if (abilityBaseEffect == null && abilityBaseImage != null)
+            abilityBaseEffect = abilityBaseImage.GetComponent<UIEffect>();
+    }
+
+    private void RefreshImportantNodeClassification()
+    {
+        isImportantNode = HasMarkupTag(displayName);
+        RefreshImportantNodeEffect();
+    }
+
+    private void RefreshImportantNodeEffect()
+    {
+        CacheAbilityBaseEffectReference();
+        bool shouldEnable = isImportantNode && visualHidden == false;
+        if (abilityBaseEffect != null)
+        {
+            if (shouldEnable == false)
+            {
+                abilityBaseEffect.enabled = false;
+            }
+            else
+            {
+                abilityBaseEffect.edgeMode = EdgeMode.Shiny;
+                abilityBaseEffect.edgeWidth = 0.5f;
+                abilityBaseEffect.edgeColorFilter = ColorFilter.Replace;
+                abilityBaseEffect.edgeShinyRate = 0.5f;
+                abilityBaseEffect.edgeShinyWidth = 0.4f;
+                abilityBaseEffect.edgeShinyAutoPlaySpeed = 0.75f;
+                abilityBaseEffect.edgeColor = GetImportantNodeShinyColor();
+                abilityBaseEffect.enabled = true;
+            }
+        }
+
+        RefreshImportantNodeLoopEffect();
+    }
+
+    private Color GetImportantNodeShinyColor()
+    {
+        return completedVisual
+            ? CompletedShinyColor
+            : canApplyVisual
+                ? CanApplyShinyColor
+                : CannotApplyShinyColor;
+    }
+
+    private void CacheImportantNodeLoopEffectReferences()
+    {
+        if (importantNodeLoopEffectFirstImage == null)
+        {
+            Transform firstTransform = FindChildRecursive(transform, "LoopEffect_First");
+            if (firstTransform != null)
+                importantNodeLoopEffectFirstImage = firstTransform.GetComponent<Image>();
+        }
+
+        if (importantNodeLoopEffectSecondImage == null)
+        {
+            Transform secondTransform = FindChildRecursive(transform, "LoopEffect_Second");
+            if (secondTransform != null)
+                importantNodeLoopEffectSecondImage = secondTransform.GetComponent<Image>();
+        }
+
+        if (importantNodeLoopEffectFirstImage != null)
+            importantNodeLoopEffectFirstImage.raycastTarget = false;
+
+        if (importantNodeLoopEffectSecondImage != null)
+            importantNodeLoopEffectSecondImage.raycastTarget = false;
+    }
+
+    private void RefreshImportantNodeLoopEffect()
+    {
+        CacheImportantNodeLoopEffectReferences();
+        bool shouldPlay = isImportantNode
+            && visualHidden == false
+            && isActiveAndEnabled
+            && importantNodeLoopEffectFrames != null
+            && importantNodeLoopEffectFrames.Length > 0;
+
+        if (shouldPlay == false)
+        {
+            StopImportantNodeLoopEffect();
+            return;
+        }
+
+        if (importantNodeLoopEffectInitialized == false)
+        {
+            importantNodeLoopEffectFirstFrameIndex = UnityEngine.Random.Range(0, importantNodeLoopEffectFrames.Length);
+            importantNodeLoopEffectSecondFrameIndex = UnityEngine.Random.Range(0, importantNodeLoopEffectFrames.Length);
+            importantNodeLoopEffectElapsed = 0f;
+            importantNodeLoopEffectInitialized = true;
+        }
+
+        importantNodeLoopEffectPlaying = true;
+        SetImportantNodeLoopEffectVisible(true);
+        ApplyImportantNodeLoopEffectColors();
+        ApplyImportantNodeLoopEffectFrames();
+    }
+
+    private void UpdateImportantNodeLoopEffect()
+    {
+        if (importantNodeLoopEffectPlaying == false
+            || importantNodeLoopEffectFrames == null
+            || importantNodeLoopEffectFrames.Length == 0)
+        {
+            return;
+        }
+
+        float frameDuration = 1f / Mathf.Max(1f, importantNodeLoopEffectFrameRate);
+        importantNodeLoopEffectElapsed += Time.unscaledDeltaTime;
+        int advancedFrameCount = Mathf.FloorToInt(importantNodeLoopEffectElapsed / frameDuration);
+        if (advancedFrameCount <= 0)
+            return;
+
+        importantNodeLoopEffectElapsed -= advancedFrameCount * frameDuration;
+        importantNodeLoopEffectFirstFrameIndex =
+            (importantNodeLoopEffectFirstFrameIndex + advancedFrameCount) % importantNodeLoopEffectFrames.Length;
+        importantNodeLoopEffectSecondFrameIndex =
+            (importantNodeLoopEffectSecondFrameIndex + advancedFrameCount) % importantNodeLoopEffectFrames.Length;
+        ApplyImportantNodeLoopEffectFrames();
+    }
+
+    private void StopImportantNodeLoopEffect()
+    {
+        importantNodeLoopEffectPlaying = false;
+        importantNodeLoopEffectElapsed = 0f;
+        SetImportantNodeLoopEffectVisible(false);
+    }
+
+    private void SetImportantNodeLoopEffectVisible(bool _visible)
+    {
+        if (importantNodeLoopEffectFirstImage != null)
+            importantNodeLoopEffectFirstImage.gameObject.SetActive(_visible);
+
+        if (importantNodeLoopEffectSecondImage != null)
+            importantNodeLoopEffectSecondImage.gameObject.SetActive(_visible);
+    }
+
+    private void ApplyImportantNodeLoopEffectColors()
+    {
+        if (importantNodeLoopEffectFirstImage != null)
+            importantNodeLoopEffectFirstImage.color = currentNodeFrameColor;
+
+        if (importantNodeLoopEffectSecondImage != null)
+            importantNodeLoopEffectSecondImage.color = GetImportantNodeShinyColor();
+    }
+
+    private void ApplyImportantNodeLoopEffectFrames()
+    {
+        if (importantNodeLoopEffectFrames == null || importantNodeLoopEffectFrames.Length == 0)
+            return;
+
+        if (importantNodeLoopEffectFirstImage != null)
+            importantNodeLoopEffectFirstImage.sprite = importantNodeLoopEffectFrames[importantNodeLoopEffectFirstFrameIndex];
+
+        if (importantNodeLoopEffectSecondImage != null)
+            importantNodeLoopEffectSecondImage.sprite = importantNodeLoopEffectFrames[importantNodeLoopEffectSecondFrameIndex];
+    }
+
+    private void SortImportantNodeLoopEffectFrames()
+    {
+        if (importantNodeLoopEffectFrames != null && importantNodeLoopEffectFrames.Length > 1)
+            Array.Sort(importantNodeLoopEffectFrames, CompareSpriteFrameNames);
+    }
+
+    private static bool HasMarkupTag(string _text)
+    {
+        if (string.IsNullOrEmpty(_text))
+            return false;
+
+        int tagStartIndex = _text.IndexOf('<');
+        return tagStartIndex >= 0 && _text.IndexOf('>', tagStartIndex + 1) > tagStartIndex;
     }
 
     public void PlayUnlockAppearMotion()
