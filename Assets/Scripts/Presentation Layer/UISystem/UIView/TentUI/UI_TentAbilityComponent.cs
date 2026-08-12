@@ -2207,9 +2207,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (spawnedNodeMap.TryGetValue(_skillType, out AbilityNode node) == false)
             return;
 
+        int previousNodeLevel = node.CurrentLevel;
         bool wasLockedByLevel = node.IsUnlockedByLevel() == false;
         SyncNodeLevelsFromProvider();
         SkillInfo upgradedSkillInfo = GetSkillInfo(_skillType);
+        bool reachedMaxLevel = upgradedSkillInfo.maxLevel > 0 &&
+            previousNodeLevel < upgradedSkillInfo.maxLevel &&
+            upgradedSkillInfo.currentLevel >= upgradedSkillInfo.maxLevel;
         PlayAbilityUpgradeSounds(upgradedSkillInfo);
         bool prestigeIncreased = _currentHUDState.IsValid &&
             _previousHUDState.IsValid &&
@@ -2222,6 +2226,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
             RefreshLines();
 
         RefreshNodeAvailabilityVisuals();
+
+        if (reachedMaxLevel)
+            node.PlayMaxLevelUpEffect();
 
         if (currentToolTipNode == node)
         {
