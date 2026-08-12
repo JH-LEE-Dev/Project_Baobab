@@ -53,11 +53,11 @@ public class UIView_HUD : UIView
         currentMapType = MapType.Town;
 
         Init_HUDLoot();
-        Init_HUDStaminaBar();
         Init_HUDEquipment();
         Init_HUDMessage();
         Init_HUDDirIndicator();
         Init_HUDScreenBlood();
+        Init_HUDStaminaBar();
 
         bool isTown = MapType.Town == currentMapType;
 

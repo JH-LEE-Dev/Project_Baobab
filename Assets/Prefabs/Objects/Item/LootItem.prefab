@@ -101,6 +101,7 @@ MonoBehaviour:
   useCenterGlow: 1
   centerGlowMaterial: {fileID: 2100000, guid: b67a5410de806ea40af2cb02fcba8d11, type: 2}
   centerGlowSprite: {fileID: 0}
+  centerGlowColor: {r: 2.5, g: 2.2, b: 1.2, a: 1}
   centerGlowScale: 0.85
   centerGlowBloomMultiplier: 1
   sortingLayerName: Objects
@@ -536,7 +537,7 @@ MonoBehaviour:
   beamBlur: 0.22
   minBeamWidth: 0.04
   maxBeamWidth: 0.5
-  showOnScreenDebugGui: 1
+  showOnScreenDebugGui: 0
 --- !u!1 &7527179807894108101
 GameObject:
   m_ObjectHideFlags: 0
