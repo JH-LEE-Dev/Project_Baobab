@@ -83,12 +83,17 @@ public class ItemAuraOrbitController : MonoBehaviour
     private float centerGlowBloomMultiplier = 1.5f;
 
     [Header("소팅 레이어 및 개별 오더 분리 설정")]
-    [SerializeField] private string sortingLayerName = "Objects";
-    [SerializeField, Tooltip("중앙 방사형 원형 글로우의 소팅 오더 (보통 아이템 본체 뒤 -2)")]
+    [SerializeField, Tooltip("특정 렌더러를 기준으로 소팅을 자동 설정할 경우 바인딩하세요.")]
+    private SpriteRenderer referenceSortingRenderer;
+    [SerializeField, ShowIf("HasReferenceRenderer"), Tooltip("바인딩된 렌더러 기준 중앙 글로우의 오더 오프셋 (더 낮게 설정하려면 음수 입력)")]
+    private int centerGlowOrderOffset = -2;
+
+    [SerializeField, HideIf("HasReferenceRenderer")] private string sortingLayerName = "Objects";
+    [SerializeField, HideIf("HasReferenceRenderer"), Tooltip("중앙 방사형 원형 글로우의 소팅 오더 (보통 아이템 본체 뒤 -2)")]
     private int centerGlowSortingOrder = -2;
-    [SerializeField, Tooltip("공전/상승하는 위성 본체의 소팅 오더 (보통 아이템 본체 앞 0)")]
+    [SerializeField, HideIf("HasReferenceRenderer"), Tooltip("공전/상승하는 위성 본체의 소팅 오더 (보통 아이템 본체 앞 0)")]
     private int satelliteSortingOrder = 0;
-    [SerializeField, Tooltip("위성 트레일 궤적의 소팅 오더 (위성 바로 뒤 -1)")]
+    [SerializeField, HideIf("HasReferenceRenderer"), Tooltip("위성 트레일 궤적의 소팅 오더 (위성 바로 뒤 -1)")]
     private int trailSortingOrder = -1;
 
     [Header("디버그")]
@@ -96,6 +101,7 @@ public class ItemAuraOrbitController : MonoBehaviour
 
     // NaughtyAttributes 조건자
     private bool IsHelicalScrewMode => trajectoryMode == OrbitTrajectoryMode.HelicalScrew;
+    private bool HasReferenceRenderer => referenceSortingRenderer != null;
 
     // ========================================================================
     // 2. 런타임 상태 (0 GC 캐싱 데이터 구조)
@@ -139,6 +145,8 @@ public class ItemAuraOrbitController : MonoBehaviour
     [Button("▶ Play Orbit (스크류/궤도 시작)")]
     public void Play()
     {
+        UpdateReferenceSorting();
+
         if (false == isInitialized || activeSatellites.Count == 0 || activeSatellites.Count != satelliteCount)
         {
             RebuildSatellites();
@@ -146,6 +154,7 @@ public class ItemAuraOrbitController : MonoBehaviour
         else
         {
             ResetAllSatellites();
+            ApplySortingToAll();
         }
 
         UpdateBloomSettings();
@@ -342,6 +351,19 @@ public class ItemAuraOrbitController : MonoBehaviour
         }
     }
 
+    private void UpdateReferenceSorting()
+    {
+        if (null != referenceSortingRenderer)
+        {
+            sortingLayerName = referenceSortingRenderer.sortingLayerName;
+            int baseOrder = referenceSortingRenderer.sortingOrder;
+
+            centerGlowSortingOrder = baseOrder + centerGlowOrderOffset;
+            satelliteSortingOrder = baseOrder + 1;
+            trailSortingOrder = baseOrder;
+        }
+    }
+
     /// <summary>
     /// 초기화(Awake) 시점에만 딱 1회 호출되어 모든 위성과 트레일 풀을 사전 생성합니다.
     /// </summary>
@@ -349,6 +371,7 @@ public class ItemAuraOrbitController : MonoBehaviour
     {
         ClearAllSatellites();
         EnsureTrailRoot();
+        UpdateReferenceSorting();
 
         // 1. 중앙 방사형 원형 코어 글로우 사전 생성
         if (true == useCenterGlow && (null != centerGlowMaterial || null != centerGlowSprite))

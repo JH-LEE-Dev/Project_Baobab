@@ -4,56 +4,56 @@
     {
       "id": 1,
       "key": "foundbox",
-      "kr": "유실되는 원목이 있다면 유실되는 원목의 \n20~30% 비율 개수로 자동으로 원목 상자에 담긴다.",
-      "en": "If any logs are lost, \n20-30% of them will be automatically stored in the log box.",
+      "kr": "유실되는 원목이 있다면 유실되는 원목의 \n<color=#FFA500,#FF4500><char_shake>20~30%</char_shake></color> 비율 개수로 자동으로 원목 상자에 담긴다.",
+      "en": "If any logs are lost, \n<color=#FFA500,#FF4500><char_shake>20-30%</char_shake></color> of them will be automatically stored in the log box.",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 2,
       "key": "sporepotion",
-      "kr": "숲 원정이 끝나고 3~5% 랜덤으로 포자 포션이 채워진다.\n[특수 키]를 사용하여 포션을 마실 수 있고, 모아진 %만큼 피로도가 회복된다. (최대 30%)",
-      "en": "After a forest expedition, the Spore Potion is randomly filled by 3-5%.\nUse the [Special Key] to drink the potion and recover stamina equal to the accumulated percentage (Up to 30%).",
+      "kr": "숲 원정이 끝나고 <color=#32CD32,#7CFC00>3~5%</color> 랜덤으로 포자 포션이 채워진다.\n<color=#FFD700><wave>[특수 키]</wave></color>를 사용하여 포션을 마실 수 있고, 모아진 %만큼 피로도가 회복된다. <color=#FF6347>(최대 30%)</color>",
+      "en": "After a forest expedition, the Spore Potion is randomly filled by <color=#32CD32,#7CFC00>3-5%</color>.\nUse the <color=#FFD700><wave>[Special Key]</wave></color> to drink the potion and recover stamina equal to the accumulated percentage <color=#FF6347>(Up to 30%)</color>.",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 3,
       "key": "starcompass",
-      "kr": "별뿌리 숲에서 별자리, 별표식을 볼 수 있게 된다.",
-      "en": "You will be able to see constellations and star marks in the Starroot Forest.",
+      "kr": "별뿌리 숲에서 <color=#87CEEB,#00BFFF><wave>별자리</wave></color>, <color=#87CEEB,#00BFFF><wave>별표식</wave></color>을 볼 수 있게 된다.",
+      "en": "You will be able to see <color=#87CEEB,#00BFFF><wave>constellations</wave></color> and <color=#87CEEB,#00BFFF><wave>star marks</wave></color> in the Starroot Forest.",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 4,
       "key": "name_lostandfoundbox",
-      "kr": "원목 보험 증서",
-      "en": "Timber Insurance Certificate",
+      "kr": "<color=#E2C275,#FFF0BA>원목 보험 증서</color>",
+      "en": "<color=#E2C275,#FFF0BA>Timber Insurance Certificate</color>",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 5,
       "key": "name_sporepotion",
-      "kr": "포자 포션",
-      "en": "Spore Potion",
+      "kr": "<color=#85E275,#C7FFBA>포자 포션</color>",
+      "en": "<color=#85E275,#C7FFBA>Spore Potion</color>",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 6,
       "key": "name_starcompass",
-      "kr": "별 나침반",
-      "en": "Star Compass",
+      "kr": "<color=#75C6E2,#BAF0FF>별 나침반</color>",
+      "en": "<color=#75C6E2,#BAF0FF>Star Compass</color>",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 7,
       "key": "name_obsidiancharm",
-      "kr": "흑요석 부적",
-      "en": "Obsidian Charm",
+      "kr": "<color=#C080FF,#E6C0FF>흑요석 부적</color>",
+      "en": "<color=#C080FF,#E6C0FF>Obsidian Charm</color>",
       "enumType": "",
       "enumValue": ""
     }

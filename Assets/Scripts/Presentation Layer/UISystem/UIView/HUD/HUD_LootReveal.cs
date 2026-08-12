@@ -95,8 +95,12 @@ public class HUD_LootReveal : MonoBehaviour
 
     private void Awake()
     {
-        // 시작 시 무조건 비활성화 상태로 대기합니다.
-        gameObject.SetActive(false);
+        // Show() 함수에 의해 정식으로 호출되어 켜진 경우가 아닐 때만 강제로 끕니다.
+        // (씬 시작 시 에디터에 켜진 채로 저장되어 자동 켜짐 방지용)
+        if (false == isShowing)
+        {
+            gameObject.SetActive(false);
+        }
     }
 
     // ─── 퍼블릭 진입점 ────────────────────────────────────────────────────────
