@@ -389,10 +389,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     }
 
     /// <summary>
-    /// 현재 던전의 ForestType을 기록한다. "분실물 보관함"이 "1-1"(WideGreenForest_1, 확정),
-    /// "1-3"(WideGreenForest_3, 확률), "2-1"(FluffySporeForest_1, 구제 보장)에서, "포자 포션"이
-    /// "2-1,2-2,2-3"(확률)과 "3-1"(구제 보장)에서 드랍되도록 OnTreeDead에서 이 값을 참조한다.
-    /// 또한 매 던전 진입마다 런 단위 상태를 리셋한다.
+    /// 현재 던전의 ForestType을 기록한다. "분실물 보관함"이 "1-3"(WideGreenForest_3, 확률)과
+    /// "2-1"(FluffySporeForest_1, 구제 보장)에서, "포자 포션"이 "2-1,2-2,2-3"(확률)과 "3-1"(구제 보장)에서
+    /// 드랍되도록 OnTreeDead에서 이 값을 참조한다. 또한 매 던전 진입마다 런 단위 상태를 리셋한다.
     /// </summary>
     public void SetupForForestType(ForestType _forestType)
     {
@@ -993,19 +992,11 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
         // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
         // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)
         // 더 이상 시도하지 않는다. 영구 플래그는 실제 습득 시점(OnLootItemAcquired)에만 세팅된다.
-        // "1-1"(WideGreenForest_1)에서는 스테이지 진입 후 첫 나무에 확정 드랍시켜, 첫 플레이에서
-        // 반드시 첫 번째 전리품을 만나도록 한다.
         if (!bHasAcquiredLostAndFoundBox && !bLostAndFoundBoxSpawnedThisRun && lootManager != null && character != null)
         {
             bool bShouldSpawnLostAndFoundBox = false;
 
-            if (currentForestType == ForestType.WideGreenForest_1)
-            {
-                // "1-1" - 1스테이지 진입 후 첫 번째로 베어지는 나무는 확률과 무관하게 확정 드랍한다.
-                // bLostAndFoundBoxSpawnedThisRun이 곧바로 true가 되므로 같은 런의 다른 나무에서는 다시 뜨지 않는다.
-                bShouldSpawnLostAndFoundBox = true;
-            }
-            else if (currentForestType == ForestType.WideGreenForest_3)
+            if (currentForestType == ForestType.WideGreenForest_3)
             {
                 // "1-3" - 확률적으로 드랍. 못 얻은 채로 나무를 벨 때마다 확률이 계속 누적 상승한다.
                 float effectiveChance = lostAndFoundBoxDropChance

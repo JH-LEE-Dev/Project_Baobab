@@ -89,8 +89,15 @@ namespace PresentationLayer.Environment
             if (_other.gameObject.layer == characterLayer)
             {
                 bPhysicalOverlapped = false;
-                bInteracting = false;
                 InteractStateChangedEvent?.Invoke(false, CurrentLootType);
+
+                // 상호작용(모달이 열린) 상태로 범위를 벗어나면, 키를 다시 눌러 취소한 것과 동일하게
+                // 취급해 LootPillarInteractEvent(false)를 발행하고 상태를 초기화한다.
+                if (bInteracting)
+                {
+                    bInteracting = false;
+                    LootPillarInteractEvent?.Invoke(false, CurrentLootType);
+                }
             }
         }
 
