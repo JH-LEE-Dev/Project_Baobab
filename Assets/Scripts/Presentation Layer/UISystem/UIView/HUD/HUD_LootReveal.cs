@@ -212,6 +212,10 @@ public class HUD_LootReveal : MonoBehaviour
 
         if (null == bgRoot)
             return;
+            
+        // 그리드 컨테이너 자체가 하이어라키 최상단(가장 먼저 렌더링)에 위치하도록 하여 
+        // 기둥(Pillar) 등 다른 UI 요소보다 뒤에 깔리도록 합니다.
+        bgRoot.SetAsFirstSibling();
 
         Vector2 _bgSize = bgRoot.rect.size;
         float _cellW = (_bgSize.x - cellGap * (gridColumns - 1)) / gridColumns;
@@ -223,6 +227,10 @@ public class HUD_LootReveal : MonoBehaviour
             {
                 GameObject _cellGO = new GameObject($"Cell_{_col}_{_row}", typeof(RectTransform), typeof(Image));
                 _cellGO.transform.SetParent(bgRoot, false);
+                
+                // 만약 기둥(Pillar)이나 다른 요소가 bgRoot 안에 있다면 
+                // 생성된 셀들이 덮지 않도록 최상단(가장 먼저 렌더링)으로 보냅니다.
+                _cellGO.transform.SetAsFirstSibling();
 
                 RectTransform _rt = _cellGO.GetComponent<RectTransform>();
                 _rt.anchorMin = Vector2.zero;
