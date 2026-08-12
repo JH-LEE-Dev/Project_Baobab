@@ -16,6 +16,8 @@ public enum SoundID
     OutItem = 1933263251,
     Cutter = -688056987,
     SawmillCutterLoop = -213121976,
+    HookApear = 1236307780,
+    NewItemApear = 490385430,
     BoxClose = 532227752,
     BoxJumping = 844063308,
     BoxLanding = 993819465,

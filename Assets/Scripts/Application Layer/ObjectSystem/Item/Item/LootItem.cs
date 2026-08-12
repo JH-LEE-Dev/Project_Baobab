@@ -136,6 +136,10 @@ public class LootItem : Item
         }
 
         PlayVFX();
+
+        // 전리품 등장 사운드: 새 아이템 등장음을 기준으로, 훅(기둥) 등장음은 더 낮은 볼륨으로 함께 재생
+        Sound.Play(SoundID.NewItemApear, _start);
+        Sound.Play(SoundID.HookApear, _start, 0.5f);
     }
 
     public override void ResetItem()
