@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class UIView_ScreenModal : UIView
 {
+    public LootType CurrentLootType { get; private set; } = LootType.None;
+
     protected override void Awake()
     {
         base.Awake();
@@ -57,5 +59,24 @@ public class UIView_ScreenModal : UIView
     public override void OnDestroy()
     {
         base.OnDestroy();
+    }
+
+    public void LootPillarInteractStateChanged(bool _state, LootType _lootType)
+    {
+        InteractionStateChange(_state, _lootType);
+    }
+
+    private void InteractionStateChange(bool _state, LootType _lootType)
+    {
+        if (true == _state)
+        {
+            CurrentLootType = _lootType;
+            Show();
+        }
+        else
+        {
+            CurrentLootType = LootType.None;
+            Hide();
+        }
     }
 }

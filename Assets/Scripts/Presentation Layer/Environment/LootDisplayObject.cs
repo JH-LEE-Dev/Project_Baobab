@@ -26,13 +26,36 @@ namespace PresentationLayer.Environment
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
         [SerializeField] private List<LootAuraSetting> auraSettings;
 
+        public event Action<bool, LootType> InteractStateChangedEvent;
+
+        public LootType CurrentLootType { get; private set; } = LootType.None;
+
+        private int characterLayer;
+
         private void Awake()
         {
             customSortable = GetComponent<CustomSortable>();
+            characterLayer = LayerMask.NameToLayer("Character");
 
             // 기본값: 생성 위치(자기 자신의 Y) 기준. 스포너가 별도 Pivot 기준점을 알고 있다면
             // ApplySortingBasis()로 덮어써서 그 기준으로 다시 계산한다.
             ApplySortingBasis(transform.position.y);
+        }
+
+        private void OnTriggerEnter2D(Collider2D _other)
+        {
+            if (_other.gameObject.layer == characterLayer)
+            {
+                InteractStateChangedEvent?.Invoke(true, CurrentLootType);
+            }
+        }
+
+        private void OnTriggerExit2D(Collider2D _other)
+        {
+            if (_other.gameObject.layer == characterLayer)
+            {
+                InteractStateChangedEvent?.Invoke(false, CurrentLootType);
+            }
         }
 
         /// <summary>
@@ -58,6 +81,8 @@ namespace PresentationLayer.Environment
 
         public void SetLootDisplay(LootType _lootType)
         {
+            CurrentLootType = _lootType;
+
             if (null != lootDataBase && null != targetRenderer)
             {
                 LootItemTypeData itemData = lootDataBase.Get(_lootType);

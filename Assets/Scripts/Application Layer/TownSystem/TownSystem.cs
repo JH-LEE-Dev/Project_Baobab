@@ -210,6 +210,12 @@ public class TownSystem : MonoBehaviour
 
         townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
         townProductionManager.GoToMainMenuCurtainRevealEvent += GoToMainMenuCurtainReveal;
+
+        if (lootPillarManager != null)
+        {
+            lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
+            lootPillarManager.LootPillarInteractStateChangedEvent += LootPillarInteractStateChanged;
+        }
     }
 
     private void ReleaseEvents()
@@ -239,6 +245,11 @@ public class TownSystem : MonoBehaviour
         townProductionManager.MainMenuIntroEndEvent -= MainMenuIntroEnd;
         townProductionManager.GoToMainMenuReadyEvent -= GoToMainMenuReady;
         townProductionManager.GoToMainMenuCurtainRevealEvent -= GoToMainMenuCurtainReveal;
+
+        if (lootPillarManager != null)
+        {
+            lootPillarManager.LootPillarInteractStateChangedEvent -= LootPillarInteractStateChanged;
+        }
     }
 
     private void SubscribeSignals()
@@ -427,6 +438,11 @@ public class TownSystem : MonoBehaviour
     private void ShopInteractStateChanged(bool _boolean)
     {
         signalHub.Publish(new ShopInteractStateChangedSignal(_boolean));
+    }
+
+    private void LootPillarInteractStateChanged(bool _state, LootType _lootType)
+    {
+        signalHub.Publish(new LootPillarInteractStateChangedSignal(_state, _lootType));
     }
 
     private void LogItemProcessorActiveState(bool _boolean)

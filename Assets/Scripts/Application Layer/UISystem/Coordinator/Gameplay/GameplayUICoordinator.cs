@@ -20,6 +20,7 @@ public class GameplayUICoordinator
     private UIView_SkyProduction skyProduction;
     private UIView_Warning warningUI;
     private UIView_OverUIPopup overUIPopupUI;
+    private UIView_ScreenModal screenModalUI;
 
     private UIDepthController uiDepthController;
 
@@ -45,7 +46,7 @@ public class GameplayUICoordinator
     public void Initialize(SignalHub _signalHub, InputManager _inputManager, UIView_Popup _popUpUI, UIView_HUD _hudUI,
      UIView_Unit _unitUI, UIView_WorldPopup _worldPopupUI, UIView_MenuPopup _menuPopupUI, UIView_Tent _tentUI, UIView_ESC _escUI,
      UIDepthController _uiDepthController, UIView_SkyProduction _skyProduction, UIView_Result _resultUI, UIView_Warning _warningUI,
-     UIView_OverUIPopup _overUIPopupUI)
+     UIView_OverUIPopup _overUIPopupUI, UIView_ScreenModal _screenModalUI)
     {
         inputManager = _inputManager;
         popUpUI = _popUpUI;
@@ -61,6 +62,7 @@ public class GameplayUICoordinator
         resultUI = _resultUI;
         warningUI = _warningUI;
         overUIPopupUI = _overUIPopupUI;
+        screenModalUI = _screenModalUI;
 
         SubscribeSignals();
         BindEvents();
@@ -117,6 +119,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.Subscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
         signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
+        signalHub.Subscribe<LootPillarInteractStateChangedSignal>(LootPillarInteractStateChanged);
     }
 
     private void UnSubscribeSignals()
@@ -170,6 +173,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<TreeDetectedSignal>(TreeDetected);
         signalHub.UnSubscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
         signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
+        signalHub.UnSubscribe<LootPillarInteractStateChangedSignal>(LootPillarInteractStateChanged);
     }
 
     private void BindEvents()
@@ -650,6 +654,12 @@ public class GameplayUICoordinator
     private void ShopInteractStateChanged(ShopInteractStateChangedSignal _shopInteractStateChangedSignal)
     {
         unitUI.ShopInteractStateChanged(_shopInteractStateChangedSignal.state);
+    }
+
+    private void LootPillarInteractStateChanged(LootPillarInteractStateChangedSignal _lootPillarInteractStateChangedSignal)
+    {
+        unitUI.LootPillarInteractStateChanged(_lootPillarInteractStateChangedSignal.state);
+        screenModalUI.LootPillarInteractStateChanged(_lootPillarInteractStateChangedSignal.state, _lootPillarInteractStateChangedSignal.lootType);
     }
 
     private void LogItemProcessorIsActive(LogItemProcessorActiveStateSignal _logItemProcessorActiveStateSignal)

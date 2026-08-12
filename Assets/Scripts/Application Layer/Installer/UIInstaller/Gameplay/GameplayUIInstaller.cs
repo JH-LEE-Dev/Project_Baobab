@@ -204,7 +204,7 @@ public class GameplayUIInstaller : MonoBehaviour
         UIView_OverUIPopup overUIPopupUI = uiManager.Open<UIView_OverUIPopup>();
 
         uICoordinator.Initialize(signalHub, inputManager, inventoryUI, hudUI, unitUI, worldPopupUI,
-        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI, overUIPopupUI);
+        menuPopupUI, tentUI, escUI, depthController, skyProductionUI, resultUI, warningUI, overUIPopupUI, screenModalUI);
 
         BindEvent();
     }
