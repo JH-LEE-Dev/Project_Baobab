@@ -139,6 +139,9 @@ public class UIView_MainMenu : UIView
         }
     }
 
+    // 한 번 스플래시를 본 이후(예: 인게임에서 ESC로 메인 메뉴로 돌아왔을 때) 스플래시를 생략하기 위한 정적 변수
+    private static bool hasPlayedSplash = false;
+
     protected override void OnShow()
     {
         base.OnShow();
@@ -181,18 +184,29 @@ public class UIView_MainMenu : UIView
         }
 #endif
 
-        if (null != this.splashScreenUI)
+        if (false == hasPlayedSplash)
         {
-            this.splashScreenUI.gameObject.SetActive(true);
-            if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
-            if (null != this.mainMenuUI) this.mainMenuUI.gameObject.SetActive(false);
-            if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(false);
+            hasPlayedSplash = true;
+            if (null != this.splashScreenUI)
+            {
+                this.splashScreenUI.gameObject.SetActive(true);
+                if (null != this.pressAnyKeyUI) this.pressAnyKeyUI.Hide();
+                if (null != this.mainMenuUI) this.mainMenuUI.gameObject.SetActive(false);
+                if (null != this.logoAnimUI) this.logoAnimUI.gameObject.SetActive(false);
 
-            // 마지막 페이드아웃 직전에 UI를 미리 켜고, 완료 시 스플래시 자체를 끕니다.
-            this.splashScreenUI.PlaySequence(this.OnSplashScreenCompleted, this.PrepareNextUIAfterSplash);
+                // 마지막 페이드아웃 직전에 UI를 미리 켜고, 완료 시 스플래시 자체를 끕니다.
+                this.splashScreenUI.PlaySequence(this.OnSplashScreenCompleted, this.PrepareNextUIAfterSplash);
+            }
+            else
+            {
+                if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
+                this.PrepareNextUIAfterSplash();
+                this.OnSplashScreenCompleted();
+            }
         }
         else
         {
+            // 이미 스플래시를 본 적이 있다면(인게임에서 나왔다면) 스플래시 연출을 스킵하고 바로 Press Any Key로 넘어감
             if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
             this.PrepareNextUIAfterSplash();
             this.OnSplashScreenCompleted();

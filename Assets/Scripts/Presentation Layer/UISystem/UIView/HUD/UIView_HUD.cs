@@ -25,6 +25,10 @@ public class UIView_HUD : UIView
     private HUD_ScreenBlood hudScreenBlood;
     private HUD_Loot hudLoot;
 
+    // 모션 중첩 방지를 위한 현재 재생 중인 엔트리 참조
+    private MotionEntry goDownEntry;
+    private MotionEntry goUpEntry;
+
     private ILootDataProvider lootDataProvider;
     [Header("Loot Data")]
     [SerializeField] private LootItemTypeDataBase lootItemTypeDataBase;
@@ -281,7 +285,9 @@ public class UIView_HUD : UIView
 
         if (null != omp)
         {
-            omp.Play(mapTransitionMotionTag, bReset: true);
+            // 올라가는 모션이 재생 중이라면 강제 종료하여 모션 중첩을 방지합니다.
+            omp.SettingEntryMotion(goUpEntry, true, true);
+            goDownEntry = omp.Play(mapTransitionMotionTag, bReset: true);
         }
     }
 
@@ -294,7 +300,9 @@ public class UIView_HUD : UIView
 
         if (null != omp)
         {
-            omp.PlayBackward(mapTransitionMotionTag, _onComplete: () => _onCompleted?.Invoke(), bReset: true);
+            // 내려가는 모션이 재생 중이라면 강제 종료하여 모션 중첩을 방지합니다.
+            omp.SettingEntryMotion(goDownEntry, true, true);
+            goUpEntry = omp.PlayBackward(mapTransitionMotionTag, _onComplete: () => _onCompleted?.Invoke(), bReset: true);
         }
         else
         {
