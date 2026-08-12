@@ -963,6 +963,26 @@ MonoBehaviour:
     loop: 0
     maxConcurrentVoices: 0
     polyphonyAttenuationStrength: 0
+  - id: 1236307780
+    mixerId: 0
+    clip: {fileID: 8300000, guid: 8b21df222a94c9544aaf7f4f168d7e1c, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 0.2
+    is3D: 1
+    loop: 0
+    maxConcurrentVoices: 0
+    polyphonyAttenuationStrength: 0
+  - id: 490385430
+    mixerId: 0
+    clip: {fileID: 8300000, guid: fc9724f4d5a897747ad1ffb5e714f9c1, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 0.2
+    is3D: 1
+    loop: 0
+    maxConcurrentVoices: 0
+    polyphonyAttenuationStrength: 0
   mixers:
   - id: -235980376
     group: {fileID: 24300002, guid: 865ed13951834138be11bea38be7fea0, type: 2}
