@@ -12,6 +12,7 @@ public enum SoundID
     CharacterDieAxeDrop = 2117622870,
     CharacterDieBodyDrop = -476703456,
     GetItem = 413619275,
+    GetItem04 = 1734930082,
     OutItem = 1933263251,
     Cutter = -688056987,
     SawmillCutterLoop = -213121976,

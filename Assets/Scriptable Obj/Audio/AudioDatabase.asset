@@ -63,6 +63,16 @@ MonoBehaviour:
     loop: 0
     maxConcurrentVoices: 5
     polyphonyAttenuationStrength: 0.75
+  - id: 1734930082
+    mixerId: 0
+    clip: {fileID: 8300000, guid: 29fe1dfd6f534564f93d2f5232bf1dde, type: 3}
+    cueData: {fileID: 0}
+    mixerGroup: {fileID: 24300200, guid: 865ed13951834138be11bea38be7fea0, type: 2}
+    defaultVolume: 0.125
+    is3D: 1
+    loop: 0
+    maxConcurrentVoices: 0
+    polyphonyAttenuationStrength: 0
   - id: 1393049894
     mixerId: 0
     clip: {fileID: 0}
