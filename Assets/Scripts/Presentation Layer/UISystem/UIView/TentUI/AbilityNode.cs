@@ -9,8 +9,6 @@ using DG.Tweening;
 public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler, IPointerClickHandler
 {
     private const float AbilityBarMaxHeight = 26f;
-    private const string MaxLevelUpEffectResourcePath = "AbilityHUD/NodeEffect";
-
     [Header("Node Data")]
     [SerializeField] private SkillType skillType = SkillType.None;
     [SerializeField] private string displayName;
@@ -39,6 +37,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     [Header("Max Level Sprite Effect")]
     [SerializeField] private Image maxLevelUpEffectImage;
+    [SerializeField] private Sprite[] maxLevelUpEffectFrames;
     [SerializeField, Min(1f)] private float maxLevelUpEffectFrameRate = 24f;
 
     [Header("Motion Settings")]
@@ -66,7 +65,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     private bool progressionVisible = true;
     private bool viewportVisible = true;
     private Tween maxLevelUpEffectTween;
-    private static Sprite[] maxLevelUpEffectFrames;
 
     public SkillType SkillType => skillType;
     public string DisplayName => displayName;
@@ -91,6 +89,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             motionPlayer.Initialize();
 
         CacheMaxLevelUpEffectReference();
+        SortMaxLevelUpEffectFrames();
         HideMaxLevelUpEffect();
     }
 
@@ -316,8 +315,6 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
     {
         StopMaxLevelUpEffect();
         CacheMaxLevelUpEffectReference();
-        LoadMaxLevelUpEffectFramesIfNeeded();
-
         if (maxLevelUpEffectImage == null || maxLevelUpEffectFrames == null || maxLevelUpEffectFrames.Length == 0)
             return;
 
@@ -376,13 +373,10 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
             maxLevelUpEffectImage.raycastTarget = false;
     }
 
-    private static void LoadMaxLevelUpEffectFramesIfNeeded()
+    private void SortMaxLevelUpEffectFrames()
     {
-        if (maxLevelUpEffectFrames != null && maxLevelUpEffectFrames.Length > 0)
-            return;
-
-        maxLevelUpEffectFrames = Resources.LoadAll<Sprite>(MaxLevelUpEffectResourcePath);
-        Array.Sort(maxLevelUpEffectFrames, CompareSpriteFrameNames);
+        if (maxLevelUpEffectFrames != null && maxLevelUpEffectFrames.Length > 1)
+            Array.Sort(maxLevelUpEffectFrames, CompareSpriteFrameNames);
     }
 
     private static int CompareSpriteFrameNames(Sprite _left, Sprite _right)

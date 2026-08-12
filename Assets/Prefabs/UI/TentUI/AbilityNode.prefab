@@ -294,7 +294,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -971,6 +971,36 @@ MonoBehaviour:
   effectLayerTag: HUD
   levelUpImpactTag: LevelUpEffect
   maxLevelUpEffectImage: {fileID: 9020330033409768601}
+  maxLevelUpEffectFrames:
+  - {fileID: 357360430637363567, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -196969970629857297, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -455704834006809850, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -188519885416251465, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3058170925482934950, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3595359435694097229, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -8665936688751666894, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -5545607485667387057, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 1642640397240119637, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 2127807457266132368, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 9373119954761734, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 3645505317366634217, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 6334238937447704063, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3988954552548641116, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 2693542810642562598, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 768242812857961483, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 6061104447499646291, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -7679410567698293900, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 8779566841725707401, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3660386938350495463, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 7722489700757802795, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 6786292648516963785, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 3059842384482936807, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 7641391983900938612, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 818190229777170819, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 4365923493224744177, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 8988111497597379133, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 5133563916505715374, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 5995543882994794911, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
   maxLevelUpEffectFrameRate: 24
   motionPlayer: {fileID: 1173830248015622911}
   hoverMotionTag: UIHover

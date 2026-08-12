@@ -14,12 +14,6 @@ using UnityEditor;
 public class AbilityHUD : MonoBehaviour
 {
     private const float DownTickMinimumInterval = 0.04f;
-    private const string LevelUpSideEffectResourcePath = "AbilityHUD/AbilityHUD_SideEffect";
-    private const string LevelUpAboveEffectResourcePath = "AbilityHUD/AbilityHUD_AboveEffect";
-    private const string LevelUpSparkEffectResourcePath = "AbilityHUD/AbilityHUD_LevelUpSpark";
-    private const string FontSparkEffectResourcePath = "AbilityHUD/AbilityHUD_FontAppear";
-    private const string FlowerAppearEffectResourcePath = "AbilityHUD/AbilityHUD_FlowerAppear";
-
     private enum EventSpriteEffectType
     {
         LevelUpSpark,
@@ -36,14 +30,28 @@ public class AbilityHUD : MonoBehaviour
 
     [Header("Level Up Sprite Effect")]
     [SerializeField] private GameObject levelUpSpriteEffectRoot;
-    [SerializeField] private Image[] levelUpSideEffectImages = new Image[2];
     [SerializeField] private Image levelUpAboveEffectImage;
+    [SerializeField] private Sprite[] levelUpAboveEffectFrames;
     [SerializeField, Min(1.0f)] private float levelUpSpriteEffectFrameRate = 24.0f;
+
+    [Header("Level Up Particle Effect")]
+    [SerializeField] private Canvas abilityHUDCanvas;
+    [SerializeField] private Canvas levelUpParticleCanvas;
+    [SerializeField] private GameObject levelUpParticleLeftRoot;
+    [SerializeField] private GameObject levelUpParticleRightRoot;
+    [SerializeField] private string levelUpParticleSortingLayer = "HUD";
+    [SerializeField] private int abilityHUDSortingOrder = 2;
+    [SerializeField] private int levelUpParticleSortingOrder = 1;
+    [SerializeField, Min(0.0f)] private float levelUpParticleEmissionDuration = 1.5f;
 
     [Header("Event Sprite Effects")]
     [SerializeField] private Image levelUpSparkEffectImage;
+    [SerializeField] private Sprite[] levelUpSparkEffectFrames;
     [SerializeField] private Image fontSparkEffectImage;
+    [SerializeField] private Sprite[] fontSparkEffectFrames;
     [SerializeField] private Image flowerAppearEffectImage;
+    [SerializeField] private Sprite[] flowerAppearEffectFrames;
+    [SerializeField] private Vector2 flowerAppearEffectOffset = new Vector2(0.0f, 6.0f);
     [SerializeField, Min(1.0f)] private float eventSpriteEffectFrameRate = 30.0f;
 
     [Header("Ability Bar")]
@@ -88,8 +96,8 @@ public class AbilityHUD : MonoBehaviour
 
     private Sequence resetEffectSequence;
     private Tween levelUpSpriteEffectTween;
+    private Tween levelUpParticleStopTween;
     private readonly Tween[] eventSpriteEffectTweens = new Tween[(int)EventSpriteEffectType.Count];
-    private readonly Sprite[][] eventSpriteEffectFrames = new Sprite[(int)EventSpriteEffectType.Count][];
     private readonly List<RectTransform> spawnedFlowerObjects = new List<RectTransform>();
     private readonly List<RectTransform> pooledFlowerObjects = new List<RectTransform>();
     private RectTransform barFontRectTransform;
@@ -105,17 +113,16 @@ public class AbilityHUD : MonoBehaviour
     private float lastDownTickSoundElapsed = float.NegativeInfinity;
     private bool playExperienceMotionAfterReset;
     private bool playFlowerDangleAfterReset;
-    private Sprite[] levelUpSideEffectFrames;
-    private Sprite[] levelUpAboveEffectFrames;
+    private ParticleSystem[] levelUpParticleSystems;
 
     private void Awake()
     {
         BindReferencesIfNeeded();
 
-        if (Application.isPlaying)
-            LoadLevelUpSpriteEffectFramesIfNeeded();
+        SortSerializedSpriteEffectFrames();
 
         HideLevelUpSpriteEffect();
+        StopLevelUpParticleEffect();
         HideIdleEventSpriteEffects();
         RefreshOrSchedule();
     }
@@ -127,13 +134,22 @@ public class AbilityHUD : MonoBehaviour
         if (Application.isPlaying && (null == levelUpSpriteEffectTween || false == levelUpSpriteEffectTween.IsActive()))
             HideLevelUpSpriteEffect();
 
+        if (Application.isPlaying && (null == levelUpParticleStopTween || false == levelUpParticleStopTween.IsActive()))
+            StopLevelUpParticleEffect();
+
         HideIdleEventSpriteEffects();
 
         RefreshOrSchedule();
     }
 
+    private void OnTransformParentChanged()
+    {
+        BindReferencesIfNeeded();
+    }
+
     private void OnValidate()
     {
+        SortSerializedSpriteEffectFrames();
         maxExperience = Mathf.Max(1, maxExperience);
         currentExperience = Mathf.Clamp(currentExperience, 0, maxExperience);
         flowerStack = Mathf.Max(0, flowerStack);
@@ -359,6 +375,7 @@ public class AbilityHUD : MonoBehaviour
         {
             Sound.PlayUI(SoundID.AbilityHUDLevelUp);
             PlayLevelUpSpriteEffect();
+            PlayLevelUpParticleEffect();
             PlayEventSpriteEffect(EventSpriteEffectType.LevelUpSpark);
 
             if (null != barFontRectTransform)
@@ -423,7 +440,10 @@ public class AbilityHUD : MonoBehaviour
         if (null != _newFlowerVisual)
         {
             Sound.PlayUI(SoundID.AbilityHUDFlowerGrow);
-            PlayEventSpriteEffect(EventSpriteEffectType.FlowerAppear, _newFlowerVisual.transform as RectTransform);
+            PlayEventSpriteEffect(
+                EventSpriteEffectType.FlowerAppear,
+                _newFlowerVisual.transform as RectTransform,
+                flowerAppearEffectOffset);
         }
 
         if (null == flowerStackFontRectTransform)
@@ -554,6 +574,7 @@ public class AbilityHUD : MonoBehaviour
     private void RestoreResetExperienceEffectState()
     {
         StopLevelUpSpriteEffect();
+        StopLevelUpParticleEffect();
         StopAllEventSpriteEffects();
         StopDownStartSound();
         StopBarFontExperienceMotion();
@@ -620,7 +641,6 @@ public class AbilityHUD : MonoBehaviour
         if (null == flowerObjectPivot)
             return;
 
-        EnsureFlowerVisualPrefab();
         if (null == flowerVisualPrefab)
             return;
 
@@ -909,14 +929,6 @@ public class AbilityHUD : MonoBehaviour
         return $"FlowerObject_{_index:00}";
     }
 
-    private void EnsureFlowerVisualPrefab()
-    {
-#if UNITY_EDITOR
-        if (null == flowerVisualPrefab)
-            flowerVisualPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/UI/TentUI/FlowerVisual.prefab");
-#endif
-    }
-
     private void BindReferencesIfNeeded()
     {
         if (null == fillImage)
@@ -930,8 +942,6 @@ public class AbilityHUD : MonoBehaviour
 
         if (null == flowerObjectPivot)
             flowerObjectPivot = FindChildComponent<RectTransform>("FlowerObjectPivot");
-
-        EnsureFlowerVisualPrefab();
 
         if (null == barFontMotionPlayer)
             barFontMotionPlayer = GetComponent<ObjectMotionPlayer>();
@@ -948,14 +958,25 @@ public class AbilityHUD : MonoBehaviour
         if (null == levelUpAboveEffectImage)
             levelUpAboveEffectImage = FindChildComponent<Image>("Above_AboveEffect");
 
-        if (null == levelUpSideEffectImages || levelUpSideEffectImages.Length != 2)
-            levelUpSideEffectImages = new Image[2];
+        if (null == levelUpParticleCanvas)
+            levelUpParticleCanvas = FindChildComponent<Canvas>("LevelUpParticleCanvas");
 
-        if (null == levelUpSideEffectImages[0])
-            levelUpSideEffectImages[0] = FindChildComponent<Image>("Left_SideEffect");
+        if (null == abilityHUDCanvas)
+            abilityHUDCanvas = GetComponent<Canvas>();
 
-        if (null == levelUpSideEffectImages[1])
-            levelUpSideEffectImages[1] = FindChildComponent<Image>("Right_SideEffect");
+        if (null == levelUpParticleLeftRoot)
+        {
+            Transform _leftParticleRoot = FindChild(transform, "VFX_LevelUpPop_Left");
+            levelUpParticleLeftRoot = null == _leftParticleRoot ? null : _leftParticleRoot.gameObject;
+        }
+
+        if (null == levelUpParticleRightRoot)
+        {
+            Transform _rightParticleRoot = FindChild(transform, "VFX_LevelUpPop_Right");
+            levelUpParticleRightRoot = null == _rightParticleRoot ? null : _rightParticleRoot.gameObject;
+        }
+
+        CacheAndConfigureLevelUpParticleEffect();
 
         if (null == levelUpSparkEffectImage)
             levelUpSparkEffectImage = FindChildComponent<Image>("LevelUp_Spark");
@@ -966,7 +987,8 @@ public class AbilityHUD : MonoBehaviour
         if (null == flowerAppearEffectImage)
             flowerAppearEffectImage = FindChildComponent<Image>("Appear_Flower");
 
-        SetLevelUpSpriteEffectRaycastTargets(false);
+        if (null != levelUpAboveEffectImage)
+            levelUpAboveEffectImage.raycastTarget = false;
         SetEventSpriteEffectRaycastTargets(false);
 
         if (null != levelUpSpriteEffectRoot)
@@ -977,6 +999,7 @@ public class AbilityHUD : MonoBehaviour
     {
         StopResetExperienceEffect(false);
         StopLevelUpSpriteEffect();
+        StopLevelUpParticleEffect();
         StopAllEventSpriteEffects();
         StopDownStartSound();
     }
@@ -984,20 +1007,16 @@ public class AbilityHUD : MonoBehaviour
     private void PlayLevelUpSpriteEffect()
     {
         StopLevelUpSpriteEffect();
-        LoadLevelUpSpriteEffectFramesIfNeeded();
 
-        int _sideFrameCount = null == levelUpSideEffectFrames ? 0 : levelUpSideEffectFrames.Length;
         int _aboveFrameCount = null == levelUpAboveEffectFrames ? 0 : levelUpAboveEffectFrames.Length;
-        int _longestFrameCount = Mathf.Max(_sideFrameCount, _aboveFrameCount);
-        if (null == levelUpSpriteEffectRoot || _longestFrameCount <= 0)
+        if (null == levelUpSpriteEffectRoot || _aboveFrameCount <= 0)
             return;
 
         levelUpSpriteEffectRoot.SetActive(true);
-        SetSpriteEffectFrame(levelUpSideEffectImages, levelUpSideEffectFrames, 0);
         SetSpriteEffectFrame(levelUpAboveEffectImage, levelUpAboveEffectFrames, 0);
 
         float _frameRate = Mathf.Max(1.0f, levelUpSpriteEffectFrameRate);
-        float _duration = _longestFrameCount / _frameRate;
+        float _duration = _aboveFrameCount / _frameRate;
         int _lastFrameIndex = 0;
         levelUpSpriteEffectTween = DOVirtual.Float(0.0f, _duration, _duration, _elapsedTime =>
         {
@@ -1006,7 +1025,6 @@ public class AbilityHUD : MonoBehaviour
                 return;
 
             _lastFrameIndex = _frameIndex;
-            SetSpriteEffectFrame(levelUpSideEffectImages, levelUpSideEffectFrames, _frameIndex);
             SetSpriteEffectFrame(levelUpAboveEffectImage, levelUpAboveEffectFrames, _frameIndex);
         })
         .SetEase(Ease.Linear)
@@ -1029,22 +1047,143 @@ public class AbilityHUD : MonoBehaviour
 
     private void HideLevelUpSpriteEffect()
     {
-        SetSpriteEffectFrame(levelUpSideEffectImages, null, -1);
         SetSpriteEffectFrame(levelUpAboveEffectImage, null, -1);
     }
 
-    private void PlayEventSpriteEffect(EventSpriteEffectType _effectType, RectTransform _target = null)
+    private void PlayLevelUpParticleEffect()
+    {
+        StopLevelUpParticleEffect();
+        CacheAndConfigureLevelUpParticleEffect();
+        if (null == levelUpParticleSystems || 0 == levelUpParticleSystems.Length)
+            return;
+
+        SetLevelUpParticleRootsActive(true);
+        float _maxParticleLifetime = 0.0f;
+        for (int i = 0; i < levelUpParticleSystems.Length; i++)
+        {
+            ParticleSystem _particleSystem = levelUpParticleSystems[i];
+            if (null == _particleSystem)
+                continue;
+
+            ParticleSystem.MainModule _main = _particleSystem.main;
+            _particleSystem.Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+            _particleSystem.Play(false);
+            _maxParticleLifetime = Mathf.Max(_maxParticleLifetime, _main.startLifetime.constantMax);
+        }
+
+        float _emissionDuration = Mathf.Max(0.0f, levelUpParticleEmissionDuration);
+        levelUpParticleStopTween = DOTween.Sequence()
+            .AppendInterval(_emissionDuration)
+            .AppendCallback(StopLevelUpParticleEmission)
+            .AppendInterval(Mathf.Max(0.0f, _maxParticleLifetime))
+            .OnComplete(() =>
+            {
+                levelUpParticleStopTween = null;
+                SetLevelUpParticleRootsActive(false);
+            })
+            .SetUpdate(true);
+    }
+
+    private void StopLevelUpParticleEffect()
+    {
+        if (null != levelUpParticleStopTween && levelUpParticleStopTween.IsActive())
+            levelUpParticleStopTween.Kill(false);
+
+        levelUpParticleStopTween = null;
+        if (null != levelUpParticleSystems)
+        {
+            for (int i = 0; i < levelUpParticleSystems.Length; i++)
+            {
+                if (null != levelUpParticleSystems[i])
+                    levelUpParticleSystems[i].Stop(false, ParticleSystemStopBehavior.StopEmittingAndClear);
+            }
+        }
+
+        SetLevelUpParticleRootsActive(false);
+    }
+
+    private void CacheAndConfigureLevelUpParticleEffect()
+    {
+        if (null != abilityHUDCanvas)
+        {
+            abilityHUDCanvas.overrideSorting = true;
+            abilityHUDCanvas.sortingLayerName = levelUpParticleSortingLayer;
+            abilityHUDCanvas.sortingOrder = abilityHUDSortingOrder;
+        }
+
+        if (null != levelUpParticleCanvas)
+        {
+            levelUpParticleCanvas.overrideSorting = true;
+            levelUpParticleCanvas.sortingLayerName = levelUpParticleSortingLayer;
+            levelUpParticleCanvas.sortingOrder = levelUpParticleSortingOrder;
+            levelUpParticleCanvas.referencePixelsPerUnit = 32.0f;
+        }
+
+        List<ParticleSystem> _particleSystems = new List<ParticleSystem>(4);
+        AddParticleSystems(levelUpParticleLeftRoot, _particleSystems);
+        AddParticleSystems(levelUpParticleRightRoot, _particleSystems);
+        levelUpParticleSystems = _particleSystems.ToArray();
+        for (int i = 0; i < levelUpParticleSystems.Length; i++)
+        {
+            ParticleSystem _particleSystem = levelUpParticleSystems[i];
+            ParticleSystem.MainModule _main = _particleSystem.main;
+            _main.loop = true;
+            _main.playOnAwake = false;
+            _main.useUnscaledTime = true;
+
+            ParticleSystemRenderer _renderer = _particleSystem.GetComponent<ParticleSystemRenderer>();
+            if (null == _renderer)
+                continue;
+
+            _renderer.sortingLayerName = levelUpParticleSortingLayer;
+            _renderer.sortingOrder = levelUpParticleSortingOrder;
+        }
+    }
+
+    private static void AddParticleSystems(GameObject _root, List<ParticleSystem> _results)
+    {
+        if (null == _root || null == _results)
+            return;
+
+        _results.AddRange(_root.GetComponentsInChildren<ParticleSystem>(true));
+    }
+
+    private void StopLevelUpParticleEmission()
+    {
+        if (null == levelUpParticleSystems)
+            return;
+
+        for (int i = 0; i < levelUpParticleSystems.Length; i++)
+        {
+            if (null != levelUpParticleSystems[i])
+                levelUpParticleSystems[i].Stop(false, ParticleSystemStopBehavior.StopEmitting);
+        }
+    }
+
+    private void SetLevelUpParticleRootsActive(bool _active)
+    {
+        if (null != levelUpParticleLeftRoot)
+            levelUpParticleLeftRoot.SetActive(_active);
+
+        if (null != levelUpParticleRightRoot)
+            levelUpParticleRightRoot.SetActive(_active);
+    }
+
+    private void PlayEventSpriteEffect(
+        EventSpriteEffectType _effectType,
+        RectTransform _target = null,
+        Vector2 _targetOffset = default)
     {
         int _effectIndex = (int)_effectType;
         StopEventSpriteEffect(_effectType);
 
         Image _effectImage = GetEventSpriteEffectImage(_effectType);
-        Sprite[] _frames = LoadEventSpriteEffectFramesIfNeeded(_effectType);
+        Sprite[] _frames = GetEventSpriteEffectFrames(_effectType);
         if (null == _effectImage || null == _frames || 0 == _frames.Length)
             return;
 
         if (null != _target)
-            SnapEffectToTarget(_effectImage.rectTransform, _target);
+            SnapEffectToTarget(_effectImage.rectTransform, _target, _targetOffset);
 
         SetSpriteEffectFrame(_effectImage, _frames, 0);
 
@@ -1098,17 +1237,19 @@ public class AbilityHUD : MonoBehaviour
         }
     }
 
-    private Sprite[] LoadEventSpriteEffectFramesIfNeeded(EventSpriteEffectType _effectType)
+    private Sprite[] GetEventSpriteEffectFrames(EventSpriteEffectType _effectType)
     {
-        int _effectIndex = (int)_effectType;
-        Sprite[] _frames = eventSpriteEffectFrames[_effectIndex];
-        if (null != _frames && _frames.Length > 0)
-            return _frames;
-
-        _frames = Resources.LoadAll<Sprite>(GetEventSpriteEffectResourcePath(_effectType));
-        SortSpriteFrames(_frames);
-        eventSpriteEffectFrames[_effectIndex] = _frames;
-        return _frames;
+        switch (_effectType)
+        {
+            case EventSpriteEffectType.LevelUpSpark:
+                return levelUpSparkEffectFrames;
+            case EventSpriteEffectType.FontSpark:
+                return fontSparkEffectFrames;
+            case EventSpriteEffectType.FlowerAppear:
+                return flowerAppearEffectFrames;
+            default:
+                return null;
+        }
     }
 
     private Image GetEventSpriteEffectImage(EventSpriteEffectType _effectType)
@@ -1126,54 +1267,26 @@ public class AbilityHUD : MonoBehaviour
         }
     }
 
-    private static string GetEventSpriteEffectResourcePath(EventSpriteEffectType _effectType)
-    {
-        switch (_effectType)
-        {
-            case EventSpriteEffectType.LevelUpSpark:
-                return LevelUpSparkEffectResourcePath;
-            case EventSpriteEffectType.FontSpark:
-                return FontSparkEffectResourcePath;
-            case EventSpriteEffectType.FlowerAppear:
-                return FlowerAppearEffectResourcePath;
-            default:
-                return string.Empty;
-        }
-    }
-
-    private static void SnapEffectToTarget(RectTransform _effectRectTransform, RectTransform _target)
+    private static void SnapEffectToTarget(
+        RectTransform _effectRectTransform,
+        RectTransform _target,
+        Vector2 _targetOffset)
     {
         if (null == _effectRectTransform || null == _target || null == _effectRectTransform.parent)
             return;
 
         Vector3 _localTargetPosition = _effectRectTransform.parent.InverseTransformPoint(_target.position);
         _effectRectTransform.anchoredPosition = new Vector2(
-            Mathf.Round(_localTargetPosition.x),
-            Mathf.Round(_localTargetPosition.y));
+            Mathf.Round(_localTargetPosition.x + _targetOffset.x),
+            Mathf.Round(_localTargetPosition.y + _targetOffset.y));
     }
 
-    private void LoadLevelUpSpriteEffectFramesIfNeeded()
+    private void SortSerializedSpriteEffectFrames()
     {
-        if (null == levelUpSideEffectFrames || levelUpSideEffectFrames.Length == 0)
-        {
-            levelUpSideEffectFrames = Resources.LoadAll<Sprite>(LevelUpSideEffectResourcePath);
-            SortSpriteFrames(levelUpSideEffectFrames);
-        }
-
-        if (null == levelUpAboveEffectFrames || levelUpAboveEffectFrames.Length == 0)
-        {
-            levelUpAboveEffectFrames = Resources.LoadAll<Sprite>(LevelUpAboveEffectResourcePath);
-            SortSpriteFrames(levelUpAboveEffectFrames);
-        }
-    }
-
-    private static void SetSpriteEffectFrame(Image[] _images, Sprite[] _frames, int _frameIndex)
-    {
-        if (null == _images)
-            return;
-
-        for (int i = 0; i < _images.Length; i++)
-            SetSpriteEffectFrame(_images[i], _frames, _frameIndex);
+        SortSpriteFrames(levelUpAboveEffectFrames);
+        SortSpriteFrames(levelUpSparkEffectFrames);
+        SortSpriteFrames(fontSparkEffectFrames);
+        SortSpriteFrames(flowerAppearEffectFrames);
     }
 
     private static void SetSpriteEffectFrame(Image _image, Sprite[] _frames, int _frameIndex)
@@ -1226,21 +1339,6 @@ public class AbilityHUD : MonoBehaviour
         return int.TryParse(_name.Substring(_digitStart), out int _index)
             ? _index
             : int.MaxValue;
-    }
-
-    private void SetLevelUpSpriteEffectRaycastTargets(bool _raycastTarget)
-    {
-        if (null != levelUpAboveEffectImage)
-            levelUpAboveEffectImage.raycastTarget = _raycastTarget;
-
-        if (null == levelUpSideEffectImages)
-            return;
-
-        for (int i = 0; i < levelUpSideEffectImages.Length; i++)
-        {
-            if (null != levelUpSideEffectImages[i])
-                levelUpSideEffectImages[i].raycastTarget = _raycastTarget;
-        }
     }
 
     private void SetEventSpriteEffectRaycastTargets(bool _raycastTarget)

@@ -197,7 +197,7 @@ TextureImporter:
       name: AbilityHUD_LevelUpSpark_4
       rect:
         serializedVersion: 2
-        x: 280
+        x: 0
         y: 60
         width: 280
         height: 60
@@ -219,7 +219,7 @@ TextureImporter:
       name: AbilityHUD_LevelUpSpark_5
       rect:
         serializedVersion: 2
-        x: 840
+        x: 280
         y: 60
         width: 280
         height: 60
@@ -241,8 +241,8 @@ TextureImporter:
       name: AbilityHUD_LevelUpSpark_6
       rect:
         serializedVersion: 2
-        x: 280
-        y: 0
+        x: 560
+        y: 60
         width: 280
         height: 60
       alignment: 0
@@ -255,6 +255,116 @@ TextureImporter:
       bones: []
       spriteID: e022b5e827e66044794d9d1a325a0a73
       internalID: -1235770204
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_LevelUpSpark_7
+      rect:
+        serializedVersion: 2
+        x: 840
+        y: 60
+        width: 280
+        height: 60
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f89f63b6ca6cca64eb78a98831054a59
+      internalID: -987742614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_LevelUpSpark_8
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 280
+        height: 60
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e42dd5d2c08a8fb41b95282830ba0364
+      internalID: 494246820
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_LevelUpSpark_9
+      rect:
+        serializedVersion: 2
+        x: 280
+        y: 0
+        width: 280
+        height: 60
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1bb6f00cd763c4747a3f585feb153009
+      internalID: 1370426181
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_LevelUpSpark_10
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 0
+        width: 280
+        height: 60
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9872698f883a5564db265284204f0819
+      internalID: 526842774
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: AbilityHUD_LevelUpSpark_11
+      rect:
+        serializedVersion: 2
+        x: 840
+        y: 0
+        width: 280
+        height: 60
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 086b35804399cc546b70b43154724a7b
+      internalID: 1397500463
       vertices: []
       indices: 
       edges: []
@@ -273,15 +383,20 @@ TextureImporter:
     spriteCustomMetadata:
       entries:
       - key: SpriteEditor.SliceSettings
-        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":280.0,"y":60.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":4.0,"y":3.0},"gridSpriteSize":{"x":280.0,"y":60.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":true,"isAlternate":false}'
     nameFileIdTable:
       AbilityHUD_LevelUpSpark_0: 8129924077054157125
       AbilityHUD_LevelUpSpark_1: -6375416714980725312
+      AbilityHUD_LevelUpSpark_10: 526842774
+      AbilityHUD_LevelUpSpark_11: 1397500463
       AbilityHUD_LevelUpSpark_2: -7775266178402651993
       AbilityHUD_LevelUpSpark_3: -706275332
       AbilityHUD_LevelUpSpark_4: 1874283343
       AbilityHUD_LevelUpSpark_5: -1996677045
       AbilityHUD_LevelUpSpark_6: -1235770204
+      AbilityHUD_LevelUpSpark_7: -987742614
+      AbilityHUD_LevelUpSpark_8: 494246820
+      AbilityHUD_LevelUpSpark_9: 1370426181
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
