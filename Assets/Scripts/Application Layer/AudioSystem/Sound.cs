@@ -102,6 +102,15 @@ public static class Sound
         AudioManager.Instance.RampTrackedPitch(handle, targetPitch, duration);
     }
 
+    // 이미 재생 중인 트랙 사운드의 볼륨 배율을 현재 값에서 targetVolumeScale까지 duration에 걸쳐 서서히 바꾼다.
+    public static void RampTrackedVolume(AudioHandle handle, float targetVolumeScale, float duration)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.RampTrackedVolume(handle, targetVolumeScale, duration);
+    }
+
     // 사운드 ID에 연결된 클립의 길이(초)를 조회한다.
     public static float GetClipLength(SoundID id)
     {

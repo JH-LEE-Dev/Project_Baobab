@@ -726,6 +726,11 @@ public class InDungeonSystem : MonoBehaviour
     {
         yield return new WaitForSeconds(0.7f);
 
+        // 대기하는 0.7초 사이에 ESC로 메인메뉴 이탈이 요청됐다면, 이미 내려가고 있는 HUD를
+        // 다시 올리면 안 되므로 여기서 멈춘다(HUDDown 직후 HUDUp이 뒤따라오던 레이스 컨디션 방지).
+        if (bGoingToMainMenu == true)
+            yield break;
+
         signalHub.Publish(new PopupUIUpSignal());
 
         if (bCurrentlyDungeonScene == true)

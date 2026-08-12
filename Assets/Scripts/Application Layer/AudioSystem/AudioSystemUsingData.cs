@@ -22,6 +22,7 @@ public enum SoundID
     BoxOpen = -1886360244,
     OffroadClose = -620152258,
     OffroadNonEdit = -928538285,
+    OffroadNonEditLoop = -158719152,
     CoinGet = -790215032,
     CoinOut = 339084960,
     ConvayerComplete = 1734120465,

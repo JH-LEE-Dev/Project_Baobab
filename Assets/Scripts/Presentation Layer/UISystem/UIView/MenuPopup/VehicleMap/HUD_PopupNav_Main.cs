@@ -172,6 +172,11 @@ public class HUD_PopupNav_Main : MonoBehaviour
     public event Action OnUnlockProductionStarted;
     public event Action OnUnlockProductionEnded;
 
+    // 플레이어가 들어갈 던전(하위 지역)을 클릭해 선택을 확정한 바로 그 순간에 발행된다.
+    // 실제 DungeonSelectedEvent(HandleEnterDungeon)는 UI가 닫히는 연출 + dungeonConfirmDelay만큼
+    // 늦게 발동되는데, 그 사이 구간도 이미 취소 불가능한 선택이므로 ESC는 이 시점부터 막아야 한다.
+    public event Action DungeonConfirmStartedEvent;
+
     private void StartUnlockProduction()
     {
         if (false == isUnlockingProductionActive)
@@ -1072,6 +1077,9 @@ public class HUD_PopupNav_Main : MonoBehaviour
             hasPendingDungeonConfirm = true;
             pendingConfirmMapType = currentSelectedMapType;
             pendingConfirmForestType = currentSelectedForestType;
+
+            DungeonConfirmStartedEvent?.Invoke();
+
             Close(_playCloseSound: false);
         }
     }

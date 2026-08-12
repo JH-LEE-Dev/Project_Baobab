@@ -216,6 +216,9 @@ public class GameplayUICoordinator
         menuPopupUI.UnlockProductionEndedEvent -= MenuPopupUnlockProductionEnded;
         menuPopupUI.UnlockProductionEndedEvent += MenuPopupUnlockProductionEnded;
 
+        menuPopupUI.DungeonConfirmStartedEvent -= DungeonConfirmStarted;
+        menuPopupUI.DungeonConfirmStartedEvent += DungeonConfirmStarted;
+
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
         popUpUI.InventoryUIOpendEvent += InventoryUIOpened;
 
@@ -254,6 +257,7 @@ public class GameplayUICoordinator
         tentUI.TentUIClosedEvent -= TentUIClosed;
         menuPopupUI.UnlockProductionStartedEvent -= MenuPopupUnlockProductionStarted;
         menuPopupUI.UnlockProductionEndedEvent -= MenuPopupUnlockProductionEnded;
+        menuPopupUI.DungeonConfirmStartedEvent -= DungeonConfirmStarted;
         popUpUI.InventoryUIOpendEvent -= InventoryUIOpened;
         resultUI.GoHomeButtonClickedEvent -= GoHomeButtonClicked;
         resultUI.RetryButtonClickedEvent -= RetryGame;
@@ -574,6 +578,15 @@ public class GameplayUICoordinator
     private void MenuPopupUnlockProductionEnded()
     {
         inputManager.PauseInteractKey(false);
+    }
+
+    // 플레이어가 들어갈 던전을 클릭해 선택을 확정한 바로 그 시점(HUD_PopupNav_Main.HandleSubRegionSelected)에
+    // ESC를 막는다. 실제 DungeonSelectedSignal(TownSystem.DungeonSelected)은 내비게이션 UI가 닫히는 연출과
+    // dungeonConfirmDelay만큼 늦게 발동되는데, 그 사이 구간도 이미 취소 불가능한 선택이므로 여기서 미리 잠근다.
+    // 해제 시점은 기존과 동일하게 TownSystem.CompleteDungeonEntry().
+    private void DungeonConfirmStarted()
+    {
+        inputManager.PauseESCKey(true);
     }
 
     private void ESCUIInputLockChanged(bool _isLocked)

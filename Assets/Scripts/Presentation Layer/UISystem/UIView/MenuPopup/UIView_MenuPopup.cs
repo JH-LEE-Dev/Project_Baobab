@@ -17,6 +17,10 @@ public class UIView_MenuPopup : UIView
     public event Action UnlockProductionStartedEvent;
     public event Action UnlockProductionEndedEvent;
 
+    // popupNavMain.DungeonConfirmStartedEvent를 그대로 상위로 릴레이하는 이벤트.
+    // 던전 클릭으로 선택이 확정된 순간(닫힘 연출/딜레이가 끝나 DungeonSelectedEvent가 발행되기 전)을 알린다.
+    public event Action DungeonConfirmStartedEvent;
+
     // 외부 의존성
     private IMapDataProvider mapDataProvider;
     private IWeatherProvider weatherProvider;
@@ -95,6 +99,8 @@ public class UIView_MenuPopup : UIView
             popupNavMain.OnUnlockProductionStarted += HandleUnlockProductionStarted;
             popupNavMain.OnUnlockProductionEnded -= HandleUnlockProductionEnded;
             popupNavMain.OnUnlockProductionEnded += HandleUnlockProductionEnded;
+            popupNavMain.DungeonConfirmStartedEvent -= HandleDungeonConfirmStarted;
+            popupNavMain.DungeonConfirmStartedEvent += HandleDungeonConfirmStarted;
 
             popupNavMain.Close(true);
         }
@@ -108,6 +114,11 @@ public class UIView_MenuPopup : UIView
     private void HandleUnlockProductionEnded()
     {
         UnlockProductionEndedEvent?.Invoke();
+    }
+
+    private void HandleDungeonConfirmStarted()
+    {
+        DungeonConfirmStartedEvent?.Invoke();
     }
 
     private void HandlePrev()
@@ -266,6 +277,7 @@ public class UIView_MenuPopup : UIView
         {
             popupNavMain.OnUnlockProductionStarted -= HandleUnlockProductionStarted;
             popupNavMain.OnUnlockProductionEnded -= HandleUnlockProductionEnded;
+            popupNavMain.DungeonConfirmStartedEvent -= HandleDungeonConfirmStarted;
         }
 
         // [기존 시스템 주석 처리]

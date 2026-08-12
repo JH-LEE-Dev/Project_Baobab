@@ -346,8 +346,11 @@ public class TownSystem : MonoBehaviour
         if (bRetryGame == true)
             return;
 
-        // 던전이 실제로 선택되어 확정되는 시점 - 여기서부터는 취소 불가능한 씬 전환 연출이므로 ESC 재입력을 막는다.
+        // 던전이 실제로 선택되어 확정된 신호 - 이 시점부터는 취소 불가능한 씬 전환 연출이므로 ESC를 막는다.
         // (차량 탑승~던전 선택 팝업 단계는 ESC로 팝업을 취소할 수 있어야 하므로 여기서 막으면 안 된다)
+        // 실제 잠금은 이보다 더 앞선, 플레이어가 내비게이션에서 던전을 클릭한 시점(GameplayUICoordinator.
+        // DungeonConfirmStarted)에 이미 걸려 있다 - 이 신호는 UI가 닫히는 연출 + 확정 딜레이만큼 늦게
+        // 도착하기 때문. 여기서는 안전망 차원에서 같은 상태를 한 번 더 확정해둔다.
         inputManager.PauseESCKey(true); // 종료 시점은 TownSystem.CameraDownIsEnd()
 
         // 상자에서 인출 중이던 NPC는 이미 날아온 것만 습득하고 그만두게 하고,
@@ -560,6 +563,11 @@ public class TownSystem : MonoBehaviour
     {
         yield return new WaitForSeconds(0.7f);
 
+        // 대기하는 0.7초 사이에 ESC로 메인메뉴 이탈이 요청됐다면, 이미 내려가고 있는 HUD를
+        // 다시 올리면 안 되므로 여기서 멈춘다(HUDDown 직후 HUDUp이 뒤따라오던 레이스 컨디션 방지).
+        if (bGoingToMainMenu == true)
+            yield break;
+
         signalHub.Publish(new PopupUIUpSignal());
 
         if (bCurrentlyTownScene == false)
@@ -623,6 +631,11 @@ public class TownSystem : MonoBehaviour
     private IEnumerator MainMenuIntroPopupUIUpCoroutine()
     {
         yield return new WaitForSeconds(0.7f);
+
+        // 대기하는 0.7초 사이에 ESC로 메인메뉴 이탈이 요청됐다면, 이미 내려가고 있는 HUD를
+        // 다시 올리면 안 되므로 여기서 멈춘다(HUDDown 직후 HUDUp이 뒤따라오던 레이스 컨디션 방지).
+        if (bGoingToMainMenu == true)
+            yield break;
 
         signalHub.Publish(new PopupUIUpSignal());
     }

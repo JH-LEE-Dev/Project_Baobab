@@ -770,6 +770,39 @@ public class AudioManager : MonoBehaviour
         }
     }
 
+    // 이미 재생 중인 트랙 사운드의 볼륨 배율을, 현재 값을 시작점으로 삼아 목표 배율까지 서서히 바꾼다.
+    // (예: 대사가 끝나는 시점에 엔진 소리로 시선을 집중시키기 위해 잠깐 볼륨을 키울 때.)
+    public void RampTrackedVolume(AudioHandle handle, float targetVolumeScale, float duration)
+    {
+        if (!IsHandleValid(handle)) return;
+        StartCoroutine(RampVolumeRoutine(handle, targetVolumeScale, duration));
+    }
+
+    private System.Collections.IEnumerator RampVolumeRoutine(AudioHandle handle, float targetVolumeScale, float duration)
+    {
+        int index = handle.sourceIndex;
+        float startTargetVolume = sourceTargetVolume[index];
+        float endTargetVolume = sourceBaseVolume[index] * targetVolumeScale * sourcePolyphonyAttenuation[index];
+
+        float timer = 0f;
+        while (timer < duration)
+        {
+            if (!IsHandleValid(handle)) yield break;
+
+            timer += Time.deltaTime;
+            float t = duration > 0f ? timer / duration : 1f;
+            sourceTargetVolume[index] = Mathf.Lerp(startTargetVolume, endTargetVolume, t);
+            ApplySourceVolume(index);
+            yield return null;
+        }
+
+        if (IsHandleValid(handle))
+        {
+            sourceTargetVolume[index] = endTargetVolume;
+            ApplySourceVolume(index);
+        }
+    }
+
     // 사운드 ID에 연결된 클립의 길이(초)를 조회한다. 클립 내 특정 지점(예: 20% 지점)에
     // 맞춰 다른 연출을 동기화해야 할 때 사용한다. AudioCueData(복수 클립) 사운드에는 사용하지 않는다.
     public float GetClipLength(SoundID id)
