@@ -489,6 +489,17 @@ public class InDungeonVFXManager : MonoBehaviour
     }
 
     /// <summary>
+    /// MainMenu → Dungeon 튜토리얼 인트로에서 캐릭터가 차량에서 내릴 때 재생되는 VFX입니다.
+    /// 튜토리얼 하차 연출(InDungeonSystem.TutorialRideExitCoroutine)에서만 호출됩니다.
+    /// </summary>
+    public void PlayCharacterGetOffVFX(Vector3 _position)
+    {
+        if (vfxComponent == null) return;
+
+        vfxComponent.Play(new VFXPlaySettings("CharacterGetOffEffect", _position, Quaternion.identity));
+    }
+
+    /// <summary>
     /// MagmaForest 등에서 나무가 열기를 방출할 때의 VFX를 재생합니다.
     /// parent는 null로 고정하여 나무 오브젝트와 완전히 분리합니다.
     /// </summary>

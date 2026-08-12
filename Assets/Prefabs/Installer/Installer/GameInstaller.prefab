@@ -1615,6 +1615,12 @@ MonoBehaviour:
     allowDynamicExpansion: 1
     maxPoolSize: 70
     uiParticleScale: 0
+  - vfxTag: CharacterGetOffEffect
+    effectPrefab: {fileID: 666413043986464954, guid: 8665778b09e603b4697862d7a8b40304, type: 3}
+    initialPoolSize: 3
+    allowDynamicExpansion: 1
+    maxPoolSize: 5
+    uiParticleScale: 0
   - vfxTag: ManifestationBrandSparkEffect
     effectPrefab: {fileID: 4414206344302795060, guid: ae8dfa960fb2f644f89d0e6dd44ea1da, type: 3}
     initialPoolSize: 40
