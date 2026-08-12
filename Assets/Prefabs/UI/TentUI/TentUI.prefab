@@ -154,7 +154,6 @@ MonoBehaviour:
   moveTarget: {fileID: 2446041748342605229}
   abilityHUD: {fileID: 4123691864559926061}
   abilityNodePrefab: {fileID: 186751372433236867, guid: f50dc13d7e7439444b4bed2520b62d96, type: 3}
-  abilityLinePrefab: {fileID: 5716816955533093396, guid: 837b53e06369c2849b172916f360208c, type: 3}
   abilityNodeJson: {fileID: 4900000, guid: f2dada2f7a2657d44ac7174b4ee787ca, type: 3}
   gridCellSize: 32
   prewarmNodePoolCount: 64
@@ -424,6 +423,7 @@ MonoBehaviour:
   - lineType: 7
     sprite: {fileID: 21300000, guid: 9332ba84a0244cc45bf631c79eb60716, type: 3}
   lineParent: {fileID: 805268414600116728}
+  nodeViewportCullPadding: 64
   toolTipPrefab: {fileID: 7118067883298631761, guid: 0693cecbf0fc4eb4e988a48e7663f4bf, type: 3}
   toolTipParent: {fileID: 0}
   toolTipPlacementHysteresis: 32

@@ -175,9 +175,11 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
             inputManager.PauseESCKey(false);
             mainMenuInstaller.MainMenuReturned();
             mainMenuInstaller.PlayButtonsRevealAnimation();
-        }
 
-        Sound.PlayBGM(SoundID.MainBGM);
+            // 이 경로는 스플래시(팀 로고) 연출을 다시 재생하지 않으므로, 여기서 즉시 BGM을 재생한다.
+            // 최초 부팅 경로의 BGM 재생은 UIView_MainMenu의 스플래시 로고 페이드인 시작 시점으로 이동했다.
+            Sound.PlayBGM(SoundID.MainBGM);
+        }
     }
 
     public void GoToMainMenuScene()

@@ -24,18 +24,23 @@ public class UI_SplashScreen : MonoBehaviour
     
     private Action onSequenceComplete;
     private Action currentBeforeLastFadeOut;
+    private Action currentOnFirstFadeInStart;
     private TweenCallback onBeforeLastFadeOutCallback;
+    private TweenCallback onFirstFadeInStartCallback;
     private Sequence currentSequence;
 
-    public void PlaySequence(Action _onComplete, Action _onBeforeLastFadeOut = null)
+    public void PlaySequence(Action _onComplete, Action _onBeforeLastFadeOut = null, Action _onFirstFadeInStart = null)
     {
         if (null == onBeforeLastFadeOutCallback) onBeforeLastFadeOutCallback = InvokeBeforeLastFadeOut;
+        if (null == onFirstFadeInStartCallback) onFirstFadeInStartCallback = InvokeOnFirstFadeInStart;
         currentBeforeLastFadeOut = _onBeforeLastFadeOut;
+        currentOnFirstFadeInStart = _onFirstFadeInStart;
 
         this.onSequenceComplete = _onComplete;
-        
+
         if (null == this.sequences || 0 == this.sequences.Length)
         {
+            InvokeOnFirstFadeInStart();
             InvokeBeforeLastFadeOut();
             this.OnSequenceFinished();
             return;
@@ -74,6 +79,12 @@ public class UI_SplashScreen : MonoBehaviour
             
             if (null != _item.targetGroup)
             {
+                // 첫 번째 항목의 페이드인이 시작되는 시점(= 팀 로고가 화면에 나타나기 시작하는 시점)을 외부에 알린다.
+                if (0 == i)
+                {
+                    this.currentSequence.AppendCallback(onFirstFadeInStartCallback);
+                }
+
                 this.currentSequence.Append(_item.targetGroup.DOFade(1f, _item.fadeInDuration).SetEase(_item.fadeInEase));
                 this.currentSequence.AppendInterval(_item.holdDuration);
                 
@@ -104,6 +115,12 @@ public class UI_SplashScreen : MonoBehaviour
     private void InvokeBeforeLastFadeOut()
     {
         currentBeforeLastFadeOut?.Invoke();
+    }
+
+    private void InvokeOnFirstFadeInStart()
+    {
+        currentOnFirstFadeInStart?.Invoke();
+        currentOnFirstFadeInStart = null;
     }
 
     private void OnSequenceFinished()
