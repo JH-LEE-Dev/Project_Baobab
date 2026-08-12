@@ -595,6 +595,9 @@ public class InDungeonSystem : MonoBehaviour
         character.gameObject.SetActive(true);
         character.SetFacingDirection(Vector2.down);
 
+        Sound.Play(SoundID.OffroadClose, character.transform.position);
+        Sound.Play(SoundID.GetItem04, character.transform.position);
+
         // 튜토리얼 전용: 아이템 획득 때와 동일한 뽀잉(감쇠 진동 스케일) + 하얀 스프라이트 플래시(셰이더) 연출로 하차를 강조한다.
         character.PlayItemAcquireBounce();
         character.PlayItemAcquireSpriteFlash();
@@ -725,6 +728,11 @@ public class InDungeonSystem : MonoBehaviour
     private IEnumerator PopupUIGoUPCoroutine()
     {
         yield return new WaitForSeconds(0.7f);
+
+        // 대기하는 0.7초 사이에 ESC로 메인메뉴 이탈이 요청됐다면, 이미 내려가고 있는 HUD를
+        // 다시 올리면 안 되므로 여기서 멈춘다(HUDDown 직후 HUDUp이 뒤따라오던 레이스 컨디션 방지).
+        if (bGoingToMainMenu == true)
+            yield break;
 
         signalHub.Publish(new PopupUIUpSignal());
 

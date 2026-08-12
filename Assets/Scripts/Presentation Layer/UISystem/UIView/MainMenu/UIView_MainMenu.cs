@@ -33,6 +33,10 @@ public class UIView_MainMenu : UIView
     [SerializeField, Tooltip("체크하면 에디터 환경에서 스플래시와 로고 연출을 건너뛰고 바로 메인 메뉴를 출력합니다.")]
     private bool skipIntroInEditor = true;
 
+    // Town/Dungeon에서 메인메뉴로 복귀할 때 MainMenuReturned()가 CloseAll()로 bVisible을 리셋시켜
+    // OnShow()가 다시 호출된다. 스플래시(팀 로고)는 앱 부팅 후 최초 1회만 재생되어야 하므로 추적한다.
+    private bool hasIntroPlayed = false;
+
     [Header("Exit Animation")]
     [SerializeField] private float exitMoveDuration = 1.8f;
     // MainMenu 모드에서 꺼지는 SkyProduction.prefab의 skyImage 이동 거리(635 → 135)와 동일한 500으로 맞춤
@@ -161,6 +165,15 @@ public class UIView_MainMenu : UIView
             otherCanvasGroup.DOKill();
             otherCanvasGroup.alpha = 0f;
         }
+
+        // 최초 1회만 스플래시(팀 로고)를 재생한다. 복귀 시의 실제 연출은 Bootstrap.SetupMainMenuScene()가
+        // 곧이어 호출하는 PlayButtonsRevealAnimation()이 전담하므로, 여기서는 조용히 빠져나간다.
+        if (this.hasIntroPlayed)
+        {
+            if (null != this.splashScreenUI) this.splashScreenUI.gameObject.SetActive(false);
+            return;
+        }
+        this.hasIntroPlayed = true;
 
 #if UNITY_EDITOR
         if (this.skipIntroInEditor)

@@ -54,6 +54,10 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     [Space(10)]
     [Header("Engine Shutdown Settings")]
+    [Tooltip("시동이 꺼지기 직전, 대사가 끝나는 시점에 차량 소리로 시선을 집중시키기 위해 볼륨을 키우는 배율")]
+    [SerializeField] private float engineFocusVolumeScale = 1.5f;
+    [Tooltip("포커스 볼륨까지 올라가는 데 걸리는 시간")]
+    [SerializeField] private float engineFocusSwellDuration = 0.3f;
     [Tooltip("시동이 꺼지며 차체가 주저앉는 연출 시간")]
     [SerializeField] private float engineShutdownSettleDuration = 0.4f;
     [Tooltip("시동이 꺼지며 차체가 주저앉는 최대 스케일 변화량")]
@@ -113,6 +117,7 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
     private bool bUIActivated = false;
     private Coroutine driveCoroutine;
     private AudioHandle engineStartHandle;
+    private AudioHandle idleLoopHandle;
     private float colRadius;
     private bool bCanReach = true;
     private bool bCanInteract = false;
@@ -500,7 +505,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
 
     /// <summary>
     /// 튜토리얼(MainMenu → Dungeon) 전용. 시동을 거는 연출(임팩트) 없이, 이미 시동이 걸려 있는 상태로
-    /// 공회전 떨림만 StopEngineIdle()이 호출될 때까지 무한 반복한다. 사운드는 재생하지 않는다.
+    /// 공회전 떨림만 StopEngineIdle()이 호출될 때까지 무한 반복한다. 시동 임팩트 사운드는 재생하지 않고,
+    /// 공회전 루프 사운드만 재생한다.
     /// </summary>
     public void StartEngineIdle()
     {
@@ -510,6 +516,8 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         }
 
         idleRumbleCoroutine = StartCoroutine(EngineIdleRoutine());
+
+        idleLoopHandle = Sound.PlayTracked(SoundID.OffroadNonEditLoop, transform.position);
     }
 
     public void StopEngineIdle()
@@ -524,15 +532,21 @@ public class OffroadVehicleObj : MonoBehaviour, IOffroadProvider
         {
             jitterVisualObject.transform.localPosition = idleRumbleInitialLocalPos;
         }
+
+        Sound.StopTrackedWithPowerDown(idleLoopHandle);
     }
 
     /// <summary>
     /// 튜토리얼(MainMenu → Dungeon) 전용. StartEngineIdle()로 공회전 중인 시동이 꺼지는 연출.
-    /// 공회전 떨림을 멈추고, 힘이 빠지며 차체가 살짝 주저앉았다 돌아온다(시동 임팩트의 반대 방향).
-    /// 시동 걸기와 마찬가지로 사운드는 재생하지 않는다.
+    /// 대사가 끝나는 시점(호출 시점)에 먼저 엔진 소리 볼륨을 살짝 키워 시선을 집중시킨 뒤, 공회전 떨림을
+    /// 멈추고 피치를 낮추며 시동이 꺼진다. 힘이 빠지며 차체가 살짝 주저앉았다 돌아온다(시동 임팩트의 반대
+    /// 방향). 시동 걸기와 마찬가지로 시동 임팩트 사운드는 재생하지 않는다.
     /// </summary>
     public IEnumerator EngineShutdownSequence()
     {
+        Sound.RampTrackedVolume(idleLoopHandle, engineFocusVolumeScale, engineFocusSwellDuration);
+        yield return new WaitForSeconds(engineFocusSwellDuration);
+
         StopEngineIdle();
 
         yield return EngineShutdownSettleSequence();
