@@ -24,6 +24,38 @@
       "en": "You will be able to see constellations and star marks in the Starroot Forest.",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 4,
+      "key": "name_lostandfoundbox",
+      "kr": "원목 보험 증서",
+      "en": "Timber Insurance Certificate",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 5,
+      "key": "name_sporepotion",
+      "kr": "포자 포션",
+      "en": "Spore Potion",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 6,
+      "key": "name_starcompass",
+      "kr": "별 나침반",
+      "en": "Star Compass",
+      "enumType": "",
+      "enumValue": ""
+    },
+    {
+      "id": 7,
+      "key": "name_obsidiancharm",
+      "kr": "흑요석 부적",
+      "en": "Obsidian Charm",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }
