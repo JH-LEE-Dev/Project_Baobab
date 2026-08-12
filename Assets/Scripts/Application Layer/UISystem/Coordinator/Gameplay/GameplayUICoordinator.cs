@@ -120,6 +120,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
         signalHub.Subscribe<CharacterRideStartSignal>(CharacterRideStart);
         signalHub.Subscribe<LootPillarInteractStateChangedSignal>(LootPillarInteractStateChanged);
+        signalHub.Subscribe<LootPillarInteractSignal>(LootPillarInteract);
     }
 
     private void UnSubscribeSignals()
@@ -174,6 +175,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<TreeDetectionClearedSignal>(TreeDetectionCleared);
         signalHub.UnSubscribe<CharacterRideStartSignal>(CharacterRideStart);
         signalHub.UnSubscribe<LootPillarInteractStateChangedSignal>(LootPillarInteractStateChanged);
+        signalHub.UnSubscribe<LootPillarInteractSignal>(LootPillarInteract);
     }
 
     private void BindEvents()
@@ -656,10 +658,17 @@ public class GameplayUICoordinator
         unitUI.ShopInteractStateChanged(_shopInteractStateChangedSignal.state);
     }
 
+    // 콜라이더 범위 진입/이탈 - 상호작용 가능 아이콘(UIView_Unit)만 갱신한다.
+    // UIView_ScreenModal을 실제로 여닫는 건 상호작용 키 입력(LootPillarInteract) 쪽이다.
     private void LootPillarInteractStateChanged(LootPillarInteractStateChangedSignal _lootPillarInteractStateChangedSignal)
     {
         unitUI.LootPillarInteractStateChanged(_lootPillarInteractStateChangedSignal.state);
-        screenModalUI.LootPillarInteractStateChanged(_lootPillarInteractStateChangedSignal.state, _lootPillarInteractStateChangedSignal.lootType);
+    }
+
+    // 범위 안에서 상호작용 키를 눌렀을 때만 UIView_ScreenModal을 토글로 여닫는다.
+    private void LootPillarInteract(LootPillarInteractSignal _lootPillarInteractSignal)
+    {
+        screenModalUI.LootPillarInteractStateChanged(_lootPillarInteractSignal.bInteract, _lootPillarInteractSignal.lootType);
     }
 
     private void LogItemProcessorIsActive(LogItemProcessorActiveStateSignal _logItemProcessorActiveStateSignal)

@@ -50,7 +50,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3fba2d16f44dfa342c3c273abfbb6db1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIView_ScreenModal
-  layer: 1
+  layer: 2
   bCloseableByESC: 0
   bWorld: 0
   bScreenSpace: 0

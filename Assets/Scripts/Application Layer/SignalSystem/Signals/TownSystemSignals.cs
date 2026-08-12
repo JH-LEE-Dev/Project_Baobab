@@ -75,6 +75,17 @@ public struct LootPillarInteractStateChangedSignal
     }
 }
 
+public struct LootPillarInteractSignal
+{
+    public bool bInteract;
+    public LootType lootType;
+    public LootPillarInteractSignal(bool _bInteract, LootType _lootType)
+    {
+        bInteract = _bInteract;
+        lootType = _lootType;
+    }
+}
+
 public struct StartDecreaseStaminaSignal { }
 
 public struct PopupUIDownSignal { }
