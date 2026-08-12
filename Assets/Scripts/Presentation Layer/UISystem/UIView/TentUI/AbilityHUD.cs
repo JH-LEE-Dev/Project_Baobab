@@ -16,6 +16,17 @@ public class AbilityHUD : MonoBehaviour
     private const float DownTickMinimumInterval = 0.04f;
     private const string LevelUpSideEffectResourcePath = "AbilityHUD/AbilityHUD_SideEffect";
     private const string LevelUpAboveEffectResourcePath = "AbilityHUD/AbilityHUD_AboveEffect";
+    private const string LevelUpSparkEffectResourcePath = "AbilityHUD/AbilityHUD_LevelUpSpark";
+    private const string FontSparkEffectResourcePath = "AbilityHUD/AbilityHUD_FontAppear";
+    private const string FlowerAppearEffectResourcePath = "AbilityHUD/AbilityHUD_FlowerAppear";
+
+    private enum EventSpriteEffectType
+    {
+        LevelUpSpark,
+        FontSpark,
+        FlowerAppear,
+        Count
+    }
 
     [Header("UI References")]
     [SerializeField] private Image fillImage;
@@ -28,6 +39,12 @@ public class AbilityHUD : MonoBehaviour
     [SerializeField] private Image[] levelUpSideEffectImages = new Image[2];
     [SerializeField] private Image levelUpAboveEffectImage;
     [SerializeField, Min(1.0f)] private float levelUpSpriteEffectFrameRate = 24.0f;
+
+    [Header("Event Sprite Effects")]
+    [SerializeField] private Image levelUpSparkEffectImage;
+    [SerializeField] private Image fontSparkEffectImage;
+    [SerializeField] private Image flowerAppearEffectImage;
+    [SerializeField, Min(1.0f)] private float eventSpriteEffectFrameRate = 30.0f;
 
     [Header("Ability Bar")]
     [SerializeField] private int maxExperience = 50;
@@ -71,6 +88,8 @@ public class AbilityHUD : MonoBehaviour
 
     private Sequence resetEffectSequence;
     private Tween levelUpSpriteEffectTween;
+    private readonly Tween[] eventSpriteEffectTweens = new Tween[(int)EventSpriteEffectType.Count];
+    private readonly Sprite[][] eventSpriteEffectFrames = new Sprite[(int)EventSpriteEffectType.Count][];
     private readonly List<RectTransform> spawnedFlowerObjects = new List<RectTransform>();
     private readonly List<RectTransform> pooledFlowerObjects = new List<RectTransform>();
     private RectTransform barFontRectTransform;
@@ -97,6 +116,7 @@ public class AbilityHUD : MonoBehaviour
             LoadLevelUpSpriteEffectFramesIfNeeded();
 
         HideLevelUpSpriteEffect();
+        HideIdleEventSpriteEffects();
         RefreshOrSchedule();
     }
 
@@ -106,6 +126,8 @@ public class AbilityHUD : MonoBehaviour
 
         if (Application.isPlaying && (null == levelUpSpriteEffectTween || false == levelUpSpriteEffectTween.IsActive()))
             HideLevelUpSpriteEffect();
+
+        HideIdleEventSpriteEffects();
 
         RefreshOrSchedule();
     }
@@ -337,6 +359,7 @@ public class AbilityHUD : MonoBehaviour
         {
             Sound.PlayUI(SoundID.AbilityHUDLevelUp);
             PlayLevelUpSpriteEffect();
+            PlayEventSpriteEffect(EventSpriteEffectType.LevelUpSpark);
 
             if (null != barFontRectTransform)
                 barFontRectTransform.DOShakeAnchorPos(
@@ -392,9 +415,16 @@ public class AbilityHUD : MonoBehaviour
 
     private void PlayFlowerStackGrowEffect()
     {
+        int _previousFlowerStack = flowerStack;
         FlowerVisual _newFlowerVisual = AddFlowerStackFromReset();
+        if (flowerStack != _previousFlowerStack)
+            PlayEventSpriteEffect(EventSpriteEffectType.FontSpark);
+
         if (null != _newFlowerVisual)
+        {
             Sound.PlayUI(SoundID.AbilityHUDFlowerGrow);
+            PlayEventSpriteEffect(EventSpriteEffectType.FlowerAppear, _newFlowerVisual.transform as RectTransform);
+        }
 
         if (null == flowerStackFontRectTransform)
         {
@@ -524,6 +554,7 @@ public class AbilityHUD : MonoBehaviour
     private void RestoreResetExperienceEffectState()
     {
         StopLevelUpSpriteEffect();
+        StopAllEventSpriteEffects();
         StopDownStartSound();
         StopBarFontExperienceMotion();
 
@@ -926,13 +957,27 @@ public class AbilityHUD : MonoBehaviour
         if (null == levelUpSideEffectImages[1])
             levelUpSideEffectImages[1] = FindChildComponent<Image>("Right_SideEffect");
 
+        if (null == levelUpSparkEffectImage)
+            levelUpSparkEffectImage = FindChildComponent<Image>("LevelUp_Spark");
+
+        if (null == fontSparkEffectImage)
+            fontSparkEffectImage = FindChildComponent<Image>("Font_Spark");
+
+        if (null == flowerAppearEffectImage)
+            flowerAppearEffectImage = FindChildComponent<Image>("Appear_Flower");
+
         SetLevelUpSpriteEffectRaycastTargets(false);
+        SetEventSpriteEffectRaycastTargets(false);
+
+        if (null != levelUpSpriteEffectRoot)
+            levelUpSpriteEffectRoot.SetActive(true);
     }
 
     private void OnDestroy()
     {
         StopResetExperienceEffect(false);
         StopLevelUpSpriteEffect();
+        StopAllEventSpriteEffects();
         StopDownStartSound();
     }
 
@@ -984,8 +1029,127 @@ public class AbilityHUD : MonoBehaviour
 
     private void HideLevelUpSpriteEffect()
     {
-        if (null != levelUpSpriteEffectRoot)
-            levelUpSpriteEffectRoot.SetActive(false);
+        SetSpriteEffectFrame(levelUpSideEffectImages, null, -1);
+        SetSpriteEffectFrame(levelUpAboveEffectImage, null, -1);
+    }
+
+    private void PlayEventSpriteEffect(EventSpriteEffectType _effectType, RectTransform _target = null)
+    {
+        int _effectIndex = (int)_effectType;
+        StopEventSpriteEffect(_effectType);
+
+        Image _effectImage = GetEventSpriteEffectImage(_effectType);
+        Sprite[] _frames = LoadEventSpriteEffectFramesIfNeeded(_effectType);
+        if (null == _effectImage || null == _frames || 0 == _frames.Length)
+            return;
+
+        if (null != _target)
+            SnapEffectToTarget(_effectImage.rectTransform, _target);
+
+        SetSpriteEffectFrame(_effectImage, _frames, 0);
+
+        float _frameRate = Mathf.Max(1.0f, eventSpriteEffectFrameRate);
+        float _duration = _frames.Length / _frameRate;
+        int _lastFrameIndex = 0;
+        eventSpriteEffectTweens[_effectIndex] = DOVirtual.Float(0.0f, _duration, _duration, _elapsedTime =>
+        {
+            int _frameIndex = Mathf.Min(
+                Mathf.FloorToInt(_elapsedTime * _frameRate),
+                _frames.Length - 1);
+            if (_frameIndex == _lastFrameIndex)
+                return;
+
+            _lastFrameIndex = _frameIndex;
+            SetSpriteEffectFrame(_effectImage, _frames, _frameIndex);
+        })
+        .SetEase(Ease.Linear)
+        .SetUpdate(true)
+        .OnComplete(() =>
+        {
+            eventSpriteEffectTweens[_effectIndex] = null;
+            SetSpriteEffectFrame(_effectImage, null, -1);
+        });
+    }
+
+    private void StopEventSpriteEffect(EventSpriteEffectType _effectType)
+    {
+        int _effectIndex = (int)_effectType;
+        Tween _tween = eventSpriteEffectTweens[_effectIndex];
+        if (null != _tween && _tween.IsActive())
+            _tween.Kill(false);
+
+        eventSpriteEffectTweens[_effectIndex] = null;
+        SetSpriteEffectFrame(GetEventSpriteEffectImage(_effectType), null, -1);
+    }
+
+    private void StopAllEventSpriteEffects()
+    {
+        for (int i = 0; i < (int)EventSpriteEffectType.Count; i++)
+            StopEventSpriteEffect((EventSpriteEffectType)i);
+    }
+
+    private void HideIdleEventSpriteEffects()
+    {
+        for (int i = 0; i < (int)EventSpriteEffectType.Count; i++)
+        {
+            Tween _tween = eventSpriteEffectTweens[i];
+            if (null == _tween || false == _tween.IsActive())
+                SetSpriteEffectFrame(GetEventSpriteEffectImage((EventSpriteEffectType)i), null, -1);
+        }
+    }
+
+    private Sprite[] LoadEventSpriteEffectFramesIfNeeded(EventSpriteEffectType _effectType)
+    {
+        int _effectIndex = (int)_effectType;
+        Sprite[] _frames = eventSpriteEffectFrames[_effectIndex];
+        if (null != _frames && _frames.Length > 0)
+            return _frames;
+
+        _frames = Resources.LoadAll<Sprite>(GetEventSpriteEffectResourcePath(_effectType));
+        SortSpriteFrames(_frames);
+        eventSpriteEffectFrames[_effectIndex] = _frames;
+        return _frames;
+    }
+
+    private Image GetEventSpriteEffectImage(EventSpriteEffectType _effectType)
+    {
+        switch (_effectType)
+        {
+            case EventSpriteEffectType.LevelUpSpark:
+                return levelUpSparkEffectImage;
+            case EventSpriteEffectType.FontSpark:
+                return fontSparkEffectImage;
+            case EventSpriteEffectType.FlowerAppear:
+                return flowerAppearEffectImage;
+            default:
+                return null;
+        }
+    }
+
+    private static string GetEventSpriteEffectResourcePath(EventSpriteEffectType _effectType)
+    {
+        switch (_effectType)
+        {
+            case EventSpriteEffectType.LevelUpSpark:
+                return LevelUpSparkEffectResourcePath;
+            case EventSpriteEffectType.FontSpark:
+                return FontSparkEffectResourcePath;
+            case EventSpriteEffectType.FlowerAppear:
+                return FlowerAppearEffectResourcePath;
+            default:
+                return string.Empty;
+        }
+    }
+
+    private static void SnapEffectToTarget(RectTransform _effectRectTransform, RectTransform _target)
+    {
+        if (null == _effectRectTransform || null == _target || null == _effectRectTransform.parent)
+            return;
+
+        Vector3 _localTargetPosition = _effectRectTransform.parent.InverseTransformPoint(_target.position);
+        _effectRectTransform.anchoredPosition = new Vector2(
+            Mathf.Round(_localTargetPosition.x),
+            Mathf.Round(_localTargetPosition.y));
     }
 
     private void LoadLevelUpSpriteEffectFramesIfNeeded()
@@ -1077,6 +1241,18 @@ public class AbilityHUD : MonoBehaviour
             if (null != levelUpSideEffectImages[i])
                 levelUpSideEffectImages[i].raycastTarget = _raycastTarget;
         }
+    }
+
+    private void SetEventSpriteEffectRaycastTargets(bool _raycastTarget)
+    {
+        if (null != levelUpSparkEffectImage)
+            levelUpSparkEffectImage.raycastTarget = _raycastTarget;
+
+        if (null != fontSparkEffectImage)
+            fontSparkEffectImage.raycastTarget = _raycastTarget;
+
+        if (null != flowerAppearEffectImage)
+            flowerAppearEffectImage.raycastTarget = _raycastTarget;
     }
 
     private void PlayBarFontExperienceMotion()
