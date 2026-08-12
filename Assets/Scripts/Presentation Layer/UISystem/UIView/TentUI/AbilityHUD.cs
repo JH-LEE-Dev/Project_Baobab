@@ -14,12 +14,20 @@ using UnityEditor;
 public class AbilityHUD : MonoBehaviour
 {
     private const float DownTickMinimumInterval = 0.04f;
+    private const string LevelUpSideEffectResourcePath = "AbilityHUD/AbilityHUD_SideEffect";
+    private const string LevelUpAboveEffectResourcePath = "AbilityHUD/AbilityHUD_AboveEffect";
 
     [Header("UI References")]
     [SerializeField] private Image fillImage;
     [SerializeField] private FontMaker fontMakerForBar;
     [SerializeField] private FontMaker fontMakerForFlowerStack;
     [SerializeField] private ObjectMotionPlayer barFontMotionPlayer;
+
+    [Header("Level Up Sprite Effect")]
+    [SerializeField] private GameObject levelUpSpriteEffectRoot;
+    [SerializeField] private Image[] levelUpSideEffectImages = new Image[2];
+    [SerializeField] private Image levelUpAboveEffectImage;
+    [SerializeField, Min(1.0f)] private float levelUpSpriteEffectFrameRate = 24.0f;
 
     [Header("Ability Bar")]
     [SerializeField] private int maxExperience = 50;
@@ -62,6 +70,7 @@ public class AbilityHUD : MonoBehaviour
     public int FlowerStack => flowerStack;
 
     private Sequence resetEffectSequence;
+    private Tween levelUpSpriteEffectTween;
     private readonly List<RectTransform> spawnedFlowerObjects = new List<RectTransform>();
     private readonly List<RectTransform> pooledFlowerObjects = new List<RectTransform>();
     private RectTransform barFontRectTransform;
@@ -77,16 +86,27 @@ public class AbilityHUD : MonoBehaviour
     private float lastDownTickSoundElapsed = float.NegativeInfinity;
     private bool playExperienceMotionAfterReset;
     private bool playFlowerDangleAfterReset;
+    private Sprite[] levelUpSideEffectFrames;
+    private Sprite[] levelUpAboveEffectFrames;
 
     private void Awake()
     {
         BindReferencesIfNeeded();
+
+        if (Application.isPlaying)
+            LoadLevelUpSpriteEffectFramesIfNeeded();
+
+        HideLevelUpSpriteEffect();
         RefreshOrSchedule();
     }
 
     private void OnEnable()
     {
         BindReferencesIfNeeded();
+
+        if (Application.isPlaying && (null == levelUpSpriteEffectTween || false == levelUpSpriteEffectTween.IsActive()))
+            HideLevelUpSpriteEffect();
+
         RefreshOrSchedule();
     }
 
@@ -316,6 +336,7 @@ public class AbilityHUD : MonoBehaviour
         resetEffectSequence.AppendCallback(() =>
         {
             Sound.PlayUI(SoundID.AbilityHUDLevelUp);
+            PlayLevelUpSpriteEffect();
 
             if (null != barFontRectTransform)
                 barFontRectTransform.DOShakeAnchorPos(
@@ -502,6 +523,7 @@ public class AbilityHUD : MonoBehaviour
 
     private void RestoreResetExperienceEffectState()
     {
+        StopLevelUpSpriteEffect();
         StopDownStartSound();
         StopBarFontExperienceMotion();
 
@@ -885,12 +907,176 @@ public class AbilityHUD : MonoBehaviour
 
         if (null == barFontMotionPlayer)
             barFontMotionPlayer = FindChildComponent<ObjectMotionPlayer>("Motions");
+
+        if (null == levelUpSpriteEffectRoot)
+        {
+            Transform _effectRoot = FindChild(transform, "VFX_Sprite");
+            levelUpSpriteEffectRoot = null == _effectRoot ? null : _effectRoot.gameObject;
+        }
+
+        if (null == levelUpAboveEffectImage)
+            levelUpAboveEffectImage = FindChildComponent<Image>("Above_AboveEffect");
+
+        if (null == levelUpSideEffectImages || levelUpSideEffectImages.Length != 2)
+            levelUpSideEffectImages = new Image[2];
+
+        if (null == levelUpSideEffectImages[0])
+            levelUpSideEffectImages[0] = FindChildComponent<Image>("Left_SideEffect");
+
+        if (null == levelUpSideEffectImages[1])
+            levelUpSideEffectImages[1] = FindChildComponent<Image>("Right_SideEffect");
+
+        SetLevelUpSpriteEffectRaycastTargets(false);
     }
 
     private void OnDestroy()
     {
         StopResetExperienceEffect(false);
+        StopLevelUpSpriteEffect();
         StopDownStartSound();
+    }
+
+    private void PlayLevelUpSpriteEffect()
+    {
+        StopLevelUpSpriteEffect();
+        LoadLevelUpSpriteEffectFramesIfNeeded();
+
+        int _sideFrameCount = null == levelUpSideEffectFrames ? 0 : levelUpSideEffectFrames.Length;
+        int _aboveFrameCount = null == levelUpAboveEffectFrames ? 0 : levelUpAboveEffectFrames.Length;
+        int _longestFrameCount = Mathf.Max(_sideFrameCount, _aboveFrameCount);
+        if (null == levelUpSpriteEffectRoot || _longestFrameCount <= 0)
+            return;
+
+        levelUpSpriteEffectRoot.SetActive(true);
+        SetSpriteEffectFrame(levelUpSideEffectImages, levelUpSideEffectFrames, 0);
+        SetSpriteEffectFrame(levelUpAboveEffectImage, levelUpAboveEffectFrames, 0);
+
+        float _frameRate = Mathf.Max(1.0f, levelUpSpriteEffectFrameRate);
+        float _duration = _longestFrameCount / _frameRate;
+        int _lastFrameIndex = 0;
+        levelUpSpriteEffectTween = DOVirtual.Float(0.0f, _duration, _duration, _elapsedTime =>
+        {
+            int _frameIndex = Mathf.FloorToInt(_elapsedTime * _frameRate);
+            if (_frameIndex == _lastFrameIndex)
+                return;
+
+            _lastFrameIndex = _frameIndex;
+            SetSpriteEffectFrame(levelUpSideEffectImages, levelUpSideEffectFrames, _frameIndex);
+            SetSpriteEffectFrame(levelUpAboveEffectImage, levelUpAboveEffectFrames, _frameIndex);
+        })
+        .SetEase(Ease.Linear)
+        .SetUpdate(true)
+        .OnComplete(() =>
+        {
+            levelUpSpriteEffectTween = null;
+            HideLevelUpSpriteEffect();
+        });
+    }
+
+    private void StopLevelUpSpriteEffect()
+    {
+        if (null != levelUpSpriteEffectTween && levelUpSpriteEffectTween.IsActive())
+            levelUpSpriteEffectTween.Kill(false);
+
+        levelUpSpriteEffectTween = null;
+        HideLevelUpSpriteEffect();
+    }
+
+    private void HideLevelUpSpriteEffect()
+    {
+        if (null != levelUpSpriteEffectRoot)
+            levelUpSpriteEffectRoot.SetActive(false);
+    }
+
+    private void LoadLevelUpSpriteEffectFramesIfNeeded()
+    {
+        if (null == levelUpSideEffectFrames || levelUpSideEffectFrames.Length == 0)
+        {
+            levelUpSideEffectFrames = Resources.LoadAll<Sprite>(LevelUpSideEffectResourcePath);
+            SortSpriteFrames(levelUpSideEffectFrames);
+        }
+
+        if (null == levelUpAboveEffectFrames || levelUpAboveEffectFrames.Length == 0)
+        {
+            levelUpAboveEffectFrames = Resources.LoadAll<Sprite>(LevelUpAboveEffectResourcePath);
+            SortSpriteFrames(levelUpAboveEffectFrames);
+        }
+    }
+
+    private static void SetSpriteEffectFrame(Image[] _images, Sprite[] _frames, int _frameIndex)
+    {
+        if (null == _images)
+            return;
+
+        for (int i = 0; i < _images.Length; i++)
+            SetSpriteEffectFrame(_images[i], _frames, _frameIndex);
+    }
+
+    private static void SetSpriteEffectFrame(Image _image, Sprite[] _frames, int _frameIndex)
+    {
+        if (null == _image)
+            return;
+
+        bool _hasFrame = null != _frames && _frameIndex >= 0 && _frameIndex < _frames.Length;
+        if (_image.enabled != _hasFrame)
+            _image.enabled = _hasFrame;
+
+        if (_hasFrame && _image.sprite != _frames[_frameIndex])
+            _image.sprite = _frames[_frameIndex];
+    }
+
+    private static void SortSpriteFrames(Sprite[] _frames)
+    {
+        if (null == _frames || _frames.Length <= 1)
+            return;
+
+        System.Array.Sort(_frames, CompareSpriteFrameNames);
+    }
+
+    private static int CompareSpriteFrameNames(Sprite _left, Sprite _right)
+    {
+        int _leftIndex = GetSpriteFrameIndex(_left);
+        int _rightIndex = GetSpriteFrameIndex(_right);
+        int _indexComparison = _leftIndex.CompareTo(_rightIndex);
+        if (_indexComparison != 0)
+            return _indexComparison;
+
+        string _leftName = null == _left ? string.Empty : _left.name;
+        string _rightName = null == _right ? string.Empty : _right.name;
+        return string.CompareOrdinal(_leftName, _rightName);
+    }
+
+    private static int GetSpriteFrameIndex(Sprite _sprite)
+    {
+        if (null == _sprite || string.IsNullOrEmpty(_sprite.name))
+            return int.MaxValue;
+
+        string _name = _sprite.name;
+        int _digitStart = _name.Length;
+        while (_digitStart > 0 && char.IsDigit(_name[_digitStart - 1]))
+            _digitStart--;
+
+        if (_digitStart >= _name.Length)
+            return int.MaxValue;
+
+        return int.TryParse(_name.Substring(_digitStart), out int _index)
+            ? _index
+            : int.MaxValue;
+    }
+
+    private void SetLevelUpSpriteEffectRaycastTargets(bool _raycastTarget)
+    {
+        if (null != levelUpAboveEffectImage)
+            levelUpAboveEffectImage.raycastTarget = _raycastTarget;
+
+        if (null == levelUpSideEffectImages)
+            return;
+
+        for (int i = 0; i < levelUpSideEffectImages.Length; i++)
+        {
+            if (null != levelUpSideEffectImages[i])
+                levelUpSideEffectImages[i].raycastTarget = _raycastTarget;
+        }
     }
 
     private void PlayBarFontExperienceMotion()
