@@ -91,6 +91,14 @@ public class HUD_LootReveal : MonoBehaviour
     private Coroutine revealCoroutine;
     private bool isShowing = false;
 
+    // ─── 초기화 ───────────────────────────────────────────────────────────────
+
+    private void Awake()
+    {
+        // 시작 시 무조건 비활성화 상태로 대기합니다.
+        gameObject.SetActive(false);
+    }
+
     // ─── 퍼블릭 진입점 ────────────────────────────────────────────────────────
 
     /// <summary>
