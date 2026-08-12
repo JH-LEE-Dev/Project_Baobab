@@ -56,7 +56,7 @@ MonoBehaviour:
   downArrowSprite: {fileID: -2120726315948265764, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
   leftArrowSprite: {fileID: -1216850264913150114, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
   rightArrowSprite: {fileID: -8463291593813042295, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
-  padding: 50
+  padding: 60
   idleSpeed: 5
 --- !u!210 &6140344899616592753
 SortingGroup:
@@ -67,7 +67,7 @@ SortingGroup:
   m_GameObject: {fileID: 1916422466606343881}
   m_Enabled: 1
   m_SortingLayerID: 962808927
-  m_SortingLayer: 14
+  m_SortingLayer: 16
   m_SortingOrder: 99
   m_SortAtRoot: 0
   m_Sort3DAs2D: 0
