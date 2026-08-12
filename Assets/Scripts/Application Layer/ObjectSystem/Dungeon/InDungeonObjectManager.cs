@@ -42,6 +42,9 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
     // 같은 던전 진행(run) 동안 이미 스폰을 시도했는지 - 습득 완료 전까지 중복 스폰을 막는 런타임 전용
     // 플래그. 매 던전 진입마다(SetupForForestType) 리셋된다.
     private bool bLostAndFoundBoxSpawnedThisRun;
+
+    // TEMP DEBUG - LootPillar 테스트용, 확인 후 OnTreeDead의 관련 블록과 함께 제거할 것.
+    private bool debugFirstTreeLootSpawned = false;
     private ForestType currentForestType;
     // "1-3" 드랍 확률 - 기본값에서 시작해, 이 스테이지에서 나무를 벨 때마다(못 얻은 채로) 한 그루당
     // lostAndFoundBoxDropChanceIncreasePerKill만큼 계속 올라간다. 스테이지 진입마다 리셋된다.
@@ -982,6 +985,15 @@ public class InDungeonObjectManager : MonoBehaviour, IInDungeonObjProvider, IInD
 
         // 죽은 위치 재사용 준비
         Vector3 deadPos = _treeObj.transform.position;
+
+        // ==================== TEMP DEBUG - LootPillar 테스트용, 확인 후 제거할 것 ====================
+        // 첫 번째로 벌목하는 나무에서 확률/맵 조건 무시하고 무조건 "분실물 보관함"을 드랍시킨다.
+        if (!debugFirstTreeLootSpawned && lootManager != null && character != null)
+        {
+            debugFirstTreeLootSpawned = true;
+            lootManager.SpawnLootItem(deadPos, LootType.LostAndFoundBox, character.centerTransform);
+        }
+        // ==================== TEMP DEBUG END ====================
 
         // "분실물 보관함" - 나무를 죽여 LogItem이 드랍될 때 함께 스폰을 시도한다.
         // 이미 획득했거나(영구 저장 플래그) 이번 런에서 이미 스폰을 시도했으면(습득 완료 전 중복 방지)

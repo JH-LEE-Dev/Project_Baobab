@@ -17,10 +17,44 @@ namespace PresentationLayer.Environment
         [SerializeField] private SpriteRenderer targetRenderer;
         [SerializeField] private LootItemTypeDataBase lootDataBase;
 
+        [Header("Sorting Settings")]
+        [SerializeField] private SpriteRenderer pillarRenderer;
+        private CustomSortable customSortable;
+
         [Header("Aura Orbit Settings")]
         [SerializeField] private bool useAuraOrbit = false;
         [SerializeField] private ItemAuraOrbitController auraOrbitController;
         [SerializeField] private List<LootAuraSetting> auraSettings;
+
+        private void Awake()
+        {
+            customSortable = GetComponent<CustomSortable>();
+
+            // 기본값: 생성 위치(자기 자신의 Y) 기준. 스포너가 별도 Pivot 기준점을 알고 있다면
+            // ApplySortingBasis()로 덮어써서 그 기준으로 다시 계산한다.
+            ApplySortingBasis(transform.position.y);
+        }
+
+        /// <summary>
+        /// customSortable의 정렬 기준 Y좌표를 지정해 Pillar/Loot 렌더러의 Sorting Order를 다시 계산한다.
+        /// LootPoint의 실제 지면 접점(Pivot)이 오브젝트 자신의 Transform과 다를 때 스포너가 호출한다.
+        /// </summary>
+        public void ApplySortingBasis(float _sortingBasisY)
+        {
+            if (null == customSortable) return;
+
+            int pillarOrder = customSortable.ComputeSortingOrder(_sortingBasisY);
+
+            if (null != pillarRenderer)
+            {
+                pillarRenderer.sortingOrder = pillarOrder;
+            }
+
+            if (null != targetRenderer)
+            {
+                targetRenderer.sortingOrder = pillarOrder + 1;
+            }
+        }
 
         public void SetLootDisplay(LootType _lootType)
         {

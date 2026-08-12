@@ -26,6 +26,7 @@ public class TownSystem : MonoBehaviour
     private SkyCameraProductionManager skyCameraProductionManager;
     private TownTileManager townTileManager;
     public TownUnitSpawner townUnitSpawner { get; private set; }
+    public LootPillarManager lootPillarManager { get; private set; }
 
     /// <summary>
     /// 게임이 처음 시작됐을 때(던전에서 돌아온 것이 아닐 때) 캐릭터가 생성되는 위치.
@@ -57,6 +58,7 @@ public class TownSystem : MonoBehaviour
         townProductionManager = GetComponentInChildren<TownProductionManager>();
         townTileManager = GetComponentInChildren<TownTileManager>();
         townUnitSpawner = GetComponentInChildren<TownUnitSpawner>();
+        lootPillarManager = GetComponentInChildren<LootPillarManager>();
         skyCameraProductionManager = _skyCameraProductionManager;
 
         townProductionManager.Initialize(inputManager, _skyCameraProductionManager);
