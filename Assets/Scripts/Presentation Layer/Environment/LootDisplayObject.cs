@@ -52,7 +52,7 @@ namespace PresentationLayer.Environment
 
             if (null != targetRenderer)
             {
-                targetRenderer.sortingOrder = pillarOrder + 1;
+                targetRenderer.sortingOrder = pillarOrder + 2;
             }
         }
 
