@@ -18,13 +18,13 @@ MonoBehaviour:
     sprite: {fileID: 0}
   - itemType: 2
     lootType: 2
-    sprite: {fileID: -5931985335208768119, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+    sprite: {fileID: -2259201171145334409, guid: 8ec955a772c88f54ab3c640892ab1637, type: 3}
   - itemType: 2
     lootType: 3
-    sprite: {fileID: 6479773223036287334, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+    sprite: {fileID: 2938342319528027407, guid: 8ec955a772c88f54ab3c640892ab1637, type: 3}
   - itemType: 2
     lootType: 4
-    sprite: {fileID: 6139783936273432520, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+    sprite: {fileID: 3768802574645691863, guid: 8ec955a772c88f54ab3c640892ab1637, type: 3}
   - itemType: 2
     lootType: 5
-    sprite: {fileID: -3259025338804959706, guid: 68778ea41741e954bb9369fdee6555dc, type: 3}
+    sprite: {fileID: 193010350, guid: 8ec955a772c88f54ab3c640892ab1637, type: 3}
