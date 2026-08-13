@@ -649,12 +649,14 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (eventData != null && eventData.button != PointerEventData.InputButton.Left)
             return;
 
+#if UNITY_EDITOR
         if (IsShiftPressed())
         {
             consumedRapidClick = true;
             owner?.StartAutoNodeLevelUp(this, IsControlPressed());
             return;
         }
+#endif
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -676,15 +678,21 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         if (IsDraggedClick(eventData))
             return;
 
-        bool isApproved = owner != null && (IsControlPressed()
+        bool isApproved;
+#if UNITY_EDITOR
+        isApproved = owner != null && (IsControlPressed()
             ? owner.TryRequestNodeLevelUpWithoutCost(this)
             : owner.TryRequestNodeLevelUp(this));
+#else
+        isApproved = owner != null && owner.TryRequestNodeLevelUp(this);
+#endif
         if (true == isApproved)
             PlayClickRequestMotion();
         else
             PlayRejectedRequestMotion();
     }
 
+#if UNITY_EDITOR
     private bool IsShiftPressed()
     {
         Keyboard keyboard = Keyboard.current;
@@ -698,6 +706,7 @@ public class AbilityNode : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
         return keyboard != null &&
                (keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed);
     }
+#endif
 
     private bool IsDraggedClick(PointerEventData _eventData)
     {

@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: M_AbilityTiledBackGround
-  m_Shader: {fileID: 4800000, guid: b7e14d59aa8a41f8b1e91765fe7bb901, type: 3}
+  m_Name: M_AbilityLineShiny
+  m_Shader: {fileID: 4800000, guid: a1f6e8d27c5b4f349a0e93b81d72c640, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -24,24 +24,27 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: 66ebdf9db3dc98643896125b8ec8ce8c, type: 3}
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
+    - _ShineGap: 0.3
+    - _ShineIntensity: 1
+    - _ShineSoftness: 0.85
+    - _ShineSpeed: 0.35
+    - _ShineWidth: 0.24
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _VignetteIntensity: 0.9
-    - _VignetteRadius: 0.38
-    - _VignetteSoftness: 0.9
+    - _UseUIAlphaClip: 0
     m_Colors:
+    - _BlueShineColor: {r: 0.7607843, g: 0.95686275, b: 0.99607843, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _Pivot: {r: 0.5, g: 0.5, b: 0, a: 0}
-    - _RectSize: {r: 640, g: 360, b: 0, a: 0}
-    - _TileSize: {r: 128, g: 128, b: 0, a: 0}
+    - _GreenShineColor: {r: 0.6862745, g: 0.84705883, b: 0.7137255, a: 1}
+    - _RedShineColor: {r: 0.7607843, g: 0.42745098, b: 0.40392157, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

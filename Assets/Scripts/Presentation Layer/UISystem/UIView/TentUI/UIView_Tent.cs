@@ -47,7 +47,7 @@ public class UIView_Tent : UIView
     // Tent UI가 사용하는 하위 컴포넌트들을 초기화한다.
     private void InitializeComponents()
     {
-        abilityUIComponent?.Initialize(skillSystemProvider, viewCtx?.localizationManager);
+        abilityUIComponent?.Initialize(skillSystemProvider, viewCtx?.inputManager, viewCtx?.localizationManager);
         InitializeMoneyCounters();
         ApplyTutorialHUDAlpha(tutorialHUDAlpha);
     }
@@ -57,7 +57,7 @@ public class UIView_Tent : UIView
     {
         skillSystemProvider = _skillSystemProvider;
         moneyData = _moneyData;
-        abilityUIComponent?.Initialize(skillSystemProvider, viewCtx?.localizationManager);
+        abilityUIComponent?.Initialize(skillSystemProvider, viewCtx?.inputManager, viewCtx?.localizationManager);
         RefreshMoneyTexts(false);
     }
 
