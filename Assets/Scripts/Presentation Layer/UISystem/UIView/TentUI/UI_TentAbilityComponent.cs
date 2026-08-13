@@ -145,6 +145,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
     [SerializeField] private List<AbilityLevelBadgeBinding> levelBadgeBindings = new List<AbilityLevelBadgeBinding>();
     [SerializeField] private List<AbilityLineSegmentSpriteBinding> lineSpriteBindings = new List<AbilityLineSegmentSpriteBinding>();
+    [SerializeField] private Material lineMaterial;
     [SerializeField] private RectTransform lineParent;
 
     [Header("Node Viewport Culling")]
@@ -198,7 +199,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
         EnsureCircleRevealDim();
         BindAbilityHUDIfNeeded();
         lineRenderer.CacheLineSpriteBindings(lineSpriteBindings);
-        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, rootCanvas, gridCellSize, GetLineColor);
+        lineRenderer.Initialize(
+            abilityBackground,
+            moveTarget,
+            lineParent,
+            rootCanvas,
+            gridCellSize,
+            lineMaterial,
+            GetLineColor,
+            GetLineShineColorIndex);
         CachePictureBindings();
         CacheLevelBadgeBindings();
         LoadNodeDefinitions();
@@ -1977,6 +1986,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return DefaultLineColor;
 
         return GetNodeStateColor(childNode);
+    }
+
+    private int GetLineShineColorIndex(SkillType _childSkillType)
+    {
+        if (spawnedNodeMap.TryGetValue(_childSkillType, out AbilityNode childNode) == false)
+            return -1;
+
+        if (childNode.CompletedVisual)
+            return 2;
+
+        return childNode.CanApplyVisual ? 1 : 0;
     }
 
     // MaxLevel까지 찍힌 노드로 들어오는 라인만 일반 라인보다 위에 그린다.

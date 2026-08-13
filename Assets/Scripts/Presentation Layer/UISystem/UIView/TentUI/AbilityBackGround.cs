@@ -19,7 +19,7 @@ public sealed class AbilityBackGround : MonoBehaviour
     };
 
     [SerializeField] private Material backgroundMaterial;
-    [SerializeField] private Vector2 tileSize = new Vector2(64f, 64f);
+    [SerializeField] private Vector2 tileSize = new Vector2(128f, 128f);
     [SerializeField, Min(0f)] private float speedPixelsPerSecond = 12f;
 
     private Image image;

@@ -58,18 +58,22 @@ public sealed class AbilityLineGraphic : MaskableGraphic
 
         vertex.position = new Vector2(_quad.Rect.xMin, _quad.Rect.yMin);
         vertex.uv0 = new Vector2(_outerUv.x, _outerUv.y);
+        vertex.uv1 = new Vector4(_quad.ShineProgress.x, _quad.ShineColorIndex, 0f, 0f);
         _vertexHelper.AddVert(vertex);
 
         vertex.position = new Vector2(_quad.Rect.xMin, _quad.Rect.yMax);
         vertex.uv0 = new Vector2(_outerUv.x, _outerUv.w);
+        vertex.uv1 = new Vector4(_quad.ShineProgress.y, _quad.ShineColorIndex, 0f, 0f);
         _vertexHelper.AddVert(vertex);
 
         vertex.position = new Vector2(_quad.Rect.xMax, _quad.Rect.yMax);
         vertex.uv0 = new Vector2(_outerUv.z, _outerUv.w);
+        vertex.uv1 = new Vector4(_quad.ShineProgress.z, _quad.ShineColorIndex, 0f, 0f);
         _vertexHelper.AddVert(vertex);
 
         vertex.position = new Vector2(_quad.Rect.xMax, _quad.Rect.yMin);
         vertex.uv0 = new Vector2(_outerUv.z, _outerUv.y);
+        vertex.uv1 = new Vector4(_quad.ShineProgress.w, _quad.ShineColorIndex, 0f, 0f);
         _vertexHelper.AddVert(vertex);
 
         _vertexHelper.AddTriangle(vertexStart, vertexStart + 1, vertexStart + 2);
@@ -81,10 +85,14 @@ public readonly struct AbilityLineMeshQuad
 {
     public Rect Rect { get; }
     public Color32 Color { get; }
+    public Vector4 ShineProgress { get; }
+    public float ShineColorIndex { get; }
 
-    public AbilityLineMeshQuad(Rect _rect, Color _color)
+    public AbilityLineMeshQuad(Rect _rect, Color _color, Vector4 _shineProgress, float _shineColorIndex)
     {
         Rect = _rect;
         Color = _color;
+        ShineProgress = _shineProgress;
+        ShineColorIndex = _shineColorIndex;
     }
 }

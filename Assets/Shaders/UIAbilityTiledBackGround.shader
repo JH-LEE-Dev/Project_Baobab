@@ -4,7 +4,7 @@ Shader "UI/AbilityTiledBackGround"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (1, 1, 1, 1)
-        _TileSize ("Tile Size", Vector) = (64, 64, 0, 0)
+        _TileSize ("Tile Size", Vector) = (128, 128, 0, 0)
         _RectSize ("Rect Size", Vector) = (640, 360, 0, 0)
         _Pivot ("Pivot", Vector) = (0.5, 0.5, 0, 0)
         _VignetteIntensity ("Vignette Intensity", Range(0, 1)) = 0.35
