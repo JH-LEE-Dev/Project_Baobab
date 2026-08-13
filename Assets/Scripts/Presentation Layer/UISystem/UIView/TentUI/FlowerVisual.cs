@@ -2,10 +2,6 @@ using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 public class FlowerVisual : MonoBehaviour
 {
     [Header("References")]
@@ -82,7 +78,6 @@ public class FlowerVisual : MonoBehaviour
         dangleBounceCount = Mathf.Max(1, dangleBounceCount);
 
         BindReferencesIfNeeded();
-        LoadSpritesIfNeeded();
         ApplySprites();
         ApplyFixedSizes();
     }
@@ -96,7 +91,6 @@ public class FlowerVisual : MonoBehaviour
     public void SetBottomVariant(int _variantIndex)
     {
         BindReferencesIfNeeded();
-        LoadSpritesIfNeeded();
 
         if (null == bottomImage || null == bottomSprites || 0 == bottomSprites.Length)
             return;
@@ -166,7 +160,6 @@ public class FlowerVisual : MonoBehaviour
 
         initialized = true;
         BindReferencesIfNeeded();
-        LoadSpritesIfNeeded();
         ApplySprites();
         ApplyFixedSizes();
         ApplyMotionSeed();
@@ -437,38 +430,4 @@ public class FlowerVisual : MonoBehaviour
         return _overlayRectTransform;
     }
 
-    private void LoadSpritesIfNeeded()
-    {
-#if UNITY_EDITOR
-        if (null == topSprite)
-            topSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_Top.png");
-
-        if (null == topWhiteSprite)
-            topWhiteSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_Top_White.png");
-
-        if (null == bottomSprites || bottomSprites.Length != 3)
-            bottomSprites = new Sprite[3];
-
-        if (null == bottomWhiteSprites || bottomWhiteSprites.Length != 3)
-            bottomWhiteSprites = new Sprite[3];
-
-        if (null == bottomSprites[0])
-            bottomSprites[0] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_BottomA.png");
-
-        if (null == bottomSprites[1])
-            bottomSprites[1] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_BottomB.png");
-
-        if (null == bottomSprites[2])
-            bottomSprites[2] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_BottomC.png");
-
-        if (null == bottomWhiteSprites[0])
-            bottomWhiteSprites[0] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_BottomA_White.png");
-
-        if (null == bottomWhiteSprites[1])
-            bottomWhiteSprites[1] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_BottomB_White.png");
-
-        if (null == bottomWhiteSprites[2])
-            bottomWhiteSprites[2] = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Graphics/Ability/Ability_HUD/AbilityHUD_Flower/Flower_BottomC_White.png");
-#endif
-    }
 }
