@@ -782,6 +782,7 @@ MonoBehaviour:
   _treeVisualComponent: {fileID: 7941305713547832146}
   collisionRadius: 0.29
   collisionOffset: {x: 0, y: 0}
+  bGemVisual: 0
   bDead: 0
   alphaDownRadius: 0.6
   adColliderOffset: {x: 0, y: 0.7}
@@ -837,12 +838,66 @@ MonoBehaviour:
   hitDuration: 0.2
   hitVibrato: 15
   hitElasticity: 1
+  hitFlashDuration: 0.15
+  hitFlashCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  growUpFlashDuration: 0.35
+  growUpFlashCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   outlineVisualObj: {fileID: 4431059294842002129}
+  gemTopMaterial: {fileID: 2100000, guid: 2e6a91d4f37b58c4bb0d3e91a45c7f62, type: 2}
+  gemBottomMaterial: {fileID: 2100000, guid: 9a3f57e2c1d84b649e72a05fd3b16c8e, type: 2}
   baseVisualObj: {fileID: 3309576156863803684}
   shieldHDRIntensity: 1.05
   highlightHDRIntensity: 1.05
   customTreeType: 1
   treeVisualDataBase: {fileID: 11400000, guid: e604acc135e058a4ba2931ab54f2d0ec, type: 2}
+  defaultTopMaterial: {fileID: 2100000, guid: 03350fe11d393cf4fa9084102a0c40a2, type: 2}
+  defaultBottomMaterial: {fileID: 2100000, guid: 78f5e76f68715f54686fd8f5fcf4e86a, type: 2}
 --- !u!114 &3142599335365549467
 MonoBehaviour:
   m_ObjectHideFlags: 0

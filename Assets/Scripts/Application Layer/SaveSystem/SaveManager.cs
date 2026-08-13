@@ -52,16 +52,39 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     private void SubscribeSignals()
     {
         signalHub.Subscribe<CharacterSpawnedSignal>(CharacterSpawned);
+        signalHub.Subscribe<AutoSaveRequestedSignal>(AutoSaveRequested);
     }
 
     private void UnSubscribeSignals()
     {
         signalHub.UnSubscribe<CharacterSpawnedSignal>(CharacterSpawned);
+        signalHub.UnSubscribe<AutoSaveRequestedSignal>(AutoSaveRequested);
     }
 
     public void CharacterSpawned(CharacterSpawnedSignal _signal)
     {
         character = _signal.character;
+    }
+
+    // 마을 도착 / 숲 출발 시점에 발행되는 자동저장 요청. (게임 종료 시 자동저장은 OnApplicationQuit에서 별도 처리)
+    private void AutoSaveRequested(AutoSaveRequestedSignal _signal)
+    {
+        Debug.Log($"[SaveManager] Auto save triggered ({_signal.reason})");
+        SaveGameData();
+    }
+
+    // 런타임 도중 게임이 종료되면(Alt+F4, 인게임 종료 등 OnApplicationQuit이 호출되는 정상 종료 경로) 마지막 상태를 보존한다.
+    // 작업 관리자 강제 종료/크래시/정전처럼 OnApplicationQuit 자체가 호출되지 않는 경우는 이 훅으로 막을 수 없다.
+    // saveManager는 BootStrap(DontDestroyOnLoad)에 붙어있는 영구 싱글톤이라 MainMenu로 돌아가도 파괴되지 않으며,
+    // 세션 없이(메인메뉴에서) 종료해도 이 메서드는 매번 호출된다. 이때 SaveGameData()가 조용히 아무 일도
+    // 하지 않는 건, GameInstaller가 파괴되며 character(MonoBehaviour)가 유니티의 파괴된-오브젝트 null 비교
+    // 규칙에 의해 "character == null"로 평가되어 위쪽 가드에서 걸러지기 때문이다(세션 밖이라 호출 자체가
+    // 안 되는 게 아님). character를 유니티 오브젝트가 아닌 형태로 바꾸거나 Release()에서 필드를 명시적으로
+    // 비우게 되면 이 안전장치가 사라지므로 주의.
+    private void OnApplicationQuit()
+    {
+        Debug.Log("[SaveManager] Auto save triggered (ApplicationQuit)");
+        SaveGameData();
     }
 
     private string GetSaveFilePath()

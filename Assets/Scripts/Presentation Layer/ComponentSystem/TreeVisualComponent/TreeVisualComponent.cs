@@ -55,6 +55,12 @@ public class TreeVisualComponent : MonoBehaviour
     [Header("Outline")]
     [SerializeField] private GameObject outlineVisualObj;
 
+    [Header("Gem Visual")]
+    // 보석 나무로 뽑혔을 때 본체 렌더러에 갈아끼우는 머티리얼. (Custom/Custom-Sprite-Default-Tree-Gem)
+    // 아웃라인/그림자/물그림자 렌더러는 건드리지 않으므로 기존 나무 시스템과 그대로 호환된다.
+    [SerializeField] private Material gemTopMaterial;
+    [SerializeField] private Material gemBottomMaterial;
+
     [Header("Other Settings")]
     public GameObject baseVisualObj;
 
@@ -97,6 +103,16 @@ public class TreeVisualComponent : MonoBehaviour
     private static readonly int FlashAmountID = Shader.PropertyToID("_FlashAmount");
     private MaterialPropertyBlock _flashMPB;
     private Coroutine hitFlashCoroutine;
+
+    // Gem Visual - 보석 머티리얼로 갈아끼우기 전의 원본 머티리얼.
+    // 에디터에서 인스펙터로 토글하면 스크립트 재컴파일(도메인 리로드)로 런타임 필드가 날아가는데,
+    // 그때 이미 보석 머티리얼이 적용된 상태를 "원본"으로 다시 캐싱해버리면 되돌릴 수가 없다.
+    // 그래서 직렬화해서 리로드를 넘겨 살린다.
+    [SerializeField, HideInInspector] private Material defaultTopMaterial;
+    [SerializeField, HideInInspector] private Material defaultBottomMaterial;
+
+    // 별도 플래그를 들고 있으면 리로드 후 실제 머티리얼과 어긋날 수 있어, 현재 머티리얼에서 직접 판단한다.
+    public bool IsGemActive => topRenderer != null && gemTopMaterial != null && topRenderer.sharedMaterial == gemTopMaterial;
 
     // VFX Color Settings
     private ParticleColorSet currentTopVfxColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
@@ -663,6 +679,9 @@ public class TreeVisualComponent : MonoBehaviour
     // 누적된 연출 값을 지우고 비주얼을 기본 위치와 포즈로 되돌린다.
     public void ResetVisualState()
     {
+        // 보석 비주얼은 여기서 건드리지 않는다. 켜고 끄는 판단은 TreeObj가 단독으로 갖고 있고
+        // (TreeObj.bGemVisual), ResetTree가 이 함수 호출 직후에 그 값을 다시 적용한다.
+
         if (visualRoot == null)
         {
             return;
@@ -826,6 +845,42 @@ public class TreeVisualComponent : MonoBehaviour
         isShieldActive = true;
         UpdateRendererSprites();
         UpdateHDRStates();
+    }
+
+    // 원본 머티리얼을 아직 모르는 경우에만 현재 값을 기록한다.
+    // 이미 보석 머티리얼이 적용된 상태를 원본으로 잘못 굳히지 않도록 걸러낸다.
+    private void EnsureDefaultMaterialsCached()
+    {
+        if (defaultTopMaterial == null && topRenderer != null && topRenderer.sharedMaterial != gemTopMaterial)
+        {
+            defaultTopMaterial = topRenderer.sharedMaterial;
+        }
+
+        if (defaultBottomMaterial == null && bottomRenderer != null && bottomRenderer.sharedMaterial != gemBottomMaterial)
+        {
+            defaultBottomMaterial = bottomRenderer.sharedMaterial;
+        }
+    }
+
+    /// <summary>
+    /// 본체 렌더러의 머티리얼을 보석 머티리얼로 교체하거나 원본으로 되돌린다.
+    /// _HDRIntensity / _FlashAmount는 MaterialPropertyBlock으로 들어가고 보석 셰이더도 두 프로퍼티를
+    /// 동일하게 선언하므로, 머티리얼을 갈아끼워도 피격 플래시와 HDR 연출은 그대로 동작한다.
+    /// 보석 머티리얼이나 원본 머티리얼을 알 수 없으면 아무것도 하지 않는다(미할당 상태 방어).
+    /// </summary>
+    public void ApplyGemVisual(bool _active)
+    {
+        EnsureDefaultMaterialsCached();
+
+        if (topRenderer != null && gemTopMaterial != null && defaultTopMaterial != null)
+        {
+            topRenderer.sharedMaterial = _active ? gemTopMaterial : defaultTopMaterial;
+        }
+
+        if (bottomRenderer != null && gemBottomMaterial != null && defaultBottomMaterial != null)
+        {
+            bottomRenderer.sharedMaterial = _active ? gemBottomMaterial : defaultBottomMaterial;
+        }
     }
 
     private void ApplyHDRToRenderer(SpriteRenderer _renderer, bool _active, float _intensity)

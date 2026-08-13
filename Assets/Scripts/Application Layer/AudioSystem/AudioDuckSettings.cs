@@ -29,6 +29,19 @@ public class AudioDuckSettings : ScriptableObject
     [Tooltip("일시정지 음소거를 전환하는 데 걸리는 시간(초). 짧게 둬야 딸깍 소리가 안 난다.")]
     public float pauseFadeDuration = 0.1f;
 
+    [Header("Fatigue Tension Cutoff (Hz)")]
+    [Tooltip("긴박감 연출 시작 임계값. 캐릭터 피로도(스태미나) 비율이 이 값 아래로 떨어지면 " +
+             "Cutoff 보간이 시작된다 (0~1, 0.2 = 20%). Duck Cutoff와 별개로 이 값이 더 먹먹하면 그쪽이 우선한다.")]
+    [Range(0f, 1f)]
+    public float tensionStartRatio = 0.2f;
+
+    [Tooltip("이 비율 이하로 내려가면 Max Cutoff(가장 먹먹한 상태)로 고정된다 (0~1, 0.1 = 10%).")]
+    [Range(0f, 1f)]
+    public float tensionMaxRatio = 0.1f;
+
+    [Tooltip("피로도가 tensionMaxRatio 이하일 때 적용되는 Max Cutoff. 낮을수록 더 먹먹해진다.")]
+    public float tensionMaxCutoffHz = 500f;
+
     [Header("Volume Slider Mapping")]
     [Tooltip("마스터 슬라이더가 이 값일 때 0dB(원본 그대로)가 된다.")]
     public float masterZeroDbValue = 100f;
