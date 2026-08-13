@@ -182,6 +182,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float itemAcquireBounceTime = 1f;
     private const float ITEM_ACQUIRE_BOUNCE_DURATION = 0.2f;
 
+    // 피로도(스태미나)가 이 비율 이하로 떨어지면 화면에 색수차 경고를 켠다. 사망 시에는
+    // StaminaIsEmpty()가 이 조건과 무관하게 강제로 꺼준다.
+    private const float LOW_STAMINA_CHROMATIC_ABERRATION_RATIO = 0.2f;
+
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -502,6 +506,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         characterVisualComponent.PlayDeathFlash(GetArmFlashRenderer());
         CameraMoveController.Instance?.ShakeCamera(5f, 0.3f);
         CameraMoveController.Instance?.ZoomCamera(1.05f, 0.08f, 0.05f, 0.15f);
+        PostProcessSettingsApplier.Instance?.SetLowStaminaChromaticAberrationActive(false);
         bDead = true;
         healthComponent.SetStaminaDecrease(false);
         inputManager.PauseMove(true);
@@ -1127,13 +1132,18 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bStaminaUpDown) healthComponent.IncreaseStamina();
         else healthComponent.DecreaseStamina();
 
+        float staminaRatio = healthComponent.GetCurrentStamina() / Mathf.Max(1f, healthComponent.GetMaxStamina());
+
         // 던전에서 피로도(스태미나)가 낮아질수록 BGM/SFX가 서서히 먹먹해지는 긴박감 연출.
         // 타운에서는 적용하지 않으므로 던전을 벗어나면 매 프레임 1f(먹먹함 없음)로 되돌린다.
         // 스태미나 고갈로 사망한 뒤에도 꺼준다 - 그대로 두면 사망/결과창이 거는 별도의 덕킹과
         // 겹쳐 지나치게 먹먹해진다(ApplyCombinedCutoff가 둘 중 더 낮은 값을 취하기 때문).
-        Sound.SetFatigueRatio(bInDungeon && !bDead
-            ? healthComponent.GetCurrentStamina() / Mathf.Max(1f, healthComponent.GetMaxStamina())
-            : 1f);
+        Sound.SetFatigueRatio(bInDungeon && !bDead ? staminaRatio : 1f);
+
+        // 피로도가 낮을 때만 색수차 경고를 켠다. 사망 직후에도 스태미나는 낮게 남아있으므로
+        // !bDead로 걸러야 한다 - 그렇지 않으면 StaminaIsEmpty()가 꺼준 직후 바로 다시 켜진다.
+        PostProcessSettingsApplier.Instance?.SetLowStaminaChromaticAberrationActive(
+            bInDungeon && !bDead && staminaRatio <= LOW_STAMINA_CHROMATIC_ABERRATION_RATIO);
 
         // 용암 등 위험 지형 인접 시 추가 소모. 단, 일반 스태미나 소모(DecreaseStamina)와 마찬가지로
         // "실제 플레이가 시작된 이후"에만 적용해야 한다. bWhileReset(입장 카메라 연출 중, 조작 불가) 또는
