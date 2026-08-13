@@ -294,7 +294,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -344,6 +344,8 @@ RectTransform:
   m_Children:
   - {fileID: 6040278013667876326}
   - {fileID: 2439349732526603566}
+  - {fileID: 771409847957296570}
+  - {fileID: 2616820528475761538}
   m_Father: {fileID: 3923181264527570548}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -351,6 +353,81 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1500669281074876609
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 771409847957296570}
+  - component: {fileID: 7237776551098446394}
+  - component: {fileID: 3246055928221206773}
+  m_Layer: 5
+  m_Name: LoopEffect_First
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &771409847957296570
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1500669281074876609}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8407583694166403342}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 64, y: 64}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &7237776551098446394
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1500669281074876609}
+  m_CullTransparentMesh: 1
+--- !u!114 &3246055928221206773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1500669281074876609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 1757836452847658815, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &3165374215863575202
 GameObject:
   m_ObjectHideFlags: 0
@@ -526,6 +603,7 @@ GameObject:
   - component: {fileID: 3211174051171178391}
   - component: {fileID: 773788734813754045}
   - component: {fileID: 3304097743168148013}
+  - component: {fileID: 2110704571577969625}
   m_Layer: 5
   m_Name: AbilityBase
   m_TagString: Untagged
@@ -573,7 +651,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.32941177, g: 0.84705883, b: 0.41568628, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -590,6 +668,157 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2110704571577969625
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3681080422180222388}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 938fce054c42f40a3969e27a88d9bdd8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Coffee.UIEffect::Coffee.UIEffects.UIEffect
+  m_ToneFilter: 0
+  m_ToneIntensity: 1
+  m_ColorFilter: 0
+  m_ColorIntensity: 1
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_ColorGlow: 0
+  m_SamplingFilter: 0
+  m_SamplingIntensity: 0.5
+  m_SamplingWidth: 1
+  m_SamplingScale: 1
+  m_TransitionFilter: 0
+  m_TransitionRate: 0.5
+  m_TransitionReverse: 0
+  m_TransitionTex: {fileID: 0}
+  m_TransitionTexScale: {x: 1, y: 1}
+  m_TransitionTexOffset: {x: 0, y: 0}
+  m_TransitionTexSpeed: {x: 0, y: 0}
+  m_TransitionRotation: 0
+  m_TransitionKeepAspectRatio: 1
+  m_TransitionWidth: 0.2
+  m_TransitionSoftness: 0.2
+  m_TransitionRange:
+    m_Min: 0
+    m_Max: 1
+  m_TransitionColorFilter: 6
+  m_TransitionColor: {r: 0, g: 0.5, b: 1, a: 1}
+  m_TransitionColorGlow: 0
+  m_TransitionPatternReverse: 0
+  m_TransitionAutoPlaySpeed: 0
+  m_TransitionGradient:
+    serializedVersion: 2
+    key0: {r: 1, g: 1, b: 1, a: 1}
+    key1: {r: 1, g: 1, b: 1, a: 1}
+    key2: {r: 0, g: 0, b: 0, a: 0}
+    key3: {r: 0, g: 0, b: 0, a: 0}
+    key4: {r: 0, g: 0, b: 0, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 65535
+    ctime2: 0
+    ctime3: 0
+    ctime4: 0
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_ColorSpace: -1
+    m_NumColorKeys: 2
+    m_NumAlphaKeys: 2
+  m_TargetMode: 0
+  m_TargetColor: {r: 1, g: 1, b: 1, a: 1}
+  m_TargetRange: 0.1
+  m_TargetSoftness: 0.5
+  m_BlendType: 1
+  m_SrcBlendMode: 1
+  m_DstBlendMode: 10
+  m_ShadowMode: 0
+  m_ShadowDistance: {x: 1, y: -1}
+  m_ShadowIteration: 1
+  m_ShadowFade: 0.9
+  m_ShadowMirrorScale: 0.5
+  m_ShadowBlurIntensity: 1
+  m_ShadowColorFilter: 4
+  m_ShadowColor: {r: 1, g: 1, b: 1, a: 1}
+  m_ShadowColorGlow: 0
+  m_GradationMode: 0
+  m_GradationIntensity: 1
+  m_GradationColorFilter: 1
+  m_GradationColor1: {r: 1, g: 1, b: 1, a: 1}
+  m_GradationColor2: {r: 1, g: 1, b: 1, a: 1}
+  m_GradationColor3: {r: 1, g: 1, b: 1, a: 1}
+  m_GradationColor4: {r: 1, g: 1, b: 1, a: 1}
+  m_GradationGradient:
+    serializedVersion: 2
+    key0: {r: 1, g: 1, b: 1, a: 1}
+    key1: {r: 1, g: 1, b: 1, a: 1}
+    key2: {r: 0, g: 0, b: 0, a: 0}
+    key3: {r: 0, g: 0, b: 0, a: 0}
+    key4: {r: 0, g: 0, b: 0, a: 0}
+    key5: {r: 0, g: 0, b: 0, a: 0}
+    key6: {r: 0, g: 0, b: 0, a: 0}
+    key7: {r: 0, g: 0, b: 0, a: 0}
+    ctime0: 0
+    ctime1: 65535
+    ctime2: 0
+    ctime3: 0
+    ctime4: 0
+    ctime5: 0
+    ctime6: 0
+    ctime7: 0
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_ColorSpace: -1
+    m_NumColorKeys: 2
+    m_NumAlphaKeys: 2
+  m_GradationOffset: 0
+  m_GradationScale: 1
+  m_GradationRotation: 0
+  m_GradationWrapMode: 0
+  m_GradationReverse: 0
+  m_AllowToModifyMeshShape: 1
+  m_EdgeMode: 2
+  m_EdgeWidth: 0.5
+  m_EdgeColorFilter: 4
+  m_EdgeColor: {r: 1.4142135, g: 0.89844155, b: 1.1868302, a: 1}
+  m_EdgeColorGlow: 0
+  m_EdgeShinyRate: 0.5
+  m_EdgeShinyWidth: 0.4
+  m_EdgeShinyAutoPlaySpeed: 0.75
+  m_PatternArea: 1
+  m_DetailFilter: 0
+  m_DetailIntensity: 1
+  m_DetailThreshold:
+    m_Min: 0
+    m_Max: 1
+  m_DetailColor: {r: 1, g: 1, b: 1, a: 1}
+  m_DetailTex: {fileID: 0}
+  m_DetailTexScale: {x: 1, y: 1}
+  m_DetailTexOffset: {x: 0, y: 0}
+  m_DetailTexSpeed: {x: 0, y: 0}
+  m_CustomRoot: {fileID: 0}
+  m_Flip: 0
 --- !u!1 &4325659756143705785
 GameObject:
   m_ObjectHideFlags: 0
@@ -731,6 +960,81 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: e5298198a64592941849ea8b38428bab, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!1 &5063751863135466228
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2616820528475761538}
+  - component: {fileID: 1077677591862252535}
+  - component: {fileID: 9162612835271353551}
+  m_Layer: 5
+  m_Name: LoopEffect_Second
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!224 &2616820528475761538
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5063751863135466228}
+  m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8407583694166403342}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 90}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 64, y: 64}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &1077677591862252535
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5063751863135466228}
+  m_CullTransparentMesh: 1
+--- !u!114 &9162612835271353551
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5063751863135466228}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 1757836452847658815, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -966,11 +1270,66 @@ MonoBehaviour:
   abilityPictureImage: {fileID: 6666146036124203983}
   abilityLevelImage: {fileID: 1182543981634824514}
   abilityBarImage: {fileID: 6541639837274626401}
+  abilityBaseEffect: {fileID: 2110704571577969625}
+  importantNodeLoopEffectFirstImage: {fileID: 3246055928221206773}
+  importantNodeLoopEffectSecondImage: {fileID: 9162612835271353551}
+  importantNodeLoopEffectFrames:
+  - {fileID: 1757836452847658815, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 1332128813, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 587916420, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -26955343, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 1336589092, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 1139738467, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -192384067, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 485530160, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 170726790, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -2096745053, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -489735192, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 1265185940, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 2008270029, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -231985936, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -2027014301, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -1646366185, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: -1671771039, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 1174421008, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 1169520243, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  - {fileID: 449791308, guid: 45fb1dfaa9db99441ad197f0eb21b482, type: 3}
+  importantNodeLoopEffectFrameRate: 16
   defaultPictureSprite: {fileID: 21300000, guid: e5298198a64592941849ea8b38428bab, type: 3}
   vfxComponent: {fileID: 6061039416078355049}
   effectLayerTag: HUD
   levelUpImpactTag: LevelUpEffect
   maxLevelUpEffectImage: {fileID: 9020330033409768601}
+  maxLevelUpEffectFrames:
+  - {fileID: 357360430637363567, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -196969970629857297, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -455704834006809850, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -188519885416251465, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3058170925482934950, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3595359435694097229, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -8665936688751666894, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -5545607485667387057, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 1642640397240119637, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 2127807457266132368, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 9373119954761734, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 3645505317366634217, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 6334238937447704063, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3988954552548641116, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 2693542810642562598, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 768242812857961483, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 6061104447499646291, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -7679410567698293900, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 8779566841725707401, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: -3660386938350495463, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 7722489700757802795, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 6786292648516963785, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 3059842384482936807, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 7641391983900938612, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 818190229777170819, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 4365923493224744177, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 8988111497597379133, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 5133563916505715374, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
+  - {fileID: 5995543882994794911, guid: b49572d890f31df44a147943cb1f8a94, type: 3}
   maxLevelUpEffectFrameRate: 24
   motionPlayer: {fileID: 1173830248015622911}
   hoverMotionTag: UIHover
