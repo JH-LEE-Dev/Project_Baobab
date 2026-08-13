@@ -585,9 +585,26 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnCameraShakeChanged(float _val) { settings.SetCameraShake(_val); }
     private void OnCrosshairBrightnessChanged(float _val) { settings.SetCrosshairBrightness(_val); }
-    private void OnChromaticAberrationChanged(float _val) { settings.SetChromaticAberration(_val); }
-    private void OnBrightnessChanged(float _val) { settings.SetBrightness(_val); }
-    private void OnSaturationChanged(float _val) { settings.SetSaturation(_val); }
+
+    // 화면 효과는 볼륨과 마찬가지로 창을 닫을 때가 아니라 조작하는 즉시 보여야 조절이 가능하므로,
+    // 값을 넘긴 뒤 곧바로 실시간 반영까지 요청한다. (저장은 기존대로 창을 닫을 때 CommitChanges가 담당)
+    private void OnChromaticAberrationChanged(float _val)
+    {
+        settings.SetChromaticAberration(_val);
+        settings.ApplyGraphicsSettingsLive();
+    }
+
+    private void OnBrightnessChanged(float _val)
+    {
+        settings.SetBrightness(_val);
+        settings.ApplyGraphicsSettingsLive();
+    }
+
+    private void OnSaturationChanged(float _val)
+    {
+        settings.SetSaturation(_val);
+        settings.ApplyGraphicsSettingsLive();
+    }
 
     // 볼륨은 창을 닫을 때가 아니라 조작하는 즉시 들려야 조절이 가능하므로, 값을 넘긴 뒤
     // 곧바로 실시간 반영까지 요청한다. (저장은 기존대로 창을 닫을 때 CommitChanges가 담당)

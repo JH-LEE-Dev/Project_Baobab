@@ -157,6 +157,9 @@ public class GameInstaller : MonoBehaviour
             // Town 초기화(그리드 생성, NPC 스폰)가 끝난 뒤에만 구름이 걷히도록 여기서 명시적으로 트리거한다.
             inDungeonSystem.NotifyTownSystemReady();
             unitSystem.SetWhereIsCharacter(false);
+
+            // 마을 도착(최초 진입/이어하기 포함) 시점 자동저장.
+            signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.ArriveTown));
         }
     }
 

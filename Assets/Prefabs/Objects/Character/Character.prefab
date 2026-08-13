@@ -951,6 +951,7 @@ GameObject:
   - component: {fileID: 9036442478881247126}
   - component: {fileID: 528576042098378646}
   - component: {fileID: 8468477139537547128}
+  - component: {fileID: 4472830195621847503}
   m_Layer: 8
   m_Name: Character
   m_TagString: Player
@@ -981,6 +982,19 @@ Transform:
   - {fileID: 5601304583361212893}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4472830195621847503
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3341736304246452574}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f2b8e41d95a4c7e8b3f1027ad6c5e93, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::GemLightSource
+  offset: {x: 0, y: 0.5}
 --- !u!114 &8662941010871122232
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -991,7 +1005,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 699ec30f180d36a479ce2da0a2a41340, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::Character
   shadowObject: {fileID: 8695531816826255951}
   animatorObject: {fileID: 3984376963687474699}

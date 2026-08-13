@@ -534,6 +534,9 @@ public class TownSystem : MonoBehaviour
         if (bCurrentlyTownScene == false)
             return;
 
+        // 마을 → 숲 출발 시점 자동저장. townObjectManager가 정리(Clear)되기 전, 가장 온전한 상태에서 저장한다.
+        signalHub.Publish(new AutoSaveRequestedSignal(AutoSaveReason.DepartToForest));
+
         townUnitSpawner?.PauseAllNPCs();
         townUnitSpawner?.DeactivateAllNPCs();
 

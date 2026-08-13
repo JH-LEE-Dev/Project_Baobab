@@ -1127,6 +1127,14 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         if (bStaminaUpDown) healthComponent.IncreaseStamina();
         else healthComponent.DecreaseStamina();
 
+        // 던전에서 피로도(스태미나)가 낮아질수록 BGM/SFX가 서서히 먹먹해지는 긴박감 연출.
+        // 타운에서는 적용하지 않으므로 던전을 벗어나면 매 프레임 1f(먹먹함 없음)로 되돌린다.
+        // 스태미나 고갈로 사망한 뒤에도 꺼준다 - 그대로 두면 사망/결과창이 거는 별도의 덕킹과
+        // 겹쳐 지나치게 먹먹해진다(ApplyCombinedCutoff가 둘 중 더 낮은 값을 취하기 때문).
+        Sound.SetFatigueRatio(bInDungeon && !bDead
+            ? healthComponent.GetCurrentStamina() / Mathf.Max(1f, healthComponent.GetMaxStamina())
+            : 1f);
+
         // 용암 등 위험 지형 인접 시 추가 소모. 단, 일반 스태미나 소모(DecreaseStamina)와 마찬가지로
         // "실제 플레이가 시작된 이후"에만 적용해야 한다. bWhileReset(입장 카메라 연출 중, 조작 불가) 또는
         // bDead 상태에서까지 깎으면, 스태미나가 매우 빠르게 닳는 스테이지(예: 최대치가 낮은 상태의 MagmaForest)에서

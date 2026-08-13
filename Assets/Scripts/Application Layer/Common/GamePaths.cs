@@ -8,7 +8,7 @@ using System.IO;
 /// </summary>
 public static class GamePaths
 {
-    private const string FOLDER_NAME = "Project_Baobab";
+    private const string FOLDER_NAME = "LumberBoy";
     private const string GAME_SAVE_FILE_NAME = "SaveData.dat";
     private const string GAME_SAVE_BACKUP_FILE_NAME = "SaveData.dat.bak";
     private const string GAME_SAVE_TEMP_FILE_NAME = "SaveData.dat.tmp";
