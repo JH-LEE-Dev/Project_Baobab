@@ -46,16 +46,23 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
 
         [Header(Gem Color)]
         [HDR] _GemColor("Gem Color", Color) = (0.22, 0.45, 1, 1)
-        _DeepShade("Deep Shade (unlit facet)", Range(0,1)) = 0.35
-        _Whiteness("Highlight Whiteness (lit facet)", Range(0,1)) = 0.7
+        [HDR] _GemColorB("Gem Color B (iridescence)", Color) = (0.45, 0.92, 1, 1)
+        _Iridescence("Iridescence", Range(0,1)) = 0.55
+        _RainbowAmount("Rainbow Amount", Range(0,1)) = 0
+        _RainbowHueBase("Rainbow Hue Base", Range(0,1)) = 0.55
+        _RainbowHueRange("Rainbow Hue Range", Range(0,1)) = 0.45
+        _RainbowSaturation("Rainbow Saturation", Range(0,1)) = 0.7
+        _GemAlpha("Gem Alpha", Range(0,1)) = 0.82
+        _DeepShade("Deep Shade (unlit facet)", Range(0,1)) = 0.25
         _FacetVariation("Facet Brightness Variation", Range(0,0.5)) = 0.08
         _LumaInfluence("Sprite Luma Influence", Range(0,2)) = 0.75
         _LumaBias("Luma Bias", Range(0,1)) = 0.35
-        _SpecStrength("Facet Highlight", Range(0,2)) = 0.4
 
-        [Header(Gem Edges)]
-        _EdgeWidth("Facet Edge Width", Range(0,0.3)) = 0.035
-        _EdgeBrightness("Facet Edge Brightness", Range(0,2)) = 0.5
+        [Header(Gem Flash)]
+        _FlashThreshold("Flash Threshold", Range(0.3,1)) = 0.82
+        _FlashStrength("Flash Strength", Range(0,1)) = 1
+        _Whiteness("Flash Whiteness", Range(0,1)) = 0.85
+        _SpecStrength("Flash Bloom", Range(0,2)) = 0.5
 
         [Header(Gem Sparkle)]
         _SparkleRatio("Sparkle Facet Ratio", Range(0,1)) = 0.15
@@ -121,6 +128,13 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _GemColor)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _GemColorB)
+                UNITY_DEFINE_INSTANCED_PROP(float, _Iridescence)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowAmount)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowHueBase)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowHueRange)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowSaturation)
+                UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
@@ -140,12 +154,12 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _FormCenterY)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DeepShade)
                 UNITY_DEFINE_INSTANCED_PROP(float, _Whiteness)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashThreshold)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashStrength)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FacetVariation)
                 UNITY_DEFINE_INSTANCED_PROP(float, _LumaInfluence)
                 UNITY_DEFINE_INSTANCED_PROP(float, _LumaBias)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SpecStrength)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EdgeWidth)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EdgeBrightness)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleRatio)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleSize)
@@ -157,6 +171,12 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 TreeGemParams p;
                 p.amount            = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemAmount);
                 p.gemColor          = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemColor).rgb;
+                p.gemColorB         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemColorB).rgb;
+                p.iridescence       = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Iridescence);
+                p.rainbowAmount     = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowAmount);
+                p.rainbowHueBase    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowHueBase);
+                p.rainbowHueRange   = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowHueRange);
+                p.rainbowSaturation = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowSaturation);
                 p.facetSize         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FacetSize);
                 p.shadeSteps        = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShadeSteps);
                 p.sweepSpeed        = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SweepSpeed);
@@ -167,12 +187,12 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 p.formCenterY       = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FormCenterY);
                 p.deepShade         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DeepShade);
                 p.whiteness         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Whiteness);
+                p.flashThreshold    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashThreshold);
+                p.flashStrength     = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashStrength);
                 p.facetVariation    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FacetVariation);
                 p.lumaInfluence     = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _LumaInfluence);
                 p.lumaBias          = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _LumaBias);
                 p.specStrength      = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SpecStrength);
-                p.edgeWidth         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EdgeWidth);
-                p.edgeBrightness    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EdgeBrightness);
                 p.sparkleRatio      = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SparkleRatio);
                 p.sparkleSpeed      = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SparkleSpeed);
                 p.sparkleSize       = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SparkleSize);
@@ -237,6 +257,10 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+
+                // 살짝 비치게 해서 뒤가 은은히 보이도록 한다. 피격 플래시가 color.a를 참조하므로
+                // 반드시 그 뒤에서 곱해야 플래시 세기가 알파에 휘둘리지 않는다.
+                color.a *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemAlpha);
                 return color;
             }
             ENDHLSL
@@ -279,6 +303,13 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _GemColor)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _GemColorB)
+                UNITY_DEFINE_INSTANCED_PROP(float, _Iridescence)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowAmount)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowHueBase)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowHueRange)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowSaturation)
+                UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
@@ -298,12 +329,12 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _FormCenterY)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DeepShade)
                 UNITY_DEFINE_INSTANCED_PROP(float, _Whiteness)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashThreshold)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashStrength)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FacetVariation)
                 UNITY_DEFINE_INSTANCED_PROP(float, _LumaInfluence)
                 UNITY_DEFINE_INSTANCED_PROP(float, _LumaBias)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SpecStrength)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EdgeWidth)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EdgeBrightness)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleRatio)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleSize)
@@ -402,6 +433,13 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
             UNITY_INSTANCING_BUFFER_START(UnityPerMaterial)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _Color)
                 UNITY_DEFINE_INSTANCED_PROP(half4, _GemColor)
+                UNITY_DEFINE_INSTANCED_PROP(half4, _GemColorB)
+                UNITY_DEFINE_INSTANCED_PROP(float, _Iridescence)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowAmount)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowHueBase)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowHueRange)
+                UNITY_DEFINE_INSTANCED_PROP(float, _RainbowSaturation)
+                UNITY_DEFINE_INSTANCED_PROP(float, _GemAlpha)
                 UNITY_DEFINE_INSTANCED_PROP(float, _HDRIntensity)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FlashAmount)
                 UNITY_DEFINE_INSTANCED_PROP(float, _EnableWindSway)
@@ -421,12 +459,12 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 UNITY_DEFINE_INSTANCED_PROP(float, _FormCenterY)
                 UNITY_DEFINE_INSTANCED_PROP(float, _DeepShade)
                 UNITY_DEFINE_INSTANCED_PROP(float, _Whiteness)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashThreshold)
+                UNITY_DEFINE_INSTANCED_PROP(float, _FlashStrength)
                 UNITY_DEFINE_INSTANCED_PROP(float, _FacetVariation)
                 UNITY_DEFINE_INSTANCED_PROP(float, _LumaInfluence)
                 UNITY_DEFINE_INSTANCED_PROP(float, _LumaBias)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SpecStrength)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EdgeWidth)
-                UNITY_DEFINE_INSTANCED_PROP(float, _EdgeBrightness)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleRatio)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleSpeed)
                 UNITY_DEFINE_INSTANCED_PROP(float, _SparkleSize)
@@ -438,6 +476,12 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 TreeGemParams p;
                 p.amount            = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemAmount);
                 p.gemColor          = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemColor).rgb;
+                p.gemColorB         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemColorB).rgb;
+                p.iridescence       = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Iridescence);
+                p.rainbowAmount     = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowAmount);
+                p.rainbowHueBase    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowHueBase);
+                p.rainbowHueRange   = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowHueRange);
+                p.rainbowSaturation = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _RainbowSaturation);
                 p.facetSize         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FacetSize);
                 p.shadeSteps        = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _ShadeSteps);
                 p.sweepSpeed        = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SweepSpeed);
@@ -448,12 +492,12 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
                 p.formCenterY       = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FormCenterY);
                 p.deepShade         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _DeepShade);
                 p.whiteness         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _Whiteness);
+                p.flashThreshold    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashThreshold);
+                p.flashStrength     = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashStrength);
                 p.facetVariation    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FacetVariation);
                 p.lumaInfluence     = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _LumaInfluence);
                 p.lumaBias          = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _LumaBias);
                 p.specStrength      = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SpecStrength);
-                p.edgeWidth         = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EdgeWidth);
-                p.edgeBrightness    = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _EdgeBrightness);
                 p.sparkleRatio      = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SparkleRatio);
                 p.sparkleSpeed      = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SparkleSpeed);
                 p.sparkleSize       = UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _SparkleSize);
@@ -516,6 +560,10 @@ Shader "Custom/Custom-Sprite-Default-Tree-Gem"
 
                 color.rgb *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _HDRIntensity);
                 color.rgb = lerp(color.rgb, half3(1,1,1), UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _FlashAmount) * color.a);
+
+                // 살짝 비치게 해서 뒤가 은은히 보이도록 한다. 피격 플래시가 color.a를 참조하므로
+                // 반드시 그 뒤에서 곱해야 플래시 세기가 알파에 휘둘리지 않는다.
+                color.a *= UNITY_ACCESS_INSTANCED_PROP(UnityPerMaterial, _GemAlpha);
                 return color;
             }
             ENDHLSL

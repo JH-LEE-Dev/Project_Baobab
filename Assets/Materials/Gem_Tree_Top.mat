@@ -19,7 +19,7 @@ Material:
   m_CustomRenderQueue: -1
   stringTagMap: {}
   disabledShaderPasses: []
-  m_LockedProperties:
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -41,40 +41,44 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _DeepShade: 0.35
-    - _EdgeBrightness: 0.5
-    - _EdgeWidth: 0.035
+    - _DeepShade: 0.45
     - _EnableExternalAlpha: 0
     - _EnableWindSway: 1
-    - _FacetRandomness: 0.45
-    - _FacetSize: 7
-    - _FacetVariation: 0.08
-    - _FormBulge: 1.6
-    - _FormCenterY: 0.74
+    - _FacetRandomness: 0.55
+    - _FacetSize: 7.5
+    - _FacetVariation: 0.12
     - _FlashAmount: 0
+    - _FlashStrength: 0.5
+    - _FlashThreshold: 0.9
+    - _FormBulge: 2.5
+    - _FormCenterY: 0.74
+    - _GemAlpha: 0.85
     - _GemAmount: 1
     - _HDRIntensity: 1
+    - _Iridescence: 0.65
     - _LightFollow: 1
-    - _LightHeight: 2
-    - _LumaBias: 0.35
-    - _LumaInfluence: 0.75
-    - _ShadeSteps: 5
+    - _LightHeight: 0.5
+    - _LumaBias: 0.5
+    - _LumaInfluence: 0.6
+    - _RainbowAmount: 0
+    - _ShadeSteps: 6
     - _SparkleBrightness: 1.2
-    - _SparkleRatio: 0.15
+    - _SparkleRatio: 1
     - _SparkleSize: 0.06
     - _SparkleSpeed: 2.5
-    - _SpecStrength: 0.4
+    - _SpecStrength: 0.1
     - _SwayDetailSpeed: 1.45
     - _SwayDetailWeight: 0.35
     - _SwayMainSpeed: 0.55
     - _SwayPositionAmplitude: 0.03
     - _SwayRotationAmplitude: 1.25
     - _SweepSpeed: 0.8
-    - _Whiteness: 0.7
+    - _Whiteness: 0.18
     - _ZWrite: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _GemColor: {r: 0.22, g: 0.45, b: 1, a: 1}
+    - _GemColor: {r: 0.78464717, g: 1.7262238, b: 4.237095, a: 1}
+    - _GemColorB: {r: 0.6618444, g: 1.522242, b: 1.7207954, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

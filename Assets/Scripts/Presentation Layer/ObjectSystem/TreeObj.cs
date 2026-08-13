@@ -58,9 +58,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     public void SetGemVisual(bool _boolean)
     {
         bGemVisual = _boolean;
+        RefreshGemVisual();
+    }
+
+    /// <summary>
+    /// 현재 설정으로 보석 비주얼을 다시 적용한다.
+    /// 색 데이터를 인스펙터에서 바꿨을 때 이미 스폰된 나무에도 반영하기 위해 외부에서 호출한다.
+    /// </summary>
+    public void RefreshGemVisual()
+    {
         if (treeVisualComponent != null)
         {
-            treeVisualComponent.ApplyGemVisual(_boolean);
+            // 보석 색은 나무 등급이 결정한다. treeData는 ApplyData 진입 시점에 이미 갱신되어 있다.
+            treeVisualComponent.ApplyGemVisual(bGemVisual, treeData.grade);
         }
     }
 
@@ -325,7 +335,7 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
             treeVisualComponent.ResetVisualState();
             // 인스펙터에서 켜 둔 보석 비주얼이 풀 재사용 후에도 유지되도록 마지막에 다시 적용한다.
             // 나중에 스폰별로 보석 여부를 굴린다면, ResetTree가 끝난 뒤에 SetGemVisual을 호출하면 된다.
-            treeVisualComponent.ApplyGemVisual(bGemVisual);
+            treeVisualComponent.ApplyGemVisual(bGemVisual, treeData.grade);
         }
     }
 

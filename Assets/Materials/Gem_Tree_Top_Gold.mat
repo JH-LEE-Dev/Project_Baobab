@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Gem_Tree_Bottom
+  m_Name: Gem_Tree_Top_Gold
   m_Shader: {fileID: 4800000, guid: 4b8d2f61ca9e37b48d15e0a7c6392fd8, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -43,27 +43,27 @@ Material:
     m_Floats:
     - _DeepShade: 0.45
     - _EnableExternalAlpha: 0
-    - _EnableWindSway: 0
+    - _EnableWindSway: 1
     - _FacetRandomness: 0.55
-    - _FacetSize: 5.5
+    - _FacetSize: 7.5
     - _FacetVariation: 0.12
     - _FlashAmount: 0
     - _FlashStrength: 0.5
     - _FlashThreshold: 0.9
-    - _FormBulge: 1.2
-    - _FormCenterY: 0.1
+    - _FormBulge: 2.5
+    - _FormCenterY: 0.74
     - _GemAlpha: 0.85
     - _GemAmount: 1
     - _HDRIntensity: 1
     - _Iridescence: 0.65
     - _LightFollow: 1
     - _LightHeight: 0.5
-    - _LumaBias: 0.62
-    - _LumaInfluence: 0.4
+    - _LumaBias: 0.5
+    - _LumaInfluence: 0.6
     - _RainbowAmount: 0
     - _ShadeSteps: 6
     - _SparkleBrightness: 1.2
-    - _SparkleRatio: 0
+    - _SparkleRatio: 1
     - _SparkleSize: 0.06
     - _SparkleSpeed: 2.5
     - _SpecStrength: 0.1
@@ -77,8 +77,8 @@ Material:
     - _ZWrite: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _GemColor: {r: 0.36605084, g: 0.80531186, b: 1.9766746, a: 1}
-    - _GemColorB: {r: 0.6618443, g: 1.5222418, b: 1.7207952, a: 1}
+    - _GemColor: {r: 2.3180466, g: 1.6689936, b: 0.50997025, a: 1}
+    - _GemColorB: {r: 1.4098369, g: 1.3111483, b: 0.84590214, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

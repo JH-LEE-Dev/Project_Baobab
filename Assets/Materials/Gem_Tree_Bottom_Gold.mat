@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Gem_Tree_Bottom
+  m_Name: Gem_Tree_Bottom_Gold
   m_Shader: {fileID: 4800000, guid: 4b8d2f61ca9e37b48d15e0a7c6392fd8, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -77,8 +77,8 @@ Material:
     - _ZWrite: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _GemColor: {r: 0.36605084, g: 0.80531186, b: 1.9766746, a: 1}
-    - _GemColorB: {r: 0.6618443, g: 1.5222418, b: 1.7207952, a: 1}
+    - _GemColor: {r: 1.0814068, g: 0.778613, b: 0.2379095, a: 1}
+    - _GemColorB: {r: 1.4098368, g: 1.3111482, b: 0.8459021, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

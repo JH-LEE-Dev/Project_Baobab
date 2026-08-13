@@ -1,7 +1,19 @@
 using System.Collections;
+using System.Collections.Generic;
 using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Rendering;
+
+/// <summary>
+/// 보석 종류 하나에 대응하는 머티리얼 한 쌍.
+/// </summary>
+[System.Serializable]
+public struct TreeGemMaterialSet
+{
+    public TreeGemType gemType;
+    public Material topMaterial;
+    public Material bottomMaterial;
+}
 
 public class TreeVisualComponent : MonoBehaviour
 {
@@ -56,10 +68,16 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField] private GameObject outlineVisualObj;
 
     [Header("Gem Visual")]
-    // 보석 나무로 뽑혔을 때 본체 렌더러에 갈아끼우는 머티리얼. (Custom/Custom-Sprite-Default-Tree-Gem)
+    // 보석 종류별 머티리얼 세트. 색·투명도·면 크기 등을 종류마다 머티리얼에서 독립적으로 설정한다.
     // 아웃라인/그림자/물그림자 렌더러는 건드리지 않으므로 기존 나무 시스템과 그대로 호환된다.
-    [SerializeField] private Material gemTopMaterial;
-    [SerializeField] private Material gemBottomMaterial;
+    [SerializeField] private TreeGemMaterialSet[] gemMaterialSets;
+
+    [Tooltip("등급 매핑이 없을 때 쓸 기본 보석 종류.")]
+    [SerializeField] private TreeGemType defaultGemType = TreeGemType.Diamond;
+
+    [Tooltip("나무 등급 -> 보석 종류 매핑. 비워두면 항상 기본 종류를 쓴다.")]
+    [SerializeField] private TreeGemColorDataBase treeGemColorDataBase;
+
 
     [Header("Other Settings")]
     public GameObject baseVisualObj;
@@ -94,6 +112,9 @@ public class TreeVisualComponent : MonoBehaviour
     private bool isShieldActive = false;
     private bool isOnWaterActive = false;
 
+    // 보석 머티리얼인지 판별하는 데 쓰는 프로퍼티
+    private static readonly int GemColorID = Shader.PropertyToID("_GemColor");
+
     // Shield HDR
     private static readonly int HDRIntensityID = Shader.PropertyToID("_HDRIntensity");
     private MaterialPropertyBlock _mpb;
@@ -112,7 +133,8 @@ public class TreeVisualComponent : MonoBehaviour
     [SerializeField, HideInInspector] private Material defaultBottomMaterial;
 
     // 별도 플래그를 들고 있으면 리로드 후 실제 머티리얼과 어긋날 수 있어, 현재 머티리얼에서 직접 판단한다.
-    public bool IsGemActive => topRenderer != null && gemTopMaterial != null && topRenderer.sharedMaterial == gemTopMaterial;
+    // 색을 바꾼 인스턴스 머티리얼도 보석으로 쳐야 하므로 참조 비교가 아니라 프로퍼티 유무로 본다.
+    public bool IsGemActive => topRenderer != null && IsGemMaterial(topRenderer.sharedMaterial);
 
     // VFX Color Settings
     private ParticleColorSet currentTopVfxColor = new ParticleColorSet { startColor = new ParticleSystem.MinMaxGradient(Color.white), overrideChildrenColor = true };
@@ -847,16 +869,23 @@ public class TreeVisualComponent : MonoBehaviour
         UpdateHDRStates();
     }
 
+    // 보석 머티리얼(또는 그 복제본)인지 판별한다. 복제본도 gem 프로퍼티를 갖고 있으므로
+    // 원본 머티리얼을 캐싱할 때 이걸로 걸러야 한다.
+    private static bool IsGemMaterial(Material _material)
+    {
+        return _material != null && _material.HasProperty(GemColorID);
+    }
+
     // 원본 머티리얼을 아직 모르는 경우에만 현재 값을 기록한다.
     // 이미 보석 머티리얼이 적용된 상태를 원본으로 잘못 굳히지 않도록 걸러낸다.
     private void EnsureDefaultMaterialsCached()
     {
-        if (defaultTopMaterial == null && topRenderer != null && topRenderer.sharedMaterial != gemTopMaterial)
+        if (defaultTopMaterial == null && topRenderer != null && !IsGemMaterial(topRenderer.sharedMaterial))
         {
             defaultTopMaterial = topRenderer.sharedMaterial;
         }
 
-        if (defaultBottomMaterial == null && bottomRenderer != null && bottomRenderer.sharedMaterial != gemBottomMaterial)
+        if (defaultBottomMaterial == null && bottomRenderer != null && !IsGemMaterial(bottomRenderer.sharedMaterial))
         {
             defaultBottomMaterial = bottomRenderer.sharedMaterial;
         }
@@ -864,23 +893,59 @@ public class TreeVisualComponent : MonoBehaviour
 
     /// <summary>
     /// 본체 렌더러의 머티리얼을 보석 머티리얼로 교체하거나 원본으로 되돌린다.
-    /// _HDRIntensity / _FlashAmount는 MaterialPropertyBlock으로 들어가고 보석 셰이더도 두 프로퍼티를
-    /// 동일하게 선언하므로, 머티리얼을 갈아끼워도 피격 플래시와 HDR 연출은 그대로 동작한다.
-    /// 보석 머티리얼이나 원본 머티리얼을 알 수 없으면 아무것도 하지 않는다(미할당 상태 방어).
+    /// 보석 종류별 색은 베이스 머티리얼을 복제한 인스턴스로 처리한다.
     /// </summary>
-    public void ApplyGemVisual(bool _active)
+    public void ApplyGemVisual(bool _active, TreeGrade _grade = TreeGrade.None)
     {
         EnsureDefaultMaterialsCached();
 
-        if (topRenderer != null && gemTopMaterial != null && defaultTopMaterial != null)
+        if (!_active)
         {
-            topRenderer.sharedMaterial = _active ? gemTopMaterial : defaultTopMaterial;
+            if (topRenderer != null && defaultTopMaterial != null) topRenderer.sharedMaterial = defaultTopMaterial;
+            if (bottomRenderer != null && defaultBottomMaterial != null) bottomRenderer.sharedMaterial = defaultBottomMaterial;
+            return;
         }
 
-        if (bottomRenderer != null && gemBottomMaterial != null && defaultBottomMaterial != null)
+        if (!TryGetGemMaterialSet(_grade, out TreeGemMaterialSet materialSet)) return;
+
+        if (topRenderer != null && materialSet.topMaterial != null)
         {
-            bottomRenderer.sharedMaterial = _active ? gemBottomMaterial : defaultBottomMaterial;
+            topRenderer.sharedMaterial = materialSet.topMaterial;
         }
+
+        if (bottomRenderer != null && materialSet.bottomMaterial != null)
+        {
+            bottomRenderer.sharedMaterial = materialSet.bottomMaterial;
+        }
+    }
+
+    /// <summary>
+    /// 등급에 맞는 머티리얼 세트를 찾는다.
+    /// 등급 매핑이 없으면 defaultGemType 세트를 쓴다.
+    /// </summary>
+    private bool TryGetGemMaterialSet(TreeGrade _grade, out TreeGemMaterialSet _materialSet)
+    {
+        _materialSet = default;
+        if (gemMaterialSets == null || gemMaterialSets.Length == 0) return false;
+
+        TreeGemType gemType = defaultGemType;
+        if (treeGemColorDataBase != null && treeGemColorDataBase.TryResolveGemType(_grade, out TreeGemType resolved))
+        {
+            gemType = resolved;
+        }
+
+        for (int i = 0; i < gemMaterialSets.Length; i++)
+        {
+            if (gemMaterialSets[i].gemType == gemType)
+            {
+                _materialSet = gemMaterialSets[i];
+                return true;
+            }
+        }
+
+        // 지정한 종류의 세트가 없으면 첫 번째 세트로라도 보석 비주얼은 유지한다.
+        _materialSet = gemMaterialSets[0];
+        return true;
     }
 
     private void ApplyHDRToRenderer(SpriteRenderer _renderer, bool _active, float _intensity)
@@ -934,8 +999,29 @@ public class TreeVisualComponent : MonoBehaviour
     {
     }
 
+#if UNITY_EDITOR
+    // 인스펙터에서 미리보기 종류나 베이스 머티리얼을 바꿨을 때 씬 뷰에 즉시 반영한다.
+    // 이미 보석이 켜져 있을 때만 다시 적용한다.
+    private void RefreshGemVisualInEditor()
+    {
+        bool isGemActive = (topRenderer != null && IsGemMaterial(topRenderer.sharedMaterial))
+                        || (bottomRenderer != null && IsGemMaterial(bottomRenderer.sharedMaterial));
+
+        if (!isGemActive) return;
+
+        // 색 종류는 데이터(TreeGemColorDataBase)가 등급 또는 디버그 강제로 결정한다.
+        // 머티리얼 인스턴스는 버리지 않고 색만 다시 계산되므로 DestroyImmediate가 필요 없다.
+        ApplyGemVisual(true);
+    }
+#endif
+
     private void OnValidate()
     {
+#if UNITY_EDITOR
+        // 인스펙터에서 미리보기 종류나 베이스 머티리얼을 바꾼 것을 바로 반영한다.
+        RefreshGemVisualInEditor();
+#endif
+
         if (Application.isPlaying || !previewInEditor)
         {
             return;
