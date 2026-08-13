@@ -622,7 +622,7 @@ public class LogItem : Item, IStaticCollidable
 
             state = ItemMoveState.Dropped;
             SetShaderFloating(true);
-            if (vfxComponent != null)
+            if (vfxComponent != null && logState > LogState.Normal)
             {
                 particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
                 if (particleEffect != null) particleEffect.transform.localScale = Vector3.one;
@@ -901,13 +901,13 @@ public class LogItem : Item, IStaticCollidable
             transform.localScale = Vector3.one;
             if (visualTransform != null) visualTransform.localScale = Vector3.one;
             state = ItemMoveState.Dropped;
-            
-            if (vfxComponent != null)
+
+            if (vfxComponent != null && logState > LogState.Normal)
             {
                 particleEffect = vfxComponent.Play("Shiny", transform.position, transform.rotation, transform);
                 if (particleEffect != null) particleEffect.transform.localScale = Vector3.one;
             }
-                
+
             return;
         }
 
