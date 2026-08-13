@@ -75,6 +75,7 @@ public enum SoundID
     MainMenuStart00 = 322512263,
     MainMenuStart01 = 1888596204,
     OptionClick = 359467584,
+    OptionSFXBarTick = -911198171,
     SkyDown = 1617231916,
     SkyUP = -358144385,
     NaviClose = -494540975,
