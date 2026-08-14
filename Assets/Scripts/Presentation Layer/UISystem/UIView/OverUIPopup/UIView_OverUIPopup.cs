@@ -66,6 +66,13 @@ public class UIView_OverUIPopup : UIView
     }
 
     /// <summary>
+    /// 프레스티지 레벨이 상승함 - 관련 연출/UI 갱신이 필요하면 여기서 처리하면 된다.
+    /// </summary>
+    public void PrestigeLevelIncreased(int _level)
+    {
+    }
+
+    /// <summary>
     /// 튜토리얼 스텝이 시작됨 - 해당 스텝의 안내 UI를 여기서 띄우면 된다.
     /// </summary>
     public void TutorialStepStarted(TutorialStep _step)
