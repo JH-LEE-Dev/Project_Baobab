@@ -15,6 +15,11 @@ public class UIView_OverUIPopup : UIView
     [Header("Tutorial Quest")]
     [SerializeField] private UI_TutorialQuest tutorialQuest;
 
+    [Header("Prestige Region Unlock Settings")]
+    [SerializeField] private string prestigeUnlockKey = "UnlockNewRegion_Title";
+    [SerializeField] private float prestigeInitialDuration = 1.5f;
+    [SerializeField] private float prestigeCompletedHoldDuration = 1.5f;
+
     public override void Initialize(UIViewContext _ctx)
     {
         base.Initialize(_ctx);
@@ -70,6 +75,21 @@ public class UIView_OverUIPopup : UIView
     /// </summary>
     public void PrestigeLevelIncreased(int _level)
     {
+        Debug.Log($"UIView_OverUIPopup::PrestigeLevelIncreased() - Level: {_level}");
+
+        if (null == tutorialQuest)
+            return;
+
+        string _title = null != viewCtx?.localizationManager
+            ? viewCtx.localizationManager.GetText(prestigeUnlockKey)
+            : "새로운 지역 해금!!";
+
+        if (true == string.IsNullOrEmpty(_title))
+        {
+            _title = "새로운 지역 해금!!";
+        }
+
+        tutorialQuest.PlayCustomSequence(_title, string.Empty, prestigeInitialDuration, prestigeCompletedHoldDuration);
     }
 
     /// <summary>

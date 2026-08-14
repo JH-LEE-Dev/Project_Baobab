@@ -21,6 +21,10 @@ public class UI_TutorialQuest : MonoBehaviour
     [SerializeField] private GameObject questDescRoot;
     [SerializeField] private TextMeshProUGUI questDescText;
 
+    [Header("Text Point Settings")]
+    [SerializeField] private RectTransform titleTextPoint;
+    [SerializeField] private RectTransform descTextPoint;
+
     [Header("Background Dim Settings")]
     [SerializeField] private bool useBgFadeIn = true;
     [SerializeField] private bool useBgFadeOut = true;
@@ -188,7 +192,7 @@ public class UI_TutorialQuest : MonoBehaviour
         SetQuestContent(_title, _desc);
     }
 
-    public void PlayCustomSequence(string _title, string _desc = "")
+    public void PlayCustomSequence(string _title, string _desc = "", float _initialDuration = -1f, float _completedHoldDuration = -1f)
     {
         if (false == useCustomMode)
             return;
@@ -209,7 +213,7 @@ public class UI_TutorialQuest : MonoBehaviour
         AppendShowEffect(showSequence);
 
         // 2. 초기 텍스트(진행색) 상태 유지
-        float _initialHold = Mathf.Max(0.0f, customInitialDuration);
+        float _initialHold = 0f <= _initialDuration ? _initialDuration : Mathf.Max(0.0f, customInitialDuration);
         showSequence.AppendInterval(_initialHold);
 
         // 3. 완료 색상(녹색) 전환 및 Pop 효과 재생
@@ -217,7 +221,7 @@ public class UI_TutorialQuest : MonoBehaviour
         AppendCompletionEffect(showSequence);
 
         // 4. 완료 상태 추가 대기
-        float _customHold = Mathf.Max(0.0f, customCompletedHoldDuration);
+        float _customHold = 0f <= _completedHoldDuration ? _completedHoldDuration : Mathf.Max(0.0f, customCompletedHoldDuration);
         showSequence.AppendInterval(_customHold);
 
         // 5. 대기가 끝난 직후 퇴장 연출(PlayHideQuest) 이어서 재생
@@ -901,6 +905,20 @@ public class UI_TutorialQuest : MonoBehaviour
             Vector2 _pos = _rect.anchoredPosition;
             _pos.y += yOffset;
             _rect.anchoredPosition = _pos;
+        }
+
+        if (null != titleTextPoint && null != questTitleText)
+        {
+            questTitleText.rectTransform.position = titleTextPoint.position;
+        }
+
+        if (null != descTextPoint && null != questDescRoot)
+        {
+            RectTransform _descRect = questDescRoot.GetComponent<RectTransform>();
+            if (null != _descRect)
+            {
+                _descRect.position = descTextPoint.position;
+            }
         }
 
         InitCachedCallbacks();

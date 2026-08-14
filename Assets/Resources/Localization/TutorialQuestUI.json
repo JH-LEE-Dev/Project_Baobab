@@ -64,6 +64,14 @@
       "en": "Start a new logging trip!",
       "enumType": "",
       "enumValue": ""
+    },
+    {
+      "id": 9,
+      "key": "UnlockNewRegion_Title",
+      "kr": "새로운 지역 해금!!",
+      "en": "New Region Unlocked!!",
+      "enumType": "",
+      "enumValue": ""
     }
   ]
 }
