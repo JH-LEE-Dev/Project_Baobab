@@ -497,7 +497,12 @@ public class AudioManager : MonoBehaviour
                 : 1f;
         }
 
-        fatigueCutoffCurrentValue = Mathf.Lerp(duckSettings.openCutoffHz, duckSettings.tensionMaxCutoffHz, t);
+        // Hz를 그대로 선형 보간하면(Lerp) 사람 청감이 로그(옥타브) 스케일이라 값이 큰 구간(22000→11000 등)은
+        // 거의 안 들리다가, t가 후반부에 가서야 컷오프가 가청 대역 아래로 훅 떨어지며 갑자기 확 먹먹해진다.
+        // 로그 스케일에서 보간해야 체감상 고르게 어두워진다.
+        float safeOpenHz = Mathf.Max(1f, duckSettings.openCutoffHz);
+        float safeMaxHz = Mathf.Max(1f, duckSettings.tensionMaxCutoffHz);
+        fatigueCutoffCurrentValue = Mathf.Exp(Mathf.Lerp(Mathf.Log(safeOpenHz), Mathf.Log(safeMaxHz), t));
         ApplyCombinedCutoff();
     }
 

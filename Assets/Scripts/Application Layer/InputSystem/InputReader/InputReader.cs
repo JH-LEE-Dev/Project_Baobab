@@ -47,6 +47,9 @@ public class InputReader
 
     private bool bPauseESC = false;
 
+    // 마을에서 던전을 클릭해 선택을 확정한 시점부터 던전 입장 연출이 끝날 때까지 Space(인벤토리)를 막는다.
+    private bool bPauseInventory = false;
+
     public void Initialize()
     {
         if (actions == null)
@@ -162,6 +165,9 @@ public class InputReader
 
     private void OnInventoryKeyPressed(InputAction.CallbackContext context)
     {
+        if (bPauseInventory)
+            return;
+
         InventoryKeyEvent?.Invoke();
     }
 
@@ -211,6 +217,11 @@ public class InputReader
     public void PauseESCKey(bool _boolean)
     {
         bPauseESC = _boolean;
+    }
+
+    public void PauseInventoryKey(bool _boolean)
+    {
+        bPauseInventory = _boolean;
     }
 
     public void PotionKeyPressed(InputAction.CallbackContext context)

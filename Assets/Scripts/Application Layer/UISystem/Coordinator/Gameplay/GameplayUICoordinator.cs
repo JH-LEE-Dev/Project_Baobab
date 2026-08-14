@@ -28,6 +28,10 @@ public class GameplayUICoordinator
     private bool bIsTutorialQuestHiding = false;
     private bool bPendingGameEnd = false;
 
+    // PopupUIDown ~ HUD가 완전히 다 올라오는 시점(HUDGoUpCompleted)까지 true.
+    // 이 구간에는 HUD가 내려가 있거나 애니메이션 중이므로 인벤토리 여닫기(Space)를 막는다.
+    private bool bHUDDown = false;
+
     // MainMenu → Dungeon 튜토리얼: 로고 연출이 끝난 뒤 처음으로 HUD가 다 올라오는 시점에만
     // 인트로 종료를 알리기 위한 예약 플래그(일반 던전/타운 전환의 HUD 복귀와 구분한다).
     private bool bWaitingIntroProductionEnd = false;
@@ -293,6 +297,12 @@ public class GameplayUICoordinator
 
     private void OnInventoryKeyPressed()
     {
+        if (bHUDDown)
+            return;
+
+        if (LoadingManager.Instance != null && LoadingManager.Instance.IsLoading)
+            return;
+
         if (bInventoryOpened == false)
         {
             bInventoryOpened = true;
@@ -590,9 +600,12 @@ public class GameplayUICoordinator
     // ESC를 막는다. 실제 DungeonSelectedSignal(TownSystem.DungeonSelected)은 내비게이션 UI가 닫히는 연출과
     // dungeonConfirmDelay만큼 늦게 발동되는데, 그 사이 구간도 이미 취소 불가능한 선택이므로 여기서 미리 잠근다.
     // 해제 시점은 기존과 동일하게 TownSystem.CompleteDungeonEntry().
+    // 같은 시점부터 Space(인벤토리)도 함께 막는다 - 이미 취소 불가능한 던전 진입 연출 중에 인벤토리를
+    // 여닫으면 이후 이어지는 PopupUIDown/HUDGoDown 연출과 겹쳐 조작이 꼬일 수 있다.
     private void DungeonConfirmStarted()
     {
         inputManager.PauseESCKey(true);
+        inputManager.PauseInventoryKey(true);
     }
 
     private void ESCUIInputLockChanged(bool _isLocked)
@@ -714,6 +727,8 @@ public class GameplayUICoordinator
 
     private void PopupUIDown(PopupUIDownSignal _popupUIDownSignal)
     {
+        bHUDDown = true;
+
         hudUI.HUDGoDown();
         popUpUI.PopupGoDown();
         worldPopupUI.WorldPopupGoDown();
@@ -732,6 +747,8 @@ public class GameplayUICoordinator
     // HUD가 완전히 다 올라온 시점. 튜토리얼 인트로 중이었다면 그 종료를 UI에 알린다.
     private void HUDGoUpCompleted()
     {
+        bHUDDown = false;
+
         if (bWaitingIntroProductionEnd == false)
             return;
 

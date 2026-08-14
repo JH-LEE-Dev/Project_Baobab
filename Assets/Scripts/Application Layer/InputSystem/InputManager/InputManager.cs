@@ -61,6 +61,11 @@ public class InputManager : MonoBehaviour
         inputReader.PauseESCKey(_boolean);
     }
 
+    public void PauseInventoryKey(bool _boolean)
+    {
+        inputReader.PauseInventoryKey(_boolean);
+    }
+
     // 키 리바인딩 (실제 처리는 inputReader 위임, KeyBindingsChangedEvent는 inputManager.inputReader에서 직접 구독)
     public bool IsRebinding => inputReader.IsRebinding;
 

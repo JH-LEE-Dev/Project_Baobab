@@ -575,6 +575,7 @@ public class TownSystem : MonoBehaviour
     {
         inputManager.PauseMove(false);
         inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (DungeonSelected()에서 걸어둔 PauseESCKey(true) 해제)
+        inputManager.PauseInventoryKey(false); // 타운→던전 진입 연출 종료 (GameplayUICoordinator.DungeonConfirmStarted()에서 걸어둔 PauseInventoryKey(true) 해제)
 
         StartCoroutine(PopupUIGoUPCoroutine());
     }

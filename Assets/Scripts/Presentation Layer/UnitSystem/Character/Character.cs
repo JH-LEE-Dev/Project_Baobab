@@ -182,10 +182,6 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     private float itemAcquireBounceTime = 1f;
     private const float ITEM_ACQUIRE_BOUNCE_DURATION = 0.2f;
 
-    // 피로도(스태미나)가 이 비율 이하로 떨어지면 화면에 색수차 경고를 켠다. 사망 시에는
-    // StaminaIsEmpty()가 이 조건과 무관하게 강제로 꺼준다.
-    private const float LOW_STAMINA_CHROMATIC_ABERRATION_RATIO = 0.2f;
-
     #region Public Methods (Initialization & Control)
 
     public void Initialize(InputManager _inputManager, IEnvironmentProvider _environmentProvider)
@@ -506,7 +502,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         characterVisualComponent.PlayDeathFlash(GetArmFlashRenderer());
         CameraMoveController.Instance?.ShakeCamera(5f, 0.3f);
         CameraMoveController.Instance?.ZoomCamera(1.05f, 0.08f, 0.05f, 0.15f);
-        PostProcessSettingsApplier.Instance?.SetLowStaminaChromaticAberrationActive(false);
+        PostProcessSettingsApplier.Instance?.PlayDeathChromaticAberrationPulse();
         bDead = true;
         healthComponent.SetStaminaDecrease(false);
         inputManager.PauseMove(true);
@@ -1140,10 +1136,10 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         // 겹쳐 지나치게 먹먹해진다(ApplyCombinedCutoff가 둘 중 더 낮은 값을 취하기 때문).
         Sound.SetFatigueRatio(bInDungeon && !bDead ? staminaRatio : 1f);
 
-        // 피로도가 낮을 때만 색수차 경고를 켠다. 사망 직후에도 스태미나는 낮게 남아있으므로
-        // !bDead로 걸러야 한다 - 그렇지 않으면 StaminaIsEmpty()가 꺼준 직후 바로 다시 켜진다.
-        PostProcessSettingsApplier.Instance?.SetLowStaminaChromaticAberrationActive(
-            bInDungeon && !bDead && staminaRatio <= LOW_STAMINA_CHROMATIC_ABERRATION_RATIO);
+        // 피로도가 낮을수록(임계 비율 이하 구간에서) 색수차가 연속적으로 짙어진다. Sound.SetFatigueRatio와
+        // 같은 이유로 던전 밖/사망 후에는 1f(임계 비율보다 항상 커서 목표 세기가 0)를 넘겨 꺼둔다.
+        // 사망 순간의 강한 펄스는 여기가 아니라 StaminaIsEmpty()의 PlayDeathChromaticAberrationPulse가 담당한다.
+        PostProcessSettingsApplier.Instance?.UpdateLowStaminaChromaticAberration(bInDungeon && !bDead ? staminaRatio : 1f);
 
         // 용암 등 위험 지형 인접 시 추가 소모. 단, 일반 스태미나 소모(DecreaseStamina)와 마찬가지로
         // "실제 플레이가 시작된 이후"에만 적용해야 한다. bWhileReset(입장 카메라 연출 중, 조작 불가) 또는
