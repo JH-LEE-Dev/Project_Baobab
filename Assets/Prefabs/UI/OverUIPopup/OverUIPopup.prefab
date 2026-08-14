@@ -100,6 +100,10 @@ MonoBehaviour:
   bOverlay: 1
   openingProduction: {fileID: 5360012417931442538}
   tutorialQuest: {fileID: 5890807763898856431}
+  prestigeUnlockKey: UnlockNewRegion_Title
+  prestigeInitialDuration: 0.25
+  prestigeCompletedHoldDuration: 1
+  prestigeYOffset: 0
 --- !u!1001 &4858656349497809668
 PrefabInstance:
   m_ObjectHideFlags: 0
