@@ -214,4 +214,14 @@ public static class Sound
 
         AudioManager.Instance.SetAudioPreviewMode(enabled);
     }
+
+    // 캐릭터 피로도(스태미나) 비율(0~1)에 맞춰 BGM/SFX에 긴박감 Low Pass Filter를 건다.
+    // 던전 안에서 매 프레임 현재 비율로 호출하는 것을 전제로 한다. 던전을 벗어나면 1f로 호출해 해제한다.
+    public static void SetFatigueRatio(float ratio)
+    {
+        if (AudioManager.Instance == null)
+            return;
+
+        AudioManager.Instance.SetFatigueRatio(ratio);
+    }
 }

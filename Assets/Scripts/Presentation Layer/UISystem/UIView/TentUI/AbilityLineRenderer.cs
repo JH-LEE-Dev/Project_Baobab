@@ -17,8 +17,10 @@ public sealed class AbilityLineRenderer
     private RectTransform lineParent;
     private Canvas rootCanvas;
     private float gridCellSize;
+    private Material lineMaterial;
     private bool hasConfiguredLineLayer;
     private Func<SkillType, Color> lineColorResolver;
+    private Func<SkillType, int> lineShineColorIndexResolver;
 
     public void Initialize(
         RectTransform _abilityBackground,
@@ -26,14 +28,24 @@ public sealed class AbilityLineRenderer
         RectTransform _lineParent,
         Canvas _rootCanvas,
         float _gridCellSize,
-        Func<SkillType, Color> _lineColorResolver)
+        Material _lineMaterial,
+        Func<SkillType, Color> _lineColorResolver,
+        Func<SkillType, int> _lineShineColorIndexResolver)
     {
         abilityBackground = _abilityBackground;
         moveTarget = _moveTarget;
         lineParent = _lineParent;
         rootCanvas = _rootCanvas;
         gridCellSize = Mathf.Max(_gridCellSize, 0.0001f);
+        lineMaterial = _lineMaterial;
         lineColorResolver = _lineColorResolver;
+        lineShineColorIndexResolver = _lineShineColorIndexResolver;
+
+        Canvas targetCanvas = rootCanvas != null && rootCanvas.rootCanvas != null
+            ? rootCanvas.rootCanvas
+            : rootCanvas;
+        if (targetCanvas != null)
+            targetCanvas.additionalShaderChannels |= AdditionalCanvasShaderChannels.TexCoord1;
 
         EnsureLineLayer();
         EnsureLineGraphics();
@@ -192,6 +204,7 @@ public sealed class AbilityLineRenderer
 
             graphic.raycastTarget = false;
             graphic.color = Color.white;
+            graphic.material = lineMaterial;
             graphic.SetLineSprite(pair.Value);
 
             if (lineQuadMap.ContainsKey(pair.Key) == false)
@@ -263,9 +276,15 @@ public sealed class AbilityLineRenderer
 
         float connectionProgress = GetLineRevealProgress(_connection.ChildNode.SkillType);
         Color color = GetLineColor(_connection.ChildNode.SkillType);
+        int shineColorIndex = GetLineShineColorIndex(_connection.ChildNode.SkillType);
 
         if (hasPivot)
         {
+            float firstLength = Vector2.Distance(startCenter, pivotCenter);
+            float secondLength = Vector2.Distance(pivotCenter, endCenter);
+            float totalLength = firstLength + secondLength;
+            float pivotProgress = totalLength > 0.0001f ? firstLength / totalLength : 0.5f;
+
             BuildLineSegmentPath(
                 _connection.ParentNode.GridPosition,
                 _connection.PivotGrid,
@@ -275,7 +294,10 @@ public sealed class AbilityLineRenderer
                 true,
                 false,
                 Mathf.Clamp01(connectionProgress * 2f),
-                color);
+                color,
+                shineColorIndex,
+                0f,
+                pivotProgress);
             BuildLineSegmentPath(
                 _connection.PivotGrid,
                 _connection.ChildNode.GridPosition,
@@ -285,7 +307,10 @@ public sealed class AbilityLineRenderer
                 true,
                 true,
                 Mathf.Clamp01((connectionProgress - 0.5f) * 2f),
-                color);
+                color,
+                shineColorIndex,
+                pivotProgress,
+                1f);
             return;
         }
 
@@ -298,7 +323,10 @@ public sealed class AbilityLineRenderer
             false,
             false,
             connectionProgress,
-            color);
+            color,
+            shineColorIndex,
+            0f,
+            1f);
     }
 
     private void BuildLineSegmentPath(
@@ -310,7 +338,10 @@ public sealed class AbilityLineRenderer
         bool _hasCornerAnchor,
         bool _isStartCornerAnchor,
         float _progress,
-        Color _color)
+        Color _color,
+        int _shineColorIndex,
+        float _shineProgressStart,
+        float _shineProgressEnd)
     {
         if (_progress <= 0f)
             return;
@@ -347,7 +378,10 @@ public sealed class AbilityLineRenderer
                 _hasCornerAnchor,
                 _isStartCornerAnchor,
                 _progress,
-                _color);
+                _color,
+                _shineColorIndex,
+                _shineProgressStart,
+                _shineProgressEnd);
             return;
         }
 
@@ -365,7 +399,16 @@ public sealed class AbilityLineRenderer
         for (int segmentIndex = 0; segmentIndex < revealSegmentCount; segmentIndex++)
         {
             Vector2 position = firstSegmentCenter + segmentAxisStep * segmentIndex;
-            AddCenteredQuad(spriteType, position, nativeSize, _color);
+            AddCenteredQuad(
+                spriteType,
+                position,
+                nativeSize,
+                _color,
+                _shineColorIndex,
+                _startCenter,
+                _endCenter,
+                _shineProgressStart,
+                _shineProgressEnd);
         }
     }
 
@@ -378,7 +421,10 @@ public sealed class AbilityLineRenderer
         bool _hasCornerAnchor,
         bool _isStartCornerAnchor,
         float _progress,
-        Color _color)
+        Color _color,
+        int _shineColorIndex,
+        float _shineProgressStart,
+        float _shineProgressEnd)
     {
         _progress = Mathf.Clamp01(_progress);
         Vector2 snappedStart = SnapToPixel(_startCenter);
@@ -411,7 +457,12 @@ public sealed class AbilityLineRenderer
                 _isHorizontal,
                 length,
                 anchorAtStart,
-                _color);
+                _color,
+                _shineColorIndex,
+                snappedStart,
+                snappedEnd,
+                _shineProgressStart,
+                _shineProgressEnd);
             return;
         }
 
@@ -438,14 +489,24 @@ public sealed class AbilityLineRenderer
             _isHorizontal,
             lineLength,
             directAnchorAtStart,
-            _color);
+            _color,
+            _shineColorIndex,
+            snappedStart,
+            snappedEnd,
+            _shineProgressStart,
+            _shineProgressEnd);
     }
 
     private void AddCenteredQuad(
         AbilityLineSegmentSpriteType _spriteType,
         Vector2 _center,
         Vector2 _size,
-        Color _color)
+        Color _color,
+        int _shineColorIndex,
+        Vector2 _pathStart,
+        Vector2 _pathEnd,
+        float _shineProgressStart,
+        float _shineProgressEnd)
     {
         Vector2 halfSize = _size * 0.5f;
         Rect rect = Rect.MinMaxRect(
@@ -453,7 +514,15 @@ public sealed class AbilityLineRenderer
             _center.y - halfSize.y,
             _center.x + halfSize.x,
             _center.y + halfSize.y);
-        AddQuad(_spriteType, rect, _color);
+        AddQuad(
+            _spriteType,
+            rect,
+            _color,
+            _shineColorIndex,
+            _pathStart,
+            _pathEnd,
+            _shineProgressStart,
+            _shineProgressEnd);
     }
 
     private void AddAnchoredStraightQuad(
@@ -463,7 +532,12 @@ public sealed class AbilityLineRenderer
         bool _isHorizontal,
         float _length,
         bool _anchorAtStart,
-        Color _color)
+        Color _color,
+        int _shineColorIndex,
+        Vector2 _pathStart,
+        Vector2 _pathEnd,
+        float _shineProgressStart,
+        float _shineProgressEnd)
     {
         Vector2 nativeSize = GetSpriteNativeSize(_sprite);
         float length = Mathf.Max(Mathf.Round(_length), 1f);
@@ -488,10 +562,26 @@ public sealed class AbilityLineRenderer
                 length);
         }
 
-        AddQuad(_spriteType, rect, _color);
+        AddQuad(
+            _spriteType,
+            rect,
+            _color,
+            _shineColorIndex,
+            _pathStart,
+            _pathEnd,
+            _shineProgressStart,
+            _shineProgressEnd);
     }
 
-    private void AddQuad(AbilityLineSegmentSpriteType _spriteType, Rect _rect, Color _color)
+    private void AddQuad(
+        AbilityLineSegmentSpriteType _spriteType,
+        Rect _rect,
+        Color _color,
+        int _shineColorIndex,
+        Vector2 _pathStart,
+        Vector2 _pathEnd,
+        float _shineProgressStart,
+        float _shineProgressEnd)
     {
         if (lineQuadMap.TryGetValue(_spriteType, out List<AbilityLineMeshQuad> quads) == false)
         {
@@ -499,7 +589,37 @@ public sealed class AbilityLineRenderer
             lineQuadMap[_spriteType] = quads;
         }
 
-        quads.Add(new AbilityLineMeshQuad(_rect, _color));
+        Vector4 shineProgress = CalculateShineProgress(
+            _rect,
+            _pathStart,
+            _pathEnd,
+            _shineProgressStart,
+            _shineProgressEnd);
+        quads.Add(new AbilityLineMeshQuad(_rect, _color, shineProgress, _shineColorIndex));
+    }
+
+    private static Vector4 CalculateShineProgress(
+        Rect _rect,
+        Vector2 _pathStart,
+        Vector2 _pathEnd,
+        float _shineProgressStart,
+        float _shineProgressEnd)
+    {
+        Vector2 path = _pathEnd - _pathStart;
+        float pathLengthSquared = path.sqrMagnitude;
+        if (pathLengthSquared <= 0.0001f)
+            return new Vector4(_shineProgressStart, _shineProgressStart, _shineProgressStart, _shineProgressStart);
+
+        float inversePathLengthSquared = 1f / pathLengthSquared;
+        float centerProgress = Vector2.Dot(_rect.center - _pathStart, path) * inversePathLengthSquared;
+        float horizontalContribution = path.x * (_rect.width * 0.5f) * inversePathLengthSquared;
+        float verticalContribution = path.y * (_rect.height * 0.5f) * inversePathLengthSquared;
+
+        return new Vector4(
+            Mathf.Lerp(_shineProgressStart, _shineProgressEnd, Mathf.Clamp01(centerProgress - horizontalContribution - verticalContribution)),
+            Mathf.Lerp(_shineProgressStart, _shineProgressEnd, Mathf.Clamp01(centerProgress - horizontalContribution + verticalContribution)),
+            Mathf.Lerp(_shineProgressStart, _shineProgressEnd, Mathf.Clamp01(centerProgress + horizontalContribution + verticalContribution)),
+            Mathf.Lerp(_shineProgressStart, _shineProgressEnd, Mathf.Clamp01(centerProgress + horizontalContribution - verticalContribution)));
     }
 
     private Vector2 GetSpriteNativeSize(Sprite _sprite)
@@ -636,6 +756,11 @@ public sealed class AbilityLineRenderer
     private Color GetLineColor(SkillType _childSkillType)
     {
         return lineColorResolver != null ? lineColorResolver(_childSkillType) : Color.white;
+    }
+
+    private int GetLineShineColorIndex(SkillType _childSkillType)
+    {
+        return lineShineColorIndexResolver != null ? lineShineColorIndexResolver(_childSkillType) : -1;
     }
 
     private float GetLineRevealProgress(SkillType _childSkillType)

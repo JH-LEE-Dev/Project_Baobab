@@ -422,6 +422,7 @@ MonoBehaviour:
     sprite: {fileID: 21300000, guid: e0b1f27cfd54f0940bf417523d0a300e, type: 3}
   - lineType: 7
     sprite: {fileID: 21300000, guid: 9332ba84a0244cc45bf631c79eb60716, type: 3}
+  lineMaterial: {fileID: 2100000, guid: c8e124f76a5d4b36a92f0eb7134d6581, type: 2}
   lineParent: {fileID: 805268414600116728}
   nodeViewportCullPadding: 64
   toolTipPrefab: {fileID: 7118067883298631761, guid: 0693cecbf0fc4eb4e988a48e7663f4bf, type: 3}
@@ -647,7 +648,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AbilityBackGround
   backgroundMaterial: {fileID: 2100000, guid: d283e98145a14b8cb5cdb42efadac820, type: 2}
-  tileSize: {x: 64, y: 64}
+  tileSize: {x: 128, y: 128}
   speedPixelsPerSecond: 12
 --- !u!1 &3166310292131078781
 GameObject:
@@ -789,9 +790,9 @@ RectTransform:
   - {fileID: 4694013469330058724}
   m_Father: {fileID: 7063596525735268374}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -50, y: 10}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 15, y: 15}
   m_SizeDelta: {x: 2, y: 2}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &4610350953994636370
@@ -1142,7 +1143,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.y
@@ -1202,7 +1203,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -22
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1296,11 +1297,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5749843511807943119, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: otherKey
-      value: 75
+      value: 27
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.y
@@ -1360,7 +1361,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -22
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1450,7 +1451,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_Pivot.y
@@ -1510,7 +1511,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -22
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6587975889572139397, guid: 7fac8189cec29354da87489252a0394e, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -1621,6 +1622,10 @@ PrefabInstance:
     - target: {fileID: 913802642584626678, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 951415046715606095, guid: a3715294014f52c469e6e708be23badc, type: 3}
+      propertyPath: m_OverrideSorting
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1218788101718964845, guid: a3715294014f52c469e6e708be23badc, type: 3}
       propertyPath: m_Layer

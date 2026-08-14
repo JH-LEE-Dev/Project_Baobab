@@ -293,6 +293,16 @@ public class SettingsManager : MonoBehaviour
         OnAudioSettingsAppliedEvent?.Invoke(current);
     }
 
+    /// <summary>
+    /// 색수차·명도·채도를 조작하는 즉시 화면에 반영합니다. (슬라이더를 드래그하는 동안 실시간 피드백용)
+    /// 저장은 하지 않으므로 CommitChanges와 별개이며, 창을 닫을 때 한 번 더 적용/저장됩니다.
+    /// </summary>
+    public void ApplyGraphicsSettingsLive()
+    {
+        EnsureLoaded();
+        OnGraphicsSettingsAppliedEvent?.Invoke(current);
+    }
+
     private void MarkDisplayDirty()
     {
         isDirty = true;

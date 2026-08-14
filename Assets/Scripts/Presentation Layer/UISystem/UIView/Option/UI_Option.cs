@@ -42,12 +42,14 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     [SerializeField, Tooltip("효과음 슬라이더를 조작할 때 들려줄 미리듣기 사운드. 반드시 SFX 믹서 " +
         "그룹을 타는 사운드여야 조절한 볼륨이 그대로 반영되어 들린다(UI 그룹 사운드는 영향을 받지 않는다).")]
-    private SoundID sfxVolumePreviewSound = SoundID.GetItem;
+    private SoundID sfxVolumePreviewSound = SoundID.OptionSFXBarTick;
 
-    // 슬라이더 드래그 중에는 값 변경 콜백이 매 프레임 들어오므로, 미리듣기가 겹쳐 울리지 않도록
-    // 최소 간격을 둔다.
-    private const float SfxPreviewInterval = 0.08f;
+    // 슬라이더는 소수점 단위로 값이 들어오지만, 미리듣기는 화면에 표시되는 정수(%) 눈금이
+    // 바뀔 때만 울려야 "매 틱마다 재생"이라는 의도와 맞는다. 그 위에 0.03초 쿨타임을 안전장치로
+    // 둬서, 아주 짧은 시간에 여러 눈금을 오가더라도 소리가 겹쳐 울리지 않게 한다.
+    private const float SfxPreviewInterval = 0.03f;
     private float lastSfxPreviewTime = float.NegativeInfinity;
+    private int lastSfxPreviewTick = int.MinValue;
 
     [Header("Control Options")]
     [SerializeField] private Transform keyBindRowContainer;           // 행들이 배치될 부모 Transform (ScrollView Content 등)
@@ -585,9 +587,26 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
     private void OnCameraShakeChanged(float _val) { settings.SetCameraShake(_val); }
     private void OnCrosshairBrightnessChanged(float _val) { settings.SetCrosshairBrightness(_val); }
-    private void OnChromaticAberrationChanged(float _val) { settings.SetChromaticAberration(_val); }
-    private void OnBrightnessChanged(float _val) { settings.SetBrightness(_val); }
-    private void OnSaturationChanged(float _val) { settings.SetSaturation(_val); }
+
+    // 화면 효과는 볼륨과 마찬가지로 창을 닫을 때가 아니라 조작하는 즉시 보여야 조절이 가능하므로,
+    // 값을 넘긴 뒤 곧바로 실시간 반영까지 요청한다. (저장은 기존대로 창을 닫을 때 CommitChanges가 담당)
+    private void OnChromaticAberrationChanged(float _val)
+    {
+        settings.SetChromaticAberration(_val);
+        settings.ApplyGraphicsSettingsLive();
+    }
+
+    private void OnBrightnessChanged(float _val)
+    {
+        settings.SetBrightness(_val);
+        settings.ApplyGraphicsSettingsLive();
+    }
+
+    private void OnSaturationChanged(float _val)
+    {
+        settings.SetSaturation(_val);
+        settings.ApplyGraphicsSettingsLive();
+    }
 
     // 볼륨은 창을 닫을 때가 아니라 조작하는 즉시 들려야 조절이 가능하므로, 값을 넘긴 뒤
     // 곧바로 실시간 반영까지 요청한다. (저장은 기존대로 창을 닫을 때 CommitChanges가 담당)
@@ -607,17 +626,21 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         settings.SetSfxVolume(_val);
         settings.ApplyAudioSettingsLive();
-        PlaySfxVolumePreview();
+        PlaySfxVolumePreview(_val);
     }
 
     // 효과음은 BGM과 달리 조작하는 동안 계속 울리는 소리가 없어서, 슬라이더를 움직여도 지금
-    // 몇 %인지 귀로 알 수 없다. 그래서 값이 바뀔 때마다 효과음 그룹을 타는 소리를 짧게 재생해
-    // 유저가 바로 체감하게 한다. 드래그 중에는 매 프레임 호출되므로 간격 제한이 필수다.
-    private void PlaySfxVolumePreview()
+    // 몇 %인지 귀로 알 수 없다. 그래서 화면에 표시되는 정수(%) 눈금이 바뀔 때마다 효과음 그룹을
+    // 타는 소리를 짧게 재생해 유저가 바로 체감하게 한다.
+    private void PlaySfxVolumePreview(float _val)
     {
+        int _tick = Mathf.RoundToInt(_val);
+        if (_tick == lastSfxPreviewTick) return;
+
         float _now = Time.unscaledTime;
         if (_now - lastSfxPreviewTime < SfxPreviewInterval) return;
 
+        lastSfxPreviewTick = _tick;
         lastSfxPreviewTime = _now;
         Sound.PlayUI(sfxVolumePreviewSound);
     }

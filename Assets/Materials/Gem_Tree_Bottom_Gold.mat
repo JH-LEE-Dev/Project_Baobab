@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Gem_Tree_Bottom_Gold
+  m_Shader: {fileID: 4800000, guid: 4b8d2f61ca9e37b48d15e0a7c6392fd8, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _DeepShade: 0.45
+    - _EnableExternalAlpha: 0
+    - _EnableWindSway: 0
+    - _FacetRandomness: 0.55
+    - _FacetSize: 5.5
+    - _FacetVariation: 0.12
+    - _FlashAmount: 0
+    - _FlashStrength: 0.5
+    - _FlashThreshold: 0.9
+    - _FormBulge: 1.2
+    - _FormCenterY: 0.1
+    - _GemAlpha: 0.85
+    - _GemAmount: 1
+    - _HDRIntensity: 1
+    - _Iridescence: 0.65
+    - _LightFollow: 1
+    - _LightHeight: 0.5
+    - _LumaBias: 0.62
+    - _LumaInfluence: 0.4
+    - _RainbowAmount: 0
+    - _ShadeSteps: 6
+    - _SparkleBrightness: 1.2
+    - _SparkleRatio: 0
+    - _SparkleSize: 0.06
+    - _SparkleSpeed: 2.5
+    - _SpecStrength: 0.1
+    - _SwayDetailSpeed: 1.45
+    - _SwayDetailWeight: 0.35
+    - _SwayMainSpeed: 0.55
+    - _SwayPositionAmplitude: 0.03
+    - _SwayRotationAmplitude: 1.25
+    - _SweepSpeed: 0.8
+    - _Whiteness: 0.18
+    - _ZWrite: 0
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _GemColor: {r: 1.0814068, g: 0.778613, b: 0.2379095, a: 1}
+    - _GemColorB: {r: 1.4098368, g: 1.3111482, b: 0.8459021, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1

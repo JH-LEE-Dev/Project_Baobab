@@ -48,6 +48,32 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         StarGroupId = _groupId;
     }
 
+    [Header("Gem Visual")]
+    [Tooltip("켜면 이 나무를 보석(결정) 재질로 렌더링한다. 에디터에서 체크하는 즉시 씬 뷰에 반영된다.")]
+    [SerializeField] private bool bGemVisual = false;
+
+    // 보석 비주얼의 단일 기준값. 풀에서 재사용될 때 ResetTree가 이 값을 다시 적용한다.
+    public bool bIsGem => bGemVisual;
+
+    public void SetGemVisual(bool _boolean)
+    {
+        bGemVisual = _boolean;
+        RefreshGemVisual();
+    }
+
+    /// <summary>
+    /// 현재 설정으로 보석 비주얼을 다시 적용한다.
+    /// 색 데이터를 인스펙터에서 바꿨을 때 이미 스폰된 나무에도 반영하기 위해 외부에서 호출한다.
+    /// </summary>
+    public void RefreshGemVisual()
+    {
+        if (treeVisualComponent != null)
+        {
+            // 보석 색은 나무 등급이 결정한다. treeData는 ApplyData 진입 시점에 이미 갱신되어 있다.
+            treeVisualComponent.ApplyGemVisual(bGemVisual, treeData.grade);
+        }
+    }
+
     public TreeData treeData { get; private set; }
     public IHealthComponent health => healthComponent;
     IBaseHealthComponent IDamageable.health => healthComponent;
@@ -307,6 +333,9 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
         {
             SetOutline(false);
             treeVisualComponent.ResetVisualState();
+            // 인스펙터에서 켜 둔 보석 비주얼이 풀 재사용 후에도 유지되도록 마지막에 다시 적용한다.
+            // 나중에 스폰별로 보석 여부를 굴린다면, ResetTree가 끝난 뒤에 SetGemVisual을 호출하면 된다.
+            treeVisualComponent.ApplyGemVisual(bGemVisual, treeData.grade);
         }
     }
 
@@ -599,6 +628,19 @@ public class TreeObj : MonoBehaviour, IDamageable, ITreeObj, IStaticCollidable
     }
 
 #if UNITY_EDITOR
+    // 인스펙터에서 Gem Visual 체크박스를 토글하면 플레이 중이 아니어도 씬 뷰에 즉시 반영한다.
+    private void OnValidate()
+    {
+        if (treeVisualComponent == null) return;
+
+        treeVisualComponent.ApplyGemVisual(bGemVisual);
+
+        // ApplyGemVisual은 교체 전 원본 머티리얼을 TreeVisualComponent에 기록해 두는데,
+        // OnValidate에서의 변경은 명시적으로 dirty 처리하지 않으면 씬에 저장되지 않는다.
+        // 저장이 안 되면 다음 재컴파일 후 원본을 몰라 체크를 해제해도 되돌릴 수 없다.
+        UnityEditor.EditorUtility.SetDirty(treeVisualComponent);
+    }
+
     [ContextMenu("Update All Trees In Scene")]
     public void UpdateAllTreesInScene()
     {

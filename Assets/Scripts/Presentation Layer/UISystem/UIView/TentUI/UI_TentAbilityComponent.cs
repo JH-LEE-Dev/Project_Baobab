@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.UI;
 
 [DefaultExecutionOrder(-100)]
@@ -13,11 +14,14 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private const float MaxZoom = 1f;
     private const float ZoomStep = 0.1f;
     private const float ZoomFollowSpeed = 18f;
+    private const float KeyboardMoveGridUnitsPerSecond = 9f;
     private const float ToolTipSpacing = 32f;
     private const float ToolTipVerticalScreenPadding = 16f;
     private const float UnlockRevealDuration = 0.1f;
     private const float UnlockRevealStaggerDelay = 0.025f;
+#if UNITY_EDITOR
     private const float AutoLevelUpInterval = 0.1f;
+#endif
     private const float AbilityUpgradeMaxSemitones = 6f;
     private const string SharedNodeVfxPoolName = "SharedAbilityNodeVFXPool";
     private const string ToolTipCostAvailableColor = "54D86A";
@@ -30,6 +34,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private static readonly Color DefaultLineColor = new Color32(255, 255, 255, 255);
 
     private ISkillSystemProvider skillSystemProvider;
+    private InputManager inputManager;
     private LocalizationManager localizationManager;
     private Canvas rootCanvas;
     private bool hasDraggedCurrentPress;
@@ -67,7 +72,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private readonly Dictionary<SkillType, AbilityNode> spawnedNodeMap = new Dictionary<SkillType, AbilityNode>();
     private readonly Queue<AbilityNode> nodePool = new Queue<AbilityNode>();
     private readonly List<AbilityNodeUnlockReveal> activeUnlockReveals = new List<AbilityNodeUnlockReveal>(4);
+#if UNITY_EDITOR
     private readonly List<AutoLevelUpRequest> activeAutoLevelUps = new List<AutoLevelUpRequest>(4);
+#endif
     private readonly AbilityLineRenderer lineRenderer = new AbilityLineRenderer();
 
     // 튜토리얼 "도끼를 강화하세요" 스텝 동안 이 화면이 열렸는지. 그 스텝의 퀘스트 안내 UI와 이 화면의
@@ -93,6 +100,10 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private UISelectionCursor selectionCursorInstance;
     private VFXComponent sharedNodeVfxPool;
     private Material circleRevealDimMaterialInstance;
+    private ButtonControl moveUpControl;
+    private ButtonControl moveDownControl;
+    private ButtonControl moveLeftControl;
+    private ButtonControl moveRightControl;
     private ToolTipPlacementMode toolTipPlacementMode = ToolTipPlacementMode.Right;
     private readonly Dictionary<SkillType, SkillAccumulatedValueChangeData> toolTipPreviewDataMap = new Dictionary<SkillType, SkillAccumulatedValueChangeData>();
 
@@ -145,6 +156,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private List<AbilityPictureBinding> pictureBindings = new List<AbilityPictureBinding>();
     [SerializeField] private List<AbilityLevelBadgeBinding> levelBadgeBindings = new List<AbilityLevelBadgeBinding>();
     [SerializeField] private List<AbilityLineSegmentSpriteBinding> lineSpriteBindings = new List<AbilityLineSegmentSpriteBinding>();
+    [SerializeField] private Material lineMaterial;
     [SerializeField] private RectTransform lineParent;
 
     [Header("Node Viewport Culling")]
@@ -188,9 +200,13 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
 #region Initializing
 
-    public void Initialize(ISkillSystemProvider _skillSystemProvider, LocalizationManager _localizationManager = null)
+    public void Initialize(
+        ISkillSystemProvider _skillSystemProvider,
+        InputManager _inputManager,
+        LocalizationManager _localizationManager = null)
     {
         skillSystemProvider = _skillSystemProvider;
+        SetInputManager(_inputManager);
         SetLocalizationManager(_localizationManager);
         rootCanvas = GetComponentInParent<Canvas>();
         EnsureAbilityCanvasGroup();
@@ -198,7 +214,15 @@ public class UI_TentAbilityComponent : MonoBehaviour
         EnsureCircleRevealDim();
         BindAbilityHUDIfNeeded();
         lineRenderer.CacheLineSpriteBindings(lineSpriteBindings);
-        lineRenderer.Initialize(abilityBackground, moveTarget, lineParent, rootCanvas, gridCellSize, GetLineColor);
+        lineRenderer.Initialize(
+            abilityBackground,
+            moveTarget,
+            lineParent,
+            rootCanvas,
+            gridCellSize,
+            lineMaterial,
+            GetLineColor,
+            GetLineShineColorIndex);
         CachePictureBindings();
         CacheLevelBadgeBindings();
         LoadNodeDefinitions();
@@ -225,6 +249,39 @@ public class UI_TentAbilityComponent : MonoBehaviour
     public void NotifyTutorialUpgradeAxeQuestUIHidden()
     {
         bTutorialUpgradeAxeQuestUIHidden = true;
+    }
+
+    private void SetInputManager(InputManager _inputManager)
+    {
+        if (inputManager != null && inputManager.inputReader != null)
+            inputManager.inputReader.KeyBindingsChangedEvent -= CacheKeyboardMoveControls;
+
+        inputManager = _inputManager;
+
+        if (inputManager != null && inputManager.inputReader != null)
+            inputManager.inputReader.KeyBindingsChangedEvent += CacheKeyboardMoveControls;
+
+        CacheKeyboardMoveControls();
+    }
+
+    private void CacheKeyboardMoveControls()
+    {
+        moveUpControl = FindMoveButtonControl(ERebindableAction.MoveUp);
+        moveDownControl = FindMoveButtonControl(ERebindableAction.MoveDown);
+        moveLeftControl = FindMoveButtonControl(ERebindableAction.MoveLeft);
+        moveRightControl = FindMoveButtonControl(ERebindableAction.MoveRight);
+    }
+
+    private ButtonControl FindMoveButtonControl(ERebindableAction _action)
+    {
+        if (inputManager == null || inputManager.inputReader == null)
+            return null;
+
+        string bindingPath = inputManager.GetBindingPath(_action);
+        if (string.IsNullOrEmpty(bindingPath))
+            return null;
+
+        return InputSystem.FindControl(bindingPath) as ButtonControl;
     }
 
     private void SetLocalizationManager(LocalizationManager _localizationManager)
@@ -940,7 +997,9 @@ public class UI_TentAbilityComponent : MonoBehaviour
         hasZoomFocus = false;
         isOpeningZoomReveal = false;
         openingZoomFocusPoint = Vector2.zero;
+#if UNITY_EDITOR
         StopAllAutoLevelUps();
+#endif
         StopAllNodeEffects();
         EndCircleRevealImmediately();
         StopViewShake();
@@ -1513,8 +1572,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
         // 드래그 이동
         bool viewChanged = boundsAdjusted;
+        viewChanged |= UpdateKeyboardViewMovement();
 
+#if UNITY_EDITOR
         UpdateAutoLevelUps();
+#endif
         // 줌 기능
         bool zoomChanged = HandleZoom();
         if (zoomChanged)
@@ -1650,17 +1712,54 @@ public class UI_TentAbilityComponent : MonoBehaviour
         if (rootCanvas != null)
             scaleFactor = Mathf.Max(rootCanvas.rootCanvas.scaleFactor, 0.0001f);
 
-        Vector2 previousPosition = moveTarget.anchoredPosition;
-        Vector2 logicalPosition = previousPosition - currentViewShakeOffset;
-        logicalPosition += _screenDelta / scaleFactor;
-        moveTarget.anchoredPosition = ClampViewPosition(logicalPosition, currentZoom) + currentViewShakeOffset;
-
-        if ((moveTarget.anchoredPosition - previousPosition).sqrMagnitude <= 0.0001f)
+        if (ApplyViewLogicalDelta(_screenDelta / scaleFactor) == false)
             return;
 
         MarkViewLayoutDirty();
         RefreshLinesIfNeeded();
         UpdateToolTipPositionIfNeeded();
+    }
+
+    private bool UpdateKeyboardViewMovement()
+    {
+        if (IsViewInputEnabled() == false)
+            return false;
+
+        Vector2 input = new Vector2(
+            ReadButton(moveRightControl) - ReadButton(moveLeftControl),
+            ReadButton(moveUpControl) - ReadButton(moveDownControl));
+        if (input.sqrMagnitude <= 0.0001f)
+            return false;
+
+        input.Normalize();
+        float speed = gridCellSize * KeyboardMoveGridUnitsPerSecond * currentZoom;
+        Vector2 logicalDelta = -input * speed * Time.unscaledDeltaTime;
+        if (ApplyViewLogicalDelta(logicalDelta) == false)
+            return false;
+
+        StopViewShake();
+        return true;
+    }
+
+    private static float ReadButton(ButtonControl _control)
+    {
+        return _control != null && _control.isPressed ? 1f : 0f;
+    }
+
+    private bool ApplyViewLogicalDelta(Vector2 _logicalDelta)
+    {
+        if (moveTarget == null || _logicalDelta.sqrMagnitude <= 0.0001f)
+            return false;
+
+        Vector2 previousPosition = moveTarget.anchoredPosition;
+        Vector2 logicalPosition = previousPosition - currentViewShakeOffset;
+        logicalPosition += _logicalDelta;
+        moveTarget.anchoredPosition = ClampViewPosition(logicalPosition, currentZoom) + currentViewShakeOffset;
+
+        if ((moveTarget.anchoredPosition - previousPosition).sqrMagnitude <= 0.0001f)
+            return false;
+
+        return true;
     }
 
     private bool IsViewInputEnabled()
@@ -1979,6 +2078,17 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return GetNodeStateColor(childNode);
     }
 
+    private int GetLineShineColorIndex(SkillType _childSkillType)
+    {
+        if (spawnedNodeMap.TryGetValue(_childSkillType, out AbilityNode childNode) == false)
+            return -1;
+
+        if (childNode.CompletedVisual)
+            return 2;
+
+        return childNode.CanApplyVisual ? 1 : 0;
+    }
+
     // MaxLevel까지 찍힌 노드로 들어오는 라인만 일반 라인보다 위에 그린다.
     // 현재 줌 비율에 따라 사용할 라인 세그먼트 크기를 선택한다.
     // 방향과 세그먼트 크기에 맞는 라인 스프라이트 타입을 반환한다.
@@ -2012,6 +2122,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         return OnAbilityLevelUpRequested(requestedSkillType);
     }
 
+#if UNITY_EDITOR
     public bool TryRequestNodeLevelUpWithoutCost(AbilityNode _node)
     {
         if (isOpeningZoomReveal || isCloseFading)
@@ -2128,6 +2239,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     {
         activeAutoLevelUps.Clear();
     }
+#endif
 
     private void StopAllNodeEffects()
     {
@@ -2161,6 +2273,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
     }
 
     // 상위 시스템의 세부 실패 사유를 UI에서 사용할 공통 사유로 정리한다.
+#if UNITY_EDITOR
     private bool OnAbilityLevelUpWithoutCostRequested(SkillType _skillType)
     {
         if (skillSystemProvider == null)
@@ -2183,6 +2296,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
             return false;
         }
     }
+#endif
 
     private AbilityLevelUpRejectReason NormalizeRejectReason(AbilityLevelUpRejectReason _reason)
     {
@@ -2309,6 +2423,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
 
     private void OnDestroy()
     {
+        SetInputManager(null);
         SetLocalizationManager(null);
     }
 
