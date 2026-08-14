@@ -832,9 +832,21 @@ public class AttackComponent : PComponent
         indicatorFadeCoroutine = null;
     }
 
+    public bool IsCursorEnabled => bCursorEnable;
+
     public void SetCursorEnable(bool _boolean)
     {
+        bool _wasEnabled = bCursorEnable;
         bCursorEnable = _boolean;
+
+        // 조준은 마우스가 물리적으로 움직일 때(MouseMove)만 갱신되므로, 켜는 순간 한 번 직접
+        // 계산해주지 않으면 다음 마우스 이동이 있을 때까지 이전 방향을 그대로 보고 있게 된다.
+        // lastMouseScreenPos는 bCursorEnable이 false인 동안에도 계속 캐싱되므로(MouseMove 참고)
+        // 여기서 곧바로 현재 커서 위치 기준으로 맞출 수 있다.
+        if (_boolean && _wasEnabled == false && lastMouseScreenPos != Vector2.zero)
+        {
+            UpdateAttackColliderPosition(lastMouseScreenPos);
+        }
     }
 
     public void SetbCanAttack(bool _boolean)

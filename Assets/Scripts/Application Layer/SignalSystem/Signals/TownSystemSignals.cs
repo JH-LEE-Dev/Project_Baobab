@@ -93,6 +93,12 @@ public struct PopupUIUpSignal { }
 
 public struct ActivateCharacterSignal { }
 
+// 캐릭터 조준(마우스 추적)만 먼저 켜라는 신호. ActivateCharacterSignal은 AttackIndicator 노출까지
+// 함께 처리하느라 HUD가 올라오는 시점(조작 해제 0.7초 뒤)에 발행되는데, 그 0.7초 동안 조준이
+// 갱신되지 않아 마우스를 움직여도 캐릭터/팔이 이전 방향을 그대로 보고 있는 문제가 있었다.
+// 그래서 "조준 활성화"만 떼어내 조작 잠금이 풀리는 시점에 즉시 발행한다.
+public struct EnableCharacterAimSignal { }
+
 // MainMenu → Dungeon 튜토리얼: 캐릭터 하차 후, 일반 던전 입장과 동일한 마무리
 // (조작 잠금 해제 + ActivateCharacterSignal + HUD 복귀)를 실행하라는 신호.
 // 일반 경로에서 카메라 하강 완료가 하던 역할을 튜토리얼에서는 이 신호가 대신한다.

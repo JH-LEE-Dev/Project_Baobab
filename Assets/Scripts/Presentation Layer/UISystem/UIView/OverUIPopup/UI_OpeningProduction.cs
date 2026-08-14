@@ -335,6 +335,10 @@ public class UI_OpeningProduction : MonoBehaviour
         return _scale;
     }
 
+    // "...네? 말도 안 되는 소리 말고 나무나 베라고요?" 대사(Opening_Monologue_2, localizationEntryId 3)가
+    // 나오는 순간에만 카메라를 살짝 흔들어 캐릭터의 놀람/황당함을 연출한다.
+    private const int ShakeOnMonologueEntryId = 3;
+
     private void ActivateElement(int _index)
     {
         if (0 > _index || introSceneElements.Count <= _index)
@@ -363,6 +367,11 @@ public class UI_OpeningProduction : MonoBehaviour
         if (true == elem.playTMPRevealBounce && null != elem.targetAnimator)
         {
             elem.targetAnimator.PlayRevealBounce(cachedRevealCharacterAppeared);
+        }
+
+        if (ShakeOnMonologueEntryId == elem.localizationEntryId)
+        {
+            CameraMoveController.Instance?.ShakeCamera(2.5f, 0.2f);
         }
 
         if (OpeningMonologue2EntryId == elem.localizationEntryId)

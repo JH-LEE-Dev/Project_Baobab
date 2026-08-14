@@ -60,6 +60,7 @@ public class UnitSystem
         signalHub.Subscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.Subscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.Subscribe<ActivateCharacterSignal>(ActivateCharacter);
+        signalHub.Subscribe<EnableCharacterAimSignal>(EnableCharacterAim);
         signalHub.Subscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
@@ -81,6 +82,7 @@ public class UnitSystem
         signalHub.UnSubscribe<LostAndFoundBoxAcquiredSignal>(LostAndFoundBoxAcquired);
         signalHub.UnSubscribe<RetryButtonClickedSignal>(RetryGame);
         signalHub.UnSubscribe<ActivateCharacterSignal>(ActivateCharacter);
+        signalHub.UnSubscribe<EnableCharacterAimSignal>(EnableCharacterAim);
         signalHub.UnSubscribe<TreeIsDeadSignal>(TreeIsDead);
         signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
@@ -341,6 +343,11 @@ public class UnitSystem
     private void ActivateCharacter(ActivateCharacterSignal _activateCharacterSignal)
     {
         unitLogicManager.ActivateCharacter();
+    }
+
+    private void EnableCharacterAim(EnableCharacterAimSignal _enableCharacterAimSignal)
+    {
+        unitLogicManager.EnableCharacterAim();
     }
 
     private void TreeIsDead(TreeIsDeadSignal _signal)

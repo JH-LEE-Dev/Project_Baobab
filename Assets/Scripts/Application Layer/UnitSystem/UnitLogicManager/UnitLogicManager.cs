@@ -131,6 +131,11 @@ public class UnitLogicManager : MonoBehaviour, IUnitLogicProvider
         character.ActivateCharacter();
     }
 
+    public void EnableCharacterAim()
+    {
+        character.EnableAim();
+    }
+
     public void StartDecreaseStamina()
     {
         character.StartDecreaseStamina();

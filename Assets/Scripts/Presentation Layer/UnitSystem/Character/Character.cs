@@ -1224,11 +1224,27 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
         healthComponent.SetStaminaDecrease(_boolean);
     }
 
+    /// <summary>
+    /// 조준(마우스 추적)만 먼저 켠다. AttackIndicator 노출과 공격 허용은 포함하지 않으므로,
+    /// 연출상 인디케이터를 나중에 띄우면서도 조작이 풀리는 즉시 캐릭터가 마우스를 바라보게 할 수 있다.
+    /// </summary>
+    public void EnableAim()
+    {
+        attackComponent.SetCursorEnable(true);
+    }
+
     public void ActivateCharacter()
     {
-        armComponent.ResetRotation();
-        attackComponent.ResetAttackTransform();
-        attackComponent.SetCursorEnable(true);
+        // 조준이 아직 꺼져 있을 때만 초기 자세로 리셋한다. EnableAim()으로 이미 조준이 켜져
+        // 마우스를 따라가는 중인데 리셋하면, 팔이 정면 아래로 튕겼다가 다시 마우스 쪽으로
+        // 돌아가는 움직임이 눈에 보인다.
+        if (attackComponent.IsCursorEnabled == false)
+        {
+            armComponent.ResetRotation();
+            attackComponent.ResetAttackTransform();
+            attackComponent.SetCursorEnable(true);
+        }
+
         attackComponent.SetEnable(true);
         attackComponent.SetbCanAttack(true);
         armComponent.SetbCanAttack(true);

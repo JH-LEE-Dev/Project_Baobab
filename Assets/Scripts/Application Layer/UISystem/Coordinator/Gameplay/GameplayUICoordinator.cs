@@ -815,11 +815,13 @@ public class GameplayUICoordinator
                 resultUI.OpenResultUI();
             }
         }
-        else if (_step == TutorialStep.FillOffroadContainer || _step == TutorialStep.UpgradeAxe || _step == TutorialStep.ReceiveMoney)
+        else if (_step == TutorialStep.CutTree || _step == TutorialStep.FillOffroadContainer
+            || _step == TutorialStep.UpgradeAxe || _step == TutorialStep.ReceiveMoney)
         {
+            // CutTree는 InDungeonSystem이 이 신호로 OffroadContainer 상호작용 잠금을 풀고,
             // FillOffroadContainer는 InDungeonSystem이 이 신호로 차량 상호작용 잠금을 풀고,
             // UpgradeAxe는 TutorialSystem이 이 신호로 다음(마지막) 스텝인 StartNewLogging을 시작하며,
-            // ReceiveMoney는 TutorialSystem이 이 신호로 UpgradeAxe를 시작한다. 세 경우 모두 "완료
+            // ReceiveMoney는 TutorialSystem이 이 신호로 UpgradeAxe를 시작한다. 네 경우 모두 "완료
             // 연출(안내 UI가 사라지는 애니메이션)이 실제로 끝난 뒤"에 다음 로직이 이어져야 하므로
             // 스텝 완료 시점이 아니라 이 콜백에서 발행한다.
             signalHub.Publish(new TutorialQuestHideCompletedSignal(_step));

@@ -124,6 +124,14 @@ public class InDungeonSystem : MonoBehaviour
             signalHub.Publish(new PopupUIDownSignal());
             inputManager.PauseMove(true);
             inputManager.PauseESCKey(true);
+
+            // 던전 셋업이 시작되는 이 시점부터 곧바로 컨테이너 상호작용을 잠근다. OnTreesReady()에서
+            // 잠그는 것만으로는 늦다 - 그 앞의 나무 초기 스폰(ReadyTrees)은 여러 프레임에 걸쳐 도는
+            // 코루틴이라, 그 사이 프레임들에서는 bCollisionEnabled가 아직 기본값(true)이고 컨테이너도
+            // 아직 차량 위치로 옮겨지기(ReadyPortal) 전이라 캐릭터 스폰 지점과 겹쳐 있다. 그 상태로
+            // 물리 스텝이 한 번이라도 돌면 OnTriggerEnter2D → InteractStateEvent(true)가 발행되어
+            // 월드 팝업의 슬롯 UI가 열리고 슬롯 오픈 SFX(HUDEverySlotOpen)가 재생되어 버린다.
+            offroadContainer.DisableCollision();
         }
 
         currentMapType = _sceneChangeData.mapType;
@@ -253,7 +261,6 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.Subscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.Subscribe<DungeonBGMStartSignal>(DungeonBGMStart);
-        signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
@@ -271,7 +278,6 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.UnSubscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.UnSubscribe<DungeonBGMStartSignal>(DungeonBGMStart);
-        signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
@@ -335,8 +341,13 @@ public class InDungeonSystem : MonoBehaviour
             }
 
             // MainMenu → Dungeon 튜토리얼: 처음엔 둘 다 상호작용 불가로 시작한다.
-            // OffroadContainer는 나무 벌목 퀘스트가 끝나면, OffroadVehicle은 원목 이관 퀘스트가
-            // 끝나면 각각 TutorialStepCompleted(TutorialStepCompletedSignal)에서 열어준다.
+            // OffroadContainer는 나무 벌목 퀘스트가, OffroadVehicle은 원목 이관 퀘스트가 각각
+            // 끝나고 그 완료 안내 UI까지 완전히 사라지면 TutorialQuestHideCompleted에서 열어준다.
+            //
+            // 컨테이너 잠금은 이미 StartDungeonSystem()에서 걸어뒀지만 여기서 한 번 더 건다.
+            // 이 메서드 위쪽의 ReadyPortal()이 OffroadVehicleObj.ResetObject()를 호출하고,
+            // 그 안에서 EnableCollision()을 무조건 다시 켜버리기 때문이다(차량 배치용 공통 경로).
+            // 따라서 이 재잠금은 반드시 ReadyPortal() 이후에 있어야 한다.
             offroadVehicle?.SetCanTravel(false);
             offroadContainer.DisableCollision();
         }
@@ -629,19 +640,16 @@ public class InDungeonSystem : MonoBehaviour
         }
     }
 
-    // CutTree 완료 후 원목을 충분히 주워 FillOffroadContainer가 실제로 시작되는 시점에
-    // OffroadContainer 상호작용을 열어준다. CutTree 완료 시점에 미리 열어두면 "나무를 벌목하세요"
-    // 안내가 아직 화면에 떠 있는 동안에도 컨테이너에 상호작용할 수 있게 되어버린다.
-    private void TutorialStepStarted(TutorialStepStartedSignal _signal)
+    private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
     {
-        if (_signal.step == TutorialStep.FillOffroadContainer)
+        // 첫 퀘스트(나무 벌목)의 완료 안내 UI가 완전히 사라진 뒤에 컨테이너 상호작용을 열어준다.
+        // 스텝 완료 즉시 열면 "나무를 벌목하세요" 안내가 아직 화면에 떠 있는 동안 컨테이너를
+        // 쓸 수 있게 되어버린다.
+        if (_signal.step == TutorialStep.CutTree)
         {
             offroadContainer.EnableCollision();
         }
-    }
 
-    private void TutorialQuestHideCompleted(TutorialQuestHideCompletedSignal _signal)
-    {
         if (_signal.step == TutorialStep.FillOffroadContainer)
         {
             inDungeonObjectManager.offroadVehicle?.SetCanTravel(true);
@@ -716,6 +724,14 @@ public class InDungeonSystem : MonoBehaviour
     {
         if (bCurrentlyDungeonScene == true && bRetryGame == false)
             return;
+
+        // 재도전으로 던전에 다시 들어가는 경우. 카메라 하강이 끝나면서 방금 PauseMove(false)로
+        // 조작이 풀렸으므로(InDungeonProductionManager.CameraDownIsEnd), 조준도 여기서 같이 켠다.
+        // 아래 PopupUIGoUPCoroutine의 ActivateCharacterSignal은 0.7초 뒤라 그동안 조준이 잠긴다.
+        if (bCurrentlyDungeonScene == true)
+        {
+            signalHub.Publish(new EnableCharacterAimSignal());
+        }
 
         StartCoroutine(PopupUIGoUPCoroutine());
 
