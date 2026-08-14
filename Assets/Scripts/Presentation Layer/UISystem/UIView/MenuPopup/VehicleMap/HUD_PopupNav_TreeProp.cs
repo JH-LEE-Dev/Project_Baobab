@@ -60,7 +60,7 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
     private Color dimmedColorMultiplier = Color.gray;
     private Tween[] colorTweens = new Tween[6];
 
-
+    private ParticleSystem[] hoverChildParticles;
 
     private TweenCallback cachedPlayChildParticles;
     private bool isInitialized = false;
@@ -73,6 +73,11 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
         }
 
         childParticles = GetComponentsInChildren<ParticleSystem>(true);
+        if (null != hoverEffectParticle)
+        {
+            hoverChildParticles = hoverEffectParticle.GetComponentsInChildren<ParticleSystem>(true);
+        }
+
         CacheOriginalMaterialsAndColors();
         
         // 그림???기?? ?해 EnvironmentSystem 찾기
@@ -120,25 +125,33 @@ public class HUD_PopupNav_TreeProp : MonoBehaviour
 
         gameObject.SetActive(true);
 
+        SetupParticleColor(_visualData);
+        SetupSprites(_visualData);
+    }
+
+    private void SetupParticleColor(TreeVisualData _visualData)
+    {
         if (null != hoverEffectParticle)
         {
             ParticleSystem.MainModule _main = hoverEffectParticle.main;
             _main.startColor = _visualData.topVfxColor.startColor;
             
-            if (true == _visualData.topVfxColor.overrideChildrenColor)
+            if (true == _visualData.topVfxColor.overrideChildrenColor && null != hoverChildParticles)
             {
-                ParticleSystem[] _children = hoverEffectParticle.GetComponentsInChildren<ParticleSystem>(true);
-                for (int i = 0; i < _children.Length; i++)
+                for (int i = 0; i < hoverChildParticles.Length; i++)
                 {
-                    if (hoverEffectParticle != _children[i])
+                    if (hoverEffectParticle != hoverChildParticles[i])
                     {
-                        ParticleSystem.MainModule _childMain = _children[i].main;
+                        ParticleSystem.MainModule _childMain = hoverChildParticles[i].main;
                         _childMain.startColor = _visualData.topVfxColor.startColor;
                     }
                 }
             }
         }
+    }
 
+    private void SetupSprites(TreeVisualData _visualData)
+    {
         if (null != leafImage)
         {
             Sprite _spr = (null != _visualData.topSprites && 0 < _visualData.topSprites.Count) ? _visualData.topSprites[0] : null;

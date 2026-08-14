@@ -113,6 +113,7 @@ public class ItemAuraOrbitController : MonoBehaviour
     private Transform trailRoot;
     private bool isPlaying = false;
     private bool isInitialized = false;
+    private Gradient cachedTrailGradient;
 
     private static readonly int CenterIntensityPropertyId = Shader.PropertyToID("_Intensity");
 
@@ -430,34 +431,36 @@ public class ItemAuraOrbitController : MonoBehaviour
     {
         if (null == trail) return;
 
-        if (null != trailColorGradient && 0 < trailColorGradient.colorKeys.Length)
+        if (null == cachedTrailGradient)
         {
-            Gradient g = new Gradient();
-            var srcColorKeys = trailColorGradient.colorKeys;
-            var newColorKeys = new GradientColorKey[srcColorKeys.Length];
-            for (int i = 0; i < srcColorKeys.Length; i++)
+            cachedTrailGradient = new Gradient();
+            if (null != trailColorGradient && 0 < trailColorGradient.colorKeys.Length)
             {
-                Color c = srcColorKeys[i].color * trailBloomMultiplier;
-                newColorKeys[i] = new GradientColorKey(c, srcColorKeys[i].time);
-            }
-            g.SetKeys(newColorKeys, trailColorGradient.alphaKeys);
-            trail.colorGradient = g;
-        }
-        else
-        {
-            Gradient g = new Gradient();
-            g.SetKeys(
-                new GradientColorKey[] {
-                    new GradientColorKey(new Color(1.0f, 0.95f, 0.6f) * trailBloomMultiplier, 0.0f),
-                    new GradientColorKey(new Color(1.0f, 0.7f, 0.1f) * trailBloomMultiplier, 1.0f)
-                },
-                new GradientAlphaKey[] {
-                    new GradientAlphaKey(1.0f, 0.0f),
-                    new GradientAlphaKey(0.0f, 1.0f)
+                var srcColorKeys = trailColorGradient.colorKeys;
+                var newColorKeys = new GradientColorKey[srcColorKeys.Length];
+                for (int i = 0; i < srcColorKeys.Length; i++)
+                {
+                    Color c = srcColorKeys[i].color * trailBloomMultiplier;
+                    newColorKeys[i] = new GradientColorKey(c, srcColorKeys[i].time);
                 }
-            );
-            trail.colorGradient = g;
+                cachedTrailGradient.SetKeys(newColorKeys, trailColorGradient.alphaKeys);
+            }
+            else
+            {
+                cachedTrailGradient.SetKeys(
+                    new GradientColorKey[] {
+                        new GradientColorKey(new Color(1.0f, 0.95f, 0.6f) * trailBloomMultiplier, 0.0f),
+                        new GradientColorKey(new Color(1.0f, 0.7f, 0.1f) * trailBloomMultiplier, 1.0f)
+                    },
+                    new GradientAlphaKey[] {
+                        new GradientAlphaKey(1.0f, 0.0f),
+                        new GradientAlphaKey(0.0f, 1.0f)
+                    }
+                );
+            }
         }
+        
+        trail.colorGradient = cachedTrailGradient;
     }
 
     private SatelliteData CreateSatellite(int _index)
@@ -633,6 +636,8 @@ public class ItemAuraOrbitController : MonoBehaviour
 
     private void UpdateBloomSettings()
     {
+        cachedTrailGradient = null; // 인스펙터 변경 등에 의해 갱신될 수 있도록 캐시 무효화
+
         // 1. 중앙 원형 글로우 블룸 반영
         if (null != centerGlowObject)
         {
@@ -809,89 +814,85 @@ public class ItemAuraOrbitController : MonoBehaviour
 
             if (trajectoryMode == OrbitTrajectoryMode.HelicalScrew)
             {
-                // ============================================================
-                // 스크류 교차 나선 상승 + 0 GC 사전 할당 고정 풀링 시스템
-                // ============================================================
-                sat.currentProgress += dt * screwRiseSpeed;
-
-                // 상단 도달 후 바닥 리셋 순간
-                if (sat.currentProgress >= 1.0f)
-                {
-                    sat.currentProgress -= 1.0f;
-
-                    // 1. 현재 상단에 도달한 트레일의 방출을 끔 (그 자리에서 공중 자연 소멸)
-                    TrailRenderer oldTrail = sat.trailPool[sat.activeTrailIndex];
-                    if (null != oldTrail)
-                    {
-                        oldTrail.emitting = false;
-                    }
-
-                    // 2. 바닥 위치 계산 및 위성 이동
-                    Vector3 resetPos = CalculateScrewPosition(sat, sat.currentProgress, out _);
-                    sat.gameObject.transform.localPosition = resetPos;
-
-                    // 3. 대기 중이던 2번째 트레일 풀로 바톤 터치 (0 GC 재사용)
-                    sat.activeTrailIndex = (sat.activeTrailIndex + 1) % 2;
-                    TrailRenderer nextTrail = sat.trailPool[sat.activeTrailIndex];
-                    if (null != nextTrail)
-                    {
-                        nextTrail.transform.localPosition = resetPos;
-                        nextTrail.Clear();
-                        nextTrail.emitting = true;
-                    }
-                    continue;
-                }
-
-                // 상단 도달(0.85 ~ 1.0) 및 바닥 시작(0.0 ~ 0.15) 위성 알파 페이드
-                float fade = 1.0f;
-                if (sat.currentProgress > 0.85f)
-                {
-                    fade = Mathf.InverseLerp(1.0f, 0.85f, sat.currentProgress);
-                }
-                else if (sat.currentProgress < 0.15f)
-                {
-                    fade = Mathf.InverseLerp(0.0f, 0.15f, sat.currentProgress);
-                }
-
-                Vector3 pos = CalculateScrewPosition(sat, sat.currentProgress, out float depthZ);
-                sat.gameObject.transform.localPosition = pos;
-
-                // 활성 트레일의 위치 동기화
-                TrailRenderer activeTrail = sat.trailPool[sat.activeTrailIndex];
-                if (null != activeTrail)
-                {
-                    activeTrail.transform.localPosition = pos;
-                }
-
-                // 위성 HDR Bloom 컬러 및 3D Depth 스케일링
-                Color c = satelliteColor * satelliteBloomMultiplier;
-                c.a = satelliteColor.a * fade;
-                sat.spriteRenderer.color = c;
-
-                float scaleFactor = (1.0f + depthZ * depthScaleAmount) * fade;
-                sat.gameObject.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.01f, scaleFactor));
+                UpdateHelicalScrewOrbit(sat, dt);
             }
             else
             {
-                // ============================================================
-                // 일반 궤도 모드 (타원 / 리사주 / 구면)
-                // ============================================================
-                Vector3 pos = CalculateSatellitePosition(sat, time, out float depthZ);
-                sat.gameObject.transform.localPosition = pos;
-
-                // 트레일 위치 동기화
-                TrailRenderer tr = sat.trailPool[0];
-                if (null != tr) tr.transform.localPosition = pos;
-
-                Color c = satelliteColor * satelliteBloomMultiplier;
-                sat.spriteRenderer.color = c;
-
-                if (0.001f < depthScaleAmount)
-                {
-                    float scaleFactor = 1.0f + depthZ * depthScaleAmount;
-                    sat.gameObject.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.1f, scaleFactor));
-                }
+                UpdateStandardOrbit(sat, time);
             }
+        }
+    }
+
+    private void UpdateHelicalScrewOrbit(SatelliteData sat, float dt)
+    {
+        sat.currentProgress += dt * screwRiseSpeed;
+
+        if (sat.currentProgress >= 1.0f)
+        {
+            sat.currentProgress -= 1.0f;
+
+            TrailRenderer oldTrail = sat.trailPool[sat.activeTrailIndex];
+            if (null != oldTrail)
+            {
+                oldTrail.emitting = false;
+            }
+
+            Vector3 resetPos = CalculateScrewPosition(sat, sat.currentProgress, out _);
+            sat.gameObject.transform.localPosition = resetPos;
+
+            sat.activeTrailIndex = (sat.activeTrailIndex + 1) % 2;
+            TrailRenderer nextTrail = sat.trailPool[sat.activeTrailIndex];
+            if (null != nextTrail)
+            {
+                nextTrail.transform.localPosition = resetPos;
+                nextTrail.Clear();
+                nextTrail.emitting = true;
+            }
+            return;
+        }
+
+        float fade = 1.0f;
+        if (sat.currentProgress > 0.85f)
+        {
+            fade = Mathf.InverseLerp(1.0f, 0.85f, sat.currentProgress);
+        }
+        else if (sat.currentProgress < 0.15f)
+        {
+            fade = Mathf.InverseLerp(0.0f, 0.15f, sat.currentProgress);
+        }
+
+        Vector3 pos = CalculateScrewPosition(sat, sat.currentProgress, out float depthZ);
+        sat.gameObject.transform.localPosition = pos;
+
+        TrailRenderer activeTrail = sat.trailPool[sat.activeTrailIndex];
+        if (null != activeTrail)
+        {
+            activeTrail.transform.localPosition = pos;
+        }
+
+        Color c = satelliteColor * satelliteBloomMultiplier;
+        c.a = satelliteColor.a * fade;
+        sat.spriteRenderer.color = c;
+
+        float scaleFactor = (1.0f + depthZ * depthScaleAmount) * fade;
+        sat.gameObject.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.01f, scaleFactor));
+    }
+
+    private void UpdateStandardOrbit(SatelliteData sat, float time)
+    {
+        Vector3 pos = CalculateSatellitePosition(sat, time, out float depthZ);
+        sat.gameObject.transform.localPosition = pos;
+
+        TrailRenderer tr = sat.trailPool[0];
+        if (null != tr) tr.transform.localPosition = pos;
+
+        Color c = satelliteColor * satelliteBloomMultiplier;
+        sat.spriteRenderer.color = c;
+
+        if (0.001f < depthScaleAmount)
+        {
+            float scaleFactor = 1.0f + depthZ * depthScaleAmount;
+            sat.gameObject.transform.localScale = Vector3.one * (satelliteSize * Mathf.Max(0.1f, scaleFactor));
         }
     }
 
@@ -944,6 +945,7 @@ public class ItemAuraOrbitController : MonoBehaviour
         }
     }
 
+#if UNITY_EDITOR
     private void OnGUI()
     {
         if (false == showOnScreenDebugGui) return;
@@ -967,4 +969,5 @@ public class ItemAuraOrbitController : MonoBehaviour
         }
         GUILayout.EndArea();
     }
+#endif
 }

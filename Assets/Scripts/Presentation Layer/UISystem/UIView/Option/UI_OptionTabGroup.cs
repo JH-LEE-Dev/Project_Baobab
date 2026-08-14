@@ -22,13 +22,13 @@ public class UI_OptionTabGroup : MonoBehaviour
     {
         if (null == tabs) return;
 
-        for (int i = 0; i < tabs.Length; i++)
+        for (int i = 0; tabs.Length > i; i++)
         {
             if (null != tabs[i].tabButton)
             {
                 tabs[i].tabButton.Initialize(this, i);
                 
-                if (null != _tabTexts && i < _tabTexts.Length)
+                if (null != _tabTexts && _tabTexts.Length > i)
                 {
                     tabs[i].tabButton.SetText(_tabTexts[i]);
                 }
@@ -36,7 +36,7 @@ public class UI_OptionTabGroup : MonoBehaviour
         }
 
         // 기본적으로 첫 번째 탭 활성화
-        if (tabs.Length > 0)
+        if (0 < tabs.Length)
         {
             SelectTab(0);
         }
@@ -46,9 +46,9 @@ public class UI_OptionTabGroup : MonoBehaviour
     {
         if (null == tabs || null == _tabTexts) return;
 
-        for (int i = 0; i < tabs.Length; i++)
+        for (int i = 0; tabs.Length > i; i++)
         {
-            if (null != tabs[i].tabButton && i < _tabTexts.Length)
+            if (null != tabs[i].tabButton && _tabTexts.Length > i)
             {
                 tabs[i].tabButton.SetText(_tabTexts[i]);
             }
@@ -64,7 +64,7 @@ public class UI_OptionTabGroup : MonoBehaviour
     {
         if (null == tabs) return;
 
-        for (int i = 0; i < tabs.Length; i++)
+        for (int i = 0; tabs.Length > i; i++)
         {
             bool _isSelected = (i == _selectedIndex);
 

@@ -90,7 +90,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == currencyFont) 
             return;
 
-        if (gameObject.activeInHierarchy)
+        if (true == gameObject.activeInHierarchy)
         {
             // 객체가 켜져 있다면 에러 없이 코루틴을 돌릴 수 있으므로 즉시 1프레임 대기 루틴 실행
             StartCoroutine(ApplySortingRoutine());
@@ -104,7 +104,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void OnEnable()
     {
-        if (bNeedSorting)
+        if (true == bNeedSorting)
         {
             StartCoroutine(ApplySortingRoutine());
         }
@@ -118,15 +118,15 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         
         int retryCount = 0;
         
-        while (_canvas != null && retryCount < 10)
+        while (null != _canvas && 10 > retryCount)
         {
-            if (_canvas.rootCanvas != null && _canvas.rootCanvas.worldCamera != null)
+            if (null != _canvas.rootCanvas && null != _canvas.rootCanvas.worldCamera)
             {
                 _canvas.overrideSorting = true;
                 _canvas.sortingOrder = 10;
                 _canvas.sortingLayerName = "HUD";
 
-                if (_canvas.overrideSorting == true)
+                if (true == _canvas.overrideSorting)
                 {
                     yield break;
                 }
@@ -142,7 +142,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == currencyFont) return;
         
         Canvas _canvas = currencyFont.GetComponent<Canvas>();
-        if (_canvas != null && _canvas.rootCanvas != null && _canvas.rootCanvas.worldCamera != null)
+        if (null != _canvas && null != _canvas.rootCanvas && null != _canvas.rootCanvas.worldCamera)
         {
             _canvas.overrideSorting = true;
             _canvas.sortingOrder = 10;
@@ -193,7 +193,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (null == currencyFont)
             return;
 
-        if (showCnt >= maxItemCntPerSlot)
+        if (maxItemCntPerSlot <= showCnt)
             currencyFont.SetGlyphColor(maxColor);
         else
             currencyFont.SetGlyphColor(defaultColor);
@@ -219,7 +219,7 @@ public class UI_InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         maxItemCntPerSlot = _maxCount;
 
-        if (null == _newSlot.itemData)
+        if (null == _newSlot || null == _newSlot.itemData)
         {
             ResetData();
             return;

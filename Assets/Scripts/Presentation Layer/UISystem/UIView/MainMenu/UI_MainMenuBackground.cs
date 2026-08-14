@@ -142,54 +142,58 @@ public class UI_MainMenuBackground : MonoBehaviour
 
         for (int i = 0; i < backgroundLayers.Length; i++)
         {
-            if (null == backgroundLayers[i].layerTransform) continue;
+            if (null == backgroundLayers[i].layerTransform)
+            {
+                continue;
+            }
 
-            // 1. Parallax 연산
             Vector2 _layerParallax = new Vector2(
                 currentParallaxOffset.x * backgroundLayers[i].parallaxMultiplier.x,
                 currentParallaxOffset.y * backgroundLayers[i].parallaxMultiplier.y
             );
 
-            // 2 & 3. Floating 연산 및 적용
             if (backgroundLayers[i].enableFloating)
             {
-                if (backgroundLayers[i].independentChildrenFloating && null != backgroundLayers[i].childrenData)
-                {
-                    // 부모는 패럴랙스(카메라 이동 효과)만 적용
-                    backgroundLayers[i].layerTransform.anchoredPosition = backgroundLayers[i].initialPosition + _layerParallax;
-                    
-                    // 자식들은 각자 개별적으로 Floating(부유 효과) 적용
-                    for (int j = 0; j < backgroundLayers[i].childrenData.Length; j++)
-                    {
-                        var _child = backgroundLayers[i].childrenData[j];
-                        if (null == _child.transform) continue;
-
-                        float _timeWithOffset = _currentTime * backgroundLayers[i].floatingSpeed + _child.randomOffset;
-                        Vector2 _childFloating = new Vector2(
-                            Mathf.Sin(_timeWithOffset) * backgroundLayers[i].floatingAmplitude.x,
-                            Mathf.Cos(_timeWithOffset * 0.8f) * backgroundLayers[i].floatingAmplitude.y
-                        );
-
-                        // 자식의 위치는 부모 안에서의 로컬 좌표이므로 부유 효과만 더함
-                        _child.transform.anchoredPosition = _child.initialPosition + _childFloating;
-                    }
-                }
-                else
-                {
-                    // 부모 자체가 통째로 Floating + Parallax 적용
-                    float _timeWithOffset = _currentTime * backgroundLayers[i].floatingSpeed + backgroundLayers[i].randomOffset;
-                    Vector2 _layerFloating = new Vector2(
-                        Mathf.Sin(_timeWithOffset) * backgroundLayers[i].floatingAmplitude.x,
-                        Mathf.Cos(_timeWithOffset * 0.8f) * backgroundLayers[i].floatingAmplitude.y
-                    );
-                    backgroundLayers[i].layerTransform.anchoredPosition = backgroundLayers[i].initialPosition + _layerParallax + _layerFloating;
-                }
+                ApplyFloatingMovement(backgroundLayers[i], _layerParallax, _currentTime);
             }
             else
             {
-                // Floating 없이 Parallax만 적용
                 backgroundLayers[i].layerTransform.anchoredPosition = backgroundLayers[i].initialPosition + _layerParallax;
             }
+        }
+    }
+
+    private void ApplyFloatingMovement(in BackgroundLayer _layer, Vector2 _layerParallax, float _currentTime)
+    {
+        if (_layer.independentChildrenFloating && null != _layer.childrenData)
+        {
+            _layer.layerTransform.anchoredPosition = _layer.initialPosition + _layerParallax;
+            
+            for (int j = 0; j < _layer.childrenData.Length; j++)
+            {
+                var _child = _layer.childrenData[j];
+                if (null == _child.transform)
+                {
+                    continue;
+                }
+
+                float _timeWithOffset = _currentTime * _layer.floatingSpeed + _child.randomOffset;
+                Vector2 _childFloating = new Vector2(
+                    Mathf.Sin(_timeWithOffset) * _layer.floatingAmplitude.x,
+                    Mathf.Cos(_timeWithOffset * 0.8f) * _layer.floatingAmplitude.y
+                );
+
+                _child.transform.anchoredPosition = _child.initialPosition + _childFloating;
+            }
+        }
+        else
+        {
+            float _timeWithOffset = _currentTime * _layer.floatingSpeed + _layer.randomOffset;
+            Vector2 _layerFloating = new Vector2(
+                Mathf.Sin(_timeWithOffset) * _layer.floatingAmplitude.x,
+                Mathf.Cos(_timeWithOffset * 0.8f) * _layer.floatingAmplitude.y
+            );
+            _layer.layerTransform.anchoredPosition = _layer.initialPosition + _layerParallax + _layerFloating;
         }
     }
 }

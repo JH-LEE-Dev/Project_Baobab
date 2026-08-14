@@ -27,6 +27,8 @@ namespace PresentationLayer.VFX
         [Header("최적화 세팅")]
         [SerializeField, Tooltip("애니메이션이 끝나면 이 게임오브젝트 자체를 꺼버립니다. (오브젝트 풀링용)")]
         private bool disableObjectOnComplete = true;
+        [SerializeField, Tooltip("사전 생성할 최대 번개 분절(Segment) 개수입니다.")]
+        private int maxSegments = 8;
 
         private LineRenderer originalLineRenderer;
         private List<LineRenderer> lineSegments = new List<LineRenderer>();
@@ -53,6 +55,12 @@ namespace PresentationLayer.VFX
 
             // 델리게이트 미리 생성 (GC Alloc 완전 방지)
             onZapCompleteCallback = OnZapComplete;
+
+            // 풀 사전 생성 (Pre-warm)
+            for (int i = 1; maxSegments > i; i++)
+            {
+                GetOrCreateSegment(i);
+            }
         }
 
         private static Gradient BuildNeutralGradient()
@@ -72,7 +80,7 @@ namespace PresentationLayer.VFX
         public void TestFire()
         {
             // 실행 모드가 아닐 때 트윈이 도는 것을 방지
-            if (!Application.isPlaying) 
+            if (false == Application.isPlaying) 
             {
                 Debug.LogWarning("Test Fire는 플레이 모드에서만 작동합니다.");
                 return;
@@ -138,7 +146,7 @@ namespace PresentationLayer.VFX
         /// <param name="_points">A -> B -> C 순서대로 이어질 좌표 배열</param>
         public void PlayZap(Vector3[] _points)
         {
-            if (_points == null) return;
+            if (null == _points) return;
             PlayZapInternal(_points, _points.Length);
         }
 
@@ -155,7 +163,7 @@ namespace PresentationLayer.VFX
 
         private void PlayZapInternal(IReadOnlyList<Vector3> _points, int _count)
         {
-            if (_points == null || _count < 2) return;
+            if (null == _points || 2 > _count) return;
 
             for (int i = 0; i < lineSegments.Count; i++) lineSegments[i].enabled = false;
 
@@ -176,7 +184,9 @@ namespace PresentationLayer.VFX
         {
             if (_index < lineSegments.Count) return lineSegments[_index];
 
-            GameObject go = new GameObject($"LineSegment_{_index}");
+            Debug.LogWarning($"[VFX_LightningZap] maxSegments({maxSegments}) 부족으로 런타임에 동적 생성됨. 성능 최적화를 위해 인스펙터에서 값을 늘려주세요.");
+
+            GameObject go = new GameObject("LineSegment_Pool");
             go.transform.SetParent(this.transform, false);
             LineRenderer lr = go.AddComponent<LineRenderer>();
             
@@ -201,7 +211,7 @@ namespace PresentationLayer.VFX
         private void ExecuteZap()
         {
             // 게임오브젝트가 꺼져있었다면 다시 켜기
-            if (!gameObject.activeSelf) gameObject.SetActive(true);
+            if (false == gameObject.activeSelf) gameObject.SetActive(true);
             
             // 2. 진행 중인 트윈 취소 및 초기 굵기/색상 강제 설정
             DOTween.Kill(instancedMaterial);
@@ -220,7 +230,7 @@ namespace PresentationLayer.VFX
             for (int i = 0; i < lineSegments.Count; i++) lineSegments[i].enabled = false;
 
             // 최적화: 애니메이션이 끝나면 오브젝트 자체를 비활성화
-            if (disableObjectOnComplete)
+            if (true == disableObjectOnComplete)
             {
                 gameObject.SetActive(false);
             }
@@ -233,7 +243,7 @@ namespace PresentationLayer.VFX
         private void OnDestroy()
         {
             // 복제된 머티리얼 메모리 릭(누수) 방지
-            if (instancedMaterial != null)
+            if (null != instancedMaterial)
             {
                 Destroy(instancedMaterial);
             }

@@ -24,16 +24,12 @@ public class HUD_LootReveal : MonoBehaviour
     [Header("── DataBase ────────────────────────────────────────────────────")]
     [SerializeField] private LootItemTypeDataBase lootDataBase;
 
-    // ─── Tetris BG (Procedural Grid) ─────────────────────────────────────────
-    [Header("── Tetris BG (Procedural Grid) ─────────────────────────────────")]
-    [SerializeField] private Sprite cellSprite;             // null이면 단색 처리
-    [SerializeField] private Color cellColor = new Color(0.1f, 0.1f, 0.15f, 1f);
-    [SerializeField] private int gridColumns = 10;
-    [SerializeField] private int gridRows = 6;
-    [SerializeField] private float cellGap = 3f;
-    [SerializeField] private float pieceAppearInterval = 0.04f;   // 열 1개 등장 간격
-    [SerializeField] private float pieceRevealDuration = 0.12f;   // 셀 페이드인 시간
-    [SerializeField] private Ease pieceRevealEase = Ease.OutQuad;
+    // ─── Tetris BG (Procedural Grid / Shader) ────────────────────────────────
+    [Header("── Tetris BG (Procedural Grid / Shader) ──────────────────────────")]
+    [SerializeField] private Image bgDissolveImage;         // 디졸브 셰이더(UI_PixelDissolve)가 적용된 머티리얼을 가진 이미지
+    [SerializeField] private int gridSize = 12;             // 세로축(Row) 기준 픽셀 조각 개수 (가로축은 비율에 맞춰 자동 계산)
+    [SerializeField] private float bgRevealDuration = 0.8f; // 확산에 걸리는 총 시간
+    [SerializeField] private Ease bgRevealEase = Ease.OutQuad;
 
     // ─── Pillar ───────────────────────────────────────────────────────────────
     [Header("── Pillar ───────────────────────────────────────────────────────")]
@@ -42,9 +38,27 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private float pillarStartY = -300f;    // 시작 Y (마스크 하단 밖)
     [SerializeField] private float pillarTargetY = 0f;      // 최종 Y
     [SerializeField] private float pillarMoveDuration = 0.35f;
-    [SerializeField] private float pillarShakeStrength = 4f;
-    [SerializeField] private float pillarShakeDuration = 0.25f;
     [SerializeField] private Ease pillarMoveEase = Ease.OutCubic;
+
+    // ─── Particles ────────────────────────────────────────────────────────────
+    [Header("── Particles ────────────────────────────────────────────────────")]
+    [SerializeField] private RectTransform particlesRoot;
+    
+    [Tooltip("기둥(Pillar)을 쫓아갈 때의 지연 시간. 값이 클수록 늦게(고무줄처럼) 따라갑니다.")]
+    [SerializeField] private float particlesFollowSmoothTime = 0.15f; 
+    
+    [Space(5)]
+    [Tooltip("파티클이 위아래로 움직일 최대 거리(폭). 좁을수록 은은합니다.")]
+    [SerializeField] private float particleFloatDistance = 3f;
+    
+    [Tooltip("파티클 1회 왕복에 걸리는 최소 시간 (매우 느리게 하려면 6 이상)")]
+    [SerializeField] private float particleFloatDurationMin = 8.0f;
+    
+    [Tooltip("파티클 1회 왕복에 걸리는 최대 시간 (매우 느리게 하려면 10 이상)")]
+    [SerializeField] private float particleFloatDurationMax = 12.0f;
+
+    private RectTransform[] childParticles;
+    private Vector2 particlesVelocity = Vector2.zero;
 
     // ─── Loot Item ────────────────────────────────────────────────────────────
     [Header("── Loot Item ────────────────────────────────────────────────────")]
@@ -52,6 +66,14 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private Image lootItemImage;
     [SerializeField] private float lootPopDuration = 0.25f;
     [SerializeField] private Vector3 lootPopOvershoot = new Vector3(1.3f, 1.3f, 1f);
+    
+    [Space(5)]
+    [Tooltip("전리품 아이템 부유 거리(위아래 폭)")]
+    [SerializeField] private float lootFloatDistance = 5f;
+    [Tooltip("전리품 아이템 1회 왕복 소요 시간")]
+    [SerializeField] private float lootFloatDuration = 4.0f;
+
+    private float lootInitialY; 
     [SerializeField] private Ease lootPopEase = Ease.OutBack;
 
     // ─── VFX ──────────────────────────────────────────────────────────────────
@@ -82,53 +104,128 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private float textStartDelay = 0.05f;  // 아이템 등장 후 텍스트 딜레이
 
     // ─── UIView_ScreenModal 연동 준비 ─────────────────────────────────────────
-    // UIView_ScreenModal 구현 완료 후 아래 이벤트를 외부에서 구독하여 활용하세요.
     public event Action OnRevealCompleted;
     public event Action OnHideCompleted;
 
     // ─── 런타임 상태 ──────────────────────────────────────────────────────────
-    private readonly List<Image> gridCells = new List<Image>();
     private Coroutine revealCoroutine;
     private bool isShowing = false;
+    private Material runtimeDissolveMat;
+
+    private TweenCallback cachedOnHideFadeComplete;
+    private TweenCallback cachedOnGridRevealUpdate;
+
+    private WaitForSeconds cachedWait01f;
+    private WaitForSeconds cachedPillarDelay;
+    private WaitForSeconds cachedLootDelay;
+    private WaitForSeconds cachedTextDelay;
+    private WaitForSeconds cachedDescSlideDelay;
+    private WaitForSeconds cachedTextSlideEndDelay;
 
     // ─── 초기화 ───────────────────────────────────────────────────────────────
 
     private void Awake()
     {
-        // Show() 함수에 의해 정식으로 호출되어 켜진 경우가 아닐 때만 강제로 끕니다.
-        // (씬 시작 시 에디터에 켜진 채로 저장되어 자동 켜짐 방지용)
         if (false == isShowing)
         {
             gameObject.SetActive(false);
         }
+        InitParticles();
+
+        if (null != lootItemRect)
+        {
+            lootInitialY = lootItemRect.anchoredPosition.y;
+        }
+
+        cachedOnHideFadeComplete = OnHideFadeComplete;
+        cachedOnGridRevealUpdate = OnGridRevealUpdate;
+
+        cachedWait01f = new WaitForSeconds(0.1f);
+        cachedPillarDelay = new WaitForSeconds(pillarStartDelay);
+        cachedLootDelay = new WaitForSeconds(lootStartDelay);
+        cachedTextDelay = new WaitForSeconds(textStartDelay);
+        cachedDescSlideDelay = new WaitForSeconds(descSlideDelay);
+        cachedTextSlideEndDelay = new WaitForSeconds(Mathf.Max(nameSlideDuration, descSlideDuration + descSlideDelay));
     }
 
-    // ─── 퍼블릭 진입점 ────────────────────────────────────────────────────────
+    private void InitParticles()
+    {
+        if (null == particlesRoot) return;
 
-    /// <summary>
-    /// 외부(UIView_ScreenModal 등)에서 전리품 타입과 함께 호출하는 진입점입니다.
-    /// </summary>
+        int _childCount = particlesRoot.childCount;
+        childParticles = new RectTransform[_childCount];
+        for (int i = 0; i < _childCount; i++)
+        {
+            childParticles[i] = particlesRoot.GetChild(i) as RectTransform;
+        }
+
+        if (null != pillarRect)
+        {
+            particlesRoot.SetParent(pillarRect.parent, true);
+            particlesRoot.SetAsLastSibling();
+        }
+
+        foreach (var _p in childParticles)
+        {
+            if (null == _p) continue;
+            
+            float _duration = UnityEngine.Random.Range(particleFloatDurationMin, particleFloatDurationMax);
+            float _dist = UnityEngine.Random.Range(particleFloatDistance * 0.5f, particleFloatDistance);
+            float _delay = UnityEngine.Random.Range(0f, 1f);
+            
+            _p.DOAnchorPosY(_p.anchoredPosition.y + _dist, _duration)
+              .SetEase(Ease.InOutSine)
+              .SetDelay(_delay)
+              .SetLoops(-1, LoopType.Yoyo);
+        }
+    }
+    
+    private void Update()
+    {
+        if (null != particlesRoot && null != pillarRect)
+        {
+            particlesRoot.anchoredPosition = Vector2.SmoothDamp(
+                particlesRoot.anchoredPosition, 
+                pillarRect.anchoredPosition, 
+                ref particlesVelocity, 
+                particlesFollowSmoothTime
+            );
+        }
+    }
+    
+    private void OnDestroy()
+    {
+        if (null != childParticles)
+        {
+            foreach (var _p in childParticles)
+            {
+                if (null != _p) _p.DOKill();
+            }
+        }
+        DOTween.Kill("LootFloat");
+    }
+
     public void Show(LootType _lootType, LocalizationManager _locManager)
     {
-        if (true == isShowing)
-            return;
-
+        // 광클 락 해제: 완전히 켜져있는 상태라도 닫히는 중일 수 있으므로 무조건 초기화하고 다시 연출합니다.
         isShowing = true;
         gameObject.SetActive(true);
 
+        if (null != revealCoroutine)
+        {
+            StopCoroutine(revealCoroutine);
+            revealCoroutine = null;
+        }
+
         SetLocalizedTexts(_lootType, _locManager);
         SetLootSprite(_lootType, lootDataBase);
+        
+        // 렌더 및 트윈 완벽 초기화
         ResetState();
-
-        if (null != revealCoroutine)
-            StopCoroutine(revealCoroutine);
 
         revealCoroutine = StartCoroutine(PlayRevealSequence());
     }
 
-    /// <summary>
-    /// 닫힘 진입점. 키 입력 처리는 상단에서 담당하므로 이 메서드만 노출합니다.
-    /// </summary>
     public void Hide()
     {
         if (false == isShowing)
@@ -143,12 +240,7 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();
-            rootCanvasGroup.DOFade(0f, 0.25f).OnComplete(() =>
-            {
-                isShowing = false;
-                gameObject.SetActive(false);
-                OnHideCompleted?.Invoke();
-            });
+            rootCanvasGroup.DOFade(0f, 0.25f).OnComplete(cachedOnHideFadeComplete);
         }
         else
         {
@@ -158,209 +250,135 @@ public class HUD_LootReveal : MonoBehaviour
         }
     }
 
-    // ─── 초기화 ───────────────────────────────────────────────────────────────
+    private void OnHideFadeComplete()
+    {
+        // 페이드아웃 중 다시 Show가 불려 알파값이 오르는 상황이면 끄지 않음
+        if (0.05f >= rootCanvasGroup.alpha) 
+        {
+            isShowing = false;
+            gameObject.SetActive(false);
+            OnHideCompleted?.Invoke();
+        }
+    }
 
     private void ResetState()
     {
         if (null != rootCanvasGroup)
+        {
+            rootCanvasGroup.DOKill();
             rootCanvasGroup.alpha = 0f;
+        }
 
-        // 기둥 초기 위치
         if (null != pillarRect)
+        {
+            pillarRect.DOKill();
             pillarRect.anchoredPosition = new Vector2(pillarRect.anchoredPosition.x, pillarStartY);
+            
+            if (null != particlesRoot)
+            {
+                particlesRoot.anchoredPosition = pillarRect.anchoredPosition;
+                particlesVelocity = Vector2.zero;
+            }
+        }
 
-        // 전리품 아이콘 초기 스케일
         if (null != lootItemRect)
         {
+            lootItemRect.DOKill(); // 부유 및 스케일 모션 강제 정지
             lootItemRect.localScale = Vector3.zero;
+            lootItemRect.anchoredPosition = new Vector2(lootItemRect.anchoredPosition.x, lootInitialY);
             lootItemRect.gameObject.SetActive(false);
         }
 
-        // 텍스트 초기 위치 (마스킹 영역 왼쪽 밖)
         if (null != lootNameText)
         {
+            lootNameText.rectTransform.DOKill();
             lootNameText.rectTransform.anchoredPosition =
                 new Vector2(nameSlideFromX, lootNameText.rectTransform.anchoredPosition.y);
             lootNameText.ForceMeshUpdate(true);
         }
         if (null != lootDescText)
         {
+            lootDescText.rectTransform.DOKill();
             lootDescText.rectTransform.anchoredPosition =
                 new Vector2(descSlideFromX, lootDescText.rectTransform.anchoredPosition.y);
             lootDescText.ForceMeshUpdate(true);
         }
 
-        // 셀 초기화
-        foreach (Image _cell in gridCells)
+        if (null != bgDissolveImage && null != bgDissolveImage.material)
         {
-            if (null != _cell)
-                _cell.color = new Color(cellColor.r, cellColor.g, cellColor.b, 0f);
-        }
-    }
-
-    // ─── 그리드 생성 ──────────────────────────────────────────────────────────
-
-    private void BuildGrid()
-    {
-        // 기존 셀 제거
-        foreach (Image _cell in gridCells)
-        {
-            if (null != _cell)
-                Destroy(_cell.gameObject);
-        }
-        gridCells.Clear();
-
-        if (null == bgRoot)
-            return;
-            
-        // 그리드 컨테이너 자체가 하이어라키 최상단(가장 먼저 렌더링)에 위치하도록 하여 
-        // 기둥(Pillar) 등 다른 UI 요소보다 뒤에 깔리도록 합니다.
-        bgRoot.SetAsFirstSibling();
-
-        Vector2 _bgSize = bgRoot.rect.size;
-        float _cellW = (_bgSize.x - cellGap * (gridColumns - 1)) / gridColumns;
-        float _cellH = (_bgSize.y - cellGap * (gridRows - 1)) / gridRows;
-
-        for (int _row = 0; _row < gridRows; _row++)
-        {
-            for (int _col = 0; _col < gridColumns; _col++)
+            if (null == runtimeDissolveMat)
             {
-                GameObject _cellGO = new GameObject($"Cell_{_col}_{_row}", typeof(RectTransform), typeof(Image));
-                _cellGO.transform.SetParent(bgRoot, false);
-                
-                // 만약 기둥(Pillar)이나 다른 요소가 bgRoot 안에 있다면 
-                // 생성된 셀들이 덮지 않도록 최상단(가장 먼저 렌더링)으로 보냅니다.
-                _cellGO.transform.SetAsFirstSibling();
-
-                RectTransform _rt = _cellGO.GetComponent<RectTransform>();
-                _rt.anchorMin = Vector2.zero;
-                _rt.anchorMax = Vector2.zero;
-                _rt.pivot = Vector2.zero;
-                _rt.sizeDelta = new Vector2(_cellW, _cellH);
-
-                float _x = _col * (_cellW + cellGap);
-                float _y = _row * (_cellH + cellGap);
-                _rt.anchoredPosition = new Vector2(_x, _y);
-
-                Image _img = _cellGO.GetComponent<Image>();
-                _img.sprite = cellSprite;
-                _img.color = new Color(cellColor.r, cellColor.g, cellColor.b, 0f);
-
-                gridCells.Add(_img);
+                runtimeDissolveMat = new Material(bgDissolveImage.material);
+                bgDissolveImage.material = runtimeDissolveMat;
             }
+
+            if (null != runtimeDissolveMat)
+                runtimeDissolveMat.DOKill();
+
+            runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
+            runtimeDissolveMat.SetFloat("_GridSize", gridSize);
+            
+            float _aspectRatio = 1f;
+            if (0 < bgDissolveImage.rectTransform.rect.height)
+            {
+                _aspectRatio = bgDissolveImage.rectTransform.rect.width / bgDissolveImage.rectTransform.rect.height;
+            }
+            runtimeDissolveMat.SetFloat("_AspectRatio", _aspectRatio);
+            
+            bgDissolveImage.SetMaterialDirty(); 
+            bgDissolveImage.SetVerticesDirty(); 
         }
     }
-
-    // ─── 연출 시퀀스 ──────────────────────────────────────────────────────────
 
     private IEnumerator PlayRevealSequence()
     {
-        // 루트 페이드인
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();
             rootCanvasGroup.DOFade(1f, 0.2f);
         }
 
-        yield return new WaitForSeconds(0.1f);
+        yield return cachedWait01f;
 
-        // 1단계: 그리드 셀 중앙→좌우 순차 점등
-        BuildGrid();
         yield return StartCoroutine(PlayGridReveal());
 
-        yield return new WaitForSeconds(pillarStartDelay);
+        yield return cachedPillarDelay;
 
-        // 2단계: 기둥 상승
         yield return StartCoroutine(PlayPillarReveal());
 
-        yield return new WaitForSeconds(lootStartDelay);
+        yield return cachedLootDelay;
 
-        // 3단계: VFX + 전리품 이미지 뽀잉 등장
         PlayVFX();
-        PlayLootPop();
-        yield return new WaitForSeconds(lootPopDuration);
+        yield return StartCoroutine(PlayLootPop());
 
-        yield return new WaitForSeconds(textStartDelay);
+        yield return cachedTextDelay;
 
-        // 4단계: 이름 → 설명 텍스트 슬라이드
         yield return StartCoroutine(PlayTextSlide());
 
         OnRevealCompleted?.Invoke();
     }
 
-    // 1단계 ─ 그리드 셀 중앙 열부터 좌우 순차 점등
     private IEnumerator PlayGridReveal()
     {
-        if (0 == gridCells.Count)
+        if (null == bgDissolveImage || null == runtimeDissolveMat)
             yield break;
 
-        // 중앙 열 인덱스 계산 후 좌우 확산 순서로 열 인덱스 정렬
-        List<int> _columnOrder = BuildColumnOrder();
-
-        foreach (int _col in _columnOrder)
-        {
-            for (int _row = 0; _row < gridRows; _row++)
-            {
-                int _idx = _row * gridColumns + _col;
-                if (_idx < 0 || _idx >= gridCells.Count)
-                    continue;
-
-                Image _cell = gridCells[_idx];
-                if (null == _cell)
-                    continue;
-
-                _cell.DOKill();
-                _cell.DOFade(1f, pieceRevealDuration).SetEase(pieceRevealEase);
-            }
-
-            yield return new WaitForSeconds(pieceAppearInterval);
-        }
-
-        // 마지막 열 연출이 끝날 때까지 대기
-        yield return new WaitForSeconds(pieceRevealDuration);
+        runtimeDissolveMat.DOKill();
+        runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
+        
+        yield return runtimeDissolveMat.DOFloat(1f, "_DissolveAmount", bgRevealDuration)
+            .SetEase(bgRevealEase)
+            .SetUpdate(true) 
+            .OnUpdate(cachedOnGridRevealUpdate)
+            .WaitForCompletion();
     }
 
-    // 중앙에서 좌우로 퍼지는 열 등장 순서 계산
-    private List<int> BuildColumnOrder()
+    private void OnGridRevealUpdate()
     {
-        List<int> _order = new List<int>(gridColumns);
-        int _mid = gridColumns / 2;
-        int _left = _mid - 1;
-        int _right = (0 == gridColumns % 2) ? _mid : _mid + 1;
-
-        // 중앙 열 먼저
-        if (0 == gridColumns % 2)
-        {
-            _order.Add(_mid - 1);
-            _order.Add(_mid);
-        }
-        else
-        {
-            _order.Add(_mid);
-        }
-
-        // 좌우로 동시 확산
-        _left = _mid - (0 == gridColumns % 2 ? 2 : 1);
-        _right = _mid + 1;
-
-        while (_left >= 0 || _right < gridColumns)
-        {
-            if (_left >= 0)
-            {
-                _order.Add(_left);
-                _left--;
-            }
-            if (_right < gridColumns)
-            {
-                _order.Add(_right);
-                _right++;
-            }
-        }
-
-        return _order;
+        bgDissolveImage.SetMaterialDirty();
+        bgDissolveImage.SetVerticesDirty();
     }
 
-    // 2단계 ─ 기둥 부들부들 떨리며 상승
     private IEnumerator PlayPillarReveal()
     {
         if (null == pillarRect)
@@ -372,14 +390,10 @@ public class HUD_LootReveal : MonoBehaviour
         _pillarSeq.Append(
             pillarRect.DOAnchorPosY(pillarTargetY, pillarMoveDuration).SetEase(pillarMoveEase)
         );
-        _pillarSeq.Append(
-            pillarRect.DOShakeAnchorPos(pillarShakeDuration, new Vector2(pillarShakeStrength, 0f), 15, 90f, false, true)
-        );
 
         yield return _pillarSeq.WaitForCompletion();
     }
 
-    // 3단계 ─ VFX 재생
     private void PlayVFX()
     {
         if (null != vfxComponent && false == string.IsNullOrEmpty(vfxTag))
@@ -393,10 +407,10 @@ public class HUD_LootReveal : MonoBehaviour
     }
 
     // 3단계 ─ 전리품 이미지 뽀잉 등장
-    private void PlayLootPop()
+    private IEnumerator PlayLootPop()
     {
         if (null == lootItemRect)
-            return;
+            yield break;
 
         lootItemRect.gameObject.SetActive(true);
         lootItemRect.localScale = Vector3.zero;
@@ -404,6 +418,14 @@ public class HUD_LootReveal : MonoBehaviour
         Sequence _popSeq = DOTween.Sequence();
         _popSeq.Append(lootItemRect.DOScale(lootPopOvershoot, lootPopDuration * 0.6f).SetEase(lootPopEase));
         _popSeq.Append(lootItemRect.DOScale(Vector3.one, lootPopDuration * 0.4f).SetEase(Ease.OutQuad));
+        
+        yield return _popSeq.WaitForCompletion();
+
+        // 등장 스케일 애니메이션이 완전히 끝난 후, 아이템이 파티클처럼 부유(Floating)하도록 모션 연결
+        lootItemRect.DOAnchorPosY(lootInitialY + lootFloatDistance, lootFloatDuration)
+            .SetEase(Ease.InOutSine)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetId("LootFloat"); 
     }
 
     // 4단계 ─ 이름/설명 텍스트 마스킹 슬라이드
@@ -417,7 +439,7 @@ public class HUD_LootReveal : MonoBehaviour
             _nameRT.DOAnchorPosX(0f, nameSlideDuration).SetEase(nameSlideEase);
         }
 
-        yield return new WaitForSeconds(descSlideDelay);
+        yield return cachedDescSlideDelay;
 
         // 설명 텍스트 슬라이드
         if (null != lootDescText)
@@ -427,7 +449,7 @@ public class HUD_LootReveal : MonoBehaviour
             _descRT.DOAnchorPosX(0f, descSlideDuration).SetEase(descSlideEase);
         }
 
-        yield return new WaitForSeconds(Mathf.Max(nameSlideDuration, descSlideDuration + descSlideDelay));
+        yield return cachedTextSlideEndDelay;
     }
 
     // ─── 로컬라이징 ───────────────────────────────────────────────────────────
@@ -443,13 +465,13 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != lootNameText)
         {
             lootNameText.text = _locManager.GetText(_nameKey);
-            LayoutRebuilder.ForceRebuildLayoutImmediate(lootNameText.rectTransform);
+            lootNameText.ForceMeshUpdate(true);
         }
 
         if (null != lootDescText)
         {
             lootDescText.text = _locManager.GetText(_descKey);
-            LayoutRebuilder.ForceRebuildLayoutImmediate(lootDescText.rectTransform);
+            lootDescText.ForceMeshUpdate(true);
         }
     }
 
@@ -490,16 +512,34 @@ public class HUD_LootReveal : MonoBehaviour
 
     // ─── 에디터 테스트 ────────────────────────────────────────────────────────
 #if UNITY_EDITOR
-    [NaughtyAttributes.Button("▶ Test Grid Build")]
-    private void TestGridBuild()
-    {
-        BuildGrid();
-    }
+    // (TestGridBuild 버튼 삭제됨)
 
     [NaughtyAttributes.Button("▶ Reset State")]
     private void TestReset()
     {
         ResetState();
+    }
+    
+    private void OnValidate()
+    {
+        // Application.isPlaying 제약을 제거하여 에디터 모드에서도 종횡비 연산이 즉시 동작하도록 락 해제
+        if (null != bgDissolveImage && null != bgDissolveImage.rectTransform)
+        {
+            Material _mat = (Application.isPlaying && null != runtimeDissolveMat) ? runtimeDissolveMat : bgDissolveImage.material;
+            if (null != _mat)
+            {
+                _mat.SetFloat("_GridSize", gridSize);
+                
+                float _aspectRatio = 1f;
+                if (0 < bgDissolveImage.rectTransform.rect.height)
+                {
+                    _aspectRatio = bgDissolveImage.rectTransform.rect.width / bgDissolveImage.rectTransform.rect.height;
+                }
+                _mat.SetFloat("_AspectRatio", _aspectRatio);
+                
+                bgDissolveImage.SetMaterialDirty();
+            }
+        }
     }
 #endif
 }

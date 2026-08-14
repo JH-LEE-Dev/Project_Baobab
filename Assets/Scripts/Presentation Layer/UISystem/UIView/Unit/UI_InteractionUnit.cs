@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using PresentationLayer.DOTweenAnimationSystem;
 using System;
+using UnityEngine.Events;
 
 public enum TutorialKeyType
 {
@@ -44,7 +45,10 @@ public class UI_InteractionUnit : MonoBehaviour
     // 튜토리얼 상태 관리 변수
     private TutorialKeyType pendingTutorialKey = TutorialKeyType.None;
     private TutorialKeyType currentlyVisibleTutorialKey = TutorialKeyType.None;
-    private bool isInteractionShowing => showCount > 0;
+    private bool isInteractionShowing => 0 < showCount;
+
+    // 델리게이트 캐싱
+    private UnityAction cachedOnHideComplete;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -53,6 +57,9 @@ public class UI_InteractionUnit : MonoBehaviour
         bHide = true;
         pendingTutorialKey = TutorialKeyType.None;
         currentlyVisibleTutorialKey = TutorialKeyType.None;
+
+        if (null == cachedOnHideComplete)
+            cachedOnHideComplete = OnHideSequenceComplete;
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
@@ -66,11 +73,11 @@ public class UI_InteractionUnit : MonoBehaviour
         }
 
         // 초기화 시 모든 튜토리얼 키 숨기기
-        if (tutorialKeyConfigs != null)
+        if (null != tutorialKeyConfigs)
         {
             foreach (var config in tutorialKeyConfigs)
             {
-                if (config.rootObject != null)
+                if (null != config.rootObject)
                     config.rootObject.SetActive(false);
             }
         }
@@ -98,7 +105,7 @@ public class UI_InteractionUnit : MonoBehaviour
         if (null == interactionIcons || 0 == interactionIcons.Length)
             return;
             
-        if (0 > _iconIndex || _iconIndex >= interactionIcons.Length)
+        if (0 > _iconIndex || interactionIcons.Length <= _iconIndex)
             return;
             
         if (null != iconImage)
@@ -144,12 +151,14 @@ public class UI_InteractionUnit : MonoBehaviour
         if (null == motionPlayer)
             return;
             
-        motionPlayer.PlayBackward(motionTag, bReset: true, _skip: _bSkip, _onComplete: () => 
-        {
-            Hide();
-            // 상호작용 UI 연출 종료 후 대기 중인 튜토리얼 키가 있다면 화면에 복구합니다.
-            ShowPendingTutorialKey();
-        });
+        motionPlayer.PlayBackward(motionTag, bReset: true, _skip: _bSkip, _onComplete: cachedOnHideComplete);
+    }
+
+    private void OnHideSequenceComplete()
+    {
+        Hide();
+        // 상호작용 UI 연출 종료 후 대기 중인 튜토리얼 키가 있다면 화면에 복구합니다.
+        ShowPendingTutorialKey();
     }
 
     private void Hide()
@@ -168,7 +177,7 @@ public class UI_InteractionUnit : MonoBehaviour
         if (false == bFollowTarget)
             return;
 
-        if (true == bHide && currentlyVisibleTutorialKey == TutorialKeyType.None)
+        if (true == bHide && TutorialKeyType.None == currentlyVisibleTutorialKey)
             return;
 
         Vector2 targetPosition = targetTransform.position;
@@ -182,10 +191,10 @@ public class UI_InteractionUnit : MonoBehaviour
     
     public void ShowTutorialKey(TutorialKeyType _type)
     {
-        if (pendingTutorialKey == _type) return;
+        if (_type == pendingTutorialKey) return;
 
         // 다른 튜토리얼 키가 켜져 있거나 대기 중이라면 끕니다.
-        if (pendingTutorialKey != TutorialKeyType.None && pendingTutorialKey != _type)
+        if (TutorialKeyType.None != pendingTutorialKey && _type != pendingTutorialKey)
         {
             HideVisibleTutorialKey();
         }
@@ -193,7 +202,7 @@ public class UI_InteractionUnit : MonoBehaviour
         pendingTutorialKey = _type;
 
         // 현재 상호작용 UI가 떠있지 않다면 즉시 튜토리얼 UI를 띄웁니다.
-        if (!isInteractionShowing)
+        if (false == isInteractionShowing)
         {
             ShowPendingTutorialKey();
         }
@@ -201,7 +210,7 @@ public class UI_InteractionUnit : MonoBehaviour
 
     public void HideTutorialKey(TutorialKeyType _type)
     {
-        if (pendingTutorialKey == _type)
+        if (_type == pendingTutorialKey)
         {
             pendingTutorialKey = TutorialKeyType.None;
             HideVisibleTutorialKey();
@@ -220,22 +229,22 @@ public class UI_InteractionUnit : MonoBehaviour
     
     private void ShowPendingTutorialKey()
     {
-        if (pendingTutorialKey == TutorialKeyType.None) return;
-        if (currentlyVisibleTutorialKey == pendingTutorialKey) return; // 이미 재생 중
+        if (TutorialKeyType.None == pendingTutorialKey) return;
+        if (pendingTutorialKey == currentlyVisibleTutorialKey) return; // 이미 재생 중
 
-        if (tutorialKeyConfigs == null) return;
+        if (null == tutorialKeyConfigs) return;
 
         for (int i = 0; i < tutorialKeyConfigs.Length; i++)
         {
-            if (tutorialKeyConfigs[i].keyType == pendingTutorialKey)
+            if (pendingTutorialKey == tutorialKeyConfigs[i].keyType)
             {
                 var config = tutorialKeyConfigs[i];
-                if (config.rootObject != null)
+                if (null != config.rootObject)
                 {
                     config.rootObject.SetActive(true);
                 }
 
-                if (motionPlayer != null && !string.IsNullOrEmpty(config.motionTag))
+                if (null != motionPlayer && false == string.IsNullOrEmpty(config.motionTag))
                 {
                     motionPlayer.Play(config.motionTag, bReset: true);
                 }
@@ -251,27 +260,27 @@ public class UI_InteractionUnit : MonoBehaviour
 
     private void HideVisibleTutorialKey()
     {
-        if (currentlyVisibleTutorialKey == TutorialKeyType.None) return;
+        if (TutorialKeyType.None == currentlyVisibleTutorialKey) return;
 
-        if (tutorialKeyConfigs == null) return;
+        if (null == tutorialKeyConfigs) return;
 
         for (int i = 0; i < tutorialKeyConfigs.Length; i++)
         {
-            if (tutorialKeyConfigs[i].keyType == currentlyVisibleTutorialKey)
+            if (currentlyVisibleTutorialKey == tutorialKeyConfigs[i].keyType)
             {
                 var config = tutorialKeyConfigs[i];
                 
-                if (motionPlayer != null && !string.IsNullOrEmpty(config.motionTag))
+                if (null != motionPlayer && false == string.IsNullOrEmpty(config.motionTag))
                 {
                     motionPlayer.PlayBackward(config.motionTag, bReset: true, _onComplete: () => 
                     {
-                        if (config.rootObject != null) 
+                        if (null != config.rootObject) 
                             config.rootObject.SetActive(false);
                     });
                 }
                 else
                 {
-                    if (config.rootObject != null) 
+                    if (null != config.rootObject) 
                         config.rootObject.SetActive(false);
                 }
 

@@ -51,7 +51,13 @@ public class UI_TutorialQuest : MonoBehaviour
     [SerializeField] private Vector3 completedTextSquashScale = new Vector3(1.12f, 0.88f, 1.0f);
     [SerializeField] private Vector3 completedTextStretchScale = new Vector3(0.96f, 1.08f, 1.0f);
 
+    [Header("Transform Settings")]
+    [SerializeField] private float yOffset = 0f;
 
+    [Header("Custom Mode Settings")]
+    [SerializeField] private bool useCustomMode = false;
+    [SerializeField] private float customInitialDuration = 2.0f;
+    [SerializeField] private float customCompletedHoldDuration = 2.0f;
 
     // 내부 의존성
     private const float HiddenBGWidth = 0f;
@@ -67,6 +73,18 @@ public class UI_TutorialQuest : MonoBehaviour
     private Sequence hideSequence;
     private Sequence stepTransitionSequence;
     private Sequence completedSequence;
+
+    private string pendingNextTitle;
+    private string pendingNextDesc;
+
+    private TweenCallback cachedOnShowComplete;
+    private TweenCallback cachedOnHideComplete;
+    private TweenCallback cachedOnTransitionComplete;
+    private TweenCallback cachedOnCompletedHide;
+    private TweenCallback cachedOnStepMidpoint;
+    private TweenCallback cachedOnTransitionBGCollapse;
+    private TweenCallback cachedPlayQuestTextAppearSounds;
+    private TweenCallback cachedOnCompleteHideCallback;
 
     private TutorialStep currentStep;
     private bool bIsShowing = false;
@@ -85,6 +103,7 @@ public class UI_TutorialQuest : MonoBehaviour
     // 퍼블릭 초기화 및 제어 메서드
     public void Initialize(LocalizationManager _localizationManager)
     {
+        InitCachedCallbacks();
         localizationManager = _localizationManager;
 
         CacheCanvasGroups();
@@ -104,7 +123,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
     public void OnTutorialStepStarted(TutorialStep _step)
     {
-        if (currentStep == _step && bIsShowing)
+        if (_step == currentStep && true == bIsShowing)
             return;
 
         // 이전 퀘스트의 "완료 색상 전환 → 유지 → 숨김" 연출(PlayCompleteAndHide)이 아직 끝나지 않은 상태로
@@ -118,91 +137,18 @@ public class UI_TutorialQuest : MonoBehaviour
 
         currentStep = _step;
 
-        switch (_step)
+        currentStep = _step;
+
+        GetQuestTitleAndDesc(_step, out string _title, out string _desc);
+
+        if (true == bIsShowing)
         {
-            case TutorialStep.CutTree:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetCutTreeTitle(), string.Empty);
-                }
-                else
-                {
-                    SetQuestContent(GetCutTreeTitle(), string.Empty);
-                    PlayShowQuest();
-                }
-                break;
-
-            case TutorialStep.FillOffroadContainer:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetFillContainerTitle(), GetFillContainerDesc());
-                }
-                else
-                {
-                    SetQuestContent(GetFillContainerTitle(), GetFillContainerDesc());
-                    PlayShowQuest();
-                }
-                break;
-
-            case TutorialStep.GoHomeBeforeExhausted:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetGoHomeTitle(), string.Empty);
-                }
-                else
-                {
-                    SetQuestContent(GetGoHomeTitle(), string.Empty);
-                    PlayShowQuest();
-                }
-                break;
-
-            case TutorialStep.PutItemsInLogContainer:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetPutItemsTitle(), string.Empty);
-                }
-                else
-                {
-                    SetQuestContent(GetPutItemsTitle(), string.Empty);
-                    PlayShowQuest();
-                }
-                break;
-
-            case TutorialStep.ReceiveMoney:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetReceiveMoneyTitle(), string.Empty);
-                }
-                else
-                {
-                    SetQuestContent(GetReceiveMoneyTitle(), string.Empty);
-                    PlayShowQuest();
-                }
-                break;
-
-            case TutorialStep.UpgradeAxe:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetUpgradeAxeTitle(), string.Empty);
-                }
-                else
-                {
-                    SetQuestContent(GetUpgradeAxeTitle(), string.Empty);
-                    PlayShowQuest();
-                }
-                break;
-
-            case TutorialStep.StartNewLogging:
-                if (bIsShowing)
-                {
-                    PlayStepTransition(GetStartNewLoggingTitle(), string.Empty);
-                }
-                else
-                {
-                    SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
-                    PlayShowQuest();
-                }
-                break;
+            PlayStepTransition(_title, _desc);
+        }
+        else
+        {
+            SetQuestContent(_title, _desc);
+            PlayShowQuest();
         }
     }
 
@@ -217,7 +163,7 @@ public class UI_TutorialQuest : MonoBehaviour
             case TutorialStep.ReceiveMoney:
             case TutorialStep.UpgradeAxe:
             case TutorialStep.StartNewLogging:
-                if (bIsShowing)
+                if (true == bIsShowing)
                 {
                     PlayCompleteAndHide();
                 }
@@ -238,30 +184,44 @@ public class UI_TutorialQuest : MonoBehaviour
         if (false == bIsShowing)
             return;
 
-        switch (currentStep)
-        {
-            case TutorialStep.CutTree:
-                SetQuestContent(GetCutTreeTitle(), string.Empty);
-                break;
-            case TutorialStep.FillOffroadContainer:
-                SetQuestContent(GetFillContainerTitle(), GetFillContainerDesc());
-                break;
-            case TutorialStep.GoHomeBeforeExhausted:
-                SetQuestContent(GetGoHomeTitle(), string.Empty);
-                break;
-            case TutorialStep.PutItemsInLogContainer:
-                SetQuestContent(GetPutItemsTitle(), string.Empty);
-                break;
-            case TutorialStep.ReceiveMoney:
-                SetQuestContent(GetReceiveMoneyTitle(), string.Empty);
-                break;
-            case TutorialStep.UpgradeAxe:
-                SetQuestContent(GetUpgradeAxeTitle(), string.Empty);
-                break;
-            case TutorialStep.StartNewLogging:
-                SetQuestContent(GetStartNewLoggingTitle(), string.Empty);
-                break;
-        }
+        GetQuestTitleAndDesc(currentStep, out string _title, out string _desc);
+        SetQuestContent(_title, _desc);
+    }
+
+    public void PlayCustomSequence(string _title, string _desc = "")
+    {
+        if (false == useCustomMode)
+            return;
+
+        ForceCompletePendingHide();
+
+        KillSequences();
+        bIsShowing = true;
+
+        SetQuestContent(_title, _desc);
+
+        AssignBGDelays();
+        PrepareShowState();
+
+        showSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+
+        // 1. 등장 연출
+        AppendShowEffect(showSequence);
+
+        // 2. 초기 텍스트(진행색) 상태 유지
+        float _initialHold = Mathf.Max(0.0f, customInitialDuration);
+        showSequence.AppendInterval(_initialHold);
+
+        // 3. 완료 색상(녹색) 전환 및 Pop 효과 재생
+        showSequence.AppendCallback(PlayQuestCompletedSound);
+        AppendCompletionEffect(showSequence);
+
+        // 4. 완료 상태 추가 대기
+        float _customHold = Mathf.Max(0.0f, customCompletedHoldDuration);
+        showSequence.AppendInterval(_customHold);
+
+        // 5. 대기가 끝난 직후 퇴장 연출(PlayHideQuest) 이어서 재생
+        showSequence.OnComplete(cachedOnCompleteHideCallback);
     }
 
     private void PlayShowQuest()
@@ -274,18 +234,25 @@ public class UI_TutorialQuest : MonoBehaviour
 
         showSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
+        AppendShowEffect(showSequence);
+
+        showSequence.OnComplete(cachedOnShowComplete);
+    }
+
+    private void AppendShowEffect(Sequence _seq)
+    {
         // 1. DimBG 확장 연출
-        if (bgPieces.Length > 0)
+        if (0 < bgPieces.Length)
         {
             SetCanvasGroupAlpha(bgCanvasGroup, 1f);
-            InsertBGOpenTweens(showSequence);
+            InsertBGOpenTweens(_seq);
         }
         else if (null != bgRoot)
         {
-            showSequence.Append(DOTween.To(GetBGWidth, SetBGWidth, bgTargetWidth, bgOpenDuration).SetEase(bgOpenEase));
-            if (null != bgCanvasGroup && useBgFadeIn)
+            _seq.Append(DOTween.To(GetBGWidth, SetBGWidth, bgTargetWidth, bgOpenDuration).SetEase(bgOpenEase));
+            if (null != bgCanvasGroup && true == useBgFadeIn)
             {
-                showSequence.Join(bgCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(bgOpenEase));
+                _seq.Join(bgCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(bgOpenEase));
             }
         }
 
@@ -294,20 +261,15 @@ public class UI_TutorialQuest : MonoBehaviour
 
         if (null != contentCanvasGroup)
         {
-            showSequence.Insert(_contentStartTime, contentCanvasGroup.DOFade(1f, scaleDuration).SetEase(Ease.OutQuad));
+            _seq.Insert(_contentStartTime, contentCanvasGroup.DOFade(1f, scaleDuration).SetEase(Ease.OutQuad));
         }
 
         if (null != textContainer)
         {
-            showSequence.Insert(_contentStartTime, textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
+            _seq.Insert(_contentStartTime, textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
         }
 
-        showSequence.InsertCallback(_contentStartTime, PlayQuestTextAppearSounds);
-
-        showSequence.OnComplete(() =>
-        {
-            showSequence = null;
-        });
+        _seq.InsertCallback(_contentStartTime, cachedPlayQuestTextAppearSounds);
     }
 
     private void PlayHideQuest()
@@ -320,49 +282,49 @@ public class UI_TutorialQuest : MonoBehaviour
 
         hideSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
+        AppendHideEffect(hideSequence, 0f);
+
+        hideSequence.OnComplete(cachedOnHideComplete);
+    }
+
+    private void AppendHideEffect(Sequence _seq, float _startOffset)
+    {
         // 1. 텍스트 컨텐츠 스케일 & 페이드아웃 선행 연출
         float _textHideDuration = scaleDuration;
 
         if (null != contentCanvasGroup)
         {
-            hideSequence.Insert(0f, contentCanvasGroup.DOFade(0f, _textHideDuration).SetEase(Ease.InQuad));
+            _seq.Insert(_startOffset, contentCanvasGroup.DOFade(0f, _textHideDuration).SetEase(Ease.InQuad));
         }
 
         if (null != textContainer)
         {
-            hideSequence.Insert(0f, textContainer.DOScale(startScale, _textHideDuration).SetEase(Ease.InBack));
+            _seq.Insert(_startOffset, textContainer.DOScale(startScale, _textHideDuration).SetEase(Ease.InBack));
         }
 
         // 2. DimBG 축소 및 페이드 역재생 연출 (글자가 완전히 사라진 후 시작)
-        float _bgHideStartTime = _textHideDuration;
+        float _bgHideStartTime = _startOffset + _textHideDuration;
 
-        if (bgPieces.Length > 0)
+        if (0 < bgPieces.Length)
         {
             AssignBGCloseDelays();
-            InsertBGCloseTweens(hideSequence, _bgHideStartTime);
+            InsertBGCloseTweens(_seq, _bgHideStartTime);
         }
         else if (null != bgRoot)
         {
-            hideSequence.Insert(_bgHideStartTime, DOTween.To(GetBGWidth, SetBGWidth, HiddenBGWidth, bgCloseDuration).SetEase(bgCloseEase));
-            if (null != bgCanvasGroup && useBgFadeOut)
+            _seq.Insert(_bgHideStartTime, DOTween.To(GetBGWidth, SetBGWidth, HiddenBGWidth, bgCloseDuration).SetEase(bgCloseEase));
+            if (null != bgCanvasGroup && true == useBgFadeOut)
             {
-                hideSequence.Insert(_bgHideStartTime, bgCanvasGroup.DOFade(0f, bgCloseDuration).SetEase(bgCloseEase));
+                _seq.Insert(_bgHideStartTime, bgCanvasGroup.DOFade(0f, bgCloseDuration).SetEase(bgCloseEase));
             }
         }
-
-        hideSequence.OnComplete(() =>
-        {
-            hideSequence = null;
-            PrepareHiddenState();
-            HideCompletedEvent?.Invoke(currentStep);
-        });
     }
 
-    /// <summary>
-    /// 이전 퀘스트를 완료 색상으로 전환하고 유지시간 대기 후, 다음 퀘스트 텍스트로 스케일 바운스 교체합니다.
-    /// </summary>
     private void PlayStepTransition(string _nextTitle, string _nextDesc)
     {
+        pendingNextTitle = _nextTitle;
+        pendingNextDesc = _nextDesc;
+
         KillSequences();
         bIsShowing = true;
 
@@ -370,81 +332,60 @@ public class UI_TutorialQuest : MonoBehaviour
 
         stepTransitionSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
-        // 1. 현재 완료된 퀘스트 텍스트 색상 전환 (Append로 시퀀스 타임라인에 명시적 등록)
+        AppendCompletionEffect(stepTransitionSequence);
+        AppendFadeOutEffect(stepTransitionSequence);
+        AppendNextQuestAppearEffect(stepTransitionSequence);
+
+        stepTransitionSequence.OnComplete(cachedOnTransitionComplete);
+    }
+
+    private void AppendCompletionEffect(Sequence _seq)
+    {
         if (null != questTitleText)
         {
-            stepTransitionSequence.Append(questTitleText.DOColor(completedColor, colorTransitionDuration).SetEase(colorTransitionEase));
+            _seq.Append(questTitleText.DOColor(completedColor, colorTransitionDuration).SetEase(colorTransitionEase));
         }
         else
         {
-            stepTransitionSequence.AppendInterval(colorTransitionDuration);
+            _seq.AppendInterval(colorTransitionDuration);
         }
 
         Tween _completedTextPopTween = BuildCompletedTextPopTween();
         if (null != _completedTextPopTween)
-            stepTransitionSequence.Join(_completedTextPopTween);
+            _seq.Join(_completedTextPopTween);
 
-        // 2. 완료 색상 유지 시간(Hold Duration) 대기 (지정한 시간 동안 완료 상태 유지)
         float _holdTime = Mathf.Max(0.1f, completedHoldDuration);
-        stepTransitionSequence.AppendInterval(_holdTime);
+        _seq.AppendInterval(_holdTime);
+    }
 
-        // 3. 완료된 텍스트 부드럽게 페이드아웃 (0.12초)
+    private void AppendFadeOutEffect(Sequence _seq)
+    {
         if (null != contentCanvasGroup)
         {
-            stepTransitionSequence.Append(contentCanvasGroup.DOFade(0f, 0.12f).SetEase(Ease.InQuad));
+            _seq.Append(contentCanvasGroup.DOFade(0f, 0.12f).SetEase(Ease.InQuad));
         }
+    }
 
-        // 4. 다음 퀘스트 텍스트 교체 및 시작 스케일 세팅
-        stepTransitionSequence.AppendCallback(() =>
-        {
-            SetQuestContent(_nextTitle, _nextDesc);
-            PlayQuestTextAppearSounds();
-            if (null != textContainer)
-            {
-                textContainer.localScale = startScale;
-            }
+    private void AppendNextQuestAppearEffect(Sequence _seq)
+    {
+        _seq.AppendCallback(cachedOnStepMidpoint);
 
-            if (bgPieces.Length > 1)
-            {
-                if (activeBGCount >= 2)
-                {
-                    SetGraphicAlpha(bgPieces[1].graphic, bgPieces[1].targetAlpha);
-                    DOTween.To(() => GetBGPieceWidth(bgPieces[1]), w => SetBGPieceWidth(bgPieces[1], w), bgTargetWidth > 0f ? bgTargetWidth : bgPieces[1].targetWidth, scaleDuration).SetEase(bgOpenEase).SetLink(gameObject);
-                }
-                else
-                {
-                    DOTween.To(() => GetBGPieceWidth(bgPieces[1]), w => SetBGPieceWidth(bgPieces[1], w), HiddenBGWidth, 0.15f).SetEase(bgCloseEase).SetLink(gameObject).OnComplete(() =>
-                    {
-                        if (activeBGCount < 2)
-                            SetGraphicAlpha(bgPieces[1].graphic, 0f);
-                    });
-                }
-            }
-        });
-
-        // 5. 다음 퀘스트 텍스트 스케일 바운스 & 페이드인 등장 연출
         if (null != contentCanvasGroup)
         {
-            stepTransitionSequence.Append(contentCanvasGroup.DOFade(1f, scaleDuration).SetEase(Ease.OutQuad));
+            _seq.Append(contentCanvasGroup.DOFade(1f, scaleDuration).SetEase(Ease.OutQuad));
         }
 
         if (null != textContainer)
         {
             if (null != contentCanvasGroup)
             {
-                stepTransitionSequence.Join(textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
+                _seq.Join(textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
             }
             else
             {
-                stepTransitionSequence.Append(textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
+                _seq.Append(textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
             }
         }
-
-        stepTransitionSequence.OnComplete(() =>
-        {
-            stepTransitionSequence = null;
-            StepTransitionCompletedEvent?.Invoke(currentStep);
-        });
     }
 
     /// <summary>
@@ -458,31 +399,10 @@ public class UI_TutorialQuest : MonoBehaviour
 
         completedSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
-        // 1. 현재 퀘스트 텍스트 완료 색상 전환 (Append로 타임라인 명시적 등록)
-        if (null != questTitleText)
-        {
-            completedSequence.Append(questTitleText.DOColor(completedColor, colorTransitionDuration).SetEase(colorTransitionEase));
-        }
-        else
-        {
-            completedSequence.AppendInterval(colorTransitionDuration);
-        }
+        AppendCompletionEffect(completedSequence);
 
-        Tween _completedTextPopTween = BuildCompletedTextPopTween();
-        if (null != _completedTextPopTween)
-            completedSequence.Join(_completedTextPopTween);
-
-        // 2. 완료 색상 유지
-        float _holdTime = Mathf.Max(0.1f, completedHoldDuration);
-        completedSequence.AppendInterval(_holdTime);
-
-        // 3. DimBG 및 퀘스트 UI 퇴장
-        completedSequence.AppendCallback(OnCompleteHideCallback);
-
-        completedSequence.OnComplete(() =>
-        {
-            completedSequence = null;
-        });
+        completedSequence.AppendCallback(cachedOnCompleteHideCallback);
+        completedSequence.OnComplete(cachedOnCompletedHide);
     }
 
     private Tween BuildCompletedTextPopTween()
@@ -493,7 +413,7 @@ public class UI_TutorialQuest : MonoBehaviour
         float _duration = Mathf.Max(0.0f, completedTextPopDuration);
         textContainer.localScale = targetScale;
 
-        if (_duration <= 0.0f)
+        if (0.0f >= _duration)
             return null;
 
         Vector3 _squashScale = Vector3.Scale(targetScale, completedTextSquashScale);
@@ -540,7 +460,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private void PrepareShowState()
     {
-        if (bgPieces.Length > 0)
+        if (0 < bgPieces.Length)
         {
             for (int i = 0; i < bgPieces.Length; i++)
             {
@@ -576,7 +496,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private void PrepareHiddenState()
     {
-        if (bgPieces.Length > 0)
+        if (0 < bgPieces.Length)
         {
             for (int i = 0; i < bgPieces.Length; i++)
             {
@@ -613,7 +533,7 @@ public class UI_TutorialQuest : MonoBehaviour
         for (int i = 0; i < _count; i++)
         {
             TutorialQuestBGPiece _piece = bgPieces[i];
-            float _width = bgTargetWidth > 0f ? bgTargetWidth : _piece.targetWidth;
+            float _width = 0f < bgTargetWidth ? bgTargetWidth : _piece.targetWidth;
 
             _seq.Insert(_piece.delay, DOTween.To(
                 () => GetBGPieceWidth(_piece),
@@ -656,7 +576,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private void AssignBGDelays()
     {
-        if (bgPieces.Length <= 0) return;
+        if (0 >= bgPieces.Length) return;
 
         for (int i = 0; i < bgPieces.Length; i++)
         {
@@ -666,7 +586,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private void AssignBGCloseDelays()
     {
-        if (bgPieces.Length <= 0) return;
+        if (0 >= bgPieces.Length) return;
 
         int _count = Mathf.Clamp(activeBGCount, 1, bgPieces.Length);
         for (int i = 0; i < _count; i++)
@@ -713,7 +633,7 @@ public class UI_TutorialQuest : MonoBehaviour
             {
                 rectTransform = _rect,
                 graphic = _graphic,
-                targetWidth = _rect.rect.width > 0f ? _rect.rect.width : bgTargetWidth,
+                targetWidth = 0f < _rect.rect.width ? _rect.rect.width : bgTargetWidth,
                 targetAlpha = DefaultBGTargetAlpha
             });
         }
@@ -729,11 +649,11 @@ public class UI_TutorialQuest : MonoBehaviour
 
         bgPieces = _list.ToArray();
 
-        if (bgPieces.Length > 0 && bgTargetWidth <= 0f)
+        if (0 < bgPieces.Length && 0f >= bgTargetWidth)
         {
             bgTargetWidth = bgPieces[0].targetWidth;
         }
-        else if (null != bgRoot && bgTargetWidth <= 0f)
+        else if (null != bgRoot && 0f >= bgTargetWidth)
         {
             bgTargetWidth = bgRoot.rect.width;
         }
@@ -754,7 +674,7 @@ public class UI_TutorialQuest : MonoBehaviour
 
     private float GetBGPiecesAlpha()
     {
-        if (bgPieces.Length <= 0 || null == bgPieces[0].graphic) return 0f;
+        if (0 >= bgPieces.Length || null == bgPieces[0].graphic) return 0f;
         float _targetAlpha = Mathf.Max(bgPieces[0].targetAlpha, 0.0001f);
         return Mathf.Clamp01(bgPieces[0].graphic.color.a / _targetAlpha);
     }
@@ -933,12 +853,102 @@ public class UI_TutorialQuest : MonoBehaviour
         return "새로운 벌목을 시작하세요!";
     }
 
+    private void GetQuestTitleAndDesc(TutorialStep _step, out string _title, out string _desc)
+    {
+        switch (_step)
+        {
+            case TutorialStep.CutTree:
+                _title = GetCutTreeTitle();
+                _desc = string.Empty;
+                break;
+            case TutorialStep.FillOffroadContainer:
+                _title = GetFillContainerTitle();
+                _desc = GetFillContainerDesc();
+                break;
+            case TutorialStep.GoHomeBeforeExhausted:
+                _title = GetGoHomeTitle();
+                _desc = string.Empty;
+                break;
+            case TutorialStep.PutItemsInLogContainer:
+                _title = GetPutItemsTitle();
+                _desc = string.Empty;
+                break;
+            case TutorialStep.ReceiveMoney:
+                _title = GetReceiveMoneyTitle();
+                _desc = string.Empty;
+                break;
+            case TutorialStep.UpgradeAxe:
+                _title = GetUpgradeAxeTitle();
+                _desc = string.Empty;
+                break;
+            case TutorialStep.StartNewLogging:
+                _title = GetStartNewLoggingTitle();
+                _desc = string.Empty;
+                break;
+            default:
+                _title = string.Empty;
+                _desc = string.Empty;
+                break;
+        }
+    }
+
     // 유니티 이벤트 함수
     private void Awake()
     {
+        RectTransform _rect = GetComponent<RectTransform>();
+        if (null != _rect)
+        {
+            Vector2 _pos = _rect.anchoredPosition;
+            _pos.y += yOffset;
+            _rect.anchoredPosition = _pos;
+        }
+
+        InitCachedCallbacks();
         CacheCanvasGroups();
         CacheBGPieces();
     }
+
+    private void InitCachedCallbacks()
+    {
+        if (null != cachedOnShowComplete) return; // 중복 초기화 방지
+
+        cachedOnShowComplete = OnShowComplete;
+        cachedOnHideComplete = OnHideComplete;
+        cachedOnTransitionComplete = OnTransitionComplete;
+        cachedOnCompletedHide = OnCompletedHide;
+        cachedOnStepMidpoint = OnStepMidpoint;
+        cachedOnTransitionBGCollapse = OnTransitionBGCollapse;
+        cachedPlayQuestTextAppearSounds = PlayQuestTextAppearSounds;
+        cachedOnCompleteHideCallback = OnCompleteHideCallback;
+    }
+
+    private void OnShowComplete() { }
+    
+    private void OnHideComplete() 
+    { 
+        HideCompletedEvent?.Invoke(currentStep); 
+    }
+    
+    private void OnTransitionComplete() 
+    { 
+        StepTransitionCompletedEvent?.Invoke(currentStep); 
+    }
+    
+    private void OnCompletedHide() 
+    { 
+        HideCompletedEvent?.Invoke(currentStep); 
+    }
+
+    private void OnStepMidpoint()
+    {
+        SetQuestContent(pendingNextTitle, pendingNextDesc);
+        if (null != textContainer)
+        {
+            textContainer.localScale = startScale;
+        }
+    }
+
+    private void OnTransitionBGCollapse() { }
 
     private void OnDestroy()
     {

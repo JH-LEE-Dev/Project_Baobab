@@ -57,22 +57,7 @@ public class UI_ItemAuraEffectController : MonoBehaviour
     /// </summary>
     public float BurstDuration => burstDuration;
 
-    // 셰이더 프로퍼티 ID 캐싱 (ItemAuraEffectController와 동일한 셰이더 사용)
-    private static readonly int IntensityPropertyId        = Shader.PropertyToID("_Intensity");
-    private static readonly int BloomMultiplierPropertyId  = Shader.PropertyToID("_BloomMultiplier");
-    private static readonly int PixelateEnabledPropertyId  = Shader.PropertyToID("_PixelateEnabled");
-    private static readonly int PixelResolutionPropertyId  = Shader.PropertyToID("_PixelResolution");
-    private static readonly int ColorBandingStepsPropertyId = Shader.PropertyToID("_ColorBandingSteps");
-    private static readonly int BurstProgressPropertyId    = Shader.PropertyToID("_BurstProgress");
-    private static readonly int RotationSpeedPropertyId    = Shader.PropertyToID("_RotationSpeed");
-    private static readonly int SpeedVariationPropertyId   = Shader.PropertyToID("_SpeedVariation");
-    private static readonly int RayCountPropertyId         = Shader.PropertyToID("_RayCount");
-    private static readonly int AngleJitterPropertyId      = Shader.PropertyToID("_AngleJitter");
-    private static readonly int BeamBlurPropertyId         = Shader.PropertyToID("_BeamBlur");
-    private static readonly int BeamMinWidthPropertyId     = Shader.PropertyToID("_BeamMinWidth");
-    private static readonly int BeamMaxWidthPropertyId     = Shader.PropertyToID("_BeamMaxWidth");
-    private static readonly int CoreColorPropertyId        = Shader.PropertyToID("_CoreColor");
-    private static readonly int BeamColorPropertyId        = Shader.PropertyToID("_BeamColor");
+    // 셰이더 프로퍼티 ID 캐싱은 ItemAuraShaderHelper로 위임됨
 
     // ========================================================================
     // 1. 퍼블릭 제어 및 초기화 메서드
@@ -189,8 +174,8 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == instanceMaterial)
             return;
 
-        instanceMaterial.SetColor(CoreColorPropertyId, _coreColor);
-        instanceMaterial.SetColor(BeamColorPropertyId, _beamColor);
+        instanceMaterial.SetColor(ItemAuraShaderHelper.CoreColorPropertyId, _coreColor);
+        instanceMaterial.SetColor(ItemAuraShaderHelper.BeamColorPropertyId, _beamColor);
     }
 
     // ========================================================================
@@ -206,12 +191,22 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == targetImage)
             targetImage = GetComponent<Image>();
 
-        if (null == targetImage)
+        if (null == targetImage || null == targetImage.material)
             return;
 
-        // Image.material 접근 시 Unity 내부에서 인스턴스 머티리얼이 자동 생성됩니다.
         if (null == instanceMaterial)
-            instanceMaterial = targetImage.material;
+        {
+#if UNITY_EDITOR
+            if (false == Application.isPlaying)
+            {
+                instanceMaterial = targetImage.material;
+                return;
+            }
+#endif
+            // UGUI의 Image.material은 자동 인스턴스화되지 않으므로 런타임에서 직접 복제하여 사용합니다.
+            instanceMaterial = new Material(targetImage.material);
+            targetImage.material = instanceMaterial;
+        }
     }
 
     private void ApplyAllSettings()
@@ -219,21 +214,16 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == instanceMaterial)
             return;
 
-        instanceMaterial.SetFloat(PixelateEnabledPropertyId,   enablePixelStyle ? 1f : 0f);
-        instanceMaterial.SetFloat(PixelResolutionPropertyId,   pixelResolution);
-        instanceMaterial.SetFloat(ColorBandingStepsPropertyId, colorBandingSteps);
-        instanceMaterial.SetFloat(BloomMultiplierPropertyId,   bloomIntensity);
-        instanceMaterial.SetFloat(RotationSpeedPropertyId,     rotationSpeed);
-        instanceMaterial.SetFloat(SpeedVariationPropertyId,    speedVariation);
+        ItemAuraShaderHelper.ApplyPixelSettings(instanceMaterial, enablePixelStyle, pixelResolution, colorBandingSteps);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.BloomMultiplierPropertyId, bloomIntensity);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, rotationSpeed);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.SpeedVariationPropertyId, speedVariation);
 
         if (true == overrideRaySettings)
         {
-            instanceMaterial.SetFloat(RayCountPropertyId,    rayCount);
-            instanceMaterial.SetFloat(AngleJitterPropertyId, angleJitter);
-            instanceMaterial.SetFloat(BeamBlurPropertyId,    beamBlur);
-            instanceMaterial.SetFloat(BeamMinWidthPropertyId, minBeamWidth);
-            instanceMaterial.SetFloat(BeamMaxWidthPropertyId, maxBeamWidth);
+            ItemAuraShaderHelper.ApplyRayOverrides(instanceMaterial, rayCount, angleJitter, beamBlur, minBeamWidth, maxBeamWidth);
         }
+        ForceUIRenderUpdate();
     }
 
     private void ApplyPixelSettings()
@@ -241,9 +231,8 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == instanceMaterial)
             return;
 
-        instanceMaterial.SetFloat(PixelateEnabledPropertyId,   enablePixelStyle ? 1f : 0f);
-        instanceMaterial.SetFloat(PixelResolutionPropertyId,   pixelResolution);
-        instanceMaterial.SetFloat(ColorBandingStepsPropertyId, colorBandingSteps);
+        ItemAuraShaderHelper.ApplyPixelSettings(instanceMaterial, enablePixelStyle, pixelResolution, colorBandingSteps);
+        ForceUIRenderUpdate();
     }
 
     private void ApplyBloomSettings()
@@ -251,7 +240,8 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == instanceMaterial)
             return;
 
-        instanceMaterial.SetFloat(BloomMultiplierPropertyId, bloomIntensity);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.BloomMultiplierPropertyId, bloomIntensity);
+        ForceUIRenderUpdate();
     }
 
     private void ApplyRotationSettings(float _speed, float _variation)
@@ -259,8 +249,9 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == instanceMaterial)
             return;
 
-        instanceMaterial.SetFloat(RotationSpeedPropertyId, _speed);
-        instanceMaterial.SetFloat(SpeedVariationPropertyId, _variation);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, _speed);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.SpeedVariationPropertyId, _variation);
+        ForceUIRenderUpdate();
     }
 
     private void ApplyRayOverrides()
@@ -268,11 +259,8 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (false == overrideRaySettings || null == instanceMaterial)
             return;
 
-        instanceMaterial.SetFloat(RayCountPropertyId,     rayCount);
-        instanceMaterial.SetFloat(AngleJitterPropertyId,  angleJitter);
-        instanceMaterial.SetFloat(BeamBlurPropertyId,     beamBlur);
-        instanceMaterial.SetFloat(BeamMinWidthPropertyId, minBeamWidth);
-        instanceMaterial.SetFloat(BeamMaxWidthPropertyId, maxBeamWidth);
+        ItemAuraShaderHelper.ApplyRayOverrides(instanceMaterial, rayCount, angleJitter, beamBlur, minBeamWidth, maxBeamWidth);
+        ForceUIRenderUpdate();
     }
 
     private void ApplyBurstProgress(float _progress)
@@ -280,7 +268,8 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == instanceMaterial)
             return;
 
-        instanceMaterial.SetFloat(BurstProgressPropertyId, _progress);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.BurstProgressPropertyId, _progress);
+        ForceUIRenderUpdate();
     }
 
     private void ApplyIntensity(float _intensity)
@@ -288,7 +277,21 @@ public class UI_ItemAuraEffectController : MonoBehaviour
         if (null == instanceMaterial)
             return;
 
-        instanceMaterial.SetFloat(IntensityPropertyId, _intensity);
+        instanceMaterial.SetFloat(ItemAuraShaderHelper.IntensityPropertyId, _intensity);
+        ForceUIRenderUpdate();
+    }
+
+    /// <summary>
+    /// UGUI Canvas 배칭 최적화를 우회하고 즉시 렌더링 갱신을 강제합니다.
+    /// 머티리얼 속성만 변할 경우 화면이 안 그려지는 버그를 해결합니다.
+    /// </summary>
+    private void ForceUIRenderUpdate()
+    {
+        if (null != targetImage)
+        {
+            targetImage.SetMaterialDirty();
+            targetImage.SetVerticesDirty();
+        }
     }
 
     private void UpdateBurst(float _deltaTime)
@@ -376,10 +379,19 @@ public class UI_ItemAuraEffectController : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 인스턴스 머티리얼은 Unity가 자동 생성한 복사본이므로 명시적으로 해제합니다.
         if (null != instanceMaterial)
         {
-            Destroy(instanceMaterial);
+#if UNITY_EDITOR
+            if (false == Application.isPlaying)
+            {
+                // 에디터 상태에서는 원본 에셋이므로 파괴하지 않고 참조만 해제합니다.
+                instanceMaterial = null;
+                targetImage = null;
+                return;
+            }
+#endif
+            // GC 발생을 줄이기 위해 DestroyImmediate 사용 (사용자 규칙)
+            DestroyImmediate(instanceMaterial);
             instanceMaterial = null;
         }
 

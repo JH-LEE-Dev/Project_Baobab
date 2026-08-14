@@ -116,7 +116,7 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         float _maxY = _contentHeight - _viewportHeight;
         
         // 범위 밖으로 넘어가지 않도록 클램핑
-        if (_targetY < 0f) return 0f;
+        if (0f > _targetY) return 0f;
         if (_targetY > _maxY) return _maxY;
 
         return _targetY;
@@ -130,7 +130,7 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         float _viewportHeight = viewport.rect.height;
         float _maxY = _contentHeight - _viewportHeight;
 
-        if (_maxY <= 0f) return;
+        if (0f >= _maxY) return;
 
         // 스크롤바 value 1이 맨 위(Y=0), value 0이 맨 아래(Y=_maxY) 라고 가정
         float _targetY = (1f - _value) * _maxY;
@@ -147,7 +147,7 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
 
         isSyncingScrollbar = true;
 
-        if (_maxY <= 0f)
+        if (0f >= _maxY)
         {
             verticalScrollbar.value = 1f;
         }
@@ -168,7 +168,7 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         float _contentHeight = content.rect.height;
         float _viewportHeight = viewport.rect.height;
 
-        if (_contentHeight <= 0f) return;
+        if (0f >= _contentHeight) return;
 
         float _sizeRatio = _viewportHeight / _contentHeight;
         
@@ -176,7 +176,7 @@ public class UI_CustomScroll : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         verticalScrollbar.size = Mathf.Clamp01(_sizeRatio);
         
         // 스크롤이 불필요할 때 스크롤바 자체를 비활성화할 수도 있음
-        verticalScrollbar.interactable = _sizeRatio < 1f;
+        verticalScrollbar.interactable = 1f > _sizeRatio;
     }
 
     private void OnDestroy()

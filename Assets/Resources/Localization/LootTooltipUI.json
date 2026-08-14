@@ -4,24 +4,24 @@
     {
       "id": 1,
       "key": "foundbox",
-      "kr": "유실되는 원목이 있다면 유실되는 원목의 \n<color=#FFA500,#FF4500><char_shake>20~30%</char_shake></color> 비율 개수로 자동으로 원목 상자에 담긴다.",
-      "en": "If any logs are lost, \n<color=#FFA500,#FF4500><char_shake>20-30%</char_shake></color> of them will be automatically stored in the log box.",
+      "kr": "유실되는 원목이 있다면 유실되는 원목의 \n<color=#FFA500,#FF4500><b>20~30%</b></color> 비율 개수로 자동으로 원목 상자에 담긴다.",
+      "en": "If any logs are lost, \n<color=#FFA500,#FF4500><b>20-30%</b></color> of them will be automatically stored in the log box.",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 2,
       "key": "sporepotion",
-      "kr": "숲 원정이 끝나고 <color=#32CD32,#7CFC00>3~5%</color> 랜덤으로 포자 포션이 채워진다.\n<color=#FFD700><wave>[특수 키]</wave></color>를 사용하여 포션을 마실 수 있고, 모아진 %만큼 피로도가 회복된다. <color=#FF6347>(최대 30%)</color>",
-      "en": "After a forest expedition, the Spore Potion is randomly filled by <color=#32CD32,#7CFC00>3-5%</color>.\nUse the <color=#FFD700><wave>[Special Key]</wave></color> to drink the potion and recover stamina equal to the accumulated percentage <color=#FF6347>(Up to 30%)</color>.",
+      "kr": "숲 원정이 끝나고 <color=#32CD32,#7CFC00>3~5%</color> 랜덤으로 포자 포션이 채워진다.\n<color=#FFD700><b>[특수 키]</b></color>를 사용하여 포션을 마실 수 있고, 모아진 %만큼 피로도가 회복된다. <color=#FF6347>(최대 30%)</color>",
+      "en": "After a forest expedition, the Spore Potion is randomly filled by <color=#32CD32,#7CFC00>3-5%</color>.\nUse the <color=#FFD700><b>[Special Key]</b></color> to drink the potion and recover stamina equal to the accumulated percentage <color=#FF6347>(Up to 30%)</color>.",
       "enumType": "",
       "enumValue": ""
     },
     {
       "id": 3,
       "key": "starcompass",
-      "kr": "별뿌리 숲에서 <color=#87CEEB,#00BFFF><wave>별자리</wave></color>, <color=#87CEEB,#00BFFF><wave>별표식</wave></color>을 볼 수 있게 된다.",
-      "en": "You will be able to see <color=#87CEEB,#00BFFF><wave>constellations</wave></color> and <color=#87CEEB,#00BFFF><wave>star marks</wave></color> in the Starroot Forest.",
+      "kr": "별뿌리 숲에서 <color=#87CEEB,#00BFFF><b>별자리</b></color>, <color=#87CEEB,#00BFFF><b>별표식</b></color>을 볼 수 있게 된다.",
+      "en": "You will be able to see <color=#87CEEB,#00BFFF><b>constellations</b></color> and <color=#87CEEB,#00BFFF><b>star marks</b></color> in the Starroot Forest.",
       "enumType": "",
       "enumValue": ""
     },

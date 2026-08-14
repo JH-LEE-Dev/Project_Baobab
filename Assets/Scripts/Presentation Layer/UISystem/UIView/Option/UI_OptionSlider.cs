@@ -69,7 +69,7 @@ public class UI_OptionSlider : MonoBehaviour
     {
         if (null != valueText)
         {
-            valueText.text = string.Format(valueFormat, Mathf.RoundToInt(_value));
+            valueText.SetText(valueFormat, Mathf.RoundToInt(_value));
         }
     }
 

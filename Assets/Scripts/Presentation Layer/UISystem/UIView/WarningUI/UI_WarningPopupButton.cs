@@ -243,23 +243,8 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         _seq.Join(_scaleSeq);
 
         // Rotation Tween
-        Sequence _rotSeq = DOTween.Sequence();
-        float _angle = Mathf.Abs(hoverSettings.startAngle);
-        int _swingCount = Mathf.Max(hoverSettings.swingCount, 1);
         float _rotDuration = hoverSettings.duration * Mathf.Clamp01(hoverSettings.rotationTimeRatio);
-        float _swingDuration = _rotDuration / (_swingCount + 1);
-
-        for (int i = 0; i < _swingCount; i++)
-        {
-            float _direction = (0 == i % 2) ? -1f : 1f;
-            Vector3 _targetRot = originalRotation.eulerAngles;
-            _targetRot.z += _angle * _direction;
-
-            _rotSeq.Append(scaleTarget.DOLocalRotate(_targetRot, _swingDuration, RotateMode.Fast).SetEase(hoverSettings.rotationEase));
-            _angle *= Mathf.Clamp01(hoverSettings.angleDamping);
-        }
-
-        _rotSeq.Append(scaleTarget.DOLocalRotate(originalRotation.eulerAngles, _swingDuration, RotateMode.Fast).SetEase(hoverSettings.rotationEase));
+        Sequence _rotSeq = CreateSwingSequence(hoverSettings.startAngle, hoverSettings.angleDamping, hoverSettings.swingCount, _rotDuration, hoverSettings.rotationEase, false);
         _seq.Join(_rotSeq);
 
         activeTween = _seq;
@@ -274,24 +259,35 @@ public class UI_WarningPopupButton : MonoBehaviour, IPointerClickHandler, IPoint
         scaleTarget.localRotation = originalRotation;
 
         Sequence _seq = DOTween.Sequence().SetUpdate(true);
-        float _angle = Mathf.Abs(unhoverSettings.startAngle);
-        int _swingCount = Mathf.Max(unhoverSettings.swingCount, 1);
         float _rotDuration = unhoverSettings.duration * Mathf.Clamp01(unhoverSettings.rotationTimeRatio);
-        float _swingDuration = _rotDuration / (_swingCount + 1);
+        Sequence _rotSeq = CreateSwingSequence(unhoverSettings.startAngle, unhoverSettings.angleDamping, unhoverSettings.swingCount, _rotDuration, unhoverSettings.rotationEase, true);
 
-        for (int i = 0; i < _swingCount; i++)
+        _seq.Join(_rotSeq);
+        
+        activeTween = _seq;
+    }
+
+    private Sequence CreateSwingSequence(float _startAngle, float _angleDamping, int _swingCount, float _rotDuration, Ease _rotationEase, bool _invertDirection)
+    {
+        Sequence _rotSeq = DOTween.Sequence();
+        float _angle = Mathf.Abs(_startAngle);
+        int _validSwingCount = Mathf.Max(_swingCount, 1);
+        float _swingDuration = _rotDuration / (_validSwingCount + 1);
+
+        for (int i = 0; i < _validSwingCount; i++)
         {
-            float _direction = (0 == i % 2) ? 1f : -1f;
+            float _direction = (0 == i % 2) ? -1f : 1f;
+            if (true == _invertDirection) _direction *= -1f;
+
             Vector3 _targetRot = originalRotation.eulerAngles;
             _targetRot.z += _angle * _direction;
 
-            _seq.Append(scaleTarget.DOLocalRotate(_targetRot, _swingDuration, RotateMode.Fast).SetEase(unhoverSettings.rotationEase));
-            _angle *= Mathf.Clamp01(unhoverSettings.angleDamping);
+            _rotSeq.Append(scaleTarget.DOLocalRotate(_targetRot, _swingDuration, RotateMode.Fast).SetEase(_rotationEase));
+            _angle *= Mathf.Clamp01(_angleDamping);
         }
 
-        _seq.Append(scaleTarget.DOLocalRotate(originalRotation.eulerAngles, _swingDuration, RotateMode.Fast).SetEase(unhoverSettings.rotationEase));
-
-        activeTween = _seq;
+        _rotSeq.Append(scaleTarget.DOLocalRotate(originalRotation.eulerAngles, _swingDuration, RotateMode.Fast).SetEase(_rotationEase));
+        return _rotSeq;
     }
 
     private void KillTween()

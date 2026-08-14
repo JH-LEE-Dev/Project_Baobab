@@ -36,11 +36,14 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
     // //내부 의존성
     private Sequence feedbackSequence;
     private Tween catchupTween;
+    private TweenCallback cachedOnCapacityUpdate;
 
     // //퍼블릭 초기화 및 제어 메서드
     public override void Initialize()
     {
         base.Initialize();
+
+        cachedOnCapacityUpdate = OnCapacityTweenUpdate;
 
         if (null == fillImage && null != progressSlider)
         {
@@ -73,7 +76,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
 
         if (null != ghostSlider)
         {
-            if (_ratio > _prevRatio)
+            if (_prevRatio < _ratio)
             {
                 // 증가 시: 고스트 바 즉시 반영, 메인 바는 딜레이 후 따라감 (아이템 계속 먹으면 딜레이 갱신)
                 ghostSlider.value = _ratio;
@@ -84,7 +87,7 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
                 catchupTween = progressSlider.DOValue(_ratio, ghostCatchupDuration)
                     .SetDelay(ghostDelay)
                     .SetEase(Ease.OutQuad)
-                    .OnUpdate(() => { UpdateColor(progressSlider.value); });
+                    .OnUpdate(cachedOnCapacityUpdate);
             }
             else
             {
@@ -141,6 +144,12 @@ public class UI_InventoryCapacityBar : HUD_ProgressBar
         feedbackSequence.Append(transform.DOScale(new Vector3(removeSquashScale, removeSquashScale, 1f), stepDuration).SetEase(Ease.OutQuad));
         // 2. 원래대로 찰지게 돌아오기
         feedbackSequence.Append(transform.DOScale(Vector3.one, stepDuration * 2f).SetEase(Ease.OutBack, settleOvershoot));
+    }
+
+    private void OnCapacityTweenUpdate()
+    {
+        if (null != progressSlider)
+            UpdateColor(progressSlider.value);
     }
 
     // //내부 로직

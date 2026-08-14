@@ -90,56 +90,23 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
             isHovered = false;
             isPointerDown = false;
             
-            if (true == enableScaleMotion) scaleTarget.localScale = originalScale;
-            if (null != targetGraphic)
-            {
-                Color _c = EVisualMode.Color == visualMode ? normalColor : targetGraphic.color;
-                _c.a = 0.5f;
-                targetGraphic.color = _c;
-                
-                if (EVisualMode.Sprite == visualMode && null != targetImage)
-                {
-                    if (null != normalSprite) targetImage.sprite = normalSprite;
-                }
-            }
-            if (null != buttonText)
-            {
-                Color _tc = normalTextColor;
-                _tc.a = 0.5f;
-                buttonText.color = _tc;
-            }
-            if (null != targetEffect)
-            {
-                Color _ec = normalEffectColor;
-                _ec.a = 0.5f;
-                targetEffect.shadowColor = _ec;
-            }
+            Color _targetGraphicColor = (EVisualMode.Color == visualMode) ? normalColor : (null != targetGraphic ? targetGraphic.color : Color.white);
+            _targetGraphicColor.a = 0.5f;
+            Color _targetTextColor = normalTextColor; _targetTextColor.a = 0.5f;
+            Color _targetEffectColor = normalEffectColor; _targetEffectColor.a = 0.5f;
+
+            ApplyVisualState(originalScale, _targetGraphicColor, normalSprite, _targetTextColor, _targetEffectColor, false);
         }
         else
         {
-            if (null != targetGraphic)
-            {
-                Color _c = targetGraphic.color;
-                _c.a = 1f;
-                targetGraphic.color = _c;
-                
-                if (EVisualMode.Sprite == visualMode && null != targetImage)
-                {
-                    if (null != normalSprite) targetImage.sprite = normalSprite;
-                }
-            }
-            if (null != buttonText)
-            {
-                Color _tc = buttonText.color;
-                _tc.a = 1f;
-                buttonText.color = _tc;
-            }
-            if (null != targetEffect)
-            {
-                Color _ec = targetEffect.shadowColor;
-                _ec.a = 1f;
-                targetEffect.shadowColor = _ec;
-            }
+            Color _targetGraphicColor = null != targetGraphic ? targetGraphic.color : Color.white;
+            _targetGraphicColor.a = 1f;
+            Color _targetTextColor = null != buttonText ? buttonText.color : Color.white;
+            _targetTextColor.a = 1f;
+            Color _targetEffectColor = null != targetEffect ? targetEffect.shadowColor : Color.black;
+            _targetEffectColor.a = 1f;
+
+            ApplyVisualState(originalScale, _targetGraphicColor, normalSprite, _targetTextColor, _targetEffectColor, false);
         }
     }
 
@@ -161,21 +128,11 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         KillTween();
         if (true == isPointerDown)
         {
-            if (true == enableScaleMotion) scaleTarget.DOScale(clickScale, tweenDuration).SetUpdate(true);
-            if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.DOColor(clickColor, tweenDuration).SetUpdate(true);
-            else if (EVisualMode.Sprite == visualMode && null != targetImage && null != clickSprite) targetImage.sprite = clickSprite;
-            
-            if (null != buttonText) buttonText.DOColor(clickTextColor, tweenDuration).SetUpdate(true);
-            if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, clickEffectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+            ApplyVisualState(clickScale, clickColor, clickSprite, clickTextColor, clickEffectColor, true);
         }
         else
         {
-            if (true == enableScaleMotion) scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
-            if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
-            else if (EVisualMode.Sprite == visualMode && null != targetImage && null != hoverSprite) targetImage.sprite = hoverSprite;
-            
-            if (null != buttonText) buttonText.DOColor(hoverTextColor, tweenDuration).SetUpdate(true);
-            if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, hoverEffectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+            ApplyVisualState(hoverScale, hoverColor, hoverSprite, hoverTextColor, hoverEffectColor, true);
         }
     }
 
@@ -185,12 +142,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (false == isInteractable) return;
         
         KillTween();
-        if (true == enableScaleMotion) scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
-        if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
-        else if (EVisualMode.Sprite == visualMode && null != targetImage && null != normalSprite) targetImage.sprite = normalSprite;
-        
-        if (null != buttonText) buttonText.DOColor(normalTextColor, tweenDuration).SetUpdate(true);
-        if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, normalEffectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+        ApplyVisualState(originalScale, normalColor, normalSprite, normalTextColor, normalEffectColor, true);
     }
 
     public void OnPointerDown(PointerEventData _eventData)
@@ -199,12 +151,7 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         if (false == isInteractable) return;
         
         KillTween();
-        if (true == enableScaleMotion) scaleTarget.DOScale(clickScale, tweenDuration).SetUpdate(true);
-        if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.DOColor(clickColor, tweenDuration).SetUpdate(true);
-        else if (EVisualMode.Sprite == visualMode && null != targetImage && null != clickSprite) targetImage.sprite = clickSprite;
-        
-        if (null != buttonText) buttonText.DOColor(clickTextColor, tweenDuration).SetUpdate(true);
-        if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, clickEffectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+        ApplyVisualState(clickScale, clickColor, clickSprite, clickTextColor, clickEffectColor, true);
     }
 
     public void OnPointerUp(PointerEventData _eventData)
@@ -216,21 +163,11 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
         
         if (true == isHovered)
         {
-            if (true == enableScaleMotion) scaleTarget.DOScale(hoverScale, tweenDuration).SetUpdate(true);
-            if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.DOColor(hoverColor, tweenDuration).SetUpdate(true);
-            else if (EVisualMode.Sprite == visualMode && null != targetImage && null != hoverSprite) targetImage.sprite = hoverSprite;
-            
-            if (null != buttonText) buttonText.DOColor(hoverTextColor, tweenDuration).SetUpdate(true);
-            if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, hoverEffectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+            ApplyVisualState(hoverScale, hoverColor, hoverSprite, hoverTextColor, hoverEffectColor, true);
         }
         else
         {
-            if (true == enableScaleMotion) scaleTarget.DOScale(originalScale, tweenDuration).SetUpdate(true);
-            if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.DOColor(normalColor, tweenDuration).SetUpdate(true);
-            else if (EVisualMode.Sprite == visualMode && null != targetImage && null != normalSprite) targetImage.sprite = normalSprite;
-            
-            if (null != buttonText) buttonText.DOColor(normalTextColor, tweenDuration).SetUpdate(true);
-            if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, normalEffectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
+            ApplyVisualState(originalScale, normalColor, normalSprite, normalTextColor, normalEffectColor, true);
         }
     }
 
@@ -261,32 +198,33 @@ public class UI_OptionButton : MonoBehaviour, IPointerClickHandler, IPointerEnte
 
         KillTween();
         
-        scaleTarget.localScale = originalScale;
-        
-        if (null != targetGraphic)
+        Color _targetGraphicColor = (EVisualMode.Color == visualMode) ? normalColor : (null != targetGraphic ? targetGraphic.color : Color.white);
+        _targetGraphicColor.a = (true == isInteractable) ? 1f : 0.5f;
+        Color _targetTextColor = normalTextColor; _targetTextColor.a = (true == isInteractable) ? 1f : 0.5f;
+        Color _targetEffectColor = normalEffectColor; _targetEffectColor.a = (true == isInteractable) ? 1f : 0.5f;
+
+        ApplyVisualState(originalScale, _targetGraphicColor, normalSprite, _targetTextColor, _targetEffectColor, false);
+    }
+
+    private void ApplyVisualState(Vector3 _scale, Color _graphicColor, Sprite _sprite, Color _textColor, Color _effectColor, bool _animated)
+    {
+        if (true == _animated)
         {
-            Color _c = EVisualMode.Color == visualMode ? normalColor : targetGraphic.color;
-            _c.a = true == isInteractable ? 1f : 0.5f;
-            targetGraphic.color = _c;
+            if (true == enableScaleMotion) scaleTarget.DOScale(_scale, tweenDuration).SetUpdate(true);
+            if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.DOColor(_graphicColor, tweenDuration).SetUpdate(true);
+            else if (EVisualMode.Sprite == visualMode && null != targetImage && null != _sprite) targetImage.sprite = _sprite;
             
-            if (EVisualMode.Sprite == visualMode && null != targetImage && null != normalSprite)
-            {
-                targetImage.sprite = normalSprite;
-            }
+            if (null != buttonText) buttonText.DOColor(_textColor, tweenDuration).SetUpdate(true);
+            if (null != targetEffect) DOTween.To(() => targetEffect.shadowColor, x => targetEffect.shadowColor = x, _effectColor, tweenDuration).SetUpdate(true).SetTarget(targetEffect);
         }
-        
-        if (null != buttonText)
+        else
         {
-            Color _tc = normalTextColor;
-            _tc.a = true == isInteractable ? 1f : 0.5f;
-            buttonText.color = _tc;
-        }
-        
-        if (null != targetEffect)
-        {
-            Color _ec = normalEffectColor;
-            _ec.a = true == isInteractable ? 1f : 0.5f;
-            targetEffect.shadowColor = _ec;
+            if (true == enableScaleMotion) scaleTarget.localScale = _scale;
+            if (EVisualMode.Color == visualMode && null != targetGraphic) targetGraphic.color = _graphicColor;
+            else if (EVisualMode.Sprite == visualMode && null != targetImage && null != _sprite) targetImage.sprite = _sprite;
+            
+            if (null != buttonText) buttonText.color = _textColor;
+            if (null != targetEffect) targetEffect.shadowColor = _effectColor;
         }
     }
 
