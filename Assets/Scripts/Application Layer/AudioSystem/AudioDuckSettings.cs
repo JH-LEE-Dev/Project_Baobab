@@ -39,8 +39,43 @@ public class AudioDuckSettings : ScriptableObject
     [Range(0f, 1f)]
     public float tensionMaxRatio = 0.1f;
 
-    [Tooltip("피로도가 tensionMaxRatio 이하일 때 적용되는 Max Cutoff. 낮을수록 더 먹먹해진다.")]
-    public float tensionMaxCutoffHz = 500f;
+    [Tooltip("팝업 UI가 열려 덕킹이 걸리면 피로도 Cutoff를 완전히 열어(=UI 덕킹만 남겨) 두 효과가 " +
+             "겹쳐 과하게 먹먹해지는 것을 막는데, 그 전환에 걸리는 시간(초). unscaledTime 기준.\n" +
+             "즉시 열어버리면 UI를 여는 순간 소리가 확 밝아졌다가 덕킹이 걸리며 다시 어두워지는 " +
+             "'와우' 아티팩트가 생기므로 서서히 넘긴다. 덕킹 램프(cutoffTransitionDuration)보다 느려야 " +
+             "덕킹이 먼저 자리를 잡아 중간에 밝아지지 않는다. 0.6이면 아주 짧게(약 0.1초) 목표보다 " +
+             "반 옥타브쯤 밝아지는 정도이고, 1.1 이상이면 그 잔여 오버슈트도 완전히 사라지지만 UI를 " +
+             "닫은 뒤 피로도 먹먹함이 돌아오는 것도 그만큼 느려진다.")]
+    public float tensionSuppressionDuration = 0.6f;
+
+    [Header("Fatigue Tension Cutoff - BGM")]
+    [Tooltip("피로도가 tensionMaxRatio 이하일 때 BGM에 적용되는 Max Cutoff. 낮을수록 더 먹먹해진다. " +
+             "실측 결과 이 게임 BGM 6곡 전부 에너지의 90% 이상이 500~1000Hz 아래에 몰려있다.")]
+    public float bgmTensionMaxCutoffHz = 500f;
+
+    [Tooltip("피로도 비율(t)을 BGM Cutoff 로그 보간에 넣기 전에 적용하는 ease-out 지수(1 = 보정 없음). " +
+             "BGM은 에너지의 90% 이상이 500~1000Hz 아래에 몰려있어서, 22000Hz에서 출발하는 스윕은 " +
+             "대부분(약 2000Hz까지)이 아무 소리도 안 걸리는 구간이라 초반엔 안 들리다가 막판에 갑자기 " +
+             "확 먹먹해지는 것처럼 느껴진다. 이 값을 1보다 크게 주면 안 들리는 고음역 구간을 피로도 " +
+             "초반에 빠르게 통과시키고, 실제로 음악이 걸리는 저역 구간에 나머지 피로도 구간을 더 많이 " +
+             "배분해 체감상 고르게 어두워진다. BGM 6곡 모두 비슷한 대역이라 공통값 하나로 충분하다. " +
+             "3은 너무 앞쪽에 몰려 13%에서 이미 최대치에 닿고 13~10% 구간이 낭비되므로 2로 둔다.")]
+    [Min(1f)]
+    public float bgmTensionCurveExponent = 2f;
+
+    [Header("Fatigue Tension Cutoff - SFX/Ambience")]
+    [Tooltip("피로도가 tensionMaxRatio 이하일 때 SFX/Ambience(Gameplay 그룹)에 적용되는 Max Cutoff. " +
+             "낮을수록 더 먹먹해진다.")]
+    public float sfxTensionMaxCutoffHz = 500f;
+
+    [Tooltip("피로도 비율(t)을 SFX/Ambience Cutoff 로그 보간에 넣기 전에 적용하는 ease-out 지수 " +
+             "(1 = 보정 없음, 왜곡 없는 순수 로그 보간). BGM과 달리 SFX는 종류마다 에너지가 몰린 대역이 " +
+             "제각각이다(예: 동전 줍기 효과음은 90% 지점이 18761Hz까지 올라가는 반면 도끼 파괴음은 " +
+             "86Hz 아래에 몰려있다) - 그래서 BGM처럼 '고음역은 어차피 무음'이라는 전제로 커브를 " +
+             "휘게 하면 오히려 밝은 SFX에서 어색해진다. 다만 1(순수 로그 보간)로 두면 BGM보다 한참 " +
+             "밝게 남아 음악만 물속에 잠긴 것처럼 들리므로, 간격을 좁히되 왜곡은 최소인 1.5로 둔다.")]
+    [Min(1f)]
+    public float sfxTensionCurveExponent = 1.5f;
 
     [Header("Volume Slider Mapping")]
     [Tooltip("마스터 슬라이더가 이 값일 때 0dB(원본 그대로)가 된다.")]
