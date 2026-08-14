@@ -13,7 +13,6 @@ GameObject:
   - component: {fileID: 1256858329457694333}
   - component: {fileID: 5903493271542259228}
   - component: {fileID: 8858733093728536719}
-  - component: {fileID: 8858733093728536720}
   m_Layer: 5
   m_Name: Overlay Canvas
   m_TagString: Untagged
@@ -119,18 +118,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CanvasEnabler
   canvas: {fileID: 5983813252923583599}
   bPPUI: 0
---- !u!114 &8858733093728536720
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1833141974581157746}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b3f7c81d9e2b4f5a8c6d0e1b2a3f4c5d, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::PixelPerfectCanvasScaleApplier
 --- !u!1 &5765702228179312450
 GameObject:
   m_ObjectHideFlags: 0

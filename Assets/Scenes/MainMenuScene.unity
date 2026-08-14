@@ -668,7 +668,7 @@ MonoBehaviour:
   duckSettings: {fileID: 11400000, guid: 0051b4e90e29e3e4ea42c245e77f7610, type: 2}
   enableDebugSound: 0
   debugSoundId: 0
---- !u!1001 &1407627020
+--- !u!1001 &1279486248
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -680,18 +680,6 @@ PrefabInstance:
       propertyPath: orthographic size
       value: 5.625
       objectReference: {fileID: 0}
-    - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
-      propertyPath: m_NormalizedViewPortRect.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
-      propertyPath: m_NormalizedViewPortRect.width
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1417226923079838101, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
-      propertyPath: m_NormalizedViewPortRect.height
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 2118913147681777825, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.x
       value: 0
@@ -703,6 +691,14 @@ PrefabInstance:
     - target: {fileID: 2118913147681777825, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_NormalizedViewPortRect.height
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2132736546778820798, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2132736546778820798, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7979977446318086124, guid: 7305b048601aa1a44889822d72d0a828, type: 3}
       propertyPath: m_LocalPosition.x
@@ -759,4 +755,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 209871254}
   - {fileID: 529530709}
-  - {fileID: 1407627020}
+  - {fileID: 1279486248}

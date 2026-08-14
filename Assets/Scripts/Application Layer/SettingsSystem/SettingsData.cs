@@ -21,10 +21,14 @@ public enum EOnOff { Off, On }
 /// 새 해상도는 항상 맨 뒤에 추가해서 기존 저장 파일을 그대로 호환시킵니다.
 ///
 /// 앞 4개(16:9)는 640x360의 정수배, 뒤 4개(16:10)는 640x400의 정수배입니다.
-/// 이 목록에서 정수배만 고르는 이유는 픽셀 크기 때문이 아닙니다. 픽셀 배율은
-/// 카메라(CinemachinePixelPerfect)와 UI(PixelPerfectCanvasScaleApplier) 모두
-/// 화면세로/360을 반올림해 쓰므로 어떤 해상도에서도 이미 정수입니다.
-/// (SettingsData.GetPixelScale)
+/// 이 목록에서 정수배만 고르는 이유는 월드 픽셀 크기 때문이 아닙니다. 카메라 배율은
+/// CinemachinePixelPerfect가 화면세로/360을 반올림해 쓰므로 어떤 해상도에서도 이미
+/// 정수입니다. (SettingsData.GetPixelScale)
+///
+/// UI 캔버스는 별개입니다. ScaleWithScreenSize + Match Height로 동작해 배율이
+/// 화면세로/360(실수)이며, 그 덕분에 캔버스 논리 높이가 항상 정확히 360으로 유지됩니다.
+/// UI 프리팹들이 640x360 고정 크기로 제작되어 있어서 이 성질에 의존합니다.
+/// (배율을 정수로 만들면 캔버스 높이가 360을 벗어나 고정 크기 UI가 화면을 못 채웁니다)
 ///
 /// 정수배 해상도만 고르면 나누어떨어져서 반올림 오차가 0이 되고, 화면에 보이는 월드가
 /// 기준 시야와 정확히 같아집니다. 즉 같은 그룹의 창모드 프리셋끼리는 시야가 완전히
@@ -295,8 +299,9 @@ public struct SettingsData
     /// 가상 카메라(Assets/Prefabs/Objects/Camera/Camera.prefab)의 Lens.OrthographicSize 5.625와
     /// PixelPerfectCamera의 Assets PPU 32에서 나옵니다. (5.625 * 2 * 32 = 360)
     ///
-    /// 주의: 둘 중 하나라도 바꾸면 이 값도 같이 바꿔야 합니다. 어긋나면 UI 픽셀과
-    /// 월드 픽셀의 크기가 달라집니다. (PixelPerfectCanvasScaleApplier가 이 값을 씁니다)
+    /// 주의: 둘 중 하나라도 바꾸면 이 값도 같이 바꿔야 합니다. 씬에서 카메라의
+    /// OrthographicSize를 오버라이드하는 경우도 마찬가지입니다. 어긋나면 줌 연출 이후
+    /// 카메라가 엉뚱한 시야를 보여주는데, 아무 경고 없이 화면만 이상해지므로 찾기 어렵습니다.
     /// </summary>
     public const int CAMERA_VIEW_HEIGHT = 360;
 
