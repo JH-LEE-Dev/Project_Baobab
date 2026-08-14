@@ -393,8 +393,8 @@ public class UIView_Unit : UIView
     }
 
     /// <summary>
-    /// 튜토리얼 중 플레이어가 던전의 OffroadVehicle에 상호작용(탑승)한 즉시 호출된다.
-    /// GameplayUICoordinator.CharacterRideStart(CharacterRideStartSignal)에서 bIsTutorialActive일 때 호출됨.
+    /// 튜토리얼 중 플레이어가 첫 나무를 벌목(CutTree 스텝 완료)한 즉시 호출된다.
+    /// GameplayUICoordinator.TutorialStepCompleted(TutorialStepCompletedSignal)에서 step이 CutTree일 때 호출됨.
     /// </summary>
     public void TutorialOffroadResultUIOpened()
     {
