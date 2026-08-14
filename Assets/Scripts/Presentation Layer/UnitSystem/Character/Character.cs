@@ -445,11 +445,11 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
 
     private void UpdateFacingByAttackPoint()
     {
-        if (bFacingLocked || Time.timeScale == 0f) return;
-        if (attackComponent == null || bInDungeon == false || bWhileReset == true) return;
+        if (true == bFacingLocked || 0f == Time.timeScale) return;
+        if (null == attackComponent || false == bInDungeon || false == attackComponent.IsCursorEnabled) return;
 
         Transform attackTarget = attackComponent.GetAttackPointTransform();
-        if (attackTarget == null) return;
+        if (null == attackTarget) return;
 
         Vector2 dir = (Vector2)attackTarget.position - (Vector2)transform.position;
         SetFacingDirection(dir);
@@ -1231,6 +1231,7 @@ public class Character : MonoBehaviour, ITeleportable, ICharacter, IStaticCollid
     public void EnableAim()
     {
         attackComponent.SetCursorEnable(true);
+        UpdateFacingByAttackPoint();
     }
 
     public void ActivateCharacter()
