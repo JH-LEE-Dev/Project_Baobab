@@ -51,7 +51,13 @@ public class UI_TutorialQuest : MonoBehaviour
     [SerializeField] private Vector3 completedTextSquashScale = new Vector3(1.12f, 0.88f, 1.0f);
     [SerializeField] private Vector3 completedTextStretchScale = new Vector3(0.96f, 1.08f, 1.0f);
 
+    [Header("Transform Settings")]
+    [SerializeField] private float yOffset = 0f;
 
+    [Header("Custom Mode Settings")]
+    [SerializeField] private bool useCustomMode = false;
+    [SerializeField] private float customInitialDuration = 2.0f;
+    [SerializeField] private float customCompletedHoldDuration = 2.0f;
 
     // 내부 의존성
     private const float HiddenBGWidth = 0f;
@@ -182,6 +188,42 @@ public class UI_TutorialQuest : MonoBehaviour
         SetQuestContent(_title, _desc);
     }
 
+    public void PlayCustomSequence(string _title, string _desc = "")
+    {
+        if (false == useCustomMode)
+            return;
+
+        ForceCompletePendingHide();
+
+        KillSequences();
+        bIsShowing = true;
+
+        SetQuestContent(_title, _desc);
+
+        AssignBGDelays();
+        PrepareShowState();
+
+        showSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
+
+        // 1. 등장 연출
+        AppendShowEffect(showSequence);
+
+        // 2. 초기 텍스트(진행색) 상태 유지
+        float _initialHold = Mathf.Max(0.0f, customInitialDuration);
+        showSequence.AppendInterval(_initialHold);
+
+        // 3. 완료 색상(녹색) 전환 및 Pop 효과 재생
+        showSequence.AppendCallback(PlayQuestCompletedSound);
+        AppendCompletionEffect(showSequence);
+
+        // 4. 완료 상태 추가 대기
+        float _customHold = Mathf.Max(0.0f, customCompletedHoldDuration);
+        showSequence.AppendInterval(_customHold);
+
+        // 5. 대기가 끝난 직후 퇴장 연출(PlayHideQuest) 이어서 재생
+        showSequence.OnComplete(cachedOnCompleteHideCallback);
+    }
+
     private void PlayShowQuest()
     {
         KillSequences();
@@ -192,18 +234,25 @@ public class UI_TutorialQuest : MonoBehaviour
 
         showSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
+        AppendShowEffect(showSequence);
+
+        showSequence.OnComplete(cachedOnShowComplete);
+    }
+
+    private void AppendShowEffect(Sequence _seq)
+    {
         // 1. DimBG 확장 연출
         if (0 < bgPieces.Length)
         {
             SetCanvasGroupAlpha(bgCanvasGroup, 1f);
-            InsertBGOpenTweens(showSequence);
+            InsertBGOpenTweens(_seq);
         }
         else if (null != bgRoot)
         {
-            showSequence.Append(DOTween.To(GetBGWidth, SetBGWidth, bgTargetWidth, bgOpenDuration).SetEase(bgOpenEase));
+            _seq.Append(DOTween.To(GetBGWidth, SetBGWidth, bgTargetWidth, bgOpenDuration).SetEase(bgOpenEase));
             if (null != bgCanvasGroup && true == useBgFadeIn)
             {
-                showSequence.Join(bgCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(bgOpenEase));
+                _seq.Join(bgCanvasGroup.DOFade(1f, bgOpenDuration).SetEase(bgOpenEase));
             }
         }
 
@@ -212,17 +261,15 @@ public class UI_TutorialQuest : MonoBehaviour
 
         if (null != contentCanvasGroup)
         {
-            showSequence.Insert(_contentStartTime, contentCanvasGroup.DOFade(1f, scaleDuration).SetEase(Ease.OutQuad));
+            _seq.Insert(_contentStartTime, contentCanvasGroup.DOFade(1f, scaleDuration).SetEase(Ease.OutQuad));
         }
 
         if (null != textContainer)
         {
-            showSequence.Insert(_contentStartTime, textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
+            _seq.Insert(_contentStartTime, textContainer.DOScale(targetScale, scaleDuration).SetEase(scaleEase));
         }
 
-        showSequence.InsertCallback(_contentStartTime, cachedPlayQuestTextAppearSounds);
-
-        showSequence.OnComplete(cachedOnShowComplete);
+        _seq.InsertCallback(_contentStartTime, cachedPlayQuestTextAppearSounds);
     }
 
     private void PlayHideQuest()
@@ -235,37 +282,42 @@ public class UI_TutorialQuest : MonoBehaviour
 
         hideSequence = DOTween.Sequence().SetUpdate(true).SetLink(gameObject);
 
+        AppendHideEffect(hideSequence, 0f);
+
+        hideSequence.OnComplete(cachedOnHideComplete);
+    }
+
+    private void AppendHideEffect(Sequence _seq, float _startOffset)
+    {
         // 1. 텍스트 컨텐츠 스케일 & 페이드아웃 선행 연출
         float _textHideDuration = scaleDuration;
 
         if (null != contentCanvasGroup)
         {
-            hideSequence.Insert(0f, contentCanvasGroup.DOFade(0f, _textHideDuration).SetEase(Ease.InQuad));
+            _seq.Insert(_startOffset, contentCanvasGroup.DOFade(0f, _textHideDuration).SetEase(Ease.InQuad));
         }
 
         if (null != textContainer)
         {
-            hideSequence.Insert(0f, textContainer.DOScale(startScale, _textHideDuration).SetEase(Ease.InBack));
+            _seq.Insert(_startOffset, textContainer.DOScale(startScale, _textHideDuration).SetEase(Ease.InBack));
         }
 
         // 2. DimBG 축소 및 페이드 역재생 연출 (글자가 완전히 사라진 후 시작)
-        float _bgHideStartTime = _textHideDuration;
+        float _bgHideStartTime = _startOffset + _textHideDuration;
 
         if (0 < bgPieces.Length)
         {
             AssignBGCloseDelays();
-            InsertBGCloseTweens(hideSequence, _bgHideStartTime);
+            InsertBGCloseTweens(_seq, _bgHideStartTime);
         }
         else if (null != bgRoot)
         {
-            hideSequence.Insert(_bgHideStartTime, DOTween.To(GetBGWidth, SetBGWidth, HiddenBGWidth, bgCloseDuration).SetEase(bgCloseEase));
+            _seq.Insert(_bgHideStartTime, DOTween.To(GetBGWidth, SetBGWidth, HiddenBGWidth, bgCloseDuration).SetEase(bgCloseEase));
             if (null != bgCanvasGroup && true == useBgFadeOut)
             {
-                hideSequence.Insert(_bgHideStartTime, bgCanvasGroup.DOFade(0f, bgCloseDuration).SetEase(bgCloseEase));
+                _seq.Insert(_bgHideStartTime, bgCanvasGroup.DOFade(0f, bgCloseDuration).SetEase(bgCloseEase));
             }
         }
-
-        hideSequence.OnComplete(cachedOnHideComplete);
     }
 
     private void PlayStepTransition(string _nextTitle, string _nextDesc)
@@ -843,6 +895,14 @@ public class UI_TutorialQuest : MonoBehaviour
     // 유니티 이벤트 함수
     private void Awake()
     {
+        RectTransform _rect = GetComponent<RectTransform>();
+        if (null != _rect)
+        {
+            Vector2 _pos = _rect.anchoredPosition;
+            _pos.y += yOffset;
+            _rect.anchoredPosition = _pos;
+        }
+
         InitCachedCallbacks();
         CacheCanvasGroups();
         CacheBGPieces();
