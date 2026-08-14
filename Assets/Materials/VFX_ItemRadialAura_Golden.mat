@@ -18,46 +18,50 @@ Material:
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: 3000
   stringTagMap:
-    Queue: Transparent
+    QUEUE: Transparent
     RenderType: Transparent
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
-    m_TexEnvs: []
+    m_TexEnvs:
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
-    - _Intensity: 1
-    - _BloomMultiplier: 1.5
-    - _PixelateEnabled: 1
-    - _PixelResolution: 32
-    - _ColorBandingSteps: 4
-    - _RayCount: 6
     - _AngleJitter: 0.4
-    - _BeamMinWidth: 0.12
-    - _BeamMaxWidth: 0.45
     - _BeamBlur: 0.22
-    - _RotationSpeed: 1.2
-    - _SpeedVariation: 0.45
-    - _FlickerSpeed: 3
-    - _FlickerAmount: 0.4
-    - _EnableBurstMode: 1
+    - _BeamMaxWidth: 0.4
+    - _BeamMinWidth: 0.04
+    - _BloomMultiplier: 1.314
     - _BurstProgress: 0
-    - _StaggerSpread: 0.25
-    - _EdgeSoftness: 0.08
-    - _OuterRadius: 0.48
-    - _RadialSoftness: 0.55
-    - _DistanceFalloff: 0.9
+    - _ColorBandingSteps: 4
     - _CoreGlowRadius: 0.15
-    - _InnerRadius: 0
-    - _InnerFade: 0.05
-    - _SrcBlend: 1
-    - _DstBlend: 1
     - _Cull: 0
+    - _DistanceFalloff: 0.9
+    - _DstBlend: 1
+    - _EdgeSoftness: 0.08
+    - _EnableBurstMode: 1
+    - _FlickerAmount: 0.4
+    - _FlickerSpeed: 3
+    - _InnerFade: 0.05
+    - _InnerRadius: 0
+    - _Intensity: 1
+    - _OuterRadius: 0.48
+    - _PixelResolution: 32
+    - _PixelateEnabled: 0
+    - _RadialSoftness: 0.55
+    - _RayCount: 8
+    - _RotationSpeed: 0.6
+    - _SpeedVariation: 0.2
+    - _SrcBlend: 1
+    - _StaggerSpread: 0.25
     m_Colors:
-    - _CoreColor: {r: 3.5, g: 3.2, b: 2, a: 1}
     - _BeamColor: {r: 2.5, g: 1.8, b: 0.3, a: 1}
-    - _OuterColor: {r: 1.2, g: 0.5, b: 0.05, a: 1}
     - _Center: {r: 0.5, g: 0.5, b: 0, a: 0}
+    - _CoreColor: {r: 3.5, g: 3.2, b: 2, a: 1}
+    - _OuterColor: {r: 1.2, g: 0.5, b: 0.05, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
