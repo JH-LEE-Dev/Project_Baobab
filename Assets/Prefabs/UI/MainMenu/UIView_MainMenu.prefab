@@ -90,7 +90,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UI_ExternalLinkButton
   targetVisualImage: {fileID: 611300313363725636}
-  targetUrl: https://google.com
+  targetUrl: https://discord.gg/JtaVpyUkU
   normalColor: {r: 0.6313726, g: 0.6313726, b: 0.6313726, a: 1}
   hoverColor: {r: 0.045701336, g: 0.3945488, b: 0.745283, a: 1}
   clickColor: {r: 0.5518868, g: 0.865687, b: 1, a: 1}

@@ -50,7 +50,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HUD_PopupNav_DemoNotice
   steamWishlistUrl: https://google.com/
-  discordCommunityUrl: https://naver.com/
+  discordCommunityUrl: https://discord.gg/JtaVpyUkU/
   demoNoticeOverlay: {fileID: 0}
   demoDimCanvasGroup: {fileID: 3272230724093129031}
   demoBandTransform: {fileID: 7318809068908883743}
