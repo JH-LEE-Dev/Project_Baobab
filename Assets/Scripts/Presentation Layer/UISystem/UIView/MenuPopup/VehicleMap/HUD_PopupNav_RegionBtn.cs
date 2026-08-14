@@ -163,29 +163,7 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
 
         bool _isLocked = !_info.isUnlocked;
 
-        Image _targetImage = (null != bgImage) ? bgImage : clickImage;
-        if (null != _targetImage)
-        {
-            if (false == _isLocked && null != unlockedBgSprite)
-            {
-                _targetImage.sprite = unlockedBgSprite;
-            }
-        }
-
-        if (null != lockVisualObj)
-        {
-            lockVisualObj.SetActive(_isLocked);
-        }
-
-        if (null != newIndicatorObj)
-        {
-            bool _showNew = _info.isNew && !_isLocked;
-            newIndicatorObj.SetActive(_showNew);
-            if (true == _showNew)
-            {
-                newIndicatorObj.transform.localScale = Vector3.one;
-            }
-        }
+        SetupVisualState(_isLocked, _info);
 
         if (null == originalLocalX || 0 == originalLocalX.Length)
         {
@@ -219,30 +197,36 @@ public class HUD_PopupNav_RegionBtn : MonoBehaviour, IPointerClickHandler, IPoin
         if (null == cachedDisableUIEffectIfUnlocked) cachedDisableUIEffectIfUnlocked = DisableUIEffectIfUnlocked;
         if (null == cachedUnlockPlayParticle) cachedUnlockPlayParticle = PlayUnlockParticle;
 
-        if (false == hasInstantiatedParticleMat && null != unlockDestructionParticle)
+        NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
+
+        SetSelectedState(false);
+    }
+
+    private void SetupVisualState(bool _isLocked, MapEnvironmentDataInfo _info)
+    {
+        Image _targetImage = (null != bgImage) ? bgImage : clickImage;
+        if (null != _targetImage)
         {
-            ParticleSystemRenderer _psr = unlockDestructionParticle.GetComponent<ParticleSystemRenderer>();
-            if (null != _psr && null != _psr.sharedMaterial)
+            if (false == _isLocked && null != unlockedBgSprite)
             {
-                Material _instancedMat = new Material(_psr.sharedMaterial);
-                if (_instancedMat.HasProperty("_HDRColor"))
-                {
-                    _instancedMat.SetColor("_HDRColor", unlockParticleColor);
-                }
-                else if (_instancedMat.HasProperty("_TintColor"))
-                {
-                    _instancedMat.SetColor("_TintColor", unlockParticleColor);
-                }
-                else if (_instancedMat.HasProperty("_Color"))
-                {
-                    _instancedMat.SetColor("_Color", unlockParticleColor);
-                }
-                _psr.material = _instancedMat;
-                hasInstantiatedParticleMat = true;
+                _targetImage.sprite = unlockedBgSprite;
             }
         }
 
-        SetSelectedState(false);
+        if (null != lockVisualObj)
+        {
+            lockVisualObj.SetActive(_isLocked);
+        }
+
+        if (null != newIndicatorObj)
+        {
+            bool _showNew = _info.isNew && !_isLocked;
+            newIndicatorObj.SetActive(_showNew);
+            if (true == _showNew)
+            {
+                newIndicatorObj.transform.localScale = Vector3.one;
+            }
+        }
     }
 
     private void ActivateObject()

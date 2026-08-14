@@ -56,7 +56,7 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler, IPointerE
 
     private void UpdateVisualState()
     {
-        if (isSelected)
+        if (true == isSelected)
         {
             if (null != targetImage && null != selectedSprite)
             {
@@ -73,7 +73,7 @@ public class UI_OptionTabButton : MonoBehaviour, IPointerClickHandler, IPointerE
                 uiEffect.shadowColor = selectedOutlineColor;
             }
         }
-        else if (isHovered)
+        else if (true == isHovered)
         {
             if (null != targetImage)
             {

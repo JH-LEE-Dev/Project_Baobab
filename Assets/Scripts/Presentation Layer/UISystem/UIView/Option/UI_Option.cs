@@ -96,6 +96,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     public bool IsActive => gameObject.activeSelf;
     private System.Collections.Generic.List<UI_OptionKeyBindRow> keyBindRows 
         = new System.Collections.Generic.List<UI_OptionKeyBindRow>();
+    private string[] cachedTabTexts;
 
     // 캐싱 델리게이트
     private Action<ERebindableAction> cachedOnRowRebindRequested;
@@ -312,7 +313,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
             locKeyCache = new System.Collections.Generic.Dictionary<string, int>();
             System.Reflection.FieldInfo[] _fields = typeof(LocKeys.OptionUI).GetFields(
                 System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            for (int i = 0; i < _fields.Length; i++)
+            for (int i = 0; _fields.Length > i; i++)
             {
                 locKeyCache[_fields[i].Name] = (int)_fields[i].GetValue(null);
             }
@@ -331,12 +332,12 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
     {
         if (null == tabLocalizeKeys || 0 == tabLocalizeKeys.Length) return null;
 
-        string[] _tabTexts = new string[tabLocalizeKeys.Length];
-        for (int i = 0; i < tabLocalizeKeys.Length; i++)
+        if (null == cachedTabTexts || cachedTabTexts.Length != tabLocalizeKeys.Length) cachedTabTexts = new string[tabLocalizeKeys.Length];
+        for (int i = 0; tabLocalizeKeys.Length > i; i++)
         {
-            _tabTexts[i] = GetTextFromKeyString(tabLocalizeKeys[i], "Tab");
+            cachedTabTexts[i] = GetTextFromKeyString(tabLocalizeKeys[i], "Tab");
         }
-        return _tabTexts;
+        return cachedTabTexts;
     }
 
     private void InitializeSelectors()
@@ -371,7 +372,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null == inputManager || null == keyBindRowPrefab || null == keyBindRowContainer) return;
 
         // 기존 행 정리
-        for (int i = 0; i < keyBindRows.Count; i++)
+        for (int i = 0; keyBindRows.Count > i; i++)
         {
             if (null != keyBindRows[i]) Destroy(keyBindRows[i].gameObject);
         }
@@ -379,7 +380,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
 
         // 리바인딩 가능한 액션 목록으로 행 동적 생성
         System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
-        for (int i = 0; i < _actions.Count; i++)
+        for (int i = 0; _actions.Count > i; i++)
         {
             ERebindableAction _action = _actions[i];
             UI_OptionKeyBindRow _row = Instantiate(keyBindRowPrefab, keyBindRowContainer);
@@ -485,7 +486,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null == inputManager) return;
 
         System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
-        for (int i = 0; i < keyBindRows.Count && i < _actions.Count; i++)
+        for (int i = 0; keyBindRows.Count > i && _actions.Count > i; i++)
         {
             if (null == keyBindRows[i]) continue;
             keyBindRows[i].RefreshLabel(GetActionLabel(_actions[i]));
@@ -638,7 +639,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (_tick == lastSfxPreviewTick) return;
 
         float _now = Time.unscaledTime;
-        if (_now - lastSfxPreviewTime < SfxPreviewInterval) return;
+        if (SfxPreviewInterval > _now - lastSfxPreviewTime) return;
 
         lastSfxPreviewTick = _tick;
         lastSfxPreviewTime = _now;
@@ -650,7 +651,7 @@ public class UI_Option : MonoBehaviour, IUIDepthCloseable
         if (null == inputManager) return;
 
         System.Collections.Generic.IReadOnlyList<ERebindableAction> _actions = inputManager.GetRebindableActions();
-        for (int i = 0; i < keyBindRows.Count && i < _actions.Count; i++)
+        for (int i = 0; keyBindRows.Count > i && _actions.Count > i; i++)
         {
             if (null == keyBindRows[i]) continue;
 

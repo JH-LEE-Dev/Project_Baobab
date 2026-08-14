@@ -20,7 +20,7 @@ public class LightningZapCreator : MonoBehaviour
 
     public void Initialize()
     {
-        if (zapPool != null) return;
+        if (null != zapPool) return;
 
         zapPool = new ObjectPool<PresentationLayer.VFX.VFX_LightningZap>(
             createFunc: CreateZap,
@@ -39,8 +39,8 @@ public class LightningZapCreator : MonoBehaviour
     /// </summary>
     public PresentationLayer.VFX.VFX_LightningZap Get()
     {
-        if (zapPool == null) Initialize();
-        return zapPool?.Get();
+        if (null == zapPool) Initialize();
+        return zapPool.Get();
     }
 
     private PresentationLayer.VFX.VFX_LightningZap CreateZap()
@@ -67,7 +67,7 @@ public class LightningZapCreator : MonoBehaviour
 
     private void OnDestroyZap(PresentationLayer.VFX.VFX_LightningZap _zap)
     {
-        if (_zap != null)
+        if (null != _zap)
         {
             _zap.ReturnToPoolEvent -= ReturnZap;
             Destroy(_zap.gameObject);

@@ -98,6 +98,9 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     private RectTransform cachedRectTransform;
     private Canvas cachedCanvas;
     private static List<RaycastResult> raycastResults = new List<RaycastResult>();
+    private PointerEventData cachedPointerData;
+    private UI_MainMenuButton[] _siblingButtons;
+    private bool _siblingsCached = false;
     
     private bool isClicked = false;
     private bool isDisappearing = false;
@@ -159,6 +162,10 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         cachedRectTransform = GetComponent<RectTransform>();
         cachedCanvas = GetComponentInParent<Canvas>();
+        if (null != EventSystem.current)
+        {
+            cachedPointerData = new PointerEventData(EventSystem.current);
+        }
     }
 
     private void OnEnable()
@@ -256,6 +263,8 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
     {
         onClickAction = null;
         onPressedAction = null;
+        _siblingButtons = null;
+        _siblingsCached = false;
         KillAllTweens();
     }
 
@@ -432,56 +441,54 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         
         isClicked = true;
 
-        Color targetShadowColor = isInteractable ? clickShadowColor : disabledClickShadowColor;
-
-        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
-        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+        PlayClickShadowMotion();
 
         if (false == isInteractable)
         {
-            // 비활성 상태면 기능 호출 및 숨김 연출 없이 펀치 모션만 재생
-            transform.DOKill();
-            transform.localScale = Vector3.one;
-            Sequence _disabledClickSeq = DOTween.Sequence();
-            _disabledClickSeq.Join(transform.DOPunchScale(clickPunchScale, clickDuration, clickVibrato, clickElasticity));
-            _disabledClickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
+            PlayDisabledClickMotion();
             return;
         }
 
         Sound.PlayUI(SoundID.MainClick);
         onPressedAction?.Invoke();
 
+        HandleClickSequence();
+    }
+
+    private void PlayClickShadowMotion()
+    {
+        Color targetShadowColor = isInteractable ? clickShadowColor : disabledClickShadowColor;
+        TweenShadow(dotUIEffect, getDotShadowColor, setDotShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+        TweenShadow(textUIEffect, getTextShadowColor, setTextShadowColor, targetShadowColor, clickShadowGlow, clickDuration, clickShadowEase);
+    }
+
+    private void PlayDisabledClickMotion()
+    {
+        transform.DOKill();
+        transform.localScale = Vector3.one;
+        Sequence _disabledClickSeq = DOTween.Sequence();
+        _disabledClickSeq.Join(transform.DOPunchScale(clickPunchScale, clickDuration, clickVibrato, clickElasticity));
+        _disabledClickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
+    }
+
+    private void HandleClickSequence()
+    {
         float _maxDelay = clickDuration;
         bool _hasDisappearTargets = false;
-
         float _currentDisappearDelay = 0f;
 
         if (true == autoDisappearOnClick)
         {
-            // 부모 하위에 있는 활성화된 모든 버튼을 찾음 (GetComponentsInChildren은 자신의 자식도 찾지만, 보통 형제 노드 탐색에 유용함)
-            // 여기서는 부모 객체의 자식들을 탐색하여 형제 버튼들을 수집
-            UI_MainMenuButton[] _siblingButtons = null;
             if (null != transform.parent)
             {
-                _siblingButtons = transform.parent.GetComponentsInChildren<UI_MainMenuButton>(false);
-                
-                // GC 할당을 피하기 위해 간단한 삽입 정렬(Insertion Sort)을 사용하여 Sibling Index 기준으로 정렬
-                if (null != _siblingButtons && _siblingButtons.Length > 1)
+                if (false == _siblingsCached)
                 {
-                    for (int i = 1; i < _siblingButtons.Length; i++)
-                    {
-                        UI_MainMenuButton _key = _siblingButtons[i];
-                        int _j = i - 1;
-                        while (_j >= 0 && _siblingButtons[_j].transform.GetSiblingIndex() > _key.transform.GetSiblingIndex())
-                        {
-                            _siblingButtons[_j + 1] = _siblingButtons[_j];
-                            _j = _j - 1;
-                        }
-                        _siblingButtons[_j + 1] = _key;
-                    }
+                    _siblingButtons = transform.parent.GetComponentsInChildren<UI_MainMenuButton>(false);
+                    _siblingsCached = true;
                 }
+                
+                SortSiblingButtonsByIndex();
 
-                // 정렬된 순서대로 사라지는 모션 재생
                 if (null != _siblingButtons)
                 {
                     for (int i = 0; i < _siblingButtons.Length; i++)
@@ -504,11 +511,10 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
             if (true == _hasDisappearTargets)
             {
-                // 자신(this)을 가장 마지막에 사라지도록 추가
                 DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
 
                 float _disappearTime = _currentDisappearDelay + disappearSuckDuration + disappearDotShrinkDuration;
-                if (_disappearTime > _maxDelay)
+                if (_maxDelay < _disappearTime)
                 {
                     _maxDelay = _disappearTime;
                 }
@@ -516,7 +522,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         }
 
         transform.DOKill();
-        transform.localScale = Vector3.one; // 펀치 모션 시작 전 스케일 정규화
+        transform.localScale = Vector3.one; 
         
         Sequence _clickSeq = DOTween.Sequence();
         
@@ -529,8 +535,24 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         else
         {
             _clickSeq.InsertCallback(clickDuration, onClickPunchCompleteCallback);
-            // 자동 사라짐이 없으므로, 클릭 펀치 종료 시점에 바로 콜백 실행
             _clickSeq.InsertCallback(clickDuration, invokeOnClickActionCallback);
+        }
+    }
+
+    private void SortSiblingButtonsByIndex()
+    {
+        if (null == _siblingButtons || 1 >= _siblingButtons.Length) return;
+
+        for (int i = 1; i < _siblingButtons.Length; i++)
+        {
+            UI_MainMenuButton _key = _siblingButtons[i];
+            int _j = i - 1;
+            while (0 <= _j && _key.transform.GetSiblingIndex() < _siblingButtons[_j].transform.GetSiblingIndex())
+            {
+                _siblingButtons[_j + 1] = _siblingButtons[_j];
+                _j = _j - 1;
+            }
+            _siblingButtons[_j + 1] = _key;
         }
     }
 
@@ -542,25 +564,15 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
         bool _hasDisappearTargets = false;
         float _currentDisappearDelay = 0f;
 
-        UI_MainMenuButton[] _siblingButtons = null;
         if (null != transform.parent)
         {
-            _siblingButtons = transform.parent.GetComponentsInChildren<UI_MainMenuButton>(false);
-            
-            if (null != _siblingButtons && _siblingButtons.Length > 1)
+            if (false == _siblingsCached)
             {
-                for (int i = 1; i < _siblingButtons.Length; i++)
-                {
-                    UI_MainMenuButton _key = _siblingButtons[i];
-                    int _j = i - 1;
-                    while (_j >= 0 && _siblingButtons[_j].transform.GetSiblingIndex() > _key.transform.GetSiblingIndex())
-                    {
-                        _siblingButtons[_j + 1] = _siblingButtons[_j];
-                        _j = _j - 1;
-                    }
-                    _siblingButtons[_j + 1] = _key;
-                }
+                _siblingButtons = transform.parent.GetComponentsInChildren<UI_MainMenuButton>(false);
+                _siblingsCached = true;
             }
+            
+            SortSiblingButtonsByIndex();
 
             if (null != _siblingButtons)
             {
@@ -587,7 +599,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
             DOVirtual.DelayedCall(_currentDisappearDelay, playDisappearImmediateCallback);
 
             float _disappearTime = _currentDisappearDelay + disappearSuckDuration + disappearDotShrinkDuration;
-            if (_disappearTime > _maxDelay)
+            if (_maxDelay < _disappearTime)
             {
                 _maxDelay = _disappearTime;
             }
@@ -651,7 +663,7 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
 
         Sequence _disappearSeq = DOTween.Sequence();
         
-        if (_delay > 0f)
+        if (0f < _delay)
         {
             _disappearSeq.AppendInterval(_delay);
         }
@@ -734,15 +746,17 @@ public class UI_MainMenuButton : MonoBehaviour, IPointerEnterHandler, IPointerEx
                 _mousePos = Mouse.current.position.ReadValue();
             }
 
-            PointerEventData _pointerData = new PointerEventData(EventSystem.current)
+            if (null == cachedPointerData)
             {
-                position = _mousePos
-            };
+                cachedPointerData = new PointerEventData(EventSystem.current);
+            }
+
+            cachedPointerData.position = _mousePos;
             
             raycastResults.Clear();
-            EventSystem.current.RaycastAll(_pointerData, raycastResults);
+            EventSystem.current.RaycastAll(cachedPointerData, raycastResults);
             
-            if (raycastResults.Count > 0)
+            if (0 < raycastResults.Count)
             {
                 GameObject _topHit = raycastResults[0].gameObject;
                 if (_topHit == gameObject || _topHit.transform.IsChildOf(transform))

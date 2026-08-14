@@ -55,22 +55,7 @@ public class ItemAuraEffectController : MonoBehaviour
     /// </summary>
     public float BurstDuration => burstDuration;
 
-    // 셰이더 프로퍼티 ID 캐싱
-    private static readonly int IntensityPropertyId = Shader.PropertyToID("_Intensity");
-    private static readonly int BloomMultiplierPropertyId = Shader.PropertyToID("_BloomMultiplier");
-    private static readonly int PixelateEnabledPropertyId = Shader.PropertyToID("_PixelateEnabled");
-    private static readonly int PixelResolutionPropertyId = Shader.PropertyToID("_PixelResolution");
-    private static readonly int ColorBandingStepsPropertyId = Shader.PropertyToID("_ColorBandingSteps");
-    private static readonly int BurstProgressPropertyId = Shader.PropertyToID("_BurstProgress");
-    private static readonly int RotationSpeedPropertyId = Shader.PropertyToID("_RotationSpeed");
-    private static readonly int SpeedVariationPropertyId = Shader.PropertyToID("_SpeedVariation");
-    private static readonly int RayCountPropertyId = Shader.PropertyToID("_RayCount");
-    private static readonly int AngleJitterPropertyId = Shader.PropertyToID("_AngleJitter");
-    private static readonly int BeamBlurPropertyId = Shader.PropertyToID("_BeamBlur");
-    private static readonly int BeamMinWidthPropertyId = Shader.PropertyToID("_BeamMinWidth");
-    private static readonly int BeamMaxWidthPropertyId = Shader.PropertyToID("_BeamMaxWidth");
-    private static readonly int CoreColorPropertyId = Shader.PropertyToID("_CoreColor");
-    private static readonly int BeamColorPropertyId = Shader.PropertyToID("_BeamColor");
+    // 셰이더 프로퍼티 ID 캐싱은 ItemAuraShaderHelper로 위임됨
 
     // ========================================================================
     // 1. 퍼블릭 제어 및 초기화 메서드
@@ -204,8 +189,8 @@ public class ItemAuraEffectController : MonoBehaviour
         if (null != targetRenderer)
         {
             targetRenderer.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetColor(CoreColorPropertyId, _coreColor);
-            propertyBlock.SetColor(BeamColorPropertyId, _beamColor);
+            propertyBlock.SetColor(ItemAuraShaderHelper.CoreColorPropertyId, _coreColor);
+            propertyBlock.SetColor(ItemAuraShaderHelper.BeamColorPropertyId, _beamColor);
             targetRenderer.SetPropertyBlock(propertyBlock);
         }
     }
@@ -234,20 +219,14 @@ public class ItemAuraEffectController : MonoBehaviour
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
 
-        propertyBlock.SetFloat(PixelateEnabledPropertyId, enablePixelStyle ? 1f : 0f);
-        propertyBlock.SetFloat(PixelResolutionPropertyId, pixelResolution);
-        propertyBlock.SetFloat(ColorBandingStepsPropertyId, colorBandingSteps);
-        propertyBlock.SetFloat(BloomMultiplierPropertyId, bloomIntensity);
-        propertyBlock.SetFloat(RotationSpeedPropertyId, rotationSpeed);
-        propertyBlock.SetFloat(SpeedVariationPropertyId, speedVariation);
+        ItemAuraShaderHelper.ApplyPixelSettings(propertyBlock, enablePixelStyle, pixelResolution, colorBandingSteps);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.BloomMultiplierPropertyId, bloomIntensity);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, rotationSpeed);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.SpeedVariationPropertyId, speedVariation);
 
         if (true == overrideRaySettings)
         {
-            propertyBlock.SetFloat(RayCountPropertyId, rayCount);
-            propertyBlock.SetFloat(AngleJitterPropertyId, angleJitter);
-            propertyBlock.SetFloat(BeamBlurPropertyId, beamBlur);
-            propertyBlock.SetFloat(BeamMinWidthPropertyId, minBeamWidth);
-            propertyBlock.SetFloat(BeamMaxWidthPropertyId, maxBeamWidth);
+            ItemAuraShaderHelper.ApplyRayOverrides(propertyBlock, rayCount, angleJitter, beamBlur, minBeamWidth, maxBeamWidth);
         }
 
         targetRenderer.SetPropertyBlock(propertyBlock);
@@ -259,9 +238,7 @@ public class ItemAuraEffectController : MonoBehaviour
 
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
-        propertyBlock.SetFloat(PixelateEnabledPropertyId, enablePixelStyle ? 1f : 0f);
-        propertyBlock.SetFloat(PixelResolutionPropertyId, pixelResolution);
-        propertyBlock.SetFloat(ColorBandingStepsPropertyId, colorBandingSteps);
+        ItemAuraShaderHelper.ApplyPixelSettings(propertyBlock, enablePixelStyle, pixelResolution, colorBandingSteps);
         targetRenderer.SetPropertyBlock(propertyBlock);
     }
 
@@ -271,7 +248,7 @@ public class ItemAuraEffectController : MonoBehaviour
 
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
-        propertyBlock.SetFloat(BloomMultiplierPropertyId, bloomIntensity);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.BloomMultiplierPropertyId, bloomIntensity);
         targetRenderer.SetPropertyBlock(propertyBlock);
     }
 
@@ -281,8 +258,8 @@ public class ItemAuraEffectController : MonoBehaviour
 
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
-        propertyBlock.SetFloat(RotationSpeedPropertyId, _speed);
-        propertyBlock.SetFloat(SpeedVariationPropertyId, _variation);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.RotationSpeedPropertyId, _speed);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.SpeedVariationPropertyId, _variation);
         targetRenderer.SetPropertyBlock(propertyBlock);
     }
 
@@ -292,11 +269,7 @@ public class ItemAuraEffectController : MonoBehaviour
 
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
-        propertyBlock.SetFloat(RayCountPropertyId, rayCount);
-        propertyBlock.SetFloat(AngleJitterPropertyId, angleJitter);
-        propertyBlock.SetFloat(BeamBlurPropertyId, beamBlur);
-        propertyBlock.SetFloat(BeamMinWidthPropertyId, minBeamWidth);
-        propertyBlock.SetFloat(BeamMaxWidthPropertyId, maxBeamWidth);
+        ItemAuraShaderHelper.ApplyRayOverrides(propertyBlock, rayCount, angleJitter, beamBlur, minBeamWidth, maxBeamWidth);
         targetRenderer.SetPropertyBlock(propertyBlock);
     }
 
@@ -306,7 +279,7 @@ public class ItemAuraEffectController : MonoBehaviour
 
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
-        propertyBlock.SetFloat(BurstProgressPropertyId, _progress);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.BurstProgressPropertyId, _progress);
         targetRenderer.SetPropertyBlock(propertyBlock);
     }
 
@@ -316,7 +289,7 @@ public class ItemAuraEffectController : MonoBehaviour
 
         EnsurePropertyBlock();
         targetRenderer.GetPropertyBlock(propertyBlock);
-        propertyBlock.SetFloat(IntensityPropertyId, _intensity);
+        propertyBlock.SetFloat(ItemAuraShaderHelper.IntensityPropertyId, _intensity);
         targetRenderer.SetPropertyBlock(propertyBlock);
     }
 

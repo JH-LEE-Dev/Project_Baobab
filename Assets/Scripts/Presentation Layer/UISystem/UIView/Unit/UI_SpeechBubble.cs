@@ -180,7 +180,7 @@ public class UI_SpeechBubble : MonoBehaviour
             return;
 
         playTimer += Time.deltaTime;
-        if (playTimer >= playDuration)
+        if (playDuration <= playTimer)
         {
             Hide();
             isPlaying = false;

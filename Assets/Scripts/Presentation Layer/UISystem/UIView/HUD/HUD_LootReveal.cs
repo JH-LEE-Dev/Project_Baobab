@@ -112,6 +112,16 @@ public class HUD_LootReveal : MonoBehaviour
     private bool isShowing = false;
     private Material runtimeDissolveMat;
 
+    private TweenCallback cachedOnHideFadeComplete;
+    private TweenCallback cachedOnGridRevealUpdate;
+
+    private WaitForSeconds cachedWait01f;
+    private WaitForSeconds cachedPillarDelay;
+    private WaitForSeconds cachedLootDelay;
+    private WaitForSeconds cachedTextDelay;
+    private WaitForSeconds cachedDescSlideDelay;
+    private WaitForSeconds cachedTextSlideEndDelay;
+
     // ─── 초기화 ───────────────────────────────────────────────────────────────
 
     private void Awake()
@@ -126,6 +136,16 @@ public class HUD_LootReveal : MonoBehaviour
         {
             lootInitialY = lootItemRect.anchoredPosition.y;
         }
+
+        cachedOnHideFadeComplete = OnHideFadeComplete;
+        cachedOnGridRevealUpdate = OnGridRevealUpdate;
+
+        cachedWait01f = new WaitForSeconds(0.1f);
+        cachedPillarDelay = new WaitForSeconds(pillarStartDelay);
+        cachedLootDelay = new WaitForSeconds(lootStartDelay);
+        cachedTextDelay = new WaitForSeconds(textStartDelay);
+        cachedDescSlideDelay = new WaitForSeconds(descSlideDelay);
+        cachedTextSlideEndDelay = new WaitForSeconds(Mathf.Max(nameSlideDuration, descSlideDuration + descSlideDelay));
     }
 
     private void InitParticles()
@@ -187,18 +207,21 @@ public class HUD_LootReveal : MonoBehaviour
 
     public void Show(LootType _lootType, LocalizationManager _locManager)
     {
-        if (true == isShowing)
-            return;
-
+        // 광클 락 해제: 완전히 켜져있는 상태라도 닫히는 중일 수 있으므로 무조건 초기화하고 다시 연출합니다.
         isShowing = true;
         gameObject.SetActive(true);
 
+        if (null != revealCoroutine)
+        {
+            StopCoroutine(revealCoroutine);
+            revealCoroutine = null;
+        }
+
         SetLocalizedTexts(_lootType, _locManager);
         SetLootSprite(_lootType, lootDataBase);
+        
+        // 렌더 및 트윈 완벽 초기화
         ResetState();
-
-        if (null != revealCoroutine)
-            StopCoroutine(revealCoroutine);
 
         revealCoroutine = StartCoroutine(PlayRevealSequence());
     }
@@ -217,14 +240,20 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();
-            rootCanvasGroup.DOFade(0f, 0.25f).OnComplete(() =>
-            {
-                isShowing = false;
-                gameObject.SetActive(false);
-                OnHideCompleted?.Invoke();
-            });
+            rootCanvasGroup.DOFade(0f, 0.25f).OnComplete(cachedOnHideFadeComplete);
         }
         else
+        {
+            isShowing = false;
+            gameObject.SetActive(false);
+            OnHideCompleted?.Invoke();
+        }
+    }
+
+    private void OnHideFadeComplete()
+    {
+        // 페이드아웃 중 다시 Show가 불려 알파값이 오르는 상황이면 끄지 않음
+        if (0.05f >= rootCanvasGroup.alpha) 
         {
             isShowing = false;
             gameObject.SetActive(false);
@@ -235,10 +264,14 @@ public class HUD_LootReveal : MonoBehaviour
     private void ResetState()
     {
         if (null != rootCanvasGroup)
+        {
+            rootCanvasGroup.DOKill();
             rootCanvasGroup.alpha = 0f;
+        }
 
         if (null != pillarRect)
         {
+            pillarRect.DOKill();
             pillarRect.anchoredPosition = new Vector2(pillarRect.anchoredPosition.x, pillarStartY);
             
             if (null != particlesRoot)
@@ -250,7 +283,7 @@ public class HUD_LootReveal : MonoBehaviour
 
         if (null != lootItemRect)
         {
-            DOTween.Kill("LootFloat");
+            lootItemRect.DOKill(); // 부유 및 스케일 모션 강제 정지
             lootItemRect.localScale = Vector3.zero;
             lootItemRect.anchoredPosition = new Vector2(lootItemRect.anchoredPosition.x, lootInitialY);
             lootItemRect.gameObject.SetActive(false);
@@ -258,12 +291,14 @@ public class HUD_LootReveal : MonoBehaviour
 
         if (null != lootNameText)
         {
+            lootNameText.rectTransform.DOKill();
             lootNameText.rectTransform.anchoredPosition =
                 new Vector2(nameSlideFromX, lootNameText.rectTransform.anchoredPosition.y);
             lootNameText.ForceMeshUpdate(true);
         }
         if (null != lootDescText)
         {
+            lootDescText.rectTransform.DOKill();
             lootDescText.rectTransform.anchoredPosition =
                 new Vector2(descSlideFromX, lootDescText.rectTransform.anchoredPosition.y);
             lootDescText.ForceMeshUpdate(true);
@@ -277,11 +312,14 @@ public class HUD_LootReveal : MonoBehaviour
                 bgDissolveImage.material = runtimeDissolveMat;
             }
 
+            if (null != runtimeDissolveMat)
+                runtimeDissolveMat.DOKill();
+
             runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
             runtimeDissolveMat.SetFloat("_GridSize", gridSize);
             
             float _aspectRatio = 1f;
-            if (bgDissolveImage.rectTransform.rect.height > 0)
+            if (0 < bgDissolveImage.rectTransform.rect.height)
             {
                 _aspectRatio = bgDissolveImage.rectTransform.rect.width / bgDissolveImage.rectTransform.rect.height;
             }
@@ -300,20 +338,20 @@ public class HUD_LootReveal : MonoBehaviour
             rootCanvasGroup.DOFade(1f, 0.2f);
         }
 
-        yield return new WaitForSeconds(0.1f);
+        yield return cachedWait01f;
 
         yield return StartCoroutine(PlayGridReveal());
 
-        yield return new WaitForSeconds(pillarStartDelay);
+        yield return cachedPillarDelay;
 
         yield return StartCoroutine(PlayPillarReveal());
 
-        yield return new WaitForSeconds(lootStartDelay);
+        yield return cachedLootDelay;
 
         PlayVFX();
         yield return StartCoroutine(PlayLootPop());
 
-        yield return new WaitForSeconds(textStartDelay);
+        yield return cachedTextDelay;
 
         yield return StartCoroutine(PlayTextSlide());
 
@@ -331,12 +369,14 @@ public class HUD_LootReveal : MonoBehaviour
         yield return runtimeDissolveMat.DOFloat(1f, "_DissolveAmount", bgRevealDuration)
             .SetEase(bgRevealEase)
             .SetUpdate(true) 
-            .OnUpdate(() => 
-            {
-                bgDissolveImage.SetMaterialDirty();
-                bgDissolveImage.SetVerticesDirty();
-            })
+            .OnUpdate(cachedOnGridRevealUpdate)
             .WaitForCompletion();
+    }
+
+    private void OnGridRevealUpdate()
+    {
+        bgDissolveImage.SetMaterialDirty();
+        bgDissolveImage.SetVerticesDirty();
     }
 
     private IEnumerator PlayPillarReveal()
@@ -399,7 +439,7 @@ public class HUD_LootReveal : MonoBehaviour
             _nameRT.DOAnchorPosX(0f, nameSlideDuration).SetEase(nameSlideEase);
         }
 
-        yield return new WaitForSeconds(descSlideDelay);
+        yield return cachedDescSlideDelay;
 
         // 설명 텍스트 슬라이드
         if (null != lootDescText)
@@ -409,7 +449,7 @@ public class HUD_LootReveal : MonoBehaviour
             _descRT.DOAnchorPosX(0f, descSlideDuration).SetEase(descSlideEase);
         }
 
-        yield return new WaitForSeconds(Mathf.Max(nameSlideDuration, descSlideDuration + descSlideDelay));
+        yield return cachedTextSlideEndDelay;
     }
 
     // ─── 로컬라이징 ───────────────────────────────────────────────────────────
@@ -425,13 +465,13 @@ public class HUD_LootReveal : MonoBehaviour
         if (null != lootNameText)
         {
             lootNameText.text = _locManager.GetText(_nameKey);
-            LayoutRebuilder.ForceRebuildLayoutImmediate(lootNameText.rectTransform);
+            lootNameText.ForceMeshUpdate(true);
         }
 
         if (null != lootDescText)
         {
             lootDescText.text = _locManager.GetText(_descKey);
-            LayoutRebuilder.ForceRebuildLayoutImmediate(lootDescText.rectTransform);
+            lootDescText.ForceMeshUpdate(true);
         }
     }
 
@@ -491,7 +531,7 @@ public class HUD_LootReveal : MonoBehaviour
                 _mat.SetFloat("_GridSize", gridSize);
                 
                 float _aspectRatio = 1f;
-                if (bgDissolveImage.rectTransform.rect.height > 0)
+                if (0 < bgDissolveImage.rectTransform.rect.height)
                 {
                     _aspectRatio = bgDissolveImage.rectTransform.rect.width / bgDissolveImage.rectTransform.rect.height;
                 }

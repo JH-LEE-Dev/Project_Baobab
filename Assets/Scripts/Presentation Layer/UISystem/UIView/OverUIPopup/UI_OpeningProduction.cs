@@ -71,6 +71,9 @@ public class UI_OpeningProduction : MonoBehaviour
     [SerializeField] private List<OpeningElementInfo> introSceneElements = new List<OpeningElementInfo>();
 
     private Sequence activeSequence;
+    
+    private TweenCallback[] cachedActivateCallbacks;
+    private TweenCallback[] cachedDeactivateCallbacks;
 
     public void Initialize(LocalizationManager _localizationManager = null)
     {
@@ -86,6 +89,7 @@ public class UI_OpeningProduction : MonoBehaviour
         }
 
         CacheComponents();
+        CacheCallbacks();
         ApplyLocalization();
         SetAllActive(false);
     }
@@ -94,6 +98,7 @@ public class UI_OpeningProduction : MonoBehaviour
     {
         KillActiveSequence();
         CacheComponents();
+        CacheCallbacks();
         SetAllActive(false);
         ApplyLocalization();
 
@@ -104,13 +109,13 @@ public class UI_OpeningProduction : MonoBehaviour
 
         for (int order = 0; order <= maxOrder; order++)
         {
-            if (!HasElementsInOrder(order))
+            if (false == HasElementsInOrder(order))
             {
                 continue;
             }
 
             float stepDuration = GetStepDuration(order);
-            if (stepDuration <= 0f)
+            if (0f >= stepDuration)
             {
                 continue;
             }
@@ -120,94 +125,103 @@ public class UI_OpeningProduction : MonoBehaviour
             for (int i = 0; i < introSceneElements.Count; i++)
             {
                 OpeningElementInfo elem = introSceneElements[i];
-                if (elem.orderIndex != order || null == elem.targetRect)
+                if (order != elem.orderIndex || null == elem.targetRect)
                 {
                     continue;
                 }
 
-                int elemIndex = i;
-                float startTime = Mathf.Max(0f, elem.delay);
-                float activeDuration = GetElementActiveDuration(elem);
-                float endTime = startTime + activeDuration;
-
-                // 1. 딜레이가 끝나는 startTime 시점에 오브젝트 활성화 및 초기값 적용
-                stepSequence.InsertCallback(startTime, () => ActivateElement(elemIndex));
-
-                // 2-1. 스케일 모션 트윈 등록
-                if (elem.motionType == OpeningMotionType.Scale)
-                {
-                    float mDuration = elem.motionDuration > 0f ? elem.motionDuration : activeDuration;
-                    Vector3 targetSc = GetSafeScale(elem.targetScale);
-                    Ease ease = elem.scaleEase == Ease.Unset ? Ease.OutQuad : elem.scaleEase;
-
-                    Tween scaleTween = elem.targetRect.DOScale(targetSc, mDuration).SetEase(ease);
-                    stepSequence.Insert(startTime, scaleTween);
-                }
-
-                // 2-2. 알파 페이드 연출 등록
-                if (elem.fadeType != OpeningFadeType.None && null != elem.canvasGroup)
-                {
-                    Ease ease = elem.fadeEase == Ease.Unset ? Ease.Linear : elem.fadeEase;
-
-                    switch (elem.fadeType)
-                    {
-                        case OpeningFadeType.FadeIn:
-                        {
-                            float inTime = elem.fadeInDuration > 0f ? elem.fadeInDuration : activeDuration;
-                            Tween fadeTween = elem.canvasGroup.DOFade(1f, inTime).SetEase(ease);
-                            stepSequence.Insert(startTime, fadeTween);
-                            break;
-                        }
-
-                        case OpeningFadeType.FadeOut:
-                        {
-                            float outTime = elem.fadeOutDuration > 0f ? elem.fadeOutDuration : activeDuration;
-                            float fadeOutStartTime = Mathf.Max(startTime, endTime - outTime);
-                            Tween fadeTween = elem.canvasGroup.DOFade(0f, outTime).SetEase(ease);
-                            stepSequence.Insert(fadeOutStartTime, fadeTween);
-                            break;
-                        }
-
-                        case OpeningFadeType.FadeInOut:
-                        {
-                            float inTime = elem.fadeInDuration > 0f ? elem.fadeInDuration : 0.5f;
-                            float outTime = elem.fadeOutDuration > 0f ? elem.fadeOutDuration : 0.5f;
-                            float holdTime = Mathf.Max(0f, activeDuration - inTime - outTime);
-
-                            Tween fadeInTween = elem.canvasGroup.DOFade(1f, inTime).SetEase(ease);
-                            stepSequence.Insert(startTime, fadeInTween);
-
-                            float fadeOutStartTime = startTime + inTime + holdTime;
-                            Tween fadeOutTween = elem.canvasGroup.DOFade(0f, outTime).SetEase(ease);
-                            stepSequence.Insert(fadeOutStartTime, fadeOutTween);
-                            break;
-                        }
-
-                        case OpeningFadeType.Custom:
-                        {
-                            Tween customFadeTween = elem.canvasGroup.DOFade(elem.targetAlpha, activeDuration).SetEase(ease);
-                            stepSequence.Insert(startTime, customFadeTween);
-                            break;
-                        }
-                    }
-                }
-
-                // 3. 해당 요소의 연출 및 유지 시간이 모두 끝나는 endTime 시점에 비활성화
-                stepSequence.InsertCallback(endTime, () => DeactivateElement(elemIndex));
+                AppendElementToSequence(stepSequence, elem, i);
             }
 
-            // 4. stepSequence의 실제 길이가 stepDuration에 미달할 때만 차이만큼 보정하여 순차 실행 확보
             float currentSeqDuration = stepSequence.Duration(false);
-            if (stepDuration > currentSeqDuration)
+            if (currentSeqDuration < stepDuration)
             {
                 stepSequence.AppendInterval(stepDuration - currentSeqDuration);
             }
 
-            // 5. 메인 시퀀스에 순차적으로 Append
             activeSequence.Append(stepSequence);
         }
 
         activeSequence.OnComplete(HandleSequenceComplete);
+    }
+
+    private void AppendElementToSequence(Sequence _stepSequence, in OpeningElementInfo _elem, int _elemIndex)
+    {
+        float _startTime = Mathf.Max(0f, _elem.delay);
+        float _activeDuration = GetElementActiveDuration(_elem);
+        float _endTime = _startTime + _activeDuration;
+
+        if (null != cachedActivateCallbacks && _elemIndex < cachedActivateCallbacks.Length)
+        {
+            _stepSequence.InsertCallback(_startTime, cachedActivateCallbacks[_elemIndex]);
+        }
+
+        if (OpeningMotionType.Scale == _elem.motionType)
+        {
+            float _mDuration = 0f < _elem.motionDuration ? _elem.motionDuration : _activeDuration;
+            Vector3 _targetSc = GetSafeScale(_elem.targetScale);
+            Ease _ease = Ease.Unset == _elem.scaleEase ? Ease.OutQuad : _elem.scaleEase;
+
+            Tween _scaleTween = _elem.targetRect.DOScale(_targetSc, _mDuration).SetEase(_ease);
+            _stepSequence.Insert(_startTime, _scaleTween);
+        }
+
+        if (OpeningFadeType.None != _elem.fadeType && null != _elem.canvasGroup)
+        {
+            AppendFadeTween(_stepSequence, _elem, _startTime, _activeDuration, _endTime);
+        }
+
+        if (null != cachedDeactivateCallbacks && _elemIndex < cachedDeactivateCallbacks.Length)
+        {
+            _stepSequence.InsertCallback(_endTime, cachedDeactivateCallbacks[_elemIndex]);
+        }
+    }
+
+    private void AppendFadeTween(Sequence _stepSequence, in OpeningElementInfo _elem, float _startTime, float _activeDuration, float _endTime)
+    {
+        Ease _ease = Ease.Unset == _elem.fadeEase ? Ease.Linear : _elem.fadeEase;
+
+        switch (_elem.fadeType)
+        {
+            case OpeningFadeType.FadeIn:
+            {
+                float _inTime = 0f < _elem.fadeInDuration ? _elem.fadeInDuration : _activeDuration;
+                Tween _fadeTween = _elem.canvasGroup.DOFade(1f, _inTime).SetEase(_ease);
+                _stepSequence.Insert(_startTime, _fadeTween);
+                break;
+            }
+
+            case OpeningFadeType.FadeOut:
+            {
+                float _outTime = 0f < _elem.fadeOutDuration ? _elem.fadeOutDuration : _activeDuration;
+                float _fadeOutStartTime = Mathf.Max(_startTime, _endTime - _outTime);
+                Tween _fadeTween = _elem.canvasGroup.DOFade(0f, _outTime).SetEase(_ease);
+                _stepSequence.Insert(_fadeOutStartTime, _fadeTween);
+                break;
+            }
+
+            case OpeningFadeType.FadeInOut:
+            {
+                float _inTime = 0f < _elem.fadeInDuration ? _elem.fadeInDuration : 0.5f;
+                float _outTime = 0f < _elem.fadeOutDuration ? _elem.fadeOutDuration : 0.5f;
+                float _holdTime = Mathf.Max(0f, _activeDuration - _inTime - _outTime);
+
+                Tween _fadeInTween = _elem.canvasGroup.DOFade(1f, _inTime).SetEase(_ease);
+                _stepSequence.Insert(_startTime, _fadeInTween);
+
+                float _fadeOutStartTime = _startTime + _inTime + _holdTime;
+                Tween _fadeOutTween = _elem.canvasGroup.DOFade(0f, _outTime).SetEase(_ease);
+                _stepSequence.Insert(_fadeOutStartTime, _fadeOutTween);
+                break;
+            }
+
+            case OpeningFadeType.Custom:
+            {
+                Tween _customFadeTween = _elem.canvasGroup.DOFade(_elem.targetAlpha, _activeDuration).SetEase(_ease);
+                _stepSequence.Insert(_startTime, _customFadeTween);
+                break;
+            }
+        }
     }
 
     public void StopOpeningProduction()
@@ -224,7 +238,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
     public float CalculateIntroSceneDuration()
     {
-        if (null == introSceneElements || introSceneElements.Count == 0)
+        if (null == introSceneElements || 0 == introSceneElements.Count)
         {
             return 0f;
         }
@@ -244,42 +258,42 @@ public class UI_OpeningProduction : MonoBehaviour
     {
         float activeDuration = _elem.duration;
 
-        if (_elem.motionType == OpeningMotionType.Scale)
+        if (OpeningMotionType.Scale == _elem.motionType)
         {
-            float mDuration = _elem.motionDuration > 0f ? _elem.motionDuration : _elem.duration;
-            if (mDuration > activeDuration)
+            float mDuration = 0f < _elem.motionDuration ? _elem.motionDuration : _elem.duration;
+            if (activeDuration < mDuration)
             {
                 activeDuration = mDuration;
             }
         }
 
-        if (_elem.fadeType == OpeningFadeType.FadeInOut)
+        if (OpeningFadeType.FadeInOut == _elem.fadeType)
         {
-            float inTime = _elem.fadeInDuration > 0f ? _elem.fadeInDuration : 0.5f;
-            float outTime = _elem.fadeOutDuration > 0f ? _elem.fadeOutDuration : 0.5f;
-            if (inTime + outTime > activeDuration)
+            float inTime = 0f < _elem.fadeInDuration ? _elem.fadeInDuration : 0.5f;
+            float outTime = 0f < _elem.fadeOutDuration ? _elem.fadeOutDuration : 0.5f;
+            if (activeDuration < inTime + outTime)
             {
                 activeDuration = inTime + outTime;
             }
         }
-        else if (_elem.fadeType == OpeningFadeType.FadeIn)
+        else if (OpeningFadeType.FadeIn == _elem.fadeType)
         {
-            float inTime = _elem.fadeInDuration > 0f ? _elem.fadeInDuration : _elem.duration;
-            if (inTime > activeDuration)
+            float inTime = 0f < _elem.fadeInDuration ? _elem.fadeInDuration : _elem.duration;
+            if (activeDuration < inTime)
             {
                 activeDuration = inTime;
             }
         }
-        else if (_elem.fadeType == OpeningFadeType.FadeOut)
+        else if (OpeningFadeType.FadeOut == _elem.fadeType)
         {
-            float outTime = _elem.fadeOutDuration > 0f ? _elem.fadeOutDuration : _elem.duration;
-            if (outTime > activeDuration)
+            float outTime = 0f < _elem.fadeOutDuration ? _elem.fadeOutDuration : _elem.duration;
+            if (activeDuration < outTime)
             {
                 activeDuration = outTime;
             }
         }
 
-        return activeDuration > 0f ? activeDuration : 0.1f;
+        return 0f < activeDuration ? activeDuration : 0.1f;
     }
 
     private float GetStepDuration(int _orderIndex)
@@ -293,10 +307,10 @@ public class UI_OpeningProduction : MonoBehaviour
         for (int i = 0; i < introSceneElements.Count; i++)
         {
             OpeningElementInfo elem = introSceneElements[i];
-            if (elem.orderIndex == _orderIndex && null != elem.targetRect)
+            if (_orderIndex == elem.orderIndex && null != elem.targetRect)
             {
                 float total = Mathf.Max(0f, elem.delay) + GetElementActiveDuration(elem);
-                if (total > maxStepDuration)
+                if (maxStepDuration < total)
                 {
                     maxStepDuration = total;
                 }
@@ -307,7 +321,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
     private static Vector3 GetSafeScale(Vector3 _scale)
     {
-        if (Mathf.Approximately(_scale.z, 0f))
+        if (Mathf.Approximately(0f, _scale.z))
         {
             _scale.z = 1f;
         }
@@ -316,7 +330,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
     private void ActivateElement(int _index)
     {
-        if (_index < 0 || _index >= introSceneElements.Count)
+        if (0 > _index || introSceneElements.Count <= _index)
         {
             return;
         }
@@ -329,7 +343,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
         elem.targetRect.gameObject.SetActive(true);
 
-        if (elem.motionType == OpeningMotionType.Scale)
+        if (OpeningMotionType.Scale == elem.motionType)
         {
             elem.targetRect.localScale = GetSafeScale(elem.startScale);
         }
@@ -339,7 +353,7 @@ public class UI_OpeningProduction : MonoBehaviour
             elem.canvasGroup.alpha = GetInitialAlpha(elem);
         }
 
-        if (elem.playTMPRevealBounce && null != elem.targetAnimator)
+        if (true == elem.playTMPRevealBounce && null != elem.targetAnimator)
         {
             elem.targetAnimator.PlayRevealBounce();
         }
@@ -347,7 +361,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
     private void DeactivateElement(int _index)
     {
-        if (_index < 0 || _index >= introSceneElements.Count)
+        if (0 > _index || introSceneElements.Count <= _index)
         {
             return;
         }
@@ -363,7 +377,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
     public void ApplyLocalization()
     {
-        if (null == localizationManager || introSceneElements == null)
+        if (null == localizationManager || null == introSceneElements)
         {
             return;
         }
@@ -371,13 +385,13 @@ public class UI_OpeningProduction : MonoBehaviour
         for (int i = 0; i < introSceneElements.Count; i++)
         {
             OpeningElementInfo element = introSceneElements[i];
-            if (element.localizationEntryId <= 0 || null == element.targetText)
+            if (0 >= element.localizationEntryId || null == element.targetText)
             {
                 continue;
             }
 
             string localizedText = localizationManager.GetText(localizationJsonId, element.localizationEntryId);
-            if (!string.IsNullOrEmpty(localizedText))
+            if (false == string.IsNullOrEmpty(localizedText))
             {
                 element.targetText.text = localizedText;
             }
@@ -402,7 +416,7 @@ public class UI_OpeningProduction : MonoBehaviour
             if (null == element.canvasGroup)
             {
                 element.canvasGroup = element.targetRect.GetComponent<CanvasGroup>();
-                if (null == element.canvasGroup && element.fadeType != OpeningFadeType.None)
+                if (null == element.canvasGroup && OpeningFadeType.None != element.fadeType)
                 {
                     element.canvasGroup = element.targetRect.gameObject.AddComponent<CanvasGroup>();
                 }
@@ -419,6 +433,24 @@ public class UI_OpeningProduction : MonoBehaviour
             }
 
             introSceneElements[i] = element;
+        }
+    }
+
+    private void CacheCallbacks()
+    {
+        if (null == introSceneElements) return;
+
+        if (null == cachedActivateCallbacks || cachedActivateCallbacks.Length != introSceneElements.Count)
+        {
+            cachedActivateCallbacks = new TweenCallback[introSceneElements.Count];
+            cachedDeactivateCallbacks = new TweenCallback[introSceneElements.Count];
+
+            for (int i = 0; i < introSceneElements.Count; i++)
+            {
+                int index = i;
+                cachedActivateCallbacks[i] = () => ActivateElement(index);
+                cachedDeactivateCallbacks[i] = () => DeactivateElement(index);
+            }
         }
     }
 
@@ -439,7 +471,7 @@ public class UI_OpeningProduction : MonoBehaviour
                 {
                     element.canvasGroup.alpha = GetInitialAlpha(element);
                 }
-                if (element.motionType == OpeningMotionType.Scale)
+                if (OpeningMotionType.Scale == element.motionType)
                 {
                     element.targetRect.localScale = GetSafeScale(element.startScale);
                 }
@@ -461,7 +493,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
     private int GetMaxOrderIndex()
     {
-        if (null == introSceneElements || introSceneElements.Count == 0)
+        if (null == introSceneElements || 0 == introSceneElements.Count)
         {
             return 0;
         }
@@ -469,7 +501,7 @@ public class UI_OpeningProduction : MonoBehaviour
         int maxOrder = 0;
         for (int i = 0; i < introSceneElements.Count; i++)
         {
-            if (introSceneElements[i].orderIndex > maxOrder)
+            if (maxOrder < introSceneElements[i].orderIndex)
             {
                 maxOrder = introSceneElements[i].orderIndex;
             }
@@ -486,7 +518,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
         for (int i = 0; i < introSceneElements.Count; i++)
         {
-            if (introSceneElements[i].orderIndex == _orderIndex)
+            if (_orderIndex == introSceneElements[i].orderIndex)
             {
                 return true;
             }
@@ -507,13 +539,13 @@ public class UI_OpeningProduction : MonoBehaviour
 
     private void KillActiveSequence()
     {
-        if (activeSequence != null && activeSequence.IsActive())
+        if (null != activeSequence && activeSequence.IsActive())
         {
             activeSequence.Kill();
             activeSequence = null;
         }
 
-        if (introSceneElements != null)
+        if (null != introSceneElements)
         {
             for (int i = 0; i < introSceneElements.Count; i++)
             {
@@ -560,7 +592,7 @@ public class UI_OpeningProductionEditor : Editor
         UI_OpeningProduction opening = (UI_OpeningProduction)target;
 
         // 1. Localization Settings
-        if (localizationJsonIdProp != null)
+        if (null != localizationJsonIdProp)
         {
             EditorGUILayout.Space(2);
             EditorGUILayout.PropertyField(localizationJsonIdProp, new GUIContent("🌐 Localization Json ID"));
@@ -577,7 +609,7 @@ public class UI_OpeningProductionEditor : Editor
         EditorGUILayout.Space(8);
 
         // 3. Elements List
-        if (introSceneElementsProp != null)
+        if (null != introSceneElementsProp)
         {
             EditorGUILayout.BeginVertical(GUI.skin.box);
             EditorGUILayout.BeginHorizontal();
@@ -618,12 +650,12 @@ public class UI_OpeningProductionEditor : Editor
     private void DrawElementCard(SerializedProperty _elementProp, int _index)
     {
         SerializedProperty targetRect = _elementProp.FindPropertyRelative("targetRect");
-        string elemName = (targetRect != null && targetRect.objectReferenceValue != null)
+        string elemName = (null != targetRect && null != targetRect.objectReferenceValue)
             ? targetRect.objectReferenceValue.name
             : "Empty Element";
 
         SerializedProperty orderProp = _elementProp.FindPropertyRelative("orderIndex");
-        int orderVal = orderProp != null ? orderProp.intValue : 0;
+        int orderVal = null != orderProp ? orderProp.intValue : 0;
 
         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
         EditorGUILayout.BeginHorizontal();
@@ -669,7 +701,7 @@ public class UI_OpeningProductionEditor : Editor
             SerializedProperty motionType = _elementProp.FindPropertyRelative("motionType");
             EditorGUILayout.PropertyField(motionType, new GUIContent("Motion Type"));
 
-            if (motionType != null && motionType.enumValueIndex == (int)OpeningMotionType.Scale)
+            if (null != motionType && (int)OpeningMotionType.Scale == motionType.enumValueIndex)
             {
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_elementProp.FindPropertyRelative("motionDuration"), new GUIContent("Motion Duration"));
@@ -685,10 +717,10 @@ public class UI_OpeningProductionEditor : Editor
             SerializedProperty fadeType = _elementProp.FindPropertyRelative("fadeType");
             EditorGUILayout.PropertyField(fadeType, new GUIContent("Fade Type"));
 
-            if (fadeType != null)
+            if (null != fadeType)
             {
                 OpeningFadeType fType = (OpeningFadeType)fadeType.enumValueIndex;
-                if (fType != OpeningFadeType.None)
+                if (OpeningFadeType.None != fType)
                 {
                     EditorGUI.indentLevel++;
                     switch (fType)

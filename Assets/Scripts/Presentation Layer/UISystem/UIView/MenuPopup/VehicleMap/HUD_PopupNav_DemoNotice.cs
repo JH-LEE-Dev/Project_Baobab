@@ -211,7 +211,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
         if (null != demoContentCanvasGroup)
         {
             demoContentCanvasGroup.alpha = _alpha;
-            demoContentCanvasGroup.blocksRaycasts = _alpha >= 0.99f;
+            demoContentCanvasGroup.blocksRaycasts = 0.99f <= _alpha;
         }
     }
 

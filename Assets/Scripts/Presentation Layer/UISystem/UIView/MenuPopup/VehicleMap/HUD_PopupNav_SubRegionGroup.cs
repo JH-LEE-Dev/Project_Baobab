@@ -44,6 +44,8 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     [Header("SubRegion Button Setup & Animation")]
     [Tooltip("기본 프리팹 (초기화 후 비활성화됨)")]
     [SerializeField] private HUD_PopupNav_SubRegionBtn subRegionBtnPrefab;
+    [Tooltip("사전 생성할 서브지역 버튼 개수")]
+    [SerializeField] private int maxPrewarmCount = 8;
     [Tooltip("각 서브지역 버튼 등장(스케일 업) 연출 시간")]
     [SerializeField] private float appearAnimDuration = 0.15f;
     [Tooltip("각 서브지역 버튼 등장(스케일 업) 연출 이즈(Ease)")]
@@ -61,7 +63,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     private readonly List<HUD_PopupNav_SubRegionBtn> activeSubRegionButtons = new List<HUD_PopupNav_SubRegionBtn>(8);
 
     private WaitForSeconds cachedSequenceWait;
-    private Coroutine sequenceCoroutine;
     private Sequence currentAppearSequence;
     
     private MapType pendingMapType = MapType.None;
@@ -75,6 +76,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
     
     private int completedDisappearCount;
     private Action cachedOnComplete;
+    private Action pendingDisappearComplete;
 
     private Action cachedOnDisappearSequenceCompleteForToggle;
     private TweenCallback cachedOnAppearSequenceComplete;
@@ -102,6 +104,14 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
                     }
                 }
             }
+
+            int _needCount = maxPrewarmCount - subRegionButtons.Count;
+            for (int i = 0; _needCount > i; i++)
+            {
+                HUD_PopupNav_SubRegionBtn _newBtn = Instantiate(subRegionBtnPrefab, container);
+                _newBtn.gameObject.SetActive(false);
+                subRegionButtons.Add(_newBtn);
+            }
         }
         
         cachedSequenceWait = new WaitForSeconds(appearSequenceDelay);
@@ -122,7 +132,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             pendingRegionTransform = _regionBtnTransform;
             pendingOnComplete = _onComplete;
             
-            if (null == sequenceCoroutine)
+            if (null == pendingDisappearComplete)
             {
                 PlayDisappearSequence(cachedOnDisappearSequenceCompleteForToggle);
             }
@@ -239,7 +249,9 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             return null;
         }
 
+        Debug.LogWarning($"[HUD_PopupNav_SubRegionGroup] maxPrewarmCount({maxPrewarmCount}) 부족으로 런타임 동적 생성됨.");
         HUD_PopupNav_SubRegionBtn _newBtn = Instantiate(subRegionBtnPrefab, container);
+        _newBtn.gameObject.SetActive(false);
         subRegionButtons.Add(_newBtn);
         return _newBtn;
     }
@@ -252,14 +264,14 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         }
 
         int _count = activeSubRegionButtons.Count;
-        float _containerWidth = container.rect.width;
-        
-        float _usableWidth = _containerWidth - paddingLeft - paddingRight;
+        float _usableWidth = container.rect.width - paddingLeft - paddingRight;
 
-        if (cachedSafeDistances.Length < _count)
-        {
-            cachedSafeDistances = new float[_count * 2];
-        }
+        CalculateTotalSpaceAndGaps(_count, _usableWidth);
+        PositionButtonsWithArchAndScatter(_count);
+    }
+
+    private void CalculateTotalSpaceAndGaps(int _count, float _usableWidth)
+    {
         float _totalRequiredSpace = 0f;
 
         for (int i = 0; i < _count; i++)
@@ -283,10 +295,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             _availableRandomSpace = 0f;
         }
 
-        if (cachedGaps.Length < _count + 1)
-        {
-            cachedGaps = new float[(_count + 1) * 2];
-        }
         float _sumGaps = 0f;
         for (int i = 0; i < _count + 1; i++)
         {
@@ -298,7 +306,12 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
         {
             cachedGaps[i] = (cachedGaps[i] / _sumGaps) * _availableRandomSpace;
         }
+    }
 
+    private void PositionButtonsWithArchAndScatter(int _count)
+    {
+        float _containerWidth = container.rect.width;
+        float _containerHeight = container.rect.height;
         float _currentLocalX = -(_containerWidth * container.pivot.x) + paddingLeft;
         
         bool _isUpDownUp = 0.5f < UnityEngine.Random.value;
@@ -315,11 +328,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
 
             _currentLocalX += _mySafeDistance;
 
-            float t = 0f;
-            if (1 < _count)
-            {
-                t = (i / (float)(_count - 1)) * 2f - 1f;
-            }
+            float t = (1 < _count) ? (i / (float)(_count - 1)) * 2f - 1f : 0f;
             float _archOffset = archHeightY * (1f - (t * t));
             
             float _randomOffsetY = 0f;
@@ -336,7 +345,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             
             float _targetY = baseOffsetY + _archOffset + _randomOffsetY;
 
-            float _containerHeight = container.rect.height;
             float _maxY = (_containerHeight * (1f - container.pivot.y)) - paddingTop;
             float _minY = -(_containerHeight * container.pivot.y) + paddingBottom;
             
@@ -358,43 +366,34 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             currentAppearSequence = null;
         }
 
-        if (null != sequenceCoroutine)
-        {
-            StopCoroutine(sequenceCoroutine);
-        }
-        sequenceCoroutine = StartCoroutine(CoPlayDisappearSequence(_onComplete));
-    }
-
-    private System.Collections.IEnumerator CoPlayDisappearSequence(Action _onComplete)
-    {
         completedDisappearCount = 0;
         int _totalCount = activeSubRegionButtons.Count;
 
         if (0 == _totalCount)
         {
             _onComplete?.Invoke();
-            yield break;
+            return;
         }
+
+        pendingDisappearComplete = _onComplete;
 
         for (int i = _totalCount - 1; 0 <= i; i--)
         {
-            activeSubRegionButtons[i].PlayDisappearMotion(cachedOnDisappearMotionComplete); // 람다식 제거됨
+            activeSubRegionButtons[i].PlayDisappearMotion(cachedOnDisappearMotionComplete);
         }
-
-        float _timeout = 2f; 
-        while (completedDisappearCount < _totalCount && 0f < _timeout)
-        {
-            _timeout -= Time.deltaTime;
-            yield return null;
-        }
-
-        sequenceCoroutine = null;
-        _onComplete?.Invoke();
     }
 
     private void OnDisappearMotionComplete()
     {
         completedDisappearCount++;
+        if (completedDisappearCount >= activeSubRegionButtons.Count)
+        {
+            if (null != pendingDisappearComplete)
+            {
+                pendingDisappearComplete.Invoke();
+                pendingDisappearComplete = null;
+            }
+        }
     }
 
     public Sequence PlayAppearSequence()
@@ -511,11 +510,7 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             currentAppearSequence = null;
         }
 
-        if (null != sequenceCoroutine)
-        {
-            StopCoroutine(sequenceCoroutine);
-            sequenceCoroutine = null;
-        }
+        pendingDisappearComplete = null;
 
         for (int i = 0; i < activeSubRegionButtons.Count; i++)
         {
@@ -548,11 +543,6 @@ public class HUD_PopupNav_SubRegionGroup : MonoBehaviour
             currentAppearSequence = null;
         }
         
-        // 트윈 또는 시퀀스 상태가 안전하게 정리되도록 보장
-        if (null != sequenceCoroutine)
-        {
-            StopCoroutine(sequenceCoroutine);
-            sequenceCoroutine = null;
-        }
+        pendingDisappearComplete = null;
     }
 }

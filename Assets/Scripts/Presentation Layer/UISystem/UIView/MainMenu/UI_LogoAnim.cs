@@ -32,7 +32,7 @@ public class UI_LogoAnim : MonoBehaviour
         if (null == onRevealCompleteCallback) onRevealCompleteCallback = OnRevealComplete;
         if (null == onFadeOutCompleteCallback) onFadeOutCompleteCallback = OnFadeOutComplete;
 
-        if (null != logoTransform && !isInitialPositionSet)
+        if (null != logoTransform && false == isInitialPositionSet)
         {
             initialPosition = logoTransform.anchoredPosition;
             isInitialPositionSet = true;
@@ -62,7 +62,7 @@ public class UI_LogoAnim : MonoBehaviour
         if (null != logoTransform)
         {
             logoTransform.DOKill();
-            if (isInitialPositionSet)
+            if (true == isInitialPositionSet)
             {
                 logoTransform.anchoredPosition = initialPosition;
             }
@@ -81,7 +81,7 @@ public class UI_LogoAnim : MonoBehaviour
         {
             logoTransform.DOKill();
             
-            if (!isInitialPositionSet)
+            if (false == isInitialPositionSet)
             {
                 initialPosition = logoTransform.anchoredPosition;
                 isInitialPositionSet = true;

@@ -294,6 +294,15 @@ public class HUD_PopupNav_Main : MonoBehaviour
         isInputBlocked = true;
         Sound.PlayUI(SoundID.ResultUIOpen);
 
+        ResetOpenState();
+        InitFirstPlayableRegionUnlock();
+        CheckAndStartUnlockProduction();
+
+        PlayAppearSequence();
+    }
+
+    private void ResetOpenState()
+    {
         if (null != demoNotice)
         {
             demoNotice.ResetNotice();
@@ -317,39 +326,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         if (true == debugForceUnlockAll && null != mapDataProvider)
         {
-            MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
-            if (null != _db.mapDatas)
-            {
-                for (int i = 0; i < _db.mapDatas.Count; i++)
-                {
-                    if (false == _db.mapDatas[i].isUnlocked)
-                    {
-                        mapDataProvider.MarkMapUnlocked(_db.mapDatas[i].mapType);
-                        mapDataProvider.MarkMapUnlockAnimationPlayed(_db.mapDatas[i].mapType);
-                    }
-                    
-                    if (null != _db.mapDatas[i].forestDatas)
-                    {
-                        for (int j = 0; j < _db.mapDatas[i].forestDatas.Count; j++)
-                        {
-                            if (false == _db.mapDatas[i].forestDatas[j].isUnlocked)
-                            {
-                                mapDataProvider.MarkUnlocked(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
-                                mapDataProvider.MarkUnlockAnimationPlayed(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        InitFirstPlayableRegionUnlock();
-
-        BuildUnlockQueues();
-        if (0 < regionUnlockList.Count || 0 < subRegionUnlockList.Count)
-        {
-            isPendingUnlockProcess = true;
-            StartUnlockProduction();
+            ForceUnlockAllMapsForDebug();
         }
 
         if (null != appearTween && true == appearTween.IsActive())
@@ -357,11 +334,50 @@ public class HUD_PopupNav_Main : MonoBehaviour
             appearTween.Kill();
             appearTween = null;
         }
+    }
 
-        // 초기 상태 세팅
+    private void ForceUnlockAllMapsForDebug()
+    {
+        MapEnvironmentDatabase _db = mapDataProvider.GetMapEnvironmentDatabase();
+        if (null != _db.mapDatas)
+        {
+            for (int i = 0; i < _db.mapDatas.Count; i++)
+            {
+                if (false == _db.mapDatas[i].isUnlocked)
+                {
+                    mapDataProvider.MarkMapUnlocked(_db.mapDatas[i].mapType);
+                    mapDataProvider.MarkMapUnlockAnimationPlayed(_db.mapDatas[i].mapType);
+                }
+                
+                if (null != _db.mapDatas[i].forestDatas)
+                {
+                    for (int j = 0; j < _db.mapDatas[i].forestDatas.Count; j++)
+                    {
+                        if (false == _db.mapDatas[i].forestDatas[j].isUnlocked)
+                        {
+                            mapDataProvider.MarkUnlocked(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
+                            mapDataProvider.MarkUnlockAnimationPlayed(_db.mapDatas[i].mapType, _db.mapDatas[i].forestDatas[j].forestType);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void CheckAndStartUnlockProduction()
+    {
+        BuildUnlockQueues();
+        if (0 < regionUnlockList.Count || 0 < subRegionUnlockList.Count)
+        {
+            isPendingUnlockProcess = true;
+            StartUnlockProduction();
+        }
+    }
+
+    private void PlayAppearSequence()
+    {
         if (null != navImageContainer)
         {
-            // 임시로 아래로 200px 정도 내림
             navImageContainer.anchoredPosition = new Vector2(navImageContainer.anchoredPosition.x, -200f);
         }
         
@@ -375,8 +391,6 @@ public class HUD_PopupNav_Main : MonoBehaviour
             interactiveUIPanel.localScale = new Vector3(1f, 0f, 1f);
         }
 
-        // 시퀀스 생성 전, 대지역 버튼 생성 및 초기화(스케일 0 세팅)를 미리 수행해야 
-        // 하단의 PlayAppearSequence() 에서 DOTween 시퀀스를 정상적으로 조립할 수 있습니다.
         if (null != regionGroup)
         {
             regionGroup.SetupRegions(mapDataProvider);
@@ -384,27 +398,22 @@ public class HUD_PopupNav_Main : MonoBehaviour
 
         Sequence _seq = DOTween.Sequence();
         
-        // 1. 내비게이션 이미지용 UI가 아래에서 위로 스무스하게 등장 (살짝 바운스)
         if (null != navImageContainer)
         {
             _seq.Append(navImageContainer.DOAnchorPosY(0f, navImageBounceDuration).SetEase(navImageBounceEase));
         }
 
-        // 2. 빠르게 DimBG 알파 증가 (내비게이션용 이미지를 가려줌)
         if (null != dimBackgroundCanvasGroup)
         {
             _seq.Insert(navImageBounceDuration * 0.5f, dimBackgroundCanvasGroup.DOFade(1f, dimFadeDuration).SetEase(dimFadeEase));
         }
 
-        // 3. 상호작용 가능한 UI BG 패널 Y 스케일 쫀득하게 펼쳐짐
         if (null != interactiveUIPanel)
         {
             _seq.InsertCallback(navImageBounceDuration, onPanelOpenStartedCallback);
             _seq.Insert(navImageBounceDuration, interactiveUIPanel.DOScaleY(1f, panelScaleDuration).SetEase(panelScaleEase));
         }
 
-        // 4. Region 버튼들 순차 등장
-        // (DOTween 시퀀스는 미리 구성되므로 SetupRegions는 이전에 호출하여 버튼들이 생성되어 있어야 합니다)
         _seq.AppendInterval(delayBeforeButtons);
         
         Sequence _simultaneousSeq = DOTween.Sequence();
@@ -437,9 +446,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
         _seq.AppendCallback(onAdditionalElementsAppearStartedCallback);
         _seq.Append(_simultaneousSeq);
 
-        // 5. 첫번째 대지역 선택 및 서브지역 연출 준비 (OnMainPopupAppearComplete 역할 포함)
         _seq.AppendCallback(onAppearMidwayCallback);
-
         _seq.OnComplete(onAppearCompleteCallback);
 
         appearTween = _seq;
@@ -748,7 +755,7 @@ public class HUD_PopupNav_Main : MonoBehaviour
             StartUnlockProduction();
             pendingSubRegionUnlockForestTypes.Clear();
             
-            for (int i = subRegionUnlockList.Count - 1; i >= 0; i--)
+            for (int i = subRegionUnlockList.Count - 1; 0 <= i; i--)
             {
                 UnlockInfo _subInfo = subRegionUnlockList[i];
                 if (currentSelectedMapType == _subInfo.mapType)

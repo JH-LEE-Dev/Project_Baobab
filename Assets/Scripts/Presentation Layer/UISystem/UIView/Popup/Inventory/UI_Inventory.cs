@@ -18,10 +18,8 @@ public class UI_Inventory : MonoBehaviour
     [Header("Binding Obj")]
     [SerializeField] private ObjectMotionPlayer omp;
     [SerializeField] private GameObject invBackground;
-    // [SerializeField] private UI_Homing uiHoming;
     [SerializeField] private CurrencyCounterHUD uiCoin;
     [SerializeField] private UI_Backpack uiBackpack;
-    // [SerializeField] private HUD_NotificationBadge notificationBadge;
     [SerializeField] private UI_InventoryCapacityBar capacityBar;
     [SerializeField] private UI_RedDot newAlertRedDot;
     
@@ -41,6 +39,8 @@ public class UI_Inventory : MonoBehaviour
     [SerializeField] private string uiSlotLayerName = "ScreenSpaceUI";
 
     [Header("Inventory Settings")]
+    [Tooltip("사전 생성할 최대 인벤토리 슬롯 수")]
+    [SerializeField] private int maxSlotPrewarmCount = 32;
     [SerializeField] private List<UI_InventorySlot> inventorySlots = new List<UI_InventorySlot>(32);
 
     // //내부 의존성
@@ -48,14 +48,11 @@ public class UI_Inventory : MonoBehaviour
     private const string backpackTag = "Backpack";
     private const string coinsTag = "Coins";
     private const string popupTag = "Popup";
-    // private const string homingTag = "Homing";
 
     private IInventory inventory;
     private IMoneyData moneyData;
     private UI_InventoryPopup invPopup;
     private LocalizationManager locManager;
-
-
 
     public MapType CurrentMapType { get; set; } = MapType.Town;
     public bool IsOpening { get; private set; } = false;
@@ -84,11 +81,9 @@ public class UI_Inventory : MonoBehaviour
         if (null != omp)
             omp.Initialize();
 
-        // InitHoning(_clickedHomingEvent);
         InitInventoryPopup();
         InitCoins();
         InitBackpack();
-        // InitNotificationBadge();
         InitCapacityBar();
         UpdateIconsPosition();
         if (null != iconsRoot)
@@ -105,9 +100,25 @@ public class UI_Inventory : MonoBehaviour
         inventoryHoverEvent = _hoverEvent;
         inventoryUnHoverEvent = _unHoverEvent;
 
-        // 기존 슬롯이 있다면 재사용하기 위해 Clear() 대신 상태만 관리하도록 수정 가능하나, 
-        // 여기서는 안전하게 리스트만 유지하고 부족분만 생성하는 방식으로 개선
-        UpdateMaxSlotCount(SYSTEM_VAR.MAX_INVENTORY_CNT);
+        if (null != uiSlotPrefab && null != invBackground)
+        {
+            int _needPrewarm = maxSlotPrewarmCount - inventorySlots.Count;
+            for (int i = 0; i < _needPrewarm; i++)
+            {
+                GameObject _slotObj = Instantiate(uiSlotPrefab, invBackground.transform);
+                UI_InventorySlot _slot = _slotObj.GetComponent<UI_InventorySlot>();
+
+                if (null != _slot)
+                {
+                    _slot.Initialize();
+                    _slot.SetLayer(uiSlotLayerName);
+                    _slot.exitSlot -= inventoryUnHoverEvent;
+                    _slot.exitSlot += inventoryUnHoverEvent;
+                    _slot.gameObject.SetActive(false);
+                    inventorySlots.Add(_slot);
+                }
+            }
+        }
     }
 
     public void BindData(IInventory _inventory, IMoneyData _moneyData)
@@ -129,24 +140,26 @@ public class UI_Inventory : MonoBehaviour
         int _currentCount = inventorySlots.Count;
         int _needCount = _cnt - _currentCount;
 
-        if (0 >= _needCount)
-            return;
-
-        for (int _i = 0; _i < _needCount; _i++)
+        if (0 < _needCount)
         {
-            GameObject _slotObj = Instantiate(uiSlotPrefab, invBackground.transform);
-            UI_InventorySlot _slot = _slotObj.GetComponent<UI_InventorySlot>();
+            Debug.LogWarning($"[UI_Inventory] maxSlotPrewarmCount({maxSlotPrewarmCount}) 부족으로 런타임 동적 생성됨.");
+            for (int _i = 0; _i < _needCount; _i++)
+            {
+                GameObject _slotObj = Instantiate(uiSlotPrefab, invBackground.transform);
+                UI_InventorySlot _slot = _slotObj.GetComponent<UI_InventorySlot>();
 
-            if (null == _slot)
-                continue;
+                if (null == _slot)
+                    continue;
 
-            _slot.Initialize();
-            _slot.SetLayer(uiSlotLayerName);
+                _slot.Initialize();
+                _slot.SetLayer(uiSlotLayerName);
 
-            _slot.exitSlot -= inventoryUnHoverEvent;
-            _slot.exitSlot += inventoryUnHoverEvent;
+                _slot.exitSlot -= inventoryUnHoverEvent;
+                _slot.exitSlot += inventoryUnHoverEvent;
+                _slot.gameObject.SetActive(false);
 
-            inventorySlots.Add(_slot);
+                inventorySlots.Add(_slot);
+            }
         }
     }
 
@@ -178,9 +191,9 @@ public class UI_Inventory : MonoBehaviour
         for (int _i = 0; _i < _maxSlots; ++_i)
         {
             UI_InventorySlot _slot = inventorySlots[_i];
-            IInventorySlot _item = _items[_i];
+            IInventorySlot _item = _i < _items.Count ? _items[_i] : null;
             
-            if (_i < _itemCount && null != _item && null != _item.itemData && _item.itemData.itemType == ItemType.Log)
+            if (_i < _itemCount && null != _item && null != _item.itemData && ItemType.Log == _item.itemData.itemType)
             {
                 currentLogCount += _item.count;
             }
@@ -192,9 +205,9 @@ public class UI_Inventory : MonoBehaviour
             _slot.UpdateBindSlotData(_item, inventory.maxItemCntPerSlot);
         }
 
-        if (!isFirstDataBind)
+        if (false == isFirstDataBind)
         {
-            if (currentLogCount > previousLogCount && !IsOpening)
+            if (previousLogCount < currentLogCount && false == IsOpening)
             {
                 if (null != newAlertRedDot)
                     newAlertRedDot.Activate();
@@ -281,15 +294,6 @@ public class UI_Inventory : MonoBehaviour
             invPopup.OnHide();
     }
 
-    // private void InitHoning(Action _clickedHomingEvent)
-    // {
-    //     if (null == uiHoming)
-    //         return;
-    //
-    //     uiHoming.Initialize();
-    //     uiHoming.clickedEvent = _clickedHomingEvent;
-    // }
-
     private void RefreshLocalizedTexts()
     {
         if (null != locManager && null != openText)
@@ -309,12 +313,6 @@ public class UI_Inventory : MonoBehaviour
         if (null != uiBackpack)
             uiBackpack.Initialize();
     }
-
-    // private void InitNotificationBadge()
-    // {
-    //     if (null != notificationBadge)
-    //         notificationBadge.Initialize();
-    // }
 
     private void InitCapacityBar()
     {
@@ -354,9 +352,6 @@ public class UI_Inventory : MonoBehaviour
     {
         CurrentMapType = _currentMap;
 
-        // if (null != uiHoming)
-        //     uiHoming.currentMapType = _currentMap;
-
         CloseInvAndAnimSkip();
     }
 
@@ -371,16 +366,7 @@ public class UI_Inventory : MonoBehaviour
         omp.PlayBackward(backpackTag, bReset: true, _skip: true);
         omp.PlayBackward(coinsTag, bReset: true, _skip: true);
         omp.PlayBackward(popupTag, bReset: true, _skip: true);
-        // omp.PlayBackward(homingTag, bReset: true, _skip: true);
     }
-
-    // public void UpdateNotification()
-    // {
-    //     if (null == notificationBadge)
-    //         return;
-    //
-    //     notificationBadge.UpdateAndInteraction(!IsOpening ? ++hideAccCount : 0); 
-    // }
 
     public void OnHide()
     {
@@ -404,7 +390,6 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != omp)
         {
-            // omp.PlayBackward(homingTag, bReset: true);
             omp.PlayBackward(coinsTag, bReset: true);
         }
     }
@@ -416,7 +401,6 @@ public class UI_Inventory : MonoBehaviour
 
         IsOpening = isOpenAnimated = true;
         Sound.PlayUI(SoundID.HUDBackpackOpen);
-        // hideAccCount = 0;
 
         if (null != newAlertRedDot)
         {
@@ -437,7 +421,6 @@ public class UI_Inventory : MonoBehaviour
 
         if (null != omp)
         {
-            // omp.Play(homingTag, bReset: true);
             omp.Play(coinsTag, bReset: true);
         }
     }
@@ -461,9 +444,6 @@ public class UI_Inventory : MonoBehaviour
         
         inventorySlots.Clear();
     }
-
-    // public void ClearNotification() => notificationBadge?.UpdateAndInteraction(0);
-
 
     // //유니티 이벤트 함수 (Awake, Start, OnDestroy 등 최하단 배치)
 

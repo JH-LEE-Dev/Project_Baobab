@@ -192,6 +192,19 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         parentMapType = _parentMapType;
         appearSoundIndex = _appearSoundIndex;
 
+        SetupTreeProps(_visualDatas, !_info.isUnlocked);
+        SetupLockState(!_info.isUnlocked);
+        SetupNewIndicator(_info.isNew, !_info.isUnlocked);
+        CollectVisualChildren();
+        CacheDelegates();
+
+        NavParticleHelper.ApplyInstancedColor(unlockDestructionParticle, unlockParticleColor, ref hasInstantiatedParticleMat);
+
+        SetSelectedState(false);
+    }
+
+    private void SetupTreeProps(System.Collections.Generic.List<TreeVisualData> _visualDatas, bool _isLocked)
+    {
         if (null != treeProps)
         {
             for (int i = 0; i < treeProps.Count; i++)
@@ -207,9 +220,19 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
                 }
             }
         }
+        
+        for (int i = 0; i < treeProps.Count; i++)
+        {
+            if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
+            {
+                treeProps[i].SetDimColor(nonHoveredColor);
+                treeProps[i].SetVisualState(_isLocked ? TreeVisualState.Locked : TreeVisualState.Unlocked_Idle, 0f);
+            }
+        }
+    }
 
-        bool _isLocked = false == _info.isUnlocked;
-
+    private void SetupLockState(bool _isLocked)
+    {
         if (null != lockIconObj)
         {
             lockIconObj.SetActive(_isLocked);
@@ -223,16 +246,10 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
                 lockIconImage.enabled = true;
             }
         }
+    }
 
-        for (int i = 0; i < treeProps.Count; i++)
-        {
-            if (null != treeProps[i] && true == treeProps[i].gameObject.activeSelf)
-            {
-                treeProps[i].SetDimColor(nonHoveredColor);
-                treeProps[i].SetVisualState(_isLocked ? TreeVisualState.Locked : TreeVisualState.Unlocked_Idle, 0f);
-            }
-        }
-
+    private void SetupNewIndicator(bool _isNew, bool _isLocked)
+    {
         if (null != clearNewTween && true == clearNewTween.IsActive())
         {
             clearNewTween.Kill();
@@ -240,15 +257,17 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (null != newIndicatorObj)
         {
-            bool _showNew = true == _info.isNew && false == _isLocked;
+            bool _showNew = true == _isNew && false == _isLocked;
             newIndicatorObj.SetActive(_showNew);
             if (true == _showNew)
             {
                 newIndicatorObj.transform.localScale = Vector3.one;
             }
         }
+    }
 
-        // clickImage가 루트에 있지 않고 자식으로 있다면, 연출에서 제외하기 위해 비주얼 자식들만 수집
+    private void CollectVisualChildren()
+    {
         visualChildren.Clear();
         for (int i = 0; i < transform.childCount; i++)
         {
@@ -259,7 +278,10 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
             }
             visualChildren.Add(_child);
         }
+    }
 
+    private void CacheDelegates()
+    {
         CachedActivate = ActivateObject;
         cachedPlayParticle = PlayNewIndicatorParticle;
         cachedClearNewComplete = OnClearNewComplete;
@@ -270,31 +292,6 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
         cachedClearNewTweenComplete = OnClearNewTweenComplete;
         cachedOnHoverClearNewComplete = OnHoverClearNewComplete;
         if (null == cachedUnlockPlayParticle) cachedUnlockPlayParticle = PlayUnlockParticle;
-
-        if (false == hasInstantiatedParticleMat && null != unlockDestructionParticle)
-        {
-            ParticleSystemRenderer _psr = unlockDestructionParticle.GetComponent<ParticleSystemRenderer>();
-            if (null != _psr && null != _psr.sharedMaterial)
-            {
-                Material _instancedMat = new Material(_psr.sharedMaterial);
-                if (_instancedMat.HasProperty("_HDRColor"))
-                {
-                    _instancedMat.SetColor("_HDRColor", unlockParticleColor);
-                }
-                else if (_instancedMat.HasProperty("_TintColor"))
-                {
-                    _instancedMat.SetColor("_TintColor", unlockParticleColor);
-                }
-                else if (_instancedMat.HasProperty("_Color"))
-                {
-                    _instancedMat.SetColor("_Color", unlockParticleColor);
-                }
-                _psr.material = _instancedMat;
-                hasInstantiatedParticleMat = true;
-            }
-        }
-
-        SetSelectedState(false);
     }
 
     private void ActivateObject()
@@ -450,7 +447,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (null != cursorBoxUI)
         {
-            RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
+            RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
             Vector2 size = useCustomCursorSize ? customCursorSize : (target.rect.size + cursorPadding);
 
             cursorBoxUI.Show(target, size, cursorOffset, hoverCursorMotion);
@@ -505,7 +502,7 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (null != cursorBoxUI)
         {
-            RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
+            RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
             cursorBoxUI.Hide(target);
         }
     }
@@ -522,11 +519,11 @@ public class HUD_PopupNav_SubRegionBtn : MonoBehaviour, IPointerClickHandler, IP
 
         if (null != cursorBoxUI)
         {
-            RectTransform target = cursorTargetTransform != null ? cursorTargetTransform : CachedRectTransform;
+            RectTransform target = null != cursorTargetTransform ? cursorTargetTransform : CachedRectTransform;
             if (cursorBoxUI.IsTarget(target))
             {
                 var settings = cursorBoxUI.MotionSettings;
-                if (settings != null)
+                if (null != settings)
                 {
                     float originalDuration = settings.hideDuration;
                     settings.hideDuration = 0.03f; // 내비게이션 닫힐 때는 더 빠르게 사라짐
