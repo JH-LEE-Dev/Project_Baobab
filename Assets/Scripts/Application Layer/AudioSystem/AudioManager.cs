@@ -34,6 +34,14 @@ public class AudioManager : MonoBehaviour
     // Gameplay 그룹(SFX+Ambience)의 볼륨이다. UI 그룹은 둘 다의 바깥(Master 직속)에 있어서
     // 팝업 조작음은 먹먹해지지도, 일시정지에 꺼지지도 않는다.
     private const string DuckCutoffParam = "DuckCutoffFreq";
+    // 피로도 긴박감 연출용 Cutoff. BGM(Lowpass가 BGM 그룹에 직접 걸림)과 Gameplay(SFX+Ambience,
+    // Lowpass가 Gameplay 그룹에 직접 걸림)를 따로 걸었다 - 실측해보니 BGM은 에너지가 500~1000Hz
+    // 아래에 몰려있는 반면 동전 줍기 같은 일부 SFX는 20kHz 근처까지 써서, 같은 커브를 공유하면
+    // 한쪽에 맞추면 다른 쪽이 어색해진다. 두 Lowpass 모두 DuckCutoffFreq보다 하위(BGM/Gameplay
+    // 그룹) 단에 있어서, 팝업 덕킹(DuckCutoffFreq)과는 직렬로 자연히 합쳐진다 - 더 낮은 Cutoff가
+    // 항상 이긴다. 그래서 코드에서 따로 Min()으로 합칠 필요가 없다.
+    private const string BgmTensionCutoffParam = "BgmTensionCutoffFreq";
+    private const string GameplayTensionCutoffParam = "GameplayTensionCutoffFreq";
     private const string GameplayVolumeParam = "GameplayVolume";
     // 옵션 볼륨 슬라이더용. 효과음 슬라이더는 Gameplay가 아니라 그 아래의 SFX/Ambience에 건다 -
     // Gameplay는 일시정지 음소거가 쓰고 있어서, 같은 파라미터를 공유하면 일시정지가 풀릴 때
@@ -80,17 +88,16 @@ public class AudioManager : MonoBehaviour
     private bool mixerSetupWarned;
     private bool volumeParamsChecked;
     private bool volumeParamsReady;
+    private bool tensionParamsChecked;
+    private bool tensionParamsReady;
+    // 팝업 덕킹이 걸린 동안 피로도 Cutoff를 얼마나 열어둘지(0 = 피로도 그대로, 1 = 완전히 열림).
+    // 덕킹과 피로도 Lowpass는 직렬이라 그냥 두면 겹쳐서 과하게 먹먹해지므로, UI가 떠 있는 동안에는
+    // 피로도 쪽을 열어 UI 덕킹만 남긴다. 즉시 전환하면 밝아졌다 어두워지는 티가 나서 서서히 넘긴다.
+    private float fatigueSuppression;
     // 지금 향하고 있는 목표값. 같은 목표로 다시 요청이 와도 코루틴을 재시작하지 않기 위한 것으로,
     // NaN은 "아직 한 번도 설정한 적 없음"을 뜻해 최초 1회는 반드시 반영되게 한다.
     private float cutoffTarget = float.NaN;
     private float gameplayVolumeTarget = float.NaN;
-
-    // DuckCutoffFreq 파라미터는 두 가지 서로 다른 요인이 함께 밀어붙일 수 있다: 팝업 덕킹(상태 전환,
-    // RampDuckCutoffRoutine이 시간에 걸쳐 갱신)과 피로도 긴박감 연출(비율에 따라 매 프레임 직접 갱신).
-    // 각자 mixer.SetFloat을 직접 호출하면 나중에 쓴 쪽이 먼저 쓴 값을 지워버리므로, 두 값을 따로
-    // 들고 있다가 더 먹먹한(=더 낮은 Hz) 쪽을 ApplyCombinedCutoff에서 한 곳으로 모아 반영한다.
-    private float duckCutoffCurrentValue = float.NaN;
-    private float fatigueCutoffCurrentValue = float.NaN;
 
     private AudioSource bgmSource;
     private Coroutine bgmFadeCoroutine;
@@ -156,12 +163,13 @@ public class AudioManager : MonoBehaviour
         audioPreviewMode = false;
         cutoffTarget = float.NaN;
         gameplayVolumeTarget = float.NaN;
+        fatigueSuppression = 0f;
 
         if (mixer == null || duckSettings == null) return;
 
-        duckCutoffCurrentValue = duckSettings.openCutoffHz;
-        fatigueCutoffCurrentValue = duckSettings.openCutoffHz;
         mixer.SetFloat(DuckCutoffParam, duckSettings.openCutoffHz);
+        mixer.SetFloat(BgmTensionCutoffParam, duckSettings.openCutoffHz);
+        mixer.SetFloat(GameplayTensionCutoffParam, duckSettings.openCutoffHz);
         mixer.SetFloat(GameplayVolumeParam, duckSettings.normalVolumeDb);
     }
 
@@ -420,11 +428,16 @@ public class AudioManager : MonoBehaviour
     // 덕킹·일시정지 음소거·옵션 미리듣기는 서로 겹칠 수 있으므로, 각자 파라미터를 직접 쓰지 않고
     // 여기 한 곳에서 최종 상태를 계산해 반영한다. (예전에 볼륨을 여러 곳에서 각자 덮어써서
     // 서로를 지워버린 전례가 있어 ApplySourceVolume도 같은 방식으로 창구를 모아 두었다)
+    // 팝업 덕킹이 실제로 걸려 있는 상태인지. RefreshMixerState와 피로도 Cutoff(SetFatigueRatio)가
+    // 같은 판정을 써야 해서 한 곳에 모아둔다 - 옵션 미리듣기 중에는 덕킹이 풀리므로 그때는 피로도
+    // Cutoff도 원래대로 돌아와야 한다.
+    private bool IsDucked => false == audioPreviewMode && duckRequestCount > 0;
+
     private void RefreshMixerState()
     {
         if (duckSettings == null) return;
 
-        bool ducked = false == audioPreviewMode && duckRequestCount > 0;
+        bool ducked = IsDucked;
         bool muted = false == audioPreviewMode && gameplayMuted;
 
         // 게임플레이 볼륨은 세 상태가 겹칠 수 있어 우선순위가 필요하다.
@@ -452,39 +465,26 @@ public class AudioManager : MonoBehaviour
         if (duckCoroutine != null)
             StopCoroutine(duckCoroutine);
 
-        duckCoroutine = StartCoroutine(RampDuckCutoffRoutine(targetHz, duckSettings.cutoffTransitionDuration));
-    }
-
-    // 일반 RampMixerParamRoutine과 달리 mixer.SetFloat을 직접 호출하지 않고 duckCutoffCurrentValue만
-    // 갱신한다 - 피로도 긴박감 연출과 같은 파라미터를 공유하므로, 실제 반영은 ApplyCombinedCutoff를 거쳐야 한다.
-    private System.Collections.IEnumerator RampDuckCutoffRoutine(float target, float duration)
-    {
-        float start = duckCutoffCurrentValue;
-        float timer = 0f;
-
-        while (timer < duration)
-        {
-            timer += Time.unscaledDeltaTime;
-            duckCutoffCurrentValue = Mathf.Lerp(start, target, duration > 0f ? timer / duration : 1f);
-            ApplyCombinedCutoff();
-            yield return null;
-        }
-
-        duckCutoffCurrentValue = target;
-        ApplyCombinedCutoff();
-        duckCoroutine = null;
+        duckCoroutine = StartCoroutine(RampMixerParamRoutine(
+            DuckCutoffParam, targetHz, duckSettings.cutoffTransitionDuration, () => duckCoroutine = null));
     }
 
     /// <summary>
-    /// 캐릭터 피로도(스태미나) 비율(0~1)에 따라 BGM/SFX에 Low Pass Filter를 건다. tensionStartRatio
-    /// 아래로 내려가면 tensionMaxRatio까지 Cutoff를 서서히 보간하고, 그 이하는 Max Cutoff로 고정한다.
-    /// 던전에서 매 프레임 호출하는 것을 전제로 하며, 팝업 덕킹과 같은 DuckCutoffFreq 파라미터를 쓰므로
-    /// 둘 중 더 먹먹한(=더 낮은 Hz) 쪽이 최종 반영된다(ApplyCombinedCutoff 참고).
+    /// 캐릭터 피로도(스태미나) 비율(0~1)에 따라 BGM과 SFX/Ambience에 각각 독립된 Low Pass Filter를 건다.
+    /// tensionStartRatio 아래로 내려가면 tensionMaxRatio까지 Cutoff를 서서히 보간하고, 그 이하는 Max
+    /// Cutoff로 고정한다. 던전에서 매 프레임 호출하는 것을 전제로 한다.
+    ///
+    /// BGM과 Gameplay(SFX+Ambience)는 서로 다른 Exposed Parameter(BgmTensionCutoffFreq /
+    /// GameplayTensionCutoffFreq)를 쓴다 - 각각 BGM 그룹, Gameplay 그룹에 직접 걸린 별개의 Lowpass라
+    /// 팝업 덕킹(DuckCutoffFreq, Duckable 그룹)과는 직렬로 자연히 합쳐진다(더 낮은 Cutoff가 항상
+    /// 이긴다). 실측해보면 BGM은 에너지가 500~1000Hz 아래에 몰려있어 ease-out 커브(bgmTensionCurveExponent)로
+    /// 안 들리는 고음역 구간을 빨리 통과시켜야 체감상 고르게 어두워지는 반면, SFX는 곡마다(동전은
+    /// 20kHz 근처까지, 발소리는 수백Hz 이하까지) 대역이 제각각이라 하나의 곡선으로 맞출 수 없어서
+    /// 왜곡 없는 로그 보간(sfxTensionCurveExponent 기본값 1)을 쓴다.
     /// </summary>
     public void SetFatigueRatio(float ratio)
     {
-        if (duckSettings == null) return;
-        if (false == IsMixerParamReady(DuckCutoffParam)) return;
+        if (false == AreTensionParamsReady()) return;
 
         ratio = Mathf.Clamp01(ratio);
 
@@ -497,24 +497,51 @@ public class AudioManager : MonoBehaviour
                 : 1f;
         }
 
-        // Hz를 그대로 선형 보간하면(Lerp) 사람 청감이 로그(옥타브) 스케일이라 값이 큰 구간(22000→11000 등)은
-        // 거의 안 들리다가, t가 후반부에 가서야 컷오프가 가청 대역 아래로 훅 떨어지며 갑자기 확 먹먹해진다.
-        // 로그 스케일에서 보간해야 체감상 고르게 어두워진다.
-        float safeOpenHz = Mathf.Max(1f, duckSettings.openCutoffHz);
-        float safeMaxHz = Mathf.Max(1f, duckSettings.tensionMaxCutoffHz);
-        fatigueCutoffCurrentValue = Mathf.Exp(Mathf.Lerp(Mathf.Log(safeOpenHz), Mathf.Log(safeMaxHz), t));
-        ApplyCombinedCutoff();
+        // 팝업 UI가 떠 있는 동안에는 피로도 Cutoff를 완전히 열어 UI 덕킹만 남긴다. 두 Lowpass가
+        // 직렬이라 그냥 두면 덕킹 위에 피로도가 겹쳐 의도보다 훨씬 먹먹해지기 때문이다. UI가 닫히면
+        // 아래 MoveTowards가 되돌아가면서 피로도 상태로 자연히 복원된다(매 프레임 호출 전제).
+        float suppressionStep = duckSettings.tensionSuppressionDuration > 0f
+            ? Time.unscaledDeltaTime / duckSettings.tensionSuppressionDuration
+            : 1f;
+        fatigueSuppression = Mathf.MoveTowards(fatigueSuppression, IsDucked ? 1f : 0f, suppressionStep);
+
+        float logOpen = Mathf.Log(Mathf.Max(1f, duckSettings.openCutoffHz));
+
+        float bgmT = 1f - Mathf.Pow(1f - t, Mathf.Max(1f, duckSettings.bgmTensionCurveExponent));
+        mixer.SetFloat(BgmTensionCutoffParam, BlendTensionHz(logOpen, duckSettings.bgmTensionMaxCutoffHz, bgmT));
+
+        float sfxT = 1f - Mathf.Pow(1f - t, Mathf.Max(1f, duckSettings.sfxTensionCurveExponent));
+        mixer.SetFloat(GameplayTensionCutoffParam, BlendTensionHz(logOpen, duckSettings.sfxTensionMaxCutoffHz, sfxT));
     }
 
-    // DuckCutoffFreq에 실제로 쓰는 유일한 창구. 팝업 덕킹(duckCutoffCurrentValue)과 피로도 긴박감
-    // 연출(fatigueCutoffCurrentValue)은 각자 자기 값만 갱신하고, 반영 직전 더 먹먹한(=더 낮은 Hz)
-    // 쪽을 취한다 - 직렬로 이어진 두 Lowpass 필터가 있다면 더 낮은 Cutoff가 지배적인 것과 같은 효과다.
-    private void ApplyCombinedCutoff()
+    // 피로도 커브가 가리키는 Cutoff를 로그(옥타브) 스케일에서 구한 뒤, 덕킹 억제분(fatigueSuppression)
+    // 만큼 다시 열린 쪽으로 되돌린다. 두 보간 모두 로그 스케일이라 억제 전환도 청감상 고르게 들린다.
+    private float BlendTensionHz(float logOpen, float maxCutoffHz, float curveT)
     {
-        if (mixer == null) return;
+        float logCurve = Mathf.Lerp(logOpen, Mathf.Log(Mathf.Max(1f, maxCutoffHz)), curveT);
+        return Mathf.Exp(Mathf.Lerp(logCurve, logOpen, fatigueSuppression));
+    }
 
-        float combined = Mathf.Min(duckCutoffCurrentValue, fatigueCutoffCurrentValue);
-        mixer.SetFloat(DuckCutoffParam, combined);
+    // SetFatigueRatio는 캐릭터 Update에서 매 프레임 호출되므로, AreVolumeParamsReady와 같은 이유로
+    // 준비 여부를 최초 1회만 확인해 캐싱한다 - 파라미터가 없을 때 GetFloat/SetFloat이 호출마다 경고를
+    // 찍어 초당 수백 줄로 콘솔이 도배되기 때문이다. 덕킹 쪽 WarnMixerSetupOnce(1회 한정)를 쓰지 않고
+    // 자체 경고를 남기는 이유는, 매 프레임 도는 이쪽이 그 1회를 먼저 소진해 정작 덕킹/볼륨 설정
+    // 문제가 영영 보고되지 않는 것을 막기 위해서다.
+    private bool AreTensionParamsReady()
+    {
+        if (tensionParamsChecked) return tensionParamsReady;
+
+        tensionParamsChecked = true;
+        tensionParamsReady = mixer != null && duckSettings != null
+                             && mixer.GetFloat(BgmTensionCutoffParam, out _)
+                             && mixer.GetFloat(GameplayTensionCutoffParam, out _);
+
+        if (false == tensionParamsReady)
+            Debug.LogWarning($"[AudioManager] 피로도 긴박감 Cutoff가 적용되지 않는다: AudioMixer에 " +
+                             $"'{BgmTensionCutoffParam}' / '{GameplayTensionCutoffParam}' Exposed Parameter가 없거나 " +
+                             "Mixer / Duck Settings 필드가 비어 있다.");
+
+        return tensionParamsReady;
     }
 
     private void RampGameplayVolume(float targetDb)

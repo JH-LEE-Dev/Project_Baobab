@@ -17,6 +17,7 @@ AudioMixerGroupController:
   m_Send: 00000000000000000000000000000000
   m_Effects:
   - {fileID: -100347748255511900}
+  - {fileID: 24400601}
   m_UserColorIndex: 0
   m_Mute: 0
   m_Solo: 0
@@ -53,6 +54,10 @@ AudioMixerController:
   m_ExposedParameters:
   - guid: bcf82be287cd2f546918e03ed2c07c75
     name: DuckCutoffFreq
+  - guid: 34123f8e8d53a0d605358cf121d1283e
+    name: BgmTensionCutoffFreq
+  - guid: e1422f0ab66ac5600458677bbc8d4092
+    name: GameplayTensionCutoffFreq
   - guid: bd68836fd6c49254ea5332a7320eafad
     name: GameplayVolume
   - guid: c65d4bf085502bd4d8932d590897b643
@@ -113,6 +118,7 @@ AudioMixerGroupController:
   m_Send: 00000000000000000000000000000000
   m_Effects:
   - {fileID: 24400101}
+  - {fileID: 24400501}
   m_UserColorIndex: 0
   m_Mute: 0
   m_Solo: 0
@@ -255,6 +261,8 @@ AudioMixerSnapshotController:
   m_SnapshotID: 7b2d736901433b14d9d47826c36a0259
   m_FloatValues:
     bcf82be287cd2f546918e03ed2c07c75: 22000
+    34123f8e8d53a0d605358cf121d1283e: 22000
+    e1422f0ab66ac5600458677bbc8d4092: 22000
   m_TransitionOverrides: {}
 --- !u!244 &1550048840438921894
 AudioMixerEffectController:
@@ -305,6 +313,38 @@ AudioMixerEffectController:
   m_EffectName: Attenuation
   m_MixLevel: 26544349893a7514cb4f09bbc41b5fdb
   m_Parameters: []
+  m_SendTarget: {fileID: 0}
+  m_EnableWetMix: 0
+  m_Bypass: 0
+--- !u!244 &24400501
+AudioMixerEffectController:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Lowpass Simple
+  m_EffectID: b5eba77cb400bc846ade56339af7e873
+  m_EffectName: Lowpass Simple
+  m_MixLevel: 596af326b3fa4677d808a158dfe403a0
+  m_Parameters:
+  - m_ParameterName: Cutoff freq
+    m_GUID: 34123f8e8d53a0d605358cf121d1283e
+  m_SendTarget: {fileID: 0}
+  m_EnableWetMix: 0
+  m_Bypass: 0
+--- !u!244 &24400601
+AudioMixerEffectController:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Lowpass Simple
+  m_EffectID: 73f1d5dbfa82953d5a43643ac779e605
+  m_EffectName: Lowpass Simple
+  m_MixLevel: 009442fa02e20a08443e742166ecdbff
+  m_Parameters:
+  - m_ParameterName: Cutoff freq
+    m_GUID: e1422f0ab66ac5600458677bbc8d4092
   m_SendTarget: {fileID: 0}
   m_EnableWetMix: 0
   m_Bypass: 0
