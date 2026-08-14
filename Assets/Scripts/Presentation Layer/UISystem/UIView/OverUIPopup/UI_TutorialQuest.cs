@@ -58,12 +58,12 @@ public class UI_TutorialQuest : MonoBehaviour
     [Header("Transform Settings")]
     [SerializeField] private float yOffset = 0f;
 
-    [Header("Custom Mode Settings")]
-    [SerializeField] private bool useCustomMode = false;
+    [Header("Custom Sequence Settings")]
     [SerializeField] private float customInitialDuration = 2.0f;
     [SerializeField] private float customCompletedHoldDuration = 2.0f;
 
     // 내부 의존성
+    private Vector2 baseAnchoredPosition;
     private const float HiddenBGWidth = 0f;
     private const float DefaultBGTargetAlpha = 0.95f;
 
@@ -183,6 +183,18 @@ public class UI_TutorialQuest : MonoBehaviour
         PrepareHiddenState();
     }
 
+    public void SetYOffset(float _newYOffset)
+    {
+        yOffset = _newYOffset;
+        RectTransform _rect = GetComponent<RectTransform>();
+        if (null != _rect)
+        {
+            Vector2 _pos = baseAnchoredPosition;
+            _pos.y += _newYOffset;
+            _rect.anchoredPosition = _pos;
+        }
+    }
+
     public void RefreshLocalizedTexts()
     {
         if (false == bIsShowing)
@@ -194,9 +206,6 @@ public class UI_TutorialQuest : MonoBehaviour
 
     public void PlayCustomSequence(string _title, string _desc = "", float _initialDuration = -1f, float _completedHoldDuration = -1f)
     {
-        if (false == useCustomMode)
-            return;
-
         ForceCompletePendingHide();
 
         KillSequences();
@@ -902,7 +911,8 @@ public class UI_TutorialQuest : MonoBehaviour
         RectTransform _rect = GetComponent<RectTransform>();
         if (null != _rect)
         {
-            Vector2 _pos = _rect.anchoredPosition;
+            baseAnchoredPosition = _rect.anchoredPosition;
+            Vector2 _pos = baseAnchoredPosition;
             _pos.y += yOffset;
             _rect.anchoredPosition = _pos;
         }

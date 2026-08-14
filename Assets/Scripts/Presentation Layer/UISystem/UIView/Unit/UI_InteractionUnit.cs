@@ -45,10 +45,12 @@ public class UI_InteractionUnit : MonoBehaviour
     // 튜토리얼 상태 관리 변수
     private TutorialKeyType pendingTutorialKey = TutorialKeyType.None;
     private TutorialKeyType currentlyVisibleTutorialKey = TutorialKeyType.None;
+    private bool bTutorialKeyDisabled = false;
     private bool isInteractionShowing => 0 < showCount;
 
     // 델리게이트 캐싱
     private UnityAction cachedOnHideComplete;
+    private UnityAction cachedOnHideVisibleTutorialKeyComplete;
 
     public void Initialize(InputManager _inputManager)
     {
@@ -57,9 +59,13 @@ public class UI_InteractionUnit : MonoBehaviour
         bHide = true;
         pendingTutorialKey = TutorialKeyType.None;
         currentlyVisibleTutorialKey = TutorialKeyType.None;
+        bTutorialKeyDisabled = false;
 
         if (null == cachedOnHideComplete)
             cachedOnHideComplete = OnHideSequenceComplete;
+
+        if (null == cachedOnHideVisibleTutorialKeyComplete)
+            cachedOnHideVisibleTutorialKeyComplete = OnHideVisibleTutorialKeyComplete;
 
         if (null != motionPlayer)
             motionPlayer.Initialize();
@@ -191,15 +197,17 @@ public class UI_InteractionUnit : MonoBehaviour
     
     public void ShowTutorialKey(TutorialKeyType _type)
     {
+        if (true == bTutorialKeyDisabled) return;
         if (_type == pendingTutorialKey) return;
 
-        // 다른 튜토리얼 키가 켜져 있거나 대기 중이라면 끕니다.
-        if (TutorialKeyType.None != pendingTutorialKey && _type != pendingTutorialKey)
-        {
-            HideVisibleTutorialKey();
-        }
-
+        TutorialKeyType _prevKey = pendingTutorialKey;
         pendingTutorialKey = _type;
+
+        // 다른 키로 직접 전환되는 경우(예: Move -> Attack), 이전 키를 즉시 비활성화하여 비동기 콜백 간섭을 방지
+        if (TutorialKeyType.None != _prevKey && _type != _prevKey)
+        {
+            DeactivateKeyConfig(_prevKey);
+        }
 
         // 현재 상호작용 UI가 떠있지 않다면 즉시 튜토리얼 UI를 띄웁니다.
         if (false == isInteractionShowing)
@@ -219,6 +227,7 @@ public class UI_InteractionUnit : MonoBehaviour
 
     public void HideAllTutorialKeys()
     {
+        bTutorialKeyDisabled = true;
         pendingTutorialKey = TutorialKeyType.None;
         HideVisibleTutorialKey();
     }
@@ -229,6 +238,7 @@ public class UI_InteractionUnit : MonoBehaviour
     
     private void ShowPendingTutorialKey()
     {
+        if (true == bTutorialKeyDisabled) return;
         if (TutorialKeyType.None == pendingTutorialKey) return;
         if (pendingTutorialKey == currentlyVisibleTutorialKey) return; // 이미 재생 중
 
@@ -260,34 +270,68 @@ public class UI_InteractionUnit : MonoBehaviour
 
     private void HideVisibleTutorialKey()
     {
-        if (TutorialKeyType.None == currentlyVisibleTutorialKey) return;
+        TutorialKeyType _targetHideKey = currentlyVisibleTutorialKey;
+        currentlyVisibleTutorialKey = TutorialKeyType.None;
+
+        if (null == tutorialKeyConfigs) return;
+
+        bool _hasTargetHideKey = (TutorialKeyType.None != _targetHideKey);
+
+        for (int i = 0; i < tutorialKeyConfigs.Length; i++)
+        {
+            var config = tutorialKeyConfigs[i];
+            bool _isTarget = (_hasTargetHideKey && _targetHideKey == config.keyType);
+            bool _isActive = (null != config.rootObject && true == config.rootObject.activeSelf);
+
+            if (true == _isTarget || true == _isActive)
+            {
+                if (null != motionPlayer && false == string.IsNullOrEmpty(config.motionTag))
+                {
+                    motionPlayer.PlayBackward(config.motionTag, bReset: false, _onComplete: cachedOnHideVisibleTutorialKeyComplete);
+                }
+                else
+                {
+                    DeactivateKeyConfig(config.keyType);
+                }
+            }
+        }
+    }
+
+    private void DeactivateKeyConfig(TutorialKeyType _keyType)
+    {
+        if (TutorialKeyType.None == _keyType || null == tutorialKeyConfigs) return;
+
+        for (int i = 0; i < tutorialKeyConfigs.Length; i++)
+        {
+            if (_keyType == tutorialKeyConfigs[i].keyType)
+            {
+                if (null != tutorialKeyConfigs[i].rootObject)
+                {
+                    tutorialKeyConfigs[i].rootObject.SetActive(false);
+                }
+                break;
+            }
+        }
+
+        if (_keyType == currentlyVisibleTutorialKey)
+        {
+            currentlyVisibleTutorialKey = TutorialKeyType.None;
+        }
+    }
+
+    private void OnHideVisibleTutorialKeyComplete()
+    {
+        // 상호작용 UI가 노출 중이거나, 대기 중인 튜토리얼 키가 없을 때만 안전하게 비활성화
+        if (false == isInteractionShowing && TutorialKeyType.None != pendingTutorialKey) return;
 
         if (null == tutorialKeyConfigs) return;
 
         for (int i = 0; i < tutorialKeyConfigs.Length; i++)
         {
-            if (currentlyVisibleTutorialKey == tutorialKeyConfigs[i].keyType)
+            if (null != tutorialKeyConfigs[i].rootObject)
             {
-                var config = tutorialKeyConfigs[i];
-                
-                if (null != motionPlayer && false == string.IsNullOrEmpty(config.motionTag))
-                {
-                    motionPlayer.PlayBackward(config.motionTag, bReset: true, _onComplete: () => 
-                    {
-                        if (null != config.rootObject) 
-                            config.rootObject.SetActive(false);
-                    });
-                }
-                else
-                {
-                    if (null != config.rootObject) 
-                        config.rootObject.SetActive(false);
-                }
-
-                break;
+                tutorialKeyConfigs[i].rootObject.SetActive(false);
             }
         }
-        
-        currentlyVisibleTutorialKey = TutorialKeyType.None;
     }
 }
