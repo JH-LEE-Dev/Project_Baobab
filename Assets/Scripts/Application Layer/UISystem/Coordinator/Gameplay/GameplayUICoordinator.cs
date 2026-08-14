@@ -91,6 +91,7 @@ public class GameplayUICoordinator
         signalHub.Subscribe<DecalreDungeonTypeSignal>(DungeonStarted);
         signalHub.Subscribe<AnimalHitSignal>(AnimalHit);
         signalHub.Subscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.Subscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
         signalHub.Subscribe<PortalDeActivatedSignal>(PortalDeActivated);
         signalHub.Subscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
         signalHub.Subscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
@@ -145,6 +146,7 @@ public class GameplayUICoordinator
         signalHub.UnSubscribe<DecalreDungeonTypeSignal>(DungeonStarted);
         signalHub.UnSubscribe<AnimalHitSignal>(AnimalHit);
         signalHub.UnSubscribe<SkillDispatchedSignal>(SkillDispatched);
+        signalHub.UnSubscribe<PrestigeLevelIncreasedSignal>(PrestigeLevelIncreased);
         signalHub.UnSubscribe<PortalDeActivatedSignal>(PortalDeActivated);
         signalHub.UnSubscribe<OffraodContainerSpecChangedSignal>(OffraodContainerSpecChanged);
         signalHub.UnSubscribe<OffroadContainerInteractStateChangedSignal>(OffroadContainerInteractStateChanged);
@@ -563,6 +565,11 @@ public class GameplayUICoordinator
         hudUI.Refresh();
         popUpUI.Refresh();
         worldPopupUI.Refresh();
+    }
+
+    private void PrestigeLevelIncreased(PrestigeLevelIncreasedSignal _signal)
+    {
+        overUIPopupUI.PrestigeLevelIncreased(_signal.level);
     }
 
     private void TeleportUIClosed()
