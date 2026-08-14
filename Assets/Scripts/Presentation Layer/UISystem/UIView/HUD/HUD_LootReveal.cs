@@ -66,6 +66,14 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private Image lootItemImage;
     [SerializeField] private float lootPopDuration = 0.25f;
     [SerializeField] private Vector3 lootPopOvershoot = new Vector3(1.3f, 1.3f, 1f);
+    
+    [Space(5)]
+    [Tooltip("전리품 아이템 부유 거리(위아래 폭)")]
+    [SerializeField] private float lootFloatDistance = 5f;
+    [Tooltip("전리품 아이템 1회 왕복 소요 시간")]
+    [SerializeField] private float lootFloatDuration = 4.0f;
+
+    private float lootInitialY; 
     [SerializeField] private Ease lootPopEase = Ease.OutBack;
 
     // ─── VFX ──────────────────────────────────────────────────────────────────
@@ -96,7 +104,6 @@ public class HUD_LootReveal : MonoBehaviour
     [SerializeField] private float textStartDelay = 0.05f;  // 아이템 등장 후 텍스트 딜레이
 
     // ─── UIView_ScreenModal 연동 준비 ─────────────────────────────────────────
-    // UIView_ScreenModal 구현 완료 후 아래 이벤트를 외부에서 구독하여 활용하세요.
     public event Action OnRevealCompleted;
     public event Action OnHideCompleted;
 
@@ -109,14 +116,16 @@ public class HUD_LootReveal : MonoBehaviour
 
     private void Awake()
     {
-        // Show() 함수에 의해 정식으로 호출되어 켜진 경우가 아닐 때만 강제로 끕니다.
-        // (씬 시작 시 에디터에 켜진 채로 저장되어 자동 켜짐 방지용)
         if (false == isShowing)
         {
             gameObject.SetActive(false);
         }
-        
         InitParticles();
+
+        if (null != lootItemRect)
+        {
+            lootInitialY = lootItemRect.anchoredPosition.y;
+        }
     }
 
     private void InitParticles()
@@ -130,22 +139,19 @@ public class HUD_LootReveal : MonoBehaviour
             childParticles[i] = particlesRoot.GetChild(i) as RectTransform;
         }
 
-        // 1. 부모 종속 해제 (Pillar에 묶이지 않고 독립적으로 따라가게 함)
         if (null != pillarRect)
         {
             particlesRoot.SetParent(pillarRect.parent, true);
-            // 렌더링 순서(Z-Order)를 맞춰 가장 나중에 그려지게 하여(하이어라키 상 가장 아래) 다른 UI에 가려지지 않고 화면 가장 앞에 나타나도록 설정
             particlesRoot.SetAsLastSibling();
         }
 
-        // 2. 파티클 부유(Floating) 애니메이션
         foreach (var _p in childParticles)
         {
             if (null == _p) continue;
             
             float _duration = UnityEngine.Random.Range(particleFloatDurationMin, particleFloatDurationMax);
             float _dist = UnityEngine.Random.Range(particleFloatDistance * 0.5f, particleFloatDistance);
-            float _delay = UnityEngine.Random.Range(0f, 1f); // 동일한 타이밍에 움직이지 않게 엇박자
+            float _delay = UnityEngine.Random.Range(0f, 1f);
             
             _p.DOAnchorPosY(_p.anchoredPosition.y + _dist, _duration)
               .SetEase(Ease.InOutSine)
@@ -156,7 +162,6 @@ public class HUD_LootReveal : MonoBehaviour
     
     private void Update()
     {
-        // 3. 살짝 느리게 따라오게 하는 방식 (관성 SmoothDamp 추적)
         if (null != particlesRoot && null != pillarRect)
         {
             particlesRoot.anchoredPosition = Vector2.SmoothDamp(
@@ -177,13 +182,9 @@ public class HUD_LootReveal : MonoBehaviour
                 if (null != _p) _p.DOKill();
             }
         }
+        DOTween.Kill("LootFloat");
     }
 
-    // ─── 퍼블릭 진입점 ────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// 외부(UIView_ScreenModal 등)에서 전리품 타입과 함께 호출하는 진입점입니다.
-    /// </summary>
     public void Show(LootType _lootType, LocalizationManager _locManager)
     {
         if (true == isShowing)
@@ -202,9 +203,6 @@ public class HUD_LootReveal : MonoBehaviour
         revealCoroutine = StartCoroutine(PlayRevealSequence());
     }
 
-    /// <summary>
-    /// 닫힘 진입점. 키 입력 처리는 상단에서 담당하므로 이 메서드만 노출합니다.
-    /// </summary>
     public void Hide()
     {
         if (false == isShowing)
@@ -234,19 +232,15 @@ public class HUD_LootReveal : MonoBehaviour
         }
     }
 
-    // ─── 초기화 ───────────────────────────────────────────────────────────────
-
     private void ResetState()
     {
         if (null != rootCanvasGroup)
             rootCanvasGroup.alpha = 0f;
 
-        // 기둥 초기 위치
         if (null != pillarRect)
         {
             pillarRect.anchoredPosition = new Vector2(pillarRect.anchoredPosition.x, pillarStartY);
             
-            // 파티클도 기둥을 따라 텔레포트 (멀리서부터 날아오지 않도록 리셋)
             if (null != particlesRoot)
             {
                 particlesRoot.anchoredPosition = pillarRect.anchoredPosition;
@@ -254,14 +248,14 @@ public class HUD_LootReveal : MonoBehaviour
             }
         }
 
-        // 전리품 아이콘 초기 스케일
         if (null != lootItemRect)
         {
+            DOTween.Kill("LootFloat");
             lootItemRect.localScale = Vector3.zero;
+            lootItemRect.anchoredPosition = new Vector2(lootItemRect.anchoredPosition.x, lootInitialY);
             lootItemRect.gameObject.SetActive(false);
         }
 
-        // 텍스트 초기 위치 (마스킹 영역 왼쪽 밖)
         if (null != lootNameText)
         {
             lootNameText.rectTransform.anchoredPosition =
@@ -275,7 +269,6 @@ public class HUD_LootReveal : MonoBehaviour
             lootDescText.ForceMeshUpdate(true);
         }
 
-        // 배경 셰이더 프로퍼티 초기화
         if (null != bgDissolveImage && null != bgDissolveImage.material)
         {
             if (null == runtimeDissolveMat)
@@ -287,7 +280,6 @@ public class HUD_LootReveal : MonoBehaviour
             runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
             runtimeDissolveMat.SetFloat("_GridSize", gridSize);
             
-            // 완벽한 정사각형 타일을 유지하기 위해 UI 객체의 실제 종횡비(가로/세로 비율) 계산 후 셰이더 전달
             float _aspectRatio = 1f;
             if (bgDissolveImage.rectTransform.rect.height > 0)
             {
@@ -295,21 +287,13 @@ public class HUD_LootReveal : MonoBehaviour
             }
             runtimeDissolveMat.SetFloat("_AspectRatio", _aspectRatio);
             
-            // [Fix] 사용자가 설정한 원본 알파(투명도) 값을 1.0으로 덮어쓰지 않고 보존하도록 해당 줄 삭제
-            
-            // UGUI 갱신 강제 (초기화 시점 화면 프리즈 방지)
             bgDissolveImage.SetMaterialDirty(); 
             bgDissolveImage.SetVerticesDirty(); 
         }
     }
 
-    // (기존의 객체 다중 생성 BuildGrid() 삭제됨)
-
-    // ─── 연출 시퀀스 ──────────────────────────────────────────────────────────
-
     private IEnumerator PlayRevealSequence()
     {
-        // 루트 페이드인
         if (null != rootCanvasGroup)
         {
             rootCanvasGroup.DOKill();
@@ -318,53 +302,43 @@ public class HUD_LootReveal : MonoBehaviour
 
         yield return new WaitForSeconds(0.1f);
 
-        // 1단계: 셰이더 디졸브 애니메이션 재생
         yield return StartCoroutine(PlayGridReveal());
 
         yield return new WaitForSeconds(pillarStartDelay);
 
-        // 2단계: 기둥 상승
         yield return StartCoroutine(PlayPillarReveal());
 
         yield return new WaitForSeconds(lootStartDelay);
 
-        // 3단계: VFX + 전리품 이미지 뽀잉 등장
         PlayVFX();
-        PlayLootPop();
-        yield return new WaitForSeconds(lootPopDuration);
+        yield return StartCoroutine(PlayLootPop());
 
         yield return new WaitForSeconds(textStartDelay);
 
-        // 4단계: 이름 → 설명 텍스트 슬라이드
         yield return StartCoroutine(PlayTextSlide());
 
         OnRevealCompleted?.Invoke();
     }
 
-    // 1단계 ─ 셰이더 프로퍼티 애니메이팅
     private IEnumerator PlayGridReveal()
     {
         if (null == bgDissolveImage || null == runtimeDissolveMat)
             yield break;
 
-        // 중앙에서 좌우로 디졸브(_DissolveAmount: 0 -> 1)
         runtimeDissolveMat.DOKill();
         runtimeDissolveMat.SetFloat("_DissolveAmount", 0f);
         
         yield return runtimeDissolveMat.DOFloat(1f, "_DissolveAmount", bgRevealDuration)
             .SetEase(bgRevealEase)
-            .SetUpdate(true) // 타임스케일 0일 때도 정상 동작 보장
+            .SetUpdate(true) 
             .OnUpdate(() => 
             {
-                // UGUI Canvas 최적화 억제 (강제 리빌드)
-                // 단순히 머티리얼 값만 바뀌면 화면을 갱신하지 않는 현상을 막기 위함
                 bgDissolveImage.SetMaterialDirty();
                 bgDissolveImage.SetVerticesDirty();
             })
             .WaitForCompletion();
     }
 
-    // 2단계 ─ 기둥 부들부들 떨리며 상승
     private IEnumerator PlayPillarReveal()
     {
         if (null == pillarRect)
@@ -380,7 +354,6 @@ public class HUD_LootReveal : MonoBehaviour
         yield return _pillarSeq.WaitForCompletion();
     }
 
-    // 3단계 ─ VFX 재생
     private void PlayVFX()
     {
         if (null != vfxComponent && false == string.IsNullOrEmpty(vfxTag))
@@ -394,10 +367,10 @@ public class HUD_LootReveal : MonoBehaviour
     }
 
     // 3단계 ─ 전리품 이미지 뽀잉 등장
-    private void PlayLootPop()
+    private IEnumerator PlayLootPop()
     {
         if (null == lootItemRect)
-            return;
+            yield break;
 
         lootItemRect.gameObject.SetActive(true);
         lootItemRect.localScale = Vector3.zero;
@@ -405,6 +378,14 @@ public class HUD_LootReveal : MonoBehaviour
         Sequence _popSeq = DOTween.Sequence();
         _popSeq.Append(lootItemRect.DOScale(lootPopOvershoot, lootPopDuration * 0.6f).SetEase(lootPopEase));
         _popSeq.Append(lootItemRect.DOScale(Vector3.one, lootPopDuration * 0.4f).SetEase(Ease.OutQuad));
+        
+        yield return _popSeq.WaitForCompletion();
+
+        // 등장 스케일 애니메이션이 완전히 끝난 후, 아이템이 파티클처럼 부유(Floating)하도록 모션 연결
+        lootItemRect.DOAnchorPosY(lootInitialY + lootFloatDistance, lootFloatDuration)
+            .SetEase(Ease.InOutSine)
+            .SetLoops(-1, LoopType.Yoyo)
+            .SetId("LootFloat"); 
     }
 
     // 4단계 ─ 이름/설명 텍스트 마스킹 슬라이드
