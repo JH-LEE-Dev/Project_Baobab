@@ -60,9 +60,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f83f0f1fa6fd482a8cde9d9fe0ff3f9e, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  chromaticAberrationMaxIntensity: 0.3
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lowStaminaThresholdRatio: 0.2
+  lowStaminaMaxIntensity: 0.3
+  lowStaminaSmoothSpeed: 1.5
+  deathPulsePeakIntensity: 0.7
+  deathPulseFadeInDuration: 0.12
+  deathPulseFadeOutDuration: 0.5
   minPostExposure: -2
   minSaturation: -100
 --- !u!1 &7138655054702420511
@@ -127,10 +132,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.077083334
+    x: -0.07447917
     y: 0
     width: 0.33333334
-    height: 0.5277778
+    height: 0.53055555
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
@@ -219,7 +224,7 @@ MonoBehaviour:
   m_AssetsPPU: 32
   m_RefResolutionX: 640
   m_RefResolutionY: 360
-  m_CropFrame: 1
+  m_CropFrame: 0
   m_GridSnapping: 0
   m_FilterMode: 1
   m_UpscaleRT: 0
@@ -291,10 +296,10 @@ Camera:
   m_LensShift: {x: 0, y: 0}
   m_NormalizedViewPortRect:
     serializedVersion: 2
-    x: -0.077083334
+    x: 0
     y: 0
-    width: 0.33333334
-    height: 0.5277778
+    width: 1
+    height: 1
   near clip plane: 0.3
   far clip plane: 1000
   field of view: 60
@@ -434,8 +439,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a1d46436d26f43e5ae4d31a1b20fd949, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8144299782213539077
 GameObject:
   m_ObjectHideFlags: 0

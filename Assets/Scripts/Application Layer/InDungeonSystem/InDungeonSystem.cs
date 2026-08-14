@@ -48,6 +48,14 @@ public class InDungeonSystem : MonoBehaviour
     private bool bTutorialRideExitPending;
     private Coroutine tutorialRideExitCoroutine;
 
+    // MainMenu → Dungeon 튜토리얼: OffroadContainer 상호작용은 "CutTree 완료 안내 UI가 완전히
+    // 사라짐"과 "FillOffroadContainer 스텝이 실제로 시작됨(= 원목을 직접 2개 주움)" 두 조건이
+    // 모두 만족된 뒤에만 열어준다. 안내 UI가 사라지는 즉시 열어버리면, 아직 원목을 1개만 주운
+    // 상태에서 바로 컨테이너에 넣었을 때 TutorialSystem이 currentStep을 여전히 CutTree로 보고
+    // 그 이관/제거 신호를 놓쳐버려 FillOffroadContainer가 영영 완료되지 않는 문제가 있었다.
+    private bool bCutTreeQuestUIHideCompleted;
+    private bool bFillOffroadContainerStepStarted;
+
     // MainMenu → Dungeon 튜토리얼: 피로도가 바닥값(19.1%)에 닿는지 감시하는 코루틴. 이번 원정 안에서만
     // 유효하므로 마을에 도착하면(TownStarted) 중단한다.
     private Coroutine waitStaminaFloorCoroutine;
@@ -132,6 +140,8 @@ public class InDungeonSystem : MonoBehaviour
             // 물리 스텝이 한 번이라도 돌면 OnTriggerEnter2D → InteractStateEvent(true)가 발행되어
             // 월드 팝업의 슬롯 UI가 열리고 슬롯 오픈 SFX(HUDEverySlotOpen)가 재생되어 버린다.
             offroadContainer.DisableCollision();
+            bCutTreeQuestUIHideCompleted = false;
+            bFillOffroadContainerStepStarted = false;
         }
 
         currentMapType = _sceneChangeData.mapType;
@@ -261,6 +271,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.Subscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.Subscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.Subscribe<DungeonBGMStartSignal>(DungeonBGMStart);
+        signalHub.Subscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.Subscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.Subscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
@@ -278,6 +289,7 @@ public class InDungeonSystem : MonoBehaviour
         signalHub.UnSubscribe<GoToMainMenuRequestedSignal>(GoToMainMenuRequested);
         signalHub.UnSubscribe<CompanyLogoProductionCompletedSignal>(CompanyLogoProductionCompleted);
         signalHub.UnSubscribe<DungeonBGMStartSignal>(DungeonBGMStart);
+        signalHub.UnSubscribe<TutorialStepStartedSignal>(TutorialStepStarted);
         signalHub.UnSubscribe<TutorialStepCompletedSignal>(TutorialStepCompleted);
         signalHub.UnSubscribe<TutorialQuestHideCompletedSignal>(TutorialQuestHideCompleted);
     }
@@ -647,13 +659,38 @@ public class InDungeonSystem : MonoBehaviour
         // 쓸 수 있게 되어버린다.
         if (_signal.step == TutorialStep.CutTree)
         {
-            offroadContainer.EnableCollision();
+            bCutTreeQuestUIHideCompleted = true;
+            TryEnableOffroadContainerCollision();
         }
 
         if (_signal.step == TutorialStep.FillOffroadContainer)
         {
             inDungeonObjectManager.offroadVehicle?.SetCanTravel(true);
         }
+    }
+
+    // TutorialSystem은 원목을 직접 2개 주워야 FillOffroadContainer 스텝을 시작한다(나무 한 그루만
+    // 베고 바로 컨테이너로 가면 넣을 원목이 부족해서). 이 스텝이 실제로 시작된 신호를 받는다.
+    private void TutorialStepStarted(TutorialStepStartedSignal _signal)
+    {
+        if (_signal.step == TutorialStep.FillOffroadContainer)
+        {
+            bFillOffroadContainerStepStarted = true;
+            TryEnableOffroadContainerCollision();
+        }
+    }
+
+    // CutTree 안내 UI가 사라짐과 FillOffroadContainer 스텝 시작(= 원목 2개 확보), 두 조건이 모두
+    // 만족돼야 컨테이너를 열어준다. 어느 쪽이 먼저 만족될지 알 수 없다 - 원목을 빠르게 주우면 안내
+    // UI가 사라지기 전에 스텝이 먼저 시작될 수 있고, 큰 나무를 베어 원목이 넉넉하면 안내 UI가 먼저
+    // 사라질 수도 있다. 이렇게 게이팅해두면 컨테이너가 열리는 시점엔 currentStep이 항상
+    // FillOffroadContainer이므로, TutorialSystem이 이관/제거 신호를 놓치는 경우가 생기지 않는다.
+    private void TryEnableOffroadContainerCollision()
+    {
+        if (bCutTreeQuestUIHideCompleted == false || bFillOffroadContainerStepStarted == false)
+            return;
+
+        offroadContainer.EnableCollision();
     }
 
     private void StartWaitUntilStaminaReachedFloor()

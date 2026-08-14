@@ -46,7 +46,20 @@ public class CameraMoveController : MonoBehaviour
     // (zoom/orthoSize)를 계속 갱신하고 있어서 재활성화 시점의 보정 기준이 어긋나 눈에 띄는 점프가
     // 생긴다(실측 확인됨). 이 프로젝트는 가상 카메라가 하나뿐이라 이 보정은 화면 해상도가 바뀔 때만
     // 다시 필요하므로, 줌이 끝나도 자동으로 켜지 않고 실제 해상도 변경 이벤트에서만 재활성화한다.
+    //
+    // 그래서 트윈의 시작·복귀 지점은 "익스텐션이 꺼진 채로도 픽셀 퍼펙트인 값"이어야 한다.
+    // 프리팹에 적힌 원본값(5.625)을 그대로 쓰면 화면 세로가 360의 배수가 아닌 해상도에서
+    // 배율이 정수가 아니게 되어(2560x1600이면 4.444배) 줌이 끝난 뒤에도 픽셀이 계속 깨진다.
+    // 원본값은 authoredOrthographicSize에 한 번만 보관하고, 실제로 쓰는 값은 해상도에 맞춰
+    // 계산한다(SettingsData.GetPixelPerfectOrthoSize). 16:9에서는 두 값이 같아 변화가 없다.
     private float baseOrthographicSize;
+    private float authoredOrthographicSize;
+
+    // 원본값을 어느 카메라에서 읽었는지 함께 들고 있는다. virtualCamera는 SetupCamera 말고도
+    // ZoomCamera·ShakeCamera가 각자 FindAnyObjectByType으로 채우는 경로가 있어서, 플래그 하나로
+    // 관리하면 그 경로들에서 교체를 놓친다. 카메라 자체를 기준으로 두면 전부 자동으로 걸린다.
+    private CinemachineCamera authoredOrthographicSizeSource;
+    private int appliedScreenHeight;
     private Tween zoomTween;
     private CinemachinePixelPerfect pixelPerfectExtension;
 
@@ -63,6 +76,8 @@ public class CameraMoveController : MonoBehaviour
 
     public void SetupCamera(CinemachineCamera _camera)
     {
+        // 카메라 교체는 Update가 authoredOrthographicSizeSource 비교로 감지해 다음 프레임에
+        // 원본값을 다시 읽는다. 여기서 따로 초기화할 필요가 없다.
         virtualCamera = _camera;
         InitializePerlin();
     }
@@ -112,7 +127,8 @@ public class CameraMoveController : MonoBehaviour
         }
         else
         {
-            baseOrthographicSize = virtualCamera.Lens.OrthographicSize;
+            // 트윈이 도는 중에는 Lens가 중간값이라 원본을 읽을 수 없으므로, 트윈이 없을 때만 갱신한다.
+            RefreshBaseOrthographicSize();
         }
 
         if (pixelPerfectExtension != null)
@@ -133,6 +149,36 @@ public class CameraMoveController : MonoBehaviour
     }
 
     // 헬퍼 메서드
+
+    /// <summary>
+    /// 현재 화면 해상도에서 픽셀 퍼펙트가 성립하는 직교 크기를 구해 baseOrthographicSize에 넣고,
+    /// 줌 트윈이 돌고 있지 않으면 카메라에도 즉시 반영합니다.
+    ///
+    /// 익스텐션이 켜져 있을 때 보정해 주던 값과 같은 값이라, 반영해도 화면은 그대로입니다.
+    /// 대신 익스텐션이 꺼진 뒤(줌 연출 이후)에도 그 값이 유지되어 배율이 정수로 남습니다.
+    /// </summary>
+    private void RefreshBaseOrthographicSize()
+    {
+        if (virtualCamera == null) return;
+
+        // 원본값은 카메라마다 한 번만 읽는다. 아래에서 Lens를 덮어쓰기 때문에 같은 카메라에서
+        // 다시 읽으면 보정된 값을 원본으로 착각하게 된다.
+        if (authoredOrthographicSizeSource != virtualCamera)
+        {
+            authoredOrthographicSize = virtualCamera.Lens.OrthographicSize;
+            authoredOrthographicSizeSource = virtualCamera;
+        }
+
+        appliedScreenHeight = Screen.height;
+        baseOrthographicSize = SettingsData.GetPixelPerfectOrthoSize(appliedScreenHeight, authoredOrthographicSize);
+
+        // 트윈 중이면 연출이 끊기므로 건드리지 않는다. 트윈은 어차피 baseOrthographicSize로
+        // 복귀하도록 만들어져 있어서, 값만 갱신해두면 끝날 때 알아서 맞는 지점에 도착한다.
+        if (zoomTween != null && zoomTween.IsActive()) return;
+
+        SetOrthographicSize(baseOrthographicSize);
+    }
+
     private void SetOrthographicSize(float _size)
     {
         LensSettings lens = virtualCamera.Lens;
@@ -205,6 +251,16 @@ public class CameraMoveController : MonoBehaviour
 
     private void Update()
     {
+        // 익스텐션의 보정은 Lens에 들어있는 값을 기준으로 상대적으로 계산되므로, Lens에 남아 있는
+        // 값이 지금 해상도의 것이 아니면 엉뚱한 시야가 나온다(줌 이후 해상도를 바꾼 경우).
+        // OnScreenTargetResolvedEvent 시점에는 Screen.SetResolution이 아직 반영 전이라
+        // Screen 값이 옛날 값이므로, 이벤트가 아니라 실제 화면 크기를 직접 감시한다.
+        // 값이 그대로면 비교 두 번으로 끝난다. 카메라가 교체된 경우도 같이 잡는다.
+        if (Screen.height != appliedScreenHeight || authoredOrthographicSizeSource != virtualCamera)
+        {
+            RefreshBaseOrthographicSize();
+        }
+
         if (shakeTimer > 0)
         {
             shakeTimer -= Time.deltaTime;
