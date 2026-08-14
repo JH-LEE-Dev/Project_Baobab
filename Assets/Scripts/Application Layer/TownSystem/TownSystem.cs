@@ -577,6 +577,11 @@ public class TownSystem : MonoBehaviour
         inputManager.PauseESCKey(false); // 타운→던전 진입 연출 종료 (DungeonSelected()에서 걸어둔 PauseESCKey(true) 해제)
         inputManager.PauseInventoryKey(false); // 타운→던전 진입 연출 종료 (GameplayUICoordinator.DungeonConfirmStarted()에서 걸어둔 PauseInventoryKey(true) 해제)
 
+        // 조준은 여기서 바로 켠다. 아래 PopupUIGoUPCoroutine의 ActivateCharacterSignal은 0.7초 뒤에
+        // 발행되는데, 그때까지 조준이 잠겨 있으면 이미 움직일 수 있는 캐릭터가 마우스를 움직여도
+        // 이전 방향을 그대로 바라보는 구간이 생긴다(AttackIndicator 노출만 기존대로 HUD와 함께 유지).
+        signalHub.Publish(new EnableCharacterAimSignal());
+
         StartCoroutine(PopupUIGoUPCoroutine());
     }
 
