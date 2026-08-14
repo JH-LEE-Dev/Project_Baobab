@@ -59,6 +59,9 @@ public struct OpeningElementInfo
 
 public class UI_OpeningProduction : MonoBehaviour
 {
+    private const int OpeningMonologue2EntryId = 3;
+    private const float FontPopCooldown = 0.03f;
+
     [Header("Localization Settings")]
     [SerializeField] private int localizationJsonId = 16;
 
@@ -66,6 +69,8 @@ public class UI_OpeningProduction : MonoBehaviour
     private LocalizationManager localizationManager;
     private Action onIntroCompleteCallback;
     private Action cachedApplyLocalization;
+    private Action cachedRevealCharacterAppeared;
+    private float nextFontPopAllowedTime;
 
     // 내부 의존성
     [SerializeField] private List<OpeningElementInfo> introSceneElements = new List<OpeningElementInfo>();
@@ -90,6 +95,7 @@ public class UI_OpeningProduction : MonoBehaviour
 
         CacheComponents();
         CacheCallbacks();
+        cachedRevealCharacterAppeared = HandleRevealCharacterAppeared;
         ApplyLocalization();
         SetAllActive(false);
     }
@@ -101,6 +107,7 @@ public class UI_OpeningProduction : MonoBehaviour
         CacheCallbacks();
         SetAllActive(false);
         ApplyLocalization();
+        nextFontPopAllowedTime = 0f;
 
         onIntroCompleteCallback = _onComplete;
         activeSequence = DOTween.Sequence();
@@ -359,13 +366,29 @@ public class UI_OpeningProduction : MonoBehaviour
 
         if (true == elem.playTMPRevealBounce && null != elem.targetAnimator)
         {
-            elem.targetAnimator.PlayRevealBounce();
+            elem.targetAnimator.PlayRevealBounce(cachedRevealCharacterAppeared);
         }
 
         if (ShakeOnMonologueEntryId == elem.localizationEntryId)
         {
             CameraMoveController.Instance?.ShakeCamera(2.5f, 0.2f);
         }
+
+        if (OpeningMonologue2EntryId == elem.localizationEntryId)
+        {
+            Sound.PlayUI(SoundID.FontBomb);
+        }
+    }
+
+    private void HandleRevealCharacterAppeared()
+    {
+        if (Time.time < nextFontPopAllowedTime)
+        {
+            return;
+        }
+
+        nextFontPopAllowedTime = Time.time + FontPopCooldown;
+        Sound.PlayUI(SoundID.FontPop);
     }
 
     private void DeactivateElement(int _index)
