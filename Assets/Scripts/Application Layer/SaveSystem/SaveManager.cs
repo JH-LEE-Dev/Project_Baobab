@@ -8,7 +8,7 @@ using System.Threading;
 
 public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 {
-    private Bootstrap bootstrap;
+    private BootStrap bootstrap;
     private SignalHub signalHub;
     private SkillSystem skillSystem;
     private Character character;
@@ -30,7 +30,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
     private void Awake()
     {
-        bootstrap = GetComponent<Bootstrap>();
+        bootstrap = GetComponent<BootStrap>();
     }
 
     public void Initialize(SignalHub _signalHub, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
@@ -91,7 +91,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     {
         if (null == bootstrap)
         {
-            bootstrap = GetComponent<Bootstrap>();
+            bootstrap = GetComponent<BootStrap>();
         }
 
         if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType)
@@ -146,7 +146,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
         if (null == bootstrap)
         {
-            bootstrap = GetComponent<Bootstrap>();
+            bootstrap = GetComponent<BootStrap>();
         }
 
         if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType)

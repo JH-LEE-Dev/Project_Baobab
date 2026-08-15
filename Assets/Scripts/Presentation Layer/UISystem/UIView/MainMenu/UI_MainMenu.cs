@@ -88,12 +88,13 @@ public class UI_MainMenu : MonoBehaviour
             warningPopup.Initialize(_uIViewContext);
         }
 
+        InitButtonsInOrder();
         SetLocalization();
     }
 
     private UI_MainMenuButton[] buttonsInOrder;
 
-    public void UpdateLoadGameButtonState()
+    private void InitButtonsInOrder()
     {
         if (null == buttonsInOrder)
         {
@@ -106,6 +107,11 @@ public class UI_MainMenu : MonoBehaviour
                 exitButton
             };
         }
+    }
+
+    public void UpdateLoadGameButtonState()
+    {
+        InitButtonsInOrder();
 
         if (null != parentView)
         {
@@ -167,7 +173,7 @@ public class UI_MainMenu : MonoBehaviour
     /// </summary>
     public void ResetAndShowButtons()
     {
-        if (null == buttonsInOrder) return;
+        InitButtonsInOrder();
 
         bool _hasSaveData = false;
         if (null != parentView)
@@ -181,9 +187,10 @@ public class UI_MainMenu : MonoBehaviour
             if (null != _btn)
             {
                 // LoadGame 버튼은 세이브 데이터가 없으면 활성화하지 않음
-                if (_btn == loadGameButton && false == _hasSaveData)
+                if (_btn == loadGameButton)
                 {
-                    _btn.gameObject.SetActive(false);
+                    _btn.gameObject.SetActive(_hasSaveData);
+                    _btn.SetInteractable(_hasSaveData);
                     continue;
                 }
 
@@ -191,6 +198,7 @@ public class UI_MainMenu : MonoBehaviour
                 {
                     _btn.gameObject.SetActive(true);
                 }
+                _btn.SetInteractable(true);
             }
         }
 

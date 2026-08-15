@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4136428577803533724}
   - component: {fileID: 7783983704913653975}
+  - component: {fileID: 7284322210823894238}
   m_Layer: 18
   m_Name: HUD_DirectionalIndicator
   m_TagString: Untagged
@@ -35,7 +36,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 100, y: 100}
+  m_SizeDelta: {x: 32, y: 32}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &7783983704913653975
 MonoBehaviour:
@@ -51,12 +52,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PresentationLayer.UISystem.UIView.HUD.DirectionalIndicator.HUD_DirIndicator
   indicatorImage: {fileID: 5919390118902400474}
   rectTransform: {fileID: 4136428577803533724}
+  canvasGroup: {fileID: 7284322210823894238}
   upArrowSprite: {fileID: -6782612491535333161, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
   downArrowSprite: {fileID: -2120726315948265764, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
   leftArrowSprite: {fileID: -1216850264913150114, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
   rightArrowSprite: {fileID: -8463291593813042295, guid: 9836a0f7da1b5154eb254753f93f611e, type: 3}
-  padding: 52
+  referenceScreenHeight: 1080
+  padding: 54
   idleSpeed: 5
+  idleAmplitude: 4
+  onScreenHoldDuration: 2
+  onScreenYOffset: 140
+  onScreenSafeMargin: 48
+  onScreenTopMargin: 140
+  exitBuffer: 20
+  appearDuration: 0.35
+  disappearDuration: 0.25
+  appearScaleEase: 27
+  appearFadeEase: 6
+  disappearScaleEase: 26
+  disappearFadeEase: 5
+--- !u!225 &7284322210823894238
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1916422466606343881}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &3563197388873671306
 GameObject:
   m_ObjectHideFlags: 0
