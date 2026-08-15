@@ -1240,13 +1240,18 @@ public class OffroadContainer : MonoBehaviour, IInventory, IOffroadContainerCH
 
     /// <summary>
     /// 날아가는 연출 없이, 여유 슬롯이 있으면 즉시 데이터를 커밋한다(캐릭터 사망 등 연출이 무의미한 상황용).
+    /// 던전 입장 등 여러 아이템을 한 프레임에 연속으로 강제 이전할 때는 _playSound를 false로 넘겨
+    /// SFX가 아이템 개수만큼 중첩 재생되는 것을 막는다.
     /// </summary>
-    public bool TryAddLogItemDataDirect(LogItemData _sourceData, LogState _state)
+    public bool TryAddLogItemDataDirect(LogItemData _sourceData, LogState _state, bool _playSound = true)
     {
         if (!CanAddItemByData(_sourceData)) return false;
 
         AddItemByData(_sourceData, _state);
-        Sound.PlayUI(SoundID.GetItem);
+        if (_playSound)
+        {
+            Sound.PlayUI(SoundID.GetItem);
+        }
         return true;
     }
 
