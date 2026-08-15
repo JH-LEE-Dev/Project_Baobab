@@ -930,6 +930,30 @@
             "enumValue": ""
         },
         {
+            "id": 9005,
+            "key": "KeyGuide_AbilityUpgrade",
+            "kr": "특성 업그레이드",
+            "en": "Upgrade Ability",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 9006,
+            "key": "KeyGuide_DragToMove",
+            "kr": "드래그로 이동",
+            "en": "Drag to Move",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
+            "id": 9007,
+            "key": "KeyGuide_Zoom",
+            "kr": "확대 / 축소",
+            "en": "Zoom In / Out",
+            "enumType": "",
+            "enumValue": ""
+        },
+        {
             "id": 9100,
             "key": "AbilityDescription_InventoryExpansion",
             "kr": "<COLOR=8bbeff>인벤토리</COLOR> 공간을 <COLOR=54D86A>{0}칸</COLOR> 늘립니다.",
@@ -1068,7 +1092,7 @@
         {
             "id": 9117,
             "key": "AbilityDescription_FascinatingLogChance",
-            "kr": "<COLOR=8bbeff>희귀 등급 원목</COLOR> 출현 비중이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "kr": "<COLOR=8bbeff>희귀 등급 원목</COLOR> 출현 비중이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.\n[미구현]",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "FascinatingLogChance"

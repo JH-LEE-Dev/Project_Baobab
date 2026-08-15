@@ -119,6 +119,9 @@ public static class LocKeys
         public const int commonMaxLevel = 4203306;
         public const int commonToUnlock = 4203307;
         public const int commonUnlockComplete = 4203308;
+        public const int keyGuideAbilityUpgrade = 4203309;
+        public const int keyGuideDragToMove = 4203310;
+        public const int keyGuideZoom = 4203311;
         public const int abilityDescriptionInventoryExpansion = 4203404;
         public const int abilityDescriptionLogCapacityIncrease = 4203405;
         public const int abilityDescriptionSawmillLogStorageExpansion = 4203406;
@@ -208,6 +211,10 @@ public static class LocKeys
         public const int foundbox = 20971521;
         public const int sporepotion = 20971522;
         public const int starcompass = 20971523;
+        public const int nameLostandfoundbox = 20971524;
+        public const int nameSporepotion = 20971525;
+        public const int nameStarcompass = 20971526;
+        public const int nameObsidiancharm = 20971527;
     }
 
     public static class MainMenuUI
@@ -279,6 +286,14 @@ public static class LocKeys
         public const int obsidianTree = 14680076;
     }
 
+    public static class OpeningProductionUI
+    {
+        public const int openingMonologue0 = 33554433;
+        public const int openingMonologue1 = 33554434;
+        public const int openingMonologue2 = 33554435;
+        public const int openingMonologue3 = 33554436;
+    }
+
     public static class OptionUI
     {
         public const int windowed = 18874469;
@@ -335,6 +350,19 @@ public static class LocKeys
         public const int inventoryFull = 10485761;
         public const int itemCantAcquired = 10485762;
         public const int axeDurabilityEmpty = 10485763;
+    }
+
+    public static class TutorialQuestUI
+    {
+        public const int cutTreeTitle = 31457281;
+        public const int fillOffroadContainerTitle = 31457282;
+        public const int fillOffroadContainerDesc = 31457283;
+        public const int goHomeBeforeExhaustedTitle = 31457284;
+        public const int putItemsInLogContainerTitle = 31457285;
+        public const int receiveMoneyTitle = 31457286;
+        public const int upgradeAxeTitle = 31457287;
+        public const int startNewLoggingTitle = 31457288;
+        public const int unlockNewRegionTitle = 31457289;
     }
 
     public static class WarningUI
