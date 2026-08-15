@@ -229,7 +229,12 @@ public class HUD_LootReveal : MonoBehaviour
     public void Hide()
     {
         if (false == isShowing)
+        {
+            // 이미 닫혀있어도 호출자(UIView_ScreenModal)가 OnHideCompleted를 기다리고 있을 수 있으므로
+            // 즉시 완료로 처리해 알려준다.
+            OnHideCompleted?.Invoke();
             return;
+        }
 
         if (null != revealCoroutine)
         {

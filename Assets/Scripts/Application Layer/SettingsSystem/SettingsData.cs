@@ -163,8 +163,8 @@ public struct SettingsData
     public static int ResolutionCount => resolutionSizes.Length;
 
     /// <summary>
-    /// 옵션 선택기에 보여줄 순서입니다. 가로폭 오름차순, 같은 가로폭 안에서는 세로 내림차순입니다.
-    /// (1920x1200 다음에 1920x1080이 오도록)
+    /// 옵션 선택기에 보여줄 순서입니다. 가로폭 오름차순, 같은 가로폭 안에서는 세로 오름차순입니다.
+    /// (1920x1080 다음에 1920x1200이 오도록)
     ///
     /// enum 선언 순서(= 저장되는 정수값)와 분리해 둔 이유가 중요합니다. enum 순서를 바꾸면
     /// 기존 저장 파일의 숫자가 다른 해상도를 가리키게 되어 SettingsRepository의 버전을 올려야
@@ -175,14 +175,14 @@ public struct SettingsData
     /// </summary>
     private static readonly EResolution[] displayOrder =
     {
-        EResolution.Res640x400,   // 640
-        EResolution.Res640x360,
-        EResolution.Res1280x800,  // 1280
-        EResolution.Res1280x720,
-        EResolution.Res1920x1200, // 1920
-        EResolution.Res1920x1080,
-        EResolution.Res2560x1600, // 2560
-        EResolution.Res2560x1440
+        EResolution.Res640x360,   // 640
+        EResolution.Res640x400,
+        EResolution.Res1280x720,  // 1280
+        EResolution.Res1280x800,
+        EResolution.Res1920x1080, // 1920
+        EResolution.Res1920x1200,
+        EResolution.Res2560x1440, // 2560
+        EResolution.Res2560x1600
     };
 
     /// <summary>
