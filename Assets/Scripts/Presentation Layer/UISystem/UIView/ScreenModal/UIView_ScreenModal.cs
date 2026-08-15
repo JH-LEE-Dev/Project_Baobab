@@ -34,9 +34,17 @@ public class UIView_ScreenModal : UIView
         base.Show();
     }
 
+    // ESC(UIDepthController)로 닫힐 때도 E키로 닫을 때와 동일하게 hudLootReveal 페이드아웃을 거치도록
+    // 한다. 실제 등록 해제(base.Hide)는 CheckAndCompleteHide에서 애니메이션 완료 후에 이뤄진다.
     public override void Hide()
     {
-        base.Hide();
+        if (false == IsVisible)
+        {
+            base.Hide();
+            return;
+        }
+
+        InteractionStateChange(false, CurrentLootType);
     }
 
     protected override void OnShow()

@@ -227,12 +227,15 @@ public class SettingsManager : MonoBehaviour
         // 디스플레이 조회는 루프 밖에서 한 번만 수행한다.
         DisplayUtil.GetMainDisplaySize(out int _maxWidth, out int _maxHeight);
 
-        int _idx = (int)SettingsData.ClampResolution(current.resolution, _maxWidth, _maxHeight);
+        // enum 인덱스가 아니라 표시 순서를 순환한다. 유저가 화면에서 보는 나열 순서와
+        // 좌우 이동 순서가 같아야 하기 때문이다. (SettingsData.displayOrder)
+        EResolution _effective = SettingsData.ClampResolution(current.resolution, _maxWidth, _maxHeight);
+        int _order = SettingsData.GetDisplayOrderIndex(_effective);
 
         for (int i = 0; i < SettingsData.ResolutionCount; i++)
         {
-            _idx = IterateEnum(_idx, SettingsData.ResolutionCount, _delta);
-            EResolution _candidate = (EResolution)_idx;
+            _order = IterateEnum(_order, SettingsData.ResolutionCount, _delta);
+            EResolution _candidate = SettingsData.GetResolutionAtDisplayOrder(_order);
 
             // 강등되지 않는 값 == 이 모니터에서 표시 가능한 값
             if (_candidate == SettingsData.ClampResolution(_candidate, _maxWidth, _maxHeight))
@@ -243,8 +246,8 @@ public class SettingsManager : MonoBehaviour
             }
         }
 
-        // 여기에는 도달하지 않는다. ClampResolution이 최저 해상도는 절대 강등하지 않으므로,
-        // 순환이 최저 해상도 후보에 닿는 순간 위에서 반드시 return한다.
+        // 여기에는 도달하지 않는다. 목록에서 가장 작은 해상도는 어떤 모니터에도 들어간다고
+        // 가정하므로, 순환이 그 후보에 닿는 순간 위에서 반드시 return한다.
         // (ClampResolution의 하한 처리를 바꾸면 이 전제도 함께 검토해야 한다)
     }
 

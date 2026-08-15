@@ -21,23 +21,29 @@ public enum EOnOff { Off, On }
 /// 새 해상도는 항상 맨 뒤에 추가해서 기존 저장 파일을 그대로 호환시킵니다.
 ///
 /// 앞 4개(16:9)는 640x360의 정수배, 뒤 4개(16:10)는 640x400의 정수배입니다.
-/// UI 캔버스가 640x360 기준이고(Assets/Prefabs/UI/Canvas/*.prefab) 게임 아트가
-/// Point 필터 픽셀아트라, 같은 그룹 안에서 비정수 배율을 쓰면 원본 1px이 화면에서
-/// 2px과 3px로 들쭉날쭉하게 찍혀 테두리·폰트 굵기가 불균일해집니다.
-/// (그래서 16:9의 2.5배인 1600x900, 16:10의 2.5배인 1600x1000 등은 제외했습니다)
+/// 이 목록에서 정수배만 고르는 이유는 월드 픽셀 크기 때문이 아닙니다. 카메라 배율은
+/// CinemachinePixelPerfect가 화면세로/360을 반올림해 쓰므로 어떤 해상도에서도 이미
+/// 정수입니다. (SettingsData.GetPixelScale)
 ///
-/// 16:10 해상도는 세로 기준 해상도(400)가 16:9(360)보다 커서, 카메라가
-/// Crop Frame: None(확장)으로 동작하는 한 640x360 대비 위아래로 시야가 더 넓게
-/// 노출됩니다(왜곡은 아님 - 정수 배율 자체는 항상 유지됩니다). 화면비와 무관하게
-/// 동일한 시야를 보장해야 한다면 PixelPerfectCamera의 Crop Frame을 Letterbox 등으로
-/// 바꾸는 별도 작업이 필요합니다.
+/// UI 캔버스는 별개입니다. ScaleWithScreenSize + Match Height로 동작해 배율이
+/// 화면세로/360(실수)이며, 그 덕분에 캔버스 논리 높이가 항상 정확히 360으로 유지됩니다.
+/// UI 프리팹들이 640x360 고정 크기로 제작되어 있어서 이 성질에 의존합니다.
+/// (배율을 정수로 만들면 캔버스 높이가 360을 벗어나 고정 크기 UI가 화면을 못 채웁니다)
 ///
-/// CycleResolution은 선언 순서가 아니라 각 후보가 현재 모니터에 들어맞는지만
-/// 개별 검사하므로, 16:9/16:10 두 그룹이 전역적으로 오름차순이 아니어도(예: 인덱스 3의
-/// 2560x1440보다 인덱스 4의 640x400이 더 작음) 정상 동작합니다. ClampResolution은
-/// 인덱스를 1씩 낮추며 강등하다 최종적으로 인덱스 0(640x360, 모든 모니터가 지원한다고
-/// 가정하는 절대 하한)에서 멈추므로, 두 그룹이 뒤섞여도 모니터 크기를 벗어나는 값을
-/// 반환하지는 않습니다.
+/// 정수배 해상도만 고르면 나누어떨어져서 반올림 오차가 0이 되고, 화면에 보이는 월드가
+/// 기준 시야와 정확히 같아집니다. 즉 같은 그룹의 창모드 프리셋끼리는 시야가 완전히
+/// 동일하다는 보장이 생깁니다. 16:9 4개는 세로 360, 16:10 4개는 세로 400을 보여줍니다.
+/// (제외한 1600x900은 900/360=2.5가 2로 반올림되어 세로 450이 보입니다)
+///
+/// 전체화면은 이 목록을 쓰지 않고 모니터 해상도를 그대로 씁니다(SettingsManager.
+/// GetCurrentScreenTarget). 그쪽은 나누어떨어지지 않는 해상도도 들어오지만, 배율 자체는
+/// 여전히 정수이고 반올림 오차만큼 시야가 넓거나 좁아질 뿐입니다.
+/// (예: 2880x1800은 배율 5배에 시야 576x360, 1680x1050은 3배에 560x350)
+///
+/// 유저에게 보이는 나열 순서는 이 선언 순서가 아니라 displayOrder 배열이 정합니다.
+/// CycleResolution과 ClampResolution 모두 그 배열을 따라 이동하므로, 여기 선언 순서는
+/// 저장되는 정수값의 의미만 담당합니다. 표시 순서를 바꾸고 싶으면 displayOrder만
+/// 고치면 되고 저장 파일 호환성에는 영향이 없습니다.
 /// </summary>
 public enum EResolution
 {
@@ -156,6 +162,89 @@ public struct SettingsData
 
     public static int ResolutionCount => resolutionSizes.Length;
 
+    /// <summary>
+    /// 옵션 선택기에 보여줄 순서입니다. 가로폭 오름차순, 같은 가로폭 안에서는 세로 내림차순입니다.
+    /// (1920x1200 다음에 1920x1080이 오도록)
+    ///
+    /// enum 선언 순서(= 저장되는 정수값)와 분리해 둔 이유가 중요합니다. enum 순서를 바꾸면
+    /// 기존 저장 파일의 숫자가 다른 해상도를 가리키게 되어 SettingsRepository의 버전을 올려야
+    /// 하지만, 표시 순서만 바꾸는 것은 저장값에 아무 영향이 없습니다.
+    ///
+    /// 해상도를 추가할 때는 resolutionSizes 맨 뒤에 넣고, 이 배열에는 원하는 위치에 끼워
+    /// 넣으세요. 두 배열의 길이가 다르거나 항목이 빠지면 아래 정적 생성자가 잡아냅니다.
+    /// </summary>
+    private static readonly EResolution[] displayOrder =
+    {
+        EResolution.Res640x400,   // 640
+        EResolution.Res640x360,
+        EResolution.Res1280x800,  // 1280
+        EResolution.Res1280x720,
+        EResolution.Res1920x1200, // 1920
+        EResolution.Res1920x1080,
+        EResolution.Res2560x1600, // 2560
+        EResolution.Res2560x1440
+    };
+
+    /// <summary>
+    /// 어떤 모니터에도 들어간다고 가정하는 최소 해상도입니다. 표시 순서와 무관하게
+    /// 목록에서 가장 작은 항목을 골라 두므로, 목록이 바뀌어도 하한이 따라옵니다.
+    /// </summary>
+    private static readonly EResolution smallestResolution = FindSmallestResolution();
+
+    private static EResolution FindSmallestResolution()
+    {
+        int _best = 0;
+        for (int i = 1; i < resolutionSizes.Length; i++)
+        {
+            bool _smaller = resolutionSizes[i].width < resolutionSizes[_best].width
+                || (resolutionSizes[i].width == resolutionSizes[_best].width
+                    && resolutionSizes[i].height < resolutionSizes[_best].height);
+
+            if (_smaller) _best = i;
+        }
+        return (EResolution)_best;
+    }
+
+    // 표시 순서 배열이 목록과 어긋나면(누락·중복·길이 불일치) 선택기에서 특정 해상도를
+    // 영영 고를 수 없게 된다. 조용히 넘어가면 찾기 어려우므로 로딩 시점에 한 번 검사한다.
+    static SettingsData()
+    {
+        if (displayOrder.Length != resolutionSizes.Length)
+        {
+            Debug.LogError("[SettingsData] displayOrder와 resolutionSizes의 길이가 다릅니다.");
+            return;
+        }
+
+        bool[] _seen = new bool[resolutionSizes.Length];
+        for (int i = 0; i < displayOrder.Length; i++)
+        {
+            int _idx = (int)displayOrder[i];
+            if (_idx < 0 || _idx >= _seen.Length || _seen[_idx])
+            {
+                Debug.LogError("[SettingsData] displayOrder에 중복되거나 잘못된 항목이 있습니다: " + displayOrder[i]);
+                return;
+            }
+            _seen[_idx] = true;
+        }
+    }
+
+    /// <summary>표시 순서상 몇 번째인지를 반환합니다. 목록에 없으면 0입니다.</summary>
+    public static int GetDisplayOrderIndex(EResolution _res)
+    {
+        for (int i = 0; i < displayOrder.Length; i++)
+        {
+            if (displayOrder[i] == _res) return i;
+        }
+        return 0;
+    }
+
+    /// <summary>표시 순서상 _orderIndex번째 해상도입니다. 범위를 벗어나면 최소 해상도입니다.</summary>
+    public static EResolution GetResolutionAtDisplayOrder(int _orderIndex)
+    {
+        if (_orderIndex < 0 || _orderIndex >= displayOrder.Length) return smallestResolution;
+        return displayOrder[_orderIndex];
+    }
+
     public static void GetResolutionSize(EResolution _res, out int _width, out int _height)
     {
         int _idx = (int)_res;
@@ -203,6 +292,69 @@ public struct SettingsData
         _refHeight = Mathf.Abs(_aspect - _aspect169) <= Mathf.Abs(_aspect - _aspect1610)
             ? PIXEL_PERFECT_REF_HEIGHT_16_9
             : PIXEL_PERFECT_REF_HEIGHT_16_10;
+    }
+
+    /// <summary>
+    /// 게임플레이 카메라가 세로로 보여주도록 만들어진 시야 높이(기준 픽셀)입니다.
+    /// 가상 카메라(Assets/Prefabs/Objects/Camera/Camera.prefab)의 Lens.OrthographicSize 5.625와
+    /// PixelPerfectCamera의 Assets PPU 32에서 나옵니다. (5.625 * 2 * 32 = 360)
+    ///
+    /// 주의: 둘 중 하나라도 바꾸면 이 값도 같이 바꿔야 합니다. 씬에서 카메라의
+    /// OrthographicSize를 오버라이드하는 경우도 마찬가지입니다. 어긋나면 줌 연출 이후
+    /// 카메라가 엉뚱한 시야를 보여주는데, 아무 경고 없이 화면만 이상해지므로 찾기 어렵습니다.
+    /// </summary>
+    public const int CAMERA_VIEW_HEIGHT = 360;
+
+    /// <summary>
+    /// 주어진 화면에서 원본 1픽셀이 화면 몇 픽셀로 찍히는지(정수 배율)를 반환합니다.
+    ///
+    /// 이 프로젝트의 카메라는 CinemachinePixelPerfect가 붙어 있어서, 실제 배율이
+    /// PixelPerfectCamera의 zoom(기준 해상도 대비 내림)이 아니라
+    /// PixelPerfectCameraInternal.CorrectCinemachineOrthoSize의 cinemachineVCamZoom으로 정해집니다.
+    ///
+    ///   cinemachineVCamZoom = max(1, round(zoom * orthoSize / vcam의 OrthographicSize))
+    ///
+    /// 여기서 zoom * orthoSize는 화면세로/(2*PPU)로 정리되어 zoom이 약분됩니다. 즉
+    /// PixelPerfectCamera의 기준 해상도(640x360 / 640x400)는 결과에 영향을 주지 않고,
+    /// 화면 "세로"만으로 결정되며 내림이 아니라 반올림입니다. 그래서 아래 식이 곧 실제 배율입니다.
+    ///
+    /// 가로를 받지 않는 것도 같은 이유입니다. 시네머신은 세로(직교 크기)만 보정하므로
+    /// 초광각(21:9, 32:9)에서도 가로는 배율에 관여하지 않고 시야만 넓어집니다.
+    ///
+    /// Mathf.RoundToInt는 .5에서 짝수로 붙는데(1600x900의 900/360=2.5 -> 2), 시네머신이
+    /// 쓰는 것과 같은 함수라 일부러 그대로 둡니다. 다른 반올림을 쓰면 그 해상도에서
+    /// UI와 월드의 배율이 어긋납니다.
+    /// </summary>
+    public static int GetPixelScale(int _screenHeight)
+    {
+        if (_screenHeight <= 0) return 1;
+
+        // 기준 시야보다 작은 화면에서도 0배가 되지 않도록 1을 하한으로 둔다.
+        return Mathf.Max(1, Mathf.RoundToInt((float)_screenHeight / CAMERA_VIEW_HEIGHT));
+    }
+
+    /// <summary>
+    /// 주어진 화면 세로에서 픽셀 퍼펙트가 성립하는 직교 크기(OrthographicSize)를 반환합니다.
+    /// _authoredOrthoSize는 가상 카메라에 작성해 둔 원본 값, 즉 CAMERA_VIEW_HEIGHT만큼을
+    /// 보여주도록 정해진 크기입니다.
+    ///
+    /// CinemachinePixelPerfect가 켜져 있을 때 CorrectCinemachineOrthoSize가 만들어내는 값과
+    /// 같습니다. 그래서 이 값을 카메라에 넣어두면 익스텐션의 보정이 항등이 되어,
+    /// 익스텐션을 켜든 끄든 화면이 달라지지 않습니다. CameraMoveController가 줌 연출 동안
+    /// 익스텐션을 끄기 때문에 이 성질이 필요합니다.
+    ///
+    /// 화면 세로가 CAMERA_VIEW_HEIGHT의 정수배인 해상도(16:9 프리셋 전부)에서는
+    /// _authoredOrthoSize를 그대로 돌려주므로 아무것도 달라지지 않습니다.
+    /// </summary>
+    public static float GetPixelPerfectOrthoSize(int _screenHeight, float _authoredOrthoSize)
+    {
+        if (_screenHeight <= 0 || _authoredOrthoSize <= 0f) return _authoredOrthoSize;
+
+        // 실제로 보이게 될 시야 높이(기준 픽셀). 배율이 정수라 반올림 오차가 여기로 흡수된다.
+        float _viewHeight = (float)_screenHeight / GetPixelScale(_screenHeight);
+
+        // 직교 크기는 시야 높이에 정비례하므로 기준 시야 대비 비율만 곱하면 된다.
+        return _authoredOrthoSize * _viewHeight / CAMERA_VIEW_HEIGHT;
     }
 
     /// <summary>
@@ -265,18 +417,18 @@ public struct SettingsData
         // 디스플레이 정보를 신뢰할 수 없는 환경에서는 판단하지 않는다.
         if (_maxWidth <= 0 || _maxHeight <= 0) return _res;
 
-        EResolution _result = _res;
-
-        // 인덱스 0(가장 낮은 해상도)이 하한이다. 특정 항목을 하드코딩하지 않으므로
-        // 목록 맨 앞에 더 낮은 해상도를 추가해도 그대로 동작한다.
-        while ((int)_result > 0)
+        // enum 인덱스가 아니라 표시 순서를 따라 내려간다. 유저가 선택기에서 보는 순서와
+        // 강등 순서가 같아야 "왼쪽으로 가면 점점 작아진다"는 기대가 유지된다.
+        for (int i = GetDisplayOrderIndex(_res); i >= 0; i--)
         {
-            GetResolutionSize(_result, out int _width, out int _height);
-            if (_width <= _maxWidth && _height <= _maxHeight) break;
+            EResolution _candidate = displayOrder[i];
 
-            _result = (EResolution)((int)_result - 1);
+            GetResolutionSize(_candidate, out int _width, out int _height);
+            if (_width <= _maxWidth && _height <= _maxHeight) return _candidate;
         }
 
-        return _result;
+        // 표시 순서 맨 앞이 반드시 가장 작은 항목인 것은 아니므로(가로가 같으면 세로가 큰 쪽이
+        // 앞에 온다) 여기까지 왔다면 목록에서 가장 작은 항목으로 떨어뜨린다.
+        return smallestResolution;
     }
 }

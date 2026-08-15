@@ -8,7 +8,9 @@ using System.Threading;
 
 public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 {
+    private BootStrap bootstrap;
     private SignalHub signalHub;
+    private TutorialSystem tutorialSystem;
     private SkillSystem skillSystem;
     private Character character;
     private InventoryManager inventoryManager;
@@ -27,11 +29,17 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     // GC Alloc 최적화를 위한 캐싱된 세이브 데이터 객체
     private GameSaveData cachedSaveData = new GameSaveData();
 
-    public void Initialize(SignalHub _signalHub, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
+    private void Awake()
+    {
+        bootstrap = GetComponent<BootStrap>();
+    }
+
+    public void Initialize(SignalHub _signalHub, TutorialSystem _tutorialSystem, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
     DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager, OffroadContainer _offroadContainer,
     TownUnitSpawner _townUnitSpawner)
     {
         signalHub = _signalHub;
+        tutorialSystem = _tutorialSystem;
         inDungeonObjectManager = _inDungeonObjectManager;
         densityManager = _densityManager;
         skillSystem = _skillSystem;
@@ -83,6 +91,17 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
     // 비우게 되면 이 안전장치가 사라지므로 주의.
     private void OnApplicationQuit()
     {
+        if (null == bootstrap)
+        {
+            bootstrap = GetComponent<BootStrap>();
+        }
+
+        if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType)
+        {
+            Debug.Log("[SaveManager] Currently in DungeonScene; skipping auto-save on ApplicationQuit.");
+            return;
+        }
+
         Debug.Log("[SaveManager] Auto save triggered (ApplicationQuit)");
         SaveGameData();
     }
@@ -125,43 +144,62 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 
     public void SaveGameData()
     {
-        if (character == null || character.statComponent == null) return;
+        if (null == character || null == character.statComponent) return;
+
+        if (null == bootstrap)
+        {
+            bootstrap = GetComponent<BootStrap>();
+        }
+
+        if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType)
+        {
+            Debug.LogWarning("[SaveManager] SaveGameData skipped because current scene is DungeonScene.");
+            return;
+        }
+
+        // 튜토리얼 진행 중(마지막 스텝 완료 전)에는 자동/종료 저장을 하지 않는다.
+        // 마지막 스텝이 완료되어 다시 던전으로 향하는 순간(DepartToForest 자동저장)부터 정상 저장된다.
+        if (null != tutorialSystem && tutorialSystem.IsTutorialInProgress)
+        {
+            Debug.LogWarning("[SaveManager] SaveGameData skipped because tutorial is in progress.");
+            return;
+        }
 
         // 기존 데이터 클리어 (리스트 등 재사용)
         cachedSaveData.Clear();
         
         // 1. 스킬 데이터 추출 (리스트 재사용)
-        if (skillSystem != null && skillSystem.skillManager != null)
+        if (null != skillSystem && null != skillSystem.skillManager)
         {
             skillSystem.skillManager.PopulateSkillSaveData(ref cachedSaveData.skillTreeSaveData);
         }
 
         // 3. 인벤토리 데이터 추출 (리스트 재사용)
-        if (inventoryManager != null)
+        if (null != inventoryManager)
         {
             inventoryManager.PopulateInventorySaveData(ref cachedSaveData.inventorySaveData);
         }
 
         // 4. 로그 가공 시스템 데이터 추출 (리스트 재사용)
-        if (logProcessingManager != null)
+        if (null != logProcessingManager)
         {
             logProcessingManager.PopulateSaveData(ref cachedSaveData.logProcessingSaveData);
         }
 
         // 5. 환경 밀도 데이터 추출
-        if (densityManager != null)
+        if (null != densityManager)
         {
             densityManager.PopulateSaveData(ref cachedSaveData.environmentSaveData);
         }
 
         // 8. 오프로드 컨테이너 데이터 추출
-        if (offroadContainer != null)
+        if (null != offroadContainer)
         {
             offroadContainer.PopulateSaveData(ref cachedSaveData.offroadContainerSaveData);
         }
 
         // 8-2. "분실물 보관함" 영구 획득 플래그, "포자 포션" 획득 여부/충전량
-        if (inDungeonObjectManager != null)
+        if (null != inDungeonObjectManager)
         {
             cachedSaveData.bHasAcquiredLostAndFoundBox = inDungeonObjectManager.bHasAcquiredLostAndFoundBox;
             cachedSaveData.bHasAcquiredSporePotion = inDungeonObjectManager.bHasAcquiredSporePotion;
@@ -170,7 +208,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
             cachedSaveData.bHasAcquiredObsidianCharm = inDungeonObjectManager.bHasAcquiredObsidianCharm;
             
             cachedSaveData.currentOwnedLoots.Clear();
-            if (inDungeonObjectManager.CurrentOwnedLoots != null)
+            if (null != inDungeonObjectManager.CurrentOwnedLoots)
             {
                 cachedSaveData.currentOwnedLoots.AddRange(inDungeonObjectManager.CurrentOwnedLoots);
             }
@@ -181,16 +219,16 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         //      - LogContainer로 납품되던 비행분 -> LogContainer 세이브로 착지
         //      - OffroadContainer<->캐릭터/포터 비행분, 포터가 들고 있던 분 -> 각 규칙대로 정산
         //      (반드시 모든 Populate 이후에 호출: 슬롯 리스트가 구성된 뒤여야 병합 가능)
-        if (logProcessingManager != null)
+        if (null != logProcessingManager)
         {
             logProcessingManager.AppendTransitToSaveData(ref cachedSaveData.logProcessingSaveData);
         }
 
-        if (offroadContainer != null)
+        if (null != offroadContainer)
         {
-            int characterMaxPerSlot = inventoryManager != null ? inventoryManager.GetMaxItemsPerSlot() : 0;
-            int logContainerMaxPerSlot = logProcessingManager != null ? logProcessingManager.GetContainerMaxItemsPerSlot() : 0;
-            IReadOnlyList<OffroadPorterNPC> porters = townUnitSpawner != null ? townUnitSpawner.NPCs : null;
+            int characterMaxPerSlot = null != inventoryManager ? inventoryManager.GetMaxItemsPerSlot() : 0;
+            int logContainerMaxPerSlot = null != logProcessingManager ? logProcessingManager.GetContainerMaxItemsPerSlot() : 0;
+            IReadOnlyList<OffroadPorterNPC> porters = null != townUnitSpawner ? townUnitSpawner.NPCs : null;
             // OffroadContainer가 가득이면 포터 로그를 LogContainer 세이브로 전진 납품(fallback)하므로
             // 그 LogContainer 세이브 데이터도 ref로 넘긴다. (LogContainer 자체 운반분은 위에서 이미 정산됨)
             offroadContainer.AppendTransitToSaveData(ref cachedSaveData.offroadContainerSaveData,

@@ -40,6 +40,8 @@ public class BootStrap : MonoBehaviour, IBootStrapProvider
     private SceneType currentSceneType = SceneType.None;
     private SceneType prevSceneType = SceneType.None;
 
+    public SceneType CurrentSceneType => currentSceneType;
+
     private bool bNewGame = false;
     private MapType currentMapType = MapType.Town;
     private ForestType currentForestType = ForestType.InTown;

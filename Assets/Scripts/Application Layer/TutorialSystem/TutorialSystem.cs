@@ -19,6 +19,10 @@ public class TutorialSystem
     // 튜토리얼 로직이 다시는 실행되지 않도록 완전히 차단한다.
     private bool bTutorialCompleted;
 
+    // 튜토리얼이 시작됐지만 아직 끝나지 않은 구간인지. SaveManager가 이 구간 동안 자동/종료 저장을
+    // 막는 데 사용한다(마지막 스텝 완료로 bTutorialCompleted가 true가 되는 순간 곧바로 false로 바뀐다).
+    public bool IsTutorialInProgress => CanProcessTutorialLogic();
+
     // 2단계에서 플레이어가 실제로 OffroadContainer에 원목을 넣기 시작했는지.
     // 인벤토리가 비는 것만으로는 "컨테이너에 넣어서 비운 것"인지 구분할 수 없어(버리기 등) 함께 확인한다.
     private bool bContainerTransferStarted;
