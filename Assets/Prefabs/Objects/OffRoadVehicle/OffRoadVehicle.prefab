@@ -2041,6 +2041,8 @@ MonoBehaviour:
   reachThreshold: 0.1
   engineIgnitionCatchRatio: 0.1
   engineRunPitchTarget: 1.4
+  engineFocusVolumeScale: 1.5
+  engineFocusSwellDuration: 0.3
   engineShutdownSettleDuration: 0.4
   engineShutdownSettleIntensity: 0.12
   containerCarryPoint: {fileID: 8170189756255339106}
@@ -2203,6 +2205,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::VFXComponent
   isUIComponent: 0
+  initializeOnAwake: 1
   vfxPoolDataList:
   - vfxTag: StartUp
     effectPrefab: {fileID: 5748764238649717206, guid: a2f48f48d8c96b64dbfeb7a97164b433, type: 3}
