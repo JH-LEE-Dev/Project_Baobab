@@ -51,7 +51,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UIView_ScreenModal
   layer: 2
-  bCloseableByESC: 0
+  bCloseableByESC: 1
   bWorld: 0
   bScreenSpace: 0
   bOverlay: 1
