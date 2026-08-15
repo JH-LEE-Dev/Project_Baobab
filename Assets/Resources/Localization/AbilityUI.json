@@ -1068,7 +1068,7 @@
         {
             "id": 9117,
             "key": "AbilityDescription_FascinatingLogChance",
-            "kr": "<COLOR=8bbeff>희귀 등급 원목</COLOR> 출현 비중이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.",
+            "kr": "<COLOR=8bbeff>희귀 등급 원목</COLOR> 출현 비중이 <COLOR=54D86A>{0}%</COLOR> 증가합니다.\n[미구현]",
             "en": "",
             "enumType": "SkillCommandType",
             "enumValue": "FascinatingLogChance"

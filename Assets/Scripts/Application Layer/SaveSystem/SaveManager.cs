@@ -10,6 +10,7 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
 {
     private BootStrap bootstrap;
     private SignalHub signalHub;
+    private TutorialSystem tutorialSystem;
     private SkillSystem skillSystem;
     private Character character;
     private InventoryManager inventoryManager;
@@ -33,11 +34,12 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         bootstrap = GetComponent<BootStrap>();
     }
 
-    public void Initialize(SignalHub _signalHub, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
+    public void Initialize(SignalHub _signalHub, TutorialSystem _tutorialSystem, SkillSystem _skillSystem, InventoryManager _inventoryManager, LogProcessingManager _logProcessingManager,
     DensityManager _densityManager, InDungeonObjectManager _inDungeonObjectManager,TownObjectManager _townObjectManager, OffroadContainer _offroadContainer,
     TownUnitSpawner _townUnitSpawner)
     {
         signalHub = _signalHub;
+        tutorialSystem = _tutorialSystem;
         inDungeonObjectManager = _inDungeonObjectManager;
         densityManager = _densityManager;
         skillSystem = _skillSystem;
@@ -152,6 +154,14 @@ public class SaveManager : MonoBehaviour, IMainMenuSaveSystem
         if (null != bootstrap && SceneType.DungeonScene == bootstrap.CurrentSceneType)
         {
             Debug.LogWarning("[SaveManager] SaveGameData skipped because current scene is DungeonScene.");
+            return;
+        }
+
+        // 튜토리얼 진행 중(마지막 스텝 완료 전)에는 자동/종료 저장을 하지 않는다.
+        // 마지막 스텝이 완료되어 다시 던전으로 향하는 순간(DepartToForest 자동저장)부터 정상 저장된다.
+        if (null != tutorialSystem && tutorialSystem.IsTutorialInProgress)
+        {
+            Debug.LogWarning("[SaveManager] SaveGameData skipped because tutorial is in progress.");
             return;
         }
 
