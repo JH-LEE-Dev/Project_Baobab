@@ -76,6 +76,7 @@ public class HUD_PopupNav_DemoNotice : MonoBehaviour
 
         isDemoNoticeShowing = true;
         demoNoticeOverlay.SetActive(true);
+        Sound.PlayUI(SoundID.DemoEnd);
 
         // 배너 확장 연출 전 콘텐츠는 투명(Alpha 0) 상태로 대기 (레이아웃 크기는 정상 유지)
         SetContentAlpha(0f);

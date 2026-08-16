@@ -79,6 +79,7 @@ public enum SoundID
     OptionSFXBarTick = -911198171,
     SkyDown = 1617231916,
     SkyUP = -358144385,
+    DemoEnd = 356486371,
     NaviClose = -494540975,
     NaviLocked = 1564583461,
     NaviLockHover = -1037988270,

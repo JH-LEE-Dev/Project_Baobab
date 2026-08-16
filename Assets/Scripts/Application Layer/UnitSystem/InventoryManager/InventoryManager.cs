@@ -601,14 +601,13 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
             {
                 // 컨테이너 쪽에 자리가 있는지 먼저 확인 후 성공했을 때만 캐릭터 슬롯에서 차감한다.
                 // 순서를 반대로 하면(먼저 차감 후 실패 시 롤백) 데이터가 증발할 위험이 있다.
-                if (!_container.TryAddLogItemDataDirect(logData, logData.logState))
+                if (!_container.TryAddLogItemDataDirect(logData, logData.logState, false))
                 {
                     containerFull = true;
                     break;
                 }
 
                 slot.TakeOneItem();
-                Sound.PlayUI(SoundID.OutItem);
                 rescuedCount++;
                 ItemRemoved();
             }
@@ -642,11 +641,10 @@ public class InventoryManager : MonoBehaviour, IInventory, IInventoryForSkill, I
 
             while (slot.totalCount > 0)
             {
-                if (!_container.TryAddLogItemDataDirect(logData, logData.logState))
+                if (!_container.TryAddLogItemDataDirect(logData, logData.logState, false))
                     break;
 
                 slot.TakeOneItem();
-                Sound.PlayUI(SoundID.OutItem);
                 transferredCount++;
                 ItemRemoved();
             }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
@@ -148,6 +149,11 @@ public class UI_TentAbilityComponent : MonoBehaviour
     [SerializeField] private RectTransform moveTarget;
     [SerializeField] private AbilityHUD abilityHUD;
 
+    [Header("Key Guide Localization")]
+    [SerializeField] private TMP_Text keyGuideUpgradeText;
+    [SerializeField] private TMP_Text keyGuideMoveText;
+    [SerializeField] private TMP_Text keyGuideMagnificationText;
+
     [Header("Ability Node Setup")]
     [SerializeField] private AbilityNode abilityNodePrefab;
     [SerializeField] private TextAsset abilityNodeJson;
@@ -231,6 +237,7 @@ public class UI_TentAbilityComponent : MonoBehaviour
         EnsureToolTipInstance();
         EnsureSelectionCursorInstance();
         RefreshLocalizedNodeTexts();
+        RefreshKeyGuideTexts();
         RefreshAbilityHUDImmediately();
         Close();
     }
@@ -301,9 +308,26 @@ public class UI_TentAbilityComponent : MonoBehaviour
     private void HandleLanguageChanged()
     {
         RefreshLocalizedNodeTexts();
+        RefreshKeyGuideTexts();
 
         if (currentToolTipNode != null)
             ShowToolTip(currentToolTipNode);
+    }
+
+    private void RefreshKeyGuideTexts()
+    {
+        SetLocalizedText(keyGuideUpgradeText, LocKeys.AbilityUI.keyGuideAbilityUpgrade, "특성 업그레이드");
+        SetLocalizedText(keyGuideMoveText, LocKeys.AbilityUI.keyGuideDragToMove, "드래그로 이동");
+        SetLocalizedText(keyGuideMagnificationText, LocKeys.AbilityUI.keyGuideZoom, "확대 / 축소");
+    }
+
+    private void SetLocalizedText(TMP_Text _target, int _compositeKey, string _fallback)
+    {
+        if (_target == null)
+            return;
+
+        string localizedText = ResolveLocalizedText(_compositeKey);
+        _target.text = string.IsNullOrEmpty(localizedText) ? _fallback : localizedText;
     }
 
 
