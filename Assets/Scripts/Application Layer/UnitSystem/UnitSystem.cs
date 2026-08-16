@@ -327,7 +327,6 @@ public class UnitSystem
     private void DropAllItem(DropAllItemSignal _signal)
     {
         inDungeonResultManager.IncreaseLostLogItemCnt(inventoryManager.DropAllItem(unitSpawner.character.centerTransform));
-        signalHub.Publish(new PopupUIDownSignal());
     }
 
     private void RetryGame(RetryButtonClickedSignal _retryButtonClickedSignal)
